@@ -10,8 +10,9 @@ Subcommands:
     harmonic outcomes outcome summary: glycemic metrics + derived clean rates
     harmonic outcomes-trend behavioral + glycemic scorecard across rolling windows
 
-The DB defaults to ``tconnect-data/ciq.db`` — inside the already-gitignored
-folder, so nothing personal escapes the repo.
+The DB resolves once for every subcommand: an explicitly typed ``--db`` wins,
+then ``HARMONIC_DB`` (legacy ``CIQ_DB``), then ``tconnect-data/ciq.db`` —
+inside the already-gitignored folder, so nothing personal escapes the repo.
 """
 
 from __future__ import annotations
@@ -26,6 +27,7 @@ from typing import List, Optional
 from . import report as report_mod
 from . import sync as sync_mod
 from .backtest import BacktestResult, backtest, dia_sweep, render_dia_sweep
+from .config import resolve_db_path
 from .model import ModelConfig
 from .store import Store
 
@@ -62,7 +64,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     p_fetch = sub.add_parser("fetch", help="pull live data from t:connect into the store")
-    p_fetch.add_argument("--db", default=DEFAULT_DB)
+    p_fetch.add_argument("--db", default=None)
     p_fetch.add_argument("--days", type=int, metavar="N",
                          help="pull the last N days (ending today)")
     p_fetch.add_argument("--start", metavar="YYYY-MM-DD",
@@ -72,7 +74,7 @@ def main(argv: Optional[List[str]] = None) -> int:
                          help="override TCONNECT_REGION from .env")
 
     p_basal = sub.add_parser("basal", help="suggest a basal profile from clean windows")
-    p_basal.add_argument("--db", default=DEFAULT_DB)
+    p_basal.add_argument("--db", default=None)
     p_basal.add_argument("--window", type=int, default=30, metavar="DAYS",
                          help="analysis window (default 30); each slot is cut to its own basal setting epoch")
     p_basal.add_argument("--bolus-clear", type=float, metavar="U",
@@ -86,7 +88,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     p_basal.add_argument("--flat-slope", type=float, metavar="MGDL_MIN")
 
     p_an = sub.add_parser("analyze", help="full model (basal/ISF/I:C/behavioral) over one result")
-    p_an.add_argument("--db", default=DEFAULT_DB)
+    p_an.add_argument("--db", default=None)
     p_an.add_argument("--window", type=int, default=30, metavar="DAYS",
                       help="analysis window (default 30); ISF/I:C use the full window; basal slots keep basal setting-epoch measurement cuts")
     p_an.add_argument("--ignore-changes", action="store_true",
@@ -94,13 +96,13 @@ def main(argv: Optional[List[str]] = None) -> int:
     p_an.add_argument("--json", action="store_true", help="emit the AnalysisResult as JSON")
 
     p_bt = sub.add_parser("backtest", help="score the suggestion on held-out days")
-    p_bt.add_argument("--db", default=DEFAULT_DB)
+    p_bt.add_argument("--db", default=None)
     p_bt.add_argument("--holdout", type=int, default=2, metavar="DAYS")
 
     p_dia = sub.add_parser(
         "dia-sweep",
         help="calibrate DIA: coverage gained vs. estimate-drift as functions of DIA")
-    p_dia.add_argument("--db", default=DEFAULT_DB)
+    p_dia.add_argument("--db", default=None)
     p_dia.add_argument("--dia", type=float, nargs="+", metavar="MIN",
                        help="DIA values to sweep (default: 120..300 around the baseline)")
     p_dia.add_argument("--baseline", type=float, metavar="MIN",
@@ -109,7 +111,7 @@ def main(argv: Optional[List[str]] = None) -> int:
                        help="distinct clean days a slot needs to count as covered (default 5)")
 
     p_serve = sub.add_parser("serve", help="run the HTTP API (needs the api extra)")
-    p_serve.add_argument("--db", default=DEFAULT_DB)
+    p_serve.add_argument("--db", default=None)
     p_serve.add_argument("--host", default="127.0.0.1", help="bind address (localhost by default)")
     p_serve.add_argument("--port", type=int, default=8765)
     p_serve.add_argument("--token", default=None,
@@ -120,7 +122,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     p_out = sub.add_parser(
         "outcomes",
         help="outcome summary: glycemic metrics + derived clean rates over a window")
-    p_out.add_argument("--db", default=DEFAULT_DB)
+    p_out.add_argument("--db", default=None)
     p_out.add_argument("--window", type=int, default=14, metavar="DAYS",
                        help="flat window (default 14; 30/90 typical)")
     p_out.add_argument("--json", action="store_true", help="emit the OutcomeSummary as JSON")
@@ -128,13 +130,13 @@ def main(argv: Optional[List[str]] = None) -> int:
     p_trend = sub.add_parser(
         "outcomes-trend",
         help="outcomes trend: behavioral + glycemic scorecard across rolling windows")
-    p_trend.add_argument("--db", default=DEFAULT_DB)
+    p_trend.add_argument("--db", default=None)
     p_trend.add_argument("--window", type=int, default=14, metavar="DAYS",
                          help="rolling window width (default 14)")
     p_trend.add_argument("--json", action="store_true", help="emit the OutcomesTrend as JSON")
 
     p_report = sub.add_parser("report", help="write a markdown advisory report")
-    p_report.add_argument("--db", default=DEFAULT_DB)
+    p_report.add_argument("--db", default=None)
     p_report.add_argument("--out", default="tconnect-data/report.md")
     p_report.add_argument("--window", type=int, default=30, metavar="DAYS",
                           help="analysis window (default 30); ISF/I:C use the full window; basal slots keep basal setting-epoch measurement cuts")
@@ -143,6 +145,7 @@ def main(argv: Optional[List[str]] = None) -> int:
                           help="also write a why-plot PNG (needs matplotlib)")
 
     args = parser.parse_args(argv)
+    args.db = resolve_db_path(args.db, DEFAULT_DB)
 
     if args.cmd == "fetch":
         return _cmd_fetch(args)

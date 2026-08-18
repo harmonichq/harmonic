@@ -1,6 +1,8 @@
-# ADR 25 — The correction-factor detail states the analyzer's direction, not its recommendation
+# Design — isf-detail-verdict
 
-## Context
+## ADR 25 — The correction-factor detail states the analyzer's direction, not its recommendation
+
+### Context
 
 `analyzers/isf` can assert a direction without producing a number: a weaken owned
 by recurring correction-caused lows is direction-only (adr-468), so
@@ -21,7 +23,7 @@ from `mockups/diagnose-workstation.synthetic`, whose ISF evidence carries only
 `rest_windows` — no `direction`, no `night_fits`. Neither the mock nor the fixture
 could reach the state. Real data reaches it routinely.
 
-## Decision
+### Decision
 
 The detail level's verdict comes from `evidence.direction`; stageability stays
 `recommended != null`. The two are answered separately by `isfVerdict`
@@ -39,7 +41,7 @@ Support is counted as the nights the estimate is clustered on (`night_fits`,
 supports nothing, and counting windows made the detail claim 27 where the queue
 row claimed 24 for the same reading.
 
-## Consequences
+### Consequences
 
 - One predicate per surface for the correction factor's direction, matching the
   shape the basal and carb-ratio invariants already have. No frontend gate
@@ -50,3 +52,6 @@ row claimed 24 for the same reading.
   the demo fixture's row is still held.
 - Whether such a finding should be ranked where it is, and whether the correction
   factor gets a surface of its own, are open: issue 26.
+
+Decision: harmonichq/harmonic#25, 2026-08-18. Open questions about ranking and a
+correction-factor surface of its own: harmonichq/harmonic#26.

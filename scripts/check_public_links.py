@@ -2,7 +2,7 @@
 """Reject a shipping document that points at a file the public tree excludes
 (#728, cutover plan Phase 2.2).
 
-``docs/adr/``, ``docs/scope/``, ``mockups/`` (bar a handful of exact paths) and
+``docs/scope/``, ``mockups/`` (bar a handful of exact paths) and
 the private tooling directories do not ship. A README or spec that links into
 one of them reads fine in this repository and is a dead end in the published
 one — three such links existed when this check was written, and the fourth is
@@ -27,7 +27,7 @@ Four rules, each failing closed:
 * **Markdown links** — a relative ``[text](target)`` in any shipping ``.md``
   must resolve to something inside the tree. External URLs, ``mailto:`` and
   bare ``#anchor`` fragments are not paths and are skipped.
-* **Prose path references** — a path-shaped token (``docs/adr/adr-6-….md``,
+* **Prose path references** — a path-shaped token (``openspec/changes/x/design.md``,
   ``mockups/INDEX.md``) that names a **tracked file of this repository which
   the tree excludes**. Comparing against the tracked set, rather than against
   "does this string exist", is what keeps runtime paths like
@@ -123,10 +123,11 @@ _PATH_TOKEN_RE = re.compile(r"[A-Za-z0-9_.][A-Za-z0-9_.@+-]*(?:/[A-Za-z0-9_.@+-]
 # the reason it is not a defect. Pinned per document rather than exempted by
 # directory, so a second document citing the same path is still caught.
 PINNED = {
-    ("AGENTS.md", "docs/adr/"):
+    ("AGENTS.md", "openspec/changes/"):
         "names where a new decision record is created. The public tree ships"
-        " the naming guard, not the historical records.",
-    ("CLAUDE.md", "docs/adr/"):
+        " the naming guard and the capability specs, not the change history"
+        " those records sit in.",
+    ("CLAUDE.md", "openspec/changes/"):
         "the same line, reached through the CLAUDE.md symlink.",
     (".gitignore", "mockups/sweep/"):
         "a comment explaining the ignore rule directly above it. Behaviour-sweep"
@@ -141,12 +142,15 @@ PINNED = {
     ("scripts/check_public_links.py", "docs/scope/"): "the same docstring.",
     ("scripts/check_public_links.py", "mockups/INDEX.md"):
         "the same docstring's worked example of a prose path reference.",
-    ("scripts/check_adr_numbers.py", "docs/adr/"):
-        "the ADR-numbering guard names the directory it validates. The guard"
+    ("scripts/check_adr_numbers.py", "openspec/changes/"):
+        "the ADR-identity guard names the directory it validates. The guard"
         " ships so the naming rule is enforceable in the public repository; the"
-        " historical records do not.",
+        " records themselves do not.",
     ("tests/test_check_public_links.py", "docs/adr/"):
         "the test docstrings quote the links this check was written for.",
+    ("tests/test_check_public_links.py", "openspec/changes/"):
+        "the pinned-reference test quotes the decision-record pointer it clears,"
+        " which names the change tree the records live in.",
     ("tests/test_check_adr_numbers.py", "docs/adr/"):
         "the guard's own test says, in as many words, that the tree ships the"
         " naming rule and not the records. Naming the absent directory is the"

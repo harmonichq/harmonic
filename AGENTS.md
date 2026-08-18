@@ -334,12 +334,17 @@ Hard-won, and expensive to re-derive.
   an issue, test or report names a domain concept, use the term as defined there
   and steer clear of the listed synonyms. `DESIGN.md` is the visual system,
   `PRODUCT.md` the product frame.
-- **Decision records** live under `docs/adr/`, named after the issue that
-  originated them: `docs/adr/adr-<issue>-<slug>.md`, with the heading
-  `# ADR <issue> — Title`. Two records from one issue take distinct slugs.
-  `scripts/check_adr_numbers.py` enforces that filename-to-heading identity in
-  CI; an absent or empty directory is a pass, so a repository with no recorded
-  decisions yet is legal. Run it locally before pushing.
+- **Decision records live in an OpenSpec change's `design.md`**, because that is
+  where this repository already records design — there is no `docs/adr/` tree,
+  and a record written into one is a forked history, not a second home. A record
+  is a section headed `## ADR <issue> — Title` in
+  `openspec/changes/<change>/design.md`, where `<issue>` is the GitHub issue,
+  ticket or pull request the decision came from; create the change directory if
+  the work has none yet. Two records from one issue take distinct titles.
+  `scripts/check_adr_numbers.py` enforces that identity in CI and fails on a
+  reappearing `docs/adr/` record; an absent changes directory is a pass, so a
+  repository with no recorded decisions yet is legal. Run it locally before
+  pushing.
 - **The product name is guarded.** `scripts/check_owned_identifiers.py` rejects
   the retired pre-Harmonic name in the identifiers Harmonic owns — the
   distribution and command names, the container image, the browser title, the

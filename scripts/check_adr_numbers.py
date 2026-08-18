@@ -1,27 +1,27 @@
 #!/usr/bin/env python3
 """Guard against ADR identity drift (stdlib only; no deps).
 
-ADRs are identified by the GitHub issue that originated them, not a sequential
-counter. Each ADR lives in a file named:
+**A decision record's home is an OpenSpec change's design.md**, because that is
+where this repository already records design:
 
-    docs/adr/adr-<issue>-<slug>.md
+    openspec/changes/<change>/design.md
 
-with a heading:
+    ## ADR <issue> — <title>
 
-    # ADR <issue> — <title>
+``<issue>`` is the GitHub issue, ticket or pull request the decision came from,
+not a sequential counter: GitHub hands out those numbers uniquely before any
+line is written, so two branches cannot both pick "the next free number" off a
+stale base. Two records originating from one issue take distinct titles.
 
-The (issue, slug) pair is unique — a collision becomes structurally impossible
-because GitHub hands out issue numbers uniquely before any line is written.
-
-Legacy files from the old sequential scheme (``NNNN-slug.md``, where the
-originating issue was unrecoverable) are also accepted as-is and checked for
-uniqueness on their 4-digit prefix.  They are read-only: new ADRs must use the
-issue-keyed form.
+There is no ``docs/adr/`` tree here. One was created for ADR 25 and moved into
+this scheme the same week (ADR 25 itself records why); this guard fails on its
+reappearance so the history cannot fork again — a repository with two decision
+homes has neither.
 
 Checks:
-  1. No two new-style files share the same (issue, slug) pair.
-  2. No two legacy files share the same NNNN prefix.
-  3. Every file's heading issue/number agrees with its filename.
+  1. Every ``## ADR`` heading is issue-keyed and titled.
+  2. No two records share an (issue, title) pair.
+  3. No ``docs/adr/`` records exist.
 
 Exit non-zero (and print the offenders) on any violation.
 """
@@ -32,125 +32,76 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
-ADR_DIR = Path(__file__).resolve().parent.parent / "docs" / "adr"
+REPO_ROOT = Path(__file__).resolve().parent.parent
+CHANGES_DIR = REPO_ROOT / "openspec" / "changes"
+RETIRED_DIR = REPO_ROOT / "docs" / "adr"
 
-# New scheme: adr-<issue>-<slug>.md  (issue is one or more digits)
-NEW_FILENAME_RE = re.compile(r"^adr-(\d+)-(.+)\.md$")
-# Legacy scheme: NNNN-slug.md  (exactly 4 leading digits)
-LEGACY_FILENAME_RE = re.compile(r"^(\d{4})-.+\.md$")
-
-# New heading: # ADR <issue> [— ...]
-NEW_HEADING_RE = re.compile(r"^#\s*ADR\s+(\d+)\b", re.IGNORECASE)
-# Legacy heading: # ADR NNNN [— ...]  (4-digit number)
-LEGACY_HEADING_RE = re.compile(r"^#\s*ADR\s+(\d{4})\b", re.IGNORECASE)
+# "## ADR <issue> — <title>", em dash, en dash or hyphen between the two.
+HEADING_RE = re.compile(r"^##\s*ADR\s+(\d+)\s*[—–-]\s*(\S.*?)\s*$", re.IGNORECASE)
+# Anything else claiming to be an ADR heading — caught rather than skipped, so a
+# record cannot go unidentified by mistyping its own heading.
+LOOSE_RE = re.compile(r"^##\s*ADR\b", re.IGNORECASE)
 
 
 def main() -> int:
-    if not ADR_DIR.is_dir():
-        # A repository with no decisions recorded yet is legal — the public
-        # tree ships this script but nothing under docs/adr/ (Harmonic cutover
-        # Phase 1.7). Only a malformed or colliding *set* of records is a
-        # failure; an absent directory has no records to malform or collide.
-        print("check-adr: no ADR dir — nothing to check, pass.")
+    if not CHANGES_DIR.is_dir():
+        # A repository with no decisions recorded yet is legal — the public tree
+        # ships this guard, not the historical records.
+        print("check-adr: no OpenSpec changes dir — nothing to check, pass.")
         return 0
 
-    # (issue_str, slug) → [filename, ...]
-    by_pair: dict[tuple[str, str], list[str]] = defaultdict(list)
-    # nnnn → [filename, ...]  for legacy files
-    by_legacy: dict[str, list[str]] = defaultdict(list)
-    heading_mismatches: list[str] = []
+    # (issue, title casefolded) → ["<change>/design.md:<line>", ...]
+    by_identity: dict[tuple[str, str], list[str]] = defaultdict(list)
     malformed: list[str] = []
 
-    for path in sorted(ADR_DIR.glob("*.md")):
-        nm = NEW_FILENAME_RE.match(path.name)
-        lm = LEGACY_FILENAME_RE.match(path.name) if not nm else None
+    for path in sorted(CHANGES_DIR.glob("**/design.md")):
+        rel = path.relative_to(REPO_ROOT)
+        for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            match = HEADING_RE.match(line.strip())
+            if match:
+                issue, title = match.group(1), match.group(2)
+                by_identity[(issue, title.casefold())].append(f"{rel}:{number}")
+            elif LOOSE_RE.match(line.strip()):
+                malformed.append(f"{rel}:{number}: {line.strip()}")
 
-        if nm:
-            issue, slug = nm.group(1), nm.group(2)
-            by_pair[(issue, slug)].append(path.name)
-
-            heading_issue = None
-            for line in path.read_text(encoding="utf-8").splitlines():
-                hm = NEW_HEADING_RE.match(line.strip())
-                if hm:
-                    heading_issue = hm.group(1)
-                    break
-            if heading_issue is not None and heading_issue != issue:
-                heading_mismatches.append(
-                    f"{path.name}: filename issue {issue!r},"
-                    f" heading issue {heading_issue!r}"
-                )
-        elif lm:
-            number = lm.group(1)
-            by_legacy[number].append(path.name)
-
-            heading_num = None
-            for line in path.read_text(encoding="utf-8").splitlines():
-                hm = LEGACY_HEADING_RE.match(line.strip())
-                if hm:
-                    heading_num = hm.group(1)
-                    break
-            if heading_num is not None and heading_num != number:
-                heading_mismatches.append(
-                    f"{path.name}: filename says {number}, heading says {heading_num}"
-                )
-        else:
-            malformed.append(path.name)
-            continue
-
-    dup_pairs = {k: v for k, v in by_pair.items() if len(v) > 1}
-    dup_legacy = {n: v for n, v in by_legacy.items() if len(v) > 1}
+    duplicates = {k: v for k, v in by_identity.items() if len(v) > 1}
+    retired = sorted(p.name for p in RETIRED_DIR.glob("*.md")) if RETIRED_DIR.is_dir() else []
 
     ok = True
-    if dup_pairs:
+    if duplicates:
         ok = False
-        print("check-adr: DUPLICATE (issue, slug) pairs:", file=sys.stderr)
-        for (issue, slug), files in sorted(dup_pairs.items()):
-            print(
-                f"  issue={issue}, slug={slug!r}: {', '.join(files)}",
-                file=sys.stderr,
-            )
-    if dup_legacy:
-        ok = False
-        print("check-adr: DUPLICATE legacy ADR numbers:", file=sys.stderr)
-        for n, files in sorted(dup_legacy.items()):
-            print(f"  {n}: {', '.join(files)}", file=sys.stderr)
-    if heading_mismatches:
-        ok = False
-        print("check-adr: heading/filename number mismatch:", file=sys.stderr)
-        for line in heading_mismatches:
-            print(f"  {line}", file=sys.stderr)
+        print("check-adr: DUPLICATE (issue, title) records:", file=sys.stderr)
+        for (issue, title), places in sorted(duplicates.items()):
+            print(f"  issue={issue}, title={title!r}: {', '.join(places)}", file=sys.stderr)
     if malformed:
         ok = False
+        print("check-adr: headings not matching '## ADR <issue> — <title>':", file=sys.stderr)
+        for line in malformed:
+            print(f"  {line}", file=sys.stderr)
+    if retired:
+        ok = False
         print(
-            "check-adr: filenames not matching adr-<issue>-<slug>.md"
-            " or NNNN-slug.md:",
+            "check-adr: records under docs/adr/ — this repository records decisions"
+            " in an OpenSpec change's design.md (ADR 25):",
             file=sys.stderr,
         )
-        for name in malformed:
-            print(f"  {name}", file=sys.stderr)
+        for name in retired:
+            print(f"  docs/adr/{name}", file=sys.stderr)
 
-    new_count = len(by_pair)
-    legacy_count = len(by_legacy)
     if ok:
-        parts = []
-        if new_count:
-            parts.append(f"{new_count} issue-keyed")
-        if legacy_count:
-            parts.append(f"{legacy_count} legacy")
-        total = sum(len(v) for v in by_pair.values()) + sum(
-            len(v) for v in by_legacy.values()
-        )
+        total = sum(len(v) for v in by_identity.values())
+        files = {place.split(":")[0] for v in by_identity.values() for place in v}
         print(
-            f"check-adr: {total} ADRs ({', '.join(parts)}),"
-            " all identities unique and consistent."
+            f"check-adr: {total} ADR{'' if total == 1 else 's'} in"
+            f" {len(files)} design.md file{'' if len(files) == 1 else 's'},"
+            " all identities unique and issue-keyed."
         )
         return 0
 
     print(
-        "\nNew ADRs: name files adr-<issue>-<slug>.md with heading"
-        " '# ADR <issue> — title'.\n"
-        "Legacy NNNN-slug.md files are accepted read-only — do not add new ones.",
+        "\nA new decision record is a '## ADR <issue> — <title>' section in the"
+        " design.md of the OpenSpec change it belongs to; create the change"
+        " directory if the work has none yet.",
         file=sys.stderr,
     )
     return 1

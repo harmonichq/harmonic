@@ -1,0 +1,81 @@
+{
+ "viewport": {
+  "width": 1440,
+  "height": 900
+ },
+ "dark": {
+  "computedStyleDiff": {
+   "checked": 75,
+   "matched": 75,
+   "absentInApp": [
+    ".qrow[data-tier=\"priced\"]",
+    ".qrow[data-tier=\"priced\"] .lab",
+    ".qrow[data-tier=\"priced\"] .tag",
+    ".qrow[data-tier=\"priced\"] .tag .gly",
+    ".qrow[data-tier=\"priced\"] .den",
+    ".qrow[data-tier=\"priced\"] .den .v"
+   ],
+   "mismatches": [],
+   "expected": [
+    ".panes grid-template-rows: app \"789px\" vs mock \"831px\" — the retired instrument row: 42px of rail height returns to the panes (#31 ruling 1)",
+    ".pane grid-template-rows: app \"30px 759px\" vs mock \"30px 801px\" — ditto — the pane inherits the taller track",
+    ".inspector grid-template-rows: app \"30px 661px 98px\" vs mock \"30px 703px 98px\" — ditto — the level track grows by the same 42px; header 30px and dock 98px are identical",
+    ".inspector > .body grid-template-rows: app \"32px 629px\" vs mock \"33px 670px\" — ditto — the level track grows; the crumb row differs by 1px because the scope chip sits in it",
+    ".lvl-cap .meta margin-left: app \"75.2188px\" vs mock \"66.8438px\" — an AUTO margin, resolved against a different string length — the rule is identical"
+   ],
+   "contentResolved": [
+    ".pane > header grid-template-columns: app \"682.828px 251.172px\" vs mock \"763.391px 170.609px\"",
+    ".canvas-pane > header.canvas-head grid-template-columns: app \"682.828px 251.172px\" vs mock \"763.391px 170.609px\"",
+    ".canvas-head .head-swap grid-template-columns: app \"682.828px\" vs mock \"763.391px\"",
+    ".ev-row .entry grid-template-columns: app \"15.9375px 0px 0px\" vs mock \"15.875px 0px 0px\""
+   ]
+  },
+  "chartOptionDiff": [],
+  "geometry": {
+   "pageScrollX": 0,
+   "pageScrollY": 0,
+   "levelScrollsInternally": false,
+   "breadcrumbClipped": false,
+   "unresolvedTokens": []
+  }
+ },
+ "highlightedRow": "lows-synthetic-3",
+ "light": {
+  "computedStyleDiff": {
+   "checked": 75,
+   "matched": 75,
+   "absentInApp": [
+    ".qrow[data-tier=\"priced\"]",
+    ".qrow[data-tier=\"priced\"] .lab",
+    ".qrow[data-tier=\"priced\"] .tag",
+    ".qrow[data-tier=\"priced\"] .tag .gly",
+    ".qrow[data-tier=\"priced\"] .den",
+    ".qrow[data-tier=\"priced\"] .den .v"
+   ],
+   "mismatches": [],
+   "expected": [
+    ".panes grid-template-rows: app \"789px\" vs mock \"831px\" — the retired instrument row: 42px of rail height returns to the panes (#31 ruling 1)",
+    ".pane grid-template-rows: app \"30px 759px\" vs mock \"30px 801px\" — ditto — the pane inherits the taller track",
+    ".inspector grid-template-rows: app \"30px 661px 98px\" vs mock \"30px 703px 98px\" — ditto — the level track grows by the same 42px; header 30px and dock 98px are identical",
+    ".inspector > .body grid-template-rows: app \"32px 629px\" vs mock \"33px 670px\" — ditto — the level track grows; the crumb row differs by 1px because the scope chip sits in it",
+    ".lvl-cap .meta margin-left: app \"75.2188px\" vs mock \"66.8438px\" — an AUTO margin, resolved against a different string length — the rule is identical"
+   ],
+   "contentResolved": [
+    ".pane > header grid-template-columns: app \"682.828px 251.172px\" vs mock \"763.391px 170.609px\"",
+    ".canvas-pane > header.canvas-head grid-template-columns: app \"682.828px 251.172px\" vs mock \"763.391px 170.609px\"",
+    ".canvas-head .head-swap grid-template-columns: app \"682.828px\" vs mock \"763.391px\"",
+    ".ev-row .entry grid-template-columns: app \"15.9375px 0px 0px\" vs mock \"15.875px 0px 0px\""
+   ]
+  },
+  "chartOptionDiff": [],
+  "geometry": {
+   "pageScrollX": 0,
+   "pageScrollY": 0,
+   "levelScrollsInternally": false,
+   "breadcrumbClipped": false,
+   "unresolvedTokens": []
+  }
+ },
+ "mockProblems": [],
+ "openerProblems": []
+}

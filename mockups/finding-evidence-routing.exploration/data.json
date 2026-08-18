@@ -1,0 +1,4540 @@
+{
+ "_generated_by": "mockups/finding-evidence-routing.exploration/build.mjs",
+ "_note": "SYNTHETIC. Derived from two committed synthetic fixtures through their shipped producers; nothing here is hand-written. Regenerate with `node mockups/finding-evidence-routing.exploration/build.mjs`.",
+ "provenance": {
+  "chip_and_header": "frontend/__fixtures__/findings-projection.json (windows.global, row finding:over_treated_low)",
+  "coincidence": "frontend/__fixtures__/findings-projection.json (inputs.analysis.basal, inputs.analysis.ic_blocks)",
+  "canvas_and_table": "mockups/diagnose-event-comparison.synthetic/capture.json via project.mjs (view lows, factor over_treated_low)",
+  "disjoint": "The two populations are disjoint by construction and are never reconciled."
+ },
+ "crumb": {
+  "root": "Findings",
+  "here": "Over-treated low",
+  "meta": "30 days",
+  "level1Meta": "6 findings · 30 days"
+ },
+ "chip": {
+  "label": "Over-treated low",
+  "count": "1 event",
+  "title": "Clear this filter and return to Findings"
+ },
+ "header": {
+  "title": "Over-treated low",
+  "flavor": "habit",
+  "flavorWord": "Habit",
+  "flavorGlyph": "◈",
+  "appearances": [
+   {
+    "count": "1 of 3",
+    "noun": "highs"
+   },
+   {
+    "count": "1 of 4",
+    "noun": "lows"
+   }
+  ],
+  "windowDays": 30,
+  "windowRange": "Jul 18–Aug 17"
+ },
+ "judgment": {
+  "summary": "7 events met this factor’s rule. 4 sat narrowly outside it. 6 comparable events did not match any factor. 1 had another factor; 2 of 20 lows were excluded as not safely comparable.",
+  "counts": [
+   {
+    "key": "fired",
+    "n": 7,
+    "label": "Rule matched",
+    "support": "Supported"
+   },
+   {
+    "key": "near_rule",
+    "n": 4,
+    "label": "Near rule",
+    "support": "Limited"
+   },
+   {
+    "key": "neutral",
+    "n": 6,
+    "label": "Rule did not match",
+    "support": "Supported"
+   }
+  ],
+  "boundaryNote": {
+   "lead": "Near rule is disclosure only.",
+   "rest": " It explains the boundary and never enters Priority, a suggestion, or Plan."
+  },
+  "sourceWindow": "Jul 13–Aug 11"
+ },
+ "clock": {
+  "capMeta": "peak 00:00–02:00 · 1 of 7",
+  "total": 7,
+  "max": 1,
+  "buckets": [
+   {
+    "n": 1,
+    "peak": true,
+    "title": "00:00–02:00 — 1 of 7",
+    "axis": "00"
+   },
+   {
+    "n": 0,
+    "peak": false,
+    "title": "02:00–04:00 — 0 of 7",
+    "axis": "02"
+   },
+   {
+    "n": 1,
+    "peak": false,
+    "title": "04:00–06:00 — 1 of 7",
+    "axis": "04"
+   },
+   {
+    "n": 1,
+    "peak": false,
+    "title": "06:00–08:00 — 1 of 7",
+    "axis": "06"
+   },
+   {
+    "n": 0,
+    "peak": false,
+    "title": "08:00–10:00 — 0 of 7",
+    "axis": "08"
+   },
+   {
+    "n": 1,
+    "peak": false,
+    "title": "10:00–12:00 — 1 of 7",
+    "axis": "10"
+   },
+   {
+    "n": 1,
+    "peak": false,
+    "title": "12:00–14:00 — 1 of 7",
+    "axis": "12"
+   },
+   {
+    "n": 0,
+    "peak": false,
+    "title": "14:00–16:00 — 0 of 7",
+    "axis": "14"
+   },
+   {
+    "n": 1,
+    "peak": false,
+    "title": "16:00–18:00 — 1 of 7",
+    "axis": "16"
+   },
+   {
+    "n": 1,
+    "peak": false,
+    "title": "18:00–20:00 — 1 of 7",
+    "axis": "18"
+   },
+   {
+    "n": 0,
+    "peak": false,
+    "title": "20:00–22:00 — 0 of 7",
+    "axis": "20"
+   },
+   {
+    "n": 0,
+    "peak": false,
+    "title": "22:00–00:00 — 0 of 7",
+    "axis": "22"
+   }
+  ],
+  "coincidence": {
+   "slotText": "Peak hour falls in the 00:00 basal slot (holds at current)",
+   "blockText": "and in the Morning I:C block, 00:00–12:00 (holds at current)"
+  }
+ },
+ "occurrences": {
+  "cap": 5,
+  "capMeta": "entry → worst · Δ &nbsp;·&nbsp; 7 of 20 in Jul 13–Aug 11",
+  "groupLead": "Over-treated low",
+  "groupTier": "observed",
+  "groupCount": "· 7 episodes",
+  "moreLabel": "2 more",
+  "backLabel": "Show first 5",
+  "rows": [
+   {
+    "id": "lows-synthetic-1",
+    "when": "Aug 1 · 01:00",
+    "tier": "observed",
+    "title": "Over-treated low matched the current rule.",
+    "both": true,
+    "entry": 68,
+    "worst": 58,
+    "delta": "−10"
+   },
+   {
+    "id": "lows-synthetic-2",
+    "when": "Aug 2 · 07:00",
+    "tier": "observed",
+    "title": "Over-treated low matched the current rule.",
+    "both": true,
+    "entry": 69,
+    "worst": 59,
+    "delta": "−10"
+   },
+   {
+    "id": "lows-synthetic-3",
+    "when": "Aug 3 · 13:00",
+    "tier": "observed",
+    "title": "Over-treated low matched the current rule.",
+    "both": true,
+    "entry": 70,
+    "worst": 60,
+    "delta": "−10"
+   },
+   {
+    "id": "lows-synthetic-4",
+    "when": "Aug 4 · 19:00",
+    "tier": "observed",
+    "title": "Over-treated low matched the current rule.",
+    "both": true,
+    "entry": 68,
+    "worst": 61,
+    "delta": "−7"
+   },
+   {
+    "id": "lows-synthetic-5",
+    "when": "Aug 5 · 04:00",
+    "tier": "observed",
+    "title": "Over-treated low matched the current rule.",
+    "both": true,
+    "entry": 69,
+    "worst": 58,
+    "delta": "−11"
+   },
+   {
+    "id": "lows-synthetic-6",
+    "when": "Aug 6 · 10:00",
+    "tier": "observed",
+    "title": "Over-treated low matched the current rule.",
+    "both": true,
+    "entry": 70,
+    "worst": 59,
+    "delta": "−11"
+   },
+   {
+    "id": "lows-synthetic-7",
+    "when": "Aug 7 · 16:00",
+    "tier": "observed",
+    "title": "Over-treated low matched the current rule.",
+    "both": true,
+    "entry": 68,
+    "worst": 60,
+    "delta": "−8"
+   }
+  ]
+ },
+ "dock": {
+  "kind": "Nothing being watched",
+  "title": "No change staged, no trial or focus active",
+  "detail": "Stage a change from a finding to start one."
+ },
+ "canvas": {
+  "title": "Low response comparison",
+  "context": "excursion nadir · −5 h to +2 h",
+  "factorLabel": "Over-treated low",
+  "alignmentWindow": [
+   -300,
+   120
+  ],
+  "axisAnchor": "low",
+  "cohortOrder": [
+   "fired",
+   "near_rule",
+   "neutral"
+  ],
+  "cohorts": {
+   "fired": {
+    "key": "fired",
+    "label": "Rule matched",
+    "support": "supported",
+    "supportWord": "Supported",
+    "routed_count": 7,
+    "legendDetail": "7 events · 76 supported · 7 limited · 2 withheld points",
+    "points": [
+     {
+      "minute": -300,
+      "n": 1,
+      "support": "withheld",
+      "median": null,
+      "p25": null,
+      "p75": null
+     },
+     {
+      "minute": -295,
+      "n": 1,
+      "support": "withheld",
+      "median": null,
+      "p25": null,
+      "p75": null
+     },
+     {
+      "minute": -290,
+      "n": 2,
+      "support": "limited",
+      "median": 135.5,
+      "p25": 133.25,
+      "p75": 137.75
+     },
+     {
+      "minute": -285,
+      "n": 3,
+      "support": "limited",
+      "median": 139,
+      "p25": 134.5,
+      "p75": 142.5
+     },
+     {
+      "minute": -280,
+      "n": 4,
+      "support": "limited",
+      "median": 142,
+      "p25": 136,
+      "p75": 148.25
+     },
+     {
+      "minute": -275,
+      "n": 5,
+      "support": "supported",
+      "median": 146,
+      "p25": 138,
+      "p75": 155
+     },
+     {
+      "minute": -270,
+      "n": 6,
+      "support": "supported",
+      "median": 151,
+      "p25": 139.25,
+      "p75": 167.25
+     },
+     {
+      "minute": -265,
+      "n": 7,
+      "support": "supported",
+      "median": 157,
+      "p25": 141.5,
+      "p75": 179.5
+     },
+     {
+      "minute": -260,
+      "n": 7,
+      "support": "supported",
+      "median": 158,
+      "p25": 141,
+      "p75": 180.5
+     },
+     {
+      "minute": -255,
+      "n": 7,
+      "support": "supported",
+      "median": 159,
+      "p25": 141.5,
+      "p75": 181.5
+     },
+     {
+      "minute": -250,
+      "n": 7,
+      "support": "supported",
+      "median": 160,
+      "p25": 141.5,
+      "p75": 183
+     },
+     {
+      "minute": -245,
+      "n": 7,
+      "support": "supported",
+      "median": 161,
+      "p25": 142.5,
+      "p75": 183.5
+     },
+     {
+      "minute": -240,
+      "n": 7,
+      "support": "supported",
+      "median": 162,
+      "p25": 143,
+      "p75": 184
+     },
+     {
+      "minute": -235,
+      "n": 7,
+      "support": "supported",
+      "median": 163,
+      "p25": 143.5,
+      "p75": 184
+     },
+     {
+      "minute": -230,
+      "n": 7,
+      "support": "supported",
+      "median": 165,
+      "p25": 144.5,
+      "p75": 184.5
+     },
+     {
+      "minute": -225,
+      "n": 7,
+      "support": "supported",
+      "median": 165,
+      "p25": 145.5,
+      "p75": 185
+     },
+     {
+      "minute": -220,
+      "n": 7,
+      "support": "supported",
+      "median": 166,
+      "p25": 146.5,
+      "p75": 184.5
+     },
+     {
+      "minute": -215,
+      "n": 7,
+      "support": "supported",
+      "median": 165,
+      "p25": 146,
+      "p75": 182.5
+     },
+     {
+      "minute": -210,
+      "n": 7,
+      "support": "supported",
+      "median": 163,
+      "p25": 144,
+      "p75": 179
+     },
+     {
+      "minute": -205,
+      "n": 7,
+      "support": "supported",
+      "median": 161,
+      "p25": 143,
+      "p75": 176.5
+     },
+     {
+      "minute": -200,
+      "n": 7,
+      "support": "supported",
+      "median": 159,
+      "p25": 141,
+      "p75": 173
+     },
+     {
+      "minute": -195,
+      "n": 7,
+      "support": "supported",
+      "median": 157,
+      "p25": 139.5,
+      "p75": 169
+     },
+     {
+      "minute": -190,
+      "n": 7,
+      "support": "supported",
+      "median": 154,
+      "p25": 137.5,
+      "p75": 165.5
+     },
+     {
+      "minute": -185,
+      "n": 7,
+      "support": "supported",
+      "median": 151,
+      "p25": 136,
+      "p75": 162
+     },
+     {
+      "minute": -180,
+      "n": 7,
+      "support": "supported",
+      "median": 148,
+      "p25": 134,
+      "p75": 158.5
+     },
+     {
+      "minute": -175,
+      "n": 7,
+      "support": "supported",
+      "median": 145,
+      "p25": 131.5,
+      "p75": 154.5
+     },
+     {
+      "minute": -170,
+      "n": 7,
+      "support": "supported",
+      "median": 142,
+      "p25": 129.5,
+      "p75": 151.5
+     },
+     {
+      "minute": -165,
+      "n": 7,
+      "support": "supported",
+      "median": 138,
+      "p25": 127,
+      "p75": 147.5
+     },
+     {
+      "minute": -160,
+      "n": 7,
+      "support": "supported",
+      "median": 135,
+      "p25": 124,
+      "p75": 144
+     },
+     {
+      "minute": -155,
+      "n": 7,
+      "support": "supported",
+      "median": 131,
+      "p25": 121.5,
+      "p75": 141
+     },
+     {
+      "minute": -150,
+      "n": 7,
+      "support": "supported",
+      "median": 128,
+      "p25": 118.5,
+      "p75": 137.5
+     },
+     {
+      "minute": -145,
+      "n": 7,
+      "support": "supported",
+      "median": 124,
+      "p25": 115.5,
+      "p75": 134.5
+     },
+     {
+      "minute": -140,
+      "n": 7,
+      "support": "supported",
+      "median": 121,
+      "p25": 112.5,
+      "p75": 132
+     },
+     {
+      "minute": -135,
+      "n": 7,
+      "support": "supported",
+      "median": 117,
+      "p25": 109,
+      "p75": 129.5
+     },
+     {
+      "minute": -130,
+      "n": 7,
+      "support": "supported",
+      "median": 114,
+      "p25": 105.5,
+      "p75": 127
+     },
+     {
+      "minute": -125,
+      "n": 7,
+      "support": "supported",
+      "median": 111,
+      "p25": 102,
+      "p75": 124.5
+     },
+     {
+      "minute": -120,
+      "n": 7,
+      "support": "supported",
+      "median": 107,
+      "p25": 99,
+      "p75": 122.5
+     },
+     {
+      "minute": -115,
+      "n": 7,
+      "support": "supported",
+      "median": 105,
+      "p25": 96,
+      "p75": 121
+     },
+     {
+      "minute": -110,
+      "n": 7,
+      "support": "supported",
+      "median": 102,
+      "p25": 92,
+      "p75": 119.5
+     },
+     {
+      "minute": -105,
+      "n": 7,
+      "support": "supported",
+      "median": 99,
+      "p25": 89,
+      "p75": 118
+     },
+     {
+      "minute": -100,
+      "n": 7,
+      "support": "supported",
+      "median": 97,
+      "p25": 86,
+      "p75": 116.5
+     },
+     {
+      "minute": -95,
+      "n": 7,
+      "support": "supported",
+      "median": 95,
+      "p25": 83,
+      "p75": 115.5
+     },
+     {
+      "minute": -90,
+      "n": 7,
+      "support": "supported",
+      "median": 93,
+      "p25": 80,
+      "p75": 114.5
+     },
+     {
+      "minute": -85,
+      "n": 7,
+      "support": "supported",
+      "median": 91,
+      "p25": 77,
+      "p75": 113
+     },
+     {
+      "minute": -80,
+      "n": 7,
+      "support": "supported",
+      "median": 89,
+      "p25": 74.5,
+      "p75": 111.5
+     },
+     {
+      "minute": -75,
+      "n": 7,
+      "support": "supported",
+      "median": 88,
+      "p25": 72.5,
+      "p75": 110.5
+     },
+     {
+      "minute": -70,
+      "n": 7,
+      "support": "supported",
+      "median": 87,
+      "p25": 70,
+      "p75": 109.5
+     },
+     {
+      "minute": -65,
+      "n": 7,
+      "support": "supported",
+      "median": 85,
+      "p25": 68,
+      "p75": 108
+     },
+     {
+      "minute": -60,
+      "n": 7,
+      "support": "supported",
+      "median": 84,
+      "p25": 66,
+      "p75": 107
+     },
+     {
+      "minute": -55,
+      "n": 7,
+      "support": "supported",
+      "median": 83,
+      "p25": 64,
+      "p75": 105
+     },
+     {
+      "minute": -50,
+      "n": 7,
+      "support": "supported",
+      "median": 82,
+      "p25": 62.5,
+      "p75": 103
+     },
+     {
+      "minute": -45,
+      "n": 7,
+      "support": "supported",
+      "median": 80,
+      "p25": 60.5,
+      "p75": 101
+     },
+     {
+      "minute": -40,
+      "n": 7,
+      "support": "supported",
+      "median": 79,
+      "p25": 59.5,
+      "p75": 98.5
+     },
+     {
+      "minute": -35,
+      "n": 7,
+      "support": "supported",
+      "median": 78,
+      "p25": 57.5,
+      "p75": 96.5
+     },
+     {
+      "minute": -30,
+      "n": 7,
+      "support": "supported",
+      "median": 76,
+      "p25": 56,
+      "p75": 93.5
+     },
+     {
+      "minute": -25,
+      "n": 7,
+      "support": "supported",
+      "median": 74,
+      "p25": 55,
+      "p75": 91
+     },
+     {
+      "minute": -20,
+      "n": 7,
+      "support": "supported",
+      "median": 72,
+      "p25": 53,
+      "p75": 88
+     },
+     {
+      "minute": -15,
+      "n": 7,
+      "support": "supported",
+      "median": 70,
+      "p25": 52,
+      "p75": 84.5
+     },
+     {
+      "minute": -10,
+      "n": 7,
+      "support": "supported",
+      "median": 68,
+      "p25": 50,
+      "p75": 81
+     },
+     {
+      "minute": -5,
+      "n": 7,
+      "support": "supported",
+      "median": 65,
+      "p25": 48.5,
+      "p75": 78
+     },
+     {
+      "minute": 0,
+      "n": 7,
+      "support": "supported",
+      "median": 63,
+      "p25": 47.5,
+      "p75": 74
+     },
+     {
+      "minute": 5,
+      "n": 7,
+      "support": "supported",
+      "median": 68,
+      "p25": 53,
+      "p75": 78.5
+     },
+     {
+      "minute": 10,
+      "n": 7,
+      "support": "supported",
+      "median": 73,
+      "p25": 59,
+      "p75": 83.5
+     },
+     {
+      "minute": 15,
+      "n": 7,
+      "support": "supported",
+      "median": 78,
+      "p25": 65.5,
+      "p75": 88
+     },
+     {
+      "minute": 20,
+      "n": 7,
+      "support": "supported",
+      "median": 83,
+      "p25": 71.5,
+      "p75": 92.5
+     },
+     {
+      "minute": 25,
+      "n": 7,
+      "support": "supported",
+      "median": 88,
+      "p25": 77,
+      "p75": 97.5
+     },
+     {
+      "minute": 30,
+      "n": 7,
+      "support": "supported",
+      "median": 93,
+      "p25": 82.5,
+      "p75": 102
+     },
+     {
+      "minute": 35,
+      "n": 7,
+      "support": "supported",
+      "median": 98,
+      "p25": 88,
+      "p75": 107
+     },
+     {
+      "minute": 40,
+      "n": 7,
+      "support": "supported",
+      "median": 103,
+      "p25": 93,
+      "p75": 112.5
+     },
+     {
+      "minute": 45,
+      "n": 7,
+      "support": "supported",
+      "median": 107,
+      "p25": 98.5,
+      "p75": 118
+     },
+     {
+      "minute": 50,
+      "n": 7,
+      "support": "supported",
+      "median": 112,
+      "p25": 103.5,
+      "p75": 123.5
+     },
+     {
+      "minute": 55,
+      "n": 7,
+      "support": "supported",
+      "median": 117,
+      "p25": 108.5,
+      "p75": 129.5
+     },
+     {
+      "minute": 60,
+      "n": 7,
+      "support": "supported",
+      "median": 122,
+      "p25": 114,
+      "p75": 135
+     },
+     {
+      "minute": 65,
+      "n": 7,
+      "support": "supported",
+      "median": 127,
+      "p25": 119,
+      "p75": 141.5
+     },
+     {
+      "minute": 70,
+      "n": 7,
+      "support": "supported",
+      "median": 132,
+      "p25": 124,
+      "p75": 148
+     },
+     {
+      "minute": 75,
+      "n": 7,
+      "support": "supported",
+      "median": 138,
+      "p25": 129,
+      "p75": 154.5
+     },
+     {
+      "minute": 80,
+      "n": 7,
+      "support": "supported",
+      "median": 143,
+      "p25": 134,
+      "p75": 161.5
+     },
+     {
+      "minute": 85,
+      "n": 7,
+      "support": "supported",
+      "median": 149,
+      "p25": 138.5,
+      "p75": 168
+     },
+     {
+      "minute": 90,
+      "n": 7,
+      "support": "supported",
+      "median": 155,
+      "p25": 144,
+      "p75": 175
+     },
+     {
+      "minute": 95,
+      "n": 6,
+      "support": "supported",
+      "median": 157,
+      "p25": 147.75,
+      "p75": 171.5
+     },
+     {
+      "minute": 100,
+      "n": 5,
+      "support": "supported",
+      "median": 159,
+      "p25": 151,
+      "p75": 168
+     },
+     {
+      "minute": 105,
+      "n": 4,
+      "support": "limited",
+      "median": 160.5,
+      "p25": 153.75,
+      "p75": 167.25
+     },
+     {
+      "minute": 110,
+      "n": 3,
+      "support": "limited",
+      "median": 162,
+      "p25": 157,
+      "p75": 166.5
+     },
+     {
+      "minute": 115,
+      "n": 2,
+      "support": "limited",
+      "median": 162.5,
+      "p25": 160.25,
+      "p75": 164.75
+     },
+     {
+      "minute": 120,
+      "n": 2,
+      "support": "limited",
+      "median": 168,
+      "p25": 165.5,
+      "p75": 170.5
+     }
+    ]
+   },
+   "near_rule": {
+    "key": "near_rule",
+    "label": "Near rule",
+    "support": "limited",
+    "supportWord": "Limited",
+    "routed_count": 4,
+    "legendDetail": "4 events · 85 limited points",
+    "points": [
+     {
+      "minute": -300,
+      "n": 4,
+      "support": "limited",
+      "median": 161,
+      "p25": 138.75,
+      "p75": 181.75
+     },
+     {
+      "minute": -295,
+      "n": 4,
+      "support": "limited",
+      "median": 160.5,
+      "p25": 139,
+      "p75": 180.5
+     },
+     {
+      "minute": -290,
+      "n": 4,
+      "support": "limited",
+      "median": 160.5,
+      "p25": 139,
+      "p75": 180.25
+     },
+     {
+      "minute": -285,
+      "n": 4,
+      "support": "limited",
+      "median": 159.5,
+      "p25": 138.5,
+      "p75": 179.25
+     },
+     {
+      "minute": -280,
+      "n": 4,
+      "support": "limited",
+      "median": 159,
+      "p25": 138.5,
+      "p75": 178.25
+     },
+     {
+      "minute": -275,
+      "n": 4,
+      "support": "limited",
+      "median": 158.5,
+      "p25": 138.5,
+      "p75": 177.25
+     },
+     {
+      "minute": -270,
+      "n": 4,
+      "support": "limited",
+      "median": 157.5,
+      "p25": 137.75,
+      "p75": 176.25
+     },
+     {
+      "minute": -265,
+      "n": 4,
+      "support": "limited",
+      "median": 156.5,
+      "p25": 137,
+      "p75": 175.25
+     },
+     {
+      "minute": -260,
+      "n": 4,
+      "support": "limited",
+      "median": 156,
+      "p25": 136.75,
+      "p75": 174.25
+     },
+     {
+      "minute": -255,
+      "n": 4,
+      "support": "limited",
+      "median": 155,
+      "p25": 136,
+      "p75": 173.25
+     },
+     {
+      "minute": -250,
+      "n": 4,
+      "support": "limited",
+      "median": 154,
+      "p25": 135,
+      "p75": 172.5
+     },
+     {
+      "minute": -245,
+      "n": 4,
+      "support": "limited",
+      "median": 153,
+      "p25": 134.25,
+      "p75": 171.5
+     },
+     {
+      "minute": -240,
+      "n": 3,
+      "support": "limited",
+      "median": 139,
+      "p25": 127.5,
+      "p75": 152
+     },
+     {
+      "minute": -235,
+      "n": 3,
+      "support": "limited",
+      "median": 138,
+      "p25": 126.5,
+      "p75": 151.5
+     },
+     {
+      "minute": -230,
+      "n": 3,
+      "support": "limited",
+      "median": 137,
+      "p25": 125.5,
+      "p75": 150.5
+     },
+     {
+      "minute": -225,
+      "n": 3,
+      "support": "limited",
+      "median": 136,
+      "p25": 125,
+      "p75": 150
+     },
+     {
+      "minute": -220,
+      "n": 3,
+      "support": "limited",
+      "median": 136,
+      "p25": 124.5,
+      "p75": 150
+     },
+     {
+      "minute": -215,
+      "n": 3,
+      "support": "limited",
+      "median": 133,
+      "p25": 121.5,
+      "p75": 147.5
+     },
+     {
+      "minute": -210,
+      "n": 3,
+      "support": "limited",
+      "median": 130,
+      "p25": 118.5,
+      "p75": 145
+     },
+     {
+      "minute": -205,
+      "n": 3,
+      "support": "limited",
+      "median": 128,
+      "p25": 116,
+      "p75": 143
+     },
+     {
+      "minute": -200,
+      "n": 3,
+      "support": "limited",
+      "median": 125,
+      "p25": 113,
+      "p75": 140.5
+     },
+     {
+      "minute": -195,
+      "n": 3,
+      "support": "limited",
+      "median": 123,
+      "p25": 110.5,
+      "p75": 138.5
+     },
+     {
+      "minute": -190,
+      "n": 4,
+      "support": "limited",
+      "median": 136.5,
+      "p25": 114.5,
+      "p75": 159.25
+     },
+     {
+      "minute": -185,
+      "n": 4,
+      "support": "limited",
+      "median": 135,
+      "p25": 112.5,
+      "p75": 158.25
+     },
+     {
+      "minute": -180,
+      "n": 4,
+      "support": "limited",
+      "median": 133.5,
+      "p25": 110.25,
+      "p75": 157.25
+     },
+     {
+      "minute": -175,
+      "n": 4,
+      "support": "limited",
+      "median": 131.5,
+      "p25": 108.25,
+      "p75": 155.25
+     },
+     {
+      "minute": -170,
+      "n": 3,
+      "support": "limited",
+      "median": 147,
+      "p25": 116.5,
+      "p75": 161.5
+     },
+     {
+      "minute": -165,
+      "n": 3,
+      "support": "limited",
+      "median": 145,
+      "p25": 114.5,
+      "p75": 159.5
+     },
+     {
+      "minute": -160,
+      "n": 3,
+      "support": "limited",
+      "median": 144,
+      "p25": 113,
+      "p75": 158.5
+     },
+     {
+      "minute": -155,
+      "n": 3,
+      "support": "limited",
+      "median": 143,
+      "p25": 111.5,
+      "p75": 157
+     },
+     {
+      "minute": -150,
+      "n": 3,
+      "support": "limited",
+      "median": 141,
+      "p25": 109.5,
+      "p75": 155
+     },
+     {
+      "minute": -145,
+      "n": 3,
+      "support": "limited",
+      "median": 139,
+      "p25": 108,
+      "p75": 153
+     },
+     {
+      "minute": -140,
+      "n": 3,
+      "support": "limited",
+      "median": 138,
+      "p25": 106.5,
+      "p75": 151
+     },
+     {
+      "minute": -135,
+      "n": 3,
+      "support": "limited",
+      "median": 136,
+      "p25": 104.5,
+      "p75": 149
+     },
+     {
+      "minute": -130,
+      "n": 3,
+      "support": "limited",
+      "median": 134,
+      "p25": 103,
+      "p75": 146.5
+     },
+     {
+      "minute": -125,
+      "n": 3,
+      "support": "limited",
+      "median": 131,
+      "p25": 100.5,
+      "p75": 143.5
+     },
+     {
+      "minute": -120,
+      "n": 3,
+      "support": "limited",
+      "median": 129,
+      "p25": 99,
+      "p75": 141
+     },
+     {
+      "minute": -115,
+      "n": 3,
+      "support": "limited",
+      "median": 126,
+      "p25": 96.5,
+      "p75": 137.5
+     },
+     {
+      "minute": -110,
+      "n": 4,
+      "support": "limited",
+      "median": 108.5,
+      "p25": 86,
+      "p75": 129.5
+     },
+     {
+      "minute": -105,
+      "n": 4,
+      "support": "limited",
+      "median": 106,
+      "p25": 84,
+      "p75": 126.5
+     },
+     {
+      "minute": -100,
+      "n": 3,
+      "support": "limited",
+      "median": 89,
+      "p25": 75,
+      "p75": 114
+     },
+     {
+      "minute": -95,
+      "n": 3,
+      "support": "limited",
+      "median": 86,
+      "p25": 72.5,
+      "p75": 110.5
+     },
+     {
+      "minute": -90,
+      "n": 3,
+      "support": "limited",
+      "median": 83,
+      "p25": 70,
+      "p75": 107.5
+     },
+     {
+      "minute": -85,
+      "n": 3,
+      "support": "limited",
+      "median": 80,
+      "p25": 67.5,
+      "p75": 104
+     },
+     {
+      "minute": -80,
+      "n": 3,
+      "support": "limited",
+      "median": 77,
+      "p25": 64.5,
+      "p75": 101
+     },
+     {
+      "minute": -75,
+      "n": 3,
+      "support": "limited",
+      "median": 74,
+      "p25": 62,
+      "p75": 97.5
+     },
+     {
+      "minute": -70,
+      "n": 3,
+      "support": "limited",
+      "median": 71,
+      "p25": 59,
+      "p75": 94.5
+     },
+     {
+      "minute": -65,
+      "n": 3,
+      "support": "limited",
+      "median": 68,
+      "p25": 56,
+      "p75": 91.5
+     },
+     {
+      "minute": -60,
+      "n": 3,
+      "support": "limited",
+      "median": 64,
+      "p25": 53,
+      "p75": 88
+     },
+     {
+      "minute": -55,
+      "n": 3,
+      "support": "limited",
+      "median": 61,
+      "p25": 51.5,
+      "p75": 85
+     },
+     {
+      "minute": -50,
+      "n": 3,
+      "support": "limited",
+      "median": 58,
+      "p25": 50,
+      "p75": 82.5
+     },
+     {
+      "minute": -45,
+      "n": 3,
+      "support": "limited",
+      "median": 54,
+      "p25": 48,
+      "p75": 79.5
+     },
+     {
+      "minute": -40,
+      "n": 3,
+      "support": "limited",
+      "median": 51,
+      "p25": 46.5,
+      "p75": 76.5
+     },
+     {
+      "minute": -35,
+      "n": 4,
+      "support": "limited",
+      "median": 62,
+      "p25": 46.5,
+      "p75": 82
+     },
+     {
+      "minute": -30,
+      "n": 3,
+      "support": "limited",
+      "median": 73,
+      "p25": 59,
+      "p75": 86
+     },
+     {
+      "minute": -25,
+      "n": 3,
+      "support": "limited",
+      "median": 71,
+      "p25": 56.5,
+      "p75": 84
+     },
+     {
+      "minute": -20,
+      "n": 3,
+      "support": "limited",
+      "median": 69,
+      "p25": 55.5,
+      "p75": 82
+     },
+     {
+      "minute": -15,
+      "n": 3,
+      "support": "limited",
+      "median": 67,
+      "p25": 54.5,
+      "p75": 80.5
+     },
+     {
+      "minute": -10,
+      "n": 3,
+      "support": "limited",
+      "median": 65,
+      "p25": 53.5,
+      "p75": 79
+     },
+     {
+      "minute": -5,
+      "n": 3,
+      "support": "limited",
+      "median": 63,
+      "p25": 52.5,
+      "p75": 77.5
+     },
+     {
+      "minute": 0,
+      "n": 3,
+      "support": "limited",
+      "median": 61,
+      "p25": 51.5,
+      "p75": 75.5
+     },
+     {
+      "minute": 5,
+      "n": 3,
+      "support": "limited",
+      "median": 68,
+      "p25": 55,
+      "p75": 82.5
+     },
+     {
+      "minute": 10,
+      "n": 3,
+      "support": "limited",
+      "median": 75,
+      "p25": 58.5,
+      "p75": 89.5
+     },
+     {
+      "minute": 15,
+      "n": 3,
+      "support": "limited",
+      "median": 82,
+      "p25": 65.5,
+      "p75": 96.5
+     },
+     {
+      "minute": 20,
+      "n": 3,
+      "support": "limited",
+      "median": 89,
+      "p25": 72.5,
+      "p75": 103.5
+     },
+     {
+      "minute": 25,
+      "n": 3,
+      "support": "limited",
+      "median": 96,
+      "p25": 79,
+      "p75": 110.5
+     },
+     {
+      "minute": 30,
+      "n": 3,
+      "support": "limited",
+      "median": 103,
+      "p25": 86,
+      "p75": 117.5
+     },
+     {
+      "minute": 35,
+      "n": 3,
+      "support": "limited",
+      "median": 110,
+      "p25": 93,
+      "p75": 124
+     },
+     {
+      "minute": 40,
+      "n": 4,
+      "support": "limited",
+      "median": 100,
+      "p25": 75.75,
+      "p75": 123.75
+     },
+     {
+      "minute": 45,
+      "n": 4,
+      "support": "limited",
+      "median": 106.5,
+      "p25": 82.5,
+      "p75": 129.75
+     },
+     {
+      "minute": 50,
+      "n": 4,
+      "support": "limited",
+      "median": 113,
+      "p25": 88.75,
+      "p75": 136.5
+     },
+     {
+      "minute": 55,
+      "n": 4,
+      "support": "limited",
+      "median": 119.5,
+      "p25": 95.75,
+      "p75": 142.5
+     },
+     {
+      "minute": 60,
+      "n": 4,
+      "support": "limited",
+      "median": 126,
+      "p25": 102.75,
+      "p75": 148.25
+     },
+     {
+      "minute": 65,
+      "n": 4,
+      "support": "limited",
+      "median": 132,
+      "p25": 108.75,
+      "p75": 154
+     },
+     {
+      "minute": 70,
+      "n": 4,
+      "support": "limited",
+      "median": 138.5,
+      "p25": 115.75,
+      "p75": 159.75
+     },
+     {
+      "minute": 75,
+      "n": 4,
+      "support": "limited",
+      "median": 144.5,
+      "p25": 122,
+      "p75": 165.5
+     },
+     {
+      "minute": 80,
+      "n": 4,
+      "support": "limited",
+      "median": 150,
+      "p25": 128,
+      "p75": 170.5
+     },
+     {
+      "minute": 85,
+      "n": 4,
+      "support": "limited",
+      "median": 155.5,
+      "p25": 134,
+      "p75": 175.5
+     },
+     {
+      "minute": 90,
+      "n": 4,
+      "support": "limited",
+      "median": 161,
+      "p25": 140.25,
+      "p75": 180.5
+     },
+     {
+      "minute": 95,
+      "n": 4,
+      "support": "limited",
+      "median": 166,
+      "p25": 145.5,
+      "p75": 185.5
+     },
+     {
+      "minute": 100,
+      "n": 4,
+      "support": "limited",
+      "median": 171.5,
+      "p25": 151.5,
+      "p75": 190.25
+     },
+     {
+      "minute": 105,
+      "n": 4,
+      "support": "limited",
+      "median": 176.5,
+      "p25": 156.75,
+      "p75": 195.25
+     },
+     {
+      "minute": 110,
+      "n": 4,
+      "support": "limited",
+      "median": 181.5,
+      "p25": 162,
+      "p75": 200.25
+     },
+     {
+      "minute": 115,
+      "n": 4,
+      "support": "limited",
+      "median": 187,
+      "p25": 167.75,
+      "p75": 205.25
+     },
+     {
+      "minute": 120,
+      "n": 4,
+      "support": "limited",
+      "median": 192,
+      "p25": 173,
+      "p75": 210.25
+     }
+    ]
+   },
+   "neutral": {
+    "key": "neutral",
+    "label": "Rule did not match",
+    "support": "supported",
+    "supportWord": "Supported",
+    "routed_count": 6,
+    "legendDetail": "6 events · 78 supported · 6 limited · 1 withheld points",
+    "points": [
+     {
+      "minute": -300,
+      "n": 2,
+      "support": "limited",
+      "median": 132,
+      "p25": 132,
+      "p75": 132
+     },
+     {
+      "minute": -295,
+      "n": 3,
+      "support": "limited",
+      "median": 132,
+      "p25": 132,
+      "p75": 132.5
+     },
+     {
+      "minute": -290,
+      "n": 4,
+      "support": "limited",
+      "median": 132,
+      "p25": 131,
+      "p75": 134
+     },
+     {
+      "minute": -285,
+      "n": 5,
+      "support": "supported",
+      "median": 133,
+      "p25": 131,
+      "p75": 138
+     },
+     {
+      "minute": -280,
+      "n": 6,
+      "support": "supported",
+      "median": 136,
+      "p25": 130.75,
+      "p75": 144.25
+     },
+     {
+      "minute": -275,
+      "n": 6,
+      "support": "supported",
+      "median": 137,
+      "p25": 131,
+      "p75": 146
+     },
+     {
+      "minute": -270,
+      "n": 6,
+      "support": "supported",
+      "median": 138,
+      "p25": 131.25,
+      "p75": 147
+     },
+     {
+      "minute": -265,
+      "n": 6,
+      "support": "supported",
+      "median": 138.5,
+      "p25": 132,
+      "p75": 148
+     },
+     {
+      "minute": -260,
+      "n": 6,
+      "support": "supported",
+      "median": 139.5,
+      "p25": 132.25,
+      "p75": 149
+     },
+     {
+      "minute": -255,
+      "n": 6,
+      "support": "supported",
+      "median": 141,
+      "p25": 133.25,
+      "p75": 150.25
+     },
+     {
+      "minute": -250,
+      "n": 6,
+      "support": "supported",
+      "median": 142,
+      "p25": 133.5,
+      "p75": 150.5
+     },
+     {
+      "minute": -245,
+      "n": 6,
+      "support": "supported",
+      "median": 143,
+      "p25": 134.5,
+      "p75": 151.5
+     },
+     {
+      "minute": -240,
+      "n": 6,
+      "support": "supported",
+      "median": 143.5,
+      "p25": 135.5,
+      "p75": 151.5
+     },
+     {
+      "minute": -235,
+      "n": 6,
+      "support": "supported",
+      "median": 144.5,
+      "p25": 136.5,
+      "p75": 151.75
+     },
+     {
+      "minute": -230,
+      "n": 6,
+      "support": "supported",
+      "median": 145.5,
+      "p25": 137.5,
+      "p75": 152
+     },
+     {
+      "minute": -225,
+      "n": 6,
+      "support": "supported",
+      "median": 146,
+      "p25": 138.5,
+      "p75": 151.25
+     },
+     {
+      "minute": -220,
+      "n": 6,
+      "support": "supported",
+      "median": 146.5,
+      "p25": 139.5,
+      "p75": 150.5
+     },
+     {
+      "minute": -215,
+      "n": 6,
+      "support": "supported",
+      "median": 145,
+      "p25": 138.5,
+      "p75": 147.75
+     },
+     {
+      "minute": -210,
+      "n": 6,
+      "support": "supported",
+      "median": 142.5,
+      "p25": 136.5,
+      "p75": 144.75
+     },
+     {
+      "minute": -205,
+      "n": 6,
+      "support": "supported",
+      "median": 139.5,
+      "p25": 134.5,
+      "p75": 141.5
+     },
+     {
+      "minute": -200,
+      "n": 6,
+      "support": "supported",
+      "median": 136,
+      "p25": 133,
+      "p75": 137.5
+     },
+     {
+      "minute": -195,
+      "n": 6,
+      "support": "supported",
+      "median": 133.5,
+      "p25": 130.75,
+      "p75": 134.75
+     },
+     {
+      "minute": -190,
+      "n": 6,
+      "support": "supported",
+      "median": 130,
+      "p25": 128.25,
+      "p75": 131
+     },
+     {
+      "minute": -185,
+      "n": 6,
+      "support": "supported",
+      "median": 126.5,
+      "p25": 125.25,
+      "p75": 127.75
+     },
+     {
+      "minute": -180,
+      "n": 6,
+      "support": "supported",
+      "median": 123.5,
+      "p25": 122.25,
+      "p75": 124.75
+     },
+     {
+      "minute": -175,
+      "n": 6,
+      "support": "supported",
+      "median": 120.5,
+      "p25": 119.25,
+      "p75": 121.75
+     },
+     {
+      "minute": -170,
+      "n": 6,
+      "support": "supported",
+      "median": 117.5,
+      "p25": 116.25,
+      "p75": 118
+     },
+     {
+      "minute": -165,
+      "n": 6,
+      "support": "supported",
+      "median": 114.5,
+      "p25": 113.25,
+      "p75": 115
+     },
+     {
+      "minute": -160,
+      "n": 6,
+      "support": "supported",
+      "median": 111,
+      "p25": 110.25,
+      "p75": 111.75
+     },
+     {
+      "minute": -155,
+      "n": 6,
+      "support": "supported",
+      "median": 108.5,
+      "p25": 107.25,
+      "p75": 109
+     },
+     {
+      "minute": -150,
+      "n": 6,
+      "support": "supported",
+      "median": 105,
+      "p25": 104.25,
+      "p75": 105.75
+     },
+     {
+      "minute": -145,
+      "n": 6,
+      "support": "supported",
+      "median": 102,
+      "p25": 102,
+      "p75": 102.75
+     },
+     {
+      "minute": -140,
+      "n": 6,
+      "support": "supported",
+      "median": 99,
+      "p25": 99,
+      "p75": 99
+     },
+     {
+      "minute": -135,
+      "n": 6,
+      "support": "supported",
+      "median": 96,
+      "p25": 95.25,
+      "p75": 96.75
+     },
+     {
+      "minute": -130,
+      "n": 6,
+      "support": "supported",
+      "median": 93,
+      "p25": 92.25,
+      "p75": 94.5
+     },
+     {
+      "minute": -125,
+      "n": 6,
+      "support": "supported",
+      "median": 90,
+      "p25": 89.25,
+      "p75": 93
+     },
+     {
+      "minute": -120,
+      "n": 6,
+      "support": "supported",
+      "median": 87,
+      "p25": 86,
+      "p75": 91
+     },
+     {
+      "minute": -115,
+      "n": 6,
+      "support": "supported",
+      "median": 84,
+      "p25": 83,
+      "p75": 89.5
+     },
+     {
+      "minute": -110,
+      "n": 6,
+      "support": "supported",
+      "median": 82,
+      "p25": 80,
+      "p75": 87.75
+     },
+     {
+      "minute": -105,
+      "n": 6,
+      "support": "supported",
+      "median": 80,
+      "p25": 77.25,
+      "p75": 86.5
+     },
+     {
+      "minute": -100,
+      "n": 6,
+      "support": "supported",
+      "median": 78,
+      "p25": 74.5,
+      "p75": 85.25
+     },
+     {
+      "minute": -95,
+      "n": 6,
+      "support": "supported",
+      "median": 76.5,
+      "p25": 71.75,
+      "p75": 84.25
+     },
+     {
+      "minute": -90,
+      "n": 6,
+      "support": "supported",
+      "median": 74.5,
+      "p25": 69.75,
+      "p75": 83
+     },
+     {
+      "minute": -85,
+      "n": 6,
+      "support": "supported",
+      "median": 73,
+      "p25": 67,
+      "p75": 82
+     },
+     {
+      "minute": -80,
+      "n": 6,
+      "support": "supported",
+      "median": 71.5,
+      "p25": 65,
+      "p75": 80.25
+     },
+     {
+      "minute": -75,
+      "n": 6,
+      "support": "supported",
+      "median": 70.5,
+      "p25": 63.25,
+      "p75": 79.25
+     },
+     {
+      "minute": -70,
+      "n": 6,
+      "support": "supported",
+      "median": 68.5,
+      "p25": 61.25,
+      "p75": 78
+     },
+     {
+      "minute": -65,
+      "n": 6,
+      "support": "supported",
+      "median": 67.5,
+      "p25": 59.5,
+      "p75": 76.25
+     },
+     {
+      "minute": -60,
+      "n": 6,
+      "support": "supported",
+      "median": 66,
+      "p25": 57.5,
+      "p75": 74.5
+     },
+     {
+      "minute": -55,
+      "n": 6,
+      "support": "supported",
+      "median": 64.5,
+      "p25": 56.5,
+      "p75": 72.5
+     },
+     {
+      "minute": -50,
+      "n": 6,
+      "support": "supported",
+      "median": 63.5,
+      "p25": 54.75,
+      "p75": 70.75
+     },
+     {
+      "minute": -45,
+      "n": 6,
+      "support": "supported",
+      "median": 61.5,
+      "p25": 53.5,
+      "p75": 68
+     },
+     {
+      "minute": -40,
+      "n": 6,
+      "support": "supported",
+      "median": 60,
+      "p25": 51.75,
+      "p75": 66
+     },
+     {
+      "minute": -35,
+      "n": 6,
+      "support": "supported",
+      "median": 58,
+      "p25": 50.5,
+      "p75": 63.25
+     },
+     {
+      "minute": -30,
+      "n": 6,
+      "support": "supported",
+      "median": 56,
+      "p25": 48.75,
+      "p75": 59.5
+     },
+     {
+      "minute": -25,
+      "n": 6,
+      "support": "supported",
+      "median": 54,
+      "p25": 47.5,
+      "p75": 56
+     },
+     {
+      "minute": -20,
+      "n": 6,
+      "support": "supported",
+      "median": 51,
+      "p25": 45.5,
+      "p75": 52.75
+     },
+     {
+      "minute": -15,
+      "n": 6,
+      "support": "supported",
+      "median": 48,
+      "p25": 43.5,
+      "p75": 49.5
+     },
+     {
+      "minute": -10,
+      "n": 6,
+      "support": "supported",
+      "median": 45,
+      "p25": 42.75,
+      "p75": 46.5
+     },
+     {
+      "minute": -5,
+      "n": 6,
+      "support": "supported",
+      "median": 42.5,
+      "p25": 42,
+      "p75": 43
+     },
+     {
+      "minute": 0,
+      "n": 6,
+      "support": "supported",
+      "median": 42,
+      "p25": 42,
+      "p75": 42
+     },
+     {
+      "minute": 5,
+      "n": 6,
+      "support": "supported",
+      "median": 43.5,
+      "p25": 42.25,
+      "p75": 44.75
+     },
+     {
+      "minute": 10,
+      "n": 6,
+      "support": "supported",
+      "median": 48.5,
+      "p25": 47.25,
+      "p75": 49.75
+     },
+     {
+      "minute": 15,
+      "n": 6,
+      "support": "supported",
+      "median": 53.5,
+      "p25": 53,
+      "p75": 54.75
+     },
+     {
+      "minute": 20,
+      "n": 6,
+      "support": "supported",
+      "median": 59,
+      "p25": 58,
+      "p75": 60
+     },
+     {
+      "minute": 25,
+      "n": 6,
+      "support": "supported",
+      "median": 64.5,
+      "p25": 63.25,
+      "p75": 65
+     },
+     {
+      "minute": 30,
+      "n": 6,
+      "support": "supported",
+      "median": 69.5,
+      "p25": 69,
+      "p75": 70.75
+     },
+     {
+      "minute": 35,
+      "n": 6,
+      "support": "supported",
+      "median": 74.5,
+      "p25": 74,
+      "p75": 75.75
+     },
+     {
+      "minute": 40,
+      "n": 6,
+      "support": "supported",
+      "median": 80,
+      "p25": 80,
+      "p75": 80.75
+     },
+     {
+      "minute": 45,
+      "n": 6,
+      "support": "supported",
+      "median": 85,
+      "p25": 85,
+      "p75": 85.75
+     },
+     {
+      "minute": 50,
+      "n": 6,
+      "support": "supported",
+      "median": 91,
+      "p25": 90.25,
+      "p75": 91
+     },
+     {
+      "minute": 55,
+      "n": 6,
+      "support": "supported",
+      "median": 96,
+      "p25": 95.25,
+      "p75": 97.5
+     },
+     {
+      "minute": 60,
+      "n": 6,
+      "support": "supported",
+      "median": 101,
+      "p25": 101,
+      "p75": 103.25
+     },
+     {
+      "minute": 65,
+      "n": 6,
+      "support": "supported",
+      "median": 106.5,
+      "p25": 106,
+      "p75": 110
+     },
+     {
+      "minute": 70,
+      "n": 6,
+      "support": "supported",
+      "median": 112,
+      "p25": 111,
+      "p75": 116
+     },
+     {
+      "minute": 75,
+      "n": 6,
+      "support": "supported",
+      "median": 117.5,
+      "p25": 116,
+      "p75": 122.75
+     },
+     {
+      "minute": 80,
+      "n": 6,
+      "support": "supported",
+      "median": 123.5,
+      "p25": 121.25,
+      "p75": 129.5
+     },
+     {
+      "minute": 85,
+      "n": 6,
+      "support": "supported",
+      "median": 130,
+      "p25": 126.5,
+      "p75": 136.5
+     },
+     {
+      "minute": 90,
+      "n": 6,
+      "support": "supported",
+      "median": 136.5,
+      "p25": 132.5,
+      "p75": 144.25
+     },
+     {
+      "minute": 95,
+      "n": 6,
+      "support": "supported",
+      "median": 142.5,
+      "p25": 138.5,
+      "p75": 151
+     },
+     {
+      "minute": 100,
+      "n": 5,
+      "support": "supported",
+      "median": 147,
+      "p25": 143,
+      "p75": 152
+     },
+     {
+      "minute": 105,
+      "n": 4,
+      "support": "limited",
+      "median": 151,
+      "p25": 148.75,
+      "p75": 154.5
+     },
+     {
+      "minute": 110,
+      "n": 3,
+      "support": "limited",
+      "median": 155,
+      "p25": 154,
+      "p75": 157.5
+     },
+     {
+      "minute": 115,
+      "n": 2,
+      "support": "limited",
+      "median": 160.5,
+      "p25": 159.75,
+      "p75": 161.25
+     },
+     {
+      "minute": 120,
+      "n": 1,
+      "support": "withheld",
+      "median": null,
+      "p25": null,
+      "p75": null
+     }
+    ]
+   }
+  },
+  "traces": {
+   "lows-synthetic-1": [
+    [
+     -300,
+     133
+    ],
+    [
+     -295,
+     132
+    ],
+    [
+     -290,
+     131
+    ],
+    [
+     -285,
+     130
+    ],
+    [
+     -280,
+     130
+    ],
+    [
+     -275,
+     129
+    ],
+    [
+     -270,
+     128
+    ],
+    [
+     -265,
+     127
+    ],
+    [
+     -260,
+     127
+    ],
+    [
+     -255,
+     126
+    ],
+    [
+     -250,
+     126
+    ],
+    [
+     -245,
+     125
+    ],
+    [
+     -240,
+     125
+    ],
+    [
+     -235,
+     125
+    ],
+    [
+     -230,
+     125
+    ],
+    [
+     -225,
+     125
+    ],
+    [
+     -220,
+     126
+    ],
+    [
+     -215,
+     124
+    ],
+    [
+     -210,
+     123
+    ],
+    [
+     -205,
+     121
+    ],
+    [
+     -200,
+     119
+    ],
+    [
+     -195,
+     118
+    ],
+    [
+     -190,
+     116
+    ],
+    [
+     -185,
+     114
+    ],
+    [
+     -180,
+     113
+    ],
+    [
+     -175,
+     111
+    ],
+    [
+     -170,
+     109
+    ],
+    [
+     -165,
+     108
+    ],
+    [
+     -160,
+     106
+    ],
+    [
+     -155,
+     104
+    ],
+    [
+     -150,
+     102
+    ],
+    [
+     -145,
+     100
+    ],
+    [
+     -140,
+     97
+    ],
+    [
+     -135,
+     95
+    ],
+    [
+     -130,
+     92
+    ],
+    [
+     -125,
+     89
+    ],
+    [
+     -120,
+     86
+    ],
+    [
+     -115,
+     83
+    ],
+    [
+     -110,
+     80
+    ],
+    [
+     -105,
+     77
+    ],
+    [
+     -100,
+     74
+    ],
+    [
+     -95,
+     71
+    ],
+    [
+     -90,
+     67
+    ],
+    [
+     -85,
+     64
+    ],
+    [
+     -80,
+     61
+    ],
+    [
+     -75,
+     58
+    ],
+    [
+     -70,
+     55
+    ],
+    [
+     -65,
+     52
+    ],
+    [
+     -60,
+     49
+    ],
+    [
+     -55,
+     47
+    ],
+    [
+     -50,
+     44
+    ],
+    [
+     -45,
+     42
+    ],
+    [
+     -40,
+     42
+    ],
+    [
+     -35,
+     42
+    ],
+    [
+     -30,
+     42
+    ],
+    [
+     -25,
+     42
+    ],
+    [
+     -20,
+     42
+    ],
+    [
+     -15,
+     42
+    ],
+    [
+     -10,
+     42
+    ],
+    [
+     -5,
+     42
+    ],
+    [
+     0,
+     42
+    ],
+    [
+     5,
+     42
+    ],
+    [
+     10,
+     42
+    ],
+    [
+     15,
+     45
+    ],
+    [
+     20,
+     52
+    ],
+    [
+     25,
+     58
+    ],
+    [
+     30,
+     65
+    ],
+    [
+     35,
+     71
+    ],
+    [
+     40,
+     77
+    ],
+    [
+     45,
+     83
+    ],
+    [
+     50,
+     89
+    ],
+    [
+     55,
+     95
+    ],
+    [
+     60,
+     100
+    ],
+    [
+     65,
+     106
+    ],
+    [
+     70,
+     111
+    ],
+    [
+     75,
+     116
+    ],
+    [
+     80,
+     122
+    ],
+    [
+     85,
+     127
+    ],
+    [
+     90,
+     132
+    ],
+    [
+     95,
+     137
+    ],
+    [
+     100,
+     142
+    ],
+    [
+     105,
+     147
+    ],
+    [
+     110,
+     152
+    ],
+    [
+     115,
+     158
+    ],
+    [
+     120,
+     163
+    ]
+   ],
+   "lows-synthetic-2": [
+    [
+     -290,
+     140
+    ],
+    [
+     -285,
+     139
+    ],
+    [
+     -280,
+     138
+    ],
+    [
+     -275,
+     138
+    ],
+    [
+     -270,
+     137
+    ],
+    [
+     -265,
+     137
+    ],
+    [
+     -260,
+     136
+    ],
+    [
+     -255,
+     136
+    ],
+    [
+     -250,
+     136
+    ],
+    [
+     -245,
+     137
+    ],
+    [
+     -240,
+     137
+    ],
+    [
+     -235,
+     137
+    ],
+    [
+     -230,
+     138
+    ],
+    [
+     -225,
+     139
+    ],
+    [
+     -220,
+     140
+    ],
+    [
+     -215,
+     139
+    ],
+    [
+     -210,
+     137
+    ],
+    [
+     -205,
+     136
+    ],
+    [
+     -200,
+     134
+    ],
+    [
+     -195,
+     133
+    ],
+    [
+     -190,
+     131
+    ],
+    [
+     -185,
+     130
+    ],
+    [
+     -180,
+     128
+    ],
+    [
+     -175,
+     126
+    ],
+    [
+     -170,
+     124
+    ],
+    [
+     -165,
+     122
+    ],
+    [
+     -160,
+     119
+    ],
+    [
+     -155,
+     117
+    ],
+    [
+     -150,
+     114
+    ],
+    [
+     -145,
+     112
+    ],
+    [
+     -140,
+     109
+    ],
+    [
+     -135,
+     106
+    ],
+    [
+     -130,
+     102
+    ],
+    [
+     -125,
+     99
+    ],
+    [
+     -120,
+     96
+    ],
+    [
+     -115,
+     93
+    ],
+    [
+     -110,
+     89
+    ],
+    [
+     -105,
+     86
+    ],
+    [
+     -100,
+     83
+    ],
+    [
+     -95,
+     79
+    ],
+    [
+     -90,
+     76
+    ],
+    [
+     -85,
+     73
+    ],
+    [
+     -80,
+     70
+    ],
+    [
+     -75,
+     68
+    ],
+    [
+     -70,
+     65
+    ],
+    [
+     -65,
+     63
+    ],
+    [
+     -60,
+     60
+    ],
+    [
+     -55,
+     58
+    ],
+    [
+     -50,
+     56
+    ],
+    [
+     -45,
+     54
+    ],
+    [
+     -40,
+     53
+    ],
+    [
+     -35,
+     51
+    ],
+    [
+     -30,
+     49
+    ],
+    [
+     -25,
+     48
+    ],
+    [
+     -20,
+     46
+    ],
+    [
+     -15,
+     45
+    ],
+    [
+     -10,
+     43
+    ],
+    [
+     -5,
+     42
+    ],
+    [
+     0,
+     42
+    ],
+    [
+     5,
+     47
+    ],
+    [
+     10,
+     53
+    ],
+    [
+     15,
+     60
+    ],
+    [
+     20,
+     66
+    ],
+    [
+     25,
+     72
+    ],
+    [
+     30,
+     78
+    ],
+    [
+     35,
+     84
+    ],
+    [
+     40,
+     89
+    ],
+    [
+     45,
+     95
+    ],
+    [
+     50,
+     100
+    ],
+    [
+     55,
+     105
+    ],
+    [
+     60,
+     111
+    ],
+    [
+     65,
+     116
+    ],
+    [
+     70,
+     121
+    ],
+    [
+     75,
+     126
+    ],
+    [
+     80,
+     131
+    ],
+    [
+     85,
+     135
+    ],
+    [
+     90,
+     141
+    ],
+    [
+     95,
+     146
+    ],
+    [
+     100,
+     151
+    ],
+    [
+     105,
+     156
+    ],
+    [
+     110,
+     162
+    ],
+    [
+     115,
+     167
+    ],
+    [
+     120,
+     173
+    ]
+   ],
+   "lows-synthetic-3": [
+    [
+     -285,
+     146
+    ],
+    [
+     -280,
+     146
+    ],
+    [
+     -275,
+     146
+    ],
+    [
+     -270,
+     146
+    ],
+    [
+     -265,
+     146
+    ],
+    [
+     -260,
+     146
+    ],
+    [
+     -255,
+     147
+    ],
+    [
+     -250,
+     147
+    ],
+    [
+     -245,
+     148
+    ],
+    [
+     -240,
+     149
+    ],
+    [
+     -235,
+     150
+    ],
+    [
+     -230,
+     151
+    ],
+    [
+     -225,
+     152
+    ],
+    [
+     -220,
+     153
+    ],
+    [
+     -215,
+     153
+    ],
+    [
+     -210,
+     151
+    ],
+    [
+     -205,
+     150
+    ],
+    [
+     -200,
+     148
+    ],
+    [
+     -195,
+     146
+    ],
+    [
+     -190,
+     144
+    ],
+    [
+     -185,
+     142
+    ],
+    [
+     -180,
+     140
+    ],
+    [
+     -175,
+     137
+    ],
+    [
+     -170,
+     135
+    ],
+    [
+     -165,
+     132
+    ],
+    [
+     -160,
+     129
+    ],
+    [
+     -155,
+     126
+    ],
+    [
+     -150,
+     123
+    ],
+    [
+     -145,
+     119
+    ],
+    [
+     -140,
+     116
+    ],
+    [
+     -135,
+     112
+    ],
+    [
+     -130,
+     109
+    ],
+    [
+     -125,
+     105
+    ],
+    [
+     -120,
+     102
+    ],
+    [
+     -115,
+     99
+    ],
+    [
+     -110,
+     95
+    ],
+    [
+     -105,
+     92
+    ],
+    [
+     -100,
+     89
+    ],
+    [
+     -95,
+     87
+    ],
+    [
+     -90,
+     84
+    ],
+    [
+     -85,
+     81
+    ],
+    [
+     -80,
+     79
+    ],
+    [
+     -75,
+     77
+    ],
+    [
+     -70,
+     75
+    ],
+    [
+     -65,
+     73
+    ],
+    [
+     -60,
+     72
+    ],
+    [
+     -55,
+     70
+    ],
+    [
+     -50,
+     69
+    ],
+    [
+     -45,
+     67
+    ],
+    [
+     -40,
+     66
+    ],
+    [
+     -35,
+     64
+    ],
+    [
+     -30,
+     63
+    ],
+    [
+     -25,
+     62
+    ],
+    [
+     -20,
+     60
+    ],
+    [
+     -15,
+     59
+    ],
+    [
+     -10,
+     57
+    ],
+    [
+     -5,
+     55
+    ],
+    [
+     0,
+     53
+    ],
+    [
+     5,
+     59
+    ],
+    [
+     10,
+     65
+    ],
+    [
+     15,
+     71
+    ],
+    [
+     20,
+     77
+    ],
+    [
+     25,
+     82
+    ],
+    [
+     30,
+     87
+    ],
+    [
+     35,
+     92
+    ],
+    [
+     40,
+     97
+    ],
+    [
+     45,
+     102
+    ],
+    [
+     50,
+     107
+    ],
+    [
+     55,
+     112
+    ],
+    [
+     60,
+     117
+    ],
+    [
+     65,
+     122
+    ],
+    [
+     70,
+     127
+    ],
+    [
+     75,
+     132
+    ],
+    [
+     80,
+     137
+    ],
+    [
+     85,
+     142
+    ],
+    [
+     90,
+     147
+    ],
+    [
+     95,
+     153
+    ],
+    [
+     100,
+     159
+    ],
+    [
+     105,
+     165
+    ],
+    [
+     110,
+     171
+    ]
+   ],
+   "lows-synthetic-4": [
+    [
+     -280,
+     155
+    ],
+    [
+     -275,
+     155
+    ],
+    [
+     -270,
+     156
+    ],
+    [
+     -265,
+     157
+    ],
+    [
+     -260,
+     158
+    ],
+    [
+     -255,
+     159
+    ],
+    [
+     -250,
+     160
+    ],
+    [
+     -245,
+     161
+    ],
+    [
+     -240,
+     162
+    ],
+    [
+     -235,
+     163
+    ],
+    [
+     -230,
+     165
+    ],
+    [
+     -225,
+     165
+    ],
+    [
+     -220,
+     166
+    ],
+    [
+     -215,
+     165
+    ],
+    [
+     -210,
+     163
+    ],
+    [
+     -205,
+     161
+    ],
+    [
+     -200,
+     159
+    ],
+    [
+     -195,
+     157
+    ],
+    [
+     -190,
+     154
+    ],
+    [
+     -185,
+     151
+    ],
+    [
+     -180,
+     148
+    ],
+    [
+     -175,
+     145
+    ],
+    [
+     -170,
+     142
+    ],
+    [
+     -165,
+     138
+    ],
+    [
+     -160,
+     135
+    ],
+    [
+     -155,
+     131
+    ],
+    [
+     -150,
+     128
+    ],
+    [
+     -145,
+     124
+    ],
+    [
+     -140,
+     121
+    ],
+    [
+     -135,
+     117
+    ],
+    [
+     -130,
+     114
+    ],
+    [
+     -125,
+     111
+    ],
+    [
+     -120,
+     107
+    ],
+    [
+     -115,
+     105
+    ],
+    [
+     -110,
+     102
+    ],
+    [
+     -105,
+     99
+    ],
+    [
+     -100,
+     97
+    ],
+    [
+     -95,
+     95
+    ],
+    [
+     -90,
+     93
+    ],
+    [
+     -85,
+     91
+    ],
+    [
+     -80,
+     89
+    ],
+    [
+     -75,
+     88
+    ],
+    [
+     -70,
+     87
+    ],
+    [
+     -65,
+     85
+    ],
+    [
+     -60,
+     84
+    ],
+    [
+     -55,
+     83
+    ],
+    [
+     -50,
+     82
+    ],
+    [
+     -45,
+     80
+    ],
+    [
+     -40,
+     79
+    ],
+    [
+     -35,
+     78
+    ],
+    [
+     -30,
+     76
+    ],
+    [
+     -25,
+     74
+    ],
+    [
+     -20,
+     72
+    ],
+    [
+     -15,
+     70
+    ],
+    [
+     -10,
+     68
+    ],
+    [
+     -5,
+     65
+    ],
+    [
+     0,
+     63
+    ],
+    [
+     5,
+     68
+    ],
+    [
+     10,
+     73
+    ],
+    [
+     15,
+     78
+    ],
+    [
+     20,
+     83
+    ],
+    [
+     25,
+     88
+    ],
+    [
+     30,
+     93
+    ],
+    [
+     35,
+     98
+    ],
+    [
+     40,
+     103
+    ],
+    [
+     45,
+     107
+    ],
+    [
+     50,
+     112
+    ],
+    [
+     55,
+     117
+    ],
+    [
+     60,
+     122
+    ],
+    [
+     65,
+     127
+    ],
+    [
+     70,
+     132
+    ],
+    [
+     75,
+     138
+    ],
+    [
+     80,
+     143
+    ],
+    [
+     85,
+     149
+    ],
+    [
+     90,
+     155
+    ],
+    [
+     95,
+     161
+    ],
+    [
+     100,
+     168
+    ],
+    [
+     105,
+     174
+    ]
+   ],
+   "lows-synthetic-5": [
+    [
+     -275,
+     169
+    ],
+    [
+     -270,
+     171
+    ],
+    [
+     -265,
+     172
+    ],
+    [
+     -260,
+     173
+    ],
+    [
+     -255,
+     174
+    ],
+    [
+     -250,
+     176
+    ],
+    [
+     -245,
+     177
+    ],
+    [
+     -240,
+     178
+    ],
+    [
+     -235,
+     178
+    ],
+    [
+     -230,
+     179
+    ],
+    [
+     -225,
+     180
+    ],
+    [
+     -220,
+     180
+    ],
+    [
+     -215,
+     178
+    ],
+    [
+     -210,
+     175
+    ],
+    [
+     -205,
+     173
+    ],
+    [
+     -200,
+     170
+    ],
+    [
+     -195,
+     166
+    ],
+    [
+     -190,
+     163
+    ],
+    [
+     -185,
+     159
+    ],
+    [
+     -180,
+     156
+    ],
+    [
+     -175,
+     152
+    ],
+    [
+     -170,
+     149
+    ],
+    [
+     -165,
+     145
+    ],
+    [
+     -160,
+     141
+    ],
+    [
+     -155,
+     138
+    ],
+    [
+     -150,
+     134
+    ],
+    [
+     -145,
+     131
+    ],
+    [
+     -140,
+     128
+    ],
+    [
+     -135,
+     125
+    ],
+    [
+     -130,
+     122
+    ],
+    [
+     -125,
+     119
+    ],
+    [
+     -120,
+     117
+    ],
+    [
+     -115,
+     115
+    ],
+    [
+     -110,
+     113
+    ],
+    [
+     -105,
+     111
+    ],
+    [
+     -100,
+     109
+    ],
+    [
+     -95,
+     108
+    ],
+    [
+     -90,
+     107
+    ],
+    [
+     -85,
+     105
+    ],
+    [
+     -80,
+     104
+    ],
+    [
+     -75,
+     103
+    ],
+    [
+     -70,
+     102
+    ],
+    [
+     -65,
+     101
+    ],
+    [
+     -60,
+     100
+    ],
+    [
+     -55,
+     98
+    ],
+    [
+     -50,
+     97
+    ],
+    [
+     -45,
+     95
+    ],
+    [
+     -40,
+     93
+    ],
+    [
+     -35,
+     91
+    ],
+    [
+     -30,
+     89
+    ],
+    [
+     -25,
+     87
+    ],
+    [
+     -20,
+     84
+    ],
+    [
+     -15,
+     81
+    ],
+    [
+     -10,
+     78
+    ],
+    [
+     -5,
+     75
+    ],
+    [
+     0,
+     71
+    ],
+    [
+     5,
+     76
+    ],
+    [
+     10,
+     81
+    ],
+    [
+     15,
+     86
+    ],
+    [
+     20,
+     90
+    ],
+    [
+     25,
+     95
+    ],
+    [
+     30,
+     99
+    ],
+    [
+     35,
+     104
+    ],
+    [
+     40,
+     109
+    ],
+    [
+     45,
+     114
+    ],
+    [
+     50,
+     119
+    ],
+    [
+     55,
+     125
+    ],
+    [
+     60,
+     130
+    ],
+    [
+     65,
+     136
+    ],
+    [
+     70,
+     142
+    ],
+    [
+     75,
+     148
+    ],
+    [
+     80,
+     155
+    ],
+    [
+     85,
+     161
+    ],
+    [
+     90,
+     168
+    ],
+    [
+     95,
+     175
+    ],
+    [
+     100,
+     182
+    ]
+   ],
+   "lows-synthetic-6": [
+    [
+     -270,
+     186
+    ],
+    [
+     -265,
+     187
+    ],
+    [
+     -260,
+     188
+    ],
+    [
+     -255,
+     189
+    ],
+    [
+     -250,
+     190
+    ],
+    [
+     -245,
+     190
+    ],
+    [
+     -240,
+     190
+    ],
+    [
+     -235,
+     190
+    ],
+    [
+     -230,
+     190
+    ],
+    [
+     -225,
+     190
+    ],
+    [
+     -220,
+     189
+    ],
+    [
+     -215,
+     187
+    ],
+    [
+     -210,
+     183
+    ],
+    [
+     -205,
+     180
+    ],
+    [
+     -200,
+     176
+    ],
+    [
+     -195,
+     172
+    ],
+    [
+     -190,
+     168
+    ],
+    [
+     -185,
+     165
+    ],
+    [
+     -180,
+     161
+    ],
+    [
+     -175,
+     157
+    ],
+    [
+     -170,
+     154
+    ],
+    [
+     -165,
+     150
+    ],
+    [
+     -160,
+     147
+    ],
+    [
+     -155,
+     144
+    ],
+    [
+     -150,
+     141
+    ],
+    [
+     -145,
+     138
+    ],
+    [
+     -140,
+     136
+    ],
+    [
+     -135,
+     134
+    ],
+    [
+     -130,
+     132
+    ],
+    [
+     -125,
+     130
+    ],
+    [
+     -120,
+     128
+    ],
+    [
+     -115,
+     127
+    ],
+    [
+     -110,
+     126
+    ],
+    [
+     -105,
+     125
+    ],
+    [
+     -100,
+     124
+    ],
+    [
+     -95,
+     123
+    ],
+    [
+     -90,
+     122
+    ],
+    [
+     -85,
+     121
+    ],
+    [
+     -80,
+     119
+    ],
+    [
+     -75,
+     118
+    ],
+    [
+     -70,
+     117
+    ],
+    [
+     -65,
+     115
+    ],
+    [
+     -60,
+     114
+    ],
+    [
+     -55,
+     112
+    ],
+    [
+     -50,
+     109
+    ],
+    [
+     -45,
+     107
+    ],
+    [
+     -40,
+     104
+    ],
+    [
+     -35,
+     102
+    ],
+    [
+     -30,
+     98
+    ],
+    [
+     -25,
+     95
+    ],
+    [
+     -20,
+     92
+    ],
+    [
+     -15,
+     88
+    ],
+    [
+     -10,
+     84
+    ],
+    [
+     -5,
+     81
+    ],
+    [
+     0,
+     77
+    ],
+    [
+     5,
+     81
+    ],
+    [
+     10,
+     86
+    ],
+    [
+     15,
+     90
+    ],
+    [
+     20,
+     95
+    ],
+    [
+     25,
+     100
+    ],
+    [
+     30,
+     105
+    ],
+    [
+     35,
+     110
+    ],
+    [
+     40,
+     116
+    ],
+    [
+     45,
+     122
+    ],
+    [
+     50,
+     128
+    ],
+    [
+     55,
+     134
+    ],
+    [
+     60,
+     140
+    ],
+    [
+     65,
+     147
+    ],
+    [
+     70,
+     154
+    ],
+    [
+     75,
+     161
+    ],
+    [
+     80,
+     168
+    ],
+    [
+     85,
+     175
+    ],
+    [
+     90,
+     182
+    ],
+    [
+     95,
+     190
+    ]
+   ],
+   "lows-synthetic-7": [
+    [
+     -265,
+     205
+    ],
+    [
+     -260,
+     205
+    ],
+    [
+     -255,
+     205
+    ],
+    [
+     -250,
+     205
+    ],
+    [
+     -245,
+     205
+    ],
+    [
+     -240,
+     204
+    ],
+    [
+     -235,
+     203
+    ],
+    [
+     -230,
+     202
+    ],
+    [
+     -225,
+     201
+    ],
+    [
+     -220,
+     200
+    ],
+    [
+     -215,
+     196
+    ],
+    [
+     -210,
+     192
+    ],
+    [
+     -205,
+     188
+    ],
+    [
+     -200,
+     185
+    ],
+    [
+     -195,
+     181
+    ],
+    [
+     -190,
+     177
+    ],
+    [
+     -185,
+     173
+    ],
+    [
+     -180,
+     170
+    ],
+    [
+     -175,
+     167
+    ],
+    [
+     -170,
+     164
+    ],
+    [
+     -165,
+     161
+    ],
+    [
+     -160,
+     159
+    ],
+    [
+     -155,
+     156
+    ],
+    [
+     -150,
+     154
+    ],
+    [
+     -145,
+     153
+    ],
+    [
+     -140,
+     151
+    ],
+    [
+     -135,
+     150
+    ],
+    [
+     -130,
+     149
+    ],
+    [
+     -125,
+     148
+    ],
+    [
+     -120,
+     147
+    ],
+    [
+     -115,
+     146
+    ],
+    [
+     -110,
+     145
+    ],
+    [
+     -105,
+     144
+    ],
+    [
+     -100,
+     143
+    ],
+    [
+     -95,
+     142
+    ],
+    [
+     -90,
+     141
+    ],
+    [
+     -85,
+     139
+    ],
+    [
+     -80,
+     138
+    ],
+    [
+     -75,
+     136
+    ],
+    [
+     -70,
+     134
+    ],
+    [
+     -65,
+     131
+    ],
+    [
+     -60,
+     129
+    ],
+    [
+     -55,
+     126
+    ],
+    [
+     -50,
+     123
+    ],
+    [
+     -45,
+     119
+    ],
+    [
+     -40,
+     116
+    ],
+    [
+     -35,
+     112
+    ],
+    [
+     -30,
+     108
+    ],
+    [
+     -25,
+     105
+    ],
+    [
+     -20,
+     101
+    ],
+    [
+     -15,
+     97
+    ],
+    [
+     -10,
+     93
+    ],
+    [
+     -5,
+     89
+    ],
+    [
+     0,
+     85
+    ],
+    [
+     5,
+     90
+    ],
+    [
+     10,
+     95
+    ],
+    [
+     15,
+     100
+    ],
+    [
+     20,
+     106
+    ],
+    [
+     25,
+     111
+    ],
+    [
+     30,
+     117
+    ],
+    [
+     35,
+     123
+    ],
+    [
+     40,
+     130
+    ],
+    [
+     45,
+     136
+    ],
+    [
+     50,
+     143
+    ],
+    [
+     55,
+     150
+    ],
+    [
+     60,
+     158
+    ],
+    [
+     65,
+     165
+    ],
+    [
+     70,
+     172
+    ],
+    [
+     75,
+     180
+    ],
+    [
+     80,
+     187
+    ],
+    [
+     85,
+     194
+    ],
+    [
+     90,
+     202
+    ]
+   ]
+  },
+  "firedIds": [
+   "lows-synthetic-1",
+   "lows-synthetic-2",
+   "lows-synthetic-3",
+   "lows-synthetic-4",
+   "lows-synthetic-5",
+   "lows-synthetic-6",
+   "lows-synthetic-7"
+  ]
+ }
+}

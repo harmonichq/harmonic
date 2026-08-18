@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Finding → evidence routing · exploration</title>
+
+  <!-- EXPLORATION DRAFT for issue #31 — not a lock, not a locked mock. No lock
+       manifest, no ★ LOCKED header, no INDEX.md row. It renders one scene: the
+       reader has clicked "Over-treated low" in the ranked findings queue.
+
+       Per the #31 resolution, the instrument row is GONE (no VIEW / FACTOR /
+       FILTER strip). The inspector is the sole navigation and the canvas answers
+       wherever it stands.
+
+       CHROME IS THE SHIPPED APP'S, not a copy of it: the stylesheets below are
+       the app's own files, loaded in the app's own order, and the cockpit topbar
+       and footer are lifted out of the running app's DOM into
+       chrome.extracted.html by harness.mjs. -->
+
+  <script>
+    // The app's own first-paint theme switch (frontend/index.html), verbatim.
+    (function () {
+      if (localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark');
+    })();
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+
+  <!-- The app's stylesheets, in the app's order (frontend/index.html lines
+       25-32, then its <style> blocks, then theme.css LAST). -->
+  <link rel="stylesheet" href="../../frontend/scenario.css" />
+  <link rel="stylesheet" href="../../frontend/shell.css" />
+  <link rel="stylesheet" href="../../frontend/diagnose-workstation.css" />
+  <link rel="stylesheet" href="../../frontend/diagnose-event-comparison.css" />
+  <link rel="stylesheet" href="../../frontend/verify-workstation.css" />
+  <link rel="stylesheet" href="./app-base.extracted.css" />
+  <link rel="stylesheet" href="../../frontend/theme.css" />
+  <!-- Scene-only rules. Nothing here re-states a token, a colour or a shipped
+       component's metrics; every value is either a shipped declaration copied
+       from its named sibling, or geometry this scene changes on purpose. -->
+  <link rel="stylesheet" href="./scene.css" />
+</head>
+<body>
+  <div id="app">
+    <div class="cockpit-shell cockpit">
+      <!-- topbar: injected from chrome.extracted.html -->
+      <main class="cockpit-stage"><div class="main-content">
+        <div id="diagnose-root">
+          <section class="dw ec-surface fer-surface" data-state="typical">
+            <main class="panes">
+
+              <!-- ===================== canvas ===================== -->
+              <section class="pane canvas-pane ec-canvas" aria-label="Low response comparison">
+                <header class="canvas-head" id="ec-canvas-head" data-hover="0">
+                  <div class="head-swap">
+                    <div class="head-line head-rest">
+                      <h2>Low response comparison</h2>
+                      <span class="ec-title-context" id="canvas-context"></span>
+                    </div>
+                    <div class="head-line head-live ec-canvas-readout" id="ec-readout" aria-hidden="true"><span class="ec-rd-time">--:--</span></div>
+                  </div>
+                  <span class="meta persist" id="canvas-persist"></span>
+                </header>
+                <div class="body">
+                  <div id="ec-chart" class="ec-chart" role="img" tabindex="0"
+                       aria-label="Low response comparison. Use left and right arrow keys to inspect five-minute points."></div>
+                  <div class="ec-chart-key" id="ec-chart-key" aria-label="Cohort legend"></div>
+                </div>
+              </section>
+
+              <!-- =================== inspector =================== -->
+              <section class="pane inspector" aria-label="Inspector">
+                <header><h2>Inspector</h2></header>
+                <div class="body">
+                  <!-- OPEN QUESTION for round 2, deliberately visible rather
+                       than hidden: at the shipped 430px inspector width the
+                       path (163px) + the scope chip (198px) + the shipped crumb
+                       meta (66px) need 461px and do not fit. The meta gives,
+                       because the chip is the retired FILTER instrument and the
+                       path is the navigation — but that drops the projection's
+                       own `30 days` run from the surface, which the shipped
+                       drill level does print. See the report. -->
+                  <div class="crumb">
+                    <div class="trail" id="crumb-trail"></div>
+                    <span class="fer-chip" id="scope-chip"></span>
+                  </div>
+                  <div class="level" id="level" tabindex="-1"></div>
+                </div>
+                <div class="watch" id="watch-dock"></div>
+              </section>
+
+            </main>
+          </section>
+        </div>
+      </div></main>
+      <!-- footer: injected from chrome.extracted.html -->
+    </div>
+  </div>
+
+  <script type="module" src="./surface.js"></script>
+</body>
+</html>

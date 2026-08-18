@@ -1,0 +1,59 @@
+/* Scene-only rules for the issue-#31 exploration.
+ *
+ * THE BAR: any element with a shipped sibling uses the shipped values exactly.
+ * So this file holds only two kinds of rule, and each one says which:
+ *   (a) geometry this scene deliberately changes — the retired instrument row;
+ *   (b) the scope chip, which has no shipped sibling, built by COPYING the
+ *       declarations of the two closest shipped siblings by name.
+ * Nothing here restates a token, a colour, a radius or a type rank.
+ */
+
+/* (a) THE INSTRUMENT ROW IS GONE (#31 resolution, ruling 1). `.dw` is a two-row
+   grid — 42px rail, then panes. With no rail the surface is one row, so the
+   panes take the whole height instead of leaving a 42px band of ground. This is
+   the scene's central move, not a fidelity drift. */
+.fer-surface { grid-template-rows: minmax(0, 1fr); }
+
+/* (b) THE SCOPE CHIP — the retired FILTER instrument, re-homed beside the
+   breadcrumb (#31 resolution, ruling 1 and term 9). It carries the CLICKED
+   FILTER's own count; cohort and population counts stay in the lens legend.
+
+   Every declaration is copied from `.entry .pill` in
+   frontend/diagnose-workstation.css (the workstation's own chip) — the family,
+   size, padding, radius, background, ink and border are that rule's, byte for
+   byte, minus its `min-width` and `text-align`, which exist to hold a numeric
+   column even and would only pad a chip that is not in a column. */
+.fer-chip {
+  display: inline-flex; align-items: baseline; gap: 6px;
+  font-family: var(--ck-mono); font-size: 10.5px; padding: 1px 6px; border-radius: 8px;
+  background: var(--ck-sel); color: var(--mk-text);
+  border: 1px solid color-mix(in srgb, var(--ck-accent) 45%, transparent);
+}
+/* `.crumb .trail` carries `margin-right: auto`, which would shove the chip to
+   the far end of the row beside the meta. The chip belongs against the path it
+   scopes, so the auto moves onto the chip and the meta keeps its own. */
+/* `.crumb .trail`'s own rule is "root and current never lose a character"
+   (diagnose-workstation.css). With a chip sharing the row the trail was the
+   thing that gave, and the leaf clipped to "Over-tr". It is pinned open here
+   and the chip takes the row's free space instead. */
+.crumb:has(.fer-chip) .trail { margin-right: 0; flex: 0 0 auto; }
+.fer-chip { margin-right: auto; margin-left: 10px; }
+
+/* The chip's dismiss. Copied from `.seg button .x` in
+   frontend/diagnose-workstation.css — the same padding, radius, ink, size and
+   hover swap the retired instrument row used for exactly this affordance. */
+.fer-chip .x {
+  border: 0; background: transparent; font: inherit;
+  padding: 0 3px; border-radius: 3px; font-style: normal;
+  color: var(--mk-muted); font-size: 12px; line-height: 1; cursor: pointer;
+}
+.fer-chip .x:hover { color: var(--mk-text); background: var(--ck-inset); }
+.fer-chip .x:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: 1px; }
+
+/* The occurrences table is the selection mechanism (#31 resolution, ruling 2):
+   row and lens trace are two reads of ONE selection, so the hovered/selected row
+   takes the same wash `.ev-row:hover` already paints and the selected row keeps
+   it after the pointer leaves. No new colour, no new weight — the canvas carries
+   the other half of the read. */
+.ev-row[data-selected="true"] { background: color-mix(in srgb, var(--mk-surface-2) 60%, transparent); }
+.ev-row:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: -2px; }

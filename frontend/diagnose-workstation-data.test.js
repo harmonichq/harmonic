@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { blockKey } from './diagnose-workspaces.js';
-import { envelopeFromPooled, markersFromPooled, toCaptures } from './diagnose-workstation-data.js';
+import { envelopeFromPooled, isfVerdict, markersFromPooled, toCaptures } from './diagnose-workstation-data.js';
 
 const pooled = {
   reading_count: 12,
@@ -56,4 +56,34 @@ test('day.days leaves an unfetched day empty and requests it once', async () => 
   resolveLoad({ date: '2026-08-10', window: { cgm: [] } });
   await Promise.resolve();
   assert.deepEqual(captures.day.days['2026-08-10'], { date: '2026-08-10', window: { cgm: [] } });
+});
+
+test('isfVerdict answers direction and stageability separately', () => {
+  // A harm-owned weaken (#468): the analyzer asserts the direction and produces
+  // no number, so the level must say the direction AND offer nothing to stage.
+  const weaken = isfVerdict({
+    current: 36, recommended: null,
+    evidence: { direction: 'weaken', night_fits: [{ date: '2026-08-01', isf: 28.5 }] },
+  });
+  assert.equal(weaken.direction, 'weaken');
+  assert.equal(weaken.canStage, false);
+  // A sized recommendation is the only thing that stages.
+  assert.equal(isfVerdict({
+    recommended: 39.2, evidence: { direction: 'strengthen', night_fits: [] },
+  }).canStage, true);
+  // No direction is no direction, whatever the numbers look like.
+  assert.equal(isfVerdict({ recommended: null, evidence: {} }).direction, null);
+});
+
+test('isfVerdict counts the nights the estimate is clustered on, not detected windows', () => {
+  const verdict = isfVerdict({
+    recommended: null,
+    evidence: {
+      direction: 'weaken',
+      night_fits: [{ date: '2026-08-01', isf: 28.5 }, { date: '2026-08-02', isf: 31.0 }],
+      // three windows were detected; the third produced no fit and supports nothing
+      rest_windows: [{ date: '2026-08-01' }, { date: '2026-08-02' }, { date: '2026-08-03' }],
+    },
+  });
+  assert.equal(verdict.nights, 2);
 });

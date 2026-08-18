@@ -26,7 +26,7 @@ import {
   buildSlotLane, cellAtMinute, windowStats, hhmm, BIN_MINUTES, MIN_SUPPORTED_NIGHTS,
   snapWindow, minuteAtX, xAtMinute, plotBox, buildDayTrace,
 } from './diagnose-workstation-chart.js';
-import { toCaptures } from './diagnose-workstation-data.js';
+import { toCaptures, isfVerdict } from './diagnose-workstation-data.js';
 // #735: level 1 is the server-owned findings queue, and the pane has a floor.
 import { renderFindingsQueue, queueMeta } from './diagnose-findings-queue.js';
 import { watchDockView, paintWatchDock } from './watched-change-dock.js';
@@ -729,13 +729,17 @@ function renderIcBlockLevel(host, cell, icStaged, onStage, demoNote) {
 const ISF_SCOPE = 'Measured in the overnight fasting window. Daytime ISF is not separately '
   + 'identifiable, so this one value stands for the whole day.';
 
-function renderIsfLevel(host, isf, restWindows, isfStaged, onStage) {
+function renderIsfLevel(host, isf, isfStaged, onStage) {
   const e = isf.estimate;
-  // ISF's verdict is its own: it asserts only when the backend recommends one
-  const canStage = isf.recommended != null;
+  /* Reading the verdict off `recommended` printed "no direction asserted" over
+     this level's own weaken sentence, and disagreed with the queue row that
+     drilled into it. Both facts come from `isfVerdict` now. */
+  const { direction, canStage, nights } = isfVerdict(isf);
   renderParamLevel(host, {
     head: 'ISF',
-    verdict: canStage ? 'suggests a change' : 'no direction asserted',
+    verdict: canStage ? 'suggests a change'
+      : direction ? 'corrections look stronger than needed'
+        : 'no direction asserted',
     scopeSay: ISF_SCOPE,
     unit: 'mg/dL/U',
     current: isf.current,
@@ -743,17 +747,22 @@ function renderIsfLevel(host, isf, restWindows, isfStaged, onStage) {
     recommended: canStage ? isf.recommended : null,
     recommendedQual: canStage
       ? 'mg/dL/U, one conservative step'
-      : 'no direction asserted, so nothing is recommended',
+      : direction ? 'no new number is suggested'
+        : 'no direction asserted, so nothing is recommended',
     currentNoun: 'correction factor',
     moveWord: 'move',
-    // ISF's own noun and its own run — not nights, not meals
+    // ISF's own noun and its own run — the nights its estimate is clustered on,
+    // the same count and noun the queue row carries. Not the detected windows:
+    // a window that produced no fit supports nothing.
     support: `${e.n.toLocaleString()} correction steps <span>·</span> `
-      + `${restWindows} overnight rest windows`,
+      + `${nights} fasting nights`,
     sentence: isf.annotation,
     canStage,
     isStaged: isfStaged,
-    footNote: `${e.wide ? 'The interval is wide and no' : 'No'} direction is asserted here, so `
-      + 'there is nothing to stage; the number and its interval are shown as measured.',
+    footNote: direction
+      ? 'Corrections look stronger than needed, but recent lows make a new number unsafe to suggest.'
+      : `${e.wide ? 'The interval is wide and no' : 'No'} direction is asserted here, so `
+        + 'there is nothing to stage; the number and its interval are shown as measured.',
     onStage,
   });
 }
@@ -948,7 +957,6 @@ function boot(root, data, callbacks, signal) {
     : '';
   const icLane = buildIcLane(params.ic_blocks);
   const isf = params.isf[0];
-  const isfRestWindows = (isf.evidence.rest_windows || []).length;
   const exposures = exposureCapture.exposures;
   // The capture's `dense` state asserts moves on four slots with n=1..7 and wide
   // intervals — it predates the support floor. Applying the floor there leaves
@@ -1465,7 +1473,7 @@ function boot(root, data, callbacks, signal) {
       return;
     }
     if (f.k === 'isf') {
-      renderIsfLevel(host, isf, isfRestWindows, isfStaged, () => {
+      renderIsfLevel(host, isf, isfStaged, () => {
         isfStaged = !isfStaged;
         // PORT: reach the app's Plan draft as well as the local tally
         callbacks.stage?.({ family: 'isf', raw: isf }, isfStaged);

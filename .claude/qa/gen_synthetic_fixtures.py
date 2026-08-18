@@ -240,7 +240,13 @@ def build_ic(asserting):
             'estimate': estimate(31.4, 18.2, 46.9, 1583, wide=True), 'recommended': None,
             'annotation': 'corrections keep overshooting into lows, so the correction factor '
                           'eases weaker',
-            'evidence': {'rest_windows': [{'date': d} for d in DATES] * 9},
+            # 27 detected rest windows, 24 of which produced a per-night fit: the
+            # estimate is clustered on the fits (#177), and the surface counts THAT
+            # list. A capture carrying only the windows cannot tell the two apart.
+            'evidence': {'rest_windows': [{'date': d} for d in DATES] * 9,
+                         'night_fits': [{'date': d, 'isf': isf}
+                                        for d, isf in zip(DATES * 8,
+                                                          [28.5, 31.4, 34.2] * 8)]},
             'asserts_move': None, 'block_id': None}]
     out = {**LABEL, 'schema_version': 8, 'generated': f'{WINDOW["end"]}T00:00:00+00:00',
            'ic': [], 'ic_blocks': [evening, morning], 'isf': isf}

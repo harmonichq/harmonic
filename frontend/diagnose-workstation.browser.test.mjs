@@ -40,17 +40,22 @@
  * mock it captured is archived (#722), the app is now the sole contract
  * artifact.
  *
- * Dropped outright, not moved: the ISF "direction asserted, not sized"
- * verdict state the old file tested never existed in the locked mock either
- * (the archived mock's own `renderIsfLevel` has the
- * identical two-state gate the port has) — #636-invented UI, correctly absent
- * from the verbatim port, nothing to restore. The "missing envelope" half of
+ * RESTORED, not invented: the ISF "direction asserted, not sized" verdict state
+ * this header once called #636-invented UI. That reading came from a capture
+ * whose ISF evidence carries no `direction` field at all, so neither the mock nor
+ * this fixture ever reached the state — while against real data the analyzer's
+ * harm-owned weaken (#468) asserts a direction with no number, and the two-state
+ * gate printed "no direction asserted" over the level's own weaken sentence and
+ * disagreed with the queue row that drilled into it. DESIGN.md's voice rules 6
+ * and 7 settle the copy, refusal line included. The state's coverage is in the
+ * fast gate (frontend/diagnose-workstation-data.test.js, `isfVerdict`), because
+ * this fixture's ISF row is still held. The "missing envelope" half of
  * the old error test is also dropped: `setData({ analyze: {}, scenarios: {},
  * evidence: { bins: [] } })` doesn't fail closed in the real port — with
  * `analyze.isf` absent, `params.isf` is `[]` (diagnose-workstation-data.js's
  * `isf: analyze.isf || []`), so `boot()`'s `params.isf[0]` is `undefined` and
- * the next line's `isf.evidence` throws
- * (diagnose-workstation.js:1005-1006). The real caller (frontend/index.html's
+ * `isfVerdict(isf)` throws on its
+ * `evidence` deref. The real caller (frontend/index.html's
  * `loadAudit`) never produces that shape — it either has a full envelope or
  * the fetch itself rejects into `setError` — so this is a latent gap on an
  * unreached input, not a regression this branch caused. Not patched here:

@@ -119,6 +119,26 @@ export function toCaptures(payload = {}, { loadDay = null, onDayLoaded = null, s
 }
 
 /**
+ * The two facts the ISF level reads off the analyzer, together because reading
+ * one off the other is the bug they replace.
+ *
+ * `direction` is the analyzer's own verdict — the one ISF predicate, and the same
+ * field the server's findings queue reads. A harm-owned weaken (#468) asserts a
+ * direction while `recommended` stays null: the direction holds, nothing is
+ * stageable, and the two must be answered separately. `nights` is the count the
+ * estimate is clustered on (#177) — a detected rest window that produced no fit
+ * supports nothing, so it is not counted.
+ */
+export function isfVerdict(row) {
+  const evidence = row.evidence || {};
+  return {
+    direction: evidence.direction || null,
+    canStage: row.recommended != null,
+    nights: (evidence.night_fits || []).length,
+  };
+}
+
+/**
  * `day.days` — a lazily-filled map of date → that day's timeline record.
  *
  * The mock has all 30 days in memory because its capture holds them. The app

@@ -16,6 +16,11 @@ eggs/
 .eggs/
 lib/
 lib64/
+# AgentFlow vendors skill implementation libraries below these managed roots.
+!/.agents/skills/**/lib/
+!/.agents/skills/**/lib/**
+!/.claude/skills/**/lib/
+!/.claude/skills/**/lib/**
 parts/
 sdist/
 var/

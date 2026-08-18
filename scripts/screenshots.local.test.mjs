@@ -11,7 +11,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 // Exercise the CLI with the first Playwright candidate it discovers from a temporary
 // checkout. The mock makes the route fail unless stripPrefix finds fixture/payload.json,
 // so this covers the public wrapper path without requiring Chromium in the Node test job.
-test('wrapper serves a stripPrefix fixture and loads fixture-backed fetch stubs', () => {
+test('wrapper serves a stripPrefix fixture, fixture-backed stubs, and the dark class', () => {
   const work = mkdtempSync(join(tmpdir(), 'screenshots-local-test-'));
   try {
     const runtime = join(work, '.agents', 'skills', 'drive-local-webapp', 'node_modules', 'playwright');
@@ -37,7 +37,28 @@ export const chromium = {
         }
       },
       async setViewportSize() {},
-      async evaluate() {},
+      async waitForTimeout() {},
+      // The theme step is the one page.evaluate that carries an argument. Run it
+      // against a DOM shim and require the app's actual theming marker — the
+      // .dark class — so a wrapper that falls back to the harness's default
+      // (data-theme only) fails here instead of shipping light "dark" shots.
+      async evaluate(fn, arg) {
+        if (arg !== 'dark') return;
+        const classes = new Set();
+        globalThis.document = { documentElement: {
+          dataset: {},
+          classList: {
+            add: (c) => classes.add(c),
+            toggle: (c, on) => { on ? classes.add(c) : classes.delete(c); },
+          },
+        } };
+        globalThis.Event = class {};
+        globalThis.window = { dispatchEvent() {} };
+        fn(arg);
+        if (!classes.has('dark') || globalThis.document.documentElement.dataset.theme !== 'dark') {
+          throw new Error('dark theme step did not set the .dark class and data-theme');
+        }
+      },
       async screenshot({ path }) { writeFileSync(path, 'mock png'); },
     };
     return {
@@ -67,6 +88,7 @@ export const chromium = {
       serveRoot: [{ dir: fixture, stripPrefix: '/mockups/' }],
       shots: [{
         url: 'http://screenshots.local/mockups/payload.json',
+        theme: 'dark',
         out,
         storage: { boot: 'ready' },
         fetchStubFiles: { '/analyze': { file: join(fixture, 'payload.json'), key: 'analyze' } },

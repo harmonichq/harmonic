@@ -38,6 +38,22 @@ def _environment_value(name: str, default: Optional[str] = None) -> Optional[str
     return default
 
 
+def resolve_db_path(flag_value: Optional[str], default_db: str) -> str:
+    """Resolve the database path for the command line.
+
+    An explicitly typed ``--db`` wins; otherwise the environment
+    (``HARMONIC_DB``, with the deprecated ``CIQ_DB`` alias); otherwise the
+    built-in default. Decided on whether the flag was given, not truthiness,
+    so a deliberately empty canonical value stays meaningful — the same rule
+    the app factory applies.
+    """
+    if flag_value is not None:
+        return flag_value
+    db_path = _environment_value("db_path", default_db)
+    assert db_path is not None
+    return db_path
+
+
 def resolve_runtime_configuration(default_db: str, default_secret_key: str) -> RuntimeConfiguration:
     """Resolve process configuration once for CLI, Docker, and direct ASGI use.
 

@@ -139,9 +139,12 @@ The database path, the bearer token, the path to the credential-encryption key, 
 whether the scheduled fetch runs each resolve from an explicit argument first and an
 environment variable second (`HARMONIC_DB`, `HARMONIC_API_TOKEN`,
 `HARMONIC_SECRET_KEY`, `HARMONIC_NO_FETCH`), and that resolution lives in one seam
-the app factory consumes — not in the command-line front end. A caller that
-constructs the app directly, without going through the command line, therefore gets
-exactly the same configuration as one that does.
+that both the app factory and the command-line front end consume. The front end
+resolves the database path once, after parsing — a typed `--db` is the explicit
+argument, the environment is the fallback — so every subcommand crosses the same
+resolution rather than re-declaring the default. A caller that constructs the app
+directly, without going through the command line, therefore gets exactly the same
+configuration as one that does.
 
 Each of those variables has a superseded spelling that is still honoured so an
 existing deployment keeps starting, and reading one logs a deprecation naming its

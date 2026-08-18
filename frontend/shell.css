@@ -1,0 +1,430 @@
+/* #634 — Cockpit shell, ported from the locked #620 Diagnose workstation.
+   This file owns chrome only. Existing tab bodies keep their own design systems
+   and may be visibly cramped until their individual workstation passes land. */
+:root {
+  --ck-ground: var(--wk-canvas);
+  --ck-panel: var(--wk-surface);
+  --ck-text: var(--wk-ink);
+  --ck-body: var(--wk-ink-body);
+  --ck-meta: var(--wk-ink-meta);
+  --ck-rule: var(--wk-rule);
+  --ck-accent: var(--wk-signal);
+  --ck-accent-soft: var(--wk-signal-well);
+  --ck-manual: var(--manual-carb);
+  --ck-manual-soft: var(--manual-carb-soft);
+  --ck-ok: var(--wk-status-favorable);
+  --ck-label: 10px;
+  --ck-data: 12px;
+  --ck-emphasis: 13px;
+  --ck-track: .08em;
+  --ck-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+}
+
+html, body { width: 100%; height: 100%; overflow: hidden; }
+body { background: var(--ck-ground); }
+.cockpit-shell {
+  display: grid;
+  grid-template-rows: 42px minmax(0, 1fr) 26px;
+  width: 100vw;
+  height: 100dvh;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--ck-ground);
+  color: var(--ck-text);
+}
+
+.cockpit-topbar,
+.cockpit-footer {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  background: var(--ck-ground);
+}
+
+.cockpit-topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 16px;
+  border: 0;
+  font-size: var(--ck-data);
+}
+.cockpit-identity {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  color: var(--ck-text);
+  font-size: var(--ck-emphasis);
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+/* The locked Harmonic mark (#736): a native Inter capital H in a burnt-orange
+   rounded square. No wordmark asset exists — `Harmonic` beside it is simply set
+   in Inter. The square holds the same orange in both themes, so the mark reads
+   as one constant object rather than a themed one. */
+.cockpit-mark {
+  display: grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  border: 0;
+  border-radius: 5px;
+  background: #b35b2e;
+  color: #fffaf3;
+  font-family: Inter, system-ui, sans-serif;
+}
+.cockpit-mark::before {
+  content: "H";
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1;
+  letter-spacing: -.025em;
+}
+.cockpit-identity small {
+  color: var(--ck-meta);
+  font-size: var(--ck-label);
+  font-weight: 500;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.cockpit-flow { display: flex; flex: 0 0 auto; align-items: center; gap: 2px; }
+.cockpit-step {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 10px 4px 6px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ck-meta);
+  font-size: var(--ck-data);
+  font-weight: 550;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.cockpit-step:hover { color: var(--ck-text); }
+.cockpit-step[aria-current="step"] {
+  border-color: color-mix(in srgb, var(--ck-accent) 45%, transparent);
+  background: var(--ck-accent-soft);
+  color: var(--ck-text);
+}
+.cockpit-step-number {
+  display: grid;
+  width: 17px;
+  height: 17px;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--ck-meta) 55%, transparent);
+  border-radius: 50%;
+  color: var(--ck-meta);
+  font-family: var(--ck-mono);
+  font-size: var(--ck-label);
+  font-weight: 700;
+}
+.cockpit-step[aria-current="step"] .cockpit-step-number {
+  border-color: var(--ck-accent);
+  background: var(--ck-accent);
+  color: var(--on-primary);
+}
+.cockpit-flow-separator { color: color-mix(in srgb, var(--ck-meta) 60%, transparent); font-size: var(--ck-data); }
+.cockpit-badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  display: grid;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--ck-accent);
+  box-shadow: 0 0 0 1.5px var(--ck-ground);
+  color: var(--on-primary);
+  font-family: var(--ck-mono);
+  font-size: var(--ck-label);
+  font-weight: 700;
+}
+.cockpit-badge[data-count="0"] { visibility: hidden; }
+
+.cockpit-divider { width: 1px; height: 16px; flex: 0 0 auto; background: var(--ck-rule); opacity: .5; }
+.cockpit-day {
+  display: inline-flex;
+  min-width: 24px;
+  min-height: 24px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ck-meta);
+  font-size: var(--ck-data);
+  font-weight: 500;
+  text-decoration: none;
+}
+.cockpit-day:hover,
+.cockpit-day[aria-current="page"] { color: var(--ck-text); text-decoration: underline; text-underline-offset: 2px; }
+.cockpit-gap { flex: 1 1 auto; min-width: 8px; }
+.cockpit-scope {
+  display: flex;
+  min-width: 0;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  overflow: hidden;
+  border: 1px solid var(--ck-rule);
+  border-radius: 7px;
+  background: var(--ck-panel);
+  color: var(--ck-text);
+  font-family: var(--ck-mono);
+  font-size: var(--ck-data);
+  text-overflow: ellipsis;
+}
+.cockpit-scope-label {
+  color: var(--ck-meta);
+  font-family: Inter, system-ui, sans-serif;
+  font-size: var(--ck-label);
+  font-weight: 650;
+  letter-spacing: var(--ck-track);
+  text-transform: uppercase;
+}
+.cockpit-scope-range { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.cockpit-scope-dot { width: 5px; height: 5px; flex: 0 0 auto; border-radius: 50%; background: var(--ck-ok); }
+.cockpit-log-carbs {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border: 1px solid var(--ck-manual);
+  border-radius: 7px;
+  background: var(--ck-manual-soft);
+  color: var(--ck-manual);
+  font-size: var(--ck-data);
+  font-weight: 650;
+}
+.cockpit-log-carbs .plus { font-size: var(--ck-emphasis); line-height: 1; }
+
+.cockpit-stage {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border: 0;
+  background: var(--ck-ground);
+}
+/* Lock term 1, second clause: "panes scroll internally". The page never
+   scrolls and the chrome never moves, but the tab pane owns a scrollport so no
+   control is ever clipped out of reach at 1440x900 or 1280x800. */
+.cockpit-stage > .main-content {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.cockpit-footer {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 10px;
+  border: 0;
+  color: var(--ck-meta);
+  font-size: var(--ck-label);
+  letter-spacing: .04em;
+}
+/* Mock parity (shell-cockpit-ev-stack.html `.status`): the ISF/I:C facts and
+   the advisory sentence sit adjacent at the left, both `flex: 0 0 auto` with
+   visible overflow — "never abbreviated and never ellipsized". The utilities
+   are this shell's analogue of the mock's right-docked `.dock`, and they are
+   the only thing in the row that compresses. */
+.cockpit-profile-facts {
+  flex: 0 0 auto;
+  overflow: visible;
+  color: var(--ck-body);
+  font-family: var(--ck-mono);
+  font-size: var(--ck-data);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+.cockpit-advisory {
+  flex: 0 0 auto;
+  overflow: visible;
+  color: var(--ck-body);
+  font-size: var(--ck-label);
+  font-weight: 550;
+}
+.cockpit-utilities {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex: 0 1 auto;
+  align-items: center;
+  margin-left: auto;
+  gap: 16px;
+  overflow: hidden;
+}
+/* Hit-area floor, restored from the retired rail without touching the locked
+   visual weight: transparent background and no border, so padding grows the
+   pointer target and nothing that is drawn. See ADR 634 for why the floor is
+   24px here and stays 44px in the narrow drawer. */
+.cockpit-utilities > button {
+  display: inline-flex;
+  min-width: 24px;
+  min-height: 24px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 2px;
+  margin: 0 -2px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ck-meta);
+  font-size: var(--ck-label);
+  font-weight: 500;
+  letter-spacing: 0;
+  text-decoration: none;
+}
+.cockpit-utilities > button:hover { color: var(--ck-text); text-decoration: underline; text-underline-offset: 2px; }
+.cockpit-count { font-family: var(--ck-mono); font-size: var(--ck-label); font-variant-numeric: tabular-nums; }
+
+.cockpit-utility-menu {
+  position: fixed;
+  z-index: 42;
+  right: 8px;
+  bottom: 30px;
+  width: 158px;
+  padding: 5px;
+  border: 1px solid var(--ck-rule);
+  border-radius: 7px;
+  background: var(--ck-panel);
+}
+.cockpit-utility-menu[hidden] { display: none; }
+.cockpit-utility-menu button {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--ck-body);
+  font-size: var(--ck-data);
+  text-align: left;
+}
+.cockpit-utility-menu button:hover { background: var(--ck-accent-soft); }
+.cockpit-utility-menu button[aria-checked="true"] { color: var(--ck-accent); font-weight: 700; }
+
+.cockpit-menu-button,
+.cockpit-drawer,
+.cockpit-scrim { display: none; }
+
+.cockpit-topbar button:focus-visible,
+.cockpit-footer button:focus-visible,
+.cockpit-drawer button:focus-visible {
+  outline: 2px solid var(--ck-accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 1360px) {
+  .cockpit-topbar { gap: 12px; padding-inline: 12px; }
+  .cockpit-step { padding-right: 8px; }
+  .cockpit-scope-range { display: none; }
+  .cockpit-footer { gap: 10px; }
+  .cockpit-utilities { gap: 12px; }
+}
+
+@media (max-height: 860px) {
+  .cockpit-shell { grid-template-rows: 38px minmax(0, 1fr) 24px; }
+}
+
+/* The cockpit lock is desktop-only. Below 760px, retain a compact labeled
+   drawer so every destination remains usable without inventing a phone cockpit. */
+@media (max-width: 760px) {
+  .cockpit-shell { grid-template-rows: 44px minmax(0, 1fr) 24px; }
+  .cockpit-topbar { gap: 9px; padding: 0 8px; }
+  .cockpit-menu-button {
+    display: grid;
+    width: 36px;
+    height: 36px;
+    flex: 0 0 auto;
+    place-items: center;
+    border: 1px solid var(--ck-rule);
+    border-radius: 7px;
+    background: var(--ck-panel);
+    color: var(--ck-accent);
+  }
+  .cockpit-menu-button svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.5; }
+  .cockpit-identity small,
+  .cockpit-flow,
+  .cockpit-divider,
+  .cockpit-day,
+  .cockpit-scope { display: none; }
+  .cockpit-gap { min-width: 0; }
+  .cockpit-log-carbs { padding-inline: 9px; }
+  .cockpit-footer { overflow-x: auto; }
+  .cockpit-profile-facts,
+  .cockpit-utilities { display: none; }
+  .cockpit-advisory { margin-inline: auto; }
+
+  .cockpit-drawer {
+    position: fixed;
+    z-index: 50;
+    inset: 0 auto 0 0;
+    display: flex;
+    width: min(320px, calc(100vw - 40px));
+    min-height: 0;
+    flex-direction: column;
+    padding: 12px 10px;
+    overflow-y: auto;
+    background: var(--ck-panel);
+    transform: translateX(-102%);
+    transition: transform 180ms ease-out;
+  }
+  body.drawer-open .cockpit-drawer { transform: translateX(0); }
+  .cockpit-drawer [data-shell-tab],
+  .cockpit-drawer > button {
+    display: flex;
+    min-height: 44px;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 8px 10px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--ck-body);
+    font-size: var(--ck-data);
+    text-align: left;
+  }
+  .cockpit-drawer [aria-current="page"] { background: var(--ck-accent-soft); color: var(--ck-text); }
+  .cockpit-scrim {
+    position: fixed;
+    z-index: 45;
+    inset: 0;
+    display: block;
+    visibility: hidden;
+    border: 0;
+    background: rgba(6, 10, 13, .6);
+    opacity: 0;
+    transition: opacity 180ms ease-out, visibility 180ms;
+  }
+  body.drawer-open .cockpit-scrim { visibility: visible; opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cockpit-drawer,
+  .cockpit-scrim { transition: none; }
+}

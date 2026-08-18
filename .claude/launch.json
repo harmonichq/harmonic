@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "harmonic-demo",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "HARMONIC_DB=$PWD/tconnect-data/ciq.demo.db HARMONIC_API_TOKEN=secret HARMONIC_SECRET_KEY=$PWD/tconnect-data/secret.key TIMEZONE_NAME=${TIMEZONE_NAME:-UTC} uv run --extra api --extra sync python .claude/qa/demo_serve.py"
+      ],
+      "port": 8899
+    },
+    {
+      "name": "mockups",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "cd mockups && python3 -m http.server 8901"
+      ],
+      "port": 8901
+    }
+  ]
+}

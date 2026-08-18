@@ -1,0 +1,290 @@
+name: CI
+
+# Test every PR and every push to main; publish the image only when main moves
+# (ADR 0021). No image smoke-test in CI — not worth the complexity for a
+# single-user project.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  backend:
+    name: pytest (backend)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.25"
+      - name: Sync deps (api + sync extras, from the lockfile)
+        run: uv sync --frozen --extra api --extra sync
+      - name: Run tests
+        run: uv run python -m pytest
+      # The frontend's I:C block fixtures are real analyzer output, not literals
+      # (#518). If a gate moves and the fixture isn't regenerated, the frontend tests
+      # keep asserting a verdict the analyzer no longer produces — the #273 trap in a
+      # new place. This fails the build instead.
+      - name: Check the generated I:C block fixtures are current
+        run: uv run python scripts/gen_ic_block_fixtures.py --check
+      # Same drift class, the engine-authored annotation copy the Settings audit
+      # renders verbatim (#536).
+      - name: Check the generated annotation fixtures are current
+        run: uv run python scripts/gen_annotation_fixtures.py --check
+      # Same drift class again: the three chart-builder fixtures (#728) are real
+      # analyze()/timeline()/scenario-engine output over invented inputs, not
+      # literals — see scripts/gen_chart_builder_fixtures.py.
+      - name: Check the generated chart-builder fixtures are current
+        run: uv run python scripts/gen_chart_builder_fixtures.py --check
+      # #716: the two committed synthetic demo sets under mockups/ (Verify,
+      # Diagnose) are generator output, not hand-written — regenerate both into a
+      # temp dir and byte-compare against the committed copy.
+      - name: Check the committed demo fixture sets are current
+        run: uv run python scripts/check_demo_fixtures.py
+      # #730: the Diagnose findings queue is a server-owned projection, and its
+      # fixture is that projection's own output over inputs run through the real
+      # engines. A classification, merge, anchoring or ordering change that is not
+      # regenerated would leave the fixture describing a window the server no longer
+      # returns — the same drift class as the two checks above.
+      - name: Check the generated findings-projection fixtures are current
+        run: uv run python scripts/gen_findings_projection_fixtures.py --check
+
+  docs:
+    name: ADR numbering guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      # Stdlib-only guard — no deps, no setup. Fails on duplicate ADR numbers or a
+      # heading/filename mismatch, catching parallel-branch collisions at PR time
+      # instead of at merge (see scripts/check_adr_numbers.py).
+      - name: Check ADR numbers
+        run: python3 scripts/check_adr_numbers.py
+      - name: Check owned identifiers
+        run: python3 scripts/check_owned_identifiers.py
+      # #728: fails when a tracked path clears neither an allowlist positive
+      # rule nor an exact-path deny — the mechanism the public-repository
+      # cutover's build script reads (scripts/check_public_allowlist.py).
+      - name: Check public-repository allowlist
+        run: python3 scripts/check_public_allowlist.py
+      # #728: materialise the tree the allowlist describes ONCE, then run both
+      # checks that only mean anything against the bytes that actually publish.
+      #
+      # The link check: docs/adr/, docs/scope/ and most of mockups/ do not ship,
+      # so a link or prose pointer into one of them reads fine in this repository
+      # and is a dead end in the published one.
+      #
+      # The contamination scan (plan §3.1) is the one mechanical check standing
+      # between a private health record and a public repository. It runs over the
+      # MATERIALISED tree, not the source repo, because the tree is what gets
+      # published — and it fails closed: a file it cannot parse is a failure,
+      # never a skip.
+      - name: Check and scan the materialised public tree
+        run: |
+          python3 scripts/build_public_tree.py "$RUNNER_TEMP/public-tree" > "$RUNNER_TEMP/public-tree-manifest.txt"
+          tail -n 1 "$RUNNER_TEMP/public-tree-manifest.txt"
+          python3 scripts/check_public_links.py "$RUNNER_TEMP/public-tree"
+          python3 scripts/scan_public_tree.py "$RUNNER_TEMP/public-tree"
+
+  frontend:
+    name: node --test (frontend)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+      # Pure-logic frontend modules are tested with Node's built-in runner —
+      # no npm/package.json (see CLAUDE.md conventions).
+      - name: Run tests
+        run: node --test 'frontend/**/*.test.js'
+      - name: Exercise the local screenshot wrapper
+        run: node --test scripts/screenshots.local.test.mjs
+
+  browser-gate-setup:
+    name: browser gate setup
+    runs-on: ubuntu-latest
+    env:
+      PLAYWRIGHT_VERSION: "1.61.1"
+    steps:
+      - uses: actions/checkout@v5
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+      # The matrix restores this exact runner + browser bundle after this one job
+      # creates it. Keeping the version in both the install and cache key prevents
+      # a pinned Playwright upgrade from reusing an incompatible browser download.
+      - name: Restore the isolated browser runner and Chromium
+        id: browser-runner-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ runner.temp }}/ciq-playwright
+            ${{ runner.temp }}/ciq-playwright-browsers
+          key: browser-gates-${{ runner.os }}-node-22-playwright-${{ env.PLAYWRIGHT_VERSION }}-v1
+      - name: Install the isolated browser runner
+        if: steps.browser-runner-cache.outputs.cache-hit != 'true'
+        run: npm install --prefix "$RUNNER_TEMP/ciq-playwright" "playwright@$PLAYWRIGHT_VERSION"
+      - name: Install Chromium
+        if: steps.browser-runner-cache.outputs.cache-hit != 'true'
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/ciq-playwright-browsers
+        run: npx --prefix "$RUNNER_TEMP/ciq-playwright" playwright install --with-deps chromium
+      # Browser legs that route CDN requests through VENDOR_DIR restore this
+      # separate cache; the Day, browser-runner, and first-plan legs never do.
+      - name: Vendor CDN modules for the browser gates
+        id: vendor-cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/ciq-vendor
+          key: browser-gates-${{ runner.os }}-playwright-${{ env.PLAYWRIGHT_VERSION }}-vue-3-echarts-5.5.0-v1
+      - name: Download CDN modules for the browser gates
+        if: steps.vendor-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p "$RUNNER_TEMP/ciq-vendor"
+          curl -fsSL https://unpkg.com/vue@3/dist/vue.esm-browser.js -o "$RUNNER_TEMP/ciq-vendor/vue.esm-browser.js"
+          curl -fsSL https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js -o "$RUNNER_TEMP/ciq-vendor/echarts.min.js"
+
+  frontend-browser-leg:
+    name: browser gates — ${{ matrix.gate }}
+    needs: browser-gate-setup
+    runs-on: ubuntu-latest
+    env:
+      PLAYWRIGHT_VERSION: "1.61.1"
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - gate: Day lifecycle
+            vendor: false
+            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node frontend/day-surface.browser.mjs
+          - gate: Diagnose workstation
+            vendor: true
+            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" VENDOR_DIR="$RUNNER_TEMP/ciq-vendor" PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node --test frontend/diagnose-workstation.browser.test.mjs
+          - gate: Cockpit shell
+            vendor: true
+            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" VENDOR_DIR="$RUNNER_TEMP/ciq-vendor" node --test frontend/cockpit-shell.browser.test.mjs
+      # #554: the shared browser-runner.js front door itself — proves it
+      # launches Chromium once per command and still isolates scenarios.
+      # #672: fails closed like every other browser gate, so it's a
+      # `.browser.test.mjs` (not `.test.js`) and only runs here.
+          - gate: Browser runner lifecycle
+            vendor: false
+            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node --test frontend/browser-runner.browser.test.mjs
+          - gate: First-plan reconcile
+            vendor: false
+            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node frontend/plan-first-match.browser.mjs
+      # The behaviour replay is a .replay.mjs, which the `frontend/**/*.test.js`
+      # glob never discovers, so it gets its own explicit step. It fails closed —
+      # a missing driver, vendored asset or fixture exits nonzero rather than
+      # skipping, because a green step that ran zero stories proves nothing.
+      #
+      # This surface has shipped (#722): the app is now the contract artifact,
+      # so this is the only leg — the same stories and assertions, against the
+      # BUILT workstation through the app opener, whose route stubs serve the
+      # synthetic set's API-shaped payload. The mock (and its TARGET=mock CI
+      # leg) has been archived; the anti-drift guarantee lives on in these
+      # stories replaying against the built app forever.
+          - gate: Diagnose workstation behaviour ledger
+            vendor: true
+            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" VENDOR_DIR="$RUNNER_TEMP/ciq-vendor" TARGET=app PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node frontend/diagnose-workstation-behavior.replay.mjs
+      # #677/#694: Meals/Lows extend Diagnose with an eleven-story contract.
+      # S12 mutates glucose after the mock's former server-owned support facts
+      # were computed, so its production aggregation regression is app-only
+      # (#706). This surface has shipped (#722): the app is now the contract
+      # artifact, so only the app leg remains, running every frozen story
+      # (S1–S12). It fails closed when browser infrastructure or a fixture is
+      # absent (#672).
+          - gate: Diagnose event comparisons
+            vendor: true
+            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" VENDOR_DIR="$RUNNER_TEMP/ciq-vendor" TARGET=app node frontend/diagnose-event-comparison-behavior.replay.mjs
+          - gate: Diagnose comparison support audit
+            vendor: true
+            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" VENDOR_DIR="$RUNNER_TEMP/ciq-vendor" TARGET=app node mockups/diagnose-event-comparison-support-audit.mjs
+      # #660: the Verify workstation's own frozen ledger. This surface has
+      # shipped (#722): the app is now the contract artifact, so this is the
+      # only leg — the regression gate the port owes, rendering the committed
+      # synthetic set. It fails closed — a run that executes zero stories
+      # exits nonzero.
+          - gate: Verify behaviour ledger
+            vendor: true
+            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" VENDOR_DIR="$RUNNER_TEMP/ciq-vendor" TARGET=app PAYLOAD=mockups/verify-660-story.synthetic/payload.json node frontend/verify-660-story-behavior.replay.mjs
+    steps:
+      - uses: actions/checkout@v5
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+      - name: Restore the isolated browser runner and Chromium
+        id: browser-runner-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ runner.temp }}/ciq-playwright
+            ${{ runner.temp }}/ciq-playwright-browsers
+          key: browser-gates-${{ runner.os }}-node-22-playwright-${{ env.PLAYWRIGHT_VERSION }}-v1
+      - name: Require the browser runner cache
+        if: steps.browser-runner-cache.outputs.cache-hit != 'true'
+        run: exit 1
+      - name: Restore vendored CDN modules
+        if: matrix.vendor
+        id: vendor-cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/ciq-vendor
+          key: browser-gates-${{ runner.os }}-playwright-${{ env.PLAYWRIGHT_VERSION }}-vue-3-echarts-5.5.0-v1
+      - name: Require the vendored CDN module cache
+        if: matrix.vendor && steps.vendor-cache.outputs.cache-hit != 'true'
+        run: exit 1
+      - name: Run browser gate
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/ciq-playwright-browsers
+        run: ${{ matrix.command }}
+
+  frontend-browser:
+    name: browser gates
+    needs: [frontend-browser-leg]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every browser gate leg to pass
+        env:
+          BROWSER_LEGS_RESULT: ${{ needs.frontend-browser-leg.result }}
+        run: test "$BROWSER_LEGS_RESULT" = success
+
+  docker:
+    name: build + push image
+    needs: [backend, frontend, frontend-browser]
+    # Only on a real push to main — never on PRs or forks.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v5
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      # GHCR image paths must be lowercase; the repo name is mixed-case.
+      - name: Compute lowercase image name
+        id: image
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          # latest tracks main; the full SHA gives a traceable pin.
+          tags: |
+            ${{ steps.image.outputs.name }}:latest
+            ${{ steps.image.outputs.name }}:${{ github.sha }}

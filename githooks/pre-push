@@ -1,0 +1,37 @@
+#!/bin/sh
+# Pre-push guard for the public repository.
+#
+# In a repository built from one person's health data, a push is publication:
+# once a commit reaches the remote it can be cloned, forked and archived by
+# anyone, and a check that runs after the push can only report what has already
+# left. So the two checks that decide whether the tree is safe to publish run
+# before it goes, not after.
+#
+# Opt in per clone with `git config core.hooksPath githooks` — git runs no
+# tracked hook without it.
+#
+# Two gates, in order:
+#
+#   1. The allowlist check (scripts/check_public_allowlist.py) — fails a push
+#      whenever the allowlist itself violates its parse-time grammar, which is
+#      what keeps the positive-rule set honest.
+#   2. The structural contamination scan (scripts/scan_public_tree.py) over a
+#      FRESHLY MATERIALISED tree. It scans the built tree rather than the
+#      source repository, because the tree is what gets published, and it reads
+#      file CONTENT rather than prose: reviewing a commit message or a diff
+#      summary tells you nothing about the numbers inside a fixture that commit
+#      adds, and a fixture is where real readings would hide.
+#
+# Simple and dependency-free on purpose: POSIX sh + python3, no venv, so it
+# still runs when a push happens outside an activated project environment.
+
+set -e
+
+repo_root="$(git rev-parse --show-toplevel)"
+
+python3 "$repo_root/scripts/check_public_allowlist.py"
+
+tree_dir="$(mktemp -d)"
+trap 'rm -rf "$tree_dir"' EXIT
+python3 "$repo_root/scripts/build_public_tree.py" "$tree_dir" >/dev/null
+python3 "$repo_root/scripts/scan_public_tree.py" "$tree_dir"

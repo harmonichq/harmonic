@@ -1,0 +1,47 @@
+"""Guard: runtime file-path assets the API serves must ship in the Docker image.
+
+Production runs the GHCR image CI publishes on merge (docker compose pull), NOT a
+source checkout — so any file api.py reads at runtime relative to the package must
+be explicitly COPY'd into the image. The #269 Guide-KB serves the authored how-tos
+as raw markdown from ../docs/kb/<slug>.md via /api/kb/<slug>; without a
+`COPY docs/kb` line those files are absent in the image and every authored article
+404s ("unknown article"). This test fails loudly if that COPY is dropped.
+"""
+
+import re
+import unittest
+from pathlib import Path
+
+_REPO = Path(__file__).resolve().parent.parent
+_AUTHORED_SLUGS = ("start-here", "reading-diagnose", "reading-day", "the-plan-tab")
+
+
+class DeployAssetsTest(unittest.TestCase):
+    def test_dockerfile_ships_the_kb_markdown(self):
+        text = (_REPO / "Dockerfile").read_text()
+        self.assertRegex(
+            text, r"COPY\s+docs/kb\b",
+            "Dockerfile must COPY docs/kb into the image — the #269 /api/kb how-tos "
+            "are read from ../docs/kb at runtime; without it every authored Guide "
+            "article 404s ('unknown article') in the deployed app.",
+        )
+        # ...beside frontend/, the sibling asset resolved the same way (../frontend).
+        self.assertRegex(text, r"COPY\s+frontend\b")
+
+    def test_dockerignore_does_not_exclude_docs(self):
+        di = _REPO / ".dockerignore"
+        if di.is_file():
+            for line in di.read_text().splitlines():
+                s = line.strip()
+                if s and not s.startswith("#"):
+                    self.assertFalse(re.match(r"/?docs(/|$)", s),
+                                     f".dockerignore must not exclude docs: {line!r}")
+
+    def test_every_authored_how_to_has_its_markdown_file(self):
+        for slug in _AUTHORED_SLUGS:
+            self.assertTrue((_REPO / "docs" / "kb" / f"{slug}.md").is_file(),
+                            f"docs/kb/{slug}.md is missing")
+
+
+if __name__ == "__main__":
+    unittest.main()

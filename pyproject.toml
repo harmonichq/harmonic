@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "harmonic"
+version = "0.1.0"
+description = "Local, advisory basal-profile tuning from your own pump data."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "PolyForm-Noncommercial-1.0.0" }
+authors = [{ name = "Connor Griffin" }]
+# Core (store + model + cli) is deliberately stdlib-only: sqlite3, json,
+# datetime, statistics. No third-party runtime dependency to run the brain.
+dependencies = []
+
+[project.optional-dependencies]
+# Live pull from t:connect. The exact version is pinned by uv.lock; Tandem-side
+# breakages are absorbed upstream and you just relock. Until then, sync works
+# off local JSON and needs none of this.
+#
+# Tracks the tagged PyPI release line. v3.0.0 (published 2026-07-01) is the
+# required floor: it's the first tagged release carrying the 2026-06-30 Tandem
+# BFF cutover fixes (native BFF pump_events/pump_metadata,
+# source.tandemdiabetes.com Origin, the new settings.details schema). We
+# formerly pinned an exact `dev` commit for these before upstream tagged a
+# release.
+sync = [
+    "tconnectsync>=3.0.0",
+    "cryptography>=42",
+]
+# Plots for the Phase 3 "why" report.
+report = ["matplotlib>=3.5"]
+# The v0.1 HTTP API. A thin renderer over the same AnalysisResult the CLI prints;
+# kept an extra so the core (store + model + CLI) stays stdlib-only. httpx ships
+# with it for the TestClient and is harmless at runtime. cryptography backs the
+# encrypted Tandem-credential store (Fernet).
+api = ["fastapi>=0.110", "uvicorn>=0.27", "httpx>=0.27", "cryptography>=42"]
+
+# Dev tooling (uv dependency group). Tests use stdlib unittest, so they run
+# without this; it's here for `uv run pytest` if you prefer.
+[dependency-groups]
+dev = [
+    "coverage>=7.10.7",
+    "pytest>=7",
+]
+
+[project.scripts]
+harmonic = "ciq_autotune.cli:main"
+
+[tool.setuptools]
+packages = ["ciq_autotune"]

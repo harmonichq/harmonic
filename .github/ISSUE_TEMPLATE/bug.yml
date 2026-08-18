@@ -1,0 +1,21 @@
+name: Bug
+description: Something's broken, wrong, or off
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: "Vague is fine — every issue gets read, and you'll be asked here if anything's unclear. This tracker is public, so share only what you're comfortable making public: describe what you saw rather than pasting raw CGM or pump exports."
+  - type: textarea
+    id: what
+    attributes:
+      label: What's happening
+      description: What you saw, and what you expected instead.
+    validations:
+      required: false
+  - type: textarea
+    id: context
+    attributes:
+      label: Where / when (optional)
+      description: Which screen, which data, any repro steps or a rough time.
+    validations:
+      required: false

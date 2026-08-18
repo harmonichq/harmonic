@@ -1,0 +1,3408 @@
+{
+ "_source": "MANUFACTURED FIXTURE \u2014 not real data. Built by .claude/qa/gen_verify_payload.py through review_trials(); safe to commit.",
+ "roster": {
+  "trials": [
+   {
+    "id": "profile-all-20260623233000",
+    "parameter": "profile",
+    "slot": null,
+    "changed_at": "2026-06-23 23:30:00",
+    "before": null,
+    "after": null,
+    "target_metrics": [
+     "tir",
+     "arc"
+    ],
+    "state": "maturing",
+    "maturing": {
+     "days_elapsed": 7,
+     "days_required": 14,
+     "gap_count": 1
+    }
+   },
+   {
+    "id": "carb_ratio-12-00-20260609233000-900",
+    "parameter": "carb_ratio",
+    "slot": "12:00",
+    "changed_at": "2026-06-09 23:30:00",
+    "before": 5.0,
+    "after": 4.4,
+    "target_metrics": [
+     "arc"
+    ],
+    "state": "complete",
+    "maturing": {
+     "days_elapsed": 14,
+     "days_required": 14,
+     "gap_count": 1
+    }
+   },
+   {
+    "id": "carb_ratio-all-20260607081500",
+    "parameter": "carb_ratio",
+    "slot": null,
+    "changed_at": "2026-06-07 08:15:00",
+    "before": 5.0,
+    "after": 4.8,
+    "target_metrics": [
+     "arc"
+    ],
+    "state": "complete",
+    "maturing": {
+     "days_elapsed": 15,
+     "days_required": 14,
+     "gap_count": 0
+    }
+   }
+  ],
+  "selected": null
+ },
+ "details": {
+  "profile-all-20260623233000": {
+   "trials": [
+    {
+     "id": "profile-all-20260623233000",
+     "parameter": "profile",
+     "slot": null,
+     "changed_at": "2026-06-23 23:30:00",
+     "before": null,
+     "after": null,
+     "target_metrics": [
+      "tir",
+      "arc"
+     ],
+     "state": "maturing",
+     "maturing": {
+      "days_elapsed": 7,
+      "days_required": 14,
+      "gap_count": 1
+     }
+    },
+    {
+     "id": "carb_ratio-12-00-20260609233000-900",
+     "parameter": "carb_ratio",
+     "slot": "12:00",
+     "changed_at": "2026-06-09 23:30:00",
+     "before": 5.0,
+     "after": 4.4,
+     "target_metrics": [
+      "arc"
+     ],
+     "state": "complete",
+     "maturing": {
+      "days_elapsed": 14,
+      "days_required": 14,
+      "gap_count": 1
+     }
+    },
+    {
+     "id": "carb_ratio-all-20260607081500",
+     "parameter": "carb_ratio",
+     "slot": null,
+     "changed_at": "2026-06-07 08:15:00",
+     "before": 5.0,
+     "after": 4.8,
+     "target_metrics": [
+      "arc"
+     ],
+     "state": "complete",
+     "maturing": {
+      "days_elapsed": 15,
+      "days_required": 14,
+      "gap_count": 0
+     }
+    }
+   ],
+   "selected": {
+    "id": "profile-all-20260623233000",
+    "parameter": "profile",
+    "slot": null,
+    "changed_at": "2026-06-23 23:30:00",
+    "before": null,
+    "after": null,
+    "target_metrics": [
+     "tir",
+     "arc"
+    ],
+    "state": "maturing",
+    "maturing": {
+     "days_elapsed": 7,
+     "days_required": 14,
+     "gap_count": 1
+    },
+    "before_period": {
+     "start": "2026-06-09 23:30:00",
+     "end": "2026-06-23 23:30:00"
+    },
+    "trial_period": {
+     "start": "2026-06-23 23:30:00",
+     "end": "2026-06-30 23:30:00"
+    },
+    "focus": {
+     "available": false,
+     "message": "Focus is unavailable while a Trial is live. It will not queue behind this change."
+    },
+    "readiness": {
+     "label": "Maturing",
+     "message": "No verdict is ready while evidence accrues."
+    },
+    "evidence": [
+     {
+      "key": "tir",
+      "role": "target",
+      "before": {
+       "value": 81.2,
+       "n_readings": 672
+      },
+      "trial": {
+       "value": 81.2,
+       "n_readings": 335
+      }
+     },
+     {
+      "key": "tbr",
+      "role": "guardrail",
+      "before": {
+       "value": 0.0,
+       "n_readings": 672
+      },
+      "trial": {
+       "value": 0.0,
+       "n_readings": 335
+      }
+     },
+     {
+      "key": "arc",
+      "role": "target",
+      "before": {
+       "peak": 182.0,
+       "nadir": 146.0,
+       "n_peak": 42,
+       "n_nadir": 42
+      },
+      "trial": {
+       "peak": 183.0,
+       "nadir": 123.0,
+       "n_peak": 18,
+       "n_nadir": 18
+      },
+      "rescue_context": {
+       "count": 0,
+       "grams": 0.0,
+       "unknown_count": 0
+      }
+     }
+    ],
+    "plan_route": {
+     "mode": "manual-review",
+     "label": "Review this change in Plan",
+     "message": "This Trial does not have one prior setting that can be staged. Review the change in Plan, program the pump manually, then confirm it with a fresh pump snapshot."
+    },
+    "limits": [
+     "The evidence is limited to the selected Before and Trial periods.",
+     "Observed movement does not establish that the setting caused it.",
+     "1 data gap remains in the post-change period."
+    ],
+    "changes": [
+     {
+      "parameter": "basal_rate",
+      "slot": "00:00",
+      "slots_changed": 48,
+      "uniform": true,
+      "before": 0.6,
+      "after": 0.8
+     },
+     {
+      "parameter": "isf",
+      "slot": "00:00",
+      "slots_changed": 48,
+      "uniform": true,
+      "before": 40,
+      "after": 36
+     },
+     {
+      "parameter": "carb_ratio",
+      "slot": "00:00",
+      "slots_changed": 48,
+      "uniform": false,
+      "before": 5.0,
+      "after": 4.6
+     }
+    ],
+    "envelopes": {
+     "before_period": [
+      {
+       "t": "00:00",
+       "n": 14,
+       "med": 138
+      },
+      {
+       "t": "00:30",
+       "n": 14,
+       "med": 138
+      },
+      {
+       "t": "01:00",
+       "n": 14,
+       "med": 139
+      },
+      {
+       "t": "01:30",
+       "n": 14,
+       "med": 141
+      },
+      {
+       "t": "02:00",
+       "n": 14,
+       "med": 142
+      },
+      {
+       "t": "02:30",
+       "n": 14,
+       "med": 144
+      },
+      {
+       "t": "03:00",
+       "n": 14,
+       "med": 146
+      },
+      {
+       "t": "03:30",
+       "n": 14,
+       "med": 148
+      },
+      {
+       "t": "04:00",
+       "n": 14,
+       "med": 150
+      },
+      {
+       "t": "04:30",
+       "n": 14,
+       "med": 153
+      },
+      {
+       "t": "05:00",
+       "n": 14,
+       "med": 155
+      },
+      {
+       "t": "05:30",
+       "n": 14,
+       "med": 157
+      },
+      {
+       "t": "06:00",
+       "n": 14,
+       "med": 160
+      },
+      {
+       "t": "06:30",
+       "n": 14,
+       "med": 162
+      },
+      {
+       "t": "07:00",
+       "n": 14,
+       "med": 164
+      },
+      {
+       "t": "07:30",
+       "n": 14,
+       "med": 166
+      },
+      {
+       "t": "08:00",
+       "n": 14,
+       "med": 168
+      },
+      {
+       "t": "08:30",
+       "n": 14,
+       "med": 169
+      },
+      {
+       "t": "09:00",
+       "n": 14,
+       "med": 171
+      },
+      {
+       "t": "09:30",
+       "n": 14,
+       "med": 172
+      },
+      {
+       "t": "10:00",
+       "n": 14,
+       "med": 174
+      },
+      {
+       "t": "10:30",
+       "n": 14,
+       "med": 177
+      },
+      {
+       "t": "11:00",
+       "n": 14,
+       "med": 182
+      },
+      {
+       "t": "11:30",
+       "n": 14,
+       "med": 190
+      },
+      {
+       "t": "12:00",
+       "n": 14,
+       "med": 201
+      },
+      {
+       "t": "12:30",
+       "n": 14,
+       "med": 212
+      },
+      {
+       "t": "13:00",
+       "n": 14,
+       "med": 222
+      },
+      {
+       "t": "13:30",
+       "n": 14,
+       "med": 224
+      },
+      {
+       "t": "14:00",
+       "n": 14,
+       "med": 219
+      },
+      {
+       "t": "14:30",
+       "n": 14,
+       "med": 207
+      },
+      {
+       "t": "15:00",
+       "n": 14,
+       "med": 192
+      },
+      {
+       "t": "15:30",
+       "n": 14,
+       "med": 179
+      },
+      {
+       "t": "16:00",
+       "n": 14,
+       "med": 168
+      },
+      {
+       "t": "16:30",
+       "n": 14,
+       "med": 161
+      },
+      {
+       "t": "17:00",
+       "n": 14,
+       "med": 156
+      },
+      {
+       "t": "17:30",
+       "n": 14,
+       "med": 153
+      },
+      {
+       "t": "18:00",
+       "n": 14,
+       "med": 150
+      },
+      {
+       "t": "18:30",
+       "n": 14,
+       "med": 148
+      },
+      {
+       "t": "19:00",
+       "n": 14,
+       "med": 146
+      },
+      {
+       "t": "19:30",
+       "n": 14,
+       "med": 144
+      },
+      {
+       "t": "20:00",
+       "n": 14,
+       "med": 142
+      },
+      {
+       "t": "20:30",
+       "n": 14,
+       "med": 141
+      },
+      {
+       "t": "21:00",
+       "n": 14,
+       "med": 139
+      },
+      {
+       "t": "21:30",
+       "n": 14,
+       "med": 138
+      },
+      {
+       "t": "22:00",
+       "n": 14,
+       "med": 138
+      },
+      {
+       "t": "22:30",
+       "n": 14,
+       "med": 137
+      },
+      {
+       "t": "23:00",
+       "n": 14,
+       "med": 137
+      },
+      {
+       "t": "23:30",
+       "n": 14,
+       "med": 137
+      }
+     ],
+     "trial_period": [
+      {
+       "t": "00:00",
+       "n": 7,
+       "med": 107
+      },
+      {
+       "t": "00:30",
+       "n": 7,
+       "med": 109
+      },
+      {
+       "t": "01:00",
+       "n": 7,
+       "med": 111
+      },
+      {
+       "t": "01:30",
+       "n": 7,
+       "med": 113
+      },
+      {
+       "t": "02:00",
+       "n": 7,
+       "med": 116
+      },
+      {
+       "t": "02:30",
+       "n": 7,
+       "med": 119
+      },
+      {
+       "t": "03:00",
+       "n": 7,
+       "med": 123
+      },
+      {
+       "t": "03:30",
+       "n": 7,
+       "med": 127
+      },
+      {
+       "t": "04:00",
+       "n": 7,
+       "med": 131
+      },
+      {
+       "t": "04:30",
+       "n": 7,
+       "med": 136
+      },
+      {
+       "t": "05:00",
+       "n": 7,
+       "med": 140
+      },
+      {
+       "t": "05:30",
+       "n": 7,
+       "med": 144
+      },
+      {
+       "t": "06:00",
+       "n": 7,
+       "med": 149
+      },
+      {
+       "t": "06:30",
+       "n": 7,
+       "med": 153
+      },
+      {
+       "t": "07:00",
+       "n": 7,
+       "med": 157
+      },
+      {
+       "t": "07:30",
+       "n": 7,
+       "med": 161
+      },
+      {
+       "t": "08:00",
+       "n": 7,
+       "med": 164
+      },
+      {
+       "t": "08:30",
+       "n": 7,
+       "med": 167
+      },
+      {
+       "t": "09:00",
+       "n": 7,
+       "med": 170
+      },
+      {
+       "t": "09:30",
+       "n": 7,
+       "med": 172
+      },
+      {
+       "t": "10:00",
+       "n": 7,
+       "med": 174
+      },
+      {
+       "t": "10:30",
+       "n": 7,
+       "med": 177
+      },
+      {
+       "t": "11:00",
+       "n": 7,
+       "med": 183
+      },
+      {
+       "t": "11:30",
+       "n": 7,
+       "med": 190
+      },
+      {
+       "t": "12:00",
+       "n": 7,
+       "med": 201
+      },
+      {
+       "t": "12:30",
+       "n": 7,
+       "med": 212
+      },
+      {
+       "t": "13:00",
+       "n": 7,
+       "med": 221
+      },
+      {
+       "t": "13:30",
+       "n": 7,
+       "med": 222
+      },
+      {
+       "t": "14:00",
+       "n": 7,
+       "med": 215
+      },
+      {
+       "t": "14:30",
+       "n": 7,
+       "med": 202
+      },
+      {
+       "t": "15:00",
+       "n": 7,
+       "med": 185
+      },
+      {
+       "t": "15:30",
+       "n": 7,
+       "med": 170
+      },
+      {
+       "t": "16:00",
+       "n": 7,
+       "med": 157
+      },
+      {
+       "t": "16:30",
+       "n": 7,
+       "med": 148
+      },
+      {
+       "t": "17:00",
+       "n": 7,
+       "med": 141
+      },
+      {
+       "t": "17:30",
+       "n": 7,
+       "med": 136
+      },
+      {
+       "t": "18:00",
+       "n": 7,
+       "med": 131
+      },
+      {
+       "t": "18:30",
+       "n": 7,
+       "med": 127
+      },
+      {
+       "t": "19:00",
+       "n": 7,
+       "med": 123
+      },
+      {
+       "t": "19:30",
+       "n": 7,
+       "med": 119
+      },
+      {
+       "t": "20:00",
+       "n": 7,
+       "med": 116
+      },
+      {
+       "t": "20:30",
+       "n": 7,
+       "med": 113
+      },
+      {
+       "t": "21:00",
+       "n": 7,
+       "med": 111
+      },
+      {
+       "t": "21:30",
+       "n": 7,
+       "med": 109
+      },
+      {
+       "t": "22:00",
+       "n": 7,
+       "med": 107
+      },
+      {
+       "t": "22:30",
+       "n": 7,
+       "med": 106
+      },
+      {
+       "t": "23:00",
+       "n": 7,
+       "med": 106
+      },
+      {
+       "t": "23:30",
+       "n": 7,
+       "med": 106
+      }
+     ]
+    },
+    "rescue": {
+     "before_period": {
+      "n": 23,
+      "grams": 432,
+      "n_unknown": 0,
+      "n_low_prompt": 18
+     },
+     "trial_period": {
+      "n": 5,
+      "grams": 48,
+      "n_unknown": 1,
+      "n_low_prompt": 0
+     }
+    },
+    "day_rows": {
+     "before_period": [
+      {
+       "date": "2026-06-09",
+       "n_readings": 1,
+       "n_in_range": 1,
+       "n_below": 0,
+       "meals": 0,
+       "tir": 100.0,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-10",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-11",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-12",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-13",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-14",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-15",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-16",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-17",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-18",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-19",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-20",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-21",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-22",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-23",
+       "n_readings": 47,
+       "n_in_range": 38,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 80.9,
+       "tbr": 0.0
+      }
+     ],
+     "trial_period": [
+      {
+       "date": "2026-06-23",
+       "n_readings": 1,
+       "n_in_range": 1,
+       "n_below": 0,
+       "meals": 0,
+       "tir": 100.0,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-24",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-25",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-26",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-27",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-28",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-29",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-30",
+       "n_readings": 47,
+       "n_in_range": 38,
+       "n_below": 0,
+       "meals": 0,
+       "tir": 80.9,
+       "tbr": 0.0
+      }
+     ]
+    },
+    "days": {
+     "before_period": 15,
+     "trial_period": 8
+    },
+    "meal_arcs": {
+     "block": null,
+     "before_period": {
+      "n_meals": 42,
+      "bins": [
+       {
+        "t": -60,
+        "n": 0
+       },
+       {
+        "t": -45,
+        "n": 42,
+        "med": 166
+       },
+       {
+        "t": -30,
+        "n": 0
+       },
+       {
+        "t": -15,
+        "n": 42,
+        "med": 168
+       },
+       {
+        "t": 0,
+        "n": 0
+       },
+       {
+        "t": 15,
+        "n": 42,
+        "med": 169
+       },
+       {
+        "t": 30,
+        "n": 0
+       },
+       {
+        "t": 45,
+        "n": 42,
+        "med": 171
+       },
+       {
+        "t": 60,
+        "n": 0
+       },
+       {
+        "t": 75,
+        "n": 42,
+        "med": 172
+       },
+       {
+        "t": 90,
+        "n": 0
+       },
+       {
+        "t": 105,
+        "n": 42,
+        "med": 174
+       },
+       {
+        "t": 120,
+        "n": 0
+       },
+       {
+        "t": 135,
+        "n": 42,
+        "med": 177
+       },
+       {
+        "t": 150,
+        "n": 0
+       },
+       {
+        "t": 165,
+        "n": 42,
+        "med": 168
+       },
+       {
+        "t": 180,
+        "n": 0
+       },
+       {
+        "t": 195,
+        "n": 42,
+        "med": 161
+       },
+       {
+        "t": 210,
+        "n": 0
+       },
+       {
+        "t": 225,
+        "n": 42,
+        "med": 156
+       }
+      ]
+     },
+     "trial_period": {
+      "n_meals": 18,
+      "bins": [
+       {
+        "t": -60,
+        "n": 0
+       },
+       {
+        "t": -45,
+        "n": 18,
+        "med": 161
+       },
+       {
+        "t": -30,
+        "n": 0
+       },
+       {
+        "t": -15,
+        "n": 18,
+        "med": 164
+       },
+       {
+        "t": 0,
+        "n": 0
+       },
+       {
+        "t": 15,
+        "n": 18,
+        "med": 167
+       },
+       {
+        "t": 30,
+        "n": 0
+       },
+       {
+        "t": 45,
+        "n": 18,
+        "med": 170
+       },
+       {
+        "t": 60,
+        "n": 0
+       },
+       {
+        "t": 75,
+        "n": 18,
+        "med": 172
+       },
+       {
+        "t": 90,
+        "n": 0
+       },
+       {
+        "t": 105,
+        "n": 18,
+        "med": 174
+       },
+       {
+        "t": 120,
+        "n": 0
+       },
+       {
+        "t": 135,
+        "n": 18,
+        "med": 170
+       },
+       {
+        "t": 150,
+        "n": 0
+       },
+       {
+        "t": 165,
+        "n": 18,
+        "med": 157
+       },
+       {
+        "t": 180,
+        "n": 0
+       },
+       {
+        "t": 195,
+        "n": 18,
+        "med": 148
+       },
+       {
+        "t": 210,
+        "n": 0
+       },
+       {
+        "t": 225,
+        "n": 18,
+        "med": 141
+       }
+      ]
+     }
+    }
+   }
+  },
+  "carb_ratio-12-00-20260609233000-900": {
+   "trials": [
+    {
+     "id": "profile-all-20260623233000",
+     "parameter": "profile",
+     "slot": null,
+     "changed_at": "2026-06-23 23:30:00",
+     "before": null,
+     "after": null,
+     "target_metrics": [
+      "tir",
+      "arc"
+     ],
+     "state": "maturing",
+     "maturing": {
+      "days_elapsed": 7,
+      "days_required": 14,
+      "gap_count": 1
+     }
+    },
+    {
+     "id": "carb_ratio-12-00-20260609233000-900",
+     "parameter": "carb_ratio",
+     "slot": "12:00",
+     "changed_at": "2026-06-09 23:30:00",
+     "before": 5.0,
+     "after": 4.4,
+     "target_metrics": [
+      "arc"
+     ],
+     "state": "complete",
+     "maturing": {
+      "days_elapsed": 14,
+      "days_required": 14,
+      "gap_count": 1
+     }
+    },
+    {
+     "id": "carb_ratio-all-20260607081500",
+     "parameter": "carb_ratio",
+     "slot": null,
+     "changed_at": "2026-06-07 08:15:00",
+     "before": 5.0,
+     "after": 4.8,
+     "target_metrics": [
+      "arc"
+     ],
+     "state": "complete",
+     "maturing": {
+      "days_elapsed": 15,
+      "days_required": 14,
+      "gap_count": 0
+     }
+    }
+   ],
+   "selected": {
+    "id": "carb_ratio-12-00-20260609233000-900",
+    "parameter": "carb_ratio",
+    "slot": "12:00",
+    "changed_at": "2026-06-09 23:30:00",
+    "before": 5.0,
+    "after": 4.4,
+    "target_metrics": [
+     "arc"
+    ],
+    "state": "complete",
+    "maturing": {
+     "days_elapsed": 14,
+     "days_required": 14,
+     "gap_count": 1
+    },
+    "before_period": {
+     "start": "2026-05-26 23:30:00",
+     "end": "2026-06-09 23:30:00"
+    },
+    "trial_period": {
+     "start": "2026-06-09 23:30:00",
+     "end": "2026-06-23 23:30:00"
+    },
+    "focus": {
+     "available": true
+    },
+    "readiness": {
+     "label": "Ready to judge",
+     "message": "This Trial is ready for a before-and-Trial read."
+    },
+    "evidence": [
+     {
+      "key": "tir",
+      "role": "guardrail",
+      "before": {
+       "value": 81.2,
+       "n_readings": 672
+      },
+      "trial": {
+       "value": 81.2,
+       "n_readings": 672
+      }
+     },
+     {
+      "key": "tbr",
+      "role": "guardrail",
+      "before": {
+       "value": 0.0,
+       "n_readings": 672
+      },
+      "trial": {
+       "value": 0.0,
+       "n_readings": 672
+      }
+     },
+     {
+      "key": "arc",
+      "role": "target",
+      "before": {
+       "peak": 224.0,
+       "nadir": 146.0,
+       "n_peak": 14,
+       "n_nadir": 14
+      },
+      "trial": {
+       "peak": 224.0,
+       "nadir": 146.0,
+       "n_peak": 14,
+       "n_nadir": 14
+      },
+      "rescue_context": {
+       "count": 0,
+       "grams": 0.0,
+       "unknown_count": 0
+      }
+     }
+    ],
+    "plan_route": {
+     "mode": "stage-prior",
+     "label": "Prior setting ready for Plan",
+     "draft": {
+      "items": [
+       {
+        "type": "ic",
+        "start_min": 720,
+        "value": 5.0
+       }
+      ]
+     },
+     "message": "The prior setting is staged for manual pump programming. After programming, confirm it with a fresh pump snapshot in Plan."
+    },
+    "limits": [
+     "The evidence is limited to the selected Before and Trial periods.",
+     "Observed movement does not establish that the setting caused it.",
+     "1 data gap remains in the post-change period."
+    ],
+    "changes": [
+     {
+      "parameter": "carb_ratio",
+      "slot": "12:00",
+      "before": 5.0,
+      "after": 4.4
+     }
+    ],
+    "envelopes": {
+     "before_period": [
+      {
+       "t": "00:00",
+       "n": 14,
+       "med": 138
+      },
+      {
+       "t": "00:30",
+       "n": 14,
+       "med": 138
+      },
+      {
+       "t": "01:00",
+       "n": 14,
+       "med": 139
+      },
+      {
+       "t": "01:30",
+       "n": 14,
+       "med": 141
+      },
+      {
+       "t": "02:00",
+       "n": 14,
+       "med": 142
+      },
+      {
+       "t": "02:30",
+       "n": 14,
+       "med": 144
+      },
+      {
+       "t": "03:00",
+       "n": 14,
+       "med": 146
+      },
+      {
+       "t": "03:30",
+       "n": 14,
+       "med": 148
+      },
+      {
+       "t": "04:00",
+       "n": 14,
+       "med": 150
+      },
+      {
+       "t": "04:30",
+       "n": 14,
+       "med": 153
+      },
+      {
+       "t": "05:00",
+       "n": 14,
+       "med": 155
+      },
+      {
+       "t": "05:30",
+       "n": 14,
+       "med": 157
+      },
+      {
+       "t": "06:00",
+       "n": 14,
+       "med": 160
+      },
+      {
+       "t": "06:30",
+       "n": 14,
+       "med": 162
+      },
+      {
+       "t": "07:00",
+       "n": 14,
+       "med": 164
+      },
+      {
+       "t": "07:30",
+       "n": 14,
+       "med": 166
+      },
+      {
+       "t": "08:00",
+       "n": 14,
+       "med": 168
+      },
+      {
+       "t": "08:30",
+       "n": 14,
+       "med": 169
+      },
+      {
+       "t": "09:00",
+       "n": 14,
+       "med": 171
+      },
+      {
+       "t": "09:30",
+       "n": 14,
+       "med": 172
+      },
+      {
+       "t": "10:00",
+       "n": 14,
+       "med": 174
+      },
+      {
+       "t": "10:30",
+       "n": 14,
+       "med": 177
+      },
+      {
+       "t": "11:00",
+       "n": 14,
+       "med": 182
+      },
+      {
+       "t": "11:30",
+       "n": 14,
+       "med": 190
+      },
+      {
+       "t": "12:00",
+       "n": 14,
+       "med": 201
+      },
+      {
+       "t": "12:30",
+       "n": 14,
+       "med": 212
+      },
+      {
+       "t": "13:00",
+       "n": 14,
+       "med": 222
+      },
+      {
+       "t": "13:30",
+       "n": 14,
+       "med": 224
+      },
+      {
+       "t": "14:00",
+       "n": 14,
+       "med": 219
+      },
+      {
+       "t": "14:30",
+       "n": 14,
+       "med": 207
+      },
+      {
+       "t": "15:00",
+       "n": 14,
+       "med": 192
+      },
+      {
+       "t": "15:30",
+       "n": 14,
+       "med": 179
+      },
+      {
+       "t": "16:00",
+       "n": 14,
+       "med": 168
+      },
+      {
+       "t": "16:30",
+       "n": 14,
+       "med": 161
+      },
+      {
+       "t": "17:00",
+       "n": 14,
+       "med": 156
+      },
+      {
+       "t": "17:30",
+       "n": 14,
+       "med": 153
+      },
+      {
+       "t": "18:00",
+       "n": 14,
+       "med": 150
+      },
+      {
+       "t": "18:30",
+       "n": 14,
+       "med": 148
+      },
+      {
+       "t": "19:00",
+       "n": 14,
+       "med": 146
+      },
+      {
+       "t": "19:30",
+       "n": 14,
+       "med": 144
+      },
+      {
+       "t": "20:00",
+       "n": 14,
+       "med": 142
+      },
+      {
+       "t": "20:30",
+       "n": 14,
+       "med": 141
+      },
+      {
+       "t": "21:00",
+       "n": 14,
+       "med": 139
+      },
+      {
+       "t": "21:30",
+       "n": 14,
+       "med": 138
+      },
+      {
+       "t": "22:00",
+       "n": 14,
+       "med": 138
+      },
+      {
+       "t": "22:30",
+       "n": 14,
+       "med": 137
+      },
+      {
+       "t": "23:00",
+       "n": 14,
+       "med": 137
+      },
+      {
+       "t": "23:30",
+       "n": 14,
+       "med": 137
+      }
+     ],
+     "trial_period": [
+      {
+       "t": "00:00",
+       "n": 14,
+       "med": 138
+      },
+      {
+       "t": "00:30",
+       "n": 14,
+       "med": 138
+      },
+      {
+       "t": "01:00",
+       "n": 14,
+       "med": 139
+      },
+      {
+       "t": "01:30",
+       "n": 14,
+       "med": 141
+      },
+      {
+       "t": "02:00",
+       "n": 14,
+       "med": 142
+      },
+      {
+       "t": "02:30",
+       "n": 14,
+       "med": 144
+      },
+      {
+       "t": "03:00",
+       "n": 14,
+       "med": 146
+      },
+      {
+       "t": "03:30",
+       "n": 14,
+       "med": 148
+      },
+      {
+       "t": "04:00",
+       "n": 14,
+       "med": 150
+      },
+      {
+       "t": "04:30",
+       "n": 14,
+       "med": 153
+      },
+      {
+       "t": "05:00",
+       "n": 14,
+       "med": 155
+      },
+      {
+       "t": "05:30",
+       "n": 14,
+       "med": 157
+      },
+      {
+       "t": "06:00",
+       "n": 14,
+       "med": 160
+      },
+      {
+       "t": "06:30",
+       "n": 14,
+       "med": 162
+      },
+      {
+       "t": "07:00",
+       "n": 14,
+       "med": 164
+      },
+      {
+       "t": "07:30",
+       "n": 14,
+       "med": 166
+      },
+      {
+       "t": "08:00",
+       "n": 14,
+       "med": 168
+      },
+      {
+       "t": "08:30",
+       "n": 14,
+       "med": 169
+      },
+      {
+       "t": "09:00",
+       "n": 14,
+       "med": 171
+      },
+      {
+       "t": "09:30",
+       "n": 14,
+       "med": 172
+      },
+      {
+       "t": "10:00",
+       "n": 14,
+       "med": 174
+      },
+      {
+       "t": "10:30",
+       "n": 14,
+       "med": 177
+      },
+      {
+       "t": "11:00",
+       "n": 14,
+       "med": 182
+      },
+      {
+       "t": "11:30",
+       "n": 14,
+       "med": 190
+      },
+      {
+       "t": "12:00",
+       "n": 14,
+       "med": 201
+      },
+      {
+       "t": "12:30",
+       "n": 14,
+       "med": 212
+      },
+      {
+       "t": "13:00",
+       "n": 14,
+       "med": 222
+      },
+      {
+       "t": "13:30",
+       "n": 14,
+       "med": 224
+      },
+      {
+       "t": "14:00",
+       "n": 14,
+       "med": 219
+      },
+      {
+       "t": "14:30",
+       "n": 14,
+       "med": 207
+      },
+      {
+       "t": "15:00",
+       "n": 14,
+       "med": 192
+      },
+      {
+       "t": "15:30",
+       "n": 14,
+       "med": 179
+      },
+      {
+       "t": "16:00",
+       "n": 14,
+       "med": 168
+      },
+      {
+       "t": "16:30",
+       "n": 14,
+       "med": 161
+      },
+      {
+       "t": "17:00",
+       "n": 14,
+       "med": 156
+      },
+      {
+       "t": "17:30",
+       "n": 14,
+       "med": 153
+      },
+      {
+       "t": "18:00",
+       "n": 14,
+       "med": 150
+      },
+      {
+       "t": "18:30",
+       "n": 14,
+       "med": 148
+      },
+      {
+       "t": "19:00",
+       "n": 14,
+       "med": 146
+      },
+      {
+       "t": "19:30",
+       "n": 14,
+       "med": 144
+      },
+      {
+       "t": "20:00",
+       "n": 14,
+       "med": 142
+      },
+      {
+       "t": "20:30",
+       "n": 14,
+       "med": 141
+      },
+      {
+       "t": "21:00",
+       "n": 14,
+       "med": 139
+      },
+      {
+       "t": "21:30",
+       "n": 14,
+       "med": 138
+      },
+      {
+       "t": "22:00",
+       "n": 14,
+       "med": 138
+      },
+      {
+       "t": "22:30",
+       "n": 14,
+       "med": 137
+      },
+      {
+       "t": "23:00",
+       "n": 14,
+       "med": 137
+      },
+      {
+       "t": "23:30",
+       "n": 14,
+       "med": 137
+      }
+     ]
+    },
+    "rescue": {
+     "before_period": {
+      "n": 0,
+      "grams": 0,
+      "n_unknown": 0,
+      "n_low_prompt": 0
+     },
+     "trial_period": {
+      "n": 23,
+      "grams": 432,
+      "n_unknown": 0,
+      "n_low_prompt": 18
+     }
+    },
+    "day_rows": {
+     "before_period": [
+      {
+       "date": "2026-05-26",
+       "n_readings": 1,
+       "n_in_range": 1,
+       "n_below": 0,
+       "meals": 0,
+       "tir": 100.0,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-05-27",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-05-28",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-05-29",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-05-30",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-05-31",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-01",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-02",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-03",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-04",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-05",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-06",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-07",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-08",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-09",
+       "n_readings": 47,
+       "n_in_range": 38,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 80.9,
+       "tbr": 0.0
+      }
+     ],
+     "trial_period": [
+      {
+       "date": "2026-06-09",
+       "n_readings": 1,
+       "n_in_range": 1,
+       "n_below": 0,
+       "meals": 0,
+       "tir": 100.0,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-10",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-11",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-12",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-13",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-14",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-15",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-16",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-17",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-18",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-19",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-20",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-21",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-22",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-23",
+       "n_readings": 47,
+       "n_in_range": 38,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 80.9,
+       "tbr": 0.0
+      }
+     ]
+    },
+    "days": {
+     "before_period": 15,
+     "trial_period": 15
+    },
+    "meal_arcs": {
+     "block": [
+      720,
+      900
+     ],
+     "before_period": {
+      "n_meals": 14,
+      "bins": [
+       {
+        "t": -60,
+        "n": 0
+       },
+       {
+        "t": -45,
+        "n": 14,
+        "med": 212
+       },
+       {
+        "t": -30,
+        "n": 0
+       },
+       {
+        "t": -15,
+        "n": 14,
+        "med": 222
+       },
+       {
+        "t": 0,
+        "n": 0
+       },
+       {
+        "t": 15,
+        "n": 14,
+        "med": 224
+       },
+       {
+        "t": 30,
+        "n": 0
+       },
+       {
+        "t": 45,
+        "n": 14,
+        "med": 219
+       },
+       {
+        "t": 60,
+        "n": 0
+       },
+       {
+        "t": 75,
+        "n": 14,
+        "med": 207
+       },
+       {
+        "t": 90,
+        "n": 0
+       },
+       {
+        "t": 105,
+        "n": 14,
+        "med": 192
+       },
+       {
+        "t": 120,
+        "n": 0
+       },
+       {
+        "t": 135,
+        "n": 14,
+        "med": 179
+       },
+       {
+        "t": 150,
+        "n": 0
+       },
+       {
+        "t": 165,
+        "n": 14,
+        "med": 168
+       },
+       {
+        "t": 180,
+        "n": 0
+       },
+       {
+        "t": 195,
+        "n": 14,
+        "med": 161
+       },
+       {
+        "t": 210,
+        "n": 0
+       },
+       {
+        "t": 225,
+        "n": 14,
+        "med": 156
+       }
+      ]
+     },
+     "trial_period": {
+      "n_meals": 14,
+      "bins": [
+       {
+        "t": -60,
+        "n": 0
+       },
+       {
+        "t": -45,
+        "n": 14,
+        "med": 212
+       },
+       {
+        "t": -30,
+        "n": 0
+       },
+       {
+        "t": -15,
+        "n": 14,
+        "med": 222
+       },
+       {
+        "t": 0,
+        "n": 0
+       },
+       {
+        "t": 15,
+        "n": 14,
+        "med": 224
+       },
+       {
+        "t": 30,
+        "n": 0
+       },
+       {
+        "t": 45,
+        "n": 14,
+        "med": 219
+       },
+       {
+        "t": 60,
+        "n": 0
+       },
+       {
+        "t": 75,
+        "n": 14,
+        "med": 207
+       },
+       {
+        "t": 90,
+        "n": 0
+       },
+       {
+        "t": 105,
+        "n": 14,
+        "med": 192
+       },
+       {
+        "t": 120,
+        "n": 0
+       },
+       {
+        "t": 135,
+        "n": 14,
+        "med": 179
+       },
+       {
+        "t": 150,
+        "n": 0
+       },
+       {
+        "t": 165,
+        "n": 14,
+        "med": 168
+       },
+       {
+        "t": 180,
+        "n": 0
+       },
+       {
+        "t": 195,
+        "n": 14,
+        "med": 161
+       },
+       {
+        "t": 210,
+        "n": 0
+       },
+       {
+        "t": 225,
+        "n": 14,
+        "med": 156
+       }
+      ]
+     }
+    }
+   }
+  },
+  "carb_ratio-all-20260607081500": {
+   "trials": [
+    {
+     "id": "profile-all-20260623233000",
+     "parameter": "profile",
+     "slot": null,
+     "changed_at": "2026-06-23 23:30:00",
+     "before": null,
+     "after": null,
+     "target_metrics": [
+      "tir",
+      "arc"
+     ],
+     "state": "maturing",
+     "maturing": {
+      "days_elapsed": 7,
+      "days_required": 14,
+      "gap_count": 1
+     }
+    },
+    {
+     "id": "carb_ratio-12-00-20260609233000-900",
+     "parameter": "carb_ratio",
+     "slot": "12:00",
+     "changed_at": "2026-06-09 23:30:00",
+     "before": 5.0,
+     "after": 4.4,
+     "target_metrics": [
+      "arc"
+     ],
+     "state": "complete",
+     "maturing": {
+      "days_elapsed": 14,
+      "days_required": 14,
+      "gap_count": 1
+     }
+    },
+    {
+     "id": "carb_ratio-all-20260607081500",
+     "parameter": "carb_ratio",
+     "slot": null,
+     "changed_at": "2026-06-07 08:15:00",
+     "before": 5.0,
+     "after": 4.8,
+     "target_metrics": [
+      "arc"
+     ],
+     "state": "complete",
+     "maturing": {
+      "days_elapsed": 15,
+      "days_required": 14,
+      "gap_count": 0
+     }
+    }
+   ],
+   "selected": {
+    "id": "carb_ratio-all-20260607081500",
+    "parameter": "carb_ratio",
+    "slot": null,
+    "changed_at": "2026-06-07 08:15:00",
+    "before": 5.0,
+    "after": 4.8,
+    "target_metrics": [
+     "arc"
+    ],
+    "state": "complete",
+    "maturing": {
+     "days_elapsed": 15,
+     "days_required": 14,
+     "gap_count": 0
+    },
+    "before_period": {
+     "start": "2026-05-24 08:15:00",
+     "end": "2026-06-07 08:15:00"
+    },
+    "trial_period": {
+     "start": "2026-06-07 08:15:00",
+     "end": "2026-06-21 08:15:00"
+    },
+    "focus": {
+     "available": true
+    },
+    "readiness": {
+     "label": "Ready to judge",
+     "message": "This Trial is ready for a before-and-Trial read."
+    },
+    "evidence": [
+     {
+      "key": "tir",
+      "role": "guardrail",
+      "before": {
+       "value": 81.2,
+       "n_readings": 672
+      },
+      "trial": {
+       "value": 81.2,
+       "n_readings": 672
+      }
+     },
+     {
+      "key": "tbr",
+      "role": "guardrail",
+      "before": {
+       "value": 0.0,
+       "n_readings": 672
+      },
+      "trial": {
+       "value": 0.0,
+       "n_readings": 672
+      }
+     },
+     {
+      "key": "arc",
+      "role": "target",
+      "before": {
+       "peak": 182.0,
+       "nadir": 146.0,
+       "n_peak": 42,
+       "n_nadir": 42
+      },
+      "trial": {
+       "peak": 182.0,
+       "nadir": 146.0,
+       "n_peak": 41,
+       "n_nadir": 41
+      },
+      "rescue_context": {
+       "count": 0,
+       "grams": 0.0,
+       "unknown_count": 0
+      }
+     }
+    ],
+    "plan_route": {
+     "mode": "manual-review",
+     "label": "Review this change in Plan",
+     "message": "This Trial does not have one prior setting that can be staged. Review the change in Plan, program the pump manually, then confirm it with a fresh pump snapshot."
+    },
+    "limits": [
+     "The evidence is limited to the selected Before and Trial periods.",
+     "Observed movement does not establish that the setting caused it."
+    ],
+    "changes": [
+     {
+      "parameter": "carb_ratio",
+      "slot": null,
+      "before": 5.0,
+      "after": 4.8
+     }
+    ],
+    "envelopes": {
+     "before_period": [
+      {
+       "t": "00:00",
+       "n": 14,
+       "med": 138
+      },
+      {
+       "t": "00:30",
+       "n": 14,
+       "med": 138
+      },
+      {
+       "t": "01:00",
+       "n": 14,
+       "med": 139
+      },
+      {
+       "t": "01:30",
+       "n": 14,
+       "med": 141
+      },
+      {
+       "t": "02:00",
+       "n": 14,
+       "med": 142
+      },
+      {
+       "t": "02:30",
+       "n": 14,
+       "med": 144
+      },
+      {
+       "t": "03:00",
+       "n": 14,
+       "med": 146
+      },
+      {
+       "t": "03:30",
+       "n": 14,
+       "med": 148
+      },
+      {
+       "t": "04:00",
+       "n": 14,
+       "med": 150
+      },
+      {
+       "t": "04:30",
+       "n": 14,
+       "med": 153
+      },
+      {
+       "t": "05:00",
+       "n": 14,
+       "med": 155
+      },
+      {
+       "t": "05:30",
+       "n": 14,
+       "med": 157
+      },
+      {
+       "t": "06:00",
+       "n": 14,
+       "med": 160
+      },
+      {
+       "t": "06:30",
+       "n": 14,
+       "med": 162
+      },
+      {
+       "t": "07:00",
+       "n": 14,
+       "med": 164
+      },
+      {
+       "t": "07:30",
+       "n": 14,
+       "med": 166
+      },
+      {
+       "t": "08:00",
+       "n": 14,
+       "med": 168
+      },
+      {
+       "t": "08:30",
+       "n": 14,
+       "med": 169
+      },
+      {
+       "t": "09:00",
+       "n": 14,
+       "med": 171
+      },
+      {
+       "t": "09:30",
+       "n": 14,
+       "med": 172
+      },
+      {
+       "t": "10:00",
+       "n": 14,
+       "med": 174
+      },
+      {
+       "t": "10:30",
+       "n": 14,
+       "med": 177
+      },
+      {
+       "t": "11:00",
+       "n": 14,
+       "med": 182
+      },
+      {
+       "t": "11:30",
+       "n": 14,
+       "med": 190
+      },
+      {
+       "t": "12:00",
+       "n": 14,
+       "med": 201
+      },
+      {
+       "t": "12:30",
+       "n": 14,
+       "med": 212
+      },
+      {
+       "t": "13:00",
+       "n": 14,
+       "med": 222
+      },
+      {
+       "t": "13:30",
+       "n": 14,
+       "med": 224
+      },
+      {
+       "t": "14:00",
+       "n": 14,
+       "med": 219
+      },
+      {
+       "t": "14:30",
+       "n": 14,
+       "med": 207
+      },
+      {
+       "t": "15:00",
+       "n": 14,
+       "med": 192
+      },
+      {
+       "t": "15:30",
+       "n": 14,
+       "med": 179
+      },
+      {
+       "t": "16:00",
+       "n": 14,
+       "med": 168
+      },
+      {
+       "t": "16:30",
+       "n": 14,
+       "med": 161
+      },
+      {
+       "t": "17:00",
+       "n": 14,
+       "med": 156
+      },
+      {
+       "t": "17:30",
+       "n": 14,
+       "med": 153
+      },
+      {
+       "t": "18:00",
+       "n": 14,
+       "med": 150
+      },
+      {
+       "t": "18:30",
+       "n": 14,
+       "med": 148
+      },
+      {
+       "t": "19:00",
+       "n": 14,
+       "med": 146
+      },
+      {
+       "t": "19:30",
+       "n": 14,
+       "med": 144
+      },
+      {
+       "t": "20:00",
+       "n": 14,
+       "med": 142
+      },
+      {
+       "t": "20:30",
+       "n": 14,
+       "med": 141
+      },
+      {
+       "t": "21:00",
+       "n": 14,
+       "med": 139
+      },
+      {
+       "t": "21:30",
+       "n": 14,
+       "med": 138
+      },
+      {
+       "t": "22:00",
+       "n": 14,
+       "med": 138
+      },
+      {
+       "t": "22:30",
+       "n": 14,
+       "med": 137
+      },
+      {
+       "t": "23:00",
+       "n": 14,
+       "med": 137
+      },
+      {
+       "t": "23:30",
+       "n": 14,
+       "med": 137
+      }
+     ],
+     "trial_period": [
+      {
+       "t": "00:00",
+       "n": 14,
+       "med": 138
+      },
+      {
+       "t": "00:30",
+       "n": 14,
+       "med": 138
+      },
+      {
+       "t": "01:00",
+       "n": 14,
+       "med": 139
+      },
+      {
+       "t": "01:30",
+       "n": 14,
+       "med": 141
+      },
+      {
+       "t": "02:00",
+       "n": 14,
+       "med": 142
+      },
+      {
+       "t": "02:30",
+       "n": 14,
+       "med": 144
+      },
+      {
+       "t": "03:00",
+       "n": 14,
+       "med": 146
+      },
+      {
+       "t": "03:30",
+       "n": 14,
+       "med": 148
+      },
+      {
+       "t": "04:00",
+       "n": 14,
+       "med": 150
+      },
+      {
+       "t": "04:30",
+       "n": 14,
+       "med": 153
+      },
+      {
+       "t": "05:00",
+       "n": 14,
+       "med": 155
+      },
+      {
+       "t": "05:30",
+       "n": 14,
+       "med": 157
+      },
+      {
+       "t": "06:00",
+       "n": 14,
+       "med": 160
+      },
+      {
+       "t": "06:30",
+       "n": 14,
+       "med": 162
+      },
+      {
+       "t": "07:00",
+       "n": 14,
+       "med": 164
+      },
+      {
+       "t": "07:30",
+       "n": 14,
+       "med": 166
+      },
+      {
+       "t": "08:00",
+       "n": 14,
+       "med": 168
+      },
+      {
+       "t": "08:30",
+       "n": 14,
+       "med": 169
+      },
+      {
+       "t": "09:00",
+       "n": 14,
+       "med": 171
+      },
+      {
+       "t": "09:30",
+       "n": 14,
+       "med": 172
+      },
+      {
+       "t": "10:00",
+       "n": 14,
+       "med": 174
+      },
+      {
+       "t": "10:30",
+       "n": 14,
+       "med": 177
+      },
+      {
+       "t": "11:00",
+       "n": 14,
+       "med": 182
+      },
+      {
+       "t": "11:30",
+       "n": 14,
+       "med": 190
+      },
+      {
+       "t": "12:00",
+       "n": 14,
+       "med": 201
+      },
+      {
+       "t": "12:30",
+       "n": 14,
+       "med": 212
+      },
+      {
+       "t": "13:00",
+       "n": 14,
+       "med": 222
+      },
+      {
+       "t": "13:30",
+       "n": 14,
+       "med": 224
+      },
+      {
+       "t": "14:00",
+       "n": 14,
+       "med": 219
+      },
+      {
+       "t": "14:30",
+       "n": 14,
+       "med": 207
+      },
+      {
+       "t": "15:00",
+       "n": 14,
+       "med": 192
+      },
+      {
+       "t": "15:30",
+       "n": 14,
+       "med": 179
+      },
+      {
+       "t": "16:00",
+       "n": 14,
+       "med": 168
+      },
+      {
+       "t": "16:30",
+       "n": 14,
+       "med": 161
+      },
+      {
+       "t": "17:00",
+       "n": 14,
+       "med": 156
+      },
+      {
+       "t": "17:30",
+       "n": 14,
+       "med": 153
+      },
+      {
+       "t": "18:00",
+       "n": 14,
+       "med": 150
+      },
+      {
+       "t": "18:30",
+       "n": 14,
+       "med": 148
+      },
+      {
+       "t": "19:00",
+       "n": 14,
+       "med": 146
+      },
+      {
+       "t": "19:30",
+       "n": 14,
+       "med": 144
+      },
+      {
+       "t": "20:00",
+       "n": 14,
+       "med": 142
+      },
+      {
+       "t": "20:30",
+       "n": 14,
+       "med": 141
+      },
+      {
+       "t": "21:00",
+       "n": 14,
+       "med": 139
+      },
+      {
+       "t": "21:30",
+       "n": 14,
+       "med": 138
+      },
+      {
+       "t": "22:00",
+       "n": 14,
+       "med": 138
+      },
+      {
+       "t": "22:30",
+       "n": 14,
+       "med": 137
+      },
+      {
+       "t": "23:00",
+       "n": 14,
+       "med": 137
+      },
+      {
+       "t": "23:30",
+       "n": 14,
+       "med": 137
+      }
+     ]
+    },
+    "rescue": {
+     "before_period": {
+      "n": 0,
+      "grams": 0,
+      "n_unknown": 0,
+      "n_low_prompt": 0
+     },
+     "trial_period": {
+      "n": 20,
+      "grams": 378,
+      "n_unknown": 0,
+      "n_low_prompt": 16
+     }
+    },
+    "day_rows": {
+     "before_period": [
+      {
+       "date": "2026-05-24",
+       "n_readings": 31,
+       "n_in_range": 22,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 71.0,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-05-25",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-05-26",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-05-27",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-05-28",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-05-29",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-05-30",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-05-31",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-01",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-02",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-03",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-04",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-05",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-06",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-07",
+       "n_readings": 17,
+       "n_in_range": 17,
+       "n_below": 0,
+       "meals": 0,
+       "tir": 100.0,
+       "tbr": 0.0
+      }
+     ],
+     "trial_period": [
+      {
+       "date": "2026-06-07",
+       "n_readings": 31,
+       "n_in_range": 22,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 71.0,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-08",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-09",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-10",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-11",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-12",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-13",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-14",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-15",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-16",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-17",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-18",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-19",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-20",
+       "n_readings": 48,
+       "n_in_range": 39,
+       "n_below": 0,
+       "meals": 3,
+       "tir": 81.2,
+       "tbr": 0.0
+      },
+      {
+       "date": "2026-06-21",
+       "n_readings": 17,
+       "n_in_range": 17,
+       "n_below": 0,
+       "meals": 0,
+       "tir": 100.0,
+       "tbr": 0.0
+      }
+     ]
+    },
+    "days": {
+     "before_period": 15,
+     "trial_period": 15
+    },
+    "meal_arcs": {
+     "block": null,
+     "before_period": {
+      "n_meals": 42,
+      "bins": [
+       {
+        "t": -60,
+        "n": 0
+       },
+       {
+        "t": -45,
+        "n": 41,
+        "med": 166
+       },
+       {
+        "t": -30,
+        "n": 0
+       },
+       {
+        "t": -15,
+        "n": 41,
+        "med": 168
+       },
+       {
+        "t": 0,
+        "n": 0
+       },
+       {
+        "t": 15,
+        "n": 42,
+        "med": 169
+       },
+       {
+        "t": 30,
+        "n": 0
+       },
+       {
+        "t": 45,
+        "n": 42,
+        "med": 171
+       },
+       {
+        "t": 60,
+        "n": 0
+       },
+       {
+        "t": 75,
+        "n": 42,
+        "med": 172
+       },
+       {
+        "t": 90,
+        "n": 0
+       },
+       {
+        "t": 105,
+        "n": 42,
+        "med": 174
+       },
+       {
+        "t": 120,
+        "n": 0
+       },
+       {
+        "t": 135,
+        "n": 42,
+        "med": 177
+       },
+       {
+        "t": 150,
+        "n": 0
+       },
+       {
+        "t": 165,
+        "n": 42,
+        "med": 168
+       },
+       {
+        "t": 180,
+        "n": 0
+       },
+       {
+        "t": 195,
+        "n": 42,
+        "med": 161
+       },
+       {
+        "t": 210,
+        "n": 0
+       },
+       {
+        "t": 225,
+        "n": 42,
+        "med": 156
+       }
+      ]
+     },
+     "trial_period": {
+      "n_meals": 42,
+      "bins": [
+       {
+        "t": -60,
+        "n": 0
+       },
+       {
+        "t": -45,
+        "n": 41,
+        "med": 166
+       },
+       {
+        "t": -30,
+        "n": 0
+       },
+       {
+        "t": -15,
+        "n": 41,
+        "med": 168
+       },
+       {
+        "t": 0,
+        "n": 0
+       },
+       {
+        "t": 15,
+        "n": 42,
+        "med": 169
+       },
+       {
+        "t": 30,
+        "n": 0
+       },
+       {
+        "t": 45,
+        "n": 42,
+        "med": 171
+       },
+       {
+        "t": 60,
+        "n": 0
+       },
+       {
+        "t": 75,
+        "n": 42,
+        "med": 172
+       },
+       {
+        "t": 90,
+        "n": 0
+       },
+       {
+        "t": 105,
+        "n": 42,
+        "med": 174
+       },
+       {
+        "t": 120,
+        "n": 0
+       },
+       {
+        "t": 135,
+        "n": 42,
+        "med": 177
+       },
+       {
+        "t": 150,
+        "n": 0
+       },
+       {
+        "t": 165,
+        "n": 42,
+        "med": 168
+       },
+       {
+        "t": 180,
+        "n": 0
+       },
+       {
+        "t": 195,
+        "n": 42,
+        "med": 161
+       },
+       {
+        "t": 210,
+        "n": 0
+       },
+       {
+        "t": 225,
+        "n": 42,
+        "med": 156
+       }
+      ]
+     }
+    }
+   }
+  }
+ }
+}

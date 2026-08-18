@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Harmonic">
+  <!-- The locked Harmonic mark (#736): a native capital H in a burnt-orange
+       rounded square, the same object the topbar draws in `.cockpit-mark`.
+       There is no wordmark asset; the name is simply set in Inter beside it. -->
+  <rect width="32" height="32" rx="8" fill="#b35b2e"/>
+  <text x="16" y="16" fill="#fffaf3" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
+        font-size="19" font-weight="630" letter-spacing="-.5"
+        text-anchor="middle" dominant-baseline="central">H</text>
+</svg>

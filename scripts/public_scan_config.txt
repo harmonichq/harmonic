@@ -1,0 +1,289 @@
+# Config for the Harmonic public-tree contamination scan (#728, cutover plan
+# Phase 3.1). Grammar is documented in scripts/scan_public_tree.py, which
+# parses this file — read that module before editing this one.
+#
+# Two directives:
+#   span-start <YYYY-MM-DD>          the in-span floor, open-ended
+#   <exact path> | <reason>          a pin; the reason is mandatory
+#   prose-exempt <path> <check> | <reason>
+#   authorized-synthetic <path> | <reason>   clears ONE file to carry rule 2's
+#                                    `authorized` + `synthetic` stamp
+#
+# A pin suppresses the STRUCTURAL rules (1, 3, 4) for one exact path. It never
+# suppresses a rule 5 prose hit: per plan §0.5.5.3 a prose hit in a shipping
+# source file is scrubbed, never pinned, and the scan reports such a finding
+# marked PIN REFUSED rather than honouring the pin.
+#
+# --- Rule 4's OTHER exemption: an in-file marker, not a config directive ---
+# This is NOT a third config directive, and reading one here is the wrong
+# place to look for it: rule 4 (the timestamp-series carrier) also accepts an
+# exemption written IN THE SOURCE FILE ITSELF, because a Python (or other
+# source) file has no top-level JSON document to carry rule 2's stamp — so
+# without a source-file mechanism, rule 4 would fire forever on any invented
+# timestamp series a scrub embeds in code (#728 Task 3; the six synthetic CGM
+# arcs in tests/test_scenario_engine.py are the motivating case).
+#
+# The marker is a comment on the line directly above a top-level assignment:
+#   # SYNTHETIC-FIXTURE: <why this data is invented, what shape it preserves>
+#   _SOME_ARC = (
+#       "17:00:121,17:05:124,..."
+#   )
+# It exempts rule 4 for THAT ONE ASSIGNMENT ONLY (found by bracket balance
+# from the assignment line) — never a whole file, and never rules 1, 3 or 5,
+# which never look for it. A bare marker with nothing after the colon is not
+# a marker (same "reason is mandatory" principle as a pin above) — do not
+# "fix" a rejected marker by writing an empty one; write the reason. See
+# scripts/scan_public_tree.py's synthetic_fixture_spans for the implementation
+# and tests/test_scan_public_tree.py's SyntheticFixtureMarkerTest for proof it
+# cannot be abused (no reason -> no exemption; never reaches rules 1/3/5).
+
+# --- The capture span (§3.1 [R8]) ---------------------------------------
+# The floor below which a date cannot be a real capture. The end stays OPEN
+# because the data accrues daily and any fixed upper bound goes stale between
+# this file's authoring and the scan's run, so an in-span test is
+# `date >= span-start`, evaluated at scan time. Anything dated earlier passes
+# silently — the intended behaviour for invented fixtures such as
+# explore-day.capture.json's 2020 dates. The boundary is what the scan needs;
+# the record it was derived from is not restated here, because the extent of a
+# health record — when it starts, how long it runs, how many events it holds —
+# is itself information about the person it describes.
+span-start 2025-07-01
+
+# --- Pins, ruled by hand and never blanket-exempted by directory (§3.1 [R6])
+# All the unstamped ones are invented round test dates, so this is dry-run
+# cost, not risk.
+#
+# NOTE ON THE COUNTS: the plan's figures below are distinct dates over the
+# whole file; the rule it states counts distinct IN-SPAN dates. Where the two
+# diverge the rule wins, so a pin can read as covering more dates than the
+# scan now attributes to the file. The counts are kept verbatim as the plan
+# recorded them. Measured divergences: uv.lock 78 total / 47 in-span,
+# tests/test_store.py 16 / 13, tests/test_api.py 8 / 7.
+#
+# So tests/test_api.py's pin is EXPECTED to suppress nothing: at 7 in-span
+# dates the file sits one below the rule-3 threshold of 8 and never trips it,
+# and the scan reports the pin under "pins that suppressed nothing". That is
+# the pin being correctly redundant, not the threshold being wrong — do NOT
+# "fix" it by lowering the threshold to 7, which would start flagging files
+# the plan never ruled on. The pin stays as the plan's recorded ruling in case
+# a future edit pushes the file back over the line.
+# frontend/__fixtures__/analysis.json carried a PROVISIONAL pin here for its
+# 31 dates. Phase 0.5.1's regenerated fixture has landed carrying a provenance
+# stamp, so the stamp exempts it and the pin suppressed nothing — re-ruled and
+# removed, as that pin's own text instructed. A pin that suppresses nothing
+# teaches the next reader that pins are decorative.
+uv.lock | 77 in-span dates, package upload stamps (§3.1 [R6])
+tests/test_store.py | 16 invented round test dates (§3.1 [R6])
+frontend/daily-nav.test.js | 16 invented round test dates (§3.1 [R6])
+frontend/__fixtures__/ic-blocks.json | 26 dates, stamped exemplar (§3.1 [R6])
+frontend/cockpit-shell.browser.test.mjs | 12 invented round test dates (§3.1 [R6])
+frontend/day-surface.browser.mjs | 8 invented round test dates (§3.1 [R6])
+tests/test_api.py | 8 invented round test dates (§3.1 [R6])
+mockups/diagnose-event-comparison.synthetic/capture.json | dates a synthetic projection carries in its own source_window field; carries no value, dose or ratio; ships by ruling (§3.1 [R3])
+
+# --- The one ruled prose exemption (§3.1 [R5]) ---------------------------
+# pyproject.toml's `authors` entry is deliberate authorship and stays,
+# which §3.1 rules explicitly while §0.5.5.3 forbids pinning prose. Encoded as
+# its own directive, scoped to the single check it exempts, so it can never
+# silently cover the credential, dose, user-path or dated-event checks on this
+# file, and so no structural pin is ever read as suppressing prose.
+prose-exempt pyproject.toml owner-name | deliberate authorship, ruled to stay (§3.1 [R5])
+# The licence names its licensor for the same reason, and a licence with no
+# licensor named is not a licence. Same class as the pyproject.toml authorship;
+# holds under the pending swap to PolyForm Noncommercial 1.0.0, which also
+# names the licensor.
+# This config is itself a shipping file, and the generated block below
+# RECORDS 136 matched dose texts — so without this line the record of the
+# findings becomes 136 more findings, and the set can never settle. Scoped to
+# dose-ratio alone: the block is generated, digest-guarded (a hand edit fails
+# the config closed), and by construction contains only text already judged
+# non-identifying. The other four prose checks still apply to this file.
+prose-exempt scripts/public_scan_config.txt dose-ratio | the generated baseline records matched dose texts; without this the record of the findings is itself findings (#728)
+prose-exempt LICENSE owner-name | the licensor must be named for the licence to function; deliberate authorship, same class as pyproject.toml (§3.1 [R5])
+
+# --- Files cleared to carry the `authorized` + `synthetic` stamp ---------
+# Rule 2's other three stamp forms say how a file was MADE and are checkable on
+# their face. This one says a human cleared it, and the `authorized` value is
+# free text nobody validates — so granted on the presence of two keys it was a
+# blanket waiver of rule 1, the rule that caught all three contaminated
+# fixtures, available to any JSON that typed them. The clearance is therefore
+# enumerated: the five files below, and nothing else. A NEW file carrying both
+# keys is scanned like any other until it is named here.
+#
+# All five are the Diagnose workstation's committed demo captures, generated
+# from a seeded PRNG and byte-compared against a fresh generator run by
+# scripts/check_demo_fixtures.py on every PR — so their contents are held
+# synthetic mechanically, not by the stamp's say-so. Adding a sixth means
+# reading the file and saying why here.
+authorized-synthetic mockups/diagnose-workstation.synthetic/explore-day.capture.json | seeded-PRNG demo capture, regenerated and byte-compared in CI
+authorized-synthetic mockups/diagnose-workstation.synthetic/explore-exposures.capture.json | seeded-PRNG demo capture, regenerated and byte-compared in CI
+authorized-synthetic mockups/diagnose-workstation.synthetic/ic-blocks.capture.json | seeded-PRNG demo capture, regenerated and byte-compared in CI
+authorized-synthetic mockups/diagnose-workstation.synthetic/ic-blocks-asserting.capture.json | seeded-PRNG demo capture, regenerated and byte-compared in CI
+authorized-synthetic mockups/diagnose-workstation.synthetic/settings-audit.capture.json | seeded-PRNG demo capture, regenerated and byte-compared in CI
+
+# --- The acknowledged rule5-dose-ratio set (§0.5.5.3, #728) --------------
+# Rule 5's dose/ratio term is broad by design and CANNOT reach zero: prose in
+# a dosing application legitimately says "U" and "g/U" — unit names, display
+# thresholds, and pump-programmable rounding precisions that are identical for
+# any pump and identify nobody. Every finding below was individually read and
+# judged on 2026-08-18, each one either INVENTED (a value the code itself
+# constructs) or GENERIC (a unit, a threshold, a documented precision). None
+# is a claim about the data subject. They are acknowledged rather than pinned,
+# because plan §0.5.5.3 forbids pinning a prose hit and that refusal stays
+# enforced. The digest exists so that judgement cannot silently rot: the scan
+# fails on ANY change to this set — an addition, a removal, or a one-for-one
+# swap that a bare count would wave through — and any change re-opens the
+# question for a human. Every other rule still hard-fails on a single finding.
+#
+# The digest is keyed on (path, matched text) as a MULTISET — counts included,
+# line numbers excluded. Line numbers are recorded below for audit and printed
+# in the delta, but keying on them would fire this gate on any edit that merely
+# shifts a line, and an operator who re-accepts noise without reading is the
+# same failure as a gate that is red forever. Nothing real is lost: an added
+# hit raises a key's count or adds a key, a removal lowers it, and a swap
+# changes the text. 18 of the pairs below repeat within one file, so a second
+# leak matching an acknowledged generic in the same file still moves a count.
+#
+# The block between the sentinels is GENERATED. Regenerate it with
+#   uv run python scripts/scan_public_tree.py <tree> --accept-dose-ratio-baseline
+# which prints the full delta first. Never edit it by hand: the digest is
+# checked at parse time and a hand edit fails the config closed.
+# BEGIN dose-ratio baseline
+dose-ratio-baseline 136 39422a8136e07717b83efb7e701c13cbfa2b9e49437e072e407acd2780d81d37
+dose-ratio-ack CONTEXT.md:441 | 0.2 U
+dose-ratio-ack CONTEXT.md:65 | 1 U : 36 mg/dL
+dose-ratio-ack CONTEXT.md:87 | 0.5 U
+dose-ratio-ack DESIGN.md:147 | 1 U : 36 mg/dL
+dose-ratio-ack DESIGN.md:165 | 1.23 U
+dose-ratio-ack DESIGN.md:167 | 1.23 U
+dose-ratio-ack ciq_autotune/analyzers/classifiers/evidence.py:6 | 10 U
+dose-ratio-ack ciq_autotune/analyzers/ic.py:164 | 0.5 U
+dose-ratio-ack ciq_autotune/analyzers/ic.py:175 | 0.0 U
+dose-ratio-ack ciq_autotune/analyzers/ic.py:338 | 1U
+dose-ratio-ack ciq_autotune/analyzers/scenario/narrate.py:30 | 1 U
+dose-ratio-ack ciq_autotune/analyzers/scenario/payload.py:72 | 6U
+dose-ratio-ack ciq_autotune/analyzers/scenario_config.py:252 | 0.23 U
+dose-ratio-ack ciq_autotune/analyzers/scenario_config.py:253 | 3.6 U
+dose-ratio-ack ciq_autotune/analyzers/scenario_config.py:258 | 20 U
+dose-ratio-ack ciq_autotune/analyzers/scenario_config.py:261 | 0.7 U
+dose-ratio-ack ciq_autotune/analyzers/tuning_priority.py:16 | 3.6 U
+dose-ratio-ack ciq_autotune/analyzers/tuning_priority.py:201 | 100 U
+dose-ratio-ack ciq_autotune/harm.py:70 | 0.1 U
+dose-ratio-ack ciq_autotune/insulin.py:220 | 0.1 U
+dose-ratio-ack ciq_autotune/pattern_sweep.py:1042 | 1 U
+dose-ratio-ack ciq_autotune/tandemsource_map.py:207 | 65.535 U
+dose-ratio-ack docs/kb/start-here.md:12 | 4.5 U
+dose-ratio-ack frontend/kb.test.js:186 | 0.5 U
+dose-ratio-ack frontend/kb.test.js:206 | 0.5 U
+dose-ratio-ack frontend/plan.js:666 | 0.001 U
+dose-ratio-ack frontend/plan.js:668 | 0.1 g/U
+dose-ratio-ack openspec/specs/behavioral-layer/spec.md:19 | 0.3 U
+dose-ratio-ack openspec/specs/behavioral-layer/spec.md:27 | 10 U
+dose-ratio-ack openspec/specs/safety/spec.md:26 | 0.1 U
+dose-ratio-ack openspec/specs/safety/spec.md:27 | 3.0 U
+dose-ratio-ack openspec/specs/safety/spec.md:64 | 0.05 U
+dose-ratio-ack scripts/gen_chart_builder_fixtures.py:163 | 0.04 U
+dose-ratio-ack tests/test_analyzer_basal.py:109 | 0.9 U
+dose-ratio-ack tests/test_analyzer_basal.py:901 | 0.30 U
+dose-ratio-ack tests/test_analyzer_basal.py:902 | 0.80 U
+dose-ratio-ack tests/test_analyzer_basal.py:905 | 0.30 U
+dose-ratio-ack tests/test_analyzer_coverage.py:437 | 0.6 U
+dose-ratio-ack tests/test_analyzer_coverage.py:752 | 6 g/U
+dose-ratio-ack tests/test_analyzer_ic.py:1006 | 82 g/U
+dose-ratio-ack tests/test_analyzer_ic.py:1092 | 10U
+dose-ratio-ack tests/test_analyzer_ic.py:1179 | 10U
+dose-ratio-ack tests/test_analyzer_ic.py:1180 | 11U
+dose-ratio-ack tests/test_analyzer_ic.py:1318 | 2U
+dose-ratio-ack tests/test_analyzer_ic.py:1464 | 2U
+dose-ratio-ack tests/test_analyzer_ic.py:1490 | 1U
+dose-ratio-ack tests/test_analyzer_ic.py:1501 | 3U
+dose-ratio-ack tests/test_analyzer_ic.py:1503 | 12U
+dose-ratio-ack tests/test_analyzer_ic.py:1527 | 0.6U
+dose-ratio-ack tests/test_analyzer_ic.py:1528 | 1U
+dose-ratio-ack tests/test_analyzer_ic.py:1529 | 0.6U
+dose-ratio-ack tests/test_analyzer_ic.py:1563 | 1.5U
+dose-ratio-ack tests/test_analyzer_ic.py:1571 | 6U
+dose-ratio-ack tests/test_analyzer_ic.py:20 | 6 g/U
+dose-ratio-ack tests/test_analyzer_ic.py:281 | 0.40 U
+dose-ratio-ack tests/test_analyzer_ic.py:410 | 10U
+dose-ratio-ack tests/test_analyzer_ic.py:449 | 5U
+dose-ratio-ack tests/test_analyzer_ic.py:458 | 1U
+dose-ratio-ack tests/test_analyzer_ic.py:468 | 4U
+dose-ratio-ack tests/test_analyzer_ic.py:469 | 3.5U
+dose-ratio-ack tests/test_analyzer_ic.py:501 | 2U
+dose-ratio-ack tests/test_analyzer_ic.py:545 | 1U
+dose-ratio-ack tests/test_analyzer_ic.py:556 | 1.0U
+dose-ratio-ack tests/test_analyzer_ic.py:570 | 1.0U
+dose-ratio-ack tests/test_analyzer_ic.py:582 | 2U
+dose-ratio-ack tests/test_analyzer_ic.py:585 | 2U
+dose-ratio-ack tests/test_analyzer_ic.py:669 | 1U
+dose-ratio-ack tests/test_analyzer_ic.py:670 | 1.5U
+dose-ratio-ack tests/test_analyzer_ic.py:683 | 1U
+dose-ratio-ack tests/test_analyzer_ic.py:710 | 4U
+dose-ratio-ack tests/test_analyzer_ic.py:716 | 1.0U
+dose-ratio-ack tests/test_analyzer_ic.py:736 | 1U
+dose-ratio-ack tests/test_analyzer_ic.py:751 | 1.0U
+dose-ratio-ack tests/test_analyzer_ic.py:765 | 1.8U
+dose-ratio-ack tests/test_analyzer_ic.py:767 | 1.0U
+dose-ratio-ack tests/test_analyzer_ic.py:818 | 2.8U
+dose-ratio-ack tests/test_analyzer_ic.py:990 | 10U
+dose-ratio-ack tests/test_classifier_correction_on_iob.py:11 | 1 U
+dose-ratio-ack tests/test_classifier_correction_on_iob.py:116 | 0.5 U
+dose-ratio-ack tests/test_classifier_correction_on_iob.py:14 | 0.5 U
+dose-ratio-ack tests/test_classifier_correction_on_iob.py:70 | 7.4 U
+dose-ratio-ack tests/test_classifier_correction_stacking.py:124 | 1U
+dose-ratio-ack tests/test_classifier_correction_stacking.py:137 | 0.1 U
+dose-ratio-ack tests/test_classifier_correction_stacking.py:145 | 0.1 U
+dose-ratio-ack tests/test_ic_blocks.py:158 | 4.0 g/U
+dose-ratio-ack tests/test_ic_blocks.py:181 | 12 U
+dose-ratio-ack tests/test_ic_blocks.py:209 | 8.0 g/U
+dose-ratio-ack tests/test_ic_meal_runs.py:248 | 2 U
+dose-ratio-ack tests/test_model.py:214 | 0.09U
+dose-ratio-ack tests/test_model.py:215 | 0.1U
+dose-ratio-ack tests/test_model.py:71 | 5U
+dose-ratio-ack tests/test_preempted_lows.py:97 | 0.06 U
+dose-ratio-ack tests/test_safety_backtest.py:403 | 4U
+dose-ratio-ack tests/test_safety_backtest.py:405 | 2U
+dose-ratio-ack tests/test_safety_backtest.py:416 | 2U
+dose-ratio-ack tests/test_safety_backtest.py:424 | 5U
+dose-ratio-ack tests/test_scenario_engine.py:1095 | 6 U
+dose-ratio-ack tests/test_scenario_engine.py:1105 | 0 U
+dose-ratio-ack tests/test_scenario_engine.py:1118 | 8 U
+dose-ratio-ack tests/test_scenario_engine.py:1217 | 8 U
+dose-ratio-ack tests/test_scenario_engine.py:1707 | 5.5 U
+dose-ratio-ack tests/test_scenario_engine.py:1890 | 4.5 U
+dose-ratio-ack tests/test_scenario_engine.py:1935 | 6 U
+dose-ratio-ack tests/test_scenario_engine.py:934 | 6 U
+dose-ratio-ack tests/test_scenario_engine.py:935 | 4 U
+dose-ratio-ack tests/test_scenario_engine.py:980 | 8 U
+dose-ratio-ack tests/test_scenario_model_view.py:84 | 2 U
+dose-ratio-ack tests/test_scenario_narrate.py:103 | 5U
+dose-ratio-ack tests/test_scenario_narrate.py:16 | 1 U
+dose-ratio-ack tests/test_settings.py:121 | 15 U
+dose-ratio-ack tests/test_settings.py:124 | 0.6 U
+dose-ratio-ack tests/test_settings.py:126 | 7.0 g/U
+dose-ratio-ack tests/test_settings.py:220 | 5 g/U
+dose-ratio-ack tests/test_settling.py:93 | 0.6 U
+dose-ratio-ack tests/test_settling.py:94 | 0.9 U
+dose-ratio-ack tests/test_store.py:434 | 5.4U
+dose-ratio-ack tests/test_store.py:435 | 4.0U
+dose-ratio-ack tests/test_tandemsource_map_real.py:94 | 65.535 U
+dose-ratio-ack tests/test_tuning_priority.py:682 | 0.7 U
+dose-ratio-ack tests/test_tuning_priority.py:683 | 100 U
+dose-ratio-ack tests/test_tuning_priority.py:710 | 20 U
+dose-ratio-ack tests/test_tuning_priority.py:754 | 3.0 U
+dose-ratio-ack tests/test_tuning_priority.py:767 | 35 U
+dose-ratio-ack tests/test_tuning_priority.py:77 | 0.2 U
+dose-ratio-ack tests/test_tuning_priority.py:78 | 0.2 U
+dose-ratio-ack tests/test_user_correction_provenance.py:103 | 0.5U
+dose-ratio-ack tests/test_user_correction_provenance.py:104 | 0.5U
+dose-ratio-ack tests/test_user_correction_provenance.py:109 | 8.5U
+dose-ratio-ack tests/test_user_correction_provenance.py:55 | 1U
+dose-ratio-ack tests/test_user_correction_provenance.py:56 | 1U
+dose-ratio-ack tests/test_user_correction_provenance.py:68 | 0.4U
+dose-ratio-ack tests/test_user_correction_provenance.py:69 | 1U
+dose-ratio-ack tests/test_user_correction_provenance.py:7 | 1U
+dose-ratio-ack tests/test_user_correction_provenance.py:82 | 1U
+dose-ratio-ack tests/test_user_correction_provenance.py:83 | 1U
+dose-ratio-ack tests/test_user_correction_provenance.py:97 | 1.0U
+# END dose-ratio baseline

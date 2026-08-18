@@ -1,0 +1,30 @@
+{
+ "_generated_by": "scripts/gen_annotation_fixtures.py",
+ "_note": "SYNTHETIC. The sentences the engine really emits, produced by running the real analyzers — never hand-written or sanitized. Regenerate with `python3 scripts/gen_annotation_fixtures.py`.",
+ "basal": {
+  "capped (lower)": "a step down, limited to 20% below the set rate",
+  "capped (raise)": "a step up, limited to 20% above the set rate",
+  "held (recurring-low gate)": "a low printed at this hour, so a step up is withheld and the rate stays as it is",
+  "insufficient evidence": "not enough nights of steady data yet to point one way",
+  "lower": "one cautious step down is supported at this time",
+  "lower (recurring lows)": "lows keep happening at this hour, so the rate steps down toward the measured rate (20% at most)",
+  "no baseline": "no set rate to step from, so only the measured range is shown",
+  "no change": "the measured rate and the set rate agree, so no change is suggested",
+  "no data": "no nights of steady data at this time yet",
+  "raise": "one cautious step up is supported at this time"
+ },
+ "isf": {
+  "collecting_range_too_wide": "not enough independent fasting nights yet to suggest a change, so overnight data is still collecting",
+  "confirmed": "your fasting data agrees with the set correction factor",
+  "held_after_a_low": "a low after a correction is on record, so the correction factor stays as it is rather than going stronger",
+  "held_rescue_log_incomplete": "rescue-carb history does not cover part of this window, so a quiet stretch cannot be confirmed and the correction factor stays as it is",
+  "no_baseline_measured": "measured overnight sensitivity (no set value to compare with)",
+  "no_baseline_no_data": "not enough steady fasting data yet to measure your correction factor",
+  "no_measurement": "not enough steady fasting data yet to measure your correction factor",
+  "strengthen": "overnight you look more sensitive to insulin than the set value, so corrections can run a little stronger",
+  "watching_not_yet_held": "the overnight reading differs from the set value but has not held across two weekly check-ins, so nothing is suggested yet",
+  "weaken_easing": "corrections keep overshooting into lows, so the correction factor eases weaker",
+  "weaken_easing_disagreeing_measurement": "corrections keep overshooting into lows, so the correction factor eases weaker (the overnight reading points the other way, but it is unsteady and the lows carry the decision)",
+  "weaken_no_target": "corrections keep overshooting into lows, so more overnight data is needed before a new number"
+ }
+}

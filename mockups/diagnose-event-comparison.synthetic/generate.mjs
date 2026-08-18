@@ -1,0 +1,289 @@
+#!/usr/bin/env node
+/* Labeled-synthetic fixture for the #677 browser replay and #694 support lock.
+ * Detector verdicts remain fixture facts. The `visual_support` projection is
+ * generated here, on the server side of the mock boundary, so the browser only
+ * renders Supported / Limited / Withheld and never carries a numeric floor.
+ */
+import { writeFileSync } from 'node:fs';
+
+const factors = {
+  meals: ['carb_undercount', 'late_bolus', 'meal_over_delivery'],
+  lows: ['over_treated_low', 'correction_on_iob', 'correction_stacking'],
+};
+const labels = {
+  carb_undercount: 'Carb undercount',
+  late_bolus: 'Late bolus',
+  meal_over_delivery: 'Meal over-delivery',
+  over_treated_low: 'Over-treated low',
+  correction_on_iob: 'Correction on active insulin',
+  correction_stacking: 'Correction stacking',
+};
+const plan = [
+  'fired', 'fired', 'fired', 'fired', 'fired', 'fired', 'fired',
+  'near_rule', 'near_rule', 'near_rule', 'near_rule',
+  'neutral', 'neutral', 'neutral', 'neutral', 'neutral', 'neutral',
+  'another_factor', 'excluded', 'excluded',
+];
+const hours = [1, 7, 13, 19, 4, 10, 16, 22, 6, 12, 18, 2, 8, 14, 20, 5, 11, 17, 3, 15];
+const BLOCKS = {
+  overnight: [0, 6], morning: [6, 12], afternoon: [12, 18],
+  evening: [18, 24], all: [0, 24],
+};
+
+const cohortRank = (index) => plan.slice(0, index).filter((cohort) => cohort === plan[index]).length;
+
+function traceIncludes(cohort, rank, minute, start, end) {
+  const span = end - start;
+  const progress = (minute - start) / span;
+  if (cohort === 'fired') {
+    const starts = [0, 10, 15, 20, 25, 30, 35];
+    const ends = [0, 0, 10, 15, 20, 25, 30];
+    return minute >= start + starts[rank] && minute <= end - ends[rank];
+  }
+  if (cohort === 'near_rule') {
+    const dropout = [[.64, .80], [.30, .45], [.47, .62], [.14, .25]][rank];
+    return !(progress >= dropout[0] && progress <= dropout[1]);
+  }
+  if (cohort === 'neutral') {
+    const starts = [0, 0, 5, 10, 15, 20];
+    const ends = [0, 5, 10, 15, 20, 25];
+    return minute >= start + starts[rank] && minute <= end - ends[rank];
+  }
+  return true;
+}
+
+function cgm(view, index) {
+  const [start, end] = view === 'meals' ? [-60, 300] : [-300, 120];
+  const cohort = plan[index];
+  const rank = cohortRank(index);
+  const spread = {
+    fired: [-30, -18, -8, 1, 12, 22, 36],
+    near_rule: [-38, -12, 18, 43],
+    neutral: [-7, -4, -1, 2, 5, 8],
+    another_factor: [8],
+    excluded: [-3, 4],
+  }[cohort][rank];
+  const offset = { fired: 10, near_rule: 2, neutral: -10, another_factor: 6, excluded: 0 }[cohort] + spread;
+  const rows = [];
+  for (let minute = start; minute <= end; minute += 5) {
+    if (!traceIncludes(cohort, rank, minute, start, end)) continue;
+    let bg;
+    if (view === 'meals') {
+      const rise = minute < 120 ? Math.max(0, minute + 30) * .48 : 72 - (minute - 120) * .25;
+      bg = 128 + Math.max(0, rise) + offset + Math.sin((minute + index * 17) / 24) * (7 + rank);
+    } else {
+      const distance = Math.abs(minute);
+      const low = 150 - Math.max(0, 105 - distance * .48);
+      const rebound = minute > 0 ? minute * .7 : 0;
+      bg = low + rebound + offset + Math.sin((minute + index * 19) / 30) * (5 + rank * .7);
+    }
+    rows.push({ minute, bg: Math.max(42, Math.min(294, Math.round(bg))) });
+  }
+  return rows;
+}
+
+const quantile = (sorted, q) => {
+  if (!sorted.length) return null;
+  const at = (sorted.length - 1) * q;
+  const lo = Math.floor(at);
+  const hi = Math.ceil(at);
+  if (lo === hi) return sorted[lo];
+  return sorted[lo] + (sorted[hi] - sorted[lo]) * (at - lo);
+};
+
+function aggregate(occurrences, window) {
+  const [start, end] = window;
+  const values = new Map();
+  for (let minute = start; minute <= end; minute += 5) values.set(minute, []);
+  for (const item of occurrences) {
+    const occurrenceBins = new Map();
+    for (const point of item.trace.cgm) {
+      const minute = start + Math.round((point.minute - start) / 5) * 5;
+      if (minute < start || minute > end) continue;
+      const existing = occurrenceBins.get(minute);
+      if (!existing || Math.abs(point.minute - minute) < Math.abs(existing.minute - minute)) {
+        occurrenceBins.set(minute, point);
+      }
+    }
+    for (const [minute, point] of occurrenceBins) values.get(minute).push(point.bg);
+  }
+  return [...values].map(([minute, rows]) => {
+    const sorted = rows.sort((a, b) => a - b);
+    return {
+      minute, n: sorted.length,
+      p25: quantile(sorted, .25), p50: quantile(sorted, .5), p75: quantile(sorted, .75),
+    };
+  });
+}
+
+const supportForCount = (count) => count <= 1 ? 'withheld' : count <= 4 ? 'limited' : 'supported';
+
+function pointSupport(count, cohortCount, cohortSupport) {
+  if (count <= 1) return 'withheld';
+  if (count <= 4) return 'limited';
+  if (cohortSupport !== 'supported') return 'limited';
+  return count * 2 >= cohortCount ? 'supported' : 'limited';
+}
+
+function supportRuns(rows, cohortCount, cohortSupport) {
+  const runs = [];
+  for (const row of rows) {
+    const support = pointSupport(row.n, cohortCount, cohortSupport);
+    const prior = runs.at(-1);
+    if (prior && prior.end + 5 === row.minute
+        && prior.n === row.n && prior.support === support) {
+      prior.end = row.minute;
+    } else {
+      runs.push({ start: row.minute, end: row.minute, n: row.n, support });
+    }
+  }
+  return runs.map((run) => `${run.start}|${run.end}|${run.n}|${run.support}`);
+}
+
+function inBlock(item, block) {
+  const hour = Number(item.anchor_t.slice(11, 13));
+  return hour >= block[0] && hour < block[1];
+}
+
+function visualProjection(view, factor, block, variant = 'dense') {
+  const result = { server_owned: true, cohorts: {} };
+  for (const cohort of ['fired', 'near_rule', 'neutral', 'another_factor']) {
+    let occurrences = view.occurrences.filter((item) =>
+      item.routes[factor]?.cohort === cohort && inBlock(item, block));
+    if (variant === 'sparse') occurrences = occurrences.slice(0, 2);
+    if (variant === 'zero-fired' && cohort === 'fired') occurrences = [];
+    const cohortSupport = supportForCount(occurrences.length);
+    result.cohorts[cohort] = {
+      support: cohortSupport,
+      occurrence_ids: occurrences.map((item) => item.id),
+      // Compact fixture-only encoding: start|end|distinct contributors|server
+      // state. Adjacent identical facts are run-length encoded at five minutes.
+      // It keeps the committed manufactured capture reviewable without making
+      // this temporary projection the production interface that #678 owns.
+      points: supportRuns(aggregate(occurrences, view.window), occurrences.length, cohortSupport),
+    };
+  }
+  return result;
+}
+
+function attachVisualSupport(view) {
+  const support = {};
+  for (const factor of view.factors) {
+    for (const [blockName, block] of Object.entries(BLOCKS)) {
+      support[`dense:${factor}:${blockName}`] = visualProjection(view, factor, block);
+    }
+    support[`sparse:${factor}:all`] = visualProjection(view, factor, BLOCKS.all, 'sparse');
+    support[`zero-fired:${factor}:all`] = visualProjection(view, factor, BLOCKS.all, 'zero-fired');
+  }
+  view.visual_support = support;
+  return view;
+}
+
+function routes(view, cohort) {
+  const [primary, second, third] = factors[view];
+  const result = {};
+  for (const factor of factors[view]) {
+    let routed = 'excluded';
+    if (cohort === 'neutral') routed = 'neutral';
+    else if (cohort === 'excluded') routed = 'excluded';
+    else if (cohort === 'near_rule') routed = factor === primary ? 'near_rule' : 'excluded';
+    else if (cohort === 'fired') routed = factor === primary ? 'fired' : 'another_factor';
+    else if (cohort === 'another_factor') routed = factor === second ? 'fired' : 'another_factor';
+    result[factor] = {
+      cohort: routed,
+      provenance: routed === 'near_rule' ? 'synthetic boundary fixture'
+        : routed === 'neutral' ? 'fully judged; no factor matched'
+          : routed === 'excluded' ? 'not safely comparable'
+            : routed === 'another_factor' ? 'another current classifier matched'
+              : 'current classifier matched',
+    };
+    if (routed === 'near_rule') {
+      result[factor].boundary = view === 'meals'
+        ? { implied_carbs_g: 50, logged_carbs_g: 38, ratio: 1.32, gap_g: 12 }
+        : { nadir_mgdl: 70, guarded_rebound_peak_mgdl: 150, live_bar_mgdl: 160 };
+    }
+    if (routed === 'another_factor') result[factor].other_factors = [second];
+  }
+  void third;
+  return result;
+}
+
+function occurrence(view, index) {
+  const day = String(index + 1).padStart(2, '0');
+  const hour = String(hours[index]).padStart(2, '0');
+  const stamp = `2026-08-${day} ${hour}:00:00`;
+  const cohort = plan[index];
+  const primary = factors[view][0];
+  const trace = {
+    cgm: cgm(view, index),
+    boluses: view === 'meals'
+      ? [{ minute: 0, insulin: 3 + index * .1, carbs: 30 + index, completion: 'Completed', seq_num: index + 1 }]
+      : [],
+    suspends: [],
+  };
+  if (view === 'lows') {
+    /* The source rows exercise #698's closed marker contract. Source is
+       deliberately removed before the fixture reaches a renderer. The
+       null-gram row is carried all the way into the committed capture (not
+       filtered out here) so both replay legs — the mock's own inline filter
+       and project.mjs's projection filter — genuinely drop it at render time,
+       instead of it being absent from the fixture before either ever sees
+       it (#711). */
+    const rescueRows = index === 0 ? [
+      { minute: 8, grams: 8, certainty: 'exact', source: 'manual' },
+      { minute: 14, grams: 6, certainty: 'estimate', source: 'rise-prompt' },
+      { minute: 21, grams: 4, certainty: 'unknown', source: 'low-prompt' },
+      { minute: 28, grams: null, certainty: 'unknown', source: 'manual' },
+    ] : [];
+    trace.rescue_carbs = rescueRows
+      .filter((row) => Number.isFinite(row.grams) && row.grams > 0 || row.grams === null)
+      .map(({ source, ...marker }) => marker);
+  }
+  return {
+    id: `${view}-synthetic-${index + 1}`,
+    ep_id: `${view}-ep-${index + 1}`,
+    date: `2026-08-${day}`,
+    anchor_t: stamp,
+    anchor_bg: view === 'meals' ? 132 + index : 68 + (index % 3),
+    worst_bg: view === 'meals' ? 205 + index : 58 + (index % 4),
+    label: view === 'meals' ? 'Completed carb bolus' : 'Low excursion',
+    verdicts: factors[view].map((factor) => ({
+      classifier: factor,
+      matched: routes(view, cohort)[factor].cohort === 'fired',
+      detail: routes(view, cohort)[factor].cohort === 'fired'
+        ? `${labels[factor]} matched the current rule.`
+        : `${labels[factor]} did not match the current rule.`,
+      evidence_tier: 'observed',
+      silence_reason: routes(view, cohort)[factor].cohort === 'near_rule' ? 'under_threshold' : 'no_trigger',
+    })),
+    routes: routes(view, cohort),
+    trace,
+    ...(view === 'meals' ? { anchor_bolus: { seq_num: index + 1, carbs: 30 + index, insulin: 3 + index * .1 } } : {}),
+  };
+}
+
+const capture = {
+  schema: 'issue-677-event-comparison-capture-v1',
+  fixture: 'labeled-synthetic',
+  source_window: { start: '2026-07-13', end: '2026-08-11' },
+  views: {
+    meals: attachVisualSupport({
+      anchor: 'completed carb-bolus', window: [-60, 300],
+      factors: factors.meals, default_factor: 'carb_undercount',
+      factor_labels: Object.fromEntries(factors.meals.map((key) => [key, labels[key]])),
+      occurrences: plan.map((_, index) => occurrence('meals', index)),
+    }),
+    lows: attachVisualSupport({
+      anchor: 'excursion nadir', window: [-300, 120],
+      factors: factors.lows, default_factor: 'over_treated_low',
+      factor_labels: Object.fromEntries(factors.lows.map((key) => [key, labels[key]])),
+      occurrences: plan.map((_, index) => occurrence('lows', index)),
+    }),
+  },
+};
+const serialized = JSON.stringify(capture, null, 2) + '\n';
+if (process.argv.includes('--write')) {
+  writeFileSync(new URL('./capture.json', import.meta.url), serialized);
+} else {
+  process.stdout.write(serialized);
+}

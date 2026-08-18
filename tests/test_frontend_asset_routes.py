@@ -1,0 +1,109 @@
+"""Guard: every local frontend asset reachable from index.html has a route.
+
+api.py serves frontend/index.html and its sibling assets via an explicit
+per-file FileResponse whitelist (no StaticFiles mount, see api.py's routes
+around the ``_FRONTEND_DIR`` block). A locally imported module without a route
+404s after the page loads, so walk the static module graph rather than only the
+assets index.html names directly.
+"""
+
+import re
+import unittest
+from pathlib import Path
+from typing import Optional
+
+
+_FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
+_FRONTEND_INDEX = _FRONTEND_DIR / "index.html"
+_API = _FRONTEND_DIR.parent / "ciq_autotune" / "api.py"
+
+# Local <script src=...> and <link href=...> references from index.html. The
+# value is resolved below so nested frontend paths work too.
+_HTML_ASSET_REF = re.compile(
+    r'''<(?:script|link)\b[^>]*?\b(?:src|href)=["']([^"']+)["']''', re.IGNORECASE
+)
+_INLINE_MODULE = re.compile(
+    r'''<script\b[^>]*\btype=["']module["'][^>]*>(.*?)</script>''',
+    re.IGNORECASE | re.DOTALL,
+)
+# ES static imports and re-exports, including side-effect imports. Dynamic
+# import() is deliberately excluded: it cannot be determined from this graph.
+_MODULE_SPECIFIER = re.compile(
+    r'''\b(?:import\s+(?:[\w*${},\s]+?\s+from\s+)?|export\s+(?:[\w*${},\s]+?\s+from\s+))["']([^"']+)["']'''
+)
+_GET_ROUTE = re.compile(r'''@app\.get\(\s*["']([^"']+)["']''')
+
+
+def _local_path(specifier: str, importer: Path) -> Optional[Path]:
+    """Return a local frontend path for a relative specifier, if it has one."""
+    if not specifier.startswith("."):
+        return None
+    path = (importer.parent / specifier).resolve()
+    try:
+        path.relative_to(_FRONTEND_DIR)
+    except ValueError:
+        return None
+    return path
+
+
+def _module_specifiers(source: str) -> set[str]:
+    return set(_MODULE_SPECIFIER.findall(source))
+
+
+def _local_assets() -> set[Path]:
+    """Walk index.html's local asset graph without revisiting modules."""
+    index = _FRONTEND_INDEX.read_text()
+    pending = {
+        path
+        for specifier in _HTML_ASSET_REF.findall(index)
+        if (path := _local_path(specifier, _FRONTEND_INDEX)) is not None
+    }
+    pending.update(
+        path
+        for block in _INLINE_MODULE.findall(index)
+        for specifier in _module_specifiers(block)
+        if (path := _local_path(specifier, _FRONTEND_INDEX)) is not None
+    )
+
+    assets = set()
+    while pending:
+        asset = pending.pop()
+        if asset in assets:
+            continue
+        assets.add(asset)
+        if asset.suffix != ".js" or not asset.is_file():
+            continue
+        pending.update(
+            path
+            for specifier in _module_specifiers(asset.read_text())
+            if (path := _local_path(specifier, asset)) is not None and path not in assets
+        )
+    return assets
+
+
+def _served_paths() -> set[str]:
+    """Read the explicit GET paths declared by api.py's hand-written routes."""
+    return set(_GET_ROUTE.findall(_API.read_text()))
+
+
+class FrontendAssetRoutesTest(unittest.TestCase):
+    def test_every_reachable_local_asset_has_a_route(self):
+        assets = _local_assets()
+        paths = {"/" + asset.relative_to(_FRONTEND_DIR).as_posix() for asset in assets}
+        missing = sorted(paths - _served_paths())
+
+        # Sanity: the HTML and inline-module extractors both find known assets,
+        # so a broken extraction cannot pass vacuously.
+        self.assertIn("/tab-routing.js", paths)
+        self.assertIn("/scenario.css", paths)
+
+        self.assertFalse(
+            missing,
+            "Frontend asset route missing for "
+            f"{', '.join(missing)}. Add an explicit @app.get route in "
+            "ciq_autotune/api.py returning FileResponse(_FRONTEND_DIR / <file>).",
+        )
+
+
+if __name__ == "__main__":
+    unittest.main()

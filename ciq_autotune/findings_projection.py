@@ -1,0 +1,577 @@
+"""The Diagnose findings queue as a SERVER-OWNED window projection (#730).
+
+The workstation's level 1 is one ranked findings queue (lock terms 34–45). Given an
+explicit clock window — a pressed preset or a drawn brace — the queue re-scopes in
+place, and *that scoping is decided here*, not in the browser: the caller sends a
+window and receives the window's rows, already classified, merged, anchored, counted
+and ordered. The frontend renders them verbatim and composes nothing (term 40).
+
+Four registers, assigned by one mechanical rule and stamped on every row as
+``register``:
+
+* ``assert`` — a parameter whose backend predicate asserts a direction
+  (``SlotEstimate.asserts_move`` for basal, ``IcBlock.asserts_move`` for I:C, the
+  ISF analyzer's own ``evidence.direction`` for ISF). Contiguous asserting basal
+  slots sharing a direction are ONE row named by its span (term 13).
+* ``held`` — a parameter with a number but no assertion, carrying its hold reason
+  transcribed **verbatim** from the analyzer (``safety_status`` / ``held_reason``).
+  Contiguous held slots sharing a lean merge the same way.
+* ``blind`` — a basal span with zero clean days, with the analyzer's own reason.
+* ``finding`` — one row per behavioral finding NAME (term 35), carrying each family
+  appearance's own window-local ``n of m`` denominators.
+
+Under an explicit window all four registers can appear; the GLOBAL (24 h) queue is
+asserting-only — a quiet parameter is never listed (term 38).
+
+**Window membership is OUTCOME-anchored** (term 39 / ledger D34). A finding sits in
+the window where its *consequence* landed, never where its trigger crossed a
+threshold: over-treated low belongs to the window holding the rebound, so a window
+drawn over the low block itself excludes it. Each lever declares the anchor kind its
+consequence lands on (:func:`~ciq_autotune.analyzers.scenario.levers.outcome_kind`);
+an occurrence attributed to that lever re-anchors to its episode's latest anchor of
+that kind. Nothing is re-anchored in storage — the exposures feed keeps its own
+timestamps and this happens at projection time only.
+
+Numerator and denominator are anchored the SAME way, which is what keeps ``n <= m``:
+if a low's outcome moved out of the window, that low leaves both this finding's count
+and its family's denominator, so a window can never read "3 of 0 lows".
+
+The projection composes no scores. Priority is read from the two places that already
+ship it — scenario ``Pattern.priority`` for behaviors, ``tuning_levers[]`` for
+settings — and rows are ordered priced-first (priority desc), then unpriced by count,
+then the demoted held and blind registers.
+
+It reads the published payload dicts (``/analyze``, ``/explore/exposures``,
+``/scenarios``), not analyzer internals, so a fixture generator can drive the very
+same public interface the API serves.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Dict, List, Optional, Sequence, Tuple
+
+from .analyzers.ic import BLOCK_WINDOW_DAYS
+from .analyzers.scenario.levers import outcome_kind
+from .safety import Status
+
+SCHEMA = "diagnose-findings-v1"
+
+DAY_MINUTES = 1440
+_SLOT_MINUTES = 30
+
+# The basal verdicts that WITHHOLD a move: the analyzer had something to say and
+# declined to name a direction from it. `NO_CHANGE` is deliberately not among them —
+# a slot whose delivery sits inside the noise floor of its programmed rate is quiet,
+# and quiet is quiet (ledger D22): it is never listed, in any window.
+_HELD_STATUSES = frozenset({str(Status.INSUFFICIENT), str(Status.HARM_GATED),
+                            str(Status.NO_BASELINE)})
+# No suggestion at all — the model saw no clean day in this slot.
+_BLIND_STATUS = str(Status.NO_DATA)
+
+# The exposure family a queue row's denominator is counted in, and the noun it is
+# counted with (term 16: every denominator names its own noun). Keyed by the family
+# names `explore_exposures` emits.
+_FAMILY_NOUN = {
+    "lows": "lows",
+    "highs": "highs",
+    "meals": "meals",
+    "correction_clusters": "correction clusters",
+}
+
+# The anchor kind each exposure family holds, so an occurrence can be found from its
+# episode when a lever re-anchors it (the inverse of `explore_exposures._FAMILY_FOR_KIND`).
+_KIND_FOR_FAMILY = {"lows": "low", "meals": "meal", "highs": "high",
+                    "correction_clusters": "correction"}
+
+# Register order in the queue: asserting and counted rows share the ranked head,
+# held and blind follow in the demoted register (term 38).
+_REGISTER_RANK = {"assert": 0, "finding": 0, "held": 1, "blind": 2}
+
+
+def _hhmm(minute: int) -> str:
+    """``330`` -> ``"05:30"``; the day's far edge prints as ``24:00``, not ``00:00``."""
+    if minute == DAY_MINUTES:
+        return "24:00"
+    return f"{minute // 60:02d}:{minute % 60:02d}"
+
+
+def _span_label(start_min: int, end_min: int) -> str:
+    """A parameter row's own name for its extent: one slot reads as its start."""
+    if (start_min + _SLOT_MINUTES) % DAY_MINUTES == end_min % DAY_MINUTES:
+        return _hhmm(start_min)
+    return f"{_hhmm(start_min)} to {_hhmm(end_min)}"
+
+
+def _segments(start_min: int, end_min: int) -> List[Tuple[int, int]]:
+    """Linear pieces of a clock interval on the circular day.
+
+    ``end_min <= start_min`` wraps past midnight (the I:C block convention), so it
+    yields two pieces; everything else is one.
+    """
+    if end_min > start_min:
+        return [(start_min, end_min)]
+    return [(start_min, DAY_MINUTES), (0, end_min)]
+
+
+def _overlaps(pieces: Sequence[Tuple[int, int]],
+              window: Sequence[Tuple[int, int]]) -> bool:
+    return any(max(a, c) < min(b, d) for a, b in pieces for c, d in window)
+
+
+def _contains(minute: int, window: Sequence[Tuple[int, int]]) -> bool:
+    return any(a <= minute < b for a, b in window)
+
+
+def _minute_of(stamp: str) -> int:
+    """Minutes past midnight of an exposures occurrence timestamp (``... HH:MM:SS``)."""
+    return int(stamp[11:13]) * 60 + int(stamp[14:16])
+
+
+@dataclass(frozen=True)
+class WindowQuery:
+    """The clock window a projection answers for — the whole day, or one interval.
+
+    ``start_min``/``end_min`` are minutes past midnight on the circular day, half-open
+    ``[start, end)``; ``end_min <= start_min`` wraps past midnight (an Overnight preset
+    is 1320 -> 360). The whole day is *not* a window: it is the unscoped global queue,
+    which is asserting-only (term 38).
+    """
+
+    start_min: Optional[int] = None
+    end_min: Optional[int] = None
+
+    @classmethod
+    def whole_day(cls) -> "WindowQuery":
+        return cls()
+
+    @classmethod
+    def clock(cls, start_min: int, end_min: int) -> "WindowQuery":
+        for name, value in (("start_min", start_min), ("end_min", end_min)):
+            if not isinstance(value, int) or isinstance(value, bool):
+                raise ValueError(f"{name} must be minutes past midnight")
+            if not 0 <= value <= DAY_MINUTES:
+                raise ValueError(f"{name} must be within 0..{DAY_MINUTES}")
+        if start_min % DAY_MINUTES == end_min % DAY_MINUTES:
+            raise ValueError("a window must span some part of the day")
+        return cls(start_min, end_min)
+
+    @property
+    def scoped(self) -> bool:
+        return self.start_min is not None
+
+    def _window(self) -> List[Tuple[int, int]]:
+        if not self.scoped:
+            return [(0, DAY_MINUTES)]
+        return _segments(self.start_min % DAY_MINUTES, self.end_min)
+
+    def to_dict(self) -> dict:
+        return {
+            "scoped": self.scoped,
+            "start_min": self.start_min,
+            "end_min": self.end_min,
+            "label": (None if not self.scoped
+                      else f"{_hhmm(self.start_min % DAY_MINUTES)}–{_hhmm(self.end_min)}"),
+        }
+
+
+@dataclass(frozen=True)
+class FindingsProjection:
+    """One window's worth of analysis, with all queue policy behind ``project``.
+
+    Holds the three published payloads it projects from — the ``/analyze`` result,
+    the ``/explore/exposures`` feed and the ``/scenarios`` report — so the same
+    public interface serves the API and the fixture generator.
+    """
+
+    _analysis: dict
+    _exposures: dict
+    _scenarios: dict
+
+    def project(self, query: WindowQuery) -> dict:
+        window = query._window()
+        rows = self._parameter_rows(window, scoped=query.scoped)
+        rows += self._finding_rows(window)
+        rows.sort(key=_sort_key)
+        counts = {name: 0 for name in ("assert", "held", "blind", "finding")}
+        for row in rows:
+            counts[row["register"]] += 1
+        return {
+            "schema": SCHEMA,
+            "window": query.to_dict(),
+            "findings_window": {
+                "days": self._analysis.get("window_days"),
+                **(self._exposures.get("window") or {}),
+            },
+            "rows": rows,
+            # Keyed by the register name each row carries, so a count and a row can
+            # never be read as two different vocabularies.
+            "counts": counts,
+        }
+
+    # --- parameters: asserting / held / blind ---------------------------------
+
+    def _parameter_rows(self, window, *, scoped: bool) -> List[dict]:
+        rows = self._basal_rows(window) + self._ic_rows(window) + self._isf_rows()
+        if not scoped:
+            # The global queue is asserting-only: a quiet parameter is never listed
+            # and never named (term 38).
+            rows = [row for row in rows if row["register"] == "assert"]
+        return rows
+
+    def _lever_priority(self, parameter: str) -> Optional[int]:
+        for lever in self._analysis.get("tuning_levers") or []:
+            if lever.get("parameter") == parameter:
+                return lever.get("priority")
+        return None
+
+    def _basal_rows(self, window) -> List[dict]:
+        """Merge the 48 slots into spans, then keep the spans overlapping the window.
+
+        Spans are merged over the WHOLE day before filtering, never clipped to the
+        window: a run of asserting slots is one item that stages whole (term 13), so
+        the row names the run it really is.
+
+        Not :func:`~ciq_autotune.analyzers.tuning_priority._basal_blocks` — that
+        grouping bridges a one-slot gap to price a headline, which would put a
+        non-asserting slot inside a row that claims to move everything it spans.
+        """
+        slots = sorted(self._analysis.get("basal") or [], key=lambda s: s["slot"])
+        spans: List[Tuple[Tuple[str, Optional[str]], List[dict]]] = []
+        for slot in slots:
+            key = _basal_key(slot)
+            if key is None:  # quiet: never listed, and it breaks any run it sits in
+                spans.append((key, [slot]))
+                continue
+            if (spans and spans[-1][0] == key
+                    and spans[-1][1][-1]["slot"] + 1 == slot["slot"]):
+                spans[-1][1].append(slot)
+            else:
+                spans.append((key, [slot]))
+
+        rows = []
+        for key, span in spans:
+            if key is None:
+                continue
+            start_min = span[0]["slot"] * _SLOT_MINUTES
+            end_min = (span[-1]["slot"] + 1) * _SLOT_MINUTES
+            if not _overlaps([(start_min, end_min)], window):
+                continue
+            register, direction = key
+            head = span[0]
+            single = len(span) == 1
+            label = _span_label(start_min, end_min)
+            rows.append(_row(
+                id=f"basal:{start_min}-{end_min}",
+                register=register,
+                kind="setting",
+                parameter="basal_rate",
+                title=_title(f"Basal {label}", register, direction),
+                label=label,
+                priority=(self._lever_priority("basal_rate")
+                          if register == "assert" else None),
+                span={"start_min": start_min, "end_min": end_min, "label": label},
+                direction=direction if register == "assert" else None,
+                lean=direction if register == "held" else None,
+                # A merged run names no single programmed rate, so its numbers stay on
+                # its members rather than becoming an invented span average.
+                current=head.get("current") if single else None,
+                recommended=head.get("recommended") if single else None,
+                estimate=head.get("estimate") if single else None,
+                members=[{"start_min": s["slot"] * _SLOT_MINUTES,
+                          "current": s.get("current"),
+                          "recommended": s.get("recommended"),
+                          "estimate": s.get("estimate"),
+                          "days": s.get("days")} for s in span],
+                # The weakest slot governs how well-supported the whole run is.
+                support={"n": min(s.get("days") or 0 for s in span),
+                         "noun": "clean nights",
+                         "run_days": self._analysis.get("window_days")},
+                # Verbatim, both of them: the cap() verdict string and the
+                # analyzer's own sentence. Neither is rewritten here.
+                reason=head.get("safety_status") if register != "assert" else None,
+                annotation=head.get("annotation"),
+            ))
+        return rows
+
+    def _ic_rows(self, window) -> List[dict]:
+        rows = []
+        for block in self._analysis.get("ic_blocks") or []:
+            start_min, end_min = block["start_min"], block["end_min"]
+            if not _overlaps(_segments(start_min, end_min), window):
+                continue
+            asserts = bool(block.get("asserts_move"))
+            estimate = block.get("estimate") or {}
+            # `held_reason` IS the I:C hold predicate (#523): the analyzer sets it
+            # exactly when a numeric block's band excludes the programmed value and a
+            # gate withheld the move. A block whose band agrees, or that is still
+            # collecting, is quiet — never re-derived here from the band.
+            if not asserts and not block.get("held_reason"):
+                continue
+            register = "assert" if asserts else "held"
+            label = _span_label(start_min, end_min)
+            direction = (block.get("direction") if asserts
+                         else _lean(block.get("current"), estimate.get("value")))
+            rows.append(_row(
+                id=f"ic:{block['block_id']}",
+                register=register,
+                kind="setting",
+                parameter="carb_ratio",
+                title=_title(f"I:C {label}", register, direction),
+                label=block.get("label"),
+                priority=(self._lever_priority("carb_ratio") if asserts else None),
+                span={"start_min": start_min, "end_min": end_min, "label": label},
+                direction=direction if asserts else None,
+                lean=direction if not asserts else None,
+                current=block.get("current_values", [None])[0]
+                if block.get("current_values") else None,
+                recommended=block.get("recommended"),
+                estimate=estimate,
+                support={"n": block.get("n_runs"), "noun": "meal runs",
+                         "run_days": BLOCK_WINDOW_DAYS},
+                reason=(block.get("held_reason") or block.get("annotation")
+                        if not asserts else None),
+                annotation=block.get("annotation"),
+            ))
+        return rows
+
+    def _isf_rows(self) -> List[dict]:
+        """ISF is one value for the whole day (term 31), so it meets every window.
+
+        Its verdict is the analyzer's own ``evidence.direction`` — the one ISF
+        predicate — never re-derived from the band and the programmed value.
+
+        Unlike basal, a no-direction ISF with a number is HELD rather than quiet: the
+        parameter is one row for the whole day and its analyzer always says in words
+        why it is not moving (a band spanning the programmed value included), where a
+        basal slot inside its noise floor has nothing to say and there are 47 more of
+        them. Term 31's amendment expects exactly this row under an explicit window.
+        """
+        rows = []
+        for row in self._analysis.get("isf") or []:
+            evidence = row.get("evidence") or {}
+            direction = evidence.get("direction")
+            estimate = row.get("estimate") or {}
+            if direction is None and estimate.get("value") is None:
+                continue
+            register = "assert" if direction is not None else "held"
+            rows.append(_row(
+                id="isf",
+                register=register,
+                kind="setting",
+                parameter="isf",
+                title=_title("ISF", register, direction),
+                label=row.get("label"),
+                priority=self._lever_priority("isf") if direction is not None else None,
+                span=None,
+                direction=direction,
+                lean=None,
+                current=row.get("current"),
+                recommended=row.get("recommended"),
+                estimate=estimate,
+                support={"n": len(evidence.get("night_fits") or []),
+                         "noun": "fasting nights",
+                         "run_days": self._analysis.get("window_days")},
+                reason=row.get("annotation") if direction is None else None,
+                annotation=row.get("annotation"),
+            ))
+        return rows
+
+    # --- findings: outcome-anchored membership + window-local denominators -----
+
+    def _finding_rows(self, window) -> List[dict]:
+        families = (self._exposures.get("exposures") or {})
+        anchors = _episode_anchors(families)
+
+        # Every occurrence, re-anchored to its finding's outcome, kept only where
+        # that outcome lands inside the window. The family denominator is filtered
+        # by the same anchor, so it can never be smaller than what it denominates.
+        in_window: Dict[str, List[dict]] = {}
+        for family, payload in families.items():
+            kept = [
+                occurrence for occurrence in payload.get("occurrences") or []
+                if _contains(_outcome_minute(occurrence, anchors), window)
+            ]
+            in_window[family] = kept
+
+        by_lever: Dict[str, dict] = {}
+        for family, occurrences in in_window.items():
+            denominator = len(occurrences)
+            counted: Dict[str, List[dict]] = {}
+            for occurrence in occurrences:
+                lever = occurrence.get("cause_lever")
+                if lever is None:
+                    continue
+                counted.setdefault(lever, []).append(occurrence)
+            for lever, hits in counted.items():
+                entry = by_lever.setdefault(lever, {
+                    "title": hits[0].get("cause_title"),
+                    "appearances": [],
+                    "episodes": set(),
+                })
+                entry["appearances"].append({
+                    "family": family,
+                    "noun": _FAMILY_NOUN.get(family, family),
+                    "n": len(hits),
+                    "m": denominator,
+                })
+                entry["episodes"].update(hit.get("ep_id") for hit in hits)
+
+        priced = _pattern_priorities(self._scenarios)
+        rows = []
+        for lever, entry in by_lever.items():
+            entry["appearances"].sort(key=lambda a: a["family"])
+            rows.append(_row(
+                id=f"finding:{lever}",
+                register="finding",
+                kind="habit",
+                lever=lever,
+                title=entry["title"],
+                priority=priced.get(lever),
+                appearances=entry["appearances"],
+                # Episodes, not occurrences: one episode showing up in two families
+                # is one thing that happened, and the count that orders the unpriced
+                # tail must say so.
+                episodes=len(entry["episodes"]),
+            ))
+        return rows
+
+
+def _basal_key(slot: dict) -> Optional[Tuple[str, Optional[str]]]:
+    """A slot's ``(register, direction)`` — the pair contiguous slots merge on — or
+    ``None`` for a quiet slot, which is no row at all.
+
+    Asserting is read first, so a zero-clean-day slot the harm layer moved down reads
+    as the move it is rather than as blind.
+    """
+    if slot.get("asserts_move"):
+        return "assert", slot.get("direction")
+    status = slot.get("safety_status")
+    if status == _BLIND_STATUS:
+        return "blind", None
+    if status in _HELD_STATUSES:
+        return "held", _lean(slot.get("current"),
+                             (slot.get("estimate") or {}).get("value"))
+    return None
+
+
+def _lean(current: Optional[float], value: Optional[float]) -> Optional[str]:
+    """Which way a held estimate sits against the programmed value.
+
+    A lean is not a direction: nothing asserts here, and the queue prints it as
+    "leaning raise" (term 14). It is computed on the server for the same reason the
+    direction is — the frontend derives neither (#273/#465).
+    """
+    if current is None or value is None or value == current:
+        return None
+    return "raise" if value > current else "lower"
+
+
+def _title(name: str, register: str, direction: Optional[str]) -> str:
+    if direction is None:
+        return name
+    if register == "held":
+        return f"{name} · leaning {direction}"
+    return f"{name} · {direction}"
+
+
+def _row(**fields) -> dict:
+    """One queue row, with every key present on every row (absent reads as null)."""
+    row = {
+        "id": None, "register": None, "kind": None, "title": None, "priority": None,
+        "parameter": None, "label": None, "span": None, "direction": None,
+        "lean": None, "current": None, "recommended": None, "estimate": None,
+        "support": None, "reason": None, "annotation": None, "members": None,
+        "lever": None, "appearances": None, "episodes": None,
+    }
+    row.update(fields)
+    return row
+
+
+def _sort_key(row: dict):
+    """The queue's one order: priced rows by priority desc, then unpriced rows by
+    count desc, then the demoted held and blind registers in clock order (terms
+    22 / 38). Every tie falls through to a stable, data-derived key so two runs of
+    the same window always return the same list."""
+    span = row.get("span") or {}
+    return (
+        _REGISTER_RANK[row["register"]],
+        0 if row["priority"] is not None else 1,
+        -(row["priority"] or 0),
+        -(row["episodes"] or 0),
+        span.get("start_min", DAY_MINUTES),
+        row["title"] or "",
+    )
+
+
+def _episode_anchors(families: dict) -> Dict[str, List[Tuple[int, str]]]:
+    """``ep_id -> [(minute, anchor kind)]`` across every family.
+
+    An episode's anchors are split across the family lists by kind, so the outcome
+    anchor of one occurrence generally lives in a *different* family's list.
+    """
+    anchors: Dict[str, List[Tuple[int, str]]] = {}
+    for family, payload in families.items():
+        kind = _KIND_FOR_FAMILY.get(family, family)
+        for occurrence in payload.get("occurrences") or []:
+            anchors.setdefault(occurrence.get("ep_id"), []).append(
+                (_minute_of(occurrence["t"]), occurrence.get("kind", kind)))
+    return anchors
+
+
+def _outcome_minute(occurrence: dict, anchors: Dict[str, List[Tuple[int, str]]]) -> int:
+    """The clock minute this occurrence is a member of a window BY (term 39).
+
+    An occurrence attributed to a lever moves to its episode's latest anchor of the
+    lever's declared outcome kind — the rebound for an over-treated low. An
+    unattributed occurrence *is* its own outcome and does not move, and neither does
+    an attributed one whose episode raised no anchor of that kind.
+    """
+    kind = outcome_kind(occurrence.get("cause_lever"))
+    if kind is not None:
+        landings = [minute for minute, anchor_kind
+                    in anchors.get(occurrence.get("ep_id"), [])
+                    if anchor_kind == kind]
+        if landings:
+            return max(landings)
+    return _minute_of(occurrence["t"])
+
+
+def _pattern_priorities(scenarios: dict) -> Dict[str, int]:
+    """Each lever's already-computed 0–100 priority, surfaced or low-confidence.
+
+    Read, never recomputed: the unified priority ships on the scenario payload and on
+    ``tuning_levers``, and the queue's whole job is to render the server's own order.
+    """
+    priced = {}
+    for pattern in ((scenarios.get("patterns") or [])
+                    + (scenarios.get("low_confidence") or [])):
+        priced.setdefault(pattern["lever"], pattern.get("priority"))
+    return priced
+
+
+def prepare_findings_projection(store, *, window_days: int = 30) -> FindingsProjection:
+    """Read one findings window from ``store`` and keep all queue policy behind
+    :meth:`FindingsProjection.project`.
+
+    The three payloads are the published ones, built by their own modules — this adds
+    no analysis, exactly as the API adds none over ``AnalysisResult``.
+    """
+    from .analyze import analyze
+    from .analyzers.scenario import build_scenarios
+    from .explore_exposures import build_exposures
+
+    analysis = analyze(
+        store, window_days=window_days,
+        # The pooling mode the Diagnose surface already reads in (#85 / #246, ADR
+        # 0032): the queue and the lanes under it must not rank the same slot from
+        # two different estimates.
+        pool_agreeing_basal_regimes=True,
+        carb_entries=store.carb_entries(),
+        prompt_responses=store.prompt_responses(),
+    ).to_dict()
+    return FindingsProjection(
+        _analysis=analysis,
+        _exposures=build_exposures(store, window_days=window_days),
+        _scenarios=build_scenarios(store, window_days=window_days).to_dict(),
+    )

@@ -1,0 +1,860 @@
+{
+ "_generated_by": "scripts/gen_chart_builder_fixtures.py",
+ "_note": "SYNTHETIC. Produced by running the real analyzers and endpoint builders on invented inputs — never hand-written or captured from real data. Regenerate with `python3 scripts/gen_chart_builder_fixtures.py`.",
+ "end": "2024-03-15 17:00:00",
+ "id": "ep-000",
+ "lever": "carb_undercount",
+ "severity": 3100.0,
+ "start": "2024-03-15 12:00:00",
+ "steps": [
+  {
+   "cited_event_refs": [],
+   "cited_window": null,
+   "evidence_tier": "inferred",
+   "t": "2024-03-15 12:00:00",
+   "text": "ran away to 260 mg/dL despite the bolus — the excursion implies ~37 g vs 20 g logged (1.8x), a likely carb undercount"
+  },
+  {
+   "cited_event_refs": [
+    "2024-03-15 13:20:00",
+    "2024-03-15 13:25:00",
+    "2024-03-15 13:30:00",
+    "2024-03-15 13:35:00",
+    "2024-03-15 13:40:00",
+    "2024-03-15 13:45:00",
+    "2024-03-15 13:50:00",
+    "2024-03-15 13:55:00",
+    "2024-03-15 14:00:00",
+    "2024-03-15 14:05:00",
+    "2024-03-15 14:10:00",
+    "2024-03-15 14:15:00"
+   ],
+   "cited_window": null,
+   "evidence_tier": "observed",
+   "t": "2024-03-15 13:20:00",
+   "text": "Control-IQ suspended basal for 55 min"
+  },
+  {
+   "cited_event_refs": [
+    "2024-03-15 14:15:00"
+   ],
+   "cited_window": null,
+   "evidence_tier": "inferred",
+   "t": "2024-03-15 14:15:00",
+   "text": "BG bottomed at 62 mg/dL — insulin on board likely over-shot, driving it low"
+  }
+ ],
+ "trigger": "meal",
+ "window": {
+  "basal": [
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 11:30:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 11:35:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 11:40:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 11:45:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 11:50:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 11:55:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 12:00:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 12:05:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 12:10:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 12:15:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 12:20:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 12:25:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 12:30:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 12:35:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 12:40:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 12:45:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 12:50:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 12:55:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 13:00:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 13:05:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 13:10:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 13:15:00"
+   },
+   {
+    "basal_rate": 0.0,
+    "delivery_type": "algorithmDelivery (control-iq suspension)",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 13:20:00"
+   },
+   {
+    "basal_rate": 0.0,
+    "delivery_type": "algorithmDelivery (control-iq suspension)",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 13:25:00"
+   },
+   {
+    "basal_rate": 0.0,
+    "delivery_type": "algorithmDelivery (control-iq suspension)",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 13:30:00"
+   },
+   {
+    "basal_rate": 0.0,
+    "delivery_type": "algorithmDelivery (control-iq suspension)",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 13:35:00"
+   },
+   {
+    "basal_rate": 0.0,
+    "delivery_type": "algorithmDelivery (control-iq suspension)",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 13:40:00"
+   },
+   {
+    "basal_rate": 0.0,
+    "delivery_type": "algorithmDelivery (control-iq suspension)",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 13:45:00"
+   },
+   {
+    "basal_rate": 0.0,
+    "delivery_type": "algorithmDelivery (control-iq suspension)",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 13:50:00"
+   },
+   {
+    "basal_rate": 0.0,
+    "delivery_type": "algorithmDelivery (control-iq suspension)",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 13:55:00"
+   },
+   {
+    "basal_rate": 0.0,
+    "delivery_type": "algorithmDelivery (control-iq suspension)",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 14:00:00"
+   },
+   {
+    "basal_rate": 0.0,
+    "delivery_type": "algorithmDelivery (control-iq suspension)",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 14:05:00"
+   },
+   {
+    "basal_rate": 0.0,
+    "delivery_type": "algorithmDelivery (control-iq suspension)",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 14:10:00"
+   },
+   {
+    "basal_rate": 0.0,
+    "delivery_type": "algorithmDelivery (control-iq suspension)",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 14:15:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 14:20:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 14:25:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 14:30:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 14:35:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 14:40:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 14:45:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 14:50:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 14:55:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 15:00:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 15:05:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 15:10:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 15:15:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 15:20:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 15:25:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 15:30:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 15:35:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 15:40:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 15:45:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 15:50:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 15:55:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 16:00:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 16:05:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 16:10:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 16:15:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 16:20:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 16:25:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 16:30:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 16:35:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 16:40:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 16:45:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 16:50:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 16:55:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 17:00:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 17:05:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 17:10:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 17:15:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 17:20:00"
+   },
+   {
+    "basal_rate": 0.7,
+    "delivery_type": "algorithmDelivery",
+    "duration_mins": 5.0,
+    "profile_basal_rate": 0.7,
+    "t": "2024-03-15 17:25:00"
+   }
+  ],
+  "boluses": [
+   {
+    "bg": null,
+    "carbs": 20.0,
+    "extended": false,
+    "insulin": 2.0,
+    "t": "2024-03-15 12:00:00"
+   }
+  ],
+  "cgm": [
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 11:30:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 11:35:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 11:40:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 11:45:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 11:50:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 11:55:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 12:00:00"
+   },
+   {
+    "bg": 110.0,
+    "t": "2024-03-15 12:05:00"
+   },
+   {
+    "bg": 120.0,
+    "t": "2024-03-15 12:10:00"
+   },
+   {
+    "bg": 130.0,
+    "t": "2024-03-15 12:15:00"
+   },
+   {
+    "bg": 140.0,
+    "t": "2024-03-15 12:20:00"
+   },
+   {
+    "bg": 150.0,
+    "t": "2024-03-15 12:25:00"
+   },
+   {
+    "bg": 160.0,
+    "t": "2024-03-15 12:30:00"
+   },
+   {
+    "bg": 170.0,
+    "t": "2024-03-15 12:35:00"
+   },
+   {
+    "bg": 180.0,
+    "t": "2024-03-15 12:40:00"
+   },
+   {
+    "bg": 190.0,
+    "t": "2024-03-15 12:45:00"
+   },
+   {
+    "bg": 200.0,
+    "t": "2024-03-15 12:50:00"
+   },
+   {
+    "bg": 210.0,
+    "t": "2024-03-15 12:55:00"
+   },
+   {
+    "bg": 220.0,
+    "t": "2024-03-15 13:00:00"
+   },
+   {
+    "bg": 230.0,
+    "t": "2024-03-15 13:05:00"
+   },
+   {
+    "bg": 240.0,
+    "t": "2024-03-15 13:10:00"
+   },
+   {
+    "bg": 250.0,
+    "t": "2024-03-15 13:15:00"
+   },
+   {
+    "bg": 260.0,
+    "t": "2024-03-15 13:20:00"
+   },
+   {
+    "bg": 242.0,
+    "t": "2024-03-15 13:25:00"
+   },
+   {
+    "bg": 224.0,
+    "t": "2024-03-15 13:30:00"
+   },
+   {
+    "bg": 206.0,
+    "t": "2024-03-15 13:35:00"
+   },
+   {
+    "bg": 188.0,
+    "t": "2024-03-15 13:40:00"
+   },
+   {
+    "bg": 170.0,
+    "t": "2024-03-15 13:45:00"
+   },
+   {
+    "bg": 152.0,
+    "t": "2024-03-15 13:50:00"
+   },
+   {
+    "bg": 134.0,
+    "t": "2024-03-15 13:55:00"
+   },
+   {
+    "bg": 116.0,
+    "t": "2024-03-15 14:00:00"
+   },
+   {
+    "bg": 98.0,
+    "t": "2024-03-15 14:05:00"
+   },
+   {
+    "bg": 80.0,
+    "t": "2024-03-15 14:10:00"
+   },
+   {
+    "bg": 62.0,
+    "t": "2024-03-15 14:15:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 14:20:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 14:25:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 14:30:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 14:35:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 14:40:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 14:45:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 14:50:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 14:55:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 15:00:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 15:05:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 15:10:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 15:15:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 15:20:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 15:25:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 15:30:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 15:35:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 15:40:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 15:45:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 15:50:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 15:55:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 16:00:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 16:05:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 16:10:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 16:15:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 16:20:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 16:25:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 16:30:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 16:35:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 16:40:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 16:45:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 16:50:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 16:55:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 17:00:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 17:05:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 17:10:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 17:15:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 17:20:00"
+   },
+   {
+    "bg": 100.0,
+    "t": "2024-03-15 17:25:00"
+   }
+  ],
+  "end": "2024-03-15 17:30:00",
+  "pump_events": [],
+  "sleep_windows": [],
+  "start": "2024-03-15 11:30:00"
+ },
+ "worst_bg": 62.0
+}

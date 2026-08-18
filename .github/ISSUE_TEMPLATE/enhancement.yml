@@ -1,0 +1,14 @@
+name: Enhancement
+description: A new feature, change, or improvement
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: "Vague is fine — every issue gets read, and you'll be asked here if anything's unclear. This tracker is public, so share only what you're comfortable making public: describe what you saw rather than pasting raw CGM or pump exports."
+  - type: textarea
+    id: what
+    attributes:
+      label: What you want
+      description: The change or capability, and why it matters.
+    validations:
+      required: false

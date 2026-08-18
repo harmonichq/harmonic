@@ -1,0 +1,6326 @@
+{
+ "_generated_by": ".claude/qa/gen_synthetic_fixtures.py",
+ "_note": "SYNTHETIC. Manufactured for the CI behaviour-replay gate \u2014 no real CGM, pump or personal data, every number from a fixed seed. See the module docstring.",
+ "analyze": {
+  "basal": [
+   {
+    "annotation": "too few clean nights to assert a direction here",
+    "asserts_move": false,
+    "current": 0.8,
+    "days": 3,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 1.24,
+     "lo": 0.5,
+     "method": "bootstrap-median",
+     "n": 3,
+     "value": 0.86,
+     "wide": true
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "00:00",
+    "recommended": null,
+    "safety_status": "insufficient evidence",
+    "slot": 0
+   },
+   {
+    "annotation": "delivery matches the programmed rate through these hours",
+    "asserts_move": false,
+    "current": 0.833,
+    "days": 22,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 0.883,
+     "lo": 0.783,
+     "method": "bootstrap-median",
+     "n": 12,
+     "value": 0.833,
+     "wide": false
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "00:30",
+    "recommended": null,
+    "safety_status": "no change",
+    "slot": 1
+   },
+   {
+    "annotation": "delivery matches the programmed rate through these hours",
+    "asserts_move": false,
+    "current": 0.865,
+    "days": 22,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 0.915,
+     "lo": 0.815,
+     "method": "bootstrap-median",
+     "n": 24,
+     "value": 0.865,
+     "wide": false
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "01:00",
+    "recommended": null,
+    "safety_status": "no change",
+    "slot": 2
+   },
+   {
+    "annotation": "delivery matches the programmed rate through these hours",
+    "asserts_move": false,
+    "current": 0.896,
+    "days": 22,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 0.946,
+     "lo": 0.846,
+     "method": "bootstrap-median",
+     "n": 19,
+     "value": 0.896,
+     "wide": false
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "01:30",
+    "recommended": null,
+    "safety_status": "no change",
+    "slot": 3
+   },
+   {
+    "annotation": "delivery matches the programmed rate through these hours",
+    "asserts_move": false,
+    "current": 0.925,
+    "days": 22,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 0.975,
+     "lo": 0.875,
+     "method": "bootstrap-median",
+     "n": 22,
+     "value": 0.925,
+     "wide": false
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "02:00",
+    "recommended": null,
+    "safety_status": "no change",
+    "slot": 4
+   },
+   {
+    "annotation": "delivery matches the programmed rate through these hours",
+    "asserts_move": false,
+    "current": 0.952,
+    "days": 22,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 1.002,
+     "lo": 0.902,
+     "method": "bootstrap-median",
+     "n": 16,
+     "value": 0.952,
+     "wide": false
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "02:30",
+    "recommended": null,
+    "safety_status": "no change",
+    "slot": 5
+   },
+   {
+    "annotation": "delivery matches the programmed rate through these hours",
+    "asserts_move": false,
+    "current": 0.977,
+    "days": 22,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 1.027,
+     "lo": 0.927,
+     "method": "bootstrap-median",
+     "n": 12,
+     "value": 0.977,
+     "wide": false
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "03:00",
+    "recommended": null,
+    "safety_status": "no change",
+    "slot": 6
+   },
+   {
+    "annotation": "too few clean nights to assert a direction here",
+    "asserts_move": false,
+    "current": 0.998,
+    "days": 5,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 1.438,
+     "lo": 0.698,
+     "method": "bootstrap-median",
+     "n": 5,
+     "value": 1.058,
+     "wide": true
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "03:30",
+    "recommended": null,
+    "safety_status": "insufficient evidence",
+    "slot": 7
+   },
+   {
+    "annotation": "delivery matches the programmed rate through these hours",
+    "asserts_move": false,
+    "current": 1.017,
+    "days": 22,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 1.067,
+     "lo": 0.967,
+     "method": "bootstrap-median",
+     "n": 18,
+     "value": 1.017,
+     "wide": false
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "04:00",
+    "recommended": null,
+    "safety_status": "no change",
+    "slot": 8
+   },
+   {
+    "annotation": "delivery matches the programmed rate through these hours",
+    "asserts_move": false,
+    "current": 1.031,
+    "days": 22,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 1.081,
+     "lo": 0.981,
+     "method": "bootstrap-median",
+     "n": 25,
+     "value": 1.031,
+     "wide": false
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "04:30",
+    "recommended": null,
+    "safety_status": "no change",
+    "slot": 9
+   },
+   {
+    "annotation": "delivery matches the programmed rate through these hours",
+    "asserts_move": false,
+    "current": 1.041,
+    "days": 22,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 1.091,
+     "lo": 0.991,
+     "method": "bootstrap-median",
+     "n": 12,
+     "value": 1.041,
+     "wide": false
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "05:00",
+    "recommended": null,
+    "safety_status": "no change",
+    "slot": 10
+   },
+   {
+    "annotation": "delivery matches the programmed rate through these hours",
+    "asserts_move": false,
+    "current": 1.048,
+    "days": 22,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 1.098,
+     "lo": 0.998,
+     "method": "bootstrap-median",
+     "n": 18,
+     "value": 1.048,
+     "wide": false
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "05:30",
+    "recommended": null,
+    "safety_status": "no change",
+    "slot": 11
+   },
+   {
+    "annotation": "delivery matches the programmed rate through these hours",
+    "asserts_move": false,
+    "current": 1.05,
+    "days": 22,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 1.1,
+     "lo": 1.0,
+     "method": "bootstrap-median",
+     "n": 24,
+     "value": 1.05,
+     "wide": false
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "06:00",
+    "recommended": null,
+    "safety_status": "no change",
+    "slot": 12
+   },
+   {
+    "annotation": "delivery matches the programmed rate through these hours",
+    "asserts_move": false,
+    "current": 1.048,
+    "days": 22,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 1.098,
+     "lo": 0.998,
+     "method": "bootstrap-median",
+     "n": 23,
+     "value": 1.048,
+     "wide": false
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "06:30",
+    "recommended": null,
+    "safety_status": "no change",
+    "slot": 13
+   },
+   {
+    "annotation": "a conservative one-step move would raise this slot",
+    "asserts_move": true,
+    "current": 1.041,
+    "days": 20,
+    "direction": "raise",
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 1.371,
+     "lo": 1.041,
+     "method": "bootstrap-median",
+     "n": 20,
+     "value": 1.131,
+     "wide": false
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "07:00",
+    "recommended": 1.131,
+    "safety_status": "raise",
+    "slot": 14
+   },
+   {
+    "annotation": "delivery matches the programmed rate through these hours",
+    "asserts_move": false,
+    "current": 1.031,
+    "days": 22,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 1.081,
+     "lo": 0.981,
+     "method": "bootstrap-median",
+     "n": 25,
+     "value": 1.031,
+     "wide": false
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "07:30",
+    "recommended": null,
+    "safety_status": "no change",
+    "slot": 15
+   },
+   {
+    "annotation": "delivery matches the programmed rate through these hours",
+    "asserts_move": false,
+    "current": 1.017,
+    "days": 22,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 1.067,
+     "lo": 0.967,
+     "method": "bootstrap-median",
+     "n": 17,
+     "value": 1.017,
+     "wide": false
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "08:00",
+    "recommended": null,
+    "safety_status": "no change",
+    "slot": 16
+   },
+   {
+    "annotation": "delivery matches the programmed rate through these hours",
+    "asserts_move": false,
+    "current": 0.998,
+    "days": 22,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 1.048,
+     "lo": 0.948,
+     "method": "bootstrap-median",
+     "n": 14,
+     "value": 0.998,
+     "wide": false
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "08:30",
+    "recommended": null,
+    "safety_status": "no change",
+    "slot": 17
+   },
+   {
+    "annotation": "delivery matches the programmed rate through these hours",
+    "asserts_move": false,
+    "current": 0.977,
+    "days": 22,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 1.027,
+     "lo": 0.927,
+     "method": "bootstrap-median",
+     "n": 20,
+     "value": 0.977,
+     "wide": false
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "09:00",
+    "recommended": null,
+    "safety_status": "no change",
+    "slot": 18
+   },
+   {
+    "annotation": "delivery matches the programmed rate through these hours",
+    "asserts_move": false,
+    "current": 0.952,
+    "days": 22,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 1.002,
+     "lo": 0.902,
+     "method": "bootstrap-median",
+     "n": 24,
+     "value": 0.952,
+     "wide": false
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "09:30",
+    "recommended": null,
+    "safety_status": "no change",
+    "slot": 19
+   },
+   {
+    "annotation": "delivery matches the programmed rate through these hours",
+    "asserts_move": false,
+    "current": 0.925,
+    "days": 22,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 0.975,
+     "lo": 0.875,
+     "method": "bootstrap-median",
+     "n": 21,
+     "value": 0.925,
+     "wide": false
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "10:00",
+    "recommended": null,
+    "safety_status": "no change",
+    "slot": 20
+   },
+   {
+    "annotation": "too few clean nights to assert a direction here",
+    "asserts_move": false,
+    "current": 0.896,
+    "days": 2,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 1.336,
+     "lo": 0.596,
+     "method": "bootstrap-median",
+     "n": 2,
+     "value": 0.956,
+     "wide": true
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "10:30",
+    "recommended": null,
+    "safety_status": "insufficient evidence",
+    "slot": 21
+   },
+   {
+    "annotation": "delivery matches the programmed rate through these hours",
+    "asserts_move": false,
+    "current": 0.865,
+    "days": 22,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 0.915,
+     "lo": 0.815,
+     "method": "bootstrap-median",
+     "n": 12,
+     "value": 0.865,
+     "wide": false
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "11:00",
+    "recommended": null,
+    "safety_status": "no change",
+    "slot": 22
+   },
+   {
+    "annotation": "delivery matches the programmed rate through these hours",
+    "asserts_move": false,
+    "current": 0.833,
+    "days": 22,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 0.883,
+     "lo": 0.783,
+     "method": "bootstrap-median",
+     "n": 22,
+     "value": 0.833,
+     "wide": false
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "11:30",
+    "recommended": null,
+    "safety_status": "no change",
+    "slot": 23
+   },
+   {
+    "annotation": "delivery matches the programmed rate through these hours",
+    "asserts_move": false,
+    "current": 0.8,
+    "days": 22,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 0.85,
+     "lo": 0.75,
+     "method": "bootstrap-median",
+     "n": 12,
+     "value": 0.8,
+     "wide": false
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "12:00",
+    "recommended": null,
+    "safety_status": "no change",
+    "slot": 24
+   },
+   {
+    "annotation": "delivery matches the programmed rate through these hours",
+    "asserts_move": false,
+    "current": 0.767,
+    "days": 22,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 0.817,
+     "lo": 0.717,
+     "method": "bootstrap-median",
+     "n": 19,
+     "value": 0.767,
+     "wide": false
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "12:30",
+    "recommended": null,
+    "safety_status": "no change",
+    "slot": 25
+   },
+   {
+    "annotation": "delivery matches the programmed rate through these hours",
+    "asserts_move": false,
+    "current": 0.735,
+    "days": 22,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 0.785,
+     "lo": 0.685,
+     "method": "bootstrap-median",
+     "n": 24,
+     "value": 0.735,
+     "wide": false
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "13:00",
+    "recommended": null,
+    "safety_status": "no change",
+    "slot": 26
+   },
+   {
+    "annotation": "delivery matches the programmed rate through these hours",
+    "asserts_move": false,
+    "current": 0.704,
+    "days": 22,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 0.754,
+     "lo": 0.654,
+     "method": "bootstrap-median",
+     "n": 14,
+     "value": 0.704,
+     "wide": false
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "13:30",
+    "recommended": null,
+    "safety_status": "no change",
+    "slot": 27
+   },
+   {
+    "annotation": "too few clean nights to assert a direction here",
+    "asserts_move": false,
+    "current": 0.675,
+    "days": 2,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 1.115,
+     "lo": 0.375,
+     "method": "bootstrap-median",
+     "n": 2,
+     "value": 0.735,
+     "wide": true
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "14:00",
+    "recommended": null,
+    "safety_status": "insufficient evidence",
+    "slot": 28
+   },
+   {
+    "annotation": "delivery matches the programmed rate through these hours",
+    "asserts_move": false,
+    "current": 0.648,
+    "days": 22,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 0.698,
+     "lo": 0.598,
+     "method": "bootstrap-median",
+     "n": 12,
+     "value": 0.648,
+     "wide": false
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "14:30",
+    "recommended": null,
+    "safety_status": "no change",
+    "slot": 29
+   },
+   {
+    "annotation": "delivery matches the programmed rate through these hours",
+    "asserts_move": false,
+    "current": 0.623,
+    "days": 22,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 0.673,
+     "lo": 0.573,
+     "method": "bootstrap-median",
+     "n": 15,
+     "value": 0.623,
+     "wide": false
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "15:00",
+    "recommended": null,
+    "safety_status": "no change",
+    "slot": 30
+   },
+   {
+    "annotation": "delivery matches the programmed rate through these hours",
+    "asserts_move": false,
+    "current": 0.602,
+    "days": 22,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 0.652,
+     "lo": 0.552,
+     "method": "bootstrap-median",
+     "n": 24,
+     "value": 0.602,
+     "wide": false
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "15:30",
+    "recommended": null,
+    "safety_status": "no change",
+    "slot": 31
+   },
+   {
+    "annotation": "delivery matches the programmed rate through these hours",
+    "asserts_move": false,
+    "current": 0.583,
+    "days": 22,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 0.633,
+     "lo": 0.533,
+     "method": "bootstrap-median",
+     "n": 12,
+     "value": 0.583,
+     "wide": false
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "16:00",
+    "recommended": null,
+    "safety_status": "no change",
+    "slot": 32
+   },
+   {
+    "annotation": "delivery matches the programmed rate through these hours",
+    "asserts_move": false,
+    "current": 0.569,
+    "days": 22,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 0.619,
+     "lo": 0.519,
+     "method": "bootstrap-median",
+     "n": 23,
+     "value": 0.569,
+     "wide": false
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "16:30",
+    "recommended": null,
+    "safety_status": "no change",
+    "slot": 33
+   },
+   {
+    "annotation": "delivery matches the programmed rate through these hours",
+    "asserts_move": false,
+    "current": 0.559,
+    "days": 22,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 0.609,
+     "lo": 0.509,
+     "method": "bootstrap-median",
+     "n": 16,
+     "value": 0.559,
+     "wide": false
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "17:00",
+    "recommended": null,
+    "safety_status": "no change",
+    "slot": 34
+   },
+   {
+    "annotation": "too few clean nights to assert a direction here",
+    "asserts_move": false,
+    "current": 0.552,
+    "days": 5,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 0.992,
+     "lo": 0.252,
+     "method": "bootstrap-median",
+     "n": 5,
+     "value": 0.612,
+     "wide": true
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "17:30",
+    "recommended": null,
+    "safety_status": "insufficient evidence",
+    "slot": 35
+   },
+   {
+    "annotation": "delivery matches the programmed rate through these hours",
+    "asserts_move": false,
+    "current": 0.55,
+    "days": 22,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 0.6,
+     "lo": 0.5,
+     "method": "bootstrap-median",
+     "n": 12,
+     "value": 0.55,
+     "wide": false
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "18:00",
+    "recommended": null,
+    "safety_status": "no change",
+    "slot": 36
+   },
+   {
+    "annotation": "delivery matches the programmed rate through these hours",
+    "asserts_move": false,
+    "current": 0.552,
+    "days": 22,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 0.602,
+     "lo": 0.502,
+     "method": "bootstrap-median",
+     "n": 22,
+     "value": 0.552,
+     "wide": false
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "18:30",
+    "recommended": null,
+    "safety_status": "no change",
+    "slot": 37
+   },
+   {
+    "annotation": "delivery matches the programmed rate through these hours",
+    "asserts_move": false,
+    "current": 0.559,
+    "days": 22,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 0.609,
+     "lo": 0.509,
+     "method": "bootstrap-median",
+     "n": 22,
+     "value": 0.559,
+     "wide": false
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "19:00",
+    "recommended": null,
+    "safety_status": "no change",
+    "slot": 38
+   },
+   {
+    "annotation": "delivery matches the programmed rate through these hours",
+    "asserts_move": false,
+    "current": 0.569,
+    "days": 22,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 0.619,
+     "lo": 0.519,
+     "method": "bootstrap-median",
+     "n": 13,
+     "value": 0.569,
+     "wide": false
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "19:30",
+    "recommended": null,
+    "safety_status": "no change",
+    "slot": 39
+   },
+   {
+    "annotation": "delivery matches the programmed rate through these hours",
+    "asserts_move": false,
+    "current": 0.583,
+    "days": 22,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 0.633,
+     "lo": 0.533,
+     "method": "bootstrap-median",
+     "n": 25,
+     "value": 0.583,
+     "wide": false
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "20:00",
+    "recommended": null,
+    "safety_status": "no change",
+    "slot": 40
+   },
+   {
+    "annotation": "delivery matches the programmed rate through these hours",
+    "asserts_move": false,
+    "current": 0.602,
+    "days": 22,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 0.652,
+     "lo": 0.552,
+     "method": "bootstrap-median",
+     "n": 17,
+     "value": 0.602,
+     "wide": false
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "20:30",
+    "recommended": null,
+    "safety_status": "no change",
+    "slot": 41
+   },
+   {
+    "annotation": "too few clean nights to assert a direction here",
+    "asserts_move": false,
+    "current": 0.623,
+    "days": 2,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 1.063,
+     "lo": 0.323,
+     "method": "bootstrap-median",
+     "n": 2,
+     "value": 0.683,
+     "wide": true
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "21:00",
+    "recommended": null,
+    "safety_status": "insufficient evidence",
+    "slot": 42
+   },
+   {
+    "annotation": "delivery matches the programmed rate through these hours",
+    "asserts_move": false,
+    "current": 0.648,
+    "days": 22,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 0.698,
+     "lo": 0.598,
+     "method": "bootstrap-median",
+     "n": 22,
+     "value": 0.648,
+     "wide": false
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "21:30",
+    "recommended": null,
+    "safety_status": "no change",
+    "slot": 43
+   },
+   {
+    "annotation": "delivery matches the programmed rate through these hours",
+    "asserts_move": false,
+    "current": 0.675,
+    "days": 22,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 0.725,
+     "lo": 0.625,
+     "method": "bootstrap-median",
+     "n": 24,
+     "value": 0.675,
+     "wide": false
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "22:00",
+    "recommended": null,
+    "safety_status": "no change",
+    "slot": 44
+   },
+   {
+    "annotation": "delivery matches the programmed rate through these hours",
+    "asserts_move": false,
+    "current": 0.704,
+    "days": 22,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 0.754,
+     "lo": 0.654,
+     "method": "bootstrap-median",
+     "n": 16,
+     "value": 0.704,
+     "wide": false
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "22:30",
+    "recommended": null,
+    "safety_status": "no change",
+    "slot": 45
+   },
+   {
+    "annotation": "delivery matches the programmed rate through these hours",
+    "asserts_move": false,
+    "current": 0.735,
+    "days": 22,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 0.785,
+     "lo": 0.685,
+     "method": "bootstrap-median",
+     "n": 25,
+     "value": 0.735,
+     "wide": false
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "23:00",
+    "recommended": null,
+    "safety_status": "no change",
+    "slot": 46
+   },
+   {
+    "annotation": "delivery matches the programmed rate through these hours",
+    "asserts_move": false,
+    "current": 0.767,
+    "days": 22,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 0.817,
+     "lo": 0.717,
+     "method": "bootstrap-median",
+     "n": 13,
+     "value": 0.767,
+     "wide": false
+    },
+    "evidence": {
+     "points": []
+    },
+    "label": "23:30",
+    "recommended": null,
+    "safety_status": "no change",
+    "slot": 47
+   }
+  ],
+  "data_quality": {
+   "counts": {
+    "boluses": 18,
+    "cgm": 864
+   }
+  },
+  "generated_at": "2020-03-03T00:00:00+00:00",
+  "ic_blocks": [
+   {
+    "annotation": "meal-owned low printed \u2014 the stronger meal-bolus move is withheld",
+    "asserts_move": false,
+    "block_id": 660,
+    "current_values": [
+     5.6
+    ],
+    "end_min": 420,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 5.13,
+     "lo": 4.73,
+     "method": "bootstrap-median",
+     "n": 45,
+     "value": 4.94,
+     "wide": false
+    },
+    "held_reason": "harm gate: a meal-owned low is already printed",
+    "label": "Evening",
+    "member_start_mins": [
+     660
+    ],
+    "n_meals": 274,
+    "n_runs": 45,
+    "recommended": 5.6,
+    "start_min": 660,
+    "state": "numeric"
+   },
+   {
+    "annotation": "too few meal runs in these hours to assert a direction",
+    "asserts_move": false,
+    "block_id": 420,
+    "current_values": [
+     5.6
+    ],
+    "end_min": 660,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 4.75,
+     "lo": 3.81,
+     "method": "bootstrap-median",
+     "n": 2,
+     "value": 4.25,
+     "wide": true
+    },
+    "held_reason": "unmeasured-alone",
+    "label": "Morning",
+    "member_start_mins": [
+     420
+    ],
+    "n_meals": 9,
+    "n_runs": 2,
+    "recommended": null,
+    "start_min": 420,
+    "state": "numeric"
+   }
+  ],
+  "ic_blocks_asserting": [
+   {
+    "annotation": "a conservative one-step move would tighten this ratio",
+    "asserts_move": true,
+    "block_id": 660,
+    "current_values": [
+     5.6
+    ],
+    "end_min": 420,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 5.13,
+     "lo": 4.73,
+     "method": "bootstrap-median",
+     "n": 45,
+     "value": 4.94,
+     "wide": false
+    },
+    "held_reason": null,
+    "label": "Evening",
+    "member_start_mins": [
+     660
+    ],
+    "n_meals": 274,
+    "n_runs": 45,
+    "recommended": 5.3,
+    "start_min": 660,
+    "state": "numeric"
+   },
+   {
+    "annotation": "too few meal runs in these hours to assert a direction",
+    "asserts_move": false,
+    "block_id": 420,
+    "current_values": [
+     5.6
+    ],
+    "end_min": 660,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 4.75,
+     "lo": 3.81,
+     "method": "bootstrap-median",
+     "n": 2,
+     "value": 4.25,
+     "wide": true
+    },
+    "held_reason": "unmeasured-alone",
+    "label": "Morning",
+    "member_start_mins": [
+     420
+    ],
+    "n_meals": 9,
+    "n_runs": 2,
+    "recommended": null,
+    "start_min": 420,
+    "state": "numeric"
+   }
+  ],
+  "isf": [
+   {
+    "annotation": "corrections keep overshooting into lows, so the correction factor eases weaker",
+    "asserts_move": null,
+    "block_id": null,
+    "current": 42.0,
+    "estimate": {
+     "confidence": 0.8,
+     "hi": 46.9,
+     "lo": 18.2,
+     "method": "bootstrap-median",
+     "n": 1583,
+     "value": 31.4,
+     "wide": true
+    },
+    "evidence": {
+     "rest_windows": [
+      {
+       "date": "2020-03-01"
+      },
+      {
+       "date": "2020-03-02"
+      },
+      {
+       "date": "2020-03-03"
+      },
+      {
+       "date": "2020-03-01"
+      },
+      {
+       "date": "2020-03-02"
+      },
+      {
+       "date": "2020-03-03"
+      },
+      {
+       "date": "2020-03-01"
+      },
+      {
+       "date": "2020-03-02"
+      },
+      {
+       "date": "2020-03-03"
+      },
+      {
+       "date": "2020-03-01"
+      },
+      {
+       "date": "2020-03-02"
+      },
+      {
+       "date": "2020-03-03"
+      },
+      {
+       "date": "2020-03-01"
+      },
+      {
+       "date": "2020-03-02"
+      },
+      {
+       "date": "2020-03-03"
+      },
+      {
+       "date": "2020-03-01"
+      },
+      {
+       "date": "2020-03-02"
+      },
+      {
+       "date": "2020-03-03"
+      },
+      {
+       "date": "2020-03-01"
+      },
+      {
+       "date": "2020-03-02"
+      },
+      {
+       "date": "2020-03-03"
+      },
+      {
+       "date": "2020-03-01"
+      },
+      {
+       "date": "2020-03-02"
+      },
+      {
+       "date": "2020-03-03"
+      },
+      {
+       "date": "2020-03-01"
+      },
+      {
+       "date": "2020-03-02"
+      },
+      {
+       "date": "2020-03-03"
+      }
+     ]
+    },
+    "label": "Fasting",
+    "parameter": "isf",
+    "recommended": null,
+    "start_min": 0
+   }
+  ],
+  "window_days": 30
+ },
+ "evidence": {
+  "bin_minutes": 5,
+  "bins": [
+   {
+    "meal_count": 0,
+    "median": 104.3,
+    "minute": 0,
+    "n": 3,
+    "p10": 104.3,
+    "p25": 104.3,
+    "p75": 104.85,
+    "p90": 105.18
+   },
+   {
+    "meal_count": 0,
+    "median": 111.3,
+    "minute": 5,
+    "n": 3,
+    "p10": 101.62,
+    "p25": 105.25,
+    "p75": 111.5,
+    "p90": 111.62
+   },
+   {
+    "meal_count": 0,
+    "median": 103.5,
+    "minute": 10,
+    "n": 3,
+    "p10": 95.58,
+    "p25": 98.55,
+    "p75": 107.35,
+    "p90": 109.66
+   },
+   {
+    "meal_count": 0,
+    "median": 102.9,
+    "minute": 15,
+    "n": 3,
+    "p10": 97.06,
+    "p25": 99.25,
+    "p75": 109.8,
+    "p90": 113.94
+   },
+   {
+    "meal_count": 0,
+    "median": 111.8,
+    "minute": 20,
+    "n": 3,
+    "p10": 109.56,
+    "p25": 110.4,
+    "p75": 112.5,
+    "p90": 112.92
+   },
+   {
+    "meal_count": 0,
+    "median": 109.6,
+    "minute": 25,
+    "n": 3,
+    "p10": 98.8,
+    "p25": 102.85,
+    "p75": 113.4,
+    "p90": 115.68
+   },
+   {
+    "meal_count": 0,
+    "median": 102.4,
+    "minute": 30,
+    "n": 3,
+    "p10": 99.04,
+    "p25": 100.3,
+    "p75": 106.1,
+    "p90": 108.32
+   },
+   {
+    "meal_count": 0,
+    "median": 104.8,
+    "minute": 35,
+    "n": 3,
+    "p10": 93.76,
+    "p25": 97.9,
+    "p75": 108.95,
+    "p90": 111.44
+   },
+   {
+    "meal_count": 0,
+    "median": 105.3,
+    "minute": 40,
+    "n": 3,
+    "p10": 102.42,
+    "p25": 103.5,
+    "p75": 107.3,
+    "p90": 108.5
+   },
+   {
+    "meal_count": 0,
+    "median": 107.8,
+    "minute": 45,
+    "n": 3,
+    "p10": 106.68,
+    "p25": 107.1,
+    "p75": 108.9,
+    "p90": 109.56
+   },
+   {
+    "meal_count": 0,
+    "median": 107.3,
+    "minute": 50,
+    "n": 3,
+    "p10": 104.74,
+    "p25": 105.7,
+    "p75": 108.15,
+    "p90": 108.66
+   },
+   {
+    "meal_count": 0,
+    "median": 108.6,
+    "minute": 55,
+    "n": 3,
+    "p10": 101.16,
+    "p25": 103.95,
+    "p75": 109.15,
+    "p90": 109.48
+   },
+   {
+    "meal_count": 0,
+    "median": 91.6,
+    "minute": 60,
+    "n": 3,
+    "p10": 90.64,
+    "p25": 91.0,
+    "p75": 98.2,
+    "p90": 102.16
+   },
+   {
+    "meal_count": 0,
+    "median": 99.7,
+    "minute": 65,
+    "n": 3,
+    "p10": 87.78,
+    "p25": 92.25,
+    "p75": 100.9,
+    "p90": 101.62
+   },
+   {
+    "meal_count": 0,
+    "median": 99.7,
+    "minute": 70,
+    "n": 3,
+    "p10": 92.5,
+    "p25": 95.2,
+    "p75": 100.15,
+    "p90": 100.42
+   },
+   {
+    "meal_count": 0,
+    "median": 97.9,
+    "minute": 75,
+    "n": 3,
+    "p10": 96.38,
+    "p25": 96.95,
+    "p75": 105.15,
+    "p90": 109.5
+   },
+   {
+    "meal_count": 0,
+    "median": 95.0,
+    "minute": 80,
+    "n": 3,
+    "p10": 93.64,
+    "p25": 94.15,
+    "p75": 98.55,
+    "p90": 100.68
+   },
+   {
+    "meal_count": 0,
+    "median": 90.4,
+    "minute": 85,
+    "n": 3,
+    "p10": 89.44,
+    "p25": 89.8,
+    "p75": 92.9,
+    "p90": 94.4
+   },
+   {
+    "meal_count": 0,
+    "median": 93.8,
+    "minute": 90,
+    "n": 3,
+    "p10": 88.2,
+    "p25": 90.3,
+    "p75": 99.55,
+    "p90": 103.0
+   },
+   {
+    "meal_count": 0,
+    "median": 81.9,
+    "minute": 95,
+    "n": 3,
+    "p10": 78.86,
+    "p25": 80.0,
+    "p75": 86.0,
+    "p90": 88.46
+   },
+   {
+    "meal_count": 0,
+    "median": 99.0,
+    "minute": 100,
+    "n": 3,
+    "p10": 98.2,
+    "p25": 98.5,
+    "p75": 100.25,
+    "p90": 101.0
+   },
+   {
+    "meal_count": 0,
+    "median": 91.6,
+    "minute": 105,
+    "n": 3,
+    "p10": 80.88,
+    "p25": 84.9,
+    "p75": 95.5,
+    "p90": 97.84
+   },
+   {
+    "meal_count": 0,
+    "median": 86.2,
+    "minute": 110,
+    "n": 3,
+    "p10": 85.48,
+    "p25": 85.75,
+    "p75": 91.6,
+    "p90": 94.84
+   },
+   {
+    "meal_count": 0,
+    "median": 89.8,
+    "minute": 115,
+    "n": 3,
+    "p10": 77.48,
+    "p25": 82.1,
+    "p75": 89.9,
+    "p90": 89.96
+   },
+   {
+    "meal_count": 0,
+    "median": 86.2,
+    "minute": 120,
+    "n": 3,
+    "p10": 85.64,
+    "p25": 85.85,
+    "p75": 89.25,
+    "p90": 91.08
+   },
+   {
+    "meal_count": 0,
+    "median": 76.3,
+    "minute": 125,
+    "n": 3,
+    "p10": 72.78,
+    "p25": 74.1,
+    "p75": 79.6,
+    "p90": 81.58
+   },
+   {
+    "meal_count": 0,
+    "median": 73.5,
+    "minute": 130,
+    "n": 3,
+    "p10": 70.62,
+    "p25": 71.7,
+    "p75": 77.85,
+    "p90": 80.46
+   },
+   {
+    "meal_count": 0,
+    "median": 81.6,
+    "minute": 135,
+    "n": 3,
+    "p10": 77.84,
+    "p25": 79.25,
+    "p75": 82.3,
+    "p90": 82.72
+   },
+   {
+    "meal_count": 0,
+    "median": 79.2,
+    "minute": 140,
+    "n": 3,
+    "p10": 75.28,
+    "p25": 76.75,
+    "p75": 82.7,
+    "p90": 84.8
+   },
+   {
+    "meal_count": 0,
+    "median": 78.8,
+    "minute": 145,
+    "n": 3,
+    "p10": 75.36,
+    "p25": 76.65,
+    "p75": 81.9,
+    "p90": 83.76
+   },
+   {
+    "meal_count": 0,
+    "median": 73.3,
+    "minute": 150,
+    "n": 3,
+    "p10": 68.74,
+    "p25": 70.45,
+    "p75": 75.8,
+    "p90": 77.3
+   },
+   {
+    "meal_count": 0,
+    "median": 77.6,
+    "minute": 155,
+    "n": 3,
+    "p10": 77.04,
+    "p25": 77.25,
+    "p75": 80.8,
+    "p90": 82.72
+   },
+   {
+    "meal_count": 0,
+    "median": 75.6,
+    "minute": 160,
+    "n": 3,
+    "p10": 72.24,
+    "p25": 73.5,
+    "p75": 82.55,
+    "p90": 86.72
+   },
+   {
+    "meal_count": 0,
+    "median": 83.3,
+    "minute": 165,
+    "n": 3,
+    "p10": 76.98,
+    "p25": 79.35,
+    "p75": 83.6,
+    "p90": 83.78
+   },
+   {
+    "meal_count": 0,
+    "median": 79.7,
+    "minute": 170,
+    "n": 3,
+    "p10": 77.46,
+    "p25": 78.3,
+    "p75": 90.05,
+    "p90": 96.26
+   },
+   {
+    "meal_count": 0,
+    "median": 90.1,
+    "minute": 175,
+    "n": 3,
+    "p10": 81.78,
+    "p25": 84.9,
+    "p75": 93.5,
+    "p90": 95.54
+   },
+   {
+    "meal_count": 0,
+    "median": 80.1,
+    "minute": 180,
+    "n": 3,
+    "p10": 78.18,
+    "p25": 78.9,
+    "p75": 81.1,
+    "p90": 81.7
+   },
+   {
+    "meal_count": 0,
+    "median": 82.8,
+    "minute": 185,
+    "n": 3,
+    "p10": 82.32,
+    "p25": 82.5,
+    "p75": 88.85,
+    "p90": 92.48
+   },
+   {
+    "meal_count": 0,
+    "median": 92.7,
+    "minute": 190,
+    "n": 3,
+    "p10": 89.26,
+    "p25": 90.55,
+    "p75": 98.7,
+    "p90": 102.3
+   },
+   {
+    "meal_count": 0,
+    "median": 96.3,
+    "minute": 195,
+    "n": 3,
+    "p10": 91.74,
+    "p25": 93.45,
+    "p75": 102.35,
+    "p90": 105.98
+   },
+   {
+    "meal_count": 0,
+    "median": 100.4,
+    "minute": 200,
+    "n": 3,
+    "p10": 98.32,
+    "p25": 99.1,
+    "p75": 105.05,
+    "p90": 107.84
+   },
+   {
+    "meal_count": 0,
+    "median": 93.6,
+    "minute": 205,
+    "n": 3,
+    "p10": 92.08,
+    "p25": 92.65,
+    "p75": 96.8,
+    "p90": 98.72
+   },
+   {
+    "meal_count": 0,
+    "median": 105.1,
+    "minute": 210,
+    "n": 3,
+    "p10": 99.74,
+    "p25": 101.75,
+    "p75": 107.35,
+    "p90": 108.7
+   },
+   {
+    "meal_count": 0,
+    "median": 107.2,
+    "minute": 215,
+    "n": 3,
+    "p10": 102.88,
+    "p25": 104.5,
+    "p75": 109.6,
+    "p90": 111.04
+   },
+   {
+    "meal_count": 0,
+    "median": 111.2,
+    "minute": 220,
+    "n": 3,
+    "p10": 101.52,
+    "p25": 105.15,
+    "p75": 112.35,
+    "p90": 113.04
+   },
+   {
+    "meal_count": 0,
+    "median": 110.7,
+    "minute": 225,
+    "n": 3,
+    "p10": 104.7,
+    "p25": 106.95,
+    "p75": 117.5,
+    "p90": 121.58
+   },
+   {
+    "meal_count": 0,
+    "median": 106.3,
+    "minute": 230,
+    "n": 3,
+    "p10": 106.22,
+    "p25": 106.25,
+    "p75": 108.25,
+    "p90": 109.42
+   },
+   {
+    "meal_count": 0,
+    "median": 117.9,
+    "minute": 235,
+    "n": 3,
+    "p10": 111.74,
+    "p25": 114.05,
+    "p75": 121.2,
+    "p90": 123.18
+   },
+   {
+    "meal_count": 0,
+    "median": 121.3,
+    "minute": 240,
+    "n": 3,
+    "p10": 113.54,
+    "p25": 116.45,
+    "p75": 121.75,
+    "p90": 122.02
+   },
+   {
+    "meal_count": 0,
+    "median": 129.2,
+    "minute": 245,
+    "n": 3,
+    "p10": 116.24,
+    "p25": 121.1,
+    "p75": 131.9,
+    "p90": 133.52
+   },
+   {
+    "meal_count": 0,
+    "median": 124.2,
+    "minute": 250,
+    "n": 3,
+    "p10": 123.72,
+    "p25": 123.9,
+    "p75": 124.55,
+    "p90": 124.76
+   },
+   {
+    "meal_count": 0,
+    "median": 122.6,
+    "minute": 255,
+    "n": 3,
+    "p10": 113.8,
+    "p25": 117.1,
+    "p75": 127.45,
+    "p90": 130.36
+   },
+   {
+    "meal_count": 0,
+    "median": 126.1,
+    "minute": 260,
+    "n": 3,
+    "p10": 120.42,
+    "p25": 122.55,
+    "p75": 130.8,
+    "p90": 133.62
+   },
+   {
+    "meal_count": 0,
+    "median": 123.1,
+    "minute": 265,
+    "n": 3,
+    "p10": 122.22,
+    "p25": 122.55,
+    "p75": 124.5,
+    "p90": 125.34
+   },
+   {
+    "meal_count": 0,
+    "median": 127.0,
+    "minute": 270,
+    "n": 3,
+    "p10": 123.48,
+    "p25": 124.8,
+    "p75": 130.5,
+    "p90": 132.6
+   },
+   {
+    "meal_count": 0,
+    "median": 114.2,
+    "minute": 275,
+    "n": 3,
+    "p10": 114.12,
+    "p25": 114.15,
+    "p75": 116.65,
+    "p90": 118.12
+   },
+   {
+    "meal_count": 0,
+    "median": 125.3,
+    "minute": 280,
+    "n": 3,
+    "p10": 117.62,
+    "p25": 120.5,
+    "p75": 126.65,
+    "p90": 127.46
+   },
+   {
+    "meal_count": 0,
+    "median": 124.1,
+    "minute": 285,
+    "n": 3,
+    "p10": 118.34,
+    "p25": 120.5,
+    "p75": 129.15,
+    "p90": 132.18
+   },
+   {
+    "meal_count": 0,
+    "median": 125.9,
+    "minute": 290,
+    "n": 3,
+    "p10": 123.5,
+    "p25": 124.4,
+    "p75": 126.65,
+    "p90": 127.1
+   },
+   {
+    "meal_count": 0,
+    "median": 132.0,
+    "minute": 295,
+    "n": 3,
+    "p10": 131.92,
+    "p25": 131.95,
+    "p75": 132.85,
+    "p90": 133.36
+   },
+   {
+    "meal_count": 0,
+    "median": 134.6,
+    "minute": 300,
+    "n": 3,
+    "p10": 127.48,
+    "p25": 130.15,
+    "p75": 136.25,
+    "p90": 137.24
+   },
+   {
+    "meal_count": 0,
+    "median": 133.0,
+    "minute": 305,
+    "n": 3,
+    "p10": 128.12,
+    "p25": 129.95,
+    "p75": 138.65,
+    "p90": 142.04
+   },
+   {
+    "meal_count": 0,
+    "median": 132.9,
+    "minute": 310,
+    "n": 3,
+    "p10": 129.06,
+    "p25": 130.5,
+    "p75": 136.2,
+    "p90": 138.18
+   },
+   {
+    "meal_count": 0,
+    "median": 126.5,
+    "minute": 315,
+    "n": 3,
+    "p10": 125.54,
+    "p25": 125.9,
+    "p75": 130.95,
+    "p90": 133.62
+   },
+   {
+    "meal_count": 0,
+    "median": 127.0,
+    "minute": 320,
+    "n": 3,
+    "p10": 123.72,
+    "p25": 124.95,
+    "p75": 131.7,
+    "p90": 134.52
+   },
+   {
+    "meal_count": 0,
+    "median": 128.4,
+    "minute": 325,
+    "n": 3,
+    "p10": 128.24,
+    "p25": 128.3,
+    "p75": 129.6,
+    "p90": 130.32
+   },
+   {
+    "meal_count": 0,
+    "median": 127.3,
+    "minute": 330,
+    "n": 3,
+    "p10": 127.14,
+    "p25": 127.2,
+    "p75": 127.5,
+    "p90": 127.62
+   },
+   {
+    "meal_count": 0,
+    "median": 139.5,
+    "minute": 335,
+    "n": 3,
+    "p10": 127.34,
+    "p25": 131.9,
+    "p75": 139.65,
+    "p90": 139.74
+   },
+   {
+    "meal_count": 0,
+    "median": 141.8,
+    "minute": 340,
+    "n": 3,
+    "p10": 137.64,
+    "p25": 139.2,
+    "p75": 142.35,
+    "p90": 142.68
+   },
+   {
+    "meal_count": 0,
+    "median": 142.4,
+    "minute": 345,
+    "n": 3,
+    "p10": 136.32,
+    "p25": 138.6,
+    "p75": 143.85,
+    "p90": 144.72
+   },
+   {
+    "meal_count": 0,
+    "median": 153.4,
+    "minute": 350,
+    "n": 3,
+    "p10": 139.88,
+    "p25": 144.95,
+    "p75": 154.9,
+    "p90": 155.8
+   },
+   {
+    "meal_count": 0,
+    "median": 141.3,
+    "minute": 355,
+    "n": 3,
+    "p10": 138.82,
+    "p25": 139.75,
+    "p75": 145.05,
+    "p90": 147.3
+   },
+   {
+    "meal_count": 0,
+    "median": 139.8,
+    "minute": 360,
+    "n": 3,
+    "p10": 128.52,
+    "p25": 132.75,
+    "p75": 141.2,
+    "p90": 142.04
+   },
+   {
+    "meal_count": 0,
+    "median": 147.5,
+    "minute": 365,
+    "n": 3,
+    "p10": 144.62,
+    "p25": 145.7,
+    "p75": 152.5,
+    "p90": 155.5
+   },
+   {
+    "meal_count": 0,
+    "median": 153.2,
+    "minute": 370,
+    "n": 3,
+    "p10": 146.16,
+    "p25": 148.8,
+    "p75": 155.25,
+    "p90": 156.48
+   },
+   {
+    "meal_count": 0,
+    "median": 155.8,
+    "minute": 375,
+    "n": 3,
+    "p10": 151.56,
+    "p25": 153.15,
+    "p75": 160.4,
+    "p90": 163.16
+   },
+   {
+    "meal_count": 0,
+    "median": 156.3,
+    "minute": 380,
+    "n": 3,
+    "p10": 151.82,
+    "p25": 153.5,
+    "p75": 156.9,
+    "p90": 157.26
+   },
+   {
+    "meal_count": 0,
+    "median": 164.2,
+    "minute": 385,
+    "n": 3,
+    "p10": 154.2,
+    "p25": 157.95,
+    "p75": 164.35,
+    "p90": 164.44
+   },
+   {
+    "meal_count": 0,
+    "median": 159.3,
+    "minute": 390,
+    "n": 3,
+    "p10": 157.54,
+    "p25": 158.2,
+    "p75": 160.9,
+    "p90": 161.86
+   },
+   {
+    "meal_count": 0,
+    "median": 171.4,
+    "minute": 395,
+    "n": 3,
+    "p10": 165.32,
+    "p25": 167.6,
+    "p75": 172.65,
+    "p90": 173.4
+   },
+   {
+    "meal_count": 0,
+    "median": 172.8,
+    "minute": 400,
+    "n": 3,
+    "p10": 168.24,
+    "p25": 169.95,
+    "p75": 173.2,
+    "p90": 173.44
+   },
+   {
+    "meal_count": 0,
+    "median": 179.9,
+    "minute": 405,
+    "n": 3,
+    "p10": 173.26,
+    "p25": 175.75,
+    "p75": 182.45,
+    "p90": 183.98
+   },
+   {
+    "meal_count": 0,
+    "median": 182.1,
+    "minute": 410,
+    "n": 3,
+    "p10": 170.42,
+    "p25": 174.8,
+    "p75": 184.15,
+    "p90": 185.38
+   },
+   {
+    "meal_count": 0,
+    "median": 184.4,
+    "minute": 415,
+    "n": 3,
+    "p10": 181.84,
+    "p25": 182.8,
+    "p75": 192.0,
+    "p90": 196.56
+   },
+   {
+    "meal_count": 0,
+    "median": 181.1,
+    "minute": 420,
+    "n": 3,
+    "p10": 179.26,
+    "p25": 179.95,
+    "p75": 185.45,
+    "p90": 188.06
+   },
+   {
+    "meal_count": 0,
+    "median": 189.1,
+    "minute": 425,
+    "n": 3,
+    "p10": 179.74,
+    "p25": 183.25,
+    "p75": 190.85,
+    "p90": 191.9
+   },
+   {
+    "meal_count": 0,
+    "median": 190.6,
+    "minute": 430,
+    "n": 3,
+    "p10": 188.6,
+    "p25": 189.35,
+    "p75": 193.15,
+    "p90": 194.68
+   },
+   {
+    "meal_count": 0,
+    "median": 187.4,
+    "minute": 435,
+    "n": 3,
+    "p10": 186.76,
+    "p25": 187.0,
+    "p75": 187.9,
+    "p90": 188.2
+   },
+   {
+    "meal_count": 0,
+    "median": 189.7,
+    "minute": 440,
+    "n": 3,
+    "p10": 186.02,
+    "p25": 187.4,
+    "p75": 190.35,
+    "p90": 190.74
+   },
+   {
+    "meal_count": 3,
+    "median": 189.5,
+    "minute": 445,
+    "n": 3,
+    "p10": 188.62,
+    "p25": 188.95,
+    "p75": 191.5,
+    "p90": 192.7
+   },
+   {
+    "meal_count": 0,
+    "median": 188.5,
+    "minute": 450,
+    "n": 3,
+    "p10": 186.34,
+    "p25": 187.15,
+    "p75": 192.55,
+    "p90": 194.98
+   },
+   {
+    "meal_count": 3,
+    "median": 194.2,
+    "minute": 455,
+    "n": 3,
+    "p10": 187.08,
+    "p25": 189.75,
+    "p75": 195.75,
+    "p90": 196.68
+   },
+   {
+    "meal_count": 0,
+    "median": 194.0,
+    "minute": 460,
+    "n": 3,
+    "p10": 192.96,
+    "p25": 193.35,
+    "p75": 196.65,
+    "p90": 198.24
+   },
+   {
+    "meal_count": 0,
+    "median": 190.1,
+    "minute": 465,
+    "n": 3,
+    "p10": 185.06,
+    "p25": 186.95,
+    "p75": 194.05,
+    "p90": 196.42
+   },
+   {
+    "meal_count": 0,
+    "median": 194.1,
+    "minute": 470,
+    "n": 3,
+    "p10": 193.3,
+    "p25": 193.6,
+    "p75": 198.35,
+    "p90": 200.9
+   },
+   {
+    "meal_count": 0,
+    "median": 193.6,
+    "minute": 475,
+    "n": 3,
+    "p10": 180.16,
+    "p25": 185.2,
+    "p75": 194.75,
+    "p90": 195.44
+   },
+   {
+    "meal_count": 0,
+    "median": 190.6,
+    "minute": 480,
+    "n": 3,
+    "p10": 190.2,
+    "p25": 190.35,
+    "p75": 193.45,
+    "p90": 195.16
+   },
+   {
+    "meal_count": 0,
+    "median": 194.4,
+    "minute": 485,
+    "n": 3,
+    "p10": 190.24,
+    "p25": 191.8,
+    "p75": 195.65,
+    "p90": 196.4
+   },
+   {
+    "meal_count": 0,
+    "median": 192.7,
+    "minute": 490,
+    "n": 3,
+    "p10": 190.54,
+    "p25": 191.35,
+    "p75": 193.6,
+    "p90": 194.14
+   },
+   {
+    "meal_count": 0,
+    "median": 179.2,
+    "minute": 495,
+    "n": 3,
+    "p10": 178.48,
+    "p25": 178.75,
+    "p75": 184.65,
+    "p90": 187.92
+   },
+   {
+    "meal_count": 0,
+    "median": 178.6,
+    "minute": 500,
+    "n": 3,
+    "p10": 176.52,
+    "p25": 177.3,
+    "p75": 178.8,
+    "p90": 178.92
+   },
+   {
+    "meal_count": 0,
+    "median": 178.0,
+    "minute": 505,
+    "n": 3,
+    "p10": 173.28,
+    "p25": 175.05,
+    "p75": 181.7,
+    "p90": 183.92
+   },
+   {
+    "meal_count": 0,
+    "median": 176.1,
+    "minute": 510,
+    "n": 3,
+    "p10": 168.98,
+    "p25": 171.65,
+    "p75": 179.0,
+    "p90": 180.74
+   },
+   {
+    "meal_count": 0,
+    "median": 167.7,
+    "minute": 515,
+    "n": 3,
+    "p10": 166.74,
+    "p25": 167.1,
+    "p75": 171.45,
+    "p90": 173.7
+   },
+   {
+    "meal_count": 0,
+    "median": 165.3,
+    "minute": 520,
+    "n": 3,
+    "p10": 160.42,
+    "p25": 162.25,
+    "p75": 170.05,
+    "p90": 172.9
+   },
+   {
+    "meal_count": 0,
+    "median": 165.1,
+    "minute": 525,
+    "n": 3,
+    "p10": 161.5,
+    "p25": 162.85,
+    "p75": 165.45,
+    "p90": 165.66
+   },
+   {
+    "meal_count": 0,
+    "median": 167.3,
+    "minute": 530,
+    "n": 3,
+    "p10": 157.46,
+    "p25": 161.15,
+    "p75": 167.65,
+    "p90": 167.86
+   },
+   {
+    "meal_count": 0,
+    "median": 160.3,
+    "minute": 535,
+    "n": 3,
+    "p10": 156.54,
+    "p25": 157.95,
+    "p75": 162.85,
+    "p90": 164.38
+   },
+   {
+    "meal_count": 0,
+    "median": 159.6,
+    "minute": 540,
+    "n": 3,
+    "p10": 157.68,
+    "p25": 158.4,
+    "p75": 160.65,
+    "p90": 161.28
+   },
+   {
+    "meal_count": 0,
+    "median": 162.7,
+    "minute": 545,
+    "n": 3,
+    "p10": 156.86,
+    "p25": 159.05,
+    "p75": 164.05,
+    "p90": 164.86
+   },
+   {
+    "meal_count": 0,
+    "median": 168.9,
+    "minute": 550,
+    "n": 3,
+    "p10": 147.38,
+    "p25": 155.45,
+    "p75": 170.2,
+    "p90": 170.98
+   },
+   {
+    "meal_count": 0,
+    "median": 160.4,
+    "minute": 555,
+    "n": 3,
+    "p10": 160.32,
+    "p25": 160.35,
+    "p75": 162.3,
+    "p90": 163.44
+   },
+   {
+    "meal_count": 0,
+    "median": 145.9,
+    "minute": 560,
+    "n": 3,
+    "p10": 144.54,
+    "p25": 145.05,
+    "p75": 148.9,
+    "p90": 150.7
+   },
+   {
+    "meal_count": 0,
+    "median": 147.5,
+    "minute": 565,
+    "n": 3,
+    "p10": 146.38,
+    "p25": 146.8,
+    "p75": 151.65,
+    "p90": 154.14
+   },
+   {
+    "meal_count": 0,
+    "median": 156.4,
+    "minute": 570,
+    "n": 3,
+    "p10": 144.8,
+    "p25": 149.15,
+    "p75": 157.0,
+    "p90": 157.36
+   },
+   {
+    "meal_count": 0,
+    "median": 157.3,
+    "minute": 575,
+    "n": 3,
+    "p10": 152.58,
+    "p25": 154.35,
+    "p75": 163.75,
+    "p90": 167.62
+   },
+   {
+    "meal_count": 0,
+    "median": 152.5,
+    "minute": 580,
+    "n": 3,
+    "p10": 152.02,
+    "p25": 152.2,
+    "p75": 154.1,
+    "p90": 155.06
+   },
+   {
+    "meal_count": 0,
+    "median": 158.2,
+    "minute": 585,
+    "n": 3,
+    "p10": 157.32,
+    "p25": 157.65,
+    "p75": 158.95,
+    "p90": 159.4
+   },
+   {
+    "meal_count": 0,
+    "median": 145.9,
+    "minute": 590,
+    "n": 3,
+    "p10": 145.02,
+    "p25": 145.35,
+    "p75": 150.3,
+    "p90": 152.94
+   },
+   {
+    "meal_count": 0,
+    "median": 159.6,
+    "minute": 595,
+    "n": 3,
+    "p10": 149.92,
+    "p25": 153.55,
+    "p75": 162.05,
+    "p90": 163.52
+   },
+   {
+    "meal_count": 0,
+    "median": 162.5,
+    "minute": 600,
+    "n": 3,
+    "p10": 152.18,
+    "p25": 156.05,
+    "p75": 163.65,
+    "p90": 164.34
+   },
+   {
+    "meal_count": 0,
+    "median": 160.3,
+    "minute": 605,
+    "n": 3,
+    "p10": 149.1,
+    "p25": 153.3,
+    "p75": 164.4,
+    "p90": 166.86
+   },
+   {
+    "meal_count": 0,
+    "median": 144.9,
+    "minute": 610,
+    "n": 3,
+    "p10": 143.46,
+    "p25": 144.0,
+    "p75": 145.85,
+    "p90": 146.42
+   },
+   {
+    "meal_count": 0,
+    "median": 150.3,
+    "minute": 615,
+    "n": 3,
+    "p10": 147.34,
+    "p25": 148.45,
+    "p75": 152.8,
+    "p90": 154.3
+   },
+   {
+    "meal_count": 0,
+    "median": 155.4,
+    "minute": 620,
+    "n": 3,
+    "p10": 144.44,
+    "p25": 148.55,
+    "p75": 156.45,
+    "p90": 157.08
+   },
+   {
+    "meal_count": 0,
+    "median": 157.6,
+    "minute": 625,
+    "n": 3,
+    "p10": 153.04,
+    "p25": 154.75,
+    "p75": 160.0,
+    "p90": 161.44
+   },
+   {
+    "meal_count": 0,
+    "median": 151.5,
+    "minute": 630,
+    "n": 3,
+    "p10": 147.5,
+    "p25": 149.0,
+    "p75": 153.1,
+    "p90": 154.06
+   },
+   {
+    "meal_count": 0,
+    "median": 150.2,
+    "minute": 635,
+    "n": 3,
+    "p10": 148.36,
+    "p25": 149.05,
+    "p75": 154.05,
+    "p90": 156.36
+   },
+   {
+    "meal_count": 0,
+    "median": 149.0,
+    "minute": 640,
+    "n": 3,
+    "p10": 148.36,
+    "p25": 148.6,
+    "p75": 155.05,
+    "p90": 158.68
+   },
+   {
+    "meal_count": 0,
+    "median": 156.0,
+    "minute": 645,
+    "n": 3,
+    "p10": 148.4,
+    "p25": 151.25,
+    "p75": 156.7,
+    "p90": 157.12
+   },
+   {
+    "meal_count": 0,
+    "median": 154.7,
+    "minute": 650,
+    "n": 3,
+    "p10": 154.22,
+    "p25": 154.4,
+    "p75": 157.8,
+    "p90": 159.66
+   },
+   {
+    "meal_count": 0,
+    "median": 155.7,
+    "minute": 655,
+    "n": 3,
+    "p10": 154.34,
+    "p25": 154.85,
+    "p75": 155.9,
+    "p90": 156.02
+   },
+   {
+    "meal_count": 0,
+    "median": 148.9,
+    "minute": 660,
+    "n": 3,
+    "p10": 147.54,
+    "p25": 148.05,
+    "p75": 152.4,
+    "p90": 154.5
+   },
+   {
+    "meal_count": 0,
+    "median": 164.6,
+    "minute": 665,
+    "n": 3,
+    "p10": 159.8,
+    "p25": 161.6,
+    "p75": 167.6,
+    "p90": 169.4
+   },
+   {
+    "meal_count": 0,
+    "median": 160.2,
+    "minute": 670,
+    "n": 3,
+    "p10": 155.4,
+    "p25": 157.2,
+    "p75": 165.5,
+    "p90": 168.68
+   },
+   {
+    "meal_count": 0,
+    "median": 162.6,
+    "minute": 675,
+    "n": 3,
+    "p10": 160.04,
+    "p25": 161.0,
+    "p75": 164.2,
+    "p90": 165.16
+   },
+   {
+    "meal_count": 0,
+    "median": 154.3,
+    "minute": 680,
+    "n": 3,
+    "p10": 150.62,
+    "p25": 152.0,
+    "p75": 158.7,
+    "p90": 161.34
+   },
+   {
+    "meal_count": 0,
+    "median": 163.4,
+    "minute": 685,
+    "n": 3,
+    "p10": 162.04,
+    "p25": 162.55,
+    "p75": 167.55,
+    "p90": 170.04
+   },
+   {
+    "meal_count": 0,
+    "median": 157.9,
+    "minute": 690,
+    "n": 3,
+    "p10": 157.18,
+    "p25": 157.45,
+    "p75": 162.7,
+    "p90": 165.58
+   },
+   {
+    "meal_count": 0,
+    "median": 159.1,
+    "minute": 695,
+    "n": 3,
+    "p10": 157.02,
+    "p25": 157.8,
+    "p75": 162.05,
+    "p90": 163.82
+   },
+   {
+    "meal_count": 0,
+    "median": 167.0,
+    "minute": 700,
+    "n": 3,
+    "p10": 164.68,
+    "p25": 165.55,
+    "p75": 168.65,
+    "p90": 169.64
+   },
+   {
+    "meal_count": 0,
+    "median": 163.8,
+    "minute": 705,
+    "n": 3,
+    "p10": 161.88,
+    "p25": 162.6,
+    "p75": 167.8,
+    "p90": 170.2
+   },
+   {
+    "meal_count": 0,
+    "median": 170.0,
+    "minute": 710,
+    "n": 3,
+    "p10": 161.04,
+    "p25": 164.4,
+    "p75": 173.35,
+    "p90": 175.36
+   },
+   {
+    "meal_count": 0,
+    "median": 177.3,
+    "minute": 715,
+    "n": 3,
+    "p10": 176.5,
+    "p25": 176.8,
+    "p75": 181.9,
+    "p90": 184.66
+   },
+   {
+    "meal_count": 0,
+    "median": 173.3,
+    "minute": 720,
+    "n": 3,
+    "p10": 173.22,
+    "p25": 173.25,
+    "p75": 176.75,
+    "p90": 178.82
+   },
+   {
+    "meal_count": 0,
+    "median": 183.9,
+    "minute": 725,
+    "n": 3,
+    "p10": 177.1,
+    "p25": 179.65,
+    "p75": 186.95,
+    "p90": 188.78
+   },
+   {
+    "meal_count": 0,
+    "median": 182.9,
+    "minute": 730,
+    "n": 3,
+    "p10": 175.38,
+    "p25": 178.2,
+    "p75": 183.55,
+    "p90": 183.94
+   },
+   {
+    "meal_count": 0,
+    "median": 184.6,
+    "minute": 735,
+    "n": 3,
+    "p10": 174.12,
+    "p25": 178.05,
+    "p75": 194.1,
+    "p90": 199.8
+   },
+   {
+    "meal_count": 0,
+    "median": 188.0,
+    "minute": 740,
+    "n": 3,
+    "p10": 182.32,
+    "p25": 184.45,
+    "p75": 188.15,
+    "p90": 188.24
+   },
+   {
+    "meal_count": 0,
+    "median": 196.1,
+    "minute": 745,
+    "n": 3,
+    "p10": 192.34,
+    "p25": 193.75,
+    "p75": 198.8,
+    "p90": 200.42
+   },
+   {
+    "meal_count": 0,
+    "median": 187.0,
+    "minute": 750,
+    "n": 3,
+    "p10": 184.36,
+    "p25": 185.35,
+    "p75": 192.5,
+    "p90": 195.8
+   },
+   {
+    "meal_count": 0,
+    "median": 197.6,
+    "minute": 755,
+    "n": 3,
+    "p10": 191.52,
+    "p25": 193.8,
+    "p75": 200.45,
+    "p90": 202.16
+   },
+   {
+    "meal_count": 0,
+    "median": 187.2,
+    "minute": 760,
+    "n": 3,
+    "p10": 184.88,
+    "p25": 185.75,
+    "p75": 191.9,
+    "p90": 194.72
+   },
+   {
+    "meal_count": 0,
+    "median": 195.3,
+    "minute": 765,
+    "n": 3,
+    "p10": 193.38,
+    "p25": 194.1,
+    "p75": 196.35,
+    "p90": 196.98
+   },
+   {
+    "meal_count": 3,
+    "median": 191.3,
+    "minute": 770,
+    "n": 3,
+    "p10": 176.9,
+    "p25": 182.3,
+    "p75": 193.0,
+    "p90": 194.02
+   },
+   {
+    "meal_count": 0,
+    "median": 195.6,
+    "minute": 775,
+    "n": 3,
+    "p10": 192.96,
+    "p25": 193.95,
+    "p75": 198.1,
+    "p90": 199.6
+   },
+   {
+    "meal_count": 0,
+    "median": 200.9,
+    "minute": 780,
+    "n": 3,
+    "p10": 192.98,
+    "p25": 195.95,
+    "p75": 203.65,
+    "p90": 205.3
+   },
+   {
+    "meal_count": 0,
+    "median": 189.0,
+    "minute": 785,
+    "n": 3,
+    "p10": 179.56,
+    "p25": 183.1,
+    "p75": 193.55,
+    "p90": 196.28
+   },
+   {
+    "meal_count": 0,
+    "median": 188.0,
+    "minute": 790,
+    "n": 3,
+    "p10": 187.68,
+    "p25": 187.8,
+    "p75": 188.45,
+    "p90": 188.72
+   },
+   {
+    "meal_count": 0,
+    "median": 186.6,
+    "minute": 795,
+    "n": 3,
+    "p10": 185.72,
+    "p25": 186.05,
+    "p75": 191.5,
+    "p90": 194.44
+   },
+   {
+    "meal_count": 0,
+    "median": 187.5,
+    "minute": 800,
+    "n": 3,
+    "p10": 184.06,
+    "p25": 185.35,
+    "p75": 193.7,
+    "p90": 197.42
+   },
+   {
+    "meal_count": 0,
+    "median": 179.8,
+    "minute": 805,
+    "n": 3,
+    "p10": 178.68,
+    "p25": 179.1,
+    "p75": 189.6,
+    "p90": 195.48
+   },
+   {
+    "meal_count": 0,
+    "median": 178.8,
+    "minute": 810,
+    "n": 3,
+    "p10": 174.08,
+    "p25": 175.85,
+    "p75": 183.0,
+    "p90": 185.52
+   },
+   {
+    "meal_count": 0,
+    "median": 171.6,
+    "minute": 815,
+    "n": 3,
+    "p10": 171.52,
+    "p25": 171.55,
+    "p75": 177.75,
+    "p90": 181.44
+   },
+   {
+    "meal_count": 0,
+    "median": 187.6,
+    "minute": 820,
+    "n": 3,
+    "p10": 178.16,
+    "p25": 181.7,
+    "p75": 193.8,
+    "p90": 197.52
+   },
+   {
+    "meal_count": 0,
+    "median": 186.5,
+    "minute": 825,
+    "n": 3,
+    "p10": 173.46,
+    "p25": 178.35,
+    "p75": 190.75,
+    "p90": 193.3
+   },
+   {
+    "meal_count": 0,
+    "median": 176.9,
+    "minute": 830,
+    "n": 3,
+    "p10": 166.82,
+    "p25": 170.6,
+    "p75": 179.8,
+    "p90": 181.54
+   },
+   {
+    "meal_count": 0,
+    "median": 177.2,
+    "minute": 835,
+    "n": 3,
+    "p10": 172.72,
+    "p25": 174.4,
+    "p75": 181.8,
+    "p90": 184.56
+   },
+   {
+    "meal_count": 0,
+    "median": 170.5,
+    "minute": 840,
+    "n": 3,
+    "p10": 168.98,
+    "p25": 169.55,
+    "p75": 175.2,
+    "p90": 178.02
+   },
+   {
+    "meal_count": 0,
+    "median": 161.3,
+    "minute": 845,
+    "n": 3,
+    "p10": 158.42,
+    "p25": 159.5,
+    "p75": 166.05,
+    "p90": 168.9
+   },
+   {
+    "meal_count": 0,
+    "median": 157.0,
+    "minute": 850,
+    "n": 3,
+    "p10": 145.72,
+    "p25": 149.95,
+    "p75": 161.0,
+    "p90": 163.4
+   },
+   {
+    "meal_count": 0,
+    "median": 160.6,
+    "minute": 855,
+    "n": 3,
+    "p10": 153.8,
+    "p25": 156.35,
+    "p75": 163.0,
+    "p90": 164.44
+   },
+   {
+    "meal_count": 0,
+    "median": 153.0,
+    "minute": 860,
+    "n": 3,
+    "p10": 150.84,
+    "p25": 151.65,
+    "p75": 163.85,
+    "p90": 170.36
+   },
+   {
+    "meal_count": 0,
+    "median": 156.8,
+    "minute": 865,
+    "n": 3,
+    "p10": 151.76,
+    "p25": 153.65,
+    "p75": 158.6,
+    "p90": 159.68
+   },
+   {
+    "meal_count": 0,
+    "median": 145.3,
+    "minute": 870,
+    "n": 3,
+    "p10": 143.94,
+    "p25": 144.45,
+    "p75": 146.2,
+    "p90": 146.74
+   },
+   {
+    "meal_count": 0,
+    "median": 155.7,
+    "minute": 875,
+    "n": 3,
+    "p10": 152.18,
+    "p25": 153.5,
+    "p75": 156.3,
+    "p90": 156.66
+   },
+   {
+    "meal_count": 0,
+    "median": 147.1,
+    "minute": 880,
+    "n": 3,
+    "p10": 144.62,
+    "p25": 145.55,
+    "p75": 149.7,
+    "p90": 151.26
+   },
+   {
+    "meal_count": 0,
+    "median": 153.7,
+    "minute": 885,
+    "n": 3,
+    "p10": 150.5,
+    "p25": 151.7,
+    "p75": 158.25,
+    "p90": 160.98
+   },
+   {
+    "meal_count": 0,
+    "median": 147.0,
+    "minute": 890,
+    "n": 3,
+    "p10": 137.96,
+    "p25": 141.35,
+    "p75": 153.1,
+    "p90": 156.76
+   },
+   {
+    "meal_count": 0,
+    "median": 136.6,
+    "minute": 895,
+    "n": 3,
+    "p10": 132.6,
+    "p25": 134.1,
+    "p75": 138.65,
+    "p90": 139.88
+   },
+   {
+    "meal_count": 0,
+    "median": 139.7,
+    "minute": 900,
+    "n": 3,
+    "p10": 139.62,
+    "p25": 139.65,
+    "p75": 144.1,
+    "p90": 146.74
+   },
+   {
+    "meal_count": 0,
+    "median": 144.1,
+    "minute": 905,
+    "n": 3,
+    "p10": 137.46,
+    "p25": 139.95,
+    "p75": 146.4,
+    "p90": 147.78
+   },
+   {
+    "meal_count": 0,
+    "median": 140.8,
+    "minute": 910,
+    "n": 3,
+    "p10": 133.68,
+    "p25": 136.35,
+    "p75": 141.7,
+    "p90": 142.24
+   },
+   {
+    "meal_count": 0,
+    "median": 142.7,
+    "minute": 915,
+    "n": 3,
+    "p10": 134.14,
+    "p25": 137.35,
+    "p75": 145.9,
+    "p90": 147.82
+   },
+   {
+    "meal_count": 0,
+    "median": 137.2,
+    "minute": 920,
+    "n": 3,
+    "p10": 137.04,
+    "p25": 137.1,
+    "p75": 142.65,
+    "p90": 145.92
+   },
+   {
+    "meal_count": 0,
+    "median": 144.4,
+    "minute": 925,
+    "n": 3,
+    "p10": 141.36,
+    "p25": 142.5,
+    "p75": 145.6,
+    "p90": 146.32
+   },
+   {
+    "meal_count": 0,
+    "median": 134.3,
+    "minute": 930,
+    "n": 3,
+    "p10": 133.26,
+    "p25": 133.65,
+    "p75": 135.85,
+    "p90": 136.78
+   },
+   {
+    "meal_count": 0,
+    "median": 139.5,
+    "minute": 935,
+    "n": 3,
+    "p10": 131.82,
+    "p25": 134.7,
+    "p75": 141.75,
+    "p90": 143.1
+   },
+   {
+    "meal_count": 0,
+    "median": 137.9,
+    "minute": 940,
+    "n": 3,
+    "p10": 136.86,
+    "p25": 137.25,
+    "p75": 142.5,
+    "p90": 145.26
+   },
+   {
+    "meal_count": 0,
+    "median": 129.7,
+    "minute": 945,
+    "n": 3,
+    "p10": 126.98,
+    "p25": 128.0,
+    "p75": 135.4,
+    "p90": 138.82
+   },
+   {
+    "meal_count": 0,
+    "median": 142.4,
+    "minute": 950,
+    "n": 3,
+    "p10": 137.6,
+    "p25": 139.4,
+    "p75": 144.1,
+    "p90": 145.12
+   },
+   {
+    "meal_count": 0,
+    "median": 135.9,
+    "minute": 955,
+    "n": 3,
+    "p10": 135.58,
+    "p25": 135.7,
+    "p75": 138.95,
+    "p90": 140.78
+   },
+   {
+    "meal_count": 0,
+    "median": 133.2,
+    "minute": 960,
+    "n": 3,
+    "p10": 128.64,
+    "p25": 130.35,
+    "p75": 136.15,
+    "p90": 137.92
+   },
+   {
+    "meal_count": 0,
+    "median": 135.0,
+    "minute": 965,
+    "n": 3,
+    "p10": 131.4,
+    "p25": 132.75,
+    "p75": 142.8,
+    "p90": 147.48
+   },
+   {
+    "meal_count": 0,
+    "median": 131.8,
+    "minute": 970,
+    "n": 3,
+    "p10": 126.2,
+    "p25": 128.3,
+    "p75": 133.45,
+    "p90": 134.44
+   },
+   {
+    "meal_count": 0,
+    "median": 140.2,
+    "minute": 975,
+    "n": 3,
+    "p10": 139.16,
+    "p25": 139.55,
+    "p75": 141.8,
+    "p90": 142.76
+   },
+   {
+    "meal_count": 0,
+    "median": 138.7,
+    "minute": 980,
+    "n": 3,
+    "p10": 136.38,
+    "p25": 137.25,
+    "p75": 139.6,
+    "p90": 140.14
+   },
+   {
+    "meal_count": 0,
+    "median": 122.6,
+    "minute": 985,
+    "n": 3,
+    "p10": 121.64,
+    "p25": 122.0,
+    "p75": 128.8,
+    "p90": 132.52
+   },
+   {
+    "meal_count": 0,
+    "median": 129.9,
+    "minute": 990,
+    "n": 3,
+    "p10": 125.02,
+    "p25": 126.85,
+    "p75": 130.25,
+    "p90": 130.46
+   },
+   {
+    "meal_count": 0,
+    "median": 130.6,
+    "minute": 995,
+    "n": 3,
+    "p10": 129.16,
+    "p25": 129.7,
+    "p75": 139.35,
+    "p90": 144.6
+   },
+   {
+    "meal_count": 0,
+    "median": 138.4,
+    "minute": 1000,
+    "n": 3,
+    "p10": 136.08,
+    "p25": 136.95,
+    "p75": 141.75,
+    "p90": 143.76
+   },
+   {
+    "meal_count": 0,
+    "median": 133.1,
+    "minute": 1005,
+    "n": 3,
+    "p10": 126.46,
+    "p25": 128.95,
+    "p75": 133.9,
+    "p90": 134.38
+   },
+   {
+    "meal_count": 0,
+    "median": 121.6,
+    "minute": 1010,
+    "n": 3,
+    "p10": 114.96,
+    "p25": 117.45,
+    "p75": 129.25,
+    "p90": 133.84
+   },
+   {
+    "meal_count": 0,
+    "median": 125.7,
+    "minute": 1015,
+    "n": 3,
+    "p10": 116.18,
+    "p25": 119.75,
+    "p75": 136.3,
+    "p90": 142.66
+   },
+   {
+    "meal_count": 0,
+    "median": 126.5,
+    "minute": 1020,
+    "n": 3,
+    "p10": 126.42,
+    "p25": 126.45,
+    "p75": 130.9,
+    "p90": 133.54
+   },
+   {
+    "meal_count": 0,
+    "median": 130.4,
+    "minute": 1025,
+    "n": 3,
+    "p10": 129.2,
+    "p25": 129.65,
+    "p75": 135.0,
+    "p90": 137.76
+   },
+   {
+    "meal_count": 0,
+    "median": 131.0,
+    "minute": 1030,
+    "n": 3,
+    "p10": 131.0,
+    "p25": 131.0,
+    "p75": 136.2,
+    "p90": 139.32
+   },
+   {
+    "meal_count": 0,
+    "median": 136.1,
+    "minute": 1035,
+    "n": 3,
+    "p10": 135.38,
+    "p25": 135.65,
+    "p75": 141.15,
+    "p90": 144.18
+   },
+   {
+    "meal_count": 0,
+    "median": 129.4,
+    "minute": 1040,
+    "n": 3,
+    "p10": 129.24,
+    "p25": 129.3,
+    "p75": 133.65,
+    "p90": 136.2
+   },
+   {
+    "meal_count": 0,
+    "median": 147.8,
+    "minute": 1045,
+    "n": 3,
+    "p10": 135.16,
+    "p25": 139.9,
+    "p75": 148.15,
+    "p90": 148.36
+   },
+   {
+    "meal_count": 0,
+    "median": 139.5,
+    "minute": 1050,
+    "n": 3,
+    "p10": 136.22,
+    "p25": 137.45,
+    "p75": 141.1,
+    "p90": 142.06
+   },
+   {
+    "meal_count": 0,
+    "median": 143.0,
+    "minute": 1055,
+    "n": 3,
+    "p10": 142.44,
+    "p25": 142.65,
+    "p75": 149.7,
+    "p90": 153.72
+   },
+   {
+    "meal_count": 0,
+    "median": 141.8,
+    "minute": 1060,
+    "n": 3,
+    "p10": 141.0,
+    "p25": 141.3,
+    "p75": 144.5,
+    "p90": 146.12
+   },
+   {
+    "meal_count": 0,
+    "median": 137.9,
+    "minute": 1065,
+    "n": 3,
+    "p10": 135.18,
+    "p25": 136.2,
+    "p75": 144.9,
+    "p90": 149.1
+   },
+   {
+    "meal_count": 0,
+    "median": 140.1,
+    "minute": 1070,
+    "n": 3,
+    "p10": 137.06,
+    "p25": 138.2,
+    "p75": 143.5,
+    "p90": 145.54
+   },
+   {
+    "meal_count": 0,
+    "median": 148.7,
+    "minute": 1075,
+    "n": 3,
+    "p10": 146.94,
+    "p25": 147.6,
+    "p75": 148.85,
+    "p90": 148.94
+   },
+   {
+    "meal_count": 0,
+    "median": 155.9,
+    "minute": 1080,
+    "n": 3,
+    "p10": 151.5,
+    "p25": 153.15,
+    "p75": 158.4,
+    "p90": 159.9
+   },
+   {
+    "meal_count": 0,
+    "median": 144.4,
+    "minute": 1085,
+    "n": 3,
+    "p10": 144.16,
+    "p25": 144.25,
+    "p75": 152.8,
+    "p90": 157.84
+   },
+   {
+    "meal_count": 0,
+    "median": 159.9,
+    "minute": 1090,
+    "n": 3,
+    "p10": 154.94,
+    "p25": 156.8,
+    "p75": 160.5,
+    "p90": 160.86
+   },
+   {
+    "meal_count": 0,
+    "median": 154.4,
+    "minute": 1095,
+    "n": 3,
+    "p10": 147.2,
+    "p25": 149.9,
+    "p75": 155.5,
+    "p90": 156.16
+   },
+   {
+    "meal_count": 0,
+    "median": 164.7,
+    "minute": 1100,
+    "n": 3,
+    "p10": 159.82,
+    "p25": 161.65,
+    "p75": 168.7,
+    "p90": 171.1
+   },
+   {
+    "meal_count": 0,
+    "median": 172.4,
+    "minute": 1105,
+    "n": 3,
+    "p10": 160.24,
+    "p25": 164.8,
+    "p75": 174.6,
+    "p90": 175.92
+   },
+   {
+    "meal_count": 0,
+    "median": 173.4,
+    "minute": 1110,
+    "n": 3,
+    "p10": 172.04,
+    "p25": 172.55,
+    "p75": 176.9,
+    "p90": 179.0
+   },
+   {
+    "meal_count": 0,
+    "median": 169.5,
+    "minute": 1115,
+    "n": 3,
+    "p10": 167.82,
+    "p25": 168.45,
+    "p75": 174.3,
+    "p90": 177.18
+   },
+   {
+    "meal_count": 0,
+    "median": 172.0,
+    "minute": 1120,
+    "n": 3,
+    "p10": 160.4,
+    "p25": 164.75,
+    "p75": 178.35,
+    "p90": 182.16
+   },
+   {
+    "meal_count": 0,
+    "median": 170.6,
+    "minute": 1125,
+    "n": 3,
+    "p10": 167.64,
+    "p25": 168.75,
+    "p75": 172.45,
+    "p90": 173.56
+   },
+   {
+    "meal_count": 3,
+    "median": 177.7,
+    "minute": 1130,
+    "n": 3,
+    "p10": 176.42,
+    "p25": 176.9,
+    "p75": 180.05,
+    "p90": 181.46
+   },
+   {
+    "meal_count": 0,
+    "median": 173.9,
+    "minute": 1135,
+    "n": 3,
+    "p10": 172.06,
+    "p25": 172.75,
+    "p75": 174.2,
+    "p90": 174.38
+   },
+   {
+    "meal_count": 0,
+    "median": 177.1,
+    "minute": 1140,
+    "n": 3,
+    "p10": 170.78,
+    "p25": 173.15,
+    "p75": 177.75,
+    "p90": 178.14
+   },
+   {
+    "meal_count": 3,
+    "median": 170.9,
+    "minute": 1145,
+    "n": 3,
+    "p10": 160.5,
+    "p25": 164.4,
+    "p75": 180.5,
+    "p90": 186.26
+   },
+   {
+    "meal_count": 3,
+    "median": 174.7,
+    "minute": 1150,
+    "n": 3,
+    "p10": 171.66,
+    "p25": 172.8,
+    "p75": 178.1,
+    "p90": 180.14
+   },
+   {
+    "meal_count": 0,
+    "median": 175.0,
+    "minute": 1155,
+    "n": 3,
+    "p10": 167.48,
+    "p25": 170.3,
+    "p75": 176.2,
+    "p90": 176.92
+   },
+   {
+    "meal_count": 0,
+    "median": 166.8,
+    "minute": 1160,
+    "n": 3,
+    "p10": 160.48,
+    "p25": 162.85,
+    "p75": 167.55,
+    "p90": 168.0
+   },
+   {
+    "meal_count": 0,
+    "median": 166.1,
+    "minute": 1165,
+    "n": 3,
+    "p10": 159.3,
+    "p25": 161.85,
+    "p75": 166.35,
+    "p90": 166.5
+   },
+   {
+    "meal_count": 0,
+    "median": 168.3,
+    "minute": 1170,
+    "n": 3,
+    "p10": 162.94,
+    "p25": 164.95,
+    "p75": 170.0,
+    "p90": 171.02
+   },
+   {
+    "meal_count": 0,
+    "median": 161.7,
+    "minute": 1175,
+    "n": 3,
+    "p10": 161.06,
+    "p25": 161.3,
+    "p75": 163.0,
+    "p90": 163.78
+   },
+   {
+    "meal_count": 0,
+    "median": 159.2,
+    "minute": 1180,
+    "n": 3,
+    "p10": 157.04,
+    "p25": 157.85,
+    "p75": 160.3,
+    "p90": 160.96
+   },
+   {
+    "meal_count": 0,
+    "median": 149.3,
+    "minute": 1185,
+    "n": 3,
+    "p10": 139.94,
+    "p25": 143.45,
+    "p75": 152.0,
+    "p90": 153.62
+   },
+   {
+    "meal_count": 0,
+    "median": 149.5,
+    "minute": 1190,
+    "n": 3,
+    "p10": 138.3,
+    "p25": 142.5,
+    "p75": 149.6,
+    "p90": 149.66
+   },
+   {
+    "meal_count": 0,
+    "median": 149.4,
+    "minute": 1195,
+    "n": 3,
+    "p10": 145.24,
+    "p25": 146.8,
+    "p75": 153.1,
+    "p90": 155.32
+   },
+   {
+    "meal_count": 0,
+    "median": 135.2,
+    "minute": 1200,
+    "n": 3,
+    "p10": 127.92,
+    "p25": 130.65,
+    "p75": 138.7,
+    "p90": 140.8
+   },
+   {
+    "meal_count": 0,
+    "median": 136.3,
+    "minute": 1205,
+    "n": 3,
+    "p10": 123.74,
+    "p25": 128.45,
+    "p75": 138.25,
+    "p90": 139.42
+   },
+   {
+    "meal_count": 0,
+    "median": 137.9,
+    "minute": 1210,
+    "n": 3,
+    "p10": 130.86,
+    "p25": 133.5,
+    "p75": 139.05,
+    "p90": 139.74
+   },
+   {
+    "meal_count": 0,
+    "median": 129.0,
+    "minute": 1215,
+    "n": 3,
+    "p10": 128.68,
+    "p25": 128.8,
+    "p75": 130.85,
+    "p90": 131.96
+   },
+   {
+    "meal_count": 0,
+    "median": 129.2,
+    "minute": 1220,
+    "n": 3,
+    "p10": 126.0,
+    "p25": 127.2,
+    "p75": 132.2,
+    "p90": 134.0
+   },
+   {
+    "meal_count": 0,
+    "median": 122.1,
+    "minute": 1225,
+    "n": 3,
+    "p10": 118.82,
+    "p25": 120.05,
+    "p75": 123.25,
+    "p90": 123.94
+   },
+   {
+    "meal_count": 0,
+    "median": 120.9,
+    "minute": 1230,
+    "n": 3,
+    "p10": 117.78,
+    "p25": 118.95,
+    "p75": 121.65,
+    "p90": 122.1
+   },
+   {
+    "meal_count": 0,
+    "median": 112.9,
+    "minute": 1235,
+    "n": 3,
+    "p10": 109.86,
+    "p25": 111.0,
+    "p75": 119.1,
+    "p90": 122.82
+   },
+   {
+    "meal_count": 0,
+    "median": 107.9,
+    "minute": 1240,
+    "n": 3,
+    "p10": 102.3,
+    "p25": 104.4,
+    "p75": 116.5,
+    "p90": 121.66
+   },
+   {
+    "meal_count": 0,
+    "median": 116.7,
+    "minute": 1245,
+    "n": 3,
+    "p10": 114.7,
+    "p25": 115.45,
+    "p75": 117.75,
+    "p90": 118.38
+   },
+   {
+    "meal_count": 0,
+    "median": 113.3,
+    "minute": 1250,
+    "n": 3,
+    "p10": 106.66,
+    "p25": 109.15,
+    "p75": 117.55,
+    "p90": 120.1
+   },
+   {
+    "meal_count": 0,
+    "median": 108.5,
+    "minute": 1255,
+    "n": 3,
+    "p10": 107.78,
+    "p25": 108.05,
+    "p75": 109.95,
+    "p90": 110.82
+   },
+   {
+    "meal_count": 0,
+    "median": 104.6,
+    "minute": 1260,
+    "n": 3,
+    "p10": 99.4,
+    "p25": 101.35,
+    "p75": 107.65,
+    "p90": 109.48
+   },
+   {
+    "meal_count": 0,
+    "median": 109.5,
+    "minute": 1265,
+    "n": 3,
+    "p10": 98.14,
+    "p25": 102.4,
+    "p75": 111.95,
+    "p90": 113.42
+   },
+   {
+    "meal_count": 0,
+    "median": 107.1,
+    "minute": 1270,
+    "n": 3,
+    "p10": 104.3,
+    "p25": 105.35,
+    "p75": 107.8,
+    "p90": 108.22
+   },
+   {
+    "meal_count": 0,
+    "median": 106.0,
+    "minute": 1275,
+    "n": 3,
+    "p10": 94.64,
+    "p25": 98.9,
+    "p75": 108.85,
+    "p90": 110.56
+   },
+   {
+    "meal_count": 0,
+    "median": 102.7,
+    "minute": 1280,
+    "n": 3,
+    "p10": 90.62,
+    "p25": 95.15,
+    "p75": 109.6,
+    "p90": 113.74
+   },
+   {
+    "meal_count": 0,
+    "median": 100.4,
+    "minute": 1285,
+    "n": 3,
+    "p10": 96.64,
+    "p25": 98.05,
+    "p75": 103.3,
+    "p90": 105.04
+   },
+   {
+    "meal_count": 0,
+    "median": 105.8,
+    "minute": 1290,
+    "n": 3,
+    "p10": 100.12,
+    "p25": 102.25,
+    "p75": 107.55,
+    "p90": 108.6
+   },
+   {
+    "meal_count": 0,
+    "median": 109.8,
+    "minute": 1295,
+    "n": 3,
+    "p10": 101.4,
+    "p25": 104.55,
+    "p75": 120.5,
+    "p90": 126.92
+   },
+   {
+    "meal_count": 0,
+    "median": 111.3,
+    "minute": 1300,
+    "n": 3,
+    "p10": 108.5,
+    "p25": 109.55,
+    "p75": 112.45,
+    "p90": 113.14
+   },
+   {
+    "meal_count": 0,
+    "median": 107.8,
+    "minute": 1305,
+    "n": 3,
+    "p10": 93.24,
+    "p25": 98.7,
+    "p75": 111.05,
+    "p90": 113.0
+   },
+   {
+    "meal_count": 0,
+    "median": 95.9,
+    "minute": 1310,
+    "n": 3,
+    "p10": 92.94,
+    "p25": 94.05,
+    "p75": 100.1,
+    "p90": 102.62
+   },
+   {
+    "meal_count": 0,
+    "median": 92.2,
+    "minute": 1315,
+    "n": 3,
+    "p10": 90.2,
+    "p25": 90.95,
+    "p75": 99.95,
+    "p90": 104.6
+   },
+   {
+    "meal_count": 0,
+    "median": 99.9,
+    "minute": 1320,
+    "n": 3,
+    "p10": 92.46,
+    "p25": 95.25,
+    "p75": 102.55,
+    "p90": 104.14
+   },
+   {
+    "meal_count": 0,
+    "median": 105.4,
+    "minute": 1325,
+    "n": 3,
+    "p10": 99.56,
+    "p25": 101.75,
+    "p75": 106.25,
+    "p90": 106.76
+   },
+   {
+    "meal_count": 0,
+    "median": 93.5,
+    "minute": 1330,
+    "n": 3,
+    "p10": 92.3,
+    "p25": 92.75,
+    "p75": 100.7,
+    "p90": 105.02
+   },
+   {
+    "meal_count": 0,
+    "median": 99.6,
+    "minute": 1335,
+    "n": 3,
+    "p10": 97.76,
+    "p25": 98.45,
+    "p75": 101.5,
+    "p90": 102.64
+   },
+   {
+    "meal_count": 0,
+    "median": 102.2,
+    "minute": 1340,
+    "n": 3,
+    "p10": 101.08,
+    "p25": 101.5,
+    "p75": 104.25,
+    "p90": 105.48
+   },
+   {
+    "meal_count": 0,
+    "median": 103.6,
+    "minute": 1345,
+    "n": 3,
+    "p10": 100.72,
+    "p25": 101.8,
+    "p75": 108.6,
+    "p90": 111.6
+   },
+   {
+    "meal_count": 0,
+    "median": 99.2,
+    "minute": 1350,
+    "n": 3,
+    "p10": 98.64,
+    "p25": 98.85,
+    "p75": 105.7,
+    "p90": 109.6
+   },
+   {
+    "meal_count": 0,
+    "median": 97.4,
+    "minute": 1355,
+    "n": 3,
+    "p10": 97.4,
+    "p25": 97.4,
+    "p75": 101.5,
+    "p90": 103.96
+   },
+   {
+    "meal_count": 0,
+    "median": 102.5,
+    "minute": 1360,
+    "n": 3,
+    "p10": 100.98,
+    "p25": 101.55,
+    "p75": 106.85,
+    "p90": 109.46
+   },
+   {
+    "meal_count": 0,
+    "median": 104.0,
+    "minute": 1365,
+    "n": 3,
+    "p10": 98.48,
+    "p25": 100.55,
+    "p75": 109.6,
+    "p90": 112.96
+   },
+   {
+    "meal_count": 0,
+    "median": 97.5,
+    "minute": 1370,
+    "n": 3,
+    "p10": 96.62,
+    "p25": 96.95,
+    "p75": 98.05,
+    "p90": 98.38
+   },
+   {
+    "meal_count": 0,
+    "median": 101.8,
+    "minute": 1375,
+    "n": 3,
+    "p10": 100.84,
+    "p25": 101.2,
+    "p75": 106.6,
+    "p90": 109.48
+   },
+   {
+    "meal_count": 0,
+    "median": 110.7,
+    "minute": 1380,
+    "n": 3,
+    "p10": 96.3,
+    "p25": 101.7,
+    "p75": 112.55,
+    "p90": 113.66
+   },
+   {
+    "meal_count": 0,
+    "median": 100.7,
+    "minute": 1385,
+    "n": 3,
+    "p10": 89.42,
+    "p25": 93.65,
+    "p75": 104.5,
+    "p90": 106.78
+   },
+   {
+    "meal_count": 0,
+    "median": 96.8,
+    "minute": 1390,
+    "n": 3,
+    "p10": 93.36,
+    "p25": 94.65,
+    "p75": 103.45,
+    "p90": 107.44
+   },
+   {
+    "meal_count": 0,
+    "median": 100.3,
+    "minute": 1395,
+    "n": 3,
+    "p10": 95.74,
+    "p25": 97.45,
+    "p75": 101.7,
+    "p90": 102.54
+   },
+   {
+    "meal_count": 0,
+    "median": 107.7,
+    "minute": 1400,
+    "n": 3,
+    "p10": 95.14,
+    "p25": 99.85,
+    "p75": 108.1,
+    "p90": 108.34
+   },
+   {
+    "meal_count": 0,
+    "median": 112.2,
+    "minute": 1405,
+    "n": 3,
+    "p10": 99.24,
+    "p25": 104.1,
+    "p75": 113.05,
+    "p90": 113.56
+   },
+   {
+    "meal_count": 0,
+    "median": 103.5,
+    "minute": 1410,
+    "n": 3,
+    "p10": 102.94,
+    "p25": 103.15,
+    "p75": 104.7,
+    "p90": 105.42
+   },
+   {
+    "meal_count": 0,
+    "median": 99.7,
+    "minute": 1415,
+    "n": 3,
+    "p10": 97.7,
+    "p25": 98.45,
+    "p75": 103.15,
+    "p90": 105.22
+   },
+   {
+    "meal_count": 0,
+    "median": 105.9,
+    "minute": 1420,
+    "n": 3,
+    "p10": 97.82,
+    "p25": 100.85,
+    "p75": 109.1,
+    "p90": 111.02
+   },
+   {
+    "meal_count": 0,
+    "median": 106.2,
+    "minute": 1425,
+    "n": 3,
+    "p10": 104.04,
+    "p25": 104.85,
+    "p75": 106.65,
+    "p90": 106.92
+   },
+   {
+    "meal_count": 0,
+    "median": 103.3,
+    "minute": 1430,
+    "n": 3,
+    "p10": 101.54,
+    "p25": 102.2,
+    "p75": 106.5,
+    "p90": 108.42
+   },
+   {
+    "meal_count": 0,
+    "median": 96.3,
+    "minute": 1435,
+    "n": 3,
+    "p10": 96.06,
+    "p25": 96.15,
+    "p75": 104.7,
+    "p90": 109.74
+   }
+  ],
+  "pooled": {
+   "bin_minutes": 15,
+   "bins": [
+    {
+     "meal_count": 0,
+     "median": 105.65,
+     "minute": 0,
+     "n": 54,
+     "p10": 96.03,
+     "p25": 101.875,
+     "p75": 109.775,
+     "p90": 112.86,
+     "raw_n": 9,
+     "support_days": 4,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 105.05,
+     "minute": 15,
+     "n": 54,
+     "p10": 95.66,
+     "p25": 100.05,
+     "p75": 109.675,
+     "p90": 112.15,
+     "raw_n": 9,
+     "support_days": 4,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 104.19999999999999,
+     "minute": 30,
+     "n": 54,
+     "p10": 93.39,
+     "p25": 97.975,
+     "p75": 109.525,
+     "p90": 112.22,
+     "raw_n": 9,
+     "support_days": 4,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 102.1,
+     "minute": 45,
+     "n": 54,
+     "p10": 90.19,
+     "p25": 94.1,
+     "p75": 108.9,
+     "p90": 111.62,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 99.35,
+     "minute": 60,
+     "n": 54,
+     "p10": 86.38,
+     "p25": 91.6,
+     "p75": 105.3,
+     "p90": 109.67,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 95.7,
+     "minute": 75,
+     "n": 54,
+     "p10": 82.2,
+     "p25": 89.35,
+     "p75": 102.1,
+     "p90": 108.36,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 90.4,
+     "minute": 90,
+     "n": 54,
+     "p10": 76.48,
+     "p25": 82.925,
+     "p75": 98.75,
+     "p90": 102.1,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 86.2,
+     "minute": 105,
+     "n": 54,
+     "p10": 74.33,
+     "p25": 78.225,
+     "p75": 94.7,
+     "p90": 99.61,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 83.15,
+     "minute": 120,
+     "n": 54,
+     "p10": 73.74,
+     "p25": 76.9,
+     "p75": 89.95,
+     "p90": 97.7,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 82.2,
+     "minute": 135,
+     "n": 54,
+     "p10": 73.74,
+     "p25": 76.9,
+     "p75": 88.675,
+     "p90": 96.97,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 82.5,
+     "minute": 150,
+     "n": 54,
+     "p10": 73.74,
+     "p25": 76.9,
+     "p75": 89.95,
+     "p90": 97.53,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 83.6,
+     "minute": 165,
+     "n": 54,
+     "p10": 74.36,
+     "p25": 77.85,
+     "p75": 96.75,
+     "p90": 104.98,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 92.2,
+     "minute": 180,
+     "n": 54,
+     "p10": 75.99,
+     "p25": 79.8,
+     "p75": 104.325,
+     "p90": 110.05,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 100.2,
+     "minute": 195,
+     "n": 54,
+     "p10": 79.7,
+     "p25": 88.675,
+     "p75": 110.2,
+     "p90": 120.28,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 107.80000000000001,
+     "minute": 210,
+     "n": 54,
+     "p10": 84.48,
+     "p25": 96.45,
+     "p75": 118.725,
+     "p90": 124.78,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 111.8,
+     "minute": 225,
+     "n": 54,
+     "p10": 96.75,
+     "p25": 104.8,
+     "p75": 122.975,
+     "p90": 126.73,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 119.05,
+     "minute": 240,
+     "n": 54,
+     "p10": 102.22,
+     "p25": 110.325,
+     "p75": 124.8,
+     "p90": 128.84,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 123.85,
+     "minute": 255,
+     "n": 54,
+     "p10": 110.35,
+     "p25": 114.575,
+     "p75": 127.85,
+     "p90": 134.14,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 125.80000000000001,
+     "minute": 270,
+     "n": 54,
+     "p10": 114.65,
+     "p25": 122.3,
+     "p75": 132.225,
+     "p90": 135.16,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 127.0,
+     "minute": 285,
+     "n": 54,
+     "p10": 119.03,
+     "p25": 123.725,
+     "p75": 132.75,
+     "p90": 136.13,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 128.14999999999998,
+     "minute": 300,
+     "n": 54,
+     "p10": 122.18,
+     "p25": 125.4,
+     "p75": 136.15,
+     "p90": 142.22,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 133.35,
+     "minute": 315,
+     "n": 54,
+     "p10": 124.6,
+     "p25": 127.025,
+     "p75": 139.8,
+     "p90": 145.0,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 138.05,
+     "minute": 330,
+     "n": 54,
+     "p10": 126.62,
+     "p25": 129.0,
+     "p75": 145.075,
+     "p90": 156.15,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 142.5,
+     "minute": 345,
+     "n": 54,
+     "p10": 127.03,
+     "p25": 133.375,
+     "p75": 156.175,
+     "p90": 163.41,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 151.2,
+     "minute": 360,
+     "n": 54,
+     "p10": 128.26,
+     "p25": 139.8,
+     "p75": 164.1,
+     "p90": 173.36,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 157.5,
+     "minute": 375,
+     "n": 54,
+     "p10": 140.25,
+     "p25": 145.85,
+     "p75": 173.825,
+     "p90": 184.82,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 169.45,
+     "minute": 390,
+     "n": 54,
+     "p10": 144.05,
+     "p25": 155.925,
+     "p75": 185.075,
+     "p90": 189.77,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 181.14999999999998,
+     "minute": 405,
+     "n": 54,
+     "p10": 155.95,
+     "p25": 164.275,
+     "p75": 188.475,
+     "p90": 193.23,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 186.39999999999998,
+     "minute": 420,
+     "n": 54,
+     "p10": 164.29,
+     "p25": 174.775,
+     "p75": 192.2,
+     "p90": 196.33,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 3,
+     "median": 189.35,
+     "minute": 435,
+     "n": 54,
+     "p10": 176.98,
+     "p25": 184.55,
+     "p75": 193.9,
+     "p90": 196.81,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 3,
+     "median": 190.05,
+     "minute": 450,
+     "n": 54,
+     "p10": 178.86,
+     "p25": 185.425,
+     "p75": 194.075,
+     "p90": 196.81,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 189.6,
+     "minute": 465,
+     "n": 54,
+     "p10": 176.03,
+     "p25": 182.375,
+     "p75": 193.9,
+     "p90": 196.51,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 187.10000000000002,
+     "minute": 480,
+     "n": 54,
+     "p10": 166.01,
+     "p25": 175.4,
+     "p75": 193.575,
+     "p90": 196.51,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 178.15,
+     "minute": 495,
+     "n": 54,
+     "p10": 159.81,
+     "p25": 165.5,
+     "p75": 192.175,
+     "p90": 195.48,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 168.45,
+     "minute": 510,
+     "n": 54,
+     "p10": 155.46,
+     "p25": 160.875,
+     "p75": 181.225,
+     "p90": 193.33,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 165.35000000000002,
+     "minute": 525,
+     "n": 54,
+     "p10": 148.67,
+     "p25": 157.225,
+     "p75": 175.1,
+     "p90": 181.09,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 160.0,
+     "minute": 540,
+     "n": 54,
+     "p10": 145.96,
+     "p25": 155.1,
+     "p75": 167.025,
+     "p90": 173.99,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 158.7,
+     "minute": 555,
+     "n": 54,
+     "p10": 145.96,
+     "p25": 152.05,
+     "p75": 164.425,
+     "p90": 167.79,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 155.75,
+     "minute": 570,
+     "n": 54,
+     "p10": 144.83,
+     "p25": 147.5,
+     "p75": 160.3,
+     "p90": 165.22,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 154.7,
+     "minute": 585,
+     "n": 54,
+     "p10": 144.83,
+     "p25": 146.975,
+     "p75": 159.25,
+     "p90": 164.41,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 154.7,
+     "minute": 600,
+     "n": 54,
+     "p10": 145.96,
+     "p25": 147.6,
+     "p75": 157.6,
+     "p90": 162.01,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 154.7,
+     "minute": 615,
+     "n": 54,
+     "p10": 146.36,
+     "p25": 148.375,
+     "p75": 158.125,
+     "p90": 162.47,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 155.35000000000002,
+     "minute": 630,
+     "n": 54,
+     "p10": 146.53,
+     "p25": 149.15,
+     "p75": 160.275,
+     "p90": 164.57,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 155.95,
+     "minute": 645,
+     "n": 54,
+     "p10": 146.66,
+     "p25": 150.225,
+     "p75": 160.725,
+     "p90": 164.88,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 158.25,
+     "minute": 660,
+     "n": 54,
+     "p10": 148.93,
+     "p25": 154.225,
+     "p75": 163.7,
+     "p90": 170.21,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 161.55,
+     "minute": 675,
+     "n": 54,
+     "p10": 150.99,
+     "p25": 156.025,
+     "p75": 170.525,
+     "p90": 176.58,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 166.4,
+     "minute": 690,
+     "n": 54,
+     "p10": 154.72,
+     "p25": 158.875,
+     "p75": 176.075,
+     "p90": 184.48,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 172.5,
+     "minute": 705,
+     "n": 54,
+     "p10": 158.17,
+     "p25": 163.175,
+     "p75": 184.5,
+     "p90": 194.69,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 180.55,
+     "minute": 720,
+     "n": 54,
+     "p10": 161.49,
+     "p25": 170.075,
+     "p75": 190.0,
+     "p90": 197.16,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 186.75,
+     "minute": 735,
+     "n": 54,
+     "p10": 170.09,
+     "p25": 175.625,
+     "p75": 195.15,
+     "p90": 199.85,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 188.15,
+     "minute": 750,
+     "n": 54,
+     "p10": 175.67,
+     "p25": 183.75,
+     "p75": 195.975,
+     "p90": 200.39,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 3,
+     "median": 188.15,
+     "minute": 765,
+     "n": 54,
+     "p10": 174.61,
+     "p25": 183.75,
+     "p75": 196.325,
+     "p90": 200.39,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 188.45,
+     "minute": 780,
+     "n": 54,
+     "p10": 174.05,
+     "p25": 183.325,
+     "p75": 196.325,
+     "p90": 199.97,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 186.55,
+     "minute": 795,
+     "n": 54,
+     "p10": 170.59,
+     "p25": 176.975,
+     "p75": 194.25,
+     "p90": 199.01,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 179.85000000000002,
+     "minute": 810,
+     "n": 54,
+     "p10": 158.57,
+     "p25": 170.575,
+     "p75": 188.675,
+     "p90": 199.01,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 172.25,
+     "minute": 825,
+     "n": 54,
+     "p10": 150.74,
+     "p25": 158.375,
+     "p75": 186.175,
+     "p90": 188.63,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 164.65,
+     "minute": 840,
+     "n": 54,
+     "p10": 147.03,
+     "p25": 152.475,
+     "p75": 177.125,
+     "p90": 186.47,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 156.85000000000002,
+     "minute": 855,
+     "n": 54,
+     "p10": 140.0,
+     "p25": 147.1,
+     "p75": 170.425,
+     "p90": 181.86,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 150.0,
+     "minute": 870,
+     "n": 54,
+     "p10": 136.72,
+     "p25": 142.75,
+     "p75": 160.1,
+     "p90": 170.71,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 146.05,
+     "minute": 885,
+     "n": 54,
+     "p10": 134.72,
+     "p25": 139.625,
+     "p75": 152.25,
+     "p90": 160.04,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 143.14999999999998,
+     "minute": 900,
+     "n": 54,
+     "p10": 132.3,
+     "p25": 137.05,
+     "p75": 148.4,
+     "p90": 155.1,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 140.14999999999998,
+     "minute": 915,
+     "n": 54,
+     "p10": 131.69,
+     "p25": 135.725,
+     "p75": 146.55,
+     "p90": 149.52,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 138.8,
+     "minute": 930,
+     "n": 54,
+     "p10": 130.83,
+     "p25": 135.025,
+     "p75": 142.55,
+     "p90": 147.01,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 136.8,
+     "minute": 945,
+     "n": 54,
+     "p10": 127.89,
+     "p25": 131.825,
+     "p75": 141.775,
+     "p90": 146.5,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 135.65,
+     "minute": 960,
+     "n": 54,
+     "p10": 124.8,
+     "p25": 130.525,
+     "p75": 140.425,
+     "p90": 144.89,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 135.05,
+     "minute": 975,
+     "n": 54,
+     "p10": 124.1,
+     "p25": 128.825,
+     "p75": 139.05,
+     "p90": 144.59,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 134.85,
+     "minute": 990,
+     "n": 54,
+     "p10": 124.1,
+     "p25": 128.975,
+     "p75": 138.625,
+     "p90": 142.98,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 135.14999999999998,
+     "minute": 1005,
+     "n": 54,
+     "p10": 124.1,
+     "p25": 129.25,
+     "p75": 140.05,
+     "p90": 145.87,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 135.35000000000002,
+     "minute": 1020,
+     "n": 54,
+     "p10": 124.1,
+     "p25": 129.525,
+     "p75": 141.7,
+     "p90": 147.11,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 138.95,
+     "minute": 1035,
+     "n": 54,
+     "p10": 126.43,
+     "p25": 132.275,
+     "p75": 146.425,
+     "p90": 149.98,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 142.85,
+     "minute": 1050,
+     "n": 54,
+     "p10": 129.26,
+     "p25": 135.325,
+     "p75": 150.05,
+     "p90": 159.51,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 147.5,
+     "minute": 1065,
+     "n": 54,
+     "p10": 134.71,
+     "p25": 140.275,
+     "p75": 159.575,
+     "p90": 172.19,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 156.15,
+     "minute": 1080,
+     "n": 54,
+     "p10": 139.68,
+     "p25": 144.65,
+     "p75": 170.325,
+     "p90": 176.59,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 161.14999999999998,
+     "minute": 1095,
+     "n": 54,
+     "p10": 142.49,
+     "p25": 149.35,
+     "p75": 173.225,
+     "p90": 178.19,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 169.35,
+     "minute": 1110,
+     "n": 54,
+     "p10": 149.42,
+     "p25": 158.075,
+     "p75": 174.65,
+     "p90": 178.89,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 3,
+     "median": 170.05,
+     "minute": 1125,
+     "n": 54,
+     "p10": 157.53,
+     "p25": 161.625,
+     "p75": 174.65,
+     "p90": 178.89,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 6,
+     "median": 169.35,
+     "minute": 1140,
+     "n": 54,
+     "p10": 155.24,
+     "p25": 161.025,
+     "p75": 174.65,
+     "p90": 178.89,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 165.85,
+     "minute": 1155,
+     "n": 54,
+     "p10": 138.38,
+     "p25": 155.15,
+     "p75": 173.425,
+     "p90": 177.61,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 158.4,
+     "minute": 1170,
+     "n": 54,
+     "p10": 129.13,
+     "p25": 138.475,
+     "p75": 168.975,
+     "p90": 174.91,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 146.75,
+     "minute": 1185,
+     "n": 54,
+     "p10": 121.26,
+     "p25": 129.025,
+     "p75": 161.675,
+     "p90": 170.12,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 135.2,
+     "minute": 1200,
+     "n": 54,
+     "p10": 113.57,
+     "p25": 121.875,
+     "p75": 153.45,
+     "p90": 161.67,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 125.15,
+     "minute": 1215,
+     "n": 54,
+     "p10": 107.69,
+     "p25": 113.525,
+     "p75": 137.825,
+     "p90": 149.64,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 117.5,
+     "minute": 1230,
+     "n": 54,
+     "p10": 102.97,
+     "p25": 108.5,
+     "p75": 128.9,
+     "p90": 139.51,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 111.55000000000001,
+     "minute": 1245,
+     "n": 54,
+     "p10": 98.88,
+     "p25": 105.85,
+     "p75": 122.325,
+     "p90": 129.17,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 108.8,
+     "minute": 1260,
+     "n": 54,
+     "p10": 95.76,
+     "p25": 103.775,
+     "p75": 114.375,
+     "p90": 122.01,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 106.65,
+     "minute": 1275,
+     "n": 54,
+     "p10": 92.2,
+     "p25": 99.45,
+     "p75": 111.15,
+     "p90": 115.87,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 104.9,
+     "minute": 1290,
+     "n": 54,
+     "p10": 92.06,
+     "p25": 98.1,
+     "p75": 108.35,
+     "p90": 111.61,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 103.5,
+     "minute": 1305,
+     "n": 54,
+     "p10": 92.06,
+     "p25": 97.575,
+     "p75": 107.775,
+     "p90": 112.05,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 101.5,
+     "minute": 1320,
+     "n": 54,
+     "p10": 92.59,
+     "p25": 97.425,
+     "p75": 107.55,
+     "p90": 111.93,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 101.3,
+     "minute": 1335,
+     "n": 54,
+     "p10": 92.2,
+     "p25": 97.4,
+     "p75": 107.775,
+     "p90": 111.96,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 100.65,
+     "minute": 1350,
+     "n": 54,
+     "p10": 92.29,
+     "p25": 97.325,
+     "p75": 106.9,
+     "p90": 111.05,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 101.3,
+     "minute": 1365,
+     "n": 54,
+     "p10": 93.83,
+     "p25": 97.4,
+     "p75": 107.425,
+     "p90": 111.96,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 102.94999999999999,
+     "minute": 1380,
+     "n": 54,
+     "p10": 95.86,
+     "p25": 97.75,
+     "p75": 108.15,
+     "p90": 112.2,
+     "raw_n": 9,
+     "support_days": 3,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 103.4,
+     "minute": 1395,
+     "n": 54,
+     "p10": 95.86,
+     "p25": 97.775,
+     "p75": 108.45,
+     "p90": 112.05,
+     "raw_n": 9,
+     "support_days": 4,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 103.9,
+     "minute": 1410,
+     "n": 54,
+     "p10": 94.9,
+     "p25": 99.325,
+     "p75": 110.0,
+     "p90": 112.27,
+     "raw_n": 9,
+     "support_days": 4,
+     "supported": false
+    },
+    {
+     "meal_count": 0,
+     "median": 104.3,
+     "minute": 1425,
+     "n": 54,
+     "p10": 95.66,
+     "p25": 98.45,
+     "p75": 109.775,
+     "p90": 112.86,
+     "raw_n": 9,
+     "support_days": 4,
+     "supported": false
+    }
+   ],
+   "captured_days": 3,
+   "meals": [
+    {
+     "carbs": 114.0,
+     "count": 3,
+     "insulin": 20.37,
+     "median_carbs": 38.0,
+     "minute": 420
+    },
+    {
+     "carbs": 66.0,
+     "count": 3,
+     "insulin": 11.790000000000001,
+     "median_carbs": 22.0,
+     "minute": 450
+    },
+    {
+     "carbs": 153.0,
+     "count": 3,
+     "insulin": 27.33,
+     "median_carbs": 51.0,
+     "minute": 750
+    },
+    {
+     "carbs": 132.0,
+     "count": 3,
+     "insulin": 23.580000000000002,
+     "median_carbs": 44.0,
+     "minute": 1110
+    },
+    {
+     "carbs": 138.0,
+     "count": 6,
+     "insulin": 24.630000000000003,
+     "median_carbs": 23.0,
+     "minute": 1140
+    }
+   ],
+   "pool_minutes": 45,
+   "reading_count": 864
+  },
+  "target_range": {
+   "high": 180,
+   "low": 70
+  },
+  "window": {
+   "data_days": 30,
+   "end": "2020-03-04 00:00:00",
+   "start": "2020-02-03 00:00:00"
+  }
+ },
+ "exposures": {
+  "exposures": {
+   "correction_clusters": {
+    "attributed": 2,
+    "by_cause": {
+     "Correction on active insulin": 2
+    },
+    "clean": 0,
+    "levers": [
+     "correction_on_iob"
+    ],
+    "n": 2,
+    "occurrences": [
+     {
+      "attributed": true,
+      "bg": 68.0,
+      "cause_lever": "correction_on_iob",
+      "cause_title": "Correction on active insulin",
+      "date": "2020-03-01",
+      "ep_id": "2020-03-01-ep90",
+      "kind": "low",
+      "label": "Low",
+      "state": "fired",
+      "t": "2020-03-01 10:10:00",
+      "text": "Treated a low at 10:10 and the glucose kept falling to 49 before it turned \u2014 the treatment was larger than the fall needed.",
+      "verdicts": [
+       {
+        "classifier": "over_treated_low",
+        "detail": "glucose fell to 49 mg/dL after the treatment",
+        "evidence_tier": "inferred",
+        "matched": true,
+        "silence_reason": null
+       },
+       {
+        "classifier": "iob_stacking",
+        "detail": "no stacked correction precedes this episode",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "no_signal"
+       }
+      ],
+      "worst_bg": 49.3
+     },
+     {
+      "attributed": true,
+      "bg": 63.2,
+      "cause_lever": "correction_on_iob",
+      "cause_title": "Correction on active insulin",
+      "date": "2020-03-02",
+      "ep_id": "2020-03-02-ep91",
+      "kind": "low",
+      "label": "Low",
+      "state": "fired",
+      "t": "2020-03-02 15:00:00",
+      "text": "Treated a low at 15:00 and the glucose kept falling to 55 before it turned \u2014 the treatment was larger than the fall needed.",
+      "verdicts": [
+       {
+        "classifier": "over_treated_low",
+        "detail": "glucose fell to 55 mg/dL after the treatment",
+        "evidence_tier": "inferred",
+        "matched": true,
+        "silence_reason": null
+       },
+       {
+        "classifier": "iob_stacking",
+        "detail": "no stacked correction precedes this episode",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "no_signal"
+       }
+      ],
+      "worst_bg": 55.2
+     }
+    ]
+   },
+   "highs": {
+    "attributed": 3,
+    "by_cause": {
+     "Missed / unannounced meal": 3
+    },
+    "clean": 0,
+    "levers": [
+     "missed_meal"
+    ],
+    "n": 3,
+    "occurrences": [
+     {
+      "attributed": true,
+      "bg": 62.1,
+      "cause_lever": "missed_meal",
+      "cause_title": "Missed / unannounced meal",
+      "date": "2020-03-03",
+      "ep_id": "2020-03-03-ep80",
+      "kind": "low",
+      "label": "Low",
+      "state": "fired",
+      "t": "2020-03-03 08:40:00",
+      "text": "Treated a low at 08:40 and the glucose kept falling to 54 before it turned \u2014 the treatment was larger than the fall needed.",
+      "verdicts": [
+       {
+        "classifier": "over_treated_low",
+        "detail": "glucose fell to 54 mg/dL after the treatment",
+        "evidence_tier": "inferred",
+        "matched": true,
+        "silence_reason": null
+       },
+       {
+        "classifier": "iob_stacking",
+        "detail": "no stacked correction precedes this episode",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "no_signal"
+       }
+      ],
+      "worst_bg": 53.6
+     },
+     {
+      "attributed": true,
+      "bg": 65.3,
+      "cause_lever": "missed_meal",
+      "cause_title": "Missed / unannounced meal",
+      "date": "2020-03-01",
+      "ep_id": "2020-03-01-ep81",
+      "kind": "low",
+      "label": "Low",
+      "state": "fired",
+      "t": "2020-03-01 13:50:00",
+      "text": "Treated a low at 13:50 and the glucose kept falling to 53 before it turned \u2014 the treatment was larger than the fall needed.",
+      "verdicts": [
+       {
+        "classifier": "over_treated_low",
+        "detail": "glucose fell to 53 mg/dL after the treatment",
+        "evidence_tier": "inferred",
+        "matched": true,
+        "silence_reason": null
+       },
+       {
+        "classifier": "iob_stacking",
+        "detail": "no stacked correction precedes this episode",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "no_signal"
+       }
+      ],
+      "worst_bg": 52.7
+     },
+     {
+      "attributed": true,
+      "bg": 63.0,
+      "cause_lever": "missed_meal",
+      "cause_title": "Missed / unannounced meal",
+      "date": "2020-03-02",
+      "ep_id": "2020-03-02-ep82",
+      "kind": "low",
+      "label": "Low",
+      "state": "fired",
+      "t": "2020-03-02 20:00:00",
+      "text": "Treated a low at 20:00 and the glucose kept falling to 53 before it turned \u2014 the treatment was larger than the fall needed.",
+      "verdicts": [
+       {
+        "classifier": "over_treated_low",
+        "detail": "glucose fell to 53 mg/dL after the treatment",
+        "evidence_tier": "inferred",
+        "matched": true,
+        "silence_reason": null
+       },
+       {
+        "classifier": "iob_stacking",
+        "detail": "no stacked correction precedes this episode",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "no_signal"
+       }
+      ],
+      "worst_bg": 53.2
+     }
+    ]
+   },
+   "lows": {
+    "attributed": 13,
+    "by_cause": {
+     "Correction on active insulin": 3,
+     "Over-treated low": 10
+    },
+    "clean": 2,
+    "levers": [
+     "over_treated_low",
+     "correction_on_iob"
+    ],
+    "n": 15,
+    "occurrences": [
+     {
+      "attributed": true,
+      "bg": 64.3,
+      "cause_lever": "over_treated_low",
+      "cause_title": "Over-treated low",
+      "date": "2020-03-01",
+      "ep_id": "2020-03-01-ep0",
+      "kind": "low",
+      "label": "Low",
+      "state": "fired",
+      "t": "2020-03-01 01:35:00",
+      "text": "Treated a low at 01:35 and the glucose kept falling to 49 before it turned \u2014 the treatment was larger than the fall needed.",
+      "verdicts": [
+       {
+        "classifier": "over_treated_low",
+        "detail": "glucose fell to 49 mg/dL after the treatment",
+        "evidence_tier": "inferred",
+        "matched": true,
+        "silence_reason": null
+       },
+       {
+        "classifier": "iob_stacking",
+        "detail": "no stacked correction precedes this episode",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "no_signal"
+       }
+      ],
+      "worst_bg": 49.1
+     },
+     {
+      "attributed": true,
+      "bg": 65.2,
+      "cause_lever": "over_treated_low",
+      "cause_title": "Over-treated low",
+      "date": "2020-03-02",
+      "ep_id": "2020-03-02-ep1",
+      "kind": "low",
+      "label": "Low",
+      "state": "fired",
+      "t": "2020-03-02 02:20:00",
+      "text": "Treated a low at 02:20 and the glucose kept falling to 46 before it turned \u2014 the treatment was larger than the fall needed.",
+      "verdicts": [
+       {
+        "classifier": "over_treated_low",
+        "detail": "glucose fell to 46 mg/dL after the treatment",
+        "evidence_tier": "inferred",
+        "matched": true,
+        "silence_reason": null
+       },
+       {
+        "classifier": "iob_stacking",
+        "detail": "no stacked correction precedes this episode",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "no_signal"
+       }
+      ],
+      "worst_bg": 45.5
+     },
+     {
+      "attributed": true,
+      "bg": 65.8,
+      "cause_lever": "over_treated_low",
+      "cause_title": "Over-treated low",
+      "date": "2020-03-03",
+      "ep_id": "2020-03-03-ep2",
+      "kind": "low",
+      "label": "Low",
+      "state": "fired",
+      "t": "2020-03-03 03:05:00",
+      "text": "Treated a low at 03:05 and the glucose kept falling to 48 before it turned \u2014 the treatment was larger than the fall needed.",
+      "verdicts": [
+       {
+        "classifier": "over_treated_low",
+        "detail": "glucose fell to 48 mg/dL after the treatment",
+        "evidence_tier": "inferred",
+        "matched": true,
+        "silence_reason": null
+       },
+       {
+        "classifier": "iob_stacking",
+        "detail": "no stacked correction precedes this episode",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "no_signal"
+       }
+      ],
+      "worst_bg": 48.2
+     },
+     {
+      "attributed": true,
+      "bg": 69.3,
+      "cause_lever": "over_treated_low",
+      "cause_title": "Over-treated low",
+      "date": "2020-03-01",
+      "ep_id": "2020-03-01-ep3",
+      "kind": "low",
+      "label": "Low",
+      "state": "fired",
+      "t": "2020-03-01 03:50:00",
+      "text": "Treated a low at 03:50 and the glucose kept falling to 49 before it turned \u2014 the treatment was larger than the fall needed.",
+      "verdicts": [
+       {
+        "classifier": "over_treated_low",
+        "detail": "glucose fell to 49 mg/dL after the treatment",
+        "evidence_tier": "inferred",
+        "matched": true,
+        "silence_reason": null
+       },
+       {
+        "classifier": "iob_stacking",
+        "detail": "no stacked correction precedes this episode",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "no_signal"
+       }
+      ],
+      "worst_bg": 48.9
+     },
+     {
+      "attributed": true,
+      "bg": 77.1,
+      "cause_lever": "over_treated_low",
+      "cause_title": "Over-treated low",
+      "date": "2020-03-02",
+      "ep_id": "2020-03-02-ep4",
+      "kind": "low",
+      "label": "Low",
+      "state": "fired",
+      "t": "2020-03-02 04:35:00",
+      "text": "Treated a low at 04:35 and the glucose kept falling to 61 before it turned \u2014 the treatment was larger than the fall needed.",
+      "verdicts": [
+       {
+        "classifier": "over_treated_low",
+        "detail": "glucose fell to 61 mg/dL after the treatment",
+        "evidence_tier": "inferred",
+        "matched": true,
+        "silence_reason": null
+       },
+       {
+        "classifier": "iob_stacking",
+        "detail": "no stacked correction precedes this episode",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "no_signal"
+       }
+      ],
+      "worst_bg": 60.9
+     },
+     {
+      "attributed": true,
+      "bg": 71.9,
+      "cause_lever": "over_treated_low",
+      "cause_title": "Over-treated low",
+      "date": "2020-03-03",
+      "ep_id": "2020-03-03-ep5",
+      "kind": "low",
+      "label": "Low",
+      "state": "fired",
+      "t": "2020-03-03 05:20:00",
+      "text": "Treated a low at 05:20 and the glucose kept falling to 60 before it turned \u2014 the treatment was larger than the fall needed.",
+      "verdicts": [
+       {
+        "classifier": "over_treated_low",
+        "detail": "glucose fell to 60 mg/dL after the treatment",
+        "evidence_tier": "inferred",
+        "matched": true,
+        "silence_reason": null
+       },
+       {
+        "classifier": "iob_stacking",
+        "detail": "no stacked correction precedes this episode",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "no_signal"
+       }
+      ],
+      "worst_bg": 59.9
+     },
+     {
+      "attributed": true,
+      "bg": 64.8,
+      "cause_lever": "over_treated_low",
+      "cause_title": "Over-treated low",
+      "date": "2020-03-01",
+      "ep_id": "2020-03-01-ep6",
+      "kind": "low",
+      "label": "Low",
+      "state": "fired",
+      "t": "2020-03-01 08:25:00",
+      "text": "Treated a low at 08:25 and the glucose kept falling to 53 before it turned \u2014 the treatment was larger than the fall needed.",
+      "verdicts": [
+       {
+        "classifier": "over_treated_low",
+        "detail": "glucose fell to 53 mg/dL after the treatment",
+        "evidence_tier": "inferred",
+        "matched": true,
+        "silence_reason": null
+       },
+       {
+        "classifier": "iob_stacking",
+        "detail": "no stacked correction precedes this episode",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "no_signal"
+       }
+      ],
+      "worst_bg": 53.4
+     },
+     {
+      "attributed": true,
+      "bg": 71.6,
+      "cause_lever": "over_treated_low",
+      "cause_title": "Over-treated low",
+      "date": "2020-03-02",
+      "ep_id": "2020-03-02-ep7",
+      "kind": "low",
+      "label": "Low",
+      "state": "fired",
+      "t": "2020-03-02 10:40:00",
+      "text": "Treated a low at 10:40 and the glucose kept falling to 51 before it turned \u2014 the treatment was larger than the fall needed.",
+      "verdicts": [
+       {
+        "classifier": "over_treated_low",
+        "detail": "glucose fell to 51 mg/dL after the treatment",
+        "evidence_tier": "inferred",
+        "matched": true,
+        "silence_reason": null
+       },
+       {
+        "classifier": "iob_stacking",
+        "detail": "no stacked correction precedes this episode",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "no_signal"
+       }
+      ],
+      "worst_bg": 50.7
+     },
+     {
+      "attributed": true,
+      "bg": 72.1,
+      "cause_lever": "over_treated_low",
+      "cause_title": "Over-treated low",
+      "date": "2020-03-03",
+      "ep_id": "2020-03-03-ep8",
+      "kind": "low",
+      "label": "Low",
+      "state": "fired",
+      "t": "2020-03-03 15:05:00",
+      "text": "Treated a low at 15:05 and the glucose kept falling to 54 before it turned \u2014 the treatment was larger than the fall needed.",
+      "verdicts": [
+       {
+        "classifier": "over_treated_low",
+        "detail": "glucose fell to 54 mg/dL after the treatment",
+        "evidence_tier": "inferred",
+        "matched": true,
+        "silence_reason": null
+       },
+       {
+        "classifier": "iob_stacking",
+        "detail": "no stacked correction precedes this episode",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "no_signal"
+       }
+      ],
+      "worst_bg": 54.0
+     },
+     {
+      "attributed": true,
+      "bg": 68.3,
+      "cause_lever": "over_treated_low",
+      "cause_title": "Over-treated low",
+      "date": "2020-03-01",
+      "ep_id": "2020-03-01-ep9",
+      "kind": "low",
+      "label": "Low",
+      "state": "fired",
+      "t": "2020-03-01 17:55:00",
+      "text": "Treated a low at 17:55 and the glucose kept falling to 61 before it turned \u2014 the treatment was larger than the fall needed.",
+      "verdicts": [
+       {
+        "classifier": "over_treated_low",
+        "detail": "glucose fell to 61 mg/dL after the treatment",
+        "evidence_tier": "inferred",
+        "matched": true,
+        "silence_reason": null
+       },
+       {
+        "classifier": "iob_stacking",
+        "detail": "no stacked correction precedes this episode",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "no_signal"
+       }
+      ],
+      "worst_bg": 60.8
+     },
+     {
+      "attributed": true,
+      "bg": 68.4,
+      "cause_lever": "correction_on_iob",
+      "cause_title": "Correction on active insulin",
+      "date": "2020-03-03",
+      "ep_id": "2020-03-03-ep50",
+      "kind": "low",
+      "label": "Low",
+      "state": "fired",
+      "t": "2020-03-03 06:50:00",
+      "text": "Treated a low at 06:50 and the glucose kept falling to 48 before it turned \u2014 the treatment was larger than the fall needed.",
+      "verdicts": [
+       {
+        "classifier": "over_treated_low",
+        "detail": "glucose fell to 48 mg/dL after the treatment",
+        "evidence_tier": "inferred",
+        "matched": true,
+        "silence_reason": null
+       },
+       {
+        "classifier": "iob_stacking",
+        "detail": "no stacked correction precedes this episode",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "no_signal"
+       }
+      ],
+      "worst_bg": 48.2
+     },
+     {
+      "attributed": true,
+      "bg": 65.2,
+      "cause_lever": "correction_on_iob",
+      "cause_title": "Correction on active insulin",
+      "date": "2020-03-01",
+      "ep_id": "2020-03-01-ep51",
+      "kind": "low",
+      "label": "Low",
+      "state": "fired",
+      "t": "2020-03-01 11:40:00",
+      "text": "Treated a low at 11:40 and the glucose kept falling to 43 before it turned \u2014 the treatment was larger than the fall needed.",
+      "verdicts": [
+       {
+        "classifier": "over_treated_low",
+        "detail": "glucose fell to 43 mg/dL after the treatment",
+        "evidence_tier": "inferred",
+        "matched": true,
+        "silence_reason": null
+       },
+       {
+        "classifier": "iob_stacking",
+        "detail": "no stacked correction precedes this episode",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "no_signal"
+       }
+      ],
+      "worst_bg": 43.4
+     },
+     {
+      "attributed": true,
+      "bg": 72.8,
+      "cause_lever": "correction_on_iob",
+      "cause_title": "Correction on active insulin",
+      "date": "2020-03-02",
+      "ep_id": "2020-03-02-ep52",
+      "kind": "low",
+      "label": "Low",
+      "state": "fired",
+      "t": "2020-03-02 16:55:00",
+      "text": "Treated a low at 16:55 and the glucose kept falling to 55 before it turned \u2014 the treatment was larger than the fall needed.",
+      "verdicts": [
+       {
+        "classifier": "over_treated_low",
+        "detail": "glucose fell to 55 mg/dL after the treatment",
+        "evidence_tier": "inferred",
+        "matched": true,
+        "silence_reason": null
+       },
+       {
+        "classifier": "iob_stacking",
+        "detail": "no stacked correction precedes this episode",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "no_signal"
+       }
+      ],
+      "worst_bg": 54.6
+     },
+     {
+      "attributed": false,
+      "bg": 66.0,
+      "cause_lever": null,
+      "cause_title": null,
+      "date": "2020-03-01",
+      "ep_id": "2020-03-01-ep60",
+      "kind": "low",
+      "label": "Low",
+      "state": "no_data",
+      "t": "2020-03-01 02:40:00",
+      "text": "",
+      "verdicts": [
+       {
+        "classifier": "over_treated_low",
+        "detail": "glucose fell to 45 mg/dL after the treatment",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "insufficient_data"
+       },
+       {
+        "classifier": "iob_stacking",
+        "detail": "no stacked correction precedes this episode",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "no_signal"
+       }
+      ],
+      "worst_bg": 45.1
+     },
+     {
+      "attributed": false,
+      "bg": 60.2,
+      "cause_lever": null,
+      "cause_title": null,
+      "date": "2020-03-02",
+      "ep_id": "2020-03-02-ep61",
+      "kind": "low",
+      "label": "Low",
+      "state": "no_data",
+      "t": "2020-03-02 16:20:00",
+      "text": "",
+      "verdicts": [
+       {
+        "classifier": "over_treated_low",
+        "detail": "glucose fell to 41 mg/dL after the treatment",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "insufficient_data"
+       },
+       {
+        "classifier": "iob_stacking",
+        "detail": "no stacked correction precedes this episode",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "no_signal"
+       }
+      ],
+      "worst_bg": 41.0
+     }
+    ]
+   },
+   "meals": {
+    "attributed": 5,
+    "by_cause": {
+     "Late bolus": 5
+    },
+    "clean": 0,
+    "levers": [
+     "late_bolus"
+    ],
+    "n": 5,
+    "occurrences": [
+     {
+      "attributed": true,
+      "bg": 70.9,
+      "cause_lever": "late_bolus",
+      "cause_title": "Late bolus",
+      "date": "2020-03-02",
+      "ep_id": "2020-03-02-ep70",
+      "kind": "low",
+      "label": "Low",
+      "state": "fired",
+      "t": "2020-03-02 07:35:00",
+      "text": "Treated a low at 07:35 and the glucose kept falling to 56 before it turned \u2014 the treatment was larger than the fall needed.",
+      "verdicts": [
+       {
+        "classifier": "over_treated_low",
+        "detail": "glucose fell to 56 mg/dL after the treatment",
+        "evidence_tier": "inferred",
+        "matched": true,
+        "silence_reason": null
+       },
+       {
+        "classifier": "iob_stacking",
+        "detail": "no stacked correction precedes this episode",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "no_signal"
+       }
+      ],
+      "worst_bg": 55.6
+     },
+     {
+      "attributed": true,
+      "bg": 65.5,
+      "cause_lever": "late_bolus",
+      "cause_title": "Late bolus",
+      "date": "2020-03-03",
+      "ep_id": "2020-03-03-ep71",
+      "kind": "low",
+      "label": "Low",
+      "state": "fired",
+      "t": "2020-03-03 13:00:00",
+      "text": "Treated a low at 13:00 and the glucose kept falling to 59 before it turned \u2014 the treatment was larger than the fall needed.",
+      "verdicts": [
+       {
+        "classifier": "over_treated_low",
+        "detail": "glucose fell to 59 mg/dL after the treatment",
+        "evidence_tier": "inferred",
+        "matched": true,
+        "silence_reason": null
+       },
+       {
+        "classifier": "iob_stacking",
+        "detail": "no stacked correction precedes this episode",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "no_signal"
+       }
+      ],
+      "worst_bg": 59.2
+     },
+     {
+      "attributed": true,
+      "bg": 65.2,
+      "cause_lever": "late_bolus",
+      "cause_title": "Late bolus",
+      "date": "2020-03-01",
+      "ep_id": "2020-03-01-ep72",
+      "kind": "low",
+      "label": "Low",
+      "state": "fired",
+      "t": "2020-03-01 19:10:00",
+      "text": "Treated a low at 19:10 and the glucose kept falling to 53 before it turned \u2014 the treatment was larger than the fall needed.",
+      "verdicts": [
+       {
+        "classifier": "over_treated_low",
+        "detail": "glucose fell to 53 mg/dL after the treatment",
+        "evidence_tier": "inferred",
+        "matched": true,
+        "silence_reason": null
+       },
+       {
+        "classifier": "iob_stacking",
+        "detail": "no stacked correction precedes this episode",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "no_signal"
+       }
+      ],
+      "worst_bg": 53.1
+     },
+     {
+      "attributed": true,
+      "bg": 77.6,
+      "cause_lever": "late_bolus",
+      "cause_title": "Late bolus",
+      "date": "2020-03-02",
+      "ep_id": "2020-03-02-ep73",
+      "kind": "low",
+      "label": "Low",
+      "state": "fired",
+      "t": "2020-03-02 07:45:00",
+      "text": "Treated a low at 07:45 and the glucose kept falling to 73 before it turned \u2014 the treatment was larger than the fall needed.",
+      "verdicts": [
+       {
+        "classifier": "over_treated_low",
+        "detail": "glucose fell to 73 mg/dL after the treatment",
+        "evidence_tier": "inferred",
+        "matched": true,
+        "silence_reason": null
+       },
+       {
+        "classifier": "iob_stacking",
+        "detail": "no stacked correction precedes this episode",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "no_signal"
+       }
+      ],
+      "worst_bg": 72.7
+     },
+     {
+      "attributed": true,
+      "bg": 72.6,
+      "cause_lever": "late_bolus",
+      "cause_title": "Late bolus",
+      "date": "2020-03-03",
+      "ep_id": "2020-03-03-ep74",
+      "kind": "low",
+      "label": "Low",
+      "state": "fired",
+      "t": "2020-03-03 13:10:00",
+      "text": "Treated a low at 13:10 and the glucose kept falling to 54 before it turned \u2014 the treatment was larger than the fall needed.",
+      "verdicts": [
+       {
+        "classifier": "over_treated_low",
+        "detail": "glucose fell to 54 mg/dL after the treatment",
+        "evidence_tier": "inferred",
+        "matched": true,
+        "silence_reason": null
+       },
+       {
+        "classifier": "iob_stacking",
+        "detail": "no stacked correction precedes this episode",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "no_signal"
+       }
+      ],
+      "worst_bg": 54.5
+     }
+    ]
+   }
+  },
+  "window": {
+   "end": "2020-03-03",
+   "start": "2020-02-02"
+  }
+ },
+ "scenarios": {
+  "episodes": {},
+  "low_confidence": [],
+  "patterns": [],
+  "preempted_lows": {
+   "floor_u": 0.3,
+   "ic": 0,
+   "isf": 0,
+   "observation": {
+    "fully_observed": false,
+    "observed_days": 0,
+    "observed_from": null,
+    "state": "no-recorded-observation",
+    "states": {
+     "confirmed-rescue": 0,
+     "explicit-no": 0,
+     "not-sure": 0
+    },
+    "unobserved_days": 30,
+    "window_days": 30
+   },
+   "total": 0,
+   "unattributed": 0
+  },
+  "priority_active_threshold": 30,
+  "schema_version": 6,
+  "window": {
+   "days": 30,
+   "end": "2020-03-03 23:55:00",
+   "start": "2020-02-02 23:55:00"
+  }
+ }
+}

@@ -1,0 +1,249 @@
+/* Verify workstation — PORTED from the locked mock, not authored here.
+ *
+ * Source: the archived mock (#722). Its interior
+ * style blocks — lines 87-125 (surface, strip, pane grid, narrow fallback) and
+ * 231-358 (story layout: hero head, trial line, popover, inspector blocks,
+ * movement chips, accrual, decision) — are transferred VERBATIM apart from the
+ * host scope below.
+ *
+ * NOT ported, deliberately: the mock's chrome (`.cockpit-*`, the `html, body`
+ * viewport pin) — #634 already built the app's topbar and status strip to the
+ * same lock, and the mock's own header says chrome is the shipped app's files.
+ * The `.mockbar` rules are harness furniture, excluded by the behaviour ledger.
+ *
+ * PORT ADAPTER — the host scope. The mock is a whole page, so its `.panes` /
+ * `.pane` / `.head-live` rules sit at global scope; in the app those same class
+ * names are already declared, unscoped, by diagnose-workstation.css. Every rule
+ * here is therefore prefixed with `.vw`, the Verify host class, mirroring
+ * Diagnose's own `.dw`. Class names themselves are untouched: the behaviour
+ * replay drives the mock's selectors against this build, and a rename would be
+ * a port defect (the port process's R1, selector parity).
+ *
+ * The `--mk-*` / `--ck-*` token bridge is declared once by
+ * diagnose-workstation.css and inherited here; only the two tokens the Verify
+ * surface adds are declared below. Aliasing, never restating: re-declaring a
+ * colour from memory is what shipped the wrong ink in #644.
+ *
+ * Edit this file only to re-sync it with the mock. A change that is not in the
+ * mock is a deviation and needs a re-settle against the lock.
+ */
+
+:root {
+  --mk-secondary: var(--secondary);
+  --mk-bg-tint: var(--bg-tint);
+}
+
+/* ---- workstation tokens — the same layer, on this surface's host.
+   diagnose-workstation.css declares this set on `.dw`, not on `:root` (it must:
+   shell.css already owns a different global `--ck-*` set). A second workstation
+   is therefore outside every one of them, and the first render proved it —
+   `padding: var(--ck-gap) 12px` is invalid when the token is missing, so the
+   pane grid lost its inset, its panel ground and its 8px radius all at once.
+   Mirrored value-for-value from that block, because both workstations render
+   the one locked token layer (lock term 2 pins the literals: pad 12, gap 10,
+   radius 8, base 12.5px, grid-left 52px). Re-sync the two together. */
+.vw {
+  --ck-bar: var(--mk-bg);
+  --ck-rail: var(--mk-surface);
+  --ck-hair: var(--mk-line);
+  --ck-inset: color-mix(in srgb, var(--mk-bg) 82%, #000);
+  --ck-accent: var(--mk-primary);
+  --ck-meal: var(--mk-accent);
+  --ck-sel: color-mix(in srgb, var(--mk-primary) 16%, transparent);
+  --ck-manual: #93701B;          /* user-claim token, from frontend/index.html */
+  --ck-manual-soft: #F6EFDC;
+  --ck-up: var(--mk-ok);
+  --ck-hold: var(--mk-muted);
+  --ck-insuff: var(--mk-warn);
+  --ck-pad: 12px;
+  --ck-gap: 10px;
+  --ck-r: 8px;
+  --ck-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+  --ck-micro: 10px;
+  --ck-track: .08em;
+  --ck-data: 12px;
+  --ck-emph: 13px;
+  --ck-body: 12.5px;
+  --ck-grid-left: 52px;
+  --ck-grid-right: 52px;
+  font-size: var(--ck-body);
+}
+html.dark .vw {
+  --ck-inset: #101215;
+  --ck-bar: var(--mk-bg);
+  --ck-rail: #191c1f;
+  --ck-manual: #D9B568;
+  --ck-manual-soft: #332C1B;
+}
+
+/* ---- host adapter (NEW) — the app shell owns the topbar and status rows, so
+   the ported surface is the strip + panes, and `.vw` carries that two-row grid
+   at the mock's own track sizes. */
+.main-content > div:has(.vw), .main-content > div:has(.vw) > div { height: 100%; }
+.vw { height: 100%; min-height: 0; }
+.vw, .vw * { box-sizing: border-box; }
+.vw button { font: inherit; }
+
+.vw.verify-surface { display: grid; grid-template-rows: 42px minmax(0, 1fr); }
+/* strip = the shipped .instruments row, exact values: 14px inset, 7px
+   cap-to-control gap, painted on the bar ground */
+.vw .verify-strip { display: flex; align-items: center; gap: 7px;
+  padding: 0 14px; background: var(--mk-bg); min-width: 0; overflow: visible; }
+.vw .verify-strip .cap { font-size: var(--ck-micro); text-transform: uppercase;
+  letter-spacing: var(--ck-track); color: var(--ck-meta); font-weight: 650; white-space: nowrap; }
+.vw .verify-strip .strip-slot { display: flex; align-items: baseline; gap: 18px;
+  min-width: 0; flex: 1; }
+.vw .verify-strip .strip-note { margin-left: auto; color: var(--ck-meta);
+  font-size: var(--ck-micro); }
+
+/* ---- pane grid (two surfaces, one spine per column) --------------------- */
+.vw .panes { display: grid; gap: var(--ck-gap); padding: var(--ck-gap) 12px; min-height: 0;
+  grid-template-columns: minmax(0, 1fr) var(--side, 430px);
+  font-size: 12.5px; /* the workstation's base rank (.dw --ck-body) */ }
+.vw .pane { display: grid; grid-template-rows: auto minmax(0, 1fr); min-height: 0; min-width: 0;
+  background: var(--ck-rail); border-radius: var(--ck-r); }
+.vw .pane > header { display: flex; align-items: baseline; gap: 12px; padding: 8px var(--ck-pad); }
+.vw .pane > header h2 { margin: 0; font-size: var(--ck-micro); font-weight: 700;
+  letter-spacing: var(--ck-track); text-transform: uppercase; color: var(--mk-secondary); }
+.vw .pane > header .meta { margin-left: auto; font-family: var(--ck-mono);
+  font-size: var(--ck-micro); font-weight: 500; color: var(--mk-muted);
+  font-variant-numeric: tabular-nums; }
+.vw .pane > .body { min-height: 0; overflow: auto; padding: 0 var(--ck-pad) var(--ck-pad);
+  line-height: 1.45; }
+.vw .mono { font-family: var(--ck-mono); font-variant-numeric: tabular-nums; }
+
+/* ---- story layout — everything below rides the shell's tokens ----------- */
+/* pane header = the shipped canvas-head anatomy: the rest line (title + meta)
+   swaps to the live readout line on hover, in place, no floating box. The
+   header text opens on the plot's own left edge (--ck-grid-left), so the title,
+   the mg/dL caption and the axis labels share one vertical. */
+.vw .hero-head { display: grid; grid-template-columns: minmax(0, 1fr); align-items: baseline;
+  --ck-grid-left: 52px; }
+.vw .pane > header.hero-head { padding: 4px var(--ck-pad) 4px var(--ck-grid-left); }
+.vw .hero-head .head-swap { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; }
+.vw .hero-head .head-line { grid-area: 1 / 1; display: flex; align-items: baseline; gap: 10px;
+  min-width: 0; transition: opacity .1s linear; }
+.vw .hero-head .head-line .meta { margin-left: auto; }
+.vw .hero-head .head-live { visibility: hidden; opacity: 0;
+  font-family: var(--ck-mono); font-variant-numeric: tabular-nums;
+  font-size: var(--ck-data); white-space: nowrap; overflow: hidden; gap: 14px; }
+.vw .hero-head[data-hover="1"] .head-rest { visibility: hidden; opacity: 0; }
+.vw .hero-head[data-hover="1"] .head-live { visibility: visible; opacity: 1; }
+.vw .head-live .rd-time { font-weight: 700; color: var(--mk-text); letter-spacing: .02em;
+  min-width: 5ch; display: inline-block; }
+.vw .head-live .rd-pair { display: inline-flex; align-items: baseline; gap: 6px; }
+.vw .head-live .rd-pair .k { color: var(--mk-muted); font-size: var(--ck-micro);
+  text-transform: uppercase; letter-spacing: var(--ck-track); }
+.vw .head-live .rd-pair .v { color: var(--mk-text); font-weight: 600;
+  display: inline-block; text-align: right; font-variant-numeric: tabular-nums; min-width: 3ch; }
+
+/* trial line: ONLY the selected trial stands in the strip; siblings live behind
+   a quiet popover (by design — past trials get no standing space) */
+.vw .trial-line { display: flex; align-items: baseline; gap: 14px; min-width: 0; position: relative; }
+.vw .trial-line .subject { color: var(--mk-text); font-weight: 650; font-size: var(--ck-emph);
+  white-space: nowrap; }
+.vw .trial-line .subject .st { color: var(--ck-meta); font-size: var(--ck-micro);
+  text-transform: uppercase; letter-spacing: var(--ck-track); font-weight: 650; }
+.vw .trial-more { border: 0; background: none; padding: 0; cursor: pointer; font: inherit;
+  color: var(--mk-muted); font-size: 12px; white-space: nowrap; }
+.vw .trial-more:hover { color: var(--mk-text); text-decoration: underline; text-underline-offset: 2px; }
+.vw .trial-pop { position: absolute; top: calc(100% + 8px); left: 0; z-index: 30;
+  background: var(--mk-surface); border: 1px solid var(--ck-hair); border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.12); padding: 6px; display: grid; gap: 2px; min-width: 320px; }
+.vw .trial-pop[hidden] { display: none; }
+.vw .trial-pop button { border: 0; background: none; text-align: left; padding: 7px 10px;
+  border-radius: 6px; cursor: pointer; font: inherit; color: var(--mk-text); white-space: nowrap; }
+.vw .trial-pop button:hover { background: var(--ck-sel); }
+.vw .trial-pop .st { color: var(--mk-muted); font-family: var(--ck-mono); font-size: var(--ck-micro); }
+
+/* three type ranks only (lock term 14): the header carries emphasis (title) and
+   caps-rank meta; the chart's own legend is the sole mark key */
+.vw .blk .hh-progress { margin-left: 0; flex-wrap: wrap; }
+.vw .hh-progress { margin-left: auto; display: flex; align-items: center; gap: 10px;
+  font-family: var(--ck-mono); font-size: var(--ck-data); color: var(--mk-text); flex: 0 0 auto; }
+.vw .hh-progress .pips { display: flex; gap: 2px; }
+.vw .hh-progress .pips i { width: 7px; height: 10px; border-radius: 2px;
+  background: color-mix(in srgb, var(--ck-accent) 55%, transparent); }
+.vw .hh-progress .pips i[data-pending] { background: transparent;
+  border: 1px dashed color-mix(in srgb, var(--mk-muted) 50%, transparent); }
+.vw .hh-progress .ready { color: var(--mk-ok); font-weight: 650; }
+.vw .hh-progress .waiting { color: var(--mk-secondary); }
+
+.vw .story-body { display: grid; grid-template-rows: minmax(0, 1fr); }
+.vw .hero-chart { min-height: 0; position: relative; }
+.vw .hero-chart svg { width: 100%; height: 100%; display: block; }
+
+/* inspector column — Diagnose's verdict-column anatomy, Verify's content */
+.vw .insp-body { display: flex; flex-direction: column; gap: 14px; overflow: auto; }
+.vw .blk { display: grid; gap: 8px; }
+/* section hierarchy without a fourth type rank: the GROUP title steps up in ink
+   (secondary, 700) and every group after the first opens with a hairline rule +
+   extra air; row caps inside stay muted so the group title owns the eye */
+.vw .blk > .cap { font-size: var(--ck-micro); text-transform: uppercase;
+  letter-spacing: var(--ck-track); color: var(--mk-secondary); font-weight: 700; }
+/* hairlines run the full pane width, edge to edge (app idiom) */
+.vw .blk + .blk { border-top: 1px solid var(--ck-hair); padding-top: 14px;
+  margin-inline: calc(-1 * var(--ck-pad)); padding-inline: var(--ck-pad); }
+.vw .changes { display: grid; gap: 4px; }
+.vw .chg { display: flex; align-items: baseline; gap: 8px;
+  font-family: var(--ck-mono); font-size: var(--ck-data);
+  font-variant-numeric: tabular-nums; color: var(--mk-text); }
+.vw .chg .p { color: var(--mk-secondary); min-width: 44px; }
+.vw .chg .scope-n { color: var(--mk-muted); margin-left: auto; font-size: var(--ck-micro); }
+.vw .limits { margin: 0; padding: 0 0 0 14px; display: grid; gap: 3px;
+  font-size: 11.5px; color: var(--mk-secondary); }
+.vw .decide-blk { margin-top: auto; border-top: 1px solid var(--ck-hair); padding-top: 12px; }
+.vw .movement { display: grid; gap: 10px; }
+.vw .m-item { display: grid; gap: 2px; }
+.vw .m-item .cap { font-size: var(--ck-micro); text-transform: uppercase;
+  letter-spacing: var(--ck-track); color: var(--mk-muted); font-weight: 600; }
+.vw .m-item .vals { font-family: var(--ck-mono); font-size: var(--ck-emph);
+  font-variant-numeric: tabular-nums; color: var(--mk-text);
+  display: flex; align-items: baseline; }
+.vw .m-item .vals .arrow { color: var(--mk-muted); padding: 0 3px; }
+/* movement chip: direction glyph + signed magnitude, one glance, valence by
+   token (ok = moved the right way, warn = the wrong way) */
+.vw .m-item .delta { margin-left: auto; font-size: var(--ck-data); font-weight: 700; }
+.vw .m-item .delta.good { color: var(--mk-ok); }
+.vw .m-item .delta.bad { color: var(--mk-warn); }
+.vw .m-item .delta.flat { color: var(--mk-muted); }
+.vw .m-item .word { font-size: var(--ck-micro); color: var(--mk-secondary); }
+.vw .m-item .role { font-size: var(--ck-micro); color: var(--mk-muted); letter-spacing: var(--ck-track); }
+
+.vw .decide { display: grid; gap: 8px; }
+/* the readiness word is a STATUS, not a control: text-rank word led by a state
+   dot, so nothing above the buttons reads as a link */
+.vw .decide .d-status { font-weight: 650; font-size: var(--ck-data); color: var(--mk-text); }
+.vw .decide .d-status::before { content: ''; display: inline-block; width: 6px; height: 6px;
+  border-radius: 50%; margin-right: 7px; vertical-align: 1px; }
+.vw .decide .d-status.ready::before { background: var(--mk-ok); }
+.vw .decide .d-status.waiting { color: var(--mk-secondary); }
+.vw .decide .d-status.waiting::before { background: transparent;
+  border: 1px dashed color-mix(in srgb, var(--mk-muted) 60%, transparent); }
+.vw .decide .btns { display: flex; gap: 8px; }
+.vw .decide .note { font-size: var(--ck-micro); color: var(--mk-secondary); }
+.vw .decide button { border: 1px solid var(--ck-accent); background: transparent;
+  color: var(--ck-accent); border-radius: 7px; padding: 6px 12px; font-weight: 650;
+  font-size: 12px; cursor: pointer; }
+.vw .decide button.secondary { border-color: var(--ck-hair); color: var(--mk-secondary); }
+
+/* narrow fallback: the workstation is a 1440×900 desktop surface (term 17);
+   below it the panes stack and the content column scrolls instead of overlapping */
+@media (max-width: 900px) {
+  /* PORT ADAPTER: the mock's surface is a direct child of the stage's content
+     column; in the app it sits two `height: 100%` wrappers deep (the tab div and
+     the mount). Releasing only the surface leaves it pinned to the viewport and
+     the stack never scrolls — the app-side replay caught exactly this. */
+  .main-content > div:has(.vw), .main-content > div:has(.vw) > div { height: auto; }
+  .vw { height: auto; }
+  .vw.verify-surface { height: auto; }
+  .vw .panes { grid-template-columns: minmax(0, 1fr); }
+  .vw .pane:not(.inspector) { height: 60vh; }
+  .vw .verify-strip { flex-wrap: wrap; row-gap: 0; padding-block: 4px; height: auto; }
+  .vw .verify-strip .strip-slot { flex-wrap: wrap; }
+  .vw .trial-line { flex-wrap: wrap; }
+  .vw .trial-line .subject { white-space: normal; }
+  /* the shell pins html/body/stage to the viewport (overflow hidden); when the
+     panes stack, the stage's content column is the scroll surface */
+  .cockpit-stage > .main-content:has(.vw) { overflow-y: auto; }
+}

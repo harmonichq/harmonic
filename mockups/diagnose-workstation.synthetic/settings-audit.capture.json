@@ -1,0 +1,4279 @@
+{
+ "authorized": "operator, 2026-08-10, behaviour ledger Q2",
+ "states": {
+  "dense": {
+   "analysis": {
+    "basal": [
+     {
+      "annotation": "too few clean nights to assert a direction here",
+      "asserts_move": false,
+      "current": 0.8,
+      "days": 3,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.24,
+       "lo": 0.5,
+       "method": "bootstrap-median",
+       "n": 3,
+       "value": 0.86,
+       "wide": true
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "00:00",
+      "recommended": null,
+      "safety_status": "insufficient evidence",
+      "slot": 0
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.833,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.883,
+       "lo": 0.783,
+       "method": "bootstrap-median",
+       "n": 12,
+       "value": 0.833,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "00:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 1
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.865,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.915,
+       "lo": 0.815,
+       "method": "bootstrap-median",
+       "n": 24,
+       "value": 0.865,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "01:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 2
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.896,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.946,
+       "lo": 0.846,
+       "method": "bootstrap-median",
+       "n": 19,
+       "value": 0.896,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "01:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 3
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.925,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.975,
+       "lo": 0.875,
+       "method": "bootstrap-median",
+       "n": 22,
+       "value": 0.925,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "02:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 4
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.952,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.002,
+       "lo": 0.902,
+       "method": "bootstrap-median",
+       "n": 16,
+       "value": 0.952,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "02:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 5
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.977,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.027,
+       "lo": 0.927,
+       "method": "bootstrap-median",
+       "n": 12,
+       "value": 0.977,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "03:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 6
+     },
+     {
+      "annotation": "too few clean nights to assert a direction here",
+      "asserts_move": false,
+      "current": 0.998,
+      "days": 5,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.438,
+       "lo": 0.698,
+       "method": "bootstrap-median",
+       "n": 5,
+       "value": 1.058,
+       "wide": true
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "03:30",
+      "recommended": null,
+      "safety_status": "insufficient evidence",
+      "slot": 7
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 1.017,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.067,
+       "lo": 0.967,
+       "method": "bootstrap-median",
+       "n": 18,
+       "value": 1.017,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "04:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 8
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 1.031,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.081,
+       "lo": 0.981,
+       "method": "bootstrap-median",
+       "n": 25,
+       "value": 1.031,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "04:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 9
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 1.041,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.091,
+       "lo": 0.991,
+       "method": "bootstrap-median",
+       "n": 12,
+       "value": 1.041,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "05:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 10
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 1.048,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.098,
+       "lo": 0.998,
+       "method": "bootstrap-median",
+       "n": 18,
+       "value": 1.048,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "05:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 11
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 1.05,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.1,
+       "lo": 1.0,
+       "method": "bootstrap-median",
+       "n": 24,
+       "value": 1.05,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "06:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 12
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 1.048,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.098,
+       "lo": 0.998,
+       "method": "bootstrap-median",
+       "n": 23,
+       "value": 1.048,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "06:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 13
+     },
+     {
+      "annotation": "a conservative one-step move would raise this slot",
+      "asserts_move": true,
+      "current": 1.041,
+      "days": 20,
+      "direction": "raise",
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.371,
+       "lo": 1.041,
+       "method": "bootstrap-median",
+       "n": 20,
+       "value": 1.131,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "07:00",
+      "recommended": 1.131,
+      "safety_status": "raise",
+      "slot": 14
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 1.031,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.081,
+       "lo": 0.981,
+       "method": "bootstrap-median",
+       "n": 25,
+       "value": 1.031,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "07:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 15
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 1.017,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.067,
+       "lo": 0.967,
+       "method": "bootstrap-median",
+       "n": 17,
+       "value": 1.017,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "08:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 16
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.998,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.048,
+       "lo": 0.948,
+       "method": "bootstrap-median",
+       "n": 14,
+       "value": 0.998,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "08:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 17
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.977,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.027,
+       "lo": 0.927,
+       "method": "bootstrap-median",
+       "n": 20,
+       "value": 0.977,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "09:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 18
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.952,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.002,
+       "lo": 0.902,
+       "method": "bootstrap-median",
+       "n": 24,
+       "value": 0.952,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "09:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 19
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.925,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.975,
+       "lo": 0.875,
+       "method": "bootstrap-median",
+       "n": 21,
+       "value": 0.925,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "10:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 20
+     },
+     {
+      "annotation": "too few clean nights to assert a direction here",
+      "asserts_move": false,
+      "current": 0.896,
+      "days": 2,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.336,
+       "lo": 0.596,
+       "method": "bootstrap-median",
+       "n": 2,
+       "value": 0.956,
+       "wide": true
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "10:30",
+      "recommended": null,
+      "safety_status": "insufficient evidence",
+      "slot": 21
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.865,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.915,
+       "lo": 0.815,
+       "method": "bootstrap-median",
+       "n": 12,
+       "value": 0.865,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "11:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 22
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.833,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.883,
+       "lo": 0.783,
+       "method": "bootstrap-median",
+       "n": 22,
+       "value": 0.833,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "11:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 23
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.8,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.85,
+       "lo": 0.75,
+       "method": "bootstrap-median",
+       "n": 12,
+       "value": 0.8,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "12:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 24
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.767,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.817,
+       "lo": 0.717,
+       "method": "bootstrap-median",
+       "n": 19,
+       "value": 0.767,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "12:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 25
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.735,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.785,
+       "lo": 0.685,
+       "method": "bootstrap-median",
+       "n": 24,
+       "value": 0.735,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "13:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 26
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.704,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.754,
+       "lo": 0.654,
+       "method": "bootstrap-median",
+       "n": 14,
+       "value": 0.704,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "13:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 27
+     },
+     {
+      "annotation": "too few clean nights to assert a direction here",
+      "asserts_move": false,
+      "current": 0.675,
+      "days": 2,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.115,
+       "lo": 0.375,
+       "method": "bootstrap-median",
+       "n": 2,
+       "value": 0.735,
+       "wide": true
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "14:00",
+      "recommended": null,
+      "safety_status": "insufficient evidence",
+      "slot": 28
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.648,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.698,
+       "lo": 0.598,
+       "method": "bootstrap-median",
+       "n": 12,
+       "value": 0.648,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "14:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 29
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.623,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.673,
+       "lo": 0.573,
+       "method": "bootstrap-median",
+       "n": 15,
+       "value": 0.623,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "15:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 30
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.602,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.652,
+       "lo": 0.552,
+       "method": "bootstrap-median",
+       "n": 24,
+       "value": 0.602,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "15:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 31
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.583,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.633,
+       "lo": 0.533,
+       "method": "bootstrap-median",
+       "n": 12,
+       "value": 0.583,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "16:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 32
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.569,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.619,
+       "lo": 0.519,
+       "method": "bootstrap-median",
+       "n": 23,
+       "value": 0.569,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "16:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 33
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.559,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.609,
+       "lo": 0.509,
+       "method": "bootstrap-median",
+       "n": 16,
+       "value": 0.559,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "17:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 34
+     },
+     {
+      "annotation": "too few clean nights to assert a direction here",
+      "asserts_move": false,
+      "current": 0.552,
+      "days": 5,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.992,
+       "lo": 0.252,
+       "method": "bootstrap-median",
+       "n": 5,
+       "value": 0.612,
+       "wide": true
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "17:30",
+      "recommended": null,
+      "safety_status": "insufficient evidence",
+      "slot": 35
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.55,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.6,
+       "lo": 0.5,
+       "method": "bootstrap-median",
+       "n": 12,
+       "value": 0.55,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "18:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 36
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.552,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.602,
+       "lo": 0.502,
+       "method": "bootstrap-median",
+       "n": 22,
+       "value": 0.552,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "18:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 37
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.559,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.609,
+       "lo": 0.509,
+       "method": "bootstrap-median",
+       "n": 22,
+       "value": 0.559,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "19:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 38
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.569,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.619,
+       "lo": 0.519,
+       "method": "bootstrap-median",
+       "n": 13,
+       "value": 0.569,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "19:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 39
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.583,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.633,
+       "lo": 0.533,
+       "method": "bootstrap-median",
+       "n": 25,
+       "value": 0.583,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "20:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 40
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.602,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.652,
+       "lo": 0.552,
+       "method": "bootstrap-median",
+       "n": 17,
+       "value": 0.602,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "20:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 41
+     },
+     {
+      "annotation": "too few clean nights to assert a direction here",
+      "asserts_move": false,
+      "current": 0.623,
+      "days": 2,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.063,
+       "lo": 0.323,
+       "method": "bootstrap-median",
+       "n": 2,
+       "value": 0.683,
+       "wide": true
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "21:00",
+      "recommended": null,
+      "safety_status": "insufficient evidence",
+      "slot": 42
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.648,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.698,
+       "lo": 0.598,
+       "method": "bootstrap-median",
+       "n": 22,
+       "value": 0.648,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "21:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 43
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.675,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.725,
+       "lo": 0.625,
+       "method": "bootstrap-median",
+       "n": 24,
+       "value": 0.675,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "22:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 44
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.704,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.754,
+       "lo": 0.654,
+       "method": "bootstrap-median",
+       "n": 16,
+       "value": 0.704,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "22:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 45
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.735,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.785,
+       "lo": 0.685,
+       "method": "bootstrap-median",
+       "n": 25,
+       "value": 0.735,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "23:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 46
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.767,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.817,
+       "lo": 0.717,
+       "method": "bootstrap-median",
+       "n": 13,
+       "value": 0.767,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "23:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 47
+     }
+    ],
+    "behavioral": [],
+    "window_days": 30
+   },
+   "as_of": "2020-03-03",
+   "habit_levers": [],
+   "trial": null
+  },
+  "empty": {
+   "analysis": {
+    "basal": [
+     {
+      "annotation": "too few clean nights to assert a direction here",
+      "asserts_move": false,
+      "current": 0.8,
+      "days": 3,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.24,
+       "lo": 0.5,
+       "method": "bootstrap-median",
+       "n": 3,
+       "value": 0.86,
+       "wide": true
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "00:00",
+      "recommended": null,
+      "safety_status": "insufficient evidence",
+      "slot": 0
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.833,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.883,
+       "lo": 0.783,
+       "method": "bootstrap-median",
+       "n": 12,
+       "value": 0.833,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "00:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 1
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.865,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.915,
+       "lo": 0.815,
+       "method": "bootstrap-median",
+       "n": 24,
+       "value": 0.865,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "01:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 2
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.896,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.946,
+       "lo": 0.846,
+       "method": "bootstrap-median",
+       "n": 19,
+       "value": 0.896,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "01:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 3
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.925,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.975,
+       "lo": 0.875,
+       "method": "bootstrap-median",
+       "n": 22,
+       "value": 0.925,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "02:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 4
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.952,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.002,
+       "lo": 0.902,
+       "method": "bootstrap-median",
+       "n": 16,
+       "value": 0.952,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "02:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 5
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.977,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.027,
+       "lo": 0.927,
+       "method": "bootstrap-median",
+       "n": 12,
+       "value": 0.977,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "03:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 6
+     },
+     {
+      "annotation": "too few clean nights to assert a direction here",
+      "asserts_move": false,
+      "current": 0.998,
+      "days": 5,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.438,
+       "lo": 0.698,
+       "method": "bootstrap-median",
+       "n": 5,
+       "value": 1.058,
+       "wide": true
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "03:30",
+      "recommended": null,
+      "safety_status": "insufficient evidence",
+      "slot": 7
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 1.017,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.067,
+       "lo": 0.967,
+       "method": "bootstrap-median",
+       "n": 18,
+       "value": 1.017,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "04:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 8
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 1.031,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.081,
+       "lo": 0.981,
+       "method": "bootstrap-median",
+       "n": 25,
+       "value": 1.031,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "04:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 9
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 1.041,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.091,
+       "lo": 0.991,
+       "method": "bootstrap-median",
+       "n": 12,
+       "value": 1.041,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "05:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 10
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 1.048,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.098,
+       "lo": 0.998,
+       "method": "bootstrap-median",
+       "n": 18,
+       "value": 1.048,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "05:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 11
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 1.05,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.1,
+       "lo": 1.0,
+       "method": "bootstrap-median",
+       "n": 24,
+       "value": 1.05,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "06:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 12
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 1.048,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.098,
+       "lo": 0.998,
+       "method": "bootstrap-median",
+       "n": 23,
+       "value": 1.048,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "06:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 13
+     },
+     {
+      "annotation": "a conservative one-step move would raise this slot",
+      "asserts_move": true,
+      "current": 1.041,
+      "days": 20,
+      "direction": "raise",
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.371,
+       "lo": 1.041,
+       "method": "bootstrap-median",
+       "n": 20,
+       "value": 1.131,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "07:00",
+      "recommended": 1.131,
+      "safety_status": "raise",
+      "slot": 14
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 1.031,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.081,
+       "lo": 0.981,
+       "method": "bootstrap-median",
+       "n": 25,
+       "value": 1.031,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "07:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 15
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 1.017,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.067,
+       "lo": 0.967,
+       "method": "bootstrap-median",
+       "n": 17,
+       "value": 1.017,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "08:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 16
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.998,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.048,
+       "lo": 0.948,
+       "method": "bootstrap-median",
+       "n": 14,
+       "value": 0.998,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "08:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 17
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.977,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.027,
+       "lo": 0.927,
+       "method": "bootstrap-median",
+       "n": 20,
+       "value": 0.977,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "09:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 18
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.952,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.002,
+       "lo": 0.902,
+       "method": "bootstrap-median",
+       "n": 24,
+       "value": 0.952,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "09:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 19
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.925,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.975,
+       "lo": 0.875,
+       "method": "bootstrap-median",
+       "n": 21,
+       "value": 0.925,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "10:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 20
+     },
+     {
+      "annotation": "too few clean nights to assert a direction here",
+      "asserts_move": false,
+      "current": 0.896,
+      "days": 2,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.336,
+       "lo": 0.596,
+       "method": "bootstrap-median",
+       "n": 2,
+       "value": 0.956,
+       "wide": true
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "10:30",
+      "recommended": null,
+      "safety_status": "insufficient evidence",
+      "slot": 21
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.865,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.915,
+       "lo": 0.815,
+       "method": "bootstrap-median",
+       "n": 12,
+       "value": 0.865,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "11:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 22
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.833,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.883,
+       "lo": 0.783,
+       "method": "bootstrap-median",
+       "n": 22,
+       "value": 0.833,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "11:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 23
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.8,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.85,
+       "lo": 0.75,
+       "method": "bootstrap-median",
+       "n": 12,
+       "value": 0.8,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "12:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 24
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.767,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.817,
+       "lo": 0.717,
+       "method": "bootstrap-median",
+       "n": 19,
+       "value": 0.767,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "12:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 25
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.735,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.785,
+       "lo": 0.685,
+       "method": "bootstrap-median",
+       "n": 24,
+       "value": 0.735,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "13:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 26
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.704,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.754,
+       "lo": 0.654,
+       "method": "bootstrap-median",
+       "n": 14,
+       "value": 0.704,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "13:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 27
+     },
+     {
+      "annotation": "too few clean nights to assert a direction here",
+      "asserts_move": false,
+      "current": 0.675,
+      "days": 2,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.115,
+       "lo": 0.375,
+       "method": "bootstrap-median",
+       "n": 2,
+       "value": 0.735,
+       "wide": true
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "14:00",
+      "recommended": null,
+      "safety_status": "insufficient evidence",
+      "slot": 28
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.648,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.698,
+       "lo": 0.598,
+       "method": "bootstrap-median",
+       "n": 12,
+       "value": 0.648,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "14:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 29
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.623,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.673,
+       "lo": 0.573,
+       "method": "bootstrap-median",
+       "n": 15,
+       "value": 0.623,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "15:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 30
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.602,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.652,
+       "lo": 0.552,
+       "method": "bootstrap-median",
+       "n": 24,
+       "value": 0.602,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "15:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 31
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.583,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.633,
+       "lo": 0.533,
+       "method": "bootstrap-median",
+       "n": 12,
+       "value": 0.583,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "16:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 32
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.569,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.619,
+       "lo": 0.519,
+       "method": "bootstrap-median",
+       "n": 23,
+       "value": 0.569,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "16:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 33
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.559,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.609,
+       "lo": 0.509,
+       "method": "bootstrap-median",
+       "n": 16,
+       "value": 0.559,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "17:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 34
+     },
+     {
+      "annotation": "too few clean nights to assert a direction here",
+      "asserts_move": false,
+      "current": 0.552,
+      "days": 5,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.992,
+       "lo": 0.252,
+       "method": "bootstrap-median",
+       "n": 5,
+       "value": 0.612,
+       "wide": true
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "17:30",
+      "recommended": null,
+      "safety_status": "insufficient evidence",
+      "slot": 35
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.55,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.6,
+       "lo": 0.5,
+       "method": "bootstrap-median",
+       "n": 12,
+       "value": 0.55,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "18:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 36
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.552,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.602,
+       "lo": 0.502,
+       "method": "bootstrap-median",
+       "n": 22,
+       "value": 0.552,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "18:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 37
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.559,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.609,
+       "lo": 0.509,
+       "method": "bootstrap-median",
+       "n": 22,
+       "value": 0.559,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "19:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 38
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.569,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.619,
+       "lo": 0.519,
+       "method": "bootstrap-median",
+       "n": 13,
+       "value": 0.569,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "19:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 39
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.583,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.633,
+       "lo": 0.533,
+       "method": "bootstrap-median",
+       "n": 25,
+       "value": 0.583,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "20:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 40
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.602,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.652,
+       "lo": 0.552,
+       "method": "bootstrap-median",
+       "n": 17,
+       "value": 0.602,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "20:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 41
+     },
+     {
+      "annotation": "too few clean nights to assert a direction here",
+      "asserts_move": false,
+      "current": 0.623,
+      "days": 2,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.063,
+       "lo": 0.323,
+       "method": "bootstrap-median",
+       "n": 2,
+       "value": 0.683,
+       "wide": true
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "21:00",
+      "recommended": null,
+      "safety_status": "insufficient evidence",
+      "slot": 42
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.648,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.698,
+       "lo": 0.598,
+       "method": "bootstrap-median",
+       "n": 22,
+       "value": 0.648,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "21:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 43
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.675,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.725,
+       "lo": 0.625,
+       "method": "bootstrap-median",
+       "n": 24,
+       "value": 0.675,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "22:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 44
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.704,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.754,
+       "lo": 0.654,
+       "method": "bootstrap-median",
+       "n": 16,
+       "value": 0.704,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "22:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 45
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.735,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.785,
+       "lo": 0.685,
+       "method": "bootstrap-median",
+       "n": 25,
+       "value": 0.735,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "23:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 46
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.767,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.817,
+       "lo": 0.717,
+       "method": "bootstrap-median",
+       "n": 13,
+       "value": 0.767,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "23:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 47
+     }
+    ],
+    "behavioral": [],
+    "window_days": 30
+   },
+   "as_of": "2020-03-03",
+   "habit_levers": [],
+   "trial": null
+  },
+  "trial": {
+   "analysis": {
+    "basal": [
+     {
+      "annotation": "too few clean nights to assert a direction here",
+      "asserts_move": false,
+      "current": 0.8,
+      "days": 3,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.24,
+       "lo": 0.5,
+       "method": "bootstrap-median",
+       "n": 3,
+       "value": 0.86,
+       "wide": true
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "00:00",
+      "recommended": null,
+      "safety_status": "insufficient evidence",
+      "slot": 0
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.833,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.883,
+       "lo": 0.783,
+       "method": "bootstrap-median",
+       "n": 12,
+       "value": 0.833,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "00:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 1
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.865,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.915,
+       "lo": 0.815,
+       "method": "bootstrap-median",
+       "n": 24,
+       "value": 0.865,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "01:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 2
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.896,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.946,
+       "lo": 0.846,
+       "method": "bootstrap-median",
+       "n": 19,
+       "value": 0.896,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "01:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 3
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.925,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.975,
+       "lo": 0.875,
+       "method": "bootstrap-median",
+       "n": 22,
+       "value": 0.925,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "02:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 4
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.952,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.002,
+       "lo": 0.902,
+       "method": "bootstrap-median",
+       "n": 16,
+       "value": 0.952,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "02:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 5
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.977,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.027,
+       "lo": 0.927,
+       "method": "bootstrap-median",
+       "n": 12,
+       "value": 0.977,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "03:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 6
+     },
+     {
+      "annotation": "too few clean nights to assert a direction here",
+      "asserts_move": false,
+      "current": 0.998,
+      "days": 5,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.438,
+       "lo": 0.698,
+       "method": "bootstrap-median",
+       "n": 5,
+       "value": 1.058,
+       "wide": true
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "03:30",
+      "recommended": null,
+      "safety_status": "insufficient evidence",
+      "slot": 7
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 1.017,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.067,
+       "lo": 0.967,
+       "method": "bootstrap-median",
+       "n": 18,
+       "value": 1.017,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "04:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 8
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 1.031,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.081,
+       "lo": 0.981,
+       "method": "bootstrap-median",
+       "n": 25,
+       "value": 1.031,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "04:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 9
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 1.041,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.091,
+       "lo": 0.991,
+       "method": "bootstrap-median",
+       "n": 12,
+       "value": 1.041,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "05:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 10
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 1.048,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.098,
+       "lo": 0.998,
+       "method": "bootstrap-median",
+       "n": 18,
+       "value": 1.048,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "05:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 11
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 1.05,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.1,
+       "lo": 1.0,
+       "method": "bootstrap-median",
+       "n": 24,
+       "value": 1.05,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "06:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 12
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 1.048,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.098,
+       "lo": 0.998,
+       "method": "bootstrap-median",
+       "n": 23,
+       "value": 1.048,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "06:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 13
+     },
+     {
+      "annotation": "a conservative one-step move would raise this slot",
+      "asserts_move": true,
+      "current": 1.041,
+      "days": 20,
+      "direction": "raise",
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.371,
+       "lo": 1.041,
+       "method": "bootstrap-median",
+       "n": 20,
+       "value": 1.131,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "07:00",
+      "recommended": 1.131,
+      "safety_status": "raise",
+      "slot": 14
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 1.031,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.081,
+       "lo": 0.981,
+       "method": "bootstrap-median",
+       "n": 25,
+       "value": 1.031,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "07:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 15
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 1.017,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.067,
+       "lo": 0.967,
+       "method": "bootstrap-median",
+       "n": 17,
+       "value": 1.017,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "08:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 16
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.998,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.048,
+       "lo": 0.948,
+       "method": "bootstrap-median",
+       "n": 14,
+       "value": 0.998,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "08:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 17
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.977,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.027,
+       "lo": 0.927,
+       "method": "bootstrap-median",
+       "n": 20,
+       "value": 0.977,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "09:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 18
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.952,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.002,
+       "lo": 0.902,
+       "method": "bootstrap-median",
+       "n": 24,
+       "value": 0.952,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "09:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 19
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.925,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.975,
+       "lo": 0.875,
+       "method": "bootstrap-median",
+       "n": 21,
+       "value": 0.925,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "10:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 20
+     },
+     {
+      "annotation": "too few clean nights to assert a direction here",
+      "asserts_move": false,
+      "current": 0.896,
+      "days": 2,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.336,
+       "lo": 0.596,
+       "method": "bootstrap-median",
+       "n": 2,
+       "value": 0.956,
+       "wide": true
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "10:30",
+      "recommended": null,
+      "safety_status": "insufficient evidence",
+      "slot": 21
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.865,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.915,
+       "lo": 0.815,
+       "method": "bootstrap-median",
+       "n": 12,
+       "value": 0.865,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "11:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 22
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.833,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.883,
+       "lo": 0.783,
+       "method": "bootstrap-median",
+       "n": 22,
+       "value": 0.833,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "11:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 23
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.8,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.85,
+       "lo": 0.75,
+       "method": "bootstrap-median",
+       "n": 12,
+       "value": 0.8,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "12:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 24
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.767,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.817,
+       "lo": 0.717,
+       "method": "bootstrap-median",
+       "n": 19,
+       "value": 0.767,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "12:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 25
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.735,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.785,
+       "lo": 0.685,
+       "method": "bootstrap-median",
+       "n": 24,
+       "value": 0.735,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "13:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 26
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.704,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.754,
+       "lo": 0.654,
+       "method": "bootstrap-median",
+       "n": 14,
+       "value": 0.704,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "13:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 27
+     },
+     {
+      "annotation": "too few clean nights to assert a direction here",
+      "asserts_move": false,
+      "current": 0.675,
+      "days": 2,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.115,
+       "lo": 0.375,
+       "method": "bootstrap-median",
+       "n": 2,
+       "value": 0.735,
+       "wide": true
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "14:00",
+      "recommended": null,
+      "safety_status": "insufficient evidence",
+      "slot": 28
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.648,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.698,
+       "lo": 0.598,
+       "method": "bootstrap-median",
+       "n": 12,
+       "value": 0.648,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "14:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 29
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.623,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.673,
+       "lo": 0.573,
+       "method": "bootstrap-median",
+       "n": 15,
+       "value": 0.623,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "15:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 30
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.602,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.652,
+       "lo": 0.552,
+       "method": "bootstrap-median",
+       "n": 24,
+       "value": 0.602,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "15:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 31
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.583,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.633,
+       "lo": 0.533,
+       "method": "bootstrap-median",
+       "n": 12,
+       "value": 0.583,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "16:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 32
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.569,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.619,
+       "lo": 0.519,
+       "method": "bootstrap-median",
+       "n": 23,
+       "value": 0.569,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "16:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 33
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.559,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.609,
+       "lo": 0.509,
+       "method": "bootstrap-median",
+       "n": 16,
+       "value": 0.559,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "17:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 34
+     },
+     {
+      "annotation": "too few clean nights to assert a direction here",
+      "asserts_move": false,
+      "current": 0.552,
+      "days": 5,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.992,
+       "lo": 0.252,
+       "method": "bootstrap-median",
+       "n": 5,
+       "value": 0.612,
+       "wide": true
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "17:30",
+      "recommended": null,
+      "safety_status": "insufficient evidence",
+      "slot": 35
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.55,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.6,
+       "lo": 0.5,
+       "method": "bootstrap-median",
+       "n": 12,
+       "value": 0.55,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "18:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 36
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.552,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.602,
+       "lo": 0.502,
+       "method": "bootstrap-median",
+       "n": 22,
+       "value": 0.552,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "18:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 37
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.559,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.609,
+       "lo": 0.509,
+       "method": "bootstrap-median",
+       "n": 22,
+       "value": 0.559,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "19:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 38
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.569,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.619,
+       "lo": 0.519,
+       "method": "bootstrap-median",
+       "n": 13,
+       "value": 0.569,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "19:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 39
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.583,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.633,
+       "lo": 0.533,
+       "method": "bootstrap-median",
+       "n": 25,
+       "value": 0.583,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "20:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 40
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.602,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.652,
+       "lo": 0.552,
+       "method": "bootstrap-median",
+       "n": 17,
+       "value": 0.602,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "20:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 41
+     },
+     {
+      "annotation": "too few clean nights to assert a direction here",
+      "asserts_move": false,
+      "current": 0.623,
+      "days": 2,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.063,
+       "lo": 0.323,
+       "method": "bootstrap-median",
+       "n": 2,
+       "value": 0.683,
+       "wide": true
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "21:00",
+      "recommended": null,
+      "safety_status": "insufficient evidence",
+      "slot": 42
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.648,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.698,
+       "lo": 0.598,
+       "method": "bootstrap-median",
+       "n": 22,
+       "value": 0.648,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "21:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 43
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.675,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.725,
+       "lo": 0.625,
+       "method": "bootstrap-median",
+       "n": 24,
+       "value": 0.675,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "22:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 44
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.704,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.754,
+       "lo": 0.654,
+       "method": "bootstrap-median",
+       "n": 16,
+       "value": 0.704,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "22:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 45
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.735,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.785,
+       "lo": 0.685,
+       "method": "bootstrap-median",
+       "n": 25,
+       "value": 0.735,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "23:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 46
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.767,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.817,
+       "lo": 0.717,
+       "method": "bootstrap-median",
+       "n": 13,
+       "value": 0.767,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "23:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 47
+     }
+    ],
+    "behavioral": [],
+    "window_days": 30
+   },
+   "as_of": "2020-03-03",
+   "habit_levers": [],
+   "trial": null
+  },
+  "typical": {
+   "analysis": {
+    "basal": [
+     {
+      "annotation": "too few clean nights to assert a direction here",
+      "asserts_move": false,
+      "current": 0.8,
+      "days": 3,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.24,
+       "lo": 0.5,
+       "method": "bootstrap-median",
+       "n": 3,
+       "value": 0.86,
+       "wide": true
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "00:00",
+      "recommended": null,
+      "safety_status": "insufficient evidence",
+      "slot": 0
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.833,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.883,
+       "lo": 0.783,
+       "method": "bootstrap-median",
+       "n": 12,
+       "value": 0.833,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "00:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 1
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.865,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.915,
+       "lo": 0.815,
+       "method": "bootstrap-median",
+       "n": 24,
+       "value": 0.865,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "01:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 2
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.896,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.946,
+       "lo": 0.846,
+       "method": "bootstrap-median",
+       "n": 19,
+       "value": 0.896,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "01:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 3
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.925,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.975,
+       "lo": 0.875,
+       "method": "bootstrap-median",
+       "n": 22,
+       "value": 0.925,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "02:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 4
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.952,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.002,
+       "lo": 0.902,
+       "method": "bootstrap-median",
+       "n": 16,
+       "value": 0.952,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "02:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 5
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.977,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.027,
+       "lo": 0.927,
+       "method": "bootstrap-median",
+       "n": 12,
+       "value": 0.977,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "03:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 6
+     },
+     {
+      "annotation": "too few clean nights to assert a direction here",
+      "asserts_move": false,
+      "current": 0.998,
+      "days": 5,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.438,
+       "lo": 0.698,
+       "method": "bootstrap-median",
+       "n": 5,
+       "value": 1.058,
+       "wide": true
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "03:30",
+      "recommended": null,
+      "safety_status": "insufficient evidence",
+      "slot": 7
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 1.017,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.067,
+       "lo": 0.967,
+       "method": "bootstrap-median",
+       "n": 18,
+       "value": 1.017,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "04:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 8
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 1.031,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.081,
+       "lo": 0.981,
+       "method": "bootstrap-median",
+       "n": 25,
+       "value": 1.031,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "04:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 9
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 1.041,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.091,
+       "lo": 0.991,
+       "method": "bootstrap-median",
+       "n": 12,
+       "value": 1.041,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "05:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 10
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 1.048,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.098,
+       "lo": 0.998,
+       "method": "bootstrap-median",
+       "n": 18,
+       "value": 1.048,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "05:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 11
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 1.05,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.1,
+       "lo": 1.0,
+       "method": "bootstrap-median",
+       "n": 24,
+       "value": 1.05,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "06:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 12
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 1.048,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.098,
+       "lo": 0.998,
+       "method": "bootstrap-median",
+       "n": 23,
+       "value": 1.048,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "06:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 13
+     },
+     {
+      "annotation": "a conservative one-step move would raise this slot",
+      "asserts_move": true,
+      "current": 1.041,
+      "days": 20,
+      "direction": "raise",
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.371,
+       "lo": 1.041,
+       "method": "bootstrap-median",
+       "n": 20,
+       "value": 1.131,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "07:00",
+      "recommended": 1.131,
+      "safety_status": "raise",
+      "slot": 14
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 1.031,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.081,
+       "lo": 0.981,
+       "method": "bootstrap-median",
+       "n": 25,
+       "value": 1.031,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "07:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 15
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 1.017,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.067,
+       "lo": 0.967,
+       "method": "bootstrap-median",
+       "n": 17,
+       "value": 1.017,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "08:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 16
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.998,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.048,
+       "lo": 0.948,
+       "method": "bootstrap-median",
+       "n": 14,
+       "value": 0.998,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "08:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 17
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.977,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.027,
+       "lo": 0.927,
+       "method": "bootstrap-median",
+       "n": 20,
+       "value": 0.977,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "09:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 18
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.952,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.002,
+       "lo": 0.902,
+       "method": "bootstrap-median",
+       "n": 24,
+       "value": 0.952,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "09:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 19
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.925,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.975,
+       "lo": 0.875,
+       "method": "bootstrap-median",
+       "n": 21,
+       "value": 0.925,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "10:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 20
+     },
+     {
+      "annotation": "too few clean nights to assert a direction here",
+      "asserts_move": false,
+      "current": 0.896,
+      "days": 2,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.336,
+       "lo": 0.596,
+       "method": "bootstrap-median",
+       "n": 2,
+       "value": 0.956,
+       "wide": true
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "10:30",
+      "recommended": null,
+      "safety_status": "insufficient evidence",
+      "slot": 21
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.865,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.915,
+       "lo": 0.815,
+       "method": "bootstrap-median",
+       "n": 12,
+       "value": 0.865,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "11:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 22
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.833,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.883,
+       "lo": 0.783,
+       "method": "bootstrap-median",
+       "n": 22,
+       "value": 0.833,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "11:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 23
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.8,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.85,
+       "lo": 0.75,
+       "method": "bootstrap-median",
+       "n": 12,
+       "value": 0.8,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "12:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 24
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.767,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.817,
+       "lo": 0.717,
+       "method": "bootstrap-median",
+       "n": 19,
+       "value": 0.767,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "12:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 25
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.735,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.785,
+       "lo": 0.685,
+       "method": "bootstrap-median",
+       "n": 24,
+       "value": 0.735,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "13:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 26
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.704,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.754,
+       "lo": 0.654,
+       "method": "bootstrap-median",
+       "n": 14,
+       "value": 0.704,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "13:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 27
+     },
+     {
+      "annotation": "too few clean nights to assert a direction here",
+      "asserts_move": false,
+      "current": 0.675,
+      "days": 2,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.115,
+       "lo": 0.375,
+       "method": "bootstrap-median",
+       "n": 2,
+       "value": 0.735,
+       "wide": true
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "14:00",
+      "recommended": null,
+      "safety_status": "insufficient evidence",
+      "slot": 28
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.648,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.698,
+       "lo": 0.598,
+       "method": "bootstrap-median",
+       "n": 12,
+       "value": 0.648,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "14:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 29
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.623,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.673,
+       "lo": 0.573,
+       "method": "bootstrap-median",
+       "n": 15,
+       "value": 0.623,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "15:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 30
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.602,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.652,
+       "lo": 0.552,
+       "method": "bootstrap-median",
+       "n": 24,
+       "value": 0.602,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "15:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 31
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.583,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.633,
+       "lo": 0.533,
+       "method": "bootstrap-median",
+       "n": 12,
+       "value": 0.583,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "16:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 32
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.569,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.619,
+       "lo": 0.519,
+       "method": "bootstrap-median",
+       "n": 23,
+       "value": 0.569,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "16:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 33
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.559,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.609,
+       "lo": 0.509,
+       "method": "bootstrap-median",
+       "n": 16,
+       "value": 0.559,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "17:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 34
+     },
+     {
+      "annotation": "too few clean nights to assert a direction here",
+      "asserts_move": false,
+      "current": 0.552,
+      "days": 5,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.992,
+       "lo": 0.252,
+       "method": "bootstrap-median",
+       "n": 5,
+       "value": 0.612,
+       "wide": true
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "17:30",
+      "recommended": null,
+      "safety_status": "insufficient evidence",
+      "slot": 35
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.55,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.6,
+       "lo": 0.5,
+       "method": "bootstrap-median",
+       "n": 12,
+       "value": 0.55,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "18:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 36
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.552,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.602,
+       "lo": 0.502,
+       "method": "bootstrap-median",
+       "n": 22,
+       "value": 0.552,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "18:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 37
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.559,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.609,
+       "lo": 0.509,
+       "method": "bootstrap-median",
+       "n": 22,
+       "value": 0.559,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "19:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 38
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.569,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.619,
+       "lo": 0.519,
+       "method": "bootstrap-median",
+       "n": 13,
+       "value": 0.569,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "19:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 39
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.583,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.633,
+       "lo": 0.533,
+       "method": "bootstrap-median",
+       "n": 25,
+       "value": 0.583,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "20:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 40
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.602,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.652,
+       "lo": 0.552,
+       "method": "bootstrap-median",
+       "n": 17,
+       "value": 0.602,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "20:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 41
+     },
+     {
+      "annotation": "too few clean nights to assert a direction here",
+      "asserts_move": false,
+      "current": 0.623,
+      "days": 2,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 1.063,
+       "lo": 0.323,
+       "method": "bootstrap-median",
+       "n": 2,
+       "value": 0.683,
+       "wide": true
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "21:00",
+      "recommended": null,
+      "safety_status": "insufficient evidence",
+      "slot": 42
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.648,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.698,
+       "lo": 0.598,
+       "method": "bootstrap-median",
+       "n": 22,
+       "value": 0.648,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "21:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 43
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.675,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.725,
+       "lo": 0.625,
+       "method": "bootstrap-median",
+       "n": 24,
+       "value": 0.675,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "22:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 44
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.704,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.754,
+       "lo": 0.654,
+       "method": "bootstrap-median",
+       "n": 16,
+       "value": 0.704,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "22:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 45
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.735,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.785,
+       "lo": 0.685,
+       "method": "bootstrap-median",
+       "n": 25,
+       "value": 0.735,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "23:00",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 46
+     },
+     {
+      "annotation": "delivery matches the programmed rate through these hours",
+      "asserts_move": false,
+      "current": 0.767,
+      "days": 22,
+      "estimate": {
+       "confidence": 0.8,
+       "hi": 0.817,
+       "lo": 0.717,
+       "method": "bootstrap-median",
+       "n": 13,
+       "value": 0.767,
+       "wide": false
+      },
+      "evidence": {
+       "points": []
+      },
+      "label": "23:30",
+      "recommended": null,
+      "safety_status": "no change",
+      "slot": 47
+     }
+    ],
+    "behavioral": [],
+    "window_days": 30
+   },
+   "as_of": "2020-03-03",
+   "habit_levers": [],
+   "trial": null
+  }
+ },
+ "synthetic": true,
+ "why": "Manufactured fixture for the behaviour-replay CI gate. No real CGM, pump or personal data. Shapes only \u2014 see .claude/qa/gen_synthetic_fixtures.py."
+}

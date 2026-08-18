@@ -1,0 +1,16 @@
+# Real PHI / secrets — never bake into an image layer.
+tconnect-data/
+.env
+
+# VCS, local venv, caches, and dev-only trees.
+.git/
+.gitignore
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+.claude/
+
+# Design scratch — not part of the runtime app.
+mockups/

@@ -1,0 +1,329 @@
+"""The Diagnose findings queue's server-owned window projection (#730).
+
+Everything here goes through the public interface — ``FindingsProjection.project``
+and ``GET /diagnose/findings`` — over the committed generator's own inputs, so a test
+can never encode a verdict the engines did not produce (the #273/#465 lesson: the
+fixture that hand-sets the predicate under test stays green while the product is
+wrong).
+"""
+
+import importlib.util
+import pathlib
+import tempfile
+import unittest
+
+try:
+    from fastapi.testclient import TestClient
+    _HAS_FASTAPI = True
+except ImportError:  # pragma: no cover
+    _HAS_FASTAPI = False
+
+from ciq_autotune.analyzers.scenario.levers import Lever, outcome_kind
+from ciq_autotune.findings_projection import (
+    FindingsProjection,
+    WindowQuery,
+    prepare_findings_projection,
+)
+from ciq_autotune.safety import Status
+
+_GEN_PATH = (pathlib.Path(__file__).resolve().parents[1]
+             / "scripts" / "gen_findings_projection_fixtures.py")
+_spec = importlib.util.spec_from_file_location("gen_findings_projection_fixtures",
+                                               _GEN_PATH)
+gen = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(gen)
+
+LOW_BLOCK = (12 * 60, 14 * 60)
+REBOUND = (14 * 60, 16 * 60)
+MORNING = (4 * 60 + 30, 8 * 60)
+AFTERNOON = (14 * 60, 21 * 60)
+
+
+def _titles(rows, register):
+    return [row["title"] for row in rows if row["register"] == register]
+
+
+def _row(rows, title):
+    return next(row for row in rows if row["title"] == title)
+
+
+class OutcomeAnchoredMembershipTest(unittest.TestCase):
+    """Term 39 / D34: a finding sits where its consequence landed, never where its
+    trigger crossed a threshold."""
+
+    def setUp(self):
+        self.projection = gen.projection()
+        self.exposures = gen.exposures()["exposures"]
+
+    def _lows_occurrence(self):
+        return next(o for o in self.exposures["lows"]["occurrences"]
+                    if o["cause_lever"] == Lever.OVER_TREATED_LOW.value)
+
+    def test_the_trigger_really_does_sit_inside_the_low_window(self):
+        # The premise of the next test: anchoring on the stored occurrence time —
+        # what the frontend used to do — WOULD put this finding in the low window.
+        stamp = self._lows_occurrence()["t"]
+        trigger = int(stamp[11:13]) * 60 + int(stamp[14:16])
+        self.assertTrue(LOW_BLOCK[0] <= trigger < LOW_BLOCK[1],
+                        f"the low fires at {stamp}, inside the drawn low block")
+
+    def test_a_window_over_the_low_block_excludes_over_treated_low(self):
+        rows = self.projection.project(WindowQuery.clock(*LOW_BLOCK))["rows"]
+        self.assertNotIn("Over-treated low", _titles(rows, "finding"))
+
+    def test_the_window_over_the_rebound_includes_it(self):
+        rows = self.projection.project(WindowQuery.clock(*REBOUND))["rows"]
+        self.assertIn("Over-treated low", _titles(rows, "finding"))
+
+    def test_trigger_anchoring_would_fail_this(self):
+        # The falsification: strip the per-lever outcome declaration and the
+        # projection falls back to each occurrence's own instant — trigger
+        # anchoring — which puts the finding right back in the low block. This test
+        # is what stops the anchoring rule from being quietly removed.
+        from unittest.mock import patch
+
+        import ciq_autotune.findings_projection as module
+
+        with patch.object(module, "outcome_kind", lambda lever: None):
+            rows = self.projection.project(WindowQuery.clock(*LOW_BLOCK))["rows"]
+        self.assertIn("Over-treated low", _titles(rows, "finding"))
+
+    def test_the_rebound_is_where_the_high_anchor_sits_not_the_low(self):
+        rebound = next(o for o in self.exposures["highs"]["occurrences"]
+                       if o["cause_lever"] == Lever.OVER_TREATED_LOW.value)
+        self.assertEqual(rebound["ep_id"], self._lows_occurrence()["ep_id"])
+        minute = int(rebound["t"][11:13]) * 60 + int(rebound["t"][14:16])
+        self.assertTrue(REBOUND[0] <= minute < REBOUND[1])
+
+    def test_every_lever_declares_where_its_consequence_lands(self):
+        # The closed set stays closed: a new lever has to answer the anchoring
+        # question rather than silently falling back to its trigger.
+        for lever in Lever:
+            self.assertIn(outcome_kind(lever), {"low", "high", "meal", "correction"},
+                          f"{lever.value} declares no outcome anchor")
+
+    def test_a_family_denominator_never_undercounts_what_it_denominates(self):
+        for bounds in (None, LOW_BLOCK, REBOUND, MORNING, AFTERNOON, (22 * 60, 2 * 60)):
+            query = (WindowQuery.whole_day() if bounds is None
+                     else WindowQuery.clock(*bounds))
+            for row in self.projection.project(query)["rows"]:
+                for appearance in row["appearances"] or []:
+                    self.assertLessEqual(appearance["n"], appearance["m"],
+                                         f"{row['title']} in {bounds}")
+
+
+class GroundedWindowTest(unittest.TestCase):
+    """The 2026-08-17-shaped reading, window by window."""
+
+    def setUp(self):
+        self.projection = gen.projection()
+
+    def test_the_morning_window_asserts_one_slot_and_holds_the_next(self):
+        rows = self.projection.project(WindowQuery.clock(*MORNING))["rows"]
+        self.assertEqual(_titles(rows, "assert"), ["Basal 05:30 · raise"])
+        held = _row(rows, "Basal 06:30 · leaning raise")
+        self.assertEqual(held["register"], "held")
+        self.assertEqual(held["reason"], str(Status.INSUFFICIENT))
+        self.assertEqual(held["reason"], "insufficient evidence")
+
+    def test_the_afternoon_window_shows_the_blind_stretch_and_a_held_isf(self):
+        rows = self.projection.project(WindowQuery.clock(*AFTERNOON))["rows"]
+        blind = _row(rows, "Basal 19:30 to 21:00")
+        self.assertEqual(blind["register"], "blind")
+        self.assertEqual(blind["reason"], str(Status.NO_DATA))
+        self.assertEqual(blind["support"]["n"], 0)
+        isf = _row(rows, "ISF")
+        self.assertEqual(isf["register"], "held")
+        self.assertIsNone(isf["direction"])
+
+    def test_a_held_reason_is_the_analyzers_own_string(self):
+        # Byte-identical, both flavors: the queue transcribes, it never rewords.
+        analysis = self.projection._analysis
+        rows = self.projection.project(WindowQuery.clock(*AFTERNOON))["rows"]
+        self.assertEqual(_row(rows, "ISF")["reason"], analysis["isf"][0]["annotation"])
+        blind_slot = next(s for s in analysis["basal"] if s["slot"] == 39)
+        self.assertEqual(_row(rows, "Basal 19:30 to 21:00")["reason"],
+                         blind_slot["safety_status"])
+
+    def test_a_window_can_hold_nothing_at_all(self):
+        empty = gen.empty_projection().project(WindowQuery.clock(*MORNING))
+        self.assertEqual(empty["rows"], [])
+        self.assertEqual(empty["counts"],
+                         {"assert": 0, "held": 0, "blind": 0, "finding": 0})
+
+    def test_a_window_wrapping_midnight_reaches_both_sides_of_it(self):
+        rows = self.projection.project(WindowQuery.clock(22 * 60, 2 * 60))["rows"]
+        self.assertIn("Basal 00:30 to 01:30 · raise", _titles(rows, "assert"))
+        self.assertIn("I:C 12:00 to 24:00 · lower", _titles(rows, "assert"))
+
+
+class SpanMergingTest(unittest.TestCase):
+    def setUp(self):
+        self.projection = gen.projection()
+
+    def test_contiguous_asserting_slots_are_one_span(self):
+        rows = self.projection.project(WindowQuery.whole_day())["rows"]
+        self.assertIn("Basal 00:30 to 01:30 · raise", _titles(rows, "assert"))
+        span = _row(rows, "Basal 00:30 to 01:30 · raise")["span"]
+        self.assertEqual((span["start_min"], span["end_min"]), (30, 90))
+
+    def test_contiguous_held_slots_with_one_lean_are_one_span(self):
+        rows = self.projection.project(WindowQuery.clock(*LOW_BLOCK))["rows"]
+        held = _titles(rows, "held")
+        self.assertIn("Basal 12:30 to 14:00 · leaning lower", held)
+        self.assertEqual(len([t for t in held if t.startswith("Basal")]), 1)
+
+    def test_a_span_never_mixes_directions(self):
+        # Two adjacent held slots leaning opposite ways stay two rows.
+        analysis = dict(gen.analysis())
+        slots = {row["slot"]: row for row in analysis["basal"]}
+        slots[20] = gen._slot(20, current=1.10, value=0.95, lo=0.80, hi=1.15,
+                              n=18, supported=0).to_dict()
+        slots[21] = gen._slot(21, current=0.90, value=1.15, lo=0.85, hi=1.40,
+                              n=18, supported=0).to_dict()
+        analysis["basal"] = [slots[index] for index in sorted(slots)]
+        rows = FindingsProjection(
+            _analysis=analysis, _exposures=gen.exposures(), _scenarios=gen.scenarios(),
+        ).project(WindowQuery.clock(10 * 60, 11 * 60))["rows"]
+        self.assertEqual(
+            [row["lean"] for row in rows if row["title"].startswith("Basal")],
+            ["lower", "raise"])
+
+    def test_the_span_a_row_names_is_the_whole_run_not_the_visible_part(self):
+        # A run is one item that stages whole (term 13), so a window that clips it
+        # still names the run it really is.
+        rows = self.projection.project(WindowQuery.clock(60, 75))["rows"]
+        self.assertIn("Basal 00:30 to 01:30 · raise", _titles(rows, "assert"))
+
+
+class QueueOrderTest(unittest.TestCase):
+    def setUp(self):
+        self.projection = gen.projection()
+        self.global_rows = self.projection.project(WindowQuery.whole_day())["rows"]
+
+    def test_the_global_queue_is_asserting_only(self):
+        self.assertEqual(
+            {row["register"] for row in self.global_rows}, {"assert", "finding"})
+        quiet = [row for row in self.global_rows if row["register"] in ("held", "blind")]
+        self.assertEqual(quiet, [])
+
+    def test_priced_rows_lead_in_server_priority_order_then_counted_rows(self):
+        priced = [row["priority"] for row in self.global_rows
+                  if row["priority"] is not None]
+        self.assertEqual(priced, sorted(priced, reverse=True))
+        tail = self.global_rows[len(priced):]
+        self.assertTrue(all(row["priority"] is None for row in tail))
+        counts = [row["episodes"] for row in tail]
+        self.assertEqual(counts, sorted(counts, reverse=True))
+
+    def test_the_order_is_the_servers_own_priorities_not_a_re_derivation(self):
+        levers = {lever["parameter"]: lever["priority"]
+                  for lever in self.projection._analysis["tuning_levers"]}
+        patterns = {p["lever"]: p["priority"]
+                    for p in self.projection._scenarios["patterns"]}
+        for row in self.global_rows:
+            if row["register"] == "assert":
+                self.assertEqual(row["priority"], levers[row["parameter"]])
+            elif row["priority"] is not None:
+                self.assertEqual(row["priority"], patterns[row["lever"]])
+
+    def test_held_and_blind_follow_the_ranked_head(self):
+        rows = self.projection.project(WindowQuery.clock(*AFTERNOON))["rows"]
+        order = {"assert": 0, "finding": 0, "held": 1, "blind": 2}
+        ranks = [order[row["register"]] for row in rows]
+        self.assertEqual(ranks, sorted(ranks))
+
+
+class WindowQueryTest(unittest.TestCase):
+    def test_a_window_must_span_some_part_of_the_day(self):
+        with self.assertRaises(ValueError):
+            WindowQuery.clock(600, 600)
+
+    def test_bounds_are_minutes_on_the_clock(self):
+        with self.assertRaises(ValueError):
+            WindowQuery.clock(-30, 600)
+        with self.assertRaises(ValueError):
+            WindowQuery.clock(0, 1441)
+
+    def test_the_whole_day_is_not_a_window(self):
+        self.assertFalse(WindowQuery.whole_day().scoped)
+        self.assertIsNone(WindowQuery.whole_day().to_dict()["label"])
+        self.assertEqual(WindowQuery.clock(270, 480).to_dict()["label"], "04:30–08:00")
+
+
+class PreparedFromStoreTest(unittest.TestCase):
+    def test_an_empty_store_projects_an_empty_queue(self):
+        from ciq_autotune.store import Store
+
+        with tempfile.NamedTemporaryFile(suffix=".db") as db:
+            with Store.open(db.name) as store:
+                projection = prepare_findings_projection(store)
+        result = projection.project(WindowQuery.whole_day())
+        self.assertEqual(result["rows"], [])
+        self.assertEqual(result["window"]["scoped"], False)
+        self.assertEqual(result["findings_window"]["days"], 30)
+
+
+@unittest.skipUnless(_HAS_FASTAPI, "api extra not installed")
+class FindingsEndpointTest(unittest.TestCase):
+    def setUp(self):
+        from ciq_autotune.api import create_app
+        from tests.test_api import _seed
+
+        self.tmp = tempfile.NamedTemporaryFile(suffix=".db")
+        _seed(self.tmp.name)
+        self.client = TestClient(create_app(db_path=self.tmp.name, token=None,
+                                            enable_fetch_loop=False))
+
+    def tearDown(self):
+        self.tmp.close()
+
+    def test_the_global_queue_answers_without_a_window(self):
+        r = self.client.get("/diagnose/findings")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertEqual(body["schema"], "diagnose-findings-v1")
+        self.assertFalse(body["window"]["scoped"])
+
+    def test_a_clock_window_scopes_it(self):
+        r = self.client.get("/diagnose/findings",
+                            params={"start_min": 270, "end_min": 480})
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json()["window"]["label"], "04:30–08:00")
+
+    def test_half_a_window_is_a_bad_request(self):
+        r = self.client.get("/diagnose/findings", params={"start_min": 270})
+        self.assertEqual(r.status_code, 400)
+
+    def test_a_zero_width_window_is_a_bad_request(self):
+        r = self.client.get("/diagnose/findings",
+                            params={"start_min": 600, "end_min": 600})
+        self.assertEqual(r.status_code, 400)
+
+    def test_it_answers_from_the_cache_and_a_write_invalidates_it(self):
+        import ciq_autotune.api as api_mod
+        from unittest.mock import patch
+
+        real = api_mod.prepare_findings_projection
+        calls = []
+
+        def counting(*args, **kwargs):
+            calls.append(1)
+            return real(*args, **kwargs)
+
+        with patch.object(api_mod, "prepare_findings_projection", counting):
+            self.client.get("/diagnose/findings")                       # miss
+            self.client.get("/diagnose/findings",
+                            params={"start_min": 270, "end_min": 480})  # same read
+            self.assertEqual(len(calls), 1)
+
+            r = self.client.post("/carbs", json={
+                "t": "2026-06-03 10:05:00", "grams": 8, "certainty": "exact"})
+            self.assertEqual(r.status_code, 200)
+
+            self.client.get("/diagnose/findings")                       # bumped
+            self.assertEqual(len(calls), 2)
+
+
+if __name__ == "__main__":
+    unittest.main()

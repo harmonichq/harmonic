@@ -1,0 +1,74 @@
+# Harmonic — single-user self-hosting (issue #6, ADR 0021).
+#
+#   docker compose up -d        # build (first run) + start in the background
+#   docker compose logs -f      # watch the startup fetch / server
+#   docker compose pull && docker compose up -d   # update to a newer image
+#
+# Raw `docker run` equivalent:
+#   docker run -d --name harmonic -p 8765:8765 \
+#     -e TIMEZONE_NAME=America/Phoenix \
+#     -v harmonic-data:/app/tconnect-data \
+#     ghcr.io/harmonichq/harmonic:latest
+# One-time migration for existing Compose installs: copy the project-prefixed
+# ciq-autotune-data volume into harmonic-data before the first start; see README.md.
+# A pre-Harmonic raw `docker run` install may instead have the unprefixed
+# ciq-autotune-data volume; Compose will not stop that container for you.
+
+services:
+  harmonic:
+    # Default: run the image CI publishes to GHCR on every merge to main, so
+    # `docker compose pull && docker compose up -d` updates cleanly.
+    # To build from this checkout instead (e.g. an un-merged change), uncomment
+    # `build: .` — compose then builds and tags it under the image name below.
+    image: ghcr.io/harmonichq/harmonic:latest
+    # build: .
+    container_name: harmonic
+    restart: unless-stopped
+    # Disable IPv6 inside the container so glibc returns only A records. The
+    # host has a partial/unroutable IPv6 path, so a fetch that resolved an
+    # AAAA (e.g. sso.tandemdiabetes.com) died with "[Errno 101] Network is
+    # unreachable". Nothing here needs v6; forcing v4 avoids the dead route.
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=1
+      - net.ipv6.conf.default.disable_ipv6=1
+    ports:
+      - "8765:8765"
+    environment:
+      # --- REQUIRED ---------------------------------------------------------
+      # Must match your pump's timezone. Sets the wall clock every record is
+      # bucketed by; a fetch refuses to run without it. The container exits
+      # immediately if this is unset.
+      TIMEZONE_NAME: America/New_York
+
+      # --- RECOMMENDED ------------------------------------------------------
+      # Static bearer token gating the API. If unset the API is OPEN — fine on a
+      # loopback bind, but you are publishing port 8765 here, so set a token
+      # (any long random string) unless this host is truly private.
+      # HARMONIC_API_TOKEN: change-me-to-a-long-random-string
+
+      # --- OPTIONAL ---------------------------------------------------------
+      # Skip the startup live-fetch (no Tandem login). Use for a first run
+      # against an empty DB, or to smoke-test the container. Leave unset for
+      # normal operation.
+      # HARMONIC_NO_FETCH: 1
+
+      # One-time credential seed. On first run these seed the encrypted
+      # credentials table; after that, change credentials via POST /credentials
+      # (editing these has no further effect). You can omit them entirely and
+      # set credentials through the API instead.
+      # TCONNECT_EMAIL: you@example.com
+      # TCONNECT_PASSWORD: your-tconnect-password
+      # TCONNECT_REGION: US   # US or EU
+
+      # DB path override. The default (tconnect-data/ciq.db) already lands on
+      # the mounted volume below; only change this if you know why.
+      # HARMONIC_DB: tconnect-data/ciq.db
+      # HARMONIC_SECRET_KEY: tconnect-data/secret.key
+    volumes:
+      # One named volume holds BOTH the SQLite DB (ciq.db) and the Fernet key
+      # (secret.key). Keep them together: losing the key means re-entering
+      # credentials, so it must persist on the volume, not in an image layer.
+      - harmonic-data:/app/tconnect-data
+
+volumes:
+  harmonic-data:

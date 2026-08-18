@@ -1,0 +1,396 @@
+/* ★ HARMONIC — the shell, by ROLE. Locked 2026-08-18 (#736), against
+ * the archived Harmonic-theme lock.
+ *
+ * The lock was settled against a five-file REFERENCE overlay, applied in
+ * filename order, which is a design-time record and does not ship. This file is
+ * where those five files resolve to in the app's own tree: the token values
+ * landed in the :root / html.dark block of frontend/index.html, and every rule
+ * below is one of the overlay's rules with its cascade already collapsed — a
+ * declaration a later overlay file overwrote is simply absent here, rather than
+ * restated and then beaten.
+ *
+ * WHY THIS FILE EXISTS AT ALL, RATHER THAN EDITS INSIDE THE SURFACE FILES:
+ * the single most expensive defect of the lock round was a theme rule wearing a
+ * surface's selector. The docked workspace was scoped to `.dw`, so Verify (.vw)
+ * kept rendering as two floating cards; and Verify's `.verify-strip` was missed
+ * even though verify-workstation.css calls it "the shipped .instruments row,
+ * exact values", so its Trial line rendered dark-on-dark and vanished in BOTH
+ * themes. Neither was visible until a POPULATED render of a second surface.
+ *
+ * So the shell is themed by ROLE, and the roles are:
+ *
+ *   chrome bar         .cockpit-topbar, .cockpit-footer
+ *   instrument rail    :is(.dw, .vw) :is(.instruments, .ec-coordinates),
+                      .vw .verify-strip
+ *   pane header rail   :is(.dw, .vw) .pane > header
+ *   pane body          :is(.dw, .vw) .pane
+ *   dock floor         :is(.dw, .vw) .inspector > .watch
+ *
+ * A new surface either realises a role above, or it is a recorded gap. Never a
+ * silent third material. Renaming `.dw` / `.vw` / `.verify-strip` so the roles
+ * read off the class names is deferred to its own pass by the lock itself.
+ *
+ * This file is loaded LAST by index.html. It has to be: a theme rule and a
+ * surface rule collide at equal specificity, so ordering, not specificity, is
+ * what decides. Adding a stylesheet after this one puts the surface back on top.
+ */
+
+/* ---- chart marks are not the interaction palette (terms 5, 6, 14) --------
+   diagnose-workstation.css aliases the ported `--mk-*` namespace onto the app's
+   own tokens rather than restating any colour, which is right for every token
+   whose chart meaning and app meaning agree. Harmonic deliberately splits the
+   ones below: orange owns interaction, so the median, its envelope and the
+   grid may not read from `--primary` / `--line`. Only the diverging tokens are
+   declared — the rest keep the adapter's alias, so there is still one source. */
+:root {
+  /* the measured signal is forest, and the median (`--mk-primary-600`) is the
+     darkest step of it against parchment */
+  --mk-primary: #455f41;
+  --mk-primary-600: #183326;
+  --mk-primary-soft: #d8e3da;
+  /* the plot draws no frame of its own: the grid recedes beneath the data so
+     the dashed target rails outrank the gridlines (term 6) */
+  --mk-line: #ded2bd;
+}
+/* Light ALONE splits the warn/danger marks from their text inks: term 4 raised
+   --warn and --danger on parchment to clear 4.5:1 as small text, and a mark
+   calibrated for 3:1 graphics should not follow them up. Dark's inks already
+   sit where its marks want to be, so it keeps the adapter's alias rather than
+   restating a value — and scoping this to light is what stops a light literal
+   from leaking into dark, which is how Verify's movement chips lost their ink. */
+html:not(.dark) {
+  --mk-warn: #9b562d;
+  --mk-danger: #b3402c;
+}
+html.dark {
+  /* THE INVERSION: in light the measured signal is dark forest ON parchment; in
+     dark the light theme's GROUND becomes the ink. The median is bone and the
+     green identity lives in the bands beneath it, so the two are set apart.
+     The median joins the BODY tier, warmed toward parchment and never toward
+     white — the brightest LINE, never the brightest THING (term 14). */
+  --mk-primary: #86ad78;
+  --mk-primary-600: #c3b49c;
+  --mk-primary-soft: #2f3a2c;
+  /* structure rejoins the warm family and recedes by lightness (term 12) */
+  --mk-accent: #e07f3f;
+  --mk-ok: #a89a85;
+  --mk-line: #322e29;
+}
+
+/* ---- ROLE: chrome bar ----------------------------------------------------
+   The app frame — workflow, scope, utilities. It is the one surface that is not
+   the sheet, and it keeps its own token set so nothing inside it has to opt out
+   of the parchment ground. */
+.cockpit-topbar,
+.cockpit-footer {
+  --ck-ground: #183326;
+  --ck-panel: #244638;
+  --ck-text: #f5f1e9;
+  --ck-body: #d8e0da;
+  --ck-meta: #afc0b5;
+  --ck-rule: #557061;
+  --ck-accent: #b35b2e;
+  --ck-accent-soft: #8f4524;
+  --on-primary: #ffffff;
+  background: #183326;
+  color: #f5f1e9;
+}
+html.dark .cockpit-topbar,
+html.dark .cockpit-footer {
+  /* the same desk, one step deeper — never a black bar */
+  --ck-ground: #161413;
+  --ck-panel: #2b241d;
+  --ck-text: #efe5d4;
+  --ck-body: #d3c7b4;
+  --ck-meta: #a19484;
+  --ck-rule: #4c4238;
+  --ck-accent: #d2743e;
+  --ck-accent-soft: #7a4423;
+  --on-primary: #ffffff;
+  background: #161413;
+}
+.cockpit-step[aria-current="step"] {
+  border-color: color-mix(in srgb, var(--ck-accent) 75%, #f5f1e9);
+  background: var(--ck-accent-soft);
+  color: #fff8f1;
+}
+.cockpit-step[aria-current="step"] .cockpit-step-number {
+  border-color: #f5f1e9;
+  background: var(--ck-accent);
+  color: #ffffff;
+}
+.cockpit-scope { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .035); }
+
+/* Term 8 — every control in the chrome speaks ONE vocabulary. Log carbs sat on
+   the user-claim ochre at its own radius and ground, a hollow tinted box in a
+   different vocabulary from the SCOPE chip beside it, which is why it read as a
+   web CTA rather than a toolbar action. It now matches that chip exactly and
+   spends the accent on the `+` alone, where it still marks the write. */
+.cockpit-log-carbs {
+  padding: 4px 10px;
+  border: 1px solid var(--ck-rule);
+  border-radius: 7px;
+  background: var(--ck-panel);
+  color: var(--ck-text);
+  font-weight: 600;
+}
+.cockpit-log-carbs .plus { color: var(--ck-accent); font-weight: 700; }
+.cockpit-log-carbs:hover { border-color: var(--ck-accent); }
+
+/* Metadata rails are SENTENCES, not readings: the footer leaves mono and keeps
+   tabular figures so its digits still hold still (term 3). */
+.cockpit-footer,
+.cockpit-profile-facts,
+.cockpit-footer .cockpit-count,
+.cockpit-utilities > button {
+  font-family: Inter, system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: normal;
+}
+
+/* ---- ROLE: pane body — ONE docked workspace, not two floating cards ------
+   Term 1. The panes lose their gutters, radii and shadows; one hairline divides
+   canvas from inspector, and the parchment sheet becomes the working surface
+   itself. This is the rule that was scoped to `.dw`. */
+:is(.dw, .vw) .panes {
+  gap: 0;
+  padding: 0;
+  background: var(--wk-surface);
+  border-top: 1px solid var(--wk-rule-strong);
+}
+:is(.dw, .vw) .pane {
+  border: 0;
+  border-radius: 0;
+  background: var(--wk-surface);
+  box-shadow: none;
+}
+:is(.dw, .vw) .panes > .pane + .pane { border-left: 1px solid var(--wk-rule); }
+
+/* ---- ROLE: pane header rail ---------------------------------------------
+   Pane headers become dock rails rather than card captions, and both share one
+   height so the divider reads as a single seam. */
+:is(.dw, .vw) .pane > header {
+  min-height: 30px;
+  align-items: center;
+  background: var(--wk-surface-rail);
+  border-bottom: 1px solid var(--wk-rule);
+}
+:is(.dw, .vw) .canvas-pane > header { padding-top: 4px; padding-bottom: 4px; }
+
+/* Dark has to make the material step explicit or the inspector floats on the
+   chart's own ground. Light never needed it stated: parchment and the rail were
+   already different substances with a tonal step behind the divider. Three
+   substances, each one step warmer than the last — chart field, inspector wall,
+   dock floor — and no jump big enough to band (term 13). */
+html.dark :is(.dw, .vw) .panes,
+html.dark :is(.dw, .vw) .canvas-pane { background: #151311; }
+html.dark :is(.dw, .vw) .canvas-pane > header { background: #1a1815; }
+html.dark :is(.dw, .vw) .panes > .pane + .pane { border-left-color: #574a3f; }
+
+/* ---- ROLE: dock floor ----------------------------------------------------
+   The pinned watched-change slot. Its markup belongs to the dock re-settle
+   (#662); the material it sits on belongs to the theme, so the role is styled
+   here and the surface inherits it the moment the markup lands. */
+html.dark :is(.dw, .vw) .inspector > .watch { background: #38312a; }
+html.dark :is(.dw, .vw) .watch .go { border-color: #6b5f53; background: #2b2622; }
+
+/* ---- ROLE: instrument rail ----------------------------------------------
+   Term 7. The controls that scope the surface below them belong to the SHEET,
+   not to the frame. They were a third material — evergreen chrome above,
+   parchment workspace below, and a near-black band of their own in between — so
+   VIEW and WINDOW read as part of the window frame rather than part of the
+   instrument. They drive the plot, so they join the plot's material and become
+   the workspace's top rail.
+
+   THREE classes realise this ONE role, and all three are named here on purpose.
+   `.verify-strip` is Verify's, and missing it made the Trial line vanish.
+   `.ec-coordinates` is the event comparison's, and missing IT is measurable
+   rather than merely visible: the Glucose lens renders `.dw .instruments` while
+   Meals and Lows render `.ec-coordinates`, and the behaviour ledger asserts the
+   two rails are pixel-identical across the three lenses — so theming one and
+   not the other moved the cap half a pixel and failed the gate. Same anatomy
+   (`.instrument`, `.cap`, `.seg`), same element, same material. */
+:is(.dw, .vw) :is(.instruments, .ec-coordinates),
+.vw .verify-strip {
+  background: var(--wk-surface-rail);
+  color: var(--wk-ink);
+  border-bottom: 1px solid var(--wk-rule);
+}
+:is(.dw, .vw) :is(.instruments, .ec-coordinates) .seg {
+  border-color: var(--wk-rule);
+  background: var(--wk-surface-sunken);
+}
+:is(.dw, .vw) :is(.instruments, .ec-coordinates) .seg button { color: var(--wk-ink-body); }
+:is(.dw, .vw) :is(.instruments, .ec-coordinates) .seg button .x { color: var(--wk-ink-meta); }
+:is(.dw, .vw) :is(.instruments, .ec-coordinates) .seg button[aria-pressed="true"] {
+  background: var(--wk-surface);
+  color: var(--wk-ink);
+  box-shadow: 0 1px 2px rgba(8, 18, 13, .18),
+              inset 0 0 0 1px color-mix(in srgb, var(--primary) 46%, transparent);
+}
+.vw .verify-strip .strip-note { color: var(--wk-ink-meta); }
+
+/* In dark the rail descends INTO the plot instead of sitting continuous with a
+   parchment sheet: chrome -> rail -> chart header -> field, each step slightly
+   deeper. Lit the other way it was lighter than both its neighbours and the top
+   of the surface stacked as three warm-grey stripes. */
+html.dark :is(.dw, .vw) :is(.instruments, .ec-coordinates),
+html.dark .vw .verify-strip {
+  background: #1f1b18;
+  color: var(--wk-ink);
+  border-bottom-color: #322c27;
+}
+html.dark :is(.dw, .vw) :is(.instruments, .ec-coordinates) .seg { border-color: #3d362f; background: #171412; }
+html.dark :is(.dw, .vw) :is(.instruments, .ec-coordinates) .seg button { color: #cabfae; }
+html.dark :is(.dw, .vw) :is(.instruments, .ec-coordinates) .seg button[aria-pressed="true"] {
+  background: #352e28;
+  color: #f5ece0;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 62%, transparent);
+}
+
+/* ---- type is split by KIND, not by rank (term 3) -------------------------
+   UI sans for chrome, labels, prose and conclusions; tabular mono reserved for
+   readings, times, units and counts. */
+:is(.dw, .vw) .pane > header h2,
+:is(.dw, .vw) .instrument > .cap,
+:is(.dw, .vw) .lane-key .t,
+:is(.dw, .vw) .lvl-cap .meta,
+:is(.dw, .vw) .entry .sub,
+:is(.dw, .vw) .slot-stats,
+:is(.dw, .vw) .ev-row button,
+:is(.dw, .vw) .head-live .rd-note {
+  font-family: Inter, system-ui, sans-serif;
+  letter-spacing: normal;
+}
+:is(.dw, .vw) .slot-head .time,
+:is(.dw, .vw) .clock .axis,
+:is(.dw, .vw) .clock .bars .n,
+:is(.dw, .vw) .numrow b,
+:is(.dw, .vw) .statline b,
+:is(.dw, .vw) .ev-group .n,
+:is(.dw, .vw) .occ-head .when,
+:is(.dw, .vw) .occ-nums,
+:is(.dw, .vw) .head-live .rd-time,
+:is(.dw, .vw) .head-live .rd-pair .v {
+  font-family: var(--ck-mono);
+  font-variant-numeric: tabular-nums;
+}
+/* A pane's own metadata is a sentence about the reading, not a reading. */
+:is(.dw, .vw) .pane > header .meta,
+:is(.dw, .vw) #crumb-meta,
+:is(.dw, .vw) .canvas-head .persist {
+  font-family: Inter, system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: normal;
+}
+/* Lift the micro band off the 10px floor so labels stop impersonating data. */
+:is(.dw, .vw) { --ck-micro: 11px; }
+
+/* ---- structural labels tie to the chrome by INK, not by ground (term 7) --
+   The rails keep the sheet's material so the docked workspace stays one
+   surface; only the labels take the brand's evergreen, and that is what relates
+   them to the chrome above. */
+:is(.dw, .vw) .lane-key { color: var(--mk-secondary); }
+:is(.dw, .vw) .pane > header h2,
+:is(.dw, .vw) .instrument > .cap,
+.vw .verify-strip .cap { color: #1f4130; }
+
+/* Dark cannot copy that. Evergreen ink is a LIGHT-theme device: at 145° against
+   dark's warm 30-37° substrate it recreates the clash term 12 measures out.
+   What transfers is the RELATIONSHIP, not the hue — the labels take the
+   topbar's own ink, one clear step above body text, so structure still reads as
+   chrome-family, by value instead of by colour. */
+html.dark :is(.dw, .vw) .pane > header h2,
+html.dark :is(.dw, .vw) .instrument > .cap,
+html.dark .vw .verify-strip .cap { color: #c6b7a2; }
+
+/* ---- orange means interaction and high/attention, and nothing else ------- */
+/* Term 5. Meals take clay, neutral proportions take forest, and insufficiency
+   takes neutral ink plus a structural tell. */
+:is(.dw, .vw) {
+  --ck-meal: #8a6a3c;
+  --ck-insuff: #5e645b;
+  --ck-up: #455f41;
+}
+html.dark :is(.dw, .vw) {
+  --ck-rail: var(--wk-surface);
+  --ck-inset: #1a1611;
+  --ck-manual: #d9b568;
+  --ck-manual-soft: #3a2e18;
+  --ck-meal: #c08d52;
+  --ck-insuff: #8d8579;
+  --ck-up: #86ad78;
+}
+/* TEXT NEVER SITS ON THE LANE'S GROUND.
+   `--ck-inset` is derived as `color-mix(--mk-bg 82%, #000)`. That produced a
+   light grey while `--mk-bg` was one; under Harmonic `--mk-bg` IS the dark desk,
+   so in LIGHT the derivation drops to near-black — correct for what it mostly
+   is (the schedule lanes' track, the clock's empty cells, the level meter),
+   where nothing but colour sits on it, and wrong for the few wells that carry
+   words. Measured on parchment: the occurrence tag read #526358 on #131D18 at
+   2.71:1, and the event comparison's Factor and occurrence selects read #172219
+   on the same ground at 1.05:1 — invisible. Those wells step DOWN into the
+   sheet instead, which is the material the instrument rail's own segmented
+   controls already sit on. `.capchip` is here because it carries the identical
+   border/ground/ink triple as the tag that was measured, not because it was
+   rendered. DARK is deliberately untouched: its well is stated outright at
+   #1A1611, the same tag measures 6.54:1 there, and dark's `--wk-surface-sunken`
+   is lifted for the value tag's plate, so borrowing it here would make this
+   worse rather than better. */
+html:not(.dark) :is(.dw, .vw) :is(select, .capchip, .occ-head .tag) {
+  background: var(--wk-surface-sunken);
+}
+
+:is(.dw, .vw) [data-safety="insufficient"],
+:is(.dw, .vw) [data-verdict="insufficient"] {
+  outline: 1px dashed color-mix(in srgb, var(--wk-rule-strong) 90%, transparent);
+  outline-offset: -1px;
+}
+/* Adverse states keep a structural tell even though the palette is simpler:
+   a full rule, never a colour patch alone. */
+:is(.dw, .vw) [data-verdict="low"],
+:is(.dw, .vw) [data-verdict="adverse"] {
+  outline: 1px solid var(--low);
+  outline-offset: -1px;
+}
+/* A median reading above target is attention, not insufficiency, so it leaves
+   `--ck-insuff` for the attention token — which term 4 already made text-safe. */
+:is(.dw, .vw) .head-live #rd-med[data-verdict="above"] { color: var(--warn); }
+/* The share bar is a neutral PROPORTION, so it leaves the interaction hue. */
+:is(.dw, .vw) .factor .track i { background: var(--ck-up); }
+
+/* Diagnose's chart plane, specifically: `--ck-accent` is the interaction hue
+   everywhere in the workstation, and orange is forbidden from the plot, so
+   `#chart` re-points `--primary` at the measured signal for the rules inside
+   it. Verify's `.vw` keeps `--ck-accent` on `--mk-primary` already, so its hero
+   chart needs no equivalent — this is an element rule, not a role rule. */
+.dw {
+  --ck-accent: var(--primary);
+  --ck-sel: color-mix(in srgb, var(--primary) 16%, transparent);
+}
+.dw #chart { --primary: var(--mk-primary); }
+.dw .canvas-pane .brace { --ck-accent: var(--mk-primary); }
+
+/* ---- findings-queue flavour tags (#662 term 36) --------------------------
+   Markup owned by the queue build; the ink is a theme decision, so it is
+   recorded here rather than left to be re-derived. The tag names a KIND of
+   finding, not a state: under Harmonic `--primary` is byte-identical to
+   `--high`, so a tag on the accent would read as clinical attention — the exact
+   collision term 36 forbids. Warm graphite is on-theme and is shared with no
+   chart mark and no clinical token; the glyph carries the differentiation. */
+:is(.dw, .vw) .qrow .tag.setting,
+:is(.dw, .vw) .qrow .tag.habit { color: #6a5d4e; }
+:is(.dw, .vw) .qrow[data-tier="tail"] .tag.setting,
+:is(.dw, .vw) .qrow[data-tier="tail"] .tag.habit { color: color-mix(in srgb, #6a5d4e 72%, transparent); }
+html.dark :is(.dw, .vw) .qrow .tag.setting,
+html.dark :is(.dw, .vw) .qrow .tag.habit { color: #b3a48d; }
+html.dark :is(.dw, .vw) .qrow[data-tier="tail"] .tag.setting,
+html.dark :is(.dw, .vw) .qrow[data-tier="tail"] .tag.habit { color: color-mix(in srgb, #a2937f 72%, transparent); }
+/* One phrase, one ink: a bright value beside a dim noun inside four words read
+   as two colours arguing, so the noun comes up to meet it. */
+html.dark :is(.dw, .vw) .qrow .den { color: #bdb1a0; }
+html.dark :is(.dw, .vw) .qrow .den .v { color: #f0e6d6; }
+
+@media (prefers-reduced-motion: reduce) {
+  :is(.dw, .vw) .panes { transition: none; }
+}

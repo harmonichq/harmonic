@@ -1,0 +1,773 @@
+/* Diagnose workstation — PORTED from the locked mock, not authored here.
+ *
+ * Source: the archived ★ LOCKED cockpit mock (the fork that executes lock terms
+ * 31-33). Lines 258-298 (tokens) and 393-939 (instrument row, pane grid, brace,
+ * I:C lane, stacked inspector) are transferred VERBATIM.
+ *
+ * NOT ported, deliberately: the mock's sections 1 (identity/workflow bar) and 4
+ * (status strip), and its `.cockpit` page grid. #634 already built the app's
+ * chrome to this same lock (terms 2 and 3) in shell.css; porting the mock's
+ * chrome rules on top would double-declare and fight it. The mock's `.mockbar`
+ * is harness chrome and is excluded from the contract by the behaviour ledger.
+ *
+ * Edit this file only to re-sync it with the mock. A change that is not in the
+ * mock is a deviation and needs a re-settle against the surface's lock manifest.
+ */
+
+/* ---- token adapter (NEW — the seam between the app's design system and the
+       ported rules) --------------------------------------------------------
+   The ported CSS and the ported chart module both read `--mk-*`, which is the
+   shared mock scaffold's own namespace and is unused in this
+   app. Alias it onto the app's own tokens instead of restating any colour:
+   re-declaring a token from memory is what shipped the wrong ink in #644.
+   These sit on :root so the workstation subtree inherits the live app tokens
+   without restating them. */
+:root {
+  --mk-bg: var(--bg);
+  --mk-surface: var(--surface);
+  --mk-surface-2: var(--surface-2);
+  --mk-text: var(--text);
+  --mk-muted: var(--muted);
+  --mk-line: var(--line);
+  --mk-primary: var(--primary);
+  --mk-primary-600: var(--primary-600);
+  --mk-primary-soft: var(--primary-100);
+  --mk-on-primary: var(--on-primary);
+  --mk-accent: var(--accent);
+  --mk-ok: var(--ok);
+  --mk-ok-soft: var(--ok-bg);
+  --mk-warn: var(--warn);
+  --mk-warn-soft: var(--warn-bg);
+  --mk-danger: var(--danger);
+  --mk-danger-soft: var(--danger-bg);
+  /* #735: two aliases the original port did not carry, both pointing at existing
+     app tokens — nothing here restates a colour. `--mk-secondary` is the flavor
+     tags' identity hue (term 36), `--mk-body` the body ink a denominator keeps
+     when its row is demoted (term 42). */
+  --mk-secondary: var(--secondary);
+  --mk-body: var(--wk-ink-body);
+}
+
+/* ---- host adapter (NEW) -------------------------------------------------
+   The mock's `.cockpit` is a four-row page grid (topbar/instruments/panes/
+   status). Here the app shell owns the topbar and status rows, so the ported
+   surface is the middle two and `.dw` carries that two-row grid. Same track
+   sizes as the mock's rows 2 and 3, so the panes get the identical height
+   budget term 1 is asserted against. */
+.main-content > div:has(.dw), .main-content > div:has(.dw) > div { height: 100%; }
+.dw {
+  height: 100%; display: grid; overflow: hidden;
+  grid-template-rows: 42px minmax(0, 1fr);
+  font-size: var(--ck-body);
+}
+.dw, .dw * { box-sizing: border-box; }
+.dw button { font: inherit; }
+
+/* ---- tokens — VERBATIM from mock 258-298; the two selectors are rescoped
+       (`:root`->`.dw`, `html[data-theme=dark]`->`html.dark .dw`) because this
+       app themes with a `.dark` class and because shell.css already owns a
+       different `--ck-*` set globally — scoping keeps the two from colliding. */
+.dw {
+  /* TWO SURFACES ONLY — ground and panel — both reused existing values.
+     Chrome (top bar, instrument row, status) is ground; the two cards are
+     panel. The old --ck-bar third value is gone: it now IS ground. */
+  --ck-bar: var(--mk-bg);
+  --ck-rail: var(--mk-surface);
+  --ck-hair: var(--mk-line);
+  --ck-inset: color-mix(in srgb, var(--mk-bg) 82%, #000);
+  --ck-accent: var(--mk-primary);
+  --ck-meal: var(--mk-accent);
+  --ck-sel: color-mix(in srgb, var(--mk-primary) 16%, transparent);
+  --ck-manual: #866619;          /* user-claim token, from frontend/index.html */
+  --ck-manual-soft: #F6EFDC;
+  --ck-up: var(--mk-ok);
+  --ck-hold: var(--mk-muted);
+  --ck-insuff: var(--mk-warn);
+  --ck-pad: 12px;
+  --ck-gap: 10px;
+  --ck-r: 8px;
+  --ck-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+  /* THREE TYPE RANKS, and only three:
+       caps  — 10px, +.08em, dimmed: section headers, axis captions, key
+               labels, and ALL metadata (provenance recedes by weight and ink,
+               not by shrinking below the floor)
+       data  — 12px mono tabular: every value, count and time
+       emph  — 13px: the current selection's headline numbers */
+  --ck-micro: 10px;
+  --ck-track: .08em;
+  --ck-data: 12px;
+  --ck-emph: 13px;
+  --ck-body: 12.5px;
+  --ck-grid-left: 52px;
+  --ck-grid-right: 52px;   /* must track GRID in shell-cockpit-chart.js */
+}
+html.dark .dw {
+  --ck-inset: #101215;
+  --ck-bar: var(--mk-bg);
+  --ck-rail: #191c1f;
+  --ck-manual: #D9B568;
+  --ck-manual-soft: #332C1B;
+}
+
+/* ---- mock 393-939 — VERBATIM (one line rescoped, marked inline) ---- */
+/* ---- 2. instrument row ---------------------------------------------- */
+.instruments {
+  display: flex; align-items: center; gap: 14px; padding: 0 14px;
+  background: var(--mk-bg);
+}
+.instrument { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.instrument > .cap {
+  font-size: var(--ck-micro); text-transform: uppercase; letter-spacing: var(--ck-track);
+  color: var(--mk-muted); font-weight: 650; white-space: nowrap;
+}
+.seg {
+  display: flex; padding: 2px; gap: 2px; border-radius: 7px;
+  background: var(--ck-inset); border: 1px solid var(--ck-hair);
+  min-width: 0; overflow: hidden;
+}
+.seg button {
+  border: 0; background: transparent; color: var(--mk-secondary);
+  padding: 4px 9px; border-radius: 5px; cursor: pointer; font-size: 11.5px; font-weight: 550;
+}
+/* The follow chip reports a LIVE value, so it is sized once for the longest
+   string it can ever hold ("Factor peak 00:00–24:00", longer than the drag's
+   own "Window 00:00–24:00 ×") and never resizes again. */
+.seg button[data-follow] {
+  display: inline-flex; align-items: center; width: 172px;
+  font-variant-numeric: tabular-nums; text-align: left;
+}
+.seg button .x {
+  margin-left: auto; padding: 0 3px; border-radius: 3px; font-style: normal;
+  color: var(--mk-muted); font-size: 12px; line-height: 1;
+}
+.seg button .x:hover { color: var(--mk-text); background: var(--ck-inset); }
+.seg button[aria-pressed="true"] {
+  background: var(--mk-surface); color: var(--mk-text);
+  box-shadow: 0 1px 2px rgba(0,0,0,.28), inset 0 0 0 1px color-mix(in srgb, var(--ck-accent) 34%, transparent);
+}
+/* ---- 3. pane grid --------------------------------------------------- */
+.panes {
+  display: grid; gap: var(--ck-gap); padding: var(--ck-gap) 12px; min-height: 0;
+  grid-template-columns: minmax(0, 1fr) var(--side, 430px);
+  transition: grid-template-columns .18s ease;
+}
+/* one fixed inspector width in every state — a per-state width made the canvas
+   reflow horizontally on each state change */
+.dw[data-state="dense"] { --ck-body: 12px; --ck-pad: 10px; }
+
+.pane {
+  display: grid; grid-template-rows: auto minmax(0, 1fr); min-height: 0; min-width: 0;
+  background: var(--ck-rail); border-radius: var(--ck-r);
+}
+/* ONE SPINE PER COLUMN. The inspector's is --ck-pad; the chart's is the
+   plot's own left edge (--ck-grid-left), so the panel title, the provenance,
+   the mg/dL caption, the basal lane and the lane key all start on the same
+   vertical. Header hairlines are gone — 8px of space separates them. */
+.pane > header { display: flex; align-items: baseline; gap: 12px; padding: 8px var(--ck-pad); }
+.canvas-pane > header { padding: 4px var(--ck-pad) 4px var(--ck-grid-left); }
+.pane > header h2 {
+  margin: 0; font-size: var(--ck-micro); font-weight: 700; letter-spacing: var(--ck-track);
+  text-transform: uppercase; color: var(--mk-secondary);
+}
+/* metadata sits at caps rank and recedes by weight and ink, so it can never
+   read as the title's equal */
+.pane > header .meta {
+  margin-left: auto; font-family: var(--ck-mono); font-size: var(--ck-micro);
+  font-weight: 500; color: var(--mk-muted); letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+/* re-derived on every drag frame: reserve the widest count so the title row
+   holds still ("window 941 of 941 readings") */
+#canvas-scope { min-width: 158px; }
+
+/* DOCKED READOUT — an OHLC-row style header, mono and tabular so the digits do
+   not shuffle as the cursor moves. Only the LEFT region swaps on hover; the
+   pooling provenance on the right is never hidden, because it is the caveat
+   that makes every number in the row readable. Both left lines share one grid
+   cell, so the header height is identical hovering or not and nothing
+   reflows. */
+.canvas-pane > header.canvas-head {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline;
+}
+.canvas-head > .head-swap { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; }
+.canvas-head .head-line {
+  grid-area: 1 / 1; display: flex; align-items: baseline; gap: 10px;
+  min-width: 0; transition: opacity .1s linear;
+}
+.canvas-head .head-live {
+  visibility: hidden; opacity: 0;
+  font-family: var(--ck-mono); font-variant-numeric: tabular-nums;
+  font-size: var(--ck-data); white-space: nowrap; overflow: hidden; gap: 14px;
+}
+.canvas-head[data-hover="1"] .head-rest { visibility: hidden; opacity: 0; }
+.canvas-head[data-hover="1"] .head-live { visibility: visible; opacity: 1; }
+.head-live .rd-time { font-weight: 700; color: var(--mk-text); letter-spacing: .02em; }
+.head-live .rd-pair { display: inline-flex; align-items: baseline; gap: 6px; }
+.head-live .rd-pair .k {
+  color: var(--mk-muted); font-size: var(--ck-micro);
+  text-transform: uppercase; letter-spacing: var(--ck-track);
+}
+/* each value reserves its widest digit count in ch, so a 46 -> 176 -> 229
+   sweep cannot shuffle the pairs to its right */
+.head-live .rd-pair .v {
+  color: var(--mk-text); font-weight: 600;
+  display: inline-block; text-align: right; font-variant-numeric: tabular-nums;
+}
+.head-live #rd-med { min-width: 3ch; }
+.head-live #rd-iqr, .head-live #rd-band { min-width: 7ch; }
+.head-live #rd-n { min-width: 3ch; }
+.head-live .rd-time { min-width: 5ch; display: inline-block; }
+/* verdict ink, on the MEDIAN VALUE ONLY — everything else stays neutral so the
+   one coloured number cannot be mistaken for a general alarm state */
+.head-live #rd-med[data-verdict="above"] { color: var(--ck-insuff); }
+.head-live #rd-med[data-verdict="below"] { color: var(--mk-danger); }
+.head-live .rd-note { color: var(--mk-secondary); min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.canvas-head .persist {
+  font-family: var(--ck-mono); font-size: var(--ck-micro); color: var(--mk-muted);
+  padding-left: 14px; white-space: nowrap;
+}
+
+/* canvas pane */
+.canvas-pane > .body {
+  display: grid; grid-template-rows: minmax(0, 1fr) auto; overflow: hidden; min-height: 0;
+  position: relative;   /* the brace overlay is measured against this box */
+}
+/* `min-width: 0` is load-bearing, not symmetry with min-height. A grid item
+   defaults to min-width:auto, so the element's floor is its CONTENT's width —
+   and the content here is a rendered ECharts canvas that keeps whatever width
+   it was last drawn at. Without this, narrowing an OPEN window shrinks the
+   grid track while #chart stays at its old width: the plot overflows its
+   track (clipped, .panes is overflow:hidden) and the brace repaints against
+   geometry that never reflowed. The resize listener fires correctly the whole
+   time — there is simply nothing to reflow. Behaviour-ledger Q3 (#651). */
+#chart { min-height: 0; min-width: 0; cursor: crosshair; }
+
+/* ---- drawn-window brace ---------------------------------------------
+   Two dashed edges on the SAME optical spine as the plot and the lane —
+   they span the whole canvas body, so they project down through the basal
+   lane without a second drawing pass. Deliberately NOT a rubber-band: no
+   fill rectangle, no floating bubble, no animation. */
+.brace { position: absolute; inset: 0; pointer-events: none; z-index: 4; }
+.brace[hidden] { display: none; }
+/* vertical extent is set in paintBrace: from the plot's top edge down to the
+   bottom of the basal lane, and no further — never into the chart header
+   above, never past the lane into the key below */
+.brace .edge { position: absolute; width: 0; border-left: 1px dashed var(--ck-accent); }
+/* the edge being dragged goes solid and high-contrast, so it reads as the one
+   under the hand while the other stays a reference */
+.brace .edge.live { border-left: 1.5px solid var(--mk-text); }
+/* the snapped time the edge has landed on, live during the drag */
+.brace .readout {
+  position: absolute; transform: translateX(-50%); padding: 1px 5px; border-radius: 3px;
+  background: var(--mk-surface); border: 1px solid var(--ck-accent);
+  color: var(--mk-text); font-family: var(--ck-mono); font-size: 10.5px; white-space: nowrap;
+}
+.brace .readout[hidden] { display: none; }
+/* visible grab handles, seated on the plot's label row */
+.brace .grip {
+  position: absolute; width: 7px; height: 22px; margin-left: -4px;
+  border: 1px solid var(--ck-accent); border-radius: 3px;
+  background: var(--mk-surface); pointer-events: auto; cursor: ew-resize;
+}
+.brace .grip::after {
+  content: ''; position: absolute; inset: 4px 2px;
+  border-left: 1px solid color-mix(in srgb, var(--ck-accent) 60%, transparent);
+  border-right: 1px solid color-mix(in srgb, var(--ck-accent) 60%, transparent);
+}
+
+/* verdict lane — one cell per basal slot, in register with the clock axis */
+.lane-wrap { padding: 0 0 8px; }
+/* The ribbon is a densitometer, so it needs its own ground: without a track
+   behind the cells a "hold" slot went white-on-white in light theme and the
+   outline-only verdicts lost their baseline. */
+.lane {
+  display: grid; height: 11px; gap: 1px;
+  margin-left: var(--ck-grid-left); margin-right: var(--ck-grid-right);
+  background: var(--ck-inset);
+  box-shadow: inset 0 0 0 1px var(--ck-hair);
+  border-radius: 2px;
+}
+.lane button {
+  position: relative; border: 0; padding: 0; cursor: pointer; border-radius: 1px;
+  background: var(--cell, var(--ck-inset)); min-width: 0;
+}
+.lane button[data-verdict="up"] { --cell: color-mix(in srgb, var(--ck-up) 72%, transparent); }
+.lane button[data-verdict="down"] { --cell: color-mix(in srgb, var(--mk-danger) 72%, transparent); }
+.lane button[data-verdict="hold"] { --cell: color-mix(in srgb, var(--ck-hold) 45%, var(--mk-surface)); }
+/* insufficient reads as measured, not broken: outline only, full-contrast text
+   lives in the inspector */
+.lane button[data-verdict="insufficient"] {
+  --cell: transparent; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ck-insuff) 75%, transparent);
+}
+.lane button[data-verdict="nodata"] { --cell: transparent; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ck-hair) 90%, transparent); }
+.lane button[aria-pressed="true"] { outline: 1px solid var(--mk-text); outline-offset: 1px; }
+/* outside the drawn window a slot is de-emphasised, never hidden: its verdict
+   is still true, it is just not what the canvas is scoped to */
+.lane button[data-outside="true"] { opacity: .38; }
+.lane button[data-staged="true"]::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: -4px; height: 2px;
+  background: var(--ck-accent); border-radius: 1px;
+}
+
+/* ---- the second lane: I:C blocks, at TRUE MINUTE boundaries -----------
+   The stack is two rows, 4px apart, both 11px — 15px of the plot's height,
+   which is the whole budget for the extension. The basal lane above is a
+   48-cell grid; this one is NOT a grid, because a block is a data span: its
+   left and width are fractions of 1440 and a block that wraps midnight is
+   drawn as two pieces of the same block. Nothing is snapped to the basal
+   cells and nothing carries a minimum width — where a seam does not line up
+   with a slot edge, it must be seen not lining up. */
+.lane-stack { display: grid; gap: 4px; }
+.iclane {
+  position: relative; height: 11px;
+  margin-left: var(--ck-grid-left); margin-right: var(--ck-grid-right);
+  background: var(--ck-inset);
+  box-shadow: inset 0 0 0 1px var(--ck-hair);
+  border-radius: 2px;
+}
+.iclane button {
+  position: absolute; top: 0; bottom: 0; border: 0; padding: 0; cursor: pointer;
+  border-radius: 1px; background: var(--cell, var(--ck-inset)); min-width: 0;
+}
+/* ONE hue family with the lane above: these are the same three tokens, at the
+   same strengths. The lanes are told apart by ROW and by the key's lead word. */
+.iclane button[data-verdict="up"] { --cell: color-mix(in srgb, var(--ck-up) 72%, transparent); }
+.iclane button[data-verdict="down"] { --cell: color-mix(in srgb, var(--mk-danger) 72%, transparent); }
+.iclane button[data-verdict="hold"] { --cell: color-mix(in srgb, var(--ck-hold) 45%, var(--mk-surface)); }
+.iclane button[data-verdict="insufficient"] {
+  --cell: transparent; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ck-insuff) 75%, transparent);
+}
+.iclane button[aria-pressed="true"] { outline: 1px solid var(--mk-text); outline-offset: 1px; }
+.iclane button[data-outside="true"] { opacity: .38; }
+.iclane button[data-staged="true"]::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: -4px; height: 2px;
+  background: var(--ck-accent); border-radius: 1px;
+}
+/* one line, always: a wrapped key would grow the canvas pane's fixed rows */
+.lane-key {
+  display: flex; flex-wrap: nowrap; gap: 11px; align-items: center; overflow: hidden;
+  margin-left: var(--ck-grid-left); margin-right: var(--ck-grid-right);
+  padding-top: 8px; font-size: var(--ck-micro); color: var(--mk-muted);
+  white-space: nowrap;
+}
+.lane-key span { display: inline-flex; align-items: center; gap: 5px; }
+.lane-key i { width: 12px; height: 8px; border-radius: 2px; display: inline-block; }
+.lane-key .t { font-family: var(--ck-mono); }
+.lane-key .lead { color: var(--mk-secondary); font-family: Inter, system-ui, sans-serif; }
+/* the second lane's lead word opens a new group, so it gets a little more air
+   than the gap between two swatches — spacing, not a rule and not a colour */
+.lane-key .lead:not(:first-child) { margin-left: 7px; }
+
+/* the stat tiles are gone: their numbers now ride the plot's own geometry
+   (right-edge value tags, in-band spread annotation) or the chart header */
+
+/* ---- stacked inspector ---------------------------------------------- */
+/* the pane is a fixed two-row grid: a breadcrumb header that never scrolls and
+   exactly ONE level below it. Levels are swapped, never stacked visually. */
+.inspector > .body { display: grid; grid-template-rows: auto minmax(0, 1fr); min-height: 0; overflow: hidden; }
+
+.crumb {
+  display: flex; align-items: baseline; gap: 6px; min-width: 0;
+  padding: 8px var(--ck-pad); border-bottom: 1px solid var(--ck-hair);
+  background: var(--ck-rail); font-size: 12px; white-space: nowrap;
+}
+/* THE PATH IS THE NAVIGATION. There is no back button: the ancestors ARE the
+   back affordance. With nothing preceding the text, the trail's left edge sits
+   on the inspector's spine structurally at every level — no reserved slot to
+   keep in sync, and nothing that can shift the words by appearing. */
+.crumb .trail {
+  display: flex; align-items: baseline; gap: 0; min-width: 0; overflow: hidden;
+  margin-right: auto; font-size: 12px;
+}
+/* THREE INK RANKS. Current: full ink, medium, and deliberately inert — the
+   ABSENCE of hover is what says "you are here". */
+/* Root and current never lose a character: they do not shrink and they do not
+   ellipsize. Overflow is resolved by dropping the MIDDLE (see paintCrumb),
+   which is the only thing the path can afford to lose. */
+.crumb .trail .here { color: var(--mk-text); font-weight: 550; flex: 0 0 auto; }
+/* Ancestor: 55% ink, regular; brightens and underlines on hover, and pops. */
+.crumb .trail button {
+  border: 0; background: none; padding: 0; font: inherit; font-weight: 400;
+  cursor: pointer; color: color-mix(in srgb, var(--mk-text) 55%, transparent);
+  white-space: nowrap; flex: 0 0 auto;
+}
+.crumb .trail button:hover {
+  color: var(--mk-text);
+  text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px;
+}
+/* Separator: one step dimmer than an ancestor, 6px each side, inert. */
+.crumb .trail .chev {
+  color: color-mix(in srgb, var(--mk-text) 35%, transparent);
+  font-size: 11px; margin: 0 6px; flex: 0 0 auto;
+}
+/* right-aligned in a reserved box, so a meta that changes length cannot drag
+   the trail's right edge around under it */
+/* No fixed reserve: the trail's left edge is pinned to the spine and the
+   meta's right edge to the row's end, so neither can move the other. A 132px
+   floor here only stole width the path needed at depth 3. */
+.crumb .meta {
+  margin-left: auto; padding-left: 12px; flex: 0 1 auto; text-align: right;
+  min-width: 0; font-family: var(--ck-mono); font-size: var(--ck-micro);
+  color: var(--mk-muted); font-variant-numeric: tabular-nums;
+}
+
+/* exactly one level renders; the swap is a 90 ms slide, no cross-fade stack */
+.level { overflow: auto; min-height: 0; animation: push .09s ease-out; }
+.level[data-dir="pop"] { animation-name: pop; }
+@keyframes push { from { transform: translateX(9px); opacity: .35; } }
+@keyframes pop { from { transform: translateX(-9px); opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .level { animation: none; } }
+.level .inner { padding: 8px var(--ck-pad); }
+.lvl-cap {
+  padding: 8px var(--ck-pad) 4px; font-size: var(--ck-micro); font-weight: 700;
+  letter-spacing: var(--ck-track); text-transform: uppercase; color: var(--mk-secondary);
+  display: flex; align-items: baseline; gap: 8px;
+  border-bottom: 1px solid color-mix(in srgb, var(--ck-hair) 60%, transparent);
+}
+.lvl-cap .meta { margin-left: auto; font-family: var(--ck-mono); font-size: var(--ck-micro); letter-spacing: 0; text-transform: none; color: var(--mk-muted); font-weight: 500; }
+
+/* level 1: the slot lane's staging entry point, as a row of the same list */
+.entry {
+  display: grid; grid-template-columns: 1fr auto auto; gap: 2px 9px;
+  align-items: center; width: 100%; text-align: left;
+  padding: 8px var(--ck-pad); cursor: pointer; background: none; color: inherit;
+  border: 0; border-bottom: 1px solid var(--ck-hair);
+  border-top: 1px solid var(--ck-hair);
+}
+.entry .sub, .entry .scopenote { grid-column: 1 / -1; }
+/* stated, not implied: the window does not reach staging */
+.entry .scopenote { font-size: var(--ck-micro); color: var(--ck-insuff); }
+.entry:hover { background: color-mix(in srgb, var(--mk-surface-2) 60%, transparent); }
+.entry .lab { font-weight: 600; color: var(--mk-text); }
+.entry .sub { font-size: var(--ck-data); color: var(--mk-muted); font-family: var(--ck-mono); }
+.entry .go { margin-left: auto; color: var(--ck-accent); font-size: 12px; }
+.entry .pill {
+  font-family: var(--ck-mono); font-size: 10.5px; padding: 1px 6px; border-radius: 8px;
+  background: var(--ck-sel); color: var(--mk-text); min-width: 58px; text-align: center;
+  border: 1px solid color-mix(in srgb, var(--ck-accent) 45%, transparent);
+}
+.entry .pill[data-empty="true"] { visibility: hidden; }
+
+/* level 2 header block */
+.who { font-weight: 650; font-size: var(--ck-emph); }
+.who .qual { color: var(--mk-muted); font-weight: 450; }
+.slotlink {
+  margin-top: 8px; font-size: 11.5px; color: var(--mk-secondary);
+  display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap;
+}
+.linkbtn {
+  border: 0; background: none; padding: 0; cursor: pointer; font: inherit;
+  color: var(--ck-accent); text-decoration: underline; text-underline-offset: 2px;
+}
+
+/* clock histogram */
+.clock { margin-top: 12px; }
+.clock .cap { display: flex; align-items: baseline; gap: 8px; font-size: var(--ck-micro); text-transform: uppercase; letter-spacing: var(--ck-track); color: var(--mk-muted); font-weight: 650; }
+.clock .cap em { font-style: normal; margin-left: auto; font-family: var(--ck-mono); text-transform: none; letter-spacing: 0; }
+.clock .bars { display: grid; grid-template-columns: repeat(12, 1fr); gap: 2px; align-items: end; height: 42px; margin-top: 8px; }
+.clock .bars div { position: relative; height: 100%; display: flex; align-items: flex-end; }
+.clock .bars i { display: block; width: 100%; border-radius: 2px 2px 0 0; background: color-mix(in srgb, var(--ck-accent) 45%, transparent); min-height: 2px; }
+.clock .bars div[data-peak="true"] i { background: var(--ck-accent); }
+.clock .bars div[data-n="0"] i { background: var(--ck-inset); }
+.clock .bars .n { position: absolute; top: -11px; left: 0; right: 0; text-align: center; font-family: var(--ck-mono); font-size: var(--ck-micro); color: var(--mk-muted); }
+.clock .axis { display: grid; grid-template-columns: repeat(12, 1fr); gap: 2px; font-family: var(--ck-mono); font-size: var(--ck-micro); color: var(--mk-muted); margin-top: 4px; }
+.clock .axis span { text-align: center; }
+.clock .axis span:nth-child(odd) { visibility: hidden; }
+
+/* selection: slot mode */
+.slot-head { display: flex; align-items: baseline; gap: 8px; }
+.slot-head .time { font-family: var(--ck-mono); font-size: var(--ck-emph); color: var(--mk-text); }
+.slot-head .verdict { font-size: 11.5px; color: var(--mk-secondary); }
+.rate {
+  display: flex; align-items: baseline; gap: 10px; margin-top: 8px;
+  font-family: var(--ck-mono); font-size: 14px; color: var(--mk-text);
+}
+.rate .arrow { color: var(--mk-muted); }
+.rate .delta { font-size: 12px; color: var(--ck-up); }
+.rate .unit { font-size: 11px; color: var(--mk-muted); }
+.capchip {
+  font-family: Inter, system-ui, sans-serif; font-size: 10px; font-weight: 650;
+  padding: 1px 6px; border-radius: 4px; color: var(--mk-secondary);
+  border: 1px solid var(--ck-hair); background: var(--ck-inset);
+}
+.statline { margin-top: 4px; font-size: 11.5px; color: var(--mk-muted); }
+/* estimate and recommendation are two DIFFERENT numbers and are labelled as
+   two, so neither can be read as the other (issue #333) */
+.numrow {
+  display: grid; grid-template-columns: 88px auto 1fr; gap: 8px; align-items: baseline;
+  margin-top: 4px; font-size: 11.5px;
+}
+.numrow .k { color: var(--mk-muted); font-size: var(--ck-micro); text-transform: uppercase; letter-spacing: var(--ck-track); }
+.numrow b { font-family: var(--ck-mono); font-size: var(--ck-emph); color: var(--mk-text); font-weight: 600; }
+.numrow .qual { color: var(--mk-muted); font-size: 11px; }
+/* The WORDS are the safety feature, not a container. Same ink and weight as
+   the panel's other secondary lines, sitting directly under the CI line it
+   qualifies — no tint, no rule, no box. */
+.hedge { margin-top: 4px; font-size: 11.5px; color: var(--mk-muted); line-height: 1.45; }
+.hedge b { color: var(--mk-secondary); font-weight: 600; }
+.statline b { font-family: var(--ck-mono); color: var(--mk-text); font-weight: 600; }
+.stagebtn .sub { display: block; font-size: 10px; font-weight: 500; color: var(--mk-muted); }
+.rate.flat .delta { color: var(--mk-muted); }
+.slot-stats { margin-top: 8px; font-family: var(--ck-mono); font-size: var(--ck-data); color: var(--mk-text); }
+.slot-stats span { color: var(--mk-muted); font-family: Inter, system-ui, sans-serif; }
+.slot-say { margin-top: 8px; font-size: 11.5px; color: var(--mk-secondary); }
+/* The staged/unstaged swap must not move anything. The row is sized for the
+   LARGER of the two states from the start and the button carries a fixed
+   min-width, so "Stage change" and "Staged · Undo" occupy the identical box —
+   only the ink and the border change. */
+.slot-foot {
+  margin-top: 12px; display: flex; align-items: flex-start; gap: 10px;
+  min-height: 42px;
+}
+.stagebtn {
+  border: 1px solid var(--ck-accent); background: transparent; color: var(--ck-accent);
+  padding: 5px 12px; border-radius: 7px; cursor: pointer; font-size: 12px; font-weight: 600;
+  min-width: 136px; text-align: left;
+}
+.stagebtn[data-staged="true"] { background: var(--ck-sel); color: var(--mk-text); }
+.stagebtn[data-staged="true"] .undo { color: var(--ck-accent); text-decoration: underline; text-underline-offset: 2px; }
+.foot-note { font-size: 11px; color: var(--mk-muted); }
+
+/* The factor grid and the queue-level inference caveat are RETIRED (#662/#735,
+   lock terms 22 · 34 · 43): level 1 is one ranked queue with no bars, no score
+   numerals and no banner. Their rules are deleted rather than left behind — a
+   stylesheet that still describes a component nobody renders is the next reader's
+   wrong map. `.dw .qrow` at the foot of this file is what replaced them. */
+
+/* evidence — a table on a shared numeric spine, not a feed */
+.ev-group {
+  padding: 8px var(--ck-pad) 4px; font-size: 11.5px; color: var(--mk-secondary);
+  border-bottom: 1px solid color-mix(in srgb, var(--ck-hair) 60%, transparent);
+}
+.ev-group b { color: var(--mk-text); font-weight: 600; }
+.ev-group .n { font-family: var(--ck-mono); color: var(--mk-muted); }
+.ev-group.counter { color: var(--mk-muted); background: color-mix(in srgb, var(--ck-inset) 45%, transparent); }
+/* ONE shared column grid, so ten rows scan down as columns rather than as ten
+   sentences: when · entry → worst · delta · tier · chevron. Every column is a
+   fixed width; only the tier column flexes. */
+.ev-row {
+  display: grid;
+  grid-template-columns: 112px 30px 9px 30px 42px minmax(0, 1fr) 8px;
+  gap: 0 7px; align-items: baseline;
+  width: 100%; text-align: left; padding: 4px var(--ck-pad); cursor: pointer;
+  background: none; border: 0; color: inherit; font-family: var(--ck-mono); font-size: var(--ck-data);
+  border-bottom: 1px solid color-mix(in srgb, var(--ck-hair) 40%, transparent);
+}
+.ev-row:hover { background: color-mix(in srgb, var(--mk-surface-2) 60%, transparent); }
+/* the stamp is one line — it used to wrap "Jun 3 ·" over "02:29" */
+/* a real rule, not just a gap: "02:30" and "46" ran together as "02:3046" */
+.ev-row .when {
+  color: var(--mk-muted); white-space: nowrap;
+  padding-right: 8px; border-right: 1px solid color-mix(in srgb, var(--ck-hair) 70%, transparent);
+}
+.ev-row .entry { color: var(--mk-secondary); text-align: right; }
+.ev-row .arrow { color: color-mix(in srgb, var(--mk-muted) 70%, transparent); text-align: center; }
+.ev-row .worst { color: var(--mk-text); text-align: right; }
+.ev-row .delta { color: var(--mk-muted); text-align: right; }
+/* one reading only: the numeric columns give way to a single stated cell */
+.ev-row .only { grid-column: 2 / 6; color: var(--mk-text); white-space: nowrap; }
+.ev-row .only span { color: var(--mk-muted); font-family: Inter, system-ui, sans-serif; font-size: 10.5px; }
+.ev-row .tier {
+  text-align: right; font-family: Inter, system-ui, sans-serif; font-size: 10.5px;
+  color: var(--mk-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ev-row[data-counter="true"] .worst, .ev-row[data-counter="true"] .only { color: var(--mk-secondary); }
+.ev-row .chev { color: color-mix(in srgb, var(--mk-muted) 70%, transparent); font-family: Inter, system-ui, sans-serif; }
+
+/* level 3: one occurrence, whole panel */
+.occ-head { display: flex; align-items: baseline; gap: 9px; }
+.occ-head .when { font-family: var(--ck-mono); font-size: var(--ck-emph); color: var(--mk-text); }
+.occ-head .pos {
+  margin-left: auto; font-family: var(--ck-mono); font-size: var(--ck-micro);
+  color: var(--mk-muted); white-space: nowrap;
+}
+/* the affordance, stated once, at the separator's ink so it never competes */
+.occ-head .keyhint {
+  font-style: normal; margin-left: 6px;
+  color: color-mix(in srgb, var(--mk-text) 35%, transparent);
+}
+.occ-head .tag {
+  font-size: 10px; font-weight: 650; padding: 1px 6px; border-radius: 4px;
+  border: 1px solid var(--ck-hair); background: var(--ck-inset); color: var(--mk-secondary);
+}
+.occ-nums { margin-top: 8px; font-family: var(--ck-mono); font-size: var(--ck-data); color: var(--mk-text); }
+.occ-nums span { color: var(--mk-muted); font-family: Inter, system-ui, sans-serif; font-size: 11px; }
+.occ-say { margin-top: 8px; font-size: 12px; color: var(--mk-secondary); line-height: 1.45; }
+.occ-foot { margin-top: 12px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.ev-detail {
+  padding: 8px var(--ck-pad); font-size: 11.5px; color: var(--mk-secondary);
+}
+.ev-detail .vd { margin-top: 6px; display: grid; grid-template-columns: 8px 1fr; gap: 7px; align-items: start; }
+.ev-detail .vd .pip { width: 6px; height: 6px; border-radius: 50%; margin-top: 5px; background: var(--mk-muted); opacity: .45; }
+.ev-detail .vd[data-matched="true"] .pip { background: var(--ck-accent); opacity: 1; }
+.ev-detail .vd .lab { font-size: 10.5px; color: var(--mk-muted); }
+.more {
+  width: 100%; text-align: left; padding: 8px var(--ck-pad); background: none; border: 0;
+  color: var(--ck-accent); cursor: pointer; font-size: 11.5px;
+  border-bottom: 1px solid color-mix(in srgb, var(--ck-hair) 60%, transparent);
+}
+.empty { padding: var(--ck-pad); color: var(--mk-muted); font-size: 11.5px; }
+
+/* ======================================================================
+   #735 — the findings queue (terms 34–45) and the watched-change dock
+   (terms 46–49). PORTED from the governing mock queue-662-explorer-full.html,
+   whose queue and dock blocks are transferred here with only their `.dw`
+   scoping and the dock's ROLE selector changed. Edit only to re-sync with
+   that mock.
+   ====================================================================== */
+
+/* ---- the queue --------------------------------------------------------
+   POSITION IS RANK. No bars, no score numerals, no tint: the order of the rows
+   is the whole ranking statement, so nothing draws it a second time. Every row
+   is one spine (--ck-pad) with title + tag on the first line and its
+   denominator, in words, on the second.
+
+   TERM 44 — no hairlines between queue rows in any state; spacing separates
+   (term 27 applied). A single gap sets the rhythm for the whole list, priced
+   and tail alike. */
+.dw .q { --q-gap: 10px; display: flex; flex-direction: column; gap: var(--q-gap); }
+/* TWO OPTICAL SPINES (term 22). Left: the title with its detail and reason lines
+   flush beneath it. Right: the flavor tag in a FIXED column just inside the
+   chevron, so it lands at the same x on every row instead of trailing a title of
+   variable length. Nothing sits between the two. */
+.dw .qrow {
+  --tag-col: 74px;
+  display: grid; width: 100%; text-align: left;
+  grid-template-columns: minmax(0, 1fr) var(--tag-col) 12px;
+  column-gap: 9px; row-gap: 2px;
+  align-items: baseline; padding: 6px var(--ck-pad);
+  border: 0; background: none; color: inherit;
+}
+.dw button.qrow { cursor: pointer; }
+.dw button.qrow:hover { background: color-mix(in srgb, var(--mk-surface-2) 60%, transparent); }
+.dw button.qrow:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: -2px; }
+
+.dw .qrow .lab { grid-column: 1; grid-row: 1; font-size: var(--ck-emph); font-weight: 600; color: var(--mk-text); }
+/* FLAVOR TAGS (term 36) — glyph + word at caps-label rank, on the app's IDENTITY
+   hues, never warn or danger, which are reserved for clinical state and would
+   make a flavor read as a verdict. `--mk-accent` was tried for Habit and
+   REVERTED: it is the hue the chart spends on the Meal-boluses mark and it is
+   byte-identical to the clinical `--high` token in both themes, so the tag
+   collided with a data encoding and read as clinical state at once. The ◈ / ⚙
+   glyph carries the differentiation; the hue only has to stay out of the way. */
+.dw .qrow .tag {
+  grid-column: 2; grid-row: 1; justify-self: end; align-self: center;
+  text-align: right; font-size: var(--ck-micro); font-weight: 650;
+  letter-spacing: var(--ck-track); text-transform: uppercase; white-space: nowrap;
+}
+/* the glyph carries the shape channel; it is sized off the word, not fixed */
+.dw .qrow .tag .gly { margin-right: 3px; letter-spacing: 0; font-size: 1.1em; }
+.dw .qrow .tag.setting { color: var(--primary); }
+.dw .qrow .tag.habit { color: var(--mk-secondary); }
+.dw .qrow .go { grid-column: 3; grid-row: 1; color: var(--ck-accent); font-size: 12px; }
+.dw .qrow .den {
+  grid-column: 1 / -1; font-size: var(--ck-data); color: var(--mk-muted); line-height: 1.45;
+}
+.dw .qrow .den .sep { margin: 0 6px; opacity: .6; }
+/* Monospace is reserved for column-aligned digits (the evidence table, the lane
+   counts, the hover readout). A denominator inside a sentence is flowed row
+   text, so it stays in the proportional UI face and takes only tabular figures. */
+.dw .qrow .den .v { font-variant-numeric: tabular-nums; color: var(--mk-body); }
+.dw .qrow .den.nums { font-variant-numeric: tabular-nums; }
+.dw .qrow .den.nums b { color: var(--mk-text); font-weight: 600; }
+
+/* ---- the unpriced tail (term 42) -------------------------------------
+   The boundary is a PAUSE, not a bar — the row gap doubled, with one quiet
+   sentence sitting inside it that SAYS what the tail is. The demotion steps the
+   TITLE only (one weight step, one size step); every denominator returns to full
+   body ink, identical to a priced row. These rows are counted evidence, not
+   lesser evidence — only their ranking is absent, and the sentence says so once.
+   It is not centred in the gap: more air above than below binds it to the tail
+   rather than letting it read as a caption on the last priced row. */
+.dw .tailnote {
+  margin: 14px 0 0; padding: 0 var(--ck-pad);
+  font-size: 11.5px; color: var(--mk-muted); line-height: 1.5;
+}
+.dw .qrow[data-tier="tail"] { padding-top: 4px; padding-bottom: 4px; }
+/* the tail recedes the flavor but never re-hues it: same identity, less ink, so
+   the Setting/Habit read survives the demotion */
+.dw .qrow[data-tier="tail"] .tag.setting { color: color-mix(in srgb, var(--primary) 72%, transparent); }
+.dw .qrow[data-tier="tail"] .tag.habit { color: color-mix(in srgb, var(--mk-secondary) 72%, transparent); }
+
+/* ONE DEMOTED REGISTER for the whole queue. A row is demoted for exactly three
+   reasons — it is HELD (no direction asserted), BLIND (no clean evidence to
+   read), or UNPRICED (not ranked yet) — and a reader should not have to learn a
+   different quiet treatment for each. All three take one weight step and one
+   size step off the asserting row and keep full ink: legibility is never what
+   recedes, and each row's own sentence already says which of the three it is.
+   Keyed on register and tier alone, never on which parameter it is, so ISF
+   holding and a basal span holding read identically. */
+.dw .qrow[data-state="held"] .lab,
+.dw .qrow[data-state="blind"] .lab,
+.dw .qrow[data-tier="tail"] .lab {
+  font-weight: 500; font-size: var(--ck-body);
+}
+/* one reason-line treatment too, for the same reason */
+.dw .qrow .why { grid-column: 1 / -1; font-size: 11.5px; color: var(--mk-secondary); line-height: 1.45; }
+
+/* Term 41 — the calm line is the WHOLE pane when there is nothing to rank, so it
+   sits in the middle of it rather than clinging to the top edge under a header
+   with nothing beneath it. Centred vertically, but LEFT on the queue's own
+   optical spine (--ck-pad): it is the sentence a list of rows would have started
+   at, so it starts where those rows start. */
+.dw .quiet-line {
+  display: grid; place-items: center start; min-height: 52vh;
+  padding: 22px var(--ck-pad); text-align: left;
+  font-size: var(--ck-body); color: var(--mk-body);
+}
+/* The queue's meta is flowed text, so it takes the proportional face with tabular
+   figures like every other sentence in this list. Scoped to level 1: the metas at
+   deeper levels carry column-aligned readouts and keep the data face. Spelled out
+   rather than `inherit` — the crumb's own family is the mono token, so inheriting
+   just takes it back (WebKit did exactly that). */
+.crumb .meta[data-queue] {
+  font-family: Inter, system-ui, sans-serif; font-variant-numeric: tabular-nums;
+}
+
+/* ---- terms 46–49 · the watched-change dock ---------------------------
+   ONE object at the column's floor: Plan, Trial or Focus, never two lists
+   (CONTEXT.md). The queue can end; the column no longer can.
+
+   The selector is the THEME'S ROLE — `dock floor`, as the Harmonic theme lock
+   names it — not a surface class of our own. The single most expensive defect of that
+   theme round was a rule wearing a surface's selector, and a dock that invents a
+   third class ships unthemed. */
+:is(.dw, .vw) .inspector { grid-template-rows: auto minmax(0, 1fr) auto; }
+:is(.dw, .vw) .inspector > .watch {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center; align-content: center; row-gap: 2px; column-gap: 12px;
+  padding: 10px var(--ck-pad) 11px;
+  /* Separated by SPACE and by the theme's own ground — never a hairline. Term 44
+     keeps rules out of the pane, and the shipped pane header already separates
+     itself the same way. A theme with no distinct sunken value simply reads flat
+     here; the space still does the work. */
+  background: var(--mk-surface-2);
+  /* ONE reserved height for all four states, so the floor never moves when the
+     watched object changes. 98px is measured, not chosen: an 82px reserve
+     truncated the Plan detail line at "nothing has changed on the …", and term 49
+     raises the height rather than cutting the sentence. */
+  min-height: 98px;
+}
+:is(.dw, .vw) .inspector > .watch .kind {
+  grid-column: 1; font-size: var(--ck-micro); font-weight: 700;
+  text-transform: uppercase; letter-spacing: var(--ck-track); color: var(--mk-muted);
+}
+:is(.dw, .vw) .inspector > .watch .what {
+  grid-column: 1; font-size: var(--ck-emph); font-weight: 600; color: var(--mk-text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* The detail line WRAPS. A title may ellipsize; the sentence that says the pump is
+   untouched may not. */
+:is(.dw, .vw) .inspector > .watch .how { grid-column: 1; font-size: var(--ck-data); color: var(--mk-muted); }
+:is(.dw, .vw) .inspector > .watch .how b {
+  color: var(--mk-text); font-weight: 600; font-variant-numeric: tabular-nums;
+}
+/* OUTLINED, not filled: the surface had just narrowed its interaction accent. */
+:is(.dw, .vw) .inspector > .watch .go {
+  grid-column: 2; grid-row: 1 / -1; align-self: center; white-space: nowrap;
+  border: 1px solid var(--mk-line); background: transparent; color: var(--mk-text);
+  font-size: 11.5px; font-weight: 600; padding: 5px 10px; border-radius: 3px;
+  cursor: pointer;
+}
+/* Idle is quiet, not absent — the slot holds its height in every state. */
+:is(.dw, .vw) .inspector > .watch[data-state="idle"] .what { color: var(--mk-muted); font-weight: 500; }

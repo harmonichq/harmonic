@@ -1,0 +1,151 @@
+"""Diagnose workstation's recent anchor-level exposure feed."""
+
+from __future__ import annotations
+
+from datetime import datetime, timedelta
+
+from .analyzers.scenario.attribute import attribute, split_caused_over_treatments
+from .analyzers.scenario.engine import _effective_isf, low_prompt_answers
+from .analyzers.scenario.levers import Lever, title
+from .analyzers.scenario.model_view import _CONTEXT_PAD_MIN, _build_episode_view, _is_driver
+from .analyzers.scenario.anchors import collect_anchors
+from .analyzers.scenario.segment import segment, split_double_humps, split_low_rebounds
+from .analyzers.scenario_config import ScenarioConfig
+from .false_low import drop_readings, false_low_span_records, spans_from_records
+
+
+_FAMILY_FOR_KIND = {
+    "low": "lows",
+    "meal": "meals",
+    "high": "highs",
+    "correction": "correction_clusters",
+}
+
+
+def _slice(events, start, end):
+    return [event for event in events if start <= event.t <= end]
+
+
+def _empty_family() -> dict:
+    return {
+        "n": 0,
+        "attributed": 0,
+        "clean": 0,
+        "levers": [],
+        "by_cause": {},
+        "occurrences": [],
+    }
+
+
+def _exposure_verdict(verdict: dict) -> dict:
+    """Keep the locked Explore verdict contract narrower than model-view detail."""
+    return {
+        key: verdict[key]
+        for key in (
+            "classifier",
+            "matched",
+            "detail",
+            "evidence_tier",
+            "silence_reason",
+        )
+    }
+
+
+def build_exposures(store, *, window_days: int = 30) -> dict:
+    """Return recent scenario anchors flattened for the Diagnose workstation."""
+    basal = store.basal_events()
+    cgm = store.cgm_readings()
+    bolus = store.bolus_events()
+    times = [event.t for event in basal] + [reading.t for reading in cgm]
+    now = max(times) if times else datetime.now()
+    start = now - timedelta(days=window_days)
+    families = {name: _empty_family() for name in _FAMILY_FOR_KIND.values()}
+
+    if not times:
+        return {
+            "window": {"start": start.date().isoformat(), "end": now.date().isoformat()},
+            "exposures": families,
+        }
+
+    false_low_records = false_low_span_records(cgm, store.prompt_responses())
+    window_cgm = drop_readings(_slice(cgm, start, now), spans_from_records(false_low_records))
+    window_bolus = _slice(bolus, start, now)
+    window_basal = _slice(basal, start, now)
+    low_answers = low_prompt_answers(store, start, now)
+    isf = _effective_isf(bolus, basal, cgm, store.settings_snapshots(), start, now)
+    scenario_config = ScenarioConfig()
+
+    anchors = collect_anchors(
+        window_bolus, window_cgm, window_basal, scenario_config=scenario_config,
+    )
+    episodes = split_caused_over_treatments(
+        split_low_rebounds(
+            split_double_humps(
+                segment(anchors, scenario_config=scenario_config), window_cgm,
+                scenario_config=scenario_config,
+            ),
+            window_cgm, scenario_config=scenario_config,
+        ),
+        window_cgm, window_bolus, window_basal,
+        isf=isf, scenario_config=scenario_config, low_answers=low_answers,
+    )
+    for index, episode_anchors in enumerate(episodes):
+        context_start = episode_anchors.start - timedelta(minutes=_CONTEXT_PAD_MIN)
+        context_end = episode_anchors.end + timedelta(minutes=_CONTEXT_PAD_MIN)
+        attribution = attribute(
+            episode_anchors,
+            _slice(window_cgm, context_start, context_end),
+            _slice(window_bolus, context_start, context_end),
+            _slice(window_basal, context_start, context_end),
+            isf=isf, scenario_config=scenario_config, low_answers=low_answers,
+        )
+        episode = _build_episode_view(
+            index, episode_anchors, window_cgm, window_bolus, window_basal,
+            isf=isf, scenario_config=scenario_config,
+            low_answers=low_answers,
+        )
+        for source_anchor, anchor in zip(
+            sorted(episode_anchors.anchors, key=lambda item: item.t), episode["anchors"],
+        ):
+            family = families.get(_FAMILY_FOR_KIND.get(anchor["kind"]))
+            if family is None:
+                continue
+            attributed = _is_driver(source_anchor, attribution)
+            lever = episode["lever"] if attributed else None
+            cause_title = title(Lever(lever)) if lever is not None else None
+            occurrence = {
+                "t": anchor["t"],
+                "date": anchor["t"][:10],
+                "bg": anchor["bg"],
+                "worst_bg": episode["worst_bg"],
+                "kind": anchor["kind"],
+                "label": anchor["label"],
+                "state": anchor["state"],
+                "attributed": attributed,
+                "cause_lever": lever,
+                "cause_title": cause_title,
+                "text": episode["steps"][0]["text"] if attributed else "",
+                "verdicts": [
+                    _exposure_verdict(verdict) for verdict in anchor["verdicts"]
+                ],
+                "ep_id": episode["id"],
+            }
+            family["occurrences"].append(occurrence)
+
+    for family in families.values():
+        occurrences = family["occurrences"]
+        family["n"] = len(occurrences)
+        family["attributed"] = sum(item["attributed"] for item in occurrences)
+        family["clean"] = family["n"] - family["attributed"]
+        family["levers"] = list(dict.fromkeys(
+            item["cause_lever"] for item in occurrences if item["cause_lever"] is not None
+        ))
+        for item in occurrences:
+            if item["cause_title"] is not None:
+                family["by_cause"][item["cause_title"]] = (
+                    family["by_cause"].get(item["cause_title"], 0) + 1
+                )
+    return {
+        "window": {"start": start.date().isoformat(), "end": now.date().isoformat()},
+        "exposures": families,
+    }

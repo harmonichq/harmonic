@@ -296,6 +296,11 @@ async function openApp(browser, options = {}) {
   if (['meals', 'lows'].includes(options.eventView)) {
     await page.locator(options.expectEventError ? '.ec-error' : '.ec-surface').waitFor();
   }
+  // index.html only mounts the Diagnose workstation (root class `.dw`) when the
+  // active tab is `diagnose`, so this wait is scoped to that default path.
+  if ((options.tab || 'diagnose') === 'diagnose' && !['meals', 'lows'].includes(options.eventView)) {
+    await page.locator('.dw').waitFor();
+  }
   return page;
 }
 
@@ -785,7 +790,6 @@ test('build renders cover both locked sizes and themes',
           planDraftItems: [{ type: 'isf', key: 0, start_min: 0, value: 45 },
             { type: 'isf', key: 360, start_min: 360, value: 42 }],
         });
-        await production.locator('.dx').waitFor();
         await production.waitForTimeout(400);
         await production.screenshot({ path: join(SHOTS, `cockpit-shell-build-${label}.png`) });
       } finally { if (production) await production.close(); }

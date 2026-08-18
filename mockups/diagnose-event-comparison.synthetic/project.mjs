@@ -117,14 +117,17 @@ function pointRows(occurrences, window, usableCount) {
 // A replay fixture is allowed to rewrite `source.occurrences` after the
 // capture's `visual_support` stamps were generated (S12's #689 regression:
 // the app leg must derive fresh support from rewritten glucose, not echo a
-// stamp computed before the rewrite). When any id the stamp counted is no
-// longer part of the live occurrence set, the stamp is stale for this
-// request and the cross-check below is skipped rather than firing on an
-// intentional, known divergence.
-function stampIsStale(source, facts) {
-  const liveIds = new Set(source.occurrences.map((occurrence) => occurrence.id));
-  return Object.values(facts.cohorts).some((cohort) =>
-    cohort.occurrence_ids.some((id) => !liveIds.has(id)));
+// stamp computed before the rewrite). When any id this cohort's stamp
+// counted is no longer part of the live occurrence set, the stamp is stale
+// for this cohort and its cross-check below is skipped rather than firing
+// on an intentional, known divergence. Per-cohort, not per-request: a
+// cohort whose stamped ids are all still live keeps its cross-check even
+// when another cohort in the same request lost one (#5). The live set is
+// the whole view's occurrences, never the block-filtered subset — a
+// time-block coordinate's stamp names only in-block ids, and narrowing
+// would read the block filter itself as staleness.
+function stampIsStale(liveIds, stamped) {
+  return stamped.occurrence_ids.some((id) => !liveIds.has(id));
 }
 
 function assertMatchesStamp(view, factor, block, variant, key, cohort, facts) {
@@ -188,7 +191,7 @@ export function projectSyntheticCapture(capture, {
   const facts = supportFacts(source, chosenFactor, block, variant);
   if (!facts) throw new Error(`missing synthetic support for ${view}/${chosenFactor}/${block}/${variant}`);
   const sourceInBlock = source.occurrences.filter((occurrence) => inBlock(occurrence, block));
-  const stale = stampIsStale(source, facts);
+  const liveIds = new Set(source.occurrences.map((occurrence) => occurrence.id));
   const visibleKeys = ['fired', 'near_rule', 'neutral', ...(another ? ['another_factor'] : [])];
   // Membership is routed straight off `routes[chosenFactor].cohort`, the same
   // signal the backend routes on — never off the capture's stamped
@@ -214,7 +217,9 @@ export function projectSyntheticCapture(capture, {
     // fails loudly instead of silently rendering whichever one the caller
     // happened to read. A stale stamp (see `stampIsStale`) is a deliberate
     // divergence, not a bug, so it's exempted rather than silenced outright.
-    if (!stale) assertMatchesStamp(view, chosenFactor, block, variant, key, cohort, facts);
+    if (!stampIsStale(liveIds, facts.cohorts[key])) {
+      assertMatchesStamp(view, chosenFactor, block, variant, key, cohort, facts);
+    }
     return cohort;
   });
   const counts = Object.fromEntries(allCohorts.map((key) => [key, 0]));

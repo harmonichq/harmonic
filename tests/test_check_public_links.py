@@ -111,15 +111,15 @@ class TestProsePathReferences(_Tree):
         self.assertIn("mock-to-app-process.md", failures[0])
 
     def test_a_pinned_reference_is_cleared_with_its_reason(self) -> None:
-        """`AGENTS.md` names `docs/adr/` as where a new record is created, not as
-        content to go and read. Pinned per document, with the reason visible in
-        the check itself."""
-        self.assertIn(("AGENTS.md", "docs/adr/"), check_public_links.PINNED)
-        self.write("AGENTS.md", "Decision records live under `docs/adr/`.\n")
-        self.assertEqual(self.check({"AGENTS.md", "docs/adr/adr-6-x.md"}), [])
+        """`AGENTS.md` names `openspec/changes/` as where a new decision record is
+        created, not as content to go and read. Pinned per document, with the
+        reason visible in the check itself."""
+        self.assertIn(("AGENTS.md", "openspec/changes/"), check_public_links.PINNED)
+        self.write("AGENTS.md", "Decision records live in `openspec/changes/`.\n")
+        self.assertEqual(self.check({"AGENTS.md", "openspec/changes/x/design.md"}), [])
         # The same path in another document is still a failure.
-        self.write("PRODUCT.md", "and docs/adr/ for the reasoning trail\n")
-        self.assertEqual(len(self.check({"PRODUCT.md", "docs/adr/adr-6-x.md"})), 1)
+        self.write("PRODUCT.md", "and openspec/changes/ for the reasoning trail\n")
+        self.assertEqual(len(self.check({"PRODUCT.md", "openspec/changes/x/design.md"})), 1)
 
 
 class TestModuleImports(_Tree):

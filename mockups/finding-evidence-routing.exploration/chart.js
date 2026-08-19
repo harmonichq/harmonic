@@ -5,13 +5,34 @@
  * `emphasisOpacity`, `colorFor`, `whiskerSeries`, `lineSeries`,
  * `selectedSeries`, `axisLabel`, `paintReadout` and `chartOption` — so the mock
  * renders the shipped lens's own chart, at its shipped ECharts 5.5 version, and
- * not a facsimile of it. audit.mjs diffs this module's produced option against
+ * not a facsimile of it. harness.mjs diffs this module's produced option against
  * the running app's live `getOption()` dump key by key, which is the only audit
  * that can see canvas-painted furniture at all.
  *
- * ONE piece of new grammar is added and marked: the per-event trace layer, which
- * the issue-31 scene requires so the occurrences table's rows have something to
- * select. Its highlighted state reuses `selectedSeries`'s exact shipped styling.
+ * ROUND 2 (item 2) — TWO DELIBERATE DIVERGENCES from the shipped lens, both
+ * named here and in the report:
+ *
+ *   (a) NO RESTING PER-EVENT LAYER. Round 1 drew every fired event's own trace
+ *       as an always-on hairline under the medians. It is gone. The default draw
+ *       is three cohort medians, their whiskers, the target band and the in-chart
+ *       legend, and nothing else; exactly ONE event trace exists at a time — the
+ *       row the reader is hovering or has pinned — in `selectedSeries`'s shipped
+ *       styling. This is closer to the shipped lens than round 1 was: the lens
+ *       draws one trace too, it just picks it from a dropdown the ruling retires.
+ *
+ *   (b) NO PER-SERIES EMPHASIS AT THE AXIS POINTER. The shipped lens leaves
+ *       ECharts' axis-pointer emphasis on, so sweeping the crosshair lights a
+ *       coloured symbol on every cohort at once. With the medians carrying the
+ *       whole comparison that read is noise, so emphasis is disabled series-wide
+ *       and the crosshair keeps only its two lines and the header readout. This
+ *       DIVERGES from the shipped lens's own hover grammar.
+ *
+ *       What remains under the crosshair is NOT emphasis and was left alone: a
+ *       `limited`-support median draws its own small `emptyCircle` at every
+ *       point, always, and one of those sits wherever the pointer line crosses
+ *       it. Checked by rendering with `tooltip.axisPointer.snap: false` — the
+ *       mark is identical either way, so it is the series' own symbol, which is
+ *       shipped grammar for "this median is thinly supported".
  */
 
 const css = (element, name) => getComputedStyle(element).getPropertyValue(name).trim();
@@ -47,6 +68,8 @@ function whiskerSeries(surface, cohort, aggregateRows, selectedCohort, support) 
     name: `${COHORTS[cohort].label} ${support} spread`,
     type: 'custom',
     silent: true,
+    /* ROUND 2 (b) — no symbol lights under the crosshair. */
+    emphasis: { disabled: true },
     z: 2,
     data: aggregateRows
       .filter((row) => row.support === support && row.minute % 60 === 0
@@ -101,7 +124,9 @@ function lineSeries(surface, cohort, aggregateRows, selectedCohort, support) {
 }
 
 /* VERBATIM — diagnose-event-comparison.js `selectedSeries`, minus the rescue-carb
-   scatter (no marker rides a fired trace in this fixture's selections). */
+   scatter (no marker rides a fired trace in this fixture's selections), plus the
+   round-2 (b) emphasis suppression. THIS IS THE ONLY EVENT TRACE ON THE CANVAS:
+   the row the reader is hovering or has pinned, and nothing else. */
 function selectedSeries(surface, trace) {
   if (!trace) return [];
   return [{
@@ -110,37 +135,19 @@ function selectedSeries(surface, trace) {
     z: 8,
     showSymbol: false,
     animation: false,
+    emphasis: { disabled: true },
     data: trace,
     lineStyle: { color: css(surface, '--ec-focus'), width: 2.2, opacity: 1 },
     itemStyle: { color: css(surface, '--ec-focus') },
   }];
 }
 
-/* ------------------------------------------------- new grammar (issue #31) --
-   The per-event trace layer. The shipped lens draws exactly one trace, chosen
-   from a dropdown; this scene retires the dropdown and makes the occurrences
-   table the selection mechanism, so every fired event's trace is on the canvas
-   at rest and one lifts to the shipped selected-trace styling on row hover.
-   The resting layer takes the fired cohort's own hue and sits UNDER the
-   aggregates (z:1), so it reads as the population behind the median rather than
-   as four new cohorts. */
-function traceLayer(surface, traces, ids, highlighted) {
-  return ids.filter((id) => id !== highlighted).map((id) => ({
-    id: `trace:${id}`,
-    name: `Event ${id}`,
-    type: 'line',
-    z: 1,
-    silent: true,
-    showSymbol: false,
-    animation: false,
-    data: traces[id],
-    lineStyle: { color: colorFor(surface, 'fired'), width: .8, opacity: highlighted ? .12 : .22 },
-  }));
-}
-
-/** VERBATIM — diagnose-event-comparison.js `chartOption`, with the trace layer added. */
-export function chartOption(surface, data, highlighted) {
-  const { canvas } = data;
+/** VERBATIM — diagnose-event-comparison.js `chartOption`.
+ *
+ * `canvas` is one scene's canvas payload: the finding scene passes the lens
+ * FILTERED to the finding (three cohorts), the population scene passes it
+ * UNFILTERED (four). Nothing else about the draw changes between them. */
+export function chartOption(surface, canvas, highlighted) {
   const cohortOrder = canvas.cohortOrder;
   const aggregates = Object.fromEntries(cohortOrder.map((key) => [key, canvas.cohorts[key].points]));
   const series = [{
@@ -155,7 +162,6 @@ export function chartOption(surface, data, highlighted) {
       label: { show: true, position: 'insideTopLeft', color: css(surface, '--mk-muted'), fontSize: 10, fontFamily: 'Inter' },
     },
   }];
-  series.push(...traceLayer(surface, canvas.traces, canvas.firedIds, highlighted));
   for (const cohort of cohortOrder) {
     for (const support of ['supported', 'limited']) {
       if (!aggregates[cohort].some((row) => row.support === support)) continue;
@@ -204,8 +210,7 @@ export function chartOption(surface, data, highlighted) {
 }
 
 /** VERBATIM — diagnose-event-comparison.js `paintLegend`, cohort branch. */
-export function legendMarkup(data) {
-  const { canvas } = data;
+export function legendMarkup(canvas) {
   return canvas.cohortOrder.map((key) => {
     const record = canvas.cohorts[key];
     return `
@@ -218,18 +223,18 @@ export function legendMarkup(data) {
 }
 
 /** VERBATIM — diagnose-event-comparison.js `paintReadout`. */
-export function paintReadout(surface, minute, data) {
+export function paintReadout(surface, minute, canvas) {
   const head = surface.querySelector('#ec-canvas-head');
   const host = surface.querySelector('#ec-readout');
-  if (minute == null) {
+  if (minute == null || !canvas) {
     head.dataset.hover = '0';
     host.setAttribute('aria-hidden', 'true');
     return;
   }
   const snapped = Math.round(minute / 5) * 5;
-  const pieces = [`<span class="ec-rd-time">${axisLabel(snapped, data.canvas.axisAnchor)}</span>`];
-  for (const cohort of data.canvas.cohortOrder) {
-    const row = data.canvas.cohorts[cohort].points.find((item) => item.minute === snapped);
+  const pieces = [`<span class="ec-rd-time">${axisLabel(snapped, canvas.axisAnchor)}</span>`];
+  for (const cohort of canvas.cohortOrder) {
+    const row = canvas.cohorts[cohort].points.find((item) => item.minute === snapped);
     const support = row?.support || 'withheld';
     const value = support === 'withheld' ? '—' : rounded(row?.median);
     pieces.push(`<span class="ec-rd-value" data-support="${support}">${COHORTS[cohort].short} <b>${value}</b><em>${support[0].toUpperCase()}${support.slice(1)} · n${row?.n ?? 0}</em></span>`);

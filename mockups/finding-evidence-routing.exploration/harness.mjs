@@ -20,7 +20,10 @@
  *               `<style>`. Dark passed because `html.dark` survived the same
  *               corruption. Only a populated LIGHT render exposed it, which is
  *               the lesson frontend/theme.css's own header records.
- *   4. SHOOT     the four PNGs.
+ *   4. SHOOT     the arrival as a SEQUENCE — queue level, drilled finding,
+ *               row-hover single trace, inspector column, drilled population —
+ *               every frame reached through the surface's own routing, so no
+ *               capture shows a state a reader could not walk to.
  *
  * FIXTURE-ONLY, like every browser leg in this repo: the app is booted through
  * the gates' own `openApp`, which stubs every endpoint from the committed
@@ -109,10 +112,11 @@ const SELECTORS = [
   '.q', '.qrow[data-tier="priced"]', '.qrow[data-tier="priced"] .lab',
   '.qrow[data-tier="priced"] .tag', '.qrow[data-tier="priced"] .tag .gly',
   '.qrow[data-tier="priced"] .den', '.qrow[data-tier="priced"] .den .v',
+  /* Round 2 opens at the queue, so the demoted register, the chevron and the
+     seam sentence are on the mock's surface too and compare against the app's. */
+  '.qrow[data-tier="tail"]', '.qrow[data-tier="tail"] .lab',
+  '.qrow[data-tier="tail"] .den', '.qrow .go', '.tailnote', '.quiet-line',
   '.slot-say', '.ec-counts', '.ec-count', '.ec-count b', '.ec-count em', '.ec-boundary-note',
-  '.clock', '.clock .cap', '.clock .cap em', '.clock .bars', '.clock .bars div',
-  '.clock .bars div[data-peak="true"] i', '.clock .bars div[data-n="0"] i',
-  '.clock .bars .n', '.clock .axis', '.clock .axis span',
   '.slotlink', '.linkbtn',
   '.ev-group', '.ev-group b', '.ev-group .n', '.ev-row', '.ev-row .when', '.ev-row .entry',
   '.ev-row .arrow', '.ev-row .worst', '.ev-row .delta', '.ev-row .tier', '.ev-row .chev', '.more',
@@ -290,6 +294,35 @@ async function openMock(browser, theme, problems) {
   return page;
 }
 
+/** The three levels the mock can stand at, in sibling-priority order. */
+const MOCK_LEVELS = ['finding:over_treated_low', null, 'population:lows'];
+
+/** Route the mock and wait for the swap to settle. */
+async function gotoLevel(page, id) {
+  await page.evaluate((target) => window.__ferGo(target), id);
+  await page.waitForTimeout(450);
+}
+
+/**
+ * Probe the mock across every level it can stand at, merging the same way the
+ * app side does: the drilled finding case file is the primary sibling, then the
+ * queue, then the population case file. Round 1 probed a single frozen state,
+ * which left every selector that only exists at another level unverified.
+ */
+async function probeMock(page) {
+  const mock = {};
+  for (const level of MOCK_LEVELS) {
+    await gotoLevel(page, level);
+    const probe = await page.evaluate(probeScript, { props: PROPS, selectors: SELECTORS });
+    for (const [selector, entry] of Object.entries(probe)) {
+      const held = mock[selector];
+      if (entry.rect.w === 0 && entry.rect.h === 0) continue;
+      if (!held || (held.rect.w === 0 && held.rect.h === 0)) mock[selector] = entry;
+    }
+  }
+  return mock;
+}
+
 /* `grid-template-columns` / `-rows` compute to RESOLVED PIXEL TRACKS, so an
    `auto` or `1fr` track sized by a different string reports as a difference even
    though the declaration is byte-identical. When the two sides have the same
@@ -370,7 +403,10 @@ async function main() {
        in both themes (the theme is a class on <html>, not different markup). */
     const { app, option } = await probeApp(browser, theme, { writeChrome: theme === 'dark' });
     const page = await openMock(browser, theme, problems);
-    const mock = await page.evaluate(probeScript, { props: PROPS, selectors: SELECTORS });
+    const mock = await probeMock(page);
+    /* The chart option is read from the FINDING scene — the filtered lens, which
+       is the shipped lens's own coordinate set. */
+    await gotoLevel(page, 'finding:over_treated_low');
     const mockOption = await page.evaluate(OPTION_READER);
 
     /* Lock term 1's clause, checked rather than assumed, plus the thing a
@@ -399,15 +435,36 @@ async function main() {
       geometry,
     };
 
+    /* THE ARRIVAL, SHOT AS A SEQUENCE. Every frame below is REACHED through the
+       surface's own routing — `__ferGo` is the same call a click makes — so no
+       capture shows a state a reader could not walk to. */
+    const data = JSON.parse(await readFile(join(HERE, 'data.json'), 'utf8'));
     if (theme === 'dark') {
+      await gotoLevel(page, null);
+      await page.screenshot({ path: join(SHOTS, 'queue-level-1440x900.png') });
+
+      await gotoLevel(page, 'finding:over_treated_low');
       await page.screenshot({ path: join(SHOTS, 'scene-1440x900.png') });
       await page.locator('.pane.inspector').screenshot({ path: join(SHOTS, 'inspector-column.png') });
-      const rowId = JSON.parse(await readFile(join(HERE, 'data.json'), 'utf8')).occurrences.rows[2].id;
+
+      const rowId = data.scenes['finding:over_treated_low'].occurrences.rows[2].id;
       await page.evaluate((id) => window.__ferSelect(id), rowId);
       await page.waitForTimeout(400);
       await page.screenshot({ path: join(SHOTS, 'row-hover-linked-trace.png') });
       results.highlightedRow = rowId;
+
+      await gotoLevel(page, 'population:lows');
+      await page.screenshot({ path: join(SHOTS, 'population-all-lows-1440x900.png') });
+      await page.locator('.pane.inspector').screenshot({ path: join(SHOTS, 'population-inspector-column.png') });
+      /* Expanded, because the first five rows are all claimed by one finding and
+         the UNCLAIMED register — muted tag, no chevron — only appears below. */
+      await page.click('.level .more');
+      await page.waitForTimeout(350);
+      await page.locator('.pane.inspector').screenshot({ path: join(SHOTS, 'population-expanded-inspector.png') });
     } else {
+      await gotoLevel(page, null);
+      await page.screenshot({ path: join(SHOTS, 'queue-level-light-1440x900.png') });
+      await gotoLevel(page, 'finding:over_treated_low');
       await page.screenshot({ path: join(SHOTS, 'scene-light-1440x900.png') });
     }
     await page.close();

@@ -5,15 +5,17 @@
  },
  "dark": {
   "computedStyleDiff": {
-   "checked": 75,
-   "matched": 75,
+   "checked": 68,
+   "matched": 68,
    "absentInApp": [
     ".qrow[data-tier=\"priced\"]",
     ".qrow[data-tier=\"priced\"] .lab",
     ".qrow[data-tier=\"priced\"] .tag",
     ".qrow[data-tier=\"priced\"] .tag .gly",
     ".qrow[data-tier=\"priced\"] .den",
-    ".qrow[data-tier=\"priced\"] .den .v"
+    ".qrow[data-tier=\"priced\"] .den .v",
+    ".tailnote",
+    ".quiet-line"
    ],
    "mismatches": [],
    "expected": [
@@ -42,15 +44,17 @@
  "highlightedRow": "lows-synthetic-3",
  "light": {
   "computedStyleDiff": {
-   "checked": 75,
-   "matched": 75,
+   "checked": 68,
+   "matched": 68,
    "absentInApp": [
     ".qrow[data-tier=\"priced\"]",
     ".qrow[data-tier=\"priced\"] .lab",
     ".qrow[data-tier=\"priced\"] .tag",
     ".qrow[data-tier=\"priced\"] .tag .gly",
     ".qrow[data-tier=\"priced\"] .den",
-    ".qrow[data-tier=\"priced\"] .den .v"
+    ".qrow[data-tier=\"priced\"] .den .v",
+    ".tailnote",
+    ".quiet-line"
    ],
    "mismatches": [],
    "expected": [

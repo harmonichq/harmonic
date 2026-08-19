@@ -6,8 +6,14 @@
   <title>Finding → evidence routing · exploration</title>
 
   <!-- EXPLORATION DRAFT for issue #31 — not a lock, not a locked mock. No lock
-       manifest, no ★ LOCKED header, no INDEX.md row. It renders one scene: the
-       reader has clicked "Over-treated low" in the ranked findings queue.
+       manifest, no ★ LOCKED header, no INDEX.md row.
+
+       ROUND 2 MOCKS THE ARRIVAL, not one frozen frame. It opens at the ranked
+       findings QUEUE, painted by the shipped `renderFindingsQueue` over the
+       committed projection. Clicking a row performs the route: the canvas swaps
+       to the lens and the inspector drills to that subject's case file. The
+       drilled states are REACHED, never rendered as the initial state, and the
+       `Findings` crumb walks back.
 
        Per the #31 resolution, the instrument row is GONE (no VIEW / FACTOR /
        FILTER strip). The inspector is the sole navigation and the canvas answers
@@ -54,13 +60,16 @@
             <main class="panes">
 
               <!-- ===================== canvas ===================== -->
-              <section class="pane canvas-pane ec-canvas" aria-label="Low response comparison">
+              <!-- ONE canvas surface that answers wherever the inspector stands
+                   (#31 ruling 1). At the queue level that is the pooled glucose
+                   chart, which this exploration does not build — the placeholder
+                   says so in as many words rather than showing an empty frame. -->
+              <section class="pane canvas-pane ec-canvas" aria-label="Evidence canvas">
                 <header class="canvas-head" id="ec-canvas-head" data-hover="0">
                   <div class="head-swap">
-                    <div class="head-line head-rest">
-                      <h2>Low response comparison</h2>
-                      <span class="ec-title-context" id="canvas-context"></span>
-                    </div>
+                    <!-- ROUND 2 ITEM 3 — the view name, and no factor name. The
+                         finding's name prints ONCE, in the crumb. -->
+                    <div class="head-line head-rest"><h2 id="canvas-title"></h2></div>
                     <div class="head-line head-live ec-canvas-readout" id="ec-readout" aria-hidden="true"><span class="ec-rd-time">--:--</span></div>
                   </div>
                   <span class="meta persist" id="canvas-persist"></span>
@@ -68,6 +77,7 @@
                 <div class="body">
                   <div id="ec-chart" class="ec-chart" role="img" tabindex="0"
                        aria-label="Low response comparison. Use left and right arrow keys to inspect five-minute points."></div>
+                  <p class="quiet-line fer-placeholder" id="canvas-placeholder" hidden></p>
                   <div class="ec-chart-key" id="ec-chart-key" aria-label="Cohort legend"></div>
                 </div>
               </section>
@@ -76,17 +86,19 @@
               <section class="pane inspector" aria-label="Inspector">
                 <header><h2>Inspector</h2></header>
                 <div class="body">
-                  <!-- OPEN QUESTION for round 2, deliberately visible rather
-                       than hidden: at the shipped 430px inspector width the
-                       path (163px) + the scope chip (198px) + the shipped crumb
-                       meta (66px) need 461px and do not fit. The meta gives,
-                       because the chip is the retired FILTER instrument and the
-                       path is the navigation — but that drops the projection's
-                       own `30 days` run from the surface, which the shipped
-                       drill level does print. See the report. -->
+                  <!-- The crumb IS the navigation (old term 4). At the queue level
+                       it is the inert root; drilled, the root becomes the button
+                       that walks back and the leaf prints the subject's name —
+                       the only place that name prints (round 2, item 3).
+
+                       The shipped crumb meta ("30 days") is still not drawn: the
+                       row holds the path and the scope chip, and at 430px the
+                       three do not fit. Round 1 raised it; it stays open, and
+                       `queue.meta` carries the string the level-1 queue would
+                       print so the drop is visible rather than silent. -->
                   <div class="crumb">
                     <div class="trail" id="crumb-trail"></div>
-                    <span class="fer-chip" id="scope-chip"></span>
+                    <span class="fer-chip" id="scope-chip" hidden></span>
                   </div>
                   <div class="level" id="level" tabindex="-1"></div>
                 </div>

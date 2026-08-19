@@ -1,7 +1,8 @@
 # Behaviour ledger — finding → evidence routing (Diagnose + Verify)
 
 **★ FROZEN — shipped-surface behavior contract.** Base:
-`origin/main` = `eda5cdfd318d638503defdd6f364a078042fe592`.
+`origin/main` = `a49b6db` (re-frozen 2026-08-19; previously
+`eda5cdfd318d638503defdd6f364a078042fe592`).
 
 The app-only replay is
 `frontend/diagnose-workstation-behavior.replay.mjs`: **29 exported stories**, all
@@ -23,6 +24,21 @@ VENDOR_DIR=/private/tmp/ciq-event-vendor BASE_URL=http://127.0.0.1:8765 \
 TARGET=app PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json \
 node frontend/diagnose-workstation-behavior.replay.mjs
 ```
+
+## Re-freeze — 2026-08-19, base `eda5cdf` → `a49b6db`
+
+Replayed before any design change, per `revise` §2's later-revision rule: the
+frozen ledger ran green against the base app at `a49b6db` — **29 of 29 stories
+passed**, S26 printing its retirement sanction — through the declared safe-start
+server and the synthetic database `AGENTS.md` names.
+
+The base re-inventory found no behavior delta to rule. Across the six swept
+files the `eda5cdf..a49b6db` diff adds and removes **zero** event handlers,
+chart-instance handlers and observers; the only source change on the surface is
+the already-ruled evidence-row chevron retirement (P48 / S26) and its stylesheet
+follow-through. No story is unreplayable, no observed behavior lacks a story,
+and no retirement lacks its sanction, so the contract carries forward unchanged
+at the new base.
 
 The 55 P-rows below are retained as the legacy predecessor inventory and the
 operator's completed rulings. The executable current contract is S01–S26 and

@@ -52,9 +52,13 @@
      the dashed target rails outrank the gridlines (term 6) */
   --mk-line: #dedad0;
 }
-/* Light ALONE splits the warn/danger marks from their text inks: term 4 raised
-   --warn and --danger on parchment to clear 4.5:1 as small text, and a mark
-   calibrated for 3:1 graphics should not follow them up. Dark's inks already
+/* Light ALONE splits the warn/danger marks from their text inks: term 4 raises
+   --warn and --danger far enough to clear 4.5:1 as small text, and a mark
+   calibrated for 3:1 graphics should not follow them up. Re-measured against
+   the bone grounds ADR 37 landed (#FAF8F4 sheet / #F0EEE8 rail / #E7E4DC
+   sunken): --warn #8d3c17 reads 7.09 / 6.48 / 5.92:1 and --danger #9d3018
+   reads 6.90 / 6.31 / 5.76:1, so the claim holds with more headroom than it
+   had on parchment, where the same inks read 6.13–5.15:1. Dark's inks already
    sit where its marks want to be, so it keeps the adapter's alias rather than
    restating a value — and scoping this to light is what stops a light literal
    from leaking into dark, which is how Verify's movement chips lost their ink. */
@@ -63,10 +67,10 @@ html:not(.dark) {
   --mk-danger: #ab3a24;
 }
 html.dark {
-  /* THE INVERSION: in light the measured signal is dark forest ON parchment; in
+  /* THE INVERSION: in light the measured signal is dark forest ON the sheet; in
      dark the light theme's GROUND becomes the ink. The median is bone and the
      green identity lives in the bands beneath it, so the two are set apart.
-     The median joins the BODY tier, warmed toward parchment and never toward
+     The median joins the BODY tier, warmed toward the sheet and never toward
      white — the brightest LINE, never the brightest THING (term 14). */
   --mk-primary: #86ad78;
   --mk-primary-600: #c3b49c;
@@ -150,8 +154,8 @@ html.dark .cockpit-footer {
 
 /* ---- ROLE: pane body — ONE docked workspace, not two floating cards ------
    Term 1. The panes lose their gutters, radii and shadows; one hairline divides
-   canvas from inspector, and the parchment sheet becomes the working surface
-   itself. This is the rule that was scoped to `.dw`. */
+   canvas from inspector, and the sheet becomes the working surface itself.
+   This is the rule that was scoped to `.dw`. */
 :is(.dw, .vw) .panes {
   gap: 0;
   padding: 0;
@@ -178,7 +182,7 @@ html.dark .cockpit-footer {
 :is(.dw, .vw) .canvas-pane > header { padding-top: 4px; padding-bottom: 4px; }
 
 /* Dark has to make the material step explicit or the inspector floats on the
-   chart's own ground. Light never needed it stated: parchment and the rail were
+   chart's own ground. Light never needed it stated: the sheet and the rail were
    already different substances with a tonal step behind the divider. Three
    substances, each one step warmer than the last — chart field, inspector wall,
    dock floor — and no jump big enough to band (term 13). */
@@ -230,8 +234,8 @@ html.dark :is(.dw, .vw) .watch .go { border-color: #6b5f53; background: #2b2622;
 }
 .vw .verify-strip .strip-note { color: var(--wk-ink-meta); }
 
-/* In dark the rail descends INTO the plot instead of sitting continuous with a
-   parchment sheet: chrome -> rail -> chart header -> field, each step slightly
+/* In dark the rail descends INTO the plot instead of sitting continuous with
+   the sheet: chrome -> rail -> chart header -> field, each step slightly
    deeper. Lit the other way it was lighter than both its neighbours and the top
    of the surface stacked as three warm-grey stripes. */
 html.dark :is(.dw, .vw) :is(.instruments, .ec-coordinates),

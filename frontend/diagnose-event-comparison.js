@@ -9,7 +9,11 @@
  * 40–300 mg/dL. Selecting one exact occurrence dims aggregates, overlays its
  * observed trace, shows logged rescue carbs when present, and links to Day.
  * Near-rule is disclosure only and never enters Priority, recommendations,
- * Plan, or settings actions. Full contract: diagnose-event-comparison.lock.md.
+ * Plan, or settings actions. The full contract is the event-comparison lock
+ * manifest held in the PREDECESSOR repository `ciq-autotune`; it is not a path
+ * in this tree. Harmonic was republished from that repository as one squashed
+ * commit and the mockup lineage did not come across, so the terms restated in
+ * this header are the whole of the contract that ships.
  *
  * RE-SETTLED TERMS 1 and 3 · 2026-08-13. The View
  * control is the rail's first instrument on EVERY view, Glucose included

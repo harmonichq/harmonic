@@ -29,7 +29,7 @@ from ciq_autotune.analyzers.classifiers.context_gate import CIQ_SUSPEND_TYPE
 from ciq_autotune.events import BasalEvent, BolusEvent, CgmReading
 
 
-# --- builders (mirror tests/test_analyzer_behavioral.py conventions) --------
+# --- builders (the conventions the other tests/test_classifier_*.py mirror) --
 
 
 def cgm_ramp(day, start_h, start_min, start_bg, slope_per_min, minutes):

@@ -303,10 +303,6 @@
   "meta": "6 findings · 30 days",
   "tiers": {
    "ic:720": {
-    "tier": "decide_now",
-    "word": "Decide now"
-   },
-   "basal:30-90": {
     "tier": "next_in_line",
     "word": "Next in line"
    },

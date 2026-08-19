@@ -340,6 +340,26 @@ const FOOTER_VOICE = [
  * retires the orphan body-weight sentence the painter drops between two rows —
  * and its rows carry the fourth tier word.
  */
+/* ---- WHY `DECIDE NOW` NEVER RENDERS (issue #26) ----
+ *
+ * Round 9 stamped `decide_now` on the first asserting row in server order. The
+ * server does not name a headline across parameters, so that first row is
+ * whatever sorted highest — and correction factor earns `register: "assert"`
+ * from its own predicate (`findings_projection.py:357`), independently of the
+ * staging classifier it sits outside. Issue #26 records the consequence on a
+ * real 30-day run: a correction-factor finding ranked second while establishing
+ * nothing the wearer can act on, its interval spanning the programmed value.
+ * A row that reached second can reach first, and stamping `Decide now` on it
+ * would have the machine speak for a row that recommends no number.
+ *
+ * `ic_headline_block` pins the top of the ladder for carb ratio only, and
+ * `result.py:508-510` records that basal and correction factor have no
+ * per-segment headline at all. Until a cross-parameter headline exists, every
+ * priced asserting row takes `Next in line`: it is DESIGN.md rule 4's own word,
+ * it is true of every stageable row, and it claims nothing the engine cannot
+ * defend. `decide_now` stays in the vocabulary below, unreachable, so the day
+ * the headline lands it is one predicate, in one place.
+ */
 const TIER_WORD = {
   decide_now: 'Decide now',
   next_in_line: 'Next in line',
@@ -348,13 +368,12 @@ const TIER_WORD = {
 };
 
 function rankingTiers(rows) {
-  let headline = false;
   const tierOfRow = (row) => {
     if (row.tier === 'tail') return 'noted';
     if (row.register !== 'assert') return 'worth_a_look';
-    if (headline) return 'next_in_line';
-    headline = true;
-    return 'decide_now';
+    /* EVERY asserting row is `next_in_line`. `decide_now` is deliberately
+       unreachable — see the DECIDE NOW note above. */
+    return 'next_in_line';
   };
   /* One eyebrow per RUN, not per row: the eyebrow is a section head, and
      printing it again over the second row of the same tier would make it a row

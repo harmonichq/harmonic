@@ -108,6 +108,20 @@ jobs:
         run: node --test 'frontend/**/*.test.js'
       - name: Exercise the local screenshot wrapper
         run: node --test scripts/screenshots.local.test.mjs
+      # The same drift class the backend job guards for its five generators, in
+      # the one place it was never applied. The finding->evidence exploration
+      # commits three GENERATED artifacts: app-base.extracted.css and
+      # evidence-table.extracted.js are lifted verbatim out of
+      # frontend/index.html and frontend/diagnose-workstation.js, and data.json
+      # is fixture data run through the shipped queue/chart/dock producers. All
+      # three move when the app moves, and until now nothing noticed. The light
+      # relight (63d9053) left the extracted stylesheet on the retired parchment
+      # tokens, so the exploration's own contrast guard spent an entire round
+      # measuring a theme the app had already left and reporting zero failures.
+      # Node-only and dependency-free — it regenerates in memory and byte-
+      # compares, so it belongs in the fast gate rather than behind Chromium.
+      - name: Check the exploration's generated artifacts are current
+        run: node mockups/finding-evidence-routing.exploration/build.mjs --check
 
   browser-gate-setup:
     name: browser gate setup

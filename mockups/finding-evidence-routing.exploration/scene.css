@@ -278,10 +278,30 @@
 .fer-band .bar {
   display: grid; width: 100%; height: 10px; gap: 2px; border-radius: 2px; overflow: hidden;
 }
+/* ROUND 9, FINDING 17 — THE INACTIVE SEGMENTS NEED A GROUND IN LIGHT.
+   `--mk-text` at 16% over a near-black desk is a legible grey step; the same
+   declaration over bone lands within a couple of percent of the paper itself, so
+   in light the two inactive segments effectively vanished and a three-way split
+   read as a progress bar at about 40%. The dark value is the one that worked and
+   is untouched; light gets the same PERCEIVED separation by mixing into the
+   column's own second surface instead of into the ground it is sitting on —
+   which is the token DESIGN.md pairs light and dark values on. Scoped
+   `html:not(.dark)`, the same scoping theme.css uses for its own light-only
+   splits and for the same reason: a light literal leaking into dark is how
+   Verify's movement chips lost their ink. */
 .fer-band .seg {
   border: 0; padding: 0; cursor: pointer;
   background: color-mix(in srgb, var(--mk-text) 16%, transparent);
 }
+html:not(.dark) .fer-surface .fer-band .seg {
+  background: color-mix(in srgb, var(--mk-text) 30%, var(--mk-surface-2));
+}
+/* The pressed rule below is three classes; the light override above is five, so
+   without this the drilled segment lost its accent in light and the band went
+   back to reading as one undifferentiated bar — the very defect finding 17 is
+   about, arriving through the fix for it. Scoped identically so the two rules
+   are decided by order rather than by weight. */
+html:not(.dark) .fer-surface .fer-band .seg[aria-pressed="true"] { background: var(--ck-accent); }
 .fer-band .seg[aria-pressed="true"] { background: var(--ck-accent); }
 .fer-band .seg:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: 2px; }
 
@@ -294,16 +314,24 @@
 .fer-band .key .n { font-family: var(--ck-mono); font-variant-numeric: tabular-nums; }
 .fer-band .key[aria-pressed="true"] { color: var(--mk-text); font-weight: 600; }
 .fer-band .key:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: 2px; }
-/* The band scopes the ROSTER only, and says so. A control that looks like a
-   cohort filter beside a canvas that is never cohort-filtered is exactly the
-   disagreement the #31 ruling exists to prevent — so the surface states the
-   rule rather than leaving the reader to infer it from the dots. */
-.fer-band .caveat {
-  margin: 8px 0 0; padding-bottom: 10px;
-  font-size: 11px; line-height: 1.5;
-  color: color-mix(in srgb, var(--mk-text) 45%, transparent);
-  border-bottom: 1px solid var(--ck-hair);
+/* ROUND 9, FINDING 8 — `.caveat` IS DELETED and the band takes a cap instead.
+   The two sentences under the bar are gone (a control explaining its own scope
+   has not been drawn clearly enough, and this one outlived the control it
+   described whenever the factor dropdown overlaid it). What is left is the one
+   FACT they carried, on the band's own line as right-hand meta — which is the
+   `.lvl-cap` grammar this column already uses for exactly that, borrowed by name
+   rather than restyled, so the band opens the way every other section does. */
+.fer-band .cap {
+  display: flex; align-items: baseline; gap: 8px; padding-bottom: 7px;
+  font-size: var(--ck-micro); font-weight: 700;
+  letter-spacing: var(--ck-track); text-transform: uppercase; color: var(--mk-secondary);
 }
+.fer-band .cap .meta {
+  margin-left: auto; font-family: var(--ck-mono); font-weight: 500;
+  font-variant-numeric: tabular-nums; text-transform: none; letter-spacing: 0;
+  color: color-mix(in srgb, var(--mk-text) 45%, transparent);
+}
+.fer-band { padding-bottom: 10px; border-bottom: 1px solid var(--ck-hair); }
 
 /* ======================================================================
    ROUND 5, BLOCK 7 — THE RESIDUE, UNFILLED.
@@ -475,3 +503,149 @@ html:not(.dark) .fer-surface { --ec-near: #5d2a0c; }
   font-size: 10px; line-height: 1.4;
   color: color-mix(in srgb, var(--mk-muted) 80%, transparent);
 }
+
+/* ======================================================================
+   ROUND 9 — THE PERSONA'S ROUND-8 FINDINGS, IN CSS.
+   ====================================================================== */
+
+/* ---------- FINDING 11: the queue renders its rank ----------
+   The eyebrow is the Label rank DESIGN.md already specifies and `.lvl-cap` is
+   the element on this surface that already IS that rank, so the tier word takes
+   `.lvl-cap`'s own declarations by name rather than inventing a second small-caps
+   register one class apart. It is dimmer than a section cap because a tier is a
+   property of the rows beneath it, not a new section — `noted` keeps DESIGN.md's
+   own lowercase, which is how that word is written in the rule. */
+.fer-tier {
+  margin: 18px 0 5px; padding: 0 var(--ck-pad);
+  font-size: var(--ck-micro); font-weight: 700;
+  letter-spacing: var(--ck-track); text-transform: uppercase;
+  color: color-mix(in srgb, var(--mk-secondary) 85%, transparent);
+}
+.q > .fer-tier:first-child { margin-top: 2px; }
+/* `noted` is the one tier DESIGN.md writes in lower case, and it is the quiet
+   end of the ladder: it keeps its own spelling and steps back again. */
+.fer-tier[data-tier="noted"] {
+  text-transform: none; letter-spacing: normal; font-weight: 600;
+  color: var(--mk-muted);
+}
+/* The Watching section cap. `.lvl-cap` carries every declaration; the only rule
+   here is the air that makes it a section boundary rather than another row. */
+.fer-watching { margin: 20px 0 0; }
+
+/* ---------- FINDING 14: the coincidence routes join the column spine ----------
+   Round 8 set them right-aligned, underlined and in `--ck-accent`: an underlined
+   in-app link (a website tell) at a second right-hand indent, in a column whose
+   only right-aligned object was deliberately the ONE action `Open case file ›`.
+   Two more right-aligned things at a different x turn that deliberate accent into
+   noise, and the ragged left edge reads as a layout accident. They are left-
+   aligned to the column spine now, unruled, and every ink and rank below is
+   `.fer-open`'s — block 6's settled treatment for a route in this column — so
+   the two kinds of route on the page look like one kind of thing. The chevron
+   they already carry is the whole affordance. */
+.fer-coincide .fer-route { align-items: flex-start; }
+.fer-coincide .linkbtn {
+  font-size: 11.5px; font-weight: 500; color: var(--primary); text-decoration: none;
+}
+.fer-coincide .linkbtn:hover { text-decoration: underline; text-underline-offset: 2px; }
+
+/* ---------- FINDING 10: the basal strip is a surface, not the loudest ink ----------
+   `.lane button`'s ground is `var(--cell, var(--ck-inset))`, and `--ck-inset` is
+   a near-black in BOTH themes (`#1a1611` light, `#101215` dark) — so a cell whose
+   verdict rule leaves `--cell` unset renders as a solid black block on bone and
+   as an invisible one on the desk: the same fill twice, which is a token that
+   never got its light/dark pass. DESIGN.md pairs every colour with values tuned
+   independently for the same RELATIONSHIP, and the relationship this strip wants
+   is recessive-in-both: it is a summary under the axis, not a figure. Both
+   values below are the column's own second surface, stepped so the verdict tints
+   that DO carry meaning stay the loudest thing in the strip. */
+.fer-surface .lane button { --cell: var(--mk-surface-2); }
+html.dark .fer-surface .lane button { --cell: color-mix(in srgb, var(--mk-text) 12%, transparent); }
+.fer-surface .lane button:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: 1px; }
+
+/* ---------- FINDING 5: the chart's legend and window caption, in the head ----------
+   Both used to float over the plot. The keys take the head rail beside the title
+   at the meta rank the rail already spends on `#dw-scope` and `#dw-pool`; the
+   caption is prefixed onto `#dw-scope` in surface.js, because it and the reading
+   count are two readings of one window. The swatch is a 7px square, which is the
+   ECharts legend's own `itemHeight` on this chart. */
+.fer-head-key {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 2px 10px;
+  min-width: 0; flex: 1 1 auto;
+  font-size: var(--ck-micro); color: var(--mk-muted);
+}
+/* The rail is three tenants on one line — title, window meta, keys — and the
+   title is the one that must not break: it is the pane's name. It keeps its
+   words together and the keys, which are a list and wrap gracefully, take the
+   slack. Without this the h2 broke across two lines to make room for a legend,
+   which is the wrong thing giving way. */
+.fer-surface .dw-canvas .head-rest h2 { white-space: nowrap; }
+.fer-surface .dw-canvas .head-rest #dw-scope { flex: 0 1 auto; min-width: 0; }
+.fer-head-key:empty { display: none; }
+.fer-head-key .k { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.fer-head-key .k i {
+  width: 7px; height: 7px; border-radius: 1px;
+  background: color-mix(in srgb, var(--mk-text) 34%, transparent);
+}
+.fer-head-key .k[data-series="Median"] i { background: var(--primary); }
+.fer-head-key .k[data-series="Occurrences"] i { background: var(--fer-dot); border-radius: 50%; }
+.fer-head-key .k[data-series="10–90th"] i { background: color-mix(in srgb, var(--primary) 18%, transparent); }
+.fer-head-key .k[data-series="25–75th"] i { background: color-mix(in srgb, var(--primary) 38%, transparent); }
+
+/* ---------- FINDING 18: one token pair for the two dot states ----------
+   The shipped scatter draws at `--primary-600`, which on bone is a near-full-
+   contrast dark teal — so the UNSELECTED dots were louder in light than the
+   terracotta accent marking the ones being read, and the emphasis hierarchy
+   inverted between the two themes. `--fer-dot` is the recessive half of the pair
+   and the accent is the lead half, tuned independently against each ground for
+   the SAME relationship (the lead reads clearly ahead of the field in both).
+   Declared as literal colours rather than a `color-mix()` for the reason
+   `--ec-near` above is: pooled.js reads this through `getPropertyValue` and hands
+   it to a canvas, and an unresolved `color-mix()` comes back as its own source
+   text, which no canvas can paint. */
+.fer-surface { --fer-dot: #7d9fad; }
+html.dark .fer-surface { --fer-dot: #4d7789; }
+
+/* ---------- FINDING 3: the hedge hangs off the key, it does not print under it ----------
+   The amendment asked for the existing `.has-tooltip` primitive and this
+   repository has none — `grep` finds it in no shipped stylesheet or module — so
+   the scene declares one and the report names the gap. It is CSS-only and
+   keyboard-reachable: the chip is focusable, and the disclosure appears on hover
+   or focus. `--ck-inset` is deliberately not used as its ground (the trap the
+   factor dropdown and the band both documented); it takes the surface the
+   dropdown's own overlay takes, which is the only other overlay here. */
+.fer-tip { position: relative; cursor: help; }
+.fer-tip > strong { text-decoration: underline dotted; text-underline-offset: 3px; }
+.fer-tip::after {
+  content: attr(data-tip);
+  position: absolute; left: 0; bottom: calc(100% + 6px); z-index: 20;
+  width: max-content; max-width: 230px;
+  padding: 6px 8px; border: 1px solid var(--ck-hair); border-radius: 3px;
+  background: var(--mk-surface); color: var(--mk-text);
+  font-size: 10.5px; font-weight: 400; line-height: 1.4; letter-spacing: normal;
+  text-transform: none; white-space: normal;
+  box-shadow: 0 6px 12px color-mix(in srgb, #000 18%, transparent);
+  opacity: 0; visibility: hidden; transition: opacity .1s ease-out;
+}
+.fer-tip:hover::after, .fer-tip:focus-visible::after { opacity: 1; visibility: visible; }
+.fer-tip:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: 2px; }
+
+/* ---------- FINDING 3: a legend chip is ONE LINE ----------
+   The rail's shipped item is an `inline-grid` that drops its detail line under
+   the label, which at three cohorts on a 430px-wide canvas produced three
+   wrapped paragraphs — a line ending on a trailing `·`, ragged breaks, and a
+   sentence of policy at data weight directly under the data. DESIGN.md rule 5
+   is explicit that a chart needing a paragraph fails the bar. The grid drops to
+   a baseline flex row: mark, name, support word, count, and nothing else. */
+.fer-surface .ec-key-item {
+  display: inline-flex; align-items: baseline; gap: 6px; white-space: nowrap;
+}
+.fer-surface .ec-key-item small { margin: 0; }
+/* FINDING 6 — the selected occurrence's key. It is a key like any other; only
+   its mark says it is one event rather than an aggregate. */
+.fer-key-selected .ec-key-mark { border-radius: 50%; }
+
+/* ---------- FINDING 7: the route to Day ----------
+   The same right-aligned single-action form `Open case file ›` takes — every
+   declaration is `.fer-route`'s and `.fer-open`'s. Only the air is here: it
+   closes the table rather than opening the next section. */
+.fer-day { padding-top: 8px; }

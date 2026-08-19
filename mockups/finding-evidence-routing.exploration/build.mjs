@@ -63,7 +63,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { projectSyntheticCapture } from '../diagnose-event-comparison.synthetic/project.mjs';
-import { queueRows, queueMeta, FLAVOR } from '../../frontend/diagnose-findings-queue.js';
+import { queueRows, queueMeta, FLAVOR, TAIL_NOTE } from '../../frontend/diagnose-findings-queue.js';
 import {
   buildSlotLane, buildDayTrace, cellAtMinute, clockBuckets, hhmm,
 } from '../../frontend/diagnose-workstation-chart.js';
@@ -228,11 +228,211 @@ function buildIcLane(blocks) {
 const icBlockAtMinute = (icLane, minute) =>
   icLane.cells.find((c) => c.spans.some(([a, b]) => minute >= a && minute < b)) || icLane.cells[0];
 
-/** VERBATIM — diagnose-event-comparison.js `COHORTS` labels. */
-const COHORT_LABEL = {
-  fired: 'Rule matched', near_rule: 'Near rule',
-  neutral: 'Rule did not match', another_factor: 'Another factor applies',
+/* ================== ROUND 9, FINDING 1: THE VOICE PASS ==================
+ *
+ * The ONLY authored strings in this build, and they are authored because
+ * DESIGN.md §"Voice and user-copy register" requires exactly these words. The
+ * grounding invariant is about DATA — every number, population and denominator
+ * still comes from a fixture through its shipped producer, and nothing below
+ * invents or reshapes one. What these rules change is how an already-derived
+ * fact is SPELLED.
+ *
+ * Each entry names the rule it satisfies. A rule with no violation left in the
+ * fixtures fails the build rather than sitting here rotting, so a later fixture
+ * that reintroduces the old spelling cannot slip past silently.
+ *
+ * WHAT THIS PASS DELIBERATELY DOES NOT TOUCH: the four nouns for the partition
+ * (`factor` / `rule` / `classifier` / `finding`). Which one wins is with the
+ * operator (App Snob finding 9) and unifying three of the four would be a
+ * half-migration nobody asked for. They stay exactly as round 8 left them.
+ *
+ * IT ALSO CANNOT TOUCH THE SHIPPED EVIDENCE TABLE. `renderEvidence` is lifted
+ * whole and prints its own `unclassified`, its own group hedge and its own date
+ * format; rewriting any of that would be the fork the ruling forbids. Reported
+ * instead.
+ */
+
+/** DESIGN.md rule 3 — "Do not say 'clean nights'… Say 'nights of steady data.'"
+    The noun is the projection's own `support.noun`, respelled. */
+const STEADY_NOUN = { 'clean nights': 'nights of steady data' };
+
+/** DESIGN.md rule 8 — user copy uses `Correction factor` and `Carb ratio`, and
+    shows basal model slots as bare time ranges (`Basal · 00:00–00:30`). The
+    projection's row titles carry the engine spellings (`I:C`, `Basal 00:30 to
+    01:30`), which rule 8 reserves for engine code and technical documentation.
+    ONE format for a slot, both rows: parameter, `·`, en-dash range, `·`,
+    direction. */
+const RANGE = /^(Basal|I:C|ISF) (\d{2}:\d{2})(?: to (\d{2}:\d{2}))? · (.+)$/;
+const PARAMETER_WORD = { Basal: 'Basal', 'I:C': 'Carb ratio', ISF: 'Correction factor' };
+
+function voiceTitle(title) {
+  const m = RANGE.exec(title);
+  if (!m) return title;
+  const [, parameter, from, to, direction] = m;
+  const span = to ? `${from}–${to}` : from;
+  return `${PARAMETER_WORD[parameter]} · ${span} · ${direction}`;
+}
+
+/** Rule 3 + rule 8 over the projection window the shipped queue painter reads.
+ *
+ * The projection is handed to `renderFindingsQueue` WHOLE, so the respelling has
+ * to happen to the projection rather than to the painted DOM — the painter owns
+ * how a title and a support noun are laid out, and reaching into its output to
+ * retype them is the transcription this mock does not do. Fails closed both
+ * ways: a window where nothing needed respelling means the fixture changed under
+ * the rule, and that is worth stopping for. */
+function voiceProjection(window) {
+  let touched = 0;
+  const rows = window.rows.map((row) => {
+    const title = voiceTitle(row.title);
+    const noun = row.support?.noun;
+    const respelled = noun && STEADY_NOUN[noun];
+    if (title !== row.title || respelled) touched += 1;
+    return {
+      ...row,
+      title,
+      support: row.support ? { ...row.support, noun: respelled || noun } : row.support,
+    };
+  });
+  if (!touched) {
+    throw new Error('the voice pass found nothing to respell in the projection window — '
+      + 'either the fixture already speaks DESIGN.md\'s register (delete this pass) '
+      + 'or its row shape changed under it');
+  }
+  return { ...window, rows };
+}
+
+/** DESIGN.md rule 8 again, on the app's own footer rail. The chrome is lifted
+    from the running app's DOM, so surface.js applies this at injection rather
+    than the build editing an extracted artifact. */
+const FOOTER_VOICE = [
+  ['ISF', 'Correction factor'],
+  ['I:C', 'Carb ratio'],
+];
+
+/* ========== ROUND 9, FINDING 11: THE QUEUE'S RANKING TIERS ==========
+ *
+ * DESIGN.md rule 4: "Decide now, Next in line, Worth a look, and noted are the
+ * complete ranking-tier vocabulary", and the 0–100 urgency number is never
+ * shown. Round 8 rendered neither — six flat rows in server order, so the single
+ * most decision-relevant fact on the screen (does row 1 outrank row 6?) was left
+ * for the reader to infer from position alone.
+ *
+ * NO THRESHOLD IS INVENTED HERE, because there is no threshold in this
+ * repository to read: `tuning_priority.py` emits the 0–100 score and nothing
+ * bands it. What the tree DOES pin is the top of the ladder —
+ * `ic_headline_block`'s docstring: "the server's headline and the client's
+ * 'Decide now' are the same computation on the same field", i.e. Decide now is
+ * the highest-priority ASSERTING row. The rest follow from the projection's own
+ * register and the shipped painter's own priced/unpriced seam, so every boundary
+ * below is a field the server already published:
+ *
+ *   DECIDE NOW    the top priced `assert` row — the one the machine speaks for
+ *   NEXT IN LINE  the remaining priced `assert` rows — stageable, not the headline
+ *   WORTH A LOOK  the priced `finding` rows — ranked, but no pump value to stage
+ *   noted         the unpriced tail, which the shipped `queueRows` already
+ *                 separates with its own seam (`tier: 'tail'`)
+ *
+ * The tail's section name is CONTEXT.md's, not invented either: "**Watching**:
+ * the subordinate Audit section for held and still-collecting tuning reads that
+ * are not available for a decision." So the tail gets a `WATCHING` ledger rule
+ * carrying the shipped `TAIL_NOTE` as its right-hand meta — which is what
+ * retires the orphan body-weight sentence the painter drops between two rows —
+ * and its rows carry the fourth tier word.
+ */
+const TIER_WORD = {
+  decide_now: 'Decide now',
+  next_in_line: 'Next in line',
+  worth_a_look: 'Worth a look',
+  noted: 'noted',
 };
+
+function rankingTiers(rows) {
+  let headline = false;
+  const tierOfRow = (row) => {
+    if (row.tier === 'tail') return 'noted';
+    if (row.register !== 'assert') return 'worth_a_look';
+    if (headline) return 'next_in_line';
+    headline = true;
+    return 'decide_now';
+  };
+  /* One eyebrow per RUN, not per row: the eyebrow is a section head, and
+     printing it again over the second row of the same tier would make it a row
+     decoration. Keyed by the id of the row that OPENS the run, so surface.js
+     inserts it in front of the painted node without counting anything. */
+  const opens = {};
+  let previous = null;
+  for (const row of rows) {
+    const tier = tierOfRow(row);
+    if (tier !== previous) opens[row.id] = { tier, word: TIER_WORD[tier] };
+    previous = tier;
+  }
+  return opens;
+}
+
+/* ========== ROUND 9, FINDING 19: WHAT A HABIT ROW'S SUBLINE SAYS ==========
+ *
+ * A setting row's subline is `now 0.8 U/hr → 0.96 U/hr` — what it does, then the
+ * numbers. A habit row's was `1 of 3 highs · 1 of 4 lows`: two bare fractions
+ * with no clause naming what they are fractions OF, leading with a "highs"
+ * figure on a finding called Over-treated LOW.
+ *
+ * The clause is CONTEXT.md's own reading of those numbers. An Appearance is a
+ * "'k of n' recurrence rate" over an Exposure population, so the verb is
+ * `Recurs in` and the denominators are named by the nouns the projection already
+ * publishes. Nothing numeric is added, moved or recomputed — one clause is set
+ * in front of the counts the shipped painter already lays out. */
+const HABIT_LEAD = 'Recurs in ';
+
+/* ============ ROUND 9, FINDING 9: ONE NOUN PER CONCEPT ============
+ *
+ * Round 8 spent FOUR vocabularies on one partition in a single column: the
+ * dropdown's cap said `FACTOR · 3 IN LOWS`, the band said `Near rule`, the
+ * table's group rule said `Attributed here, but no classifier fired on the
+ * pattern`, and the row cells said `unclassified`. A reader managing their
+ * diabetes has no way to know that a classifier, a rule and a finding are the
+ * same thing here — because they are.
+ *
+ * THE OPERATOR'S WORDS, settled this round, used IDENTICALLY on the band, the
+ * group rule, the row verdict cell and the canvas legend. They are deliberately
+ * clinical rather than lows-flavoured: the same three labels have to carry meals
+ * and carb-ratio findings, which `Over-treated` / `Close call` / `Treated fine`
+ * cannot.
+ *
+ * CHECKED AGAINST CONTEXT.md, AS INSTRUCTED, AND IT DEFINES NO COMPETING TERM.
+ * The glossary has no `Verdict`, `Cohort` or partition entry at all. Its nearest
+ * neighbour is **Silence reason**, whose `under-threshold` case is glossed "it
+ * happened but fell short of the bar — the near-miss" — but that is a closed set
+ * of six REASONS the engine stayed silent, one axis down from a three-way
+ * partition of a population, and it names a cause rather than a verdict. Nothing
+ * in CONTEXT.md wins over the three below. **Evidence tier** is a genuinely
+ * different axis (`Observed` / `Inferred` / `Not-in-data`) which the glossary
+ * warns must never be shown as one badge with the outcome — and the shipped
+ * table prints the outcome in the slot its field calls `evidence_tier`, which is
+ * that very collision. Named in the report; not this round's to fix.
+ *
+ * `another_factor` keeps a distinct word: it is not a verdict on this finding's
+ * rule, it is the statement that a different lever owns the episode.
+ */
+const COHORT_LABEL = {
+  fired: 'Meets criteria', near_rule: 'Borderline',
+  neutral: 'Does not meet', another_factor: 'Another lever applies',
+};
+
+/** FINDING 9 — the same three words, as the value the SHIPPED table prints in a
+    row's verdict cell and in its group rule. It reads `evidence_tier` off the
+    matched verdict, so the partition word travels as data and the mock never
+    touches the painter. */
+const PARTITION_TIER = COHORT_LABEL;
+
+/** FINDING 9 — the Unclaimed frame's one word, on its band key, its group rule
+    and its dots' readout. Round 8 had this frame's rows fall through to the
+    shipped `unclassified` and its group rule to the generic
+    `Attributed here, but no classifier fired on the pattern`, which is one
+    string doing two jobs — it rendered identically under a `Near rule` band with
+    `· 4`. Deleted: with every occurrence carrying a partition word, the shipped
+    painter's counter branch never runs and neither string can render. */
+const UNCLAIMED_TIER = 'Not claimed by any finding';
 
 /** VERBATIM — diagnose-event-comparison.js `pointStateSummary`. */
 function pointStateSummary(rows) {
@@ -276,6 +476,15 @@ function canvasFor(lens) {
     title: 'Low response comparison',
     /* ROUND 4 ITEM 2 — the hue an overlaid occurrence trace draws in. */
     cohortOf: cohortMap(lens.occurrences),
+    /* ROUND 9, FINDING 6 — WHAT THE SELECTED KEY IS CALLED. `That day` is a
+       pronoun; the row the reader clicked says `Aug 3`, so the chart says
+       `Aug 3`. Both halves are the occurrence's own anchor, through the shipped
+       `fmtDate` the table's rows are dated by, so the key and the row can never
+       spell the same day two ways. */
+    dateOf: Object.fromEntries(lens.occurrences.map((o) => [o.identity.id, {
+      label: fmtDate(o.anchor.date),
+      detail: o.anchor.t.slice(11, 16),
+    }])),
     context: 'excursion nadir · −5 h to +2 h',
     alignmentWindow: lens.coordinates.alignment_window_min,
     axisAnchor: 'low',
@@ -287,7 +496,7 @@ function canvasFor(lens) {
        rule" is already on screen and the only place the hedge is about
        something visible. Null elsewhere, and the legend prints nothing. */
     nearRuleNote: (lens.cohorts.find((c) => c.key === 'near_rule')?.routed_count || 0) > 0
-      ? 'Disclosure only — never enters Priority, a suggestion, or Plan.'
+      ? 'Disclosure only. Never enters Priority, a suggestion, or Plan.'
       : null,
     cohortOrder: lens.cohorts.map((c) => c.key),
     cohorts: Object.fromEntries(lens.cohorts.map((c) => [c.key, {
@@ -301,11 +510,17 @@ function canvasFor(lens) {
          between a number and its word ("· 2 / withheld points"), which reads as
          two facts where there is one. Binding inside each clause leaves the line
          free to wrap at the separators, which is where it actually divides. */
-      legendDetail: (c.support === 'withheld'
-        ? `${c.routed_count} ${c.routed_count === 1 ? 'event' : 'events'} · aggregate not shown`
-        : `${c.routed_count} events · ${pointStateSummary(c.points)} points`)
-        .replace(/(\d+) (\S+)/g, '$1\u00a0$2')
-        .replace(/(withheld|limited|supported) (points)/g, '$1\u00a0$2'),
+      /* ROUND 9, FINDING 3 — A CHIP IS ONE LINE: mark, name, count, support word.
+         Round 8's detail carried the per-point support tally as well
+         (`7 events · 76 supported · 7 limited · 2 withheld points`), which is
+         three engine facts about how the aggregate was assembled, printed at
+         data weight under the data. DESIGN.md rule 2 keeps that vocabulary out
+         of user copy, and rule 5 keeps the legend to a chip. `pointStateSummary`
+         is still transcribed above and still unused by nothing else — it is the
+         shipped producer, and the day the chip earns the tally back it is here.
+         What survives is the number the reader is counting: how many events. */
+      legendDetail: `${c.routed_count} ${c.routed_count === 1 ? 'event' : 'events'}`
+        .replace(/(\d+) (\S+)/g, '$1\u00a0$2'),
       points: c.points,
     }])),
     traces: null,
@@ -319,18 +534,18 @@ const GROUP_ORDER = ['fired', 'near_rule', 'neutral'];
 
 /** The Unclaimed frame's single group rule, and the state its clock dots report
     on hover — one string, because they are one statement. */
-const UNCLAIMED_LEAD = 'Claimed by no finding';
+const UNCLAIMED_LEAD = UNCLAIMED_TIER;
 
-/** The causal phrase a group header carries beside the shipped cohort label.
-    `fired` and `near_rule` are the two the FACTOR's rule defines, so they name
-    it; `neutral` is defined by its absence and says so in the lens's own words
-    (`summarySentence`: "did not match any factor"). */
-const GROUP_PHRASE = {
-  fired: (label) => label,
-  near_rule: (label) => `${label}, disclosure only`,
-  neutral: () => 'matched no factor’s rule',
-};
-
+/* ROUND 9, FINDING 9 — `GROUP_PHRASE` IS DELETED. It set the causal phrase the
+   shipped group header prints in front of its tier word, and all three of its
+   entries were the old vocabulary: the finding's own title for `fired`, a
+   `, disclosure only` tail for `near_rule`, and `matched no factor’s rule` for
+   `neutral` — which also spent the noun CONTEXT.md lists under Avoid for Lever.
+   With the partition word carried as the occurrence's own tier, the shipped
+   header leads with that word and nothing precedes it, which is what makes the
+   group rule and the band read as one statement. `factor.cause` is handed the
+   painter as empty, which is the branch it already has for a factor with no
+   title. */
 
 /* ROUND 8, ITEM 1 — `dedupeGroupTags` is DELETED. Round 4 blanked a row's tier
    cell wherever the group header already carried the same word; that was a rule
@@ -386,7 +601,9 @@ async function main() {
   }));
 
   /* ---- level 1: the ranked queue, handed to the SHIPPED renderer whole ---- */
-  const globalWindow = projection.windows.global;
+  /* ROUND 9, FINDING 1 — respelled ONCE, here, so the crumb leaf, the subject
+     strip and the painted row can never disagree about how a slot is written. */
+  const globalWindow = voiceProjection(projection.windows.global);
   const rows = queueRows(globalWindow);
   const row = rows.find((r) => r.id === FINDING_ID);
   if (!row) throw new Error(`${FINDING_ID} is not in the projection's global window`);
@@ -441,7 +658,28 @@ async function main() {
      invention: the classifier is the projector's own factor, `matched` is
      whether it routed the occurrence to `fired`, and both the tier and the
      sentence are the projector's own strings. */
-  const evidenceOccurrence = (o) => ({
+  /* ROUND 9, FINDING 9 — AND THE PARTITION WORD TRAVELS AS `evidence_tier`.
+     The shipped painter reads exactly one field for a row's verdict cell AND for
+     its group rule: `tierOf`, which is the `evidence_tier` of whichever verdict
+     carries `matched`. Round 8 set `matched` only on the fired cohort, so every
+     other row fell through the painter's `counter` branch and printed the
+     literal `unclassified` under the generic
+     `Attributed here, but no classifier fired on the pattern` header — the two
+     strings the operator's ruling deletes, and the reason four vocabularies were
+     on screen at once.
+     Every occurrence is a judged one here: a low in the `Borderline` set was
+     judged and fell short, which is a verdict, not an absence of one. So each
+     carries its cohort's partition word as its tier, the counter branch never
+     runs, and one noun reaches the band, the group rule and the row cell. This
+     is DATA the painter reads — the extraction is untouched and still fails
+     closed. */
+  /* CALL IT WITH ONE ARGUMENT. `.map(evidenceOccurrence)` hands
+     `Array.prototype.map`'s INDEX to `tier`, so every row after the first took
+     its own position as its verdict word — the identical trap round 8 found and
+     documented one function down, on `clockDot`. Caught here by finding 12: with
+     five distinct "tiers" no group was homogeneous, so nothing was suppressed
+     and the column printed `Meets criteria`, `1`, `2`, `3`, `4`. */
+  const evidenceOccurrence = (o, tier) => ({
     id: o.identity.id,
     date: o.anchor.date,
     t: o.anchor.t,
@@ -450,8 +688,8 @@ async function main() {
     text: o.verdict.detail,
     verdicts: [{
       classifier: o.verdict.factor,
-      matched: o.verdict.cohort === 'fired',
-      evidence_tier: o.verdict.evidence_tier,
+      matched: true,
+      evidence_tier: tier || PARTITION_TIER[o.verdict.cohort],
       detail: o.verdict.detail,
     }],
   });
@@ -473,11 +711,20 @@ async function main() {
      positional and stamped (`provenance.day_traces`), the same way the
      population rows are stamped — the alternative is drawing no day at all,
      which would delete the projection's whole drill state. */
+  /* ROUND 9, FINDING 2 — A DOT'S HEIGHT IS ITS GLUCOSE, AND `bg` IS THE WRONG
+     ONE. The shipped scatter reads `o.bg` first and falls back to `o.worst_bg`
+     (diagnose-workstation-chart.js: "each one now sits at its own recorded
+     glucose value"). `anchor.bg` is the ENTRY value — the reading at which the
+     excursion crossed the threshold — so on this capture it is 68-70 on every
+     single low, and seventeen dots landed in a dead straight line on top of the
+     70 rule. `anchor.worst_bg` is the nadir, 58-61, which is the number the
+     table's own `entry → worst · Δ` key is built around and the only one that
+     orders the rows by severity. So `bg` is not passed at all and the shipped
+     fallback plots the worst — the renderer's own rule, not an override. */
   const clockDot = (o, label, cohort) => ({
     id: o.identity.id,
     t: o.anchor.t,
     date: o.anchor.date,
-    bg: o.anchor.bg,
     worst_bg: o.anchor.worst_bg,
     /* The shipped scatter reports this string through the docked readout on
        hover. It is the one channel that can still say WHICH state a dot is in,
@@ -537,10 +784,11 @@ async function main() {
       .map((key) => ({
         key,
         lead: COHORT_LABEL[key],
-        cause: GROUP_PHRASE[key](label),
+        /* FINDING 9 — nothing precedes the partition word in the group rule. */
+        cause: null,
         occurrences: narrow.occurrences
           .filter((o) => o.verdict.cohort === key)
-          .map(evidenceOccurrence),
+          .map((o) => evidenceOccurrence(o)),
       }))
       .filter((g) => g.occurrences.length)
       .map((g) => ({ ...g, count: g.occurrences.length }));
@@ -585,16 +833,32 @@ async function main() {
            are still the frame's own, and the settled rule is unchanged: the
            meta counts what the table draws. */
         cap: { key: 'entry → worst · Δ', denominator: narrow.population.denominator, window: windowLabel },
-        /* The band's caveat, stated on the surface because a control that looks
-           like a cohort filter beside a canvas that is never cohort-filtered is
-           the exact disagreement the #31 ruling exists to prevent. */
-        bandCaveat: `${drawn} of ${narrow.population.denominator} lows in ${windowLabel}. The band scopes this list only — `
-          + 'the comparison beside it always draws all three.',
-        /* ROUND 5, BLOCK 7 — the residue, as ONE unfilled line. It is the same
-           two counts round 4 printed in a dark `.ev-group.counter` slab; block 3
-           routes the finding scene's `2 not comparable` residue here too. */
-        residue: `${narrow.population.counts.another_factor} claimed by another factor`
-          + ` · ${narrow.population.counts.excluded} not comparable`,
+        /* ROUND 9, FINDING 8 — THE INSTRUCTION MANUAL IS DELETED. Round 8 put
+           two sentences under the band: what it counts, and that it scopes the
+           list rather than the comparison. Both are gone. The second was a
+           control explaining its own scope, which is a control not drawn clearly
+           enough — and the canvas already says it in pixels, because the
+           unselected verdicts stay plotted. Worse, it OUTLIVED the band: opening
+           the factor dropdown overlays the band and the sentence sat on alone,
+           captioning a control the reader could no longer see.
+           What survives is the one FACT the first sentence carried, moved onto
+           the band's own line as its right-hand meta, where it cannot outlive
+           the thing it counts. */
+        bandMeta: `${drawn} of ${narrow.population.denominator} lows in ${windowLabel}`,
+        /* ROUND 9, FINDING 13 — THE RESIDUE IS PARTS NOW, NOT A LINE. Round 8
+           emitted a finished sentence naming the FRAME's two leftovers, and
+           printed it under a table that draws ONE VERDICT — so in the `Near rule`
+           frame the reader's last impression of the table was `1 + 2` against a
+           cap of `4 of 20` and a band of `4`, arithmetic that closes against
+           nothing on screen. The counts have to be scoped to what the table is
+           actually drawing, and which verdict that is is a runtime fact (the
+           same reason the cap's numerator became one in round 8). So the build
+           emits the frame's own figures and surface.js closes the denominator
+           with them. */
+        residueParts: {
+          another_factor: narrow.population.counts.another_factor,
+          excluded: narrow.population.counts.excluded,
+        },
         groups,
       },
     };
@@ -622,7 +886,7 @@ async function main() {
      low no rule reached is. */
   const unclaimedOccurrences = wide.occurrences
     .filter((o) => unclaimedIds.includes(o.identity.id));
-  const unclaimedRows = unclaimedOccurrences.map(evidenceOccurrence);
+  const unclaimedRows = unclaimedOccurrences.map((o) => evidenceOccurrence(o, UNCLAIMED_TIER));
   const unclaimedFrame = {
     key: 'unclaimed',
     label: 'Unclaimed',
@@ -651,13 +915,12 @@ async function main() {
          are still the frame's own, and the settled rule is unchanged: the
          meta counts what the table draws. */
       cap: { key: 'entry → worst · Δ', denominator: wide.population.denominator, window: windowLabel },
-      /* The band's caveat, stated on the surface because a control that looks
-         like a cohort filter beside a canvas that is never cohort-filtered is
-         the exact disagreement the #31 ruling exists to prevent. */
-      bandCaveat: `${unclaimedRows.length} of ${wide.population.denominator} lows in ${windowLabel}. The band scopes this list only — `
-        + 'the comparison beside it always draws all three.',
-      /* The mirror of a factor frame's residue: what is NOT in this table. */
-      residue: `${claimed} claimed by a finding`,
+      /* ROUND 9, FINDING 8 — the fact, on the band's own line. See the factor
+         frame above for why the two instruction sentences are gone. */
+      bandMeta: `${unclaimedRows.length} of ${wide.population.denominator} lows in ${windowLabel}`,
+      /* The mirror of a factor frame's residue: what is NOT in this table. One
+         part, because this frame has one group and nothing else to account for. */
+      residueParts: { claimed },
       groups: [{
         key: 'unclaimed',
         lead: UNCLAIMED_LEAD,
@@ -791,6 +1054,23 @@ async function main() {
          rows are the bare destinations — and the row label is byte-identical to
          the crumb leaf it opens (`Findings › Lows`), so the routing cannot
          change vocabulary mid-hop. */
+      /* ROUND 9, FINDING 11 — WHICH ROW OPENS WHICH RANKING TIER, keyed by row
+         id so surface.js sets the eyebrow in front of the painted node without
+         counting anything. Derived above from the projection's own register and
+         priority; no threshold is invented. */
+      tiers: rankingTiers(rows),
+      /* ROUND 9, FINDING 11 — THE TAIL'S SECTION CAP. The shipped painter drops
+         `TAIL_NOTE` between two rows as a bare line of body-weight prose with no
+         eyebrow and no rule, so it reads as a caption for whichever row the
+         reader's eye lands on. CONTEXT.md already names that section — Watching,
+         "the subordinate Audit section for held and still-collecting tuning
+         reads that are not available for a decision" — so it becomes a ledger
+         rule at the section register, and the shipped sentence becomes its
+         right-hand meta, which is the slot on that rule where an explanatory
+         clause belongs. The sentence is the shipped export, not a rewrite. */
+      watching: { cap: 'Watching', meta: TAIL_NOTE },
+      /* ROUND 9, FINDING 19 — the clause set in front of a habit row's counts. */
+      habitLead: HABIT_LEAD,
       populationCap: 'All events',
       populationCapMeta: windowLabel,
       populationRows: [
@@ -840,12 +1120,27 @@ async function main() {
        sentence, reworded to stand alone now that it no longer has a title line
        above it to lean on. DEVIATION from watched-change-dock.js's exported
        strings, named here and in the report. */
+    /* ROUND 9, FINDING 15 — ONE STRING, BECAUSE THERE IS ONE STATE. Round 8
+       said `Nothing staged` at the queue and `No trial or focus active — stage a
+       change from a finding to start one.` at a case file, and nothing about the
+       world differs between those two screens: the dock reports what is staged,
+       and at both levels the answer is nothing. The finding scene's version also
+       carried a prose em dash, which DESIGN.md rule 1 forbids outright. One line
+       for the one state, with the invitation as its second clause. */
     dock: {
       kind: KIND.idle,
-      queue: 'Nothing staged',
-      population: 'Nothing staged',
-      finding: 'No trial or focus active — stage a change from a finding to start one.',
+      idle: 'Nothing staged · stage a change from a finding to start a trial',
     },
+
+    /* ---------- ROUND 9, FINDING 1: THE FOOTER RAIL'S TWO WORDS ----------
+       DESIGN.md rule 8 — user copy uses `Correction factor` and `Carb ratio`;
+       `ISF` and `I:C` are reserved for engine code and technical documentation.
+       The rail is lifted from the running app's DOM (chrome.extracted.html, which
+       harness.mjs rewrites on every run), so the respelling is applied by
+       surface.js at injection rather than by editing an extracted artifact that
+       the next harness run would overwrite. Reported as an app-side voice defect
+       the mock is standing in front of, not as something the mock fixed. */
+    footerVoice: FOOTER_VOICE,
 
     /* ---------- ROUND 7, ITEM 1: THE INSTRUMENT ROW ----------
        The shipped `View` and `Window` groups, extracted above. The mock does not
@@ -953,9 +1248,17 @@ async function main() {
            same derivation round 2 built; only the shape changes. */
         coincidence: {
           band: `Busiest two-hour band ${band} · ${clock.peak.n} of ${clock.total}`,
+          /* ROUND 9, FINDING 1 — THE TWO ROUTES SPEAK THE SAME REGISTER AS THE
+             QUEUE. They were `00:00 basal slot · …` and `Morning I:C block
+             00:00–12:00 · …`: a second spelling of a basal slot two levels below
+             the queue's, and the engine's `I:C`, which DESIGN.md rule 8 reserves
+             for engine code and technical documentation while user copy says
+             carb ratio. One slot format on this surface (`Basal · 00:00`), and
+             the parameter named the way the queue row that opens it names it.
+             Every value is still the shipped lane's own — only the wording. */
           routes: [
-            { label: `${cell.label} basal slot · ${VERDICT_KEY[cell.verdict]} ›` },
-            { label: `${block.label} I:C block ${block.span} · ${VERDICT_KEY[block.verdict]} ›` },
+            { label: `Basal · ${cell.label} · ${VERDICT_KEY[cell.verdict]} ›` },
+            { label: `${block.label} carb-ratio block ${block.span} · ${VERDICT_KEY[block.verdict]} ›` },
           ],
         },
         occurrences: {
@@ -970,17 +1273,18 @@ async function main() {
                are still the frame's own, and the settled rule is unchanged: the
                meta counts what the table draws. */
           cap: { key: 'entry → worst · Δ', denominator: lens.population.denominator, window: windowLabel },
-          /* The band's caveat, stated on the surface because a control that looks
-               like a cohort filter beside a canvas that is never cohort-filtered is
-               the exact disagreement the #31 ruling exists to prevent. */
-          bandCaveat: `${firedOccurrences.length} of ${lens.population.denominator} lows in ${windowLabel}. The band scopes this list only — `
-              + 'the comparison beside it always draws all three.',
+          /* ROUND 9, FINDING 8 — the fact, on the band's own line. */
+          bandMeta: `${lens.occurrences.length} of ${lens.population.denominator} lows in ${windowLabel}`,
           /* ROUND 5, BLOCK 3 + 7, TRANSFERRED. The judgment block's trailing
              sentence carried two counts the tally has no cell for; they are
              residue, and residue now has one form — an unfilled line after the
              last row. The sentence is deleted, not moved twice. */
-          residue: `${lens.population.counts.another_factor} claimed by another factor`
-            + ` · ${lens.population.counts.excluded} not comparable`,
+          /* ROUND 9, FINDING 13 — parts, closed against the denominator at paint
+             time. See the factor frame above. */
+          residueParts: {
+            another_factor: lens.population.counts.another_factor,
+            excluded: lens.population.counts.excluded,
+          },
           /* One group, unchanged from round 2 — the finding's own title and its
              evidence tier. ROUND 5, BLOCK 5 transfers only the count's FORM: a
              bare number, printed by the renderer only where a frame draws more
@@ -999,15 +1303,27 @@ async function main() {
                header prints. Its `, <tier>, not confirmed` tail is the shipped
                painter's, derived there from the occurrences themselves; this
                build no longer assembles the header string. */
-            cause: factorLabel[FACTOR],
+            /* FINDING 9 — nothing precedes the partition word. */
+            cause: null,
             count: firedOccurrences.length,
-            occurrences: firedOccurrences.map(evidenceOccurrence),
+            occurrences: firedOccurrences.map((o) => evidenceOccurrence(o)),
           }],
         },
         canvasHead: { title: 'Low response comparison', context: 'excursion nadir · −5 h to +2 h' },
         canvas: canvasFor(lens),
-        /* FORM 3 — the finding's own events, on the clock. */
-        clock: { occurrences: firedOccurrences.map((o) => clockDot(o)) },
+        /* ROUND 9, FINDING 4 — THE CASE FILE DRAWS ALL THREE VERDICTS, exactly
+           as the population frame does. Round 8 plotted the finding's SEVEN
+           fired events and nothing else, one line under a judgment block reading
+           `7 Rule matched · 4 Near rule · 6 Rule did not match` — so the reader
+           was told seventeen lows were in play and shown seven, at the one level
+           where the near-misses are the whole argument.
+           The amendment settles it in its own words: "there is no cohort filter
+           anywhere — the evidence canvas always draws all three states (event
+           fired / near miss / not owned)." It is the lens's full occurrence set
+           now, each dot carrying its own verdict, and `markCanvas` accents the
+           finding's matched set against the other two. The case file differs
+           from the population frame by EMPHASIS, never by population. */
+        clock: { occurrences: lens.occurrences.map((o) => clockDot(o)) },
         traces: traceMap(capture, fired.occurrence_ids, coords),
       },
 
@@ -1043,7 +1359,13 @@ async function main() {
         segments,
         /* The expanded list's own header (wireframe G): what is being chosen,
            how many there are, and where. */
-        factorListHead: `Factor · ${segments.length} in Lows`,
+        /* ROUND 9, FINDING 9 — `FACTOR · 3 IN LOWS` is retired. CONTEXT.md's **Lever**
+       entry lists "factor" under _Avoid_ outright, so the surface's own control
+       label was contradicting the glossary while the column below it spent three
+       more nouns on the same idea. Read as English rather than as a field name,
+       which is also what drops the `·` the old form needed to hold two halves
+       together. */
+    factorListHead: `${segments.length} levers in Lows`,
         coincidence: null,
         defaultFactor: claimOrder[0],
         frames,

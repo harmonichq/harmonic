@@ -68,7 +68,7 @@
       "noun": "meal runs",
       "run_days": 90
      },
-     "title": "I:C 12:00 to 24:00 · lower"
+     "title": "Carb ratio · 12:00–24:00 · lower"
     },
     {
      "annotation": "a step up, limited to 20% above the set rate",
@@ -126,10 +126,10 @@
      },
      "support": {
       "n": 19,
-      "noun": "clean nights",
+      "noun": "nights of steady data",
       "run_days": 30
      },
-     "title": "Basal 00:30 to 01:30 · raise"
+     "title": "Basal · 00:30–01:30 · raise"
     },
     {
      "annotation": "a step up, limited to 20% above the set rate",
@@ -180,10 +180,10 @@
      },
      "support": {
       "n": 22,
-      "noun": "clean nights",
+      "noun": "nights of steady data",
       "run_days": 30
      },
-     "title": "Basal 05:30 · raise"
+     "title": "Basal · 05:30 · raise"
     },
     {
      "annotation": null,
@@ -301,6 +301,29 @@
   },
   "root": "Findings",
   "meta": "6 findings · 30 days",
+  "tiers": {
+   "ic:720": {
+    "tier": "decide_now",
+    "word": "Decide now"
+   },
+   "basal:30-90": {
+    "tier": "next_in_line",
+    "word": "Next in line"
+   },
+   "finding:over_treated_low": {
+    "tier": "worth_a_look",
+    "word": "Worth a look"
+   },
+   "finding:correction_stacking": {
+    "tier": "noted",
+    "word": "noted"
+   }
+  },
+  "watching": {
+   "cap": "Watching",
+   "meta": "Not recurring often enough to rank yet."
+  },
+  "habitLead": "Recurs in ",
   "populationCap": "All events",
   "populationCapMeta": "Jul 13–Aug 11",
   "populationRows": [
@@ -2684,10 +2707,18 @@
  },
  "dock": {
   "kind": "Nothing being watched",
-  "queue": "Nothing staged",
-  "population": "Nothing staged",
-  "finding": "No trial or focus active — stage a change from a finding to start one."
+  "idle": "Nothing staged · stage a change from a finding to start a trial"
  },
+ "footerVoice": [
+  [
+   "ISF",
+   "Correction factor"
+  ],
+  [
+   "I:C",
+   "Carb ratio"
+  ]
+ ],
  "toolbar": {
   "view": {
    "label": "View",
@@ -3133,19 +3164,19 @@
      {
       "key": "fired",
       "n": 7,
-      "label": "Rule matched",
+      "label": "Meets criteria",
       "support": "Supported"
      },
      {
       "key": "near_rule",
       "n": 4,
-      "label": "Near rule",
+      "label": "Borderline",
       "support": "Limited"
      },
      {
       "key": "neutral",
       "n": 6,
-      "label": "Rule did not match",
+      "label": "Does not meet",
       "support": "Supported"
      }
     ]
@@ -3154,10 +3185,10 @@
     "band": "Busiest two-hour band 00:00–02:00 · 1 of 7",
     "routes": [
      {
-      "label": "00:00 basal slot · holds at current ›"
+      "label": "Basal · 00:00 · holds at current ›"
      },
      {
-      "label": "Morning I:C block 00:00–12:00 · holds at current ›"
+      "label": "Morning carb-ratio block 00:00–12:00 · holds at current ›"
      }
     ]
    },
@@ -3167,13 +3198,16 @@
      "denominator": 20,
      "window": "Jul 13–Aug 11"
     },
-    "bandCaveat": "7 of 20 lows in Jul 13–Aug 11. The band scopes this list only — the comparison beside it always draws all three.",
-    "residue": "1 claimed by another factor · 2 not comparable",
+    "bandMeta": "17 of 20 lows in Jul 13–Aug 11",
+    "residueParts": {
+     "another_factor": 1,
+     "excluded": 2
+    },
     "groups": [
      {
       "key": "fired",
-      "lead": "Rule matched",
-      "cause": "Over-treated low",
+      "lead": "Meets criteria",
+      "cause": null,
       "count": 7,
       "occurrences": [
        {
@@ -3187,7 +3221,7 @@
          {
           "classifier": "over_treated_low",
           "matched": true,
-          "evidence_tier": "observed",
+          "evidence_tier": "Meets criteria",
           "detail": "Over-treated low matched the current rule."
          }
         ]
@@ -3203,7 +3237,7 @@
          {
           "classifier": "over_treated_low",
           "matched": true,
-          "evidence_tier": "observed",
+          "evidence_tier": "Meets criteria",
           "detail": "Over-treated low matched the current rule."
          }
         ]
@@ -3219,7 +3253,7 @@
          {
           "classifier": "over_treated_low",
           "matched": true,
-          "evidence_tier": "observed",
+          "evidence_tier": "Meets criteria",
           "detail": "Over-treated low matched the current rule."
          }
         ]
@@ -3235,7 +3269,7 @@
          {
           "classifier": "over_treated_low",
           "matched": true,
-          "evidence_tier": "observed",
+          "evidence_tier": "Meets criteria",
           "detail": "Over-treated low matched the current rule."
          }
         ]
@@ -3251,7 +3285,7 @@
          {
           "classifier": "over_treated_low",
           "matched": true,
-          "evidence_tier": "observed",
+          "evidence_tier": "Meets criteria",
           "detail": "Over-treated low matched the current rule."
          }
         ]
@@ -3267,7 +3301,7 @@
          {
           "classifier": "over_treated_low",
           "matched": true,
-          "evidence_tier": "observed",
+          "evidence_tier": "Meets criteria",
           "detail": "Over-treated low matched the current rule."
          }
         ]
@@ -3283,7 +3317,7 @@
          {
           "classifier": "over_treated_low",
           "matched": true,
-          "evidence_tier": "observed",
+          "evidence_tier": "Meets criteria",
           "detail": "Over-treated low matched the current rule."
          }
         ]
@@ -3317,13 +3351,83 @@
      "lows-synthetic-16": "neutral",
      "lows-synthetic-17": "neutral"
     },
+    "dateOf": {
+     "lows-synthetic-1": {
+      "label": "Aug 1",
+      "detail": "01:00"
+     },
+     "lows-synthetic-2": {
+      "label": "Aug 2",
+      "detail": "07:00"
+     },
+     "lows-synthetic-3": {
+      "label": "Aug 3",
+      "detail": "13:00"
+     },
+     "lows-synthetic-4": {
+      "label": "Aug 4",
+      "detail": "19:00"
+     },
+     "lows-synthetic-5": {
+      "label": "Aug 5",
+      "detail": "04:00"
+     },
+     "lows-synthetic-6": {
+      "label": "Aug 6",
+      "detail": "10:00"
+     },
+     "lows-synthetic-7": {
+      "label": "Aug 7",
+      "detail": "16:00"
+     },
+     "lows-synthetic-8": {
+      "label": "Aug 8",
+      "detail": "22:00"
+     },
+     "lows-synthetic-9": {
+      "label": "Aug 9",
+      "detail": "06:00"
+     },
+     "lows-synthetic-10": {
+      "label": "Aug 10",
+      "detail": "12:00"
+     },
+     "lows-synthetic-11": {
+      "label": "Aug 11",
+      "detail": "18:00"
+     },
+     "lows-synthetic-12": {
+      "label": "Aug 12",
+      "detail": "02:00"
+     },
+     "lows-synthetic-13": {
+      "label": "Aug 13",
+      "detail": "08:00"
+     },
+     "lows-synthetic-14": {
+      "label": "Aug 14",
+      "detail": "14:00"
+     },
+     "lows-synthetic-15": {
+      "label": "Aug 15",
+      "detail": "20:00"
+     },
+     "lows-synthetic-16": {
+      "label": "Aug 16",
+      "detail": "05:00"
+     },
+     "lows-synthetic-17": {
+      "label": "Aug 17",
+      "detail": "11:00"
+     }
+    },
     "context": "excursion nadir · −5 h to +2 h",
     "alignmentWindow": [
      -300,
      120
     ],
     "axisAnchor": "low",
-    "nearRuleNote": "Disclosure only — never enters Priority, a suggestion, or Plan.",
+    "nearRuleNote": "Disclosure only. Never enters Priority, a suggestion, or Plan.",
     "cohortOrder": [
      "fired",
      "near_rule",
@@ -3332,11 +3436,11 @@
     "cohorts": {
      "fired": {
       "key": "fired",
-      "label": "Rule matched",
+      "label": "Meets criteria",
       "support": "supported",
       "supportWord": "Supported",
       "routed_count": 7,
-      "legendDetail": "7 events · 76 supported · 7 limited · 2 withheld points",
+      "legendDetail": "7 events",
       "points": [
        {
         "minute": -300,
@@ -4022,11 +4126,11 @@
      },
      "near_rule": {
       "key": "near_rule",
-      "label": "Near rule",
+      "label": "Borderline",
       "support": "limited",
       "supportWord": "Limited",
       "routed_count": 4,
-      "legendDetail": "4 events · 85 limited points",
+      "legendDetail": "4 events",
       "points": [
        {
         "minute": -300,
@@ -4712,11 +4816,11 @@
      },
      "neutral": {
       "key": "neutral",
-      "label": "Rule did not match",
+      "label": "Does not meet",
       "support": "supported",
       "supportWord": "Supported",
       "routed_count": 6,
-      "legendDetail": "6 events · 78 supported · 6 limited · 1 withheld points",
+      "legendDetail": "6 events",
       "points": [
        {
         "minute": -300,
@@ -5409,64 +5513,137 @@
       "id": "lows-synthetic-1",
       "t": "2026-08-01 01:00:00",
       "date": "2026-08-01",
-      "bg": 68,
       "worst_bg": 58,
-      "cause_title": "Rule matched",
+      "cause_title": "Meets criteria",
       "cohort": "fired"
      },
      {
       "id": "lows-synthetic-2",
       "t": "2026-08-02 07:00:00",
       "date": "2026-08-02",
-      "bg": 69,
       "worst_bg": 59,
-      "cause_title": "Rule matched",
+      "cause_title": "Meets criteria",
       "cohort": "fired"
      },
      {
       "id": "lows-synthetic-3",
       "t": "2026-08-03 13:00:00",
       "date": "2026-08-03",
-      "bg": 70,
       "worst_bg": 60,
-      "cause_title": "Rule matched",
+      "cause_title": "Meets criteria",
       "cohort": "fired"
      },
      {
       "id": "lows-synthetic-4",
       "t": "2026-08-04 19:00:00",
       "date": "2026-08-04",
-      "bg": 68,
       "worst_bg": 61,
-      "cause_title": "Rule matched",
+      "cause_title": "Meets criteria",
       "cohort": "fired"
      },
      {
       "id": "lows-synthetic-5",
       "t": "2026-08-05 04:00:00",
       "date": "2026-08-05",
-      "bg": 69,
       "worst_bg": 58,
-      "cause_title": "Rule matched",
+      "cause_title": "Meets criteria",
       "cohort": "fired"
      },
      {
       "id": "lows-synthetic-6",
       "t": "2026-08-06 10:00:00",
       "date": "2026-08-06",
-      "bg": 70,
       "worst_bg": 59,
-      "cause_title": "Rule matched",
+      "cause_title": "Meets criteria",
       "cohort": "fired"
      },
      {
       "id": "lows-synthetic-7",
       "t": "2026-08-07 16:00:00",
       "date": "2026-08-07",
-      "bg": 68,
       "worst_bg": 60,
-      "cause_title": "Rule matched",
+      "cause_title": "Meets criteria",
       "cohort": "fired"
+     },
+     {
+      "id": "lows-synthetic-8",
+      "t": "2026-08-08 22:00:00",
+      "date": "2026-08-08",
+      "worst_bg": 61,
+      "cause_title": "Borderline",
+      "cohort": "near_rule"
+     },
+     {
+      "id": "lows-synthetic-9",
+      "t": "2026-08-09 06:00:00",
+      "date": "2026-08-09",
+      "worst_bg": 58,
+      "cause_title": "Borderline",
+      "cohort": "near_rule"
+     },
+     {
+      "id": "lows-synthetic-10",
+      "t": "2026-08-10 12:00:00",
+      "date": "2026-08-10",
+      "worst_bg": 59,
+      "cause_title": "Borderline",
+      "cohort": "near_rule"
+     },
+     {
+      "id": "lows-synthetic-11",
+      "t": "2026-08-11 18:00:00",
+      "date": "2026-08-11",
+      "worst_bg": 60,
+      "cause_title": "Borderline",
+      "cohort": "near_rule"
+     },
+     {
+      "id": "lows-synthetic-12",
+      "t": "2026-08-12 02:00:00",
+      "date": "2026-08-12",
+      "worst_bg": 61,
+      "cause_title": "Does not meet",
+      "cohort": "neutral"
+     },
+     {
+      "id": "lows-synthetic-13",
+      "t": "2026-08-13 08:00:00",
+      "date": "2026-08-13",
+      "worst_bg": 58,
+      "cause_title": "Does not meet",
+      "cohort": "neutral"
+     },
+     {
+      "id": "lows-synthetic-14",
+      "t": "2026-08-14 14:00:00",
+      "date": "2026-08-14",
+      "worst_bg": 59,
+      "cause_title": "Does not meet",
+      "cohort": "neutral"
+     },
+     {
+      "id": "lows-synthetic-15",
+      "t": "2026-08-15 20:00:00",
+      "date": "2026-08-15",
+      "worst_bg": 60,
+      "cause_title": "Does not meet",
+      "cohort": "neutral"
+     },
+     {
+      "id": "lows-synthetic-16",
+      "t": "2026-08-16 05:00:00",
+      "date": "2026-08-16",
+      "worst_bg": 61,
+      "cause_title": "Does not meet",
+      "cohort": "neutral"
+     },
+     {
+      "id": "lows-synthetic-17",
+      "t": "2026-08-17 11:00:00",
+      "date": "2026-08-17",
+      "worst_bg": 58,
+      "cause_title": "Does not meet",
+      "cohort": "neutral"
      }
     ]
    },
@@ -7705,7 +7882,7 @@
      "count": 10
     }
    ],
-   "factorListHead": "Factor · 3 in Lows",
+   "factorListHead": "3 levers in Lows",
    "coincidence": null,
    "defaultFactor": "over_treated_low",
    "frames": {
@@ -7734,13 +7911,83 @@
        "lows-synthetic-16": "neutral",
        "lows-synthetic-17": "neutral"
       },
+      "dateOf": {
+       "lows-synthetic-1": {
+        "label": "Aug 1",
+        "detail": "01:00"
+       },
+       "lows-synthetic-2": {
+        "label": "Aug 2",
+        "detail": "07:00"
+       },
+       "lows-synthetic-3": {
+        "label": "Aug 3",
+        "detail": "13:00"
+       },
+       "lows-synthetic-4": {
+        "label": "Aug 4",
+        "detail": "19:00"
+       },
+       "lows-synthetic-5": {
+        "label": "Aug 5",
+        "detail": "04:00"
+       },
+       "lows-synthetic-6": {
+        "label": "Aug 6",
+        "detail": "10:00"
+       },
+       "lows-synthetic-7": {
+        "label": "Aug 7",
+        "detail": "16:00"
+       },
+       "lows-synthetic-8": {
+        "label": "Aug 8",
+        "detail": "22:00"
+       },
+       "lows-synthetic-9": {
+        "label": "Aug 9",
+        "detail": "06:00"
+       },
+       "lows-synthetic-10": {
+        "label": "Aug 10",
+        "detail": "12:00"
+       },
+       "lows-synthetic-11": {
+        "label": "Aug 11",
+        "detail": "18:00"
+       },
+       "lows-synthetic-12": {
+        "label": "Aug 12",
+        "detail": "02:00"
+       },
+       "lows-synthetic-13": {
+        "label": "Aug 13",
+        "detail": "08:00"
+       },
+       "lows-synthetic-14": {
+        "label": "Aug 14",
+        "detail": "14:00"
+       },
+       "lows-synthetic-15": {
+        "label": "Aug 15",
+        "detail": "20:00"
+       },
+       "lows-synthetic-16": {
+        "label": "Aug 16",
+        "detail": "05:00"
+       },
+       "lows-synthetic-17": {
+        "label": "Aug 17",
+        "detail": "11:00"
+       }
+      },
       "context": "excursion nadir · −5 h to +2 h",
       "alignmentWindow": [
        -300,
        120
       ],
       "axisAnchor": "low",
-      "nearRuleNote": "Disclosure only — never enters Priority, a suggestion, or Plan.",
+      "nearRuleNote": "Disclosure only. Never enters Priority, a suggestion, or Plan.",
       "cohortOrder": [
        "fired",
        "near_rule",
@@ -7749,11 +7996,11 @@
       "cohorts": {
        "fired": {
         "key": "fired",
-        "label": "Rule matched",
+        "label": "Meets criteria",
         "support": "supported",
         "supportWord": "Supported",
         "routed_count": 7,
-        "legendDetail": "7 events · 76 supported · 7 limited · 2 withheld points",
+        "legendDetail": "7 events",
         "points": [
          {
           "minute": -300,
@@ -8439,11 +8686,11 @@
        },
        "near_rule": {
         "key": "near_rule",
-        "label": "Near rule",
+        "label": "Borderline",
         "support": "limited",
         "supportWord": "Limited",
         "routed_count": 4,
-        "legendDetail": "4 events · 85 limited points",
+        "legendDetail": "4 events",
         "points": [
          {
           "minute": -300,
@@ -9129,11 +9376,11 @@
        },
        "neutral": {
         "key": "neutral",
-        "label": "Rule did not match",
+        "label": "Does not meet",
         "support": "supported",
         "supportWord": "Supported",
         "routed_count": 6,
-        "legendDetail": "6 events · 78 supported · 6 limited · 1 withheld points",
+        "legendDetail": "6 events",
         "points": [
          {
           "minute": -300,
@@ -9826,153 +10073,136 @@
         "id": "lows-synthetic-1",
         "t": "2026-08-01 01:00:00",
         "date": "2026-08-01",
-        "bg": 68,
         "worst_bg": 58,
-        "cause_title": "Rule matched",
+        "cause_title": "Meets criteria",
         "cohort": "fired"
        },
        {
         "id": "lows-synthetic-2",
         "t": "2026-08-02 07:00:00",
         "date": "2026-08-02",
-        "bg": 69,
         "worst_bg": 59,
-        "cause_title": "Rule matched",
+        "cause_title": "Meets criteria",
         "cohort": "fired"
        },
        {
         "id": "lows-synthetic-3",
         "t": "2026-08-03 13:00:00",
         "date": "2026-08-03",
-        "bg": 70,
         "worst_bg": 60,
-        "cause_title": "Rule matched",
+        "cause_title": "Meets criteria",
         "cohort": "fired"
        },
        {
         "id": "lows-synthetic-4",
         "t": "2026-08-04 19:00:00",
         "date": "2026-08-04",
-        "bg": 68,
         "worst_bg": 61,
-        "cause_title": "Rule matched",
+        "cause_title": "Meets criteria",
         "cohort": "fired"
        },
        {
         "id": "lows-synthetic-5",
         "t": "2026-08-05 04:00:00",
         "date": "2026-08-05",
-        "bg": 69,
         "worst_bg": 58,
-        "cause_title": "Rule matched",
+        "cause_title": "Meets criteria",
         "cohort": "fired"
        },
        {
         "id": "lows-synthetic-6",
         "t": "2026-08-06 10:00:00",
         "date": "2026-08-06",
-        "bg": 70,
         "worst_bg": 59,
-        "cause_title": "Rule matched",
+        "cause_title": "Meets criteria",
         "cohort": "fired"
        },
        {
         "id": "lows-synthetic-7",
         "t": "2026-08-07 16:00:00",
         "date": "2026-08-07",
-        "bg": 68,
         "worst_bg": 60,
-        "cause_title": "Rule matched",
+        "cause_title": "Meets criteria",
         "cohort": "fired"
        },
        {
         "id": "lows-synthetic-8",
         "t": "2026-08-08 22:00:00",
         "date": "2026-08-08",
-        "bg": 69,
         "worst_bg": 61,
-        "cause_title": "Near rule",
+        "cause_title": "Borderline",
         "cohort": "near_rule"
        },
        {
         "id": "lows-synthetic-9",
         "t": "2026-08-09 06:00:00",
         "date": "2026-08-09",
-        "bg": 70,
         "worst_bg": 58,
-        "cause_title": "Near rule",
+        "cause_title": "Borderline",
         "cohort": "near_rule"
        },
        {
         "id": "lows-synthetic-10",
         "t": "2026-08-10 12:00:00",
         "date": "2026-08-10",
-        "bg": 68,
         "worst_bg": 59,
-        "cause_title": "Near rule",
+        "cause_title": "Borderline",
         "cohort": "near_rule"
        },
        {
         "id": "lows-synthetic-11",
         "t": "2026-08-11 18:00:00",
         "date": "2026-08-11",
-        "bg": 69,
         "worst_bg": 60,
-        "cause_title": "Near rule",
+        "cause_title": "Borderline",
         "cohort": "near_rule"
        },
        {
         "id": "lows-synthetic-12",
         "t": "2026-08-12 02:00:00",
         "date": "2026-08-12",
-        "bg": 70,
         "worst_bg": 61,
-        "cause_title": "Rule did not match",
+        "cause_title": "Does not meet",
         "cohort": "neutral"
        },
        {
         "id": "lows-synthetic-13",
         "t": "2026-08-13 08:00:00",
         "date": "2026-08-13",
-        "bg": 68,
         "worst_bg": 58,
-        "cause_title": "Rule did not match",
+        "cause_title": "Does not meet",
         "cohort": "neutral"
        },
        {
         "id": "lows-synthetic-14",
         "t": "2026-08-14 14:00:00",
         "date": "2026-08-14",
-        "bg": 69,
         "worst_bg": 59,
-        "cause_title": "Rule did not match",
+        "cause_title": "Does not meet",
         "cohort": "neutral"
        },
        {
         "id": "lows-synthetic-15",
         "t": "2026-08-15 20:00:00",
         "date": "2026-08-15",
-        "bg": 70,
         "worst_bg": 60,
-        "cause_title": "Rule did not match",
+        "cause_title": "Does not meet",
         "cohort": "neutral"
        },
        {
         "id": "lows-synthetic-16",
         "t": "2026-08-16 05:00:00",
         "date": "2026-08-16",
-        "bg": 68,
         "worst_bg": 61,
-        "cause_title": "Rule did not match",
+        "cause_title": "Does not meet",
         "cohort": "neutral"
        },
        {
         "id": "lows-synthetic-17",
         "t": "2026-08-17 11:00:00",
         "date": "2026-08-17",
-        "bg": 69,
         "worst_bg": 58,
-        "cause_title": "Rule did not match",
+        "cause_title": "Does not meet",
         "cohort": "neutral"
        }
       ]
@@ -9987,13 +10217,16 @@
        "denominator": 20,
        "window": "Jul 13–Aug 11"
       },
-      "bandCaveat": "17 of 20 lows in Jul 13–Aug 11. The band scopes this list only — the comparison beside it always draws all three.",
-      "residue": "1 claimed by another factor · 2 not comparable",
+      "bandMeta": "17 of 20 lows in Jul 13–Aug 11",
+      "residueParts": {
+       "another_factor": 1,
+       "excluded": 2
+      },
       "groups": [
        {
         "key": "fired",
-        "lead": "Rule matched",
-        "cause": "Over-treated low",
+        "lead": "Meets criteria",
+        "cause": null,
         "occurrences": [
          {
           "id": "lows-synthetic-1",
@@ -10006,7 +10239,7 @@
            {
             "classifier": "over_treated_low",
             "matched": true,
-            "evidence_tier": "observed",
+            "evidence_tier": "Meets criteria",
             "detail": "Over-treated low matched the current rule."
            }
           ]
@@ -10022,7 +10255,7 @@
            {
             "classifier": "over_treated_low",
             "matched": true,
-            "evidence_tier": "observed",
+            "evidence_tier": "Meets criteria",
             "detail": "Over-treated low matched the current rule."
            }
           ]
@@ -10038,7 +10271,7 @@
            {
             "classifier": "over_treated_low",
             "matched": true,
-            "evidence_tier": "observed",
+            "evidence_tier": "Meets criteria",
             "detail": "Over-treated low matched the current rule."
            }
           ]
@@ -10054,7 +10287,7 @@
            {
             "classifier": "over_treated_low",
             "matched": true,
-            "evidence_tier": "observed",
+            "evidence_tier": "Meets criteria",
             "detail": "Over-treated low matched the current rule."
            }
           ]
@@ -10070,7 +10303,7 @@
            {
             "classifier": "over_treated_low",
             "matched": true,
-            "evidence_tier": "observed",
+            "evidence_tier": "Meets criteria",
             "detail": "Over-treated low matched the current rule."
            }
           ]
@@ -10086,7 +10319,7 @@
            {
             "classifier": "over_treated_low",
             "matched": true,
-            "evidence_tier": "observed",
+            "evidence_tier": "Meets criteria",
             "detail": "Over-treated low matched the current rule."
            }
           ]
@@ -10102,7 +10335,7 @@
            {
             "classifier": "over_treated_low",
             "matched": true,
-            "evidence_tier": "observed",
+            "evidence_tier": "Meets criteria",
             "detail": "Over-treated low matched the current rule."
            }
           ]
@@ -10112,8 +10345,8 @@
        },
        {
         "key": "near_rule",
-        "lead": "Near rule",
-        "cause": "Over-treated low, disclosure only",
+        "lead": "Borderline",
+        "cause": null,
         "occurrences": [
          {
           "id": "lows-synthetic-8",
@@ -10125,8 +10358,8 @@
           "verdicts": [
            {
             "classifier": "over_treated_low",
-            "matched": false,
-            "evidence_tier": "observed",
+            "matched": true,
+            "evidence_tier": "Borderline",
             "detail": "Over-treated low did not match the current rule."
            }
           ]
@@ -10141,8 +10374,8 @@
           "verdicts": [
            {
             "classifier": "over_treated_low",
-            "matched": false,
-            "evidence_tier": "observed",
+            "matched": true,
+            "evidence_tier": "Borderline",
             "detail": "Over-treated low did not match the current rule."
            }
           ]
@@ -10157,8 +10390,8 @@
           "verdicts": [
            {
             "classifier": "over_treated_low",
-            "matched": false,
-            "evidence_tier": "observed",
+            "matched": true,
+            "evidence_tier": "Borderline",
             "detail": "Over-treated low did not match the current rule."
            }
           ]
@@ -10173,8 +10406,8 @@
           "verdicts": [
            {
             "classifier": "over_treated_low",
-            "matched": false,
-            "evidence_tier": "observed",
+            "matched": true,
+            "evidence_tier": "Borderline",
             "detail": "Over-treated low did not match the current rule."
            }
           ]
@@ -10184,8 +10417,8 @@
        },
        {
         "key": "neutral",
-        "lead": "Rule did not match",
-        "cause": "matched no factor’s rule",
+        "lead": "Does not meet",
+        "cause": null,
         "occurrences": [
          {
           "id": "lows-synthetic-12",
@@ -10197,8 +10430,8 @@
           "verdicts": [
            {
             "classifier": "over_treated_low",
-            "matched": false,
-            "evidence_tier": "observed",
+            "matched": true,
+            "evidence_tier": "Does not meet",
             "detail": "Over-treated low did not match the current rule."
            }
           ]
@@ -10213,8 +10446,8 @@
           "verdicts": [
            {
             "classifier": "over_treated_low",
-            "matched": false,
-            "evidence_tier": "observed",
+            "matched": true,
+            "evidence_tier": "Does not meet",
             "detail": "Over-treated low did not match the current rule."
            }
           ]
@@ -10229,8 +10462,8 @@
           "verdicts": [
            {
             "classifier": "over_treated_low",
-            "matched": false,
-            "evidence_tier": "observed",
+            "matched": true,
+            "evidence_tier": "Does not meet",
             "detail": "Over-treated low did not match the current rule."
            }
           ]
@@ -10245,8 +10478,8 @@
           "verdicts": [
            {
             "classifier": "over_treated_low",
-            "matched": false,
-            "evidence_tier": "observed",
+            "matched": true,
+            "evidence_tier": "Does not meet",
             "detail": "Over-treated low did not match the current rule."
            }
           ]
@@ -10261,8 +10494,8 @@
           "verdicts": [
            {
             "classifier": "over_treated_low",
-            "matched": false,
-            "evidence_tier": "observed",
+            "matched": true,
+            "evidence_tier": "Does not meet",
             "detail": "Over-treated low did not match the current rule."
            }
           ]
@@ -10277,8 +10510,8 @@
           "verdicts": [
            {
             "classifier": "over_treated_low",
-            "matched": false,
-            "evidence_tier": "observed",
+            "matched": true,
+            "evidence_tier": "Does not meet",
             "detail": "Over-treated low did not match the current rule."
            }
           ]
@@ -10304,6 +10537,36 @@
        "lows-synthetic-16": "neutral",
        "lows-synthetic-17": "neutral"
       },
+      "dateOf": {
+       "lows-synthetic-18": {
+        "label": "Aug 18",
+        "detail": "17:00"
+       },
+       "lows-synthetic-12": {
+        "label": "Aug 12",
+        "detail": "02:00"
+       },
+       "lows-synthetic-13": {
+        "label": "Aug 13",
+        "detail": "08:00"
+       },
+       "lows-synthetic-14": {
+        "label": "Aug 14",
+        "detail": "14:00"
+       },
+       "lows-synthetic-15": {
+        "label": "Aug 15",
+        "detail": "20:00"
+       },
+       "lows-synthetic-16": {
+        "label": "Aug 16",
+        "detail": "05:00"
+       },
+       "lows-synthetic-17": {
+        "label": "Aug 17",
+        "detail": "11:00"
+       }
+      },
       "context": "excursion nadir · −5 h to +2 h",
       "alignmentWindow": [
        -300,
@@ -10319,11 +10582,11 @@
       "cohorts": {
        "fired": {
         "key": "fired",
-        "label": "Rule matched",
+        "label": "Meets criteria",
         "support": "withheld",
         "supportWord": "Withheld",
         "routed_count": 1,
-        "legendDetail": "1 event · aggregate not shown",
+        "legendDetail": "1 event",
         "points": [
          {
           "minute": -300,
@@ -11009,11 +11272,11 @@
        },
        "near_rule": {
         "key": "near_rule",
-        "label": "Near rule",
+        "label": "Borderline",
         "support": "withheld",
         "supportWord": "Withheld",
         "routed_count": 0,
-        "legendDetail": "0 events · aggregate not shown",
+        "legendDetail": "0 events",
         "points": [
          {
           "minute": -300,
@@ -11699,11 +11962,11 @@
        },
        "neutral": {
         "key": "neutral",
-        "label": "Rule did not match",
+        "label": "Does not meet",
         "support": "supported",
         "supportWord": "Supported",
         "routed_count": 6,
-        "legendDetail": "6 events · 78 supported · 6 limited · 1 withheld points",
+        "legendDetail": "6 events",
         "points": [
          {
           "minute": -300,
@@ -12396,63 +12659,56 @@
         "id": "lows-synthetic-18",
         "t": "2026-08-18 17:00:00",
         "date": "2026-08-18",
-        "bg": 70,
         "worst_bg": 59,
-        "cause_title": "Rule matched",
+        "cause_title": "Meets criteria",
         "cohort": "fired"
        },
        {
         "id": "lows-synthetic-12",
         "t": "2026-08-12 02:00:00",
         "date": "2026-08-12",
-        "bg": 70,
         "worst_bg": 61,
-        "cause_title": "Rule did not match",
+        "cause_title": "Does not meet",
         "cohort": "neutral"
        },
        {
         "id": "lows-synthetic-13",
         "t": "2026-08-13 08:00:00",
         "date": "2026-08-13",
-        "bg": 68,
         "worst_bg": 58,
-        "cause_title": "Rule did not match",
+        "cause_title": "Does not meet",
         "cohort": "neutral"
        },
        {
         "id": "lows-synthetic-14",
         "t": "2026-08-14 14:00:00",
         "date": "2026-08-14",
-        "bg": 69,
         "worst_bg": 59,
-        "cause_title": "Rule did not match",
+        "cause_title": "Does not meet",
         "cohort": "neutral"
        },
        {
         "id": "lows-synthetic-15",
         "t": "2026-08-15 20:00:00",
         "date": "2026-08-15",
-        "bg": 70,
         "worst_bg": 60,
-        "cause_title": "Rule did not match",
+        "cause_title": "Does not meet",
         "cohort": "neutral"
        },
        {
         "id": "lows-synthetic-16",
         "t": "2026-08-16 05:00:00",
         "date": "2026-08-16",
-        "bg": 68,
         "worst_bg": 61,
-        "cause_title": "Rule did not match",
+        "cause_title": "Does not meet",
         "cohort": "neutral"
        },
        {
         "id": "lows-synthetic-17",
         "t": "2026-08-17 11:00:00",
         "date": "2026-08-17",
-        "bg": 69,
         "worst_bg": 58,
-        "cause_title": "Rule did not match",
+        "cause_title": "Does not meet",
         "cohort": "neutral"
        }
       ]
@@ -12464,13 +12720,16 @@
        "denominator": 20,
        "window": "Jul 13–Aug 11"
       },
-      "bandCaveat": "7 of 20 lows in Jul 13–Aug 11. The band scopes this list only — the comparison beside it always draws all three.",
-      "residue": "7 claimed by another factor · 6 not comparable",
+      "bandMeta": "7 of 20 lows in Jul 13–Aug 11",
+      "residueParts": {
+       "another_factor": 7,
+       "excluded": 6
+      },
       "groups": [
        {
         "key": "fired",
-        "lead": "Rule matched",
-        "cause": "Correction on active insulin",
+        "lead": "Meets criteria",
+        "cause": null,
         "occurrences": [
          {
           "id": "lows-synthetic-18",
@@ -12483,7 +12742,7 @@
            {
             "classifier": "correction_on_iob",
             "matched": true,
-            "evidence_tier": "observed",
+            "evidence_tier": "Meets criteria",
             "detail": "Correction on active insulin matched the current rule."
            }
           ]
@@ -12493,8 +12752,8 @@
        },
        {
         "key": "neutral",
-        "lead": "Rule did not match",
-        "cause": "matched no factor’s rule",
+        "lead": "Does not meet",
+        "cause": null,
         "occurrences": [
          {
           "id": "lows-synthetic-12",
@@ -12506,8 +12765,8 @@
           "verdicts": [
            {
             "classifier": "correction_on_iob",
-            "matched": false,
-            "evidence_tier": "observed",
+            "matched": true,
+            "evidence_tier": "Does not meet",
             "detail": "Correction on active insulin did not match the current rule."
            }
           ]
@@ -12522,8 +12781,8 @@
           "verdicts": [
            {
             "classifier": "correction_on_iob",
-            "matched": false,
-            "evidence_tier": "observed",
+            "matched": true,
+            "evidence_tier": "Does not meet",
             "detail": "Correction on active insulin did not match the current rule."
            }
           ]
@@ -12538,8 +12797,8 @@
           "verdicts": [
            {
             "classifier": "correction_on_iob",
-            "matched": false,
-            "evidence_tier": "observed",
+            "matched": true,
+            "evidence_tier": "Does not meet",
             "detail": "Correction on active insulin did not match the current rule."
            }
           ]
@@ -12554,8 +12813,8 @@
           "verdicts": [
            {
             "classifier": "correction_on_iob",
-            "matched": false,
-            "evidence_tier": "observed",
+            "matched": true,
+            "evidence_tier": "Does not meet",
             "detail": "Correction on active insulin did not match the current rule."
            }
           ]
@@ -12570,8 +12829,8 @@
           "verdicts": [
            {
             "classifier": "correction_on_iob",
-            "matched": false,
-            "evidence_tier": "observed",
+            "matched": true,
+            "evidence_tier": "Does not meet",
             "detail": "Correction on active insulin did not match the current rule."
            }
           ]
@@ -12586,8 +12845,8 @@
           "verdicts": [
            {
             "classifier": "correction_on_iob",
-            "matched": false,
-            "evidence_tier": "observed",
+            "matched": true,
+            "evidence_tier": "Does not meet",
             "detail": "Correction on active insulin did not match the current rule."
            }
           ]
@@ -12615,90 +12874,80 @@
         "id": "lows-synthetic-8",
         "t": "2026-08-08 22:00:00",
         "date": "2026-08-08",
-        "bg": 69,
         "worst_bg": 61,
-        "cause_title": "Claimed by no finding",
+        "cause_title": "Not claimed by any finding",
         "cohort": "unclaimed"
        },
        {
         "id": "lows-synthetic-9",
         "t": "2026-08-09 06:00:00",
         "date": "2026-08-09",
-        "bg": 70,
         "worst_bg": 58,
-        "cause_title": "Claimed by no finding",
+        "cause_title": "Not claimed by any finding",
         "cohort": "unclaimed"
        },
        {
         "id": "lows-synthetic-10",
         "t": "2026-08-10 12:00:00",
         "date": "2026-08-10",
-        "bg": 68,
         "worst_bg": 59,
-        "cause_title": "Claimed by no finding",
+        "cause_title": "Not claimed by any finding",
         "cohort": "unclaimed"
        },
        {
         "id": "lows-synthetic-11",
         "t": "2026-08-11 18:00:00",
         "date": "2026-08-11",
-        "bg": 69,
         "worst_bg": 60,
-        "cause_title": "Claimed by no finding",
+        "cause_title": "Not claimed by any finding",
         "cohort": "unclaimed"
        },
        {
         "id": "lows-synthetic-12",
         "t": "2026-08-12 02:00:00",
         "date": "2026-08-12",
-        "bg": 70,
         "worst_bg": 61,
-        "cause_title": "Claimed by no finding",
+        "cause_title": "Not claimed by any finding",
         "cohort": "unclaimed"
        },
        {
         "id": "lows-synthetic-13",
         "t": "2026-08-13 08:00:00",
         "date": "2026-08-13",
-        "bg": 68,
         "worst_bg": 58,
-        "cause_title": "Claimed by no finding",
+        "cause_title": "Not claimed by any finding",
         "cohort": "unclaimed"
        },
        {
         "id": "lows-synthetic-14",
         "t": "2026-08-14 14:00:00",
         "date": "2026-08-14",
-        "bg": 69,
         "worst_bg": 59,
-        "cause_title": "Claimed by no finding",
+        "cause_title": "Not claimed by any finding",
         "cohort": "unclaimed"
        },
        {
         "id": "lows-synthetic-15",
         "t": "2026-08-15 20:00:00",
         "date": "2026-08-15",
-        "bg": 70,
         "worst_bg": 60,
-        "cause_title": "Claimed by no finding",
+        "cause_title": "Not claimed by any finding",
         "cohort": "unclaimed"
        },
        {
         "id": "lows-synthetic-16",
         "t": "2026-08-16 05:00:00",
         "date": "2026-08-16",
-        "bg": 68,
         "worst_bg": 61,
-        "cause_title": "Claimed by no finding",
+        "cause_title": "Not claimed by any finding",
         "cohort": "unclaimed"
        },
        {
         "id": "lows-synthetic-17",
         "t": "2026-08-17 11:00:00",
         "date": "2026-08-17",
-        "bg": 69,
         "worst_bg": 58,
-        "cause_title": "Claimed by no finding",
+        "cause_title": "Not claimed by any finding",
         "cohort": "unclaimed"
        }
       ]
@@ -12709,12 +12958,14 @@
        "denominator": 20,
        "window": "Jul 13–Aug 11"
       },
-      "bandCaveat": "10 of 20 lows in Jul 13–Aug 11. The band scopes this list only — the comparison beside it always draws all three.",
-      "residue": "8 claimed by a finding",
+      "bandMeta": "10 of 20 lows in Jul 13–Aug 11",
+      "residueParts": {
+       "claimed": 8
+      },
       "groups": [
        {
         "key": "unclaimed",
-        "lead": "Claimed by no finding",
+        "lead": "Not claimed by any finding",
         "cause": null,
         "count": 10,
         "occurrences": [
@@ -12728,8 +12979,8 @@
           "verdicts": [
            {
             "classifier": "over_treated_low",
-            "matched": false,
-            "evidence_tier": "observed",
+            "matched": true,
+            "evidence_tier": "Not claimed by any finding",
             "detail": "Over-treated low did not match the current rule."
            }
           ]
@@ -12744,8 +12995,8 @@
           "verdicts": [
            {
             "classifier": "over_treated_low",
-            "matched": false,
-            "evidence_tier": "observed",
+            "matched": true,
+            "evidence_tier": "Not claimed by any finding",
             "detail": "Over-treated low did not match the current rule."
            }
           ]
@@ -12760,8 +13011,8 @@
           "verdicts": [
            {
             "classifier": "over_treated_low",
-            "matched": false,
-            "evidence_tier": "observed",
+            "matched": true,
+            "evidence_tier": "Not claimed by any finding",
             "detail": "Over-treated low did not match the current rule."
            }
           ]
@@ -12776,8 +13027,8 @@
           "verdicts": [
            {
             "classifier": "over_treated_low",
-            "matched": false,
-            "evidence_tier": "observed",
+            "matched": true,
+            "evidence_tier": "Not claimed by any finding",
             "detail": "Over-treated low did not match the current rule."
            }
           ]
@@ -12792,8 +13043,8 @@
           "verdicts": [
            {
             "classifier": "over_treated_low",
-            "matched": false,
-            "evidence_tier": "observed",
+            "matched": true,
+            "evidence_tier": "Not claimed by any finding",
             "detail": "Over-treated low did not match the current rule."
            }
           ]
@@ -12808,8 +13059,8 @@
           "verdicts": [
            {
             "classifier": "over_treated_low",
-            "matched": false,
-            "evidence_tier": "observed",
+            "matched": true,
+            "evidence_tier": "Not claimed by any finding",
             "detail": "Over-treated low did not match the current rule."
            }
           ]
@@ -12824,8 +13075,8 @@
           "verdicts": [
            {
             "classifier": "over_treated_low",
-            "matched": false,
-            "evidence_tier": "observed",
+            "matched": true,
+            "evidence_tier": "Not claimed by any finding",
             "detail": "Over-treated low did not match the current rule."
            }
           ]
@@ -12840,8 +13091,8 @@
           "verdicts": [
            {
             "classifier": "over_treated_low",
-            "matched": false,
-            "evidence_tier": "observed",
+            "matched": true,
+            "evidence_tier": "Not claimed by any finding",
             "detail": "Over-treated low did not match the current rule."
            }
           ]
@@ -12856,8 +13107,8 @@
           "verdicts": [
            {
             "classifier": "over_treated_low",
-            "matched": false,
-            "evidence_tier": "observed",
+            "matched": true,
+            "evidence_tier": "Not claimed by any finding",
             "detail": "Over-treated low did not match the current rule."
            }
           ]
@@ -12872,8 +13123,8 @@
           "verdicts": [
            {
             "classifier": "over_treated_low",
-            "matched": false,
-            "evidence_tier": "observed",
+            "matched": true,
+            "evidence_tier": "Not claimed by any finding",
             "detail": "Over-treated low did not match the current rule."
            }
           ]

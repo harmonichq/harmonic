@@ -51,6 +51,7 @@ import {
   envelopeFromPooled, markersFromPooled,
 } from '../../frontend/diagnose-workstation-data.js';
 import { resolveColors } from '../../frontend/diagnose-workstation.js';
+import { Y_DOMAIN } from './chart.js';
 
 /* (T1) VERBATIM — diagnose-workstation.js `chartColors`, which is module-private
    there. `root` is the workstation element that DECLARES the tokens (`.dw`),
@@ -111,17 +112,41 @@ function keySwatch(k) {
    surface stages a slot or picks a cell, so `data-staged` and `aria-pressed`
    would both be constants. The verdict tint, the grid, the title and the
    aria-label are the shipped ones. */
+/* ROUND 9, FINDING 10 — THE STRIP COSTS ONE TAB STOP, NOT FORTY-EIGHT.
+ *
+ * Every cell was a plain `<button>`, so tabbing off the toolbar walked all 48
+ * slots (`00:00 basal slot, holds at current` … ×48) before reaching the first
+ * row of the queue — forty-eight stops of chart furniture standing between the
+ * reader and the column the ruling calls the sole steering wheel. It is one
+ * composite widget now, on the roving-tabindex pattern: the strip takes one
+ * stop, the arrow keys walk the cells inside it, and Home / End reach the ends.
+ * Nothing about what a cell IS changes — the verdict tint, the title and the
+ * aria-label are the shipped ones, and the strip keeps its shipped role and
+ * label. This is a DIVERGENCE from the shipped `renderLane`, which has no
+ * roving behaviour, and it is reported as one. */
 function renderLane(host, lane) {
   host.style.gridTemplateColumns = `repeat(${lane.cells.length}, 1fr)`;
   host.innerHTML = '';
-  for (const cell of lane.cells) {
+  lane.cells.forEach((cell, i) => {
     const b = document.createElement('button');
     b.type = 'button';
     b.dataset.verdict = cell.verdict;
     b.title = `${cell.label} · ${VERDICT_KEY[cell.verdict]}`;
     b.setAttribute('aria-label', `${cell.label} basal slot, ${VERDICT_KEY[cell.verdict]}`);
+    b.tabIndex = i === 0 ? 0 : -1;
     host.append(b);
-  }
+  });
+  host.onkeydown = (e) => {
+    const cells = [...host.querySelectorAll('button')];
+    const at = cells.indexOf(document.activeElement);
+    if (at < 0) return;
+    const to = { ArrowRight: at + 1, ArrowLeft: at - 1, Home: 0, End: cells.length - 1 }[e.key];
+    if (to == null) return;
+    e.preventDefault();
+    const next = cells[Math.max(0, Math.min(cells.length - 1, to))];
+    for (const c of cells) c.tabIndex = c === next ? 0 : -1;
+    next.focus();
+  };
 }
 
 /* (T3) diagnose-workstation.js `renderLaneKey`, basal group only — see omission
@@ -192,6 +217,9 @@ function paintReadout(head, r) {
 export function paintPooled({
   surface, head, chartHost, laneHost, keyHost, payload,
   occurrences = [], trace = null, window: win = null, windowLabel = null,
+  /* ROUND 9, FINDING 6 — what the selected day's key is called. Null at rest and
+     at the queue root, where nothing is selected to name. */
+  dayLabel = null,
 }) {
   const envelope = envelopeFromPooled(payload.pooled);
   const markers = markersFromPooled(payload.pooled);
@@ -222,6 +250,114 @@ export function paintPooled({
     onHover: (r) => paintReadout(head, r),
   });
 
+  /* ================= ROUND 9, FINDING 5: THE CHART, EDITED =================
+   *
+   * The critique's charge against this canvas is that it is library output:
+   * a domain nobody chose, a ladder nobody chose, four competing horizontal-rule
+   * vocabularies, and every annotation dropped wherever there was room. All of
+   * that is drawn by the SHIPPED `renderCanvas`, which this mock may not edit —
+   * so it is edited the way everything else on this surface edits shipped
+   * output: ONE OVERRIDE APPLIED OVER WHAT THE SHIPPED RENDERER DREW, reading
+   * every value it keeps back off that renderer's own option rather than
+   * recomputing it. `markCanvas` in surface.js is the same idiom.
+   *
+   * Five edits, each answering one clause of the finding:
+   *
+   *   (1) ONE DOMAIN, ONE LADDER. 40–300 at 60 becomes `Y_DOMAIN` — the same
+   *       40–240 at 40 the lens now stands on, so the projection toggle stops
+   *       re-scaling the axis and relabelling every tick. See chart.js for how
+   *       the three numbers were measured. This is also what takes 70 and 180
+   *       off the value ladder, leaving them as the band's own edges.
+   *
+   *   (2) NO MARQUEE. The window markArea carries a 1px [4, 3] dashed border,
+   *       and the mock stands permanently on the 24 h preset — so that border
+   *       ran all four sides of the plot and, on bone, read as a marquee
+   *       selection rather than a frame. The window is the whole plot here;
+   *       drawing an edge around the whole plot states nothing. The FILL stays,
+   *       so the shipped highlight is still the shipped highlight.
+   *
+   *   (3) THE WINDOW CAPTION IS DOCKED. `24 H 00:00–24:00 · 25–75 spread 16
+   *       mg/dL` floated in the empty upper region of the plot, attached to
+   *       nothing. It is returned to the caller and printed in the canvas head's
+   *       meta rail, where the window's other two facts already live.
+   *
+   *   (4) TWO RULE STYLES, NOT FOUR. Solid gridlines and dashed thresholds stay.
+   *       The Median series' two dotted [2, 3] value rules go, and the boxed
+   *       `139` / `82` chips riding their right ends go with them: they are the
+   *       drawn window's median and lowest median, a fact the head's readout
+   *       already reports, and unlabelled on a pooled envelope they read as a
+   *       "last value" the chart does not have.
+   *
+   *   (5) THE LEGEND LEAVES THE PLOT. ECharts' own legend floated over the plot
+   *       area; its keys are returned to the caller and drawn as chips in the
+   *       head rail beside the title. The chip list is the shipped legend's own
+   *       `data`, so nothing here decides what is on the chart.
+   *
+   * FINDING 6 rides (5): the selected day's key is named with the occurrence's
+   * date rather than the pronoun `That day`.
+   * FINDING 18 is the sixth edit, below the loop: one token pair for the two dot
+   * states, tuned per theme, so the emphasis hierarchy stops inverting.
+   */
+  const live = chart.getOption();
+  const index = (name) => live.series.findIndex((x) => x.name === name);
+  const patch = Array.from({ length: live.series.length }, () => ({}));
+  const set = (name, value) => { const i = index(name); if (i >= 0) patch[i] = value; };
+
+  /* (3) + (5) — read back off the shipped option, never rebuilt. The window
+     label is rich text (`{a|24 H …}{b| · 25–75 spread …}`), so the rich tags are
+     unwrapped rather than the string being reassembled from parts. */
+  const context = live.series[index('__context')];
+  const windowArea = context?.markArea?.data?.find((d) => d[0].xAxis !== undefined);
+  const plain = (text) => String(text || '').replace(/\{\w+\|([^}]*)\}/g, '$1').trim();
+  const caption = plain(windowArea?.[0]?.label?.formatter
+    ?? context?.markPoint?.data?.[0]?.label?.formatter);
+
+  if (context) {
+    set('__context', {
+      markArea: {
+        ...context.markArea,
+        data: context.markArea.data.map((entry) => (entry === windowArea
+          /* (2) the border off, the fill kept; (3) the caption off the plot. */
+          ? [{ ...entry[0], itemStyle: { ...entry[0].itemStyle, borderWidth: 0 },
+            label: { ...entry[0].label, show: false } }, entry[1]]
+          : entry)),
+      },
+      /* (3) the parked copy of the same caption, for the viewports where the
+         shipped renderer could not fit it inside. */
+      markPoint: { data: [] },
+    });
+  }
+  /* (4) */
+  set('Median', { markLine: { data: [] } });
+  /* FINDING 18 — ONE TOKEN PAIR FOR THE TWO DOT STATES.
+     The shipped scatter draws at `--primary-600`, which on bone resolves to a
+     near-full-contrast dark teal: the UNSELECTED dots were louder in light than
+     the terracotta accent marking the ones being read, so the emphasis hierarchy
+     inverted between themes. `--fer-dot` is declared per theme in scene.css
+     against the same ground the accent is measured on, as a literal colour for
+     the reason `--ec-near` is one — a custom property holding a `color-mix()`
+     comes back from `getPropertyValue` as its own source text, which no canvas
+     can paint. The accent is untouched: it was already right in both themes. */
+  const dot = getComputedStyle(surface).getPropertyValue('--fer-dot').trim();
+  if (dot) set('Occurrences', { itemStyle: { color: dot } });
+  /* FINDING 6 — the selected day's series, named with its date. */
+  if (dayLabel) set('That day', { name: dayLabel });
+
+  chart.setOption({
+    /* (1) */
+    yAxis: [{ ...Y_DOMAIN }, {}],
+    /* (5) */
+    legend: [{ show: false }],
+    series: patch,
+  });
+
+  /* (5) + (3) — what the head rail has to print, handed back rather than
+     reached for: the caller owns the head. The keys are the shipped legend's
+     own `data` in the shipped order, with `That day` renamed. */
+  const keys = (live.legend?.[0]?.data || [])
+    .map((k) => (typeof k === 'string' ? { name: k } : k))
+    .map((k) => (k.name === 'That day' && dayLabel ? { ...k, name: dayLabel } : k));
+
   /* The two provenance readouts the shipped head carries — the window's own
      reading count against the capture's, and the pooling terms. Both are the
      shipped strings, built from the shipped `windowStats` / envelope fields. */
@@ -230,5 +366,8 @@ export function paintPooled({
   head.querySelector('#dw-pool').textContent =
     `pooled from ${envelope.days} captured CGM days · ±${envelope.pool} min`;
 
-  return chart;
+  /* ROUND 9, FINDING 5 — the instance, plus the two things the head now owns.
+     Round 8 returned the instance alone because the plot carried its own legend
+     and its own caption. */
+  return { chart, keys, caption };
 }

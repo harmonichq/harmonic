@@ -73,18 +73,93 @@
 
 const css = (element, name) => getComputedStyle(element).getPropertyValue(name).trim();
 
+/* ================= ROUND 9, FINDING 5: ONE DOMAIN, ONE LADDER =================
+ *
+ * The projection toggle was sold as "the same class of control as a scale
+ * toggle" — a switch over the already-selected data — and it was the control on
+ * the surface that moved the most: `By clock` stood on 40-300 at 60, `By event`
+ * on 40-340 at 60, so pressing it re-scaled the axis and relabelled every tick
+ * under a reader who had asked for the same data drawn differently.
+ *
+ * ONE DOMAIN NOW, EXPORTED FROM HERE AND APPLIED TO BOTH PROJECTIONS (pooled.js
+ * reads `Y_DOMAIN` for the clock chart's override). The numbers are measured off
+ * this build's own data rather than picked:
+ *
+ *   the deepest value anything draws     42   (a lens occurrence trace)
+ *   the highest value anything draws    226   (a lens occurrence trace)
+ *   pooled envelope p10..p90         74..200
+ *   captured day traces              72..203
+ *   occurrence dots (finding 2)      58..61
+ *
+ * So `min: 40` — the floor both charts already stood on, and the first multiple
+ * of 40 under 42 — and `max: 240`, the first multiple of 40 over 226. The max is
+ * ON the interval, which is the defect round 4 (d) fixed on this chart and then
+ * only fixed on one of the two; the ladder is 40 · 80 · 120 · 160 · 200 · 240,
+ * six even gaps and no short one.
+ *
+ * The interval is 40 rather than 60 for one reason beyond evenness: NEITHER 70
+ * NOR 180 LANDS ON IT. Round 8's ladder printed 180 and 70 among the value ticks
+ * in identical type, so a reader could not tell which numerals were the scale
+ * and which were the clinical rule. With this ladder the two thresholds exist
+ * only as the target band's own edges, in the band's own tone — which is what
+ * lets the band be read as a band.
+ *
+ * The cost is headroom this fixture does not fill: data tops out at 226 against
+ * a 240 ceiling, so roughly 7% of the plot is empty above the highest mark,
+ * where round 8 spent 40-45%. */
+export const Y_DOMAIN = { min: 40, max: 240, interval: 40 };
+
+/** The target range, and the ONE way it is drawn on either projection.
+ *
+ * Round 8 drew this fact twice: `TARGET 70–180 mg/dL` in caps over a dashed pair
+ * of edges under `By clock`, and `target 70–180` in lowercase over a filled band
+ * under `By event`. Same fact, two treatments, one surface — and the treatment
+ * changed under the toggle that promised to hold the data still.
+ * The SHIPPED workstation form wins, because it is the app's: a filled band, a
+ * knock-out caption at the band's top-left, and the two thresholds as dashed
+ * edges carrying their own numerals in the band's tone. `bandMarks` below builds
+ * the lens's copy of it; pooled.js leaves the shipped one alone and only stops
+ * it colliding with things this round moved. */
+export const TARGET = [70, 180];
+
 /** ROUND 4 (c) — what the three cohort aggregates fall to while one occurrence
     trace is up. ONE multiplier over opacities `whiskerSeries` and `lineSeries`
     already computed, so the shipped ratios between supported and limited, and
     between fired and neutral, survive the recede intact. */
 const RECEDE = .3;
 
-/* VERBATIM — diagnose-event-comparison.js `COHORTS`. */
+/* ROUND 9, FINDING 6 — AND THE SPREAD RECEDES LESS THAN THE MEDIAN DOES.
+ *
+ * At `RECEDE` the whiskers' own shipped opacities (.27 for a limited support
+ * tier, .42 for a supported one) fell to .08 and .13, which is not recessive,
+ * it is gone — so selecting an occurrence silently deleted the cohort's
+ * uncertainty and the chart got MORE confident-looking the moment the reader
+ * engaged with it. PRODUCT.md's principle is the opposite one: show uncertainty,
+ * do not hide it. The spread keeps most of its ink while the medians step back,
+ * so what recedes under a selected trace is the CENTRAL LINE, not the evidence
+ * of how wide the cohort is. */
+const RECEDE_SPREAD = .7;
+
+/* diagnose-event-comparison.js `COHORTS`, with ONE FIELD RESPELLED.
+ *
+ * ROUND 9, FINDING 9 — the labels and their shorts take the settled partition
+ * words. Everything else here is the shipped transcription untouched: the keys,
+ * the colour tokens and the line types, which are what the fidelity harness
+ * checks series by series.
+ *
+ * The label is not decoration on this module — it composes each series' `name`
+ * (`Borderline limited spread`) and the chart's `aria.description`, and the
+ * `short` is what the header readout prints under the crosshair. Leaving either
+ * on the old vocabulary would have put `Rule matched` in the reader's ear and in
+ * the crosshair while the band, the group rule and the legend chip beside them
+ * all said `Meets criteria` — which is the four-vocabulary defect moved rather
+ * than fixed. The resulting series-name differences against the shipped lens are
+ * named deviations in harness.mjs, mapped to this finding. */
 const COHORTS = {
-  fired: { label: 'Rule matched', short: 'Matched', color: '--ec-fired', lineType: 'solid' },
-  near_rule: { label: 'Near rule', short: 'Near', color: '--ec-near', lineType: 'dashed' },
-  neutral: { label: 'Rule did not match', short: 'No match', color: '--ec-neutral', lineType: 'dotted' },
-  another_factor: { label: 'Another factor applies', short: 'Other', color: '--ec-other', lineType: 'dashed' },
+  fired: { label: 'Meets criteria', short: 'Meets', color: '--ec-fired', lineType: 'solid' },
+  near_rule: { label: 'Borderline', short: 'Borderline', color: '--ec-near', lineType: 'dashed' },
+  neutral: { label: 'Does not meet', short: 'No', color: '--ec-neutral', lineType: 'dotted' },
+  another_factor: { label: 'Another lever applies', short: 'Other', color: '--ec-other', lineType: 'dashed' },
 };
 
 /* VERBATIM — diagnose-event-comparison.js. */
@@ -231,6 +306,16 @@ function selectedSeries(surface, trace, cohort) {
 export function chartOption(surface, canvas, highlighted) {
   const cohortOrder = canvas.cohortOrder;
   const aggregates = Object.fromEntries(cohortOrder.map((key) => [key, canvas.cohorts[key].points]));
+  /* ROUND 9, FINDING 5 — THE BAND, DRAWN THE SHIPPED WAY, ON BOTH PROJECTIONS.
+     Every value below is `chartColors`'s in diagnose-workstation.js and every
+     geometry is `renderCanvas`'s own target block: the same fill, the same
+     `TARGET 70–180 mg/dL` knock-out caption at the band's top-left, and the same
+     dashed [4, 4] edges carrying their own numerals in the band's tone. What it
+     replaces is round 1's lowercase `target 70–180` at `--mk-muted` on a bare
+     fill, which stated the identical fact in a second vocabulary one toggle
+     press away from the first. */
+  const ok = css(surface, '--mk-ok');
+  const bandInk = `color-mix(in srgb, ${ok} 85%, ${css(surface, '--mk-text')})`;
   const series = [{
     name: 'Target range',
     type: 'line',
@@ -238,9 +323,26 @@ export function chartOption(surface, canvas, highlighted) {
     silent: true,
     markArea: {
       silent: true,
-      itemStyle: { color: `color-mix(in srgb, ${css(surface, '--mk-ok')} 7%, transparent)` },
-      data: [[{ yAxis: 70, name: 'target 70–180' }, { yAxis: 180 }]],
-      label: { show: true, position: 'insideTopLeft', color: css(surface, '--mk-muted'), fontSize: 10, fontFamily: 'Inter' },
+      itemStyle: { color: `color-mix(in srgb, ${ok} 8%, transparent)` },
+      data: [[{
+        yAxis: TARGET[0],
+        label: {
+          show: true, position: 'insideStartTop', distance: 10,
+          color: bandInk, fontSize: 10, fontWeight: 600, fontFamily: 'Inter',
+          formatter: `TARGET ${TARGET[0]}–${TARGET[1]} mg/dL`,
+          backgroundColor: css(surface, '--ck-rail'), padding: [2, 5], borderRadius: 2,
+        },
+      }, { yAxis: TARGET[1] }]],
+    },
+    markLine: {
+      silent: true, symbol: 'none', z: 4,
+      lineStyle: { color: `color-mix(in srgb, ${ok} 55%, transparent)`, type: [4, 4], width: 1 },
+      label: {
+        show: true, position: 'start', formatter: '{c}',
+        color: bandInk, fontSize: 10,
+        backgroundColor: css(surface, '--ck-rail'), padding: [2, 4], borderRadius: 2,
+      },
+      data: [{ yAxis: TARGET[0] }, { yAxis: TARGET[1] }],
     },
   }];
   /* ROUND 4 (c) — with a trace up, the three aggregates step back to 30% of the
@@ -250,7 +352,10 @@ export function chartOption(surface, canvas, highlighted) {
   for (const cohort of cohortOrder) {
     for (const support of ['supported', 'limited']) {
       if (!aggregates[cohort].some((row) => row.support === support)) continue;
-      series.push(receded(whiskerSeries(surface, cohort, aggregates[cohort], null, support), recede));
+      /* FINDING 6 — two multipliers, not one: the spread stays legible while the
+         median steps back. */
+      series.push(receded(whiskerSeries(surface, cohort, aggregates[cohort], null, support),
+        highlighted ? RECEDE_SPREAD : 1));
       series.push(receded(lineSeries(surface, cohort, aggregates[cohort], null, support), recede));
     }
   }
@@ -319,11 +424,11 @@ export function chartOption(surface, canvas, highlighted) {
     },
     yAxis: {
       type: 'value',
-      min: 40,
-      /* ROUND 4 (d) — 340, not 300: the max has to sit ON the interval or the
-         ladder prints one short gap at the top. */
-      max: 340,
-      interval: 60,
+      /* ROUND 9, FINDING 5 — the shared domain and ladder. Round 4 (d)'s rule
+         (the max sits ON the interval) still holds and is now satisfied on BOTH
+         projections by the same three numbers. See `Y_DOMAIN` above for how they
+         were measured and why the interval is 40. */
+      ...Y_DOMAIN,
       /* ROUND 4 (f) — no `name` on the axis; the unit is the docked `graphic`
          above, which is the only way to put it over the first tick rather than
          wherever ECharts decides an end-located axis name goes. */
@@ -383,8 +488,10 @@ export function emptyOption(surface, frame, alignmentWindow, axisAnchor) {
       axisLine: { onZero: false, lineStyle: { color: line, opacity: GREY } },
       ...furniture({ formatter: (value) => axisLabel(value, axisAnchor) }),
     },
+    /* FINDING 5 — the empty frame stands the instrument at the SAME coordinates
+       a drawn one does; that is the whole point of keeping the range on it. */
     yAxis: {
-      type: 'value', min: 40, max: 340, interval: 60,
+      type: 'value', ...Y_DOMAIN,
       axisLine: { show: false },
       ...furniture({}),
     },
@@ -401,7 +508,7 @@ export function emptyOption(surface, frame, alignmentWindow, axisAnchor) {
  * keep the rail, verbatim. Dead ones collapse into ONE sentence beneath it,
  * which is the whole statement they were carrying between them.
  */
-export function legendMarkup(canvas) {
+export function legendMarkup(canvas, selected) {
   const live = canvas.cohortOrder.filter((key) => canvas.cohorts[key].support !== 'withheld');
   /* A withheld cohort with NO routed events is not a fact the reader needs: it
      is the absence of a thing, and naming it ("near rule (0)") spends a clause
@@ -411,28 +518,45 @@ export function legendMarkup(canvas) {
     && canvas.cohorts[key].routed_count > 0);
   const rail = live.map((key) => {
     const record = canvas.cohorts[key];
-    /* ROUND 5, BLOCK 6 — THE NEAR-RULE HEDGE HANGS HERE, not in the inspector
-       column. It was a `.ec-boundary-note` line in the case-file body: a full
-       line of prose about one cohort, printed whether or not that cohort had
-       anything on the canvas. It is now a sub-line on the Near-rule KEY —
-       attached to the mark it is about, in the one place the phrase "Near rule"
-       is already on screen — and it prints only where the cohort routed events
-       (build.mjs sets `nearRuleNote` to null otherwise). */
-    const note = key === 'near_rule' && canvas.nearRuleNote
-      ? `<small class="fer-key-hedge">${canvas.nearRuleNote}</small>` : '';
+    /* ROUND 9, FINDING 3 — THE HEDGE IS A DISCLOSURE, NOT A PARAGRAPH.
+       Round 8 hung it under the Near-rule key as a permanently-printed sub-line,
+       which is how the legend became three wrapped paragraphs of policy prose
+       standing at data weight directly under the data — the thing DESIGN.md rule
+       5 forbids by name ("charts explain themselves through on-chart legend
+       chips, not caption sentences. A chart that requires a paragraph fails the
+       bar"). It now HANGS OFF the key rather than printing beneath it: the chip
+       carries the disclosure and reveals it on hover or focus.
+       THE AMENDMENT ASKED FOR `.has-tooltip`, AND THIS REPOSITORY HAS NO SUCH
+       PRIMITIVE — `grep` finds it in neither frontend/*.css nor frontend/*.js.
+       So the scene declares one, `.fer-tip`, built out of the surface's own
+       tokens and named in the report as a gap the app owes. */
+    const hedged = key === 'near_rule' && canvas.nearRuleNote;
     return `
-      <span class="ec-key-item" data-cohort="${key}" data-support="${record.support}" data-selected-cohort="false">
+      <span class="ec-key-item${hedged ? ' fer-tip' : ''}" data-cohort="${key}" data-support="${record.support}" data-selected-cohort="false"${
+      hedged ? ` tabindex="0" data-tip="${canvas.nearRuleNote}" aria-label="${record.label}. ${canvas.nearRuleNote}"` : ''}>
         <i class="ec-key-mark" aria-hidden="true"></i>
         <strong>${record.label}<em class="ec-support-label">${record.supportWord}</em></strong>
         <small>${record.legendDetail}</small>
-        ${note}
       </span>`;
   }).join('');
-  if (!dead.length) return rail;
+  /* ROUND 9, FINDING 6 — THE SELECTED OCCURRENCE GETS A KEY HERE TOO, AND IT IS
+     NAMED WITH ITS DATE. Round 8 drew the selected trace on this projection with
+     NO key at all, so the chart carried four things and three keys, while the
+     clock projection's key for the same series read `That day` — a pronoun,
+     where the row the reader had just clicked said `Aug 3`. Both projections
+     carry the same key now and both say the date. The mark takes the trace's own
+     cohort, which is the hue round 4 (c) settled it draws in. */
+  const pick = selected ? `
+      <span class="ec-key-item fer-key-selected" data-cohort="${selected.cohort}" data-support="supported" data-selected-cohort="true">
+        <i class="ec-key-mark" aria-hidden="true"></i>
+        <strong>${selected.label}<em class="ec-support-label">Selected</em></strong>
+        <small>${selected.detail}</small>
+      </span>` : '';
+  if (!dead.length) return rail + pick;
   const phrase = dead
     .map((key) => `${canvas.cohorts[key].label.toLowerCase()} (${canvas.cohorts[key].routed_count})`)
     .join(', ');
-  return `${rail}<span class="fer-key-dead">Too few events to draw an aggregate: ${phrase}.</span>`;
+  return `${rail}${pick}<span class="fer-key-dead">Too few events to draw an aggregate: ${phrase}.</span>`;
 }
 
 /** VERBATIM — diagnose-event-comparison.js `paintReadout`. */

@@ -138,6 +138,26 @@ const SELECTORS = [
      header is a rule now), so these three would silently skip. They are left
      listed on purpose: if a later round reinstates the shipped header, it starts
      verified again the moment it appears. */
+  /* ROUND 9 — FOUR OF THE SELECTORS BELOW ARE NO LONGER EMITTED BY THE MOCK, and
+     they are left listed for the same reason `.ev-group` and `.slotlink` were:
+     if a later round brings one back it starts verified the moment it appears.
+     The shared-selector count is 84 where round 8 checked 86, and this is the
+     whole difference — no comparison got weaker.
+       `.ev-row .chev`                     FINDING 7/16: the row selects, it does
+                                           not route, so it no longer wears the
+                                           glyph that means "there is somewhere
+                                           to go"; the one route it owes is the
+                                           single `Open … in Day ›` action.
+       `.ev-row .tier`                     FINDING 12: blanked wherever a group
+                                           is homogeneous, which on this fixture
+                                           is every group, so the cell lays out
+                                           at 0×0 and the probe skips it.
+       `.qrow[…] .tag .gly`                FINDING 16: the dingbat comes off a
+                                           badge whose word already says it.
+       `.tailnote`                         FINDING 11: replaced by the Watching
+                                           section cap.
+     The last two were already `absentInApp`, so only the first two came out of
+     `checked`. */
   '.ev-group', '.ev-group b', '.ev-group .n', '.ev-row', '.ev-row .when', '.ev-row .entry',
   '.ev-row .arrow', '.ev-row .worst', '.ev-row .delta', '.ev-row .tier', '.ev-row .chev', '.more',
   '.watch',
@@ -202,6 +222,104 @@ const EXPECTED = {
     + 'section rather than as more of the judgment block',
   '.level .inner|padding-bottom': 'item 12: the judgment block closes with air before the claim selector, '
     + 'which item 4 moved outside `.inner`',
+
+  /* ================= ROUND 9 — THE PERSONA'S ROUND-8 FINDINGS =================
+     Each entry names the finding number it implements. Anything here is a
+     deliberate step AWAY from the shipped sibling, taken because the shipped
+     sibling is what the critique is calling library output or app-side voice. */
+  '.linkbtn|color': 'FINDING 14: the coincidence routes inherit `Open case file ›`\'s treatment. The shipped '
+    + '`.linkbtn` is `--ck-accent` underlined, which is a website tell inside an app that navigates without a '
+    + 'single underline anywhere else; the amendment also reserved the accent + right-alignment for the ONE '
+    + 'action in this column, and two more of them turned a deliberate accent into noise.',
+  '.linkbtn|text-decoration-line': 'FINDING 14: the underline goes; the chevron the label already carries is '
+    + 'the whole affordance',
+  '.linkbtn|font-weight': 'FINDING 14: the routes inherit `.fer-open`\'s weight as well as its ink, so the two '
+    + 'kinds of route in this column read as one kind of thing',
+  '.ec-key-item|display': 'FINDING 3: a legend chip is ONE LINE. The shipped item is an `inline-grid` that drops '
+    + 'its detail under the label, which at three cohorts in a 430px canvas produced three wrapped paragraphs of '
+    + 'engine caveat at data weight under the data — the thing DESIGN.md rule 5 forbids by name.',
+  '.ec-key-item|grid-template-columns': 'FINDING 3: ditto — no grid, so no tracks',
+  '.ec-key-item|grid-template-rows': 'FINDING 3: ditto — the detail is on the label\'s own line now',
+  '.ec-key-item|align-items': 'FINDING 3: baseline, so the mark, the name and the count sit on one line',
+  '.ec-key-item|column-gap': 'FINDING 3: one line, so one gap rhythm',
+  '.ec-key-item|row-gap': 'FINDING 3: one line has no row gap',
+  '.ec-key-item small|margin-top': 'FINDING 3: the count rides the label\'s baseline instead of a second row',
+  '.ec-key-item small|margin-left': 'FINDING 3: ditto',
+  '.lane button|background-color': 'FINDING 10: `--ck-inset` is a near-black in BOTH themes, so the strip was '
+    + 'the loudest ink on a bone page and nearly invisible on the dark desk — one fill that never got its '
+    + 'light/dark pass, under the least consequential element on the canvas. Both values are the column\'s own '
+    + 'second surface now, recessive in each theme, so the verdict tints that carry meaning stay the loudest '
+    + 'thing in the strip.',
+};
+
+/* ROUND 9 — NAMED DEVIATIONS IN THE TWO CHART-OPTION DIFFS.
+ *
+ * The computed-style diff has had `EXPECTED` since round 1; the two option diffs
+ * had nothing, so an intentional change to a chart could only ever show up as an
+ * unexplained difference. Round 9 changes both charts on purpose (finding 5 is
+ * the critique's own "if only one thing lands, make it 5"), so each option diff
+ * gets the same mechanism rather than the counts being allowed to drift.
+ *
+ * Keys are matched as PATH PREFIXES, because one intent (`the target band is
+ * drawn one way now`) lands on a dozen leaves under one path. Nothing here
+ * loosens the diff: an unlisted path is still an unexplained difference, and the
+ * round-8 differences are deliberately NOT listed — they are history and they
+ * stay in the count.
+ */
+const EXPECTED_OPTION = {
+  'yAxis.interval': 'FINDING 5: one ladder across both projections. 40 rather than the shipped 60 so that the '
+    + 'max lands ON the interval and — the load-bearing half — so neither 70 nor 180 falls on the value ladder, '
+    + 'which is what lets the two thresholds be the target band\'s own edges instead of ticks in identical type.',
+  'series[Target range].markArea': 'FINDING 5: the band is drawn the SHIPPED WORKSTATION way on both '
+    + 'projections. Round 8 drew this one fact twice — `TARGET 70–180 mg/dL` in caps over dashed edges under '
+    + '`By clock`, `target 70–180` in lowercase over a bare fill under `By event` — so the toggle that promised '
+    + 'to hold the data still restyled the band. The lens copy now carries the workstation\'s fill, its '
+    + 'knock-out caption and its dashed edges; against the SHIPPED LENS that reads as a difference, and it is '
+    + 'the right one.',
+  '].name': 'FINDING 9: one noun per concept. A series `name` is composed from the cohort label, and the '
+    + 'labels take the settled partition words (`Meets criteria` / `Borderline` / `Does not meet`). The name '
+    + 'reaches the reader through the chart\'s aria description, so leaving it on `Rule matched` would have put '
+    + 'the retired vocabulary in the reader\'s ear beside a band that had moved on. A SUFFIX key, so it reaches '
+    + 'every series\' name and nothing else on those series — the round-4 light-theme Near-rule ink deviation '
+    + 'sits on the same objects and stays in the count where it belongs.',
+  'aria.description': 'FINDING 9: ditto — the description is built from the same labels',
+  'aria.label.description': 'FINDING 9: ditto. ECharts normalises the description onto `aria.label` as \n    well, so the one string differs at two paths and both are named rather than one being left to read \n    as drift.'.replace(/\s+/g, ' '),
+};
+
+const EXPECTED_POOLED = {
+  'yAxis[0].max': 'FINDING 5: 240, not 300. The shipped domain left the top 40% of the largest element on the '
+    + 'page rendering nothing; 240 is the first multiple of 40 above the highest value anything on either '
+    + 'projection draws (226), so the max sits ON the ladder and roughly 7% is empty above the data.',
+  'yAxis[0].interval': 'FINDING 5: 40, not 60 — one ladder shared with the lens, and the interval that keeps 70 '
+    + 'and 180 off it. See the `yAxis.interval` entry in EXPECTED_OPTION.',
+  'legend': 'FINDING 5: ECharts\' own legend floated over the plot area. Its keys are read back off this same '
+    + 'option and drawn as chips in the canvas header rail beside the title, where the window meta already '
+    + 'lives, so the plot carries data and the head carries the explanation.',
+  'series[Occurrences].itemStyle': 'FINDING 18: one token pair for the two dot states. The shipped scatter '
+    + 'draws at `--primary-600`, which on bone is a near-full-contrast dark teal — so unselected dots were '
+    + 'LOUDER in light than the accent marking the ones being read, and the emphasis hierarchy inverted between '
+    + 'themes. `--fer-dot` is the recessive half, tuned per theme against its own ground.',
+};
+
+/** Is this diff path a named deviation? Prefix match, longest key wins.
+ *
+ * The pooled diff labels a series by its POSITION as well as its name
+ * (`series[8 Occurrences]`), because `renderCanvas` emits two pairs of bands
+ * under repeated names and a name map would collapse four series into two. A
+ * position is not what an intent is about, though — the shipped renderer drops
+ * the day-trace series when nothing is selected, which slides every index after
+ * it — so the index-free form is tried as well, and a table entry can name the
+ * series it means rather than where that series happened to land. */
+const namedDeviation = (table, path) => {
+  const forms = [path, path.replace(/series\[\d+ /, 'series[')];
+  /* A key beginning with `]` is a SUFFIX, for the one shape a prefix cannot
+     express: "this leaf, on every series". `].name` reaches ten series' names
+     without also reaching `yAxis.name`, which is a round-4 deviation of its own. */
+  const hit = (k, f) => (k.startsWith(']') ? f.endsWith(k) : f === k || f.startsWith(k));
+  const key = Object.keys(table)
+    .filter((k) => forms.some((f) => hit(k, f)))
+    .sort((a, b) => b.length - a.length)[0];
+  return key ? table[key] : null;
 };
 
 const probeScript = ({ props, selectors }) => {
@@ -542,12 +660,23 @@ function diffStyles(app, mock) {
 
 function diffOption(appOption, mockOption) {
   const out = [];
+  /* ROUND 9 — a path named in EXPECTED_OPTION is a deliberate step away from the
+     shipped lens and is reported as a named deviation rather than counted as a
+     difference. The prefix match is checked BEFORE the walk descends, so one
+     intent does not have to enumerate every leaf underneath it. */
+  out.expected = [];
   const walk = (a, b, path) => {
     if (JSON.stringify(a) === JSON.stringify(b)) return;
     if (a && b && typeof a === 'object' && typeof b === 'object' && !Array.isArray(a) && !Array.isArray(b)) {
       for (const key of new Set([...Object.keys(a), ...Object.keys(b)])) walk(a[key], b[key], `${path}.${key}`);
       return;
     }
+    /* The note is tested at the LEAF, after the descent, never on the branch
+       above it. Tested on the branch, one round-9 entry naming a series' `name`
+       swallowed the round-4 light-theme ink deviation on the same series — which
+       is history, and history stays in the count. */
+    const note = namedDeviation(EXPECTED_OPTION, path);
+    if (note) { out.expected.push(`${path} — ${note}`); return; }
     out.push(`${path}: app ${JSON.stringify(a)} vs mock ${JSON.stringify(b)}`);
   };
   for (const key of ['grid', 'tooltip', 'aria', 'animation', 'backgroundColor']) walk(appOption[key], mockOption[key], key);
@@ -579,12 +708,15 @@ function diffOption(appOption, mockOption) {
    such rather than being zipped over. */
 function diffPooledOption(app, mock) {
   const out = [];
+  out.expected = [];
   const walk = (a, b, path) => {
     if (JSON.stringify(a) === JSON.stringify(b)) return;
     if (a && b && typeof a === 'object' && typeof b === 'object' && !Array.isArray(a) && !Array.isArray(b)) {
       for (const key of new Set([...Object.keys(a), ...Object.keys(b)])) walk(a[key], b[key], `${path}.${key}`);
       return;
     }
+    const note = namedDeviation(EXPECTED_POOLED, path);
+    if (note) { out.expected.push(`${path} — ${note}`); return; }
     out.push(`${path}: app ${JSON.stringify(a)} vs mock ${JSON.stringify(b)}`);
   };
   for (const key of ['grid', 'tooltip', 'animation', 'backgroundColor', 'textStyle', 'legend']) {
@@ -650,6 +782,11 @@ async function main() {
       computedStyleDiff: diffStyles(app, mock),
       chartOptionDiff: diffOption(option, mockOption),
       pooledOptionDiff: diffPooledOption(pooledOption, mockPooled),
+      /* `JSON.stringify` drops a property hung off an array, so the two named-
+         deviation lists are carried into fidelity-report.json in their own
+         fields rather than silently vanishing from the record. */
+      get chartOptionExpected() { return this.chartOptionDiff.expected || []; },
+      get pooledOptionExpected() { return this.pooledOptionDiff.expected || []; },
       geometry,
     };
 
@@ -871,6 +1008,64 @@ async function main() {
       await page.waitForTimeout(400);
       await page.screenshot({ path: join(SHOTS, 'population-lows-light-by-event.png') });
     }
+    /* ================= ROUND 9 — THE SAME SIX FRAMES IN BOTH THEMES =================
+     * Round 8 shot most states in one theme each, which is the wrong split for
+     * a round whose findings are largely about the two grounds disagreeing:
+     * finding 10 (a strip that is the loudest ink in light and the quietest in
+     * dark), 17 (a band that reads as three scopes in dark and as a progress bar
+     * in light), 18 (a dot hierarchy that inverts between them). None of those
+     * can be judged from one capture. Every frame below is reached through the
+     * surface's own routing, as every other capture here is. */
+    const t = theme;
+    await page.evaluate(() => window.__ferProject('clock'));
+    await gotoLevel(page, null);
+    await page.waitForTimeout(400);
+    /* FINDING 11 — the requeued queue: tier eyebrows over the ranked runs, the
+       Watching cap where the orphan sentence was. FINDING 10 — and the basal
+       strip under the axis, in the theme it was drawn wrong in. */
+    await page.screenshot({ path: join(SHOTS, `r9-queue-tiers-${t}.png`) });
+    await page.locator('.pane.inspector').screenshot({ path: join(SHOTS, `r9-queue-tiers-${t}-column.png`) });
+    /* FINDING 5 — the chart, on its own, at rest: one ladder, no marquee, no
+       dotted value rules, the legend and the window caption in the head rail. */
+    await page.locator('.dw-canvas').screenshot({ path: join(SHOTS, `r9-chart-${t}.png`) });
+
+    await gotoLevel(page, 'finding:over_treated_low');
+    await page.waitForTimeout(400);
+    /* FINDING 4 — the case file drawing all three verdicts, the matched set
+       accented. FINDING 8 — the band with its meta and no manual. FINDING 13 —
+       the residue above the expander. FINDINGS 9 + 12 — one noun on the band and
+       the group rule, and no verdict column restating it once per row. */
+    await page.screenshot({ path: join(SHOTS, `r9-case-file-${t}.png`) });
+    await page.locator('.pane.inspector').screenshot({ path: join(SHOTS, `r9-case-file-${t}-column.png`) });
+    await page.locator('.dw-canvas').screenshot({ path: join(SHOTS, `r9-chart-case-file-${t}.png`) });
+
+    /* FINDINGS 2, 6 AND 7 — A SELECTION, UNDER EACH PROJECTION. The dots sit at
+       their own worst value, both projections name the selected day by its date,
+       the cohort's whiskers are still drawn, and the row's chevron is gone with
+       one `Open … in Day ›` in its place. */
+    const shot = data.scenes['finding:over_treated_low'].occurrences.groups[0].occurrences[2].id;
+    await page.evaluate((id) => window.__ferSelect(id), shot);
+    await page.waitForTimeout(500);
+    await page.mouse.move(0, 0);
+    await page.screenshot({ path: join(SHOTS, `r9-selection-by-clock-${t}.png`) });
+    await page.evaluate(() => window.__ferProject('event'));
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: join(SHOTS, `r9-selection-by-event-${t}.png`) });
+    await page.evaluate(() => window.__ferProject('clock'));
+
+    /* FINDINGS 8 + 17 — THE BAND, AT REST AND DRILLED, IN BOTH THEMES. The
+       population case file is where it has three segments to state. */
+    await gotoLevel(page, 'population:lows');
+    await page.waitForTimeout(450);
+    await page.mouse.move(0, 0);
+    await page.screenshot({ path: join(SHOTS, `r9-band-rest-${t}.png`) });
+    await page.locator('.pane.inspector').screenshot({ path: join(SHOTS, `r9-band-rest-${t}-column.png`) });
+    await page.evaluate(() => window.__ferVerdict('near_rule'));
+    await page.waitForTimeout(500);
+    await page.mouse.move(0, 0);
+    await page.screenshot({ path: join(SHOTS, `r9-band-drilled-${t}.png`) });
+    await page.locator('.pane.inspector').screenshot({ path: join(SHOTS, `r9-band-drilled-${t}-column.png`) });
+
     await page.close();
   }
 
@@ -887,8 +1082,10 @@ async function main() {
       + `${d.mismatches.length} unexplained, ${d.expected.length} named deviation(s), `
       + `${d.absentInApp.length} not laid out in the app, `
       + `${d.contentResolved.length} track(s) resolved against different content\n`
-      + `[${theme}] lens chart-option diff — ${r.chartOptionDiff.length} difference(s)\n`
-      + `[${theme}] queue-root pooled chart-option diff — ${r.pooledOptionDiff.length} difference(s)\n`
+      + `[${theme}] lens chart-option diff — ${r.chartOptionDiff.length} difference(s), `
+      + `${(r.chartOptionDiff.expected || []).length} named deviation(s)\n`
+      + `[${theme}] queue-root pooled chart-option diff — ${r.pooledOptionDiff.length} difference(s), `
+      + `${(r.pooledOptionDiff.expected || []).length} named deviation(s)\n`
       + `[${theme}] page scroll x ${r.geometry.pageScrollX}px / y ${r.geometry.pageScrollY}px; `
       + `breadcrumb clipped: ${r.geometry.breadcrumbClipped}; `
       + `level scrolls internally: ${r.geometry.levelScrollsInternally}\n`,
@@ -898,7 +1095,9 @@ async function main() {
       process.stdout.write(`  ! ${m.selector} (app <${m.appTag}> / mock <${m.mockTag}>)\n`);
       for (const b of m.bad) process.stdout.write(`      ${b}\n`);
     }
+    for (const o of r.chartOptionDiff.expected || []) process.stdout.write(`  ~= ${o}\n`);
     for (const o of r.chartOptionDiff) process.stdout.write(`  ~ ${o}\n`);
+    for (const o of r.pooledOptionDiff.expected || []) process.stdout.write(`  ≈= ${o}\n`);
     for (const o of r.pooledOptionDiff) process.stdout.write(`  ≈ ${o}\n`);
   }
   process.stdout.write(`\nmock console/page errors — ${problems.length}\n`);

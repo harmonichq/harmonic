@@ -82,6 +82,21 @@ const shell = document.querySelector('.cockpit-shell');
 const stage = document.querySelector('.cockpit-stage');
 const holder = document.createElement('div');
 holder.innerHTML = chrome;
+/* ROUND 9, FINDING 1 — THE FOOTER RAIL SPEAKS DESIGN.md's REGISTER.
+   The rail reads `Pump profile · ISF — mg/dL/U · I:C — g/U`, and rule 8 reserves
+   `ISF` and `I:C` for engine code and technical documentation: user copy uses
+   `Correction factor` and `Carb ratio`. This is the APP's own chrome, lifted out
+   of the running app's DOM, so the mock respells it at injection rather than
+   editing chrome.extracted.html — which harness.mjs rewrites from the app on
+   every run, so an edit there would survive exactly until the next run. The two
+   em dashes in that string are value PLACEHOLDERS ("no value yet"), not prose,
+   so rule 1 does not reach them and they stay. Reported as an app-side voice
+   defect this mock is standing in front of. */
+for (const rail of holder.querySelectorAll('.cockpit-profile-facts')) {
+  for (const [engine, user] of data.footerVoice) {
+    rail.textContent = rail.textContent.split(engine).join(user);
+  }
+}
 const topbar = holder.querySelector('.cockpit-topbar');
 const footer = holder.querySelector('.cockpit-footer');
 if (topbar) shell.insertBefore(topbar, stage);
@@ -115,8 +130,35 @@ const pooledHosts = {
   keyHost: el('lane-key'),
   payload: data.queue.canvas,
 };
-const pooledChart = paintPooled(pooledHosts);
+/* ROUND 9, FINDING 5 — `paintPooled` returns the instance PLUS the two things
+   the chart used to draw over its own plot and the head now owns: the legend's
+   keys and the window's caption. `paintHeadKeys` prints them. */
+const pooledChart = paintHeadKeys(paintPooled(pooledHosts));
 new ResizeObserver(() => pooledChart.resize()).observe(el('chart'));
+
+/* ROUND 9, FINDING 5 — THE CHART HEADER RAIL'S TWO NEW TENANTS.
+ *
+ * The keys are the shipped chart's own legend `data`, in the shipped order, read
+ * back off its option by pooled.js — so the rail can only ever name series the
+ * chart actually drew, and a series the shipped renderer drops (the day trace
+ * with nothing selected, the occurrence scatter at the queue root) drops out of
+ * the rail with it. The caption is the window markArea's own label, unwrapped
+ * from its rich-text tags, prefixed onto the window meta that was already there.
+ *
+ * The mark is a CSS square keyed on the series name, which is what the shipped
+ * ECharts legend was drawing too; nothing here invents a swatch for a series it
+ * cannot see. Returns the instance so the call sites read as one expression. */
+function paintHeadKeys({ chart, keys, caption }) {
+  el('dw-key').innerHTML = keys
+    .map((k) => `<span class="k" data-series="${k.name}"><i aria-hidden="true"></i>${k.name}</span>`)
+    .join('');
+  /* The caption joins the window meta rather than taking a line of its own: they
+     are two readings of the same window, and `paintPooled` has just written the
+     second one, so this prefixes rather than replaces. */
+  const scope = el('dw-scope');
+  if (caption) scope.textContent = `${caption} · ${scope.textContent}`;
+  return chart;
+}
 
 /* ------------------------------------------------------------- the dock floor */
 /* ROUND 5, BLOCK 8 — ONE LINE, AT THE COLUMN'S TRUE BOTTOM. The shipped dock is
@@ -205,12 +247,26 @@ function paintPooledCanvas() {
   const active = frame();
   const dots = active?.clock?.occurrences || [];
   const drill = highlighted ? data.clockDrills[highlighted] : null;
-  paintPooled({
+  paintHeadKeys(paintPooled({
     ...pooledHosts,
     occurrences: dots,
     trace: drill ? data.dayTraces[drill.day] : null,
-  });
+    /* ROUND 9, FINDING 6 — the day's key is named with the occurrence's DATE, not
+       with `That day`. The row the reader clicked says `Aug 3`; a chart key that
+       answers with a pronoun is the one series on the plot that will not say
+       what it is. Both projections take the same label (chart.js's legend does
+       too), from the same `dateOf` map. */
+    dayLabel: selectedKey()?.label || null,
+  }));
   markCanvas(dots);
+}
+
+/** The selected occurrence's own name and time, or null. One accessor, because
+    both projections' legends print it and they must never disagree. */
+function selectedKey() {
+  const record = highlighted ? sceneCanvas()?.dateOf?.[highlighted] : null;
+  if (!record) return null;
+  return { ...record, cohort: sceneCanvas()?.cohortOf?.[highlighted] || 'neutral' };
 }
 
 /* ROUND 8 — THE EMPHASIS LAYER, OVER THE SHIPPED SCATTER, NEVER INSTEAD OF IT.
@@ -246,10 +302,15 @@ function markCanvas(dots) {
   if (index < 0) return;
   const plotted = option.series[index].data || [];
   const at = (i) => plotted[i]?.value;
-  /* Only where there IS a split to read. A frame with one group draws no band,
-     and emphasising every dot on the plot against nothing is a colour change
-     dressed as a distinction. */
-  const split = (frame()?.occurrences.groups.length || 0) > 1;
+  /* Only where there IS a split to read: emphasising every dot on the plot
+     against nothing is a colour change dressed as a distinction.
+     ROUND 9, FINDING 4 — AND THE PREDICATE IS THE PLOT'S, NOT THE ROSTER'S. It
+     used to ask whether the TABLE had more than one group, which is why the
+     finding case file drew no emphasis: its roster is one verdict long. With the
+     case file now plotting all three verdicts like the population frame does,
+     the question is whether the DOTS carry more than one state — which is the
+     thing emphasis is about, and is true at both levels. */
+  const split = new Set(dots.map((d) => d.cohort)).size > 1;
   const focus = split
     ? dots.reduce((acc, d, i) => (d.cohort === verdict && at(i) ? [...acc, at(i)] : acc), [])
     : [];
@@ -357,7 +418,7 @@ function paintCanvas() {
   }
   el('canvas-title').textContent = current.canvasHead.title;
   el('canvas-persist').textContent = current.canvasHead.context;
-  legend.innerHTML = legendMarkup(canvas);
+  legend.innerHTML = legendMarkup(canvas, selectedKey());
   /* The lens is kept painted whichever projection is mounted — it is the same
      selection either way, and a chart that only exists while it is visible
      cannot be audited. Only the MOUNTED one is resized: an ECharts instance
@@ -406,7 +467,8 @@ function paintQueue() {
      `finding:over_treated_low` has a case file in this exploration; the other
      five rows drill nowhere, and `go` refuses an id it has no scene for rather
      than half-opening one. */
-  renderFindingsQueue(level, data.queue.projection, (row) => go(row.id));
+  const painted = renderFindingsQueue(level, data.queue.projection, (row) => go(row.id));
+  dressQueue(level, painted);
 
   /* ROUND 2 ITEM 5 — the ruling's free-browse entry, below the projection's own
      rows and its priced/unpriced seam. These rows are NOT in the projection
@@ -449,6 +511,61 @@ function paintQueue() {
   }
 }
 
+/* ================= ROUND 9, FINDINGS 11, 16 AND 19 =================
+ *
+ * Three edits to what the SHIPPED queue painter left on the page, applied to the
+ * nodes it painted rather than by forking it — the same standing that
+ * `data-selected` and the removed row `title` have on the evidence table.
+ *
+ * (11) RANK IS RENDERED. It is a ranked queue that rendered no rank: six flat
+ *      rows in server order, leaving the reader to guess whether row 1 outranked
+ *      row 6, which is the single most decision-relevant fact on the screen.
+ *      DESIGN.md rule 4 names the four words and forbids the 0–100 number, and
+ *      the tier each row opens was derived in build.mjs off the projection's own
+ *      register and priority. Each RUN gets one eyebrow at the Label rank; a tier
+ *      that continues across two rows does not repeat itself.
+ *
+ * (11) THE SEAM BECOMES A SECTION. The painter drops `TAIL_NOTE` between two
+ *      rows as a bare line of body-weight prose with no eyebrow and no rule, so
+ *      it reads as a caption for whichever row the eye lands on. CONTEXT.md names
+ *      that section — Watching — so it becomes a ledger rule at the section
+ *      register (`.lvl-cap`, which is already that register on this surface) with
+ *      the shipped sentence as its right-hand meta. The sentence is not rewritten.
+ *
+ * (16) THE BADGE GLYPHS GO. `⚙SETTING ›` / `◈HABIT ›` stacked a dingbat on a word
+ *      that already said it — the shipped module's own comment calls the glyph
+ *      "decoration on a word that already says it" and hides it from screen
+ *      readers, which is the tell. The words stay; only the decoration goes.
+ *      The chevron stays HERE, because a queue row genuinely changes level.
+ *
+ * (19) A HABIT ROW SAYS WHAT IT DOES BEFORE IT COUNTS. `1 of 3 highs · 1 of 4
+ *      lows` on a finding called Over-treated LOW leads with a highs figure and
+ *      names no denominator; a setting row's `now 0.8 U/hr → 0.96 U/hr` says what
+ *      it does first. The clause is set in front of the counts the painter
+ *      already laid out — no figure is added, moved or recomputed.
+ */
+function dressQueue(host, rows) {
+  const { tiers, watching, habitLead } = data.queue;
+  const note = host.querySelector('.tailnote');
+  if (note) {
+    note.outerHTML = `<div class="lvl-cap fer-watching">${watching.cap}`
+      + `<span class="meta">${watching.meta}</span></div>`;
+  }
+  for (const row of rows) {
+    const node = host.querySelector(`.qrow[data-id="${row.id}"]`);
+    if (!node) continue;
+    node.querySelector('.tag .gly')?.remove();
+    const tier = tiers[row.id];
+    if (tier) {
+      node.insertAdjacentHTML('beforebegin',
+        `<p class="fer-tier" data-tier="${tier.tier}">${tier.word}</p>`);
+    }
+    if (row.detail?.kind === 'appearances' && habitLead) {
+      node.querySelector('.den')?.prepend(habitLead);
+    }
+  }
+}
+
 /* --------------------------------------------------- the drilled case file */
 /* ROUND 8, ITEM 1 — `rowMarkup`, `occurrenceTable` and `measureFit` ARE
  * DELETED. Between them they were the mock's own table: a transcribed row
@@ -468,12 +585,22 @@ function paintQueue() {
  * verdicts, and drilling emphasises one set rather than removing two
  * (`markCanvas`, and the term in data.json). A frame with one group draws no
  * band, because there is no split to state. */
+/* ROUND 9, FINDING 8 — THE BAND KEEPS ITS FACT AND LOSES ITS MANUAL.
+   Round 8 set two sentences under the bar: what it counts, and that it scopes the
+   roster rather than the comparison. The second explained the control's own
+   scope, which a control drawn clearly enough does not need — and the canvas
+   already says it, because the unselected verdicts stay plotted. Worse, the
+   paragraph OUTLIVED the band: the factor dropdown overlays the bar, and the
+   sentence went on sitting underneath explaining a control that was no longer on
+   screen. The one fact it carried is now the band's own right-hand meta, on the
+   band's line, where it cannot be orphaned from the thing it counts. */
 function bandMarkup(active) {
-  const { groups, bandCaveat } = active.occurrences;
+  const { groups, bandMeta } = active.occurrences;
   if (groups.length < 2) return '';
   const seg = (g) => `aria-pressed="${g.key === verdict}" data-verdict="${g.key}"`;
   return `
     <div class="fer-band">
+      <div class="cap"><span class="lab">Verdict</span><span class="meta">${bandMeta}</span></div>
       <div class="bar" role="group" aria-label="Verdict split"
            style="grid-template-columns:${groups.map((g) => g.count).join('fr ')}fr">
         ${groups.map((g) => `<button type="button" class="seg" ${seg(g)}
@@ -483,8 +610,38 @@ function bandMarkup(active) {
         ${groups.map((g) => `<button type="button" class="key" ${seg(g)}><span>${g.lead}</span>
             <span class="n">${g.count}</span></button>`).join('')}
       </div>
-      <p class="caveat">${bandCaveat}</p>
     </div>`;
+}
+
+/* ROUND 9, FINDING 13 — THE RESIDUE, SCOPED TO THE FRAME THE TABLE IS DRAWING.
+ *
+ * Round 8 printed the frame's two leftovers as a finished sentence under a table
+ * that draws ONE verdict, so in the `Near rule` frame the last thing before the
+ * whitespace was `1 claimed by another factor · 2 not comparable` against a cap
+ * reading `4 of 20` and a band segment reading `4` — three numbers that close
+ * against nothing. Everything outside the roster is residue, including the other
+ * verdicts, so the line names them and the arithmetic closes on screen:
+ *
+ *     what the table draws  +  every clause below  =  the cap's denominator
+ *
+ * The other-verdict figure is the only one computed here, and it is computed as
+ * the remainder rather than tallied, which is what makes closing structural
+ * instead of coincidental. */
+const RESIDUE_NOUN = {
+  another_factor: 'claimed by another factor',
+  excluded: 'not comparable',
+  claimed: 'claimed by a finding',
+};
+
+function residueLine(active, group) {
+  const { residueParts, cap } = active.occurrences;
+  if (!residueParts) return '';
+  const named = Object.entries(RESIDUE_NOUN)
+    .filter(([key]) => residueParts[key])
+    .map(([key, noun]) => [residueParts[key], noun]);
+  const others = cap.denominator - group.count - named.reduce((n, [v]) => n + v, 0);
+  return [...(others > 0 ? [[others, 'in other verdicts']] : []), ...named]
+    .map(([n, noun]) => `${n} ${noun}`).join(' · ');
 }
 
 /** The group the roster is showing: the drilled verdict, or the frame's only
@@ -619,7 +776,10 @@ function paintLevel() {
          above prints the name, and it prints it once (round 2, item 3). -->
     <div class="q fer-subject">
       <div class="qrow" data-state="finding" data-tier="priced">
-        <span class="tag ${subject.flavor}"><span class="gly" aria-hidden="true">${subject.flavorGlyph}</span>${subject.flavorWord}</span>
+        <!-- ROUND 9, FINDING 16 — no glyph here either. The subject strip's tag is
+             the queue row's tag, and dropping the dingbat from one and not the
+             other would leave the surface saying HABIT two ways one drill apart. -->
+        <span class="tag ${subject.flavor}">${subject.flavorWord}</span>
         <span class="den">${subject.appearances.map(({ count, noun }, i) =>
           `${i ? '<span class="sep">·</span>' : ''}<span class="v">${count}</span> ${noun}`).join('')}</span>
       </div>
@@ -674,11 +834,36 @@ function paintLevel() {
          draws") applied to a roster that is now one verdict long. -->
     ${bandMarkup(active)}
     <div class="lvl-cap fer-occ-cap">Occurrences<span class="meta">${cap.key} &nbsp;·&nbsp; ${group.count} of ${cap.denominator} in ${cap.window}</span></div>
+    <!-- ROUND 9, FINDING 13 — THE RESIDUE SITS ABOVE THE EXPANDER, which is the
+         amendment's own settled form ("residue is an unfilled dim line above the
+         expander") and which round 8 inverted. As drawn there, the last thing
+         before the whitespace was a dim, unclosable arithmetic line rather than
+         the actionable control. The production table brings its own expander and
+         paints it after its rows, so the table host is split: the rows are painted
+         into it, the residue goes in the slot between, and the expander is moved
+         down past the residue after the paint (liftResidue below). Moving one
+         node the shipped painter emitted is the same class of stamp as removing
+         a row's title attribute — the painter is not edited. -->
     <div class="fer-table" id="occ-table"></div>
-    <!-- ROUND 5, BLOCK 7 — THE RESIDUE, one unfilled line at the table's own
-         left edge. It closes the section: the production table brings its own
-         expander, and that expander belongs to the rows it caps. -->
-    ${occurrences.residue ? `<div class="fer-residue">${occurrences.residue}</div>` : ''}`;
+    <!-- ROUND 9, FINDING 7 — THE DAY CONTRACT, HONOURED FOR THE SELECTED ROW.
+         CONTEXT.md is not soft about this: "'Jump to' is a contract, not
+         aspiration (ADR 0037): an Occurrence anywhere it renders deep-links to
+         the Day surface at its day with that moment ringed." This surface
+         renders occurrences and offered no route to Day from any of them, while
+         ending every row in the glyph that means there is somewhere to go.
+         The route is ONE right-aligned action in block 6's settled form — the
+         same treatment the case-file action takes — and it is ABSENT rather than
+         disabled until a row is selected, because until then there is no day to
+         open. The per-row chevron comes OFF (below): the row's job is selection,
+         and a chevron that returns a tint teaches the reader to distrust every
+         chevron on the page.
+         THIS ADDS A ROUTE THE EXPLORATION HAD NOT DRAWN. It goes nowhere here —
+         Day is off this surface's spine — exactly as the coincidence routes do,
+         and it is called out in the report so it can be pulled back out. -->
+    ${dayRoute() ? `
+    <div class="fer-route fer-day">
+      <button type="button" class="fer-open">${dayRoute()}</button>
+    </div>` : ''}`;
 
   /* THE PRODUCTION TABLE, PAINTING ITSELF. `factor.cause` is the causal phrase
      its group header prints; `onMore` is its own two-way expander; `shownCount`
@@ -700,18 +885,57 @@ function paintLevel() {
                       sentence as a native tooltip, so the browser popped it over
                       the surface on every row the pointer crossed. Hover does
                       nothing on this surface, and that is settled. */
+  /* FINDING 12 — does this group mix verdicts, or state one? Read off the
+     occurrences the painter was handed, through the shipped `tierOf`, so the
+     question is asked of exactly the values the cells would print. */
+  const uniform = new Set(group.occurrences.map((o) => tierOf(o))).size < 2;
   paintedOrder(group.occurrences, shownCount).forEach((occ, i) => {
     const node = host.querySelectorAll('.ev-row')[i];
     if (!node) return;
     node.dataset.id = occ.id;
     node.dataset.selected = String(highlighted === occ.id);
     node.removeAttribute('title');
+    /* ROUND 9, FINDING 12 — A HOMOGENEOUS GROUP DOES NOT RESTATE ITSELF ONCE PER
+       ROW. Operator's ruling this round. The verdict cell is the widest text in
+       the row and in every frame this fixture can reach it prints one word all
+       the way down, competing for width with the numbers that actually differ,
+       while the group rule directly above already states it. It is blanked where
+       the group is uniform and printed per row where a group genuinely mixes —
+       a DATA-DRIVEN suppression, decided from the group's own occurrences, not a
+       change to what the table is.
+       IT CANNOT BE DONE IN THE DATA ALONE, and that is worth writing down: the
+       shipped painter reads ONE field (`tierOf`) for both the group rule's word
+       and every row's cell, so any value that blanks the cells also blanks the
+       header. So it is applied as a stamp to the row the painter emitted, which
+       is the standing round 8 gave `data-selected` and the removed `title`. This
+       restores round 4's `dedupeGroupTags` rule, which round 8 deleted with the
+       mock's own painter; it is the operator's rule now, not the mock's.
+       ON THIS FIXTURE EVERY GROUP IS ONE COHORT, so the column never renders —
+       which is exactly what finding 12 observed. Reported. */
+    if (uniform) node.querySelector('.tier').textContent = '';
+    /* ROUND 9, FINDING 16 + 7 — THE ROW'S CHEVRON COMES OFF. `›` means "there is
+       somewhere to go", and on this surface an occurrence row goes nowhere: it
+       selects. Every row type on the page ended in one, so the glyph had stopped
+       carrying any meaning at all; it is reserved now for the things that change
+       level, and the one route this row genuinely owes — Day — is the single
+       right-aligned action above, where the surface already puts a route. The
+       shipped cell is removed from the painted row, not from the painter. */
+    node.querySelector('.chev')?.remove();
   });
+
+  /* FINDING 13 — the two nodes the shipped painter appends in the order it
+     appends them, put back in the settled order. `.more` is the expander and it
+     is always last if it exists at all. */
+  liftResidue(host, residueLine(active, group));
 
   /* The route out of a population case file. Scoped to `.fer-route` because the
      coincidence routes above take the shipped `.linkbtn` and go nowhere in this
      exploration, exactly as they did in round 5. */
-  level.querySelector('.fer-route .fer-open')
+  /* Scoped to `[data-open]`, not to the first `.fer-open` in the column: FINDING
+     7 adds a second right-aligned action (the Day route), it carries no target
+     because Day is off this surface's spine, and a bare first-match would have
+     handed `go` an undefined id — which walks the reader back to the queue. */
+  level.querySelector('.fer-route .fer-open[data-open]')
     ?.addEventListener('click', (e) => go(e.currentTarget.dataset.open));
 
   /* ROUND 8, ITEM 1 — the band's two controls, bar and key, drilling the same
@@ -722,6 +946,33 @@ function paintLevel() {
   }
 
   paintDock();
+}
+
+/** FINDING 13 — set the residue between the last row and the expander.
+ *
+ * The production table paints its rows and then its `.more` control into one
+ * host, so there is no slot between them to render into declaratively. The
+ * residue is inserted before `.more` where there is one, and appended where the
+ * frame does not overflow — which is the same position, since with no expander
+ * the residue IS the last line. Nothing about the painter changes: this moves
+ * around what it already emitted. */
+function liftResidue(host, text) {
+  host.querySelector('.fer-residue')?.remove();
+  if (!text) return;
+  const line = document.createElement('div');
+  line.className = 'fer-residue';
+  line.textContent = text;
+  const more = host.querySelector('.more');
+  if (more) host.insertBefore(line, more);
+  else host.append(line);
+}
+
+/** FINDING 7 — the selected occurrence's route to Day, or nothing. The label
+    carries the day it opens, so the action names its own destination the way
+    `Open case file ›` does. */
+function dayRoute() {
+  const key = selectedKey();
+  return key ? `Open ${key.label} in Day ›` : '';
 }
 
 /** Drill the band. It scopes the ROSTER: the table redraws for that verdict and
@@ -738,8 +989,11 @@ function selectVerdict(key) {
 }
 
 /* ROUND 5, BLOCK 8 — the dock's one line, per level. */
+/* ROUND 9, FINDING 15 — ONE STRING, BECAUSE THERE IS ONE STATE. The dock reports
+   what is being watched, and nothing about that differs between the queue root
+   and a case file, so the level is no longer a key into it. */
 function paintDock() {
-  dockLine.textContent = data.dock[scene()?.kind || 'queue'];
+  dockLine.textContent = data.dock.idle;
 }
 
 /** Pick a frame: the canvas redraws for that factor (or draws the honest empty

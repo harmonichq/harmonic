@@ -112,6 +112,17 @@
                     <div class="head-line head-rest">
                       <h2>Glucose by time of day</h2>
                       <span class="meta" id="dw-scope">—</span>
+                      <!-- ROUND 9, FINDING 5 — THE CHART'S LEGEND AND ITS WINDOW
+                           CAPTION LIVE IN THE HEADER RAIL NOW. Both used to
+                           float over the plot: ECharts' own legend in the top
+                           right, and `24 H 00:00–24:00 · 25–75 spread …`
+                           unanchored in the empty upper third. The caption joins
+                           `#dw-scope`, which is already the window's meta; the
+                           keys take this rail beside the title. Their content is
+                           the shipped chart's own legend `data`, read back off
+                           its option by pooled.js — the head prints what the
+                           chart drew, it does not decide it. -->
+                      <span class="fer-head-key" id="dw-key" aria-label="Chart legend"></span>
                     </div>
                     <div class="head-line head-live" id="dw-readout" aria-hidden="true">
                       <span class="rd-time" id="rd-time">--:--</span>

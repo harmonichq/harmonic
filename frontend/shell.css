@@ -63,7 +63,13 @@ body { background: var(--ck-ground); }
 /* The locked Harmonic mark (#736): a native Inter capital H in a burnt-orange
    rounded square. No wordmark asset exists — `Harmonic` beside it is simply set
    in Inter. The square holds the same orange in both themes, so the mark reads
-   as one constant object rather than a themed one. */
+   as one constant object rather than a themed one.
+   #b35b2e survives HERE and in the favicon only, and is no longer the chrome
+   signal (ADR 47): the mark is identity, not interaction, and WCAG exempts a
+   logotype from a contrast minimum. It is also the empty band in miniature —
+   the same square rides a dark chrome bar and a light browser tab strip, which
+   pull opposite ways, so a constant is the only stable answer for it. Do not
+   re-point this at --ck-bar-signal; index.test.js pins that it does not. */
 .cockpit-mark {
   display: grid;
   width: 20px;
@@ -127,7 +133,7 @@ body { background: var(--ck-ground); }
 .cockpit-step[aria-current="step"] .cockpit-step-number {
   border-color: var(--ck-accent);
   background: var(--ck-accent);
-  color: var(--on-primary);
+  color: var(--ck-bar-on-signal);
 }
 .cockpit-flow-separator { color: color-mix(in srgb, var(--ck-meta) 60%, transparent); font-size: var(--ck-data); }
 .cockpit-badge {
@@ -142,7 +148,7 @@ body { background: var(--ck-ground); }
   border-radius: 8px;
   background: var(--ck-accent);
   box-shadow: 0 0 0 1.5px var(--ck-ground);
-  color: var(--on-primary);
+  color: var(--ck-bar-on-signal);
   font-family: var(--ck-mono);
   font-size: var(--ck-label);
   font-weight: 700;

@@ -93,9 +93,21 @@ html.dark {
   --ck-body: #d8e0da;
   --ck-meta: #afc0b5;
   --ck-rule: #557061;
-  --ck-accent: #b35b2e;
-  --ck-accent-soft: #8f4524;
-  --on-primary: #ffffff;
+  /* The bar's signal is DERIVED FOR THIS GROUND, and can never be the sheet's
+     (ADR 47). This bar is dark in both themes while light's sheet is bone, so no
+     one value serves both: bone caps a signal used as text at relative luminance
+     .1700 for 4.5:1, and this evergreen floors a signal used as a mark at .1811
+     for 3:1. That band is empty. It is also how the literals that used to sit
+     here came to BE the pre-ADR-37 primary ramp (#b35b2e / #8f4524) — copied
+     once, then left behind when the sheet relit from parchment to bone.
+     Re-derive, never copy. The rule: the signal must clear 4.5:1 as TEXT on
+     --ck-panel above, which is the heaviest job it has (the Log carbs `+`, the
+     checked theme name). Every other use is a 3:1 mark and follows for free. */
+  --ck-bar-signal: #f79d60;       /* L .4470 — 4.95:1 on --ck-panel, 6.46:1 on --ck-ground */
+  --ck-bar-signal-well: #874928;  /* L .1000 — holds --ck-body at 5.17:1, sits 3.30:1 under the signal */
+  --ck-bar-on-signal: var(--ck-ground);  /* ink ON the signal is the bar's own ground: 6.46:1 */
+  --ck-accent: var(--ck-bar-signal);
+  --ck-accent-soft: var(--ck-bar-signal-well);
   background: #183326;
   color: #f5f1e9;
 }
@@ -108,9 +120,15 @@ html.dark .cockpit-footer {
   --ck-body: #d3c7b4;
   --ck-meta: #a19484;
   --ck-rule: #4c4238;
-  --ck-accent: #d2743e;
-  --ck-accent-soft: #7a4423;
-  --on-primary: #ffffff;
+  /* Derived against THIS bar's panel by the same rule, not carried over from
+     light and not aliased to the sheet's dark signal. Both grounds happen to be
+     dark in this theme, so one value COULD serve both here — which is exactly
+     the coincidence that produced the light bug, so the token stays its own. */
+  --ck-bar-signal: #dc7b42;       /* L .2960 — 5.07:1 on --ck-panel, 6.08:1 on --ck-ground */
+  --ck-bar-signal-well: #64361e;  /* L .0550 — holds --ck-body at 6.03:1, sits 3.33:1 under the signal */
+  --ck-bar-on-signal: var(--ck-ground);  /* ink ON the signal is the bar's own ground: 6.08:1 */
+  --ck-accent: var(--ck-bar-signal);
+  --ck-accent-soft: var(--ck-bar-signal-well);
   background: #161413;
 }
 .cockpit-step[aria-current="step"] {
@@ -121,7 +139,10 @@ html.dark .cockpit-footer {
 .cockpit-step[aria-current="step"] .cockpit-step-number {
   border-color: #f5f1e9;
   background: var(--ck-accent);
-  color: #ffffff;
+  /* The ink is shell.css's --ck-bar-on-signal. It used to be #ffffff here, the
+     last member of the copied ramp: white reads on a dark orange and stops
+     reading as the signal lightens to clear its own ground (dark measured
+     3.33:1 even before that). Ink on the signal is now the bar's own ground. */
 }
 .cockpit-scope { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .035); }
 

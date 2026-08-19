@@ -265,8 +265,8 @@ export const S6 = async (open, browser) => use(open, browser, { view: 'lows' }, 
   ok(await page.locator('.ec-key-item[data-cohort="selected"]').count() === 1,
     'selected trace legend is missing');
   const rescue = await page.locator('#ec-rescue').innerText();
-  ok(/8 g/.test(rescue) && /6 g/.test(rescue) && /4 g/.test(rescue),
-    'finite rescue grams did not reconcile');
+  ok(rescue === 'Rescue carbs: 8 g, 6 g, 4 g.',
+    `rescue sentence drifted from "Rescue carbs: 8 g, 6 g, 4 g." (got "${rescue}")`);
   ok(!/manual|rise.prompt|low.prompt|no recorded amount/i.test(rescue),
     'rescue provenance or null amount leaked to the inspector');
   const markers = await page.evaluate(() => {

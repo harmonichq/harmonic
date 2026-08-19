@@ -336,6 +336,62 @@ export function chartOption(surface, canvas, highlighted) {
   };
 }
 
+/** ROUND 5, BLOCK 2 — THE HONEST EMPTY CANVAS, for the Unclaimed frame.
+ *
+ * The frame is a real division of the population (ten of twenty lows match no
+ * finding's rule) and there is nothing to compare it against, because there is
+ * no rule. Both dishonest answers have already been tried: round 3 mounted a
+ * full-height pane and drew nothing in it, round 4 deleted the frame so the
+ * question could not be asked.
+ *
+ * What draws instead is the CHART FRAME'S OWN FURNITURE, greyed, WITH THE RANGE
+ * STILL ON IT — the same signed-hour x window and the same 40–340 ladder at the
+ * same interval as a comparison frame, so the reader sees the same instrument
+ * standing empty at the same coordinates rather than a blank pane. Plus one
+ * short line. No paragraph.
+ *
+ * Every axis value is the one `chartOption` above already uses; only the inks
+ * step down, through ONE multiplier on the opacity the shipped axis carries. */
+const GREY = .38;
+
+export function emptyOption(surface, frame, alignmentWindow, axisAnchor) {
+  const muted = css(surface, '--mk-muted');
+  const line = css(surface, '--mk-line');
+  const furniture = (extra) => ({
+    axisTick: { show: false },
+    splitLine: { show: true, lineStyle: { color: line, opacity: .48 * GREY } },
+    axisLabel: { color: muted, opacity: GREY, fontFamily: 'Inter', fontSize: 10, ...extra },
+  });
+  return {
+    animation: false,
+    backgroundColor: 'transparent',
+    aria: {
+      enabled: true,
+      decal: { show: false },
+      description: `${frame.empty.head}. ${frame.empty.line}`,
+    },
+    grid: { left: 52, right: 22, top: 24, bottom: 42, containLabel: false },
+    graphic: [{
+      type: 'text', left: 'center', top: 'middle', silent: true,
+      style: {
+        text: frame.empty.line, textAlign: 'center',
+        fill: muted, fontFamily: 'Inter', fontSize: 11.5,
+      },
+    }],
+    xAxis: {
+      type: 'value', min: alignmentWindow[0], max: alignmentWindow[1], interval: 60,
+      axisLine: { onZero: false, lineStyle: { color: line, opacity: GREY } },
+      ...furniture({ formatter: (value) => axisLabel(value, axisAnchor) }),
+    },
+    yAxis: {
+      type: 'value', min: 40, max: 340, interval: 60,
+      axisLine: { show: false },
+      ...furniture({}),
+    },
+    series: [],
+  };
+}
+
 /** diagnose-event-comparison.js `paintLegend`, cohort branch.
  *
  * ROUND 4 ITEM 7 — THE RAIL IS FOR SERIES THAT ARE DRAWN. A `withheld` cohort
@@ -355,11 +411,21 @@ export function legendMarkup(canvas) {
     && canvas.cohorts[key].routed_count > 0);
   const rail = live.map((key) => {
     const record = canvas.cohorts[key];
+    /* ROUND 5, BLOCK 6 — THE NEAR-RULE HEDGE HANGS HERE, not in the inspector
+       column. It was a `.ec-boundary-note` line in the case-file body: a full
+       line of prose about one cohort, printed whether or not that cohort had
+       anything on the canvas. It is now a sub-line on the Near-rule KEY —
+       attached to the mark it is about, in the one place the phrase "Near rule"
+       is already on screen — and it prints only where the cohort routed events
+       (build.mjs sets `nearRuleNote` to null otherwise). */
+    const note = key === 'near_rule' && canvas.nearRuleNote
+      ? `<small class="fer-key-hedge">${canvas.nearRuleNote}</small>` : '';
     return `
       <span class="ec-key-item" data-cohort="${key}" data-support="${record.support}" data-selected-cohort="false">
         <i class="ec-key-mark" aria-hidden="true"></i>
         <strong>${record.label}<em class="ec-support-label">${record.supportWord}</em></strong>
         <small>${record.legendDetail}</small>
+        ${note}
       </span>`;
   }).join('');
   if (!dead.length) return rail;

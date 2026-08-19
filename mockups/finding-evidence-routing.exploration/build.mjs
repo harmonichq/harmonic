@@ -65,7 +65,7 @@ import { fileURLToPath } from 'node:url';
 import { projectSyntheticCapture } from '../diagnose-event-comparison.synthetic/project.mjs';
 import { queueRows, queueMeta, FLAVOR } from '../../frontend/diagnose-findings-queue.js';
 import { buildSlotLane, cellAtMinute, clockBuckets, hhmm } from '../../frontend/diagnose-workstation-chart.js';
-import { KIND, IDLE_TITLE, IDLE_DETAIL } from '../../frontend/watched-change-dock.js';
+import { KIND } from '../../frontend/watched-change-dock.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..', '..');
@@ -73,8 +73,21 @@ const FACTOR = 'over_treated_low';
 const VIEW = 'lows';
 const FINDING_ID = 'finding:over_treated_low';
 const POPULATION_ID = 'population:lows';
-/** diagnose-workstation.js's EVIDENCE_CAP — five rows, then the expander. */
-const EVIDENCE_CAP = 5;
+/* ROUND 5, BLOCK 9 — THE FIXED FIVE IS GONE, so no cap is emitted at all. The
+   occurrences table caps at rows that FIT, measured in the browser against the
+   column's own remaining height (surface.js `fittingRows`), and the expander
+   appears only on genuine overflow. `occurrences.cap`, `moreLabel` and
+   `backLabel` no longer exist in data.json — a row budget is a geometry fact
+   and cannot be decided here. */
+
+/* ROUND 5, WORKSTREAM A — the queue root's canvas is the SHIPPED pooled glucose
+   chart, so this build hands its fixture across raw and the surface runs the
+   shipped builders on it in the browser, exactly as the app does. */
+const PAYLOAD = 'mockups/diagnose-workstation.synthetic/payload.json';
+/** VERBATIM — diagnose-workstation.js `WINDOWS.all`, `winEdge`, and the
+    `${LABEL.toUpperCase()} ${winText}` string it builds for a pressed preset. */
+const ALL_DAY = { label: '24 h', range: [0, 1440] };
+const winEdge = (m) => (m === 1440 ? '24:00' : hhmm(m));
 
 const readJson = async (path) => JSON.parse(await readFile(join(ROOT, path), 'utf8'));
 
@@ -168,6 +181,16 @@ function canvasFor(lens) {
     context: 'excursion nadir · −5 h to +2 h',
     alignmentWindow: lens.coordinates.alignment_window_min,
     axisAnchor: 'low',
+    /* ROUND 5, BLOCK 6 — THE HEDGE LEAVES THE INSPECTOR COLUMN. It was a
+       `.ec-boundary-note` line in the case-file body, a whole line of prose
+       about a cohort the reader may not even be looking at. It now hangs off
+       the canvas legend's own Near-rule key as a sub-line, and only where that
+       cohort actually routed events — which is the one place the word "Near
+       rule" is already on screen and the only place the hedge is about
+       something visible. Null elsewhere, and the legend prints nothing. */
+    nearRuleNote: (lens.cohorts.find((c) => c.key === 'near_rule')?.routed_count || 0) > 0
+      ? 'Disclosure only — never enters Priority, a suggestion, or Plan.'
+      : null,
     cohortOrder: lens.cohorts.map((c) => c.key),
     cohorts: Object.fromEntries(lens.cohorts.map((c) => [c.key, {
       key: c.key,
@@ -206,7 +229,6 @@ const GROUP_PHRASE = {
   neutral: () => 'matched no factor’s rule',
 };
 
-const plural = (n, noun) => `${n} ${noun}${n === 1 ? '' : 's'}`;
 
 /** ROUND 4 ITEM 9 — a row does not repeat what its group header already said.
  *
@@ -252,6 +274,15 @@ function traceMap(capture, ids, coords) {
 async function main() {
   const projection = await readJson('frontend/__fixtures__/findings-projection.json');
   const capture = await readJson('mockups/diagnose-event-comparison.synthetic/capture.json');
+  /* ROUND 5, WORKSTREAM A — the third authorized fixture, and the only one the
+     pooled queue-root chart reads. It is the SAME payload the browser gates
+     boot the app from (harness.mjs's `PAYLOAD`), so the mock's pooled chart and
+     the running app's are fed byte-identical input and the option diff means
+     something. Fail closed: a payload without a pooled feed or basal rows would
+     otherwise render an empty chart that looks deliberate. */
+  const payload = await readJson(PAYLOAD);
+  if (!payload.evidence?.pooled?.bins?.length) throw new Error(`${PAYLOAD} carries no pooled CGM bins`);
+  if (!payload.analyze?.basal?.length) throw new Error(`${PAYLOAD} carries no basal slot estimates`);
 
   /* ---- level 1: the ranked queue, handed to the SHIPPED renderer whole ---- */
   const globalWindow = projection.windows.global;
@@ -348,47 +379,91 @@ async function main() {
           .map((o) => rows.find((r) => r.id === o.identity.id)),
       }))
       .filter((g) => g.rows.length)
-      .map((g) => ({ ...g, count: `· ${plural(g.rows.length, 'event')}` }));
+      /* ROUND 5, BLOCK 5 — the group header is a RULE, not a row, and its count
+         is a bare tabular number at the rule's right end. The round-4 phrase
+         "· 7 events" restated the noun the whole table is made of. */
+      .map((g) => ({ ...g, count: g.rows.length }));
     return {
       key: factorKey,
+      label,
+      /* ROUND 5, BLOCK 2 — the segment's count is the FRAME's own claim: how
+         many lows this factor's rule matched. */
+      count: claims[factorKey],
       canvas: canvasFor(narrow),
-      /* ROUND 4 ITEM 5 — the near-rule hedge is no longer a per-frame paragraph.
-         It is one low-ink line, printed ONCE at the scene, below the tally that
-         is the actual data. */
-      /* The sideways route into the finding's own case file. It resolves only
-         into a case file this exploration actually built: `correction_on_iob`
-         has neither a projection row nor a scene, so its line SAYS the route is
-         missing rather than offering a button nothing answers. */
-      route: factorKey === FACTOR
-        ? { text: `${label} is a finding in the queue.`, label: 'Open case file', target: FINDING_ID }
-        : { text: `${label} has no case file in this exploration.`, label: null, target: null },
+      /* ROUND 5, BLOCK 6 — THE ROUTE IS ONE ACTION, NOT A SENTENCE, and it is
+         ABSENT rather than apologised for where the factor has no case file.
+         Round 4 spent a full line saying `Correction on active insulin has no
+         case file in this exploration.` beside a button that was not there. */
+      route: factorKey === FACTOR ? { label: 'Open case file ›', target: FINDING_ID } : null,
       occurrences: {
-        cap: EVIDENCE_CAP,
-        capMeta: `entry → worst · Δ &nbsp;·&nbsp; ${rows.length} of ${narrow.population.denominator} in ${windowLabel}`,
-        counterNote: `${narrow.population.counts.another_factor} claimed by another factor `
-          + `· ${narrow.population.counts.excluded} not comparable under this rule`,
-        moreLabel: rows.length > EVIDENCE_CAP ? `${rows.length - EVIDENCE_CAP} more` : null,
-        backLabel: `Show first ${EVIDENCE_CAP}`,
+        /* ROUND 5, BLOCK 4 — the meta's denominator is the FRAME's: how many of
+           the population this frame's rule matched, over the window. The
+           `entry → worst · Δ` column legend is gone with it; the columns are
+           the table's own and they are self-evident beside the numbers. */
+        capMeta: `${claims[factorKey]} of ${narrow.population.denominator} in ${windowLabel}`,
+        /* ROUND 5, BLOCK 7 — the residue, as ONE unfilled line. It is the same
+           two counts round 4 printed in a dark `.ev-group.counter` slab; block 3
+           routes the finding scene's `2 not comparable` residue here too. */
+        residue: `${narrow.population.counts.another_factor} claimed by another factor`
+          + ` · ${narrow.population.counts.excluded} not comparable`,
         groups: dedupeGroupTags(groups),
       },
     };
   };
 
-  /* ROUND 4 ITEM 4 — THE UNCLAIMED TIER LEAVES THE SELECTOR. Round 3 gave it a
-     claim line and a canvas-less frame; the operator's ruling is that a
-     selectable tier drawing no comparison does not belong in a selector, and a
-     second look at the fixture says the frame was also redundant. Under
-     `over_treated_low` the unclaimed ten ARE that frame's Near rule (4) and Rule
-     did not match (6) groups, row for row — every low a factor cannot claim is
-     still a low that factor placed in a cohort. So a disclosure revealing "the
-     unclaimed rows" below the factor groups would re-list rows already on
-     screen under a second name. The count stays in the summary sentence, and
-     `unclaimedIds` is retained only to compute it. */
+  /* ROUND 5, BLOCK 2 — THE UNCLAIMED FRAME IS RESTORED AS A THIRD SEGMENT.
+   *
+   * Round 4 deleted it on the reasoning that its ten rows re-list the selected
+   * factor's own Near rule and Rule-did-not-match groups. That reasoning holds
+   * only while a factor frame is selected, and it is the wrong test: the
+   * segmented control is a statement of what the population divides into, and a
+   * division that silently drops its largest part is a lie about the twenty.
+   * Ten of these lows match nothing, that is the single most interesting fact
+   * on the surface, and the operator accepted the prescription wholesale.
+   *
+   * WHAT IT DRAWS is the honest empty state, not a comparison: project.mjs has
+   * no unclaimed coordinate because there IS no rule to compare against, so the
+   * canvas prints its own furniture — greyed axes, the alignment range still on
+   * them — and one short line. The head is swapped to a truthful label rather
+   * than left reading `Low response comparison` over an empty plot. */
+  const unclaimedRows = wide.occurrences
+    .filter((o) => unclaimedIds.includes(o.identity.id))
+    .map((o) => ({ ...occurrenceRow(o), tag: '' }));
+  const unclaimedFrame = {
+    key: 'unclaimed',
+    label: 'Unclaimed',
+    count: unclaimedIds.length,
+    canvas: null,
+    /* The empty canvas's own two strings. `head` swaps the canvas title; `line`
+       is the ONE short line the prescription allows in place of a paragraph. */
+    empty: {
+      head: 'No comparison drawn',
+      context: `${unclaimedIds.length} lows · no rule to compare against`,
+      line: 'No finding claims these, so there is no rule to compare them with.',
+    },
+    route: null,
+    occurrences: {
+      capMeta: `${unclaimedIds.length} of ${wide.population.denominator} in ${windowLabel}`,
+      /* The mirror of a factor frame's residue: what is NOT in this table. */
+      residue: `${claimed} claimed by a finding`,
+      groups: [{
+        key: 'unclaimed',
+        lead: 'Claimed by no finding',
+        phrase: null,
+        count: unclaimedRows.length,
+        rows: unclaimedRows,
+      }],
+    },
+  };
+
   const claimOrder = Object.entries(claims).sort(([, a], [, b]) => b - a).map(([key]) => key);
-  const frames = Object.fromEntries(claimOrder.map((key) => [key, frameFor(key)]));
-  const claimLines = claimOrder.map((key) => ({
-    key, label: factorLabel[key], count: claims[key],
-  }));
+  const frames = Object.fromEntries([
+    ...claimOrder.map((key) => [key, frameFor(key)]),
+    ['unclaimed', unclaimedFrame],
+  ]);
+  /* The segmented control's three segments, in the order the prescription
+     names them: the claiming factors by size, then Unclaimed. */
+  const segments = Object.values(frames).map((f) => ({ key: f.key, label: f.label, count: f.count }));
 
   /* ---- the second population row's count, same producer, meals view ---- */
   const mealsView = capture.views.meals;
@@ -417,12 +492,20 @@ async function main() {
         + 'PROJECTION PER CLAIMED FACTOR (view lows, factor <k>, block all) for that frame\'s canvas, and the '
         + 'same coordinates with another=true for its regrouped table. The claim split itself is a tally of '
         + 'the capture\'s `routes`: a low is claimed when some factor routes it to `fired`.',
-      unclaimed: 'NOT A FRAME AND NOT A SELECTOR LINE (round 4, item 4). project.mjs projects cohorts for a '
-        + 'NAMED FACTOR and has no unclaimed coordinate, so the round-3 `No finding claims these` line selected '
-        + 'a frame that drew no comparison. It is also redundant: under `over_treated_low` the ten unclaimed '
-        + 'lows ARE that frame\'s Near rule (4) and Rule did not match (6) groups, row for row, because a low no '
-        + 'factor claims is still a low every factor placed in a cohort. The count survives only inside the '
-        + 'population summary sentence.',
+      queue_canvas: 'mockups/diagnose-workstation.synthetic/payload.json (evidence.pooled, analyze.basal, '
+        + 'evidence.target_range) — handed across RAW. The surface runs the shipped envelopeFromPooled / '
+        + 'markersFromPooled / windowStats / buildSlotLane / renderCanvas over it in the browser, which is the '
+        + 'app\'s own path from its API response. This is a THIRD synthetic fixture, disjoint from the other '
+        + 'two again: its 3 captured CGM days and 48 basal slots are not the lens capture\'s 20 lows and not '
+        + 'the projection\'s 30-day window. Nothing on the queue root reconciles them, and nothing tries to.',
+      unclaimed: 'RESTORED AS A THIRD SEGMENT (round 5, block 2). project.mjs projects cohorts for a NAMED '
+        + 'FACTOR and has no unclaimed coordinate, so this frame draws NO comparison — its canvas is the '
+        + 'honest empty state (axis furniture with the alignment range still on it, one short line, a '
+        + 'truthful head), never a facsimile of a comparison. Its rows are the wide projection\'s occurrences '
+        + 'filtered to the lows no factor routes to `fired`; its residue names the ten that are claimed. '
+        + 'Round 4\'s deletion argument — that these ten re-list the selected factor\'s Near rule and Rule-'
+        + 'did-not-match groups — holds only while a factor frame is selected, and the segmented control is a '
+        + 'statement about the population, not about the selected frame.',
       unreachable_factor: 'correction_stacking is a factor of the lows view and fires on NOTHING in this '
         + 'capture, so it claims no low and the claim split — which is the selector — never offers it. No '
         + 'frame exists for it.',
@@ -450,21 +533,69 @@ async function main() {
          they were counted against. Rows take the bare population noun and the
          count becomes the accessory, which is also what removes the doubled
          "All … / N lows". */
-      populationCap: 'Exposure populations',
+      /* ROUND 5, THE PERSONA'S NAMING RULING (mid-run). `Exposure populations`
+         was CONTEXT.md's noun for the denominator, which is what these rows
+         ARE, but it named the concept rather than the destination and it left
+         the capture's window restated on every row. The cap is now a SECTION
+         SPINE at the Occurrences register carrying the window ONCE, and the
+         rows are the bare destinations — and the row label is byte-identical to
+         the crumb leaf it opens (`Findings › Lows`), so the routing cannot
+         change vocabulary mid-hop. */
+      populationCap: 'All events',
+      populationCapMeta: windowLabel,
       populationRows: [
         {
           id: POPULATION_ID, derived: true, title: 'Lows', drills: true,
-          count: wide.population.denominator, window: windowLabel,
+          count: wide.population.denominator,
         },
         {
           id: 'population:meals', derived: true, title: 'Meals', drills: false,
-          count: meals.population.denominator, window: windowLabel,
+          count: meals.population.denominator,
         },
       ],
+      /* ---------- ROUND 5, WORKSTREAM A: the queue root's canvas ----------
+         THE POOLED GLUCOSE CHART, from the workstation payload fixture. Nothing
+         is derived here: the surface runs `envelopeFromPooled`,
+         `markersFromPooled`, `windowStats`, `buildSlotLane` and `renderCanvas`
+         — all shipped — over exactly these two raw sub-objects, which is the
+         same path frontend/diagnose-workstation.js takes from its API response.
+
+         Round 4 collapsed this pane on the grounds that the queue level had
+         nothing to answer with. That was true of round 3's MOCK, which put a
+         title over empty ground; it was never true of the ruling, whose
+         queue-root canvas IS this chart, and the app has had it all along. */
+      canvas: {
+        head: { title: 'Glucose by time of day' },
+        pooled: payload.evidence.pooled,
+        basal: payload.analyze.basal,
+        /* NO `target`. The shipped workstation does not pass one either — it
+           lets `renderCanvas` fall through to its own `[70, 180]` default — and
+           the payload's `evidence.target_range` is an object, not the pair the
+           renderer indexes, so handing it over produced a markArea with an
+           undefined bound and killed the boot. Matching the app is both the
+           faithful move and the working one. */
+        window: ALL_DAY.range,
+        /* diagnose-workstation.js's own preset-label form, for the one preset
+           that means "no window has been chosen": the whole day. */
+        windowLabel: `${ALL_DAY.label.toUpperCase()} `
+          + `${hhmm(ALL_DAY.range[0])}–${winEdge(ALL_DAY.range[1])}`,
+      },
     },
 
-    /* ---------- the dock floor, idle ---------- */
-    dock: { kind: KIND.idle, title: IDLE_TITLE, detail: IDLE_DETAIL },
+    /* ---------- the dock floor, per level (ROUND 5, BLOCK 8) ----------
+       The shipped `IDLE_TITLE` / `IDLE_DETAIL` pair is two ranks of type saying
+       one thing, and the prescription cuts the idle dock to a single line. The
+       population and queue levels get the bare state; the FINDING scene — the
+       one level where a change can actually be staged — gets the onboarding
+       sentence, reworded to stand alone now that it no longer has a title line
+       above it to lean on. DEVIATION from watched-change-dock.js's exported
+       strings, named here and in the report. */
+    dock: {
+      kind: KIND.idle,
+      queue: 'Nothing staged',
+      population: 'Nothing staged',
+      finding: 'No trial or focus active — stage a change from a finding to start one.',
+    },
 
     /* ROUND 4 ITEM 1 — THE QUEUE LEVEL HAS NO CANVAS PAYLOAD AT ALL. Round 3
        gave it a title, a context string and an apology paragraph, which the
@@ -477,11 +608,15 @@ async function main() {
       [FINDING_ID]: {
         kind: 'finding',
         crumb: { root: 'Findings', here: raw.title },
-        /* ROUND 2 ITEM 3 — count only. The name prints in the crumb, once. */
-        chip: {
-          text: `${chipCount} ${chipCount === 1 ? 'event' : 'events'}`,
-          title: 'Clear this filter and return to Findings',
-        },
+        /* ROUND 5, BLOCK 1 — THE CHIP IS GONE, IN BOTH SCENES. It was a bordered
+           token with its own dismiss `×`, sitting on the crumb baseline beside a
+           crumb root that already walks back — two dismissals for one filter.
+           The count becomes a crumb ACCESSORY: a tabular number right-aligned to
+           the gutter, no border, no button.
+           The number itself does not move. It is still the PROJECTION's episode
+           count standing beside a lens table of seven, and that disagreement
+           between the two fixtures stays deliberately unreconciled. */
+        crumbCount: String(chipCount),
         /* The subject strip: the flavor tag and the appearance denominators,
            WITHOUT the title — the crumb directly above owns the name. */
         subject: {
@@ -491,18 +626,12 @@ async function main() {
           appearances: row.detail.parts,
         },
         judgment: {
-          /* ROUND 4 ITEM 5 — THE TALLY IS THE DATA; THE PROSE IS THE REMAINDER.
-             Round 3 printed the lens's `summarySentence` ("7 events met this
-             factor's rule. 4 sat narrowly outside it. 6 comparable events did
-             not match any factor.") as a three-line paragraph and then printed
-             the SAME three numbers again, tabular and support-stamped, in the
-             `.ec-count` tally directly beneath it. The tally wins: it carries
-             the support word the sentence cannot. What survives here is only
-             the residue — the two counts the tally has no cell for. The shipped
-             `summarySentence` is therefore no longer called; the numbers it
-             composed are the tally's, from the same `lens.population.counts`. */
-          summary: `${lens.population.counts.another_factor} had another factor; `
-            + `${lens.population.counts.excluded} of ${lens.population.denominator} lows were excluded as not safely comparable.`,
+          /* SETTLED CONTENT — the round-4 tally stands, untouched this round by
+             instruction. It carries the support word a sentence cannot, and it
+             is the data this scene is about.
+             ROUND 5, BLOCK 3 (TRANSFERRED): its trailing `.slot-say` sentence is
+             DELETED and nothing replaces it. Its two counts were residue and
+             have gone to `occurrences.residue`, where residue now lives. */
           counts: ['fired', 'near_rule', 'neutral'].map((key) => ({
             key,
             n: lens.population.counts[key],
@@ -510,10 +639,10 @@ async function main() {
             support: cohortByKey[key].support[0].toUpperCase() + cohortByKey[key].support.slice(1),
           })),
         },
-        /* ROUND 4 ITEM 5 — one low-ink line, at the scene, printed once. The
-           `<b>` lead is gone with the paragraph: bolding the first clause is
-           what gave a footnote body weight. */
-        boundaryNote: 'Near rule is disclosure only — it never enters Priority, a suggestion, or Plan.',
+        /* ROUND 5, BLOCK 6 — the near-rule hedge no longer prints in this
+           column. It hangs off the canvas legend's Near-rule key instead (see
+           `canvasFor`'s `nearRuleNote`), which is where the phrase is already
+           on screen and attached to something drawn. */
         /* ROUND 2 ITEM 4 — the histogram is gone. These sentences stand on their
            own arithmetic: the busiest two-hour band, and what covers it. The
            band's own share is printed against the total, because on this fixture
@@ -525,21 +654,26 @@ async function main() {
           blockText: `and in the ${block.label} I:C block, ${block.span} (${VERDICT_KEY[block.verdict]})`,
         },
         occurrences: {
-          cap: EVIDENCE_CAP,
+          /* The finding scene keeps its round-4 cap meta — block 4's
+             frame-denominator rewrite is a POPULATION move (the frame is what
+             changes the denominator there), and this scene has one frame. */
           capMeta: `entry → worst · Δ &nbsp;·&nbsp; ${firedOccurrences.length} of ${lens.population.denominator} in ${windowLabel}`,
-          counterNote: null,
-          moreLabel: firedOccurrences.length > EVIDENCE_CAP ? `${firedOccurrences.length - EVIDENCE_CAP} more` : null,
-          backLabel: `Show first ${EVIDENCE_CAP}`,
-          /* One group, unchanged from round 2 — the finding's own title, its
-             evidence tier and its episode count. Round 3 only generalised the
-             SHAPE to a list so the population's regrouped frames go through the
-             same renderer. */
+          /* ROUND 5, BLOCK 3 + 7, TRANSFERRED. The judgment block's trailing
+             sentence carried two counts the tally has no cell for; they are
+             residue, and residue now has one form — an unfilled line after the
+             last row. The sentence is deleted, not moved twice. */
+          residue: `${lens.population.counts.another_factor} claimed by another factor`
+            + ` · ${lens.population.counts.excluded} not comparable`,
+          /* One group, unchanged from round 2 — the finding's own title and its
+             evidence tier. ROUND 5, BLOCK 5 transfers only the count's FORM: a
+             bare number, printed by the renderer only where a frame draws more
+             than one group, which this scene never does. */
           groups: dedupeGroupTags([{
             key: 'fired',
             lead: raw.title,
             phrase: firedOccurrences[0]?.verdict.evidence_tier
               ? `${firedOccurrences[0].verdict.evidence_tier.replaceAll('_', ' ')}, not confirmed` : null,
-            count: `· ${plural(firedOccurrences.length, 'episode')}`,
+            count: firedOccurrences.length,
             rows: firedOccurrences.map(occurrenceRow),
           }]),
         },
@@ -553,31 +687,23 @@ async function main() {
         /* ROUND 4 ITEM 13 — the leaf is the population noun the queue row now
            carries, so the crumb and the row that opened it read the same. */
         crumb: { root: 'Findings', here: 'Lows' },
-        /* Item 6 spells this one as the bare count. */
-        chip: { text: String(wide.population.denominator), title: 'Clear this filter and return to Findings' },
+        /* ROUND 5, BLOCK 1 — the bare count, as a crumb accessory. */
+        crumbCount: String(wide.population.denominator),
         subject: null,
-        judgment: {
-          /* The population statement, and only what is true of the WHOLE
-             population: how many, how many a finding claims, how many none
-             does. The exclusion count moved OUT of it — exclusion is decided per
-             rule (2 lows under Over-treated low, 6 under Correction on active
-             insulin), so a single population-level exclusion sentence would be
-             one factor's number wearing the population's clothes. Each frame's
-             own counter-note carries it instead. */
-          summary: `${wide.population.denominator} lows in ${windowLabel}. `
-            + `${claimed} are claimed by a finding; ${unclaimedIds.length} match none.`,
-          counts: null,
-          /* ROUND 3 ITEM 1 — the claim split IS the factor selector. These lines
-             were `.ec-count` cells in round 2; they are queue rows now, and
-             selecting one reframes the canvas and the table below.
-             ROUND 4 ITEM 4 — and the unclaimed residue is no longer one of them:
-             its count is the second half of the summary sentence above, which is
-             the only place it now prints. */
-          claims: claimLines,
-        },
-        /* ROUND 4 ITEM 5 — the same one line, at the scene, printed once,
-           instead of once per frame. */
-        boundaryNote: 'Near rule is disclosure only — it never enters Priority, a suggestion, or Plan.',
+        /* ROUND 5, BLOCK 3 — THE SUMMARY SENTENCE IS DELETED, AND NOTHING
+           REPLACES IT. Every number it carried is now read off the segmented
+           control directly above where it stood: 20 is the crumb accessory, 7
+           and 1 and 10 are the three segment counts, and "claimed by a finding"
+           is what having a factor's name on a segment MEANS. A sentence whose
+           every clause is a caption for the control beside it is not a summary,
+           it is a second rendering of the same three numbers in prose.
+
+           The judgment block therefore has no body at this level at all: no
+           tally (the segments are the tally) and no sentence. */
+        judgment: null,
+        /* ROUND 5, BLOCK 2 — the frame control. Three segments ALWAYS: the two
+           claiming factors and Unclaimed. */
+        segments,
         coincidence: null,
         defaultFactor: claimOrder[0],
         frames,
@@ -626,12 +752,16 @@ async function main() {
   process.stdout.write(
     `data.json written — queue: ${rows.length} projection rows + ${data.queue.populationRows.length} derived `
     + `population row(s) (${data.queue.populationRows.map((r) => `${r.title} ${r.count}`).join(', ')})\n`
-    + `  finding scene — chip "${finding.chip.text}" (projection), ${finding.occurrences.groups[0].rows.length} `
+    + `  queue canvas — pooled glucose: ${data.queue.canvas.pooled.bins.length} bins, `
+    + `${data.queue.canvas.pooled.captured_days} captured days, ${data.queue.canvas.basal.length} basal slots `
+    + `(${PAYLOAD})\n`
+    + `  finding scene — crumb count "${finding.crumbCount}" (projection), `
+    + `${finding.occurrences.groups[0].rows.length} `
     + `fired events (lens), busiest band ${band} ${clock.peak.n}/${clock.total}\n`
     + `  population scene — ${wide.population.denominator} lows, ${claimed} claimed / ${unclaimedIds.length} `
     + `unclaimed; ${Object.keys(population.frames).length} frames, default "${population.defaultFactor}"\n`
     + Object.values(population.frames).map((f) => `    frame ${f.key} — `
-      + `${f.canvas ? `${f.canvas.cohortOrder.length} cohorts` : 'no canvas (empty state)'}, `
+      + `${f.canvas ? `${f.canvas.cohortOrder.length} cohorts` : 'HONEST EMPTY CANVAS'}, `
       + `${f.occurrences.groups.length} group(s), `
       + `${f.occurrences.groups.reduce((n, g) => n + g.rows.length, 0)} rows\n`).join('')
     + `app-base.extracted.css written — ${blocks.length} style block(s) from frontend/index.html\n`,

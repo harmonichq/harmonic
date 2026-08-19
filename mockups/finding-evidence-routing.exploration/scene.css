@@ -18,67 +18,46 @@
    the scene's central move, not a fidelity drift. */
 .fer-surface { grid-template-rows: minmax(0, 1fr); }
 
-/* (a) ROUND 4 ITEM 1 — THE QUEUE LEVEL IS ONE COLUMN.
+/* (a) ROUND 5, WORKSTREAM A — TWO PANES AT EVERY LEVEL, ONE CANVAS MOUNTED.
  *
- * The shipped `.panes` is `minmax(0, 1fr) var(--side, 430px)`, which is right
- * wherever the canvas has something to answer with. At the queue it does not:
- * round 3 painted a POOLED GLUCOSE header over 1010px of empty ground with a
- * paragraph apologising for the emptiness underneath it. The queue IS the app at
- * that level, so the canvas pane is not drawn and the inspector column takes the
- * stage. Drilling restores the shipped two-pane geometry, and the shipped
- * `.panes` transition carries the change.
+ * Round 4 collapsed the canvas pane at the queue level. That was the right fix
+ * for round 3's MOCK — a POOLED GLUCOSE header over 1010px of empty ground —
+ * and the wrong answer to the RULING, whose queue-root canvas IS the pooled
+ * glucose chart. The chart exists and ships, so the pane holds it and the
+ * shipped `.panes` geometry stands at every level.
  *
- * `display: none` rather than a zero track: a collapsed track still lays the
- * pane out at 0px, and ECharts inside a 0px host resizes to nothing and has to
- * be rebuilt on the way back. Unmounting it is the honest statement and the
- * cheap one. */
-.fer-surface[data-level="queue"] .panes { grid-template-columns: minmax(0, 1fr); }
-.fer-surface[data-level="queue"] .canvas-pane { display: none; }
+ * Which of the two canvases is mounted is now the only thing `data-level`
+ * decides. `display: none` rather than a zero track, for the reason round 4
+ * already found: a collapsed track still lays a pane out at 0px, and an ECharts
+ * instance in a 0px host resizes to nothing. Unmounting preserves each
+ * instance's geometry and `paintCanvas` gives it back with one `resize()`. */
+.fer-surface[data-level="queue"] .ec-canvas,
+.fer-surface[data-level="drilled"] .dw-canvas { display: none; }
 
-/* (b) THE SCOPE CHIP — the retired FILTER instrument, re-homed beside the
-   breadcrumb (#31 resolution, ruling 1 and term 9). It carries the CLICKED
-   FILTER's own count and, from round 2, NOTHING ELSE: the subject's name prints
-   once, in the crumb immediately to its left. Population and cohort counts stay
-   in the lens legend.
+/* (b) ROUND 5, BLOCK 1 — THE CRUMB'S COUNT ACCESSORY, which retires the scope
+   chip outright. The chip was the #31 FILTER instrument re-homed on the crumb
+   baseline: a bordered, filled token carrying a count and its own `×`, beside a
+   crumb root that already walks back. Two dismissals for one filter, and the
+   only bordered object in the header.
 
-   Every declaration is copied from `.entry .pill` in
-   frontend/diagnose-workstation.css (the workstation's own chip) — the family,
-   size, padding, background, ink and border are that rule's, byte for byte,
-   minus its `min-width` and `text-align`, which exist to hold a numeric column
-   even and would only pad a chip that is not in a column.
+   What is left is the number, right-aligned to the gutter on the crumb's own
+   baseline. Every declaration below is `.crumb .meta`'s in
+   frontend/diagnose-workstation.css — the shipped rule for exactly this, "a
+   right-aligned figure beside the path" — with only the size and ink stepped to
+   the prescription's 11/500 at 0.55, and `flex` pinned so a count can never
+   take a character off the leaf.
 
-   ROUND 4 ITEM 6 — and minus its 8px radius. `.entry .pill` is a pill because it
-   sits inside a bordered, rounded staging row; this chip sits on the crumb
-   baseline among square type, where a lone pill was the only rounded thing in
-   the header. Square token, monospace count retained. The count itself is
-   untouched: the finding scene's `1 event` is the projection's own episode count
-   standing beside a lens table of seven, and that disagreement between the two
-   fixtures is deliberately unreconciled (build.mjs's `provenance.disjoint`). */
-.fer-chip {
-  display: inline-flex; align-items: baseline; gap: 6px;
-  font-family: var(--ck-mono); font-size: 10.5px; padding: 1px 6px; border-radius: 0;
-  background: var(--ck-sel); color: var(--mk-text);
-  border: 1px solid color-mix(in srgb, var(--ck-accent) 45%, transparent);
+   The count itself does not move: the finding scene's `1` is the projection's
+   own episode count standing beside a lens table of seven, and that
+   disagreement between the two fixtures stays deliberately unreconciled
+   (build.mjs's `provenance.disjoint`). */
+.fer-count {
+  margin-left: auto; padding-left: 12px; flex: 0 0 auto; text-align: right;
+  font-family: var(--ck-mono); font-size: 11px; font-weight: 500;
+  color: color-mix(in srgb, var(--mk-text) 55%, transparent);
+  font-variant-numeric: tabular-nums;
 }
-/* `.crumb .trail`'s own rule is "root and current never lose a character"
-   (diagnose-workstation.css). With a chip sharing the row the trail was the
-   thing that gave, and the leaf clipped to "Over-tr". It is pinned open here
-   and the chip takes the row's free space instead. */
-.crumb:has(.fer-chip) .trail { margin-right: 0; flex: 0 0 auto; }
-.fer-chip { margin-right: auto; margin-left: 10px; }
-.fer-chip[hidden] { display: none; }
-
-/* The chip's dismiss. Copied from `.seg button .x` in
-   frontend/diagnose-workstation.css — the same padding, ink, size and hover swap
-   the retired instrument row used for exactly this affordance, squared off with
-   the chip that holds it. */
-.fer-chip .x {
-  border: 0; background: transparent; font: inherit;
-  padding: 0 3px; border-radius: 0; font-style: normal;
-  color: var(--mk-muted); font-size: 12px; line-height: 1; cursor: pointer;
-}
-.fer-chip .x:hover { color: var(--mk-text); background: var(--ck-inset); }
-.fer-chip .x:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: 1px; }
+.fer-count[hidden] { display: none; }
 
 /* (c) The occurrences table is the selection mechanism (#31 resolution, ruling
    2): row and lens trace are two reads of ONE selection, so the hovered or
@@ -96,43 +75,159 @@
 .ev-row[data-route="none"] .chev { visibility: hidden; }
 
 /* ======================================================================
-   ROUND 4 ITEM 4 — THE CLAIM SELECTOR, RE-CUT.
+   ROUND 5, BLOCK 2 — THE FRAME CONTROL.
    ====================================================================== */
-/* The claim split is the factor selector, in the shipped queue's own row
- * grammar. Round 3 rendered it as three rows floating on the shipped 10px queue
- * gap, inside `.inner`'s padding, of which exactly one — the chosen one — grew a
- * tinted rounded card. That made the selected row the only thing that looked
- * operable, and gave the inspector its only radius.
+/* Rounds 3 and 4 both built the frame selector out of queue rows, because "pick
+ * one of these" is what a queue row does. Wrong shape twice: a vertical stack of
+ * full-bleed rows is the SAME OBJECT as the occurrence table beneath it, so the
+ * reader has to learn which list is a filter and which is the data — and round
+ * 4's selected row took a full-width wash, which is the table's own selection
+ * wash spent a second time on a different meaning.
  *
- * Four changes, none of them a new colour or a new type rank:
- *   · the block moved OUT of `.inner` in surface.js, so these rows are
- *     full-bleed on the pane's edges exactly like the `.ev-row`s below them;
- *   · the queue gap closes to a 2px seam through the SHIPPED `--q-gap` variable,
- *     so the rows read as one contiguous list of choices rather than three
- *     cards, while still resolving as separate objects;
- *   · every row carries the same leading marker — the accent at rest ink, solid
- *     when chosen — so an unselected row is visibly operable;
- *   · selection is that marker plus the full-width wash, square-cornered.
+ * One row, 26px, full width, flush to the 12px gutter, square. No boxes, no
+ * radius, no fill at rest; segments divided by 1px hairlines and the control
+ * closed by one beneath. The chosen segment is its label at FULL INK over a 2px
+ * bottom rule in `--primary` — an underline, not a fill, so the table's row wash
+ * stays the only wash anywhere in the column.
  *
- * Both washes are `.stagebtn[data-staged="true"]`'s in
- * frontend/diagnose-workstation.css, the shipped control that persists a choice.
- * The marker is an `inset` box-shadow rather than a border so it cannot change
- * the row's box and shift the label between states. */
-.fer-claims { --q-gap: 2px; }
-.fer-claims .qrow {
-  border-radius: 0;
-  box-shadow: inset 2px 0 0 color-mix(in srgb, var(--ck-accent) 26%, transparent);
+ * The hairlines are `--ck-hair`, the pane's own; the rule is `--primary`, the
+ * one interaction accent this surface already spends on `.more` and on the
+ * staged-row marker. No new token, no new hue. */
+/* Flex with `flex: 1 1 auto`, NOT equal grid tracks. Equal tracks were tried
+   first and are wrong here for one measurable reason: the three labels differ by
+   more than 2× in length ("Unclaimed" against "Correction on active insulin"),
+   so equal thirds ellipsised the longest factor's name to "Correction on act…"
+   while leaving the shortest half empty. Content-sized bases with the slack
+   shared out fills the same width and keeps every name whole. */
+.fer-frames {
+  display: flex; height: 26px; margin: 0 var(--ck-pad);
+  border-bottom: 1px solid var(--ck-hair);
 }
-.fer-claims .qrow[data-selected="true"] {
-  background: var(--ck-sel); color: var(--mk-text);
-  box-shadow: inset 2px 0 0 var(--ck-accent);
+.fer-frames .seg {
+  display: flex; align-items: center; justify-content: flex-start; gap: 0;
+  flex: 1 1 auto; min-width: 0; padding: 0 8px 0 0;
+  border: 0; border-radius: 0; background: none; cursor: pointer;
+  /* The divider, as a border rather than a gap: a gap would move the labels
+     between states, a border cannot. */
+  border-left: 1px solid var(--ck-hair);
+  box-shadow: none;
 }
-/* The count moves onto the label's own baseline, in the shipped tag column — the
-   same fixed right-hand column the queue lands every flavour tag in, so it is
-   the x the reader's eye already goes to. It was a second line reading "7 lows"
-   under a row whose entire subject is lows. `.den`'s ink and size are the
-   shipped ones; only its grid placement and alignment change. */
-.fer-claims .qrow .den {
+.fer-frames .seg:first-child { border-left: 0; padding-left: 0; }
+.fer-frames .seg:not(:first-child) { padding-left: 8px; }
+.fer-frames .seg:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: -2px; }
+/* Label and count share ONE baseline, separated by a thin space. The count is
+   the louder of the two at rest, because at rest the counts are what the
+   control is reporting. */
+.fer-frames .seg .lab {
+  font-size: 11.5px; font-weight: 500;
+  color: color-mix(in srgb, var(--mk-text) 62%, transparent);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+}
+.fer-frames .seg .n {
+  margin-left: .25em;      /* a thin space */
+  font-size: 11.5px; font-weight: 600; font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--mk-text) 85%, transparent);
+}
+.fer-frames .seg[data-selected="true"] .lab { color: var(--mk-text); }
+/* The 2px rule sits ON the control's own closing hairline, so selecting a
+   segment changes ink and nothing about the box. */
+.fer-frames .seg[data-selected="true"] {
+  box-shadow: inset 0 -2px 0 var(--primary);
+}
+
+/* ======================================================================
+   ROUND 5, BLOCK 6 — THE ROUTE, AS ONE ACTION.
+   ====================================================================== */
+/* Right-aligned, directly under the frame control, no sentence and no container.
+   The ink and the size are `.linkbtn`'s in frontend/diagnose-workstation.css —
+   the shipped in-body route affordance — with its own left padding dropped
+   because nothing precedes it on this line any more. */
+.fer-route { display: flex; justify-content: flex-end; padding: 6px var(--ck-pad) 2px; }
+.fer-open {
+  border: 0; background: none; padding: 0; cursor: pointer;
+  font-size: 11.5px; font-weight: 500; color: var(--primary);
+}
+.fer-open:hover { text-decoration: underline; text-underline-offset: 2px; }
+.fer-open:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: 2px; }
+
+/* ======================================================================
+   ROUND 5, BLOCK 5 — THE GROUP HEADER IS A RULE.
+   ====================================================================== */
+/* `.ev-group` was a bordered, bolded div: a header ROW, heavier than the data
+ * rows under it. What a group needs is a label and a division, so it is a label
+ * on a hairline that runs from the end of the label to the right gutter — no
+ * uppercase, no bottom border of its own, no background.
+ *
+ * The count prints at the rule's right end only where a frame draws more than
+ * one group (surface.js decides); with one group it would restate the cap meta's
+ * own numerator on the very next line. */
+.fer-group {
+  display: grid; grid-template-columns: auto minmax(12px, 1fr) auto;
+  align-items: center; gap: 8px;
+  margin: 10px 0 4px; padding: 0 var(--ck-pad);
+}
+.fer-group .lab {
+  font-size: 11px; font-weight: 600;
+  color: color-mix(in srgb, var(--mk-text) 70%, transparent);
+}
+.fer-group .rule { border-top: 1px solid var(--ck-hair); font-style: normal; }
+.fer-group .n {
+  font-size: 11px; font-weight: 400; font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--mk-text) 50%, transparent);
+}
+
+/* ======================================================================
+   ROUND 5, BLOCK 7 — THE RESIDUE, UNFILLED.
+   ====================================================================== */
+/* Round 4 gave the two counts that are NOT in the table a filled
+ * `.ev-group.counter` slab — the darkest object in the whole column, spent on
+ * the quietest statement in it — and put it BELOW the expander, furthest from
+ * the rows it is about. It is one line now: no ground, no border of its own, on
+ * the table's own left edge, immediately after the last row and BEFORE the
+ * expander. At most one hairline above it, which is the last row's own bottom
+ * border, so nothing new is drawn. */
+.fer-residue {
+  padding: 6px var(--ck-pad);
+  font-size: 11px; font-weight: 400;
+  color: color-mix(in srgb, var(--mk-text) 45%, transparent);
+}
+
+/* ======================================================================
+   ROUND 5, BLOCK 8 — THE DOCK, AT ITS TRUE HEIGHT.
+   ====================================================================== */
+/* The shipped dock reserves 98px for four states so the floor never moves
+ * (migrated lock term 48). At idle it spent that height on three ranks of type
+ * saying that nothing is happening; round 4 hid two of them and kept the
+ * reserve, which left 98px of pane floor under one dim sentence — the same void
+ * round 4 had just deleted from the canvas, relocated.
+ *
+ * THIS RE-SETTLES TERM 48, deliberately and visibly: one hairline-topped line at
+ * the column's TRUE bottom, unfilled, as tall as its own text. The height the
+ * reserve was holding goes back to the level above, which is what closes block
+ * 9's dead gap between the residue and the floor. Named in the report as an owed
+ * close-out consequence, not absorbed. */
+.fer-surface .inspector > .watch {
+  display: block; min-height: 0;
+  background: none;
+  border-top: 1px solid var(--ck-hair);
+  padding: 7px var(--ck-pad);
+}
+.fer-dock-line {
+  display: block;
+  font-size: 11px; font-weight: 400;
+  color: color-mix(in srgb, var(--mk-text) 45%, transparent);
+}
+
+/* ======================================================================
+   ROUND 5, THE NAMING RULING — the queue's browse rows.
+   ====================================================================== */
+/* The count comes onto the label's own baseline in the shipped tag column — the
+   fixed right-hand column the queue lands every flavour tag in, so it is the x
+   the reader's eye already goes to — and the chevron keeps its own third column.
+   `.den`'s ink and size are the shipped ones; only placement and alignment
+   change. Identical treatment to the one round 4 gave the claim rows, which is
+   why it survives their deletion. */
+.fer-population .qrow .den {
   grid-column: 2; grid-row: 1; justify-self: end; text-align: right;
   font-variant-numeric: tabular-nums;
 }
@@ -227,26 +322,27 @@ html:not(.dark) .fer-surface { --ec-near: #5d2a0c; }
    that one — it is a bigger boundary than the one inside the queue. */
 .fer-browse-cap { margin-top: 24px; }
 
+/* ROUND 5 — round 4's idle-dock rule is DELETED, not amended. It hid two of the
+   three shipped spans with `visibility` so the 98px reserve survived them; block
+   8 removes the reserve, and the two spans are no longer emitted at all, so a
+   rule hiding them would be describing markup that does not exist. */
+
 /* ======================================================================
-   ROUND 4 ITEM 10 — THE IDLE DOCK, AT ONE LINE OF INK.
+   ROUND 5, BLOCK 6 — THE HEDGE, ON THE LEGEND KEY IT IS ABOUT.
    ====================================================================== */
-/* The dock floor is a reserved height that never moves across states (old lock
- * term 48): the queue can end, the column cannot. At idle it was spending that
- * height on three ranks of type — a caps label, a sentence, and a second
- * sentence — all to say that nothing is happening. What survives is the one line
- * that names the way OUT of the idle state.
- *
- * `visibility`, not `display`: the dock's 98px comes from its own content, so
- * removing the two spans would shrink the floor and move it, which is precisely
- * what term 48 forbids. Reserving the height off the same content that used to
- * fill it is also what stops the number drifting — nothing here pins a literal
- * 98px that a later type change could falsify.
- *
- * THE TENSION, named rather than resolved: this leaves 98px of pane floor
- * carrying one dim sentence, which is a smaller cousin of the void item 1
- * deletes. It is kept because the floor's stability is a locked term and the
- * canvas pane's presence at the queue level never was. If the operator would
- * rather the dock shrink at idle, that is a resettle of term 48, not a tweak
- * here. */
-.fer-surface .watch[data-state="idle"] .kind,
-.fer-surface .watch[data-state="idle"] .what { visibility: hidden; }
+/* A sub-line under the Near-rule key's detail line, at 10px — one step under the
+   detail it hangs beneath, because it is a caveat about that cohort and not a
+   second fact of the same rank. It takes the rail's own ink and face; only the
+   size steps down. It renders only where the cohort routed events, which is
+   decided in build.mjs, so an empty cohort never grows a footnote. */
+/* ROUND 5, BLOCK 2 — and the legend rail goes with the comparison. The Unclaimed
+   frame draws no series, so the rail has no key to carry; left mounted it is a
+   hairline-topped 46px strip with nothing in it, which is furniture asserting
+   that a legend exists. Same rule the empty canvas itself obeys. */
+.fer-surface .ec-chart-key:empty { display: none; }
+
+.fer-key-hedge {
+  grid-column: 2; display: block;
+  font-size: 10px; line-height: 1.4;
+  color: color-mix(in srgb, var(--mk-muted) 80%, transparent);
+}

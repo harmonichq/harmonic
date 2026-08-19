@@ -8,7 +8,8 @@
   "canvas_and_table": "mockups/diagnose-event-comparison.synthetic/capture.json via project.mjs (view lows, factor over_treated_low)",
   "population_rows": "DERIVED BY THIS BUILD, not read from any fixture. The ruling (resolution point 3) invents standing population rows as a NEW SERVER PROJECTION; no committed projection carries them yet. Their counts are the lens capture's own population denominators (lows via project.mjs, meals via the same producer on the meals view), so they name the CAPTURE's window, not the projection's 30 days.",
   "population_case_file": "mockups/diagnose-event-comparison.synthetic/capture.json via project.mjs — ONE PROJECTION PER CLAIMED FACTOR (view lows, factor <k>, block all) for that frame's canvas, and the same coordinates with another=true for its regrouped table. The claim split itself is a tally of the capture's `routes`: a low is claimed when some factor routes it to `fired`.",
-  "unclaimed": "NOT A FRAME AND NOT A SELECTOR LINE (round 4, item 4). project.mjs projects cohorts for a NAMED FACTOR and has no unclaimed coordinate, so the round-3 `No finding claims these` line selected a frame that drew no comparison. It is also redundant: under `over_treated_low` the ten unclaimed lows ARE that frame's Near rule (4) and Rule did not match (6) groups, row for row, because a low no factor claims is still a low every factor placed in a cohort. The count survives only inside the population summary sentence.",
+  "queue_canvas": "mockups/diagnose-workstation.synthetic/payload.json (evidence.pooled, analyze.basal, evidence.target_range) — handed across RAW. The surface runs the shipped envelopeFromPooled / markersFromPooled / windowStats / buildSlotLane / renderCanvas over it in the browser, which is the app's own path from its API response. This is a THIRD synthetic fixture, disjoint from the other two again: its 3 captured CGM days and 48 basal slots are not the lens capture's 20 lows and not the projection's 30-day window. Nothing on the queue root reconciles them, and nothing tries to.",
+  "unclaimed": "RESTORED AS A THIRD SEGMENT (round 5, block 2). project.mjs projects cohorts for a NAMED FACTOR and has no unclaimed coordinate, so this frame draws NO comparison — its canvas is the honest empty state (axis furniture with the alignment range still on it, one short line, a truthful head), never a facsimile of a comparison. Its rows are the wide projection's occurrences filtered to the lows no factor routes to `fired`; its residue names the ten that are claimed. Round 4's deletion argument — that these ten re-list the selected factor's Near rule and Rule-did-not-match groups — holds only while a factor frame is selected, and the segmented control is a statement about the population, not about the selected frame.",
   "unreachable_factor": "correction_stacking is a factor of the lows view and fires on NOTHING in this capture, so it claims no low and the claim split — which is the selector — never offers it. No frame exists for it.",
   "disjoint": "The two populations are disjoint by construction and are never reconciled."
  },
@@ -295,30 +296,2392 @@
   },
   "root": "Findings",
   "meta": "6 findings · 30 days",
-  "populationCap": "Exposure populations",
+  "populationCap": "All events",
+  "populationCapMeta": "Jul 13–Aug 11",
   "populationRows": [
    {
     "id": "population:lows",
     "derived": true,
     "title": "Lows",
     "drills": true,
-    "count": 20,
-    "window": "Jul 13–Aug 11"
+    "count": 20
    },
    {
     "id": "population:meals",
     "derived": true,
     "title": "Meals",
     "drills": false,
-    "count": 20,
-    "window": "Jul 13–Aug 11"
+    "count": 20
    }
-  ]
+  ],
+  "canvas": {
+   "head": {
+    "title": "Glucose by time of day"
+   },
+   "pooled": {
+    "bin_minutes": 15,
+    "bins": [
+     {
+      "meal_count": 0,
+      "median": 105.65,
+      "minute": 0,
+      "n": 54,
+      "p10": 96.03,
+      "p25": 101.875,
+      "p75": 109.775,
+      "p90": 112.86,
+      "raw_n": 9,
+      "support_days": 4,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 105.05,
+      "minute": 15,
+      "n": 54,
+      "p10": 95.66,
+      "p25": 100.05,
+      "p75": 109.675,
+      "p90": 112.15,
+      "raw_n": 9,
+      "support_days": 4,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 104.19999999999999,
+      "minute": 30,
+      "n": 54,
+      "p10": 93.39,
+      "p25": 97.975,
+      "p75": 109.525,
+      "p90": 112.22,
+      "raw_n": 9,
+      "support_days": 4,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 102.1,
+      "minute": 45,
+      "n": 54,
+      "p10": 90.19,
+      "p25": 94.1,
+      "p75": 108.9,
+      "p90": 111.62,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 99.35,
+      "minute": 60,
+      "n": 54,
+      "p10": 86.38,
+      "p25": 91.6,
+      "p75": 105.3,
+      "p90": 109.67,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 95.7,
+      "minute": 75,
+      "n": 54,
+      "p10": 82.2,
+      "p25": 89.35,
+      "p75": 102.1,
+      "p90": 108.36,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 90.4,
+      "minute": 90,
+      "n": 54,
+      "p10": 76.48,
+      "p25": 82.925,
+      "p75": 98.75,
+      "p90": 102.1,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 86.2,
+      "minute": 105,
+      "n": 54,
+      "p10": 74.33,
+      "p25": 78.225,
+      "p75": 94.7,
+      "p90": 99.61,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 83.15,
+      "minute": 120,
+      "n": 54,
+      "p10": 73.74,
+      "p25": 76.9,
+      "p75": 89.95,
+      "p90": 97.7,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 82.2,
+      "minute": 135,
+      "n": 54,
+      "p10": 73.74,
+      "p25": 76.9,
+      "p75": 88.675,
+      "p90": 96.97,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 82.5,
+      "minute": 150,
+      "n": 54,
+      "p10": 73.74,
+      "p25": 76.9,
+      "p75": 89.95,
+      "p90": 97.53,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 83.6,
+      "minute": 165,
+      "n": 54,
+      "p10": 74.36,
+      "p25": 77.85,
+      "p75": 96.75,
+      "p90": 104.98,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 92.2,
+      "minute": 180,
+      "n": 54,
+      "p10": 75.99,
+      "p25": 79.8,
+      "p75": 104.325,
+      "p90": 110.05,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 100.2,
+      "minute": 195,
+      "n": 54,
+      "p10": 79.7,
+      "p25": 88.675,
+      "p75": 110.2,
+      "p90": 120.28,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 107.80000000000001,
+      "minute": 210,
+      "n": 54,
+      "p10": 84.48,
+      "p25": 96.45,
+      "p75": 118.725,
+      "p90": 124.78,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 111.8,
+      "minute": 225,
+      "n": 54,
+      "p10": 96.75,
+      "p25": 104.8,
+      "p75": 122.975,
+      "p90": 126.73,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 119.05,
+      "minute": 240,
+      "n": 54,
+      "p10": 102.22,
+      "p25": 110.325,
+      "p75": 124.8,
+      "p90": 128.84,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 123.85,
+      "minute": 255,
+      "n": 54,
+      "p10": 110.35,
+      "p25": 114.575,
+      "p75": 127.85,
+      "p90": 134.14,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 125.80000000000001,
+      "minute": 270,
+      "n": 54,
+      "p10": 114.65,
+      "p25": 122.3,
+      "p75": 132.225,
+      "p90": 135.16,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 127,
+      "minute": 285,
+      "n": 54,
+      "p10": 119.03,
+      "p25": 123.725,
+      "p75": 132.75,
+      "p90": 136.13,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 128.14999999999998,
+      "minute": 300,
+      "n": 54,
+      "p10": 122.18,
+      "p25": 125.4,
+      "p75": 136.15,
+      "p90": 142.22,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 133.35,
+      "minute": 315,
+      "n": 54,
+      "p10": 124.6,
+      "p25": 127.025,
+      "p75": 139.8,
+      "p90": 145,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 138.05,
+      "minute": 330,
+      "n": 54,
+      "p10": 126.62,
+      "p25": 129,
+      "p75": 145.075,
+      "p90": 156.15,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 142.5,
+      "minute": 345,
+      "n": 54,
+      "p10": 127.03,
+      "p25": 133.375,
+      "p75": 156.175,
+      "p90": 163.41,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 151.2,
+      "minute": 360,
+      "n": 54,
+      "p10": 128.26,
+      "p25": 139.8,
+      "p75": 164.1,
+      "p90": 173.36,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 157.5,
+      "minute": 375,
+      "n": 54,
+      "p10": 140.25,
+      "p25": 145.85,
+      "p75": 173.825,
+      "p90": 184.82,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 169.45,
+      "minute": 390,
+      "n": 54,
+      "p10": 144.05,
+      "p25": 155.925,
+      "p75": 185.075,
+      "p90": 189.77,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 181.14999999999998,
+      "minute": 405,
+      "n": 54,
+      "p10": 155.95,
+      "p25": 164.275,
+      "p75": 188.475,
+      "p90": 193.23,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 186.39999999999998,
+      "minute": 420,
+      "n": 54,
+      "p10": 164.29,
+      "p25": 174.775,
+      "p75": 192.2,
+      "p90": 196.33,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 3,
+      "median": 189.35,
+      "minute": 435,
+      "n": 54,
+      "p10": 176.98,
+      "p25": 184.55,
+      "p75": 193.9,
+      "p90": 196.81,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 3,
+      "median": 190.05,
+      "minute": 450,
+      "n": 54,
+      "p10": 178.86,
+      "p25": 185.425,
+      "p75": 194.075,
+      "p90": 196.81,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 189.6,
+      "minute": 465,
+      "n": 54,
+      "p10": 176.03,
+      "p25": 182.375,
+      "p75": 193.9,
+      "p90": 196.51,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 187.10000000000002,
+      "minute": 480,
+      "n": 54,
+      "p10": 166.01,
+      "p25": 175.4,
+      "p75": 193.575,
+      "p90": 196.51,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 178.15,
+      "minute": 495,
+      "n": 54,
+      "p10": 159.81,
+      "p25": 165.5,
+      "p75": 192.175,
+      "p90": 195.48,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 168.45,
+      "minute": 510,
+      "n": 54,
+      "p10": 155.46,
+      "p25": 160.875,
+      "p75": 181.225,
+      "p90": 193.33,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 165.35000000000002,
+      "minute": 525,
+      "n": 54,
+      "p10": 148.67,
+      "p25": 157.225,
+      "p75": 175.1,
+      "p90": 181.09,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 160,
+      "minute": 540,
+      "n": 54,
+      "p10": 145.96,
+      "p25": 155.1,
+      "p75": 167.025,
+      "p90": 173.99,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 158.7,
+      "minute": 555,
+      "n": 54,
+      "p10": 145.96,
+      "p25": 152.05,
+      "p75": 164.425,
+      "p90": 167.79,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 155.75,
+      "minute": 570,
+      "n": 54,
+      "p10": 144.83,
+      "p25": 147.5,
+      "p75": 160.3,
+      "p90": 165.22,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 154.7,
+      "minute": 585,
+      "n": 54,
+      "p10": 144.83,
+      "p25": 146.975,
+      "p75": 159.25,
+      "p90": 164.41,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 154.7,
+      "minute": 600,
+      "n": 54,
+      "p10": 145.96,
+      "p25": 147.6,
+      "p75": 157.6,
+      "p90": 162.01,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 154.7,
+      "minute": 615,
+      "n": 54,
+      "p10": 146.36,
+      "p25": 148.375,
+      "p75": 158.125,
+      "p90": 162.47,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 155.35000000000002,
+      "minute": 630,
+      "n": 54,
+      "p10": 146.53,
+      "p25": 149.15,
+      "p75": 160.275,
+      "p90": 164.57,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 155.95,
+      "minute": 645,
+      "n": 54,
+      "p10": 146.66,
+      "p25": 150.225,
+      "p75": 160.725,
+      "p90": 164.88,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 158.25,
+      "minute": 660,
+      "n": 54,
+      "p10": 148.93,
+      "p25": 154.225,
+      "p75": 163.7,
+      "p90": 170.21,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 161.55,
+      "minute": 675,
+      "n": 54,
+      "p10": 150.99,
+      "p25": 156.025,
+      "p75": 170.525,
+      "p90": 176.58,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 166.4,
+      "minute": 690,
+      "n": 54,
+      "p10": 154.72,
+      "p25": 158.875,
+      "p75": 176.075,
+      "p90": 184.48,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 172.5,
+      "minute": 705,
+      "n": 54,
+      "p10": 158.17,
+      "p25": 163.175,
+      "p75": 184.5,
+      "p90": 194.69,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 180.55,
+      "minute": 720,
+      "n": 54,
+      "p10": 161.49,
+      "p25": 170.075,
+      "p75": 190,
+      "p90": 197.16,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 186.75,
+      "minute": 735,
+      "n": 54,
+      "p10": 170.09,
+      "p25": 175.625,
+      "p75": 195.15,
+      "p90": 199.85,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 188.15,
+      "minute": 750,
+      "n": 54,
+      "p10": 175.67,
+      "p25": 183.75,
+      "p75": 195.975,
+      "p90": 200.39,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 3,
+      "median": 188.15,
+      "minute": 765,
+      "n": 54,
+      "p10": 174.61,
+      "p25": 183.75,
+      "p75": 196.325,
+      "p90": 200.39,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 188.45,
+      "minute": 780,
+      "n": 54,
+      "p10": 174.05,
+      "p25": 183.325,
+      "p75": 196.325,
+      "p90": 199.97,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 186.55,
+      "minute": 795,
+      "n": 54,
+      "p10": 170.59,
+      "p25": 176.975,
+      "p75": 194.25,
+      "p90": 199.01,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 179.85000000000002,
+      "minute": 810,
+      "n": 54,
+      "p10": 158.57,
+      "p25": 170.575,
+      "p75": 188.675,
+      "p90": 199.01,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 172.25,
+      "minute": 825,
+      "n": 54,
+      "p10": 150.74,
+      "p25": 158.375,
+      "p75": 186.175,
+      "p90": 188.63,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 164.65,
+      "minute": 840,
+      "n": 54,
+      "p10": 147.03,
+      "p25": 152.475,
+      "p75": 177.125,
+      "p90": 186.47,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 156.85000000000002,
+      "minute": 855,
+      "n": 54,
+      "p10": 140,
+      "p25": 147.1,
+      "p75": 170.425,
+      "p90": 181.86,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 150,
+      "minute": 870,
+      "n": 54,
+      "p10": 136.72,
+      "p25": 142.75,
+      "p75": 160.1,
+      "p90": 170.71,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 146.05,
+      "minute": 885,
+      "n": 54,
+      "p10": 134.72,
+      "p25": 139.625,
+      "p75": 152.25,
+      "p90": 160.04,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 143.14999999999998,
+      "minute": 900,
+      "n": 54,
+      "p10": 132.3,
+      "p25": 137.05,
+      "p75": 148.4,
+      "p90": 155.1,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 140.14999999999998,
+      "minute": 915,
+      "n": 54,
+      "p10": 131.69,
+      "p25": 135.725,
+      "p75": 146.55,
+      "p90": 149.52,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 138.8,
+      "minute": 930,
+      "n": 54,
+      "p10": 130.83,
+      "p25": 135.025,
+      "p75": 142.55,
+      "p90": 147.01,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 136.8,
+      "minute": 945,
+      "n": 54,
+      "p10": 127.89,
+      "p25": 131.825,
+      "p75": 141.775,
+      "p90": 146.5,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 135.65,
+      "minute": 960,
+      "n": 54,
+      "p10": 124.8,
+      "p25": 130.525,
+      "p75": 140.425,
+      "p90": 144.89,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 135.05,
+      "minute": 975,
+      "n": 54,
+      "p10": 124.1,
+      "p25": 128.825,
+      "p75": 139.05,
+      "p90": 144.59,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 134.85,
+      "minute": 990,
+      "n": 54,
+      "p10": 124.1,
+      "p25": 128.975,
+      "p75": 138.625,
+      "p90": 142.98,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 135.14999999999998,
+      "minute": 1005,
+      "n": 54,
+      "p10": 124.1,
+      "p25": 129.25,
+      "p75": 140.05,
+      "p90": 145.87,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 135.35000000000002,
+      "minute": 1020,
+      "n": 54,
+      "p10": 124.1,
+      "p25": 129.525,
+      "p75": 141.7,
+      "p90": 147.11,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 138.95,
+      "minute": 1035,
+      "n": 54,
+      "p10": 126.43,
+      "p25": 132.275,
+      "p75": 146.425,
+      "p90": 149.98,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 142.85,
+      "minute": 1050,
+      "n": 54,
+      "p10": 129.26,
+      "p25": 135.325,
+      "p75": 150.05,
+      "p90": 159.51,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 147.5,
+      "minute": 1065,
+      "n": 54,
+      "p10": 134.71,
+      "p25": 140.275,
+      "p75": 159.575,
+      "p90": 172.19,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 156.15,
+      "minute": 1080,
+      "n": 54,
+      "p10": 139.68,
+      "p25": 144.65,
+      "p75": 170.325,
+      "p90": 176.59,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 161.14999999999998,
+      "minute": 1095,
+      "n": 54,
+      "p10": 142.49,
+      "p25": 149.35,
+      "p75": 173.225,
+      "p90": 178.19,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 169.35,
+      "minute": 1110,
+      "n": 54,
+      "p10": 149.42,
+      "p25": 158.075,
+      "p75": 174.65,
+      "p90": 178.89,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 3,
+      "median": 170.05,
+      "minute": 1125,
+      "n": 54,
+      "p10": 157.53,
+      "p25": 161.625,
+      "p75": 174.65,
+      "p90": 178.89,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 6,
+      "median": 169.35,
+      "minute": 1140,
+      "n": 54,
+      "p10": 155.24,
+      "p25": 161.025,
+      "p75": 174.65,
+      "p90": 178.89,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 165.85,
+      "minute": 1155,
+      "n": 54,
+      "p10": 138.38,
+      "p25": 155.15,
+      "p75": 173.425,
+      "p90": 177.61,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 158.4,
+      "minute": 1170,
+      "n": 54,
+      "p10": 129.13,
+      "p25": 138.475,
+      "p75": 168.975,
+      "p90": 174.91,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 146.75,
+      "minute": 1185,
+      "n": 54,
+      "p10": 121.26,
+      "p25": 129.025,
+      "p75": 161.675,
+      "p90": 170.12,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 135.2,
+      "minute": 1200,
+      "n": 54,
+      "p10": 113.57,
+      "p25": 121.875,
+      "p75": 153.45,
+      "p90": 161.67,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 125.15,
+      "minute": 1215,
+      "n": 54,
+      "p10": 107.69,
+      "p25": 113.525,
+      "p75": 137.825,
+      "p90": 149.64,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 117.5,
+      "minute": 1230,
+      "n": 54,
+      "p10": 102.97,
+      "p25": 108.5,
+      "p75": 128.9,
+      "p90": 139.51,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 111.55000000000001,
+      "minute": 1245,
+      "n": 54,
+      "p10": 98.88,
+      "p25": 105.85,
+      "p75": 122.325,
+      "p90": 129.17,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 108.8,
+      "minute": 1260,
+      "n": 54,
+      "p10": 95.76,
+      "p25": 103.775,
+      "p75": 114.375,
+      "p90": 122.01,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 106.65,
+      "minute": 1275,
+      "n": 54,
+      "p10": 92.2,
+      "p25": 99.45,
+      "p75": 111.15,
+      "p90": 115.87,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 104.9,
+      "minute": 1290,
+      "n": 54,
+      "p10": 92.06,
+      "p25": 98.1,
+      "p75": 108.35,
+      "p90": 111.61,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 103.5,
+      "minute": 1305,
+      "n": 54,
+      "p10": 92.06,
+      "p25": 97.575,
+      "p75": 107.775,
+      "p90": 112.05,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 101.5,
+      "minute": 1320,
+      "n": 54,
+      "p10": 92.59,
+      "p25": 97.425,
+      "p75": 107.55,
+      "p90": 111.93,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 101.3,
+      "minute": 1335,
+      "n": 54,
+      "p10": 92.2,
+      "p25": 97.4,
+      "p75": 107.775,
+      "p90": 111.96,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 100.65,
+      "minute": 1350,
+      "n": 54,
+      "p10": 92.29,
+      "p25": 97.325,
+      "p75": 106.9,
+      "p90": 111.05,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 101.3,
+      "minute": 1365,
+      "n": 54,
+      "p10": 93.83,
+      "p25": 97.4,
+      "p75": 107.425,
+      "p90": 111.96,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 102.94999999999999,
+      "minute": 1380,
+      "n": 54,
+      "p10": 95.86,
+      "p25": 97.75,
+      "p75": 108.15,
+      "p90": 112.2,
+      "raw_n": 9,
+      "support_days": 3,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 103.4,
+      "minute": 1395,
+      "n": 54,
+      "p10": 95.86,
+      "p25": 97.775,
+      "p75": 108.45,
+      "p90": 112.05,
+      "raw_n": 9,
+      "support_days": 4,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 103.9,
+      "minute": 1410,
+      "n": 54,
+      "p10": 94.9,
+      "p25": 99.325,
+      "p75": 110,
+      "p90": 112.27,
+      "raw_n": 9,
+      "support_days": 4,
+      "supported": false
+     },
+     {
+      "meal_count": 0,
+      "median": 104.3,
+      "minute": 1425,
+      "n": 54,
+      "p10": 95.66,
+      "p25": 98.45,
+      "p75": 109.775,
+      "p90": 112.86,
+      "raw_n": 9,
+      "support_days": 4,
+      "supported": false
+     }
+    ],
+    "captured_days": 3,
+    "meals": [
+     {
+      "carbs": 114,
+      "count": 3,
+      "insulin": 20.37,
+      "median_carbs": 38,
+      "minute": 420
+     },
+     {
+      "carbs": 66,
+      "count": 3,
+      "insulin": 11.790000000000001,
+      "median_carbs": 22,
+      "minute": 450
+     },
+     {
+      "carbs": 153,
+      "count": 3,
+      "insulin": 27.33,
+      "median_carbs": 51,
+      "minute": 750
+     },
+     {
+      "carbs": 132,
+      "count": 3,
+      "insulin": 23.580000000000002,
+      "median_carbs": 44,
+      "minute": 1110
+     },
+     {
+      "carbs": 138,
+      "count": 6,
+      "insulin": 24.630000000000003,
+      "median_carbs": 23,
+      "minute": 1140
+     }
+    ],
+    "pool_minutes": 45,
+    "reading_count": 864
+   },
+   "basal": [
+    {
+     "annotation": "too few clean nights to assert a direction here",
+     "asserts_move": false,
+     "current": 0.8,
+     "days": 3,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 1.24,
+      "lo": 0.5,
+      "method": "bootstrap-median",
+      "n": 3,
+      "value": 0.86,
+      "wide": true
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "00:00",
+     "recommended": null,
+     "safety_status": "insufficient evidence",
+     "slot": 0
+    },
+    {
+     "annotation": "delivery matches the programmed rate through these hours",
+     "asserts_move": false,
+     "current": 0.833,
+     "days": 22,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 0.883,
+      "lo": 0.783,
+      "method": "bootstrap-median",
+      "n": 12,
+      "value": 0.833,
+      "wide": false
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "00:30",
+     "recommended": null,
+     "safety_status": "no change",
+     "slot": 1
+    },
+    {
+     "annotation": "delivery matches the programmed rate through these hours",
+     "asserts_move": false,
+     "current": 0.865,
+     "days": 22,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 0.915,
+      "lo": 0.815,
+      "method": "bootstrap-median",
+      "n": 24,
+      "value": 0.865,
+      "wide": false
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "01:00",
+     "recommended": null,
+     "safety_status": "no change",
+     "slot": 2
+    },
+    {
+     "annotation": "delivery matches the programmed rate through these hours",
+     "asserts_move": false,
+     "current": 0.896,
+     "days": 22,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 0.946,
+      "lo": 0.846,
+      "method": "bootstrap-median",
+      "n": 19,
+      "value": 0.896,
+      "wide": false
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "01:30",
+     "recommended": null,
+     "safety_status": "no change",
+     "slot": 3
+    },
+    {
+     "annotation": "delivery matches the programmed rate through these hours",
+     "asserts_move": false,
+     "current": 0.925,
+     "days": 22,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 0.975,
+      "lo": 0.875,
+      "method": "bootstrap-median",
+      "n": 22,
+      "value": 0.925,
+      "wide": false
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "02:00",
+     "recommended": null,
+     "safety_status": "no change",
+     "slot": 4
+    },
+    {
+     "annotation": "delivery matches the programmed rate through these hours",
+     "asserts_move": false,
+     "current": 0.952,
+     "days": 22,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 1.002,
+      "lo": 0.902,
+      "method": "bootstrap-median",
+      "n": 16,
+      "value": 0.952,
+      "wide": false
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "02:30",
+     "recommended": null,
+     "safety_status": "no change",
+     "slot": 5
+    },
+    {
+     "annotation": "delivery matches the programmed rate through these hours",
+     "asserts_move": false,
+     "current": 0.977,
+     "days": 22,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 1.027,
+      "lo": 0.927,
+      "method": "bootstrap-median",
+      "n": 12,
+      "value": 0.977,
+      "wide": false
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "03:00",
+     "recommended": null,
+     "safety_status": "no change",
+     "slot": 6
+    },
+    {
+     "annotation": "too few clean nights to assert a direction here",
+     "asserts_move": false,
+     "current": 0.998,
+     "days": 5,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 1.438,
+      "lo": 0.698,
+      "method": "bootstrap-median",
+      "n": 5,
+      "value": 1.058,
+      "wide": true
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "03:30",
+     "recommended": null,
+     "safety_status": "insufficient evidence",
+     "slot": 7
+    },
+    {
+     "annotation": "delivery matches the programmed rate through these hours",
+     "asserts_move": false,
+     "current": 1.017,
+     "days": 22,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 1.067,
+      "lo": 0.967,
+      "method": "bootstrap-median",
+      "n": 18,
+      "value": 1.017,
+      "wide": false
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "04:00",
+     "recommended": null,
+     "safety_status": "no change",
+     "slot": 8
+    },
+    {
+     "annotation": "delivery matches the programmed rate through these hours",
+     "asserts_move": false,
+     "current": 1.031,
+     "days": 22,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 1.081,
+      "lo": 0.981,
+      "method": "bootstrap-median",
+      "n": 25,
+      "value": 1.031,
+      "wide": false
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "04:30",
+     "recommended": null,
+     "safety_status": "no change",
+     "slot": 9
+    },
+    {
+     "annotation": "delivery matches the programmed rate through these hours",
+     "asserts_move": false,
+     "current": 1.041,
+     "days": 22,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 1.091,
+      "lo": 0.991,
+      "method": "bootstrap-median",
+      "n": 12,
+      "value": 1.041,
+      "wide": false
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "05:00",
+     "recommended": null,
+     "safety_status": "no change",
+     "slot": 10
+    },
+    {
+     "annotation": "delivery matches the programmed rate through these hours",
+     "asserts_move": false,
+     "current": 1.048,
+     "days": 22,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 1.098,
+      "lo": 0.998,
+      "method": "bootstrap-median",
+      "n": 18,
+      "value": 1.048,
+      "wide": false
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "05:30",
+     "recommended": null,
+     "safety_status": "no change",
+     "slot": 11
+    },
+    {
+     "annotation": "delivery matches the programmed rate through these hours",
+     "asserts_move": false,
+     "current": 1.05,
+     "days": 22,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 1.1,
+      "lo": 1,
+      "method": "bootstrap-median",
+      "n": 24,
+      "value": 1.05,
+      "wide": false
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "06:00",
+     "recommended": null,
+     "safety_status": "no change",
+     "slot": 12
+    },
+    {
+     "annotation": "delivery matches the programmed rate through these hours",
+     "asserts_move": false,
+     "current": 1.048,
+     "days": 22,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 1.098,
+      "lo": 0.998,
+      "method": "bootstrap-median",
+      "n": 23,
+      "value": 1.048,
+      "wide": false
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "06:30",
+     "recommended": null,
+     "safety_status": "no change",
+     "slot": 13
+    },
+    {
+     "annotation": "a conservative one-step move would raise this slot",
+     "asserts_move": true,
+     "current": 1.041,
+     "days": 20,
+     "direction": "raise",
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 1.371,
+      "lo": 1.041,
+      "method": "bootstrap-median",
+      "n": 20,
+      "value": 1.131,
+      "wide": false
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "07:00",
+     "recommended": 1.131,
+     "safety_status": "raise",
+     "slot": 14
+    },
+    {
+     "annotation": "delivery matches the programmed rate through these hours",
+     "asserts_move": false,
+     "current": 1.031,
+     "days": 22,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 1.081,
+      "lo": 0.981,
+      "method": "bootstrap-median",
+      "n": 25,
+      "value": 1.031,
+      "wide": false
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "07:30",
+     "recommended": null,
+     "safety_status": "no change",
+     "slot": 15
+    },
+    {
+     "annotation": "delivery matches the programmed rate through these hours",
+     "asserts_move": false,
+     "current": 1.017,
+     "days": 22,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 1.067,
+      "lo": 0.967,
+      "method": "bootstrap-median",
+      "n": 17,
+      "value": 1.017,
+      "wide": false
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "08:00",
+     "recommended": null,
+     "safety_status": "no change",
+     "slot": 16
+    },
+    {
+     "annotation": "delivery matches the programmed rate through these hours",
+     "asserts_move": false,
+     "current": 0.998,
+     "days": 22,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 1.048,
+      "lo": 0.948,
+      "method": "bootstrap-median",
+      "n": 14,
+      "value": 0.998,
+      "wide": false
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "08:30",
+     "recommended": null,
+     "safety_status": "no change",
+     "slot": 17
+    },
+    {
+     "annotation": "delivery matches the programmed rate through these hours",
+     "asserts_move": false,
+     "current": 0.977,
+     "days": 22,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 1.027,
+      "lo": 0.927,
+      "method": "bootstrap-median",
+      "n": 20,
+      "value": 0.977,
+      "wide": false
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "09:00",
+     "recommended": null,
+     "safety_status": "no change",
+     "slot": 18
+    },
+    {
+     "annotation": "delivery matches the programmed rate through these hours",
+     "asserts_move": false,
+     "current": 0.952,
+     "days": 22,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 1.002,
+      "lo": 0.902,
+      "method": "bootstrap-median",
+      "n": 24,
+      "value": 0.952,
+      "wide": false
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "09:30",
+     "recommended": null,
+     "safety_status": "no change",
+     "slot": 19
+    },
+    {
+     "annotation": "delivery matches the programmed rate through these hours",
+     "asserts_move": false,
+     "current": 0.925,
+     "days": 22,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 0.975,
+      "lo": 0.875,
+      "method": "bootstrap-median",
+      "n": 21,
+      "value": 0.925,
+      "wide": false
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "10:00",
+     "recommended": null,
+     "safety_status": "no change",
+     "slot": 20
+    },
+    {
+     "annotation": "too few clean nights to assert a direction here",
+     "asserts_move": false,
+     "current": 0.896,
+     "days": 2,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 1.336,
+      "lo": 0.596,
+      "method": "bootstrap-median",
+      "n": 2,
+      "value": 0.956,
+      "wide": true
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "10:30",
+     "recommended": null,
+     "safety_status": "insufficient evidence",
+     "slot": 21
+    },
+    {
+     "annotation": "delivery matches the programmed rate through these hours",
+     "asserts_move": false,
+     "current": 0.865,
+     "days": 22,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 0.915,
+      "lo": 0.815,
+      "method": "bootstrap-median",
+      "n": 12,
+      "value": 0.865,
+      "wide": false
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "11:00",
+     "recommended": null,
+     "safety_status": "no change",
+     "slot": 22
+    },
+    {
+     "annotation": "delivery matches the programmed rate through these hours",
+     "asserts_move": false,
+     "current": 0.833,
+     "days": 22,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 0.883,
+      "lo": 0.783,
+      "method": "bootstrap-median",
+      "n": 22,
+      "value": 0.833,
+      "wide": false
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "11:30",
+     "recommended": null,
+     "safety_status": "no change",
+     "slot": 23
+    },
+    {
+     "annotation": "delivery matches the programmed rate through these hours",
+     "asserts_move": false,
+     "current": 0.8,
+     "days": 22,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 0.85,
+      "lo": 0.75,
+      "method": "bootstrap-median",
+      "n": 12,
+      "value": 0.8,
+      "wide": false
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "12:00",
+     "recommended": null,
+     "safety_status": "no change",
+     "slot": 24
+    },
+    {
+     "annotation": "delivery matches the programmed rate through these hours",
+     "asserts_move": false,
+     "current": 0.767,
+     "days": 22,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 0.817,
+      "lo": 0.717,
+      "method": "bootstrap-median",
+      "n": 19,
+      "value": 0.767,
+      "wide": false
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "12:30",
+     "recommended": null,
+     "safety_status": "no change",
+     "slot": 25
+    },
+    {
+     "annotation": "delivery matches the programmed rate through these hours",
+     "asserts_move": false,
+     "current": 0.735,
+     "days": 22,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 0.785,
+      "lo": 0.685,
+      "method": "bootstrap-median",
+      "n": 24,
+      "value": 0.735,
+      "wide": false
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "13:00",
+     "recommended": null,
+     "safety_status": "no change",
+     "slot": 26
+    },
+    {
+     "annotation": "delivery matches the programmed rate through these hours",
+     "asserts_move": false,
+     "current": 0.704,
+     "days": 22,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 0.754,
+      "lo": 0.654,
+      "method": "bootstrap-median",
+      "n": 14,
+      "value": 0.704,
+      "wide": false
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "13:30",
+     "recommended": null,
+     "safety_status": "no change",
+     "slot": 27
+    },
+    {
+     "annotation": "too few clean nights to assert a direction here",
+     "asserts_move": false,
+     "current": 0.675,
+     "days": 2,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 1.115,
+      "lo": 0.375,
+      "method": "bootstrap-median",
+      "n": 2,
+      "value": 0.735,
+      "wide": true
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "14:00",
+     "recommended": null,
+     "safety_status": "insufficient evidence",
+     "slot": 28
+    },
+    {
+     "annotation": "delivery matches the programmed rate through these hours",
+     "asserts_move": false,
+     "current": 0.648,
+     "days": 22,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 0.698,
+      "lo": 0.598,
+      "method": "bootstrap-median",
+      "n": 12,
+      "value": 0.648,
+      "wide": false
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "14:30",
+     "recommended": null,
+     "safety_status": "no change",
+     "slot": 29
+    },
+    {
+     "annotation": "delivery matches the programmed rate through these hours",
+     "asserts_move": false,
+     "current": 0.623,
+     "days": 22,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 0.673,
+      "lo": 0.573,
+      "method": "bootstrap-median",
+      "n": 15,
+      "value": 0.623,
+      "wide": false
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "15:00",
+     "recommended": null,
+     "safety_status": "no change",
+     "slot": 30
+    },
+    {
+     "annotation": "delivery matches the programmed rate through these hours",
+     "asserts_move": false,
+     "current": 0.602,
+     "days": 22,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 0.652,
+      "lo": 0.552,
+      "method": "bootstrap-median",
+      "n": 24,
+      "value": 0.602,
+      "wide": false
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "15:30",
+     "recommended": null,
+     "safety_status": "no change",
+     "slot": 31
+    },
+    {
+     "annotation": "delivery matches the programmed rate through these hours",
+     "asserts_move": false,
+     "current": 0.583,
+     "days": 22,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 0.633,
+      "lo": 0.533,
+      "method": "bootstrap-median",
+      "n": 12,
+      "value": 0.583,
+      "wide": false
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "16:00",
+     "recommended": null,
+     "safety_status": "no change",
+     "slot": 32
+    },
+    {
+     "annotation": "delivery matches the programmed rate through these hours",
+     "asserts_move": false,
+     "current": 0.569,
+     "days": 22,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 0.619,
+      "lo": 0.519,
+      "method": "bootstrap-median",
+      "n": 23,
+      "value": 0.569,
+      "wide": false
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "16:30",
+     "recommended": null,
+     "safety_status": "no change",
+     "slot": 33
+    },
+    {
+     "annotation": "delivery matches the programmed rate through these hours",
+     "asserts_move": false,
+     "current": 0.559,
+     "days": 22,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 0.609,
+      "lo": 0.509,
+      "method": "bootstrap-median",
+      "n": 16,
+      "value": 0.559,
+      "wide": false
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "17:00",
+     "recommended": null,
+     "safety_status": "no change",
+     "slot": 34
+    },
+    {
+     "annotation": "too few clean nights to assert a direction here",
+     "asserts_move": false,
+     "current": 0.552,
+     "days": 5,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 0.992,
+      "lo": 0.252,
+      "method": "bootstrap-median",
+      "n": 5,
+      "value": 0.612,
+      "wide": true
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "17:30",
+     "recommended": null,
+     "safety_status": "insufficient evidence",
+     "slot": 35
+    },
+    {
+     "annotation": "delivery matches the programmed rate through these hours",
+     "asserts_move": false,
+     "current": 0.55,
+     "days": 22,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 0.6,
+      "lo": 0.5,
+      "method": "bootstrap-median",
+      "n": 12,
+      "value": 0.55,
+      "wide": false
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "18:00",
+     "recommended": null,
+     "safety_status": "no change",
+     "slot": 36
+    },
+    {
+     "annotation": "delivery matches the programmed rate through these hours",
+     "asserts_move": false,
+     "current": 0.552,
+     "days": 22,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 0.602,
+      "lo": 0.502,
+      "method": "bootstrap-median",
+      "n": 22,
+      "value": 0.552,
+      "wide": false
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "18:30",
+     "recommended": null,
+     "safety_status": "no change",
+     "slot": 37
+    },
+    {
+     "annotation": "delivery matches the programmed rate through these hours",
+     "asserts_move": false,
+     "current": 0.559,
+     "days": 22,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 0.609,
+      "lo": 0.509,
+      "method": "bootstrap-median",
+      "n": 22,
+      "value": 0.559,
+      "wide": false
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "19:00",
+     "recommended": null,
+     "safety_status": "no change",
+     "slot": 38
+    },
+    {
+     "annotation": "delivery matches the programmed rate through these hours",
+     "asserts_move": false,
+     "current": 0.569,
+     "days": 22,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 0.619,
+      "lo": 0.519,
+      "method": "bootstrap-median",
+      "n": 13,
+      "value": 0.569,
+      "wide": false
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "19:30",
+     "recommended": null,
+     "safety_status": "no change",
+     "slot": 39
+    },
+    {
+     "annotation": "delivery matches the programmed rate through these hours",
+     "asserts_move": false,
+     "current": 0.583,
+     "days": 22,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 0.633,
+      "lo": 0.533,
+      "method": "bootstrap-median",
+      "n": 25,
+      "value": 0.583,
+      "wide": false
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "20:00",
+     "recommended": null,
+     "safety_status": "no change",
+     "slot": 40
+    },
+    {
+     "annotation": "delivery matches the programmed rate through these hours",
+     "asserts_move": false,
+     "current": 0.602,
+     "days": 22,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 0.652,
+      "lo": 0.552,
+      "method": "bootstrap-median",
+      "n": 17,
+      "value": 0.602,
+      "wide": false
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "20:30",
+     "recommended": null,
+     "safety_status": "no change",
+     "slot": 41
+    },
+    {
+     "annotation": "too few clean nights to assert a direction here",
+     "asserts_move": false,
+     "current": 0.623,
+     "days": 2,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 1.063,
+      "lo": 0.323,
+      "method": "bootstrap-median",
+      "n": 2,
+      "value": 0.683,
+      "wide": true
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "21:00",
+     "recommended": null,
+     "safety_status": "insufficient evidence",
+     "slot": 42
+    },
+    {
+     "annotation": "delivery matches the programmed rate through these hours",
+     "asserts_move": false,
+     "current": 0.648,
+     "days": 22,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 0.698,
+      "lo": 0.598,
+      "method": "bootstrap-median",
+      "n": 22,
+      "value": 0.648,
+      "wide": false
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "21:30",
+     "recommended": null,
+     "safety_status": "no change",
+     "slot": 43
+    },
+    {
+     "annotation": "delivery matches the programmed rate through these hours",
+     "asserts_move": false,
+     "current": 0.675,
+     "days": 22,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 0.725,
+      "lo": 0.625,
+      "method": "bootstrap-median",
+      "n": 24,
+      "value": 0.675,
+      "wide": false
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "22:00",
+     "recommended": null,
+     "safety_status": "no change",
+     "slot": 44
+    },
+    {
+     "annotation": "delivery matches the programmed rate through these hours",
+     "asserts_move": false,
+     "current": 0.704,
+     "days": 22,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 0.754,
+      "lo": 0.654,
+      "method": "bootstrap-median",
+      "n": 16,
+      "value": 0.704,
+      "wide": false
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "22:30",
+     "recommended": null,
+     "safety_status": "no change",
+     "slot": 45
+    },
+    {
+     "annotation": "delivery matches the programmed rate through these hours",
+     "asserts_move": false,
+     "current": 0.735,
+     "days": 22,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 0.785,
+      "lo": 0.685,
+      "method": "bootstrap-median",
+      "n": 25,
+      "value": 0.735,
+      "wide": false
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "23:00",
+     "recommended": null,
+     "safety_status": "no change",
+     "slot": 46
+    },
+    {
+     "annotation": "delivery matches the programmed rate through these hours",
+     "asserts_move": false,
+     "current": 0.767,
+     "days": 22,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 0.817,
+      "lo": 0.717,
+      "method": "bootstrap-median",
+      "n": 13,
+      "value": 0.767,
+      "wide": false
+     },
+     "evidence": {
+      "points": []
+     },
+     "label": "23:30",
+     "recommended": null,
+     "safety_status": "no change",
+     "slot": 47
+    }
+   ],
+   "window": [
+    0,
+    1440
+   ],
+   "windowLabel": "24 H 00:00–24:00"
+  }
  },
  "dock": {
   "kind": "Nothing being watched",
-  "title": "No change staged, no trial or focus active",
-  "detail": "Stage a change from a finding to start one."
+  "queue": "Nothing staged",
+  "population": "Nothing staged",
+  "finding": "No trial or focus active — stage a change from a finding to start one."
  },
  "scenes": {
   "finding:over_treated_low": {
@@ -327,10 +2690,7 @@
     "root": "Findings",
     "here": "Over-treated low"
    },
-   "chip": {
-    "text": "1 event",
-    "title": "Clear this filter and return to Findings"
-   },
+   "crumbCount": "1",
    "subject": {
     "flavor": "habit",
     "flavorWord": "Habit",
@@ -347,7 +2707,6 @@
     ]
    },
    "judgment": {
-    "summary": "1 had another factor; 2 of 20 lows were excluded as not safely comparable.",
     "counts": [
      {
       "key": "fired",
@@ -369,24 +2728,20 @@
      }
     ]
    },
-   "boundaryNote": "Near rule is disclosure only — it never enters Priority, a suggestion, or Plan.",
    "coincidence": {
     "share": "Busiest two-hour band: 00:00–02:00, 1 of 7 events.",
     "slotText": "That band sits in the 00:00 basal slot (holds at current)",
     "blockText": "and in the Morning I:C block, 00:00–12:00 (holds at current)"
    },
    "occurrences": {
-    "cap": 5,
     "capMeta": "entry → worst · Δ &nbsp;·&nbsp; 7 of 20 in Jul 13–Aug 11",
-    "counterNote": null,
-    "moreLabel": "2 more",
-    "backLabel": "Show first 5",
+    "residue": "1 claimed by another factor · 2 not comparable",
     "groups": [
      {
       "key": "fired",
       "lead": "Over-treated low",
       "phrase": "observed, not confirmed",
-      "count": "· 7 episodes",
+      "count": 7,
       "rows": [
        {
         "id": "lows-synthetic-1",
@@ -500,6 +2855,7 @@
      120
     ],
     "axisAnchor": "low",
+    "nearRuleNote": "Disclosure only — never enters Priority, a suggestion, or Plan.",
     "cohortOrder": [
      "fired",
      "near_rule",
@@ -4794,33 +7150,33 @@
     "root": "Findings",
     "here": "Lows"
    },
-   "chip": {
-    "text": "20",
-    "title": "Clear this filter and return to Findings"
-   },
+   "crumbCount": "20",
    "subject": null,
-   "judgment": {
-    "summary": "20 lows in Jul 13–Aug 11. 8 are claimed by a finding; 10 match none.",
-    "counts": null,
-    "claims": [
-     {
-      "key": "over_treated_low",
-      "label": "Over-treated low",
-      "count": 7
-     },
-     {
-      "key": "correction_on_iob",
-      "label": "Correction on active insulin",
-      "count": 1
-     }
-    ]
-   },
-   "boundaryNote": "Near rule is disclosure only — it never enters Priority, a suggestion, or Plan.",
+   "judgment": null,
+   "segments": [
+    {
+     "key": "over_treated_low",
+     "label": "Over-treated low",
+     "count": 7
+    },
+    {
+     "key": "correction_on_iob",
+     "label": "Correction on active insulin",
+     "count": 1
+    },
+    {
+     "key": "unclaimed",
+     "label": "Unclaimed",
+     "count": 10
+    }
+   ],
    "coincidence": null,
    "defaultFactor": "over_treated_low",
    "frames": {
     "over_treated_low": {
      "key": "over_treated_low",
+     "label": "Over-treated low",
+     "count": 7,
      "canvas": {
       "title": "Low response comparison",
       "cohortOf": {
@@ -4848,6 +7204,7 @@
        120
       ],
       "axisAnchor": "low",
+      "nearRuleNote": "Disclosure only — never enters Priority, a suggestion, or Plan.",
       "cohortOrder": [
        "fired",
        "near_rule",
@@ -6928,16 +9285,12 @@
       "traces": null
      },
      "route": {
-      "text": "Over-treated low is a finding in the queue.",
-      "label": "Open case file",
+      "label": "Open case file ›",
       "target": "finding:over_treated_low"
      },
      "occurrences": {
-      "cap": 5,
-      "capMeta": "entry → worst · Δ &nbsp;·&nbsp; 17 of 20 in Jul 13–Aug 11",
-      "counterNote": "1 claimed by another factor · 2 not comparable under this rule",
-      "moreLabel": "12 more",
-      "backLabel": "Show first 5",
+      "capMeta": "7 of 20 in Jul 13–Aug 11",
+      "residue": "1 claimed by another factor · 2 not comparable",
       "groups": [
        {
         "key": "fired",
@@ -7022,7 +9375,7 @@
           "tag": ""
          }
         ],
-        "count": "· 7 events"
+        "count": 7
        },
        {
         "key": "near_rule",
@@ -7074,7 +9427,7 @@
           "tag": ""
          }
         ],
-        "count": "· 4 events"
+        "count": 4
        },
        {
         "key": "neutral",
@@ -7148,13 +9501,15 @@
           "tag": ""
          }
         ],
-        "count": "· 6 events"
+        "count": 6
        }
       ]
      }
     },
     "correction_on_iob": {
      "key": "correction_on_iob",
+     "label": "Correction on active insulin",
+     "count": 1,
      "canvas": {
       "title": "Low response comparison",
       "cohortOf": {
@@ -7172,6 +9527,7 @@
        120
       ],
       "axisAnchor": "low",
+      "nearRuleNote": null,
       "cohortOrder": [
        "fired",
        "near_rule",
@@ -9251,17 +11607,10 @@
       },
       "traces": null
      },
-     "route": {
-      "text": "Correction on active insulin has no case file in this exploration.",
-      "label": null,
-      "target": null
-     },
+     "route": null,
      "occurrences": {
-      "cap": 5,
-      "capMeta": "entry → worst · Δ &nbsp;·&nbsp; 7 of 20 in Jul 13–Aug 11",
-      "counterNote": "7 claimed by another factor · 6 not comparable under this rule",
-      "moreLabel": "2 more",
-      "backLabel": "Show first 5",
+      "capMeta": "1 of 20 in Jul 13–Aug 11",
+      "residue": "7 claimed by another factor · 6 not comparable",
       "groups": [
        {
         "key": "fired",
@@ -9280,7 +11629,7 @@
           "tag": ""
          }
         ],
-        "count": "· 1 event"
+        "count": 1
        },
        {
         "key": "neutral",
@@ -9354,7 +11703,143 @@
           "tag": ""
          }
         ],
-        "count": "· 6 events"
+        "count": 6
+       }
+      ]
+     }
+    },
+    "unclaimed": {
+     "key": "unclaimed",
+     "label": "Unclaimed",
+     "count": 10,
+     "canvas": null,
+     "empty": {
+      "head": "No comparison drawn",
+      "context": "10 lows · no rule to compare against",
+      "line": "No finding claims these, so there is no rule to compare them with."
+     },
+     "route": null,
+     "occurrences": {
+      "capMeta": "10 of 20 in Jul 13–Aug 11",
+      "residue": "8 claimed by a finding",
+      "groups": [
+       {
+        "key": "unclaimed",
+        "lead": "Claimed by no finding",
+        "phrase": null,
+        "count": 10,
+        "rows": [
+         {
+          "id": "lows-synthetic-8",
+          "when": "Aug 8 · 22:00",
+          "tier": "observed",
+          "title": "Over-treated low did not match the current rule.",
+          "both": true,
+          "entry": 69,
+          "worst": 61,
+          "delta": "−8",
+          "tag": ""
+         },
+         {
+          "id": "lows-synthetic-9",
+          "when": "Aug 9 · 06:00",
+          "tier": "observed",
+          "title": "Over-treated low did not match the current rule.",
+          "both": true,
+          "entry": 70,
+          "worst": 58,
+          "delta": "−12",
+          "tag": ""
+         },
+         {
+          "id": "lows-synthetic-10",
+          "when": "Aug 10 · 12:00",
+          "tier": "observed",
+          "title": "Over-treated low did not match the current rule.",
+          "both": true,
+          "entry": 68,
+          "worst": 59,
+          "delta": "−9",
+          "tag": ""
+         },
+         {
+          "id": "lows-synthetic-11",
+          "when": "Aug 11 · 18:00",
+          "tier": "observed",
+          "title": "Over-treated low did not match the current rule.",
+          "both": true,
+          "entry": 69,
+          "worst": 60,
+          "delta": "−9",
+          "tag": ""
+         },
+         {
+          "id": "lows-synthetic-12",
+          "when": "Aug 12 · 02:00",
+          "tier": "observed",
+          "title": "Over-treated low did not match the current rule.",
+          "both": true,
+          "entry": 70,
+          "worst": 61,
+          "delta": "−9",
+          "tag": ""
+         },
+         {
+          "id": "lows-synthetic-13",
+          "when": "Aug 13 · 08:00",
+          "tier": "observed",
+          "title": "Over-treated low did not match the current rule.",
+          "both": true,
+          "entry": 68,
+          "worst": 58,
+          "delta": "−10",
+          "tag": ""
+         },
+         {
+          "id": "lows-synthetic-14",
+          "when": "Aug 14 · 14:00",
+          "tier": "observed",
+          "title": "Over-treated low did not match the current rule.",
+          "both": true,
+          "entry": 69,
+          "worst": 59,
+          "delta": "−10",
+          "tag": ""
+         },
+         {
+          "id": "lows-synthetic-15",
+          "when": "Aug 15 · 20:00",
+          "tier": "observed",
+          "title": "Over-treated low did not match the current rule.",
+          "both": true,
+          "entry": 70,
+          "worst": 60,
+          "delta": "−10",
+          "tag": ""
+         },
+         {
+          "id": "lows-synthetic-16",
+          "when": "Aug 16 · 05:00",
+          "tier": "observed",
+          "title": "Over-treated low did not match the current rule.",
+          "both": true,
+          "entry": 68,
+          "worst": 61,
+          "delta": "−7",
+          "tag": ""
+         },
+         {
+          "id": "lows-synthetic-17",
+          "when": "Aug 17 · 11:00",
+          "tier": "observed",
+          "title": "Over-treated low did not match the current rule.",
+          "both": true,
+          "entry": 69,
+          "worst": 58,
+          "delta": "−11",
+          "tag": ""
+         }
+        ]
        }
       ]
      }

@@ -61,16 +61,49 @@
 
               <!-- ===================== canvas ===================== -->
               <!-- ONE canvas surface that answers wherever the inspector stands
-                   (#31 ruling 1).
+                   (#31 ruling 1) — and WHAT it answers with changes with the
+                   level, so there are two canvas panes and exactly one of them
+                   is mounted at a time.
 
-                   ROUND 4 ITEM 1 — and at the QUEUE level it answers nothing, so
-                   it is not drawn at all. Round 3 kept this pane mounted at every
-                   level and filled it, at the queue, with a POOLED GLUCOSE header
-                   over 1010px of empty ground plus a paragraph explaining the
-                   emptiness. The pane now collapses at that level (see
-                   `.fer-surface[data-level="queue"]` in scene.css) and the
-                   placeholder paragraph is DELETED rather than hidden — a
-                   surface with nothing to say says nothing. -->
+                   ROUND 5, WORKSTREAM A — THE QUEUE ROOT'S CANVAS IS BACK, AND IT
+                   IS THE SHIPPED POOLED GLUCOSE CHART. Round 4 unmounted the pane
+                   at this level, which answered round 3's empty placeholder
+                   rather than the ruling: the ruling's queue-root canvas IS the
+                   pooled glucose chart, and the app has had it all along. The
+                   markup below is the shipped workstation canvas pane
+                   (frontend/diagnose-workstation.js's own template) minus the
+                   brace overlay and the I:C lane row — both omissions are named
+                   in pooled.js's header and in the report. -->
+              <section class="pane canvas-pane dw-canvas" aria-label="Diagnose canvas">
+                <header class="canvas-head" id="dw-canvas-head" data-hover="0">
+                  <div class="head-swap">
+                    <div class="head-line head-rest">
+                      <h2>Glucose by time of day</h2>
+                      <span class="meta" id="dw-scope">—</span>
+                    </div>
+                    <div class="head-line head-live" id="dw-readout" aria-hidden="true">
+                      <span class="rd-time" id="rd-time">--:--</span>
+                      <span class="rd-pair" id="rd-p-med"><span class="k">median</span><span class="v" id="rd-med">--</span></span>
+                      <span class="rd-pair" id="rd-p-iqr"><span class="k">25–75</span><span class="v" id="rd-iqr">--</span></span>
+                      <span class="rd-pair" id="rd-p-band"><span class="k">10–90</span><span class="v" id="rd-band">--</span></span>
+                      <span class="rd-pair" id="rd-p-n"><span class="k">n</span><span class="v" id="rd-n">--</span></span>
+                      <span class="rd-note" id="rd-note"></span>
+                    </div>
+                  </div>
+                  <span class="meta persist" id="dw-pool">—</span>
+                </header>
+                <div class="body">
+                  <div id="chart"></div>
+                  <div class="lane-wrap">
+                    <div class="lane-stack">
+                      <div class="lane" id="lane" role="group" aria-label="Basal slot verdicts"></div>
+                    </div>
+                    <div class="lane-key" id="lane-key"></div>
+                  </div>
+                </div>
+              </section>
+
+              <!-- The DRILLED canvas: the event-comparison lens, unchanged. -->
               <section class="pane canvas-pane ec-canvas" aria-label="Evidence canvas">
                 <header class="canvas-head" id="ec-canvas-head" data-hover="0">
                   <div class="head-swap">
@@ -98,13 +131,18 @@
                        the only place that name prints (round 2, item 3).
 
                        The shipped crumb meta ("30 days") is still not drawn: the
-                       row holds the path and the scope chip, and at 430px the
-                       three do not fit. Round 1 raised it; it stays open, and
-                       `queue.meta` carries the string the level-1 queue would
-                       print so the drop is visible rather than silent. -->
+                       row holds the path and the count accessory, and at 430px
+                       the three do not fit. Round 1 raised it; it stays open,
+                       and `queue.meta` carries the string the level-1 queue
+                       would print so the drop is visible rather than silent.
+
+                       ROUND 5, BLOCK 1 — the scope CHIP is gone. The filter's
+                       count is a crumb accessory now: a tabular number
+                       right-aligned to the gutter, no border and no second
+                       dismiss, because the crumb root already walks back. -->
                   <div class="crumb">
                     <div class="trail" id="crumb-trail"></div>
-                    <span class="fer-chip" id="scope-chip" hidden></span>
+                    <span class="fer-count" id="crumb-count" hidden></span>
                   </div>
                   <div class="level" id="level" tabindex="-1"></div>
                 </div>

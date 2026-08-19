@@ -506,7 +506,7 @@
   },
   "F8 .ev-row · light 1280x800": {
    "w": 429,
-   "h": 42
+   "h": 24
   },
   "F8 .fer-band .seg · light 1280x800": {
    "w": 165.1,
@@ -546,7 +546,7 @@
   },
   "F8 .ev-row · light 1440x900": {
    "w": 429,
-   "h": 42
+   "h": 24
   },
   "F8 .fer-band .seg · light 1440x900": {
    "w": 165.1,
@@ -586,7 +586,7 @@
   },
   "F8 .ev-row · dark 1280x800": {
    "w": 429,
-   "h": 42
+   "h": 24
   },
   "F8 .fer-band .seg · dark 1280x800": {
    "w": 165.1,
@@ -626,7 +626,7 @@
   },
   "F8 .ev-row · dark 1440x900": {
    "w": 429,
-   "h": 42
+   "h": 24
   },
   "F8 .fer-band .seg · dark 1440x900": {
    "w": 165.1,
@@ -675,7 +675,7 @@
    "pageX": 0
   },
   "light 1280x800 · finding · fired · clock · expanded · selected": {
-   "level": 24,
+   "level": 0,
    "pageY": 0,
    "pageX": 0
   },
@@ -695,7 +695,7 @@
    "pageX": 0
   },
   "light 1280x800 · finding · fired · event · expanded · selected": {
-   "level": 24,
+   "level": 0,
    "pageY": 0,
    "pageX": 0
   },
@@ -715,7 +715,7 @@
    "pageX": 0
   },
   "light 1280x800 · population · over_treated_low · fired · clock · expanded · selected": {
-   "level": 24,
+   "level": 0,
    "pageY": 0,
    "pageX": 0
   },
@@ -735,7 +735,7 @@
    "pageX": 0
   },
   "light 1280x800 · population · over_treated_low · fired · event · expanded · selected": {
-   "level": 24,
+   "level": 0,
    "pageY": 0,
    "pageX": 0
   },
@@ -1185,7 +1185,7 @@
    "pageX": 0
   },
   "dark 1280x800 · finding · fired · clock · expanded · selected": {
-   "level": 24,
+   "level": 0,
    "pageY": 0,
    "pageX": 0
   },
@@ -1205,7 +1205,7 @@
    "pageX": 0
   },
   "dark 1280x800 · finding · fired · event · expanded · selected": {
-   "level": 24,
+   "level": 0,
    "pageY": 0,
    "pageX": 0
   },
@@ -1225,7 +1225,7 @@
    "pageX": 0
   },
   "dark 1280x800 · population · over_treated_low · fired · clock · expanded · selected": {
-   "level": 24,
+   "level": 0,
    "pageY": 0,
    "pageX": 0
   },
@@ -1245,7 +1245,7 @@
    "pageX": 0
   },
   "dark 1280x800 · population · over_treated_low · fired · event · expanded · selected": {
-   "level": 24,
+   "level": 0,
    "pageY": 0,
    "pageX": 0
   },

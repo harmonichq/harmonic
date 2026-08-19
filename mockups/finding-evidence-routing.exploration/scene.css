@@ -209,16 +209,15 @@
    `.linkbtn`. With the shipped elements in a shipped-shaped container, both
    compare clean. `font-size` is `.slotlink`'s own declaration by name — the
    rank the shipped sentence set for the buttons it contained. */
-/* TERM 9, THE LOCK'S OPEN DEFICIT — this block's foot is one of the seven
-   places the two expanded states were given air back. Round 11 paid the queue
-   root's 20px out of the air between its tiers and grew several hit boxes to
-   clear 24x24 in the same change; the height landed in the expanded case files,
-   which nothing measured. The bottom is 9px rather than 16 because what follows
-   it is `.fer-occ-cap`'s own margin plus `.lvl-cap`'s 8px padding — three airs
-   stacked at one seam, which is where a column this tight can afford to give.
-   The top holds its rank: this block opens a section and the one above it
-   closes with `.inner.fer-judgment`'s own foot. */
-.fer-coincide { padding: 10px var(--ck-pad) 9px; font-size: 11.5px; }
+/* TERM 9 — RESTORED. This block's head and foot were two of the seven mock-owned
+   airs the previous round spent to buy the expanded case files 18px and 23px.
+   That purchase is no longer needed: the real cost was the app's own `.entry`
+   rule boxing every evidence row to 42px, and scoping it to `button.entry` gave
+   126px back across seven rows. The head reads its rank again — this block opens
+   a section and the one above it closes with `.inner.fer-judgment`'s own foot —
+   and the foot is 16px, which is what makes the seam into the Occurrences cap a
+   section break rather than a crowded stack. */
+.fer-coincide { padding: 12px var(--ck-pad) 16px; font-size: 11.5px; }
 /* One route per line, right-aligned: the two labels together are wider than the
    column, and side by side they broke mid-label across two lines each. */
 .fer-coincide .fer-route {
@@ -290,10 +289,11 @@
  * near-black bars on bone. The unselected segment is a tint of the column's own
  * ink; the selected one is the accent, solid — one colour, spent once, on the
  * one thing the reader has to be able to find. */
-/* TERM 9 — the band is the population case file's tallest block (142px at lock
-   time) and four of its airs are its own. Its head and foot each give 3px; the
-   cap, the bar and every 24px key keep their measurements exactly. */
-.fer-band { padding: 7px var(--ck-pad) 0; }
+/* TERM 9 — RESTORED. The band is the population case file's tallest block (142px
+   at lock time), and the previous round took 3px off each of its head and foot
+   to pay a deficit that turned out to be the app's boxed evidence rows. Both are
+   back at 10px; the cap, the bar and every 24px key never moved. */
+.fer-band { padding: 10px var(--ck-pad) 0; }
 /* ROUND 11, F8 — the bar no longer clips its own children. It used to carry
    `overflow: hidden` so its 2px radius could round the outer two corners; the
    segments' 24px hit boxes (below) hang outside a 10px bar, and a clipping
@@ -339,11 +339,13 @@ html:not(.dark) .fer-surface .fer-band .seg[aria-pressed="true"] { background: v
    keeps the segments' own hit boxes (which reach 7px below a 10px bar) from
    overlapping the first key's. Two targets that overlap steal each other's
    clicks, which is not a fix.
-   TERM 9 — that air is 9px now, not 14. SEVEN is the floor and the reason is
-   arithmetic, not taste: the segment overlay is 24px centred on a 10px bar, so
-   it ends exactly 7px below the bar. Nine leaves 2px between the two hit boxes.
-   Anything under 7 makes them overlap and takes the fix out with the air. */
-.fer-band .keys { display: grid; gap: 2px 10px; margin-top: 9px; }
+   TERM 9 — RESTORED to 14px. The previous round cut this to 9 against a floor of
+   SEVEN, which is arithmetic and not taste: the segment overlay is 24px centred
+   on a 10px bar, so it ends exactly 7px below the bar, and anything under 7 makes
+   the two hit boxes overlap. Nine cleared the floor by 2px and nothing else; with
+   the evidence rows no longer boxed there is no reason to sit that close to it,
+   and 14 is the separation the band was settled at. */
+.fer-band .keys { display: grid; gap: 2px 10px; margin-top: 14px; }
 .fer-band .key {
   display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 8px;
   background: none; border: 0; padding: 5px 0; cursor: pointer; text-align: left;
@@ -369,7 +371,7 @@ html:not(.dark) .fer-surface .fer-band .seg[aria-pressed="true"] { background: v
   font-variant-numeric: tabular-nums; text-transform: none; letter-spacing: 0;
   color: var(--fer-meta-dim);
 }
-.fer-band { padding-bottom: 7px; border-bottom: 1px solid var(--ck-hair); }
+.fer-band { padding-bottom: 10px; border-bottom: 1px solid var(--ck-hair); }
 
 /* ======================================================================
    ROUND 5, BLOCK 7 — THE RESIDUE, UNFILLED.
@@ -381,12 +383,13 @@ html:not(.dark) .fer-surface .fer-band .seg[aria-pressed="true"] { background: v
  * the table's own left edge, immediately after the last row and BEFORE the
  * expander. At most one hairline above it, which is the last row's own bottom
  * border, so nothing new is drawn. */
-/* TERM 9 — 3px, not 6. This line is the quietest statement in the column and it
-   was costing 25px between the last row's hairline and the expander; at 19px it
-   still clears both, and it is the one air that every state drawing the table
-   pays, so it is the cheapest place on the surface to buy a pixel. */
+/* TERM 9 — RESTORED to 6px. This line is the quietest statement in the column,
+   and being the one air that every state drawing the table pays is exactly what
+   made it the cheapest pixel to buy under the deficit — and exactly what makes it
+   the first to give back now that the deficit is gone. Six puts 25px between the
+   last row's hairline and the expander again. */
 .fer-residue {
-  padding: 3px var(--ck-pad);
+  padding: 6px var(--ck-pad);
   font-size: 11px; font-weight: 400;
   color: var(--fer-meta-dim);
 }
@@ -522,10 +525,10 @@ html.dark .fer-surface { --ec-near: #d59a60; }
    nothing while the harness reported a clean 68/68. */
 .level .inner.fer-judgment { padding-bottom: 14px; }
 .level .inner.fer-context { padding-top: 12px; padding-bottom: 16px; }
-/* TERM 9 — halved. `.lvl-cap` brings 8px of its own padding above the word, so
-   the seam the harness records as a deliberate deviation ("the Occurrences cap
-   takes air above it") still reads at 11px, not 3. */
-.fer-occ-cap { margin-top: 3px; }
+/* TERM 9 — RESTORED to 6px. Halving this held the seam at 11px once `.lvl-cap`'s
+   own 8px padding was counted, which was enough but not what the deviation the
+   harness records ("the Occurrences cap takes air above it") was settled at. */
+.fer-occ-cap { margin-top: 6px; }
 /* The queue's own seam: the ranked findings end, and the standing populations
    are a different kind of thing entirely. The shipped tail note already opens a
    14px pause before the unpriced rows, so this break is deliberately wider than

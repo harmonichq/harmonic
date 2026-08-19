@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Wireframe G — merged: collapsing dropdown + dense ledger + alignment projection</title>
+<style>
+  :root{
+    --ink:#1b1b1b; --mid:#6b6b6b; --faint:#9a9a9a;
+    --hair:#c9c9c9; --hair-soft:#e2e2e2;
+    --paper:#ffffff; --wash:#f4f4f4; --wash2:#ebebeb;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink); background:#dcdcdc; -webkit-font-smoothing:antialiased;
+  }
+
+  /* ---------- wireframe scaffold (NOT the app) ---------- */
+  .scaffold{padding:20px 24px 8px}
+  .scaffold h1{font-size:15px;margin:0 0 2px;font-weight:600;letter-spacing:.01em}
+  .scaffold p{margin:0 0 14px;color:var(--mid);font-size:12.5px;max-width:76ch}
+  .harness{
+    display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start;
+    border:1px dashed #8f8f8f;background:#e7e7e7;padding:10px 14px;border-radius:4px;
+  }
+  .harness .grp{display:flex;flex-direction:column;gap:6px}
+  .harness .grp > span{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--mid)}
+  .harness .row{display:flex;gap:8px;flex-wrap:wrap}
+  .harness button{
+    font:inherit;font-size:12.5px;min-height:44px;padding:0 14px;
+    background:var(--paper);border:1px solid var(--hair);border-radius:3px;color:var(--ink);cursor:pointer;
+  }
+  .harness button[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .note{
+    font-size:12px;color:var(--mid);border-left:3px solid #8f8f8f;background:#e7e7e7;
+    padding:7px 10px;margin:8px 0 0;max-width:96ch;
+  }
+  .note b{color:var(--ink);font-weight:600}
+
+  /* ---------- device frames ---------- */
+  .stage{padding:6px 24px 60px}
+  .devwrap{margin:26px 0 0}
+  .devlabel{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:#555;margin:0 0 6px}
+  .scaler{overflow:hidden}
+  .device{
+    transform-origin:top left;
+    background:var(--paper);border:1px solid #8f8f8f;
+    display:flex;flex-direction:column;position:relative;
+  }
+  .device.desktop{width:1440px;height:820px}
+  .device.tablet{width:1100px;height:790px}
+
+  /* ---------- workstation skeleton ---------- */
+  .topstrip{
+    height:46px;flex:0 0 46px;border-bottom:1px solid var(--hair);
+    display:flex;align-items:center;padding:0 16px;background:var(--wash);
+    font-size:12px;color:var(--faint);letter-spacing:.03em;gap:14px;
+  }
+  .topstrip .ph{border:1px dashed var(--hair);padding:4px 10px;color:var(--faint)}
+  .body{flex:1;display:flex;min-height:0}
+  .canvaspane{flex:1;min-width:0;display:flex;flex-direction:column;border-right:1px solid var(--hair)}
+  .inspector{
+    flex:0 0 430px;width:430px;display:flex;flex-direction:column;min-height:0;
+    background:var(--paper);position:relative;
+  }
+  .device.tablet .inspector{flex:0 0 400px;width:400px}
+
+  /* ---------- canvas ---------- */
+  .canvashead{
+    border-bottom:1px solid var(--hair);background:var(--wash);
+    padding:0 16px;height:52px;flex:0 0 52px;
+    display:flex;align-items:center;justify-content:space-between;gap:16px;
+  }
+  .canvashead .ctitle{font-size:13px;font-weight:600;letter-spacing:.01em}
+  .canvashead .ctitle em{font-style:normal;color:var(--mid);font-weight:400;margin-left:8px;font-size:12px}
+  .seg{display:flex;border:1px solid var(--hair);background:var(--paper);flex:0 0 auto}
+  .seg button{
+    font:inherit;font-size:12.5px;min-height:44px;padding:0 16px;
+    background:var(--paper);border:0;border-left:1px solid var(--hair);color:var(--mid);cursor:pointer;
+  }
+  .seg button:first-child{border-left:0}
+  .seg button[aria-pressed="true"]{background:var(--ink);color:#fff}
+  .seg .segcap{
+    font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);
+    display:flex;align-items:center;padding:0 12px 0 0;flex:0 0 auto;white-space:nowrap;
+  }
+  .canvasbody{flex:1;min-height:0;padding:14px 16px 10px;display:flex;flex-direction:column;gap:8px}
+  .canvassvg{flex:1;min-height:0;border:1px solid var(--hair-soft);background:var(--paper)}
+  .canvassvg svg{display:block;width:100%;height:100%}
+  .canvaslegend{
+    display:flex;gap:20px;flex-wrap:wrap;align-items:center;
+    font-size:11.5px;color:var(--mid);min-height:22px;
+  }
+  .canvaslegend .k{display:flex;align-items:center;gap:7px}
+  .canvaslegend svg{display:block}
+  .canvasfoot{font-size:11.5px;color:var(--faint)}
+
+  /* ---------- inspector: collapsing dropdown ---------- */
+  .selwrap{position:relative;flex:0 0 auto;z-index:5}
+  .selbtn{
+    display:flex;align-items:center;gap:10px;width:100%;
+    min-height:48px;padding:0 16px;background:var(--paper);
+    border:0;border-bottom:1px solid var(--hair);
+    font:inherit;text-align:left;cursor:pointer;color:var(--ink);
+  }
+  .selbtn .nm{font-size:13.5px;font-weight:600;letter-spacing:.01em}
+  .selbtn .ct{font-variant-numeric:tabular-nums;font-size:13px;color:var(--mid)}
+  .selbtn .chev{margin-left:auto;color:var(--faint);font-size:11px}
+  .selbtn[aria-expanded="true"]{background:var(--wash2)}
+  .sellist{
+    position:absolute;top:100%;left:0;right:0;
+    background:var(--paper);border-bottom:1px solid var(--hair);
+    box-shadow:0 2px 0 rgba(0,0,0,.06);
+  }
+  .sellist .lhead{
+    padding:9px 16px 6px;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);
+    border-bottom:1px solid var(--hair-soft);
+  }
+  .selopt{
+    display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:0 16px;
+    background:var(--paper);border:0;border-bottom:1px solid var(--hair-soft);
+    font:inherit;font-size:13px;text-align:left;color:var(--ink);cursor:pointer;
+  }
+  .selopt .ct{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--mid)}
+  .selopt .tick{flex:0 0 12px;color:var(--faint);font-size:11px}
+  .selopt[aria-current="true"]{background:var(--wash2)}
+  .selopt[aria-current="true"] .tick{color:var(--ink)}
+  .scrim{position:absolute;inset:0;background:transparent;border:0;padding:0;margin:0;cursor:default;z-index:4}
+
+  /* ---------- inspector: dense event ledger ---------- */
+  .cap{
+    padding:11px 16px 8px;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);
+    display:flex;justify-content:space-between;gap:10px;
+  }
+  .cap .win{text-transform:none;letter-spacing:.02em;font-size:11px}
+  .events{flex:1;overflow-y:auto;min-height:0}
+  .grule{
+    display:flex;align-items:baseline;gap:10px;padding:9px 16px 4px;
+    border-top:1px solid var(--hair);
+    font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--mid);
+  }
+  .grule .gc{margin-left:auto;font-variant-numeric:tabular-nums;letter-spacing:0;color:var(--faint)}
+  .evrow{
+    display:flex;align-items:center;gap:10px;width:100%;
+    min-height:44px;padding:0 16px;background:var(--paper);
+    border:0;border-bottom:1px solid var(--hair-soft);
+    font:inherit;font-size:13px;color:var(--ink);text-align:left;cursor:pointer;
+    line-height:1.2;
+  }
+  .evrow .date{flex:0 0 52px;color:var(--mid);font-variant-numeric:tabular-nums}
+  .evrow .time{flex:0 0 46px;color:var(--mid);font-variant-numeric:tabular-nums}
+  .evrow .pair{flex:1;font-variant-numeric:tabular-nums}
+  .evrow .pair .arw{color:var(--faint);padding:0 3px}
+  .evrow .delta{flex:0 0 44px;text-align:right;font-variant-numeric:tabular-nums;color:var(--mid)}
+  .evrow .mark{flex:0 0 12px;color:transparent;font-size:11px}
+  .evrow[aria-pressed="true"]{background:var(--wash2)}
+  .evrow[aria-pressed="true"] .mark{color:var(--ink)}
+  .evrow[aria-pressed="true"] .date,.evrow[aria-pressed="true"] .time{color:var(--ink)}
+  .residue{
+    display:flex;align-items:center;min-height:38px;padding:0 16px;
+    border-top:1px solid var(--hair-soft);
+    font-size:12px;color:var(--faint);font-style:normal;
+  }
+  .dock{
+    flex:0 0 44px;border-top:1px solid var(--hair);background:var(--wash);
+    display:flex;align-items:center;padding:0 16px;font-size:12px;color:var(--faint);gap:8px;
+  }
+  .dock b{color:var(--ink);font-weight:600}
+</style>
+</head>
+<body>
+
+<div class="scaffold">
+  <h1>Wireframe G — merged direction</h1>
+  <p>
+    Selection lives entirely in the inspector: a collapsing factor dropdown at the column head (from E),
+    over the denser event ledger (from F). The canvas head carries exactly one control — an alignment
+    <em>projection</em> switch, <b>By clock</b> / <b>By event</b> — which reprojects the already-selected
+    data and never selects it. Within a factor the canvas always draws all three states; there is no cohort filter.
+  </p>
+  <div class="harness">
+    <div class="grp"><span>Data</span><div class="row" id="h-data"></div></div>
+    <div class="grp"><span>Factor</span><div class="row" id="h-factor"></div></div>
+    <div class="grp"><span>Event</span><div class="row" id="h-event"></div></div>
+    <div class="grp"><span>Projection</span><div class="row" id="h-proj"></div></div>
+    <div class="grp"><span>Dropdown</span><div class="row" id="h-drop"></div></div>
+  </div>
+  <p class="note">
+    <b>Push vs overlay.</b> The expanded list <b>overlays</b> the ledger rather than pushing it. Pushing an
+    8-row / 352px list down the column would drive the first event rows past the fold and move the dock, so a
+    mis-tap on the factor name costs the reader their place in the table. Overlaying leaves the ledger and the
+    floor dock exactly where they were, so collapsing restores the identical column — and at 8 factors the
+    expanded list is 8 × 44px + header ≈ 400px inside a ~730px column, still one screen with the table's first
+    rows visible beneath it. Tap-away (the scrim), Esc, or choosing a factor all collapse it.
+  </p>
+</div>
+
+<div class="stage" id="stage"></div>
+
+<script>
+/* ------------------------------------------------------------------ *
+ * REAL EVENT ROWS — verbatim from
+ * mockups/finding-evidence-routing.exploration/data.json
+ * (scenes["population:lows"].frames.*.occurrences.groups[].rows[])
+ * ------------------------------------------------------------------ */
+var EV = {
+  "lows-synthetic-1":  {when:"Aug 1 · 01:00", entry:68, worst:58, delta:"−10"},
+  "lows-synthetic-2":  {when:"Aug 2 · 07:00", entry:69, worst:59, delta:"−10"},
+  "lows-synthetic-3":  {when:"Aug 3 · 13:00", entry:70, worst:60, delta:"−10"},
+  "lows-synthetic-4":  {when:"Aug 4 · 19:00", entry:68, worst:61, delta:"−7"},
+  "lows-synthetic-5":  {when:"Aug 5 · 04:00", entry:69, worst:58, delta:"−11"},
+  "lows-synthetic-6":  {when:"Aug 6 · 10:00", entry:70, worst:59, delta:"−11"},
+  "lows-synthetic-7":  {when:"Aug 7 · 16:00", entry:68, worst:60, delta:"−8"},
+  "lows-synthetic-8":  {when:"Aug 8 · 22:00", entry:69, worst:61, delta:"−8"},
+  "lows-synthetic-9":  {when:"Aug 9 · 06:00", entry:70, worst:58, delta:"−12"},
+  "lows-synthetic-10": {when:"Aug 10 · 12:00", entry:68, worst:59, delta:"−9"},
+  "lows-synthetic-11": {when:"Aug 11 · 18:00", entry:69, worst:60, delta:"−9"},
+  "lows-synthetic-12": {when:"Aug 12 · 02:00", entry:70, worst:61, delta:"−9"},
+  "lows-synthetic-13": {when:"Aug 13 · 08:00", entry:68, worst:58, delta:"−10"},
+  "lows-synthetic-14": {when:"Aug 14 · 14:00", entry:69, worst:59, delta:"−10"},
+  "lows-synthetic-15": {when:"Aug 15 · 20:00", entry:70, worst:60, delta:"−10"},
+  "lows-synthetic-16": {when:"Aug 16 · 05:00", entry:68, worst:61, delta:"−7"},
+  "lows-synthetic-17": {when:"Aug 17 · 11:00", entry:69, worst:58, delta:"−11"},
+  "lows-synthetic-18": {when:"Aug 18 · 17:00", entry:70, worst:59, delta:"−11"}
+};
+var WINDOW = "Jul 13–Aug 11";
+var POP = 20;
+
+var NEUTRAL6 = ["lows-synthetic-12","lows-synthetic-13","lows-synthetic-14",
+                "lows-synthetic-15","lows-synthetic-16","lows-synthetic-17"];
+
+/* 3-factor set — the shipped projection */
+var SET3 = [
+  {key:"over_treated_low", label:"Over-treated low", count:7,
+   residue:"1 claimed by another factor · 2 not comparable",
+   groups:[
+     {key:"fired", lead:"Rule matched", ids:["lows-synthetic-1","lows-synthetic-2","lows-synthetic-3","lows-synthetic-4","lows-synthetic-5","lows-synthetic-6","lows-synthetic-7"]},
+     {key:"near_rule", lead:"Near rule", ids:["lows-synthetic-8","lows-synthetic-9","lows-synthetic-10","lows-synthetic-11"]},
+     {key:"neutral", lead:"Rule did not match", ids:NEUTRAL6}
+   ]},
+  {key:"correction_on_iob", label:"Correction on active insulin", count:1,
+   residue:"7 claimed by another factor · 6 not comparable",
+   groups:[
+     {key:"fired", lead:"Rule matched", ids:["lows-synthetic-18"]},
+     {key:"near_rule", lead:"Near rule", ids:[]},
+     {key:"neutral", lead:"Rule did not match", ids:NEUTRAL6}
+   ]},
+  {key:"unclaimed", label:"Unclaimed", count:10,
+   residue:"8 claimed by a finding",
+   groups:[
+     {key:"neutral", lead:"Claimed by no finding", ids:["lows-synthetic-8","lows-synthetic-9","lows-synthetic-10","lows-synthetic-11","lows-synthetic-12","lows-synthetic-13","lows-synthetic-14","lows-synthetic-15","lows-synthetic-16","lows-synthetic-17"]}
+   ]}
+];
+
+/* 8-factor set — same 20-low population, invented future factor names,
+   real rows redistributed. Proves the dropdown and ledger scale. */
+function g(k,lead,ids){return {key:k,lead:lead,ids:ids};}
+var SET8 = [
+  {key:"over_treated_low", label:"Over-treated low", count:5,
+   residue:"3 claimed by another factor · 2 not comparable",
+   groups:[g("fired","Rule matched",["lows-synthetic-1","lows-synthetic-2","lows-synthetic-3","lows-synthetic-4","lows-synthetic-5"]),
+           g("near_rule","Near rule",["lows-synthetic-6","lows-synthetic-7"]),
+           g("neutral","Rule did not match",NEUTRAL6)]},
+  {key:"correction_on_iob", label:"Correction on active insulin", count:1,
+   residue:"7 claimed by another factor · 6 not comparable",
+   groups:[g("fired","Rule matched",["lows-synthetic-18"]),
+           g("near_rule","Near rule",[]),
+           g("neutral","Rule did not match",NEUTRAL6)]},
+  {key:"rebound_from_low", label:"Rebound from a prior low", count:3,
+   residue:"4 claimed by another factor · 3 not comparable",
+   groups:[g("fired","Rule matched",["lows-synthetic-6","lows-synthetic-7","lows-synthetic-8"]),
+           g("near_rule","Near rule",["lows-synthetic-9"]),
+           g("neutral","Rule did not match",NEUTRAL6)]},
+  {key:"exercise_adjacent", label:"Exercise-adjacent low", count:2,
+   residue:"5 claimed by another factor · 4 not comparable",
+   groups:[g("fired","Rule matched",["lows-synthetic-9","lows-synthetic-10"]),
+           g("near_rule","Near rule",["lows-synthetic-11"]),
+           g("neutral","Rule did not match",NEUTRAL6)]},
+  {key:"unbolused_carb_gap", label:"Carbs logged, not bolused", count:2,
+   residue:"5 claimed by another factor · 4 not comparable",
+   groups:[g("fired","Rule matched",["lows-synthetic-11","lows-synthetic-16"]),
+           g("near_rule","Near rule",["lows-synthetic-17"]),
+           g("neutral","Rule did not match",NEUTRAL6)]},
+  {key:"alcohol_window", label:"Overnight alcohol window", count:1,
+   residue:"6 claimed by another factor · 5 not comparable",
+   groups:[g("fired","Rule matched",["lows-synthetic-12"]),
+           g("near_rule","Near rule",["lows-synthetic-13"]),
+           g("neutral","Rule did not match",NEUTRAL6)]},
+  {key:"extended_bolus_overlap", label:"Extended bolus overlap", count:1,
+   residue:"6 claimed by another factor · 5 not comparable",
+   groups:[g("fired","Rule matched",["lows-synthetic-13"]),
+           g("near_rule","Near rule",["lows-synthetic-14"]),
+           g("neutral","Rule did not match",NEUTRAL6)]},
+  {key:"unclaimed", label:"Unclaimed", count:5,
+   residue:"15 claimed by a finding",
+   groups:[g("neutral","Claimed by no finding",["lows-synthetic-14","lows-synthetic-15","lows-synthetic-16","lows-synthetic-17","lows-synthetic-18"])]}
+];
+
+/* ------------------------------------------------------------------ */
+var S = {data:"3", factor:"over_treated_low", event:null, proj:"clock", open:false};
+function set(){ return S.data === "3" ? SET3 : SET8; }
+function factor(){
+  var f = set().filter(function(x){return x.key === S.factor;})[0];
+  return f || set()[0];
+}
+function rowsOf(f){
+  var out = [];
+  f.groups.forEach(function(gr){ gr.ids.forEach(function(id){ out.push({id:id, group:gr.key}); }); });
+  return out;
+}
+function cohortOf(f,id){
+  var c = null;
+  f.groups.forEach(function(gr){ if(gr.ids.indexOf(id) >= 0 && !c) c = gr.key; });
+  return c;
+}
+function hourOf(id){
+  var m = /·\s*(\d\d):(\d\d)/.exec(EV[id].when);
+  return parseInt(m[1],10) + parseInt(m[2],10)/60;
+}
+function datePart(id){ return EV[id].when.split(" · ")[0]; }
+function timePart(id){ return EV[id].when.split(" · ")[1]; }
+
+/* ---------------- schematic canvas ---------------- */
+var W = 960, H = 400, PL = 46, PR = 16, PT = 14, PB = 30;
+function yv(v){ /* 40..210 mg/dL */
+  var t = (v - 40) / 170;
+  return PT + (1 - t) * (H - PT - PB);
+}
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;"); }
+
+function frame(xlabels){
+  var s = "";
+  s += '<rect x="'+PL+'" y="'+PT+'" width="'+(W-PL-PR)+'" height="'+(H-PT-PB)+'" fill="none" stroke="#e2e2e2"/>';
+  [70,120,180].forEach(function(v){
+    s += '<line x1="'+PL+'" y1="'+yv(v)+'" x2="'+(W-PR)+'" y2="'+yv(v)+'" stroke="#ededed"/>';
+    s += '<text x="'+(PL-8)+'" y="'+(yv(v)+4)+'" text-anchor="end" font-size="11" fill="#9a9a9a">'+v+'</text>';
+  });
+  s += '<line x1="'+PL+'" y1="'+yv(70)+'" x2="'+(W-PR)+'" y2="'+yv(70)+'" stroke="#c9c9c9" stroke-dasharray="2 3"/>';
+  xlabels.forEach(function(t){
+    s += '<line x1="'+t.x+'" y1="'+(H-PB)+'" x2="'+t.x+'" y2="'+(H-PB+5)+'" stroke="#c9c9c9"/>';
+    s += '<text x="'+t.x+'" y="'+(H-PB+18)+'" text-anchor="middle" font-size="11" fill="#9a9a9a">'+esc(t.t)+'</text>';
+  });
+  return s;
+}
+function path(pts){
+  return pts.map(function(p,i){ return (i?"L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1); }).join(" ");
+}
+
+/* ---- BY CLOCK: 00:00–24:00, pooled envelope + this factor's events as dots ---- */
+function clockX(h){ return PL + (h/24) * (W - PL - PR); }
+function pooledAt(h){
+  /* deterministic schematic diurnal median */
+  var m = 132 + 26*Math.sin((h-8.5)/24*2*Math.PI) - 14*Math.cos((h-3)/12*2*Math.PI);
+  var spread = 30 + 10*Math.sin((h-5)/24*2*Math.PI);
+  return {m:m, in1:m-spread*0.55, in2:m+spread*0.55, out1:m-spread*1.25, out2:m+spread*1.25};
+}
+function drawClock(f){
+  var s = "", ticks = [];
+  for(var h=0; h<=24; h+=4) ticks.push({x:clockX(h), t:(h<10?"0":"")+h+":00"});
+  s += frame(ticks);
+
+  var top=[], bot=[], top2=[], bot2=[], med=[];
+  for(var q=0; q<=96; q++){
+    var hh = q/4, p = pooledAt(hh), x = clockX(hh);
+    top.push([x,yv(p.out2)]); bot.push([x,yv(p.out1)]);
+    top2.push([x,yv(p.in2)]); bot2.push([x,yv(p.in1)]);
+    med.push([x,yv(p.m)]);
+  }
+  s += '<path d="'+path(top)+" "+path(bot.slice().reverse()).replace(/^M/,"L")+' Z" fill="#efefef" stroke="none"/>';
+  s += '<path d="'+path(top2)+" "+path(bot2.slice().reverse()).replace(/^M/,"L")+' Z" fill="#e0e0e0" stroke="none"/>';
+  s += '<path d="'+path(med)+'" fill="none" stroke="#9a9a9a" stroke-width="1.5"/>';
+  s += '<text x="'+(W-PR-6)+'" y="'+(yv(pooledAt(23).m)-8)+'" text-anchor="end" font-size="11" fill="#9a9a9a">pooled median · all 20 lows</text>';
+
+  /* drilled: that day's whole trace laid over the envelope */
+  if(S.event){
+    var eh = hourOf(S.event), worst = EV[S.event].worst, pts = [];
+    for(var q2=0; q2<=96; q2++){
+      var h2 = q2/4, d = Math.abs(h2-eh), base = pooledAt(h2).m + 8;
+      var dip = d < 3 ? (base - worst) * Math.exp(-(d*d)/1.1) : 0;
+      pts.push([clockX(h2), yv(base - dip)]);
+    }
+    s += '<path d="'+path(pts)+'" fill="none" stroke="#1b1b1b" stroke-width="1.6"/>';
+    /* dashed window brace around the event */
+    var x1 = clockX(Math.max(0,eh-2.5)), x2 = clockX(Math.min(24,eh+1.5));
+    s += '<rect x="'+x1+'" y="'+PT+'" width="'+(x2-x1)+'" height="'+(H-PT-PB)+'" fill="none" stroke="#1b1b1b" stroke-dasharray="4 4"/>';
+    s += '<line x1="'+x1+'" y1="'+(PT+10)+'" x2="'+x2+'" y2="'+(PT+10)+'" stroke="#1b1b1b" stroke-dasharray="4 4"/>';
+    s += '<text x="'+((x1+x2)/2)+'" y="'+(PT+26)+'" text-anchor="middle" font-size="11" fill="#1b1b1b">'+esc(EV[S.event].when)+' · −5 h … +2 h</text>';
+  }
+
+  /* every event in this factor's comparison, all three states, as dots */
+  rowsOf(f).forEach(function(r){
+    var x = clockX(hourOf(r.id)), y = yv(EV[r.id].worst), on = (r.id === S.event);
+    if(r.group === "fired")      s += '<circle cx="'+x+'" cy="'+y+'" r="'+(on?6:4.5)+'" fill="#1b1b1b"/>';
+    else if(r.group === "near_rule") s += '<circle cx="'+x+'" cy="'+y+'" r="'+(on?6:4.5)+'" fill="#ffffff" stroke="#1b1b1b" stroke-width="1.4" stroke-dasharray="2 2"/>';
+    else                         s += '<circle cx="'+x+'" cy="'+y+'" r="'+(on?6:4.5)+'" fill="#ffffff" stroke="#9a9a9a" stroke-width="1.2"/>';
+    if(on) s += '<circle cx="'+x+'" cy="'+y+'" r="11" fill="none" stroke="#1b1b1b"/>';
+  });
+  return s;
+}
+
+/* ---- BY EVENT: −5 h … low … +2 h, three schematic cohort lines ---- */
+function evX(min){ return PL + ((min + 300) / 420) * (W - PL - PR); }
+function cohortCurve(kind){
+  var pts = [], i;
+  for(i=-300; i<=120; i+=5){
+    var t = i, v;
+    var start = kind === "fired" ? 172 : (kind === "near_rule" ? 150 : 128);
+    var nadir = kind === "fired" ? 56  : (kind === "near_rule" ? 62  : 68);
+    var reb   = kind === "fired" ? 168 : (kind === "near_rule" ? 128 : 104);
+    if(t <= 0){
+      var u = (t + 300) / 300;
+      v = start - (start - nadir) * Math.pow(u, 2.1);
+    } else {
+      var u2 = t / 120;
+      v = nadir + (reb - nadir) * Math.pow(u2, 0.85);
+    }
+    pts.push([evX(t), yv(v)]);
+  }
+  return pts;
+}
+function drawEvent(f){
+  var s = "", ticks = [];
+  [-300,-240,-180,-120,-60,0,60,120].forEach(function(m){
+    ticks.push({x:evX(m), t: m===0 ? "low" : (m>0?"+":"−") + Math.abs(m/60) + " h"});
+  });
+  s += frame(ticks);
+  s += '<line x1="'+evX(0)+'" y1="'+PT+'" x2="'+evX(0)+'" y2="'+(H-PB)+'" stroke="#c9c9c9"/>';
+
+  var styles = {
+    fired:     {d:"", w:1.9, c:"#1b1b1b", lab:"Rule matched"},
+    near_rule: {d:"7 4", w:1.6, c:"#1b1b1b", lab:"Near rule"},
+    neutral:   {d:"2 4", w:1.5, c:"#6b6b6b", lab:"Rule did not match"}
+  };
+  /* all three states are always drawn — there is no cohort filter */
+  ["fired","near_rule","neutral"].forEach(function(k){
+    var st = styles[k], p = cohortCurve(k);
+    s += '<path d="'+path(p)+'" fill="none" stroke="'+st.c+'" stroke-width="'+st.w+'"'+(st.d?' stroke-dasharray="'+st.d+'"':'')+'/>';
+    s += '<text x="'+(evX(120)-4)+'" y="'+(p[p.length-1][1]-6)+'" text-anchor="end" font-size="11" fill="'+st.c+'">'+st.lab+'</text>';
+  });
+
+  /* drilled: this one event's own trace highlighted among its neighbours */
+  if(S.event){
+    var ck = cohortOf(f, S.event) || "neutral";
+    var base = cohortCurve(ck), worst = EV[S.event].worst, entry = EV[S.event].entry;
+    /* one day's trace is noisier than the cohort it belongs to */
+    var pts = base.map(function(p,i){
+      var min = -300 + i*5, k = Math.exp(-Math.pow(min/95,2));
+      var yWorst = yv(worst), off = (yWorst - p[1]) * k;
+      var wob = (1-k) * (11*Math.sin(min/37) + 6*Math.sin(min/13 + 1.7));
+      return [p[0], p[1] + off + (1-k)*10 + wob];
+    });
+    s += '<path d="'+path(pts)+'" fill="none" stroke="#1b1b1b" stroke-width="2.6" stroke-linejoin="round"/>';
+    s += '<path d="'+path(pts)+'" fill="none" stroke="#ffffff" stroke-width="0.9" stroke-dasharray="1 5"/>';
+    s += '<circle cx="'+evX(0)+'" cy="'+yv(worst)+'" r="5" fill="#1b1b1b"/>';
+    s += '<circle cx="'+evX(0)+'" cy="'+yv(worst)+'" r="11" fill="none" stroke="#1b1b1b"/>';
+    s += '<text x="'+(evX(0)+16)+'" y="'+(yv(worst)+4)+'" font-size="11" fill="#1b1b1b">'+esc(EV[S.event].when)+' · '+entry+'→'+worst+'</text>';
+  }
+  return s;
+}
+
+function legend(){
+  function line(dash,w,c){
+    return '<svg width="30" height="10" viewBox="0 0 30 10"><line x1="0" y1="5" x2="30" y2="5" stroke="'+c+'" stroke-width="'+w+'"'+(dash?' stroke-dasharray="'+dash+'"':'')+'/></svg>';
+  }
+  function dot(kind){
+    if(kind==="fired") return '<svg width="14" height="14"><circle cx="7" cy="7" r="4.5" fill="#1b1b1b"/></svg>';
+    if(kind==="near") return '<svg width="14" height="14"><circle cx="7" cy="7" r="4.5" fill="#fff" stroke="#1b1b1b" stroke-width="1.4" stroke-dasharray="2 2"/></svg>';
+    return '<svg width="14" height="14"><circle cx="7" cy="7" r="4.5" fill="#fff" stroke="#9a9a9a" stroke-width="1.2"/></svg>';
+  }
+  if(S.proj === "clock"){
+    return '<span class="k">'+dot("fired")+'Event fired</span>'
+         + '<span class="k">'+dot("near")+'Near miss</span>'
+         + '<span class="k">'+dot("neutral")+'Not owned</span>'
+         + '<span class="k"><svg width="30" height="12"><rect x="0" y="2" width="30" height="8" fill="#e0e0e0"/></svg>Pooled envelope · all 20 lows</span>'
+         + (S.event ? '<span class="k">'+line("",1.6,"#1b1b1b")+'This day’s trace</span>' : '');
+  }
+  return '<span class="k">'+line("",1.9,"#1b1b1b")+'Event fired</span>'
+       + '<span class="k">'+line("7 4",1.6,"#1b1b1b")+'Near miss</span>'
+       + '<span class="k">'+line("2 4",1.5,"#6b6b6b")+'Not owned</span>'
+       + (S.event ? '<span class="k">'+line("",3,"#1b1b1b")+'This event, among its neighbours</span>' : '');
+}
+
+/* ---------------- render ---------------- */
+function render(){
+  var f = factor(), rows = rowsOf(f);
+  var stage = document.getElementById("stage");
+  stage.innerHTML =
+    dev("desktop","Desktop · 1440 × 820") +
+    dev("tablet","Tablet · 1100 × 790");
+  harness();
+  wire();
+
+  function dev(cls,label){
+    return '<div class="devwrap"><div class="devlabel">'+label+'</div><div class="scaler"><div class="device '+cls+'">'
+      + '<div class="topstrip"><span class="ph">Diagnose</span><span class="ph">Lows · 20 · '+WINDOW+'</span><span class="ph">Plan</span><span class="ph">Trials</span></div>'
+      + '<div class="body">'
+      +   '<div class="canvaspane">'
+      +     '<div class="canvashead">'
+      +       '<div class="ctitle">Low response comparison<em>'+esc(f.label)+' · '+f.count+' of '+POP+'</em></div>'
+      +       '<div style="display:flex;align-items:center">'
+      +         '<span class="segcap">Align</span>'
+      +         '<div class="seg">'
+      +           '<button type="button" data-proj="clock" aria-pressed="'+(S.proj==="clock")+'">By clock</button>'
+      +           '<button type="button" data-proj="event" aria-pressed="'+(S.proj==="event")+'">By event</button>'
+      +         '</div>'
+      +       '</div>'
+      +     '</div>'
+      +     '<div class="canvasbody">'
+      +       '<div class="canvassvg"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none">'
+      +         (S.proj === "clock" ? drawClock(f) : drawEvent(f))
+      +       '</svg></div>'
+      +       '<div class="canvaslegend">'+legend()+'</div>'
+      +       '<div class="canvasfoot">'
+      +         (S.proj === "clock"
+              ? 'Time of day, 00:00–24:00 · every event in this comparison plotted at its clock position'
+              : 'Aligned on the excursion nadir · −5 h to +2 h · all three states always drawn')
+      +       '</div>'
+      +     '</div>'
+      +   '</div>'
+      +   inspector(f, rows)
+      + '</div></div></div></div>';
+  }
+
+  function inspector(f, rows){
+    var s = '<div class="inspector">';
+    if(S.open) s += '<button type="button" class="scrim" data-act="close" aria-label="Close factor list"></button>';
+    s += '<div class="selwrap">'
+      +  '<button type="button" class="selbtn" data-act="toggle" aria-expanded="'+S.open+'">'
+      +    '<span class="nm">'+esc(f.label)+'</span><span class="ct">'+f.count+'</span>'
+      +    '<span class="chev">'+(S.open ? "▲" : "▼")+'</span>'
+      +  '</button>';
+    if(S.open){
+      s += '<div class="sellist"><div class="lhead">Factor · '+set().length+' in Lows</div>';
+      set().forEach(function(x){
+        s += '<button type="button" class="selopt" data-factor="'+x.key+'" aria-current="'+(x.key===f.key)+'">'
+          +  '<span class="tick">'+(x.key===f.key ? "•" : "")+'</span>'
+          +  '<span>'+esc(x.label)+'</span><span class="ct">'+x.count+'</span></button>';
+      });
+      s += '</div>';
+    }
+    s += '</div>';
+
+    s += '<div class="cap"><span>Events · '+f.count+' of '+POP+'</span><span class="win">'+WINDOW+'</span></div>';
+    s += '<div class="events">';
+    f.groups.forEach(function(gr){
+      if(!gr.ids.length) return;
+      s += '<div class="grule"><span>'+esc(gr.lead)+'</span><span class="gc">'+gr.ids.length+'</span></div>';
+      gr.ids.forEach(function(id){
+        var e = EV[id], on = (id === S.event);
+        s += '<button type="button" class="evrow" data-event="'+id+'" aria-pressed="'+on+'">'
+          +  '<span class="mark">▸</span>'
+          +  '<span class="date">'+esc(datePart(id))+'</span>'
+          +  '<span class="time">'+esc(timePart(id))+'</span>'
+          +  '<span class="pair">'+e.entry+'<span class="arw">→</span>'+e.worst+'</span>'
+          +  '<span class="delta">'+esc(e.delta)+'</span></button>';
+      });
+    });
+    s += '<div class="residue">'+esc(f.residue)+'</div>';
+    s += '</div>';
+    s += '<div class="dock">'+(S.event
+        ? '<b>'+esc(EV[S.event].when)+'</b><span>held for comparison — nothing staged</span>'
+        : '<span>Nothing staged — pick an event to hold it</span>')+'</div>';
+    return s + '</div>';
+  }
+}
+
+function harness(){
+  function grp(id, items, activeFn, attr){
+    document.getElementById(id).innerHTML = items.map(function(it){
+      return '<button type="button" data-h="'+attr+'" data-v="'+it.v+'" aria-pressed="'+activeFn(it.v)+'">'+esc(it.t)+'</button>';
+    }).join("");
+  }
+  grp("h-data",[{v:"3",t:"3 factors"},{v:"8",t:"8 factors"}],function(v){return S.data===v;},"data");
+  grp("h-factor", set().map(function(x){return {v:x.key,t:x.label+" ("+x.count+")"};}),
+      function(v){return S.factor===v;},"factor");
+  var f = factor(), rows = rowsOf(f);
+  grp("h-event",[{v:"",t:"None (browse)"}].concat(rows.slice(0,4).map(function(r){
+        return {v:r.id, t:EV[r.id].when};
+      })), function(v){return (S.event||"")===v;},"event");
+  grp("h-proj",[{v:"clock",t:"By clock"},{v:"event",t:"By event"}],function(v){return S.proj===v;},"proj");
+  grp("h-drop",[{v:"0",t:"Collapsed"},{v:"1",t:"Expanded"}],function(v){return String(S.open?1:0)===v;},"open");
+}
+
+function wire(){
+  document.querySelectorAll("[data-h]").forEach(function(b){
+    b.onclick = function(){
+      var k = b.getAttribute("data-h"), v = b.getAttribute("data-v");
+      if(k === "data"){ S.data = v; S.factor = set()[0].key; S.event = null; }
+      else if(k === "factor"){ S.factor = v; S.event = null; }
+      else if(k === "event"){ S.event = v || null; }
+      else if(k === "proj"){ S.proj = v; }               /* projection preserves selection */
+      else if(k === "open"){ S.open = (v === "1"); }
+      render();
+    };
+  });
+  document.querySelectorAll("[data-act='toggle']").forEach(function(b){
+    b.onclick = function(){ S.open = !S.open; render(); };
+  });
+  document.querySelectorAll("[data-act='close']").forEach(function(b){
+    b.onclick = function(){ S.open = false; render(); };
+  });
+  document.querySelectorAll("[data-factor]").forEach(function(b){
+    b.onclick = function(){ S.factor = b.getAttribute("data-factor"); S.event = null; S.open = false; render(); };
+  });
+  document.querySelectorAll("[data-proj]").forEach(function(b){
+    b.onclick = function(){ S.proj = b.getAttribute("data-proj"); render(); };  /* selection preserved */
+  });
+  document.querySelectorAll("[data-event]").forEach(function(b){
+    b.onclick = function(){
+      var id = b.getAttribute("data-event");
+      S.event = (S.event === id) ? null : id;
+      render();
+    };
+  });
+  fit();
+}
+
+document.addEventListener("keydown", function(e){
+  if(e.key === "Escape" && S.open){ S.open = false; render(); }
+});
+
+function fit(){
+  var avail = document.getElementById("stage").clientWidth;
+  document.querySelectorAll(".devwrap").forEach(function(w){
+    var d = w.querySelector(".device"), sc = Math.min(1, avail / d.offsetWidth);
+    d.style.transform = "scale(" + sc + ")";
+    w.querySelector(".scaler").style.height = (d.offsetHeight * sc) + "px";
+  });
+}
+window.addEventListener("resize", fit);
+render();
+</script>
+</body>
+</html>

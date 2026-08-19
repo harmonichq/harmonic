@@ -1,0 +1,322 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Wireframe C — Crumb Zoom</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 40px 24px 80px;
+    background: #f2f2f2;
+    font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    color: #1a1a1a;
+  }
+  .stage { display: flex; gap: 28px; align-items: flex-start; justify-content: center; }
+
+  /* ---- chart stand-in: a labelled gray rectangle, nothing more ---- */
+  .chart {
+    width: 360px; height: 300px; background: #dcdcdc; border: 1px solid #b4b4b4;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; color: #555; padding: 20px; position: sticky; top: 40px;
+  }
+  .chart b { display: block; font-size: 13px; letter-spacing: .04em; text-transform: uppercase; margin-bottom: 10px; }
+  .chart span { font-size: 12px; color: #666; }
+  .chart .hl { margin-top: 14px; padding: 8px 10px; background: #fff; border: 1px solid #b4b4b4; font-size: 12px; min-height: 34px; display: flex; align-items: center; }
+
+  /* ---- the column ---- */
+  .col { width: 430px; background: #fff; border: 1px solid #c4c4c4; }
+
+  .crumb { padding: 14px 16px 12px; border-bottom: 1px solid #c4c4c4; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px; }
+  .crumb button {
+    font: inherit; background: none; border: 0; padding: 4px 2px; margin: -4px 0;
+    color: #444; text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
+  }
+  .crumb button:hover { color: #000; background: #ededed; }
+  .crumb .sep { color: #999; }
+  .crumb .here { font-weight: 600; }
+  .crumb .n { margin-left: 6px; font-weight: 400; color: #666; font-variant-numeric: tabular-nums; }
+
+  .sub { padding: 8px 16px 10px; border-bottom: 1px solid #e2e2e2; font-size: 12px; color: #666; }
+
+  ul { list-style: none; margin: 0; padding: 0; }
+  .rowbtn {
+    display: block; width: 100%; text-align: left; font: inherit; color: inherit;
+    background: #fff; border: 0; border-bottom: 1px solid #e6e6e6; padding: 14px 16px;
+    cursor: pointer;
+  }
+  .rowbtn:hover { background: #f4f4f4; }
+
+  /* narrowing rows sit at the top of the same list, in the same grammar */
+  .drill { display: flex; align-items: center; gap: 10px; background: #fafafa; }
+  .drill .lab { flex: 1; }
+  .drill .cnt { color: #555; font-variant-numeric: tabular-nums; }
+  .drill .chev { color: #888; font-size: 16px; line-height: 1; }
+
+  .grouphead {
+    padding: 10px 16px 6px; font-size: 11px; letter-spacing: .07em; text-transform: uppercase;
+    color: #777; background: #fff; border-bottom: 1px solid #eee;
+  }
+
+  /* event rows */
+  .ev { display: flex; align-items: baseline; gap: 10px; }
+  .ev .when { width: 108px; color: #333; font-variant-numeric: tabular-nums; }
+  .ev .trace { flex: 1; color: #555; font-variant-numeric: tabular-nums; }
+  .ev .delta { width: 42px; text-align: right; font-variant-numeric: tabular-nums; }
+  .ev .tag { display: block; margin-top: 4px; margin-left: 118px; font-size: 11px; color: #888; }
+  .ev.sel { background: #1a1a1a; color: #fff; }
+  .ev.sel .when, .ev.sel .trace, .ev.sel .tag { color: #ddd; }
+  .ev.sel:hover { background: #1a1a1a; }
+
+  .note { padding: 12px 16px; font-size: 12px; color: #777; border-bottom: 1px solid #e6e6e6; background: #fbfbfb; }
+  .residue { padding: 14px 16px; font-size: 12px; color: #777; }
+
+  .sepbar { height: 8px; background: #f0f0f0; border-bottom: 1px solid #e0e0e0; }
+
+  /* ---- annotation block, wireframe furniture ---- */
+  .anno { max-width: 820px; margin: 36px auto 0; font-size: 13px; color: #444; }
+  .anno h2 { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: #777; margin: 0 0 8px; }
+  .anno p { margin: 0 0 10px; }
+  .anno code { background: #e6e6e6; padding: 1px 4px; }
+  .trail { margin: 0 auto 20px; max-width: 820px; font-size: 12px; color: #777; text-align: center; }
+</style>
+
+<div class="trail">Wireframe C — Crumb Zoom · successive narrowing, no standing selector</div>
+
+<div class="stage">
+  <div class="chart">
+    <b>Chart</b>
+    <span>Low response comparison — traces for the events in the current scope.</span>
+    <div class="hl" id="chartState">Nothing selected — all traces in scope drawn flat.</div>
+  </div>
+
+  <div class="col">
+    <div class="crumb" id="crumb"></div>
+    <div class="sub" id="sub"></div>
+    <ul id="list"></ul>
+    <div class="residue" id="residue"></div>
+  </div>
+</div>
+
+<div class="anno">
+  <h2>What to try</h2>
+  <p>Drill: <code>Lows</code> → <code>Over-treated low</code> → <code>Rule matched</code>. Back out by clicking any crumb ancestor. Then re-scope sideways: from <code>Over-treated low</code> to <code>Unclaimed</code> — note it costs a crumb click first.</p>
+</div>
+
+<script>
+// ---------------------------------------------------------------- data
+const FACTORS = [
+  { key: 'over_treated_low', label: 'Over-treated low', claimed: 7, comparison: 17,
+    residue: '1 claimed by another factor · 2 not comparable' },
+  { key: 'correction_on_iob', label: 'Correction on active insulin', claimed: 1, comparison: 7,
+    residue: '7 claimed by another factor · 6 not comparable' },
+  { key: 'unclaimed', label: 'Unclaimed', claimed: 10, comparison: 10,
+    residue: '8 claimed by a finding',
+    flat: 'No finding claims these, so there is no rule to compare them with.' },
+];
+
+const E = {
+  1:  ['Aug 1 · 01:00', 68, 58, '−10'],
+  2:  ['Aug 2 · 07:00', 69, 59, '−10'],
+  3:  ['Aug 3 · 13:00', 70, 60, '−10'],
+  4:  ['Aug 4 · 19:00', 68, 61, '−7'],
+  5:  ['Aug 5 · 04:00', 69, 58, '−11'],
+  6:  ['Aug 6 · 10:00', 70, 59, '−11'],
+  7:  ['Aug 7 · 16:00', 68, 60, '−8'],
+  8:  ['Aug 8 · 22:00', 69, 61, '−8'],
+  9:  ['Aug 9 · 06:00', 70, 58, '−12'],
+  10: ['Aug 10 · 12:00', 68, 59, '−9'],
+  11: ['Aug 11 · 18:00', 69, 60, '−9'],
+  12: ['Aug 12 · 02:00', 70, 61, '−9'],
+  13: ['Aug 13 · 08:00', 68, 58, '−10'],
+  14: ['Aug 14 · 14:00', 69, 59, '−10'],
+  15: ['Aug 15 · 20:00', 70, 60, '−10'],
+  16: ['Aug 16 · 05:00', 68, 61, '−7'],
+  17: ['Aug 17 · 11:00', 69, 58, '−11'],
+  18: ['Aug 18 · 17:00', 70, 59, '−11'],
+};
+const ev = n => ({ id: 'lows-synthetic-' + n, when: E[n][0], entry: E[n][1], worst: E[n][2], delta: E[n][3] });
+
+// cohorts within a factor's comparison
+const COHORTS = {
+  over_treated_low: [
+    { key: 'fired',     label: 'Rule matched',       count: 7, phrase: 'Over-treated low',
+      ids: [1,2,3,4,5,6,7] },
+    { key: 'near_rule', label: 'Near rule',          count: 4, phrase: 'Over-treated low, disclosure only',
+      ids: [8,9,10,11] },
+    { key: 'neutral',   label: 'Rule did not match', count: 6, phrase: 'matched no factor’s rule',
+      ids: [12,13,14,15,16,17] },
+  ],
+  correction_on_iob: [
+    { key: 'fired',   label: 'Rule matched',       count: 1, phrase: 'Correction on active insulin',
+      ids: [18] },
+    { key: 'neutral', label: 'Rule did not match', count: 6, phrase: 'matched no factor’s rule',
+      ids: [12,13,14,15,16,17] },
+  ],
+  unclaimed: [
+    { key: 'unclaimed', label: 'Claimed by no finding', count: 10, phrase: null,
+      ids: [8,9,10,11,12,13,14,15,16,17] },
+  ],
+};
+
+const ALL_IDS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18];
+
+// ---------------------------------------------------------------- state
+let scope = { factor: null, cohort: null };   // depth 1 / 2 / 3
+let selected = null;
+
+const $crumb = document.getElementById('crumb');
+const $sub = document.getElementById('sub');
+const $list = document.getElementById('list');
+const $residue = document.getElementById('residue');
+const $chart = document.getElementById('chartState');
+
+const factorOf = k => FACTORS.find(f => f.key === k);
+const cohortsOf = k => COHORTS[k] || [];
+const cohortOf = (fk, ck) => cohortsOf(fk).find(c => c.key === ck);
+
+function goto(factor, cohort) {
+  scope = { factor: factor || null, cohort: cohort || null };
+  selected = null;
+  render();
+}
+function select(id, label) {
+  selected = selected === id ? null : id;
+  $chart.textContent = selected
+    ? 'Trace highlighted: ' + label + ' — the rest of the scope dims.'
+    : 'Nothing selected — all traces in scope drawn flat.';
+  render(true);
+}
+
+// ---------------------------------------------------------------- render
+function render(keepChart) {
+  const f = scope.factor ? factorOf(scope.factor) : null;
+  const c = scope.cohort ? cohortOf(scope.factor, scope.cohort) : null;
+
+  // crumb — grows as you narrow; every ancestor is a click back out
+  $crumb.innerHTML = '';
+  const crumbBtn = (text, fk, ck) => {
+    const b = document.createElement('button');
+    b.textContent = text;
+    b.onclick = () => goto(fk, ck);
+    return b;
+  };
+  const sep = () => { const s = document.createElement('span'); s.className = 'sep'; s.textContent = '›'; return s; };
+  const here = (text, n) => {
+    const s = document.createElement('span');
+    s.className = 'here';
+    s.textContent = text;
+    const q = document.createElement('span');
+    q.className = 'n'; q.textContent = n;
+    s.appendChild(q);
+    return s;
+  };
+
+  if (!f) {
+    $crumb.appendChild(here('Lows', 20));
+  } else if (!c) {
+    $crumb.appendChild(crumbBtn('Lows', null, null));
+    $crumb.appendChild(sep());
+    $crumb.appendChild(here(f.label, f.comparison));
+  } else {
+    $crumb.appendChild(crumbBtn('Lows', null, null));
+    $crumb.appendChild(sep());
+    $crumb.appendChild(crumbBtn(f.label, f.key, null));
+    $crumb.appendChild(sep());
+    $crumb.appendChild(here(c.label, c.count));
+  }
+
+  // scope subtitle
+  if (!f) {
+    $sub.textContent = 'All lows in Jul 13–Aug 11 · entry → worst · Δ';
+  } else if (!c) {
+    $sub.textContent = f.flat
+      ? f.claimed + ' lows · no comparison drawn · entry → worst · Δ'
+      : f.claimed + ' claimed by this factor · compared against ' +
+        (f.comparison - f.claimed) + ' more · entry → worst · Δ';
+  } else {
+    $sub.textContent = (c.phrase ? c.phrase + ' · ' : '') + c.count + ' of ' + f.comparison +
+      ' in this comparison · entry → worst · Δ';
+  }
+
+  // list = narrowing rows first, then this scope's events. One list, one grammar.
+  $list.innerHTML = '';
+
+  if (!f) {
+    FACTORS.forEach(x => $list.appendChild(drillRow(x.label, x.claimed, () => goto(x.key, null))));
+    $list.appendChild(bar());
+    appendEvents(ALL_IDS, null);
+    $list.appendChild(noteRow('2 of the 20 lows are not comparable and carry no trace.'));
+  } else if (!c) {
+    const cs = cohortsOf(f.key);
+    if (f.flat) {
+      $list.appendChild(noteRow(f.flat + ' Nothing further to narrow into.'));
+    } else {
+      cs.forEach(x => $list.appendChild(drillRow(x.label, x.count, () => goto(f.key, x.key))));
+      $list.appendChild(bar());
+    }
+    cs.forEach(x => {
+      if (cs.length > 1) $list.appendChild(groupHead(x.label + ' · ' + x.count));
+      appendEvents(x.ids);
+    });
+  } else {
+    appendEvents(c.ids);
+  }
+
+  $residue.textContent = f ? f.residue : '20 lows · partitioned by claiming factor above';
+
+  if (!keepChart && !selected) {
+    $chart.textContent = 'Nothing selected — all traces in scope drawn flat.';
+  }
+}
+
+function drillRow(label, count, onClick) {
+  const li = document.createElement('li');
+  const b = document.createElement('button');
+  b.className = 'rowbtn drill';
+  b.onclick = onClick;
+  b.innerHTML = '<span class="lab"></span><span class="cnt"></span><span class="chev">›</span>';
+  b.querySelector('.lab').textContent = label;
+  b.querySelector('.cnt').textContent = count;
+  li.appendChild(b);
+  return li;
+}
+
+function groupHead(text) {
+  const li = document.createElement('li');
+  li.className = 'grouphead';
+  li.textContent = text;
+  return li;
+}
+
+function bar() {
+  const li = document.createElement('li');
+  li.className = 'sepbar';
+  return li;
+}
+
+function noteRow(text) {
+  const li = document.createElement('li');
+  li.className = 'note';
+  li.textContent = text;
+  return li;
+}
+
+function appendEvents(ids) {
+  ids.forEach(n => {
+    const e = ev(n);
+    const li = document.createElement('li');
+    const b = document.createElement('button');
+    b.className = 'rowbtn ev' + (selected === e.id ? ' sel' : '');
+    b.onclick = () => select(e.id, e.when);
+    b.innerHTML =
+      '<span class="when"></span><span class="trace"></span><span class="delta"></span>';
+    b.querySelector('.when').textContent = e.when;
+    b.querySelector('.trace').textContent = e.entry + ' → ' + e.worst;
+    b.querySelector('.delta').textContent = e.delta;
+    li.appendChild(b);
+    $list.appendChild(li);
+  });
+}
+
+render();
+</script>

@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wireframe D — the table is the selector</title>
+<style>
+  :root {
+    --ink: #1b1b1b;
+    --ink-mid: #565656;
+    --ink-dim: #8c8c8c;
+    --rule: #cfcfcf;
+    --rule-soft: #e4e4e4;
+    --ground: #f4f4f2;
+    --paper: #ffffff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 48px 24px 96px;
+    background: var(--ground);
+    color: var(--ink);
+    font: 13px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page { max-width: 820px; margin: 0 auto; }
+  .page > header { margin-bottom: 40px; }
+  h1 { font-size: 15px; font-weight: 600; margin: 0 0 6px; letter-spacing: .01em; }
+  .sub { font-size: 12px; color: var(--ink-mid); margin: 0; max-width: 58ch; }
+
+  .specimen { margin-bottom: 56px; }
+  .specimen-label {
+    font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--ink-dim); margin-bottom: 4px;
+  }
+  .specimen-note { font-size: 12px; color: var(--ink-mid); margin: 0 0 14px; max-width: 60ch; }
+
+  .stage { display: flex; gap: 20px; align-items: flex-start; }
+
+  /* chart stand-in — a labeled gray rectangle, nothing more */
+  .canvas {
+    width: 330px; flex: none; height: 420px;
+    background: #e9e9e7; border: 1px solid var(--rule);
+    display: flex; flex-direction: column; justify-content: space-between;
+    padding: 12px 14px;
+  }
+  .canvas-kicker { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-dim); }
+  .canvas-mid { text-align: center; }
+  .canvas-scope { font-size: 13px; font-weight: 600; }
+  .canvas-detail { font-size: 12px; color: var(--ink-mid); margin-top: 3px; }
+  .canvas-foot { font-size: 11px; color: var(--ink-dim); min-height: 2.6em; }
+
+  /* the ledger */
+  .col { width: 430px; flex: none; background: var(--paper); border: 1px solid var(--rule); }
+  .col-head { padding: 12px 14px 10px; border-bottom: 1px solid var(--rule); }
+  .col-title { font-size: 13px; font-weight: 600; }
+  .col-meta { font-size: 11px; color: var(--ink-dim); margin-top: 2px; }
+
+  .group { border-bottom: 1px solid var(--rule-soft); }
+  .group:last-of-type { border-bottom: 0; }
+
+  .ghead, .chead {
+    width: 100%; text-align: left; background: none; border: 0; font: inherit;
+    display: flex; align-items: baseline; gap: 8px; cursor: pointer;
+    color: inherit;
+  }
+  .ghead {
+    padding: 11px 14px 9px;
+    border-top: 1px solid var(--rule);
+  }
+  .group:first-of-type .ghead { border-top: 0; }
+  .ghead:hover, .chead:hover { background: #f7f7f5; }
+  .ghead:focus-visible, .chead:focus-visible, .row:focus-visible { outline: 2px solid #333; outline-offset: -2px; }
+  .ghead-name { font-size: 12px; font-weight: 600; letter-spacing: .01em; }
+  .ghead-count { font-size: 12px; color: var(--ink-mid); margin-left: auto; font-variant-numeric: tabular-nums; }
+
+  .chead {
+    padding: 7px 14px 5px 22px;
+  }
+  .chead-name { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-mid); }
+  .chead-count { font-size: 11px; color: var(--ink-dim); margin-left: auto; font-variant-numeric: tabular-nums; }
+  .chead-aside { font-size: 11px; color: var(--ink-dim); text-transform: none; letter-spacing: 0; }
+
+  .row {
+    width: 100%; text-align: left; background: none; border: 0; font: inherit; color: inherit;
+    display: grid; grid-template-columns: 66px 52px 1fr 46px;
+    align-items: baseline; gap: 8px;
+    padding: 7px 14px 7px 22px; cursor: pointer;
+    border-left: 3px solid transparent;
+    font-variant-numeric: tabular-nums;
+  }
+  .row:hover { background: #f7f7f5; }
+  .row .date { font-size: 12px; }
+  .row .time { font-size: 12px; color: var(--ink-mid); }
+  .row .trace { font-size: 12px; color: var(--ink-mid); }
+  .row .delta { font-size: 12px; text-align: right; }
+  .row[aria-pressed="true"] { border-left-color: var(--ink); }
+  .row[aria-pressed="true"] .date { font-weight: 600; }
+
+  /* focus-by-dimming: the only mechanism. no wash, no box. */
+  .group, .cohort { transition: opacity .12s linear; }
+  .stage[data-mode="focus"] .group[data-state="off"] { opacity: .35; }
+  .stage[data-mode="focus"] .cohort[data-state="off"] { opacity: .35; }
+  .ghead[aria-pressed="true"] .ghead-name,
+  .chead[aria-pressed="true"] .chead-name { text-decoration: underline; text-underline-offset: 3px; }
+
+  .residue {
+    padding: 10px 14px 12px; border-top: 1px solid var(--rule);
+    font-size: 11px; color: var(--ink-dim);
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <h1>Wireframe D — the table is the selector</h1>
+    <p class="sub">No control above the list. All 18 comparable events stay on the page at all times, grouped
+      factor &rarr; cohort; the group headers are the scope handles. Clicking a header focuses that group and
+      the room dims around it. Clicking it again releases. Grayscale, system font, hairlines — deliberately not
+      the app.</p>
+  </header>
+
+  <section class="specimen">
+    <div class="specimen-label">State 1 — nothing focused</div>
+    <p class="specimen-note">All groups at equal ink. The chart names the whole population.</p>
+    <div class="stage" id="s1"></div>
+  </section>
+
+  <section class="specimen">
+    <div class="specimen-label">State 2 — a factor focused</div>
+    <p class="specimen-note">“Over-treated low” clicked. Its rows hold full ink; every other group recedes to
+      35% but keeps its place, its counts and its row heights. Nothing collapses and nothing moves.</p>
+    <div class="stage" id="s2"></div>
+  </section>
+
+  <section class="specimen">
+    <div class="specimen-label">State 3 — a cohort focused inside a focused factor</div>
+    <p class="specimen-note">Second click depth: “Near rule” inside Unclaimed. The other cohorts of that factor
+      recede too, so the dim is two-deep — the craft risk this state exists to test.</p>
+    <div class="stage" id="s3"></div>
+  </section>
+</div>
+
+<script>
+// ---- the fixture, verbatim ------------------------------------------------
+const WINDOW_LABEL = "20 lows &middot; Jul 13 – Aug 11";
+const RESIDUE = "1 claimed by another factor · 2 not comparable";
+
+const MODEL = [
+  {
+    key: "over_treated_low", name: "Over-treated low", count: 7,
+    cohorts: [
+      { key: "fired", name: "Rule matched", count: 7, rows: [
+        { id: "lows-synthetic-1",  date: "Aug 1",  time: "01:00", entry: 68, worst: 58, delta: "−10" },
+        { id: "lows-synthetic-2",  date: "Aug 2",  time: "07:00", entry: 69, worst: 59, delta: "−10" },
+        { id: "lows-synthetic-3",  date: "Aug 3",  time: "13:00", entry: 70, worst: 60, delta: "−10" },
+        { id: "lows-synthetic-4",  date: "Aug 4",  time: "19:00", entry: 68, worst: 61, delta: "−7"  },
+        { id: "lows-synthetic-5",  date: "Aug 5",  time: "04:00", entry: 69, worst: 58, delta: "−11" },
+        { id: "lows-synthetic-6",  date: "Aug 6",  time: "10:00", entry: 70, worst: 59, delta: "−11" },
+        { id: "lows-synthetic-7",  date: "Aug 7",  time: "16:00", entry: 68, worst: 60, delta: "−8"  }
+      ]}
+    ]
+  },
+  {
+    key: "correction_on_iob", name: "Correction on active insulin", count: 1,
+    cohorts: [
+      { key: "fired2", name: "Rule matched", count: 1, rows: [
+        { id: "lows-synthetic-18", date: "Aug 18", time: "17:00", entry: 70, worst: 59, delta: "−11" }
+      ]}
+    ]
+  },
+  {
+    key: "unclaimed", name: "Unclaimed", count: 10,
+    cohorts: [
+      { key: "near_rule", name: "Near rule", count: 4, aside: "vs Over-treated low", rows: [
+        { id: "lows-synthetic-8",  date: "Aug 8",  time: "22:00", entry: 69, worst: 61, delta: "−8"  },
+        { id: "lows-synthetic-9",  date: "Aug 9",  time: "06:00", entry: 70, worst: 58, delta: "−12" },
+        { id: "lows-synthetic-10", date: "Aug 10", time: "12:00", entry: 68, worst: 59, delta: "−9"  },
+        { id: "lows-synthetic-11", date: "Aug 11", time: "18:00", entry: 69, worst: 60, delta: "−9"  }
+      ]},
+      { key: "neutral", name: "Rule did not match", count: 6, aside: "vs Over-treated low", rows: [
+        { id: "lows-synthetic-12", date: "Aug 12", time: "02:00", entry: 70, worst: 61, delta: "−9"  },
+        { id: "lows-synthetic-13", date: "Aug 13", time: "08:00", entry: 68, worst: 58, delta: "−10" },
+        { id: "lows-synthetic-14", date: "Aug 14", time: "14:00", entry: 69, worst: 59, delta: "−10" },
+        { id: "lows-synthetic-15", date: "Aug 15", time: "20:00", entry: 70, worst: 60, delta: "−10" },
+        { id: "lows-synthetic-16", date: "Aug 16", time: "05:00", entry: 68, worst: 61, delta: "−7"  },
+        { id: "lows-synthetic-17", date: "Aug 17", time: "11:00", entry: 69, worst: 58, delta: "−11" }
+      ]}
+    ]
+  }
+];
+
+// ---- one specimen ---------------------------------------------------------
+function build(stage, initial) {
+  const state = { factor: initial.factor || null, cohort: initial.cohort || null, event: initial.event || null };
+
+  stage.innerHTML = `
+    <div class="canvas">
+      <div class="canvas-kicker">Chart (stand-in)</div>
+      <div class="canvas-mid">
+        <div class="canvas-scope" data-scope></div>
+        <div class="canvas-detail" data-detail></div>
+      </div>
+      <div class="canvas-foot" data-foot></div>
+    </div>
+    <div class="col">
+      <div class="col-head">
+        <div class="col-title">Lows</div>
+        <div class="col-meta">${WINDOW_LABEL} &nbsp;·&nbsp; entry → worst · Δ</div>
+      </div>
+      <div data-body></div>
+      <div class="residue">${RESIDUE}</div>
+    </div>`;
+
+  const body = stage.querySelector("[data-body]");
+
+  MODEL.forEach(f => {
+    const g = document.createElement("div");
+    g.className = "group";
+    g.dataset.factor = f.key;
+
+    const gh = document.createElement("button");
+    gh.className = "ghead";
+    gh.type = "button";
+    gh.dataset.factor = f.key;
+    gh.innerHTML = `<span class="ghead-name">${f.name}</span><span class="ghead-count">${f.count}</span>`;
+    gh.addEventListener("click", () => {
+      if (state.factor === f.key && !state.cohort) { state.factor = null; }
+      else { state.factor = f.key; state.cohort = null; }
+      state.event = null;
+      paint();
+    });
+    g.appendChild(gh);
+
+    f.cohorts.forEach(c => {
+      const cw = document.createElement("div");
+      cw.className = "cohort";
+      cw.dataset.cohort = c.key;
+      cw.dataset.factor = f.key;
+
+      const ch = document.createElement("button");
+      ch.className = "chead";
+      ch.type = "button";
+      ch.innerHTML = `<span class="chead-name">${c.name}</span>` +
+        (c.aside ? `<span class="chead-aside">${c.aside}</span>` : "") +
+        `<span class="chead-count">${c.count}</span>`;
+      ch.addEventListener("click", () => {
+        if (state.cohort === c.key) { state.cohort = null; state.factor = f.key; }
+        else { state.cohort = c.key; state.factor = f.key; }
+        state.event = null;
+        paint();
+      });
+      cw.appendChild(ch);
+
+      c.rows.forEach(r => {
+        const btn = document.createElement("button");
+        btn.className = "row";
+        btn.type = "button";
+        btn.dataset.event = r.id;
+        btn.innerHTML =
+          `<span class="date">${r.date}</span>` +
+          `<span class="time">${r.time}</span>` +
+          `<span class="trace">${r.entry} → ${r.worst}</span>` +
+          `<span class="delta">${r.delta}</span>`;
+        btn.addEventListener("click", () => {
+          state.event = state.event === r.id ? null : r.id;
+          if (state.event) { state.factor = f.key; state.cohort = c.key; }
+          paint();
+        });
+        cw.appendChild(btn);
+      });
+
+      g.appendChild(cw);
+    });
+
+    body.appendChild(g);
+  });
+
+  function lookup(id) {
+    for (const f of MODEL) for (const c of f.cohorts) {
+      const r = c.rows.find(x => x.id === id);
+      if (r) return { f, c, r };
+    }
+    return null;
+  }
+
+  function paint() {
+    const focused = !!state.factor;
+    stage.dataset.mode = focused ? "focus" : "all";
+
+    stage.querySelectorAll(".group").forEach(g => {
+      g.dataset.state = !focused || g.dataset.factor === state.factor ? "on" : "off";
+    });
+    stage.querySelectorAll(".cohort").forEach(c => {
+      const inFactor = c.dataset.factor === state.factor;
+      c.dataset.state = !state.cohort ? "on" : (c.dataset.cohort === state.cohort ? "on" : "off");
+      if (focused && !inFactor) c.dataset.state = "on"; // the group above already carries the dim
+    });
+    stage.querySelectorAll(".ghead").forEach(h => {
+      h.setAttribute("aria-pressed", String(h.dataset.factor === state.factor && !state.cohort));
+    });
+    stage.querySelectorAll(".chead").forEach(h => {
+      h.setAttribute("aria-pressed", String(h.parentElement.dataset.cohort === state.cohort));
+    });
+    stage.querySelectorAll(".row").forEach(b => {
+      b.setAttribute("aria-pressed", String(b.dataset.event === state.event));
+    });
+
+    // the chart labels itself with whatever is focused
+    const scope = stage.querySelector("[data-scope]");
+    const detail = stage.querySelector("[data-detail]");
+    const foot = stage.querySelector("[data-foot]");
+
+    if (state.event) {
+      const hit = lookup(state.event);
+      scope.textContent = `${hit.r.date} · ${hit.r.time}`;
+      detail.textContent = `${hit.r.entry} → ${hit.r.worst} · ${hit.r.delta} — one trace highlighted`;
+      foot.textContent = `In ${hit.f.name} · ${hit.c.name}. Click the row again to step back to the group.`;
+    } else if (state.cohort) {
+      let hit = null;
+      MODEL.forEach(f => f.cohorts.forEach(c => { if (c.key === state.cohort) hit = { f, c }; }));
+      scope.textContent = `${hit.f.name} · ${hit.c.name}`;
+      detail.textContent = `${hit.c.count} of 20 in Jul 13 – Aug 11`;
+      foot.textContent = "Click the cohort header again to widen back to the factor.";
+    } else if (state.factor) {
+      const f = MODEL.find(x => x.key === state.factor);
+      scope.textContent = f.name;
+      detail.textContent = `${f.count} of 20 in Jul 13 – Aug 11`;
+      foot.textContent = "Click the factor header again to release, or a cohort header to narrow.";
+    } else {
+      scope.textContent = "All lows";
+      detail.textContent = "20 in Jul 13 – Aug 11";
+      foot.textContent = "Point at a group header to focus it. Nothing is hidden while you do.";
+    }
+  }
+
+  paint();
+}
+
+build(document.getElementById("s1"), {});
+build(document.getElementById("s2"), { factor: "over_treated_low" });
+build(document.getElementById("s3"), { factor: "unclaimed", cohort: "near_rule" });
+</script>
+</body>
+</html>

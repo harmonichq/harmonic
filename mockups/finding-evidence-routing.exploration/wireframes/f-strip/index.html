@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Wireframe F — the pannable factor strip</title>
+<style>
+  :root{
+    --ink:#1b1b1b; --mid:#6b6b6b; --faint:#9a9a9a;
+    --hair:#c9c9c9; --hair-soft:#e2e2e2;
+    --paper:#ffffff; --wash:#f4f4f4; --wash2:#ebebeb;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink); background:#dcdcdc; -webkit-font-smoothing:antialiased;
+  }
+
+  /* ---------- wireframe scaffold (NOT the app) ---------- */
+  .scaffold{padding:20px 24px 8px}
+  .scaffold h1{font-size:15px;margin:0 0 2px;font-weight:600;letter-spacing:.01em}
+  .scaffold p{margin:0 0 14px;color:var(--mid);font-size:12.5px;max-width:70ch}
+  .harness{
+    display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start;
+    border:1px dashed #8f8f8f;background:#e7e7e7;padding:10px 14px;border-radius:4px;
+  }
+  .harness .grp{display:flex;flex-direction:column;gap:6px}
+  .harness .grp > span{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--mid)}
+  .harness .row{display:flex;gap:8px}
+  .harness button{
+    font:inherit;font-size:12.5px;min-height:44px;padding:0 14px;
+    background:var(--paper);border:1px solid var(--hair);border-radius:3px;color:var(--ink);cursor:pointer;
+  }
+  .harness button[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .note{
+    font-size:12px;color:var(--mid);border-left:3px solid #8f8f8f;background:#e7e7e7;
+    padding:7px 10px;margin:8px 0 0;max-width:88ch;
+  }
+  .note b{color:var(--ink);font-weight:600}
+
+  /* ---------- device frames ---------- */
+  .stage{padding:6px 24px 60px}
+  .devwrap{margin:26px 0 0}
+  .devlabel{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:#555;margin:0 0 6px}
+  .scaler{overflow:hidden}
+  .device{
+    transform-origin:top left;
+    background:var(--paper);border:1px solid #8f8f8f;
+    display:flex;flex-direction:column;
+  }
+  .device.desktop{width:1440px;height:820px}
+  .device.tablet{width:1100px;height:760px}
+
+  /* ---------- workstation skeleton ---------- */
+  .topstrip{
+    height:46px;flex:0 0 46px;border-bottom:1px solid var(--hair);
+    display:flex;align-items:center;padding:0 16px;background:var(--wash);
+    font-size:12px;color:var(--faint);letter-spacing:.03em;
+  }
+  .body{flex:1;display:flex;min-height:0}
+  .canvaspane{flex:1;min-width:0;display:flex;flex-direction:column;border-right:1px solid var(--hair);}
+  .inspector{
+    flex:0 0 430px;width:430px;display:flex;flex-direction:column;min-height:0;background:var(--paper);
+  }
+
+  /* canvas */
+  .canvashead{
+    border-bottom:1px solid var(--hair);background:var(--wash);
+    padding:8px 16px 0;
+  }
+  .canvasbox{
+    flex:1;margin:16px;border:1px dashed #9a9a9a;background:
+      repeating-linear-gradient(135deg,#f7f7f7 0 9px,#f1f1f1 9px 18px);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:24px;gap:10px;min-height:0;
+  }
+  .canvasbox .cap{font-size:13.5px;color:#4a4a4a;max-width:52ch}
+  .canvasbox .states{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+  .canvasbox .states span{
+    border:1px solid var(--hair);background:var(--paper);padding:5px 10px;font-size:12px;color:var(--mid);
+  }
+  .canvasbox .hl{
+    font-size:12.5px;color:var(--ink);border:1px solid var(--ink);background:var(--paper);padding:6px 12px;
+  }
+  .canvasbox .hl.empty{color:var(--faint);border-color:var(--hair-soft);border-style:dashed}
+  .canvasbox .subj{font-size:12px;color:var(--faint)}
+
+  /* inspector parts */
+  .crumb{
+    padding:12px 16px 10px;border-bottom:1px solid var(--hair-soft);
+    font-size:12.5px;color:var(--mid);
+  }
+  .crumb b{color:var(--ink);font-weight:600}
+  .listhead{
+    padding:11px 16px 7px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);
+    display:flex;justify-content:space-between;gap:10px;
+  }
+  .events{flex:1;overflow-y:auto;min-height:0;border-top:1px solid var(--hair-soft)}
+  .evrow{
+    display:flex;align-items:center;gap:10px;width:100%;
+    min-height:48px;padding:0 16px;background:var(--paper);
+    border:0;border-bottom:1px solid var(--hair-soft);
+    font:inherit;font-size:13px;color:var(--ink);text-align:left;cursor:pointer;
+  }
+  .evrow .when{flex:0 0 108px;color:var(--mid)}
+  .evrow .pair{flex:1;font-variant-numeric:tabular-nums}
+  .evrow .delta{flex:0 0 52px;text-align:right;font-variant-numeric:tabular-nums;color:var(--mid)}
+  .evrow .mark{flex:0 0 14px;color:var(--faint);font-size:12px}
+  .evrow[aria-pressed="true"]{background:var(--wash2)}
+  .evrow[aria-pressed="true"] .mark{color:var(--ink)}
+  .evrow[aria-pressed="true"] .when{color:var(--ink)}
+  .dock{
+    flex:0 0 46px;border-top:1px solid var(--hair);background:var(--wash);
+    display:flex;align-items:center;padding:0 16px;font-size:12px;color:var(--faint);
+  }
+
+  /* ---------- THE STRIP ---------- */
+  .strip{
+    position:relative;
+    /* permanently one row tall */
+    height:48px;flex:0 0 48px;
+    display:flex;align-items:stretch;
+  }
+  .strip.p1{border-bottom:1px solid var(--hair-soft);background:var(--paper)}
+  .strip.p2{background:transparent}
+
+  .strip .scroller{
+    flex:1;min-width:0;display:flex;align-items:stretch;
+    overflow-x:auto;overflow-y:hidden;
+    scrollbar-width:none;-ms-overflow-style:none;
+    -webkit-overflow-scrolling:touch;
+  }
+  .strip .scroller::-webkit-scrollbar{display:none}
+
+  .entry{
+    flex:0 0 auto;display:flex;align-items:center;gap:7px;
+    height:48px;min-height:44px;padding:0 15px;
+    background:transparent;border:0;border-bottom:2px solid transparent;
+    font:inherit;font-size:13px;color:var(--mid);white-space:nowrap;cursor:pointer;
+  }
+  .entry .nm{}
+  .entry .ct{font-variant-numeric:tabular-nums;color:var(--faint);font-size:12.5px}
+  .entry[aria-pressed="true"]{color:var(--ink)}
+  .entry[aria-pressed="true"] .nm{font-weight:600}
+  .entry[aria-pressed="true"] .ct{color:var(--ink)}
+  .entry[aria-pressed="true"]{border-bottom-color:var(--ink)}   /* the quiet underline */
+
+  /* honest overflow signal — fade + off-screen count, no hover needed */
+  .strip .fade{position:absolute;top:0;bottom:2px;width:46px;pointer-events:none;display:none;z-index:1}
+  .strip .fade.on{display:block}
+  .strip.p1 .fade.l{left:0;background:linear-gradient(to right,#fff 0,#fff 34%,rgba(255,255,255,0) 100%)}
+  .strip.p1 .fade.r{right:0;background:linear-gradient(to left,#fff 0,#fff 34%,rgba(255,255,255,0) 100%)}
+  .strip.p2 .fade.l{left:0;background:linear-gradient(to right,var(--wash) 0,var(--wash) 34%,rgba(244,244,244,0) 100%)}
+  .strip.p2 .fade.r{right:0;background:linear-gradient(to left,var(--wash) 0,var(--wash) 34%,rgba(244,244,244,0) 100%)}
+  .strip .fade.r{right:var(--rpad,0px)}
+
+  .offcount{
+    flex:0 0 auto;display:none;align-items:center;justify-content:center;
+    min-width:44px;height:48px;padding:0 8px;
+    font-size:12px;color:var(--mid);font-variant-numeric:tabular-nums;
+    border-left:1px solid var(--hair-soft);background:inherit;
+    position:relative;z-index:2;
+  }
+  .offcount.on{display:flex}
+  .strip.p2 .offcount{background:var(--wash)}
+  .strip.p1 .offcount{background:var(--paper)}
+  .stripend{
+    flex:0 0 auto;display:flex;align-items:center;height:48px;padding:0 15px 0 3px;
+    font-size:11.5px;color:var(--faint);white-space:nowrap;
+  }
+  .p2rule{border-bottom:1px solid var(--hair-soft);margin:0 16px}
+</style>
+</head>
+<body>
+
+<div class="scaffold">
+  <h1>Wireframe F — the pannable factor strip</h1>
+  <p>Selection is one always-visible row of factor entries, permanently one row tall. It gets out of the way by
+     being small, not by hiding. Overflow pans horizontally by touch; the selected entry carries a quiet underline
+     and auto-scrolls into view. Grayscale wireframe register — not the app's visual language.</p>
+
+  <div class="harness">
+    <div class="grp"><span>Factor data</span><div class="row">
+      <button data-set="factors" data-val="3">3 factors (today)</button>
+      <button data-set="factors" data-val="8">8 factors (future)</button>
+    </div></div>
+    <div class="grp"><span>Placement</span><div class="row">
+      <button data-set="placement" data-val="P1">P1 · inspector top</button>
+      <button data-set="placement" data-val="P2">P2 · canvas head</button>
+    </div></div>
+    <div class="grp"><span>Selection at ends</span><div class="row">
+      <button data-jump="first">Select first</button>
+      <button data-jump="last">Select last</button>
+    </div></div>
+  </div>
+
+  <p class="note"><b>Placement is shown honestly, not favored.</b> One state drives both homes.
+     P2 has roughly <b id="roomnote">—</b> more usable width than P1 at the frame widths below, so P1 pans sooner
+     and pans more; P1 is rendered anyway so that constraint is visible rather than argued. P2's strip exists only
+     in this browse mode and disappears with it.</p>
+</div>
+
+<div class="stage">
+  <div class="devwrap">
+    <p class="devlabel">Desktop — 1440 × 820</p>
+    <div class="scaler"><div class="device desktop" id="dev-desktop"></div></div>
+  </div>
+  <div class="devwrap">
+    <p class="devlabel">Tablet — 1100 × 760</p>
+    <div class="scaler"><div class="device tablet" id="dev-tablet"></div></div>
+  </div>
+</div>
+
+<script>
+/* ------------------------------------------------------------------ data */
+/* 3-factor set: today's real counts — 20 lows, Jul 13–Aug 11.
+   Over-treated low rows are the exploration's own synthetic occurrences. */
+const OTL_ROWS = [
+  {id:'lows-synthetic-1', when:'Aug 1 · 01:00', entry:68, worst:58, delta:'−10'},
+  {id:'lows-synthetic-2', when:'Aug 2 · 07:00', entry:69, worst:59, delta:'−10'},
+  {id:'lows-synthetic-3', when:'Aug 3 · 13:00', entry:70, worst:60, delta:'−10'},
+  {id:'lows-synthetic-4', when:'Aug 4 · 19:00', entry:68, worst:61, delta:'−7'},
+  {id:'lows-synthetic-5', when:'Aug 5 · 04:00', entry:69, worst:58, delta:'−11'},
+  {id:'lows-synthetic-6', when:'Aug 6 · 10:00', entry:70, worst:59, delta:'−11'},
+  {id:'lows-synthetic-7', when:'Aug 7 · 16:00', entry:68, worst:60, delta:'−8'}
+];
+
+const SETS = {
+  3: {
+    window:'20 lows · Jul 13 – Aug 11',
+    factors:[
+      {key:'otl',  name:'Over-treated low',            count:7,  rows:OTL_ROWS},
+      {key:'coai', name:'Correction on active insulin', count:1},
+      {key:'uncl', name:'Unclaimed',                    count:10}
+    ]
+  },
+  8: {
+    window:'20 lows · Jul 13 – Aug 11',
+    factors:[
+      {key:'otl',  name:'Over-treated low',             count:5},
+      {key:'coai', name:'Correction on active insulin', count:3},
+      {key:'prebo',name:'Missed pre-bolus',             count:2},
+      {key:'basal',name:'Overnight basal too high',     count:4},
+      {key:'exer', name:'Exercise without adjustment',  count:2},
+      {key:'late', name:'Alcohol-associated late low',  count:1},
+      {key:'resc', name:'Rescue-carb overshoot',        count:2},
+      {key:'uncl', name:'Unclaimed',                    count:1}
+    ]
+  }
+};
+
+/* Rows for factors without captured occurrences — same shape, plausible values. */
+const DAYS = ['Jul 14','Jul 17','Jul 21','Jul 24','Jul 28','Jul 30','Aug 2','Aug 5','Aug 8','Aug 11'];
+const TIMES = ['02:20','06:45','09:10','11:55','14:30','17:05','19:40','21:15','23:50','04:05'];
+function rowsFor(f){
+  if (f.rows) return f.rows;
+  const out=[];
+  for(let i=0;i<f.count;i++){
+    const seed=(f.key.charCodeAt(0)*3+i*11);
+    const entry=64+(seed%9), worst=entry-(5+((seed*7)%9));
+    out.push({
+      id:f.key+'-'+i,
+      when:DAYS[seed%DAYS.length]+' · '+TIMES[(seed*3+1)%TIMES.length],
+      entry, worst, delta:'−'+(entry-worst)
+    });
+  }
+  return out;
+}
+
+/* ----------------------------------------------------------------- state */
+const state = {factors:'3', placement:'P1', selected:'otl', highlighted:null};
+function currentSet(){ return SETS[state.factors]; }
+function currentFactor(){
+  const fs=currentSet().factors;
+  return fs.find(f=>f.key===state.selected) || fs[0];
+}
+
+/* --------------------------------------------------------------- builders */
+function el(tag, cls, txt){
+  const n=document.createElement(tag);
+  if(cls) n.className=cls;
+  if(txt!=null) n.textContent=txt;
+  return n;
+}
+
+function buildStrip(where){
+  const strip = el('div','strip '+(where==='P1'?'p1':'p2'));
+  const scroller = el('div','scroller');
+
+  currentSet().factors.forEach(f=>{
+    const b = el('button','entry');
+    b.type='button';
+    b.setAttribute('aria-pressed', String(f.key===state.selected));
+    b.dataset.factor = f.key;
+    b.appendChild(el('span','nm', f.name));
+    b.appendChild(el('span','ct', String(f.count)));
+    b.addEventListener('click', ()=>{
+      state.selected=f.key; state.highlighted=null; render();
+    });
+    scroller.appendChild(b);
+  });
+  /* With few factors the strip must END, not trail off like a cut toolbar. */
+  scroller.appendChild(el('div','stripend','— end of factors —'));
+
+  const fl = el('div','fade l'), fr = el('div','fade r');
+  const off = el('div','offcount');
+
+  strip.appendChild(fl);
+  strip.appendChild(scroller);
+  strip.appendChild(off);
+  strip.appendChild(fr);
+
+  const sync = ()=>{
+    const max = scroller.scrollWidth - scroller.clientWidth;
+    const x = scroller.scrollLeft;
+    fl.classList.toggle('on', x > 2);
+    fr.classList.toggle('on', x < max - 2);
+    /* honest off-screen count: entries not fully visible right now */
+    const entries=[...scroller.querySelectorAll('.entry')];
+    const hidden = entries.filter(e =>
+      e.offsetLeft < x - 1 || (e.offsetLeft + e.offsetWidth) > x + scroller.clientWidth + 1
+    ).length;
+    off.classList.toggle('on', hidden>0);
+    off.textContent = hidden>0 ? ('+'+hidden) : '';
+    strip.style.setProperty('--rpad', (off.classList.contains('on') ? off.offsetWidth : 0)+'px');
+  };
+  scroller.addEventListener('scroll', sync);
+  strip._sync = sync;
+  strip._scroller = scroller;
+  return strip;
+}
+
+function buildCanvas(){
+  const pane = el('div','canvaspane');
+
+  if(state.placement==='P2'){
+    const head = el('div','canvashead');
+    head.appendChild(buildStrip('P2'));
+    pane.appendChild(head);
+  }
+
+  const box = el('div','canvasbox');
+  box.appendChild(el('div','cap','comparison chart — all three states always drawn: event fired / near miss / not owned'));
+  const st = el('div','states');
+  ['event fired','near miss','not owned'].forEach(s=>st.appendChild(el('span',null,s)));
+  box.appendChild(st);
+  const f = currentFactor();
+  box.appendChild(el('div','subj','factor in view: '+f.name+' · '+f.count+' of '+currentSet().window));
+  if(state.highlighted){
+    box.appendChild(el('div','hl','trace highlighted: '+state.highlighted));
+  }else{
+    box.appendChild(el('div','hl empty','no trace highlighted — tap an event row'));
+  }
+  pane.appendChild(box);
+  return pane;
+}
+
+function buildInspector(){
+  const insp = el('div','inspector');
+
+  const crumb = el('div','crumb');
+  crumb.innerHTML = 'Findings › <b>Lows</b> · '+currentSet().window;
+  insp.appendChild(crumb);
+
+  if(state.placement==='P1'){
+    insp.appendChild(buildStrip('P1'));
+  }
+
+  const f = currentFactor();
+  const head = el('div','listhead');
+  head.appendChild(el('span',null, f.name+' · '+f.count+' events'));
+  head.appendChild(el('span',null,'entry → worst · Δ'));
+  insp.appendChild(head);
+
+  const list = el('div','events');
+  rowsFor(f).forEach(r=>{
+    const b = el('button','evrow'); b.type='button';
+    const isHi = state.highlighted===r.when;
+    b.setAttribute('aria-pressed', String(isHi));
+    b.appendChild(el('span','when', r.when));
+    b.appendChild(el('span','pair', r.entry+' → '+r.worst));
+    b.appendChild(el('span','delta', r.delta));
+    b.appendChild(el('span','mark', isHi?'●':'○'));
+    b.addEventListener('click', ()=>{
+      state.highlighted = isHi ? null : r.when; render();
+    });
+    list.appendChild(b);
+  });
+  insp.appendChild(list);
+
+  const dock = el('div','dock');
+  dock.appendChild(el('span',null,'dock — routing actions for the selected factor (placeholder)'));
+  insp.appendChild(dock);
+
+  return insp;
+}
+
+function buildFrame(dev){
+  dev.innerHTML='';
+  const top = el('div','topstrip','top strip — workstation chrome (placeholder)');
+  dev.appendChild(top);
+  const body = el('div','body');
+  body.appendChild(buildCanvas());
+  body.appendChild(buildInspector());
+  dev.appendChild(body);
+}
+
+/* ---------------------------------------------------------------- render */
+function render(){
+  document.querySelectorAll('[data-set]').forEach(b=>{
+    b.setAttribute('aria-pressed', String(state[b.dataset.set]===b.dataset.val));
+  });
+  ['dev-desktop','dev-tablet'].forEach(id=>buildFrame(document.getElementById(id)));
+
+  /* strips: sync overflow signals, then bring selection into view */
+  document.querySelectorAll('.strip').forEach(strip=>{
+    strip._sync();
+    const sc = strip._scroller;
+    const sel = sc.querySelector('.entry[aria-pressed="true"]');
+    if(sel){
+      const entries=[...sc.querySelectorAll('.entry')];
+      const left = sel.offsetLeft, right = left + sel.offsetWidth;
+      if(sel===entries[0]) sc.scrollLeft = 0;                              /* first: show the strip's start */
+      else if(sel===entries[entries.length-1])
+        sc.scrollLeft = sc.scrollWidth - sc.clientWidth;                   /* last: show the end marker too */
+      else if(left < sc.scrollLeft) sc.scrollLeft = Math.max(0, left - 12);
+      else if(right > sc.scrollLeft + sc.clientWidth) sc.scrollLeft = right - sc.clientWidth + 12;
+    }
+    requestAnimationFrame(strip._sync);
+  });
+
+  /* how much more room P2 actually has, measured not asserted */
+  const d = document.getElementById('dev-desktop');
+  const pane = d.querySelector('.canvaspane'), insp = d.querySelector('.inspector');
+  if(pane && insp){
+    const diff = Math.round(pane.clientWidth - insp.clientWidth);
+    document.getElementById('roomnote').textContent = diff+'px';
+  }
+  fit();
+}
+
+/* scale each device box down to fit the browser window, proportions intact */
+function fit(){
+  document.querySelectorAll('.scaler').forEach(s=>{
+    const dev = s.querySelector('.device');
+    const avail = s.clientWidth;
+    const k = Math.min(1, avail / dev.offsetWidth);
+    dev.style.transform = 'scale('+k+')';
+    s.style.height = (dev.offsetHeight * k) + 'px';
+  });
+}
+window.addEventListener('resize', fit);
+
+document.querySelectorAll('[data-set]').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    state[b.dataset.set]=b.dataset.val;
+    const keys = SETS[state.factors].factors.map(f=>f.key);
+    if(!keys.includes(state.selected)) state.selected = keys[0];
+    state.highlighted=null;
+    render();
+  });
+});
+document.querySelectorAll('[data-jump]').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    const fs = currentSet().factors;
+    state.selected = (b.dataset.jump==='first' ? fs[0] : fs[fs.length-1]).key;
+    state.highlighted=null;
+    render();
+  });
+});
+
+/* Reviewer shortcut: preset a state from the URL, e.g. #8,P2,last */
+function applyHash(){
+  const toks = decodeURIComponent(location.hash.replace(/^#/,'')).split(/[,\s]+/).filter(Boolean);
+  toks.forEach(tok=>{
+    const v = tok.toLowerCase();
+    if(v==='3'||v==='8') state.factors=v;
+    else if(v==='p1'||v==='p2') state.placement=v.toUpperCase();
+    else if(v==='first'||v==='last'){
+      const fs = currentSet().factors;
+      state.selected = (v==='first'?fs[0]:fs[fs.length-1]).key;
+    }
+  });
+  const keys = currentSet().factors.map(f=>f.key);
+  if(!keys.includes(state.selected)) state.selected = keys[0];
+}
+window.addEventListener('hashchange', ()=>{applyHash();render();});
+applyHash();
+
+render();
+</script>
+</body>
+</html>

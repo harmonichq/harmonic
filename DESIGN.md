@@ -102,8 +102,8 @@ components:
 > palette and elevation values recorded below wherever the two disagree. Read
 > them, not this file, for a colour. The design-time manifest the theme was
 > settled against is a record of the decision and is not part of the shipped
-> tree. Light's grounds were re-settled inside that lock by **ADR 37**
-> (`openspec/changes/light-ground-bone/design.md`): parchment
+> tree. Light's grounds were re-settled inside that lock by **ADR 37** (pull
+> request #37): parchment
 > `#F3EADB`/`#EBE0CF`/`#E3D7C5` became bone `#FAF8F4`/`#F0EEE8`/`#E7E4DC` over a
 > darker `#C3BFB4` rule, with the saved chroma spent on ink and marks. Values
 > only — no term of #736 was reopened, and dark is unchanged.

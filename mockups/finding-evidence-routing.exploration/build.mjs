@@ -86,6 +86,15 @@ const POPULATION_ID = 'population:lows';
    chart, so this build hands its fixture across raw and the surface runs the
    shipped builders on it in the browser, exactly as the app does. */
 const PAYLOAD = 'mockups/diagnose-workstation.synthetic/payload.json';
+/* `--check` — the drift guard every other generator in this repository carries
+   (`scripts/gen_*.py --check`), and the one this build was missing. All three
+   artifacts it emits are committed AND generated, so any of them can go stale
+   against its source in silence; the light relight (63d9053) did exactly that to
+   app-base.extracted.css, and the contrast guard then measured a theme the app
+   had already left for the whole of an exploration. In check mode the build
+   computes every artifact exactly as it would to write it, compares against the
+   committed bytes, and exits nonzero naming what diverged — it never writes. */
+const CHECK = process.argv.includes('--check');
 /* ROUND 6, FORM 3 — the day traces the CLOCK projection lays over the pooled
    envelope when an event is drilled (amendment: "the day-trace overlay is KEPT
    as the clock projection's drill state"). This is the FOURTH committed
@@ -1402,11 +1411,15 @@ async function main() {
     },
   };
 
-  await writeFile(join(HERE, 'data.json'), `${JSON.stringify(data, null, 1)}\n`);
+  /* Every artifact this build owns, as text, before anything touches the tree.
+     Holding them is what lets `--check` compare all three in one pass and
+     report every stale one rather than stopping at the first. */
+  const artifacts = new Map();
+  artifacts.set('data.json', `${JSON.stringify(data, null, 1)}\n`);
 
   /* ---- ROUND 8, ITEM 1: the production evidence table, lifted not copied ---- */
   const evidenceTable = await shippedEvidenceTable();
-  await writeFile(join(HERE, 'evidence-table.extracted.js'), evidenceTable);
+  artifacts.set('evidence-table.extracted.js', evidenceTable);
 
   /* ---- extract the app's own base sheet, never transcribe it (lock.md 0.2) ---- */
   const indexHtml = await readFile(join(ROOT, 'frontend/index.html'), 'utf8');
@@ -1437,7 +1450,7 @@ async function main() {
   if (/<\/?(link|script|style|meta)\b/.test(joined)) {
     throw new Error('extracted app base contains markup — extraction is corrupt');
   }
-  await writeFile(join(HERE, 'app-base.extracted.css'),
+  artifacts.set('app-base.extracted.css',
     '/* EXTRACTED VERBATIM from frontend/index.html\'s <style> blocks by\n'
     + ' * mockups/finding-evidence-routing.exploration/build.mjs. Do not edit —\n'
     + ' * re-run the build script. This carries the app\'s :root / html.dark token\n'
@@ -1445,6 +1458,29 @@ async function main() {
     + ' * from (including `label { margin: 0 0 5px }`, which the event-comparison\n'
     + ' * stylesheet adapts against).\n'
     + ` * Blocks extracted: ${blocks.length}\n */\n${blocks.join('\n')}\n`);
+
+  if (CHECK) {
+    const stale = [];
+    for (const [name, text] of artifacts) {
+      const path = join(HERE, name);
+      /* A missing artifact is drift, not a skip: compare against empty so the
+         check fails closed rather than passing on a file that is not there. */
+      const current = await readFile(path, 'utf8').catch(() => '');
+      if (current !== text) stale.push(path);
+    }
+    if (stale.length) {
+      for (const path of stale) {
+        process.stdout.write(`stale artifact: ${path} — rerun `
+          + 'node mockups/finding-evidence-routing.exploration/build.mjs\n');
+      }
+      return 1;
+    }
+    process.stdout.write('finding-evidence-routing artifacts current '
+      + `(${[...artifacts.keys()].join(', ')})\n`);
+    return 0;
+  }
+
+  for (const [name, text] of artifacts) await writeFile(join(HERE, name), text);
 
   const finding = data.scenes[FINDING_ID];
   const population = data.scenes[POPULATION_ID];
@@ -1467,6 +1503,7 @@ async function main() {
     + `evidence-table.extracted.js written — the production renderEvidence, ${evidenceTable.split('\n').length} lines `
     + 'from frontend/diagnose-workstation.js\n',
   );
+  return 0;
 }
 
-await main();
+process.exitCode = await main();

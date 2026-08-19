@@ -62,6 +62,23 @@ uv run python scripts/gen_findings_projection_fixtures.py --check
 uv run python scripts/gen_chart_builder_fixtures.py --check
 ```
 
+The frontend job runs a sixth, in Node, over a design exploration's build
+script — the one generator here that is not a fixture builder. Its command
+lives in `.github/workflows/ci.yml`; the exploration itself is a private design
+artifact and does not ship, so it is not named here.
+
+**A mockup that extracts from the app is a generated artifact, and the same
+`--check` rule binds it.** Such a build typically commits a stylesheet lifted
+verbatim out of `frontend/index.html`, a component lifted out of a shipped
+module, and a data file run through the shipped producers — all three move when
+the app moves. When the app's light theme was relit (decision record 37) one
+such extract was not regenerated, and that exploration's own contrast guard went
+on measuring the retired palette for an entire round, reporting zero failures
+the whole time. The guard was sound; its input was stale, which is a failure no
+amount of auditing the guard would have revealed. If you add a mockup that
+extracts from shipped source, add its `--check` and its CI step in the same
+change.
+
 The findings-projection fixture also freezes the three payloads it projected
 FROM. The browser gates have no Python, so they answer `/diagnose/findings` from
 a fixture-only JS mirror of that projection, kept beside the synthetic fixture

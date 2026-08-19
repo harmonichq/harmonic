@@ -159,7 +159,7 @@ test('Diagnose scopes the readable user-claim palette in both themes', async () 
     ]) {
       const browser = await runner.browser();
       try {
-        const page = await openApp(browser, { state: 'typical', theme });
+        const page = await openApp(browser, { state: 'typical', theme, appSource: 'fixture' });
         const colors = await page.locator('.dw').evaluate((node) => {
           const probe = document.createElement('span');
           probe.style.cssText = 'color:var(--ck-manual);background:var(--ck-manual-soft)';
@@ -198,7 +198,9 @@ test('locked panel geometry matches across both required viewports and light/dar
       for (const viewport of VIEWPORTS) {
         const boxes = {};
         for (const theme of ['light', 'dark']) {
-          const page = await openApp(browser, { state: 'typical', theme, viewport });
+          const page = await openApp(browser, {
+            state: 'typical', theme, viewport, appSource: 'fixture',
+          });
           await shot(page, 'build', 'typical', viewport, theme);
           boxes[theme] = await page.evaluate(() => {
             const rect = (sel) => {
@@ -249,7 +251,7 @@ test('a held I:C block offers no stage button and says so in the locked words', 
     const browser = await runner.browser();
     try {
       const before = openerProblems().length;
-      const page = await openApp(browser, { state: 'typical' });
+      const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
       // Same block-picking approach story S17 uses: the non-wrapping block, so
       // its aria-label carries no "part N of 2". Both of 'typical' state's I:C
       // blocks are held — every entry in this repository's own fixture,
@@ -281,7 +283,7 @@ test('ISF is not stageable without a sized backend recommendation', async () => 
     const browser = await runner.browser();
     try {
       const before = openerProblems().length;
-      const page = await openApp(browser, { state: 'typical' });
+      const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
       // #735: ISF reaches its detail level from the findings QUEUE now — the three
       // per-parameter entry rows are retired with the factor grid (lock term 34).
       // Under this state's explicit Overnight window it is a held row (term 38).

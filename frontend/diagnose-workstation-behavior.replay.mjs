@@ -24,13 +24,14 @@
 // this whole process exists to prevent.
 import { createRequire } from 'node:module';
 import { readFile, access } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+import { extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { projectSyntheticCapture } from '../mockups/diagnose-event-comparison.synthetic/project.mjs';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 
 const require = createRequire(import.meta.url);
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
+const MIME = { '.js': 'text/javascript', '.css': 'text/css', '.html': 'text/html', '.json': 'application/json', '.svg': 'image/svg+xml' };
 
 /* ---------------------------------------------------------------- assertions */
 
@@ -203,18 +204,23 @@ const projectAuthor = async () => {
 };
 
 /**
- * APP opener — boots the real app page and its static assets from the declared
- * no-fetch server, answers deterministic API reads from the committed synthetic
- * replay payload, and drives it to the Diagnose tab. Every intercepted endpoint
- * is named. Nothing is fulfilled blind and no mock route exists.
+ * APP opener — boots the app page, answers deterministic API reads from the
+ * committed synthetic replay payload, and drives it to the Diagnose tab.
+ * Standalone replays use the default server source, which requires the declared
+ * no-fetch localhost server. The fixture-backed browser suite opts into the
+ * on-disk source explicitly. Every intercepted endpoint is named.
  */
 export async function openApp(browser, {
   state: want = 'typical', theme = 'dark', viewport = { width: 1440, height: 900 }, findingsInputs = null,
+  appSource = 'server',
 } = {}) {
   const payloadPath = process.env.PAYLOAD || fail('PAYLOAD is required for TARGET=app');
-  const baseUrl = process.env.BASE_URL || fail('BASE_URL is required for the app-only replay');
+  if (!['server', 'fixture'].includes(appSource)) fail(`unknown appSource: ${appSource}`);
+  const baseUrl = appSource === 'server'
+    ? process.env.BASE_URL || fail('BASE_URL is required for the app-only replay')
+    : 'http://app.local/';
   const targetUrl = new URL(baseUrl);
-  if (!['127.0.0.1', 'localhost'].includes(targetUrl.hostname)) {
+  if (appSource === 'server' && !['127.0.0.1', 'localhost'].includes(targetUrl.hostname)) {
     fail(`BASE_URL must name localhost, got ${targetUrl.hostname}`);
   }
   const payload = JSON.parse(await readFile(payloadPath, 'utf8'));
@@ -292,9 +298,22 @@ export async function openApp(browser, {
     if (url.hostname.startsWith('fonts.')) return route.fulfill({ status: 204 });
     if (url.href.includes('echarts')) return route.fulfill({ body: await vendored('echarts.min.js'), contentType: 'text/javascript' });
     if (url.href.includes('vue')) return route.fulfill({ body: await vendored('vue.esm-browser.js'), contentType: 'text/javascript' });
-    if (url.origin === targetUrl.origin
+    if (appSource === 'server' && url.origin === targetUrl.origin
         && (path === '/' || /\.(js|css|svg|html)$/.test(path))) {
       return route.continue();
+    }
+    if (appSource === 'fixture' && url.origin === targetUrl.origin) {
+      if (path === '/') {
+        return route.fulfill({ body: await readFile(join(ROOT, 'frontend/index.html')), contentType: 'text/html' });
+      }
+      if (/\.(js|css|svg|html)$/.test(path)) {
+        try {
+          return route.fulfill({
+            body: await readFile(join(ROOT, 'frontend', path.slice(1))),
+            contentType: MIME[extname(path)] || 'text/plain',
+          });
+        } catch { /* fall through to the loud unrouted response below */ }
+      }
     }
     for (const [pattern, body] of STUBS) {
       if (pattern.test(path)) return route.fulfill({ contentType: 'application/json', body: JSON.stringify(body(url)) });

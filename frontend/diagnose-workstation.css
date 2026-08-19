@@ -2,7 +2,8 @@
  *
  * Source: the archived ★ LOCKED cockpit mock (the fork that executes lock terms
  * 31-33). Lines 258-298 (tokens) and 393-939 (instrument row, pane grid, brace,
- * I:C lane, stacked inspector) are transferred VERBATIM.
+ * stacked inspector) are transferred VERBATIM. The I:C lane formerly in that
+ * range is retired by behavior-ledger row P44.
  *
  * NOT ported, deliberately: the mock's sections 1 (identity/workflow bar) and 4
  * (status strip), and its `.cockpit` page grid. #634 already built the app's
@@ -10,8 +11,8 @@
  * chrome rules on top would double-declare and fight it. The mock's `.mockbar`
  * is harness chrome and is excluded from the contract by the behaviour ledger.
  *
- * Edit this file only to re-sync it with the mock. A change that is not in the
- * mock is a deviation and needs a re-settle against the surface's lock manifest.
+ * Keep the ported rules synchronized with the mock. Any deviation needs a
+ * behavior-ledger amendment; P44 is the recorded retirement for the omitted lane.
  */
 
 /* ---- token adapter (NEW — the seam between the app's design system and the
@@ -309,40 +310,6 @@ html.dark .dw {
   background: var(--ck-accent); border-radius: 1px;
 }
 
-/* ---- the second lane: I:C blocks, at TRUE MINUTE boundaries -----------
-   The stack is two rows, 4px apart, both 11px — 15px of the plot's height,
-   which is the whole budget for the extension. The basal lane above is a
-   48-cell grid; this one is NOT a grid, because a block is a data span: its
-   left and width are fractions of 1440 and a block that wraps midnight is
-   drawn as two pieces of the same block. Nothing is snapped to the basal
-   cells and nothing carries a minimum width — where a seam does not line up
-   with a slot edge, it must be seen not lining up. */
-.lane-stack { display: grid; gap: 4px; }
-.iclane {
-  position: relative; height: 11px;
-  margin-left: var(--ck-grid-left); margin-right: var(--ck-grid-right);
-  background: var(--ck-inset);
-  box-shadow: inset 0 0 0 1px var(--ck-hair);
-  border-radius: 2px;
-}
-.iclane button {
-  position: absolute; top: 0; bottom: 0; border: 0; padding: 0; cursor: pointer;
-  border-radius: 1px; background: var(--cell, var(--ck-inset)); min-width: 0;
-}
-/* ONE hue family with the lane above: these are the same three tokens, at the
-   same strengths. The lanes are told apart by ROW and by the key's lead word. */
-.iclane button[data-verdict="up"] { --cell: color-mix(in srgb, var(--ck-up) 72%, transparent); }
-.iclane button[data-verdict="down"] { --cell: color-mix(in srgb, var(--mk-danger) 72%, transparent); }
-.iclane button[data-verdict="hold"] { --cell: color-mix(in srgb, var(--ck-hold) 45%, var(--mk-surface)); }
-.iclane button[data-verdict="insufficient"] {
-  --cell: transparent; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ck-insuff) 75%, transparent);
-}
-.iclane button[aria-pressed="true"] { outline: 1px solid var(--mk-text); outline-offset: 1px; }
-.iclane button[data-outside="true"] { opacity: .38; }
-.iclane button[data-staged="true"]::after {
-  content: ''; position: absolute; left: 0; right: 0; bottom: -4px; height: 2px;
-  background: var(--ck-accent); border-radius: 1px;
-}
 /* one line, always: a wrapped key would grow the canvas pane's fixed rows */
 .lane-key {
   display: flex; flex-wrap: nowrap; gap: 11px; align-items: center; overflow: hidden;

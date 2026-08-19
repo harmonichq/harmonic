@@ -88,10 +88,7 @@ const MARKUP = `
           <div class="readout" id="brace-readout" hidden></div>
         </div>
         <div class="lane-wrap">
-          <div class="lane-stack" id="lane-stack">
-            <div class="lane" id="lane" role="group" aria-label="Basal slot verdicts"></div>
-            <div class="iclane" id="iclane" role="group" aria-label="I:C block verdicts"></div>
-          </div>
+          <div class="lane" id="lane" role="group" aria-label="Basal slot verdicts"></div>
           <div class="lane-key" id="lane-key"></div>
         </div>
       </div>
@@ -368,16 +365,15 @@ const inWindow = (o, [a, b]) => { const m = occMinute(o); return m >= a && m < b
 
 /**
  * I:C blocks — maximal contiguous runs of one programmed ratio on the CIRCULAR
- * day, straight off the capture's `ic_blocks`. Boundaries are true minutes and
- * are kept as minutes all the way to the CSS: no snapping to the basal grid,
- * ever. A block whose end precedes its start wraps midnight and carries two
- * spans; both spans are the same block and open the same panel.
+ * day, straight off the capture's `ic_blocks`. A block whose end precedes its
+ * start wraps midnight and carries two spans for its detail and coincidence
+ * routes.
  *
  * The verdict is READ, not derived (term 14): `asserts_move` is the backend's
  * single I:C predicate, and which of the two held presentations a block gets
  * comes from the backend's own `state`.
  */
-function buildIcLane(blocks) {
+function buildIcBlocks(blocks) {
   const cells = blocks.map((b) => {
     const wraps = b.end_min <= b.start_min;
     const current = b.current_values[0];
@@ -408,41 +404,13 @@ function buildIcLane(blocks) {
       spans: wraps ? [[b.start_min, 1440], [0, b.end_min]] : [[b.start_min, b.end_min]],
     };
   });
-  const counts = {};
-  for (const c of cells) counts[c.verdict] = (counts[c.verdict] || 0) + 1;
-  return { cells, counts };
+  return cells;
 }
 
 /** The I:C block whose span contains `minute` — wraps included. */
-function icBlockAtMinute(icLane, minute) {
-  return icLane.cells.find((c) => c.spans.some(([a, b]) => minute >= a && minute < b))
-    || icLane.cells[0];
-}
-
-function renderIcLane(icLane, selectedId, icStaged, onPick) {
-  const host = el('iclane');
-  host.innerHTML = '';
-  for (const cell of icLane.cells) {
-    cell.spans.forEach(([a, b], piece) => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.dataset.verdict = cell.verdict;
-      btn.dataset.block = String(cell.id);
-      btn.dataset.staged = String(icStaged.has(cell.id));
-      btn.setAttribute('aria-pressed', String(selectedId === cell.id));
-      // TRUE MINUTES. Fractions of 1440 on the same track the basal lane spans —
-      // never the basal cell index, so a boundary that is not on a half-hour
-      // lands where it actually falls.
-      btn.style.left = `${(a / 1440) * 100}%`;
-      btn.style.width = `${((b - a) / 1440) * 100}%`;
-      btn.title = `${cell.label} I:C block ${cell.span} · ${VERDICT_KEY[cell.verdict]}`;
-      btn.setAttribute('aria-label',
-        `${cell.label} I:C block ${cell.span}${cell.wraps ? `, part ${piece + 1} of 2` : ''}, `
-        + VERDICT_KEY[cell.verdict]);
-      btn.addEventListener('click', () => onPick(cell));
-      host.append(btn);
-    });
-  }
+function icBlockAtMinute(icBlocks, minute) {
+  return icBlocks.find((c) => c.spans.some(([a, b]) => minute >= a && minute < b))
+    || icBlocks[0];
 }
 
 /** One swatch for the single-line key — same tokens as the cells themselves. */
@@ -476,18 +444,14 @@ function renderLane(lane, selectedCell, staged, onPick) {
 }
 
 /**
- * ONE key line for the whole stack. Each lane leads with its own word and
- * reconciles its own counts — 48 basal slots, n I:C blocks — because the two
- * lanes share a hue family and the lead word is the only thing telling a
- * "hold" in one row from a "hold" in the other. Wrapping is not an option: the
- * canvas pane's rows are fixed, so a second line would steal plot height.
+ * The basal verdict key reconciles the 48 slots on the canvas lane.
  */
-function renderLaneKey(lane, icLane) {
+function renderLaneKey(lane) {
   const order = ['up', 'down', 'hold', 'insufficient', 'nodata'];
   const group = (leadWord, counts) => `<span class="lead">${leadWord}</span>`
     + order.filter((k) => counts[k]).map((k) => `<span title="${VERDICT_KEY[k]}">`
       + `<i style="${keySwatch(k)}"></i>${VERDICT_SHORT[k]} <b class="t">${counts[k]}</b></span>`).join('');
-  el('lane-key').innerHTML = group('Basal slots', lane.counts) + group('I:C blocks', icLane.counts);
+  el('lane-key').innerHTML = group('Basal slots', lane.counts);
 }
 
 /* ------------------------------ inspector ----------------------------- */
@@ -511,7 +475,7 @@ function renderClockInto(host, occurrences, clock) {
 
 /** Level 2 head: the stat line, the histogram, the slot coincidence link. */
 function renderFactorHead(host, factor, occurrences, familyN, scopeText, clock, lane, onViewSlot,
-  icLane, onViewSegment) {
+  icBlocks, onViewSegment) {
   const box = document.createElement('div');
   box.className = 'inner';
   // stat lines, not prose — and the not-attributed remainder survives as a number
@@ -529,7 +493,7 @@ function renderFactorHead(host, factor, occurrences, familyN, scopeText, clock, 
        "looks stronger" would hide exactly the overlap the merged register
        exists to show. */
     const cell = cellAtMinute(lane, clock.peak.startMin);
-    const blk = icBlockAtMinute(icLane, clock.peak.startMin);
+    const blk = icBlockAtMinute(icBlocks, clock.peak.startMin);
     const link = document.createElement('div');
     link.className = 'slotlink';
     link.innerHTML = `<span>Peak hour falls in the ${cell.label} basal slot
@@ -686,7 +650,7 @@ function renderIcBlockLevel(host, cell, icStaged, onStage, demoNote) {
     // a made-up block says so on the panel its numbers print on, not only at
     // level 1 — this state can be opened straight into
     scopeSay: [demoNote, wrapSay].filter(Boolean).join(' '),
-    /* PORT NOTE (#654), same reasoning as buildIcLane's direction read above:
+    /* PORT NOTE (#654), same reasoning as buildIcBlocks's direction read above:
        the backend publishes no `direction` for I:C segments, so "tighter" vs
        "looser" here is a dose-comparison fallback, same as the lane's. It
        decides no eligibility — `canStage` (cell.asserts, i.e. ic_asserts_move)
@@ -1002,7 +966,7 @@ function boot(root, data, callbacks, signal) {
       + `can be seen.${lifted.has('recommended')
         ? ' Its measured numbers are the real ones; the recommendation is not.' : ''}`
     : '';
-  const icLane = buildIcLane(params.ic_blocks);
+  const icBlocks = buildIcBlocks(params.ic_blocks);
   const isf = params.isf[0];
   const exposures = exposureCapture.exposures;
   // The capture's `dense` state asserts moves on four slots with n=1..7 and wide
@@ -1191,7 +1155,7 @@ function boot(root, data, callbacks, signal) {
     }
     if (row.parameter === 'isf') { push({ k: 'isf' }); return; }
     if (row.parameter === 'carb_ratio') {
-      const cell = icLane.cells.find((c) => `ic:${c.id}` === row.id);
+      const cell = icBlocks.find((c) => `ic:${c.id}` === row.id);
       if (cell) pickBlock(cell);
       return;
     }
@@ -1223,7 +1187,7 @@ function boot(root, data, callbacks, signal) {
     push({ k: 'slot', cell });
   }
 
-  /** The same shortcut for the I:C lane: push from level 1, swap in place. */
+  /** The I:C findings-queue route: push from level 1, swap in place. */
   function pickBlock(cell) {
     releaseWindow();
     if (top().k === 'block') { top().cell = cell; paint(); return; }
@@ -1297,7 +1261,7 @@ function boot(root, data, callbacks, signal) {
   if (CFG.level === 'block' && !icMissing) {
     // prefer a block that asserts, so the asserting state opens on it; the held
     // capture has none and opens on its first block instead
-    const cell = icLane.cells.find((c) => c.asserts) || icLane.cells[0];
+    const cell = icBlocks.find((c) => c.asserts) || icBlocks[0];
     if (CFG.stageOpen && cell.asserts) icStaged.add(cell.id);
     stack.push({ k: 'block', cell });
   }
@@ -1423,7 +1387,7 @@ function boot(root, data, callbacks, signal) {
         : ` · ${u(head.current)} → ${u(head.recommended)} U/hr`;
       return { count: stagedTotal(), title: `Basal ${span}${numbers}` };
     }
-    const block = icLane.cells.find((c) => icStaged.has(c.id));
+    const block = icBlocks.find((c) => icStaged.has(c.id));
     if (block) {
       return { count: stagedTotal(),
         title: `I:C ${block.span} · ${u(block.current)} → ${u(block.block.recommended)} g/U` };
@@ -1574,7 +1538,7 @@ function boot(root, data, callbacks, signal) {
     const { occurrences, familyN } = scopedFor(f.factor);
     const clock = occurrences.length ? clockBuckets(occurrences) : null;
     renderFactorHead(host, f.factor, occurrences, familyN, scopeLabel(), clock, lane, pickCell,
-      icLane, pickBlock);
+      icBlocks, pickBlock);
 
     /* THE VERDICT BAND (ADR 31 part 4, ADR 41). Its counts come straight off
        the published finding row's `verdict_counts` — the frontend labels the
@@ -1629,11 +1593,9 @@ function boot(root, data, callbacks, signal) {
     const brace = el('brace');
     const chartEl = el('chart');
     const cells = el('lane').querySelectorAll('button');
-    const icCells = el('iclane').querySelectorAll('button');
     if (!shownRange) {
       brace.hidden = true;
       for (const b of cells) b.removeAttribute('data-outside');
-      for (const b of icCells) b.removeAttribute('data-outside');
       return;
     }
     // a block selection marks its segment WITHOUT a resizable brace (term 32);
@@ -1645,8 +1607,7 @@ function boot(root, data, callbacks, signal) {
     /* PLOT_TOP/PLOT_BOTTOM track the chart module's grid[0] insets. The edges
        run from the plot's top edge down to the bottom of the basal lane — the
        "project through the lane" spine, clipped at both ends. */
-    // the stack, not the basal lane alone: the edges project through BOTH rows
-    const laneEl = el('lane-stack');
+    const laneEl = el('lane');
     const laneBottom = laneEl.offsetTop + laneEl.offsetHeight;
     const plotTop = PLOT_TOP;
     const plotBottom = chartEl.clientHeight - PLOT_BOTTOM;
@@ -1668,15 +1629,6 @@ function boot(root, data, callbacks, signal) {
       if (!cells[i]) return;
       cells[i].dataset.outside = String(cell.endMin <= from || cell.startMin >= to);
     });
-    // the same for the block lane, piece by piece: a wrapped block can have one
-    // piece inside the window and one outside, and both are true
-    let piece = 0;
-    for (const cell of icLane.cells) {
-      for (const [a, b] of cell.spans) {
-        if (icCells[piece]) icCells[piece].dataset.outside = String(b <= from || a >= to);
-        piece += 1;
-      }
-    }
   }
 
   /**
@@ -1852,8 +1804,7 @@ function boot(root, data, callbacks, signal) {
     paintCrumb();
     paintLevel();
     renderLane(lane, top().k === 'slot' ? top().cell : null, staged, pickCell);
-    renderIcLane(icLane, top().k === 'block' ? top().cell.id : null, icStaged, pickBlock);
-    renderLaneKey(lane, icLane);
+    renderLaneKey(lane);
     paintWatch();
     paintChart();
     paintBrace();

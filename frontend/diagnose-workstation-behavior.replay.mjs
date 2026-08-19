@@ -127,7 +127,6 @@ export const state = (page) => page.evaluate(() => {
     }).length,
     laneSelected: [...document.querySelectorAll('#lane button')].findIndex((b) => b.getAttribute('aria-pressed') === 'true'),
     laneCells: document.querySelectorAll('#lane button').length,
-    icCells: document.querySelectorAll('#iclane button').length,
     laneOutside: [...document.querySelectorAll('#lane button')].filter((b) => b.dataset.outside === 'true').length,
     laneKey: q('#lane-key')?.innerText.replace(/\s+/g, ' ').trim() ?? null,
     hover: q('#canvas-head')?.dataset.hover ?? null,
@@ -711,23 +710,14 @@ export const S16 = async (page) => {
   is(undone.badge, '0', 'S16 the badge follows back down');
 };
 
-/** S17 · An I:C block click marks a window SEGMENT, never a two-handle brace:
-    the brace is suppressed and its edges stop being hit-testable, so a data
-    boundary cannot be dragged into a user window. */
+/** S17 · The I:C lane is retired. I:C enters through its findings-queue row. */
 // LOCK:diagnose-workstation:12 LOCK:diagnose-workstation:32
 export const S17 = async (page) => {
-  const idx = await page.evaluate(() => [...document.querySelectorAll('#iclane button')]
-    .findIndex((b) => { const t = b.getAttribute('aria-label') || ''; return !/part \d of 2/.test(t); }));
-  ok(idx >= 0, 'S17 precondition: a non-wrapping block exists');
-  await page.click(`#iclane button:nth-child(${idx + 1})`);
-  await settle(page, 450);
-  const seg = await state(page);
-  ok(/^Block \d\d:\d\d–\d\d:\d\d$/.test(seg.chip || ''), `S17 the chip names a Block, not a Window (${seg.chip})`);
-  is(seg.braceHidden, true, 'S17 no two-handle brace on a block segment');
-  ok(/block$/.test(seg.crumb[seg.crumb.length - 1]), 'S17 the trail names the block');
-  const b = await plot(page);
-  await page.mouse.move(b.x + seg.gripA, b.y + b.h * 0.5);
-  is((await state(page)).cursor, 'crosshair', 'S17 the segment edge is NOT grabbable');
+  const author = await projectAuthor();
+  const sanction = `${author} · 2026-08-19 · "Decided by ${author} in a ruling session on 2026-08-19."`;
+  is(await page.evaluate(() => document.querySelector('#iclane') !== null), false,
+    `S17 RETIRED — ${sanction}`);
+  return `RETIRED — ${sanction}`;
 };
 
 /** S18 · ISF is a level-1 QUEUE row — not a lane, not a cell — and it derives NO

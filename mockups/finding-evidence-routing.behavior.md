@@ -711,7 +711,8 @@ P44 · The I:C lane — a second lane at TRUE minute boundaries rather than slot
       indices, its cells clickable into the block branch, a wrapping block drawn
       as two pieces of one block, each piece with its own title and aria-label
       naming its part.
-  source:   frontend/diagnose-workstation.js:422-445 (renderIcLane)
+  source:   was frontend/diagnose-workstation.js (renderIcLane); the Revision
+            amendment below deletes the lane markup, CSS, renderer and handlers
   mock:     no I:C lane; pooled.js names the omission in its own header
   evidence: probe (app: 3 cells, 3 titled, e.g. "Evening I:C block 11:00–07:00 ·
             holds at current") · probe-mock (mock: icLane=0)
@@ -956,3 +957,16 @@ S21's assertions are unchanged. The amended replay then passed — real counts
 are in the PR's gate report.
 
 Decision: harmonichq/harmonic#41, 2026-08-19.
+
+## Revision amendment — 2026-08-19 (I:C lane)
+
+P44 is now applied as a permanent `RETIRED` entry. S17 replaces its positive
+lane assertion with a loud absence assertion and prints this sanction on every
+run:
+
+`sanction: Connor Griffin · 2026-08-19 · "Decided by Connor Griffin in a ruling session on 2026-08-19."`
+
+The I:C lane's markup, CSS, renderer and handlers are removed. I:C continues to
+enter through its findings-queue row, which opens the existing block detail;
+the queue and its ranking tier are unchanged. The old replay failed first with
+`S17 precondition: a non-wrapping block exists`; the revised replay then passed.

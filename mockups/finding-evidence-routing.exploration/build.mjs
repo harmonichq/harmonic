@@ -38,15 +38,16 @@
  * regrouping of the browse population. Nothing new is drawn: `canvasFor` and
  * `traceMap` are the round-1/2 functions, called with different coordinates.
  *
- * The `No finding claims these` line has NO canvas. project.mjs projects cohorts
- * for a NAMED FACTOR and has no unclaimed coordinate; a rule-matched / near-rule
- * / did-not-match split over a set defined by "no rule matched" would be three
- * fabricated cohorts. So that frame carries an empty-state line naming why, and
- * its table is grouped by how close each low came — read off the capture's own
- * `routes`, and stamped as derived in `provenance`.
+ * ROUND 4 — the round-3 `No finding claims these` line and its canvas-less frame
+ * are GONE (item 4). project.mjs projects cohorts for a NAMED FACTOR and has no
+ * unclaimed coordinate, so that line selected a frame that drew no comparison;
+ * and its ten rows were the selected factor's own Near rule and Rule did not
+ * match groups a second time, since a low no factor claims is still a low every
+ * factor placed in a cohort. The count survives in the population summary
+ * sentence, which is where it was already printed.
  *
  * ROUND 2, ITEM 5 — THE POPULATION ROWS ARE INVENTED BY THE RULING, NOT BY A
- * FIXTURE. `All lows · 20` / `All meals · 20` are the ruling's free-browse entry
+ * FIXTURE. `Lows · 20` / `Meals · 20` are the ruling's free-browse entry
  * (resolution point 3). No committed projection carries them: this build derives
  * each count from the LENS CAPTURE's own population denominator, which is a
  * different fixture, a different window and a different population from the
@@ -129,10 +130,10 @@ function pointStateSummary(rows) {
     .join(' · ');
 }
 
-/** VERBATIM — diagnose-event-comparison.js `summarySentence`. */
-const summarySentence = (counts) =>
-  `${counts.fired} events met this factor’s rule. ${counts.near_rule} sat narrowly outside it. `
-  + `${counts.neutral} comparable events did not match any factor.`;
+/* ROUND 4 ITEM 5 — the transcription of diagnose-event-comparison.js's
+   `summarySentence` is DELETED, not left unused. Its three numbers are the
+   `.ec-count` tally's three cells, and the tally is what the scene prints; a
+   transcription nobody calls is the next reader's wrong map. */
 
 /** VERBATIM — diagnose-event-comparison.js `fmtDate` / `fmtTime`. */
 const fmtDate = (iso) => new Date(`${iso}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -162,6 +163,8 @@ function evidenceCells(anchor) {
 function canvasFor(lens) {
   return {
     title: 'Low response comparison',
+    /* ROUND 4 ITEM 2 — the hue an overlaid occurrence trace draws in. */
+    cohortOf: cohortMap(lens.occurrences),
     context: 'excursion nadir · −5 h to +2 h',
     alignmentWindow: lens.coordinates.alignment_window_min,
     axisAnchor: 'low',
@@ -172,9 +175,16 @@ function canvasFor(lens) {
       support: c.support,
       supportWord: c.support[0].toUpperCase() + c.support.slice(1),
       routed_count: c.routed_count,
-      legendDetail: c.support === 'withheld'
+      /* ROUND 4 ITEM 7 — the clauses are bound with non-breaking spaces. The
+         line is a list of "N word" facts separated by `·`, and at 1440 it broke
+         between a number and its word ("· 2 / withheld points"), which reads as
+         two facts where there is one. Binding inside each clause leaves the line
+         free to wrap at the separators, which is where it actually divides. */
+      legendDetail: (c.support === 'withheld'
         ? `${c.routed_count} ${c.routed_count === 1 ? 'event' : 'events'} · aggregate not shown`
-        : `${c.routed_count} events · ${pointStateSummary(c.points)} points`,
+        : `${c.routed_count} events · ${pointStateSummary(c.points)} points`)
+        .replace(/(\d+) (\S+)/g, '$1\u00a0$2')
+        .replace(/(withheld|limited|supported) (points)/g, '$1\u00a0$2'),
       points: c.points,
     }])),
     traces: null,
@@ -197,6 +207,36 @@ const GROUP_PHRASE = {
 };
 
 const plural = (n, noun) => `${n} ${noun}${n === 1 ? '' : 's'}`;
+
+/** ROUND 4 ITEM 9 — a row does not repeat what its group header already said.
+ *
+ * On both fixtures every group is uniform in its right-hand tag ("observed" ×7
+ * under a header that reads "observed, not confirmed"; "Rule matched" ×7 under a
+ * header that reads "Rule matched"), so the column was printing the group's own
+ * sentence once per row. This blanks the cell for exactly that case — the tag is
+ * identical across the group AND the header already carries the word — and
+ * leaves it alone anywhere a row differs from its group, which is the only case
+ * the column was ever for. The shipped `.ev-row` grid column stays, so the
+ * numeric spine does not move.
+ */
+function dedupeGroupTags(groups) {
+  return groups.map((group) => {
+    const values = new Set(group.rows.map((r) => r.tag ?? r.tier ?? ''));
+    if (values.size !== 1) return group;
+    const [only] = values;
+    const header = `${group.lead} ${group.phrase || ''}`.toLowerCase();
+    if (!only || !header.includes(only.toLowerCase())) return group;
+    return { ...group, rows: group.rows.map((r) => ({ ...r, tag: '', tier: '' })) };
+  });
+}
+
+/** ROUND 4 ITEM 2 — which cohort each listed occurrence belongs to under the
+    frame's own factor. The trace overlay draws in ITS COHORT'S hue rather than
+    in one universal focus ink, so the anecdote can never outrank the aggregate
+    it sits inside. Read off the projector's own per-occurrence verdict. */
+const cohortMap = (occurrences) => Object.fromEntries(
+  occurrences.map((o) => [o.identity.id, o.verdict.cohort]),
+);
 
 /** Every listed occurrence's own observed trace, one projection per selection. */
 function traceMap(capture, ids, coords) {
@@ -258,11 +298,6 @@ async function main() {
     const source = lowsView.occurrences.find((o) => o.id === id);
     return lowsView.factors.find((f) => source.routes[f]?.cohort === 'fired') || null;
   };
-  /** The cohort a low reached under a named factor — the unclaimed frame's own
-      grouping signal, off the same `routes` the projector reads. */
-  const cohortUnder = (id, factor) =>
-    lowsView.occurrences.find((o) => o.id === id).routes[factor]?.cohort;
-
   const occurrenceRow = (o) => ({
     id: o.identity.id,
     when: `${fmtDate(o.anchor.date)} · ${fmtTime(o.anchor.t)}`,
@@ -317,13 +352,9 @@ async function main() {
     return {
       key: factorKey,
       canvas: canvasFor(narrow),
-      emptyNote: null,
-      /* The lens's own disclosure sentence, verbatim — near-rule rows are in
-         this table, so the sentence that governs them belongs with it. */
-      boundaryNote: {
-        lead: 'Near rule is disclosure only.',
-        rest: ' It explains the boundary and never enters Priority, a suggestion, or Plan.',
-      },
+      /* ROUND 4 ITEM 5 — the near-rule hedge is no longer a per-frame paragraph.
+         It is one low-ink line, printed ONCE at the scene, below the tally that
+         is the actual data. */
       /* The sideways route into the finding's own case file. It resolves only
          into a case file this exploration actually built: `correction_on_iob`
          has neither a projection row nor a scene, so its line SAYS the route is
@@ -338,70 +369,26 @@ async function main() {
           + `· ${narrow.population.counts.excluded} not comparable under this rule`,
         moreLabel: rows.length > EVIDENCE_CAP ? `${rows.length - EVIDENCE_CAP} more` : null,
         backLabel: `Show first ${EVIDENCE_CAP}`,
-        groups,
+        groups: dedupeGroupTags(groups),
       },
     };
   };
 
-  /* The unclaimed frame. NO CANVAS — see the header block: project.mjs projects
-     cohorts for a named factor, and "no factor claims these" is not one. Its
-     table is grouped by how close each low came, which IS in the capture. */
-  const unclaimedRowsById = Object.fromEntries(
-    wide.occurrences.map((o) => [o.identity.id, occurrenceRow(o)]),
-  );
-  const nearGroups = lowsView.factors
-    .map((f) => ({
-      key: `near:${f}`,
-      lead: COHORT_LABEL.near_rule,
-      phrase: GROUP_PHRASE.near_rule(factorLabel[f]),
-      rows: unclaimedIds
-        .filter((id) => cohortUnder(id, f) === 'near_rule')
-        .map((id) => ({ ...unclaimedRowsById[id], tag: COHORT_LABEL.near_rule })),
-    }))
-    .filter((g) => g.rows.length);
-  const noneRows = unclaimedIds
-    .filter((id) => !lowsView.factors.some((f) => cohortUnder(id, f) === 'near_rule'))
-    .map((id) => ({ ...unclaimedRowsById[id], tag: COHORT_LABEL.neutral }));
-  const unclaimedFrame = {
-    key: 'unclaimed',
-    canvas: null,
-    emptyNote: 'No factor claims these lows, so there is no rule to compare them against: '
-      + 'a cohort comparison needs a factor, and none of this view’s factors matched any of them. '
-      + 'The list beside this groups them by how close they came.',
-    boundaryNote: {
-      lead: 'No rule is being compared here.',
-      rest: ' The canvas says why; the list below is the whole unclaimed set.',
-    },
-    route: null,
-    occurrences: {
-      cap: EVIDENCE_CAP,
-      capMeta: `entry → worst · Δ &nbsp;·&nbsp; ${unclaimedIds.length} of ${wide.population.denominator} in ${windowLabel}`,
-      counterNote: null,
-      moreLabel: unclaimedIds.length > EVIDENCE_CAP ? `${unclaimedIds.length - EVIDENCE_CAP} more` : null,
-      backLabel: `Show first ${EVIDENCE_CAP}`,
-      groups: [
-        ...nearGroups,
-        ...(noneRows.length ? [{
-          key: 'none', lead: COHORT_LABEL.neutral, phrase: 'no factor’s rule came close', rows: noneRows,
-        }] : []),
-      ].map((g) => ({ ...g, count: `· ${plural(g.rows.length, 'event')}` })),
-    },
-  };
-
-  /* The claim split, largest claiming factor first — which is also the default
-     selection (round 3, item 2). The unclaimed line is last because it is the
-     residue, not a competitor. */
+  /* ROUND 4 ITEM 4 — THE UNCLAIMED TIER LEAVES THE SELECTOR. Round 3 gave it a
+     claim line and a canvas-less frame; the operator's ruling is that a
+     selectable tier drawing no comparison does not belong in a selector, and a
+     second look at the fixture says the frame was also redundant. Under
+     `over_treated_low` the unclaimed ten ARE that frame's Near rule (4) and Rule
+     did not match (6) groups, row for row — every low a factor cannot claim is
+     still a low that factor placed in a cohort. So a disclosure revealing "the
+     unclaimed rows" below the factor groups would re-list rows already on
+     screen under a second name. The count stays in the summary sentence, and
+     `unclaimedIds` is retained only to compute it. */
   const claimOrder = Object.entries(claims).sort(([, a], [, b]) => b - a).map(([key]) => key);
-  const frames = Object.fromEntries([
-    ...claimOrder.map((key) => [key, frameFor(key)]),
-    ['unclaimed', unclaimedFrame],
-  ]);
-  const claimLine = (key, label, count) =>
-    ({ key, label, count, noun: count === 1 ? 'low' : 'lows' });
-  const claimLines = [
-    ...claimOrder.map((key) => claimLine(key, factorLabel[key], claims[key])),
-    claimLine('unclaimed', 'No finding claims these', unclaimedIds.length),
-  ];
+  const frames = Object.fromEntries(claimOrder.map((key) => [key, frameFor(key)]));
+  const claimLines = claimOrder.map((key) => ({
+    key, label: factorLabel[key], count: claims[key],
+  }));
 
   /* ---- the second population row's count, same producer, meals view ---- */
   const mealsView = capture.views.meals;
@@ -430,11 +417,12 @@ async function main() {
         + 'PROJECTION PER CLAIMED FACTOR (view lows, factor <k>, block all) for that frame\'s canvas, and the '
         + 'same coordinates with another=true for its regrouped table. The claim split itself is a tally of '
         + 'the capture\'s `routes`: a low is claimed when some factor routes it to `fired`.',
-      unclaimed_frame: 'DERIVED BY THIS BUILD. project.mjs projects cohorts for a NAMED FACTOR and has no '
-        + 'unclaimed coordinate, so the `No finding claims these` frame has NO canvas — drawing one would mean '
-        + 'inventing three cohorts for a set defined by no rule matching. Its table grouping (near a named '
-        + 'factor\'s rule / no factor\'s rule came close) is read off the capture\'s `routes` across every '
-        + 'factor in the view, which is a build-side derivation, not a projector output.',
+      unclaimed: 'NOT A FRAME AND NOT A SELECTOR LINE (round 4, item 4). project.mjs projects cohorts for a '
+        + 'NAMED FACTOR and has no unclaimed coordinate, so the round-3 `No finding claims these` line selected '
+        + 'a frame that drew no comparison. It is also redundant: under `over_treated_low` the ten unclaimed '
+        + 'lows ARE that frame\'s Near rule (4) and Rule did not match (6) groups, row for row, because a low no '
+        + 'factor claims is still a low every factor placed in a cohort. The count survives only inside the '
+        + 'population summary sentence.',
       unreachable_factor: 'correction_stacking is a factor of the lows view and fires on NOTHING in this '
         + 'capture, so it claims no low and the claim split — which is the selector — never offers it. No '
         + 'frame exists for it.',
@@ -450,16 +438,27 @@ async function main() {
       /* The crumb root, and at level 1 the whole path (old term 4). */
       root: 'Findings',
       meta: queueMeta(globalWindow),
-      /* NOT IN ANY FIXTURE — see `provenance.population_rows`. */
-      populationCap: 'Browse everything',
+      /* NOT IN ANY FIXTURE — see `provenance.population_rows`.
+         ROUND 4 ITEM 13 — named in CONTEXT.md's own words. "Browse everything /
+         All lows / All meals" named an ACTIVITY and then restated "all" on every
+         row. CONTEXT.md already has the noun for what these rows are: an
+         **Exposure population** is "a lever's entire Exposure denominator,
+         occurrence by occurrence — all the lows behind an over-treated-low
+         lever, not just the ones it attributed", and it is "the n in every
+         'k of n' recurrence rate". The rows directly above print exactly those
+         k-of-n fractions ("1 of 4 lows"), so this section is literally the n
+         they were counted against. Rows take the bare population noun and the
+         count becomes the accessory, which is also what removes the doubled
+         "All … / N lows". */
+      populationCap: 'Exposure populations',
       populationRows: [
         {
-          id: POPULATION_ID, derived: true, title: 'All lows', drills: true,
-          count: wide.population.denominator, noun: 'lows', window: windowLabel,
+          id: POPULATION_ID, derived: true, title: 'Lows', drills: true,
+          count: wide.population.denominator, window: windowLabel,
         },
         {
-          id: 'population:meals', derived: true, title: 'All meals', drills: false,
-          count: meals.population.denominator, noun: 'meals', window: windowLabel,
+          id: 'population:meals', derived: true, title: 'Meals', drills: false,
+          count: meals.population.denominator, window: windowLabel,
         },
       ],
     },
@@ -467,13 +466,11 @@ async function main() {
     /* ---------- the dock floor, idle ---------- */
     dock: { kind: KIND.idle, title: IDLE_TITLE, detail: IDLE_DETAIL },
 
-    /* ---------- the queue level's canvas: OUT OF SCOPE, and says so ---------- */
-    rootCanvas: {
-      title: 'Pooled glucose',
-      context: 'queue level',
-      note: 'The pooled glucose chart this level answers with is out of scope for this exploration. '
-        + 'Pick a finding or a population row to route the canvas.',
-    },
+    /* ROUND 4 ITEM 1 — THE QUEUE LEVEL HAS NO CANVAS PAYLOAD AT ALL. Round 3
+       gave it a title, a context string and an apology paragraph, which the
+       surface then painted as a POOLED GLUCOSE header over 1010px of empty
+       ground. The queue IS the app at that level, so the canvas pane is not
+       rendered and there is nothing here for it to render. */
 
     /* ================= the two drilled scenes ================= */
     scenes: {
@@ -494,8 +491,17 @@ async function main() {
           appearances: row.detail.parts,
         },
         judgment: {
-          summary: `${summarySentence(lens.population.counts)} `
-            + `${lens.population.counts.another_factor} had another factor; `
+          /* ROUND 4 ITEM 5 — THE TALLY IS THE DATA; THE PROSE IS THE REMAINDER.
+             Round 3 printed the lens's `summarySentence` ("7 events met this
+             factor's rule. 4 sat narrowly outside it. 6 comparable events did
+             not match any factor.") as a three-line paragraph and then printed
+             the SAME three numbers again, tabular and support-stamped, in the
+             `.ec-count` tally directly beneath it. The tally wins: it carries
+             the support word the sentence cannot. What survives here is only
+             the residue — the two counts the tally has no cell for. The shipped
+             `summarySentence` is therefore no longer called; the numbers it
+             composed are the tally's, from the same `lens.population.counts`. */
+          summary: `${lens.population.counts.another_factor} had another factor; `
             + `${lens.population.counts.excluded} of ${lens.population.denominator} lows were excluded as not safely comparable.`,
           counts: ['fired', 'near_rule', 'neutral'].map((key) => ({
             key,
@@ -503,11 +509,11 @@ async function main() {
             label: COHORT_LABEL[key],
             support: cohortByKey[key].support[0].toUpperCase() + cohortByKey[key].support.slice(1),
           })),
-          boundaryNote: {
-            lead: 'Near rule is disclosure only.',
-            rest: ' It explains the boundary and never enters Priority, a suggestion, or Plan.',
-          },
         },
+        /* ROUND 4 ITEM 5 — one low-ink line, at the scene, printed once. The
+           `<b>` lead is gone with the paragraph: bolding the first clause is
+           what gave a footnote body weight. */
+        boundaryNote: 'Near rule is disclosure only — it never enters Priority, a suggestion, or Plan.',
         /* ROUND 2 ITEM 4 — the histogram is gone. These sentences stand on their
            own arithmetic: the busiest two-hour band, and what covers it. The
            band's own share is printed against the total, because on this fixture
@@ -528,14 +534,14 @@ async function main() {
              evidence tier and its episode count. Round 3 only generalised the
              SHAPE to a list so the population's regrouped frames go through the
              same renderer. */
-          groups: [{
+          groups: dedupeGroupTags([{
             key: 'fired',
             lead: raw.title,
             phrase: firedOccurrences[0]?.verdict.evidence_tier
               ? `${firedOccurrences[0].verdict.evidence_tier.replaceAll('_', ' ')}, not confirmed` : null,
             count: `· ${plural(firedOccurrences.length, 'episode')}`,
             rows: firedOccurrences.map(occurrenceRow),
-          }],
+          }]),
         },
         canvasHead: { title: 'Low response comparison', context: 'excursion nadir · −5 h to +2 h' },
         canvas: canvasFor(lens),
@@ -544,7 +550,9 @@ async function main() {
 
       [POPULATION_ID]: {
         kind: 'population',
-        crumb: { root: 'Findings', here: 'All lows' },
+        /* ROUND 4 ITEM 13 — the leaf is the population noun the queue row now
+           carries, so the crumb and the row that opened it read the same. */
+        crumb: { root: 'Findings', here: 'Lows' },
         /* Item 6 spells this one as the bare count. */
         chip: { text: String(wide.population.denominator), title: 'Clear this filter and return to Findings' },
         subject: null,
@@ -561,10 +569,15 @@ async function main() {
           counts: null,
           /* ROUND 3 ITEM 1 — the claim split IS the factor selector. These lines
              were `.ec-count` cells in round 2; they are queue rows now, and
-             selecting one reframes the canvas and the table below. */
+             selecting one reframes the canvas and the table below.
+             ROUND 4 ITEM 4 — and the unclaimed residue is no longer one of them:
+             its count is the second half of the summary sentence above, which is
+             the only place it now prints. */
           claims: claimLines,
-          boundaryNote: null,
         },
+        /* ROUND 4 ITEM 5 — the same one line, at the scene, printed once,
+           instead of once per frame. */
+        boundaryNote: 'Near rule is disclosure only — it never enters Priority, a suggestion, or Plan.',
         coincidence: null,
         defaultFactor: claimOrder[0],
         frames,

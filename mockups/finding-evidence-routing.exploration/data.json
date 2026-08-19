@@ -8,7 +8,7 @@
   "canvas_and_table": "mockups/diagnose-event-comparison.synthetic/capture.json via project.mjs (view lows, factor over_treated_low)",
   "population_rows": "DERIVED BY THIS BUILD, not read from any fixture. The ruling (resolution point 3) invents standing population rows as a NEW SERVER PROJECTION; no committed projection carries them yet. Their counts are the lens capture's own population denominators (lows via project.mjs, meals via the same producer on the meals view), so they name the CAPTURE's window, not the projection's 30 days.",
   "population_case_file": "mockups/diagnose-event-comparison.synthetic/capture.json via project.mjs — ONE PROJECTION PER CLAIMED FACTOR (view lows, factor <k>, block all) for that frame's canvas, and the same coordinates with another=true for its regrouped table. The claim split itself is a tally of the capture's `routes`: a low is claimed when some factor routes it to `fired`.",
-  "unclaimed_frame": "DERIVED BY THIS BUILD. project.mjs projects cohorts for a NAMED FACTOR and has no unclaimed coordinate, so the `No finding claims these` frame has NO canvas — drawing one would mean inventing three cohorts for a set defined by no rule matching. Its table grouping (near a named factor's rule / no factor's rule came close) is read off the capture's `routes` across every factor in the view, which is a build-side derivation, not a projector output.",
+  "unclaimed": "NOT A FRAME AND NOT A SELECTOR LINE (round 4, item 4). project.mjs projects cohorts for a NAMED FACTOR and has no unclaimed coordinate, so the round-3 `No finding claims these` line selected a frame that drew no comparison. It is also redundant: under `over_treated_low` the ten unclaimed lows ARE that frame's Near rule (4) and Rule did not match (6) groups, row for row, because a low no factor claims is still a low every factor placed in a cohort. The count survives only inside the population summary sentence.",
   "unreachable_factor": "correction_stacking is a factor of the lows view and fires on NOTHING in this capture, so it claims no low and the claim split — which is the selector — never offers it. No frame exists for it.",
   "disjoint": "The two populations are disjoint by construction and are never reconciled."
  },
@@ -295,24 +295,22 @@
   },
   "root": "Findings",
   "meta": "6 findings · 30 days",
-  "populationCap": "Browse everything",
+  "populationCap": "Exposure populations",
   "populationRows": [
    {
     "id": "population:lows",
     "derived": true,
-    "title": "All lows",
+    "title": "Lows",
     "drills": true,
     "count": 20,
-    "noun": "lows",
     "window": "Jul 13–Aug 11"
    },
    {
     "id": "population:meals",
     "derived": true,
-    "title": "All meals",
+    "title": "Meals",
     "drills": false,
     "count": 20,
-    "noun": "meals",
     "window": "Jul 13–Aug 11"
    }
   ]
@@ -321,11 +319,6 @@
   "kind": "Nothing being watched",
   "title": "No change staged, no trial or focus active",
   "detail": "Stage a change from a finding to start one."
- },
- "rootCanvas": {
-  "title": "Pooled glucose",
-  "context": "queue level",
-  "note": "The pooled glucose chart this level answers with is out of scope for this exploration. Pick a finding or a population row to route the canvas."
  },
  "scenes": {
   "finding:over_treated_low": {
@@ -354,7 +347,7 @@
     ]
    },
    "judgment": {
-    "summary": "7 events met this factor’s rule. 4 sat narrowly outside it. 6 comparable events did not match any factor. 1 had another factor; 2 of 20 lows were excluded as not safely comparable.",
+    "summary": "1 had another factor; 2 of 20 lows were excluded as not safely comparable.",
     "counts": [
      {
       "key": "fired",
@@ -374,12 +367,9 @@
       "label": "Rule did not match",
       "support": "Supported"
      }
-    ],
-    "boundaryNote": {
-     "lead": "Near rule is disclosure only.",
-     "rest": " It explains the boundary and never enters Priority, a suggestion, or Plan."
-    }
+    ]
    },
+   "boundaryNote": "Near rule is disclosure only — it never enters Priority, a suggestion, or Plan.",
    "coincidence": {
     "share": "Busiest two-hour band: 00:00–02:00, 1 of 7 events.",
     "slotText": "That band sits in the 00:00 basal slot (holds at current)",
@@ -401,72 +391,79 @@
        {
         "id": "lows-synthetic-1",
         "when": "Aug 1 · 01:00",
-        "tier": "observed",
+        "tier": "",
         "title": "Over-treated low matched the current rule.",
         "both": true,
         "entry": 68,
         "worst": 58,
-        "delta": "−10"
+        "delta": "−10",
+        "tag": ""
        },
        {
         "id": "lows-synthetic-2",
         "when": "Aug 2 · 07:00",
-        "tier": "observed",
+        "tier": "",
         "title": "Over-treated low matched the current rule.",
         "both": true,
         "entry": 69,
         "worst": 59,
-        "delta": "−10"
+        "delta": "−10",
+        "tag": ""
        },
        {
         "id": "lows-synthetic-3",
         "when": "Aug 3 · 13:00",
-        "tier": "observed",
+        "tier": "",
         "title": "Over-treated low matched the current rule.",
         "both": true,
         "entry": 70,
         "worst": 60,
-        "delta": "−10"
+        "delta": "−10",
+        "tag": ""
        },
        {
         "id": "lows-synthetic-4",
         "when": "Aug 4 · 19:00",
-        "tier": "observed",
+        "tier": "",
         "title": "Over-treated low matched the current rule.",
         "both": true,
         "entry": 68,
         "worst": 61,
-        "delta": "−7"
+        "delta": "−7",
+        "tag": ""
        },
        {
         "id": "lows-synthetic-5",
         "when": "Aug 5 · 04:00",
-        "tier": "observed",
+        "tier": "",
         "title": "Over-treated low matched the current rule.",
         "both": true,
         "entry": 69,
         "worst": 58,
-        "delta": "−11"
+        "delta": "−11",
+        "tag": ""
        },
        {
         "id": "lows-synthetic-6",
         "when": "Aug 6 · 10:00",
-        "tier": "observed",
+        "tier": "",
         "title": "Over-treated low matched the current rule.",
         "both": true,
         "entry": 70,
         "worst": 59,
-        "delta": "−11"
+        "delta": "−11",
+        "tag": ""
        },
        {
         "id": "lows-synthetic-7",
         "when": "Aug 7 · 16:00",
-        "tier": "observed",
+        "tier": "",
         "title": "Over-treated low matched the current rule.",
         "both": true,
         "entry": 68,
         "worst": 60,
-        "delta": "−8"
+        "delta": "−8",
+        "tag": ""
        }
       ]
      }
@@ -478,6 +475,25 @@
    },
    "canvas": {
     "title": "Low response comparison",
+    "cohortOf": {
+     "lows-synthetic-1": "fired",
+     "lows-synthetic-2": "fired",
+     "lows-synthetic-3": "fired",
+     "lows-synthetic-4": "fired",
+     "lows-synthetic-5": "fired",
+     "lows-synthetic-6": "fired",
+     "lows-synthetic-7": "fired",
+     "lows-synthetic-8": "near_rule",
+     "lows-synthetic-9": "near_rule",
+     "lows-synthetic-10": "near_rule",
+     "lows-synthetic-11": "near_rule",
+     "lows-synthetic-12": "neutral",
+     "lows-synthetic-13": "neutral",
+     "lows-synthetic-14": "neutral",
+     "lows-synthetic-15": "neutral",
+     "lows-synthetic-16": "neutral",
+     "lows-synthetic-17": "neutral"
+    },
     "context": "excursion nadir · −5 h to +2 h",
     "alignmentWindow": [
      -300,
@@ -496,7 +512,7 @@
       "support": "supported",
       "supportWord": "Supported",
       "routed_count": 7,
-      "legendDetail": "7 events · 76 supported · 7 limited · 2 withheld points",
+      "legendDetail": "7 events · 76 supported · 7 limited · 2 withheld points",
       "points": [
        {
         "minute": -300,
@@ -1186,7 +1202,7 @@
       "support": "limited",
       "supportWord": "Limited",
       "routed_count": 4,
-      "legendDetail": "4 events · 85 limited points",
+      "legendDetail": "4 events · 85 limited points",
       "points": [
        {
         "minute": -300,
@@ -1876,7 +1892,7 @@
       "support": "supported",
       "supportWord": "Supported",
       "routed_count": 6,
-      "legendDetail": "6 events · 78 supported · 6 limited · 1 withheld points",
+      "legendDetail": "6 events · 78 supported · 6 limited · 1 withheld points",
       "points": [
        {
         "minute": -300,
@@ -4776,7 +4792,7 @@
    "kind": "population",
    "crumb": {
     "root": "Findings",
-    "here": "All lows"
+    "here": "Lows"
    },
    "chip": {
     "text": "20",
@@ -4790,24 +4806,16 @@
      {
       "key": "over_treated_low",
       "label": "Over-treated low",
-      "count": 7,
-      "noun": "lows"
+      "count": 7
      },
      {
       "key": "correction_on_iob",
       "label": "Correction on active insulin",
-      "count": 1,
-      "noun": "low"
-     },
-     {
-      "key": "unclaimed",
-      "label": "No finding claims these",
-      "count": 10,
-      "noun": "lows"
+      "count": 1
      }
-    ],
-    "boundaryNote": null
+    ]
    },
+   "boundaryNote": "Near rule is disclosure only — it never enters Priority, a suggestion, or Plan.",
    "coincidence": null,
    "defaultFactor": "over_treated_low",
    "frames": {
@@ -4815,6 +4823,25 @@
      "key": "over_treated_low",
      "canvas": {
       "title": "Low response comparison",
+      "cohortOf": {
+       "lows-synthetic-1": "fired",
+       "lows-synthetic-2": "fired",
+       "lows-synthetic-3": "fired",
+       "lows-synthetic-4": "fired",
+       "lows-synthetic-5": "fired",
+       "lows-synthetic-6": "fired",
+       "lows-synthetic-7": "fired",
+       "lows-synthetic-8": "near_rule",
+       "lows-synthetic-9": "near_rule",
+       "lows-synthetic-10": "near_rule",
+       "lows-synthetic-11": "near_rule",
+       "lows-synthetic-12": "neutral",
+       "lows-synthetic-13": "neutral",
+       "lows-synthetic-14": "neutral",
+       "lows-synthetic-15": "neutral",
+       "lows-synthetic-16": "neutral",
+       "lows-synthetic-17": "neutral"
+      },
       "context": "excursion nadir · −5 h to +2 h",
       "alignmentWindow": [
        -300,
@@ -4833,7 +4860,7 @@
         "support": "supported",
         "supportWord": "Supported",
         "routed_count": 7,
-        "legendDetail": "7 events · 76 supported · 7 limited · 2 withheld points",
+        "legendDetail": "7 events · 76 supported · 7 limited · 2 withheld points",
         "points": [
          {
           "minute": -300,
@@ -5523,7 +5550,7 @@
         "support": "limited",
         "supportWord": "Limited",
         "routed_count": 4,
-        "legendDetail": "4 events · 85 limited points",
+        "legendDetail": "4 events · 85 limited points",
         "points": [
          {
           "minute": -300,
@@ -6213,7 +6240,7 @@
         "support": "supported",
         "supportWord": "Supported",
         "routed_count": 6,
-        "legendDetail": "6 events · 78 supported · 6 limited · 1 withheld points",
+        "legendDetail": "6 events · 78 supported · 6 limited · 1 withheld points",
         "points": [
          {
           "minute": -300,
@@ -6900,11 +6927,6 @@
       },
       "traces": null
      },
-     "emptyNote": null,
-     "boundaryNote": {
-      "lead": "Near rule is disclosure only.",
-      "rest": " It explains the boundary and never enters Priority, a suggestion, or Plan."
-     },
      "route": {
       "text": "Over-treated low is a finding in the queue.",
       "label": "Open case file",
@@ -6925,79 +6947,79 @@
          {
           "id": "lows-synthetic-1",
           "when": "Aug 1 · 01:00",
-          "tier": "observed",
+          "tier": "",
           "title": "Over-treated low matched the current rule.",
           "both": true,
           "entry": 68,
           "worst": 58,
           "delta": "−10",
-          "tag": "Rule matched"
+          "tag": ""
          },
          {
           "id": "lows-synthetic-2",
           "when": "Aug 2 · 07:00",
-          "tier": "observed",
+          "tier": "",
           "title": "Over-treated low matched the current rule.",
           "both": true,
           "entry": 69,
           "worst": 59,
           "delta": "−10",
-          "tag": "Rule matched"
+          "tag": ""
          },
          {
           "id": "lows-synthetic-3",
           "when": "Aug 3 · 13:00",
-          "tier": "observed",
+          "tier": "",
           "title": "Over-treated low matched the current rule.",
           "both": true,
           "entry": 70,
           "worst": 60,
           "delta": "−10",
-          "tag": "Rule matched"
+          "tag": ""
          },
          {
           "id": "lows-synthetic-4",
           "when": "Aug 4 · 19:00",
-          "tier": "observed",
+          "tier": "",
           "title": "Over-treated low matched the current rule.",
           "both": true,
           "entry": 68,
           "worst": 61,
           "delta": "−7",
-          "tag": "Rule matched"
+          "tag": ""
          },
          {
           "id": "lows-synthetic-5",
           "when": "Aug 5 · 04:00",
-          "tier": "observed",
+          "tier": "",
           "title": "Over-treated low matched the current rule.",
           "both": true,
           "entry": 69,
           "worst": 58,
           "delta": "−11",
-          "tag": "Rule matched"
+          "tag": ""
          },
          {
           "id": "lows-synthetic-6",
           "when": "Aug 6 · 10:00",
-          "tier": "observed",
+          "tier": "",
           "title": "Over-treated low matched the current rule.",
           "both": true,
           "entry": 70,
           "worst": 59,
           "delta": "−11",
-          "tag": "Rule matched"
+          "tag": ""
          },
          {
           "id": "lows-synthetic-7",
           "when": "Aug 7 · 16:00",
-          "tier": "observed",
+          "tier": "",
           "title": "Over-treated low matched the current rule.",
           "both": true,
           "entry": 68,
           "worst": 60,
           "delta": "−8",
-          "tag": "Rule matched"
+          "tag": ""
          }
         ],
         "count": "· 7 events"
@@ -7010,46 +7032,46 @@
          {
           "id": "lows-synthetic-8",
           "when": "Aug 8 · 22:00",
-          "tier": "observed",
+          "tier": "",
           "title": "Over-treated low did not match the current rule.",
           "both": true,
           "entry": 69,
           "worst": 61,
           "delta": "−8",
-          "tag": "Near rule"
+          "tag": ""
          },
          {
           "id": "lows-synthetic-9",
           "when": "Aug 9 · 06:00",
-          "tier": "observed",
+          "tier": "",
           "title": "Over-treated low did not match the current rule.",
           "both": true,
           "entry": 70,
           "worst": 58,
           "delta": "−12",
-          "tag": "Near rule"
+          "tag": ""
          },
          {
           "id": "lows-synthetic-10",
           "when": "Aug 10 · 12:00",
-          "tier": "observed",
+          "tier": "",
           "title": "Over-treated low did not match the current rule.",
           "both": true,
           "entry": 68,
           "worst": 59,
           "delta": "−9",
-          "tag": "Near rule"
+          "tag": ""
          },
          {
           "id": "lows-synthetic-11",
           "when": "Aug 11 · 18:00",
-          "tier": "observed",
+          "tier": "",
           "title": "Over-treated low did not match the current rule.",
           "both": true,
           "entry": 69,
           "worst": 60,
           "delta": "−9",
-          "tag": "Near rule"
+          "tag": ""
          }
         ],
         "count": "· 4 events"
@@ -7062,68 +7084,68 @@
          {
           "id": "lows-synthetic-12",
           "when": "Aug 12 · 02:00",
-          "tier": "observed",
+          "tier": "",
           "title": "Over-treated low did not match the current rule.",
           "both": true,
           "entry": 70,
           "worst": 61,
           "delta": "−9",
-          "tag": "Rule did not match"
+          "tag": ""
          },
          {
           "id": "lows-synthetic-13",
           "when": "Aug 13 · 08:00",
-          "tier": "observed",
+          "tier": "",
           "title": "Over-treated low did not match the current rule.",
           "both": true,
           "entry": 68,
           "worst": 58,
           "delta": "−10",
-          "tag": "Rule did not match"
+          "tag": ""
          },
          {
           "id": "lows-synthetic-14",
           "when": "Aug 14 · 14:00",
-          "tier": "observed",
+          "tier": "",
           "title": "Over-treated low did not match the current rule.",
           "both": true,
           "entry": 69,
           "worst": 59,
           "delta": "−10",
-          "tag": "Rule did not match"
+          "tag": ""
          },
          {
           "id": "lows-synthetic-15",
           "when": "Aug 15 · 20:00",
-          "tier": "observed",
+          "tier": "",
           "title": "Over-treated low did not match the current rule.",
           "both": true,
           "entry": 70,
           "worst": 60,
           "delta": "−10",
-          "tag": "Rule did not match"
+          "tag": ""
          },
          {
           "id": "lows-synthetic-16",
           "when": "Aug 16 · 05:00",
-          "tier": "observed",
+          "tier": "",
           "title": "Over-treated low did not match the current rule.",
           "both": true,
           "entry": 68,
           "worst": 61,
           "delta": "−7",
-          "tag": "Rule did not match"
+          "tag": ""
          },
          {
           "id": "lows-synthetic-17",
           "when": "Aug 17 · 11:00",
-          "tier": "observed",
+          "tier": "",
           "title": "Over-treated low did not match the current rule.",
           "both": true,
           "entry": 69,
           "worst": 58,
           "delta": "−11",
-          "tag": "Rule did not match"
+          "tag": ""
          }
         ],
         "count": "· 6 events"
@@ -7135,6 +7157,15 @@
      "key": "correction_on_iob",
      "canvas": {
       "title": "Low response comparison",
+      "cohortOf": {
+       "lows-synthetic-18": "fired",
+       "lows-synthetic-12": "neutral",
+       "lows-synthetic-13": "neutral",
+       "lows-synthetic-14": "neutral",
+       "lows-synthetic-15": "neutral",
+       "lows-synthetic-16": "neutral",
+       "lows-synthetic-17": "neutral"
+      },
       "context": "excursion nadir · −5 h to +2 h",
       "alignmentWindow": [
        -300,
@@ -7153,7 +7184,7 @@
         "support": "withheld",
         "supportWord": "Withheld",
         "routed_count": 1,
-        "legendDetail": "1 event · aggregate not shown",
+        "legendDetail": "1 event · aggregate not shown",
         "points": [
          {
           "minute": -300,
@@ -7843,7 +7874,7 @@
         "support": "withheld",
         "supportWord": "Withheld",
         "routed_count": 0,
-        "legendDetail": "0 events · aggregate not shown",
+        "legendDetail": "0 events · aggregate not shown",
         "points": [
          {
           "minute": -300,
@@ -8533,7 +8564,7 @@
         "support": "supported",
         "supportWord": "Supported",
         "routed_count": 6,
-        "legendDetail": "6 events · 78 supported · 6 limited · 1 withheld points",
+        "legendDetail": "6 events · 78 supported · 6 limited · 1 withheld points",
         "points": [
          {
           "minute": -300,
@@ -9220,11 +9251,6 @@
       },
       "traces": null
      },
-     "emptyNote": null,
-     "boundaryNote": {
-      "lead": "Near rule is disclosure only.",
-      "rest": " It explains the boundary and never enters Priority, a suggestion, or Plan."
-     },
      "route": {
       "text": "Correction on active insulin has no case file in this exploration.",
       "label": null,
@@ -9245,13 +9271,13 @@
          {
           "id": "lows-synthetic-18",
           "when": "Aug 18 · 17:00",
-          "tier": "observed",
+          "tier": "",
           "title": "Correction on active insulin matched the current rule.",
           "both": true,
           "entry": 70,
           "worst": 59,
           "delta": "−11",
-          "tag": "Rule matched"
+          "tag": ""
          }
         ],
         "count": "· 1 event"
@@ -9264,213 +9290,68 @@
          {
           "id": "lows-synthetic-12",
           "when": "Aug 12 · 02:00",
-          "tier": "observed",
+          "tier": "",
           "title": "Correction on active insulin did not match the current rule.",
           "both": true,
           "entry": 70,
           "worst": 61,
           "delta": "−9",
-          "tag": "Rule did not match"
+          "tag": ""
          },
          {
           "id": "lows-synthetic-13",
           "when": "Aug 13 · 08:00",
-          "tier": "observed",
+          "tier": "",
           "title": "Correction on active insulin did not match the current rule.",
           "both": true,
           "entry": 68,
           "worst": 58,
           "delta": "−10",
-          "tag": "Rule did not match"
+          "tag": ""
          },
          {
           "id": "lows-synthetic-14",
           "when": "Aug 14 · 14:00",
-          "tier": "observed",
+          "tier": "",
           "title": "Correction on active insulin did not match the current rule.",
           "both": true,
           "entry": 69,
           "worst": 59,
           "delta": "−10",
-          "tag": "Rule did not match"
+          "tag": ""
          },
          {
           "id": "lows-synthetic-15",
           "when": "Aug 15 · 20:00",
-          "tier": "observed",
+          "tier": "",
           "title": "Correction on active insulin did not match the current rule.",
           "both": true,
           "entry": 70,
           "worst": 60,
           "delta": "−10",
-          "tag": "Rule did not match"
+          "tag": ""
          },
          {
           "id": "lows-synthetic-16",
           "when": "Aug 16 · 05:00",
-          "tier": "observed",
+          "tier": "",
           "title": "Correction on active insulin did not match the current rule.",
           "both": true,
           "entry": 68,
           "worst": 61,
           "delta": "−7",
-          "tag": "Rule did not match"
+          "tag": ""
          },
          {
           "id": "lows-synthetic-17",
           "when": "Aug 17 · 11:00",
-          "tier": "observed",
+          "tier": "",
           "title": "Correction on active insulin did not match the current rule.",
           "both": true,
           "entry": 69,
           "worst": 58,
           "delta": "−11",
-          "tag": "Rule did not match"
-         }
-        ],
-        "count": "· 6 events"
-       }
-      ]
-     }
-    },
-    "unclaimed": {
-     "key": "unclaimed",
-     "canvas": null,
-     "emptyNote": "No factor claims these lows, so there is no rule to compare them against: a cohort comparison needs a factor, and none of this view’s factors matched any of them. The list beside this groups them by how close they came.",
-     "boundaryNote": {
-      "lead": "No rule is being compared here.",
-      "rest": " The canvas says why; the list below is the whole unclaimed set."
-     },
-     "route": null,
-     "occurrences": {
-      "cap": 5,
-      "capMeta": "entry → worst · Δ &nbsp;·&nbsp; 10 of 20 in Jul 13–Aug 11",
-      "counterNote": null,
-      "moreLabel": "5 more",
-      "backLabel": "Show first 5",
-      "groups": [
-       {
-        "key": "near:over_treated_low",
-        "lead": "Near rule",
-        "phrase": "Over-treated low, disclosure only",
-        "rows": [
-         {
-          "id": "lows-synthetic-8",
-          "when": "Aug 8 · 22:00",
-          "tier": "observed",
-          "title": "Over-treated low did not match the current rule.",
-          "both": true,
-          "entry": 69,
-          "worst": 61,
-          "delta": "−8",
-          "tag": "Near rule"
-         },
-         {
-          "id": "lows-synthetic-9",
-          "when": "Aug 9 · 06:00",
-          "tier": "observed",
-          "title": "Over-treated low did not match the current rule.",
-          "both": true,
-          "entry": 70,
-          "worst": 58,
-          "delta": "−12",
-          "tag": "Near rule"
-         },
-         {
-          "id": "lows-synthetic-10",
-          "when": "Aug 10 · 12:00",
-          "tier": "observed",
-          "title": "Over-treated low did not match the current rule.",
-          "both": true,
-          "entry": 68,
-          "worst": 59,
-          "delta": "−9",
-          "tag": "Near rule"
-         },
-         {
-          "id": "lows-synthetic-11",
-          "when": "Aug 11 · 18:00",
-          "tier": "observed",
-          "title": "Over-treated low did not match the current rule.",
-          "both": true,
-          "entry": 69,
-          "worst": 60,
-          "delta": "−9",
-          "tag": "Near rule"
-         }
-        ],
-        "count": "· 4 events"
-       },
-       {
-        "key": "none",
-        "lead": "Rule did not match",
-        "phrase": "no factor’s rule came close",
-        "rows": [
-         {
-          "id": "lows-synthetic-12",
-          "when": "Aug 12 · 02:00",
-          "tier": "observed",
-          "title": "Over-treated low did not match the current rule.",
-          "both": true,
-          "entry": 70,
-          "worst": 61,
-          "delta": "−9",
-          "tag": "Rule did not match"
-         },
-         {
-          "id": "lows-synthetic-13",
-          "when": "Aug 13 · 08:00",
-          "tier": "observed",
-          "title": "Over-treated low did not match the current rule.",
-          "both": true,
-          "entry": 68,
-          "worst": 58,
-          "delta": "−10",
-          "tag": "Rule did not match"
-         },
-         {
-          "id": "lows-synthetic-14",
-          "when": "Aug 14 · 14:00",
-          "tier": "observed",
-          "title": "Over-treated low did not match the current rule.",
-          "both": true,
-          "entry": 69,
-          "worst": 59,
-          "delta": "−10",
-          "tag": "Rule did not match"
-         },
-         {
-          "id": "lows-synthetic-15",
-          "when": "Aug 15 · 20:00",
-          "tier": "observed",
-          "title": "Over-treated low did not match the current rule.",
-          "both": true,
-          "entry": 70,
-          "worst": 60,
-          "delta": "−10",
-          "tag": "Rule did not match"
-         },
-         {
-          "id": "lows-synthetic-16",
-          "when": "Aug 16 · 05:00",
-          "tier": "observed",
-          "title": "Over-treated low did not match the current rule.",
-          "both": true,
-          "entry": 68,
-          "worst": 61,
-          "delta": "−7",
-          "tag": "Rule did not match"
-         },
-         {
-          "id": "lows-synthetic-17",
-          "when": "Aug 17 · 11:00",
-          "tier": "observed",
-          "title": "Over-treated low did not match the current rule.",
-          "both": true,
-          "entry": 69,
-          "worst": 58,
-          "delta": "−11",
-          "tag": "Rule did not match"
+          "tag": ""
          }
         ],
         "count": "· 6 events"

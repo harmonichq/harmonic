@@ -33,9 +33,51 @@
  *       it. Checked by rendering with `tooltip.axisPointer.snap: false` — the
  *       mark is identical either way, so it is the series' own symbol, which is
  *       shipped grammar for "this median is thinly supported".
+ *
+ * ROUND 4 — FOUR MORE, all named here and in the report. None is a rewrite of
+ * the lens's machinery: `whiskerSeries`, `lineSeries` and `chartOption` keep
+ * their shipped bodies, and every change is either ONE multiplier applied to a
+ * value those functions already computed, or a value on the option object.
+ *
+ *   (c) THE ANECDOTE NO LONGER OUTRANKS THE AGGREGATE (item 2). Round 2's
+ *       selected trace was 2.2px of `--ec-focus` (= `--mk-text`, the brightest
+ *       ink on the surface) laid over 1–1.05px muted medians: one event drawn
+ *       louder than the three cohorts it is being judged against, in an ink no
+ *       cohort owns. It is now a 1px hairline in ITS OWN COHORT'S hue — so the
+ *       trace says which comparison it belongs to — and the three medians and
+ *       their whiskers recede to `RECEDE` of their standing opacity while one is
+ *       up. The aggregate stays the figure; the anecdote is an annotation on it.
+ *
+ *   (d) A UNIFORM Y TICK LADDER (item 3a). The shipped axis is min 40 / max 300
+ *       / interval 60, which prints 40 · 100 · 160 · 220 · 280 and then a 300
+ *       max label 20 above the last — five even gaps and one short one, on an
+ *       axis whose whole job is letting a reader measure a gap by eye. The max
+ *       moves to 340, which IS on the interval. The cost is headroom this
+ *       fixture does not fill; a mixed ladder is the worse of the two.
+ *
+ *   (e) THE CROSSHAIR REPORTS SOMETHING (item 3b). It was ECharts' stock grey
+ *       (#999) dashed cross with `label.show: false` — furniture in a colour the
+ *       design system does not own, reporting nothing at either axis. It keeps
+ *       its two lines, restyled onto `--mk-muted`, and gains the axis-docked
+ *       readout it was missing: mg/dL at the y axis and the lens's own signed
+ *       hour label at the x axis, both in the surface's own inks. The header
+ *       readout is untouched and still carries the per-cohort medians.
+ *
+ *   (f) THE UNIT CAPTION IS DOCKED (item 3c). `yAxis.name` at
+ *       `nameLocation: 'end'` floated "mg/dL" into open plot, three quarters of
+ *       the way across the canvas, attached to nothing. The name comes off the
+ *       axis and the unit becomes a `graphic` text right-aligned to x=44 — the
+ *       tick labels' own right edge, 8px inside the axis at grid.left 52 — so it
+ *       sits directly above the ladder it labels.
  */
 
 const css = (element, name) => getComputedStyle(element).getPropertyValue(name).trim();
+
+/** ROUND 4 (c) — what the three cohort aggregates fall to while one occurrence
+    trace is up. ONE multiplier over opacities `whiskerSeries` and `lineSeries`
+    already computed, so the shipped ratios between supported and limited, and
+    between fired and neutral, survive the recede intact. */
+const RECEDE = .3;
 
 /* VERBATIM — diagnose-event-comparison.js `COHORTS`. */
 const COHORTS = {
@@ -123,12 +165,51 @@ function lineSeries(surface, cohort, aggregateRows, selectedCohort, support) {
   };
 }
 
-/* VERBATIM — diagnose-event-comparison.js `selectedSeries`, minus the rescue-carb
-   scatter (no marker rides a fired trace in this fixture's selections), plus the
-   round-2 (b) emphasis suppression. THIS IS THE ONLY EVENT TRACE ON THE CANVAS:
-   the row the reader is hovering or has pinned, and nothing else. */
-function selectedSeries(surface, trace) {
+/** ROUND 4 (c) — recede a built cohort series while one occurrence trace is up.
+ *
+ * This exists so `whiskerSeries` and `lineSeries` stay byte-verbatim
+ * transcriptions of the shipped lens: it takes what they returned and scales the
+ * opacity they computed, rather than threading a multiplier through their
+ * bodies. A whisker is a `custom` series whose opacities live inside
+ * `renderItem`, so its wrapper scales the children the shipped renderer emitted
+ * — the geometry, the dash pattern and the per-support ratios are the shipped
+ * ones, at less ink.
+ */
+function receded(series, recede) {
+  if (recede === 1) return series;
+  if (series.type !== 'custom') {
+    return {
+      ...series,
+      lineStyle: { ...series.lineStyle, opacity: series.lineStyle.opacity * recede },
+      itemStyle: { ...series.itemStyle, opacity: series.itemStyle.opacity * recede },
+    };
+  }
+  const shipped = series.renderItem;
+  return {
+    ...series,
+    renderItem(params, api) {
+      const group = shipped(params, api);
+      for (const child of group.children) child.style.opacity *= recede;
+      return group;
+    },
+  };
+}
+
+/* diagnose-event-comparison.js `selectedSeries`, minus the rescue-carb scatter
+   (no marker rides a fired trace in this fixture's selections), plus the round-2
+   (b) emphasis suppression. THIS IS THE ONLY EVENT TRACE ON THE CANVAS: the row
+   the reader is hovering or has pinned, and nothing else.
+
+   ROUND 4 (c) DIVERGES from the shipped styling, deliberately. The shipped lens
+   draws its selection at 2.2px of `--ec-focus`, which is right for a lens where
+   the occurrence is picked from a dropdown and IS the subject. Here the reader
+   is inside a cohort comparison and the trace is one row of a table beside it,
+   so it draws at 1px in the hue of the cohort it belongs to: present, locatable,
+   and never the loudest mark on a chart about three medians. `--ec-focus` is no
+   longer read by this module. */
+function selectedSeries(surface, trace, cohort) {
   if (!trace) return [];
+  const color = colorFor(surface, cohort in COHORTS ? cohort : 'neutral');
   return [{
     name: 'Selected occurrence',
     type: 'line',
@@ -137,8 +218,8 @@ function selectedSeries(surface, trace) {
     animation: false,
     emphasis: { disabled: true },
     data: trace,
-    lineStyle: { color: css(surface, '--ec-focus'), width: 2.2, opacity: 1 },
-    itemStyle: { color: css(surface, '--ec-focus') },
+    lineStyle: { color, width: 1, opacity: 1 },
+    itemStyle: { color },
   }];
 }
 
@@ -162,14 +243,19 @@ export function chartOption(surface, canvas, highlighted) {
       label: { show: true, position: 'insideTopLeft', color: css(surface, '--mk-muted'), fontSize: 10, fontFamily: 'Inter' },
     },
   }];
+  /* ROUND 4 (c) — with a trace up, the three aggregates step back to 30% of the
+     ink they carry at rest. At rest `recede` is 1 and `receded` returns the
+     shipped series object untouched. */
+  const recede = highlighted ? RECEDE : 1;
   for (const cohort of cohortOrder) {
     for (const support of ['supported', 'limited']) {
       if (!aggregates[cohort].some((row) => row.support === support)) continue;
-      series.push(whiskerSeries(surface, cohort, aggregates[cohort], null, support));
-      series.push(lineSeries(surface, cohort, aggregates[cohort], null, support));
+      series.push(receded(whiskerSeries(surface, cohort, aggregates[cohort], null, support), recede));
+      series.push(receded(lineSeries(surface, cohort, aggregates[cohort], null, support), recede));
     }
   }
-  series.push(...selectedSeries(surface, highlighted ? canvas.traces[highlighted] : null));
+  series.push(...selectedSeries(surface, highlighted ? canvas.traces[highlighted] : null,
+    canvas.cohortOf?.[highlighted]));
 
   return {
     animation: false,
@@ -180,7 +266,47 @@ export function chartOption(surface, canvas, highlighted) {
       description: `${canvas.title}. Median lines compare ${cohortOrder.map((key) => COHORTS[key].label).join(', ')}. Sparse whiskers show the 25th to 75th percentile.`,
     },
     grid: { left: 52, right: 22, top: 24, bottom: 42, containLabel: false },
-    tooltip: { trigger: 'axis', showContent: false, axisPointer: { type: 'cross', label: { show: false } } },
+    /* ROUND 4 (f) — the unit caption, docked. Right edge at x=44, which is the
+       tick labels' own right edge (grid.left 52 minus ECharts' 8px axis-label
+       margin), and above grid.top 24, which is the topmost tick's baseline. */
+    graphic: [{
+      type: 'text', left: 44, top: 4, silent: true,
+      style: {
+        text: 'mg/dL', textAlign: 'right',
+        fill: css(surface, '--mk-muted'), fontFamily: 'Inter', fontSize: 10,
+      },
+    }],
+    /* ROUND 4 (e) — the crosshair, on the surface's own inks, reporting a value
+       at each axis it crosses. `showContent` stays false: the per-cohort medians
+       are the canvas header's readout, and a floating tooltip box would be a
+       second one. */
+    tooltip: {
+      trigger: 'axis',
+      showContent: false,
+      axisPointer: {
+        type: 'cross',
+        crossStyle: { color: css(surface, '--mk-muted'), width: 1, type: 'dashed', opacity: .7 },
+        lineStyle: { color: css(surface, '--mk-muted'), width: 1, type: 'dashed', opacity: .7 },
+        label: {
+          show: true,
+          /* `--mk-surface`, not `--ck-inset`: the inset token is declared as a
+             `color-mix()` on the light ground, and a custom property holding an
+             unresolved `color-mix()` comes back from `getPropertyValue` as its
+             literal source text, which a canvas context cannot paint. The lens's
+             own `lineSeries` reads `--mk-surface` for exactly this reason. */
+          backgroundColor: css(surface, '--mk-surface'),
+          borderColor: css(surface, '--mk-line'),
+          borderWidth: 1,
+          color: css(surface, '--mk-text'),
+          fontFamily: css(surface, '--ck-mono'),
+          fontSize: 10,
+          padding: [3, 6],
+          formatter: ({ axisDimension, value }) => (axisDimension === 'x'
+            ? axisLabel(Math.round(value / 5) * 5, canvas.axisAnchor)
+            : String(Math.round(value))),
+        },
+      },
+    },
     xAxis: {
       type: 'value',
       min: canvas.alignmentWindow[0],
@@ -194,12 +320,13 @@ export function chartOption(surface, canvas, highlighted) {
     yAxis: {
       type: 'value',
       min: 40,
-      max: 300,
+      /* ROUND 4 (d) — 340, not 300: the max has to sit ON the interval or the
+         ladder prints one short gap at the top. */
+      max: 340,
       interval: 60,
-      name: 'mg/dL',
-      nameLocation: 'end',
-      nameGap: 8,
-      nameTextStyle: { color: css(surface, '--mk-muted'), fontFamily: 'Inter', fontSize: 10, align: 'left' },
+      /* ROUND 4 (f) — no `name` on the axis; the unit is the docked `graphic`
+         above, which is the only way to put it over the first tick rather than
+         wherever ECharts decides an end-located axis name goes. */
       axisLine: { show: false },
       axisTick: { show: false },
       splitLine: { show: true, lineStyle: { color: css(surface, '--mk-line'), opacity: .58 } },
@@ -209,9 +336,24 @@ export function chartOption(surface, canvas, highlighted) {
   };
 }
 
-/** VERBATIM — diagnose-event-comparison.js `paintLegend`, cohort branch. */
+/** diagnose-event-comparison.js `paintLegend`, cohort branch.
+ *
+ * ROUND 4 ITEM 7 — THE RAIL IS FOR SERIES THAT ARE DRAWN. A `withheld` cohort
+ * has no aggregate on the canvas (that is what withheld means), and the shipped
+ * markup still spent it a full legend column: a mark, a label, a support stamp
+ * and a detail line, all describing a line the reader cannot see. Live cohorts
+ * keep the rail, verbatim. Dead ones collapse into ONE sentence beneath it,
+ * which is the whole statement they were carrying between them.
+ */
 export function legendMarkup(canvas) {
-  return canvas.cohortOrder.map((key) => {
+  const live = canvas.cohortOrder.filter((key) => canvas.cohorts[key].support !== 'withheld');
+  /* A withheld cohort with NO routed events is not a fact the reader needs: it
+     is the absence of a thing, and naming it ("near rule (0)") spends a clause
+     saying nothing happened. Only withheld cohorts that actually hold events are
+     worth the sentence. */
+  const dead = canvas.cohortOrder.filter((key) => canvas.cohorts[key].support === 'withheld'
+    && canvas.cohorts[key].routed_count > 0);
+  const rail = live.map((key) => {
     const record = canvas.cohorts[key];
     return `
       <span class="ec-key-item" data-cohort="${key}" data-support="${record.support}" data-selected-cohort="false">
@@ -220,6 +362,11 @@ export function legendMarkup(canvas) {
         <small>${record.legendDetail}</small>
       </span>`;
   }).join('');
+  if (!dead.length) return rail;
+  const phrase = dead
+    .map((key) => `${canvas.cohorts[key].label.toLowerCase()} (${canvas.cohorts[key].routed_count})`)
+    .join(', ');
+  return `${rail}<span class="fer-key-dead">Too few events to draw an aggregate: ${phrase}.</span>`;
 }
 
 /** VERBATIM — diagnose-event-comparison.js `paintReadout`. */

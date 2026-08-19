@@ -2,10 +2,10 @@
  *
  * THE BAR: any element with a shipped sibling uses the shipped values exactly.
  * So this file holds only three kinds of rule, and each one says which:
- *   (a) geometry this scene deliberately changes — the retired instrument row;
- *   (b) elements with no shipped sibling (the scope chip, the canvas
- *       placeholder), built by COPYING the declarations of the closest shipped
- *       sibling BY NAME;
+ *   (a) geometry this scene deliberately changes — the retired instrument row,
+ *       the collapsed queue-level canvas;
+ *   (b) elements with no shipped sibling (the scope chip), built by COPYING the
+ *       declarations of the closest shipped sibling BY NAME;
  *   (c) state the scene adds to a shipped element (a selected row, a row whose
  *       route does not resolve), expressed only through washes and inks the
  *       shipped element already uses.
@@ -18,6 +18,23 @@
    the scene's central move, not a fidelity drift. */
 .fer-surface { grid-template-rows: minmax(0, 1fr); }
 
+/* (a) ROUND 4 ITEM 1 — THE QUEUE LEVEL IS ONE COLUMN.
+ *
+ * The shipped `.panes` is `minmax(0, 1fr) var(--side, 430px)`, which is right
+ * wherever the canvas has something to answer with. At the queue it does not:
+ * round 3 painted a POOLED GLUCOSE header over 1010px of empty ground with a
+ * paragraph apologising for the emptiness underneath it. The queue IS the app at
+ * that level, so the canvas pane is not drawn and the inspector column takes the
+ * stage. Drilling restores the shipped two-pane geometry, and the shipped
+ * `.panes` transition carries the change.
+ *
+ * `display: none` rather than a zero track: a collapsed track still lays the
+ * pane out at 0px, and ECharts inside a 0px host resizes to nothing and has to
+ * be rebuilt on the way back. Unmounting it is the honest statement and the
+ * cheap one. */
+.fer-surface[data-level="queue"] .panes { grid-template-columns: minmax(0, 1fr); }
+.fer-surface[data-level="queue"] .canvas-pane { display: none; }
+
 /* (b) THE SCOPE CHIP — the retired FILTER instrument, re-homed beside the
    breadcrumb (#31 resolution, ruling 1 and term 9). It carries the CLICKED
    FILTER's own count and, from round 2, NOTHING ELSE: the subject's name prints
@@ -26,12 +43,20 @@
 
    Every declaration is copied from `.entry .pill` in
    frontend/diagnose-workstation.css (the workstation's own chip) — the family,
-   size, padding, radius, background, ink and border are that rule's, byte for
-   byte, minus its `min-width` and `text-align`, which exist to hold a numeric
-   column even and would only pad a chip that is not in a column. */
+   size, padding, background, ink and border are that rule's, byte for byte,
+   minus its `min-width` and `text-align`, which exist to hold a numeric column
+   even and would only pad a chip that is not in a column.
+
+   ROUND 4 ITEM 6 — and minus its 8px radius. `.entry .pill` is a pill because it
+   sits inside a bordered, rounded staging row; this chip sits on the crumb
+   baseline among square type, where a lone pill was the only rounded thing in
+   the header. Square token, monospace count retained. The count itself is
+   untouched: the finding scene's `1 event` is the projection's own episode count
+   standing beside a lens table of seven, and that disagreement between the two
+   fixtures is deliberately unreconciled (build.mjs's `provenance.disjoint`). */
 .fer-chip {
   display: inline-flex; align-items: baseline; gap: 6px;
-  font-family: var(--ck-mono); font-size: 10.5px; padding: 1px 6px; border-radius: 8px;
+  font-family: var(--ck-mono); font-size: 10.5px; padding: 1px 6px; border-radius: 0;
   background: var(--ck-sel); color: var(--mk-text);
   border: 1px solid color-mix(in srgb, var(--ck-accent) 45%, transparent);
 }
@@ -41,32 +66,19 @@
    and the chip takes the row's free space instead. */
 .crumb:has(.fer-chip) .trail { margin-right: 0; flex: 0 0 auto; }
 .fer-chip { margin-right: auto; margin-left: 10px; }
+.fer-chip[hidden] { display: none; }
 
 /* The chip's dismiss. Copied from `.seg button .x` in
-   frontend/diagnose-workstation.css — the same padding, radius, ink, size and
-   hover swap the retired instrument row used for exactly this affordance. */
+   frontend/diagnose-workstation.css — the same padding, ink, size and hover swap
+   the retired instrument row used for exactly this affordance, squared off with
+   the chip that holds it. */
 .fer-chip .x {
   border: 0; background: transparent; font: inherit;
-  padding: 0 3px; border-radius: 3px; font-style: normal;
+  padding: 0 3px; border-radius: 0; font-style: normal;
   color: var(--mk-muted); font-size: 12px; line-height: 1; cursor: pointer;
 }
 .fer-chip .x:hover { color: var(--mk-text); background: var(--ck-inset); }
 .fer-chip .x:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: 1px; }
-
-/* (b) THE QUEUE-LEVEL CANVAS PLACEHOLDER. The pooled glucose chart the queue
-   level answers with is out of scope for this exploration, so the canvas says
-   so in words instead of showing an empty frame. It is `.quiet-line` — the
-   shipped class the findings queue uses for its own empty state, and the only
-   ink rank the app spends on "there is nothing to draw here" — centred in the
-   chart's own track. No new colour and no new type rank. */
-.fer-placeholder {
-  align-self: center; justify-self: center; max-width: 44ch; text-align: center;
-}
-/* The scene swaps these three per level, and each carries a shipped `display`
-   that would otherwise beat the `hidden` attribute — the placeholder's own
-   `display: grid` kept it painted over the drilled canvas AND held a 52vh track
-   open under the chart. One rule, no shipped value re-stated. */
-.fer-placeholder[hidden], .ec-chart[hidden], .ec-chart-key[hidden], .fer-chip[hidden] { display: none; }
 
 /* (c) The occurrences table is the selection mechanism (#31 resolution, ruling
    2): row and lens trace are two reads of ONE selection, so the hovered or
@@ -76,19 +88,165 @@
 .ev-row[data-selected="true"] { background: color-mix(in srgb, var(--mk-surface-2) 60%, transparent); }
 .ev-row:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: -2px; }
 
-/* (c) A POPULATION ROW SELECTS, IT DOES NOT ROUTE (round 3, item 3). In the
-   population case file the `.tier` cell carries the row's COHORT under the
-   selected factor, and clicking the row does exactly what it does in the finding
-   case file: it puts that one event's trace on the canvas. So the chevron goes —
-   a chevron that promises a route nothing answers is the lie. The route to a
-   finding's own case file lives on the claim line instead. */
+/* (c) A POPULATION ROW SELECTS, IT DOES NOT ROUTE (round 3, item 3). Clicking a
+   row does exactly what it does in the finding case file: it puts that one
+   event's trace on the canvas. So the chevron goes — a chevron that promises a
+   route nothing answers is the lie. The route to a finding's own case file lives
+   on the claim line instead. */
 .ev-row[data-route="none"] .chev { visibility: hidden; }
 
-/* (c) THE SELECTED CLAIM LINE (round 3, item 1). The claim split is the factor
-   selector, in the shipped queue's own row grammar, so it takes the shipped
-   queue row's hover for free. Selection has to survive the pointer moving on and
-   has to be distinguishable from hover, so it takes `--ck-sel` — the app's own
-   "this one is chosen" wash. Both declarations are copied from
-   `.stagebtn[data-staged="true"]` in frontend/diagnose-workstation.css, the
-   shipped control that persists a choice. No new colour, no new type rank. */
-.fer-claims .qrow[data-selected="true"] { background: var(--ck-sel); color: var(--mk-text); }
+/* ======================================================================
+   ROUND 4 ITEM 4 — THE CLAIM SELECTOR, RE-CUT.
+   ====================================================================== */
+/* The claim split is the factor selector, in the shipped queue's own row
+ * grammar. Round 3 rendered it as three rows floating on the shipped 10px queue
+ * gap, inside `.inner`'s padding, of which exactly one — the chosen one — grew a
+ * tinted rounded card. That made the selected row the only thing that looked
+ * operable, and gave the inspector its only radius.
+ *
+ * Four changes, none of them a new colour or a new type rank:
+ *   · the block moved OUT of `.inner` in surface.js, so these rows are
+ *     full-bleed on the pane's edges exactly like the `.ev-row`s below them;
+ *   · the queue gap closes to a 2px seam through the SHIPPED `--q-gap` variable,
+ *     so the rows read as one contiguous list of choices rather than three
+ *     cards, while still resolving as separate objects;
+ *   · every row carries the same leading marker — the accent at rest ink, solid
+ *     when chosen — so an unselected row is visibly operable;
+ *   · selection is that marker plus the full-width wash, square-cornered.
+ *
+ * Both washes are `.stagebtn[data-staged="true"]`'s in
+ * frontend/diagnose-workstation.css, the shipped control that persists a choice.
+ * The marker is an `inset` box-shadow rather than a border so it cannot change
+ * the row's box and shift the label between states. */
+.fer-claims { --q-gap: 2px; }
+.fer-claims .qrow {
+  border-radius: 0;
+  box-shadow: inset 2px 0 0 color-mix(in srgb, var(--ck-accent) 26%, transparent);
+}
+.fer-claims .qrow[data-selected="true"] {
+  background: var(--ck-sel); color: var(--mk-text);
+  box-shadow: inset 2px 0 0 var(--ck-accent);
+}
+/* The count moves onto the label's own baseline, in the shipped tag column — the
+   same fixed right-hand column the queue lands every flavour tag in, so it is
+   the x the reader's eye already goes to. It was a second line reading "7 lows"
+   under a row whose entire subject is lows. `.den`'s ink and size are the
+   shipped ones; only its grid placement and alignment change. */
+.fer-claims .qrow .den {
+  grid-column: 2; grid-row: 1; justify-self: end; text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ======================================================================
+   ROUND 4 ITEM 9 — A ROW DOES NOT REPEAT ITS GROUP'S OWN SENTENCE.
+   ====================================================================== */
+/* The subject strip's HABIT tag sat alone on a line with nothing beside it and
+ * the appearance denominators on a second line below — an orphan the shipped
+ * queue never produces, because there the tag always shares its line with a
+ * title. There is no title here (the crumb owns the name, once), so the
+ * denominators come up onto the tag's line and the strip is one row, exactly as
+ * a queue row is. Grid placement only; every ink and rank is the shipped one.
+ * The per-row tag column is emptied in build.mjs, not here — whether a row
+ * repeats its group is a data question, not a paint one. */
+.fer-subject .qrow .den { grid-column: 1; grid-row: 1; }
+
+/* ======================================================================
+   ROUND 4 ITEM 7 — THE LEGEND RAIL IS FOR SERIES THAT ARE DRAWN.
+   ====================================================================== */
+/* Dead cohorts collapse into one sentence beneath the rail (built in chart.js),
+ * spanning the whole grid rather than taking a column each. Its ink, face and
+ * size are `.ec-key-item small`'s, the rank the rail already spends on a
+ * cohort's detail line. */
+/* The rail is `repeat(auto-fit, minmax(145px, 1fr))`, and `auto-fit` only
+   collapses tracks NOTHING occupies. A sentence spanning `1 / -1` occupies all
+   six of them, so the tracks stop collapsing and the one surviving cohort is
+   pinned to a 145px column with its detail line broken over five lines — which
+   is how the first cut of this rule made the single-cohort frame worse than the
+   full column it replaced. So the container drops to flow layout for exactly the
+   case that has a dead line: `.ec-key-item` is already `inline-grid`, so the
+   live cohorts flow along the rail unchanged, and the sentence takes the line
+   beneath them. The rail's ground, border, padding and min-height are the
+   shipped ones and do not move. */
+.ec-chart-key:has(.fer-key-dead) { display: block; }
+.ec-chart-key:has(.fer-key-dead) .ec-key-item { margin-right: 22px; }
+.fer-key-dead {
+  display: block;
+  margin-top: 3px;
+  color: var(--mk-muted);
+  font: 500 var(--ck-micro)/1.45 var(--ck-mono);
+}
+/* The mid-phrase wrap the critique caught — "· 2 / withheld points", which reads
+   as two facts where there is one — is fixed in build.mjs, by binding each
+   clause's number to its word with a non-breaking space. NOT with
+   `white-space: nowrap` here, which was tried and is worse: the rail's tracks
+   are `minmax(145px, 1fr)` over `overflow: visible`, so an unwrappable detail
+   does not widen its track, it runs straight over the neighbouring cohort's
+   line and off the pane's right edge. The line still wraps; it now wraps only at
+   the `·` separators, which is where its own clauses divide. */
+
+/* ======================================================================
+   ROUND 4 ITEM 8 — TWO GROUNDS, TWO NEAR-RULE INKS.
+   ====================================================================== */
+/* `--ec-near` is `--mk-warn` in both themes, and the Near-rule median is a
+ * `limited`-support series, which the shipped lens draws at 1.05px dashed and
+ * 58% opacity. On the dark ground that lands as a legible warm dash. On
+ * parchment it does not: `--mk-warn` (#9b562d) at 58% over #F3EADB resolves to
+ * about #C09476, roughly 1.9:1 against its own ground — a cohort line the reader
+ * has to hunt for, on the very chart that exists to compare it.
+ *
+ * The alpha is shipped grammar (it is how "limited support" is said, on every
+ * cohort), so the INK moves instead: the same warm family, taken far enough down
+ * that 58% of it still resolves to ~3.3:1 on parchment, which is the graphics
+ * floor. DARK IS UNTOUCHED — the override is scoped to `html:not(.dark)`, the
+ * same scoping theme.css uses for its own light-only warn/danger split, and for
+ * the same reason: a light literal leaking into dark is how Verify's movement
+ * chips lost their ink. */
+html:not(.dark) .fer-surface { --ec-near: #5d2a0c; }
+
+/* ======================================================================
+   ROUND 4 ITEM 12 — SECTIONS SEPARATE BY SPACE.
+   ====================================================================== */
+/* The inspector's stacked sections — judgment, the coincidence sentences, the
+ * occurrences table — ran together at the shipped 8px `.inner` padding, which is
+ * the rhythm INSIDE a section, not between them. The air roughly doubles at each
+ * seam. No hairline and no card: the shipped grammar separates by space plus the
+ * small-caps spine (`.lvl-cap`), and that restraint is exactly what the critique
+ * credited. Nothing new carries it — these are margins on elements that already
+ * exist, and no new `.lvl-cap` was added, because a tracked uppercase eyebrow
+ * over every block is the cliché the restraint was avoiding. */
+/* Scoped `.level .inner.fer-*` rather than `.fer-*` alone: the shipped padding
+   is set by `.level .inner`, a two-class selector, and a bare class loses to it
+   on specificity — which is exactly how the first cut of this rule silently did
+   nothing while the harness reported a clean 68/68. */
+.level .inner.fer-judgment { padding-bottom: 14px; }
+.level .inner.fer-context { padding-top: 12px; padding-bottom: 16px; }
+.fer-occ-cap { margin-top: 6px; }
+/* The queue's own seam: the ranked findings end, and the standing populations
+   are a different kind of thing entirely. The shipped tail note already opens a
+   14px pause before the unpriced rows, so this break is deliberately wider than
+   that one — it is a bigger boundary than the one inside the queue. */
+.fer-browse-cap { margin-top: 24px; }
+
+/* ======================================================================
+   ROUND 4 ITEM 10 — THE IDLE DOCK, AT ONE LINE OF INK.
+   ====================================================================== */
+/* The dock floor is a reserved height that never moves across states (old lock
+ * term 48): the queue can end, the column cannot. At idle it was spending that
+ * height on three ranks of type — a caps label, a sentence, and a second
+ * sentence — all to say that nothing is happening. What survives is the one line
+ * that names the way OUT of the idle state.
+ *
+ * `visibility`, not `display`: the dock's 98px comes from its own content, so
+ * removing the two spans would shrink the floor and move it, which is precisely
+ * what term 48 forbids. Reserving the height off the same content that used to
+ * fill it is also what stops the number drifting — nothing here pins a literal
+ * 98px that a later type change could falsify.
+ *
+ * THE TENSION, named rather than resolved: this leaves 98px of pane floor
+ * carrying one dim sentence, which is a smaller cousin of the void item 1
+ * deletes. It is kept because the floor's stability is a locked term and the
+ * canvas pane's presence at the queue level never was. If the operator would
+ * rather the dock shrink at idle, that is a resettle of term 48, not a tweak
+ * here. */
+.fer-surface .watch[data-state="idle"] .kind,
+.fer-surface .watch[data-state="idle"] .what { visibility: hidden; }

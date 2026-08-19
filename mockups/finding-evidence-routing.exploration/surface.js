@@ -117,31 +117,26 @@ function paintChart() {
   chart.setOption(chartOption(surface, canvas, highlighted), true);
 }
 
+/* ROUND 4 ITEM 1 — THE QUEUE LEVEL HAS NO CANVAS, SO IT DRAWS NO CANVAS PANE.
+ *
+ * Round 3 held the two-pane geometry at every level and filled the left pane, at
+ * the queue, with a POOLED GLUCOSE header over 1010px of empty ground plus a
+ * paragraph apologising for it. The queue IS the app at that level: the pane is
+ * not rendered, the inspector takes the whole stage, and drilling restores the
+ * two-pane geometry. ONE attribute carries it, so the layout stays a function of
+ * the same `sceneId` every other painter reads. */
 function paintCanvas() {
   const current = scene();
-  const active = frame();
-  const canvas = active?.canvas || null;
-  const placeholder = el('canvas-placeholder');
+  const canvas = frame()?.canvas || null;
   const legend = el('ec-chart-key');
-  const head = current ? current.canvasHead : data.rootCanvas;
-  el('canvas-title').textContent = head.title;
-  el('canvas-persist').textContent = head.context;
-  /* TWO calm empty states, one treatment (`.quiet-line`, the shipped class for
-     "there is nothing to draw here"): the queue level, whose pooled chart this
-     exploration does not build, and the population's UNCLAIMED frame, which has
-     no rule to compare against and says so rather than inventing cohorts. */
+  surface.dataset.level = current ? 'drilled' : 'queue';
   if (!canvas) {
-    placeholder.textContent = current ? active.emptyNote : data.rootCanvas.note;
-    placeholder.hidden = false;
-    chartHost.hidden = true;
-    legend.hidden = true;
     legend.innerHTML = '';
     paintReadout(surface, null, null);
     return;
   }
-  placeholder.hidden = true;
-  chartHost.hidden = false;
-  legend.hidden = false;
+  el('canvas-title').textContent = current.canvasHead.title;
+  el('canvas-persist').textContent = current.canvasHead.context;
   legend.innerHTML = legendMarkup(canvas);
   paintChart();
   chart.resize();
@@ -200,15 +195,21 @@ function paintQueue() {
      fixture: build.mjs derives their counts from the lens capture, and the
      detail line names that capture's window rather than the projection's 30
      days, so the borrowed denominator cannot pass as the server's. */
+  /* ROUND 4 ITEM 13 — the section is named for what these rows ARE, in
+     CONTEXT.md's own noun (Exposure population), and each row is the population
+     noun with its count as the accessory. "Browse everything / All lows / All
+     meals" named an activity and then said "all" twice on every row.
+     ROUND 4 ITEM 12 — and the cap carries the air that separates it from the
+     ranked rows above, in space on the existing small-caps spine, not a rule. */
   level.insertAdjacentHTML('beforeend', `
-    <div class="lvl-cap">${data.queue.populationCap}</div>
+    <div class="lvl-cap fer-browse-cap">${data.queue.populationCap}</div>
     <div class="q fer-population">
       ${data.queue.populationRows.map((row) => `
         <button type="button" class="qrow" data-state="population" data-tier="tail"
                 data-id="${row.id}" data-drills="${row.drills}">
           <span class="lab">${row.title}</span>
           <span class="go" aria-hidden="true">›</span>
-          <span class="den"><span class="v">${row.count}</span> ${row.noun}<span class="sep">·</span>${row.window}</span>
+          <span class="den"><span class="v">${row.count}</span> in ${row.window}</span>
         </button>`).join('')}
     </div>`);
 
@@ -267,18 +268,33 @@ function occurrenceTable(active, kind) {
    (`.q` / `.qrow` / `.lab` / `.den`), which is the register this surface already
    uses for "pick one of these". Selecting a line reframes the canvas and the
    table; it is a selection, not a route, so the row carries no `.go` chevron —
-   the route to a claimed finding's own case file is the `.slotlink` below. */
+   the route to a claimed finding's own case file is the `.slotlink` below.
+ *
+ * ROUND 4 ITEM 4 — RE-CUT AS A SELECTOR, NOT A CARD LIST. Round 3's version was
+ * three floating rows on a 10px gap, of which the chosen one grew a rounded
+ * tinted card — the only radius anywhere in the inspector, and the only row that
+ * looked operable at all. Four changes, all of them in the shipped grammar:
+ *   · the block leaves `.inner`, so the rows go full-bleed edge to edge like the
+ *     `.ev-row`s below them, and the gap closes to zero (the shipped `--q-gap`);
+ *   · every row carries the same leading marker, dim at rest and solid when
+ *     chosen, so an unselected row reads as operable rather than as prose;
+ *   · selection is the full-width wash plus that marker, square-cornered;
+ *   · the count moves onto the label's own baseline, right-aligned and tabular,
+ *     in the shipped `.den` ink — it was a second line saying "7 lows" under a
+ *     row whose whole subject is lows.
+ * `role="list"`/`listitem` are gone with the second line: this is a set of
+ * mutually exclusive choices and it says so with `aria-pressed` alone. */
 const claimMarkup = (claims) => `
-  <div class="q fer-claims" role="list">
+  <div class="q fer-claims">
     ${claims.map((c) => `
       <!-- No data-tier / data-state: those two attributes are PROJECTION data in
            the shipped queue (register and pricing), and a claim line is neither.
            The bare .qrow is already the undemoted row. -->
-      <button type="button" class="qrow" role="listitem"
+      <button type="button" class="qrow"
               data-key="${c.key}" data-selected="${frameKey === c.key}"
               aria-pressed="${frameKey === c.key}">
         <span class="lab">${c.label}</span>
-        <span class="den"><span class="v">${c.count}</span> ${c.noun}</span>
+        <span class="den"><span class="v">${c.count}</span></span>
       </button>`).join('')}
   </div>`;
 
@@ -303,25 +319,38 @@ function paintLevel() {
       </div>
     </div>` : ''}
 
-    <div class="inner">
-      <!-- The judgment block, absorbed from the retired lens inspector pane and
-           re-set on the workstation's own spine and type ranks. Under a
-           population subject the same block carries the population summary:
-           how many, who claims them, and how many nothing claims. -->
-      <div class="slot-say">${judgment.summary}</div>
+    <!-- The judgment block, absorbed from the retired lens inspector pane and
+         re-set on the workstation's own spine and type ranks. Under a population
+         subject the same block carries the population summary: how many, who
+         claims them, and how many nothing claims.
+
+         ROUND 4 ITEM 5 — THE TALLY LEADS. It was printed BELOW a paragraph that
+         restated its own three numbers in words; the tally is the data (it
+         carries the support word the sentence cannot) and the sentence is now
+         the caption clause under it, carrying only what the tally has no cell
+         for. -->
+    <div class="inner fer-judgment">
       ${judgment.counts ? `
       <div class="ec-counts">${judgment.counts.map((c) => `
         <div class="ec-count"><b>${c.n}</b>${c.label}<em>${c.support}</em></div>`).join('')}</div>` : ''}
-      ${judgment.claims ? claimMarkup(judgment.claims) : ''}
-      ${active.boundaryNote || judgment.boundaryNote ? `
-      <p class="ec-boundary-note"><b>${(active.boundaryNote || judgment.boundaryNote).lead}</b>${(active.boundaryNote || judgment.boundaryNote).rest}</p>` : ''}
+      <div class="slot-say">${judgment.summary}</div>
+    </div>
+
+    <!-- ROUND 4 ITEM 4 — the claim selector sits OUTSIDE the inner block, so its
+         rows are full-bleed on the pane's edges like the occurrence rows below. -->
+    ${judgment.claims ? claimMarkup(judgment.claims) : ''}
+
+    <div class="inner fer-context">
+      <!-- ROUND 4 ITEM 5 — the near-rule hedge, once, as a footnote line rather
+           than a body-weight paragraph reprinted on every frame. -->
+      ${current.boundaryNote ? `<p class="ec-boundary-note">${current.boundaryNote}</p>` : ''}
       ${active.route ? `
       <!-- ROUND 3 ITEM 4 — the sideways route into the selected factor's OWN case
            file, in the workstation's own route grammar (.slotlink + .linkbtn, the
            same pair the finding scene spends on "View slot"). The crumb stays
-           "Findings › All lows": selecting a factor here reframes the population,
-           it does not become the finding drill. Where the factor has no case file
-           in this exploration the line says so and offers no button. -->
+           "Findings › Lows": selecting a factor here reframes the population, it
+           does not become the finding drill. Where the factor has no case file in
+           this exploration the line says so and offers no button. -->
       <div class="slotlink">
         <span>${active.route.text}</span>
         ${active.route.target ? `<button type="button" class="linkbtn" data-open="${active.route.target}">${active.route.label}</button>` : ''}
@@ -330,8 +359,8 @@ function paintLevel() {
       ${coincidence ? `
       <!-- ROUND 2 ITEM 4 — "When it lands" is DELETED: no heading, no histogram,
            no peak line. The occurrences table below is the timing record. What
-           survives is the pair of coincidence sentences, moved directly under
-           the judgment block and standing on their own arithmetic. -->
+           survives is the pair of coincidence sentences, standing on their own
+           arithmetic. -->
       <div class="slot-say">${coincidence.share}</div>
       <div class="slotlink">
         <span>${coincidence.slotText}</span><button type="button" class="linkbtn">View slot</button>
@@ -339,13 +368,11 @@ function paintLevel() {
       </div>` : ''}
     </div>
 
-    <!-- The occurrences table — the rows ARE the selection mechanism, and under
-         a population subject each row's tag is its sideways route into the
-         finding that claims it. -->
-    <div class="lvl-cap">Occurrences<span class="meta">${occurrences.capMeta}</span></div>
+    <!-- The occurrences table — the rows ARE the selection mechanism. -->
+    <div class="lvl-cap fer-occ-cap">Occurrences<span class="meta">${occurrences.capMeta}</span></div>
     ${occurrenceTable(active, current.kind)}
     ${occurrences.moreLabel
-      ? `<button type="button" class="more">${expanded ? occurrences.backLabel : occurrences.moreLabel}</button>`
+      ? `<button type="button" class="more" aria-expanded="${expanded}">${expanded ? occurrences.backLabel : occurrences.moreLabel}</button>`
       : ''}
     <!-- The excluded events, in the shipped counter-group register: counted in
          the population above, and deliberately not rows, because they carry no

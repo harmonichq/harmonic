@@ -14,8 +14,7 @@
     ".qrow[data-tier=\"priced\"] .tag .gly",
     ".qrow[data-tier=\"priced\"] .den",
     ".qrow[data-tier=\"priced\"] .den .v",
-    ".tailnote",
-    ".quiet-line"
+    ".tailnote"
    ],
    "mismatches": [],
    "expected": [
@@ -23,16 +22,28 @@
     ".pane grid-template-rows: app \"30px 759px\" vs mock \"30px 801px\" — ditto — the pane inherits the taller track",
     ".inspector grid-template-rows: app \"30px 661px 98px\" vs mock \"30px 703px 98px\" — ditto — the level track grows by the same 42px; header 30px and dock 98px are identical",
     ".inspector > .body grid-template-rows: app \"32px 629px\" vs mock \"33px 670px\" — ditto — the level track grows; the crumb row differs by 1px because the scope chip sits in it",
+    ".level .inner padding-bottom: app \"8px\" vs mock \"14px\" — item 12: the judgment block closes with air before the claim selector, which item 4 moved outside `.inner`",
+    ".lvl-cap margin-top: app \"0px\" vs mock \"6px\" — item 12: the Occurrences cap takes air above it, so the table reads as its own section rather than as more of the judgment block",
     ".lvl-cap .meta margin-left: app \"75.2188px\" vs mock \"66.8438px\" — an AUTO margin, resolved against a different string length — the rule is identical"
    ],
    "contentResolved": [
     ".pane > header grid-template-columns: app \"682.828px 251.172px\" vs mock \"763.391px 170.609px\"",
     ".canvas-pane > header.canvas-head grid-template-columns: app \"682.828px 251.172px\" vs mock \"763.391px 170.609px\"",
     ".canvas-head .head-swap grid-template-columns: app \"682.828px\" vs mock \"763.391px\"",
+    ".qrow[data-tier=\"tail\"] grid-template-columns: app \"301px 74px 12px\" vs mock \"1311px 74px 12px\"",
     ".ev-row .entry grid-template-columns: app \"15.9375px 0px 0px\" vs mock \"15.875px 0px 0px\""
    ]
   },
-  "chartOptionDiff": [],
+  "chartOptionDiff": [
+   "tooltip: app [{\"trigger\":\"axis\",\"showContent\":false,\"axisPointer\":{\"type\":\"cross\",\"label\":{\"show\":false},\"axis\":\"auto\",\"animation\":\"auto\",\"animationDurationUpdate\":200,\"animationEasingUpdate\":\"exponentialOut\",\"crossStyle\":{\"color\":\"#999\",\"width\":1,\"type\":\"dashed\",\"textStyle\":{}}},\"z\":60,\"show\":true,\"triggerOn\":\"mousemove|click\",\"alwaysShowContent\":false,\"displayMode\":\"single\",\"renderMode\":\"auto\",\"confine\":null,\"showDelay\":0,\"hideDelay\":100,\"transitionDuration\":0.4,\"enterable\":false,\"backgroundColor\":\"#fff\",\"shadowBlur\":10,\"shadowColor\":\"rgba(0, 0, 0, .2)\",\"shadowOffsetX\":1,\"shadowOffsetY\":2,\"borderRadius\":4,\"borderWidth\":1,\"padding\":null,\"extraCssText\":\"\",\"textStyle\":{\"color\":\"#666\",\"fontSize\":14}}] vs mock [{\"trigger\":\"axis\",\"showContent\":false,\"axisPointer\":{\"type\":\"cross\",\"crossStyle\":{\"color\":\"#a3968a\",\"width\":1,\"type\":\"dashed\",\"opacity\":0.7,\"textStyle\":{}},\"lineStyle\":{\"color\":\"#a3968a\",\"width\":1,\"type\":\"dashed\",\"opacity\":0.7},\"label\":{\"show\":true,\"backgroundColor\":\"#262220\",\"borderColor\":\"#322e29\",\"borderWidth\":1,\"color\":\"#f5ece0\",\"fontFamily\":\"ui-monospace, \\\"SF Mono\\\", \\\"JetBrains Mono\\\", Menlo, monospace\",\"fontSize\":10,\"padding\":[3,6]},\"axis\":\"auto\",\"animation\":\"auto\",\"animationDurationUpdate\":200,\"animationEasingUpdate\":\"exponentialOut\"},\"z\":60,\"show\":true,\"triggerOn\":\"mousemove|click\",\"alwaysShowContent\":false,\"displayMode\":\"single\",\"renderMode\":\"auto\",\"confine\":null,\"showDelay\":0,\"hideDelay\":100,\"transitionDuration\":0.4,\"enterable\":false,\"backgroundColor\":\"#fff\",\"shadowBlur\":10,\"shadowColor\":\"rgba(0, 0, 0, .2)\",\"shadowOffsetX\":1,\"shadowOffsetY\":2,\"borderRadius\":4,\"borderWidth\":1,\"padding\":null,\"extraCssText\":\"\",\"textStyle\":{\"color\":\"#666\",\"fontSize\":14}}]",
+   "yAxis.max: app 300 vs mock 340",
+   "yAxis.name: app \"mg/dL\" vs mock \"\"",
+   "yAxis.nameGap: app 8 vs mock 15",
+   "yAxis.nameTextStyle.color: app \"#a3968a\" vs mock undefined",
+   "yAxis.nameTextStyle.fontFamily: app \"Inter\" vs mock undefined",
+   "yAxis.nameTextStyle.fontSize: app 10 vs mock undefined",
+   "yAxis.nameTextStyle.align: app \"left\" vs mock undefined"
+  ],
   "geometry": {
    "pageScrollX": 0,
    "pageScrollY": 0,
@@ -55,8 +66,7 @@
     ".qrow[data-tier=\"priced\"] .tag .gly",
     ".qrow[data-tier=\"priced\"] .den",
     ".qrow[data-tier=\"priced\"] .den .v",
-    ".tailnote",
-    ".quiet-line"
+    ".tailnote"
    ],
    "mismatches": [],
    "expected": [
@@ -64,16 +74,30 @@
     ".pane grid-template-rows: app \"30px 759px\" vs mock \"30px 801px\" — ditto — the pane inherits the taller track",
     ".inspector grid-template-rows: app \"30px 661px 98px\" vs mock \"30px 703px 98px\" — ditto — the level track grows by the same 42px; header 30px and dock 98px are identical",
     ".inspector > .body grid-template-rows: app \"32px 629px\" vs mock \"33px 670px\" — ditto — the level track grows; the crumb row differs by 1px because the scope chip sits in it",
+    ".level .inner padding-bottom: app \"8px\" vs mock \"14px\" — item 12: the judgment block closes with air before the claim selector, which item 4 moved outside `.inner`",
+    ".lvl-cap margin-top: app \"0px\" vs mock \"6px\" — item 12: the Occurrences cap takes air above it, so the table reads as its own section rather than as more of the judgment block",
     ".lvl-cap .meta margin-left: app \"75.2188px\" vs mock \"66.8438px\" — an AUTO margin, resolved against a different string length — the rule is identical"
    ],
    "contentResolved": [
     ".pane > header grid-template-columns: app \"682.828px 251.172px\" vs mock \"763.391px 170.609px\"",
     ".canvas-pane > header.canvas-head grid-template-columns: app \"682.828px 251.172px\" vs mock \"763.391px 170.609px\"",
     ".canvas-head .head-swap grid-template-columns: app \"682.828px\" vs mock \"763.391px\"",
+    ".qrow[data-tier=\"tail\"] grid-template-columns: app \"301px 74px 12px\" vs mock \"1311px 74px 12px\"",
     ".ev-row .entry grid-template-columns: app \"15.9375px 0px 0px\" vs mock \"15.875px 0px 0px\""
    ]
   },
-  "chartOptionDiff": [],
+  "chartOptionDiff": [
+   "tooltip: app [{\"trigger\":\"axis\",\"showContent\":false,\"axisPointer\":{\"type\":\"cross\",\"label\":{\"show\":false},\"axis\":\"auto\",\"animation\":\"auto\",\"animationDurationUpdate\":200,\"animationEasingUpdate\":\"exponentialOut\",\"crossStyle\":{\"color\":\"#999\",\"width\":1,\"type\":\"dashed\",\"textStyle\":{}}},\"z\":60,\"show\":true,\"triggerOn\":\"mousemove|click\",\"alwaysShowContent\":false,\"displayMode\":\"single\",\"renderMode\":\"auto\",\"confine\":null,\"showDelay\":0,\"hideDelay\":100,\"transitionDuration\":0.4,\"enterable\":false,\"backgroundColor\":\"#fff\",\"shadowBlur\":10,\"shadowColor\":\"rgba(0, 0, 0, .2)\",\"shadowOffsetX\":1,\"shadowOffsetY\":2,\"borderRadius\":4,\"borderWidth\":1,\"padding\":null,\"extraCssText\":\"\",\"textStyle\":{\"color\":\"#666\",\"fontSize\":14}}] vs mock [{\"trigger\":\"axis\",\"showContent\":false,\"axisPointer\":{\"type\":\"cross\",\"crossStyle\":{\"color\":\"#4e584f\",\"width\":1,\"type\":\"dashed\",\"opacity\":0.7,\"textStyle\":{}},\"lineStyle\":{\"color\":\"#4e584f\",\"width\":1,\"type\":\"dashed\",\"opacity\":0.7},\"label\":{\"show\":true,\"backgroundColor\":\"#f3eadb\",\"borderColor\":\"#ded2bd\",\"borderWidth\":1,\"color\":\"#172219\",\"fontFamily\":\"ui-monospace, \\\"SF Mono\\\", \\\"JetBrains Mono\\\", Menlo, monospace\",\"fontSize\":10,\"padding\":[3,6]},\"axis\":\"auto\",\"animation\":\"auto\",\"animationDurationUpdate\":200,\"animationEasingUpdate\":\"exponentialOut\"},\"z\":60,\"show\":true,\"triggerOn\":\"mousemove|click\",\"alwaysShowContent\":false,\"displayMode\":\"single\",\"renderMode\":\"auto\",\"confine\":null,\"showDelay\":0,\"hideDelay\":100,\"transitionDuration\":0.4,\"enterable\":false,\"backgroundColor\":\"#fff\",\"shadowBlur\":10,\"shadowColor\":\"rgba(0, 0, 0, .2)\",\"shadowOffsetX\":1,\"shadowOffsetY\":2,\"borderRadius\":4,\"borderWidth\":1,\"padding\":null,\"extraCssText\":\"\",\"textStyle\":{\"color\":\"#666\",\"fontSize\":14}}]",
+   "yAxis.max: app 300 vs mock 340",
+   "yAxis.name: app \"mg/dL\" vs mock \"\"",
+   "yAxis.nameGap: app 8 vs mock 15",
+   "yAxis.nameTextStyle.color: app \"#4e584f\" vs mock undefined",
+   "yAxis.nameTextStyle.fontFamily: app \"Inter\" vs mock undefined",
+   "yAxis.nameTextStyle.fontSize: app 10 vs mock undefined",
+   "yAxis.nameTextStyle.align: app \"left\" vs mock undefined",
+   "series[near_rule:line:limited].lineStyle.color: app \"#9b562d\" vs mock \"#5d2a0c\"",
+   "series[near_rule:line:limited].itemStyle.borderColor: app \"#9b562d\" vs mock \"#5d2a0c\""
+  ],
   "geometry": {
    "pageScrollX": 0,
    "pageScrollY": 0,

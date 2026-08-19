@@ -131,6 +131,13 @@ const EXPECTED = {
   '.inspector|grid-template-rows': 'ditto — the level track grows by the same 42px; header 30px and dock 98px are identical',
   '.inspector > .body|grid-template-rows': 'ditto — the level track grows; the crumb row differs by 1px because the scope chip sits in it',
   '.lvl-cap .meta|margin-left': 'an AUTO margin, resolved against a different string length — the rule is identical',
+  /* ROUND 4 ITEM 12 — the two seams where the inspector's stacked sections were
+     given air. Each is a margin or padding ADDED to a shipped element on
+     purpose; neither touches an ink, a type rank or a hairline. */
+  '.lvl-cap|margin-top': 'item 12: the Occurrences cap takes air above it, so the table reads as its own '
+    + 'section rather than as more of the judgment block',
+  '.level .inner|padding-bottom': 'item 12: the judgment block closes with air before the claim selector, '
+    + 'which item 4 moved outside `.inner`',
 };
 
 const probeScript = ({ props, selectors }) => {
@@ -472,8 +479,8 @@ async function main() {
       results.populationHighlightedRow = populationRow;
 
       /* A SECOND claim line: the same lens machinery at another factor's
-         coordinates. `unclaimed` is shot too, because it is the one frame with no
-         canvas — the empty state that names why is evidence, not an omission. */
+         coordinates. Round 3's canvas-less `unclaimed` frame is gone (round 4,
+         item 4), so every frame this loop reaches draws a real comparison. */
       for (const key of Object.keys(population.frames).filter((k) => k !== population.defaultFactor)) {
         await page.evaluate((k) => window.__ferFrame(k), key);
         await page.waitForTimeout(450);

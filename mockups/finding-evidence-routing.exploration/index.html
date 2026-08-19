@@ -61,9 +61,16 @@
 
               <!-- ===================== canvas ===================== -->
               <!-- ONE canvas surface that answers wherever the inspector stands
-                   (#31 ruling 1). At the queue level that is the pooled glucose
-                   chart, which this exploration does not build — the placeholder
-                   says so in as many words rather than showing an empty frame. -->
+                   (#31 ruling 1).
+
+                   ROUND 4 ITEM 1 — and at the QUEUE level it answers nothing, so
+                   it is not drawn at all. Round 3 kept this pane mounted at every
+                   level and filled it, at the queue, with a POOLED GLUCOSE header
+                   over 1010px of empty ground plus a paragraph explaining the
+                   emptiness. The pane now collapses at that level (see
+                   `.fer-surface[data-level="queue"]` in scene.css) and the
+                   placeholder paragraph is DELETED rather than hidden — a
+                   surface with nothing to say says nothing. -->
               <section class="pane canvas-pane ec-canvas" aria-label="Evidence canvas">
                 <header class="canvas-head" id="ec-canvas-head" data-hover="0">
                   <div class="head-swap">
@@ -77,7 +84,6 @@
                 <div class="body">
                   <div id="ec-chart" class="ec-chart" role="img" tabindex="0"
                        aria-label="Low response comparison. Use left and right arrow keys to inspect five-minute points."></div>
-                  <p class="quiet-line fer-placeholder" id="canvas-placeholder" hidden></p>
                   <div class="ec-chart-key" id="ec-chart-key" aria-label="Cohort legend"></div>
                 </div>
               </section>

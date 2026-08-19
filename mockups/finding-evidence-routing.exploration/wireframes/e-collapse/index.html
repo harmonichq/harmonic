@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>E — collapsing selector (wireframe)</title>
+<style>
+  :root{
+    --ink:#1b1b1b; --mid:#5c5c5c; --quiet:#8a8a8a;
+    --line:#c9c9c9; --hair:#e2e2e2; --fill:#f4f4f4; --white:#fff;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:#ededed;color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;}
+  body{padding:24px 24px 80px;}
+
+  /* ---------- harness (NOT part of the app) ---------- */
+  .harness{max-width:1100px;margin:0 0 28px;}
+  .harness h1{font-size:17px;margin:0 0 4px;font-weight:600;letter-spacing:.01em;}
+  .harness p{font-size:13px;line-height:1.5;color:var(--mid);margin:0 0 14px;max-width:74ch;}
+  .switches{display:flex;flex-wrap:wrap;gap:18px;}
+  .switch{background:var(--white);border:1px solid var(--line);padding:8px 10px;}
+  .switch .lbl{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--quiet);
+    display:block;margin-bottom:6px;}
+  .switch button{font:inherit;font-size:12px;min-height:34px;padding:0 12px;background:var(--white);
+    border:1px solid var(--line);color:var(--mid);cursor:pointer;margin-right:-1px;}
+  .switch button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff;}
+
+  .note{max-width:74ch;font-size:12px;line-height:1.55;color:var(--mid);
+    border-left:3px solid var(--line);padding:2px 0 2px 12px;margin:0 0 18px;}
+  .note b{color:var(--ink);font-weight:600;}
+
+  /* ---------- frame chrome ---------- */
+  .framewrap{margin:0 0 34px;overflow-x:auto;padding-bottom:6px;}
+  .frametag{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--quiet);
+    margin:0 0 7px;}
+
+  /* ---------- the app skeleton ---------- */
+  .app{background:var(--white);border:1px solid var(--line);}
+  .app .strip{height:44px;border-bottom:1px solid var(--hair);display:flex;align-items:center;
+    padding:0 16px;gap:10px;}
+  .strip .ph{height:10px;background:var(--fill);border:1px solid var(--hair);}
+  .strip .ph.a{width:120px;} .strip .ph.b{width:60px;} .strip .ph.c{width:74px;margin-left:auto;}
+  .strip .stripword{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--quiet);}
+
+  .panes{display:flex;align-items:stretch;}
+  .canvaspane{flex:1 1 auto;min-width:0;padding:14px;display:flex;flex-direction:column;gap:12px;}
+  .inspector{flex:0 0 430px;width:430px;border-left:1px solid var(--hair);
+    padding:14px;display:flex;flex-direction:column;min-width:0;}
+
+  /* the chart placeholder — always all three states, never inside the column */
+  .chartbox{flex:1 1 auto;border:1px dashed var(--line);background:
+    repeating-linear-gradient(135deg,#fafafa 0 9px,#f2f2f2 9px 18px);
+    display:flex;flex-direction:column;justify-content:center;gap:10px;padding:20px;}
+  .chartbox .cl{font-size:13px;color:var(--mid);line-height:1.5;max-width:56ch;}
+  .chartbox .cl b{color:var(--ink);font-weight:600;}
+  .states{display:flex;gap:10px;flex-wrap:wrap;}
+  .states span{font-size:11px;color:var(--mid);border:1px solid var(--line);background:var(--white);
+    padding:5px 9px;}
+  .states span.hot{border-color:var(--ink);color:var(--ink);font-weight:600;}
+  .hiline{font-size:11px;color:var(--mid);border-top:1px dashed var(--line);padding-top:9px;}
+  .hiline b{color:var(--ink);}
+
+  /* ---------- canvas-head strip (P2 only) ---------- */
+  .canvashead{border:1px solid var(--hair);background:var(--white);padding:0;position:relative;}
+  .canvashead .headmeta{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--quiet);
+    padding:8px 12px 0;}
+
+  /* ---------- crumb ---------- */
+  .crumb{font-size:12px;color:var(--mid);line-height:1.4;padding-bottom:10px;
+    border-bottom:1px solid var(--hair);margin-bottom:10px;}
+  .crumb b{color:var(--ink);font-weight:600;}
+
+  /* ---------- THE COLLAPSING SELECTOR ---------- */
+  .sel{position:relative;}
+  .sel .rest{display:flex;align-items:center;gap:10px;width:100%;min-height:48px;
+    background:var(--white);border:1px solid var(--line);padding:0 12px;cursor:pointer;
+    font:inherit;text-align:left;color:var(--ink);}
+  .sel .rest .name{font-size:15px;font-weight:600;letter-spacing:.005em;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .sel .rest .n{font-size:13px;color:var(--mid);font-variant-numeric:tabular-nums;}
+  .sel .rest .chev{margin-left:auto;font-size:11px;color:var(--quiet);}
+  .sel .rest[aria-expanded="true"]{border-color:var(--ink);}
+
+  .sel .list{border:1px solid var(--ink);border-top:none;background:var(--white);}
+  .sel.overlay .list{position:absolute;left:0;right:0;top:48px;z-index:5;
+    box-shadow:0 6px 0 rgba(0,0,0,.06);}
+  .sel .list .lhead{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--quiet);
+    padding:9px 12px 5px;border-bottom:1px solid var(--hair);}
+  .sel .list button{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;
+    padding:0 12px;background:var(--white);border:none;border-bottom:1px solid var(--hair);
+    font:inherit;font-size:14px;text-align:left;color:var(--ink);cursor:pointer;}
+  .sel .list button:last-child{border-bottom:none;}
+  .sel .list button .mark{width:14px;font-size:12px;color:var(--ink);}
+  .sel .list button .fn{flex:1 1 auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .sel .list button .fc{font-variant-numeric:tabular-nums;color:var(--mid);font-size:13px;
+    min-width:26px;text-align:right;}
+  .sel .list button[aria-current="true"]{background:var(--fill);}
+  .sel .list button[aria-current="true"] .fn{font-weight:600;}
+
+  /* ---------- event list ---------- */
+  .listmeta{font-size:11px;color:var(--quiet);line-height:1.5;padding:12px 0 8px;}
+  .listmeta .residue{display:block;}
+  .rows{flex:1 1 auto;overflow-y:auto;border-top:1px solid var(--hair);}
+  .grouphead{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--quiet);
+    padding:10px 2px 5px;}
+  .row{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:0 8px 0 6px;
+    background:var(--white);border:none;border-bottom:1px solid var(--hair);
+    font:inherit;font-size:13px;text-align:left;color:var(--ink);cursor:pointer;}
+  .row .rmark{width:10px;color:var(--ink);font-size:11px;}
+  .row .when{width:112px;color:var(--ink);font-variant-numeric:tabular-nums;}
+  .row .span{flex:1 1 auto;color:var(--mid);font-variant-numeric:tabular-nums;}
+  .row .d{font-variant-numeric:tabular-nums;color:var(--ink);}
+  .row[aria-current="true"]{background:var(--fill);box-shadow:inset 3px 0 0 var(--ink);}
+
+  .dock{margin-top:auto;border-top:1px solid var(--line);padding-top:10px;font-size:12px;
+    color:var(--quiet);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+  .callout{font-size:11px;color:var(--quiet);margin:6px 0 0;line-height:1.5;max-width:70ch;}
+</style>
+</head>
+<body>
+
+<div class="harness">
+  <h1>Direction E — the collapsing selector</h1>
+  <p>At rest the factor selector is one line that reads as a title: current factor, its count, a quiet
+  chevron. Tapping expands it in place into the whole factor list; one tap switches and it collapses
+  again. Tap-away or Esc collapses. The comparison chart always draws all three states — selection
+  changes <em>which factor</em> is being asked about, never which cohorts are drawn.</p>
+  <div class="switches">
+    <div class="switch"><span class="lbl">Placement</span>
+      <button data-set="placement" data-val="P1">P1 · inspector top</button><button data-set="placement" data-val="P2">P2 · canvas head</button>
+    </div>
+    <div class="switch"><span class="lbl">Data</span>
+      <button data-set="data" data-val="today">Today · 3 factors</button><button data-set="data" data-val="future">Future · 8 factors</button>
+    </div>
+    <div class="switch"><span class="lbl">Selector</span>
+      <button data-set="open" data-val="0">Rest</button><button data-set="open" data-val="1">Expanded</button>
+    </div>
+  </div>
+</div>
+
+<div class="note" id="placementnote"></div>
+
+<div class="framewrap">
+  <div class="frametag">Desktop — 1440 × 860</div>
+  <div id="f-desktop"></div>
+  <p class="callout">Comparison canvas fills the left ~2/3; the inspector column is a fixed 430px.
+  Every control reads at the column's register — no page-title type anywhere in the column.</p>
+</div>
+
+<div class="framewrap">
+  <div class="frametag">Tablet — 1100 × 780</div>
+  <div id="f-tablet"></div>
+  <p class="callout">Same skeleton, same 430px column. Nothing reflows, nothing stacks, and the
+  expanded list at eight factors still lands inside one screen height.</p>
+</div>
+
+<script>
+/* ------------------------------------------------------------------ data */
+const REAL = {
+  over_treated_low:{label:"Over-treated low",count:7,capMeta:"7 of 20 in Jul 13–Aug 11",
+    residue:"1 claimed by another factor · 2 not comparable",rows:[
+    ["Rule matched","Aug 1 · 01:00",68,58,"−10"],["Rule matched","Aug 2 · 07:00",69,59,"−10"],
+    ["Rule matched","Aug 3 · 13:00",70,60,"−10"],["Rule matched","Aug 4 · 19:00",68,61,"−7"],
+    ["Rule matched","Aug 5 · 04:00",69,58,"−11"],["Rule matched","Aug 6 · 10:00",70,59,"−11"],
+    ["Rule matched","Aug 7 · 16:00",68,60,"−8"],
+    ["Near rule","Aug 12 · 02:00",70,61,"−9"],["Near rule","Aug 13 · 08:00",68,58,"−10"],
+    ["Rule did not match","Aug 14 · 14:00",69,59,"−10"],["Rule did not match","Aug 15 · 20:00",70,60,"−10"],
+    ["Rule did not match","Aug 16 · 05:00",68,61,"−7"],["Rule did not match","Aug 17 · 11:00",69,58,"−11"],
+    ["Rule did not match","Aug 18 · 17:00",70,59,"−11"],["Rule did not match","Aug 9 · 06:00",70,58,"−12"],
+    ["Rule did not match","Aug 10 · 12:00",68,59,"−9"],["Rule did not match","Aug 11 · 18:00",69,60,"−9"]]},
+  correction_on_iob:{label:"Correction on active insulin",count:1,capMeta:"1 of 20 in Jul 13–Aug 11",
+    residue:"7 claimed by another factor · 6 not comparable",rows:[
+    ["Rule matched","Aug 18 · 17:00",70,59,"−11"],
+    ["Rule did not match","Aug 12 · 02:00",70,61,"−9"],["Rule did not match","Aug 13 · 08:00",68,58,"−10"],
+    ["Rule did not match","Aug 14 · 14:00",69,59,"−10"],["Rule did not match","Aug 15 · 20:00",70,60,"−10"],
+    ["Rule did not match","Aug 16 · 05:00",68,61,"−7"],["Rule did not match","Aug 17 · 11:00",69,58,"−11"]]},
+  unclaimed:{label:"Unclaimed",count:10,capMeta:"10 of 20 in Jul 13–Aug 11",
+    residue:"8 claimed by a finding",rows:[
+    ["Claimed by no finding","Aug 8 · 22:00",69,61,"−8"],["Claimed by no finding","Aug 9 · 06:00",70,58,"−12"],
+    ["Claimed by no finding","Aug 10 · 12:00",68,59,"−9"],["Claimed by no finding","Aug 11 · 18:00",69,60,"−9"],
+    ["Claimed by no finding","Jul 30 · 03:00",70,61,"−9"],["Claimed by no finding","Jul 29 · 09:00",68,58,"−10"],
+    ["Claimed by no finding","Jul 28 · 15:00",69,59,"−10"],["Claimed by no finding","Jul 27 · 21:00",70,60,"−10"],
+    ["Claimed by no finding","Jul 26 · 06:00",68,61,"−7"],["Claimed by no finding","Jul 25 · 12:00",69,58,"−11"]]}
+};
+
+/* invented forward-looking list — proves the control at 8 factors without a redesign */
+const FUTURE_SPEC = [
+  ["over_treated_low","Over-treated low",11],
+  ["correction_on_iob","Correction on active insulin",6],
+  ["overnight_basal_high","Overnight basal too high",5],
+  ["meal_bolus_over","Meal bolus over-covered",5],
+  ["exercise_after_bolus","Exercise after a bolus",4],
+  ["rebound_correction","Rebound over-correction",3],
+  ["evening_ic_tight","Evening carb ratio too tight",2],
+  ["unclaimed","Unclaimed",10]
+];
+function synthRows(seed,n){
+  const rows=[],pat=[[68,58,"−10"],[69,59,"−10"],[70,60,"−10"],[68,61,"−7"],[69,58,"−11"],[70,59,"−11"]];
+  const days=["Jul 19","Jul 21","Jul 23","Jul 25","Jul 28","Jul 31","Aug 2","Aug 4","Aug 6","Aug 9","Aug 11"];
+  const hrs=["01:00","04:00","07:00","10:00","13:00","16:00","19:00","22:00"];
+  for(let i=0;i<n;i++){
+    const p=pat[(seed+i)%pat.length];
+    const g = i<Math.ceil(n*0.55)?"Rule matched":(i<Math.ceil(n*0.75)?"Near rule":"Rule did not match");
+    rows.push([g,days[(seed*3+i)%days.length]+" · "+hrs[(seed+i*2)%hrs.length],p[0],p[1],p[2]]);
+  }
+  return rows;
+}
+const FUTURE={};
+FUTURE_SPEC.forEach(([k,label,count],i)=>{
+  const total=46, shown=Math.min(count+Math.round(count*0.7),16);
+  FUTURE[k]={label,count,capMeta:count+" of "+total+" in Jun 14–Aug 11",
+    residue:k==="unclaimed"?(total-count)+" claimed by a finding"
+      :Math.max(1,Math.round(count*0.4))+" claimed by another factor · "+Math.max(1,Math.round(count*0.3))+" not comparable",
+    rows:k==="unclaimed"?synthRows(i+2,count).map(r=>["Claimed by no finding",r[1],r[2],r[3],r[4]])
+      :synthRows(i+1,shown)};
+});
+
+const SETS={
+  today:{keys:["over_treated_low","correction_on_iob","unclaimed"],frames:REAL,
+    crumb:"Lows · Jul 13–Aug 11 · <b>20 events</b>",pop:"20 lows"},
+  future:{keys:FUTURE_SPEC.map(f=>f[0]),frames:FUTURE,
+    crumb:"Lows · Jun 14–Aug 11 · <b>46 events</b>",pop:"46 lows"}
+};
+
+/* ----------------------------------------------------------------- state */
+const S={placement:"P1",data:"today",open:false,factor:"over_treated_low",highlight:null};
+
+const NOTES={
+  P1:"<b>P1 — top of the inspector column.</b> Expansion <b>pushes</b>: the list opens above the event " +
+     "rows and slides them down, never over them. An overlay here would drop a panel directly onto the " +
+     "rows the operator is reading, and those rows are the answer to the question the selector asks — " +
+     "hiding them is the one thing this control must not do. The cost is honest: at eight factors the " +
+     "push moves the first row about 390px down while the list is open, so the rows are still there but " +
+     "below the fold until the choice lands. Auto-collapse on choice is what makes that acceptable — " +
+     "the pushed state exists for one tap.",
+  P2:"<b>P2 — canvas-head strip above the chart.</b> Expansion <b>overlays</b> downward onto the chart " +
+     "and never over the strip's own head text. Pushing here would shrink the chart's box, forcing the " +
+     "comparison to re-lay-out mid-decision — the chart is the stable reference, so a transient panel " +
+     "floating over it costs nothing and a resize costs a re-read. The strip exists only in this browse " +
+     "mode; the inspector column starts straight at the crumb."
+};
+
+/* --------------------------------------------------------------- render */
+function el(tag,cls,html){const n=document.createElement(tag);if(cls)n.className=cls;
+  if(html!=null)n.innerHTML=html;return n;}
+
+function selector(){
+  const set=SETS[S.data], frames=set.frames, cur=frames[S.factor]||frames[set.keys[0]];
+  const wrap=el("div","sel"+(S.placement==="P2"?" overlay":""));
+  const btn=el("button","rest");
+  btn.setAttribute("aria-expanded",String(S.open));
+  btn.innerHTML='<span class="name">'+cur.label+'</span><span class="n">'+cur.count+'</span>'+
+    '<span class="chev">'+(S.open?"⌃ close":"⌄ change")+'</span>';
+  btn.onclick=e=>{e.stopPropagation();S.open=!S.open;draw();};
+  wrap.appendChild(btn);
+  if(S.open){
+    const list=el("div","list");
+    list.appendChild(el("div","lhead","Factor · "+set.keys.length+" in this population"));
+    set.keys.forEach(k=>{
+      const f=frames[k], b=el("button");
+      b.setAttribute("aria-current",String(k===S.factor));
+      b.innerHTML='<span class="mark">'+(k===S.factor?"✓":"")+'</span>'+
+        '<span class="fn">'+f.label+'</span><span class="fc">'+f.count+'</span>';
+      b.onclick=e=>{e.stopPropagation();S.factor=k;S.open=false;S.highlight=null;draw();};
+      list.appendChild(b);
+    });
+    list.onclick=e=>e.stopPropagation();
+    wrap.appendChild(list);
+  }
+  return wrap;
+}
+
+function eventList(){
+  const set=SETS[S.data], cur=set.frames[S.factor]||set.frames[set.keys[0]];
+  const box=el("div");
+  const meta=el("div","listmeta",cur.capMeta+'<span class="residue">'+cur.residue+'</span>');
+  box.appendChild(meta);
+  const rows=el("div","rows");
+  let last=null;
+  cur.rows.forEach((r,i)=>{
+    if(r[0]!==last){rows.appendChild(el("div","grouphead",r[0]));last=r[0];}
+    const id=S.factor+":"+i;
+    const b=el("button","row");
+    b.setAttribute("aria-current",String(S.highlight===id));
+    b.innerHTML='<span class="rmark">'+(S.highlight===id?"▸":"")+'</span>'+
+      '<span class="when">'+r[1]+'</span>'+
+      '<span class="span">'+r[2]+' → '+r[3]+'</span>'+
+      '<span class="d">'+r[4]+'</span>';
+    b.onclick=e=>{e.stopPropagation();S.highlight=(S.highlight===id?null:id);S.open=false;draw();};
+    rows.appendChild(b);
+  });
+  box.appendChild(rows);
+  box.style.display="flex";box.style.flexDirection="column";box.style.minHeight="0";
+  box.style.flex="1 1 auto";
+  return box;
+}
+
+function chart(){
+  const set=SETS[S.data], cur=set.frames[S.factor]||set.frames[set.keys[0]];
+  const hl=S.highlight;
+  let hlText="no trace highlighted — tap an event row in the column";
+  if(hl){const i=+hl.split(":")[1],r=cur.rows[i];
+    hlText="highlighted trace: <b>"+r[1]+"</b> · "+r[2]+" → "+r[3]+" ("+r[4]+")";}
+  const box=el("div","chartbox");
+  box.appendChild(el("div","cl",
+    "<b>comparison chart</b> — all three states always drawn: "+
+    "event fired / near miss / not owned. Asking about <b>"+cur.label+"</b> across "+set.pop+
+    "; the cohorts drawn never change with the selection."));
+  const st=el("div","states");
+  st.innerHTML='<span class="hot">event fired · '+cur.count+'</span>'+
+    '<span>near miss</span><span>not owned</span>';
+  box.appendChild(st);
+  box.appendChild(el("div","hiline",hlText));
+  return box;
+}
+
+function frame(w,h){
+  const set=SETS[S.data];
+  const app=el("div","app");
+  app.style.width=w+"px";app.style.height=h+"px";app.style.display="flex";
+  app.style.flexDirection="column";
+
+  const strip=el("div","strip");
+  strip.appendChild(el("span","stripword","workstation top strip"));
+  strip.appendChild(el("div","ph a"));strip.appendChild(el("div","ph b"));
+  strip.appendChild(el("div","ph c"));
+  app.appendChild(strip);
+
+  const panes=el("div","panes");
+  panes.style.flex="1 1 auto";panes.style.minHeight="0";
+
+  const cp=el("div","canvaspane");
+  if(S.placement==="P2"){
+    const head=el("div","canvashead");
+    head.appendChild(el("div","headmeta","browse mode · factor"));
+    const pad=el("div");pad.style.padding="6px 12px 12px";
+    pad.appendChild(selector());
+    head.appendChild(pad);
+    cp.appendChild(head);
+  }
+  cp.appendChild(chart());
+  panes.appendChild(cp);
+
+  const ins=el("div","inspector");
+  ins.appendChild(el("div","crumb",set.crumb));
+  if(S.placement==="P1") ins.appendChild(selector());
+  ins.appendChild(eventList());
+  ins.appendChild(el("div","dock","dock — one-line placeholder"));
+  panes.appendChild(ins);
+
+  app.appendChild(panes);
+  return app;
+}
+
+function draw(){
+  document.querySelectorAll(".switch button").forEach(b=>{
+    const k=b.dataset.set, v=b.dataset.val;
+    const on = k==="open" ? String(S.open?1:0)===v : String(S[k])===v;
+    b.setAttribute("aria-pressed",String(on));
+  });
+  document.getElementById("placementnote").innerHTML=NOTES[S.placement];
+  const d=document.getElementById("f-desktop"), t=document.getElementById("f-tablet");
+  d.innerHTML="";t.innerHTML="";
+  d.appendChild(frame(1440,860));
+  t.appendChild(frame(1100,780));
+}
+
+document.querySelectorAll(".switch button").forEach(b=>{
+  b.onclick=e=>{e.stopPropagation();
+    const k=b.dataset.set,v=b.dataset.val;
+    if(k==="open") S.open=(v==="1");
+    else {S[k]=v; if(k==="data"){S.factor=SETS[v].keys[0];S.highlight=null;}}
+    draw();};
+});
+document.addEventListener("click",()=>{if(S.open){S.open=false;draw();}});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&S.open){S.open=false;draw();}});
+draw();
+</script>
+</body>
+</html>

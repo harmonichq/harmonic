@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wireframe A — Outline tree</title>
+<style>
+  :root {
+    --ink: #1a1a1a;
+    --mid: #666;
+    --faint: #949494;
+    --hair: #d2d2d2;
+    --hair-soft: #e6e6e6;
+    --fill: #ececec;
+    --ground: #e9e9e9;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font: 13px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  }
+  body { padding: 40px 24px 80px; }
+
+  .stage {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  /* ---- the labeled stand-in for the chart that sits beside the column ---- */
+  .chart-stub {
+    width: 360px;
+    height: 300px;
+    border: 1px solid var(--hair);
+    background: #dcdcdc;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-align: center;
+    padding: 16px;
+    position: sticky;
+    top: 40px;
+  }
+  .chart-stub .lbl {
+    font-size: 11px;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: var(--mid);
+  }
+  .chart-stub .echo { font-size: 12px; color: #3a3a3a; max-width: 260px; }
+
+  /* ---- the column ---- */
+  .col {
+    width: 430px;
+    background: #fff;
+    border: 1px solid var(--hair);
+  }
+
+  .col-head {
+    padding: 14px 16px 12px;
+    border-bottom: 1px solid var(--hair);
+  }
+  .col-head .crumb { font-size: 11px; color: var(--faint); letter-spacing: .06em; text-transform: uppercase; }
+  .col-head .title { font-size: 15px; margin-top: 3px; }
+  .col-head .sub { font-size: 12px; color: var(--mid); margin-top: 2px; }
+
+  /* ---- outline ---- */
+  .outline { padding: 8px 0 10px; border-bottom: 1px solid var(--hair); }
+
+  .node {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 34px;
+    padding: 0 16px 0 10px;
+    border: 0;
+    background: none;
+    font: inherit;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  .node:hover { background: #f5f5f5; }
+  .node.sel { background: var(--fill); box-shadow: inset 3px 0 0 var(--ink); }
+  .node.sel .name { font-weight: 600; }
+
+  .tri {
+    width: 14px;
+    flex: 0 0 14px;
+    text-align: center;
+    font-size: 9px;
+    color: var(--faint);
+    line-height: 1;
+    transition: transform .12s ease;
+  }
+  .node.open .tri { transform: rotate(90deg); }
+  .tri.blank { visibility: hidden; }
+
+  .node.lvl2 { padding-left: 34px; min-height: 32px; }
+  .node.lvl2 .name { color: #333; }
+
+  .name { flex: 1 1 auto; }
+  .count {
+    flex: 0 0 auto;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+    color: var(--mid);
+    min-width: 24px;
+    text-align: right;
+  }
+  .node.sel .count { color: var(--ink); }
+
+  .branch { display: none; }
+  .branch.open { display: block; }
+
+  /* ---- scope header + events ---- */
+  .scope {
+    padding: 12px 16px 10px;
+    border-bottom: 1px solid var(--hair-soft);
+    background: #fafafa;
+  }
+  .scope .path { font-size: 13px; }
+  .scope .path .sep { color: var(--faint); padding: 0 4px; }
+  .scope .meta { font-size: 11px; color: var(--mid); margin-top: 3px; }
+  .scope .residue { font-size: 11px; color: var(--faint); margin-top: 2px; }
+
+  .group-label {
+    padding: 10px 16px 4px;
+    font-size: 11px;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--faint);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .ev {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    width: 100%;
+    min-height: 40px;
+    padding: 8px 16px;
+    border: 0;
+    border-top: 1px solid var(--hair-soft);
+    background: none;
+    font: inherit;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  .ev:hover { background: #f6f6f6; }
+  .ev.sel { background: var(--fill); box-shadow: inset 3px 0 0 var(--ink); }
+  .ev .when { flex: 0 0 108px; font-variant-numeric: tabular-nums; }
+  .ev .trace { flex: 1 1 auto; color: var(--mid); font-variant-numeric: tabular-nums; }
+  .ev .delta { flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+
+  .empty {
+    padding: 18px 16px 20px;
+    color: var(--mid);
+    border-top: 1px solid var(--hair-soft);
+  }
+
+  .caption {
+    max-width: 830px;
+    margin: 22px auto 0;
+    font-size: 12px;
+    color: var(--mid);
+  }
+  .caption b { color: var(--ink); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <div class="chart-stub">
+    <div class="lbl">chart — not drawn in wireframe</div>
+    <div class="echo" id="chartEcho">17 traces in view</div>
+  </div>
+
+  <div class="col">
+    <div class="col-head">
+      <div class="crumb">Findings › Lows</div>
+      <div class="title">20 lows</div>
+      <div class="sub">Jul 13 – Aug 11</div>
+    </div>
+
+    <div class="outline" id="outline"></div>
+
+    <div class="scope" id="scope"></div>
+    <div id="events"></div>
+  </div>
+</div>
+
+<p class="caption">
+  <b>A — outline tree.</b> Every factor and cohort stays on screen; one node is selected at a
+  time and the list below is scoped to it. Try: <b>Over-treated low</b> (default, whole
+  comparison) → <b>Near rule</b> (cohort-scoped) → <b>Unclaimed</b> (its own branch, no
+  comparison drawn).
+</p>
+
+<script>
+const R = (id, when, entry, worst, delta) => ({ id, when, entry, worst, delta });
+
+const FIRED_OTL = [
+  R('l1','Aug 1 · 01:00',68,58,'−10'),
+  R('l2','Aug 2 · 07:00',69,59,'−10'),
+  R('l3','Aug 3 · 13:00',70,60,'−10'),
+  R('l4','Aug 4 · 19:00',68,61,'−7'),
+  R('l5','Aug 5 · 04:00',69,58,'−11'),
+  R('l6','Aug 6 · 10:00',70,59,'−11'),
+  R('l7','Aug 7 · 16:00',68,60,'−8')
+];
+const NEAR_OTL = [
+  R('l8','Aug 8 · 22:00',69,61,'−8'),
+  R('l9','Aug 9 · 06:00',70,58,'−12'),
+  R('l10','Aug 10 · 12:00',68,59,'−9'),
+  R('l11','Aug 11 · 18:00',69,60,'−9')
+];
+const NEUTRAL = [
+  R('l12','Aug 12 · 02:00',70,61,'−9'),
+  R('l13','Aug 13 · 08:00',68,58,'−10'),
+  R('l14','Aug 14 · 14:00',69,59,'−10'),
+  R('l15','Aug 15 · 20:00',70,60,'−10'),
+  R('l16','Aug 16 · 05:00',68,61,'−7'),
+  R('l17','Aug 17 · 11:00',69,58,'−11')
+];
+const FIRED_IOB = [ R('l18','Aug 18 · 17:00',70,59,'−11') ];
+
+const TREE = [
+  {
+    key: 'over_treated_low',
+    label: 'Over-treated low',
+    count: 7,
+    capMeta: '7 of 20 in Jul 13–Aug 11',
+    residue: '1 claimed by another factor · 2 not comparable',
+    cohorts: [
+      { key: 'fired',   label: 'Rule matched',       count: 7, rows: FIRED_OTL },
+      { key: 'near',    label: 'Near rule',          count: 4, rows: NEAR_OTL },
+      { key: 'neutral', label: 'Rule did not match', count: 6, rows: NEUTRAL }
+    ]
+  },
+  {
+    key: 'correction_on_iob',
+    label: 'Correction on active insulin',
+    count: 1,
+    capMeta: '1 of 20 in Jul 13–Aug 11',
+    residue: '7 claimed by another factor · 6 not comparable',
+    cohorts: [
+      { key: 'fired',   label: 'Rule matched',       count: 1, rows: FIRED_IOB },
+      { key: 'neutral', label: 'Rule did not match', count: 6, rows: NEUTRAL }
+    ]
+  },
+  {
+    key: 'unclaimed',
+    label: 'Unclaimed',
+    count: 10,
+    capMeta: '10 of 20 in Jul 13–Aug 11',
+    residue: '8 claimed by a finding',
+    noComparison: true,
+    cohorts: [
+      { key: 'unclaimed', label: 'Claimed by no finding', count: 10, rows: NEAR_OTL.concat(NEUTRAL) }
+    ]
+  }
+];
+
+let sel = { factor: 'over_treated_low', cohort: null };
+let open = { over_treated_low: true, correction_on_iob: false, unclaimed: false };
+let event = null;
+
+const factorOf = k => TREE.find(f => f.key === k);
+
+function scopedGroups() {
+  const f = factorOf(sel.factor);
+  return sel.cohort ? f.cohorts.filter(c => c.key === sel.cohort) : f.cohorts;
+}
+
+function renderOutline() {
+  const el = document.getElementById('outline');
+  el.innerHTML = '';
+  TREE.forEach(f => {
+    const n = document.createElement('button');
+    n.className = 'node lvl1' + (open[f.key] ? ' open' : '') +
+                  (sel.factor === f.key && !sel.cohort ? ' sel' : '');
+    n.innerHTML = '<span class="tri">▶</span><span class="name"></span>' +
+                  '<span class="count"></span>';
+    n.querySelector('.name').textContent = f.label;
+    n.querySelector('.count').textContent = f.count;
+    n.onclick = () => {
+      if (sel.factor === f.key && !sel.cohort) { open[f.key] = !open[f.key]; }
+      else { open[f.key] = true; sel = { factor: f.key, cohort: null }; event = null; }
+      render();
+    };
+    el.appendChild(n);
+
+    const branch = document.createElement('div');
+    branch.className = 'branch' + (open[f.key] ? ' open' : '');
+    f.cohorts.forEach(c => {
+      const cn = document.createElement('button');
+      cn.className = 'node lvl2' +
+        (sel.factor === f.key && sel.cohort === c.key ? ' sel' : '');
+      cn.innerHTML = '<span class="tri blank">▶</span><span class="name"></span>' +
+                     '<span class="count"></span>';
+      cn.querySelector('.name').textContent = c.label;
+      cn.querySelector('.count').textContent = c.count;
+      cn.onclick = () => { sel = { factor: f.key, cohort: c.key }; event = null; render(); };
+      branch.appendChild(cn);
+    });
+    el.appendChild(branch);
+  });
+}
+
+function renderScope() {
+  const f = factorOf(sel.factor);
+  const c = sel.cohort ? f.cohorts.find(x => x.key === sel.cohort) : null;
+  const total = scopedGroups().reduce((s, g) => s + g.count, 0);
+  const path = c
+    ? f.label + '<span class="sep">›</span>' + c.label
+    : f.label + '<span class="sep">›</span>whole comparison';
+  document.getElementById('scope').innerHTML =
+    '<div class="path">' + path + '</div>' +
+    '<div class="meta">' + total + ' event' + (total === 1 ? '' : 's') +
+      ' listed · ' + f.capMeta + '</div>' +
+    '<div class="residue">' + f.residue + '</div>';
+}
+
+function renderEvents() {
+  const host = document.getElementById('events');
+  host.innerHTML = '';
+  const groups = scopedGroups();
+  const f = factorOf(sel.factor);
+
+  if (f.noComparison && !sel.cohort) {
+    const e = document.createElement('div');
+    e.className = 'empty';
+    e.textContent = 'No comparison drawn — no finding claims these, so there is no rule to compare them with.';
+    host.appendChild(e);
+  }
+
+  groups.forEach(g => {
+    if (!sel.cohort) {
+      const h = document.createElement('div');
+      h.className = 'group-label';
+      h.innerHTML = '<span></span><span></span>';
+      h.children[0].textContent = g.label;
+      h.children[1].textContent = g.count;
+      host.appendChild(h);
+    }
+    g.rows.forEach(r => {
+      const b = document.createElement('button');
+      b.className = 'ev' + (event === r.id ? ' sel' : '');
+      b.innerHTML = '<span class="when"></span><span class="trace"></span><span class="delta"></span>';
+      b.querySelector('.when').textContent = r.when;
+      b.querySelector('.trace').textContent = r.entry + ' → ' + r.worst;
+      b.querySelector('.delta').textContent = r.delta;
+      b.onclick = () => { event = (event === r.id ? null : r.id); render(); };
+      host.appendChild(b);
+    });
+  });
+}
+
+function renderEcho() {
+  const total = scopedGroups().reduce((s, g) => s + g.count, 0);
+  const f = factorOf(sel.factor);
+  let txt;
+  if (event) {
+    const row = [].concat(...scopedGroups().map(g => g.rows)).find(r => r.id === event);
+    txt = 'one trace highlighted — ' + row.when + ' · ' + row.entry + ' → ' + row.worst;
+  } else if (f.noComparison && !sel.cohort) {
+    txt = 'no comparison drawn';
+  } else {
+    txt = total + ' trace' + (total === 1 ? '' : 's') + ' in view';
+  }
+  document.getElementById('chartEcho').textContent = txt;
+}
+
+function render() { renderOutline(); renderScope(); renderEvents(); renderEcho(); }
+render();
+</script>
+</body>
+</html>

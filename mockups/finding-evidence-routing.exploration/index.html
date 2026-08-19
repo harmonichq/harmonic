@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Finding → evidence routing · exploration</title>
+
+  <!-- ★ LOCKED — finding → evidence routing (Diagnose + Verify)
+
+       Locked 2026-08-19 by the operator — every ruling below is theirs, settled
+       across four interview rounds, seven wireframes and eleven mock rounds —
+       with the coordinator writing the record. The MANIFEST is
+       mockups/finding-evidence-routing.lock.md: this header is the narrative,
+       the manifest is the contract, and where a builder needs something
+       checkable it is there. The decision record is ADR 31, in
+       openspec/changes/finding-evidence-routing/design.md.
+
+       Supersedes no prior lock — this is the first in this repository. It CARRIES
+       FORWARD four rulings from the old repo's diagnose-workstation lock
+       (breadcrumb-only navigation, evidence-is-a-table, the Day contract, and the
+       watched-change dock's reserved floor). They are RESTATED in the manifest,
+       never referenced: a manifest that points at another repository does not
+       stand alone.
+
+       THE BET. A finding is a router, not a leaf. The cockpit has ONE inspector —
+       crumb path, subject case file, dock floor — and it is the sole steering
+       wheel; the canvas is one chart surface that answers wherever the inspector
+       stands. Every instrument that used to select data dissolves into something
+       the inspector already is. What is left on the canvas is a switch over
+       already-selected data, never a second way to select it. Two steering wheels
+       for one chart is the disagreement machine this lock exists to remove.
+
+       SELECTION IS ONE-DIMENSIONAL: the factor, and nothing else. There is no
+       cohort filter anywhere on this surface — the evidence canvas always draws
+       all three verdicts, because "how many lows did I have" must read the same
+       wherever the reader is standing. The factor control is a collapsing
+       dropdown at the top of the inspector column (the operator's placement call,
+       over two independent leans toward the canvas head): at rest one line —
+       current factor, its count in tabular numerals, a chevron at the column's
+       own register — reading as the column's working title. Expanded it overlays
+       the ledger and never pushes it, so a mis-tap cannot cost the reader their
+       place in the table; it collapses on a choice, an outside click, Esc, and
+       focus leaving. Its rest state costs one line whatever the list holds, which
+       is what lets the list run to eight entries and past them.
+
+       THE PROJECTION IS A SCALE TOGGLE, NOT A SELECTOR. `By clock` / `By event`
+       lives in the instrument row's ALIGN group, and exists only where the canvas
+       is showing a factor's events — never at the queue root, where nothing is
+       selected to re-project. `By clock` rests: the pooled day envelope with the
+       factor's events as dots, drawn through the shipped renderer, which is the
+       cluster and settings-coincidence read the basal slots and carb-ratio blocks
+       live on. `By event` is the nadir-aligned lens: the typical-of-its-kind
+       read. Drilling an occurrence lays that day's real trace over the envelope
+       with the window brace under the clock, and highlights that occurrence among
+       its neighbours under the lens. ONE Y DOMAIN AND ONE TICK LADDER hold across
+       both — 40 to 240 at an interval of 40. The interval is load-bearing rather
+       than tidy: neither 70 nor 180 lands on it, which is what lets the two
+       clinical thresholds exist as the target band's own edges instead of
+       numerals set in the same type as the value scale.
+
+       SELECTION IS EVIDENCE, NEVER A MOVE OF THE VIEWPORT. Hovering does nothing
+       to the canvas — no brace, no trace, no verdict tooltip; selection is the
+       only trigger. And selecting an occurrence never moves the clock window: the
+       window is the reader's own control, it decides which events are in play,
+       and a filter the data keeps resetting is not a filter. Drilling the verdict
+       band scopes the ROSTER only — all occurrences stay plotted at every band
+       position and the drilled verdict's are emphasised against the rest, which
+       is emphasis, not filtering.
+
+       THE INSTRUMENT ROW STAYS, AND ONE OF ITS GROUPS DOES NOT. The row itself is
+       never dropped: Verify carries the same row, and retiring it here would
+       retire it there. VIEW IS DELETED — a retirement by absorption, not a scope
+       cut. VIEW conflated two dimensions that now live apart: the projection is
+       ALIGN, and which events are drawn is the inspector's factor dropdown;
+       `Glucose` was simply the no-factor case, which is the clock projection at
+       the queue root. It read as a control and behaved as a read-out, so it goes
+       rather than gets explained. WINDOW stays and is a REAL control — a reader
+       viewing by clock can also filter by clock — and it scopes BOTH projections:
+       under `By clock` the axis narrows, because the axis is the clock; under `By
+       event` only the cohort shrinks and the axis does not move. This fixture is
+       a single 24 h window and cannot exercise it, so it is drawn at its standing
+       coordinate and left unwired. That is a fixture limitation stated as a fact:
+       WINDOW is not a read-out, and it must not be marked disabled.
+
+       THE EVIDENCE IS THE PRODUCTION TABLE, NOT A DRAWING OF ONE. The occurrence
+       table is the shipped Diagnose `renderEvidence`, lifted whole out of
+       frontend/diagnose-workstation.js at build time and never forked — it brings
+       its own group rules, its own five-row cap and two-way expander, its own date
+       and delta formats. The build fails closed if that painter is renamed or
+       stops emitting its own rows. Above it the verdict takes wireframe H3's
+       form: a proportional band stating the three-way split, with the roster below
+       it never longer than one verdict, resting at the first group. ONE NOUN PER
+       CONCEPT carries the split through the dropdown, the band, the group rule and
+       the row cells: `Meets criteria` / `Borderline` / `Does not meet`. Not
+       `classifier`, not `unclassified`, and never `factor` as a user-facing noun —
+       CONTEXT.md lists it under Avoid for Lever. Residue is a dim line ABOVE the
+       expander, its counts scoped to the frame being drawn, so the arithmetic
+       closes on screen: drawn + residue = the cap's denominator. A group that
+       states one verdict does not restate it once per row — the per-row verdict
+       cell renders only where a group genuinely mixes.
+
+       THE QUEUE RANKS, AND ONE TIER IS DELIBERATELY OUT OF REACH. Each run of rows
+       carries one eyebrow from DESIGN.md rule 4's vocabulary — `Next in line`,
+       `Worth a look`, `noted` — and the tail sits under the `Watching` section cap
+       the domain already names. `Decide now` NEVER RENDERS, and that is a decision
+       rather than an omission: correction factor earns its asserting register from
+       its own predicate, independently of the staging classifier it sits outside,
+       so the first asserting row in server order can be a row that recommends no
+       number at all — issue #26 records exactly that on a real 30-day run. Until a
+       cross-parameter headline exists on the SERVER, nothing here may promise
+       "decide now".
+
+       THE ONE TERM THAT ADDS A ROUTE THE EXPLORATION HAD NOT DRAWN: the selected
+       occurrence's `Open <day> in Day ›`. CONTEXT.md is not soft about it — "Jump
+       to" is a contract, not aspiration (ADR 0037), and an Occurrence anywhere it
+       renders deep-links to Day at its day with that moment ringed. This surface
+       renders occurrences and offered no such route, while ending every row in the
+       glyph that means there is somewhere to go. It takes the same right-aligned
+       treatment as `Open case file ›`, appears only once a row is selected, and
+       the per-row chevron comes off in exchange. FLAGGED HERE SO A REVIEWER CAN
+       PULL IT BACK OUT: it is the single term in this lock that adds rather than
+       reduces.
+
+       THE FLOOR IS RE-SETTLED, AND KEPT. The old lock's dock term — one reserved
+       height, so the column's floor never moves — stands, in a new form: one
+       hairline-topped line at the column's true bottom, the same height in every
+       state this surface can reach. The queue root's height deficit at 1280x800
+       was paid out of the air above the browse section, NOT by moving the dock and
+       not by letting the column scroll.
+
+       ONE TERM WAS NOT SATISFIED AT LOCK TIME, AND IT IS CLOSED. The column
+       must not scroll internally in any state. Six states overflowed at
+       1280x800, in both themes: EXPANDING the occurrence table cost the finding
+       case file 7px and the population case file 12px, and the four states where
+       the table is EXPANDED and a row is SELECTED — the tallest this column can
+       ever be, because selecting a row appends the `Open <day> in Day ›` route
+       below the table — cost 24px. THE CAUSE WAS NOT THIS SURFACE. The app's own
+       `.entry` rule — level 1's slot-lane staging BUTTON — was reaching the
+       evidence table's entry-glucose cell, a `<span class="entry">` inside
+       `.ev-row` that overrides only ink and alignment, so every evidence row was
+       laid out at 42px rather than the ~25px its own rule asks for and seven rows
+       paid 126px of this column. Scoping that rule to `button.entry` — the
+       element it was written for — took the row to 24px and closed all six
+       states, before the lock shipped. The dock did not move, the column does not
+       scroll, no shipped box was restyled and the production table was not
+       forked; the standing guard reads ZERO overflow across all 51 derived states
+       in both themes at both sizes, the tightest holding 82px of slack and the
+       queue root its 19px. Six of the seven mock-owned airs the previous round
+       had spent buying the first two states were given back in the same change.
+       The manifest carries the arithmetic under term 9.
+
+       KNOWN AND DELIBERATE, recorded rather than fixed: the chip-versus-table
+       number disagreements and the three disjoint synthetic populations render
+       verbatim on purpose; the day behind a drilled occurrence is a positional
+       join across two unrelated captures, owed to the fixture generators and not
+       to the mock; the two legend homes (the lens keeps its legend below the plot,
+       the clock projection's sits in the header rail) are kept so four shipped
+       selectors stay in the fidelity comparison; and the shipped painter's group
+       rule hard-codes `, not confirmed` and `episode(s)`, so it renders
+       `Borderline, not confirmed · 4 episodes` — removing them is a fork, and it
+       stands. The manifest carries each of these with its evidence, alongside the
+       production defects this surface surfaced but does not own.
+
+       EXPLORE IS EXCLUDED FROM THIS LOCK BY NAME. It is the arbitrary-slicing
+       ambition, it does not exist yet, and it gets its own round when it does.
+       Nothing here may be read as governing it.
+
+       CHROME IS THE SHIPPED APP'S, not a copy of it: the stylesheets below are
+       the app's own files, loaded in the app's own order, and the cockpit topbar
+       and footer are lifted out of the running app's DOM into
+       chrome.extracted.html by harness.mjs. -->
+
+  <script>
+    // The app's own first-paint theme switch (frontend/index.html), verbatim.
+    (function () {
+      if (localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark');
+    })();
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+
+  <!-- The app's stylesheets, in the app's order (frontend/index.html lines
+       25-32, then its <style> blocks, then theme.css LAST). -->
+  <link rel="stylesheet" href="../../frontend/scenario.css" />
+  <link rel="stylesheet" href="../../frontend/shell.css" />
+  <link rel="stylesheet" href="../../frontend/diagnose-workstation.css" />
+  <link rel="stylesheet" href="../../frontend/diagnose-event-comparison.css" />
+  <link rel="stylesheet" href="../../frontend/verify-workstation.css" />
+  <link rel="stylesheet" href="./app-base.extracted.css" />
+  <link rel="stylesheet" href="../../frontend/theme.css" />
+  <!-- Scene-only rules. Nothing here re-states a token, a colour or a shipped
+       component's metrics; every value is either a shipped declaration copied
+       from its named sibling, or geometry this scene changes on purpose. -->
+  <link rel="stylesheet" href="./scene.css" />
+</head>
+<body>
+  <div id="app">
+    <div class="cockpit-shell cockpit">
+      <!-- topbar: injected from chrome.extracted.html -->
+      <main class="cockpit-stage"><div class="main-content">
+        <div id="diagnose-root">
+          <section class="dw ec-surface fer-surface" data-state="typical">
+
+            <!-- ================== the instrument row ================== -->
+            <!-- ROUND 7, ITEM 1 — THE WINDOW-LIKE TOOLBAR STAYS. Round 2 retired
+                 it on ruling 1; the operator's send-back keeps it, because Verify
+                 carries the same row and dropping it here would drop it there.
+                 This is the SHIPPED row: `.instruments` > `.instrument` > `.cap`
+                 + `.seg`, from diagnose-workstation.js's own MARKUP.
+
+                 ROUND 11 — THE VIEW GROUP IS DELETED, markup and all. The
+                 operator's ruling: `Glucose | Meals | Lows` was a read-out
+                 wearing the costume of a control, and it goes rather than gets
+                 explained. The ROW is untouched and so are its other two groups —
+                 the standing ruling that keeps this toolbar is about the row, not
+                 about what rides it.
+
+                 WINDOW STAYS, AND IS A REAL CONTROL: a reader viewing by clock
+                 can also filter by clock. It is inert here only because this
+                 fixture is a single window (Lows over 24 h) — a fixture
+                 limitation, not a design statement — so it is drawn at its
+                 standing coordinate, neither wired nor marked disabled.
+
+                 ALIGN is the row's other group, in the identical form — same
+                 caption rank, same segmented control, same register. Round 6 put
+                 it in the canvas head instead, where it forced a third track into
+                 a two-track head and rendered poorly. Its visibility rule has not
+                 changed: it is absent at the queue root, where nothing is
+                 selected to re-project. -->
+            <div class="instruments">
+              <div class="instrument">
+                <span class="cap">Window</span>
+                <div class="seg" id="fer-seg-window" role="group" aria-label="Clock window"></div>
+              </div>
+              <div class="instrument fer-align" id="fer-align" hidden>
+                <span class="cap" id="fer-align-cap"></span>
+                <div class="seg" id="fer-seg-align" role="group" aria-label="Event alignment"></div>
+              </div>
+            </div>
+
+            <main class="panes">
+
+              <!-- ===================== canvas ===================== -->
+              <!-- ONE canvas surface that answers wherever the inspector stands
+                   (#31 ruling 1) — and WHAT it answers with changes with the
+                   level, so there are two canvas panes and exactly one of them
+                   is mounted at a time.
+
+                   ROUND 5, WORKSTREAM A — THE QUEUE ROOT'S CANVAS IS BACK, AND IT
+                   IS THE SHIPPED POOLED GLUCOSE CHART. Round 4 unmounted the pane
+                   at this level, which answered round 3's empty placeholder
+                   rather than the ruling: the ruling's queue-root canvas IS the
+                   pooled glucose chart, and the app has had it all along. The
+                   markup below is the shipped workstation canvas pane
+                   (frontend/diagnose-workstation.js's own template) minus the
+                   brace overlay and the I:C lane row — both omissions are named
+                   in pooled.js's header and in the report. -->
+              <section class="pane canvas-pane dw-canvas" aria-label="Diagnose canvas">
+                <header class="canvas-head" id="dw-canvas-head" data-hover="0">
+                  <div class="head-swap">
+                    <div class="head-line head-rest">
+                      <h2>Glucose by time of day</h2>
+                      <span class="meta" id="dw-scope">—</span>
+                      <!-- ROUND 9, FINDING 5 — THE CHART'S LEGEND AND ITS WINDOW
+                           CAPTION LIVE IN THE HEADER RAIL NOW. Both used to
+                           float over the plot: ECharts' own legend in the top
+                           right, and `24 H 00:00–24:00 · 25–75 spread …`
+                           unanchored in the empty upper third. The caption joins
+                           `#dw-scope`, which is already the window's meta; the
+                           keys take this rail beside the title. Their content is
+                           the shipped chart's own legend `data`, read back off
+                           its option by pooled.js — the head prints what the
+                           chart drew, it does not decide it. -->
+                      <span class="fer-head-key" id="dw-key" aria-label="Chart legend"></span>
+                    </div>
+                    <div class="head-line head-live" id="dw-readout" aria-hidden="true">
+                      <span class="rd-time" id="rd-time">--:--</span>
+                      <span class="rd-pair" id="rd-p-med"><span class="k">median</span><span class="v" id="rd-med">--</span></span>
+                      <span class="rd-pair" id="rd-p-iqr"><span class="k">25–75</span><span class="v" id="rd-iqr">--</span></span>
+                      <span class="rd-pair" id="rd-p-band"><span class="k">10–90</span><span class="v" id="rd-band">--</span></span>
+                      <span class="rd-pair" id="rd-p-n"><span class="k">n</span><span class="v" id="rd-n">--</span></span>
+                      <span class="rd-note" id="rd-note"></span>
+                    </div>
+                  </div>
+                  <span class="meta persist" id="dw-pool">—</span>
+                  <!-- ROUND 7, ITEM 1 — and the head's third cell is GONE with the
+                       toggle. The head is the shipped two-track grid again, which
+                       is also what squares it against the inspector head across
+                       the divider (item 2). -->
+                </header>
+                <div class="body">
+                  <div id="chart"></div>
+                  <div class="lane-wrap">
+                    <div class="lane-stack">
+                      <div class="lane" id="lane" role="group" aria-label="Basal slot verdicts"></div>
+                    </div>
+                    <div class="lane-key" id="lane-key"></div>
+                  </div>
+                </div>
+              </section>
+
+              <!-- The DRILLED canvas: the event-comparison lens, unchanged. -->
+              <section class="pane canvas-pane ec-canvas" aria-label="Evidence canvas">
+                <header class="canvas-head" id="ec-canvas-head" data-hover="0">
+                  <div class="head-swap">
+                    <!-- ROUND 2 ITEM 3 — the view name, and no factor name. The
+                         finding's name prints ONCE, in the crumb. -->
+                    <div class="head-line head-rest"><h2 id="canvas-title"></h2></div>
+                    <div class="head-line head-live ec-canvas-readout" id="ec-readout" aria-hidden="true"><span class="ec-rd-time">--:--</span></div>
+                  </div>
+                  <span class="meta persist" id="canvas-persist"></span>
+                </header>
+                <div class="body">
+                  <div id="ec-chart" class="ec-chart" role="img" tabindex="0"
+                       aria-label="Low response comparison. Use left and right arrow keys to inspect five-minute points."></div>
+                  <div class="ec-chart-key" id="ec-chart-key" aria-label="Cohort legend"></div>
+                </div>
+              </section>
+
+              <!-- =================== inspector =================== -->
+              <section class="pane inspector" aria-label="Inspector">
+                <header><h2>Inspector</h2></header>
+                <div class="body">
+                  <!-- The crumb IS the navigation (old term 4). At the queue level
+                       it is the inert root; drilled, the root becomes the button
+                       that walks back and the leaf prints the subject's name —
+                       the only place that name prints (round 2, item 3).
+
+                       The shipped crumb meta ("30 days") is still not drawn: the
+                       row holds the path and the count accessory, and at 430px
+                       the three do not fit. Round 1 raised it; it stays open,
+                       and `queue.meta` carries the string the level-1 queue
+                       would print so the drop is visible rather than silent.
+
+                       ROUND 5, BLOCK 1 — the scope CHIP is gone. The filter's
+                       count is a crumb accessory now: a tabular number
+                       right-aligned to the gutter, no border and no second
+                       dismiss, because the crumb root already walks back. -->
+                  <div class="crumb">
+                    <div class="trail" id="crumb-trail"></div>
+                    <span class="fer-count" id="crumb-count" hidden></span>
+                  </div>
+                  <!-- ROUND 6, FORM 1 — THE FACTOR DROPDOWN, at the top of the
+                       inspector column (amendment: the operator's placement
+                       call, over two independent canvas-head leans). It sits
+                       OUTSIDE `.level` on purpose: `.level` is the scrolling
+                       track, and an expanded list inside it would scroll with
+                       the ledger instead of overlaying it. Rest state is one
+                       line at the column's own register; expanded it overlays
+                       the rows beneath rather than pushing them down. -->
+                  <div class="fer-sel-host" id="factor-select"></div>
+                  <div class="level" id="level" tabindex="-1"></div>
+                </div>
+                <div class="watch" id="watch-dock"></div>
+              </section>
+
+            </main>
+          </section>
+        </div>
+      </div></main>
+      <!-- footer: injected from chrome.extracted.html -->
+    </div>
+  </div>
+
+  <script type="module" src="./surface.js"></script>
+</body>
+</html>

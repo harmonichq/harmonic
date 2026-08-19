@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Wireframe B — Facet rail</title>
+<style>
+  :root{
+    --ink:#1a1a1a; --ink2:#5c5c5c; --ink3:#8a8a8a;
+    --line:#d6d6d6; --line2:#eaeaea; --fill:#f4f4f4; --sel:#e4e4e4;
+    --ground:#fbfbfb;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--ground); color:var(--ink);
+    font:13px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .page{max-width:1060px; margin:0 auto; padding:34px 24px 80px}
+
+  /* wireframe scaffolding — not part of the UI */
+  .scaffold{
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    margin:0 0 26px; padding-bottom:16px; border-bottom:1px dashed var(--line);
+    color:var(--ink3); font-size:11px; letter-spacing:.06em; text-transform:uppercase;
+  }
+  .scaffold b{font-weight:600; color:var(--ink2); letter-spacing:.04em}
+  .scaffold button{
+    font:inherit; letter-spacing:.04em; text-transform:none;
+    background:#fff; border:1px solid var(--line); color:var(--ink2);
+    padding:6px 11px; border-radius:3px; cursor:pointer;
+  }
+  .scaffold button:hover{background:var(--fill)}
+  .scaffold button[aria-pressed="true"]{background:var(--ink); border-color:var(--ink); color:#fff}
+
+  .stage{display:flex; gap:26px; align-items:flex-start}
+
+  /* the chart, as a labeled gray rectangle only */
+  .canvas{
+    flex:1 1 auto; min-width:300px; height:560px; background:var(--fill);
+    border:1px solid var(--line); border-radius:3px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:10px; color:var(--ink3); text-align:center; padding:20px;
+  }
+  .canvas .t{font-size:12px; letter-spacing:.08em; text-transform:uppercase}
+  .canvas .s{font-size:12px; color:var(--ink2); max-width:260px}
+
+  /* the 430px column */
+  .col{flex:0 0 430px; width:430px; background:#fff; border:1px solid var(--line); border-radius:3px}
+
+  .colhead{padding:14px 16px 12px; border-bottom:1px solid var(--line)}
+  .colhead h1{margin:0; font-size:14px; font-weight:600; letter-spacing:.01em}
+  .colhead p{margin:3px 0 0; font-size:12px; color:var(--ink3)}
+
+  /* facet groups — quiet as a settings list */
+  .facet{border-bottom:1px solid var(--line)}
+  .facet > h2{
+    margin:0; padding:13px 16px 6px; font-size:10px; font-weight:600;
+    letter-spacing:.12em; text-transform:uppercase; color:var(--ink3);
+    display:flex; justify-content:space-between; align-items:baseline;
+  }
+  .facet > h2 .clear{
+    font-size:11px; letter-spacing:0; text-transform:none; font-weight:400;
+    color:var(--ink3); background:none; border:0; padding:0; cursor:pointer;
+    text-decoration:underline; text-underline-offset:2px;
+  }
+  .facet > h2 .clear[hidden]{display:none}
+  .facet ul{list-style:none; margin:0; padding:0 0 8px}
+
+  .frow{
+    display:flex; align-items:center; gap:11px; width:100%;
+    padding:9px 16px; min-height:40px;
+    background:none; border:0; font:inherit; color:inherit; text-align:left; cursor:pointer;
+  }
+  .frow:hover{background:#fafafa}
+  .frow .box{
+    flex:0 0 14px; width:14px; height:14px; border:1px solid #b4b4b4; border-radius:2px;
+    background:#fff; position:relative;
+  }
+  .frow.radio .box{border-radius:50%}
+  .frow[aria-pressed="true"] .box{background:var(--ink); border-color:var(--ink)}
+  .frow[aria-pressed="true"] .box::after{
+    content:""; position:absolute; left:3px; top:4px; width:6px; height:3px;
+    border-left:1.5px solid #fff; border-bottom:1.5px solid #fff; transform:rotate(-45deg);
+  }
+  .frow.radio[aria-pressed="true"] .box::after{
+    left:3px; top:3px; width:6px; height:6px; border:0; border-radius:50%; background:#fff; transform:none;
+  }
+  .frow .lbl{flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .frow .n{
+    flex:0 0 auto; color:var(--ink2); font-size:12px;
+    font-variant-numeric:tabular-nums; font-feature-settings:"tnum" 1;
+  }
+  .frow[aria-pressed="true"] .lbl{font-weight:600}
+  .frow[disabled]{cursor:default; color:var(--ink3)}
+  .frow[disabled]:hover{background:none}
+  .frow[disabled] .box{border-color:var(--line); background:var(--fill)}
+  .frow[disabled] .n{color:var(--ink3)}
+
+  .facetnote{padding:0 16px 11px; margin:0; font-size:11px; color:var(--ink3)}
+
+  /* active-filter tokens, one line */
+  .tokens{
+    display:flex; align-items:center; gap:6px; padding:10px 16px;
+    border-bottom:1px solid var(--line); min-height:42px; overflow:hidden; white-space:nowrap;
+  }
+  .tokens .none{font-size:12px; color:var(--ink3)}
+  .token{
+    display:inline-flex; align-items:center; gap:6px; max-width:190px;
+    border:1px solid var(--line); border-radius:12px; background:var(--fill);
+    padding:3px 4px 3px 10px; font-size:12px; color:var(--ink2);
+  }
+  .token span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .token button{
+    flex:0 0 auto; width:18px; height:18px; border:0; border-radius:50%;
+    background:none; color:var(--ink3); font:inherit; line-height:1; cursor:pointer;
+  }
+  .token button:hover{background:#e0e0e0; color:var(--ink)}
+  .tokens .clearall{
+    margin-left:auto; background:none; border:0; font:inherit; font-size:11px;
+    color:var(--ink3); cursor:pointer; text-decoration:underline; text-underline-offset:2px;
+  }
+
+  /* scope line + event list */
+  .scope{padding:12px 16px 9px}
+  .scope .a{font-size:12px; color:var(--ink); font-weight:600}
+  .scope .b{margin-top:2px; font-size:11px; color:var(--ink3)}
+
+  .events{list-style:none; margin:0; padding:0 0 6px; max-height:330px; overflow-y:auto}
+  .events li + li .erow{border-top:1px solid var(--line2)}
+  .erow{
+    display:flex; align-items:center; gap:12px; width:100%; min-height:46px;
+    padding:10px 16px; background:none; border:0; font:inherit; color:inherit;
+    text-align:left; cursor:pointer;
+  }
+  .erow:hover{background:#fafafa}
+  .erow[aria-pressed="true"]{background:var(--sel)}
+  .erow .when{flex:0 0 118px; font-size:12px; font-variant-numeric:tabular-nums}
+  .erow .trace{flex:1 1 auto; color:var(--ink2); font-size:12px; font-variant-numeric:tabular-nums}
+  .erow .d{flex:0 0 auto; font-size:12px; font-variant-numeric:tabular-nums; color:var(--ink)}
+  .erow .ck{flex:0 0 auto; width:34px; text-align:right; font-size:11px; color:var(--ink3)}
+
+  .residue{
+    padding:10px 16px 14px; border-top:1px solid var(--line);
+    font-size:11px; color:var(--ink3);
+  }
+  .empty{padding:22px 16px 26px; font-size:12px; color:var(--ink3)}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="scaffold">
+    <b>Wireframe B · facet rail</b>
+    <span>jump to state:</span>
+    <button type="button" data-state="default">default</button>
+    <button type="button" data-state="composed">composed</button>
+    <button type="button" data-state="cleared">cleared</button>
+    <span style="margin-left:auto">grayscale · not the product</span>
+  </div>
+
+  <div class="stage">
+    <div class="canvas">
+      <div class="t">Chart</div>
+      <div class="s" id="canvasNote">Traces for the current scope. Selecting one event highlights its trace.</div>
+    </div>
+
+    <div class="col">
+      <div class="colhead">
+        <h1>Lows</h1>
+        <p>20 events · Jul 13–Aug 11</p>
+      </div>
+
+      <section class="facet">
+        <h2>Factor <button type="button" class="clear" id="clearFactor" hidden>clear</button></h2>
+        <ul id="factorList"></ul>
+      </section>
+
+      <section class="facet">
+        <h2>Cohort <button type="button" class="clear" id="clearCohort" hidden>clear</button></h2>
+        <ul id="cohortList"></ul>
+        <p class="facetnote" id="cohortNote" hidden></p>
+      </section>
+
+      <div class="tokens" id="tokens"></div>
+
+      <div class="scope">
+        <div class="a" id="scopeA"></div>
+        <div class="b" id="scopeB"></div>
+      </div>
+
+      <ul class="events" id="events"></ul>
+      <div class="residue" id="residue"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---- fixture data (verbatim) ------------------------------------------------
+const EV = {
+  1:{when:'Aug 1 · 01:00',  entry:68, worst:58, d:'−10'},
+  2:{when:'Aug 2 · 07:00',  entry:69, worst:59, d:'−10'},
+  3:{when:'Aug 3 · 13:00',  entry:70, worst:60, d:'−10'},
+  4:{when:'Aug 4 · 19:00',  entry:68, worst:61, d:'−7'},
+  5:{when:'Aug 5 · 04:00',  entry:69, worst:58, d:'−11'},
+  6:{when:'Aug 6 · 10:00',  entry:70, worst:59, d:'−11'},
+  7:{when:'Aug 7 · 16:00',  entry:68, worst:60, d:'−8'},
+  8:{when:'Aug 8 · 22:00',  entry:69, worst:61, d:'−8'},
+  9:{when:'Aug 9 · 06:00',  entry:70, worst:58, d:'−12'},
+  10:{when:'Aug 10 · 12:00',entry:68, worst:59, d:'−9'},
+  11:{when:'Aug 11 · 18:00',entry:69, worst:60, d:'−9'},
+  12:{when:'Aug 12 · 02:00',entry:70, worst:61, d:'−9'},
+  13:{when:'Aug 13 · 08:00',entry:68, worst:58, d:'−10'},
+  14:{when:'Aug 14 · 14:00',entry:69, worst:59, d:'−10'},
+  15:{when:'Aug 15 · 20:00',entry:70, worst:60, d:'−10'},
+  16:{when:'Aug 16 · 05:00',entry:68, worst:61, d:'−7'},
+  17:{when:'Aug 17 · 11:00',entry:69, worst:58, d:'−11'},
+  18:{when:'Aug 18 · 17:00',entry:70, worst:59, d:'−11'}
+};
+
+const COHORT_ORDER = ['fired','near_rule','neutral','unclaimed'];
+const COHORT_LABEL = {
+  fired:'Rule matched',
+  near_rule:'Near rule',
+  neutral:'Rule did not match',
+  unclaimed:'Claimed by no finding'
+};
+
+const FACTORS = [
+  {
+    key:'over_treated_low', label:'Over-treated low', count:7,
+    cohorts:{ fired:[1,2,3,4,5,6,7], near_rule:[8,9,10,11], neutral:[12,13,14,15,16,17] },
+    residue:'1 claimed by another factor · 2 not comparable',
+    capMeta:'7 of 20 in Jul 13–Aug 11'
+  },
+  {
+    key:'correction_on_iob', label:'Correction on active insulin', count:1,
+    cohorts:{ fired:[18], near_rule:[], neutral:[12,13,14,15,16,17] },
+    residue:'7 claimed by another factor · 6 not comparable',
+    capMeta:'1 of 20 in Jul 13–Aug 11'
+  },
+  {
+    key:'unclaimed', label:'Unclaimed', count:10,
+    cohorts:{ unclaimed:[8,9,10,11,12,13,14,15,16,17] },
+    residue:'8 claimed by a finding',
+    capMeta:'10 of 20 in Jul 13–Aug 11',
+    note:'Unclaimed events match no factor’s rule, so the rule cohorts do not apply.'
+  }
+];
+
+const ALL_IDS = Object.keys(EV).map(Number).sort((a,b)=>a-b);
+
+// ---- state ------------------------------------------------------------------
+let factor = 'over_treated_low';   // single-select: factors partition the population
+let cohorts = new Set();           // multi-select within the current factor
+let picked = null;                 // the one event whose trace is highlighted
+
+const $ = id => document.getElementById(id);
+const F = () => FACTORS.find(f => f.key === factor);
+
+function activeCohortKeys(){
+  const f = F(); if(!f) return [];
+  return COHORT_ORDER.filter(k => k in f.cohorts);
+}
+function scopedIds(){
+  const f = F();
+  if(!f) return ALL_IDS;
+  const keys = cohorts.size ? [...cohorts] : activeCohortKeys();
+  const out = new Set();
+  keys.forEach(k => (f.cohorts[k] || []).forEach(id => out.add(id)));
+  return [...out].sort((a,b)=>a-b);
+}
+
+// ---- render -----------------------------------------------------------------
+function row({cls, label, count, on, disabled, onclick}){
+  const li = document.createElement('li');
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'frow' + (cls ? ' ' + cls : '');
+  b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  if(disabled) b.disabled = true;
+  b.innerHTML = '<span class="box"></span><span class="lbl"></span><span class="n"></span>';
+  b.querySelector('.lbl').textContent = label;
+  b.querySelector('.n').textContent = count;
+  if(!disabled) b.addEventListener('click', onclick);
+  li.appendChild(b);
+  return li;
+}
+
+function renderFacets(){
+  const fl = $('factorList'); fl.innerHTML = '';
+  FACTORS.forEach(f => fl.appendChild(row({
+    cls:'radio', label:f.label, count:f.count, on:factor === f.key,
+    onclick(){
+      factor = (factor === f.key) ? null : f.key;
+      cohorts.clear(); picked = null; render();
+    }
+  })));
+  $('clearFactor').hidden = !factor;
+
+  const cl = $('cohortList'); cl.innerHTML = '';
+  const f = F();
+  if(!f){
+    COHORT_ORDER.slice(0,3).forEach(k => cl.appendChild(row({
+      label:COHORT_LABEL[k], count:'—', on:false, disabled:true
+    })));
+    $('cohortNote').hidden = false;
+    $('cohortNote').textContent = 'Pick a factor to compare against its rule.';
+  } else {
+    activeCohortKeys().forEach(k => {
+      const n = (f.cohorts[k] || []).length;
+      cl.appendChild(row({
+        label:COHORT_LABEL[k], count:n, on:cohorts.has(k), disabled:n === 0,
+        onclick(){
+          cohorts.has(k) ? cohorts.delete(k) : cohorts.add(k);
+          picked = null; render();
+        }
+      }));
+    });
+    $('cohortNote').hidden = !f.note;
+    if(f.note) $('cohortNote').textContent = f.note;
+  }
+  $('clearCohort').hidden = cohorts.size === 0;
+}
+
+function token(label, onRemove){
+  const t = document.createElement('span');
+  t.className = 'token';
+  t.innerHTML = '<span></span><button type="button" aria-label="Remove filter">×</button>';
+  t.querySelector('span').textContent = label;
+  t.querySelector('button').addEventListener('click', onRemove);
+  return t;
+}
+
+function renderTokens(){
+  const box = $('tokens'); box.innerHTML = '';
+  const f = F();
+  if(!f && cohorts.size === 0){
+    const s = document.createElement('span');
+    s.className = 'none';
+    s.textContent = 'No filters — all 20 lows';
+    box.appendChild(s);
+    return;
+  }
+  if(f) box.appendChild(token(f.label, () => { factor = null; cohorts.clear(); picked = null; render(); }));
+  [...cohorts].forEach(k => box.appendChild(token(COHORT_LABEL[k], () => {
+    cohorts.delete(k); picked = null; render();
+  })));
+  const c = document.createElement('button');
+  c.type = 'button'; c.className = 'clearall'; c.textContent = 'clear all';
+  c.addEventListener('click', () => { factor = null; cohorts.clear(); picked = null; render(); });
+  box.appendChild(c);
+}
+
+function renderList(){
+  const f = F();
+  const ids = scopedIds();
+
+  if(!f){
+    $('scopeA').textContent = 'All lows · ' + ALL_IDS.length + ' of 20 events';
+    $('scopeB').textContent = 'Jul 13–Aug 11 · unfiltered, no factor comparison applied';
+  } else if(cohorts.size === 0){
+    $('scopeA').textContent = f.label + ' · ' + ids.length + ' events compared';
+    $('scopeB').textContent = f.capMeta + ' claimed · whole comparison shown';
+  } else {
+    const names = [...cohorts].map(k => COHORT_LABEL[k]).join(' + ');
+    $('scopeA').textContent = f.label + ' · ' + names + ' · ' + ids.length + ' events';
+    $('scopeB').textContent = 'Narrowed from ' + scopeTotal(f) + ' in this comparison';
+  }
+
+  const ul = $('events'); ul.innerHTML = '';
+  if(ids.length === 0){
+    const li = document.createElement('li');
+    li.innerHTML = '<div class="empty">No events in this scope.</div>';
+    ul.appendChild(li);
+  }
+  ids.forEach(id => {
+    const e = EV[id];
+    const li = document.createElement('li');
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'erow';
+    b.setAttribute('aria-pressed', picked === id ? 'true' : 'false');
+    b.innerHTML = '<span class="when"></span><span class="trace"></span><span class="d"></span><span class="ck"></span>';
+    b.querySelector('.when').textContent = e.when;
+    b.querySelector('.trace').textContent = e.entry + ' → ' + e.worst;
+    b.querySelector('.d').textContent = e.d;
+    b.querySelector('.ck').textContent = picked === id ? 'shown' : '';
+    b.addEventListener('click', () => { picked = (picked === id ? null : id); render(); });
+    li.appendChild(b);
+    ul.appendChild(li);
+  });
+
+  $('residue').textContent = f
+    ? 'Outside this comparison: ' + f.residue
+    : 'Outside every comparison: 2 not comparable — no event trace exists for these.';
+}
+
+function scopeTotal(f){
+  return activeCohortKeys().reduce((n,k) => n + (f.cohorts[k]||[]).length, 0);
+}
+
+function renderCanvas(){
+  const f = F();
+  const ids = scopedIds();
+  $('canvasNote').textContent = picked
+    ? 'One trace highlighted: ' + EV[picked].when + ' · ' + EV[picked].entry + ' → ' + EV[picked].worst
+    : ids.length + ' traces in scope' + (f ? ' · ' + f.label : ' · all lows') + '. Select an event to highlight one.';
+}
+
+function render(){ renderFacets(); renderTokens(); renderList(); renderCanvas(); syncScaffold(); }
+
+// ---- scaffolding: three named states ---------------------------------------
+const STATES = {
+  default:  () => { factor = 'over_treated_low'; cohorts = new Set(); picked = null; },
+  composed: () => { factor = 'over_treated_low'; cohorts = new Set(['near_rule']); picked = 9; },
+  cleared:  () => { factor = null; cohorts = new Set(); picked = null; }
+};
+function currentState(){
+  if(!factor && cohorts.size === 0) return 'cleared';
+  if(factor === 'over_treated_low' && cohorts.size === 0) return 'default';
+  if(cohorts.size) return 'composed';
+  return null;
+}
+function syncScaffold(){
+  const now = currentState();
+  document.querySelectorAll('.scaffold button').forEach(b =>
+    b.setAttribute('aria-pressed', b.dataset.state === now ? 'true' : 'false'));
+}
+document.querySelectorAll('.scaffold button').forEach(b =>
+  b.addEventListener('click', () => { STATES[b.dataset.state](); render(); }));
+
+$('clearFactor').addEventListener('click', () => { factor = null; cohorts.clear(); picked = null; render(); });
+$('clearCohort').addEventListener('click', () => { cohorts.clear(); picked = null; render(); });
+
+render();
+</script>
+</body>
+</html>

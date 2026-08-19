@@ -426,27 +426,32 @@ html.dark .dw {
 }
 .lvl-cap .meta { margin-left: auto; font-family: var(--ck-mono); font-size: var(--ck-micro); letter-spacing: 0; text-transform: none; color: var(--mk-muted); font-weight: 500; }
 
-/* level 1: the slot lane's staging entry point, as a row of the same list */
-.entry {
+/* level 1: the slot lane's staging entry point, as a row of the same list.
+   SCOPED TO THE BUTTON IT IS WRITTEN FOR (#31). Unscoped, `.entry` also caught
+   the evidence table's entry-glucose cell — a `<span class="entry">` inside
+   `.ev-row`, which overrides only ink and alignment — and laid a three-digit
+   reading out as a 33px grid box with padding and a hairline on both edges,
+   carrying every evidence row to 42px against the ~25px its own rule asks for. */
+button.entry {
   display: grid; grid-template-columns: 1fr auto auto; gap: 2px 9px;
   align-items: center; width: 100%; text-align: left;
   padding: 8px var(--ck-pad); cursor: pointer; background: none; color: inherit;
   border: 0; border-bottom: 1px solid var(--ck-hair);
   border-top: 1px solid var(--ck-hair);
 }
-.entry .sub, .entry .scopenote { grid-column: 1 / -1; }
+button.entry .sub, button.entry .scopenote { grid-column: 1 / -1; }
 /* stated, not implied: the window does not reach staging */
-.entry .scopenote { font-size: var(--ck-micro); color: var(--ck-insuff); }
-.entry:hover { background: color-mix(in srgb, var(--mk-surface-2) 60%, transparent); }
-.entry .lab { font-weight: 600; color: var(--mk-text); }
-.entry .sub { font-size: var(--ck-data); color: var(--mk-muted); font-family: var(--ck-mono); }
-.entry .go { margin-left: auto; color: var(--ck-accent); font-size: 12px; }
-.entry .pill {
+button.entry .scopenote { font-size: var(--ck-micro); color: var(--ck-insuff); }
+button.entry:hover { background: color-mix(in srgb, var(--mk-surface-2) 60%, transparent); }
+button.entry .lab { font-weight: 600; color: var(--mk-text); }
+button.entry .sub { font-size: var(--ck-data); color: var(--mk-muted); font-family: var(--ck-mono); }
+button.entry .go { margin-left: auto; color: var(--ck-accent); font-size: 12px; }
+button.entry .pill {
   font-family: var(--ck-mono); font-size: 10.5px; padding: 1px 6px; border-radius: 8px;
   background: var(--ck-sel); color: var(--mk-text); min-width: 58px; text-align: center;
   border: 1px solid color-mix(in srgb, var(--ck-accent) 45%, transparent);
 }
-.entry .pill[data-empty="true"] { visibility: hidden; }
+button.entry .pill[data-empty="true"] { visibility: hidden; }
 
 /* level 2 header block */
 .who { font-weight: 650; font-size: var(--ck-emph); }

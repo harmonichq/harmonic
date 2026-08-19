@@ -1,4 +1,24 @@
-/* Drives the exploration: ONE inspector, three levels, one canvas that answers
+/* ★ LOCKED — finding → evidence routing (Diagnose + Verify), 2026-08-19.
+ *
+ * COMPANION MODULE to index.html, whose ★ header carries the narrative spec.
+ * The contract is mockups/finding-evidence-routing.lock.md; the decision record
+ * is ADR 31 in openspec/changes/finding-evidence-routing/design.md. Read the
+ * header before changing anything below: the rulings this file implements were
+ * settled by the operator, and several are the second or third attempt at the
+ * same behaviour. Each is written up where it lives; the load-bearing ones:
+ *
+ *   selection is one-dimensional — the factor, and there is no cohort filter;
+ *   hover does nothing to the canvas, and selection is the only trigger;
+ *   selecting an occurrence never moves the clock window;
+ *   the verdict band scopes the roster, never the canvas;
+ *   the occurrence table is the SHIPPED painter, never a fork of it;
+ *   `Decide now` never renders until a cross-parameter headline exists server-side.
+ *
+ * Explore is outside this lock by name — it gets its own round when it exists.
+ *
+ * --------------------------------------------------------------------------
+ *
+ * Drives the exploration: ONE inspector, three levels, one canvas that answers
  * wherever the inspector stands.
  *
  *   level 1  the ranked findings queue — painted by the SHIPPED

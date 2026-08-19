@@ -102,7 +102,12 @@ components:
 > palette and elevation values recorded below wherever the two disagree. Read
 > them, not this file, for a colour. The design-time manifest the theme was
 > settled against is a record of the decision and is not part of the shipped
-> tree. The sections here still describe component anatomy and voice.
+> tree. Light's grounds were re-settled inside that lock by **ADR 37**
+> (`openspec/changes/light-ground-bone/design.md`): parchment
+> `#F3EADB`/`#EBE0CF`/`#E3D7C5` became bone `#FAF8F4`/`#F0EEE8`/`#E7E4DC` over a
+> darker `#C3BFB4` rule, with the saved chroma spent on ink and marks. Values
+> only — no term of #736 was reopened, and dark is unchanged.
+> The sections here still describe component anatomy and voice.
 > The shell is locked **by role** (chrome bar · instrument rail · pane header rail ·
 > pane body · dock floor), not by surface class: a rule scoped to `.dw` left Verify
 > rendering as floating cards, and a rule that missed `.verify-strip` made the Trial
@@ -272,7 +277,7 @@ Flat by default with exactly one shadow token (`--shadow`) reused everywhere ele
 - **Do** reuse the `.has-tooltip` primitive for any new inline-definition need rather than building a new popover mechanism.
 
 ### Don't:
-- **Don't** read this bullet's predecessor as still standing: it forbade warm parchment in the neutral ramp, and the locked Harmonic theme (#736) is exactly that — a warm parchment sheet on a dark desk, with the ramp's saturation spent on marks instead of grounds. What survives is the reason behind it: grounds stay low-chroma so only data and interaction carry colour.
+- **Don't** read this bullet's predecessor as still standing: it forbade warm parchment in the neutral ramp, and the locked Harmonic theme (#736) is exactly that — a warm sheet on a dark desk, with the ramp's saturation spent on marks instead of grounds (ADR 37 relit that sheet from parchment to bone, taking the beige out while keeping the warmth). What survives is the reason behind it: grounds stay low-chroma so only data and interaction carry colour.
 - **Don't** add gamification UI (badges, streaks, congratulatory copy, mascots) — an explicit anti-reference from PRODUCT.md; this is a clinical instrument, not a wellness app.
 - **Don't** add generic-SaaS-dashboard scaffolding — hero KPI tiles, gradient accent cards, stock unmodified chart-library defaults — another explicit PRODUCT.md anti-reference.
 - **Don't** use a `border-left` greater than 1px as a purely decorative colored stripe. The current `.card h2::before` 4px left-tab and its five sibling instances (advisory callouts, table-row grouping, warning callouts, popovers) are a known, flagged pattern — don't propagate it into new components; the in-flight Verify redesign has already dropped it ("no card accent").

@@ -44,7 +44,7 @@
    declared — the rest keep the adapter's alias, so there is still one source. */
 :root {
   /* the measured signal is forest, and the median (`--mk-primary-600`) is the
-     darkest step of it against parchment */
+     darkest step of it against the sheet */
   --mk-primary: #455f41;
   --mk-primary-600: #183326;
   --mk-primary-soft: #dde7de;
@@ -80,7 +80,7 @@ html.dark {
 /* ---- ROLE: chrome bar ----------------------------------------------------
    The app frame — workflow, scope, utilities. It is the one surface that is not
    the sheet, and it keeps its own token set so nothing inside it has to opt out
-   of the parchment ground. */
+   of the sheet's ground. */
 .cockpit-topbar,
 .cockpit-footer {
   --ck-ground: #183326;

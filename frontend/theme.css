@@ -44,13 +44,13 @@
    declared — the rest keep the adapter's alias, so there is still one source. */
 :root {
   /* the measured signal is forest, and the median (`--mk-primary-600`) is the
-     darkest step of it against parchment */
+     darkest step of it against the sheet */
   --mk-primary: #455f41;
   --mk-primary-600: #183326;
-  --mk-primary-soft: #d8e3da;
+  --mk-primary-soft: #dde7de;
   /* the plot draws no frame of its own: the grid recedes beneath the data so
      the dashed target rails outrank the gridlines (term 6) */
-  --mk-line: #ded2bd;
+  --mk-line: #dedad0;
 }
 /* Light ALONE splits the warn/danger marks from their text inks: term 4 raised
    --warn and --danger on parchment to clear 4.5:1 as small text, and a mark
@@ -59,8 +59,8 @@
    restating a value — and scoping this to light is what stops a light literal
    from leaking into dark, which is how Verify's movement chips lost their ink. */
 html:not(.dark) {
-  --mk-warn: #9b562d;
-  --mk-danger: #b3402c;
+  --mk-warn: #94501f;
+  --mk-danger: #ab3a24;
 }
 html.dark {
   /* THE INVERSION: in light the measured signal is dark forest ON parchment; in
@@ -80,7 +80,7 @@ html.dark {
 /* ---- ROLE: chrome bar ----------------------------------------------------
    The app frame — workflow, scope, utilities. It is the one surface that is not
    the sheet, and it keeps its own token set so nothing inside it has to opt out
-   of the parchment ground. */
+   of the sheet's ground. */
 .cockpit-topbar,
 .cockpit-footer {
   --ck-ground: #183326;

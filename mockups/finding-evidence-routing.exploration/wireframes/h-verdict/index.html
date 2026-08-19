@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>H — the verdict, ahead of the roster (wireframe)</title>
+
+<!-- EXPLORATION DRAFT for issue #31, wireframe round H. Not a lock: no lock
+     manifest, no ★ LOCKED header, no INDEX.md row.
+
+     THE QUESTION. Today a finding's case file lists its occurrences under three
+     flat section headers — Rule matched (7), Near rule (4), Rule did not match
+     (6) — each a labelled band over rows. That is the shape of a query result,
+     not the shape of an answer: the reader meets seventeen rows before learning
+     anything, and the three headers are the only summary on offer. The operator:
+     "there's gotta be a better way to list whether the rule matched, whether it
+     was near the rule, or rule did not match … it just feels a little bit too
+     like raw data dumpy."
+
+     WHAT THIS ROUND CHANGES, AND WHAT IT DOES NOT. Only the shape of the
+     occurrences block inside the inspector column. Settled ground is left
+     alone: the factor dropdown stays at the top of the column, selection stays
+     one-dimensional, the crumb stays the navigation, and the canvas keeps
+     drawing all three cohorts at all times.
+
+     THE TABLE IS THE SHIPPED ONE. Every row below is the production Diagnose
+     evidence row — `.ev-row` out of frontend/diagnose-workstation.css, on its
+     own seven-column spine (when · entry → worst · Δ · verdict · chevron), with
+     `.lvl-cap`, `.fer-group`, `.fer-residue` and `.more` doing exactly what they
+     do in the shipped drill level. Nothing about the table's register is
+     re-invented here; the three forms differ only in what surrounds it and how
+     it is ordered.
+
+     EVERY NUMBER IS READ AT RUNTIME from ../../data.json — the exploration's own
+     synthetic projection — so no figure on this page can drift from the mock.
+     Prose that is not a figure is wireframe placeholder, and is marked as such
+     in the notes under each frame.
+
+     THE CANVAS IS OUT OF SCOPE for this round and is drawn as a stated
+     placeholder under the shipped canvas head. It is identical in all three
+     forms, which is the point: the question is the column. -->
+
+<script>
+  // The app's own first-paint theme switch (frontend/index.html), verbatim.
+  (function () {
+    if (localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark');
+  })();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+<!-- The app's stylesheets, in the app's order, then this wireframe's own sheet.
+     scene.css is deliberately NOT linked: it is being edited in the same
+     worktree by the round-6 work, and a wireframe whose geometry moves under it
+     mid-review is worthless. The handful of settled `fer-*` forms this page
+     needs are transcribed into wireframe.css instead, each stamped with the
+     scene.css block it came from. -->
+<link rel="stylesheet" href="../../../../frontend/scenario.css" />
+<link rel="stylesheet" href="../../../../frontend/shell.css" />
+<link rel="stylesheet" href="../../../../frontend/diagnose-workstation.css" />
+<link rel="stylesheet" href="../../../../frontend/diagnose-event-comparison.css" />
+<link rel="stylesheet" href="../../../../frontend/verify-workstation.css" />
+<link rel="stylesheet" href="../../app-base.extracted.css" />
+<link rel="stylesheet" href="../../../../frontend/theme.css" />
+<link rel="stylesheet" href="./wireframe.css" />
+</head>
+<body>
+
+<div class="hv-page">
+
+  <header class="hv-harness">
+    <h1>Round H — the verdict, ahead of the roster</h1>
+    <p>Three shapes for one finding's occurrences, drawn on the production evidence table. Each
+    answers the same question — <b>did this habit hold?</b> — and each pays for the answer
+    differently. The frames are stacked so they can be read against each other; the state switch
+    moves all three at once, so resting is compared with resting and drilled with drilled.</p>
+    <div class="hv-switches">
+      <div class="hv-switch"><span class="lbl">Form</span>
+        <button data-set="form" data-val="all">All three</button><button data-set="form" data-val="h1">H1 only</button><button data-set="form" data-val="h2">H2 only</button><button data-set="form" data-val="h3">H3 only</button>
+      </div>
+      <div class="hv-switch"><span class="lbl">State</span>
+        <button data-set="state" data-val="rest">Resting</button><button data-set="state" data-val="drill">Drilled into one occurrence</button>
+      </div>
+      <div class="hv-switch"><span class="lbl">Theme</span>
+        <button data-set="theme" data-val="light">Light</button><button data-set="theme" data-val="dark">Dark</button>
+      </div>
+    </div>
+    <p class="hv-drilled-note">The drilled state opens the <b>same occurrence in all three forms</b>:
+    the largest swing in the set, which is a <b>near-rule</b> occurrence. It is the honest probe —
+    the worst-looking low here is one the habit did <em>not</em> claim, and each form makes reaching
+    it cost something different.</p>
+  </header>
+
+  <section class="hv-frame" id="frame-h1">
+    <div class="hv-frametag"><b>H1 — verdict leads.</b> The answer is a sentence at the top of the
+      column; the roster is what backs it up.</div>
+    <div class="hv-stage" data-form="h1"></div>
+    <p class="hv-note" id="note-h1"></p>
+  </section>
+
+  <section class="hv-frame" id="frame-h2">
+    <div class="hv-frametag"><b>H2 — one ranked list.</b> No sections. Seventeen occurrences in one
+      order, each carrying its verdict as an inline mark.</div>
+    <div class="hv-stage" data-form="h2"></div>
+    <p class="hv-note" id="note-h2"></p>
+  </section>
+
+  <section class="hv-frame" id="frame-h3">
+    <div class="hv-frametag"><b>H3 — proportional band, one verdict at a time.</b> The split is a
+      figure you read in one glance; the roster shows exactly one verdict's occurrences.</div>
+    <div class="hv-stage" data-form="h3"></div>
+    <p class="hv-note" id="note-h3"></p>
+  </section>
+
+  <footer class="hv-foot">
+    <h2>What each form costs</h2>
+    <dl>
+      <dt>H1 — verdict leads</dt>
+      <dd><b>Buys:</b> the reader learns the answer before meeting a row, in their own words, and
+      the answer stays on screen while they drill. <b>Costs:</b> four lines of the column's height,
+      every visit, forever — including the twentieth visit, when the reader already knows. The
+      sentence is also the one thing on the surface that has to be written per finding kind, so it
+      is the piece most likely to go stale or read as a claim the model cannot support.
+      <b>Serves:</b> the person who opened the finding to find out whether it is real.</dd>
+
+      <dt>H2 — one ranked list</dt>
+      <dd><b>Buys:</b> the strongest comparison — seventeen occurrences on one spine, in one order,
+      so the reader can see at a glance that the worst swing is not one the habit claimed. Nothing
+      is hidden and nothing is a container. <b>Costs:</b> no summary at all — the three-way split
+      has to be counted off the marks, and the near-rule hedge loses its natural home (a group
+      header) and has to hang off the cap line. Ranking by swing also invites the reading that the
+      order is a severity ranking, which it is not. <b>Serves:</b> the person comparing their own
+      occurrences against each other.</dd>
+
+      <dt>H3 — proportional band</dt>
+      <dd><b>Buys:</b> the whole split as one figure, in one line of height, and a roster that is
+      never longer than one verdict — the shortest column of the three, and the only form that
+      scales to a finding with sixty occurrences. <b>Costs:</b> the reader can only ever see one
+      verdict's occurrences, so cross-verdict comparison — the thing that made the near-rule
+      outlier visible in H2 — takes a deliberate switch, and the switch looks like a filter on a
+      canvas that is deliberately never filtered. That mismatch is a real risk against the settled
+      ruling, and the frame states it. <b>Serves:</b> the person who already trusts the finding and
+      wants the shape of the evidence, not the evidence.</dd>
+    </dl>
+
+    <h2>Terms</h2>
+    <p>Nouns are <code>CONTEXT.md</code>'s: <b>Finding</b>, <b>Occurrence</b> (never "event",
+    "instance" or "hit"), <b>Evidence</b>, <b>Comparison support</b>. The three verdict labels
+    (<em>Rule matched</em> · <em>Near rule</em> · <em>Rule did not match</em>) are the shipped
+    projection's own strings and are printed verbatim wherever the surface names the verdict; the
+    plain-language lines above them are the wireframe's proposal, and are placeholder prose.</p>
+
+    <h2>Provenance</h2>
+    <p>Counts, dates, glucose figures, the window, the residue line and the coincidence band are read
+    at runtime from <code>mockups/finding-evidence-routing.exploration/data.json</code> (scene
+    <code>population:lows</code>, frame <code>over_treated_low</code>) — the exploration's own
+    synthetic projection. Nothing on this page is a hand-entered figure.</p>
+  </footer>
+
+</div>
+
+<script type="module" src="./wireframe.js"></script>
+</body>
+</html>

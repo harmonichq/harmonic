@@ -1,0 +1,320 @@
+/* Wireframe-round-H scaffold and the three forms' NEW elements.
+ *
+ * THE BAR, same as the exploration's scene.css: anything with a shipped sibling
+ * uses the shipped values. So this file holds only:
+ *   (a) the wireframe page's own scaffold — the harness, the frame boxes, the
+ *       notes. None of it is app chrome and none of it is proposed.
+ *   (b) the elements the three forms INVENT, built by copying the declarations
+ *       of the closest shipped sibling by name.
+ * Nothing here restates a token, a colour, a radius or a type rank. */
+
+/* ---------------------------------------------------------------- (a) page */
+/* shell.css locks html/body to one non-scrolling viewport, which is right for
+   the app and wrong for a wireframe page that stacks three frames. Released
+   here and nowhere else. */
+html, body { height: auto; overflow: visible; }
+/* THE HARNESS HAS ITS OWN PALETTE, ON PURPOSE, and it is the only thing on this
+   page that does. It is not app chrome — it is the page around the frames, and
+   it must read identically whichever theme the frames are switched into, so it
+   cannot borrow a themed token. Four fixed values, no more: the cockpit's own
+   ground so the frames sit on the surface they ship on, and an ink/meta/rule set
+   that holds against it in both. Every value INSIDE a frame is the app's. */
+:root {
+  --hv-ground: #17231d;
+  --hv-ink: #eae5da;
+  --hv-meta: #9daa9f;
+  --hv-rule: #33443a;
+  --hv-panel: #1f2f27;
+}
+body { background: var(--hv-ground); color: var(--hv-ink); font-family: Inter, system-ui, sans-serif; }
+
+.hv-page { max-width: 1360px; margin: 0 auto; padding: 26px 22px 90px; }
+
+.hv-harness h1 { margin: 0 0 6px; font-size: 18px; font-weight: 700; letter-spacing: .005em; }
+.hv-harness p { margin: 0 0 14px; max-width: 88ch; font-size: 13px; line-height: 1.55; color: var(--hv-meta); }
+.hv-harness b { color: var(--hv-ink); font-weight: 600; }
+.hv-drilled-note {
+  border-left: 2px solid var(--hv-rule); padding-left: 12px;
+}
+
+.hv-switches { display: flex; flex-wrap: wrap; gap: 16px; margin: 0 0 16px; }
+.hv-switch {
+  background: var(--hv-panel); border: 1px solid var(--hv-rule); border-radius: 6px; padding: 8px 10px;
+}
+.hv-switch .lbl {
+  display: block; margin-bottom: 6px;
+  font-size: 10px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--hv-meta);
+}
+.hv-switch button {
+  font: inherit; font-size: 12px; min-height: 34px; padding: 0 12px; cursor: pointer;
+  background: var(--hv-panel); border: 1px solid var(--hv-rule); color: var(--hv-meta);
+  margin-right: -1px;
+}
+.hv-switch button:first-of-type { border-radius: 4px 0 0 4px; }
+.hv-switch button:last-of-type { border-radius: 0 4px 4px 0; }
+.hv-switch button[aria-pressed="true"] {
+  background: #4f7f63; border-color: #4f7f63; color: #fff; font-weight: 600;
+}
+
+.hv-frame { margin: 0 0 30px; }
+.hv-frame[hidden] { display: none; }
+.hv-frametag {
+  font-size: 12px; color: var(--hv-meta); margin: 0 0 8px; line-height: 1.5; max-width: 92ch;
+}
+.hv-frametag b { color: var(--hv-ink); font-weight: 700; }
+
+/* The app surface's own box. 780px is a working desktop's pane height; the
+   inspector column keeps its shipped 430px inside it. */
+.hv-stage { height: 780px; min-height: 0; }
+.hv-stage > .dw { height: 100%; }
+
+.hv-note {
+  margin: 9px 0 0; max-width: 92ch; font-size: 12px; line-height: 1.6; color: var(--hv-meta);
+}
+.hv-note b { color: var(--hv-ink); font-weight: 600; }
+
+.hv-foot { margin-top: 44px; border-top: 1px solid var(--hv-rule); padding-top: 20px; max-width: 92ch; }
+.hv-foot h2 { font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--hv-meta); margin: 22px 0 10px; }
+.hv-foot h2:first-child { margin-top: 0; }
+.hv-foot dt { font-size: 13px; font-weight: 700; color: var(--hv-ink); margin-top: 12px; }
+.hv-foot dd { margin: 4px 0 0; font-size: 12.5px; line-height: 1.6; color: var(--hv-meta); }
+.hv-foot dd b { color: var(--hv-ink); font-weight: 600; }
+.hv-foot p { font-size: 12.5px; line-height: 1.6; color: var(--hv-meta); }
+.hv-foot code { font-family: var(--ck-mono, monospace); font-size: 11.5px; }
+
+/* The canvas placeholder. Stated as absent, never dressed up as a chart: this
+   round changes nothing on the canvas, and a fake plot would invite a fidelity
+   read of a surface that is not being proposed. */
+.hv-canvas-body {
+  display: grid; place-content: center; gap: 6px; text-align: center;
+  border: 1px dashed var(--ck-hair); border-radius: var(--ck-r);
+  margin: 0 12px 12px; padding: 20px;
+}
+.hv-canvas-body .l1 { font-size: 12px; color: var(--mk-secondary); }
+.hv-canvas-body .l2 { font-size: 11px; color: var(--mk-muted); max-width: 52ch; line-height: 1.55; }
+
+/* =====================================================================
+   (a2) THE SETTLED `fer-*` FORMS, TRANSCRIBED
+   =====================================================================
+   Every rule in this block is a VERBATIM copy of a declaration in
+   mockups/finding-evidence-routing.exploration/scene.css, with its originating
+   block named. It is transcribed rather than linked because scene.css is under
+   concurrent edit for round 6, and a wireframe whose ledger geometry, dock
+   height or dropdown metrics shift mid-review answers no question. Nothing here
+   is proposed and nothing here is new — if a form below and scene.css ever
+   disagree, scene.css is right and this file is stale. */
+
+/* scene.css (a) — the instrument row is gone, so `.dw`'s 42px rail row goes
+   with it and the panes take the whole surface. */
+.fer-surface { grid-template-rows: minmax(0, 1fr); }
+
+/* scene.css round 5 block 1 — the crumb's count accessory. */
+.fer-count {
+  margin-left: auto; padding-left: 12px; flex: 0 0 auto; text-align: right;
+  font-family: var(--ck-mono); font-size: 11px; font-weight: 500;
+  color: color-mix(in srgb, var(--mk-text) 55%, transparent);
+  font-variant-numeric: tabular-nums;
+}
+
+/* scene.css (c) — the table is the selection mechanism, and a population row
+   selects rather than routes. */
+.ev-row[data-selected="true"] { background: color-mix(in srgb, var(--mk-surface-2) 60%, transparent); }
+.ev-row:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: -2px; }
+.ev-row[data-route="none"] .chev { visibility: hidden; }
+
+/* scene.css round 6 form 1 — the factor dropdown's rest line, and the third
+   body row it needs. Only the rest state is drawn on this page; the list is not
+   part of round H's question. */
+.fer-surface .inspector > .body { grid-template-rows: auto auto minmax(0, 1fr); }
+.fer-sel-host { position: relative; z-index: 5; }
+.fer-sel {
+  display: flex; align-items: baseline; gap: 8px; width: 100%;
+  padding: 8px var(--ck-pad); border: 0; border-bottom: 1px solid var(--ck-hair);
+  background: var(--ck-rail); cursor: pointer; text-align: left;
+  font-size: 12px; white-space: nowrap;
+}
+.fer-sel .nm {
+  font-size: 12px; font-weight: 600; color: var(--mk-text);
+  overflow: hidden; text-overflow: ellipsis; min-width: 0;
+}
+.fer-sel .ct {
+  font-family: var(--ck-mono); font-size: 11px; font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--mk-text) 55%, transparent);
+}
+.fer-sel .chev {
+  margin-left: auto; color: var(--mk-muted); font-size: 11px;
+  transform: rotate(90deg);
+}
+
+/* scene.css round 5 block 5 — the group header is a rule, not a row. */
+.fer-group {
+  display: grid; grid-template-columns: auto minmax(12px, 1fr) auto;
+  align-items: center; gap: 8px;
+  margin: 10px 0 4px; padding: 0 var(--ck-pad);
+}
+.fer-group .lab {
+  font-size: 11px; font-weight: 600;
+  color: color-mix(in srgb, var(--mk-text) 70%, transparent);
+}
+.fer-group .rule { border-top: 1px solid var(--ck-hair); font-style: normal; }
+.fer-group .n {
+  font-size: 11px; font-weight: 400; font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--mk-text) 50%, transparent);
+}
+
+/* scene.css round 5 block 7 — the residue, unfilled. */
+.fer-residue {
+  padding: 6px var(--ck-pad);
+  font-size: 11px; font-weight: 400;
+  color: color-mix(in srgb, var(--mk-text) 45%, transparent);
+}
+
+/* scene.css round 5 block 8 — the dock at its true height (the owed term-48
+   re-settle), and the occurrences cap's own top pause. */
+.fer-surface .inspector > .watch {
+  display: block; min-height: 0;
+  background: none;
+  border-top: 1px solid var(--ck-hair);
+  padding: 7px var(--ck-pad);
+}
+.fer-dock-line {
+  display: block;
+  font-size: 11px; font-weight: 400;
+  color: color-mix(in srgb, var(--mk-text) 45%, transparent);
+}
+.fer-occ-cap { margin-top: 6px; }
+
+/* =====================================================================
+   (b) H1 — THE VERDICT BLOCK
+   ===================================================================== */
+/* The one thing H1 adds: a plain-language statement of what the finding found,
+ * at the top of the level, above everything the level already draws.
+ *
+ * It takes `.inner`'s padding (the shipped level body box) and sits on the
+ * column's own hairline, so it reads as the first band of the level rather than
+ * as a card dropped into it. No border, no fill, no radius — the column has one
+ * wash and the table owns it.
+ *
+ * The lead sentence is at `--ck-emph`, the one rank the column already spends on
+ * a subject's own name; the figures inside it take the mono tabular face every
+ * other number in this column takes, so the sentence and the table agree
+ * digit-for-digit. */
+.hv-verdict {
+  padding: 10px var(--ck-pad) 12px;
+  border-bottom: 1px solid var(--ck-hair);
+}
+.hv-verdict .say {
+  margin: 0; font-size: var(--ck-emph); line-height: 1.45; color: var(--mk-text); font-weight: 500;
+}
+.hv-verdict .say b {
+  font-family: var(--ck-mono); font-variant-numeric: tabular-nums; font-weight: 700;
+}
+.hv-verdict .sub {
+  margin: 7px 0 0; font-size: 11.5px; line-height: 1.5; color: var(--mk-secondary);
+}
+.hv-verdict .sub em { font-style: normal; font-family: var(--ck-mono); font-variant-numeric: tabular-nums; }
+/* The hedge, at the residue's rank — it is the quietest true thing on the
+   surface and must never out-weigh the sentence above it. */
+.hv-verdict .hedge {
+  margin: 6px 0 0; font-size: 11px; line-height: 1.5;
+  color: color-mix(in srgb, var(--mk-text) 45%, transparent);
+}
+
+/* =====================================================================
+   (b) H2 — THE INLINE VERDICT MARK
+   ===================================================================== */
+/* H2 has no group headers, so each row carries its own verdict — in the shipped
+ * row's OWN tier column, which is where the shipped table already prints an
+ * occurrence's classification. Nothing is added to the row's geometry.
+ *
+ * The three verdicts are distinguished by ink and weight only, never by a chip,
+ * a dot or a colour the canvas does not already own: `matched` takes full text
+ * ink at 600, `near rule` the secondary ink, `did not match` the muted ink. A
+ * reader scanning the column sees weight fall away down the list. */
+.ev-row .tier[data-verdict="fired"] { color: var(--mk-text); font-weight: 600; }
+.ev-row .tier[data-verdict="near_rule"] { color: var(--mk-secondary); font-weight: 500; }
+.ev-row .tier[data-verdict="neutral"] { color: var(--mk-muted); font-weight: 400; }
+
+/* The ranked list's cap carries what the group headers used to: the tally, and
+   the near-rule hedge. One line, at the cap's own meta rank. */
+.hv-tally {
+  padding: 6px var(--ck-pad) 8px;
+  font-size: 11px; line-height: 1.55;
+  color: color-mix(in srgb, var(--mk-text) 55%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--ck-hair) 60%, transparent);
+}
+.hv-tally b { font-family: var(--ck-mono); font-variant-numeric: tabular-nums; color: var(--mk-text); font-weight: 600; }
+.hv-tally .sep { padding: 0 5px; color: var(--ck-hair); }
+
+/* =====================================================================
+   (b) H3 — THE PROPORTIONAL BAND
+   ===================================================================== */
+/* One row, full column width, divided by count. Segments are buttons; the whole
+ * band is a radio group over the three verdicts.
+ *
+ * NO FILLS AT REST beyond the column's own two washes: an unselected segment is
+ * the inset ground the shipped column already uses for a recessed strip, the
+ * selected segment is the shipped selection wash `--ck-sel`. The segment's
+ * WIDTH is the information — the proportion — so it must not also be carrying a
+ * colour code, or the reader has to decide which of the two to believe. */
+.hv-band { padding: 10px var(--ck-pad) 0; }
+.hv-band .bar {
+  display: grid; width: 100%; height: 10px; gap: 2px; border-radius: 2px; overflow: hidden;
+}
+/* `--ck-inset` was tried for the unselected segment first and is the trap the
+   factor dropdown already documented in scene.css: it is a color-mix whose light
+   resolution is nothing like a light wash, and the band came out three near-black
+   bars on bone. The unselected segment is a tint of the column's own ink; the
+   selected one is the accent, solid — one colour, spent once, on the one thing
+   the reader has to be able to find. */
+.hv-band .seg {
+  border: 0; padding: 0; cursor: pointer;
+  background: color-mix(in srgb, var(--mk-text) 16%, transparent);
+}
+.hv-band .seg[aria-pressed="true"] { background: var(--ck-accent); }
+.hv-band .seg:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: 2px; }
+
+.hv-band .keys { display: grid; gap: 2px 10px; margin-top: 7px; }
+.hv-band .key {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 8px;
+  background: none; border: 0; padding: 2px 0; cursor: pointer; text-align: left;
+  font: inherit; font-size: 11.5px; color: var(--mk-muted);
+}
+.hv-band .key .n { font-family: var(--ck-mono); font-variant-numeric: tabular-nums; }
+.hv-band .key[aria-pressed="true"] { color: var(--mk-text); font-weight: 600; }
+.hv-band .key:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: 2px; }
+/* The band scopes the ROSTER only. Stated on the surface, because a control
+   that looks like a cohort filter beside a canvas that is never cohort-filtered
+   is exactly the disagreement the #31 ruling exists to prevent. */
+.hv-band .caveat {
+  margin: 8px 0 0; padding-bottom: 10px;
+  font-size: 11px; line-height: 1.5;
+  color: color-mix(in srgb, var(--mk-text) 45%, transparent);
+  border-bottom: 1px solid var(--ck-hair);
+}
+
+/* =====================================================================
+   (b) THE DRILL BLOCK — shared by all three forms
+   ===================================================================== */
+/* The occurrence's own detail, built entirely out of the shipped level-3
+ * elements (`.occ-head`, `.occ-nums`, `.occ-say`, `.statline`, `.ev-detail`)
+ * inside the shipped `.inner` box. The ONLY new thing is the back line, which
+ * takes `.fer-open`'s ink and size — the exploration's settled in-column route
+ * affordance — and sits on the left because it walks back rather than out. */
+.hv-drill { border-bottom: 1px solid var(--ck-hair); }
+.hv-back {
+  display: block; width: 100%; text-align: left;
+  padding: 8px var(--ck-pad) 2px;
+  border: 0; background: none; cursor: pointer;
+  font-size: 11.5px; font-weight: 500; color: var(--primary);
+}
+.hv-back:hover { text-decoration: underline; text-underline-offset: 2px; }
+.hv-back:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: -2px; }
+/* H2 drills IN PLACE — the detail is a band between two rows, so the ranked
+   order survives the drill. It is inset from the row spine by nothing and
+   marked only by the selection wash the selected row already carries. */
+.hv-drill[data-inline="true"] {
+  background: color-mix(in srgb, var(--mk-surface-2) 60%, transparent);
+  border-top: 1px solid var(--ck-hair);
+}

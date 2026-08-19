@@ -127,13 +127,15 @@ dock.append(dockLine);
 /* `sceneId` is null at the queue and a scene key when drilled; `frameKey` is the
    CLAIM LINE selected inside a population case file (round 3 — the claim split
    is the factor selector, and a finding case file has exactly one frame);
-   `highlighted` is the ONE occurrence whose trace is on the canvas; `pinned`
-   survives the pointer leaving the row. Four variables, and the whole surface is
-   a function of them. */
+   `highlighted` is the ONE occurrence whose trace is on the canvas.
+
+   ROUND 7, ITEM 3 — and `pinned` is gone. It existed only to remember which row
+   survived the pointer leaving the table; with the trace and the brace moved
+   onto selection, `highlighted` IS the selection and there is nothing for a
+   second variable to hold. */
 let sceneId = null;
 let frameKey = null;
 let highlighted = null;
-let pinned = null;
 let expanded = false;
 /* ROUND 6, FORM 3 — WHICH PROJECTION THE CANVAS IS DRAWN IN. Not a selection:
    the events are the same either way, and switching preserves the drilled row.
@@ -188,22 +190,34 @@ function paintPooledCanvas() {
     root, the lens under `By event`. */
 const showingClock = () => !scene() || projection === 'clock';
 
-/* ROUND 6, FORM 3 — the canvas head's one control, painted into whichever head
-   is mounted. ABSENT at the queue root, where nothing is selected to
-   re-project (the amendment's visibility rule, not a disabled state). */
+/* ROUND 7, ITEM 1 — THE TOOLBAR'S TWO STANDING GROUPS. `View` and `Window` are
+   the shipped instruments, and the mock does not drive either: its data IS the
+   Lows view over the 24 h window, and nothing on this surface re-scopes it. So
+   each group prints its standing coordinate pressed and takes no handler — a
+   button that silently did nothing would be the worse lie. Both lists come from
+   the shipped modules through build.mjs; neither is written here. */
+function paintStandingInstruments() {
+  for (const [id, group] of [['fer-seg-view', data.toolbar.view], ['fer-seg-window', data.toolbar.window]]) {
+    el(id).innerHTML = group.options.map((o) => `
+      <button type="button" aria-pressed="${group.standing === o.key}">${o.label}</button>`).join('');
+  }
+}
+
+/* ROUND 7, ITEM 1 — ALIGN, THE TOOLBAR'S THIRD GROUP. Same `cap` + `seg` form
+   as the two above; only its visibility differs, and that rule is unchanged
+   from round 6 — absent at the queue root, where nothing is selected to
+   re-project (the amendment's rule, not a disabled state). */
 function paintProjection() {
   const on = Boolean(scene());
-  for (const id of ['dw-proj', 'ec-proj']) {
-    const host = el(id);
-    host.hidden = !on;
-    if (!on) { host.innerHTML = ''; continue; }
-    host.innerHTML = `<span class="cap">${data.projection.label}</span>`
-      + `<span class="seg">${data.projection.options.map((o) => `
-        <button type="button" data-proj="${o.key}" aria-pressed="${projection === o.key}"
-                data-selected="${projection === o.key}">${o.label}</button>`).join('')}</span>`;
-    for (const node of host.querySelectorAll('[data-proj]')) {
-      node.addEventListener('click', () => selectProjection(node.dataset.proj));
-    }
+  const group = el('fer-align');
+  group.hidden = !on;
+  if (!on) { el('fer-seg-align').innerHTML = ''; return; }
+  el('fer-align-cap').textContent = data.projection.label;
+  const seg = el('fer-seg-align');
+  seg.innerHTML = data.projection.options.map((o) => `
+    <button type="button" data-proj="${o.key}" aria-pressed="${projection === o.key}">${o.label}</button>`).join('');
+  for (const node of seg.querySelectorAll('[data-proj]')) {
+    node.addEventListener('click', () => selectProjection(node.dataset.proj));
   }
 }
 
@@ -348,11 +362,15 @@ function paintQueue() {
 }
 
 /* --------------------------------------------------- the drilled case file */
+/* ROUND 7, ITEM 3c — NO `title` ATTRIBUTE. It carried the occurrence's verdict
+   detail ("Over-treated low matched the current rule."), so the browser popped
+   that sentence over the surface on every row the pointer crossed — a third
+   thing hover did, on top of moving the brace and drawing the trace. The verdict
+   is already in the row's tier cell and in the group rule above it. */
 const rowMarkup = (r, kind) => `
     <button type="button" class="ev-row" data-id="${r.id}" data-counter="false"
             data-selected="${highlighted === r.id}"
-            data-route="${kind === 'population' ? 'none' : 'self'}"
-            title="${r.title}">
+            data-route="${kind === 'population' ? 'none' : 'self'}">
       <span class="when">${r.when}</span>
       ${r.both
         ? `<span class="entry">${r.entry}</span><span class="arrow" aria-hidden="true">→</span>
@@ -620,18 +638,18 @@ function paintLevel(refit = true) {
   level.querySelector('.fer-route .fer-open')
     ?.addEventListener('click', (e) => go(e.currentTarget.dataset.open));
 
-  /* Row ⇄ trace: hover previews the ONE trace, click pins it. IDENTICAL in both
-     case files (round 3, item 3) — a population row no longer routes anywhere,
-     so one selection register covers the whole surface. */
+  /* ROUND 7, ITEM 3 — ROW -> CANVAS IS SELECTION, AND ONLY SELECTION. Rounds
+     1-6 hung the whole read on `mouseenter`: passing the pointer down the table
+     drew each day's trace in turn and dragged the window brace after it, so the
+     canvas never held still long enough to be read and nothing about a row was
+     ever committed. Hover keeps its own lightweight affordance — the shipped
+     `.ev-row:hover` wash, which is CSS and touches nothing — and every canvas
+     consequence now waits for a click. Clicking the selected row again clears
+     it. IDENTICAL in both case files (round 3, item 3): a population row does
+     not route anywhere either, so one selection register covers the surface. */
   for (const node of level.querySelectorAll('.ev-row')) {
     const id = node.dataset.id;
-    node.addEventListener('mouseenter', () => select(id, false));
-    node.addEventListener('focus', () => select(id, false));
-    node.addEventListener('mouseleave', () => { if (!pinned) select(null, false); });
-    node.addEventListener('click', () => {
-      pinned = pinned === id ? null : id;
-      select(pinned, true);
-    });
+    node.addEventListener('click', () => select(highlighted === id ? null : id, true));
   }
 
   paintDock();
@@ -659,7 +677,6 @@ function selectFrame(key) {
   if (!scene()?.frames?.[key] || frameKey === key) return;
   frameKey = key;
   highlighted = null;
-  pinned = null;
   expanded = false;
   rowLimit = Infinity;
   paintFactorSelect();
@@ -692,7 +709,6 @@ function go(id) {
      draw round 2 arrived at is not reachable from anywhere. */
   frameKey = id ? (data.scenes[id].defaultFactor ?? null) : null;
   highlighted = null;
-  pinned = null;
   expanded = false;
   rowLimit = Infinity;
   factorOpen = false;
@@ -702,6 +718,9 @@ function go(id) {
   paintLevel();
 }
 
+/* The two standing instruments are painted ONCE: nothing on this surface can
+   move the view or the window, so nothing can change them. */
+paintStandingInstruments();
 go(null);
 
 /* Screenshot hooks for harness.mjs — they drive the surface's own routing and
@@ -713,7 +732,7 @@ window.__ferFrame = selectFrame;
    a reader presses rather than reaching into state. */
 window.__ferProject = selectProjection;
 window.__ferFactorOpen = setFactorOpen;
-window.__ferSelect = (id) => { pinned = id; select(id, true); };
+window.__ferSelect = (id) => select(id, true);
 window.__ferChart = chart;
 /* ROUND 5, WORKSTREAM A — the queue root's pooled chart, published so
    harness.mjs can read its live `getOption()` and diff it against the running

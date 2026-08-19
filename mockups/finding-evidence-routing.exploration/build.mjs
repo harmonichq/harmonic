@@ -101,6 +101,44 @@ const winEdge = (m) => (m === 1440 ? '24:00' : hhmm(m));
 
 const readJson = async (path) => JSON.parse(await readFile(join(ROOT, path), 'utf8'));
 
+/* ---- ROUND 7, ITEM 1: THE INSTRUMENT ROW'S TWO SHIPPED GROUPS ----
+   The window-like toolbar STAYS (the operator's call — Verify carries the same
+   row), so the mock draws the shipped row rather than retiring it. Its two
+   groups are EXTRACTED from the shipped source at build time, never
+   transcribed: `View` is diagnose-event-comparison.js's own `VIEWS` list,
+   capitalised the way its `createViewInstrumentMarkup` capitalises it, and
+   `Window` is diagnose-workstation.js's own `WINDOWS` map. Fails closed — an
+   upstream rename stops the build instead of freezing a stale row into the
+   mock. The two group captions are those modules' own markup strings. */
+async function shippedInstruments() {
+  const ec = await readFile(join(ROOT, 'frontend/diagnose-event-comparison.js'), 'utf8');
+  const dw = await readFile(join(ROOT, 'frontend/diagnose-workstation.js'), 'utf8');
+  const viewList = ec.match(/const VIEWS = \[([^\]]+)\]/);
+  if (!viewList) throw new Error('diagnose-event-comparison.js no longer declares `const VIEWS = [...]`');
+  const viewKeys = [...viewList[1].matchAll(/'([a-z]+)'/g)].map((m) => m[1]);
+  if (!viewKeys.length) throw new Error('diagnose-event-comparison.js `VIEWS` carries no view keys');
+  if (!viewKeys.includes(VIEW)) throw new Error(`diagnose-event-comparison.js \`VIEWS\` has no "${VIEW}" view`);
+  const winBlock = dw.match(/const WINDOWS = \{([\s\S]*?)\n\};/);
+  if (!winBlock) throw new Error('diagnose-workstation.js no longer declares `const WINDOWS = {...}`');
+  const winOptions = [...winBlock[1].matchAll(/(\w+): \{ label: '([^']+)'/g)]
+    .map((m) => ({ key: m[1], label: m[2] }));
+  if (!winOptions.length) throw new Error('diagnose-workstation.js `WINDOWS` carries no labelled presets');
+  /* The mock stands on ONE window for as long as it stands — it has no drag and
+     no preset behaviour to answer with — and that window is the 24 h preset the
+     harness presses the app to before it compares the two pooled charts. Read
+     out of the same map rather than named again here. */
+  const standingWindow = winOptions.find((o) => o.label === ALL_DAY.label);
+  if (!standingWindow) throw new Error(`diagnose-workstation.js \`WINDOWS\` has no "${ALL_DAY.label}" preset`);
+  return {
+    view: {
+      label: 'View',
+      options: viewKeys.map((key) => ({ key, label: `${key[0].toUpperCase()}${key.slice(1)}` })),
+      standing: VIEW,
+    },
+    window: { label: 'Window', options: winOptions, standing: standingWindow.key },
+  };
+}
+
 /* ---------------------------------------------------------------- verbatim
    Copied from the shipped modules that do not export them. Each is a byte
    transcription with its source named, held honest by the option-level and
@@ -371,7 +409,11 @@ async function main() {
     id: o.identity.id,
     when: `${fmtDate(o.anchor.date)} · ${fmtTime(o.anchor.t)}`,
     tier: o.verdict.evidence_tier?.replaceAll('_', ' ') || 'unclassified',
-    title: o.verdict.detail || '',
+    /* ROUND 7, ITEM 3c — `verdict.detail` is NOT carried any more. It was the
+       row's `title` attribute, so every hover popped the browser's own tooltip
+       ("Over-treated low matched the current rule.") over the surface. The
+       verdict already prints in the row's tier cell and in the group rule above
+       it; a hover-only restatement of it is the one read here nobody asked for. */
     ...evidenceCells(o.anchor),
   });
 
@@ -713,11 +755,22 @@ async function main() {
       finding: 'No trial or focus active — stage a change from a finding to start one.',
     },
 
+    /* ---------- ROUND 7, ITEM 1: THE INSTRUMENT ROW ----------
+       The shipped `View` and `Window` groups, extracted above. The mock does not
+       drive either one — its data is the Lows view over the 24 h window and
+       nothing on this surface re-scopes it — so each group prints its standing
+       coordinate pressed. The row is here because it is the surface's toolbar in
+       Diagnose and in Verify alike, and because ALIGN belongs in it. */
+    toolbar: await shippedInstruments(),
+
     /* ---------- ROUND 6, FORM 3: THE PROJECTION TOGGLE ----------
-       The canvas head's ONE control (amendment, "the projection toggle"): a
-       switch over the already-selected data, never a data selector, and present
-       only where the canvas is showing a factor's events. The two option words
-       are the amendment's own. */
+       The amendment's projection toggle: a switch over the already-selected
+       data, never a data selector, and present only where the canvas is showing
+       a factor's events. The two option words are the amendment's own.
+       ROUND 7, ITEM 1 — it is the toolbar's THIRD GROUP now, in the same
+       `cap` + `seg` form as View and Window. Round 6 put it in the canvas head,
+       where it forced a third track into a two-track head and rendered poorly.
+       Its visibility rule is unchanged: never at the queue root. */
     projection: {
       label: 'Align',
       options: [

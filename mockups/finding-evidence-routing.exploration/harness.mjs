@@ -93,6 +93,16 @@ const SELECTORS = [
   '.cockpit-shell', '.cockpit-topbar', '.cockpit-identity', '.cockpit-mark', '.cockpit-step',
   '.cockpit-step-number', '.cockpit-scope', '.cockpit-scope-label', '.cockpit-log-carbs',
   '.cockpit-stage', '.cockpit-footer', '.cockpit-advisory', '.cockpit-profile-facts',
+  /* ROUND 7, ITEM 1 — the instrument row returns to the mock, so its four shipped
+     elements are checked against the app's own row rather than self-compared.
+     The Align group is built from the same three classes, which is what "the
+     same form as View and Window" has to mean to be verifiable. */
+  '.instruments', '.instrument', '.instrument > .cap', '.seg',
+  /* STATE-SCOPED, for the same reason `.qrow[data-tier="priced"]` is: a bare
+     `.seg button` compares the app's first segment (pressed) against the mock's
+     first segment (`Glucose`, which is not — the mock stands on the Lows view),
+     and reports the pressed state as drift. Both states exist on both sides. */
+  '.seg button[aria-pressed="false"]', '.seg button[aria-pressed="true"]',
   '.panes', '.pane', '.pane > header', '.pane > header h2',
   '.canvas-pane > header.canvas-head', '.canvas-head .head-swap', '.canvas-head .head-line',
   '.ec-title-context', '.canvas-head .persist', '.ec-chart', '.ec-chart-key',
@@ -145,10 +155,11 @@ const SELECTORS = [
 /* DELIBERATE deviations, each named with the reason it is not drift. Anything
    not in this map that differs is a real finding. */
 const EXPECTED = {
-  '.panes|grid-template-rows': 'the retired instrument row: 42px of rail height returns to the panes (#31 ruling 1)',
-  '.pane|grid-template-rows': 'ditto — the pane inherits the taller track',
-  '.inspector|grid-template-rows': 'ditto, PLUS round 5 block 8: the dock is no longer a 98px reserve, so '
-    + 'the level track takes that height as well. This is the term-48 re-settle, in one number.',
+  /* ROUND 7, ITEM 1 — the instrument row is back, so the panes are the app's own
+     height again and the two entries that excused the 42px difference are gone.
+     What remains below is the DOCK's re-settle, which is a real difference. */
+  '.inspector|grid-template-rows': 'round 5 block 8: the dock is no longer a 98px reserve, so '
+    + 'the level track takes that height. This is the term-48 re-settle, in one number.',
   '.inspector > .body|grid-template-rows': 'ditto — the level track grows; the crumb row differs by 1px '
     + 'because the count accessory sits in it. ROUND 6, FORM 1 adds a THIRD track: the factor dropdown\'s '
     + 'rest line, which is a row of the column above the level rather than content inside it.',
@@ -168,17 +179,13 @@ const EXPECTED = {
     + 'so there are no rows to lay out',
   '.watch|border-top-color': 'block 8: the app declares no top border at all, so its "colour" is the '
     + 'inherited text ink of a 0px edge — the mock\'s is `--ck-hair`, the pane\'s own hairline',
-  /* ROUND 6, FORM 3 — the canvas head gains the projection toggle (`By clock` /
-     `By event`), which the amendment settles as the head's ONE control. The
-     shipped head is a two-column grid — title swap, then the persistent
-     provenance meta — and the toggle is a third cell, so the head declares a
-     third `auto` track. Without it the toggle wrapped onto an implicit second
-     row and doubled the head's height. Both selectors below resolve to the same
-     element (the canvas head is the first `.pane > header` in the document). */
-  '.pane > header|grid-template-columns': 'form 3: the head takes a third `auto` track for the projection '
-    + 'toggle, which the shipped head has no sibling for',
-  '.canvas-pane > header.canvas-head|grid-template-columns': 'form 3: ditto — the projection toggle is a '
-    + 'third cell in the head, not a second row',
+  /* ROUND 7, ITEM 1 — the two round-6 head entries are REMOVED, not amended.
+     They named the third `auto` track the projection toggle forced into the
+     canvas head; the toggle is a toolbar group now, the head is the shipped
+     two-track grid again, and the deviation they excused no longer exists. That
+     is also item 2's fix: both heads are `.pane > header`, so they take
+     theme.css's one 30px min-height, one centred alignment and one bottom
+     hairline, and the seam across the divider reads as a single rail. */
   /* ROUND 5, WORKSTREAM A — the two consequences of lifting the pooled canvas. */
   '.lane-stack|grid-template-rows': 'workstream A, omission (b): the shipped stack carries a second row of '
     + 'I:C block verdicts beneath the basal lane. The #31 ruling names the BASAL verdict lane, and with one '
@@ -641,15 +648,34 @@ async function main() {
       await page.screenshot({ path: join(SHOTS, 'scene-1440x900.png') });
       await page.locator('.pane.inspector').screenshot({ path: join(SHOTS, 'inspector-column.png') });
 
+      /* ROUND 7, ITEM 3 — THE SAME ROW, HOVERED AND THEN SELECTED, as two frames
+         of one sequence. The hover is a REAL pointer hover, not a synthetic
+         call, because what is being proved is what the pointer alone does: the
+         canvas must be identical to the frame above it — no day trace, no window
+         brace, no verdict tooltip — and the row must not read as selected. Then
+         the same row is CLICKED, and the trace and the brace arrive. Anything
+         the hover frame shows that `scene-1440x900.png` does not is the bug. */
       const rowId = data.scenes['finding:over_treated_low'].occurrences.groups[0].rows[2].id;
-      await page.evaluate((id) => window.__ferSelect(id), rowId);
-      await page.waitForTimeout(400);
-      await page.screenshot({ path: join(SHOTS, 'row-day-trace-by-clock.png') });
+      const row = page.locator(`.ev-row[data-id="${rowId}"]`);
+      await row.hover();
+      await page.waitForTimeout(500);
+      await page.screenshot({ path: join(SHOTS, 'row-hovered-canvas-unchanged.png') });
+      results.hover = await page.evaluate(() => ({
+        selectedRows: document.querySelectorAll('.ev-row[data-selected="true"]').length,
+        rowsCarryingATitleAttribute: [...document.querySelectorAll('.ev-row[title]')].length,
+      }));
+
+      await row.click();
+      await page.waitForTimeout(500);
+      await page.screenshot({ path: join(SHOTS, 'row-selected-day-trace-by-clock.png') });
       results.highlightedRow = rowId;
+      results.selected = await page.evaluate(() => ({
+        selectedRows: document.querySelectorAll('.ev-row[data-selected="true"]').length,
+      }));
 
       await page.evaluate(() => window.__ferProject('event'));
       await page.waitForTimeout(450);
-      await page.screenshot({ path: join(SHOTS, 'row-hover-linked-trace.png') });
+      await page.screenshot({ path: join(SHOTS, 'row-selected-linked-trace-by-event.png') });
       await page.evaluate((id) => window.__ferSelect(id), null);
       await page.waitForTimeout(350);
       await page.screenshot({ path: join(SHOTS, 'scene-by-event-1440x900.png') });

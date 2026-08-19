@@ -15,9 +15,11 @@
        drilled states are REACHED, never rendered as the initial state, and the
        `Findings` crumb walks back.
 
-       Per the #31 resolution, the instrument row is GONE (no VIEW / FACTOR /
-       FILTER strip). The inspector is the sole navigation and the canvas answers
-       wherever it stands.
+       Per the #31 resolution, the instrument row carried no FACTOR or FILTER
+       instrument: the inspector is the sole navigation and the canvas answers
+       wherever it stands. ROUND 7, ITEM 1 — the row ITSELF stays, because Verify
+       carries the same one, and it holds three groups: View, Window, and (only
+       where a factor's events are on the canvas) Align.
 
        CHROME IS THE SHIPPED APP'S, not a copy of it: the stylesheets below are
        the app's own files, loaded in the app's own order, and the cockpit topbar
@@ -57,6 +59,36 @@
       <main class="cockpit-stage"><div class="main-content">
         <div id="diagnose-root">
           <section class="dw ec-surface fer-surface" data-state="typical">
+
+            <!-- ================== the instrument row ================== -->
+            <!-- ROUND 7, ITEM 1 — THE WINDOW-LIKE TOOLBAR STAYS. Round 2 retired
+                 it on ruling 1; the operator's send-back keeps it, because Verify
+                 carries the same row and dropping it here would drop it there.
+                 This is the SHIPPED row: `.instruments` > `.instrument` > `.cap`
+                 + `.seg`, from diagnose-workstation.js's own MARKUP, with the
+                 View group diagnose-event-comparison.js injects as its rail lead.
+
+                 ALIGN is its THIRD GROUP, in the identical form — same caption
+                 rank, same segmented control, same register. Round 6 put it in
+                 the canvas head instead, where it forced a third track into a
+                 two-track head and rendered poorly. Its visibility rule has not
+                 changed: it is absent at the queue root, where nothing is
+                 selected to re-project. -->
+            <div class="instruments">
+              <div class="instrument ec-view-coordinate">
+                <span class="cap">View</span>
+                <div class="seg ec-view-seg" id="fer-seg-view" role="group" aria-label="Diagnose view"></div>
+              </div>
+              <div class="instrument">
+                <span class="cap">Window</span>
+                <div class="seg" id="fer-seg-window" role="group" aria-label="Clock window"></div>
+              </div>
+              <div class="instrument fer-align" id="fer-align" hidden>
+                <span class="cap" id="fer-align-cap"></span>
+                <div class="seg" id="fer-seg-align" role="group" aria-label="Event alignment"></div>
+              </div>
+            </div>
+
             <main class="panes">
 
               <!-- ===================== canvas ===================== -->
@@ -91,9 +123,10 @@
                     </div>
                   </div>
                   <span class="meta persist" id="dw-pool">—</span>
-                  <!-- ROUND 6, FORM 3 — the canvas head's ONE control. Hidden at
-                       the queue root, where nothing is selected to re-project. -->
-                  <div class="fer-proj" id="dw-proj" hidden></div>
+                  <!-- ROUND 7, ITEM 1 — and the head's third cell is GONE with the
+                       toggle. The head is the shipped two-track grid again, which
+                       is also what squares it against the inspector head across
+                       the divider (item 2). -->
                 </header>
                 <div class="body">
                   <div id="chart"></div>
@@ -116,7 +149,6 @@
                     <div class="head-line head-live ec-canvas-readout" id="ec-readout" aria-hidden="true"><span class="ec-rd-time">--:--</span></div>
                   </div>
                   <span class="meta persist" id="canvas-persist"></span>
-                  <div class="fer-proj" id="ec-proj" hidden></div>
                 </header>
                 <div class="body">
                   <div id="ec-chart" class="ec-chart" role="img" tabindex="0"

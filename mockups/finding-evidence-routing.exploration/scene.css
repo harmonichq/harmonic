@@ -12,11 +12,16 @@
  * Nothing here restates a token, a colour, a radius or a type rank.
  */
 
-/* (a) THE INSTRUMENT ROW IS GONE (#31 resolution, ruling 1). `.dw` is a two-row
-   grid — 42px rail, then panes. With no rail the surface is one row, so the
-   panes take the whole height instead of leaving a 42px band of ground. This is
-   the scene's central move, not a fidelity drift. */
-.fer-surface { grid-template-rows: minmax(0, 1fr); }
+/* (a) ROUND 7, ITEM 1 — THE INSTRUMENT ROW IS BACK, so the override that
+   collapsed `.dw`'s 42px rail track is gone with it. The surface is the shipped
+   two-row grid again — rail, then panes — because the operator's send-back keeps
+   the window-like toolbar (Verify carries the same row). What the #31 ruling
+   retired was the FACTOR and FILTER instruments inside it, not the row: the
+   inspector is still the sole navigation. Three groups ride it now — View,
+   Window, and Align, which round 6 had wedged into the canvas head. The Align
+   group is the shipped `.instrument` + `.cap` + `.seg` form exactly, so it needs
+   no rule here beyond the one that lets `hidden` beat `display: flex`. */
+.instrument[hidden] { display: none; }
 
 /* (a) ROUND 5, WORKSTREAM A — TWO PANES AT EVERY LEVEL, ONE CANVAS MOUNTED.
  *
@@ -176,46 +181,21 @@
 .fer-sel-opt[aria-selected="true"] .lab { font-weight: 600; }
 
 /* ======================================================================
-   ROUND 6, FORM 3 — THE PROJECTION TOGGLE, IN THE CANVAS HEAD.
+   THE PROJECTION TOGGLE (`Align`) — NOW A TOOLBAR GROUP.
    ====================================================================== */
-/* The head's one control, and it must not read as a data selector: no fill, no
- * box, two words divided by a hairline, the chosen one at full ink over the
- * 2px primary rule the retired frame control used. That underline is the only
- * ink it spends, which is what keeps a projection switch visibly lighter than
- * the dropdown that chooses the data.
- *
- * `margin-left: auto` seats it at the head's right end, past the persistent
- * provenance meta — the head is a flex row (`.pane > header`), so the toggle
- * takes the slack rather than a fixed position. */
-/* The head is a two-column grid (`minmax(0,1fr) auto`) holding the title swap
-   and the persistent provenance meta. The toggle is a THIRD cell, so the head
-   takes a third `auto` track rather than wrapping onto an implicit second row —
-   which is what it did with two tracks, doubling the head's height. One named
-   deviation in the harness, and the head stays one row. */
-/* Scoped `.fer-surface .canvas-pane > header.canvas-head`, not `.fer-surface
-   .canvas-head`: the shipped rule is a two-class-plus-element selector, and the
-   shorter form loses to it on specificity — the head kept its two tracks and the
-   toggle kept wrapping, silently, exactly as round 4's `.level .inner` fix did. */
-.fer-surface .canvas-pane > header.canvas-head { grid-template-columns: minmax(0, 1fr) auto auto; }
-.fer-proj { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; padding-left: 14px; }
-.fer-proj[hidden] { display: none; }
-.fer-proj .cap {
-  font-size: var(--ck-micro); font-weight: 700; letter-spacing: var(--ck-track);
-  text-transform: uppercase; color: var(--mk-secondary);
-}
-.fer-proj .seg { display: flex; }
-.fer-proj button {
-  border: 0; border-left: 1px solid var(--ck-hair); border-radius: 0;
-  background: none; cursor: pointer; padding: 2px 8px;
-  font-size: 11.5px; font-weight: 500;
-  color: color-mix(in srgb, var(--mk-text) 62%, transparent);
-  box-shadow: none;
-}
-.fer-proj button:first-child { border-left: 0; }
-.fer-proj button:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: -2px; }
-.fer-proj button[data-selected="true"] {
-  color: var(--mk-text); box-shadow: inset 0 -2px 0 var(--primary);
-}
+/* ROUND 7, ITEM 1 — THE PROJECTION TOGGLE'S OWN RULES ARE DELETED, not moved.
+ * Round 6 gave it a bespoke form in the canvas head — a caption, a hairline
+ * divider between two words and a 2px underline on the chosen one — plus a
+ * third `auto` track on the head to stop it wrapping onto a second row. The
+ * operator read that as rendering poorly, and the fix is not to restyle it: in
+ * the toolbar it is a `.instrument` with a `.cap` and a `.seg`, which is the
+ * form View and Window already have. Every declaration it needs is shipped, so
+ * there is nothing left to state here — and the canvas head goes back to the
+ * shipped two-track grid, which is what squares it against the inspector head
+ * across the divider (item 2: both heads are `.pane > header`, and theme.css
+ * gives that role one 30px min-height, one centred baseline and one bottom
+ * hairline for exactly this seam).
+ * ====================================================================== */
 
 /* ======================================================================
    ROUND 6, SEND-BACK 6 — THE COINCIDENCE, AS RESOLVED ROUTES.

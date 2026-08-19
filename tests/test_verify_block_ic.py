@@ -289,9 +289,9 @@ class BlockIcIdentityAndCohortTest(unittest.TestCase):
         self.tmp.close()
 
     def _selected(self, store):
-        roster = review_trials(store, now=NOW, window_days=14)
+        roster = review_trials(store, now=NOW)
         block = next(t for t in roster["trials"] if t["slot"] is not None)
-        detail = review_trials(store, now=NOW, window_days=14,
+        detail = review_trials(store, now=NOW,
                                selected=block["id"])["selected"]
         return block, detail
 
@@ -315,7 +315,7 @@ class BlockIcIdentityAndCohortTest(unittest.TestCase):
                 "2026-06-09 09:00:00", PumpSettings(3, (old, new, moved)))
             after_block, after_detail = self._selected(store)
             # Still exactly one block-scoped Trial — the repartition spawned none.
-            after_roster = review_trials(store, now=NOW, window_days=14)
+            after_roster = review_trials(store, now=NOW)
 
         self.assertEqual(after_block["id"], before_block["id"])
         self.assertEqual(after_block["changed_at"], "2026-06-05 09:00:00")
@@ -350,7 +350,7 @@ class BlockIcIdentityAndCohortTest(unittest.TestCase):
                   second_block, second_members, 5.0, 4.0)
             _cgm_span(store, SWITCH - timedelta(days=14), NOW)
 
-            roster = review_trials(store, now=NOW, window_days=14)
+            roster = review_trials(store, now=NOW)
 
         block_trials = sorted(
             (t for t in roster["trials"] if t["slot"] is not None),

@@ -647,7 +647,11 @@ _Avoid_: change basket, backlog, batch.
 A Trial's watch phase — the change is in effect but its **outcome delta is not yet
 trustworthy** because post-change data is still accruing ("your 07-06 change is still
 maturing, 6 of 14 days"). Gated on the **target metric's** data accrual (enough
-post-change days to fill the rolling window), not on model sufficiency. Distinct from
+post-change days to fill the Trial's **fixed 14-day maturing window** — a backend
+fact no trend or analysis window a caller selects can move), not on model
+sufficiency. Maturity accrues only within the Trial's own bounded period (from the
+change through 14 days after it), so the dock and Verify count the same days for
+the same change. Distinct from
 **Settling** (#95), which is the *Diagnose/Review*-side state where the engine withholds
 a fresh recommendation for a just-changed knob because the change is too recent to
 re-judge. Same underlying fact (a recent change, immature data), two different

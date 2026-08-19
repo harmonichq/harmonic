@@ -1078,9 +1078,10 @@ def summarize_trend(
     # epoch) or the pinned Focus, resolved by the one-active invariant (#244). This
     # may DROP an active Focus if a Trial now preempts it (a persisted state change).
     from .watched_change import active_watched_change
+    # The Trial's maturing window is the watched-change module's own fixed fact
+    # (#18) — the trend's tiling window deliberately does not travel into it.
     watched = active_watched_change(store, basal, bolus, snaps,
-                                    now=now, window_days=window_days,
-                                    cgm_readings=cgm)
+                                    now=now, cgm_readings=cgm)
 
     return OutcomesTrend(
         schema_version=SCHEMA_VERSION,

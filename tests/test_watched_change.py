@@ -75,7 +75,7 @@ def _basal_days(spans, hour=0):
 class TrialDetectionTest(unittest.TestCase):
     def test_isf_change_maps_to_tir(self):
         bolus = _isf_boluses([(30, 1, 4), (45, 5, 8)])
-        t = wc.detect_trial([], bolus, [], now=_day(8), window_days=14)
+        t = wc.detect_trial([], bolus, [], now=_day(8))
         self.assertIsNotNone(t)
         self.assertEqual(t.parameter, "isf")
         self.assertEqual(t.target_metrics, ["tir"])
@@ -88,20 +88,20 @@ class TrialDetectionTest(unittest.TestCase):
     def test_carb_ratio_change_maps_to_arc(self):
         bolus = ([_bolus(d, isf=30, ic=8.0, target=110) for d in range(1, 5)]
                  + [_bolus(d, isf=30, ic=6.0, target=110) for d in range(5, 9)])
-        t = wc.detect_trial([], bolus, [], now=_day(8), window_days=14)
+        t = wc.detect_trial([], bolus, [], now=_day(8))
         self.assertEqual(t.parameter, "carb_ratio")
         self.assertEqual(t.target_metrics, ["arc"])
 
     def test_target_change_maps_to_tir(self):
         bolus = ([_bolus(d, isf=30, ic=7.0, target=110) for d in range(1, 5)]
                  + [_bolus(d, isf=30, ic=7.0, target=100) for d in range(5, 9)])
-        t = wc.detect_trial([], bolus, [], now=_day(8), window_days=14)
+        t = wc.detect_trial([], bolus, [], now=_day(8))
         self.assertEqual(t.parameter, "target_bg")
         self.assertEqual(t.target_metrics, ["tir"])
 
     def test_basal_change_maps_to_tbr(self):
         basal = _basal_days([(0.6, 1, 4), (0.8, 5, 8)])
-        t = wc.detect_trial(basal, [], [], now=_day(8), window_days=14)
+        t = wc.detect_trial(basal, [], [], now=_day(8))
         self.assertEqual(t.parameter, "basal_rate")
         self.assertEqual(t.target_metrics, ["tbr"])
         self.assertEqual(t.slot, "00:00")
@@ -113,7 +113,7 @@ class TrialDetectionTest(unittest.TestCase):
         bolus = ([_bolus(d, isf=30, ic=8.0, target=110) for d in range(1, 5)]
                  + [_bolus(d, isf=45, ic=6.0, target=100) for d in range(5, 9)])
         basal = _basal_days([(0.6, 1, 4), (0.8, 5, 8)])
-        t = wc.detect_trial(basal, bolus, [], now=_day(8), window_days=14)
+        t = wc.detect_trial(basal, bolus, [], now=_day(8))
         self.assertEqual(t.parameter, "profile")
         self.assertEqual(t.target_metrics, ["tir", "arc"])
         self.assertIsNone(t.before)
@@ -121,20 +121,20 @@ class TrialDetectionTest(unittest.TestCase):
 
     def test_no_change_no_trial(self):
         bolus = _isf_boluses([(30, 1, 8)])
-        self.assertIsNone(wc.detect_trial([], bolus, [], now=_day(8), window_days=14))
+        self.assertIsNone(wc.detect_trial([], bolus, [], now=_day(8)))
 
     def test_stale_change_outside_watch_horizon_is_not_a_trial(self):
         # A change 40 days before `now` (> 2× the 14d window) has long matured and
         # is no longer a watched change.
         bolus = _isf_boluses([(30, 1, 4), (45, 5, 40)])
-        self.assertIsNone(wc.detect_trial([], bolus, [], now=_day(60), window_days=14))
+        self.assertIsNone(wc.detect_trial([], bolus, [], now=_day(60)))
 
 
 class MaturingTest(unittest.TestCase):
     def test_recent_change_is_maturing(self):
         bolus = _isf_boluses([(30, 1, 4), (45, 5, 8)])
         cgm = _cgm_days(1, 8)  # only a few post-change data-days
-        t = wc.detect_trial([], bolus, [], now=_day(8), window_days=14,
+        t = wc.detect_trial([], bolus, [], now=_day(8),
                             cgm_readings=cgm)
         self.assertTrue(t.maturing.is_maturing)
         self.assertGreaterEqual(t.maturing.days_elapsed, 1)
@@ -144,7 +144,7 @@ class MaturingTest(unittest.TestCase):
     def test_matured_change_is_not_maturing(self):
         bolus = _isf_boluses([(30, 1, 4), (45, 5, 24)])
         cgm = _cgm_days(5, 24)  # >14 distinct post-change data-days
-        t = wc.detect_trial([], bolus, [], now=_day(24), window_days=14,
+        t = wc.detect_trial([], bolus, [], now=_day(24),
                             cgm_readings=cgm)
         self.assertFalse(t.maturing.is_maturing)
         self.assertGreaterEqual(t.maturing.days_elapsed, 14)
@@ -153,7 +153,7 @@ class MaturingTest(unittest.TestCase):
         # An ISF change 30 calendar days old but with NO post-change CGM stays
         # maturing — the gate is data accrual, not the wall clock (ADR 0029 §6).
         bolus = _isf_boluses([(30, 1, 4), (45, 5, 8)])
-        t = wc.detect_trial([], bolus, [], now=_day(20), window_days=14,
+        t = wc.detect_trial([], bolus, [], now=_day(20),
                             cgm_readings=[])
         self.assertTrue(t.maturing.is_maturing)
         self.assertEqual(t.maturing.days_elapsed, 0)
@@ -163,7 +163,7 @@ class MaturingTest(unittest.TestCase):
         # irrelevant; the meal boluses that carry the I:C are themselves the data.
         bolus = ([_bolus(d, isf=30, ic=8.0, target=110) for d in range(1, 5)]
                  + [_bolus(d, isf=30, ic=6.0, target=110) for d in range(5, 9)])
-        t = wc.detect_trial([], bolus, [], now=_day(8), window_days=14,
+        t = wc.detect_trial([], bolus, [], now=_day(8),
                             cgm_readings=_cgm_days(1, 8))
         self.assertEqual(t.target_metrics, ["arc"])
         # post-change meal-days (days 5..8, minus the day-5 boundary dose at/after
@@ -176,12 +176,12 @@ class RevertRuleTest(unittest.TestCase):
     def test_revert_within_window_closes_trial_no_second_trial(self):
         # 30 → 45 → back to exact 30 inside the maturing window: closed, no new trial.
         bolus = _isf_boluses([(30, 1, 4), (45, 5, 8), (30, 9, 12)])
-        self.assertIsNone(wc.detect_trial([], bolus, [], now=_day(12), window_days=14))
+        self.assertIsNone(wc.detect_trial([], bolus, [], now=_day(12)))
 
     def test_third_value_creates_new_trial(self):
         # 30 → 45 → 60: a third value is a genuine new trial (45 → 60).
         bolus = _isf_boluses([(30, 1, 4), (45, 5, 8), (60, 9, 12)])
-        t = wc.detect_trial([], bolus, [], now=_day(12), window_days=14)
+        t = wc.detect_trial([], bolus, [], now=_day(12))
         self.assertIsNotNone(t)
         self.assertEqual(t.parameter, "isf")
         self.assertEqual(t.before, 45.0)
@@ -190,7 +190,7 @@ class RevertRuleTest(unittest.TestCase):
     def test_revert_after_maturing_is_a_new_trial(self):
         # Walk-back long AFTER the change matured is a deliberate new change, watched.
         bolus = _isf_boluses([(30, 1, 4), (45, 5, 8), (30, 30, 33)])
-        t = wc.detect_trial([], bolus, [], now=_day(33), window_days=14)
+        t = wc.detect_trial([], bolus, [], now=_day(33))
         self.assertIsNotNone(t)
         self.assertEqual(t.before, 45.0)
         self.assertEqual(t.after, 30.0)
@@ -200,7 +200,7 @@ class RevertRuleTest(unittest.TestCase):
         # still live: fall through to the basal Trial, don't blank the payload.
         isf = _isf_boluses([(30, 1, 4), (45, 5, 8), (30, 9, 12)])  # reverted at day 9
         basal = _basal_days([(0.6, 1, 6), (0.8, 7, 12)])           # basal changed day 7
-        t = wc.detect_trial(basal, isf, [], now=_day(12), window_days=14)
+        t = wc.detect_trial(basal, isf, [], now=_day(12))
         self.assertIsNotNone(t)
         self.assertEqual(t.parameter, "basal_rate")
         self.assertEqual(t.target_metrics, ["tbr"])
@@ -247,7 +247,7 @@ class OneActiveInvariantTest(unittest.TestCase):
     def test_focus_surfaces_when_no_trial(self):
         self.store.pin_focus("late_bolus", "2026-05-06 08:00:00")
         active = wc.active_watched_change(
-            self.store, [], [], [], now=_day(10), window_days=14)
+            self.store, [], [], [], now=_day(10))
         self.assertEqual(active.kind, "focus")
         self.assertEqual(active.lever, "late_bolus")
 
@@ -256,7 +256,7 @@ class OneActiveInvariantTest(unittest.TestCase):
             "overnight_low_from_evening_dosing", "2026-05-06 08:00:00"
         )
         active = wc.active_watched_change(
-            self.store, [], [], [], now=_day(10), window_days=14
+            self.store, [], [], [], now=_day(10)
         )
         self.assertIsNone(active)
         self.assertIsNone(self.store.active_focus())
@@ -266,7 +266,7 @@ class OneActiveInvariantTest(unittest.TestCase):
         self.store.pin_focus("late_bolus", "2026-05-06 08:00:00")
         bolus = _isf_boluses([(30, 1, 4), (45, 5, 8)])  # change at day 5
         active = wc.active_watched_change(
-            self.store, [], bolus, [], now=_day(8), window_days=14)
+            self.store, [], bolus, [], now=_day(8))
         # Trial takes the slot; the Focus is dropped (not paused), not surfaced.
         self.assertEqual(active.kind, "trial")
         self.assertIsNone(self.store.active_focus())
@@ -275,14 +275,14 @@ class OneActiveInvariantTest(unittest.TestCase):
     def test_trial_active_blocks_a_pin(self):
         bolus = _isf_boluses([(30, 1, 4), (45, 5, 8)])
         self.assertTrue(wc.trial_is_active(
-            self.store, bolus_events=bolus, now=_day(8), window_days=14))
+            self.store, bolus_events=bolus, now=_day(8)))
         # No change → no trial → a pin would be allowed.
         self.assertFalse(wc.trial_is_active(
-            self.store, bolus_events=[], now=_day(8), window_days=14))
+            self.store, bolus_events=[], now=_day(8)))
 
     def test_nothing_watched_returns_none(self):
         self.assertIsNone(wc.active_watched_change(
-            self.store, [], [], [], now=_day(8), window_days=14))
+            self.store, [], [], [], now=_day(8)))
 
 
 def _seg(start_min, basal, isf, cr, target):
@@ -324,7 +324,7 @@ class ProfileSwitchAttributionTest(unittest.TestCase):
         snaps = [_snap(4, 1, [p_out, p_in]), _snap(5, 2, [p_out, p_in])]
         bolus = ([_bolus(d, isf=40, ic=5.0, target=110) for d in range(1, 5)]
                  + [_bolus(d, isf=36, ic=5.0, target=110) for d in range(5, 9)])
-        t = wc.detect_trial([], bolus, snaps, now=_day(8), window_days=14)
+        t = wc.detect_trial([], bolus, snaps, now=_day(8))
         self.assertEqual(t.parameter, "isf")
         self.assertEqual(t.before, 40)
         self.assertEqual(t.after, 36)
@@ -338,7 +338,7 @@ class ProfileSwitchAttributionTest(unittest.TestCase):
         snaps = [_snap(4, 1, [p_out, p_in]), _snap(5, 2, [p_out, p_in])]
         bolus = ([_bolus(d, isf=40, ic=5.0, target=110) for d in range(1, 5)]
                  + [_bolus(d, isf=36, ic=5.0, target=110) for d in range(5, 9)])
-        t = wc.detect_trial([], bolus, snaps, now=_day(8), window_days=14)
+        t = wc.detect_trial([], bolus, snaps, now=_day(8))
         self.assertEqual(t.parameter, "isf")
         self.assertIsNone(t.slot)
         self.assertEqual(t.target_metrics, ["tir"])
@@ -352,7 +352,7 @@ class ProfileSwitchAttributionTest(unittest.TestCase):
         snaps = [_snap(4, 1, [p_out, p_in]), _snap(5, 2, [p_out, p_in])]
         basal = ([_basal_slot(d, 8, 30, 0.6) for d in range(1, 5)]
                  + [_basal_slot(d, 8, 30, 1.1) for d in range(5, 9)])
-        t = wc.detect_trial(basal, [], snaps, now=_day(8), window_days=14)
+        t = wc.detect_trial(basal, [], snaps, now=_day(8))
         self.assertEqual(t.parameter, "basal_rate")
         self.assertEqual(t.slot, "08:30")
         self.assertEqual(t.target_metrics, ["tbr"])
@@ -368,7 +368,7 @@ class ProfileSwitchAttributionTest(unittest.TestCase):
                  + [_bolus(d, isf=36, ic=4.0, target=110) for d in range(5, 9)])
         basal = ([_basal_slot(d, 0, 0, 0.6) for d in range(1, 5)]
                  + [_basal_slot(d, 0, 0, 0.8) for d in range(5, 9)])
-        t = wc.detect_trial(basal, bolus, snaps, now=_day(8), window_days=14)
+        t = wc.detect_trial(basal, bolus, snaps, now=_day(8))
         self.assertEqual(t.parameter, "profile")
         self.assertEqual(t.target_metrics, ["tir", "arc"])
 
@@ -379,7 +379,7 @@ class ProfileSwitchAttributionTest(unittest.TestCase):
                  _snap(5, 2, [p_in])]
         bolus = ([_bolus(d, isf=40, ic=5.0, target=110) for d in range(1, 5)]
                  + [_bolus(d, isf=36, ic=5.0, target=110) for d in range(5, 9)])
-        t = wc.detect_trial([], bolus, snaps, now=_day(8), window_days=14)
+        t = wc.detect_trial([], bolus, snaps, now=_day(8))
         self.assertEqual(t.parameter, "profile")
         self.assertEqual(t.target_metrics, ["tir", "arc"])
 
@@ -430,7 +430,7 @@ class SwitchStartsTrialImmediatelyTest(unittest.TestCase):
 
     def test_switch_with_zero_boluses_is_a_targeted_trial(self):
         t = wc.detect_trial([], [], self._noon_isf_switch(),
-                            now=_day(5) + timedelta(hours=12), window_days=14)
+                            now=_day(5) + timedelta(hours=12))
         self.assertIsNotNone(t)
         self.assertEqual(t.parameter, "isf")
         self.assertEqual(t.before, 40)
@@ -446,11 +446,11 @@ class SwitchStartsTrialImmediatelyTest(unittest.TestCase):
         # them; they only move days_elapsed.
         snaps = self._whole_day_ic_switch()
         one_day = [_bolus(5, isf=40, ic=5.7, target=110, hour=12)]
-        t1 = wc.detect_trial([], one_day, snaps, now=_day(6), window_days=14)
+        t1 = wc.detect_trial([], one_day, snaps, now=_day(6))
         self.assertEqual(t1.parameter, "carb_ratio")
         self.assertEqual(t1.maturing.days_elapsed, 1)
         two_days = one_day + [_bolus(6, isf=40, ic=5.7, target=110, hour=12)]
-        t2 = wc.detect_trial([], two_days, snaps, now=_day(7), window_days=14)
+        t2 = wc.detect_trial([], two_days, snaps, now=_day(7))
         self.assertEqual(t2.parameter, "carb_ratio")
         self.assertEqual(t2.before, 5.4)
         self.assertEqual(t2.after, 5.7)
@@ -464,7 +464,7 @@ class SwitchStartsTrialImmediatelyTest(unittest.TestCase):
                     for d in range(7, 11)])
 
         t = wc.detect_trial(
-            [], bolus, snaps, now=_day(10) + timedelta(hours=13), window_days=14
+            [], bolus, snaps, now=_day(10) + timedelta(hours=13)
         )
 
         self.assertEqual(t.parameter, "carb_ratio")
@@ -481,7 +481,7 @@ class SwitchStartsTrialImmediatelyTest(unittest.TestCase):
         # the blocks underneath a live Trial. Until that is persisted with the Plan, a
         # segment-scoped carb-ratio edit opens no Trial rather than a wrong one.
         t = wc.detect_trial([], [], self._noon_ic_switch(),
-                            now=_day(5) + timedelta(hours=12), window_days=14)
+                            now=_day(5) + timedelta(hours=12))
         self.assertIsNone(t)
 
     def test_whole_parameter_carb_ratio_change_still_opens_a_trial(self):
@@ -489,8 +489,7 @@ class SwitchStartsTrialImmediatelyTest(unittest.TestCase):
         # A whole-day carb-ratio change is still watched exactly as before.
         bolus = ([_bolus(d, isf=40, ic=5.4, target=110, hour=12) for d in range(1, 5)]
                  + [_bolus(d, isf=40, ic=5.7, target=110, hour=12) for d in range(7, 11)])
-        t = wc.detect_trial([], bolus, [], now=_day(10) + timedelta(hours=13),
-                            window_days=14)
+        t = wc.detect_trial([], bolus, [], now=_day(10) + timedelta(hours=13))
         self.assertIsNotNone(t)
         self.assertEqual(t.parameter, "carb_ratio")
         self.assertIsNone(t.slot)
@@ -504,7 +503,7 @@ class SwitchStartsTrialImmediatelyTest(unittest.TestCase):
                     for d in range(35, 39)])
 
         t = wc.detect_trial(
-            [], bolus, snaps, now=_day(39) + timedelta(hours=13), window_days=14
+            [], bolus, snaps, now=_day(39) + timedelta(hours=13)
         )
 
         self.assertIsNone(t)
@@ -519,7 +518,7 @@ class SwitchStartsTrialImmediatelyTest(unittest.TestCase):
                     for d in range(11, 15)])
 
         t = wc.detect_trial(
-            [], bolus, snaps, now=_day(14) + timedelta(hours=13), window_days=14
+            [], bolus, snaps, now=_day(14) + timedelta(hours=13)
         )
 
         self.assertEqual(t.parameter, "carb_ratio")
@@ -538,7 +537,7 @@ class SwitchStartsTrialImmediatelyTest(unittest.TestCase):
                     for d in range(11, 15)])
 
         t = wc.detect_trial(
-            [], bolus, snaps, now=_day(14) + timedelta(hours=13), window_days=14
+            [], bolus, snaps, now=_day(14) + timedelta(hours=13)
         )
 
         self.assertEqual(t.parameter, "carb_ratio")
@@ -551,7 +550,7 @@ class SwitchStartsTrialImmediatelyTest(unittest.TestCase):
         p_out = _profile(5, [_seg(0, 0.6, 40, 5.4, 110)])
         p_in = _profile(6, [_seg(0, 0.8, 36, 5.4, 110)])
         snaps = [_snap(4, 5, [p_out, p_in]), _snap(5, 6, [p_out, p_in])]
-        t = wc.detect_trial([], [], snaps, now=_day(6), window_days=14)
+        t = wc.detect_trial([], [], snaps, now=_day(6))
         self.assertEqual(t.parameter, "profile")
         self.assertEqual(t.target_metrics, ["tir", "arc"])
 
@@ -559,7 +558,7 @@ class SwitchStartsTrialImmediatelyTest(unittest.TestCase):
         p_in = _profile(6, [_seg(0, 0.6, 36, 5.4, 110)])
         snaps = [_snap(4, 5, [_profile(5, [_seg(0, 0.6, 40, 5.4, 110)]), p_in]),
                  _snap(5, 6, [p_in])]
-        t = wc.detect_trial([], [], snaps, now=_day(6), window_days=14)
+        t = wc.detect_trial([], [], snaps, now=_day(6))
         self.assertEqual(t.parameter, "profile")
 
     def test_exact_switch_back_in_window_is_closed_not_a_second_trial(self):
@@ -567,7 +566,7 @@ class SwitchStartsTrialImmediatelyTest(unittest.TestCase):
         p_in = _profile(6, [_seg(0, 0.6, 40, 5.4, 110), _seg(720, 0.6, 40, 5.7, 110)])
         snaps = [_snap(4, 5, [p_out, p_in]), _snap(5, 6, [p_out, p_in]),
                  _snap(8, 5, [p_out, p_in])]
-        self.assertIsNone(wc.detect_trial([], [], snaps, now=_day(9), window_days=14))
+        self.assertIsNone(wc.detect_trial([], [], snaps, now=_day(9)))
 
 
 if __name__ == "__main__":

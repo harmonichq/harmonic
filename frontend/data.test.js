@@ -159,10 +159,10 @@ test('fetchCatalog builds GET /api/catalog', async () => {
 test('fetchVerifyTrials builds the bounded roster request with selection', async () => {
   const { fetch, calls } = makeFakeFetch({ trials: [], selected: null });
   const { fetchVerifyTrials } = makeDeps({ fetch });
-  await fetchVerifyTrials({ window: 14, selected: 'carb_ratio-12-00-20260605090000' });
+  await fetchVerifyTrials({ selected: 'carb_ratio-12-00-20260605090000' });
   assert.equal(
     calls[0].url,
-    '/verify/trials?window=14&selected=carb_ratio-12-00-20260605090000',
+    '/verify/trials?selected=carb_ratio-12-00-20260605090000',
   );
 });
 

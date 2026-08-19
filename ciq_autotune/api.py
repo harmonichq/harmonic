@@ -450,9 +450,12 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         return cache.get_or_compute(("outcomes-trend", window), compute)
 
     @app.get("/verify/trials")
-    def verify_trials_endpoint(window: int = 14, selected: Optional[str] = None,
+    def verify_trials_endpoint(selected: Optional[str] = None,
                                _: None = Depends(require_token)) -> dict:
         """The bounded, side-effect-free Trial roster for Verify (ADR 579).
+
+        The Trial's maturing window and watch horizon are fixed backend facts
+        owned by the watched-change module (#18) — no caller window exists here.
 
         Answers from the ResultCache since #660: a selected Trial's detail now
         carries the paired per-period envelopes, which bin every CGM reading in
@@ -465,10 +468,10 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         def compute() -> dict:
             with Store.open(db_path) as store:
                 now = _latest_instant(store) or datetime.now()
-                return review_trials(store, now=now, window_days=window, selected=selected)
+                return review_trials(store, now=now, selected=selected)
 
         try:
-            return cache.get_or_compute(("verify-trials", window, selected), compute)
+            return cache.get_or_compute(("verify-trials", selected), compute)
         except KeyError:
             raise HTTPException(status_code=404, detail="unknown or expired Trial")
 
@@ -985,7 +988,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         pinned_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with Store.open(db_path) as store:
             now = _latest_instant(store) or datetime.now()
-            if trial_is_active(store, now=now, window_days=14):
+            if trial_is_active(store, now=now):
                 raise HTTPException(
                     status_code=409,
                     detail="a setting change is under trial — cannot pin a Focus")

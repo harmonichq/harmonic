@@ -4233,12 +4233,12 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           verifyLoading = true;
           verifyError.value = null;
           try {
-            const roster = await enqueue(() => dataFetchVerifyTrials({ window: 14 }));
+            const roster = await enqueue(() => dataFetchVerifyTrials());
             const details = {};
             for (const trial of roster.trials || []) {
               try {
                 details[trial.id] = await enqueue(
-                  () => dataFetchVerifyTrials({ window: 14, selected: trial.id }));
+                  () => dataFetchVerifyTrials({ selected: trial.id }));
               } catch { /* a Trial whose evidence failed is still nameable */ }
             }
             verifyTrials.value = roster.trials || [];

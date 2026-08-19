@@ -194,13 +194,13 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
   // --- Verify Trial roster (#587) ----------------------------------------
 
   /**
-   * GET /verify/trials?window=N&selected=derived-id — the bounded server-derived
-   * Trial roster.  An optional selected id returns only that Trial's aligned detail.
-   * @param {{ window?: number, selected?: string }} [opts]
+   * GET /verify/trials?selected=derived-id — the bounded server-derived Trial
+   * roster.  An optional selected id returns only that Trial's aligned detail.
+   * The Trial's maturing window is a backend fact — no window knob exists here.
+   * @param {{ selected?: string }} [opts]
    */
-  function fetchVerifyTrials({ window, selected } = {}) {
+  function fetchVerifyTrials({ selected } = {}) {
     const params = new URLSearchParams();
-    if (window != null) params.set('window', window);
     if (selected) params.set('selected', selected);
     const qs = params.toString();
     return api('/verify/trials' + (qs ? '?' + qs : ''));

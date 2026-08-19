@@ -188,9 +188,8 @@ def _seed(path):
 # --- assembly ---------------------------------------------------------------
 
 def _build(store, now):
-    roster = review_trials(store, now=now, window_days=WINDOW)
-    details = {t["id"]: review_trials(store, now=now, window_days=WINDOW,
-                                      selected=t["id"])
+    roster = review_trials(store, now=now)
+    details = {t["id"]: review_trials(store, now=now, selected=t["id"])
                for t in roster["trials"]}
     return roster, details
 

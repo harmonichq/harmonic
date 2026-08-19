@@ -352,5 +352,50 @@ class FindingsEndpointTest(unittest.TestCase):
             self.assertEqual(len(calls), 2)
 
 
+class FindingEvidenceBlockTest(unittest.TestCase):
+    """ADR 41: the verdict band's split is the engine's own closed five-state
+    taxonomy, published per finding row so the frontend composes nothing."""
+
+    def setUp(self):
+        self.exposures = gen.exposures()["exposures"]
+        self.projection = gen.projection()
+        self.rows = self.projection.project(WindowQuery.whole_day())["rows"]
+        self.row = _row(self.rows, "Over-treated low")
+
+    def test_a_near_miss_or_outranked_occurrence_carries_its_category_and_event_id(self):
+        outranked = [e for e in self.row["evidence"] if e["verdict"] == "outranked"]
+        self.assertTrue(outranked, "the fixture's over-treated low claims a family "
+                                    "another episode also fired in")
+        entry = outranked[0]
+        self.assertIn("ep_id", entry)
+        self.assertIsNotNone(entry["ep_id"])
+        self.assertIn("t", entry)
+        self.assertIn("date", entry)
+
+    def test_verdict_counts_carries_all_five_categories_zeros_included(self):
+        self.assertEqual(set(self.row["verdict_counts"]),
+                         {"fired", "outranked", "near_miss", "no_data", "clean"})
+
+    def test_verdict_counts_sums_to_the_appearances_denominator(self):
+        total_m = sum(a["m"] for a in self.row["appearances"])
+        self.assertEqual(sum(self.row["verdict_counts"].values()), total_m)
+        self.assertEqual(len(self.row["evidence"]), total_m)
+
+    def test_fired_count_matches_the_appearances_numerator(self):
+        total_n = sum(a["n"] for a in self.row["appearances"])
+        self.assertEqual(self.row["verdict_counts"]["fired"], total_n)
+
+    def test_an_occurrence_another_lever_actually_fired_is_outranked_here_not_fired(self):
+        # An anchor that IS an episode's own driver reads "fired" at the anchor
+        # level (ADR 0019 §2) — but if that lever isn't THIS row's lever, this
+        # row must not claim it: it is claimed by another factor.
+        other_fired = [e for e in self.row["evidence"]
+                       if e["verdict"] == "outranked"
+                       and any(o.get("ep_id") == e["ep_id"] and o.get("state") == "fired"
+                               for family in self.exposures.values()
+                               for o in family["occurrences"])]
+        self.assertTrue(other_fired)
+
+
 if __name__ == "__main__":
     unittest.main()

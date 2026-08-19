@@ -88,6 +88,10 @@ _KIND_FOR_FAMILY = {"lows": "low", "meals": "meal", "highs": "high",
 # held and blind follow in the demoted register (term 38).
 _REGISTER_RANK = {"assert": 0, "finding": 0, "held": 1, "blind": 2}
 
+# ADR 0019 §2's closed five-state anchor taxonomy, the verdict band's own vocabulary
+# (ADR 41). The frontend only labels these; it never derives membership or counts.
+_VERDICT_CATEGORIES = ("fired", "outranked", "near_miss", "no_data", "clean")
+
 
 def _hhmm(minute: int) -> str:
     """``330`` -> ``"05:30"``; the day's far edge prints as ``24:00``, not ``00:00``."""
@@ -409,6 +413,10 @@ class FindingsProjection:
                     "title": hits[0].get("cause_title"),
                     "appearances": [],
                     "episodes": set(),
+                    # The families this lever actually claims occurrences in — the
+                    # evidence block and its verdict band are drawn over exactly
+                    # these families' in-window occurrences, never just the hits.
+                    "families": [],
                 })
                 entry["appearances"].append({
                     "family": family,
@@ -417,11 +425,13 @@ class FindingsProjection:
                     "m": denominator,
                 })
                 entry["episodes"].update(hit.get("ep_id") for hit in hits)
+                entry["families"].append(family)
 
         priced = _pattern_priorities(self._scenarios)
         rows = []
         for lever, entry in by_lever.items():
             entry["appearances"].sort(key=lambda a: a["family"])
+            evidence, verdict_counts = _lever_evidence(lever, entry["families"], in_window)
             rows.append(_row(
                 id=f"finding:{lever}",
                 register="finding",
@@ -434,8 +444,59 @@ class FindingsProjection:
                 # is one thing that happened, and the count that orders the unpriced
                 # tail must say so.
                 episodes=len(entry["episodes"]),
+                # ADR 41: every in-window occurrence this finding's band counts,
+                # carrying the event id(s) and clock key the canvas joins on, plus
+                # its five-state verdict *relative to this lever* — never dropped
+                # just because it wasn't the one that fired (item 3).
+                evidence=evidence,
+                verdict_counts=verdict_counts,
             ))
         return rows
+
+
+def _occurrence_verdict(occurrence: dict, lever: str) -> str:
+    """This finding's own verdict on one occurrence (ADR 41).
+
+    ``fired``/``near_miss``/``no_data``/``clean`` are read straight off the
+    occurrence's own anchor-level state (ADR 0019 §2's ``_anchor_state``), which
+    is never re-derived here — only ``fired`` needs a further check, because an
+    anchor can be the driver of some OTHER lever's episode. From this row's own
+    point of view that is a claim by another factor, i.e. ``outranked``, even
+    though the occurrence's raw state reads ``fired`` for the lever that actually
+    won it.
+    """
+    if occurrence.get("state") == "fired" and occurrence.get("cause_lever") != lever:
+        return "outranked"
+    return occurrence.get("state")
+
+
+def _lever_evidence(
+    lever: str, families: Sequence[str], in_window: Dict[str, List[dict]],
+) -> Tuple[List[dict], Dict[str, int]]:
+    """The evidence rows and verdict-band counts one finding row publishes.
+
+    Drawn over every in-window occurrence of every family this lever claims a hit
+    in — not just its hits — so the band's ``outranked``/``near_miss``/``no_data``/
+    ``clean`` counts (which the frontend may not derive) have something to count.
+    """
+    counts = {category: 0 for category in _VERDICT_CATEGORIES}
+    evidence = []
+    # Sorted, not first-seen: the family a lever hits first is an accident of the
+    # exposures dict's own key order, and `appearances` already sorts alphabetically
+    # for the same reason (a stable answer independent of that order).
+    for family in sorted(set(families)):
+        for occurrence in in_window.get(family, []):
+            category = _occurrence_verdict(occurrence, lever)
+            counts[category] += 1
+            evidence.append({
+                "ep_id": occurrence.get("ep_id"),
+                "t": occurrence.get("t"),
+                "date": occurrence.get("date"),
+                "family": family,
+                "kind": occurrence.get("kind"),
+                "verdict": category,
+            })
+    return evidence, counts
 
 
 def _basal_key(slot: dict) -> Optional[Tuple[str, Optional[str]]]:
@@ -485,6 +546,7 @@ def _row(**fields) -> dict:
         "lean": None, "current": None, "recommended": None, "estimate": None,
         "support": None, "reason": None, "annotation": None, "members": None,
         "lever": None, "appearances": None, "episodes": None,
+        "evidence": None, "verdict_counts": None,
     }
     row.update(fields)
     return row

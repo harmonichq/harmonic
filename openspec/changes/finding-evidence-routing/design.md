@@ -279,3 +279,14 @@ console errors. The screenshots remain external review evidence under
 `/private/tmp/harmonic-revise-evidence-01a01b87/` as
 `base-light-final.png`, `base-dark-evidence-final.png`,
 `revision-light-final.png`, and `revision-dark-final.png`.
+
+## ADR 41 — The verdict band's categories are the engine's anchor states
+
+The band's split is the closed five-state anchor taxonomy of ADR 0019 §2,
+published by the findings projection; the frontend labels categories and
+composes nothing. Mapping ruled by Connor on 2026-08-19: fired → Meets
+criteria; near_miss → Borderline; clean → Does not meet; outranked → claimed
+by another factor; no_data → not comparable. Basis, in his words: "My
+understanding is the server has rule fired, it has near misses, and it has
+items that aren't owned by any classifier. So those should all exist in the
+engine already."

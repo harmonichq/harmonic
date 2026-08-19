@@ -40,6 +40,8 @@ const KIND_FOR_FAMILY = {
   lows: 'low', meals: 'meal', highs: 'high', correction_clusters: 'correction',
 };
 const REGISTER_RANK = { assert: 0, finding: 0, held: 1, blind: 2 };
+// ADR 0019 §2's closed five-state anchor taxonomy (ADR 41's verdict band vocabulary).
+const VERDICT_CATEGORIES = ['fired', 'outranked', 'near_miss', 'no_data', 'clean'];
 // levers._OUTCOME_KIND — the anchor kind each lever's CONSEQUENCE lands on
 const OUTCOME_KIND = {
   carb_undercount: 'high', late_bolus: 'high', meal_over_delivery: 'low',
@@ -93,6 +95,7 @@ function row(fields) {
     lean: null, current: null, recommended: null, estimate: null,
     support: null, reason: null, annotation: null, members: null,
     lever: null, appearances: null, episodes: null,
+    evidence: null, verdict_counts: null,
     ...fields,
   };
 }
@@ -282,6 +285,39 @@ function outcomeMinute(occurrence, anchors) {
   return minuteOf(occurrence.t);
 }
 
+/** This finding's own verdict on one occurrence (ADR 41). `fired`/`near_miss`/
+    `no_data`/`clean` are read straight off the occurrence's own anchor-level
+    state; only `fired` needs a further check, because an anchor can be the
+    driver of some OTHER lever's episode — from this row's own point of view
+    that is a claim by another factor, i.e. `outranked`. */
+function occurrenceVerdict(occurrence, lever) {
+  if (occurrence.state === 'fired' && occurrence.cause_lever !== lever) return 'outranked';
+  return occurrence.state;
+}
+
+/** The evidence rows and verdict-band counts one finding row publishes, drawn
+    over every in-window occurrence of every family this lever claims a hit in —
+    not just its hits — so the band's counts have something to count. */
+function leverEvidence(lever, families, inWindow) {
+  const counts = Object.fromEntries(VERDICT_CATEGORIES.map((c) => [c, 0]));
+  const evidence = [];
+  for (const family of [...new Set(families)].sort()) {
+    for (const occurrence of inWindow.get(family) || []) {
+      const category = occurrenceVerdict(occurrence, lever);
+      counts[category] += 1;
+      evidence.push({
+        ep_id: occurrence.ep_id ?? null,
+        t: occurrence.t ?? null,
+        date: occurrence.date ?? null,
+        family,
+        kind: occurrence.kind ?? null,
+        verdict: category,
+      });
+    }
+  }
+  return { evidence, counts };
+}
+
 function patternPriorities(scenarios) {
   const priced = new Map();
   for (const pattern of [...(scenarios.patterns || []), ...(scenarios.low_confidence || [])]) {
@@ -293,11 +329,13 @@ function patternPriorities(scenarios) {
 function findingRows(exposures, scenarios, window) {
   const families = exposures.exposures || {};
   const anchors = episodeAnchors(families);
+  const inWindow = new Map();
   const byLever = new Map();
   for (const [family, payload] of Object.entries(families)) {
     // numerator and denominator are anchored the SAME way, which is what keeps n<=m
     const kept = (payload.occurrences || [])
       .filter((occurrence) => contains(outcomeMinute(occurrence, anchors), window));
+    inWindow.set(family, kept);
     const denominator = kept.length;
     const counted = new Map();
     for (const occurrence of kept) {
@@ -307,11 +345,12 @@ function findingRows(exposures, scenarios, window) {
     }
     for (const [lever, hits] of counted) {
       const entry = byLever.get(lever)
-        || { title: hits[0].cause_title, appearances: [], episodes: new Set() };
+        || { title: hits[0].cause_title, appearances: [], episodes: new Set(), families: [] };
       entry.appearances.push({
         family, noun: FAMILY_NOUN[family] ?? family, n: hits.length, m: denominator,
       });
       for (const hit of hits) entry.episodes.add(hit.ep_id);
+      entry.families.push(family);
       byLever.set(lever, entry);
     }
   }
@@ -320,6 +359,7 @@ function findingRows(exposures, scenarios, window) {
   const rows = [];
   for (const [lever, entry] of byLever) {
     entry.appearances.sort((a, b) => (a.family < b.family ? -1 : a.family > b.family ? 1 : 0));
+    const { evidence, counts } = leverEvidence(lever, entry.families, inWindow);
     rows.push(row({
       id: `finding:${lever}`,
       register: 'finding',
@@ -331,6 +371,11 @@ function findingRows(exposures, scenarios, window) {
       // episodes, not occurrences: one episode in two families is one thing that
       // happened, and the count that orders the unpriced tail must say so
       episodes: entry.episodes.size,
+      // ADR 41: every in-window occurrence this finding's band counts, carrying
+      // the event id(s) and clock key the canvas joins on, plus its five-state
+      // verdict relative to this lever.
+      evidence,
+      verdict_counts: counts,
     }));
   }
   return rows;

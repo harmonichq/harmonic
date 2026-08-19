@@ -5,22 +5,58 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Finding → evidence routing · exploration</title>
 
-  <!-- ★ LOCKED — finding → evidence routing (Diagnose + Verify)
+  <!-- EXPLORATION DRAFT — finding → evidence routing (Diagnose + Verify)
 
-       Locked 2026-08-19 by the operator — every ruling below is theirs, settled
-       across four interview rounds, seven wireframes and eleven mock rounds —
-       with the coordinator writing the record. The MANIFEST is
-       mockups/finding-evidence-routing.lock.md: this header is the narrative,
-       the manifest is the contract, and where a builder needs something
-       checkable it is there. The decision record is ADR 31, in
-       openspec/changes/finding-evidence-routing/design.md.
+       LOCK RETRACTED 2026-08-19. This mock was locked earlier the same day
+       (PR #40) and the lock was withdrawn before anything was built to it. The
+       manifest, mockups/finding-evidence-routing.lock.md, is DELETED — do not
+       look for it, and do not read anything below as a contract. Nothing on
+       this surface is binding, and a build agent must not implement from this
+       file.
 
-       Supersedes no prior lock — this is the first in this repository. It CARRIES
-       FORWARD four rulings from the old repo's diagnose-workstation lock
-       (breadcrumb-only navigation, evidence-is-a-table, the Day contract, and the
-       watched-change dock's reserved floor). They are RESTATED in the manifest,
-       never referenced: a manifest that points at another repository does not
-       stand alone.
+       WHY. A predecessor inventory — the backward-looking pass that did not
+       exist when the lock was written — diffed this mock against the Diagnose
+       workstation actually running in the app. It found 55 shipped behaviours,
+       of which the mock implements 12 and drops 43. Nobody had ruled on the
+       drops. Among them: the occurrence case file (every classifier's read on
+       an occurrence, matched and NOT matched — the counter-evidence); staging a
+       change into the Plan; the parameter case file for a basal slot, an I:C
+       block or the correction factor; keyboard navigation of the inspector; the
+       lens chart's keyboard cursor and its live aria-label; the when-it-lands
+       histogram; and the drag-to-draw selection window, which is seventeen
+       behaviours by itself. The ledger is
+       mockups/finding-evidence-routing.behavior.md — 55 rows, each verdicted
+       against a real browser engine, each carrying its evidence. Read it before
+       proposing anything here.
+
+       The defect was not that the mock drew the wrong thing. It was that the
+       lock read as a COMPLETE description of this surface while being a partial
+       one, and a lock manifest is precisely the artifact a builder is entitled
+       to read that way. Left standing, 43 unruled retirements would have
+       shipped as spec.
+
+       WHAT SURVIVES. The DECISIONS in ADR 31
+       (openspec/changes/finding-evidence-routing/design.md) came out of the
+       operator's interview on issue #31 and still stand: one inspector spanning
+       Diagnose and Verify, factor-only selection with no cohort filter, the
+       `By clock` / `By event` projection, the verdict band scoping the roster
+       while the canvas keeps every occurrence, and selection showing evidence
+       without moving the reader's clock window. The narrative below is kept as
+       the design record of how those decisions were reached — history and
+       rationale, not a work order.
+
+       WHAT MUST HAPPEN BEFORE THIS SURFACE IS LOCKED AGAIN. Every one of the 43
+       missed rows needs a verdict from the operator — kept, or retired with a
+       sanction line naming who ruled, when, and their reason in their own words.
+       The ledger has no authority to write one; neither does this header. Only
+       once that round is closed and the ledger frozen can a manifest honestly
+       claim to describe this surface.
+
+       It CARRIES FORWARD four rulings from the old repo's diagnose-workstation
+       lock (breadcrumb-only navigation, evidence-is-a-table, the Day contract,
+       and the watched-change dock's reserved floor), restated here rather than
+       referenced: a record that points at another repository does not stand
+       alone.
 
        THE BET. A finding is a router, not a leaf. The cockpit has ONE inspector —
        crumb path, subject case file, dock floor — and it is the sole steering
@@ -147,7 +183,9 @@
        in both themes at both sizes, the tightest holding 82px of slack and the
        queue root its 19px. Six of the seven mock-owned airs the previous round
        had spent buying the first two states were given back in the same change.
-       The manifest carries the arithmetic under term 9.
+       That `button.entry` scoping is a PRODUCTION bug fix and is independent of
+       the retracted lock: it stays, with its regression test
+       (frontend/diagnose-evidence-row-box.test.js).
 
        KNOWN AND DELIBERATE, recorded rather than fixed: the chip-versus-table
        number disagreements and the three disjoint synthetic populations render
@@ -158,10 +196,12 @@
        selectors stay in the fidelity comparison; and the shipped painter's group
        rule hard-codes `, not confirmed` and `episode(s)`, so it renders
        `Borderline, not confirmed · 4 episodes` — removing them is a fork, and it
-       stands. The manifest carries each of these with its evidence, alongside the
-       production defects this surface surfaced but does not own.
+       stands. Each of these was carried with its evidence in the retracted
+       manifest; they are recorded here so the next round does not rediscover
+       them, alongside the production defects this surface surfaced but does not
+       own.
 
-       EXPLORE IS EXCLUDED FROM THIS LOCK BY NAME. It is the arbitrary-slicing
+       EXPLORE IS EXCLUDED BY NAME. It is the arbitrary-slicing
        ambition, it does not exist yet, and it gets its own round when it does.
        Nothing here may be read as governing it.
 

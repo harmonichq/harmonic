@@ -33,11 +33,20 @@
  * by the chart-option diff on what renderCanvas does with (T1).
  *
  * TWO DELIBERATE OMISSIONS, named here and in the report:
- *   (a) NO BRACE, NO DRAG, NO PRESETS. The window instruments are exactly what
- *       the #31 ruling retires, so the queue root stands on the 24 h preset and
- *       nothing on this surface can move it. The window markArea therefore spans
- *       the whole plot, which is the shipped chart's own rendering of that
- *       preset — not a special case built here.
+ *   (a) NO BRACE, NO DRAG, NO WIRED PRESETS — AN UNBUILT BEHAVIOUR, NOT A
+ *       RULING. An earlier version of this note claimed "the window instruments
+ *       are exactly what the #31 ruling retires". That was FALSE. #31 retires
+ *       the lens instrument row (VIEW · FACTOR · FILTER), the event-comparison
+ *       inspector pane and its occurrence dropdown, the dead `occurrenceModal`,
+ *       and the I:C lane. It KEEPS the window control — ADR 31 part 3, "`WINDOW`
+ *       stays, because a reader viewing by clock can also filter by clock" — and
+ *       the #31 resolution amendment KEEPS the brace, migrating the day-trace
+ *       overlay into the clock projection "with the window brace". The presets
+ *       are drawn but unwired because this fixture holds a single 24 h window;
+ *       the brace and its drag are simply not built here. The window markArea
+ *       therefore spans the whole plot, which is the shipped chart's own
+ *       rendering of that preset — not a special case built here. Ledger rows
+ *       P01–P18, mockups/finding-evidence-routing.behavior.md.
  *   (b) NO I:C LANE. The ruling names the basal verdict lane; the shipped stack
  *       carries a second row of I:C blocks beneath it, and `renderLaneKey`'s
  *       lead-word grammar exists to tell the two apart. With one lane the lead

@@ -136,3 +136,84 @@ vocabulary, the accessibility floors and the fixture obligations — is
 `mockups/finding-evidence-routing.exploration/`.
 
 Decision: harmonichq/harmonic#31, 2026-08-19.
+
+### Amendment — 2026-08-19: the visual contract is retracted; the decisions are not
+
+**The decisions above stand. The lock manifest derived from them does not, and
+is deleted.** The paragraph immediately above this one points at
+`mockups/finding-evidence-routing.lock.md`; that pointer is **void** — the file
+no longer exists. This is an amendment, not a rewrite: the record of what was
+decided on #31, and of what the manifest claimed, is left standing so the next
+round can read how this happened.
+
+**What was retracted.** `mockups/finding-evidence-routing.lock.md`, merged the
+same day in [PR #40](https://github.com/harmonichq/harmonic/pull/40) — a 60-term
+contract over the finding-to-evidence surface. Deleted, along with the ★ LOCKED
+headers on the mock. The mock returns to being an exploration draft, and the
+surface ledger row returns to `exploring`.
+
+**Why.** A **predecessor inventory** — the backward-looking pass that did not
+exist when the lock was written — diffed the mock against the Diagnose
+workstation running in the app. Of **55 shipped behaviours it found 12 kept and
+43 missing**, and **not one of the 43 had been ruled on by anyone**. The ledger
+is committed at `mockups/finding-evidence-routing.behavior.md`: 55 rows, each
+driven against a real browser engine rather than read out of source, each
+carrying its evidence.
+
+The failure was not that the mock drew the wrong thing. It was that the manifest
+**read as a complete description of the surface while being a partial one** — and
+a lock manifest is exactly the artifact a build agent is entitled to read that
+way. Left on `main`, those 43 absences were the spec, and a faithful build would
+have taken working capability out of a reader's hands. Among them: the
+occurrence case file (every classifier's read on one occurrence, matched **and
+not matched** — the counter-evidence a reader needs to judge a finding against
+their own data); staging a change into the Plan at all; the parameter case file
+for a basal slot, an I:C block or the correction factor; keyboard navigation of
+the inspector; the lens chart's keyboard cursor and its live aria-label; the
+when-it-lands histogram; and the drag-to-draw selection window, which is
+seventeen behaviours by itself.
+
+The mechanism that let it through is worth recording, because it is repeatable.
+A comment in the mock (`surface.js`) asserted that "the presets and the
+drag-to-draw brace are exactly what the #31 ruling retires". That was **false**.
+#31 retires the lens instrument row, the event-comparison inspector pane and its
+occurrence dropdown, the dead `occurrenceModal`, and the I:C lane. Part 3 above
+keeps `WINDOW` in as many words, and the #31 resolution amendment keeps the
+brace, migrating the day-trace overlay into the clock projection "with the
+window brace". **A retirement nobody sanctioned cited the operator's own ruling
+as its warrant, and survived ten review rounds on that citation.** Every
+instance of that claim is corrected in this change.
+
+**What is kept, deliberately.**
+
+- **Every decision recorded above**, parts 1–6. They came out of the operator's
+  interview on #31 and nothing in the inventory disturbs them: one inspector
+  spanning Diagnose and Verify, factor-only selection with no cohort filter, the
+  `By clock` / `By event` projection, the verdict band scoping the roster while
+  the canvas keeps every occurrence, and selection showing evidence without
+  moving the reader's clock window.
+- **The `button.entry` CSS scoping fix** in `frontend/diagnose-workstation.css`
+  and its regression test `frontend/diagnose-evidence-row-box.test.js`. A rule
+  written for the slot lane's staging button was also matching the evidence
+  table's numeric cell, laying every evidence row out at 42px instead of the
+  ~24px its own rule asks for. That is a defect in the shipped app, found
+  through this work but independent of the lock.
+- **The exploration mock itself**, narrative headers included, as the design
+  record of how parts 1–6 were reached.
+
+**What must precede the next lock.**
+
+1. **Every one of the 43 missed rows gets a verdict from the operator** — kept,
+   or retired with a sanction line naming who ruled, when, and their reason in
+   their own words. Six are already named by a merged term or by the #31 ruling
+   and want only their sanction transcribed; 37 have never been ruled on at all.
+   No agent may write a sanction line; neither the ledger nor this record does.
+2. **The ledger is frozen** once those verdicts land. A ledger carrying a
+   `missed` row cannot be frozen, and a manifest cannot honestly describe a
+   surface until it is.
+3. **The predecessor inventory runs before the lock round, not after it.**
+   Running it after the lock had merged is why the whole artifact had to be
+   withdrawn rather than amended: a manifest absent 43 of 55 behaviours is not
+   amendable into truth.
+
+Decision: harmonichq/harmonic#41, 2026-08-19.

@@ -1,11 +1,18 @@
-/* ★ LOCKED — finding → evidence routing (Diagnose + Verify), 2026-08-19.
+/* EXPLORATION DRAFT — finding → evidence routing (Diagnose + Verify).
  *
- * COMPANION MODULE to index.html, whose ★ header carries the narrative spec.
- * The contract is mockups/finding-evidence-routing.lock.md; the decision record
- * is ADR 31 in openspec/changes/finding-evidence-routing/design.md. Read the
- * header before changing anything below: the rulings this file implements were
- * settled by the operator, and several are the second or third attempt at the
- * same behaviour. Each is written up where it lives; the load-bearing ones:
+ * LOCK RETRACTED 2026-08-19. The manifest this file used to name as its
+ * contract, mockups/finding-evidence-routing.lock.md, is deleted: a predecessor
+ * inventory found this mock silently drops 43 of the 55 behaviours the running
+ * Diagnose workstation ships, none of them ruled on. Nothing here is binding.
+ * The ledger of what is missing is mockups/finding-evidence-routing.behavior.md.
+ *
+ * COMPANION MODULE to index.html, whose header carries the narrative and the
+ * full retraction note. The decision record is ADR 31 in
+ * openspec/changes/finding-evidence-routing/design.md — its DECISIONS still
+ * stand; the manifest derived from them did not. Read that header before
+ * changing anything below: the rulings this file implements were settled by the
+ * operator, and several are the second or third attempt at the same behaviour.
+ * Each is written up where it lives; the load-bearing ones:
  *
  *   selection is one-dimensional — the factor, and there is no cohort filter;
  *   hover does nothing to the canvas, and selection is the only trigger;
@@ -14,7 +21,8 @@
  *   the occurrence table is the SHIPPED painter, never a fork of it;
  *   `Decide now` never renders until a cross-parameter headline exists server-side.
  *
- * Explore is outside this lock by name — it gets its own round when it exists.
+ * Explore is outside this exploration by name — it gets its own round when it
+ * exists.
  *
  * --------------------------------------------------------------------------
  *
@@ -131,10 +139,30 @@ chart.getZr().on('globalout', () => paintReadout(surface, null, sceneCanvas()));
 new ResizeObserver(() => chart.resize()).observe(chartHost);
 
 /* ROUND 5, WORKSTREAM A — THE QUEUE ROOT'S CANVAS: THE SHIPPED POOLED GLUCOSE
-   CHART. Drawn ONCE, at load, because nothing on this surface can change its
-   window — the presets and the drag-to-draw brace are exactly what the #31
-   ruling retires, so the queue root stands on the 24 h preset for as long as it
-   stands. It is resized with the pane rather than rebuilt, which is also what
+   CHART. Drawn ONCE, at load, because nothing in THIS MOCK changes its window:
+   the committed fixture holds a single 24 h window, so the preset group is
+   painted at its standing coordinate and left unwired, and the queue root
+   stands on `24 h` for as long as it stands.
+
+   CORRECTION, 2026-08-19 — an earlier version of this comment claimed "the
+   presets and the drag-to-draw brace are exactly what the #31 ruling retires".
+   That was FALSE, and it is how a retirement nobody sanctioned rode through ten
+   review rounds citing the operator's own ruling as its warrant. What #31
+   actually retires is the lens instrument row (VIEW · FACTOR · FILTER), the
+   event-comparison view's own inspector pane and its occurrence dropdown, the
+   dead `occurrenceModal` hash machinery, and the I:C lane (which carries
+   forward from ciq-autotune#664 — carb ratio enters by a queue row, not a lane).
+   The window control and the brace are KEPT: ADR 31's part 3 deletes VIEW and
+   says in the same breath "`WINDOW` stays, because a reader viewing by clock
+   can also filter by clock", and the #31 resolution amendment keeps the
+   day-trace overlay "as the clock projection's drill state … with the window
+   brace", migrating old term 19 into the clock projection rather than retiring
+   it. So the unwired preset group and the absent brace are a FIXTURE LIMIT and
+   an unbuilt behaviour respectively — not rulings, and not licence to build
+   without them. Rows P01–P18 of
+   mockups/finding-evidence-routing.behavior.md carry the full ledger.
+
+   It is resized with the pane rather than rebuilt, which is also what
    makes the round-4 argument for unmounting the pane moot: an ECharts instance
    in a display:none host keeps its geometry and comes back at size. */
 /* ROUND 6, FORM 3 — and it is no longer drawn once. The `By clock` projection

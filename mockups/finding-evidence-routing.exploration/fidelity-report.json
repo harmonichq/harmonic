@@ -5,8 +5,8 @@
  },
  "dark": {
   "computedStyleDiff": {
-   "checked": 78,
-   "matched": 78,
+   "checked": 77,
+   "matched": 77,
    "absentInApp": [
     ".qrow[data-tier=\"priced\"]",
     ".qrow[data-tier=\"priced\"] .lab",
@@ -20,9 +20,11 @@
    "mismatches": [],
    "expected": [
     ".panes grid-template-rows: app \"789px\" vs mock \"831px\" — the retired instrument row: 42px of rail height returns to the panes (#31 ruling 1)",
-    ".pane grid-template-rows: app \"30px 759px\" vs mock \"30px 801px\" — ditto — the pane inherits the taller track",
+    ".pane grid-template-rows: app \"30px 759px\" vs mock \"32px 799px\" — ditto — the pane inherits the taller track",
+    ".pane > header grid-template-columns: app \"682.828px 251.172px\" vs mock \"472.875px 251.172px 197.953px\" — form 3: the head takes a third `auto` track for the projection toggle, which the shipped head has no sibling for",
+    ".canvas-pane > header.canvas-head grid-template-columns: app \"682.828px 251.172px\" vs mock \"472.875px 251.172px 197.953px\" — form 3: ditto — the projection toggle is a third cell in the head, not a second row",
     ".inspector grid-template-rows: app \"30px 661px 98px\" vs mock \"30px 773px 28px\" — ditto, PLUS round 5 block 8: the dock is no longer a 98px reserve, so the level track takes that height as well. This is the term-48 re-settle, in one number.",
-    ".inspector > .body grid-template-rows: app \"32px 629px\" vs mock \"32px 741px\" — ditto — the level track grows; the crumb row differs by 1px because the count accessory sits in it",
+    ".inspector > .body grid-template-rows: app \"32px 629px\" vs mock \"32px 504.172px 236.828px\" — ditto — the level track grows; the crumb row differs by 1px because the count accessory sits in it. ROUND 6, FORM 1 adds a THIRD track: the factor dropdown's rest line, which is a row of the column above the level rather than content inside it.",
     ".level .inner padding-bottom: app \"8px\" vs mock \"14px\" — item 12: the judgment block closes with air before the claim selector, which item 4 moved outside `.inner`",
     ".lvl-cap margin-top: app \"0px\" vs mock \"6px\" — item 12: the Occurrences cap takes air above it, so the table reads as its own section rather than as more of the judgment block",
     ".lvl-cap .meta margin-left: app \"64.4062px\" vs mock \"66.8438px\" — an AUTO margin, resolved against a different string length — the rule is identical",
@@ -34,10 +36,13 @@
     ".watch grid-template-columns: app \"393px 0px\" vs mock \"minmax(0px, 1fr) auto\" — block 8: no grid",
     ".watch grid-template-rows: app \"13px 16px 15px\" vs mock \"none\" — block 8: the three shipped ranks (kind / what / how) are one line now, so there are no rows to lay out",
     ".watch min-height: app \"98px\" vs mock \"0px\" — block 8: the dock is one line at the column's true bottom, not a 98px reserve (re-settles migrated lock term 48)",
-    ".canvas-head .head-rest .meta margin-left: app \"367.016px\" vs mock \"371.859px\" — an AUTO margin, resolved against a different string length — the two fixtures pool different reading counts, so \"window N of M readings\" is not the same width. The rule is identical; same class as the `.lvl-cap .meta` entry above.",
+    ".canvas-head .head-rest .meta margin-left: app \"367.016px\" vs mock \"161.906px\" — an AUTO margin, resolved against a different string length — the two fixtures pool different reading counts, so \"window N of M readings\" is not the same width. The rule is identical; same class as the `.lvl-cap .meta` entry above.",
     ".lane-stack grid-template-rows: app \"11px 11px\" vs mock \"11px\" — workstream A, omission (b): the shipped stack carries a second row of I:C block verdicts beneath the basal lane. The #31 ruling names the BASAL verdict lane, and with one lane the key's lead-word grammar (which exists to tell the two rows apart) is doing nothing. One row here, two in the app — a real divergence, not a resolution artifact."
    ],
    "contentResolved": [
+    ".pane > header grid-template-rows: app \"21px\" vs mock \"23px\"",
+    ".canvas-pane > header.canvas-head grid-template-rows: app \"21px\" vs mock \"23px\"",
+    ".canvas-head .head-swap grid-template-columns: app \"682.828px\" vs mock \"472.875px\"",
     ".ec-chart-key grid-template-columns: app \"292px 292px 292px 0px 0px\" vs mock \"291.656px 291.672px 291.656px 0px 0px\"",
     ".ec-chart-key grid-template-rows: app \"36px\" vs mock \"48px\"",
     ".ec-key-item grid-template-columns: app \"22px 264px\" vs mock \"22px 263.656px\"",
@@ -69,8 +74,8 @@
  "populationExpanderPresent": true,
  "light": {
   "computedStyleDiff": {
-   "checked": 78,
-   "matched": 78,
+   "checked": 77,
+   "matched": 77,
    "absentInApp": [
     ".qrow[data-tier=\"priced\"]",
     ".qrow[data-tier=\"priced\"] .lab",
@@ -84,9 +89,11 @@
    "mismatches": [],
    "expected": [
     ".panes grid-template-rows: app \"789px\" vs mock \"831px\" — the retired instrument row: 42px of rail height returns to the panes (#31 ruling 1)",
-    ".pane grid-template-rows: app \"30px 759px\" vs mock \"30px 801px\" — ditto — the pane inherits the taller track",
+    ".pane grid-template-rows: app \"30px 759px\" vs mock \"32px 799px\" — ditto — the pane inherits the taller track",
+    ".pane > header grid-template-columns: app \"682.828px 251.172px\" vs mock \"472.875px 251.172px 197.953px\" — form 3: the head takes a third `auto` track for the projection toggle, which the shipped head has no sibling for",
+    ".canvas-pane > header.canvas-head grid-template-columns: app \"682.828px 251.172px\" vs mock \"472.875px 251.172px 197.953px\" — form 3: ditto — the projection toggle is a third cell in the head, not a second row",
     ".inspector grid-template-rows: app \"30px 661px 98px\" vs mock \"30px 773px 28px\" — ditto, PLUS round 5 block 8: the dock is no longer a 98px reserve, so the level track takes that height as well. This is the term-48 re-settle, in one number.",
-    ".inspector > .body grid-template-rows: app \"32px 629px\" vs mock \"32px 741px\" — ditto — the level track grows; the crumb row differs by 1px because the count accessory sits in it",
+    ".inspector > .body grid-template-rows: app \"32px 629px\" vs mock \"32px 504.172px 236.828px\" — ditto — the level track grows; the crumb row differs by 1px because the count accessory sits in it. ROUND 6, FORM 1 adds a THIRD track: the factor dropdown's rest line, which is a row of the column above the level rather than content inside it.",
     ".level .inner padding-bottom: app \"8px\" vs mock \"14px\" — item 12: the judgment block closes with air before the claim selector, which item 4 moved outside `.inner`",
     ".lvl-cap margin-top: app \"0px\" vs mock \"6px\" — item 12: the Occurrences cap takes air above it, so the table reads as its own section rather than as more of the judgment block",
     ".lvl-cap .meta margin-left: app \"64.4062px\" vs mock \"66.8438px\" — an AUTO margin, resolved against a different string length — the rule is identical",
@@ -99,10 +106,13 @@
     ".watch grid-template-columns: app \"393px 0px\" vs mock \"minmax(0px, 1fr) auto\" — block 8: no grid",
     ".watch grid-template-rows: app \"13px 16px 15px\" vs mock \"none\" — block 8: the three shipped ranks (kind / what / how) are one line now, so there are no rows to lay out",
     ".watch min-height: app \"98px\" vs mock \"0px\" — block 8: the dock is one line at the column's true bottom, not a 98px reserve (re-settles migrated lock term 48)",
-    ".canvas-head .head-rest .meta margin-left: app \"367.016px\" vs mock \"371.859px\" — an AUTO margin, resolved against a different string length — the two fixtures pool different reading counts, so \"window N of M readings\" is not the same width. The rule is identical; same class as the `.lvl-cap .meta` entry above.",
+    ".canvas-head .head-rest .meta margin-left: app \"367.016px\" vs mock \"161.906px\" — an AUTO margin, resolved against a different string length — the two fixtures pool different reading counts, so \"window N of M readings\" is not the same width. The rule is identical; same class as the `.lvl-cap .meta` entry above.",
     ".lane-stack grid-template-rows: app \"11px 11px\" vs mock \"11px\" — workstream A, omission (b): the shipped stack carries a second row of I:C block verdicts beneath the basal lane. The #31 ruling names the BASAL verdict lane, and with one lane the key's lead-word grammar (which exists to tell the two rows apart) is doing nothing. One row here, two in the app — a real divergence, not a resolution artifact."
    ],
    "contentResolved": [
+    ".pane > header grid-template-rows: app \"21px\" vs mock \"23px\"",
+    ".canvas-pane > header.canvas-head grid-template-rows: app \"21px\" vs mock \"23px\"",
+    ".canvas-head .head-swap grid-template-columns: app \"682.828px\" vs mock \"472.875px\"",
     ".ec-chart-key grid-template-columns: app \"292px 292px 292px 0px 0px\" vs mock \"291.656px 291.672px 291.656px 0px 0px\"",
     ".ec-chart-key grid-template-rows: app \"36px\" vs mock \"48px\"",
     ".ec-key-item grid-template-columns: app \"22px 264px\" vs mock \"22px 263.656px\"",

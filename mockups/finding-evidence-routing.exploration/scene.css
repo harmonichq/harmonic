@@ -31,8 +31,13 @@
  * already found: a collapsed track still lays a pane out at 0px, and an ECharts
  * instance in a 0px host resizes to nothing. Unmounting preserves each
  * instance's geometry and `paintCanvas` gives it back with one `resize()`. */
-.fer-surface[data-level="queue"] .ec-canvas,
-.fer-surface[data-level="drilled"] .dw-canvas { display: none; }
+/* ROUND 6, FORM 3 — and WHICH pane is mounted is now the PROJECTION's answer,
+ * not the level's. `By clock` is the pooled chart with the factor's events on
+ * it; `By event` is the lens. The queue root has no projection to make and
+ * stands on the pooled chart, which is what `data-canvas` says there too — one
+ * attribute, still a pure function of the state above it. */
+.fer-surface[data-canvas="pooled"] .ec-canvas,
+.fer-surface[data-canvas="lens"] .dw-canvas { display: none; }
 
 /* (b) ROUND 5, BLOCK 1 — THE CRUMB'S COUNT ACCESSORY, which retires the scope
    chip outright. The chip was the #31 FILTER instrument re-homed on the crumb
@@ -75,65 +80,170 @@
 .ev-row[data-route="none"] .chev { visibility: hidden; }
 
 /* ======================================================================
-   ROUND 5, BLOCK 2 — THE FRAME CONTROL.
+   ROUND 6, FORM 1 — THE FACTOR DROPDOWN (wireframe G, settled).
    ====================================================================== */
-/* Rounds 3 and 4 both built the frame selector out of queue rows, because "pick
- * one of these" is what a queue row does. Wrong shape twice: a vertical stack of
- * full-bleed rows is the SAME OBJECT as the occurrence table beneath it, so the
- * reader has to learn which list is a filter and which is the data — and round
- * 4's selected row took a full-width wash, which is the table's own selection
- * wash spent a second time on a different meaning.
+/* Round 5's segmented control is retired with the rest of this block's rules.
+ * Selection is one-dimensional and the factor list is open-ended, and a control
+ * that divides one row between its options cannot take a fourth factor without
+ * ellipsising the third. The dropdown costs one line whatever the list holds.
  *
- * One row, 26px, full width, flush to the 12px gutter, square. No boxes, no
- * radius, no fill at rest; segments divided by 1px hairlines and the control
- * closed by one beneath. The chosen segment is its label at FULL INK over a 2px
- * bottom rule in `--primary` — an underline, not a fill, so the table's row wash
- * stays the only wash anywhere in the column.
+ * THE REST LINE IS THE COLUMN'S WORKING TITLE, so it takes the crumb's own
+ * metrics — `.crumb`'s padding, hairline and ground in
+ * frontend/diagnose-workstation.css, the rank directly above it — with the
+ * factor name at the body rank and its count in the mono tabular face the
+ * column already spends on every other figure. No box, no radius, no fill.
  *
- * The hairlines are `--ck-hair`, the pane's own; the rule is `--primary`, the
- * one interaction accent this surface already spends on `.more` and on the
- * staged-row marker. No new token, no new hue. */
-/* Flex with `flex: 1 1 auto`, NOT equal grid tracks. Equal tracks were tried
-   first and are wrong here for one measurable reason: the three labels differ by
-   more than 2× in length ("Unclaimed" against "Correction on active insulin"),
-   so equal thirds ellipsised the longest factor's name to "Correction on act…"
-   while leaving the shortest half empty. Content-sized bases with the slack
-   shared out fills the same width and keeps every name whole. */
-.fer-frames {
-  display: flex; height: 26px; margin: 0 var(--ck-pad);
-  border-bottom: 1px solid var(--ck-hair);
+ * THE LIST OVERLAYS. `position: absolute` under a relative host that sits above
+ * `.level`, so expanding it covers the first rows of the ledger and moves
+ * nothing: the dock stays on the floor, the table keeps its scroll position,
+ * and collapsing restores the identical column. `max-height` is in ROWS (a
+ * `--row` of 30px), so an 8- or 10-factor list scrolls inside the overlay
+ * instead of growing past the fold — which is the scale the amendment asks the
+ * form to hold. */
+/* The inspector body is a two-row grid — a crumb that never scrolls, then
+   exactly one level. The dropdown is a THIRD row and it has to be declared:
+   without this the host landed in the shipped `minmax(0, 1fr)` track, took the
+   whole column's slack for one line of type, and pushed every level down behind
+   it — visible only in a frame short enough to see the gap. */
+.fer-surface .inspector > .body { grid-template-rows: auto auto minmax(0, 1fr); }
+.fer-sel-host { position: relative; z-index: 5; }
+.fer-sel-host[hidden] { display: none; }
+.fer-sel {
+  display: flex; align-items: baseline; gap: 8px; width: 100%;
+  padding: 8px var(--ck-pad); border: 0; border-bottom: 1px solid var(--ck-hair);
+  background: var(--ck-rail); cursor: pointer; text-align: left;
+  font-size: 12px; white-space: nowrap;
 }
-.fer-frames .seg {
-  display: flex; align-items: center; justify-content: flex-start; gap: 0;
-  flex: 1 1 auto; min-width: 0; padding: 0 8px 0 0;
-  border: 0; border-radius: 0; background: none; cursor: pointer;
-  /* The divider, as a border rather than a gap: a gap would move the labels
-     between states, a border cannot. */
-  border-left: 1px solid var(--ck-hair);
-  box-shadow: none;
+.fer-sel:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: -2px; }
+.fer-sel .nm {
+  font-size: 12px; font-weight: 600; color: var(--mk-text);
+  overflow: hidden; text-overflow: ellipsis; min-width: 0;
 }
-.fer-frames .seg:first-child { border-left: 0; padding-left: 0; }
-.fer-frames .seg:not(:first-child) { padding-left: 8px; }
-.fer-frames .seg:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: -2px; }
-/* Label and count share ONE baseline, separated by a thin space. The count is
-   the louder of the two at rest, because at rest the counts are what the
-   control is reporting. */
-.fer-frames .seg .lab {
+.fer-sel .ct {
+  font-family: var(--ck-mono); font-size: 11px; font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--mk-text) 55%, transparent);
+}
+/* The chevron is the crumb's own `›`, rotated to point down at rest and up when
+   the list is open — one glyph, one rotation, no second icon. */
+.fer-sel .chev {
+  margin-left: auto; color: var(--mk-muted); font-size: 11px;
+  transform: rotate(90deg); transition: transform .12s ease-out;
+}
+/* The open state takes the column's OWN row wash — the same expression
+   `.ev-row:hover` and the selected row use. `--ck-inset` was tried first and is
+   a trap the lens already documented: it is declared as a `color-mix()` whose
+   light resolution is nothing like a light wash, and the rest line came out a
+   near-black bar with unreadable text on parchment. */
+.fer-sel-host[data-open="true"] .fer-sel {
+  background: color-mix(in srgb, var(--mk-surface-2) 60%, transparent);
+}
+.fer-sel-host[data-open="true"] .fer-sel .chev { transform: rotate(-90deg); }
+
+.fer-sel-list {
+  --row: 30px;
+  position: absolute; top: 100%; left: 0; right: 0; z-index: 6;
+  display: none; max-height: calc(var(--row) * 8 + 26px); overflow-y: auto;
+  background: var(--mk-surface); border-bottom: 1px solid var(--ck-hair);
+  box-shadow: 0 6px 12px color-mix(in srgb, #000 18%, transparent);
+}
+.fer-sel-host[data-open="true"] .fer-sel-list { display: block; }
+/* The list header takes `.lvl-cap`'s register — it is the same kind of thing, a
+   spine naming what the rows below it are. */
+.fer-sel-list .lhead {
+  padding: 8px var(--ck-pad) 4px; font-size: var(--ck-micro); font-weight: 700;
+  letter-spacing: var(--ck-track); text-transform: uppercase; color: var(--mk-secondary);
+  border-bottom: 1px solid color-mix(in srgb, var(--ck-hair) 60%, transparent);
+}
+/* An option is an `.ev-row` in everything but its columns: the same height, the
+   same hover wash, the same hairline between rows. */
+.fer-sel-opt {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  min-height: var(--row); padding: 4px var(--ck-pad);
+  border: 0; border-bottom: 1px solid color-mix(in srgb, var(--ck-hair) 60%, transparent);
+  background: none; cursor: pointer; text-align: left; font-size: 12px; color: var(--mk-text);
+}
+.fer-sel-opt:last-child { border-bottom: 0; }
+.fer-sel-opt:hover { background: color-mix(in srgb, var(--mk-surface-2) 60%, transparent); }
+.fer-sel-opt:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: -2px; }
+.fer-sel-opt .tick { flex: 0 0 8px; color: var(--primary); font-size: 11px; }
+.fer-sel-opt .lab { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.fer-sel-opt .ct {
+  margin-left: auto; font-family: var(--ck-mono); font-size: 11px;
+  font-variant-numeric: tabular-nums; color: var(--mk-muted);
+}
+.fer-sel-opt[aria-selected="true"] { background: color-mix(in srgb, var(--mk-surface-2) 60%, transparent); }
+.fer-sel-opt[aria-selected="true"] .lab { font-weight: 600; }
+
+/* ======================================================================
+   ROUND 6, FORM 3 — THE PROJECTION TOGGLE, IN THE CANVAS HEAD.
+   ====================================================================== */
+/* The head's one control, and it must not read as a data selector: no fill, no
+ * box, two words divided by a hairline, the chosen one at full ink over the
+ * 2px primary rule the retired frame control used. That underline is the only
+ * ink it spends, which is what keeps a projection switch visibly lighter than
+ * the dropdown that chooses the data.
+ *
+ * `margin-left: auto` seats it at the head's right end, past the persistent
+ * provenance meta — the head is a flex row (`.pane > header`), so the toggle
+ * takes the slack rather than a fixed position. */
+/* The head is a two-column grid (`minmax(0,1fr) auto`) holding the title swap
+   and the persistent provenance meta. The toggle is a THIRD cell, so the head
+   takes a third `auto` track rather than wrapping onto an implicit second row —
+   which is what it did with two tracks, doubling the head's height. One named
+   deviation in the harness, and the head stays one row. */
+/* Scoped `.fer-surface .canvas-pane > header.canvas-head`, not `.fer-surface
+   .canvas-head`: the shipped rule is a two-class-plus-element selector, and the
+   shorter form loses to it on specificity — the head kept its two tracks and the
+   toggle kept wrapping, silently, exactly as round 4's `.level .inner` fix did. */
+.fer-surface .canvas-pane > header.canvas-head { grid-template-columns: minmax(0, 1fr) auto auto; }
+.fer-proj { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; padding-left: 14px; }
+.fer-proj[hidden] { display: none; }
+.fer-proj .cap {
+  font-size: var(--ck-micro); font-weight: 700; letter-spacing: var(--ck-track);
+  text-transform: uppercase; color: var(--mk-secondary);
+}
+.fer-proj .seg { display: flex; }
+.fer-proj button {
+  border: 0; border-left: 1px solid var(--ck-hair); border-radius: 0;
+  background: none; cursor: pointer; padding: 2px 8px;
   font-size: 11.5px; font-weight: 500;
   color: color-mix(in srgb, var(--mk-text) 62%, transparent);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+  box-shadow: none;
 }
-.fer-frames .seg .n {
-  margin-left: .25em;      /* a thin space */
-  font-size: 11.5px; font-weight: 600; font-variant-numeric: tabular-nums;
-  color: color-mix(in srgb, var(--mk-text) 85%, transparent);
+.fer-proj button:first-child { border-left: 0; }
+.fer-proj button:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: -2px; }
+.fer-proj button[data-selected="true"] {
+  color: var(--mk-text); box-shadow: inset 0 -2px 0 var(--primary);
 }
-.fer-frames .seg[data-selected="true"] .lab { color: var(--mk-text); }
-/* The 2px rule sits ON the control's own closing hairline, so selecting a
-   segment changes ink and nothing about the box. */
-.fer-frames .seg[data-selected="true"] {
-  box-shadow: inset 0 -2px 0 var(--primary);
+
+/* ======================================================================
+   ROUND 6, SEND-BACK 6 — THE COINCIDENCE, AS RESOLVED ROUTES.
+   ====================================================================== */
+/* The figure line on the left, the two routes right-aligned on the same rhythm
+ * `.fer-route` already sets — no sentence wrapped around a button. The elements
+ * are the shipped `.slot-say` and `.linkbtn`; only the arrangement is here. */
+/* The section is a plain block, NOT a flex row, and the two routes ride
+   `.fer-route` — block 6's own container, which is already a right-aligned
+   flex. Making the section itself the flex row was tried and is wrong twice
+   over: `.slot-say` became a flex item and picked up `min-height: auto`, and
+   right-aligning the buttons individually put a 198px auto margin on a shipped
+   `.linkbtn`. With the shipped elements in a shipped-shaped container, both
+   compare clean. `font-size` is `.slotlink`'s own declaration by name — the
+   rank the shipped sentence set for the buttons it contained. */
+.fer-coincide { padding: 12px var(--ck-pad) 16px; font-size: 11.5px; }
+/* One route per line, right-aligned: the two labels together are wider than the
+   column, and side by side they broke mid-label across two lines each. */
+.fer-coincide .fer-route {
+  flex-direction: column; align-items: flex-end; gap: 3px; padding: 6px 0 0;
 }
+
+/* ROUND 5, BLOCK 2's segmented frame control is RETIRED, and its rules are
+   deleted rather than left behind: form 1 replaces it with the collapsing
+   dropdown above, no markup carries `.fer-frames` any more, and a rule for
+   markup nothing emits is the next reader's wrong map. The reasoning that
+   produced it — why the selector is not a stack of queue rows — is kept at the
+   control's painter in surface.js. */
 
 /* ======================================================================
    ROUND 5, BLOCK 6 — THE ROUTE, AS ONE ACTION.

@@ -91,6 +91,9 @@
                     </div>
                   </div>
                   <span class="meta persist" id="dw-pool">—</span>
+                  <!-- ROUND 6, FORM 3 — the canvas head's ONE control. Hidden at
+                       the queue root, where nothing is selected to re-project. -->
+                  <div class="fer-proj" id="dw-proj" hidden></div>
                 </header>
                 <div class="body">
                   <div id="chart"></div>
@@ -113,6 +116,7 @@
                     <div class="head-line head-live ec-canvas-readout" id="ec-readout" aria-hidden="true"><span class="ec-rd-time">--:--</span></div>
                   </div>
                   <span class="meta persist" id="canvas-persist"></span>
+                  <div class="fer-proj" id="ec-proj" hidden></div>
                 </header>
                 <div class="body">
                   <div id="ec-chart" class="ec-chart" role="img" tabindex="0"
@@ -144,6 +148,15 @@
                     <div class="trail" id="crumb-trail"></div>
                     <span class="fer-count" id="crumb-count" hidden></span>
                   </div>
+                  <!-- ROUND 6, FORM 1 — THE FACTOR DROPDOWN, at the top of the
+                       inspector column (amendment: the operator's placement
+                       call, over two independent canvas-head leans). It sits
+                       OUTSIDE `.level` on purpose: `.level` is the scrolling
+                       track, and an expanded list inside it would scroll with
+                       the ledger instead of overlaying it. Rest state is one
+                       line at the column's own register; expanded it overlays
+                       the rows beneath rather than pushing them down. -->
+                  <div class="fer-sel-host" id="factor-select"></div>
                   <div class="level" id="level" tabindex="-1"></div>
                 </div>
                 <div class="watch" id="watch-dock"></div>

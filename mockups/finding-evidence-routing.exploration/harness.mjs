@@ -116,6 +116,12 @@ const SELECTORS = [
      seam sentence are on the mock's surface too and compare against the app's. */
   '.qrow[data-tier="tail"]', '.qrow[data-tier="tail"] .lab',
   '.qrow[data-tier="tail"] .den', '.qrow .go', '.tailnote', '.quiet-line',
+  /* ROUND 6, SEND-BACK 6 — `.slotlink` is the prose sentence the coincidence
+     routes were set inside, and the mock no longer emits it (the routes take
+     block 6's right-aligned action form instead). Left listed for the same
+     reason `.ev-group` is: if a later round brings the sentence back, it starts
+     verified the moment it appears. This is why the shared-selector count is 77
+     where round 5 checked 78. */
   '.slot-say', '.ec-counts', '.ec-count', '.ec-count b', '.ec-count em', '.ec-boundary-note',
   '.slotlink', '.linkbtn',
   /* ROUND 5, BLOCK 5 — `.ev-group` is no longer emitted by the mock (the group
@@ -143,7 +149,9 @@ const EXPECTED = {
   '.pane|grid-template-rows': 'ditto — the pane inherits the taller track',
   '.inspector|grid-template-rows': 'ditto, PLUS round 5 block 8: the dock is no longer a 98px reserve, so '
     + 'the level track takes that height as well. This is the term-48 re-settle, in one number.',
-  '.inspector > .body|grid-template-rows': 'ditto — the level track grows; the crumb row differs by 1px because the count accessory sits in it',
+  '.inspector > .body|grid-template-rows': 'ditto — the level track grows; the crumb row differs by 1px '
+    + 'because the count accessory sits in it. ROUND 6, FORM 1 adds a THIRD track: the factor dropdown\'s '
+    + 'rest line, which is a row of the column above the level rather than content inside it.',
   /* ROUND 5, BLOCK 8 — the four faces of the same re-settle. */
   '.watch|min-height': 'block 8: the dock is one line at the column\'s true bottom, not a 98px reserve '
     + '(re-settles migrated lock term 48)',
@@ -160,6 +168,17 @@ const EXPECTED = {
     + 'so there are no rows to lay out',
   '.watch|border-top-color': 'block 8: the app declares no top border at all, so its "colour" is the '
     + 'inherited text ink of a 0px edge — the mock\'s is `--ck-hair`, the pane\'s own hairline',
+  /* ROUND 6, FORM 3 — the canvas head gains the projection toggle (`By clock` /
+     `By event`), which the amendment settles as the head's ONE control. The
+     shipped head is a two-column grid — title swap, then the persistent
+     provenance meta — and the toggle is a third cell, so the head declares a
+     third `auto` track. Without it the toggle wrapped onto an implicit second
+     row and doubled the head's height. Both selectors below resolve to the same
+     element (the canvas head is the first `.pane > header` in the document). */
+  '.pane > header|grid-template-columns': 'form 3: the head takes a third `auto` track for the projection '
+    + 'toggle, which the shipped head has no sibling for',
+  '.canvas-pane > header.canvas-head|grid-template-columns': 'form 3: ditto — the projection toggle is a '
+    + 'third cell in the head, not a second row',
   /* ROUND 5, WORKSTREAM A — the two consequences of lifting the pooled canvas. */
   '.lane-stack|grid-template-rows': 'workstream A, omission (b): the shipped stack carries a second row of '
     + 'I:C block verdicts beneath the basal lane. The #31 ruling names the BASAL verdict lane, and with one '
@@ -423,8 +442,20 @@ async function gotoLevel(page, id) {
  */
 async function probeMock(page) {
   const mock = {};
-  for (const level of MOCK_LEVELS) {
+  /* ROUND 6, FORM 3 — AND BOTH PROJECTIONS AT EVERY DRILLED LEVEL. The canvas
+     head's toggle decides WHICH pane is mounted, and an unmounted pane lays out
+     at 0×0 — so probing only the rest projection would silently drop every lens
+     selector (or every pooled one) from the comparison instead of checking it.
+     The queue root has no toggle, so `clock` there is the only state there is. */
+  const states = MOCK_LEVELS.flatMap((level) => (level
+    ? [[level, 'clock'], [level, 'event']]
+    : [[level, 'clock']]));
+  for (const [level, projection] of states) {
     await gotoLevel(page, level);
+    if (level) {
+      await page.evaluate((p) => window.__ferProject(p), projection);
+      await page.waitForTimeout(300);
+    }
     const probe = await page.evaluate(probeScript, { props: PROPS, selectors: SELECTORS });
     for (const [selector, entry] of Object.entries(probe)) {
       const held = mock[selector];
@@ -590,10 +621,22 @@ async function main() {
        surface's own routing — `__ferGo` is the same call a click makes — so no
        capture shows a state a reader could not walk to. */
     const data = JSON.parse(await readFile(join(HERE, 'data.json'), 'utf8'));
+    /* ROUND 6 — the probe above walks BOTH projections, and the surface keeps
+       whichever it was left in (switching projection is not supposed to reset
+       anything). So the capture sequence states the projection it wants rather
+       than inheriting the probe's last one — the first cut of this did inherit
+       it, and every frame labelled `by clock` came out drawn by event. */
+    await page.evaluate(() => window.__ferProject('clock'));
     if (theme === 'dark') {
       await gotoLevel(page, null);
       await page.screenshot({ path: join(SHOTS, 'queue-level-1440x900.png') });
 
+      /* ROUND 6, FORM 3 — THE FINDING SCENE IN BOTH PROJECTIONS, and the drilled
+         row in both. `By clock` is the rest state: the pooled envelope with the
+         finding's events on it, and — once a row is picked — that event's day
+         over the envelope inside the window brace. `By event` is the lens the
+         mock has had since round 1. The toggle is pressed through the surface's
+         own handler, which is the call the head's button makes. */
       await gotoLevel(page, 'finding:over_treated_low');
       await page.screenshot({ path: join(SHOTS, 'scene-1440x900.png') });
       await page.locator('.pane.inspector').screenshot({ path: join(SHOTS, 'inspector-column.png') });
@@ -601,8 +644,17 @@ async function main() {
       const rowId = data.scenes['finding:over_treated_low'].occurrences.groups[0].rows[2].id;
       await page.evaluate((id) => window.__ferSelect(id), rowId);
       await page.waitForTimeout(400);
-      await page.screenshot({ path: join(SHOTS, 'row-hover-linked-trace.png') });
+      await page.screenshot({ path: join(SHOTS, 'row-day-trace-by-clock.png') });
       results.highlightedRow = rowId;
+
+      await page.evaluate(() => window.__ferProject('event'));
+      await page.waitForTimeout(450);
+      await page.screenshot({ path: join(SHOTS, 'row-hover-linked-trace.png') });
+      await page.evaluate((id) => window.__ferSelect(id), null);
+      await page.waitForTimeout(350);
+      await page.screenshot({ path: join(SHOTS, 'scene-by-event-1440x900.png') });
+      await page.evaluate(() => window.__ferProject('clock'));
+      await page.waitForTimeout(400);
 
       /* THE POPULATION CASE FILE, AS A SEQUENCE OF FRAMES (round 3). It opens on
          the largest claiming factor; a second claim line reframes both panes; a
@@ -615,6 +667,16 @@ async function main() {
       await page.screenshot({ path: join(SHOTS, 'population-all-lows-1440x900.png') });
       await page.locator('.pane.inspector').screenshot({ path: join(SHOTS, 'population-inspector-column.png') });
       results.populationDefaultFrame = population.defaultFactor;
+
+      /* ROUND 6, FORM 1 — THE DROPDOWN, EXPANDED, over the ledger it does not
+         push. Shot on the column so the two states can be laid side by side:
+         the rows and the dock are in the identical place in both. */
+      await page.evaluate(() => window.__ferFactorOpen(true));
+      await page.waitForTimeout(300);
+      await page.locator('.pane.inspector').screenshot({ path: join(SHOTS, 'factor-dropdown-open.png') });
+      await page.screenshot({ path: join(SHOTS, 'factor-dropdown-open-1440x900.png') });
+      await page.evaluate(() => window.__ferFactorOpen(false));
+      await page.waitForTimeout(250);
 
       const populationRow = population.frames[population.defaultFactor].occurrences.groups[0].rows[1].id;
       await page.evaluate((id) => window.__ferSelect(id), populationRow);
@@ -633,6 +695,18 @@ async function main() {
         await page.locator('.pane.inspector')
           .screenshot({ path: join(SHOTS, `population-frame-${key}-inspector.png`) });
       }
+
+      /* THE HONEST EMPTY CANVAS still lives in the EVENT projection, and only
+         there: `By clock` can draw the unclaimed lows as dots on the pooled
+         envelope (a low that no rule claims still happened at a time), while a
+         cohort comparison for a frame with no rule has nothing to draw. Both
+         answers are true and the pair is the evidence. */
+      await page.evaluate((k) => window.__ferFrame(k), 'unclaimed');
+      await page.evaluate(() => window.__ferProject('event'));
+      await page.waitForTimeout(450);
+      await page.screenshot({ path: join(SHOTS, 'population-frame-unclaimed-by-event-1440x900.png') });
+      await page.evaluate(() => window.__ferProject('clock'));
+      await page.waitForTimeout(300);
 
       /* Back to the default frame, expanded: the cap is spent across the regrouped
          cohorts in order, so the groups below it only appear here. */
@@ -662,6 +736,17 @@ async function main() {
       await page.screenshot({ path: join(SHOTS, 'population-lows-light-1440x900.png') });
       await page.locator('.pane.inspector')
         .screenshot({ path: join(SHOTS, 'population-lows-light-inspector.png') });
+      /* ROUND 6 — the two new forms on parchment. The dropdown's expanded list
+         is the only overlay on this surface, and a light ground is where an
+         overlay either separates from the column beneath it or does not. */
+      await page.evaluate(() => window.__ferFactorOpen(true));
+      await page.waitForTimeout(300);
+      await page.locator('.pane.inspector')
+        .screenshot({ path: join(SHOTS, 'factor-dropdown-open-light.png') });
+      await page.evaluate(() => window.__ferFactorOpen(false));
+      await page.evaluate(() => window.__ferProject('event'));
+      await page.waitForTimeout(400);
+      await page.screenshot({ path: join(SHOTS, 'population-lows-light-by-event.png') });
     }
     await page.close();
   }

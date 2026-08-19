@@ -89,14 +89,20 @@ new ResizeObserver(() => chart.resize()).observe(chartHost);
    stands. It is resized with the pane rather than rebuilt, which is also what
    makes the round-4 argument for unmounting the pane moot: an ECharts instance
    in a display:none host keeps its geometry and comes back at size. */
-const pooledChart = paintPooled({
+/* ROUND 6, FORM 3 — and it is no longer drawn once. The `By clock` projection
+   is this same chart with the selected factor's events on it, so it repaints
+   whenever the selection or the drilled event changes. `renderCanvas` resolves
+   its instance through `getInstanceByDom`, so every repaint is the same chart
+   and the ResizeObserver below never goes stale. */
+const pooledHosts = {
   surface,
   head: el('dw-canvas-head'),
   chartHost: el('chart'),
   laneHost: el('lane'),
   keyHost: el('lane-key'),
   payload: data.queue.canvas,
-});
+};
+const pooledChart = paintPooled(pooledHosts);
 new ResizeObserver(() => pooledChart.resize()).observe(el('chart'));
 
 /* ------------------------------------------------------------- the dock floor */
@@ -129,6 +135,13 @@ let frameKey = null;
 let highlighted = null;
 let pinned = null;
 let expanded = false;
+/* ROUND 6, FORM 3 — WHICH PROJECTION THE CANVAS IS DRAWN IN. Not a selection:
+   the events are the same either way, and switching preserves the drilled row.
+   `clock` is the rest state, as in wireframe G. */
+let projection = 'clock';
+/* ROUND 6, FORM 1 — whether the factor dropdown is expanded. It overlays; it
+   never pushes, so nothing else on the column is a function of it. */
+let factorOpen = false;
 /* ROUND 5, BLOCK 9 — how many occurrence rows the column can actually hold.
    MEASURED, never chosen: `Infinity` means "lay them all out so they can be
    measured", and `measureFit` replaces it with the answer after the first
@@ -154,6 +167,54 @@ function paintChart() {
   chart.setOption(chartOption(surface, canvas, highlighted), true);
 }
 
+/* ROUND 6, FORM 3 — the clock projection's draw. The SHIPPED pooled renderer,
+   handed the selected factor's events, and — once a row is picked — that
+   event's captured day and the lens's own alignment window as the brace. At the
+   queue root every one of those is empty, which is byte-identical to the call
+   round 5 made and is what keeps the queue-root option diff at zero. */
+function paintPooledCanvas() {
+  const active = frame();
+  const drill = highlighted ? data.clockDrills[highlighted] : null;
+  paintPooled({
+    ...pooledHosts,
+    occurrences: active?.clock?.occurrences || [],
+    trace: drill ? data.dayTraces[drill.day] : null,
+    window: drill ? drill.window : null,
+    windowLabel: drill ? drill.windowLabel : null,
+  });
+}
+
+/** Which pane is mounted: the pooled chart under `By clock` and at the queue
+    root, the lens under `By event`. */
+const showingClock = () => !scene() || projection === 'clock';
+
+/* ROUND 6, FORM 3 — the canvas head's one control, painted into whichever head
+   is mounted. ABSENT at the queue root, where nothing is selected to
+   re-project (the amendment's visibility rule, not a disabled state). */
+function paintProjection() {
+  const on = Boolean(scene());
+  for (const id of ['dw-proj', 'ec-proj']) {
+    const host = el(id);
+    host.hidden = !on;
+    if (!on) { host.innerHTML = ''; continue; }
+    host.innerHTML = `<span class="cap">${data.projection.label}</span>`
+      + `<span class="seg">${data.projection.options.map((o) => `
+        <button type="button" data-proj="${o.key}" aria-pressed="${projection === o.key}"
+                data-selected="${projection === o.key}">${o.label}</button>`).join('')}</span>`;
+    for (const node of host.querySelectorAll('[data-proj]')) {
+      node.addEventListener('click', () => selectProjection(node.dataset.proj));
+    }
+  }
+}
+
+/** Re-project. The selection does not move: the same factor, the same drilled
+    event, drawn on the other axis. */
+function selectProjection(key) {
+  if (projection === key) return;
+  projection = key;
+  paintCanvas();
+}
+
 /* ROUND 5, WORKSTREAM A — TWO-PANE GEOMETRY AT EVERY LEVEL, because the canvas
  * now has something to answer with at every level. `data-level` selects WHICH
  * canvas pane is mounted: the pooled glucose chart at the queue root, the
@@ -170,11 +231,16 @@ function paintCanvas() {
   const canvas = active?.canvas || null;
   const legend = el('ec-chart-key');
   surface.dataset.level = current ? 'drilled' : 'queue';
-  if (!current) {
-    /* The pooled chart is already drawn and only needs its size back — the pane
-       it lives in was display:none while a case file was open. */
+  /* ROUND 6, FORM 3 — WHICH pane is mounted is now the projection's answer, not
+     the level's. The queue root has no projection to make and stands on the
+     pooled chart; a drilled case file stands on whichever projection the head's
+     toggle is set to. */
+  surface.dataset.canvas = showingClock() ? 'pooled' : 'lens';
+  paintProjection();
+  if (showingClock()) {
+    paintPooledCanvas();
     pooledChart.resize();
-    return;
+    if (!current) return;
   }
   if (!canvas) {
     el('canvas-title').textContent = active.empty.head;
@@ -184,14 +250,18 @@ function paintCanvas() {
     chart.setOption(emptyOption(surface, active,
       current.frames[current.defaultFactor].canvas.alignmentWindow,
       current.frames[current.defaultFactor].canvas.axisAnchor), true);
-    chart.resize();
+    if (!showingClock()) chart.resize();
     return;
   }
   el('canvas-title').textContent = current.canvasHead.title;
   el('canvas-persist').textContent = current.canvasHead.context;
   legend.innerHTML = legendMarkup(canvas);
+  /* The lens is kept painted whichever projection is mounted — it is the same
+     selection either way, and a chart that only exists while it is visible
+     cannot be audited. Only the MOUNTED one is resized: an ECharts instance
+     resized inside a `display: none` host would take that host's zero. */
   paintChart();
-  chart.resize();
+  if (!showingClock()) chart.resize();
 }
 
 /* --------------------------------------------------- crumb + scope chip */
@@ -359,7 +429,30 @@ function measureFit() {
   return Math.max(MIN_ROWS, fit);
 }
 
-/* ROUND 5, BLOCK 2 — THE FRAME CONTROL, AS A SEGMENTED CONTROL.
+/* ROUND 6, FORM 1 — THE FACTOR CONTROL, AS A COLLAPSING DROPDOWN.
+ *
+ * Round 5's segmented control is retired. It was the right object for three
+ * factors and the wrong object for the ruling: selection is one-dimensional and
+ * the factor list is OPEN-ENDED (the amendment asks for 6–10 without redesign),
+ * and a one-row control that divides its width between its options cannot take a
+ * fourth without ellipsising the third. The dropdown's rest state costs one line
+ * whatever the list holds.
+ *
+ * REST is one line at the column's own register — current factor, its count in
+ * tabular numerals, a chevron — reading as the column's working title.
+ * EXPANDED it overlays the ledger rather than pushing it: pushing an 8-entry
+ * list down the column would drive the first event rows past the fold and move
+ * the floor dock, so a mis-tap costs the reader their place in the table.
+ * Collapsing therefore restores the identical column. Choosing a factor,
+ * clicking outside, or Esc all collapse it.
+ *
+ * It sits ABOVE `.level` in the inspector body, not inside it: `.level` is the
+ * scrolling track, and a list inside it would scroll with the rows it overlays.
+ *
+ * The historical note below is round 5's, kept because it is why this is not a
+ * stack of queue rows either.
+ *
+ * ROUND 5, BLOCK 2 — THE FRAME CONTROL, AS A SEGMENTED CONTROL.
  *
  * Rounds 3 and 4 both built this as a stack of queue rows, because "pick one of
  * these" is what a queue row does. It is the wrong shape twice over: a vertical
@@ -377,14 +470,64 @@ function measureFit() {
  * THREE SEGMENTS ALWAYS, Unclaimed among them: the control states what the
  * population divides into, and a division that drops its largest part is a lie
  * about the twenty. */
-const frameControl = (segments) => `
-  <div class="fer-frames" role="group" aria-label="Frame">
-    ${segments.map((s) => `
-      <button type="button" class="seg" data-key="${s.key}"
-              data-selected="${frameKey === s.key}" aria-pressed="${frameKey === s.key}">
-        <span class="lab">${s.label}</span><span class="n">${s.count}</span>
-      </button>`).join('')}
-  </div>`;
+/** The rest line and the list, built together and switched by ONE attribute.
+ *
+ * The list is in the DOM whether it is showing or not, and `data-open` on the
+ * host is the only thing expanding it. Rebuilding the markup on toggle was
+ * tried first and is wrong for a reason that only shows at runtime: the toggle
+ * button's own click re-rendered the control, which detached the node the click
+ * came from, and the outside-click listener then saw a target the host no
+ * longer contained and collapsed the list in the same gesture that opened it. */
+function paintFactorSelect() {
+  const current = scene();
+  const host = el('factor-select');
+  const segments = current?.segments;
+  factorOpen = factorOpen && Boolean(segments);
+  host.hidden = !segments;
+  if (!segments) { host.innerHTML = ''; return; }
+  const chosen = segments.find((s) => s.key === frameKey) || segments[0];
+  host.dataset.open = String(factorOpen);
+  host.innerHTML = `
+    <button type="button" class="fer-sel" aria-expanded="${factorOpen}" aria-haspopup="listbox">
+      <span class="nm">${chosen.label}</span>
+      <span class="ct">${chosen.count}</span>
+      <span class="chev" aria-hidden="true">›</span>
+    </button>
+    <div class="fer-sel-list" role="listbox" aria-label="${current.factorListHead}">
+      <div class="lhead">${current.factorListHead}</div>
+      ${segments.map((s) => `
+        <button type="button" class="fer-sel-opt" role="option" data-key="${s.key}"
+                aria-selected="${frameKey === s.key}">
+          <span class="tick" aria-hidden="true">${frameKey === s.key ? '•' : ''}</span>
+          <span class="lab">${s.label}</span><span class="ct">${s.count}</span>
+        </button>`).join('')}
+    </div>`;
+
+  host.querySelector('.fer-sel').addEventListener('click', () => setFactorOpen(!factorOpen));
+  for (const node of host.querySelectorAll('.fer-sel-opt')) {
+    node.addEventListener('click', () => {
+      setFactorOpen(false);
+      selectFrame(node.dataset.key);
+    });
+  }
+}
+
+function setFactorOpen(open) {
+  factorOpen = open;
+  const host = el('factor-select');
+  host.dataset.open = String(open);
+  host.querySelector('.fer-sel')?.setAttribute('aria-expanded', String(open));
+}
+
+/* Auto-collapse: a choice (above), a click anywhere else, or Esc. Bound once at
+   module level — the control repaints on every state change, and a listener per
+   paint would stack. */
+document.addEventListener('click', (e) => {
+  if (factorOpen && !el('factor-select').contains(e.target)) setFactorOpen(false);
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && factorOpen) setFactorOpen(false);
+});
 
 function paintLevel(refit = true) {
   const current = scene();
@@ -419,8 +562,9 @@ function paintLevel(refit = true) {
         <div class="ec-count"><b>${c.n}</b>${c.label}<em>${c.support}</em></div>`).join('')}</div>
     </div>` : ''}
 
-    <!-- ROUND 5, BLOCK 2 — the frame control, flush to the gutter, full width. -->
-    ${current.segments ? frameControl(current.segments) : ''}
+    <!-- ROUND 6, FORM 1 — the frame control has left this level entirely. It is
+         the collapsing factor dropdown at the top of the column now, painted
+         into its own host above the level by paintFactorSelect. -->
 
     <!-- ROUND 5, BLOCK 6 — THE ROUTE IS ONE RIGHT-ALIGNED ACTION, directly under
          the frame control, and it is ABSENT (never apologised for) where the
@@ -433,18 +577,22 @@ function paintLevel(refit = true) {
       <button type="button" class="fer-open" data-open="${active.route.target}">${active.route.label}</button>
     </div>` : ''}
 
-      ${coincidence ? `
-      <div class="inner fer-context">
-      <!-- ROUND 2 ITEM 4 — "When it lands" is DELETED: no heading, no histogram,
-           no peak line. The occurrences table below is the timing record. What
-           survives is the pair of coincidence sentences, standing on their own
-           arithmetic. -->
-      <div class="slot-say">${coincidence.share}</div>
-      <div class="slotlink">
-        <span>${coincidence.slotText}</span><button type="button" class="linkbtn">View slot</button>
-        <span>${coincidence.blockText}</span><button type="button" class="linkbtn">View segment</button>
-      </div>` : ''}
-    ${coincidence ? '</div>' : ''}
+    <!-- ROUND 6, SEND-BACK 6 — THE COINCIDENCE, AS RESOLVED ROUTES. It was two
+         sentences with two "View …" buttons set inside them: the last prose in
+         the column, immediately above a table the amendment puts at dense
+         register with no prose row over it. Block 6 already settled the form a
+         route takes here — one right-aligned action, no sentence — so the two
+         settings the band lands in take it, one action each, and the fact the
+         prose carried (which band, how many of how many) stays as a figure line
+         at the residue rank on the left. Nothing derived changed. -->
+    ${coincidence ? `
+    <div class="fer-coincide">
+      <div class="slot-say">${coincidence.band}</div>
+      <div class="fer-route">
+        ${coincidence.routes.map((r) => `
+          <button type="button" class="linkbtn">${r.label}</button>`).join('')}
+      </div>
+    </div>` : ''}
 
     <!-- The occurrences table — the rows ARE the selection mechanism. -->
     <div class="lvl-cap fer-occ-cap">Occurrences<span class="meta">${occurrences.capMeta}</span></div>
@@ -466,12 +614,10 @@ function paintLevel(refit = true) {
     paintLevel();
   });
 
-  /* The segments are the frame selector; the route beside them is the only thing
-     on this level that leaves the population case file. */
-  for (const node of level.querySelectorAll('.fer-frames .seg')) {
-    node.addEventListener('click', () => selectFrame(node.dataset.key));
-  }
-  level.querySelector('.fer-open')
+  /* The route out of a population case file. Scoped to `.fer-route` because the
+     coincidence routes above take the shipped `.linkbtn` and go nowhere in this
+     exploration, exactly as they did in round 5. */
+  level.querySelector('.fer-route .fer-open')
     ?.addEventListener('click', (e) => go(e.currentTarget.dataset.open));
 
   /* Row ⇄ trace: hover previews the ONE trace, click pins it. IDENTICAL in both
@@ -516,6 +662,7 @@ function selectFrame(key) {
   pinned = null;
   expanded = false;
   rowLimit = Infinity;
+  paintFactorSelect();
   paintCanvas();
   paintLevel();
 }
@@ -524,6 +671,10 @@ function select(id, repaintRows) {
   if (highlighted === id) return;
   highlighted = id;
   paintChart();
+  /* ROUND 6, FORM 3 — under `By clock` the same selection is the day trace and
+     the window brace on the pooled chart, so the row drives both projections
+     through one call. */
+  if (showingClock()) paintPooledCanvas();
   if (repaintRows) { paintLevel(); return; }
   for (const node of el('level').querySelectorAll('.ev-row')) {
     node.dataset.selected = String(node.dataset.id === id);
@@ -544,7 +695,9 @@ function go(id) {
   pinned = null;
   expanded = false;
   rowLimit = Infinity;
+  factorOpen = false;
   paintCrumb();
+  paintFactorSelect();
   paintCanvas();
   paintLevel();
 }
@@ -556,6 +709,10 @@ go(null);
    deterministic and no state exists that a reader could not reach. */
 window.__ferGo = go;
 window.__ferFrame = selectFrame;
+/* ROUND 6 — the two new controls, driven the same way: the harness presses what
+   a reader presses rather than reaching into state. */
+window.__ferProject = selectProjection;
+window.__ferFactorOpen = setFactorOpen;
 window.__ferSelect = (id) => { pinned = id; select(id, true); };
 window.__ferChart = chart;
 /* ROUND 5, WORKSTREAM A — the queue root's pooled chart, published so

@@ -165,19 +165,39 @@ function paintReadout(head, r) {
 }
 
 /**
- * Draw the queue root's pooled glucose canvas and its basal verdict lane.
+ * Draw the pooled glucose canvas and its basal verdict lane.
  *
  * `payload` is `data.queue.canvas` — the workstation fixture's own
  * `evidence.pooled`, `analyze.basal` and `evidence.target_range`, handed across
  * raw by build.mjs. Everything between that and the pixels is shipped code.
  *
+ * ROUND 6, FORM 3 — AND IT IS THE CLOCK PROJECTION, not only the queue root.
+ * `By clock` re-projects the selected factor's events onto this same chart, so
+ * the three optional inputs below are exactly the three the shipped renderer
+ * already takes for that job and nothing here is new drawing code:
+ *
+ *   `occurrences` the factor's events, as the shipped occurrence scatter —
+ *                 each at its own recorded clock minute and glucose value.
+ *   `trace`       the drilled event's day, as the shipped `That day` line; with
+ *                 it on the plot `renderCanvas` recedes the envelope on its own.
+ *   `window`      the drilled event's alignment window, as the shipped window
+ *                 brace, with `windowLabel` as its head — the same markArea the
+ *                 24 h preset draws at the queue root.
+ *
+ * Re-calling this repaints in place: `renderCanvas` resolves the host through
+ * `echarts.getInstanceByDom`, so every call returns the SAME instance.
+ *
  * Returns the ECharts instance so the caller can resize it with the pane.
  */
-export function paintPooled({ surface, head, chartHost, laneHost, keyHost, payload }) {
+export function paintPooled({
+  surface, head, chartHost, laneHost, keyHost, payload,
+  occurrences = [], trace = null, window: win = null, windowLabel = null,
+}) {
   const envelope = envelopeFromPooled(payload.pooled);
   const markers = markersFromPooled(payload.pooled);
   const lane = buildSlotLane(payload.basal);
-  const stats = windowStats(envelope, payload.window);
+  const drawn = win || payload.window;
+  const stats = windowStats(envelope, drawn);
   const colors = chartColors(surface);
 
   renderLane(laneHost, lane);
@@ -190,12 +210,15 @@ export function paintPooled({ surface, head, chartHost, laneHost, keyHost, paylo
     stats,
     /* No `target`: the shipped workstation passes none and lets `renderCanvas`
        fall through to its own [70, 180]. */
-    window: payload.window,
-    windowLabel: payload.windowLabel,
-    /* No factor is drilled at the queue root, so there are no occurrence marks
-       and no single day's trace to lay over the pooling. The shipped renderer
-       treats both as absent and drops them from the legend on its own. */
-    occurrences: [],
+    window: drawn,
+    windowLabel: windowLabel || payload.windowLabel,
+    /* At the queue root no factor is drilled, so there are no occurrence marks
+       and no single day's trace to lay over the pooling — the shipped renderer
+       treats both as absent and drops them from the legend on its own. Under
+       the clock projection they are the factor's own events and, once a row is
+       picked, that event's day. */
+    occurrences,
+    trace,
     onHover: (r) => paintReadout(head, r),
   });
 

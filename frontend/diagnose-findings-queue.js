@@ -108,35 +108,25 @@ function assertDetail(row) {
 }
 
 /**
- * The queue's display rows, in the server's order, with the priced/unpriced seam
- * placed and each row's single detail line chosen.
+ * The queue's display rows, in the server's order, with the server's ranking tier
+ * and each row's single detail line chosen.
  *
- * The seam (term 42) opens before the first UNPRICED row of the ranked head —
- * `assert` and `finding`, the two registers priority can reach — and only where a
- * priced row precedes it. The unpriced rows "follow the priced rows below a doubled
- * gap", so with nothing priced there is no boundary and the sentence would caption
- * the whole list instead of the tail of it. The demoted `held` and `blind` registers
- * follow the seam and are not its subject: each of those rows says in its own
- * sentence why it is quiet, which is why all three share one demoted treatment
- * rather than teaching a reader three.
+ * The seam (term 42) opens at the server's first `noted` run. It merely turns the
+ * already-published tier boundary into markup; it does not classify, rank, or infer
+ * a tier from a row's register or priority.
  */
 export function queueRows(projection) {
   const rows = projection?.rows || [];
-  let pricedSeen = false;
-  let seamOpened = false;
+  let previousTier;
   return rows.map((row) => {
-    const ranked = row.register === 'assert' || row.register === 'finding';
-    const unpriced = ranked && row.priority == null;
-    const seam = unpriced && pricedSeen && !seamOpened;
-    if (seam) seamOpened = true;
-    if (ranked && !unpriced) pricedSeen = true;
+    const seam = row.tier === 'noted' && previousTier != null && previousTier !== 'noted';
+    previousTier = row.tier;
     return {
       id: row.id,
       register: row.register,
       title: row.title,
       flavor: row.kind === 'setting' ? 'setting' : 'habit',
-      // one demoted register for the whole queue: unpriced, held and blind alike
-      tier: ranked && !unpriced ? 'priced' : 'tail',
+      tier: row.tier,
       seam,
       /* Term 38: a held or blind row drills to its detail but offers no stage
          affordance. The predicate is the server's register, never a floor of ours. */

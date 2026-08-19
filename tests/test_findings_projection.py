@@ -216,6 +216,33 @@ class QueueOrderTest(unittest.TestCase):
         counts = [row["episodes"] for row in tail]
         self.assertEqual(counts, sorted(counts, reverse=True))
 
+    def test_the_sorted_queue_publishes_its_three_closed_ranking_tiers(self):
+        """The public projection names rank without inventing a headline (#41).
+
+        Tiers are assigned only after this queue's server-owned sort: priorities
+        decide which rows lead, but no first asserting row receives a stronger
+        claim than the rest.
+        """
+        scoped_rows = self.projection.project(WindowQuery.clock(*AFTERNOON))["rows"]
+        rows = self.global_rows + scoped_rows
+        allowed = {"next_in_line", "worth_a_look", "noted"}
+        self.assertEqual({row["tier"] for row in rows}, allowed)
+        self.assertEqual(
+            [row["tier"] for row in self.global_rows],
+            ["next_in_line", "next_in_line", "next_in_line",
+             "worth_a_look", "worth_a_look", "noted"],
+        )
+        self.assertEqual(
+            {row["tier"] for row in rows if row["register"] == "assert"},
+            {"next_in_line"},
+        )
+        self.assertTrue(all(
+            row["tier"] == "noted" if row["priority"] is None
+            else (row["tier"] == "next_in_line" if row["register"] == "assert"
+                  else row["tier"] == "worth_a_look")
+            for row in rows
+        ))
+
     def test_the_order_is_the_servers_own_priorities_not_a_re_derivation(self):
         levers = {lever["parameter"]: lever["priority"]
                   for lever in self.projection._analysis["tuning_levers"]}

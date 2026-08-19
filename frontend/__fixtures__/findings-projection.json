@@ -7559,6 +7559,7 @@
       "noun": "meal runs",
       "run_days": 90
      },
+     "tier": "next_in_line",
      "title": "I:C 12:00 to 24:00 · lower"
     },
     {
@@ -7594,6 +7595,7 @@
      "register": "finding",
      "span": null,
      "support": null,
+     "tier": "worth_a_look",
      "title": "Over-treated low"
     },
     {
@@ -7629,6 +7631,7 @@
      "register": "finding",
      "span": null,
      "support": null,
+     "tier": "noted",
      "title": "Correction stacking"
     },
     {
@@ -7663,6 +7666,7 @@
       "noun": "fasting nights",
       "run_days": 30
      },
+     "tier": "noted",
      "title": "ISF"
     },
     {
@@ -7739,6 +7743,7 @@
       "noun": "clean nights",
       "run_days": 30
      },
+     "tier": "noted",
      "title": "Basal 19:30 to 21:00"
     }
    ],
@@ -7799,6 +7804,7 @@
       "noun": "meal runs",
       "run_days": 90
      },
+     "tier": "next_in_line",
      "title": "I:C 12:00 to 24:00 · lower"
     },
     {
@@ -7860,6 +7866,7 @@
       "noun": "clean nights",
       "run_days": 30
      },
+     "tier": "next_in_line",
      "title": "Basal 00:30 to 01:30 · raise"
     },
     {
@@ -7914,6 +7921,7 @@
       "noun": "clean nights",
       "run_days": 30
      },
+     "tier": "next_in_line",
      "title": "Basal 05:30 · raise"
     },
     {
@@ -7949,6 +7957,7 @@
      "register": "finding",
      "span": null,
      "support": null,
+     "tier": "worth_a_look",
      "title": "Over-treated low"
     },
     {
@@ -7984,6 +7993,7 @@
      "register": "finding",
      "span": null,
      "support": null,
+     "tier": "worth_a_look",
      "title": "Carb undercount"
     },
     {
@@ -8019,6 +8029,7 @@
      "register": "finding",
      "span": null,
      "support": null,
+     "tier": "noted",
      "title": "Correction stacking"
     }
    ],
@@ -8079,6 +8090,7 @@
       "noun": "meal runs",
       "run_days": 90
      },
+     "tier": "next_in_line",
      "title": "I:C 12:00 to 24:00 · lower"
     },
     {
@@ -8155,6 +8167,7 @@
       "noun": "clean nights",
       "run_days": 30
      },
+     "tier": "noted",
      "title": "Basal 12:30 to 14:00 · leaning lower"
     },
     {
@@ -8189,6 +8202,7 @@
       "noun": "fasting nights",
       "run_days": 30
      },
+     "tier": "noted",
      "title": "ISF"
     }
    ],
@@ -8265,6 +8279,7 @@
       "noun": "clean nights",
       "run_days": 30
      },
+     "tier": "next_in_line",
      "title": "Basal 05:30 · raise"
     },
     {
@@ -8319,6 +8334,7 @@
       "noun": "clean nights",
       "run_days": 30
      },
+     "tier": "noted",
      "title": "Basal 06:30 · leaning raise"
     },
     {
@@ -8353,6 +8369,7 @@
       "noun": "fasting nights",
       "run_days": 30
      },
+     "tier": "noted",
      "title": "ISF"
     }
    ],
@@ -8413,6 +8430,7 @@
       "noun": "meal runs",
       "run_days": 90
      },
+     "tier": "next_in_line",
      "title": "I:C 12:00 to 24:00 · lower"
     },
     {
@@ -8474,6 +8492,7 @@
       "noun": "clean nights",
       "run_days": 30
      },
+     "tier": "next_in_line",
      "title": "Basal 00:30 to 01:30 · raise"
     },
     {
@@ -8508,6 +8527,7 @@
       "noun": "fasting nights",
       "run_days": 30
      },
+     "tier": "noted",
      "title": "ISF"
     }
    ],
@@ -8564,6 +8584,7 @@
       "noun": "fasting nights",
       "run_days": 30
      },
+     "tier": "noted",
      "title": "ISF"
     }
    ],
@@ -8624,6 +8645,7 @@
       "noun": "meal runs",
       "run_days": 90
      },
+     "tier": "next_in_line",
      "title": "I:C 12:00 to 24:00 · lower"
     },
     {
@@ -8659,6 +8681,7 @@
      "register": "finding",
      "span": null,
      "support": null,
+     "tier": "worth_a_look",
      "title": "Over-treated low"
     },
     {
@@ -8693,6 +8716,7 @@
       "noun": "fasting nights",
       "run_days": 30
      },
+     "tier": "noted",
      "title": "ISF"
     }
    ],

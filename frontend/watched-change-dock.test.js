@@ -41,6 +41,16 @@ test('term 47 · a matured Trial keeps the slot and says it is readable', () => 
   assert.equal(flat(view), 'Ready to judge — 14 of 14 days since 08-11');
 });
 
+test('term 47 · the day count clamps to the requirement, matching Verify', () => {
+  // A completed Trial's bounded 14-day period spans 15 dates, so the payload's
+  // true count runs to 15; Verify renders "day 14 of 14" and the dock must read
+  // the same, not contradict it one click away.
+  const view = watchDockView({
+    watched: { ...TRIAL, maturing: { is_maturing: false, days_elapsed: 15, days_required: 14 } },
+  });
+  assert.equal(flat(view), 'Ready to judge — 14 of 14 days since 08-11');
+});
+
 test('term 47 · a Focus takes the slot when no Trial does', () => {
   const view = watchDockView({ watched: FOCUS, staged: STAGED });
   assert.equal(view.state, 'focus');

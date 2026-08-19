@@ -1162,5 +1162,62 @@ class DayLevelGateTest(unittest.TestCase):
         self.assertFalse(_overnight_lows_cleared([5, 0], [20, 0]))
 
 
+class TrialWindowInvarianceTest(unittest.TestCase):
+    """#18: a Trial's maturing window, watch horizon and accrual period are backend
+    facts. Diagnose loads the trend at 30 days; none of the three may follow it."""
+
+    NOW = datetime(2026, 6, 25, 0, 0, 0)
+
+    def _store(self, **kwargs):
+        # One ISF change at 2026-06-05 08:00 with dense CGM (4/day) through day 24
+        # — the 15–28-day band where the dock's unbounded count used to run ahead
+        # of Verify's bounded one.
+        bolus = [BolusEvent(t=datetime(2026, 6, d, 8, 0, 0), insulin=5.0, carbs=40,
+                            isf=30 if d <= 4 else 45, carb_ratio=7.0, target_bg=110)
+                 for d in range(1, 25)]
+        cgm = [CgmReading(t=datetime(2026, 6, d, h, 0, 0), bg=120.0)
+               for d in range(1, 25) for h in (0, 6, 12, 18)]
+        return _FakeStore(bolus=bolus, cgm=cgm, **kwargs)
+
+    def test_trend_window_cannot_move_days_required(self):
+        for window in (30, 90):
+            trend = summarize_trend(self._store(), window_days=window, now=self.NOW)
+            payload = trend.to_dict()
+            # The tiling still follows the requested window …
+            self.assertEqual(payload["window_days"], window)
+            # … but the Trial's maturing window is the fixed backend 14.
+            self.assertEqual(payload["watched_change"]["maturing"]["days_required"], 14)
+
+    def test_trend_and_roster_count_the_same_bounded_days(self):
+        from ciq_autotune.watched_change import review_trials
+        store = self._store()
+        wc = summarize_trend(store, window_days=30, now=self.NOW
+                             ).to_dict()["watched_change"]
+        roster = review_trials(store, now=self.NOW)["trials"]
+        self.assertEqual(wc["parameter"], "isf")
+        self.assertEqual(roster[0]["parameter"], "isf")
+        # Maturity accrues only inside the Trial's own bounded 14-day period, so
+        # the dock and Verify report the same count (15 dates span that period).
+        self.assertEqual(wc["maturing"]["days_elapsed"], 15)
+        self.assertEqual(roster[0]["maturing"]["days_elapsed"], 15)
+        self.assertFalse(wc["maturing"]["is_maturing"])
+
+    def test_aged_out_change_is_no_trial_and_keeps_the_pinned_focus(self):
+        # A change 40 calendar days before now sits past the fixed 28-day horizon:
+        # not a live Trial at any trend window, so loading Diagnose surfaces the
+        # pinned Focus instead of dropping it.
+        bolus = [BolusEvent(t=datetime(2026, 5, d, 8, 0, 0), insulin=5.0, carbs=40,
+                            isf=30 if d <= 4 else 45, carb_ratio=7.0, target_bg=110)
+                 for d in range(1, 15)]
+        store = _FakeStore(bolus=bolus, active_focus={
+            "id": 3, "lever": "late_bolus",
+            "pinned_at": "2026-06-01 08:00:00", "status": "active",
+        })
+        wc = summarize_trend(store, window_days=30, now=datetime(2026, 6, 14)
+                             ).to_dict()["watched_change"]
+        self.assertEqual(wc["kind"], "focus")
+        self.assertEqual(store.dropped, [])
+
+
 if __name__ == "__main__":
     unittest.main()

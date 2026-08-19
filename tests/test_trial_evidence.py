@@ -141,9 +141,9 @@ class TrialBreakdownTest(unittest.TestCase):
     def _selected(self, seed, predicate=lambda trial: True):
         seed(self.tmp.name)
         with Store.open(self.tmp.name) as store:
-            roster = review_trials(store, now=NOW, window_days=14)
+            roster = review_trials(store, now=NOW)
             trial = next(t for t in roster["trials"] if predicate(t))
-            return review_trials(store, now=NOW, window_days=14,
+            return review_trials(store, now=NOW,
                                  selected=trial["id"])["selected"]
 
     def test_a_whole_day_uniform_move_reports_the_day_and_one_pair(self):

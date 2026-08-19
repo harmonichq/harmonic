@@ -31,14 +31,11 @@ class SyntheticSlotScopedIcTrialTest(unittest.TestCase):
             path = str(pathlib.Path(tmp) / "synthetic.db")
             gen_verify_payload._seed(path)
             with Store.open(path) as store:
-                roster = review_trials(
-                    store, now=gen_verify_payload.NOW,
-                    window_days=gen_verify_payload.WINDOW)
+                roster = review_trials(store, now=gen_verify_payload.NOW)
                 block_trial = next(
                     t for t in roster["trials"] if t["slot"] == "12:00")
                 detail = review_trials(
                     store, now=gen_verify_payload.NOW,
-                    window_days=gen_verify_payload.WINDOW,
                     selected=block_trial["id"])["selected"]
 
         # (a) the id carries the block end-minute suffix per _review_id.

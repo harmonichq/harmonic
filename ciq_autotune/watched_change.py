@@ -55,11 +55,19 @@ _TARGET_METRIC: Dict[str, List[str]] = {
 # TIR + the post-meal arc (CONTEXT.md "Trial"; ADR 0029 §3).
 _PROFILE_TARGET = ["tir", "arc"]
 
+# A Trial's maturing window is a fixed backend fact — 14 days of target-metric
+# data-days — never a caller's trend or analysis window (#18): the dock and the
+# Verify roster must report the same maturity for the same change no matter what
+# window the surface was tiled at.
+TRIAL_WINDOW_DAYS = 14
+_MATURE_WINDOW = timedelta(days=TRIAL_WINDOW_DAYS)
+
 # A Trial stays foregrounded while its change is recent — through the maturing
-# window (``window_days``) plus a review window after, then it ages out into "just
-# how things are now". Two windows is the watch horizon (a derive-live policy, no
-# stored keep-decision to end it).
+# window plus a review window after, then it ages out into "just how things are
+# now". Two windows is the watch horizon (a derive-live policy, no stored
+# keep-decision to end it).
 _WATCH_MULT = 2
+_WATCH_HORIZON = timedelta(days=TRIAL_WINDOW_DAYS * _WATCH_MULT)
 
 # Two parameters that move within this span of each other read as one whole-profile
 # switch, not two independent single-knob edits (the dense basal feed and the
@@ -168,8 +176,9 @@ class Maturing:
     """A Trial's watch phase (ADR 0029 §6, CONTEXT.md "Maturing").
 
     ``is_maturing`` is True while the target metric's **data is still accruing** —
-    fewer than ``days_required`` (the rolling window) post-change *days that actually
-    carry target data* have landed, so the before/after delta is not yet trustworthy.
+    fewer than ``days_required`` (the fixed ``TRIAL_WINDOW_DAYS``) post-change *days
+    that actually carry target data* have landed, so the before/after delta is not
+    yet trustworthy.
     ``days_elapsed`` counts those data-days, not calendar days: an I:C trial (target
     ``arc``) matures on post-meal days, not on the wall clock, so a stretch with no
     meals does not falsely mature it. Gated on data accrual, "not on model
@@ -377,7 +386,7 @@ def _switch_candidates(snapshots, mature_window: timedelta) -> List[_Cand]:
 
 
 def detect_trial(basal_events, bolus_events, snapshots, *, now: datetime,
-                 window_days: int, cgm_readings=(), plan_history=None
+                 cgm_readings=(), plan_history=None
                  ) -> Optional[TrialView]:
     """The active Trial from the setting-change epoch, or ``None`` (ADR 0029).
 
@@ -397,11 +406,11 @@ def detect_trial(basal_events, bolus_events, snapshots, *, now: datetime,
       switch shows in the snapshot changelog; else maps the single parameter to its
       target series.
 
-    A change older than the watch horizon (``_WATCH_MULT`` × ``window_days``) has
-    matured into the status quo and is not surfaced.
+    A change older than the watch horizon (``_WATCH_HORIZON``) has matured into
+    the status quo and is not surfaced.
     """
-    watch_start = now - timedelta(days=window_days * _WATCH_MULT)
-    mature_window = timedelta(days=window_days)
+    watch_start = now - _WATCH_HORIZON
+    mature_window = _MATURE_WINDOW
 
     cands: List[_Cand] = []
     for p in ("isf", "carb_ratio", "target_bg"):
@@ -498,11 +507,15 @@ def detect_trial(basal_events, bolus_events, snapshots, *, now: datetime,
     # The target's data-day timeline: post-meal instants for the arc, CGM otherwise.
     data_times = ([b.t for b in bolus_events if _is_meal(b)] if target[0] == "arc"
                   else [r.t for r in cgm_readings])
+    # Maturity accrues only within the Trial's own bounded period — the same
+    # ``min(now, changed_at + mature_window)`` cap :func:`review_trials` applies —
+    # so the dock and the Verify roster count the same days for the same change.
+    trial_end = min(now, changed_at + mature_window)
     return TrialView(
         parameter=parameter,
         changed_at=changed_at.strftime(_DT_FMT),
         target_metrics=target,
-        maturing=_maturing(changed_at, now, window_days, data_times),
+        maturing=_maturing(changed_at, trial_end, TRIAL_WINDOW_DAYS, data_times),
         slot=slot,
         before=before,
         after=after,
@@ -615,7 +628,7 @@ def focus_view(focus_row: dict) -> FocusView:
 # --- the one-active resolution (Trial XOR Focus, pump wins) -----------------
 
 
-def review_trials(store, *, now: datetime, window_days: int,
+def review_trials(store, *, now: datetime,
                   selected: Optional[str] = None) -> dict:
     """The bounded, read-only Verify Trial review surface (ADR 579).
 
@@ -629,8 +642,8 @@ def review_trials(store, *, now: datetime, window_days: int,
     snapshots = store.settings_snapshots()
     cgm = store.cgm_readings()
     plan_history = store.plan_history()
-    horizon_start = now - timedelta(days=window_days * _WATCH_MULT)
-    mature_window = timedelta(days=window_days)
+    horizon_start = now - _WATCH_HORIZON
+    mature_window = _MATURE_WINDOW
 
     candidates = _review_candidates(
         basal, bolus, snapshots, plan_history, mature_window=mature_window,
@@ -652,7 +665,7 @@ def review_trials(store, *, now: datetime, window_days: int,
         # the selected detail.  Later observations cannot complete an otherwise
         # empty Trial or make its ready-to-judge state imply unavailable evidence.
         trial_end = min(now, cand.start + mature_window)
-        maturing = _maturing(cand.start, trial_end, window_days, data_times)
+        maturing = _maturing(cand.start, trial_end, TRIAL_WINDOW_DAYS, data_times)
         trials.append(_ReviewTrial(
             view=TrialView(
                 parameter=cand.parameter,
@@ -685,7 +698,7 @@ def review_trials(store, *, now: datetime, window_days: int,
     )
     if match is None:
         raise KeyError(selected)
-    return {"trials": roster, "selected": _review_detail(store, match, now, window_days)}
+    return {"trials": roster, "selected": _review_detail(store, match, now)}
 
 
 @dataclass(frozen=True)
@@ -1077,19 +1090,19 @@ def _review_summary(trial: _ReviewTrial) -> dict:
     }
 
 
-def _review_detail(store, trial: _ReviewTrial, now: datetime, window_days: int) -> dict:
+def _review_detail(store, trial: _ReviewTrial, now: datetime) -> dict:
     view = trial.view
     changed_at = datetime.strptime(view.changed_at, _DT_FMT)
     state = "maturing" if view.maturing.is_maturing else "complete"
     detail = _review_summary(trial)
     detail.update({
         "before_period": {
-            "start": (changed_at - timedelta(days=window_days)).strftime(_DT_FMT),
+            "start": (changed_at - _MATURE_WINDOW).strftime(_DT_FMT),
             "end": view.changed_at,
         },
         "trial_period": {
             "start": view.changed_at,
-            "end": min(now, changed_at + timedelta(days=window_days)).strftime(_DT_FMT),
+            "end": min(now, changed_at + _MATURE_WINDOW).strftime(_DT_FMT),
         },
         "focus": (
             {
@@ -1111,7 +1124,7 @@ def _review_detail(store, trial: _ReviewTrial, now: datetime, window_days: int) 
                 "message": "This Trial is ready for a before-and-Trial read.",
             }
         ),
-        "evidence": _trial_evidence(store, view, changed_at, now, window_days,
+        "evidence": _trial_evidence(store, view, changed_at, now,
                                     block=trial.block),
         "plan_route": _prior_plan_route(view, trial.members),
         "limits": _trial_limits(trial),
@@ -1135,7 +1148,7 @@ def _review_detail(store, trial: _ReviewTrial, now: datetime, window_days: int) 
 
 
 def _trial_evidence(store, view: TrialView, changed_at: datetime, now: datetime,
-                    window_days: int, *, block: Optional[tuple] = None) -> List[dict]:
+                    *, block: Optional[tuple] = None) -> List[dict]:
     """The selected Trial's period-aligned targets, guardrails, and rescue context.
 
     ``block`` is the block-bound I:C Trial's captured wrap-aware arc (#581); when
@@ -1149,8 +1162,8 @@ def _trial_evidence(store, view: TrialView, changed_at: datetime, now: datetime,
     from .outcomes_trend import post_meal_arc, post_meal_rescue_context
     from .rescue_evidence import eligible_carb_entries
 
-    before_start = changed_at - timedelta(days=window_days)
-    trial_end = min(now, changed_at + timedelta(days=window_days))
+    before_start = changed_at - _MATURE_WINDOW
+    trial_end = min(now, changed_at + _MATURE_WINDOW)
     cgm = store.cgm_readings()
     bolus = store.bolus_events()
     carbs = store.carb_entries()
@@ -1268,7 +1281,7 @@ def _prior_plan_route(view: TrialView, members: Optional[list] = None) -> dict:
     }
 
 
-def trial_is_active(store, *, now: datetime, window_days: int,
+def trial_is_active(store, *, now: datetime,
                     basal_events=None, bolus_events=None, snaps=None,
                     cgm_readings=None) -> bool:
     """Is a Trial live right now? (the pin-time guard for the one-active invariant)."""
@@ -1276,13 +1289,13 @@ def trial_is_active(store, *, now: datetime, window_days: int,
     bolus = store.bolus_events() if bolus_events is None else bolus_events
     snapshots = store.settings_snapshots() if snaps is None else snaps
     cgm = store.cgm_readings() if cgm_readings is None else cgm_readings
-    return detect_trial(basal, bolus, snapshots, now=now, window_days=window_days,
+    return detect_trial(basal, bolus, snapshots, now=now,
                         cgm_readings=cgm,
                         plan_history=store.plan_history()) is not None
 
 
 def active_watched_change(store, basal_events, bolus_events, snaps, *,
-                          now: datetime, window_days: int, cgm_readings=()
+                          now: datetime, cgm_readings=()
                           ) -> Optional[Union[TrialView, FocusView]]:
     """The single active watched change — Trial XOR Focus, pump wins (ADR 0029 §4).
 
@@ -1291,7 +1304,7 @@ def active_watched_change(store, basal_events, bolus_events, snaps, *,
     With no Trial, the pinned Focus surfaces; with neither, ``None``.
     """
     trial = detect_trial(basal_events, bolus_events, snaps, now=now,
-                         window_days=window_days, cgm_readings=cgm_readings,
+                         cgm_readings=cgm_readings,
                          plan_history=store.plan_history())
     if trial is not None:
         focus = store.active_focus()

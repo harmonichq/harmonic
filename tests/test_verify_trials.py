@@ -116,7 +116,7 @@ def _seed_maturing_block_ic_trial(path):
 
 
 def _seed_evidence_after_trial_period(path):
-    """A Trial with sufficient later meals but none in its own evidence period."""
+    """A Trial whose only meals land after its own bounded 14-day period."""
     with Store.open(path) as store:
         store.upsert_settings_snapshot("2026-06-04 06:00:00", _block_ic_settings(1))
         store.upsert_settings_snapshot("2026-06-05 06:00:00", _block_ic_settings(2))
@@ -134,21 +134,21 @@ def _seed_evidence_after_trial_period(path):
             "completion": "Completed",
             "insulin": 4.0,
             "carbs": 40.0,
-        } for day in range(12, 19)])
+        } for day in range(20, 27)])
 
 
 def _seed_raw_candidates(path, *, revert=False):
     """Manufactured dose-stamped histories for roster ordering and loop closure."""
     with Store.open(path) as store:
         boluses, cgm = [], []
-        for day in range(1, 18 if not revert else 11):
+        for day in range(1, 31 if not revert else 11):
             at = BASE + timedelta(days=day - 1, hours=12)
             if revert:
                 isf = 40 if day <= 3 or day >= 7 else 36
                 carb_ratio = 5.0
             else:
-                isf = 40 if day <= 3 else 36 if day <= 10 else 34
-                carb_ratio = 5.0 if day <= 12 else 4.6
+                isf = 40 if day <= 3 else 36 if day <= 16 else 34
+                carb_ratio = 5.0 if day <= 26 else 4.6
             boluses.append({
                 "seq_num": day,
                 "request_time": at.strftime("%Y-%m-%d %H:%M:%S"),
@@ -174,7 +174,7 @@ def _seed_raw_candidates(path, *, revert=False):
 def _seed_raw_whole_profile_candidate(path):
     with Store.open(path) as store:
         boluses, cgm = [], []
-        for day in range(1, 11):
+        for day in range(1, 18):
             at = BASE + timedelta(days=day - 1, hours=12)
             boluses.append({
                 "seq_num": day,
@@ -314,7 +314,7 @@ class VerifyTrialsApiTest(unittest.TestCase):
         self.tmp.close()
 
     def test_empty_store_returns_an_empty_roster(self):
-        response = self.client.get("/verify/trials", params={"window": 14})
+        response = self.client.get("/verify/trials")
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {"trials": [], "selected": None})
@@ -326,7 +326,7 @@ class VerifyTrialsApiTest(unittest.TestCase):
         # the meal cohort. Focus is still preserved (the read is side-effect free).
         focus = _seed_maturing_block_ic_trial(self.tmp.name)
 
-        roster = self.client.get("/verify/trials", params={"window": 14})
+        roster = self.client.get("/verify/trials")
         self.assertEqual(roster.status_code, 200)
         # Exactly one entry, not two: the fixture's post-switch in-block meals are
         # dose-stamped at the same 5.0→4.6 the block switch itself carries, so this
@@ -337,7 +337,7 @@ class VerifyTrialsApiTest(unittest.TestCase):
         trial_id = roster.json()["trials"][0]["id"]
 
         selected = self.client.get(
-            "/verify/trials", params={"window": 14, "selected": trial_id},
+            "/verify/trials", params={"selected": trial_id},
         )
         self.assertEqual(selected.status_code, 200)
         detail = selected.json()["selected"]
@@ -368,9 +368,9 @@ class VerifyTrialsApiTest(unittest.TestCase):
     def test_later_data_cannot_complete_a_trial_with_no_owned_evidence(self):
         _seed_evidence_after_trial_period(self.tmp.name)
 
-        trial = self.client.get("/verify/trials", params={"window": 7}).json()["trials"][0]
+        trial = self.client.get("/verify/trials").json()["trials"][0]
         detail = self.client.get(
-            "/verify/trials", params={"window": 7, "selected": trial["id"]},
+            "/verify/trials", params={"selected": trial["id"]},
         ).json()["selected"]
 
         self.assertEqual(detail["state"], "maturing")
@@ -383,7 +383,7 @@ class VerifyTrialsApiTest(unittest.TestCase):
     def test_roster_orders_live_then_newest_completed_trials_and_rejects_unknown_id(self):
         _seed_raw_candidates(self.tmp.name)
 
-        response = self.client.get("/verify/trials", params={"window": 7})
+        response = self.client.get("/verify/trials")
         self.assertEqual(response.status_code, 200)
         trials = response.json()["trials"]
         self.assertEqual(len(trials), 3)
@@ -395,7 +395,7 @@ class VerifyTrialsApiTest(unittest.TestCase):
         self.assertGreater(trials[1]["changed_at"], trials[2]["changed_at"])
 
         complete = self.client.get(
-            "/verify/trials", params={"window": 7, "selected": trials[1]["id"]},
+            "/verify/trials", params={"selected": trials[1]["id"]},
         ).json()["selected"]
         self.assertEqual(complete["readiness"], {
             "label": "Ready to judge",
@@ -403,20 +403,20 @@ class VerifyTrialsApiTest(unittest.TestCase):
         })
 
         unknown = self.client.get(
-            "/verify/trials", params={"window": 7, "selected": "expired-trial"},
+            "/verify/trials", params={"selected": "expired-trial"},
         )
         self.assertEqual(unknown.status_code, 404)
         aged = self.client.get(
-            "/verify/trials", params={"window": 7, "selected": "isf-all-20260501080000"},
+            "/verify/trials", params={"selected": "isf-all-20260501080000"},
         )
         self.assertEqual(aged.status_code, 404)
 
     def test_selected_trial_owns_its_periods_evidence_and_maturing_readiness(self):
         _seed_maturing_block_ic_trial(self.tmp.name)
-        trial_id = self.client.get("/verify/trials", params={"window": 14}).json()["trials"][0]["id"]
+        trial_id = self.client.get("/verify/trials").json()["trials"][0]["id"]
 
         detail = self.client.get(
-            "/verify/trials", params={"window": 14, "selected": trial_id},
+            "/verify/trials", params={"selected": trial_id},
         ).json()["selected"]
 
         self.assertEqual(detail["before_period"], {
@@ -444,9 +444,9 @@ class VerifyTrialsApiTest(unittest.TestCase):
 
     def test_revert_route_only_prefills_a_reconstructible_single_setting(self):
         _seed_maturing_block_ic_trial(self.tmp.name)
-        trial_id = self.client.get("/verify/trials", params={"window": 14}).json()["trials"][0]["id"]
+        trial_id = self.client.get("/verify/trials").json()["trials"][0]["id"]
         block_ic = self.client.get(
-            "/verify/trials", params={"window": 14, "selected": trial_id},
+            "/verify/trials", params={"selected": trial_id},
         ).json()["selected"]
         self.assertEqual(block_ic["plan_route"], {
             "mode": "stage-prior",
@@ -462,10 +462,10 @@ class VerifyTrialsApiTest(unittest.TestCase):
 
     def test_whole_profile_trial_routes_to_manual_plan_review_without_a_prefill(self):
         _seed_whole_profile_trial(self.tmp.name)
-        trial_id = self.client.get("/verify/trials", params={"window": 14}).json()["trials"][0]["id"]
+        trial_id = self.client.get("/verify/trials").json()["trials"][0]["id"]
 
         detail = self.client.get(
-            "/verify/trials", params={"window": 14, "selected": trial_id},
+            "/verify/trials", params={"selected": trial_id},
         ).json()["selected"]
 
         self.assertEqual(detail["parameter"], "profile")
@@ -485,10 +485,10 @@ class VerifyTrialsApiTest(unittest.TestCase):
         # so `_prior_plan_route`'s `before is None` branch must fall back to
         # manual-review rather than inventing a value to stage (finding 4).
         _seed_missing_prior_basal_trial(self.tmp.name)
-        trial_id = self.client.get("/verify/trials", params={"window": 14}).json()["trials"][0]["id"]
+        trial_id = self.client.get("/verify/trials").json()["trials"][0]["id"]
 
         detail = self.client.get(
-            "/verify/trials", params={"window": 14, "selected": trial_id},
+            "/verify/trials", params={"selected": trial_id},
         ).json()["selected"]
 
         self.assertEqual(detail["parameter"], "basal_rate")
@@ -502,21 +502,21 @@ class VerifyTrialsApiTest(unittest.TestCase):
         # surfaces general, non-isolated evidence — it produces no roster entry.
         _seed_missing_baseline_trial(self.tmp.name)
 
-        response = self.client.get("/verify/trials", params={"window": 14})
+        response = self.client.get("/verify/trials")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {"trials": [], "selected": None})
 
     def test_exact_baseline_revert_does_not_become_a_roster_record(self):
         _seed_raw_candidates(self.tmp.name, revert=True)
 
-        response = self.client.get("/verify/trials", params={"window": 7})
+        response = self.client.get("/verify/trials")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {"trials": [], "selected": None})
 
     def test_raw_multi_parameter_change_is_one_whole_profile_trial(self):
         _seed_raw_whole_profile_candidate(self.tmp.name)
 
-        response = self.client.get("/verify/trials", params={"window": 7})
+        response = self.client.get("/verify/trials")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["trials"], [{
             "id": "profile-all-20260604120000",
@@ -527,7 +527,7 @@ class VerifyTrialsApiTest(unittest.TestCase):
             "after": None,
             "target_metrics": ["tir", "arc"],
             "state": "complete",
-            "maturing": {"days_elapsed": 7, "days_required": 7, "gap_count": 0},
+            "maturing": {"days_elapsed": 14, "days_required": 14, "gap_count": 0},
         }])
 
 

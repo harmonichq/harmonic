@@ -56,8 +56,7 @@ export function renderEvidence(host, factor, occurrences, onOpen, onMore, shownC
       : `<span class="only">${worst ?? entry ?? '—'} <span>· extreme only</span></span>`;
     b.innerHTML = `<span class="when">${fmtDate(o.date)} · ${o.t.slice(11, 16)}</span>
       ${nums}
-      <span class="tier">${tierOf(o) || 'unclassified'}</span>
-      <span class="chev" aria-hidden="true">›</span>`;
+      <span class="tier">${tierOf(o) || 'unclassified'}</span>`;
     b.addEventListener('click', () => onOpen(o));
     return { node: b, occ: o };
   });

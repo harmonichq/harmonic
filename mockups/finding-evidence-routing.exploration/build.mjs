@@ -101,15 +101,26 @@ const winEdge = (m) => (m === 1440 ? '24:00' : hhmm(m));
 
 const readJson = async (path) => JSON.parse(await readFile(join(ROOT, path), 'utf8'));
 
-/* ---- ROUND 7, ITEM 1: THE INSTRUMENT ROW'S TWO SHIPPED GROUPS ----
-   The window-like toolbar STAYS (the operator's call — Verify carries the same
-   row), so the mock draws the shipped row rather than retiring it. Its two
-   groups are EXTRACTED from the shipped source at build time, never
-   transcribed: `View` is diagnose-event-comparison.js's own `VIEWS` list,
-   capitalised the way its `createViewInstrumentMarkup` capitalises it, and
-   `Window` is diagnose-workstation.js's own `WINDOWS` map. Fails closed — an
-   upstream rename stops the build instead of freezing a stale row into the
-   mock. The two group captions are those modules' own markup strings. */
+/* ---- ROUND 7, ITEM 1: THE INSTRUMENT ROW'S SHIPPED GROUP ----
+   The window-like toolbar STAYS (the operator's standing call — Verify carries
+   the same row), so the mock draws the shipped row rather than retiring it.
+   `Window` is EXTRACTED from diagnose-workstation.js's own `WINDOWS` map at
+   build time, never transcribed. Fails closed — an upstream rename stops the
+   build instead of freezing a stale row into the mock. The group caption is
+   that module's own markup string.
+
+   ROUND 11 — THE `View` GROUP IS DELETED and its options are no longer built.
+   The operator's ruling: it was a read-out wearing the costume of a control, so
+   it goes rather than gets explained. What survives is the VIEW COORDINATE —
+   the `lows` key this whole fixture is cut at — and the check that the shipped
+   module still declares it, which is why the list is still read here: the
+   coordinate is DATA the build depends on, where the segmented control was
+   chrome the reader could not use.
+
+   `Window` is a different case and stays exactly as it is drawn. The operator's
+   model for it: a reader viewing by clock can also filter by clock, so it is a
+   real control — inert here only because this fixture is a single window (Lows
+   over 24 h), which is a fixture limitation and not a design statement. */
 async function shippedInstruments() {
   const ec = await readFile(join(ROOT, 'frontend/diagnose-event-comparison.js'), 'utf8');
   const dw = await readFile(join(ROOT, 'frontend/diagnose-workstation.js'), 'utf8');
@@ -129,14 +140,7 @@ async function shippedInstruments() {
      out of the same map rather than named again here. */
   const standingWindow = winOptions.find((o) => o.label === ALL_DAY.label);
   if (!standingWindow) throw new Error(`diagnose-workstation.js \`WINDOWS\` has no "${ALL_DAY.label}" preset`);
-  return {
-    view: {
-      label: 'View',
-      options: viewKeys.map((key) => ({ key, label: `${key[0].toUpperCase()}${key.slice(1)}` })),
-      standing: VIEW,
-    },
-    window: { label: 'Window', options: winOptions, standing: standingWindow.key },
-  };
+  return { window: { label: 'Window', options: winOptions, standing: standingWindow.key } };
 }
 
 /* ---- ROUND 8, ITEM 1: THE OCCURRENCE TABLE IS THE PRODUCTION ONE ----
@@ -1162,11 +1166,12 @@ async function main() {
     footerVoice: FOOTER_VOICE,
 
     /* ---------- ROUND 7, ITEM 1: THE INSTRUMENT ROW ----------
-       The shipped `View` and `Window` groups, extracted above. The mock does not
-       drive either one — its data is the Lows view over the 24 h window and
-       nothing on this surface re-scopes it — so each group prints its standing
-       coordinate pressed. The row is here because it is the surface's toolbar in
-       Diagnose and in Verify alike, and because ALIGN belongs in it. */
+       The shipped `Window` group, extracted above. The mock does not drive it —
+       its data is one window, the 24 h one, and nothing on this surface re-scopes
+       it — so the group prints its standing coordinate pressed. The row is here
+       because it is the surface's toolbar in Diagnose and in Verify alike, and
+       because ALIGN belongs in it.
+       ROUND 11 — `View` is gone from this map with the group itself. */
     toolbar: await shippedInstruments(),
 
     /* ---------- ROUND 6, FORM 3: THE PROJECTION TOGGLE ----------
@@ -1415,9 +1420,18 @@ async function main() {
   const html = indexHtml.replace(/<!--[\s\S]*?-->/g, '');
   const blocks = [...html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)].map((m) => m[1]);
   if (!blocks.length) throw new Error('no <style> block found in frontend/index.html');
-  /* Fail closed on the exact corruption above: the token block must be intact. */
+  /* Fail closed on the exact corruption above: the token block must be intact.
+     ROUND 11, F12 — `.has-tooltip` joins the needles, because the scene now
+     REUSES that primitive rather than declaring a second one. It is defined in
+     an inline `<style>` block here and nowhere else in frontend/, which is why
+     two prior rounds' stylesheet-only greps concluded the repository had none
+     and each wrote the false claim into a comment. This extraction is the only
+     thing putting the primitive on the mock's page, so if it ever stops
+     arriving the build must stop too rather than shipping a legend chip whose
+     disclosure silently never opens. */
   const joined = blocks.join('\n');
-  for (const needle of [':root {', 'html.dark {', '--wk-canvas:', 'color-scheme: light']) {
+  for (const needle of [':root {', 'html.dark {', '--wk-canvas:', 'color-scheme: light',
+    '.has-tooltip {', '.has-tooltip::after {']) {
     if (!joined.includes(needle)) throw new Error(`extracted app base is missing "${needle}" — extraction is corrupt`);
   }
   if (/<\/?(link|script|style|meta)\b/.test(joined)) {

@@ -2716,24 +2716,6 @@
   ]
  ],
  "toolbar": {
-  "view": {
-   "label": "View",
-   "options": [
-    {
-     "key": "glucose",
-     "label": "Glucose"
-    },
-    {
-     "key": "meals",
-     "label": "Meals"
-    },
-    {
-     "key": "lows",
-     "label": "Lows"
-    }
-   ],
-   "standing": "lows"
-  },
   "window": {
    "label": "Window",
    "options": [

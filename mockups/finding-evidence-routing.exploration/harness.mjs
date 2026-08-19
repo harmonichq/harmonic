@@ -227,10 +227,18 @@ const EXPECTED = {
      Each entry names the finding number it implements. Anything here is a
      deliberate step AWAY from the shipped sibling, taken because the shipped
      sibling is what the critique is calling library output or app-side voice. */
-  '.linkbtn|color': 'FINDING 14: the coincidence routes inherit `Open case file ›`\'s treatment. The shipped '
-    + '`.linkbtn` is `--ck-accent` underlined, which is a website tell inside an app that navigates without a '
-    + 'single underline anywhere else; the amendment also reserved the accent + right-alignment for the ONE '
-    + 'action in this column, and two more of them turned a deliberate accent into noise.',
+  '.linkbtn|color': 'FINDING 14 + F7: the coincidence routes inherit `Open case file ›`\'s treatment. The '
+    + 'shipped `.linkbtn` is `--ck-accent` underlined, which is a website tell inside an app that navigates '
+    + 'without a single underline anywhere else; the amendment also reserved the accent + right-alignment for '
+    + 'the ONE action in this column, and two more of them turned a deliberate accent into noise. F7 moves the '
+    + 'ink again, to `--primary-600`: `--ck-accent` on bone is 3.95:1 as text, so every accent-inked string on '
+    + 'this surface failed AA in light at once. The accent\'s own next step clears it in both themes (5.78:1 '
+    + 'light, 6.79:1 dark) without introducing a colour the app does not already pair.',
+  '.linkbtn|padding-top': 'F8: the painted line is 14px tall and two of these stack 3px apart, so neither the '
+    + 'target nor the spacing met WCAG 2.2 AA\'s 24x24. The padding takes each to 24px and sets the pitch to '
+    + '27px, which a centred overlay of the same height could not have done without the two boxes overlapping '
+    + 'and stealing each other\'s clicks.',
+  '.linkbtn|padding-bottom': 'F8: ditto — the other half of the same padding',
   '.linkbtn|text-decoration-line': 'FINDING 14: the underline goes; the chevron the label already carries is '
     + 'the whole affordance',
   '.linkbtn|font-weight': 'FINDING 14: the routes inherit `.fer-open`\'s weight as well as its ink, so the two '
@@ -245,12 +253,67 @@ const EXPECTED = {
   '.ec-key-item|row-gap': 'FINDING 3: one line has no row gap',
   '.ec-key-item small|margin-top': 'FINDING 3: the count rides the label\'s baseline instead of a second row',
   '.ec-key-item small|margin-left': 'FINDING 3: ditto',
-  '.lane button|background-color': 'FINDING 10: `--ck-inset` is a near-black in BOTH themes, so the strip was '
-    + 'the loudest ink on a bone page and nearly invisible on the dark desk — one fill that never got its '
-    + 'light/dark pass, under the least consequential element on the canvas. Both values are the column\'s own '
-    + 'second surface now, recessive in each theme, so the verdict tints that carry meaning stay the loudest '
-    + 'thing in the strip.',
+  '.lane button|background-color': 'FINDING 10 + F5: `--ck-inset` is a near-black in BOTH themes, so the strip '
+    + 'was the loudest ink on a bone page and nearly invisible on the dark desk — one fill that never got its '
+    + 'light/dark pass, under the least consequential element on the canvas. Round 9 re-tuned the CELL and left '
+    + 'the strip, which inverted the pair instead of fixing it: 12.19:1 cell-against-strip in light and 1.37:1 '
+    + 'in dark, at which no reader can see the 48 cell boundaries at all. One declaration now, derived from the '
+    + 'column\'s own ink and surface, measured at 3.33:1 light / 4.39:1 dark against the strip below.',
+  '.lane|background-color': 'F5: the OTHER half of the same pair, and the half round 9 missed. `.lane`\'s own '
+    + 'ground was still `--ck-inset` — a black slab under the chart on bone (14.51:1 against the pane) and a '
+    + 'strip that vanished into the pane on the desk (1.03:1). The strip\'s `gap: 1px` means the strip IS the '
+    + 'boundary between the 48 cells, so this is a 1.4.11 mark and not a matter of taste. It is a recessive '
+    + 'track in both themes now: 1.16:1 light / 1.47:1 dark against the pane it sits on.',
+
+  /* ================= ROUND 11 — THE LOCK AUDIT'S CONTRAST PASS =================
+     Four shipped inks on this surface inherit a token that fails its floor, and
+     a mock cannot fix the app from here. Each entry names the F-number it comes
+     from; the app-side defect is reported rather than silently absorbed. */
+  '.more|color': 'F7: the expander is `--ck-accent`, which on bone measures 3.95:1 as text — under DESIGN.md '
+    + 'line 188\'s own 4.5:1 bar. It takes the surface\'s route ink (`--primary-600`, 5.78:1 light / 6.79:1 '
+    + 'dark), which is the same step the two in-body routes take, so every accent-inked string in this column '
+    + 'reads at one value.',
+  '.qrow .go|color': 'F7: ditto — the queue row\'s chevron is the same `--ck-accent` at the same 3.95:1.',
+  '.ev-row .arrow|color': 'F7: the production table\'s `→` is `--mk-muted` at 70%, which measures 3.21:1 light '
+    + 'and 3.42:1 dark — it fails in BOTH themes, which is why it is not fixed by a light-only override. It '
+    + 'takes this surface\'s one dim-meta ink instead.',
+  '.crumb .trail .chev|color': 'F7: the crumb separator is `--mk-text` at 35% — 2.10:1 light / 2.90:1 dark, the '
+    + 'worst text pair on the surface and failing in both themes. Same dim-meta ink.',
+  '.crumb .trail button|color': 'F7: the crumb root is `--mk-text` at 55%, 3.56:1 in light. It is the column\'s '
+    + 'one way back, so it takes `--mk-muted` — the designed meta ink, 6.21:1 light / 5.47:1 dark — rather than '
+    + 'the dim register: a navigation control should not be reading at the floor.',
 };
+
+/* ROUND 11, F7 — THE EDGES THAT ARE NOT EDGES.
+ *
+ * `border-*-color` defaults to `currentColor`, so on an element that paints no
+ * border at all the probe reads the element's TEXT ink back under a second name.
+ * Five of the six inks F7 moves sit on such elements, which is why one ink
+ * change surfaced as eleven rows: two per element, plus `.more`'s top edge —
+ * `.more` paints a real bottom border with an explicit colour, and that one is
+ * still compared, because a fix that stopped comparing it would be the
+ * loosening this table exists to avoid.
+ *
+ * The harness already names this exact artifact once, on `.watch|border-top-color`
+ * ("the app declares no top border at all, so its 'colour' is the inherited text
+ * ink of a 0px edge"). These are the same fact, enumerated rather than absorbed
+ * into a rule that would skip every zero-width edge on the surface.
+ */
+for (const [selector, edges] of [
+  ['.crumb .trail button', ['border-top-color', 'border-bottom-color']],
+  ['.crumb .trail .chev', ['border-top-color', 'border-bottom-color']],
+  ['.qrow .go', ['border-top-color', 'border-bottom-color']],
+  ['.linkbtn', ['border-top-color', 'border-bottom-color']],
+  ['.ev-row .arrow', ['border-top-color', 'border-bottom-color']],
+  ['.more', ['border-top-color']],
+]) {
+  for (const edge of edges) {
+    EXPECTED[`${selector}|${edge}`] = `F7: not a border. ${selector} paints no ${edge.split('-')[1]} `
+      + 'edge here, so `currentColor` reports the element\'s own text ink a second time — the ink named '
+      + `in the \`${selector}|color\` entry above, and the same value. Same artifact the `
+      + '`.watch|border-top-color` entry names.';
+  }
+}
 
 /* ROUND 9 — NAMED DEVIATIONS IN THE TWO CHART-OPTION DIFFS.
  *

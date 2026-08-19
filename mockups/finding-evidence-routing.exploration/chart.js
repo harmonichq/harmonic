@@ -526,14 +526,23 @@ export function legendMarkup(canvas, selected) {
        chips, not caption sentences. A chart that requires a paragraph fails the
        bar"). It now HANGS OFF the key rather than printing beneath it: the chip
        carries the disclosure and reveals it on hover or focus.
-       THE AMENDMENT ASKED FOR `.has-tooltip`, AND THIS REPOSITORY HAS NO SUCH
-       PRIMITIVE — `grep` finds it in neither frontend/*.css nor frontend/*.js.
-       So the scene declares one, `.fer-tip`, built out of the surface's own
-       tokens and named in the report as a gap the app owes. */
+
+       ROUND 11, F12 — THE MECHANISM IS THE SHIPPED `.has-tooltip`, and round 9's
+       claim that this repository has no such primitive WAS FALSE. It is declared
+       at frontend/index.html:225-246, inside an inline `<style>` block — which is
+       why a grep over frontend/*.css and frontend/*.js missed it — and a Vue
+       component uses it at line 5913 on the identical contract: `tabindex="0"`
+       plus `data-tooltip`, revealed on `:hover` and `:focus-visible`. DESIGN.md
+       calls it "the system's one reusable 'define a term inline' mechanism …
+       should be reused rather than re-invented per feature". The scene's own
+       `.fer-tip` is DELETED rather than left standing beside it, and the
+       primitive arrives here the way every other shipped thing on this surface
+       does: through build.mjs's app-base extraction, which now fails closed if
+       the primitive ever stops arriving. */
     const hedged = key === 'near_rule' && canvas.nearRuleNote;
     return `
-      <span class="ec-key-item${hedged ? ' fer-tip' : ''}" data-cohort="${key}" data-support="${record.support}" data-selected-cohort="false"${
-      hedged ? ` tabindex="0" data-tip="${canvas.nearRuleNote}" aria-label="${record.label}. ${canvas.nearRuleNote}"` : ''}>
+      <span class="ec-key-item${hedged ? ' has-tooltip' : ''}" data-cohort="${key}" data-support="${record.support}" data-selected-cohort="false"${
+      hedged ? ` tabindex="0" data-tooltip="${canvas.nearRuleNote}" aria-label="${record.label}. ${canvas.nearRuleNote}"` : ''}>
         <i class="ec-key-mark" aria-hidden="true"></i>
         <strong>${record.label}<em class="ec-support-label">${record.supportWord}</em></strong>
         <small>${record.legendDetail}</small>

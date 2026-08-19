@@ -339,17 +339,21 @@ function markCanvas(dots) {
     root, the lens under `By event`. */
 const showingClock = () => !scene() || projection === 'clock';
 
-/* ROUND 7, ITEM 1 — THE TOOLBAR'S TWO STANDING GROUPS. `View` and `Window` are
-   the shipped instruments, and the mock does not drive either: its data IS the
-   Lows view over the 24 h window, and nothing on this surface re-scopes it. So
-   each group prints its standing coordinate pressed and takes no handler — a
-   button that silently did nothing would be the worse lie. Both lists come from
-   the shipped modules through build.mjs; neither is written here. */
+/* ROUND 7, ITEM 1 — THE TOOLBAR'S STANDING GROUP. `Window` is the shipped
+   instrument and the mock does not drive it: its data IS the 24 h window, and
+   nothing on this surface re-scopes it. It prints its standing coordinate
+   pressed and takes no handler — a button that silently did nothing would be the
+   worse lie. The list comes from the shipped module through build.mjs; it is not
+   written here.
+
+   ROUND 11 — `View` IS DELETED, its markup and its three tab stops with it. The
+   operator's ruling separates the two cases that round 7 had painted the same
+   way: VIEW was a read-out in a control's costume, and WINDOW is a control this
+   fixture cannot exercise. A read-out gets deleted; a control gets drawn. */
 function paintStandingInstruments() {
-  for (const [id, group] of [['fer-seg-view', data.toolbar.view], ['fer-seg-window', data.toolbar.window]]) {
-    el(id).innerHTML = group.options.map((o) => `
+  const group = data.toolbar.window;
+  el('fer-seg-window').innerHTML = group.options.map((o) => `
       <button type="button" aria-pressed="${group.standing === o.key}">${o.label}</button>`).join('');
-  }
 }
 
 /* ROUND 7, ITEM 1 — ALIGN, THE TOOLBAR'S THIRD GROUP. Same `cap` + `seg` form
@@ -717,12 +721,13 @@ function paintFactorSelect() {
   const chosen = segments.find((s) => s.key === frameKey) || segments[0];
   host.dataset.open = String(factorOpen);
   host.innerHTML = `
-    <button type="button" class="fer-sel" aria-expanded="${factorOpen}" aria-haspopup="listbox">
+    <button type="button" class="fer-sel" aria-expanded="${factorOpen}" aria-haspopup="listbox"
+            aria-controls="fer-sel-list">
       <span class="nm">${chosen.label}</span>
       <span class="ct">${chosen.count}</span>
       <span class="chev" aria-hidden="true">›</span>
     </button>
-    <div class="fer-sel-list" role="listbox" aria-label="${current.factorListHead}">
+    <div class="fer-sel-list" id="fer-sel-list" role="listbox" aria-label="${current.factorListHead}">
       <div class="lhead">${current.factorListHead}</div>
       ${segments.map((s) => `
         <button type="button" class="fer-sel-opt" role="option" data-key="${s.key}"
@@ -748,11 +753,26 @@ function setFactorOpen(open) {
   host.querySelector('.fer-sel')?.setAttribute('aria-expanded', String(open));
 }
 
-/* Auto-collapse: a choice (above), a click anywhere else, or Esc. Bound once at
-   module level — the control repaints on every state change, and a listener per
-   paint would stack. */
+/* Auto-collapse: a choice (above), a click anywhere else, focus leaving the
+   host, or Esc. Bound once at module level — the control repaints on every state
+   change, and a listener per paint would stack.
+
+   ROUND 11, F10 — FOCUS LEAVING IS THE FOURTH WAY OUT, and it was the missing
+   one. A pointer reader could not leave the list open by accident; a keyboard
+   reader could do nothing else. Tabbing forward off the last option walked the
+   route, the band, all five rows, the expander, the footer, the topbar and the
+   toolbar — 41 stops — with the overlay still expanded over the ledger the whole
+   way, and the overlay is `position: absolute`, so they were reading rows
+   through a panel whose edge they could not see. The predicate is the
+   outside-click listener's own, spelled against `relatedTarget` because that is
+   where the focus is GOING; `focusout` fires before it lands, and a `null`
+   relatedTarget (focus leaving the document entirely) is outside by the same
+   test. */
 document.addEventListener('click', (e) => {
   if (factorOpen && !el('factor-select').contains(e.target)) setFactorOpen(false);
+});
+el('factor-select').addEventListener('focusout', (e) => {
+  if (factorOpen && !el('factor-select').contains(e.relatedTarget)) setFactorOpen(false);
 });
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && factorOpen) setFactorOpen(false);

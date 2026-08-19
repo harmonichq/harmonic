@@ -64,7 +64,7 @@
 .fer-count {
   margin-left: auto; padding-left: 12px; flex: 0 0 auto; text-align: right;
   font-family: var(--ck-mono); font-size: 11px; font-weight: 500;
-  color: color-mix(in srgb, var(--mk-text) 55%, transparent);
+  color: var(--fer-meta-dim);
   font-variant-numeric: tabular-nums;
 }
 .fer-count[hidden] { display: none; }
@@ -125,7 +125,7 @@
 .fer-sel .ct {
   font-family: var(--ck-mono); font-size: 11px; font-weight: 500;
   font-variant-numeric: tabular-nums;
-  color: color-mix(in srgb, var(--mk-text) 55%, transparent);
+  color: var(--fer-meta-dim);
 }
 /* The chevron is the crumb's own `›`, rotated to point down at rest and up when
    the list is open — one glyph, one rotation, no second icon. */
@@ -169,11 +169,11 @@
 .fer-sel-opt:last-child { border-bottom: 0; }
 .fer-sel-opt:hover { background: color-mix(in srgb, var(--mk-surface-2) 60%, transparent); }
 .fer-sel-opt:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: -2px; }
-.fer-sel-opt .tick { flex: 0 0 8px; color: var(--primary); font-size: 11px; }
+.fer-sel-opt .tick { flex: 0 0 8px; color: var(--fer-route-ink); font-size: 11px; }
 .fer-sel-opt .lab { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .fer-sel-opt .ct {
   margin-left: auto; font-family: var(--ck-mono); font-size: 11px;
-  font-variant-numeric: tabular-nums; color: var(--mk-muted);
+  font-variant-numeric: tabular-nums; color: var(--fer-meta-dim);
 }
 .fer-sel-opt[aria-selected="true"] { background: color-mix(in srgb, var(--mk-surface-2) 60%, transparent); }
 .fer-sel-opt[aria-selected="true"] .lab { font-weight: 600; }
@@ -231,9 +231,13 @@
    the shipped in-body route affordance — with its own left padding dropped
    because nothing precedes it on this line any more. */
 .fer-route { display: flex; justify-content: flex-end; padding: 6px var(--ck-pad) 2px; }
+/* ROUND 11, F7 + F8 — the route's ink is the accent's own darker/lighter step
+   (see the token block at the foot of this file), and its hit box clears 24px
+   without moving the label: the painted line is 15px tall and the padding is
+   what the pointer and the finger get. */
 .fer-open {
-  border: 0; background: none; padding: 0; cursor: pointer;
-  font-size: 11.5px; font-weight: 500; color: var(--primary);
+  border: 0; background: none; cursor: pointer; padding: 5px 0;
+  font-size: 11.5px; font-weight: 500; color: var(--fer-route-ink);
 }
 .fer-open:hover { text-decoration: underline; text-underline-offset: 2px; }
 .fer-open:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: 2px; }
@@ -275,26 +279,35 @@
  * ink; the selected one is the accent, solid — one colour, spent once, on the
  * one thing the reader has to be able to find. */
 .fer-band { padding: 10px var(--ck-pad) 0; }
+/* ROUND 11, F8 — the bar no longer clips its own children. It used to carry
+   `overflow: hidden` so its 2px radius could round the outer two corners; the
+   segments' 24px hit boxes (below) hang outside a 10px bar, and a clipping
+   parent would have swallowed them. The radius moves onto the two end segments,
+   which with a 2px gap between them renders identically. */
 .fer-band .bar {
-  display: grid; width: 100%; height: 10px; gap: 2px; border-radius: 2px; overflow: hidden;
+  display: grid; width: 100%; height: 10px; gap: 2px;
 }
-/* ROUND 9, FINDING 17 — THE INACTIVE SEGMENTS NEED A GROUND IN LIGHT.
-   `--mk-text` at 16% over a near-black desk is a legible grey step; the same
-   declaration over bone lands within a couple of percent of the paper itself, so
-   in light the two inactive segments effectively vanished and a three-way split
-   read as a progress bar at about 40%. The dark value is the one that worked and
-   is untouched; light gets the same PERCEIVED separation by mixing into the
-   column's own second surface instead of into the ground it is sitting on —
-   which is the token DESIGN.md pairs light and dark values on. Scoped
-   `html:not(.dark)`, the same scoping theme.css uses for its own light-only
-   splits and for the same reason: a light literal leaking into dark is how
-   Verify's movement chips lost their ink. */
+.fer-band .seg:first-child { border-radius: 2px 0 0 2px; }
+.fer-band .seg:last-child { border-radius: 0 2px 2px 0; }
+/* ROUND 9, FINDING 17 / ROUND 11, F2 — THE INACTIVE SEGMENTS CARRY A 3:1 MARK
+   IN BOTH THEMES, MEASURED IN BOTH.
+   Round 9 raised light from invisible to nearly invisible (2.17:1) and left dark
+   where it was — 1.60:1, the worse half of the pair, and unmeasured. The band IS
+   the split figure and each segment is also a `<button>`, so WCAG 1.4.11's 3:1
+   applies twice over. Both values below are tuned against their own ground and
+   both are asserted by contrast-audit.mjs on every run, which is the only thing
+   that stops the next quieting pass from walking them back down:
+     light  `--mk-text` 50% into `--mk-surface-2`  -> 3.51:1 on bone
+     dark   `--mk-text` 40% into transparent       -> 3.36:1 on the desk
+   The light form still mixes into the column's second surface rather than into
+   the ground it sits on, which is the pairing DESIGN.md asks for; only the
+   percentage moved. */
 .fer-band .seg {
   border: 0; padding: 0; cursor: pointer;
-  background: color-mix(in srgb, var(--mk-text) 16%, transparent);
+  background: color-mix(in srgb, var(--mk-text) 40%, transparent);
 }
 html:not(.dark) .fer-surface .fer-band .seg {
-  background: color-mix(in srgb, var(--mk-text) 30%, var(--mk-surface-2));
+  background: color-mix(in srgb, var(--mk-text) 50%, var(--mk-surface-2));
 }
 /* The pressed rule below is three classes; the light override above is five, so
    without this the drilled segment lost its accent in light and the band went
@@ -305,10 +318,16 @@ html:not(.dark) .fer-surface .fer-band .seg[aria-pressed="true"] { background: v
 .fer-band .seg[aria-pressed="true"] { background: var(--ck-accent); }
 .fer-band .seg:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: 2px; }
 
-.fer-band .keys { display: grid; gap: 2px 10px; margin-top: 7px; }
+/* ROUND 11, F8 — the keys are the band's equivalent control and they were 18px
+   tall, so the equivalent-control exception could not rescue the segments
+   either. Padding takes each key to 24px; the extra air above the list is what
+   keeps the segments' own hit boxes (which reach 7px below a 10px bar) from
+   overlapping the first key's. Two targets that overlap steal each other's
+   clicks, which is not a fix. */
+.fer-band .keys { display: grid; gap: 2px 10px; margin-top: 14px; }
 .fer-band .key {
   display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 8px;
-  background: none; border: 0; padding: 2px 0; cursor: pointer; text-align: left;
+  background: none; border: 0; padding: 5px 0; cursor: pointer; text-align: left;
   font: inherit; font-size: 11.5px; color: var(--mk-muted);
 }
 .fer-band .key .n { font-family: var(--ck-mono); font-variant-numeric: tabular-nums; }
@@ -329,7 +348,7 @@ html:not(.dark) .fer-surface .fer-band .seg[aria-pressed="true"] { background: v
 .fer-band .cap .meta {
   margin-left: auto; font-family: var(--ck-mono); font-weight: 500;
   font-variant-numeric: tabular-nums; text-transform: none; letter-spacing: 0;
-  color: color-mix(in srgb, var(--mk-text) 45%, transparent);
+  color: var(--fer-meta-dim);
 }
 .fer-band { padding-bottom: 10px; border-bottom: 1px solid var(--ck-hair); }
 
@@ -346,7 +365,7 @@ html:not(.dark) .fer-surface .fer-band .seg[aria-pressed="true"] { background: v
 .fer-residue {
   padding: 6px var(--ck-pad);
   font-size: 11px; font-weight: 400;
-  color: color-mix(in srgb, var(--mk-text) 45%, transparent);
+  color: var(--fer-meta-dim);
 }
 
 /* ======================================================================
@@ -372,7 +391,7 @@ html:not(.dark) .fer-surface .fer-band .seg[aria-pressed="true"] { background: v
 .fer-dock-line {
   display: block;
   font-size: 11px; font-weight: 400;
-  color: color-mix(in srgb, var(--mk-text) 45%, transparent);
+  color: var(--fer-meta-dim);
 }
 
 /* ======================================================================
@@ -454,6 +473,14 @@ html:not(.dark) .fer-surface .fer-band .seg[aria-pressed="true"] { background: v
  * the same reason: a light literal leaking into dark is how Verify's movement
  * chips lost their ink. */
 html:not(.dark) .fer-surface { --ec-near: #5d2a0c; }
+/* ROUND 11, F6 — AND THE DARK HALF, WHICH ROUND 4 NEVER MEASURED. The paragraph
+   above is exactly right about the mechanism and was applied to one theme: on
+   the desk the shipped `#c98a4e` at the same 58% resolves to 2.93:1 against the
+   lens plot ground, under the same 3:1 floor the light fix was written to
+   satisfy. Same move, other ground — the ink steps toward its own theme's light
+   end until 58% of it lands at 3.34:1, and the alpha, which is how "limited
+   support" is said on every cohort, does not move. */
+html.dark .fer-surface { --ec-near: #d59a60; }
 
 /* ======================================================================
    ROUND 4 ITEM 12 — SECTIONS SEPARATE BY SPACE.
@@ -476,8 +503,21 @@ html:not(.dark) .fer-surface { --ec-near: #5d2a0c; }
 /* The queue's own seam: the ranked findings end, and the standing populations
    are a different kind of thing entirely. The shipped tail note already opens a
    14px pause before the unpriced rows, so this break is deliberately wider than
-   that one — it is a bigger boundary than the one inside the queue. */
-.fer-browse-cap { margin-top: 24px; }
+   that one — it is a bigger boundary than the one inside the queue.
+
+   ROUND 11, F1 — THIS IS WHERE THE ARRIVAL STATE'S OVERFLOW WAS PAID FROM. At
+   1280x800 the queue root was the one state in the surface that scrolled its own
+   column, hiding its last row — `Meals 20 ›`, the entry point to one of only two
+   standing populations. The operator's decision was to keep the dock floor
+   pinned at one reserved height and buy the pixels back out of inter-tier air,
+   because the lock is about to assert both that this column does not scroll and
+   that the floor does not move. So the three margins above the browse section
+   come down together — the tier eyebrow's 18px to 11px, the Watching cap's 20px
+   to 13px, and this seam's 24px to 16px — and the seam stays the widest of the
+   three, which is the relationship that carried the meaning. Deleting the VIEW
+   group paid none of it: the toolbar is a row above the panes, so dropping one
+   group off it changes tab stops, not column height. */
+.fer-browse-cap { margin-top: 16px; }
 
 /* ROUND 5 — round 4's idle-dock rule is DELETED, not amended. It hid two of the
    three shipped spans with `visibility` so the 98px reserve survived them; block
@@ -515,11 +555,17 @@ html:not(.dark) .fer-surface { --ec-near: #5d2a0c; }
    register one class apart. It is dimmer than a section cap because a tier is a
    property of the rows beneath it, not a new section — `noted` keeps DESIGN.md's
    own lowercase, which is how that word is written in the rule. */
+/* ROUND 11, F7 — the 85% mix is gone. `.lvl-cap`'s ink is `--mk-secondary` and
+   the eyebrow takes it whole (5.36:1 light / 5.72:1 dark); the tier already
+   steps back from a section cap by SIZE and by what it names, and a fifth of an
+   alpha on top of that was the difference between 3.93:1 and the floor.
+   ROUND 11, F1 — and the air above it is where the queue root's overflow was
+   paid from. See the note on `.fer-browse-cap`. */
 .fer-tier {
-  margin: 18px 0 5px; padding: 0 var(--ck-pad);
+  margin: 11px 0 4px; padding: 0 var(--ck-pad);
   font-size: var(--ck-micro); font-weight: 700;
   letter-spacing: var(--ck-track); text-transform: uppercase;
-  color: color-mix(in srgb, var(--mk-secondary) 85%, transparent);
+  color: var(--mk-secondary);
 }
 .q > .fer-tier:first-child { margin-top: 2px; }
 /* `noted` is the one tier DESIGN.md writes in lower case, and it is the quiet
@@ -530,7 +576,7 @@ html:not(.dark) .fer-surface { --ec-near: #5d2a0c; }
 }
 /* The Watching section cap. `.lvl-cap` carries every declaration; the only rule
    here is the air that makes it a section boundary rather than another row. */
-.fer-watching { margin: 20px 0 0; }
+.fer-watching { margin: 13px 0 0; }
 
 /* ---------- FINDING 14: the coincidence routes join the column spine ----------
    Round 8 set them right-aligned, underlined and in `--ck-accent`: an underlined
@@ -543,23 +589,38 @@ html:not(.dark) .fer-surface { --ec-near: #5d2a0c; }
    the two kinds of route on the page look like one kind of thing. The chevron
    they already carry is the whole affordance. */
 .fer-coincide .fer-route { align-items: flex-start; }
+/* ROUND 11, F7 + F8 — the same route ink, and the same 24px hit box. The two
+   routes stack 3px apart, so the padding sets the PITCH as well as the height:
+   at 13px painted plus 12px padding the two boxes are 28px apart and cannot
+   overlap, which a centred overlay of the same height would have done. */
 .fer-coincide .linkbtn {
-  font-size: 11.5px; font-weight: 500; color: var(--primary); text-decoration: none;
+  font-size: 11.5px; font-weight: 500; color: var(--fer-route-ink);
+  text-decoration: none; padding: 6px 0;
 }
 .fer-coincide .linkbtn:hover { text-decoration: underline; text-underline-offset: 2px; }
 
-/* ---------- FINDING 10: the basal strip is a surface, not the loudest ink ----------
-   `.lane button`'s ground is `var(--cell, var(--ck-inset))`, and `--ck-inset` is
-   a near-black in BOTH themes (`#1a1611` light, `#101215` dark) — so a cell whose
-   verdict rule leaves `--cell` unset renders as a solid black block on bone and
-   as an invisible one on the desk: the same fill twice, which is a token that
-   never got its light/dark pass. DESIGN.md pairs every colour with values tuned
-   independently for the same RELATIONSHIP, and the relationship this strip wants
-   is recessive-in-both: it is a summary under the axis, not a figure. Both
-   values below are the column's own second surface, stepped so the verdict tints
-   that DO carry meaning stay the loudest thing in the strip. */
-.fer-surface .lane button { --cell: var(--mk-surface-2); }
-html.dark .fer-surface .lane button { --cell: color-mix(in srgb, var(--mk-text) 12%, transparent); }
+/* ---------- FINDING 10 / ROUND 11, F5: the strip AND its ground ----------
+   `.lane button`'s fill is `var(--cell, var(--ck-inset))` and `.lane`'s own
+   ground is `--ck-inset` outright — a near-black in BOTH themes. Round 9 re-tuned
+   the CELLS and left the strip, which is why the two ends of the pair came out
+   inverted: on bone a black slab under the chart with bone cells punched out of
+   it (14.51:1 strip against the pane), and on the desk a strip that vanished into
+   the pane with its cells 1.37:1 above it — at which no reader can see the 48
+   cell boundaries at all. The strip's `gap: 1px` means the STRIP IS the boundary
+   between cells, so that pair is a 1.4.11 mark, not a matter of taste.
+
+   One declaration each, both themes measured, both derived from the column's own
+   ink and surface so the relationship — a recessive track with legible ticks in
+   it — resolves the same way on either ground:
+     strip  `--mk-text` 8%  into `--mk-surface`  -> 1.16:1 light / 1.47:1 dark
+                                                   against the pane (recessive)
+     cell   `--mk-text` 58% into `--mk-surface`  -> 3.33:1 light / 4.39:1 dark
+                                                   against that strip
+   The verdict tints (`up` / `down` / `hold` / `insufficient` / `nodata`) are
+   shipped rules and still override `--cell`, so they stay the loudest thing in
+   the strip — which is the whole point of quieting the default cell. */
+.fer-surface .lane { background: color-mix(in srgb, var(--mk-text) 8%, var(--mk-surface)); }
+.fer-surface .lane button { --cell: color-mix(in srgb, var(--mk-text) 58%, var(--mk-surface)); }
 .fer-surface .lane button:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: 1px; }
 
 /* ---------- FINDING 5: the chart's legend and window caption, in the head ----------
@@ -582,8 +643,19 @@ html.dark .fer-surface .lane button { --cell: color-mix(in srgb, var(--mk-text) 
 .fer-surface .dw-canvas .head-rest #dw-scope { flex: 0 1 auto; min-width: 0; }
 .fer-head-key:empty { display: none; }
 .fer-head-key .k { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+/* ROUND 11, F3 — THE SWATCHES GET A BOUNDARY, AND KEEP THEIR FILLS.
+   Four of the five keys were between 1.23:1 and 2.84:1 against the head rail —
+   the percentile swatches inherit the PLOT's own fill alphas (18% and 38% of
+   `--primary`), and on this ground even a solid `--primary` only reaches 3.61:1
+   in light, so no alpha exists that would carry a percentile swatch to 3:1. But
+   a legend mark is not the plot: what has to clear 1.4.11 is the mark's
+   BOUNDARY, and a 1px stroke does that without touching the softness of the
+   bands the chart actually draws. `--mk-secondary` measures 4.90:1 light /
+   6.43:1 dark on the rail, and it is applied to all five keys so the rail reads
+   as one set of marks rather than two. */
 .fer-head-key .k i {
-  width: 7px; height: 7px; border-radius: 1px;
+  width: 7px; height: 7px; border-radius: 1px; box-sizing: border-box;
+  border: 1px solid var(--mk-secondary);
   background: color-mix(in srgb, var(--mk-text) 34%, transparent);
 }
 .fer-head-key .k[data-series="Median"] i { background: var(--primary); }
@@ -602,32 +674,31 @@ html.dark .fer-surface .lane button { --cell: color-mix(in srgb, var(--mk-text) 
    `--ec-near` above is: pooled.js reads this through `getPropertyValue` and hands
    it to a canvas, and an unresolved `color-mix()` comes back as its own source
    text, which no canvas can paint. */
-.fer-surface { --fer-dot: #7d9fad; }
+/* ROUND 11, F4 — the light half is stepped down until it clears the 3:1 graphics
+   floor on bone (2.37:1 -> 3.40:1); dark measured 3.81:1 and is unchanged. The
+   lead/recessive separation this pair exists for is carried by HUE and by the
+   selected dot's size, not by lightness — dot against accent is 1.16:1 light /
+   1.03:1 dark, and it was already thin at 1.67:1 before this step. That is a
+   real limit of the pair and is reported rather than papered over; the floor is
+   the thing that is not negotiable. */
+.fer-surface { --fer-dot: #5c8494; }
 html.dark .fer-surface { --fer-dot: #4d7789; }
 
-/* ---------- FINDING 3: the hedge hangs off the key, it does not print under it ----------
-   The amendment asked for the existing `.has-tooltip` primitive and this
-   repository has none — `grep` finds it in no shipped stylesheet or module — so
-   the scene declares one and the report names the gap. It is CSS-only and
-   keyboard-reachable: the chip is focusable, and the disclosure appears on hover
-   or focus. `--ck-inset` is deliberately not used as its ground (the trap the
-   factor dropdown and the band both documented); it takes the surface the
-   dropdown's own overlay takes, which is the only other overlay here. */
-.fer-tip { position: relative; cursor: help; }
-.fer-tip > strong { text-decoration: underline dotted; text-underline-offset: 3px; }
-.fer-tip::after {
-  content: attr(data-tip);
-  position: absolute; left: 0; bottom: calc(100% + 6px); z-index: 20;
-  width: max-content; max-width: 230px;
-  padding: 6px 8px; border: 1px solid var(--ck-hair); border-radius: 3px;
-  background: var(--mk-surface); color: var(--mk-text);
-  font-size: 10.5px; font-weight: 400; line-height: 1.4; letter-spacing: normal;
-  text-transform: none; white-space: normal;
-  box-shadow: 0 6px 12px color-mix(in srgb, #000 18%, transparent);
-  opacity: 0; visibility: hidden; transition: opacity .1s ease-out;
-}
-.fer-tip:hover::after, .fer-tip:focus-visible::after { opacity: 1; visibility: visible; }
-.fer-tip:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: 2px; }
+/* ---------- FINDING 3 / ROUND 11, F12: the hedge hangs off the key ----------
+   `.fer-tip` IS DELETED. Round 9 declared it on a false premise — that this
+   repository has no `.has-tooltip` primitive — and wrote that premise into two
+   files, which is how the next round repeats a mistake rather than finding it.
+   The primitive exists, at frontend/index.html:225-246 in an inline `<style>`
+   block that a stylesheet-only grep cannot see, and a Vue component already uses
+   it on the identical contract. It reaches this page through build.mjs's
+   app-base extraction, which fails closed if it stops arriving, so there is
+   nothing left to declare here: the chip carries `class="has-tooltip"`,
+   `tabindex="0"` and `data-tooltip`, and the shipped rules do the rest. The one
+   thing the scene still says is the dotted underline that marks the hedged
+   label as having something to open — the shipped primitive leaves the affordance
+   to its host, and every other host of it is a glossary term that reads as one. */
+.has-tooltip > strong { text-decoration: underline dotted; text-underline-offset: 3px; }
+.has-tooltip:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: 2px; }
 
 /* ---------- FINDING 3: a legend chip is ONE LINE ----------
    The rail's shipped item is an `inline-grid` that drops its detail line under
@@ -649,3 +720,101 @@ html.dark .fer-surface { --fer-dot: #4d7789; }
    declaration is `.fer-route`'s and `.fer-open`'s. Only the air is here: it
    closes the table rather than opening the next section. */
 .fer-day { padding-top: 8px; }
+
+/* ======================================================================
+   ROUND 11 — THE FLOOR, STATED ONCE AND MEASURED IN BOTH THEMES.
+   ====================================================================== */
+/* The lock audit's systemic finding, in one sentence: three separate rounds
+ * tuned a light value against a measurement, scoped the fix `html:not(.dark)`,
+ * and never measured dark — and in every one of the three dark ended up the
+ * worse half. So every value in this block is measured on BOTH grounds, and
+ * contrast-audit.mjs re-measures all of them on every run and fails the run if
+ * one regresses. The floors are DESIGN.md line 188's own 4.5:1 for text and
+ * WCAG 1.4.11's 3:1 for marks and control boundaries.
+ *
+ * TWO TOKENS CAUSED THIRTEEN OF THE FORTY TEXT FAILURES, which is why they are
+ * declared here rather than fixed one selector at a time.
+ */
+.fer-surface {
+  /* (a) THE ROUTE INK. `--primary` is `#b35b2e` on bone, which is 3.95:1 — so
+     every accent-inked STRING in light failed at once: both routes, the
+     expander, the queue chevron, the option tick. The fix is not a new colour;
+     it is the accent's own next step, `--primary-600`, which the app already
+     pairs per theme (`#8f4524` light, `#ef9459` dark) and which clears the floor
+     on both the pane ground and the row wash the option tick sits on:
+       light  5.78:1 on bone / 5.22:1 on the selected-option wash
+       dark   6.79:1 on the desk / 4.83:1 on that wash
+     Dark's `--primary` would have passed on the pane (5.46:1) and failed on the
+     wash (3.88:1), which is exactly the half-measured fix this round exists to
+     stop. One token, one value, both themes. */
+  --fer-route-ink: var(--primary-600);
+  /* (b) THE DIM META INK, which was `color-mix(--mk-text 45%, transparent)` on
+     the dock line, the residue and the band's meta, and 55% on the two counts.
+     At 2.71:1 and 3.56:1 in light neither cleared 4.5:1, and the two steps have
+     no room between them above the floor — so they become ONE dim register
+     rather than two that both fail. Light needs 63% and dark 56% against the
+     worst ground either lands on (the dock's own fill, and the selected-option
+     wash), so each theme takes its own value with margin:
+       light  66% -> 4.93:1 on bone, 4.71:1 on the row wash
+       dark   62% -> 6.04:1 on the desk, 5.26:1 on the dock, 4.79:1 on the wash
+     It is still visibly dimmer than `--mk-muted` in light, which is the step the
+     register exists for. */
+  --fer-meta-dim: color-mix(in srgb, var(--mk-text) 66%, transparent);
+}
+html.dark .fer-surface { --fer-meta-dim: color-mix(in srgb, var(--mk-text) 62%, transparent); }
+
+/* F7 — THE SHIPPED ELEMENTS ON THIS SURFACE THAT INHERIT THOSE TWO DEFECTS.
+   Each is a step away from a shipped sibling and each is named in the harness's
+   EXPECTED table against F7, because the shipped token is where the failure
+   comes from and the mock cannot fix the app from here. Two classes deep so the
+   shipped one-class rules lose on specificity rather than on load order. */
+.fer-surface .more { color: var(--fer-route-ink); }
+.fer-surface .qrow .go { color: var(--fer-route-ink); }
+.fer-surface .ev-row .arrow { color: var(--fer-meta-dim); }
+.fer-surface .crumb .trail .chev { color: var(--fer-meta-dim); }
+/* The crumb root is the column's one way back, so it takes the designed meta ink
+   rather than the dim one: `--mk-muted` is 6.21:1 light / 5.47:1 dark, and a
+   navigation control should not be reading at the floor. */
+.fer-surface .crumb .trail button { color: var(--mk-muted); }
+
+/* ---------- F9: ONE FOCUS RING, ON EVERY CONTROL THIS SURFACE OWNS ----------
+   Ten stops took Chrome's UA ring — `auto 1px rgb(0,95,204)`, a blue that is in
+   neither palette — while the rest of the surface took the 2px accent ring. The
+   toolbar was inconsistent with ITSELF: `View`'s segments were styled, `Window`'s
+   and `Align`'s were not. Focus was visible in every case, so this was never a
+   2.4.7 failure; it is that the lock cannot state "a 2px accent focus ring" as a
+   term while ten controls contradict it. `a.cockpit-day` is the eleventh and is
+   deliberately not here: it is the app's own chrome, and fixing it in a mock's
+   stylesheet would hide a production defect rather than report it. */
+.fer-surface :is(.seg button, .more, .crumb .trail button):focus-visible {
+  outline: 2px solid var(--ck-accent);
+  outline-offset: 2px;
+}
+
+/* ---------- F8: THE HIT BOX GROWS, THE PAINTED CONTROL DOES NOT ----------
+   Seven control classes were under WCAG 2.2 AA's 24x24 minimum, the worst a
+   10px band segment. No exception applied: 2.5.8's inline exception needs the
+   target to sit inside a sentence of non-target text, and round 9 deliberately
+   removed the sentence that wrapped the coincidence routes; the
+   equivalent-control exception did not rescue the band either, because its
+   equivalent — the `.key` rows — was 18px.
+
+   Where the element is the scene's own, padding does the work and is stated on
+   the rule itself (`.fer-open`, `.fer-coincide .linkbtn`, `.fer-band .key`).
+   Where the painted geometry has to stay byte-identical to a shipped sibling,
+   an overlay does it instead: a `::before` on the button, centred on its own
+   box, 24px tall and no wider than the control. A pseudo-element hit-tests as
+   its originating element, so the target grows and not one computed metric the
+   fidelity harness reads changes.
+
+   THE 48 BASAL CELLS ARE EXCLUDED, by the operator's ruling. They are 14.6px
+   wide at 1280 and 17.9px at 1440, and 48 of them cannot reach 24px across a
+   430px column at either size — that is a genuine constraint of the figure, and
+   the manifest states it as one, with the roving-tabindex group (one tab stop,
+   Arrow/Home/End inside) as the keyboard equivalent. */
+.fer-surface :is(.seg button, .fer-band .seg, .crumb .trail button) { position: relative; }
+.fer-surface :is(.seg button, .fer-band .seg, .crumb .trail button)::before {
+  content: '';
+  position: absolute; left: 0; right: 0; top: 50%;
+  height: 24px; margin-top: -12px;
+}

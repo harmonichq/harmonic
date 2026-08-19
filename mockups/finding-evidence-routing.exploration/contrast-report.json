@@ -1,247 +1,247 @@
 {
  "pairs": {
   "F7 .qrow .go chevron · light": {
-   "ratio": 5.78,
-   "ink": "#8f4524",
-   "ground": "#f3eadb",
+   "ratio": 7.13,
+   "ink": "#87401a",
+   "ground": "#faf8f4",
    "floor": 4.5,
    "ceiling": null
   },
   "F7 .fer-dock-line · light": {
-   "ratio": 4.93,
-   "ink": "#62665b",
-   "ground": "#f3eadb",
+   "ratio": 5.54,
+   "ink": "#626561",
+   "ground": "#faf8f4",
    "floor": 4.5,
    "ceiling": null
   },
   "F7 .qrow .tag habit · light": {
-   "ratio": 5.35,
+   "ratio": 6.02,
    "ink": "#6a5d4e",
-   "ground": "#f3eadb",
+   "ground": "#faf8f4",
    "floor": 4.5,
    "ceiling": null
   },
   "F7 .fer-tier eyebrow · light": {
-   "ratio": 5.36,
-   "ink": "#526358",
-   "ground": "#f3eadb",
+   "ratio": 6.66,
+   "ink": "#4d5c53",
+   "ground": "#faf8f4",
    "floor": 4.5,
    "ceiling": null
   },
   "F7 .fer-tier noted · light": {
-   "ratio": 6.21,
-   "ink": "#4e584f",
-   "ground": "#f3eadb",
+   "ratio": 7.54,
+   "ink": "#4a534a",
+   "ground": "#faf8f4",
    "floor": 4.5,
    "ceiling": null
   },
   "F5 .lane button vs the strip · light": {
-   "ratio": 3.33,
-   "ink": "#73766a",
-   "ground": "#e1dacb",
+   "ratio": 3.63,
+   "ink": "#757773",
+   "ground": "#e8e6e2",
    "floor": 3,
    "ceiling": null
   },
   "F5 .lane strip vs the pane · light": {
-   "ratio": 1.16,
-   "ink": "#e1dacb",
-   "ground": "#f3eadb",
+   "ratio": 1.17,
+   "ink": "#e8e6e2",
+   "ground": "#faf8f4",
    "floor": 1.05,
    "ceiling": 2
   },
   "F7 .fer-coincide .linkbtn · light": {
-   "ratio": 5.78,
-   "ink": "#8f4524",
-   "ground": "#f3eadb",
+   "ratio": 7.13,
+   "ink": "#87401a",
+   "ground": "#faf8f4",
    "floor": 4.5,
    "ceiling": null
   },
   "F7 .more expander · light": {
-   "ratio": 5.78,
-   "ink": "#8f4524",
-   "ground": "#f3eadb",
+   "ratio": 7.13,
+   "ink": "#87401a",
+   "ground": "#faf8f4",
    "floor": 4.5,
    "ceiling": null
   },
   "F7 .ev-row .arrow · light": {
-   "ratio": 4.93,
-   "ink": "#62665b",
-   "ground": "#f3eadb",
+   "ratio": 5.54,
+   "ink": "#626561",
+   "ground": "#faf8f4",
    "floor": 4.5,
    "ceiling": null
   },
   "F7 .ev-row .when · light": {
-   "ratio": 6.21,
-   "ink": "#4e584f",
-   "ground": "#f3eadb",
+   "ratio": 7.54,
+   "ink": "#4a534a",
+   "ground": "#faf8f4",
    "floor": 4.5,
    "ceiling": null
   },
   "F7 .ev-row .entry · light": {
-   "ratio": 5.36,
-   "ink": "#526358",
-   "ground": "#f3eadb",
+   "ratio": 6.66,
+   "ink": "#4d5c53",
+   "ground": "#faf8f4",
    "floor": 4.5,
    "ceiling": null
   },
   "F7 .ev-row .delta · light": {
-   "ratio": 6.21,
-   "ink": "#4e584f",
-   "ground": "#f3eadb",
+   "ratio": 7.54,
+   "ink": "#4a534a",
+   "ground": "#faf8f4",
    "floor": 4.5,
    "ceiling": null
   },
   "F7 .lvl-cap section spine · light": {
-   "ratio": 5.36,
-   "ink": "#526358",
-   "ground": "#f3eadb",
+   "ratio": 6.66,
+   "ink": "#4d5c53",
+   "ground": "#faf8f4",
    "floor": 4.5,
    "ceiling": null
   },
   "F7 .ec-key-item small · light": {
-   "ratio": 6.21,
-   "ink": "#4e584f",
-   "ground": "#f3eadb",
+   "ratio": 7.54,
+   "ink": "#4a534a",
+   "ground": "#faf8f4",
    "floor": 4.5,
    "ceiling": null
   },
   "F6 --ec-near at limited alpha · light": {
-   "ratio": 3.25,
-   "ink": "#9c7b63",
-   "ground": "#f3eadb",
+   "ratio": 3.41,
+   "ink": "#9f816d",
+   "ground": "#faf8f4",
    "floor": 3,
    "ceiling": null
   },
   "F7 .fer-open route · light": {
-   "ratio": 5.78,
-   "ink": "#8f4524",
-   "ground": "#f3eadb",
+   "ratio": 7.13,
+   "ink": "#87401a",
+   "ground": "#faf8f4",
    "floor": 4.5,
    "ceiling": null
   },
   "F7 .fer-residue · light": {
-   "ratio": 4.93,
-   "ink": "#62665b",
-   "ground": "#f3eadb",
+   "ratio": 5.54,
+   "ink": "#626561",
+   "ground": "#faf8f4",
    "floor": 4.5,
    "ceiling": null
   },
   "F7 .fer-band .cap .meta · light": {
-   "ratio": 4.93,
-   "ink": "#62665b",
-   "ground": "#f3eadb",
+   "ratio": 5.54,
+   "ink": "#626561",
+   "ground": "#faf8f4",
    "floor": 4.5,
    "ceiling": null
   },
   "F7 .fer-count crumb count · light": {
-   "ratio": 4.93,
-   "ink": "#62665b",
-   "ground": "#f3eadb",
+   "ratio": 5.54,
+   "ink": "#626561",
+   "ground": "#faf8f4",
    "floor": 4.5,
    "ceiling": null
   },
   "F7 .fer-sel .ct factor count · light": {
-   "ratio": 4.93,
-   "ink": "#62665b",
-   "ground": "#f3eadb",
+   "ratio": 5.54,
+   "ink": "#626561",
+   "ground": "#faf8f4",
    "floor": 4.5,
    "ceiling": null
   },
   "F7 crumb root button · light": {
-   "ratio": 6.21,
-   "ink": "#4e584f",
-   "ground": "#f3eadb",
+   "ratio": 7.54,
+   "ink": "#4a534a",
+   "ground": "#faf8f4",
    "floor": 4.5,
    "ceiling": null
   },
   "F7 .crumb .chev · light": {
-   "ratio": 4.93,
-   "ink": "#62665b",
-   "ground": "#f3eadb",
+   "ratio": 5.54,
+   "ink": "#626561",
+   "ground": "#faf8f4",
    "floor": 4.5,
    "ceiling": null
   },
   "F7 .fer-sel .chev · light": {
-   "ratio": 6.21,
-   "ink": "#4e584f",
-   "ground": "#f3eadb",
+   "ratio": 7.54,
+   "ink": "#4a534a",
+   "ground": "#faf8f4",
    "floor": 4.5,
    "ceiling": null
   },
   "F7 .fer-head-key legend text · light": {
-   "ratio": 5.68,
-   "ink": "#4e584f",
-   "ground": "#ebe0cf",
+   "ratio": 6.89,
+   "ink": "#4a534a",
+   "ground": "#f0eee8",
    "floor": 4.5,
    "ceiling": null
   },
   "F2 band inactive segment · light": {
-   "ratio": 3.51,
-   "ink": "#7d7c6f",
-   "ground": "#f3eadb",
+   "ratio": 3.82,
+   "ink": "#7e7f78",
+   "ground": "#faf8f4",
    "floor": 3,
    "ceiling": null
   },
   "F2 band active segment · light": {
-   "ratio": 3.95,
-   "ink": "#b35b2e",
-   "ground": "#f3eadb",
+   "ratio": 5.17,
+   "ink": "#a94f21",
+   "ground": "#faf8f4",
    "floor": 3,
    "ceiling": null
   },
   "F3 legend swatch 10-90th · light": {
-   "ratio": 4.9,
-   "ink": "#526358",
-   "ground": "#ebe0cf",
+   "ratio": 6.09,
+   "ink": "#4d5c53",
+   "ground": "#f0eee8",
    "floor": 3,
    "ceiling": null
   },
   "F3 legend swatch 25-75th · light": {
-   "ratio": 4.9,
-   "ink": "#526358",
-   "ground": "#ebe0cf",
+   "ratio": 6.09,
+   "ink": "#4d5c53",
+   "ground": "#f0eee8",
    "floor": 3,
    "ceiling": null
   },
   "F3 legend swatch Meal boluses · light": {
-   "ratio": 4.9,
-   "ink": "#526358",
-   "ground": "#ebe0cf",
+   "ratio": 6.09,
+   "ink": "#4d5c53",
+   "ground": "#f0eee8",
    "floor": 3,
    "ceiling": null
   },
   "F3 legend swatch Occurrences · light": {
-   "ratio": 4.9,
-   "ink": "#526358",
-   "ground": "#ebe0cf",
+   "ratio": 6.09,
+   "ink": "#4d5c53",
+   "ground": "#f0eee8",
    "floor": 3,
    "ceiling": null
   },
   "F3 legend swatch Median · light": {
-   "ratio": 4.9,
-   "ink": "#526358",
-   "ground": "#ebe0cf",
+   "ratio": 6.09,
+   "ink": "#4d5c53",
+   "ground": "#f0eee8",
    "floor": 3,
    "ceiling": null
   },
   "F4 --fer-dot on the pane ground · light": {
-   "ratio": 3.4,
+   "ratio": 3.82,
    "ink": "#5c8494",
-   "ground": "#f3eadb",
+   "ground": "#faf8f4",
    "floor": 3,
    "ceiling": null
   },
   "F7 .fer-sel-opt .tick · light": {
-   "ratio": 5.22,
-   "ink": "#8f4524",
-   "ground": "#e9dfce",
+   "ratio": 6.4,
+   "ink": "#87401a",
+   "ground": "#efece6",
    "floor": 4.5,
    "ceiling": null
   },
   "F7 .fer-sel-opt .ct · light": {
-   "ratio": 4.71,
-   "ink": "#5f6256",
-   "ground": "#e9dfce",
+   "ratio": 5.3,
+   "ink": "#5e615c",
+   "ground": "#efece6",
    "floor": 4.5,
    "ceiling": null
   },

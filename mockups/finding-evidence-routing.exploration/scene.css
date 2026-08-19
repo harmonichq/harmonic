@@ -76,12 +76,19 @@
 .ev-row[data-selected="true"] { background: color-mix(in srgb, var(--mk-surface-2) 60%, transparent); }
 .ev-row:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: -2px; }
 
-/* (c) POPULATION ROWS ROUTE SIDEWAYS (#31 resolution, ruling 3). In the
-   population case file the `.tier` cell carries the finding that CLAIMS the
-   event rather than its evidence tier, and the row is that finding's route. A
-   claimed row's tag takes the accent the app already spends on every route
-   affordance (`.linkbtn`, `.qrow .go`); an unclaimed row keeps the muted tier
-   ink and drops the chevron, because a chevron that promises a route nothing
-   answers is the lie. */
-.ev-row[data-route="finding"] .tier { color: var(--ck-accent); }
+/* (c) A POPULATION ROW SELECTS, IT DOES NOT ROUTE (round 3, item 3). In the
+   population case file the `.tier` cell carries the row's COHORT under the
+   selected factor, and clicking the row does exactly what it does in the finding
+   case file: it puts that one event's trace on the canvas. So the chevron goes —
+   a chevron that promises a route nothing answers is the lie. The route to a
+   finding's own case file lives on the claim line instead. */
 .ev-row[data-route="none"] .chev { visibility: hidden; }
+
+/* (c) THE SELECTED CLAIM LINE (round 3, item 1). The claim split is the factor
+   selector, in the shipped queue's own row grammar, so it takes the shipped
+   queue row's hover for free. Selection has to survive the pointer moving on and
+   has to be distinguishable from hover, so it takes `--ck-sel` — the app's own
+   "this one is chosen" wash. Both declarations are copied from
+   `.stagebtn[data-staged="true"]` in frontend/diagnose-workstation.css, the
+   shipped control that persists a choice. No new colour, no new type rank. */
+.fer-claims .qrow[data-selected="true"] { background: var(--ck-sel); color: var(--mk-text); }

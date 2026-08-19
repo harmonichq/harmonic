@@ -30,6 +30,21 @@
  * with the fixture it came from in `data.provenance` so the render cannot
  * quietly borrow one for the other.
  *
+ * ROUND 3 — BROWSING KEEPS THE FACTOR COMPARISON. The population case file is no
+ * longer one unfiltered four-cohort draw over a flat list. Its claim split (the
+ * lines that say who claims these lows) IS the factor selector, and each claim
+ * line carries a whole FRAME: the lens projected for THAT factor — the same
+ * three-cohort coordinate set the finding drill uses — plus that factor's own
+ * regrouping of the browse population. Nothing new is drawn: `canvasFor` and
+ * `traceMap` are the round-1/2 functions, called with different coordinates.
+ *
+ * The `No finding claims these` line has NO canvas. project.mjs projects cohorts
+ * for a NAMED FACTOR and has no unclaimed coordinate; a rule-matched / near-rule
+ * / did-not-match split over a set defined by "no rule matched" would be three
+ * fabricated cohorts. So that frame carries an empty-state line naming why, and
+ * its table is grouped by how close each low came — read off the capture's own
+ * `routes`, and stamped as derived in `provenance`.
+ *
  * ROUND 2, ITEM 5 — THE POPULATION ROWS ARE INVENTED BY THE RULING, NOT BY A
  * FIXTURE. `All lows · 20` / `All meals · 20` are the ruling's free-browse entry
  * (resolution point 3). No committed projection carries them: this build derives
@@ -137,8 +152,14 @@ function evidenceCells(anchor) {
 
 /* -------------------------------------------------------------------- build */
 
-/** One canvas payload: the cohort medians, their support tiers and the legend. */
-function canvasFor(lens, traces) {
+/** One canvas payload: the cohort medians, their support tiers and the legend.
+ *
+ * ROUND 3 — unchanged from round 1 except that the trace map moved up to the
+ * SCENE (a scene's frames share one set of observed traces, and duplicating them
+ * per frame would triple data.json for no new fact). surface.js hands
+ * `scene.traces` to this payload at load; `chart.js` reads `canvas.traces`
+ * exactly as before. */
+function canvasFor(lens) {
   return {
     title: 'Low response comparison',
     context: 'excursion nadir · −5 h to +2 h',
@@ -156,9 +177,26 @@ function canvasFor(lens, traces) {
         : `${c.routed_count} events · ${pointStateSummary(c.points)} points`,
       points: c.points,
     }])),
-    traces,
+    traces: null,
   };
 }
+
+/** The cohorts a factor's frame regroups its table into — the lens's own three
+    visible cohorts, in the lens's own order, so the table's groups and the
+    canvas's medians are the same three things. */
+const GROUP_ORDER = ['fired', 'near_rule', 'neutral'];
+
+/** The causal phrase a group header carries beside the shipped cohort label.
+    `fired` and `near_rule` are the two the FACTOR's rule defines, so they name
+    it; `neutral` is defined by its absence and says so in the lens's own words
+    (`summarySentence`: "did not match any factor"). */
+const GROUP_PHRASE = {
+  fired: (label) => label,
+  near_rule: (label) => `${label}, disclosure only`,
+  neutral: () => 'matched no factor’s rule',
+};
+
+const plural = (n, noun) => `${n} ${noun}${n === 1 ? '' : 's'}`;
 
 /** Every listed occurrence's own observed trace, one projection per selection. */
 function traceMap(capture, ids, coords) {
@@ -205,30 +243,25 @@ async function main() {
   const block = icBlockAtMinute(icLane, clock.peak.startMin);
   const band = `${hhmm(clock.peak.startMin)}–${hhmm(clock.peak.endMin)}`;
 
-  /* ---- ROUND 2 ITEM 6: who claims each low ----
+  /* ---- who claims each low ----
      A low is CLAIMED by a finding when one of the view's factors routes it to
-     `fired`; the tag is that factor's own label. An unclaimed low keeps the
-     cohort label the filtered lens gave it. Both come off the capture's
-     `routes`, the same signal the projector routes cohorts on. */
+     `fired`. That is read off the capture's `routes`, the same signal the
+     projector routes cohorts on. In round 2 this stamped a per-row tag; in
+     round 3 it does two things instead — it tallies the CLAIM SPLIT (which is
+     now the factor selector), and it decides which lows the unclaimed frame
+     lists. Row tags come from the selected factor's own cohort membership. */
   const lowsView = capture.views[VIEW];
   const factorLabel = Object.fromEntries(
     lens.coordinates.factor_options.map((o) => [o.key, o.label]),
   );
-  const claimOf = (id) => {
+  const claimantOf = (id) => {
     const source = lowsView.occurrences.find((o) => o.id === id);
-    const claimant = lowsView.factors.find((f) => source.routes[f]?.cohort === 'fired');
-    if (claimant) {
-      return {
-        tag: factorLabel[claimant],
-        finding: `finding:${claimant}`,
-        /* The sideways route resolves only into a case file this exploration
-           actually built. `correction_on_iob` has neither a projection row nor
-           a scene, so its tag renders and routes nowhere — a named gap. */
-        target: claimant === FACTOR ? FINDING_ID : null,
-      };
-    }
-    return { tag: COHORT_LABEL[source.routes[FACTOR].cohort], finding: null, target: null };
+    return lowsView.factors.find((f) => source.routes[f]?.cohort === 'fired') || null;
   };
+  /** The cohort a low reached under a named factor — the unclaimed frame's own
+      grouping signal, off the same `routes` the projector reads. */
+  const cohortUnder = (id, factor) =>
+    lowsView.occurrences.find((o) => o.id === id).routes[factor]?.cohort;
 
   const occurrenceRow = (o) => ({
     id: o.identity.id,
@@ -241,14 +274,134 @@ async function main() {
   const windowLabel = `${fmtDate(lens.coordinates.source_window.start)}–${fmtDate(lens.coordinates.source_window.end)}`;
 
   /* ---- the population summary, off the unfiltered projection's counts ---- */
-  const wideCounts = wide.population.counts;
   const claims = {};
   for (const o of wide.occurrences) {
-    const { tag, finding } = claimOf(o.identity.id);
-    if (finding) claims[tag] = (claims[tag] || 0) + 1;
+    const claimant = claimantOf(o.identity.id);
+    if (claimant) claims[claimant] = (claims[claimant] || 0) + 1;
   }
   const claimed = Object.values(claims).reduce((sum, n) => sum + n, 0);
-  const unclaimed = wide.occurrences.length - claimed;
+  const unclaimedIds = wide.occurrences
+    .map((o) => o.identity.id).filter((id) => !claimantOf(id));
+
+  /* ---- ROUND 3: one FRAME per claim line ----
+     A claiming factor's frame is the lens at that factor's own coordinates —
+     the same three-cohort projection the finding drill draws — plus the browse
+     population regrouped into that factor's cohorts. Every listed low in the
+     view appears in every factor's frame; what changes is which cohort claims
+     it and which lows the factor cannot compare at all. */
+  const frameFor = (factorKey) => {
+    const coordsFor = { view: VIEW, factor: factorKey, block: 'all' };
+    /* ONE projection per frame, at the factor's own coordinates — the same three
+       visible cohorts the finding drill draws. The table is grouped from THIS
+       projection, not from a wider one: a table group the canvas has no cohort
+       for would be a fourth frame the comparison cannot answer. Lows the factor
+       cannot place — another factor's, and the not-comparable — are counted in
+       the frame's counter-note instead, exactly as the finding case file counts
+       everything outside its own fired cohort. */
+    const narrow = projectSyntheticCapture(capture, coordsFor);
+    const label = factorLabel[factorKey];
+    const rows = narrow.occurrences.map((o) => ({
+      ...occurrenceRow(o), tag: COHORT_LABEL[o.verdict.cohort],
+    }));
+    const groups = GROUP_ORDER
+      .map((key) => ({
+        key,
+        lead: COHORT_LABEL[key],
+        phrase: GROUP_PHRASE[key](label),
+        rows: narrow.occurrences
+          .filter((o) => o.verdict.cohort === key)
+          .map((o) => rows.find((r) => r.id === o.identity.id)),
+      }))
+      .filter((g) => g.rows.length)
+      .map((g) => ({ ...g, count: `· ${plural(g.rows.length, 'event')}` }));
+    return {
+      key: factorKey,
+      canvas: canvasFor(narrow),
+      emptyNote: null,
+      /* The lens's own disclosure sentence, verbatim — near-rule rows are in
+         this table, so the sentence that governs them belongs with it. */
+      boundaryNote: {
+        lead: 'Near rule is disclosure only.',
+        rest: ' It explains the boundary and never enters Priority, a suggestion, or Plan.',
+      },
+      /* The sideways route into the finding's own case file. It resolves only
+         into a case file this exploration actually built: `correction_on_iob`
+         has neither a projection row nor a scene, so its line SAYS the route is
+         missing rather than offering a button nothing answers. */
+      route: factorKey === FACTOR
+        ? { text: `${label} is a finding in the queue.`, label: 'Open case file', target: FINDING_ID }
+        : { text: `${label} has no case file in this exploration.`, label: null, target: null },
+      occurrences: {
+        cap: EVIDENCE_CAP,
+        capMeta: `entry → worst · Δ &nbsp;·&nbsp; ${rows.length} of ${narrow.population.denominator} in ${windowLabel}`,
+        counterNote: `${narrow.population.counts.another_factor} claimed by another factor `
+          + `· ${narrow.population.counts.excluded} not comparable under this rule`,
+        moreLabel: rows.length > EVIDENCE_CAP ? `${rows.length - EVIDENCE_CAP} more` : null,
+        backLabel: `Show first ${EVIDENCE_CAP}`,
+        groups,
+      },
+    };
+  };
+
+  /* The unclaimed frame. NO CANVAS — see the header block: project.mjs projects
+     cohorts for a named factor, and "no factor claims these" is not one. Its
+     table is grouped by how close each low came, which IS in the capture. */
+  const unclaimedRowsById = Object.fromEntries(
+    wide.occurrences.map((o) => [o.identity.id, occurrenceRow(o)]),
+  );
+  const nearGroups = lowsView.factors
+    .map((f) => ({
+      key: `near:${f}`,
+      lead: COHORT_LABEL.near_rule,
+      phrase: GROUP_PHRASE.near_rule(factorLabel[f]),
+      rows: unclaimedIds
+        .filter((id) => cohortUnder(id, f) === 'near_rule')
+        .map((id) => ({ ...unclaimedRowsById[id], tag: COHORT_LABEL.near_rule })),
+    }))
+    .filter((g) => g.rows.length);
+  const noneRows = unclaimedIds
+    .filter((id) => !lowsView.factors.some((f) => cohortUnder(id, f) === 'near_rule'))
+    .map((id) => ({ ...unclaimedRowsById[id], tag: COHORT_LABEL.neutral }));
+  const unclaimedFrame = {
+    key: 'unclaimed',
+    canvas: null,
+    emptyNote: 'No factor claims these lows, so there is no rule to compare them against: '
+      + 'a cohort comparison needs a factor, and none of this view’s factors matched any of them. '
+      + 'The list beside this groups them by how close they came.',
+    boundaryNote: {
+      lead: 'No rule is being compared here.',
+      rest: ' The canvas says why; the list below is the whole unclaimed set.',
+    },
+    route: null,
+    occurrences: {
+      cap: EVIDENCE_CAP,
+      capMeta: `entry → worst · Δ &nbsp;·&nbsp; ${unclaimedIds.length} of ${wide.population.denominator} in ${windowLabel}`,
+      counterNote: null,
+      moreLabel: unclaimedIds.length > EVIDENCE_CAP ? `${unclaimedIds.length - EVIDENCE_CAP} more` : null,
+      backLabel: `Show first ${EVIDENCE_CAP}`,
+      groups: [
+        ...nearGroups,
+        ...(noneRows.length ? [{
+          key: 'none', lead: COHORT_LABEL.neutral, phrase: 'no factor’s rule came close', rows: noneRows,
+        }] : []),
+      ].map((g) => ({ ...g, count: `· ${plural(g.rows.length, 'event')}` })),
+    },
+  };
+
+  /* The claim split, largest claiming factor first — which is also the default
+     selection (round 3, item 2). The unclaimed line is last because it is the
+     residue, not a competitor. */
+  const claimOrder = Object.entries(claims).sort(([, a], [, b]) => b - a).map(([key]) => key);
+  const frames = Object.fromEntries([
+    ...claimOrder.map((key) => [key, frameFor(key)]),
+    ['unclaimed', unclaimedFrame],
+  ]);
+  const claimLine = (key, label, count) =>
+    ({ key, label, count, noun: count === 1 ? 'low' : 'lows' });
+  const claimLines = [
+    ...claimOrder.map((key) => claimLine(key, factorLabel[key], claims[key])),
+    claimLine('unclaimed', 'No finding claims these', unclaimedIds.length),
+  ];
 
   /* ---- the second population row's count, same producer, meals view ---- */
   const mealsView = capture.views.meals;
@@ -273,8 +426,18 @@ async function main() {
         + 'yet. Their counts are the lens capture\'s own population denominators (lows via project.mjs, meals '
         + 'via the same producer on the meals view), so they name the CAPTURE\'s window, not the projection\'s '
         + '30 days.',
-      population_case_file: 'mockups/diagnose-event-comparison.synthetic/capture.json via project.mjs '
-        + '(view lows, another=true) — cohort counts, plus per-occurrence claims read off the capture\'s `routes`',
+      population_case_file: 'mockups/diagnose-event-comparison.synthetic/capture.json via project.mjs — ONE '
+        + 'PROJECTION PER CLAIMED FACTOR (view lows, factor <k>, block all) for that frame\'s canvas, and the '
+        + 'same coordinates with another=true for its regrouped table. The claim split itself is a tally of '
+        + 'the capture\'s `routes`: a low is claimed when some factor routes it to `fired`.',
+      unclaimed_frame: 'DERIVED BY THIS BUILD. project.mjs projects cohorts for a NAMED FACTOR and has no '
+        + 'unclaimed coordinate, so the `No finding claims these` frame has NO canvas — drawing one would mean '
+        + 'inventing three cohorts for a set defined by no rule matching. Its table grouping (near a named '
+        + 'factor\'s rule / no factor\'s rule came close) is read off the capture\'s `routes` across every '
+        + 'factor in the view, which is a build-side derivation, not a projector output.',
+      unreachable_factor: 'correction_stacking is a factor of the lows view and fires on NOTHING in this '
+        + 'capture, so it claims no low and the claim split — which is the selector — never offers it. No '
+        + 'frame exists for it.',
       disjoint: 'The two populations are disjoint by construction and are never reconciled.',
     },
 
@@ -358,15 +521,25 @@ async function main() {
         occurrences: {
           cap: EVIDENCE_CAP,
           capMeta: `entry → worst · Δ &nbsp;·&nbsp; ${firedOccurrences.length} of ${lens.population.denominator} in ${windowLabel}`,
-          groupLead: raw.title,
-          groupTier: firedOccurrences[0]?.verdict.evidence_tier?.replaceAll('_', ' ') || null,
-          groupCount: `· ${firedOccurrences.length} episode${firedOccurrences.length === 1 ? '' : 's'}`,
           counterNote: null,
           moreLabel: firedOccurrences.length > EVIDENCE_CAP ? `${firedOccurrences.length - EVIDENCE_CAP} more` : null,
           backLabel: `Show first ${EVIDENCE_CAP}`,
-          rows: firedOccurrences.map(occurrenceRow),
+          /* One group, unchanged from round 2 — the finding's own title, its
+             evidence tier and its episode count. Round 3 only generalised the
+             SHAPE to a list so the population's regrouped frames go through the
+             same renderer. */
+          groups: [{
+            key: 'fired',
+            lead: raw.title,
+            phrase: firedOccurrences[0]?.verdict.evidence_tier
+              ? `${firedOccurrences[0].verdict.evidence_tier.replaceAll('_', ' ')}, not confirmed` : null,
+            count: `· ${plural(firedOccurrences.length, 'episode')}`,
+            rows: firedOccurrences.map(occurrenceRow),
+          }],
         },
-        canvas: canvasFor(lens, traceMap(capture, fired.occurrence_ids, coords)),
+        canvasHead: { title: 'Low response comparison', context: 'excursion nadir · −5 h to +2 h' },
+        canvas: canvasFor(lens),
+        traces: traceMap(capture, fired.occurrence_ids, coords),
       },
 
       [POPULATION_ID]: {
@@ -376,34 +549,30 @@ async function main() {
         chip: { text: String(wide.population.denominator), title: 'Clear this filter and return to Findings' },
         subject: null,
         judgment: {
+          /* The population statement, and only what is true of the WHOLE
+             population: how many, how many a finding claims, how many none
+             does. The exclusion count moved OUT of it — exclusion is decided per
+             rule (2 lows under Over-treated low, 6 under Correction on active
+             insulin), so a single population-level exclusion sentence would be
+             one factor's number wearing the population's clothes. Each frame's
+             own counter-note carries it instead. */
           summary: `${wide.population.denominator} lows in ${windowLabel}. `
-            + `${claimed} are claimed by a finding; ${unclaimed} match none. `
-            + `${wideCounts.excluded} were excluded as not safely comparable.`,
-          /* The `em` slot carries a CLAIM state here, where a finding's case file
-             carries a support tier. Same grammar, different fact — named. */
-          counts: [
-            ...Object.entries(claims).map(([label, n]) => ({ key: label, n, label, support: 'Claimed' })),
-            { key: 'unclaimed', n: unclaimed, label: 'No finding claims these', support: 'Unclaimed' },
-          ],
-          boundaryNote: {
-            lead: `${wideCounts.excluded} lows were excluded as not safely comparable.`,
-            rest: ' They carry no comparable trace, so they are counted here and not listed below.',
-          },
+            + `${claimed} are claimed by a finding; ${unclaimedIds.length} match none.`,
+          counts: null,
+          /* ROUND 3 ITEM 1 — the claim split IS the factor selector. These lines
+             were `.ec-count` cells in round 2; they are queue rows now, and
+             selecting one reframes the canvas and the table below. */
+          claims: claimLines,
+          boundaryNote: null,
         },
         coincidence: null,
-        occurrences: {
-          cap: EVIDENCE_CAP,
-          capMeta: `entry → worst · Δ &nbsp;·&nbsp; ${wide.occurrences.length} of ${wide.population.denominator} in ${windowLabel}`,
-          groupLead: 'All lows',
-          groupTier: null,
-          groupCount: `· ${wide.occurrences.length} events`,
-          counterNote: `${wideCounts.excluded} excluded — not safely comparable`,
-          moreLabel: wide.occurrences.length > EVIDENCE_CAP ? `${wide.occurrences.length - EVIDENCE_CAP} more` : null,
-          backLabel: `Show first ${EVIDENCE_CAP}`,
-          rows: wide.occurrences.map((o) => ({ ...occurrenceRow(o), ...claimOf(o.identity.id) })),
-        },
-        canvas: canvasFor(wide, traceMap(capture, wide.occurrences.map((o) => o.identity.id),
-          { ...coords, another: true })),
+        defaultFactor: claimOrder[0],
+        frames,
+        canvasHead: { title: 'Low response comparison', context: 'excursion nadir · −5 h to +2 h' },
+        /* One trace map for the whole scene: every low any frame lists, projected
+           at the coordinates that make all of them selectable. */
+        traces: traceMap(capture, wide.occurrences.map((o) => o.identity.id),
+          { ...coords, another: true }),
       },
     },
   };
@@ -444,10 +613,14 @@ async function main() {
   process.stdout.write(
     `data.json written — queue: ${rows.length} projection rows + ${data.queue.populationRows.length} derived `
     + `population row(s) (${data.queue.populationRows.map((r) => `${r.title} ${r.count}`).join(', ')})\n`
-    + `  finding scene — chip "${finding.chip.text}" (projection), ${finding.occurrences.rows.length} fired events `
-    + `(lens), busiest band ${band} ${clock.peak.n}/${clock.total}\n`
-    + `  population scene — ${population.occurrences.rows.length} of ${wide.population.denominator} lows listed, `
-    + `${claimed} claimed / ${unclaimed} unclaimed / ${wideCounts.excluded} excluded\n`
+    + `  finding scene — chip "${finding.chip.text}" (projection), ${finding.occurrences.groups[0].rows.length} `
+    + `fired events (lens), busiest band ${band} ${clock.peak.n}/${clock.total}\n`
+    + `  population scene — ${wide.population.denominator} lows, ${claimed} claimed / ${unclaimedIds.length} `
+    + `unclaimed; ${Object.keys(population.frames).length} frames, default "${population.defaultFactor}"\n`
+    + Object.values(population.frames).map((f) => `    frame ${f.key} — `
+      + `${f.canvas ? `${f.canvas.cohortOrder.length} cohorts` : 'no canvas (empty state)'}, `
+      + `${f.occurrences.groups.length} group(s), `
+      + `${f.occurrences.groups.reduce((n, g) => n + g.rows.length, 0)} rows\n`).join('')
     + `app-base.extracted.css written — ${blocks.length} style block(s) from frontend/index.html\n`,
   );
 }

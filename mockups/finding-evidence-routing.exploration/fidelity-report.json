@@ -42,6 +42,8 @@
   }
  },
  "highlightedRow": "lows-synthetic-3",
+ "populationDefaultFrame": "over_treated_low",
+ "populationHighlightedRow": "lows-synthetic-2",
  "light": {
   "computedStyleDiff": {
    "checked": 68,

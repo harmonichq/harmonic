@@ -447,18 +447,47 @@ async function main() {
       await page.screenshot({ path: join(SHOTS, 'scene-1440x900.png') });
       await page.locator('.pane.inspector').screenshot({ path: join(SHOTS, 'inspector-column.png') });
 
-      const rowId = data.scenes['finding:over_treated_low'].occurrences.rows[2].id;
+      const rowId = data.scenes['finding:over_treated_low'].occurrences.groups[0].rows[2].id;
       await page.evaluate((id) => window.__ferSelect(id), rowId);
       await page.waitForTimeout(400);
       await page.screenshot({ path: join(SHOTS, 'row-hover-linked-trace.png') });
       results.highlightedRow = rowId;
 
+      /* THE POPULATION CASE FILE, AS A SEQUENCE OF FRAMES (round 3). It opens on
+         the largest claiming factor; a second claim line reframes both panes; a
+         row overlays one trace on whichever comparison is drawn. Every frame is
+         reached through the surface's own selector — `__ferFrame` is the call the
+         claim row's click makes — so nothing here is a state a reader cannot walk
+         to, and the flat all-cohorts draw round 2 arrived at does not exist. */
+      const population = data.scenes['population:lows'];
       await gotoLevel(page, 'population:lows');
       await page.screenshot({ path: join(SHOTS, 'population-all-lows-1440x900.png') });
       await page.locator('.pane.inspector').screenshot({ path: join(SHOTS, 'population-inspector-column.png') });
-      /* Expanded, because the first five rows are all claimed by one finding and
-         the UNCLAIMED register — muted tag, no chevron — only appears below. */
+      results.populationDefaultFrame = population.defaultFactor;
+
+      const populationRow = population.frames[population.defaultFactor].occurrences.groups[0].rows[1].id;
+      await page.evaluate((id) => window.__ferSelect(id), populationRow);
+      await page.waitForTimeout(400);
+      await page.screenshot({ path: join(SHOTS, 'population-row-trace-1440x900.png') });
+      results.populationHighlightedRow = populationRow;
+
+      /* A SECOND claim line: the same lens machinery at another factor's
+         coordinates. `unclaimed` is shot too, because it is the one frame with no
+         canvas — the empty state that names why is evidence, not an omission. */
+      for (const key of Object.keys(population.frames).filter((k) => k !== population.defaultFactor)) {
+        await page.evaluate((k) => window.__ferFrame(k), key);
+        await page.waitForTimeout(450);
+        await page.screenshot({ path: join(SHOTS, `population-frame-${key}-1440x900.png`) });
+      }
+
+      /* Back to the default frame, expanded: the cap is spent across the regrouped
+         cohorts in order, so the groups below it only appear here. */
+      await page.evaluate((k) => window.__ferFrame(k), population.defaultFactor);
+      await page.waitForTimeout(450);
       await page.click('.level .more');
+      /* The pointer lands on whatever the expander pushed under it, and a hover
+         wash in a capture reads as a selection that is not there. */
+      await page.mouse.move(0, 0);
       await page.waitForTimeout(350);
       await page.locator('.pane.inspector').screenshot({ path: join(SHOTS, 'population-expanded-inspector.png') });
     } else {

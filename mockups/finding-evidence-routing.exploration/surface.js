@@ -8,6 +8,19 @@
  *            (All lows). Both are REACHED by clicking a row; neither is ever the
  *            initial render. The crumb root walks back.
  *
+ * ROUND 3 — BROWSING KEEPS THE FACTOR COMPARISON. A population case file is not
+ * one flat view: its CLAIM SPLIT is a factor selector, and each claim line is a
+ * FRAME carrying that factor's own lens draw and that factor's own regrouping of
+ * the browse population. The frame is the only thing selecting a claim line
+ * moves — the crumb still reads `Findings › All lows`, the chip still carries the
+ * population count, and the route into a finding's own case file is a separate
+ * affordance beside the claim lines.
+ *
+ * Nothing below draws anything. `chartOption` / `legendMarkup` / `paintReadout`
+ * are round 1's ported lens functions, `renderFindingsQueue` is the shipped
+ * painter, and the population's canvas, trace overlay and row selection are the
+ * SAME calls the finding case file makes, with the selected frame's data.
+ *
  * Every element the case files stamp is the SHIPPED grammar for what it is — the
  * markup strings are transcribed from the module that owns them:
  *
@@ -34,6 +47,15 @@ const [data, chrome] = await Promise.all([
   fetch('./data.json').then((r) => r.json()),
   fetch('./chrome.extracted.html').then((r) => r.text()),
 ]);
+
+/* A scene's frames share ONE trace map (build.mjs keeps it at the scene so
+   data.json does not carry three copies of the same observed traces). chart.js
+   reads `canvas.traces`, exactly as in round 1 — this hands each canvas the
+   scene's map and changes nothing about the draw. */
+const framesOf = (sc) => (sc.frames ? Object.values(sc.frames) : [sc]);
+for (const sc of Object.values(data.scenes)) {
+  for (const f of framesOf(sc)) if (f.canvas) f.canvas.traces = sc.traces;
+}
 
 /* ------------------------------------------------------------------ chrome */
 /* The cockpit topbar and footer, lifted from the running app's own DOM. */
@@ -65,16 +87,29 @@ for (const [cls, text] of [['kind', data.dock.kind], ['what', data.dock.title], 
 }
 
 /* ------------------------------------------------------------------- state */
-/* `sceneId` is null at the queue and a scene key when drilled; `highlighted` is
-   the ONE occurrence whose trace is on the canvas; `pinned` survives the pointer
-   leaving the row. Three variables, and the whole surface is a function of them. */
+/* `sceneId` is null at the queue and a scene key when drilled; `frameKey` is the
+   CLAIM LINE selected inside a population case file (round 3 — the claim split
+   is the factor selector, and a finding case file has exactly one frame);
+   `highlighted` is the ONE occurrence whose trace is on the canvas; `pinned`
+   survives the pointer leaving the row. Four variables, and the whole surface is
+   a function of them. */
 let sceneId = null;
+let frameKey = null;
 let highlighted = null;
 let pinned = null;
 let expanded = false;
 
 const scene = () => (sceneId ? data.scenes[sceneId] : null);
-const sceneCanvas = () => scene()?.canvas || null;
+/** The scene's ACTIVE frame — a population's selected claim line, or the finding
+    case file itself, which is its own single frame. One accessor, so every
+    painter below reads the canvas, the boundary note and the table the same way
+    whichever case file is open. */
+const frame = () => {
+  const current = scene();
+  if (!current) return null;
+  return current.frames ? current.frames[frameKey] : current;
+};
+const sceneCanvas = () => frame()?.canvas || null;
 
 function paintChart() {
   const canvas = sceneCanvas();
@@ -84,12 +119,19 @@ function paintChart() {
 
 function paintCanvas() {
   const current = scene();
+  const active = frame();
+  const canvas = active?.canvas || null;
   const placeholder = el('canvas-placeholder');
   const legend = el('ec-chart-key');
-  if (!current) {
-    el('canvas-title').textContent = data.rootCanvas.title;
-    el('canvas-persist').textContent = data.rootCanvas.context;
-    placeholder.textContent = data.rootCanvas.note;
+  const head = current ? current.canvasHead : data.rootCanvas;
+  el('canvas-title').textContent = head.title;
+  el('canvas-persist').textContent = head.context;
+  /* TWO calm empty states, one treatment (`.quiet-line`, the shipped class for
+     "there is nothing to draw here"): the queue level, whose pooled chart this
+     exploration does not build, and the population's UNCLAIMED frame, which has
+     no rule to compare against and says so rather than inventing cohorts. */
+  if (!canvas) {
+    placeholder.textContent = current ? active.emptyNote : data.rootCanvas.note;
     placeholder.hidden = false;
     chartHost.hidden = true;
     legend.hidden = true;
@@ -97,12 +139,10 @@ function paintCanvas() {
     paintReadout(surface, null, null);
     return;
   }
-  el('canvas-title').textContent = current.canvas.title;
-  el('canvas-persist').textContent = current.canvas.context;
   placeholder.hidden = true;
   chartHost.hidden = false;
   legend.hidden = false;
-  legend.innerHTML = legendMarkup(current.canvas);
+  legend.innerHTML = legendMarkup(canvas);
   paintChart();
   chart.resize();
 }
@@ -183,13 +223,10 @@ function paintQueue() {
 }
 
 /* --------------------------------------------------- the drilled case file */
-function occurrenceRows(current) {
-  const { occurrences } = current;
-  const rows = expanded ? occurrences.rows : occurrences.rows.slice(0, occurrences.cap);
-  return rows.map((r) => `
+const rowMarkup = (r, kind) => `
     <button type="button" class="ev-row" data-id="${r.id}" data-counter="false"
             data-selected="${highlighted === r.id}"
-            data-route="${r.target ? 'finding' : current.kind === 'population' ? 'none' : 'self'}"
+            data-route="${kind === 'population' ? 'none' : 'self'}"
             title="${r.title}">
       <span class="when">${r.when}</span>
       ${r.both
@@ -198,14 +235,60 @@ function occurrenceRows(current) {
         : `<span class="only">${r.only} <span>· extreme only</span></span>`}
       <span class="tier">${r.tag || r.tier}</span>
       <span class="chev" aria-hidden="true">›</span>
-    </button>`).join('');
+    </button>`;
+
+/* The occurrences table, GROUPED. Round 2's table was one shipped `.ev-group`
+   header over one flat row list; round 3 emits the same header and the same rows
+   once per group, because a factor's frame regroups the browse population into
+   that factor's cohorts. A finding case file carries exactly one group, so its
+   output is byte-identical to round 2's.
+   The five-row cap is spent across the groups in order and a header always
+   prints its group's FULL count, so a truncated group says how much is behind
+   the expander instead of quietly shrinking. */
+function occurrenceTable(active, kind) {
+  const { occurrences } = active;
+  let budget = expanded ? Infinity : occurrences.cap;
+  const out = [];
+  for (const group of occurrences.groups) {
+    if (budget <= 0) break;
+    const rows = group.rows.slice(0, budget);
+    budget -= rows.length;
+    /* The space before `.n` is the shipped header's own whitespace node — round
+       2's template carried it as a newline, and dropping it closes a real gap
+       between the tier phrase and the count. */
+    out.push(`<div class="ev-group"><b>${group.lead}</b>${group.phrase ? ` — ${group.phrase}` : ''}`
+      + ` <span class="n">${group.count}</span></div>`);
+    out.push(rows.map((r) => rowMarkup(r, kind)).join(''));
+  }
+  return out.join('');
 }
+
+/* ROUND 3 ITEM 1 — the claim split, in the SHIPPED QUEUE's own row grammar
+   (`.q` / `.qrow` / `.lab` / `.den`), which is the register this surface already
+   uses for "pick one of these". Selecting a line reframes the canvas and the
+   table; it is a selection, not a route, so the row carries no `.go` chevron —
+   the route to a claimed finding's own case file is the `.slotlink` below. */
+const claimMarkup = (claims) => `
+  <div class="q fer-claims" role="list">
+    ${claims.map((c) => `
+      <!-- No data-tier / data-state: those two attributes are PROJECTION data in
+           the shipped queue (register and pricing), and a claim line is neither.
+           The bare .qrow is already the undemoted row. -->
+      <button type="button" class="qrow" role="listitem"
+              data-key="${c.key}" data-selected="${frameKey === c.key}"
+              aria-pressed="${frameKey === c.key}">
+        <span class="lab">${c.label}</span>
+        <span class="den"><span class="v">${c.count}</span> ${c.noun}</span>
+      </button>`).join('')}
+  </div>`;
 
 function paintLevel() {
   const current = scene();
   const level = el('level');
   if (!current) { paintQueue(); return; }
-  const { subject, judgment, coincidence, occurrences } = current;
+  const active = frame();
+  const { subject, judgment, coincidence } = current;
+  const { occurrences } = active;
 
   level.innerHTML = `
     ${subject ? `
@@ -226,9 +309,23 @@ function paintLevel() {
            population subject the same block carries the population summary:
            how many, who claims them, and how many nothing claims. -->
       <div class="slot-say">${judgment.summary}</div>
+      ${judgment.counts ? `
       <div class="ec-counts">${judgment.counts.map((c) => `
-        <div class="ec-count"><b>${c.n}</b>${c.label}<em>${c.support}</em></div>`).join('')}</div>
-      <p class="ec-boundary-note"><b>${judgment.boundaryNote.lead}</b>${judgment.boundaryNote.rest}</p>
+        <div class="ec-count"><b>${c.n}</b>${c.label}<em>${c.support}</em></div>`).join('')}</div>` : ''}
+      ${judgment.claims ? claimMarkup(judgment.claims) : ''}
+      ${active.boundaryNote || judgment.boundaryNote ? `
+      <p class="ec-boundary-note"><b>${(active.boundaryNote || judgment.boundaryNote).lead}</b>${(active.boundaryNote || judgment.boundaryNote).rest}</p>` : ''}
+      ${active.route ? `
+      <!-- ROUND 3 ITEM 4 — the sideways route into the selected factor's OWN case
+           file, in the workstation's own route grammar (.slotlink + .linkbtn, the
+           same pair the finding scene spends on "View slot"). The crumb stays
+           "Findings › All lows": selecting a factor here reframes the population,
+           it does not become the finding drill. Where the factor has no case file
+           in this exploration the line says so and offers no button. -->
+      <div class="slotlink">
+        <span>${active.route.text}</span>
+        ${active.route.target ? `<button type="button" class="linkbtn" data-open="${active.route.target}">${active.route.label}</button>` : ''}
+      </div>` : ''}
 
       ${coincidence ? `
       <!-- ROUND 2 ITEM 4 — "When it lands" is DELETED: no heading, no histogram,
@@ -246,9 +343,7 @@ function paintLevel() {
          a population subject each row's tag is its sideways route into the
          finding that claims it. -->
     <div class="lvl-cap">Occurrences<span class="meta">${occurrences.capMeta}</span></div>
-    <div class="ev-group"><b>${occurrences.groupLead}</b>${occurrences.groupTier ? ` — ${occurrences.groupTier}, not confirmed` : ''}
-      <span class="n">${occurrences.groupCount}</span></div>
-    ${occurrenceRows(current)}
+    ${occurrenceTable(active, current.kind)}
     ${occurrences.moreLabel
       ? `<button type="button" class="more">${expanded ? occurrences.backLabel : occurrences.moreLabel}</button>`
       : ''}
@@ -262,22 +357,39 @@ function paintLevel() {
 
   level.querySelector('.more')?.addEventListener('click', () => { expanded = !expanded; paintLevel(); });
 
-  /* Row ⇄ trace: hover previews the ONE trace, click pins it. Under a population
-     subject a claimed row's click routes sideways into the claiming finding
-     instead — the tag says which, and the chevron promises the route. */
-  const byId = Object.fromEntries(occurrences.rows.map((r) => [r.id, r]));
+  /* The claim lines are the factor selector; the route button beside them is the
+     only thing on this level that leaves the population case file. */
+  for (const node of level.querySelectorAll('.fer-claims .qrow')) {
+    node.addEventListener('click', () => selectFrame(node.dataset.key));
+  }
+  level.querySelector('.linkbtn[data-open]')
+    ?.addEventListener('click', (e) => go(e.currentTarget.dataset.open));
+
+  /* Row ⇄ trace: hover previews the ONE trace, click pins it. IDENTICAL in both
+     case files (round 3, item 3) — a population row no longer routes anywhere,
+     so one selection register covers the whole surface. */
   for (const node of level.querySelectorAll('.ev-row')) {
     const id = node.dataset.id;
     node.addEventListener('mouseenter', () => select(id, false));
     node.addEventListener('focus', () => select(id, false));
     node.addEventListener('mouseleave', () => { if (!pinned) select(null, false); });
     node.addEventListener('click', () => {
-      const target = byId[id].target;
-      if (target) { go(target); return; }
       pinned = pinned === id ? null : id;
       select(pinned, true);
     });
   }
+}
+
+/** Pick a claim line: the canvas redraws for that factor and the table regroups
+    into its cohorts. The scene, the crumb and the chip do not move. */
+function selectFrame(key) {
+  if (!scene()?.frames?.[key] || frameKey === key) return;
+  frameKey = key;
+  highlighted = null;
+  pinned = null;
+  expanded = false;
+  paintCanvas();
+  paintLevel();
 }
 
 function select(id, repaintRows) {
@@ -296,6 +408,10 @@ function go(id) {
   if (id && !data.scenes[id]) return;
   el('level').dataset.dir = id ? 'push' : 'pop';
   sceneId = id;
+  /* ROUND 3 ITEM 2 — a population case file OPENS on its largest claiming
+     factor. There is no unselected state: the flat, all-cohorts-of-all-factors
+     draw round 2 arrived at is not reachable from anywhere. */
+  frameKey = id ? (data.scenes[id].defaultFactor ?? null) : null;
   highlighted = null;
   pinned = null;
   expanded = false;
@@ -310,6 +426,7 @@ go(null);
    selection without synthetic pointer events, so captured frames are
    deterministic and no state exists that a reader could not reach. */
 window.__ferGo = go;
+window.__ferFrame = selectFrame;
 window.__ferSelect = (id) => { pinned = id; select(id, true); };
 window.__ferChart = chart;
 window.__ferReady = true;

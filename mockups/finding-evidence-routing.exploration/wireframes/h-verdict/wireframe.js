@@ -32,17 +32,35 @@ const GROUPS = OCC.groups;
 const HEDGE = FRAME.canvas.nearRuleNote;
 const DOCK = data.dock.population;
 
-/* "entry → worst · Δ  ·  17 of 20 in Jul 13–Aug 11" — the shipped cap meta. The
-   pieces are pulled apart rather than re-typed, so a regenerated data.json
-   carries straight through. */
-const CAP_TAIL = OCC.capMeta.replace(/&nbsp;/g, ' ');
-const [, SHOWN, POOL, WINDOW] = CAP_TAIL.match(/(\d+) of (\d+) in (.+)$/);
-const CAP_HEAD = CAP_TAIL.slice(0, CAP_TAIL.indexOf(SHOWN + ' of')).trim().replace(/·$/, '').trim();
+/* The cap's own parts. ROUND 8 moved the numerator out of data.json — under H3
+   the roster is one verdict long, so how many rows the table draws is a runtime
+   fact — and this page composes the same line the mock does. */
+const CAP_HEAD = OCC.cap.key;
+const POOL = String(OCC.cap.denominator);
+const WINDOW = OCC.cap.window;
+const SHOWN = String(GROUPS.reduce((n, g) => n + g.occurrences.length, 0));
+
+/* ROUND 8 — data.json carries occurrences in the SHIPPED evidence shape now
+   (the mock runs the production `renderEvidence` over them), so this page
+   formats its own display cells. VERBATIM — diagnose-workstation.js
+   `renderEvidence`'s date, time and numeric-cell rules. */
+const fmtDate = (iso) => new Date(`${iso}T00:00:00`)
+  .toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+const cells = (o) => {
+  const worst = o.worst_bg != null ? Math.round(o.worst_bg) : null;
+  const entry = o.bg != null ? Math.round(o.bg) : null;
+  return {
+    when: `${fmtDate(o.date)} · ${o.t.slice(11, 16)}`,
+    entry, worst,
+    delta: `${worst - entry > 0 ? '+' : '−'}${Math.abs(worst - entry)}`,
+    title: o.text || '',
+  };
+};
 
 /** One flat roster, each row carrying the verdict of the group it came from. */
-const ROSTER = GROUPS.flatMap((g, gi) => g.rows.map((r, ri) => ({
-  ...r, verdict: g.key, verdictLead: g.lead, order: gi * 100 + ri,
-  swing: Math.abs(Number(String(r.delta).replace('−', '-'))),
+const ROSTER = GROUPS.flatMap((g, gi) => g.occurrences.map((o, ri) => ({
+  ...o, ...cells(o), verdict: g.key, verdictLead: g.lead, order: gi * 100 + ri,
+  swing: Math.abs(o.worst_bg - o.bg),
 })));
 
 /* The drilled occurrence is the LARGEST SWING in the set — not a pick. It turns
@@ -127,7 +145,7 @@ function h1(state) {
   let budget = limit;
   const body = GROUPS.map((g) => {
     if (budget <= 0) return '';
-    const rows = g.rows.slice(0, budget);
+    const rows = g.occurrences.slice(0, budget);
     budget -= rows.length;
     return groupRule(g, true) + rows.map((r) => row(
       ROSTER.find((x) => x.id === r.id),
@@ -213,7 +231,7 @@ function h3(state) {
   }
 
   const limit = 9;
-  const rows = g.rows.slice(0, limit)
+  const rows = g.occurrences.slice(0, limit)
     .map((r) => row(ROSTER.find((x) => x.id === r.id))).join('');
   return band
     + cap(`${CAP_HEAD} &nbsp;·&nbsp; ${g.count} of ${POOL} in ${WINDOW}`)

@@ -27,7 +27,10 @@
  *   .crumb / .trail / .here / .chev          diagnose-workstation.js drawTrail
  *   .q / .qrow / .lab / .tag / .gly / .den   diagnose-findings-queue.js renderFindingsQueue
  *   .slot-say / .slotlink / .linkbtn          diagnose-workstation.js renderFactorHead
- *   .lvl-cap / .ev-group / .ev-row / .more    diagnose-workstation.js renderEvidence
+ *   .lvl-cap                                  diagnose-workstation.js renderEvidence
+ *   .ev-group / .ev-row / .more               NOT transcribed at all any more —
+ *       ROUND 8, ITEM 1 runs diagnose-workstation.js's own `renderEvidence`,
+ *       lifted whole into evidence-table.extracted.js by build.mjs
  *   .quiet-line                               diagnose-findings-queue.js (empty queue)
  *   .watch / .kind / .what / .how             watched-change-dock.js paintWatchDock
  *   .ec-counts / .ec-count / .ec-boundary-note  diagnose-event-comparison.js paintInspector
@@ -39,13 +42,23 @@
  * and no committed projection carries (see build.mjs's provenance block).
  */
 import { renderFindingsQueue } from '../../frontend/diagnose-findings-queue.js';
+/* ROUND 8, ITEM 1 — THE OCCURRENCE TABLE IS THE PRODUCTION ONE. Operator's
+   ruling: "Production table everywhere. Steal that." This module is the shipped
+   `renderEvidence`, lifted out of frontend/diagnose-workstation.js by build.mjs
+   because it is module-private there and a transcription is the thing the
+   ruling forbids. It brings its own group headers, its own five-row cap and
+   two-way expander and its own tier word with it. The mock's `rowMarkup`,
+   `occurrenceTable`, `measureFit` and `.fer-group` are deleted, not kept
+   alongside. */
+import { renderEvidence, EVIDENCE_CAP, tierOf } from './evidence-table.extracted.js';
 import { chartOption, emptyOption, legendMarkup, paintReadout } from './chart.js';
 import { paintPooled } from './pooled.js';
 
-/** ROUND 5, BLOCK 9 — the floor the rows-that-fit measurement clamps to. A
-    column too short for three rows shows three and scrolls; it never shows one
-    row and an expander. */
-const MIN_ROWS = 3;
+/* ROUND 8, ITEM 1 — ROUND 5's MEASURED ROW BUDGET IS RETIRED WITH THE MOCK'S
+   TABLE. `MIN_ROWS`, `rowLimit` and `measureFit` decided how many rows fit the
+   column; the production table decides that itself, with `EVIDENCE_CAP` and an
+   expander that toggles back. Lifting the table means taking its budget too —
+   a lifted painter driven by a bespoke budget is a fork with extra steps. */
 
 const el = (id) => document.getElementById(id);
 
@@ -144,12 +157,12 @@ let projection = 'clock';
 /* ROUND 6, FORM 1 — whether the factor dropdown is expanded. It overlays; it
    never pushes, so nothing else on the column is a function of it. */
 let factorOpen = false;
-/* ROUND 5, BLOCK 9 — how many occurrence rows the column can actually hold.
-   MEASURED, never chosen: `Infinity` means "lay them all out so they can be
-   measured", and `measureFit` replaces it with the answer after the first
-   paint. Reset on every state change, because every state change can change the
-   height of what sits above the table. */
-let rowLimit = Infinity;
+/* ROUND 8, ITEM 1 — WHICH VERDICT THE ROSTER IS SHOWING (wireframe H3). The
+   band states the three-way split proportionally and the roster below it is
+   never longer than ONE verdict; `Rule matched` is the resting verdict. It
+   scopes the ROSTER ONLY — all three verdicts stay drawn on the canvas, so the
+   denominator the reader counts never moves (data.json `terms`). */
+let verdict = null;
 
 const scene = () => (sceneId ? data.scenes[sceneId] : null);
 /** The scene's ACTIVE frame — a population's selected claim line, or the finding
@@ -174,16 +187,91 @@ function paintChart() {
    event's captured day and the lens's own alignment window as the brace. At the
    queue root every one of those is empty, which is byte-identical to the call
    round 5 made and is what keeps the queue-root option diff at zero. */
+/* ROUND 8, ITEM 2 — SELECTING AN OCCURRENCE NEVER MOVES THE WINDOW.
+   Rounds 1-7 handed the pooled renderer a `window` and a `windowLabel` built
+   around the drilled event, so every pick re-aimed the reader's viewport and
+   the brace read `Aug 12 · 02:00 00:00-04:00`. The clock window is the READER'S
+   control — it is what the toolbar's WINDOW group sets, and it decides which
+   events are in play. Selecting one of those events shows that event's
+   evidence; it does not reset the viewport. Neither argument is passed at all
+   any more, so the pooled chart keeps `payload.window` at every level and there
+   is no code path left that could move it. The term is written down in
+   data.json (`terms.selection_never_moves_the_window`) and harness.mjs asserts
+   the window and the x-extent are byte-identical across a row click.
+
+   What a selection still does: draw that day's trace, and mark that event on
+   the canvas — both below. */
 function paintPooledCanvas() {
   const active = frame();
+  const dots = active?.clock?.occurrences || [];
   const drill = highlighted ? data.clockDrills[highlighted] : null;
   paintPooled({
     ...pooledHosts,
-    occurrences: active?.clock?.occurrences || [],
+    occurrences: dots,
     trace: drill ? data.dayTraces[drill.day] : null,
-    window: drill ? drill.window : null,
-    windowLabel: drill ? drill.windowLabel : null,
   });
+  markCanvas(dots);
+}
+
+/* ROUND 8 — THE EMPHASIS LAYER, OVER THE SHIPPED SCATTER, NEVER INSTEAD OF IT.
+ *
+ * Two marks the reader needs and the shipped `renderCanvas` has no input for:
+ * which verdict they are reading, and which occurrence they picked. Round 6
+ * declined to re-style the shipped occurrence series per state rather than fork
+ * the renderer, and that still holds — so neither is drawn by changing it.
+ * Both are ONE ADDED SERIES, appended over the shipped scatter:
+ *
+ *   the drilled verdict  those dots again, larger and in the accent, ON TOP of
+ *                        the shipped ones. NOTHING IS REMOVED and nothing is
+ *                        dimmed: all three verdicts stay plotted exactly as the
+ *                        shipped renderer drew them, so the canvas keeps one
+ *                        stable denominator and the other occurrences stay
+ *                        readable as the context around the ones being read.
+ *   the selected event   a ring at that dot, as the layer's own markPoint.
+ *
+ * Every coordinate is read back off the shipped series' own data rather than
+ * recomputed, so the two layers cannot drift apart. ECharts' emphasis/highlight
+ * machinery is deliberately NOT used: `renderCanvas` disables emphasis on every
+ * series it builds (`noHoverFade`), and re-enabling it would put a canvas
+ * consequence back on hover, which round 7 settled as forbidden.
+ *
+ * Skipped entirely at the queue root, where nothing is selected — an appended
+ * series there would show up as drift against the app's own pooled chart.
+ * `renderCanvas` sets its option with `notMerge`, so every repaint clears this
+ * layer and it is re-appended from the current state, or not at all. */
+function markCanvas(dots) {
+  if (!scene()) return;
+  const option = pooledChart.getOption();
+  const index = option.series.findIndex((s) => s.name === 'Occurrences');
+  if (index < 0) return;
+  const plotted = option.series[index].data || [];
+  const at = (i) => plotted[i]?.value;
+  /* Only where there IS a split to read. A frame with one group draws no band,
+     and emphasising every dot on the plot against nothing is a colour change
+     dressed as a distinction. */
+  const split = (frame()?.occurrences.groups.length || 0) > 1;
+  const focus = split
+    ? dots.reduce((acc, d, i) => (d.cohort === verdict && at(i) ? [...acc, at(i)] : acc), [])
+    : [];
+  const picked = highlighted ? dots.findIndex((d) => d.id === highlighted) : -1;
+  const ink = (name) => getComputedStyle(surface).getPropertyValue(name).trim();
+  /* Merge is by index, so the array is padded to the shipped series' own length
+     and the layer lands one past the end. */
+  const series = Array.from({ length: option.series.length + 1 }, () => ({}));
+  series[option.series.length] = {
+    name: 'fer-emphasis', type: 'scatter', z: 12, silent: true, animation: false,
+    data: focus,
+    symbol: 'circle', symbolSize: 11,
+    itemStyle: { color: ink('--ck-accent'), borderColor: ink('--mk-surface'), borderWidth: 1.5 },
+    markPoint: picked >= 0 && at(picked)
+      ? {
+        silent: true, animation: false, symbol: 'circle', symbolSize: 19, z: 13,
+        itemStyle: { color: 'transparent', borderColor: ink('--mk-text'), borderWidth: 2 },
+        data: [{ coord: at(picked) }],
+      }
+      : { data: [] },
+  };
+  pooledChart.setOption({ series });
 }
 
 /** Which pane is mounted: the pooled chart under `By clock` and at the queue
@@ -362,90 +450,56 @@ function paintQueue() {
 }
 
 /* --------------------------------------------------- the drilled case file */
-/* ROUND 7, ITEM 3c — NO `title` ATTRIBUTE. It carried the occurrence's verdict
-   detail ("Over-treated low matched the current rule."), so the browser popped
-   that sentence over the surface on every row the pointer crossed — a third
-   thing hover did, on top of moving the brace and drawing the trace. The verdict
-   is already in the row's tier cell and in the group rule above it. */
-const rowMarkup = (r, kind) => `
-    <button type="button" class="ev-row" data-id="${r.id}" data-counter="false"
-            data-selected="${highlighted === r.id}"
-            data-route="${kind === 'population' ? 'none' : 'self'}">
-      <span class="when">${r.when}</span>
-      ${r.both
-        ? `<span class="entry">${r.entry}</span><span class="arrow" aria-hidden="true">→</span>
-           <span class="worst">${r.worst}</span><span class="delta">${r.delta}</span>`
-        : `<span class="only">${r.only} <span>· extreme only</span></span>`}
-      <span class="tier">${r.tag || r.tier}</span>
-      <span class="chev" aria-hidden="true">›</span>
-    </button>`;
-
-/* The occurrences table, GROUPED.
+/* ROUND 8, ITEM 1 — `rowMarkup`, `occurrenceTable` and `measureFit` ARE
+ * DELETED. Between them they were the mock's own table: a transcribed row
+ * spine, a grouping-and-budget loop, and a measured row limit. The operator's
+ * ruling replaces all three with the production Diagnose evidence table, which
+ * arrives whole in `evidence-table.extracted.js` and is called below.
  *
- * ROUND 5, BLOCK 5 — THE GROUP HEADER IS A RULE, NOT A ROW. It was a `.ev-group`
- * div with its own bottom border and a bolded lead, which made it a heavier
- * object than the data rows it introduced — a header row competing with the
- * table. It is now a label on a hairline that runs from the end of the label to
- * the right gutter, at no uppercase, and the count prints at the rule's right
- * end ONLY where the frame draws more than one group. With one group the count
- * is the cap meta's own numerator one line above, and printing it twice on
- * adjacent lines is how the round-4 header read as noise.
+ * WIREFRAME H3 IS THE VERDICT'S FORM (the operator's pick over H1 and H2, for
+ * the pop of colour, the light read of the split, and because drilling into
+ * `Near rule` and `Rule did not match` suits a reader for whom those are much
+ * less interesting than `Rule matched`). The three flat section headers over
+ * one long list are retired.
  *
- * ROUND 5, BLOCK 9 — and the budget is `rowLimit`, which is measured rather than
- * chosen. It is still spent across the groups in order, and a header still
- * prints its group's FULL count, so a truncated group says how much is behind
- * the expander instead of quietly shrinking. */
-function occurrenceTable(active, kind) {
-  const { occurrences } = active;
-  const multi = occurrences.groups.length > 1;
-  let budget = expanded ? Infinity : rowLimit;
-  const out = [];
-  for (const group of occurrences.groups) {
-    if (budget <= 0) break;
-    const rows = group.rows.slice(0, budget);
-    budget -= rows.length;
-    out.push(`<div class="fer-group"><span class="lab">${group.lead}</span>`
-      + '<i class="rule" aria-hidden="true"></i>'
-      + `${multi ? `<span class="n">${group.count}</span>` : ''}</div>`);
-    out.push(rows.map((r) => rowMarkup(r, kind)).join(''));
-  }
-  return out.join('');
+ * The band states the split proportionally — one 10px row divided by count —
+ * and the roster below it is exactly one verdict's occurrences. `Rule matched`
+ * rests. It scopes the ROSTER ONLY: the canvas keeps drawing all three
+ * verdicts, and drilling emphasises one set rather than removing two
+ * (`markCanvas`, and the term in data.json). A frame with one group draws no
+ * band, because there is no split to state. */
+function bandMarkup(active) {
+  const { groups, bandCaveat } = active.occurrences;
+  if (groups.length < 2) return '';
+  const seg = (g) => `aria-pressed="${g.key === verdict}" data-verdict="${g.key}"`;
+  return `
+    <div class="fer-band">
+      <div class="bar" role="group" aria-label="Verdict split"
+           style="grid-template-columns:${groups.map((g) => g.count).join('fr ')}fr">
+        ${groups.map((g) => `<button type="button" class="seg" ${seg(g)}
+            aria-label="${g.lead} · ${g.count}"></button>`).join('')}
+      </div>
+      <div class="keys">
+        ${groups.map((g) => `<button type="button" class="key" ${seg(g)}><span>${g.lead}</span>
+            <span class="n">${g.count}</span></button>`).join('')}
+      </div>
+      <p class="caveat">${bandCaveat}</p>
+    </div>`;
 }
 
-/** How many rows FIT (block 9). Rendered rows are measured against the level's
- *  own visible box, minus whatever must stay below the last one — the residue
- *  line, and the expander when there will be an expander.
- *
- *  The expander's reserve is ONE ROW's height rather than a literal: `.more` and
- *  `.ev-row` carry the same 8px/4px vertical padding on the same body rank, so a
- *  row is the self-adjusting stand-in and no px constant here can go stale
- *  against a type change. */
-function measureFit() {
-  if (expanded) return Infinity;
-  const level = el('level');
-  const rows = [...level.querySelectorAll('.ev-row')];
-  if (!rows.length) return Infinity;
-  const top = level.getBoundingClientRect().top;
-  const rowHeight = rows[0].getBoundingClientRect().height;
-  const residue = level.querySelector('.fer-residue');
-  let ceiling = level.clientHeight - (residue ? residue.getBoundingClientRect().height : 0);
-  let fit = 0;
-  for (const row of rows) {
-    if (row.getBoundingClientRect().bottom - top > ceiling) break;
-    fit += 1;
-  }
-  /* An expander is only owed when something is actually hidden — and once it is
-     owed it takes a row's worth of the space just counted. */
-  if (fit < rows.length) {
-    ceiling -= rowHeight;
-    fit = 0;
-    for (const row of rows) {
-      if (row.getBoundingClientRect().bottom - top > ceiling) break;
-      fit += 1;
-    }
-  }
-  return Math.max(MIN_ROWS, fit);
-}
+/** The group the roster is showing: the drilled verdict, or the frame's only
+    group where there is no band to drill. */
+const roster = (active) => active.occurrences.groups.find((g) => g.key === verdict)
+  || active.occurrences.groups[0];
+
+/** The order the production table lays a group out in — its own `fits` before
+    its own `counter`, its own cap on the first of the two. Computed with the
+    shipped `tierOf` rather than guessed, so the ids the mock stamps back onto
+    the painted rows can never slide against them. */
+const paintedOrder = (list, shownCount) => [
+  ...list.filter((o) => tierOf(o)).slice(0, shownCount),
+  ...list.filter((o) => !tierOf(o)),
+];
 
 /* ROUND 6, FORM 1 — THE FACTOR CONTROL, AS A COLLAPSING DROPDOWN.
  *
@@ -547,15 +601,16 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && factorOpen) setFactorOpen(false);
 });
 
-function paintLevel(refit = true) {
+function paintLevel() {
   const current = scene();
   const level = el('level');
   if (!current) { paintQueue(); paintDock(); return; }
   const active = frame();
   const { subject, judgment, coincidence } = current;
   const { occurrences } = active;
-  const hidden = occurrences.groups.reduce((n, g) => n + g.rows.length, 0)
-    - (expanded ? Infinity : rowLimit);
+  const group = roster(active);
+  const shownCount = expanded ? Infinity : EVIDENCE_CAP;
+  const { cap } = occurrences;
 
   level.innerHTML = `
     ${subject ? `
@@ -612,24 +667,45 @@ function paintLevel(refit = true) {
       </div>
     </div>` : ''}
 
-    <!-- The occurrences table — the rows ARE the selection mechanism. -->
-    <div class="lvl-cap fer-occ-cap">Occurrences<span class="meta">${occurrences.capMeta}</span></div>
-    ${occurrenceTable(active, current.kind)}
-    <!-- ROUND 5, BLOCK 7 — THE RESIDUE, AND THE ORDER: rows, then residue, then
-         the expander. Round 4's version was a filled ev-group.counter slab —
-         the darkest object in the column, spent on the two counts that are NOT
-         in the table — and it sat BELOW the expander, which put the quietest
-         statement furthest from the rows it is about. It is one unfilled line
-         now, at the table's own left edge, immediately after the last row. -->
-    ${occurrences.residue ? `<div class="fer-residue">${occurrences.residue}</div>` : ''}
-    ${hidden > 0
-      ? `<button type="button" class="more" aria-expanded="${expanded}">${hidden} more</button>`
-      : (expanded ? '<button type="button" class="more" aria-expanded="true">Show fewer</button>' : '')}`;
+    <!-- ROUND 8, ITEM 1 — the verdict band (wireframe H3), then the cap, then
+         ONE verdict's occurrences drawn by the production table. The cap's
+         numerator is what the table draws right now, which under H3 is the
+         drilled verdict — the settled rule ("the meta counts what the table
+         draws") applied to a roster that is now one verdict long. -->
+    ${bandMarkup(active)}
+    <div class="lvl-cap fer-occ-cap">Occurrences<span class="meta">${cap.key} &nbsp;·&nbsp; ${group.count} of ${cap.denominator} in ${cap.window}</span></div>
+    <div class="fer-table" id="occ-table"></div>
+    <!-- ROUND 5, BLOCK 7 — THE RESIDUE, one unfilled line at the table's own
+         left edge. It closes the section: the production table brings its own
+         expander, and that expander belongs to the rows it caps. -->
+    ${occurrences.residue ? `<div class="fer-residue">${occurrences.residue}</div>` : ''}`;
 
-  level.querySelector('.more')?.addEventListener('click', () => {
-    expanded = !expanded;
-    rowLimit = Infinity;
-    paintLevel();
+  /* THE PRODUCTION TABLE, PAINTING ITSELF. `factor.cause` is the causal phrase
+     its group header prints; `onMore` is its own two-way expander; `shownCount`
+     is its own cap. Nothing here decides a row's date format, its Δ sign or its
+     tier word. */
+  const host = el('occ-table');
+  renderEvidence(host, { cause: group.cause || '' }, group.occurrences,
+    (occ) => select(highlighted === occ.id ? null : occ.id),
+    () => { expanded = !expanded; paintLevel(); },
+    shownCount);
+
+  /* Two stamps the shipped painter has no reason to make, applied to the rows
+     it painted rather than by editing it:
+
+     `data-selected`  the mock's one selection register (round 7, item 3) — the
+                      app drills a row into a third level instead, and has no
+                      selected state for one.
+     `title` REMOVED  round 7, item 3c: the shipped row carries the occurrence's
+                      sentence as a native tooltip, so the browser popped it over
+                      the surface on every row the pointer crossed. Hover does
+                      nothing on this surface, and that is settled. */
+  paintedOrder(group.occurrences, shownCount).forEach((occ, i) => {
+    const node = host.querySelectorAll('.ev-row')[i];
+    if (!node) return;
+    node.dataset.id = occ.id;
+    node.dataset.selected = String(highlighted === occ.id);
+    node.removeAttribute('title');
   });
 
   /* The route out of a population case file. Scoped to `.fer-route` because the
@@ -638,31 +714,27 @@ function paintLevel(refit = true) {
   level.querySelector('.fer-route .fer-open')
     ?.addEventListener('click', (e) => go(e.currentTarget.dataset.open));
 
-  /* ROUND 7, ITEM 3 — ROW -> CANVAS IS SELECTION, AND ONLY SELECTION. Rounds
-     1-6 hung the whole read on `mouseenter`: passing the pointer down the table
-     drew each day's trace in turn and dragged the window brace after it, so the
-     canvas never held still long enough to be read and nothing about a row was
-     ever committed. Hover keeps its own lightweight affordance — the shipped
-     `.ev-row:hover` wash, which is CSS and touches nothing — and every canvas
-     consequence now waits for a click. Clicking the selected row again clears
-     it. IDENTICAL in both case files (round 3, item 3): a population row does
-     not route anywhere either, so one selection register covers the surface. */
-  for (const node of level.querySelectorAll('.ev-row')) {
-    const id = node.dataset.id;
-    node.addEventListener('click', () => select(highlighted === id ? null : id, true));
+  /* ROUND 8, ITEM 1 — the band's two controls, bar and key, drilling the same
+     verdict. Round 7's row click handler is gone: the production table binds its
+     own rows to `onOpen` above, which is where a lifted painter's click belongs. */
+  for (const node of level.querySelectorAll('.fer-band [data-verdict]')) {
+    node.addEventListener('click', () => selectVerdict(node.dataset.verdict));
   }
 
   paintDock();
+}
 
-  /* ROUND 5, BLOCK 9 — ONE MEASURED REFIT PASS. The first paint lays every row
-     out so their real heights can be read; if fewer fit than were laid out, the
-     limit is set and the level is painted once more with `refit` off. Two
-     passes, never a loop, and no px constant decides how many rows a column
-     holds. */
-  if (refit) {
-    const next = measureFit();
-    if (next !== rowLimit) { rowLimit = next; paintLevel(false); }
-  }
+/** Drill the band. It scopes the ROSTER: the table redraws for that verdict and
+    the canvas emphasises its dots without dropping the other two verdicts'.
+    The selection clears, because the occurrence that was selected is not in the
+    roster any more — and the window still does not move. */
+function selectVerdict(key) {
+  if (verdict === key) return;
+  verdict = key;
+  highlighted = null;
+  expanded = false;
+  paintLevel();
+  paintCanvas();
 }
 
 /* ROUND 5, BLOCK 8 — the dock's one line, per level. */
@@ -676,26 +748,32 @@ function paintDock() {
 function selectFrame(key) {
   if (!scene()?.frames?.[key] || frameKey === key) return;
   frameKey = key;
+  verdict = restingVerdict();
   highlighted = null;
   expanded = false;
-  rowLimit = Infinity;
   paintFactorSelect();
   paintCanvas();
   paintLevel();
 }
 
-function select(id, repaintRows) {
+/** THE RESTING VERDICT: `Rule matched` where the frame has one (wireframe H3's
+    rule), otherwise the frame's only group. Never stored — it is a property of
+    the frame, and a stored copy is a thing that can go stale against it. */
+function restingVerdict() {
+  const groups = frame()?.occurrences.groups || [];
+  return (groups.find((g) => g.key === 'fired') || groups[0])?.key ?? null;
+}
+
+/** SELECT AN OCCURRENCE. Evidence only: the lens redraws with that event's
+    trace highlighted, the clock projection draws that event's day and marks the
+    dot — and the window does not move (round 8, item 2, and the term in
+    data.json). Clicking the selected row again clears it. */
+function select(id) {
   if (highlighted === id) return;
   highlighted = id;
   paintChart();
-  /* ROUND 6, FORM 3 — under `By clock` the same selection is the day trace and
-     the window brace on the pooled chart, so the row drives both projections
-     through one call. */
   if (showingClock()) paintPooledCanvas();
-  if (repaintRows) { paintLevel(); return; }
-  for (const node of el('level').querySelectorAll('.ev-row')) {
-    node.dataset.selected = String(node.dataset.id === id);
-  }
+  paintLevel();
 }
 
 /* ----------------------------------------------------------------- routing */
@@ -708,9 +786,9 @@ function go(id) {
      factor. There is no unselected state: the flat, all-cohorts-of-all-factors
      draw round 2 arrived at is not reachable from anywhere. */
   frameKey = id ? (data.scenes[id].defaultFactor ?? null) : null;
+  verdict = id ? restingVerdict() : null;
   highlighted = null;
   expanded = false;
-  rowLimit = Infinity;
   factorOpen = false;
   paintCrumb();
   paintFactorSelect();
@@ -732,7 +810,9 @@ window.__ferFrame = selectFrame;
    a reader presses rather than reaching into state. */
 window.__ferProject = selectProjection;
 window.__ferFactorOpen = setFactorOpen;
-window.__ferSelect = (id) => select(id, true);
+window.__ferSelect = (id) => select(id);
+/* ROUND 8, ITEM 1 — the band, driven the way a reader drives it. */
+window.__ferVerdict = selectVerdict;
 window.__ferChart = chart;
 /* ROUND 5, WORKSTREAM A — the queue root's pooled chart, published so
    harness.mjs can read its live `getOption()` and diff it against the running

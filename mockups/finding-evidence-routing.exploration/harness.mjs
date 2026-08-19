@@ -284,6 +284,35 @@ const POOLED_READER = () => JSON.parse(JSON.stringify((() => {
   };
 })()));
 
+/* ROUND 8, ITEM 2 — THE CLOCK WINDOW, READ OFF THE POOLED CHART ITSELF.
+ *
+ * The assertion this exists for: selecting an occurrence is EVIDENCE-ONLY and
+ * must never mutate the window. Rounds 1-7 handed the pooled renderer a window
+ * built around the drilled event, so every pick re-aimed the reader's viewport
+ * and the brace read `Aug 12 · 02:00 00:00-04:00`. This reads the window's two
+ * edges, its printed label and the axis's full extent out of the SHIPPED
+ * chart's own live option — not out of the mock's state, which is exactly the
+ * thing under test — before a row click and again after, and the two must be
+ * byte-identical.
+ *
+ * The operator's reason for wanting it proved rather than described: "I don't
+ * want the incorrect logic in the mock-up carried into production on accident."
+ * The term itself is written in data.json (`terms`). */
+const WINDOW_READER = () => JSON.parse(JSON.stringify((() => {
+  const o = window.__ferPooled.getOption();
+  const context = o.series.find((s) => s.name === '__context');
+  const area = context.markArea.data.find((d) => d[0].xAxis !== undefined);
+  const axis = o.xAxis[0].data;
+  return {
+    windowFrom: area[0].xAxis,
+    windowTo: area[1].xAxis,
+    windowLabel: area[0].label?.formatter ?? null,
+    parkedLabel: context.markPoint?.data?.[0]?.label?.formatter ?? null,
+    xExtent: [axis[0], axis[axis.length - 1]],
+    xBins: axis.length,
+  };
+})()));
+
 /** Probe the running app, in one theme, across both shipped surfaces. */
 async function probeApp(browser, theme, { writeChrome = false } = {}) {
   const app = {};
@@ -655,7 +684,7 @@ async function main() {
          brace, no verdict tooltip — and the row must not read as selected. Then
          the same row is CLICKED, and the trace and the brace arrive. Anything
          the hover frame shows that `scene-1440x900.png` does not is the bug. */
-      const rowId = data.scenes['finding:over_treated_low'].occurrences.groups[0].rows[2].id;
+      const rowId = data.scenes['finding:over_treated_low'].occurrences.groups[0].occurrences[2].id;
       const row = page.locator(`.ev-row[data-id="${rowId}"]`);
       await row.hover();
       await page.waitForTimeout(500);
@@ -665,9 +694,28 @@ async function main() {
         rowsCarryingATitleAttribute: [...document.querySelectorAll('.ev-row[title]')].length,
       }));
 
+      /* ROUND 8, ITEM 2 — THE WINDOW, BEFORE AND AFTER THE CLICK. Both frames
+         are captured as well as both readings, because the failure this guards
+         is a visible one: a brace that jumps to the picked event. */
+      const windowBefore = await page.evaluate(WINDOW_READER);
+      await page.mouse.move(0, 0);
+      await page.waitForTimeout(250);
+      await page.screenshot({ path: join(SHOTS, 'selection-window-before.png') });
+
       await row.click();
       await page.waitForTimeout(500);
       await page.screenshot({ path: join(SHOTS, 'row-selected-day-trace-by-clock.png') });
+      const windowAfter = await page.evaluate(WINDOW_READER);
+      await page.mouse.move(0, 0);
+      await page.waitForTimeout(250);
+      await page.screenshot({ path: join(SHOTS, 'selection-window-after.png') });
+      const windowUnchanged = JSON.stringify(windowBefore) === JSON.stringify(windowAfter);
+      results.windowUnchanged = { unchanged: windowUnchanged, before: windowBefore, after: windowAfter };
+      if (!windowUnchanged) {
+        problems.push('SELECTION MOVED THE CLOCK WINDOW — occurrence selection is evidence-only and must '
+          + `never mutate it (data.json terms.selection_never_moves_the_window). before ${JSON.stringify(windowBefore)} `
+          + `after ${JSON.stringify(windowAfter)}`);
+      }
       results.highlightedRow = rowId;
       results.selected = await page.evaluate(() => ({
         selectedRows: document.querySelectorAll('.ev-row[data-selected="true"]').length,
@@ -704,7 +752,7 @@ async function main() {
       await page.evaluate(() => window.__ferFactorOpen(false));
       await page.waitForTimeout(250);
 
-      const populationRow = population.frames[population.defaultFactor].occurrences.groups[0].rows[1].id;
+      const populationRow = population.frames[population.defaultFactor].occurrences.groups[0].occurrences[1].id;
       await page.evaluate((id) => window.__ferSelect(id), populationRow);
       await page.waitForTimeout(400);
       await page.screenshot({ path: join(SHOTS, 'population-row-trace-1440x900.png') });
@@ -734,8 +782,44 @@ async function main() {
       await page.evaluate(() => window.__ferProject('clock'));
       await page.waitForTimeout(300);
 
-      /* Back to the default frame, expanded: the cap is spent across the regrouped
-         cohorts in order, so the groups below it only appear here. */
+
+      /* ROUND 8, ITEM 1 — THE VERDICT BAND (wireframe H3), AT REST AND DRILLED.
+         Resting is `Rule matched`; drilled here is `Near rule`, which is the
+         verdict the operator named as the one worth reaching. The pair proves
+         the settled rule as well as the form: the roster below shortens to one
+         verdict, and the canvas keeps every occurrence drawn — the drilled
+         verdict's dots are emphasised, the other two verdicts' stay as context.
+         Shot on the whole surface, because the claim is about both panes. */
+      await page.evaluate((k) => window.__ferFrame(k), population.defaultFactor);
+      await page.evaluate((id) => window.__ferSelect(id), null);
+      await page.mouse.move(0, 0);
+      await page.waitForTimeout(450);
+      await page.screenshot({ path: join(SHOTS, 'verdict-band-rest-1440x900.png') });
+      await page.locator('.pane.inspector').screenshot({ path: join(SHOTS, 'verdict-band-rest-inspector.png') });
+      results.verdictBand = await page.evaluate(() => ({
+        segments: [...document.querySelectorAll('.fer-band .seg')].map((n) => n.dataset.verdict),
+        pressed: document.querySelector('.fer-band .seg[aria-pressed="true"]')?.dataset.verdict ?? null,
+        rosterRows: document.querySelectorAll('.ev-row').length,
+        dotsDrawn: window.__ferPooled.getOption().series
+          .find((x) => x.name === 'Occurrences').data.length,
+      }));
+      await page.evaluate(() => window.__ferVerdict('near_rule'));
+      await page.mouse.move(0, 0);
+      await page.waitForTimeout(500);
+      await page.screenshot({ path: join(SHOTS, 'verdict-band-near-rule-1440x900.png') });
+      await page.locator('.pane.inspector')
+        .screenshot({ path: join(SHOTS, 'verdict-band-near-rule-inspector.png') });
+      results.verdictBandDrilled = await page.evaluate(() => ({
+        pressed: document.querySelector('.fer-band .seg[aria-pressed="true"]')?.dataset.verdict ?? null,
+        rosterRows: document.querySelectorAll('.ev-row').length,
+        dotsDrawn: window.__ferPooled.getOption().series
+          .find((x) => x.name === 'Occurrences').data.length,
+      }));
+      await page.evaluate(() => window.__ferVerdict('fired'));
+      await page.waitForTimeout(300);
+
+      /* Back to the default frame, expanded: the production table's own two-way
+         expander, on the roster it caps. */
       await page.evaluate((k) => window.__ferFrame(k), population.defaultFactor);
       await page.waitForTimeout(450);
       /* ROUND 5, BLOCK 9 — the expander is now conditional on GENUINE overflow,
@@ -770,6 +854,19 @@ async function main() {
       await page.locator('.pane.inspector')
         .screenshot({ path: join(SHOTS, 'factor-dropdown-open-light.png') });
       await page.evaluate(() => window.__ferFactorOpen(false));
+      /* ROUND 8, ITEM 1 — the band on bone. Its one saturated ink is the accent
+         on the pressed segment, and a light ground is where a 10px coloured bar
+         either reads as a figure or reads as debris. */
+      await page.mouse.move(0, 0);
+      await page.waitForTimeout(350);
+      await page.screenshot({ path: join(SHOTS, 'verdict-band-rest-light-1440x900.png') });
+      await page.locator('.pane.inspector')
+        .screenshot({ path: join(SHOTS, 'verdict-band-rest-light-inspector.png') });
+      await page.evaluate(() => window.__ferVerdict('near_rule'));
+      await page.mouse.move(0, 0);
+      await page.waitForTimeout(500);
+      await page.screenshot({ path: join(SHOTS, 'verdict-band-near-rule-light-1440x900.png') });
+      await page.evaluate(() => window.__ferVerdict('fired'));
       await page.evaluate(() => window.__ferProject('event'));
       await page.waitForTimeout(400);
       await page.screenshot({ path: join(SHOTS, 'population-lows-light-by-event.png') });

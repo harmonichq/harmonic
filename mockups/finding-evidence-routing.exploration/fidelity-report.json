@@ -5,8 +5,8 @@
  },
  "dark": {
   "computedStyleDiff": {
-   "checked": 83,
-   "matched": 83,
+   "checked": 86,
+   "matched": 86,
    "absentInApp": [
     ".qrow[data-tier=\"priced\"]",
     ".qrow[data-tier=\"priced\"] .lab",
@@ -65,17 +65,57 @@
   "selectedRows": 0,
   "rowsCarryingATitleAttribute": 0
  },
+ "windowUnchanged": {
+  "unchanged": true,
+  "before": {
+   "windowFrom": "00:00",
+   "windowTo": "23:45",
+   "windowLabel": "24 H 00:00–24:00{sp|  ·  25–75 spread 16 mg/dL}",
+   "parkedLabel": null,
+   "xExtent": [
+    "00:00",
+    "23:45"
+   ],
+   "xBins": 96
+  },
+  "after": {
+   "windowFrom": "00:00",
+   "windowTo": "23:45",
+   "windowLabel": "24 H 00:00–24:00{sp|  ·  25–75 spread 16 mg/dL}",
+   "parkedLabel": null,
+   "xExtent": [
+    "00:00",
+    "23:45"
+   ],
+   "xBins": 96
+  }
+ },
  "highlightedRow": "lows-synthetic-3",
  "selected": {
   "selectedRows": 1
  },
  "populationDefaultFrame": "over_treated_low",
  "populationHighlightedRow": "lows-synthetic-2",
+ "verdictBand": {
+  "segments": [
+   "fired",
+   "near_rule",
+   "neutral"
+  ],
+  "pressed": "fired",
+  "rosterRows": 5,
+  "dotsDrawn": 17
+ },
+ "verdictBandDrilled": {
+  "pressed": "near_rule",
+  "rosterRows": 4,
+  "dotsDrawn": 17
+ },
  "populationExpanderPresent": true,
  "light": {
   "computedStyleDiff": {
-   "checked": 83,
-   "matched": 83,
+   "checked": 86,
+   "matched": 86,
    "absentInApp": [
     ".qrow[data-tier=\"priced\"]",
     ".qrow[data-tier=\"priced\"] .lab",

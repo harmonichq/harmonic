@@ -139,6 +139,59 @@ async function shippedInstruments() {
   };
 }
 
+/* ---- ROUND 8, ITEM 1: THE OCCURRENCE TABLE IS THE PRODUCTION ONE ----
+   The operator's ruling: "Production table everywhere. Steal that." Rounds 2-7
+   painted their own — `rowMarkup` transcribed the shipped row's spine,
+   `occurrenceTable` invented the grouping and the budget, `dedupeGroupTags`
+   blanked the tier column, and `.fer-group` replaced the shipped group header
+   with a hairline rule. All four are DELETED, not kept beside the real thing.
+
+   What replaces them is `renderEvidence` itself, lifted out of
+   frontend/diagnose-workstation.js at build time exactly the way the toolbar's
+   two standing groups are — the function is module-private there, so there is
+   no export to import, and a transcription is the one thing this ruling
+   forbids. Extraction fails closed: an upstream rename stops the build rather
+   than freezing a stale copy of the production table into the mock.
+
+   It brings its own row budget (`EVIDENCE_CAP` and its two-way expander), its
+   own group headers and its own `unclassified` tier word with it. That is the
+   point — the mock now shows what the shipped table actually does over this
+   fixture, quirks included, instead of a prettier thing only the mock has. */
+async function shippedEvidenceTable() {
+  const path = 'frontend/diagnose-workstation.js';
+  const dw = await readFile(join(ROOT, path), 'utf8');
+  const grab = (name, re) => {
+    const m = dw.match(re);
+    if (!m) throw new Error(`${path} no longer declares \`${name}\` in the shape this build extracts`);
+    return m[0];
+  };
+  const cap = grab('EVIDENCE_CAP', /^const EVIDENCE_CAP = \d+;$/m);
+  const fmt = grab('fmtDate', /^const fmtDate = [\s\S]*?;$/m);
+  const tier = grab('tierOf', /^function tierOf\(occ\) \{[\s\S]*?\n\}$/m);
+  const render = grab('renderEvidence', /^function renderEvidence\([\s\S]*?\n\}$/m);
+  /* The three things the fidelity comparison hangs off. If the shipped painter
+     ever stops emitting them the mock's table is no longer the app's, and the
+     build says so here rather than in a screenshot nobody re-reads. */
+  for (const needle of ["className = 'ev-row'", 'class="ev-group"', "className = 'more'"]) {
+    if (!render.includes(needle)) {
+      throw new Error(`extracted \`renderEvidence\` no longer emits ${needle} — extraction is corrupt`);
+    }
+  }
+  return `/* EXTRACTED VERBATIM from ${path} by\n`
+    + ' * mockups/finding-evidence-routing.exploration/build.mjs. Do not edit —\n'
+    + ' * re-run the build script.\n'
+    + ' *\n'
+    + ' * This IS the production Diagnose evidence table: its group headers, its\n'
+    + ' * seven-column rows, its five-row cap and two-way expander, its tier word.\n'
+    + ' * The exploration draws no table of its own (round 8, item 1). The only\n'
+    + ' * edits are the three `export` keywords, so the surface can import it and\n'
+    + ' * split a group the same way it does (`tierOf` decides fits from counter).\n'
+    + ' */\n'
+    + `${cap.replace(/^const /, 'export const ')}\n\n`
+    + `${fmt}\n\n${tier.replace(/^function /, 'export function ')}\n\n`
+    + `${render.replace(/^function /, 'export function ')}\n`;
+}
+
 /* ---------------------------------------------------------------- verbatim
    Copied from the shipped modules that do not export them. Each is a byte
    transcription with its source named, held honest by the option-level and
@@ -196,30 +249,18 @@ function pointStateSummary(rows) {
    `.ec-count` tally's three cells, and the tally is what the scene prints; a
    transcription nobody calls is the next reader's wrong map. */
 
-/** VERBATIM — diagnose-event-comparison.js `fmtDate` / `fmtTime`. */
+/** VERBATIM — diagnose-event-comparison.js `fmtDate`. */
 const fmtDate = (iso) => new Date(`${iso}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-const fmtTime = (stamp) => stamp.slice(11, 16);
 
-/** VERBATIM — diagnose-workstation.js `renderEvidence`'s numeric-cell rule. */
-function evidenceCells(anchor) {
-  const worst = anchor.worst_bg != null ? Math.round(anchor.worst_bg) : null;
-  const entry = anchor.bg != null ? Math.round(anchor.bg) : null;
-  const both = entry != null && worst != null && entry !== worst;
-  if (!both) return { both: false, only: worst ?? entry ?? '—' };
-  return {
-    both: true, entry, worst,
-    delta: `${worst - entry > 0 ? '+' : '−'}${Math.abs(worst - entry)}`,
-  };
-}
+/* ROUND 8, ITEM 1 — `evidenceCells` is DELETED. It was a transcription of the
+   shipped `renderEvidence`'s numeric-cell rule, made when the mock painted its
+   own rows; the mock now runs that function itself, so the transcription is the
+   next reader's wrong map.
 
-/** VERBATIM — diagnose-workstation-chart.js `minuteOfDay` (module-private
-    there). The clock projection needs an event's own wall-clock minute to place
-    its dot and to size its window brace, and the shipped renderer computes it
-    exactly this way from exactly this string shape. */
-function minuteOfDay(stamp) {
-  const time = stamp.slice(11);
-  return Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5));
-}
+   ROUND 8, ITEM 2 — `minuteOfDay` goes with it. It existed to re-anchor the
+   lens's alignment window on a drilled event's wall-clock minute, which is the
+   viewport move this round retires: selecting an occurrence never sets a
+   window. See `terms.selection_never_moves_the_window` in data.json. */
 
 /* -------------------------------------------------------------------- build */
 
@@ -291,27 +332,11 @@ const GROUP_PHRASE = {
 };
 
 
-/** ROUND 4 ITEM 9 — a row does not repeat what its group header already said.
- *
- * On both fixtures every group is uniform in its right-hand tag ("observed" ×7
- * under a header that reads "observed, not confirmed"; "Rule matched" ×7 under a
- * header that reads "Rule matched"), so the column was printing the group's own
- * sentence once per row. This blanks the cell for exactly that case — the tag is
- * identical across the group AND the header already carries the word — and
- * leaves it alone anywhere a row differs from its group, which is the only case
- * the column was ever for. The shipped `.ev-row` grid column stays, so the
- * numeric spine does not move.
- */
-function dedupeGroupTags(groups) {
-  return groups.map((group) => {
-    const values = new Set(group.rows.map((r) => r.tag ?? r.tier ?? ''));
-    if (values.size !== 1) return group;
-    const [only] = values;
-    const header = `${group.lead} ${group.phrase || ''}`.toLowerCase();
-    if (!only || !header.includes(only.toLowerCase())) return group;
-    return { ...group, rows: group.rows.map((r) => ({ ...r, tag: '', tier: '' })) };
-  });
-}
+/* ROUND 8, ITEM 1 — `dedupeGroupTags` is DELETED. Round 4 blanked a row's tier
+   cell wherever the group header already carried the same word; that was a rule
+   the mock's own painter enforced, and the mock no longer has a painter. The
+   production table prints `tierOf(o) || 'unclassified'` in every row, and what
+   it prints over this fixture is now visible rather than tidied. */
 
 /** ROUND 4 ITEM 2 — which cohort each listed occurrence belongs to under the
     frame's own factor. The trace overlay draws in ITS COHORT'S hue rather than
@@ -405,16 +430,30 @@ async function main() {
     const source = lowsView.occurrences.find((o) => o.id === id);
     return lowsView.factors.find((f) => source.routes[f]?.cohort === 'fired') || null;
   };
-  const occurrenceRow = (o) => ({
+  /* ROUND 8, ITEM 1 — ONE OCCURRENCE, IN THE SHAPE THE PRODUCTION TABLE READS.
+     The build no longer formats a row; it hands the shipped `renderEvidence`
+     the same object the app hands it, so the date, the time, the rounding, the
+     Δ sign and the tier word are all the shipped function's work.
+
+     The lens projector reports a per-occurrence `verdict`; the workstation
+     evidence shape carries a LIST of classifier reads and derives the tier from
+     whichever one matched (`tierOf`). This is that projection, not an
+     invention: the classifier is the projector's own factor, `matched` is
+     whether it routed the occurrence to `fired`, and both the tier and the
+     sentence are the projector's own strings. */
+  const evidenceOccurrence = (o) => ({
     id: o.identity.id,
-    when: `${fmtDate(o.anchor.date)} · ${fmtTime(o.anchor.t)}`,
-    tier: o.verdict.evidence_tier?.replaceAll('_', ' ') || 'unclassified',
-    /* ROUND 7, ITEM 3c — `verdict.detail` is NOT carried any more. It was the
-       row's `title` attribute, so every hover popped the browser's own tooltip
-       ("Over-treated low matched the current rule.") over the surface. The
-       verdict already prints in the row's tier cell and in the group rule above
-       it; a hover-only restatement of it is the one read here nobody asked for. */
-    ...evidenceCells(o.anchor),
+    date: o.anchor.date,
+    t: o.anchor.t,
+    bg: o.anchor.bg,
+    worst_bg: o.anchor.worst_bg,
+    text: o.verdict.detail,
+    verdicts: [{
+      classifier: o.verdict.factor,
+      matched: o.verdict.cohort === 'fired',
+      evidence_tier: o.verdict.evidence_tier,
+      detail: o.verdict.detail,
+    }],
   });
 
   const windowLabel = `${fmtDate(lens.coordinates.source_window.start)}–${fmtDate(lens.coordinates.source_window.end)}`;
@@ -434,8 +473,7 @@ async function main() {
      positional and stamped (`provenance.day_traces`), the same way the
      population rows are stamped — the alternative is drawing no day at all,
      which would delete the projection's whole drill state. */
-  const alignment = lens.coordinates.alignment_window_min;
-  const clockDot = (o, label) => ({
+  const clockDot = (o, label, cohort) => ({
     id: o.identity.id,
     t: o.anchor.t,
     date: o.anchor.date,
@@ -445,22 +483,23 @@ async function main() {
        hover. It is the one channel that can still say WHICH state a dot is in,
        because the shipped series draws every occurrence in one style. */
     cause_title: label ?? COHORT_LABEL[o.verdict.cohort],
+    /* ROUND 8, ITEM 1 — which verdict this dot belongs to, so that drilling the
+       band can EMPHASISE that verdict's dots without removing any. All three
+       verdicts stay drawn at every band position: the canvas keeps one stable
+       denominator, and "how many lows did I have" reads the same wherever the
+       reader is standing. */
+    cohort: cohort ?? o.verdict.cohort,
   });
+  /* ROUND 8, ITEM 2 — a drill carries a DAY and nothing else.
+     It used to carry a window too — the lens's alignment window re-anchored on
+     the event's wall-clock minute — and handing that to the pooled renderer is
+     what moved the reader's viewport every time they picked a row. The clock
+     window belongs to the WINDOW instrument, not to a selection, so there is no
+     window here for a selection to apply. */
   const dayOfIndex = (index) => dayKeys[index % dayKeys.length];
-  const clockDrills = Object.fromEntries(lowsView.occurrences.map((source, index) => {
-    const minute = minuteOfDay(source.anchor_t);
-    const start = Math.max(0, minute + alignment[0]);
-    const end = Math.min(1440, minute + alignment[1]);
-    return [source.id, {
-      day: dayOfIndex(index),
-      window: [start, end],
-      /* The shipped window label's own form (`diagnose-workstation.js` builds
-         `${LABEL.toUpperCase()} ${winText}` for a pressed preset); here the head
-         is the event the brace is around. */
-      windowLabel: `${fmtDate(source.date)} · ${fmtTime(source.anchor_t)} `
-        + `${hhmm(start)}–${winEdge(end)}`,
-    }];
-  }));
+  const clockDrills = Object.fromEntries(
+    lowsView.occurrences.map((source, index) => [source.id, { day: dayOfIndex(index) }]),
+  );
 
   /* ---- the population summary, off the unfiltered projection's counts ---- */
   const claims = {};
@@ -489,23 +528,22 @@ async function main() {
        everything outside its own fired cohort. */
     const narrow = projectSyntheticCapture(capture, coordsFor);
     const label = factorLabel[factorKey];
-    const rows = narrow.occurrences.map((o) => ({
-      ...occurrenceRow(o), tag: COHORT_LABEL[o.verdict.cohort],
-    }));
+    /* ROUND 8, ITEM 1 — a group is now a VERDICT'S OCCURRENCES, in the shipped
+       evidence shape, plus the causal phrase the production table's own header
+       prints (`factor.cause`). Nothing here formats a row: `renderEvidence`
+       does. `lead` is the verdict's name, which the band above the table reads
+       out; the group's own count is a length, not a stored figure. */
     const groups = GROUP_ORDER
       .map((key) => ({
         key,
         lead: COHORT_LABEL[key],
-        phrase: GROUP_PHRASE[key](label),
-        rows: narrow.occurrences
+        cause: GROUP_PHRASE[key](label),
+        occurrences: narrow.occurrences
           .filter((o) => o.verdict.cohort === key)
-          .map((o) => rows.find((r) => r.id === o.identity.id)),
+          .map(evidenceOccurrence),
       }))
-      .filter((g) => g.rows.length)
-      /* ROUND 5, BLOCK 5 — the group header is a RULE, not a row, and its count
-         is a bare tabular number at the rule's right end. The round-4 phrase
-         "· 7 events" restated the noun the whole table is made of. */
-      .map((g) => ({ ...g, count: g.rows.length }));
+      .filter((g) => g.occurrences.length)
+      .map((g) => ({ ...g, count: g.occurrences.length }));
     /* ROUND 6, SEND-BACK 1 — THE META COUNTS WHAT THE TABLE DRAWS. Block 4 set
        this numerator to the frame's own claim (`claims[factorKey]`, the fired
        count), which is one cohort out of the three the table lists — so a table
@@ -513,7 +551,7 @@ async function main() {
        explicit: "The OCCURRENCES meta counts what the table draws, not one
        cohort." The cohort counts live on the group rules, which is where a
        per-cohort number belongs. */
-    const drawn = groups.reduce((n, g) => n + g.rows.length, 0);
+    const drawn = groups.reduce((n, g) => n + g.occurrences.length, 0);
     return {
       key: factorKey,
       label,
@@ -522,7 +560,11 @@ async function main() {
       count: claims[factorKey],
       canvas: canvasFor(narrow),
       /* ROUND 6, FORM 3 — the same events, ready for the clock projection. */
-      clock: { occurrences: narrow.occurrences.map(clockDot) },
+      /* ROUND 8 — `.map(clockDot)` here handed `Array.prototype.map`'s INDEX to
+         the second parameter, so since round 6 every population dot's readout
+         string has been the number 0 rather than its verdict's name. Called
+         with one argument now. */
+      clock: { occurrences: narrow.occurrences.map((o) => clockDot(o)) },
       /* ROUND 5, BLOCK 6 — THE ROUTE IS ONE ACTION, NOT A SENTENCE, and it is
          ABSENT rather than apologised for where the factor has no case file.
          Round 4 spent a full line saying `Correction on active insulin has no
@@ -535,13 +577,25 @@ async function main() {
            self-evident; they are not, on a row that prints three bare numbers
            in a mono face, and the finding scene has carried the key since round
            2. One cap form, both scenes. */
-        capMeta: `entry → worst · Δ &nbsp;·&nbsp; ${drawn} of ${narrow.population.denominator} in ${windowLabel}`,
+        /* ROUND 8, ITEM 1 — THE CAP'S NUMERATOR IS A RUNTIME FACT NOW, so the
+           build emits the cap's PARTS and the surface composes the line. Under
+           wireframe H3 the table draws one verdict at a time, and which verdict
+           that is cannot be decided here — the same reason round 5 stopped
+           emitting a row budget. The denominator, the window and the column key
+           are still the frame's own, and the settled rule is unchanged: the
+           meta counts what the table draws. */
+        cap: { key: 'entry → worst · Δ', denominator: narrow.population.denominator, window: windowLabel },
+        /* The band's caveat, stated on the surface because a control that looks
+           like a cohort filter beside a canvas that is never cohort-filtered is
+           the exact disagreement the #31 ruling exists to prevent. */
+        bandCaveat: `${drawn} of ${narrow.population.denominator} lows in ${windowLabel}. The band scopes this list only — `
+          + 'the comparison beside it always draws all three.',
         /* ROUND 5, BLOCK 7 — the residue, as ONE unfilled line. It is the same
            two counts round 4 printed in a dark `.ev-group.counter` slab; block 3
            routes the finding scene's `2 not comparable` residue here too. */
         residue: `${narrow.population.counts.another_factor} claimed by another factor`
           + ` · ${narrow.population.counts.excluded} not comparable`,
-        groups: dedupeGroupTags(groups),
+        groups,
       },
     };
   };
@@ -561,16 +615,14 @@ async function main() {
    * canvas prints its own furniture — greyed axes, the alignment range still on
    * them — and one short line. The head is swapped to a truthful label rather
    * than left reading `Low response comparison` over an empty plot. */
-  /* ROUND 6, SEND-BACK 3 — THE UNCLAIMED FRAME RETURNED A PER-ROW `observed`.
-     Round 5 blanked the frame's `tag` but left `occurrenceRow`'s `tier` on the
-     row, and the renderer prints `tag || tier` — so every row in the one frame
-     whose whole statement is "no finding claims these" carried an evidence tier
-     for a verdict no rule reached. Both cells are empty here, which is what
-     `dedupeGroupTags` does for every other frame in the build. */
+  /* ROUND 8, ITEM 1 — and its rows are the production table's rows like every
+     other frame's. Rounds 5 and 6 argued over which of the mock's two tag cells
+     an unclaimed low should print; the production table settles it by having
+     one, and printing its own `unclassified` in it — which is exactly what a
+     low no rule reached is. */
   const unclaimedOccurrences = wide.occurrences
     .filter((o) => unclaimedIds.includes(o.identity.id));
-  const unclaimedRows = unclaimedOccurrences
-    .map((o) => ({ ...occurrenceRow(o), tag: '', tier: '' }));
+  const unclaimedRows = unclaimedOccurrences.map(evidenceOccurrence);
   const unclaimedFrame = {
     key: 'unclaimed',
     label: 'Unclaimed',
@@ -589,17 +641,31 @@ async function main() {
        dots carry the frame's own group lead rather than a cohort label, because
        the cohort a wider projection put them in is not what this frame is
        about. */
-    clock: { occurrences: unclaimedOccurrences.map((o) => clockDot(o, UNCLAIMED_LEAD)) },
+    clock: { occurrences: unclaimedOccurrences.map((o) => clockDot(o, UNCLAIMED_LEAD, 'unclaimed')) },
     occurrences: {
-      capMeta: `entry → worst · Δ &nbsp;·&nbsp; ${unclaimedRows.length} of ${wide.population.denominator} in ${windowLabel}`,
+        /* ROUND 8, ITEM 1 — THE CAP'S NUMERATOR IS A RUNTIME FACT NOW, so the
+         build emits the cap's PARTS and the surface composes the line. Under
+         wireframe H3 the table draws one verdict at a time, and which verdict
+         that is cannot be decided here — the same reason round 5 stopped
+         emitting a row budget. The denominator, the window and the column key
+         are still the frame's own, and the settled rule is unchanged: the
+         meta counts what the table draws. */
+      cap: { key: 'entry → worst · Δ', denominator: wide.population.denominator, window: windowLabel },
+      /* The band's caveat, stated on the surface because a control that looks
+         like a cohort filter beside a canvas that is never cohort-filtered is
+         the exact disagreement the #31 ruling exists to prevent. */
+      bandCaveat: `${unclaimedRows.length} of ${wide.population.denominator} lows in ${windowLabel}. The band scopes this list only — `
+        + 'the comparison beside it always draws all three.',
       /* The mirror of a factor frame's residue: what is NOT in this table. */
       residue: `${claimed} claimed by a finding`,
       groups: [{
         key: 'unclaimed',
         lead: UNCLAIMED_LEAD,
-        phrase: null,
+        /* No causal phrase: no rule reached these, so the production table's
+           header degrades to its own bare hedge, which is the truth here. */
+        cause: null,
         count: unclaimedRows.length,
-        rows: unclaimedRows,
+        occurrences: unclaimedRows,
       }],
     },
   };
@@ -662,12 +728,38 @@ async function main() {
         + 'when an event is drilled. WHICH day belongs to which event is a JOIN THIS BUILD MAKES and no '
         + 'fixture carries: the capture holds three days of a fourth synthetic population (2020), the lens '
         + 'capture holds twenty lows of another (2026), and neither references the other. The assignment is '
-        + 'positional (the view\'s occurrence order, cycled over the sorted day keys) and deterministic. The '
-        + 'window brace around a drilled event is the lens\'s OWN alignment window '
-        + '(coordinates.alignment_window_min) re-anchored on that event\'s wall-clock minute, clamped to the '
-        + 'day — no new window is invented. Under ruling 5 the server would carry both; the fixture '
+        + 'positional (the view\'s occurrence order, cycled over the sorted day keys) and deterministic. '
+        + 'ROUND 8, ITEM 2 — a drill carries the DAY and nothing else. It used to carry a window too (the '
+        + 'lens\'s alignment window re-anchored on the event\'s wall-clock minute), and handing that to the '
+        + 'pooled renderer re-aimed the reader\'s viewport on every pick; see '
+        + 'terms.selection_never_moves_the_window. Under ruling 5 the server would carry both; the fixture '
         + 'generators owe it (consequence-ledger item 2).',
       disjoint: 'The two populations are disjoint by construction and are never reconciled.',
+    },
+
+    /* ---------- THE EXPLORATION'S OWN TERMS ----------
+       Rules this surface is built to, written where the build emits them so
+       anything reading data.json inherits them with the data. Provenance above
+       says where a number came from; a term says what the surface is not
+       allowed to do with it. */
+    terms: {
+      selection_never_moves_the_window: 'SELECTING AN OCCURRENCE IS EVIDENCE-ONLY. It never mutates the '
+        + 'clock window. The window is the READER\'S control — it is what the toolbar\'s WINDOW group '
+        + 'sets, and it decides which events are in play. Picking one of those events shows that event\'s '
+        + 'evidence: it draws that day\'s trace and marks the event on the canvas. It does NOT re-anchor '
+        + 'the viewport, change the x-extent or move the brace, and after a selection the window is '
+        + 'byte-identical to what it was before. Rounds 1-7 re-aimed the window on every pick (the brace '
+        + 'read `Aug 12 · 02:00 00:00-04:00`), which made the reader\'s own filter a thing the data kept '
+        + 'resetting. Operator ruling, round 8: "we would only see those events. We don\'t need to then '
+        + 'have the filter reset our viewport." Written here rather than in a screenshot because the risk '
+        + 'it guards is this logic riding into production by inheritance. harness.mjs proves it: it reads '
+        + 'the pooled chart\'s window and x-extent before a row click and after, and fails if they differ.',
+      band_scopes_the_roster_only: 'THE VERDICT BAND SCOPES THE ROSTER, NEVER THE CANVAS. Drilling the '
+        + 'band to `Near rule` changes which occurrences the table lists and nothing else: all three '
+        + 'verdicts stay plotted, so the canvas keeps one stable denominator and "how many lows did I '
+        + 'have" reads the same wherever the reader is standing. The drilled verdict\'s dots are '
+        + 'EMPHASISED against the rest (operator, round 8: "the four that you\'re reading stand out"), '
+        + 'which is emphasis, not filtering — the others stay visible as the context around them.',
     },
 
     /* ---------- level 1: the ranked queue ---------- */
@@ -870,7 +962,19 @@ async function main() {
           /* The finding scene keeps its round-4 cap meta — block 4's
              frame-denominator rewrite is a POPULATION move (the frame is what
              changes the denominator there), and this scene has one frame. */
-          capMeta: `entry → worst · Δ &nbsp;·&nbsp; ${firedOccurrences.length} of ${lens.population.denominator} in ${windowLabel}`,
+        /* ROUND 8, ITEM 1 — THE CAP'S NUMERATOR IS A RUNTIME FACT NOW, so the
+               build emits the cap's PARTS and the surface composes the line. Under
+               wireframe H3 the table draws one verdict at a time, and which verdict
+               that is cannot be decided here — the same reason round 5 stopped
+               emitting a row budget. The denominator, the window and the column key
+               are still the frame's own, and the settled rule is unchanged: the
+               meta counts what the table draws. */
+          cap: { key: 'entry → worst · Δ', denominator: lens.population.denominator, window: windowLabel },
+          /* The band's caveat, stated on the surface because a control that looks
+               like a cohort filter beside a canvas that is never cohort-filtered is
+               the exact disagreement the #31 ruling exists to prevent. */
+          bandCaveat: `${firedOccurrences.length} of ${lens.population.denominator} lows in ${windowLabel}. The band scopes this list only — `
+              + 'the comparison beside it always draws all three.',
           /* ROUND 5, BLOCK 3 + 7, TRANSFERRED. The judgment block's trailing
              sentence carried two counts the tally has no cell for; they are
              residue, and residue now has one form — an unfilled line after the
@@ -881,7 +985,7 @@ async function main() {
              evidence tier. ROUND 5, BLOCK 5 transfers only the count's FORM: a
              bare number, printed by the renderer only where a frame draws more
              than one group, which this scene never does. */
-          groups: dedupeGroupTags([{
+          groups: [{
             key: 'fired',
             /* ROUND 6, SEND-BACK 5 — THE GROUP RULE READS `Rule matched`. The
                finding scene led its one group with the finding's own title,
@@ -891,11 +995,14 @@ async function main() {
                rule is the cohort's shipped label (`COHORT_LABEL.fired`) in both
                scenes; which finding is being read is the crumb's job. */
             lead: COHORT_LABEL.fired,
-            phrase: firedOccurrences[0]?.verdict.evidence_tier
-              ? `${firedOccurrences[0].verdict.evidence_tier.replaceAll('_', ' ')}, not confirmed` : null,
+            /* ROUND 8, ITEM 1 — the causal phrase the production table's own
+               header prints. Its `, <tier>, not confirmed` tail is the shipped
+               painter's, derived there from the occurrences themselves; this
+               build no longer assembles the header string. */
+            cause: factorLabel[FACTOR],
             count: firedOccurrences.length,
-            rows: firedOccurrences.map(occurrenceRow),
-          }]),
+            occurrences: firedOccurrences.map(evidenceOccurrence),
+          }],
         },
         canvasHead: { title: 'Low response comparison', context: 'excursion nadir · −5 h to +2 h' },
         canvas: canvasFor(lens),
@@ -951,6 +1058,10 @@ async function main() {
 
   await writeFile(join(HERE, 'data.json'), `${JSON.stringify(data, null, 1)}\n`);
 
+  /* ---- ROUND 8, ITEM 1: the production evidence table, lifted not copied ---- */
+  const evidenceTable = await shippedEvidenceTable();
+  await writeFile(join(HERE, 'evidence-table.extracted.js'), evidenceTable);
+
   /* ---- extract the app's own base sheet, never transcribe it (lock.md 0.2) ---- */
   const indexHtml = await readFile(join(ROOT, 'frontend/index.html'), 'utf8');
   /* HTML comments come out FIRST. index.html carries the comment
@@ -989,15 +1100,17 @@ async function main() {
     + `${data.queue.canvas.pooled.captured_days} captured days, ${data.queue.canvas.basal.length} basal slots `
     + `(${PAYLOAD})\n`
     + `  finding scene — crumb count "${finding.crumbCount}" (projection), `
-    + `${finding.occurrences.groups[0].rows.length} `
+    + `${finding.occurrences.groups[0].occurrences.length} `
     + `fired events (lens), busiest band ${band} ${clock.peak.n}/${clock.total}\n`
     + `  population scene — ${wide.population.denominator} lows, ${claimed} claimed / ${unclaimedIds.length} `
     + `unclaimed; ${Object.keys(population.frames).length} frames, default "${population.defaultFactor}"\n`
     + Object.values(population.frames).map((f) => `    frame ${f.key} — `
       + `${f.canvas ? `${f.canvas.cohortOrder.length} cohorts` : 'HONEST EMPTY CANVAS'}, `
       + `${f.occurrences.groups.length} group(s), `
-      + `${f.occurrences.groups.reduce((n, g) => n + g.rows.length, 0)} rows\n`).join('')
-    + `app-base.extracted.css written — ${blocks.length} style block(s) from frontend/index.html\n`,
+      + `${f.occurrences.groups.reduce((n, g) => n + g.occurrences.length, 0)} rows\n`).join('')
+    + `app-base.extracted.css written — ${blocks.length} style block(s) from frontend/index.html\n`
+    + `evidence-table.extracted.js written — the production renderEvidence, ${evidenceTable.split('\n').length} lines `
+    + 'from frontend/diagnose-workstation.js\n',
   );
 }
 

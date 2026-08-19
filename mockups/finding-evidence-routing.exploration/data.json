@@ -11,8 +11,12 @@
   "queue_canvas": "mockups/diagnose-workstation.synthetic/payload.json (evidence.pooled, analyze.basal, evidence.target_range) — handed across RAW. The surface runs the shipped envelopeFromPooled / markersFromPooled / windowStats / buildSlotLane / renderCanvas over it in the browser, which is the app's own path from its API response. This is a THIRD synthetic fixture, disjoint from the other two again: its 3 captured CGM days and 48 basal slots are not the lens capture's 20 lows and not the projection's 30-day window. Nothing on the queue root reconciles them, and nothing tries to.",
   "unclaimed": "RESTORED AS A THIRD SEGMENT (round 5, block 2). project.mjs projects cohorts for a NAMED FACTOR and has no unclaimed coordinate, so this frame draws NO comparison — its canvas is the honest empty state (axis furniture with the alignment range still on it, one short line, a truthful head), never a facsimile of a comparison. Its rows are the wide projection's occurrences filtered to the lows no factor routes to `fired`; its residue names the ten that are claimed. Round 4's deletion argument — that these ten re-list the selected factor's Near rule and Rule-did-not-match groups — holds only while a factor frame is selected, and the segmented control is a statement about the population, not about the selected frame.",
   "unreachable_factor": "correction_stacking is a factor of the lows view and fires on NOTHING in this capture, so it claims no low and the claim split — which is the selector — never offers it. No frame exists for it.",
-  "day_traces": "mockups/diagnose-workstation.synthetic/explore-day.capture.json through the SHIPPED buildDayTrace — the real captured CGM days the clock projection lays over the pooled envelope when an event is drilled. WHICH day belongs to which event is a JOIN THIS BUILD MAKES and no fixture carries: the capture holds three days of a fourth synthetic population (2020), the lens capture holds twenty lows of another (2026), and neither references the other. The assignment is positional (the view's occurrence order, cycled over the sorted day keys) and deterministic. The window brace around a drilled event is the lens's OWN alignment window (coordinates.alignment_window_min) re-anchored on that event's wall-clock minute, clamped to the day — no new window is invented. Under ruling 5 the server would carry both; the fixture generators owe it (consequence-ledger item 2).",
+  "day_traces": "mockups/diagnose-workstation.synthetic/explore-day.capture.json through the SHIPPED buildDayTrace — the real captured CGM days the clock projection lays over the pooled envelope when an event is drilled. WHICH day belongs to which event is a JOIN THIS BUILD MAKES and no fixture carries: the capture holds three days of a fourth synthetic population (2020), the lens capture holds twenty lows of another (2026), and neither references the other. The assignment is positional (the view's occurrence order, cycled over the sorted day keys) and deterministic. ROUND 8, ITEM 2 — a drill carries the DAY and nothing else. It used to carry a window too (the lens's alignment window re-anchored on the event's wall-clock minute), and handing that to the pooled renderer re-aimed the reader's viewport on every pick; see terms.selection_never_moves_the_window. Under ruling 5 the server would carry both; the fixture generators owe it (consequence-ledger item 2).",
   "disjoint": "The two populations are disjoint by construction and are never reconciled."
+ },
+ "terms": {
+  "selection_never_moves_the_window": "SELECTING AN OCCURRENCE IS EVIDENCE-ONLY. It never mutates the clock window. The window is the READER'S control — it is what the toolbar's WINDOW group sets, and it decides which events are in play. Picking one of those events shows that event's evidence: it draws that day's trace and marks the event on the canvas. It does NOT re-anchor the viewport, change the x-extent or move the brace, and after a selection the window is byte-identical to what it was before. Rounds 1-7 re-aimed the window on every pick (the brace read `Aug 12 · 02:00 00:00-04:00`), which made the reader's own filter a thing the data kept resetting. Operator ruling, round 8: \"we would only see those events. We don't need to then have the filter reset our viewport.\" Written here rather than in a screenshot because the risk it guards is this logic riding into production by inheritance. harness.mjs proves it: it reads the pooled chart's window and x-extent before a row click and after, and fails if they differ.",
+  "band_scopes_the_roster_only": "THE VERDICT BAND SCOPES THE ROSTER, NEVER THE CANVAS. Drilling the band to `Near rule` changes which occurrences the table lists and nothing else: all three verdicts stay plotted, so the canvas keeps one stable denominator and \"how many lows did I have\" reads the same wherever the reader is standing. The drilled verdict's dots are EMPHASISED against the rest (operator, round 8: \"the four that you're reading stand out\"), which is emphasis, not filtering — the others stay visible as the context around them."
  },
  "queue": {
   "projection": {
@@ -3041,164 +3045,64 @@
  },
  "clockDrills": {
   "lows-synthetic-1": {
-   "day": "2020-03-01",
-   "window": [
-    0,
-    180
-   ],
-   "windowLabel": "Aug 1 · 01:00 00:00–03:00"
+   "day": "2020-03-01"
   },
   "lows-synthetic-2": {
-   "day": "2020-03-02",
-   "window": [
-    120,
-    540
-   ],
-   "windowLabel": "Aug 2 · 07:00 02:00–09:00"
+   "day": "2020-03-02"
   },
   "lows-synthetic-3": {
-   "day": "2020-03-03",
-   "window": [
-    480,
-    900
-   ],
-   "windowLabel": "Aug 3 · 13:00 08:00–15:00"
+   "day": "2020-03-03"
   },
   "lows-synthetic-4": {
-   "day": "2020-03-01",
-   "window": [
-    840,
-    1260
-   ],
-   "windowLabel": "Aug 4 · 19:00 14:00–21:00"
+   "day": "2020-03-01"
   },
   "lows-synthetic-5": {
-   "day": "2020-03-02",
-   "window": [
-    0,
-    360
-   ],
-   "windowLabel": "Aug 5 · 04:00 00:00–06:00"
+   "day": "2020-03-02"
   },
   "lows-synthetic-6": {
-   "day": "2020-03-03",
-   "window": [
-    300,
-    720
-   ],
-   "windowLabel": "Aug 6 · 10:00 05:00–12:00"
+   "day": "2020-03-03"
   },
   "lows-synthetic-7": {
-   "day": "2020-03-01",
-   "window": [
-    660,
-    1080
-   ],
-   "windowLabel": "Aug 7 · 16:00 11:00–18:00"
+   "day": "2020-03-01"
   },
   "lows-synthetic-8": {
-   "day": "2020-03-02",
-   "window": [
-    1020,
-    1440
-   ],
-   "windowLabel": "Aug 8 · 22:00 17:00–24:00"
+   "day": "2020-03-02"
   },
   "lows-synthetic-9": {
-   "day": "2020-03-03",
-   "window": [
-    60,
-    480
-   ],
-   "windowLabel": "Aug 9 · 06:00 01:00–08:00"
+   "day": "2020-03-03"
   },
   "lows-synthetic-10": {
-   "day": "2020-03-01",
-   "window": [
-    420,
-    840
-   ],
-   "windowLabel": "Aug 10 · 12:00 07:00–14:00"
+   "day": "2020-03-01"
   },
   "lows-synthetic-11": {
-   "day": "2020-03-02",
-   "window": [
-    780,
-    1200
-   ],
-   "windowLabel": "Aug 11 · 18:00 13:00–20:00"
+   "day": "2020-03-02"
   },
   "lows-synthetic-12": {
-   "day": "2020-03-03",
-   "window": [
-    0,
-    240
-   ],
-   "windowLabel": "Aug 12 · 02:00 00:00–04:00"
+   "day": "2020-03-03"
   },
   "lows-synthetic-13": {
-   "day": "2020-03-01",
-   "window": [
-    180,
-    600
-   ],
-   "windowLabel": "Aug 13 · 08:00 03:00–10:00"
+   "day": "2020-03-01"
   },
   "lows-synthetic-14": {
-   "day": "2020-03-02",
-   "window": [
-    540,
-    960
-   ],
-   "windowLabel": "Aug 14 · 14:00 09:00–16:00"
+   "day": "2020-03-02"
   },
   "lows-synthetic-15": {
-   "day": "2020-03-03",
-   "window": [
-    900,
-    1320
-   ],
-   "windowLabel": "Aug 15 · 20:00 15:00–22:00"
+   "day": "2020-03-03"
   },
   "lows-synthetic-16": {
-   "day": "2020-03-01",
-   "window": [
-    0,
-    420
-   ],
-   "windowLabel": "Aug 16 · 05:00 00:00–07:00"
+   "day": "2020-03-01"
   },
   "lows-synthetic-17": {
-   "day": "2020-03-02",
-   "window": [
-    360,
-    780
-   ],
-   "windowLabel": "Aug 17 · 11:00 06:00–13:00"
+   "day": "2020-03-02"
   },
   "lows-synthetic-18": {
-   "day": "2020-03-03",
-   "window": [
-    720,
-    1140
-   ],
-   "windowLabel": "Aug 18 · 17:00 12:00–19:00"
+   "day": "2020-03-03"
   },
   "lows-synthetic-19": {
-   "day": "2020-03-01",
-   "window": [
-    0,
-    300
-   ],
-   "windowLabel": "Aug 19 · 03:00 00:00–05:00"
+   "day": "2020-03-01"
   },
   "lows-synthetic-20": {
-   "day": "2020-03-02",
-   "window": [
-    600,
-    1020
-   ],
-   "windowLabel": "Aug 20 · 15:00 10:00–17:00"
+   "day": "2020-03-02"
   }
  },
  "scenes": {
@@ -3258,84 +3162,131 @@
     ]
    },
    "occurrences": {
-    "capMeta": "entry → worst · Δ &nbsp;·&nbsp; 7 of 20 in Jul 13–Aug 11",
+    "cap": {
+     "key": "entry → worst · Δ",
+     "denominator": 20,
+     "window": "Jul 13–Aug 11"
+    },
+    "bandCaveat": "7 of 20 lows in Jul 13–Aug 11. The band scopes this list only — the comparison beside it always draws all three.",
     "residue": "1 claimed by another factor · 2 not comparable",
     "groups": [
      {
       "key": "fired",
       "lead": "Rule matched",
-      "phrase": "observed, not confirmed",
+      "cause": "Over-treated low",
       "count": 7,
-      "rows": [
+      "occurrences": [
        {
         "id": "lows-synthetic-1",
-        "when": "Aug 1 · 01:00",
-        "tier": "",
-        "both": true,
-        "entry": 68,
-        "worst": 58,
-        "delta": "−10",
-        "tag": ""
+        "date": "2026-08-01",
+        "t": "2026-08-01 01:00:00",
+        "bg": 68,
+        "worst_bg": 58,
+        "text": "Over-treated low matched the current rule.",
+        "verdicts": [
+         {
+          "classifier": "over_treated_low",
+          "matched": true,
+          "evidence_tier": "observed",
+          "detail": "Over-treated low matched the current rule."
+         }
+        ]
        },
        {
         "id": "lows-synthetic-2",
-        "when": "Aug 2 · 07:00",
-        "tier": "",
-        "both": true,
-        "entry": 69,
-        "worst": 59,
-        "delta": "−10",
-        "tag": ""
+        "date": "2026-08-02",
+        "t": "2026-08-02 07:00:00",
+        "bg": 69,
+        "worst_bg": 59,
+        "text": "Over-treated low matched the current rule.",
+        "verdicts": [
+         {
+          "classifier": "over_treated_low",
+          "matched": true,
+          "evidence_tier": "observed",
+          "detail": "Over-treated low matched the current rule."
+         }
+        ]
        },
        {
         "id": "lows-synthetic-3",
-        "when": "Aug 3 · 13:00",
-        "tier": "",
-        "both": true,
-        "entry": 70,
-        "worst": 60,
-        "delta": "−10",
-        "tag": ""
+        "date": "2026-08-03",
+        "t": "2026-08-03 13:00:00",
+        "bg": 70,
+        "worst_bg": 60,
+        "text": "Over-treated low matched the current rule.",
+        "verdicts": [
+         {
+          "classifier": "over_treated_low",
+          "matched": true,
+          "evidence_tier": "observed",
+          "detail": "Over-treated low matched the current rule."
+         }
+        ]
        },
        {
         "id": "lows-synthetic-4",
-        "when": "Aug 4 · 19:00",
-        "tier": "",
-        "both": true,
-        "entry": 68,
-        "worst": 61,
-        "delta": "−7",
-        "tag": ""
+        "date": "2026-08-04",
+        "t": "2026-08-04 19:00:00",
+        "bg": 68,
+        "worst_bg": 61,
+        "text": "Over-treated low matched the current rule.",
+        "verdicts": [
+         {
+          "classifier": "over_treated_low",
+          "matched": true,
+          "evidence_tier": "observed",
+          "detail": "Over-treated low matched the current rule."
+         }
+        ]
        },
        {
         "id": "lows-synthetic-5",
-        "when": "Aug 5 · 04:00",
-        "tier": "",
-        "both": true,
-        "entry": 69,
-        "worst": 58,
-        "delta": "−11",
-        "tag": ""
+        "date": "2026-08-05",
+        "t": "2026-08-05 04:00:00",
+        "bg": 69,
+        "worst_bg": 58,
+        "text": "Over-treated low matched the current rule.",
+        "verdicts": [
+         {
+          "classifier": "over_treated_low",
+          "matched": true,
+          "evidence_tier": "observed",
+          "detail": "Over-treated low matched the current rule."
+         }
+        ]
        },
        {
         "id": "lows-synthetic-6",
-        "when": "Aug 6 · 10:00",
-        "tier": "",
-        "both": true,
-        "entry": 70,
-        "worst": 59,
-        "delta": "−11",
-        "tag": ""
+        "date": "2026-08-06",
+        "t": "2026-08-06 10:00:00",
+        "bg": 70,
+        "worst_bg": 59,
+        "text": "Over-treated low matched the current rule.",
+        "verdicts": [
+         {
+          "classifier": "over_treated_low",
+          "matched": true,
+          "evidence_tier": "observed",
+          "detail": "Over-treated low matched the current rule."
+         }
+        ]
        },
        {
         "id": "lows-synthetic-7",
-        "when": "Aug 7 · 16:00",
-        "tier": "",
-        "both": true,
-        "entry": 68,
-        "worst": 60,
-        "delta": "−8",
-        "tag": ""
+        "date": "2026-08-07",
+        "t": "2026-08-07 16:00:00",
+        "bg": 68,
+        "worst_bg": 60,
+        "text": "Over-treated low matched the current rule.",
+        "verdicts": [
+         {
+          "classifier": "over_treated_low",
+          "matched": true,
+          "evidence_tier": "observed",
+          "detail": "Over-treated low matched the current rule."
+         }
+        ]
        }
       ]
      }
@@ -5460,7 +5411,8 @@
       "date": "2026-08-01",
       "bg": 68,
       "worst_bg": 58,
-      "cause_title": "Rule matched"
+      "cause_title": "Rule matched",
+      "cohort": "fired"
      },
      {
       "id": "lows-synthetic-2",
@@ -5468,7 +5420,8 @@
       "date": "2026-08-02",
       "bg": 69,
       "worst_bg": 59,
-      "cause_title": "Rule matched"
+      "cause_title": "Rule matched",
+      "cohort": "fired"
      },
      {
       "id": "lows-synthetic-3",
@@ -5476,7 +5429,8 @@
       "date": "2026-08-03",
       "bg": 70,
       "worst_bg": 60,
-      "cause_title": "Rule matched"
+      "cause_title": "Rule matched",
+      "cohort": "fired"
      },
      {
       "id": "lows-synthetic-4",
@@ -5484,7 +5438,8 @@
       "date": "2026-08-04",
       "bg": 68,
       "worst_bg": 61,
-      "cause_title": "Rule matched"
+      "cause_title": "Rule matched",
+      "cohort": "fired"
      },
      {
       "id": "lows-synthetic-5",
@@ -5492,7 +5447,8 @@
       "date": "2026-08-05",
       "bg": 69,
       "worst_bg": 58,
-      "cause_title": "Rule matched"
+      "cause_title": "Rule matched",
+      "cohort": "fired"
      },
      {
       "id": "lows-synthetic-6",
@@ -5500,7 +5456,8 @@
       "date": "2026-08-06",
       "bg": 70,
       "worst_bg": 59,
-      "cause_title": "Rule matched"
+      "cause_title": "Rule matched",
+      "cohort": "fired"
      },
      {
       "id": "lows-synthetic-7",
@@ -5508,7 +5465,8 @@
       "date": "2026-08-07",
       "bg": 68,
       "worst_bg": 60,
-      "cause_title": "Rule matched"
+      "cause_title": "Rule matched",
+      "cohort": "fired"
      }
     ]
    },
@@ -9870,7 +9828,8 @@
         "date": "2026-08-01",
         "bg": 68,
         "worst_bg": 58,
-        "cause_title": 0
+        "cause_title": "Rule matched",
+        "cohort": "fired"
        },
        {
         "id": "lows-synthetic-2",
@@ -9878,7 +9837,8 @@
         "date": "2026-08-02",
         "bg": 69,
         "worst_bg": 59,
-        "cause_title": 1
+        "cause_title": "Rule matched",
+        "cohort": "fired"
        },
        {
         "id": "lows-synthetic-3",
@@ -9886,7 +9846,8 @@
         "date": "2026-08-03",
         "bg": 70,
         "worst_bg": 60,
-        "cause_title": 2
+        "cause_title": "Rule matched",
+        "cohort": "fired"
        },
        {
         "id": "lows-synthetic-4",
@@ -9894,7 +9855,8 @@
         "date": "2026-08-04",
         "bg": 68,
         "worst_bg": 61,
-        "cause_title": 3
+        "cause_title": "Rule matched",
+        "cohort": "fired"
        },
        {
         "id": "lows-synthetic-5",
@@ -9902,7 +9864,8 @@
         "date": "2026-08-05",
         "bg": 69,
         "worst_bg": 58,
-        "cause_title": 4
+        "cause_title": "Rule matched",
+        "cohort": "fired"
        },
        {
         "id": "lows-synthetic-6",
@@ -9910,7 +9873,8 @@
         "date": "2026-08-06",
         "bg": 70,
         "worst_bg": 59,
-        "cause_title": 5
+        "cause_title": "Rule matched",
+        "cohort": "fired"
        },
        {
         "id": "lows-synthetic-7",
@@ -9918,7 +9882,8 @@
         "date": "2026-08-07",
         "bg": 68,
         "worst_bg": 60,
-        "cause_title": 6
+        "cause_title": "Rule matched",
+        "cohort": "fired"
        },
        {
         "id": "lows-synthetic-8",
@@ -9926,7 +9891,8 @@
         "date": "2026-08-08",
         "bg": 69,
         "worst_bg": 61,
-        "cause_title": 7
+        "cause_title": "Near rule",
+        "cohort": "near_rule"
        },
        {
         "id": "lows-synthetic-9",
@@ -9934,7 +9900,8 @@
         "date": "2026-08-09",
         "bg": 70,
         "worst_bg": 58,
-        "cause_title": 8
+        "cause_title": "Near rule",
+        "cohort": "near_rule"
        },
        {
         "id": "lows-synthetic-10",
@@ -9942,7 +9909,8 @@
         "date": "2026-08-10",
         "bg": 68,
         "worst_bg": 59,
-        "cause_title": 9
+        "cause_title": "Near rule",
+        "cohort": "near_rule"
        },
        {
         "id": "lows-synthetic-11",
@@ -9950,7 +9918,8 @@
         "date": "2026-08-11",
         "bg": 69,
         "worst_bg": 60,
-        "cause_title": 10
+        "cause_title": "Near rule",
+        "cohort": "near_rule"
        },
        {
         "id": "lows-synthetic-12",
@@ -9958,7 +9927,8 @@
         "date": "2026-08-12",
         "bg": 70,
         "worst_bg": 61,
-        "cause_title": 11
+        "cause_title": "Rule did not match",
+        "cohort": "neutral"
        },
        {
         "id": "lows-synthetic-13",
@@ -9966,7 +9936,8 @@
         "date": "2026-08-13",
         "bg": 68,
         "worst_bg": 58,
-        "cause_title": 12
+        "cause_title": "Rule did not match",
+        "cohort": "neutral"
        },
        {
         "id": "lows-synthetic-14",
@@ -9974,7 +9945,8 @@
         "date": "2026-08-14",
         "bg": 69,
         "worst_bg": 59,
-        "cause_title": 13
+        "cause_title": "Rule did not match",
+        "cohort": "neutral"
        },
        {
         "id": "lows-synthetic-15",
@@ -9982,7 +9954,8 @@
         "date": "2026-08-15",
         "bg": 70,
         "worst_bg": 60,
-        "cause_title": 14
+        "cause_title": "Rule did not match",
+        "cohort": "neutral"
        },
        {
         "id": "lows-synthetic-16",
@@ -9990,7 +9963,8 @@
         "date": "2026-08-16",
         "bg": 68,
         "worst_bg": 61,
-        "cause_title": 15
+        "cause_title": "Rule did not match",
+        "cohort": "neutral"
        },
        {
         "id": "lows-synthetic-17",
@@ -9998,7 +9972,8 @@
         "date": "2026-08-17",
         "bg": 69,
         "worst_bg": 58,
-        "cause_title": 16
+        "cause_title": "Rule did not match",
+        "cohort": "neutral"
        }
       ]
      },
@@ -10007,83 +9982,130 @@
       "target": "finding:over_treated_low"
      },
      "occurrences": {
-      "capMeta": "entry → worst · Δ &nbsp;·&nbsp; 17 of 20 in Jul 13–Aug 11",
+      "cap": {
+       "key": "entry → worst · Δ",
+       "denominator": 20,
+       "window": "Jul 13–Aug 11"
+      },
+      "bandCaveat": "17 of 20 lows in Jul 13–Aug 11. The band scopes this list only — the comparison beside it always draws all three.",
       "residue": "1 claimed by another factor · 2 not comparable",
       "groups": [
        {
         "key": "fired",
         "lead": "Rule matched",
-        "phrase": "Over-treated low",
-        "rows": [
+        "cause": "Over-treated low",
+        "occurrences": [
          {
           "id": "lows-synthetic-1",
-          "when": "Aug 1 · 01:00",
-          "tier": "",
-          "both": true,
-          "entry": 68,
-          "worst": 58,
-          "delta": "−10",
-          "tag": ""
+          "date": "2026-08-01",
+          "t": "2026-08-01 01:00:00",
+          "bg": 68,
+          "worst_bg": 58,
+          "text": "Over-treated low matched the current rule.",
+          "verdicts": [
+           {
+            "classifier": "over_treated_low",
+            "matched": true,
+            "evidence_tier": "observed",
+            "detail": "Over-treated low matched the current rule."
+           }
+          ]
          },
          {
           "id": "lows-synthetic-2",
-          "when": "Aug 2 · 07:00",
-          "tier": "",
-          "both": true,
-          "entry": 69,
-          "worst": 59,
-          "delta": "−10",
-          "tag": ""
+          "date": "2026-08-02",
+          "t": "2026-08-02 07:00:00",
+          "bg": 69,
+          "worst_bg": 59,
+          "text": "Over-treated low matched the current rule.",
+          "verdicts": [
+           {
+            "classifier": "over_treated_low",
+            "matched": true,
+            "evidence_tier": "observed",
+            "detail": "Over-treated low matched the current rule."
+           }
+          ]
          },
          {
           "id": "lows-synthetic-3",
-          "when": "Aug 3 · 13:00",
-          "tier": "",
-          "both": true,
-          "entry": 70,
-          "worst": 60,
-          "delta": "−10",
-          "tag": ""
+          "date": "2026-08-03",
+          "t": "2026-08-03 13:00:00",
+          "bg": 70,
+          "worst_bg": 60,
+          "text": "Over-treated low matched the current rule.",
+          "verdicts": [
+           {
+            "classifier": "over_treated_low",
+            "matched": true,
+            "evidence_tier": "observed",
+            "detail": "Over-treated low matched the current rule."
+           }
+          ]
          },
          {
           "id": "lows-synthetic-4",
-          "when": "Aug 4 · 19:00",
-          "tier": "",
-          "both": true,
-          "entry": 68,
-          "worst": 61,
-          "delta": "−7",
-          "tag": ""
+          "date": "2026-08-04",
+          "t": "2026-08-04 19:00:00",
+          "bg": 68,
+          "worst_bg": 61,
+          "text": "Over-treated low matched the current rule.",
+          "verdicts": [
+           {
+            "classifier": "over_treated_low",
+            "matched": true,
+            "evidence_tier": "observed",
+            "detail": "Over-treated low matched the current rule."
+           }
+          ]
          },
          {
           "id": "lows-synthetic-5",
-          "when": "Aug 5 · 04:00",
-          "tier": "",
-          "both": true,
-          "entry": 69,
-          "worst": 58,
-          "delta": "−11",
-          "tag": ""
+          "date": "2026-08-05",
+          "t": "2026-08-05 04:00:00",
+          "bg": 69,
+          "worst_bg": 58,
+          "text": "Over-treated low matched the current rule.",
+          "verdicts": [
+           {
+            "classifier": "over_treated_low",
+            "matched": true,
+            "evidence_tier": "observed",
+            "detail": "Over-treated low matched the current rule."
+           }
+          ]
          },
          {
           "id": "lows-synthetic-6",
-          "when": "Aug 6 · 10:00",
-          "tier": "",
-          "both": true,
-          "entry": 70,
-          "worst": 59,
-          "delta": "−11",
-          "tag": ""
+          "date": "2026-08-06",
+          "t": "2026-08-06 10:00:00",
+          "bg": 70,
+          "worst_bg": 59,
+          "text": "Over-treated low matched the current rule.",
+          "verdicts": [
+           {
+            "classifier": "over_treated_low",
+            "matched": true,
+            "evidence_tier": "observed",
+            "detail": "Over-treated low matched the current rule."
+           }
+          ]
          },
          {
           "id": "lows-synthetic-7",
-          "when": "Aug 7 · 16:00",
-          "tier": "",
-          "both": true,
-          "entry": 68,
-          "worst": 60,
-          "delta": "−8",
-          "tag": ""
+          "date": "2026-08-07",
+          "t": "2026-08-07 16:00:00",
+          "bg": 68,
+          "worst_bg": 60,
+          "text": "Over-treated low matched the current rule.",
+          "verdicts": [
+           {
+            "classifier": "over_treated_low",
+            "matched": true,
+            "evidence_tier": "observed",
+            "detail": "Over-treated low matched the current rule."
+           }
+          ]
          }
         ],
         "count": 7
@@ -10091,47 +10113,71 @@
        {
         "key": "near_rule",
         "lead": "Near rule",
-        "phrase": "Over-treated low, disclosure only",
-        "rows": [
+        "cause": "Over-treated low, disclosure only",
+        "occurrences": [
          {
           "id": "lows-synthetic-8",
-          "when": "Aug 8 · 22:00",
-          "tier": "",
-          "both": true,
-          "entry": 69,
-          "worst": 61,
-          "delta": "−8",
-          "tag": ""
+          "date": "2026-08-08",
+          "t": "2026-08-08 22:00:00",
+          "bg": 69,
+          "worst_bg": 61,
+          "text": "Over-treated low did not match the current rule.",
+          "verdicts": [
+           {
+            "classifier": "over_treated_low",
+            "matched": false,
+            "evidence_tier": "observed",
+            "detail": "Over-treated low did not match the current rule."
+           }
+          ]
          },
          {
           "id": "lows-synthetic-9",
-          "when": "Aug 9 · 06:00",
-          "tier": "",
-          "both": true,
-          "entry": 70,
-          "worst": 58,
-          "delta": "−12",
-          "tag": ""
+          "date": "2026-08-09",
+          "t": "2026-08-09 06:00:00",
+          "bg": 70,
+          "worst_bg": 58,
+          "text": "Over-treated low did not match the current rule.",
+          "verdicts": [
+           {
+            "classifier": "over_treated_low",
+            "matched": false,
+            "evidence_tier": "observed",
+            "detail": "Over-treated low did not match the current rule."
+           }
+          ]
          },
          {
           "id": "lows-synthetic-10",
-          "when": "Aug 10 · 12:00",
-          "tier": "",
-          "both": true,
-          "entry": 68,
-          "worst": 59,
-          "delta": "−9",
-          "tag": ""
+          "date": "2026-08-10",
+          "t": "2026-08-10 12:00:00",
+          "bg": 68,
+          "worst_bg": 59,
+          "text": "Over-treated low did not match the current rule.",
+          "verdicts": [
+           {
+            "classifier": "over_treated_low",
+            "matched": false,
+            "evidence_tier": "observed",
+            "detail": "Over-treated low did not match the current rule."
+           }
+          ]
          },
          {
           "id": "lows-synthetic-11",
-          "when": "Aug 11 · 18:00",
-          "tier": "",
-          "both": true,
-          "entry": 69,
-          "worst": 60,
-          "delta": "−9",
-          "tag": ""
+          "date": "2026-08-11",
+          "t": "2026-08-11 18:00:00",
+          "bg": 69,
+          "worst_bg": 60,
+          "text": "Over-treated low did not match the current rule.",
+          "verdicts": [
+           {
+            "classifier": "over_treated_low",
+            "matched": false,
+            "evidence_tier": "observed",
+            "detail": "Over-treated low did not match the current rule."
+           }
+          ]
          }
         ],
         "count": 4
@@ -10139,67 +10185,103 @@
        {
         "key": "neutral",
         "lead": "Rule did not match",
-        "phrase": "matched no factor’s rule",
-        "rows": [
+        "cause": "matched no factor’s rule",
+        "occurrences": [
          {
           "id": "lows-synthetic-12",
-          "when": "Aug 12 · 02:00",
-          "tier": "",
-          "both": true,
-          "entry": 70,
-          "worst": 61,
-          "delta": "−9",
-          "tag": ""
+          "date": "2026-08-12",
+          "t": "2026-08-12 02:00:00",
+          "bg": 70,
+          "worst_bg": 61,
+          "text": "Over-treated low did not match the current rule.",
+          "verdicts": [
+           {
+            "classifier": "over_treated_low",
+            "matched": false,
+            "evidence_tier": "observed",
+            "detail": "Over-treated low did not match the current rule."
+           }
+          ]
          },
          {
           "id": "lows-synthetic-13",
-          "when": "Aug 13 · 08:00",
-          "tier": "",
-          "both": true,
-          "entry": 68,
-          "worst": 58,
-          "delta": "−10",
-          "tag": ""
+          "date": "2026-08-13",
+          "t": "2026-08-13 08:00:00",
+          "bg": 68,
+          "worst_bg": 58,
+          "text": "Over-treated low did not match the current rule.",
+          "verdicts": [
+           {
+            "classifier": "over_treated_low",
+            "matched": false,
+            "evidence_tier": "observed",
+            "detail": "Over-treated low did not match the current rule."
+           }
+          ]
          },
          {
           "id": "lows-synthetic-14",
-          "when": "Aug 14 · 14:00",
-          "tier": "",
-          "both": true,
-          "entry": 69,
-          "worst": 59,
-          "delta": "−10",
-          "tag": ""
+          "date": "2026-08-14",
+          "t": "2026-08-14 14:00:00",
+          "bg": 69,
+          "worst_bg": 59,
+          "text": "Over-treated low did not match the current rule.",
+          "verdicts": [
+           {
+            "classifier": "over_treated_low",
+            "matched": false,
+            "evidence_tier": "observed",
+            "detail": "Over-treated low did not match the current rule."
+           }
+          ]
          },
          {
           "id": "lows-synthetic-15",
-          "when": "Aug 15 · 20:00",
-          "tier": "",
-          "both": true,
-          "entry": 70,
-          "worst": 60,
-          "delta": "−10",
-          "tag": ""
+          "date": "2026-08-15",
+          "t": "2026-08-15 20:00:00",
+          "bg": 70,
+          "worst_bg": 60,
+          "text": "Over-treated low did not match the current rule.",
+          "verdicts": [
+           {
+            "classifier": "over_treated_low",
+            "matched": false,
+            "evidence_tier": "observed",
+            "detail": "Over-treated low did not match the current rule."
+           }
+          ]
          },
          {
           "id": "lows-synthetic-16",
-          "when": "Aug 16 · 05:00",
-          "tier": "",
-          "both": true,
-          "entry": 68,
-          "worst": 61,
-          "delta": "−7",
-          "tag": ""
+          "date": "2026-08-16",
+          "t": "2026-08-16 05:00:00",
+          "bg": 68,
+          "worst_bg": 61,
+          "text": "Over-treated low did not match the current rule.",
+          "verdicts": [
+           {
+            "classifier": "over_treated_low",
+            "matched": false,
+            "evidence_tier": "observed",
+            "detail": "Over-treated low did not match the current rule."
+           }
+          ]
          },
          {
           "id": "lows-synthetic-17",
-          "when": "Aug 17 · 11:00",
-          "tier": "",
-          "both": true,
-          "entry": 69,
-          "worst": 58,
-          "delta": "−11",
-          "tag": ""
+          "date": "2026-08-17",
+          "t": "2026-08-17 11:00:00",
+          "bg": 69,
+          "worst_bg": 58,
+          "text": "Over-treated low did not match the current rule.",
+          "verdicts": [
+           {
+            "classifier": "over_treated_low",
+            "matched": false,
+            "evidence_tier": "observed",
+            "detail": "Over-treated low did not match the current rule."
+           }
+          ]
          }
         ],
         "count": 6
@@ -12316,7 +12398,8 @@
         "date": "2026-08-18",
         "bg": 70,
         "worst_bg": 59,
-        "cause_title": 0
+        "cause_title": "Rule matched",
+        "cohort": "fired"
        },
        {
         "id": "lows-synthetic-12",
@@ -12324,7 +12407,8 @@
         "date": "2026-08-12",
         "bg": 70,
         "worst_bg": 61,
-        "cause_title": 1
+        "cause_title": "Rule did not match",
+        "cohort": "neutral"
        },
        {
         "id": "lows-synthetic-13",
@@ -12332,7 +12416,8 @@
         "date": "2026-08-13",
         "bg": 68,
         "worst_bg": 58,
-        "cause_title": 2
+        "cause_title": "Rule did not match",
+        "cohort": "neutral"
        },
        {
         "id": "lows-synthetic-14",
@@ -12340,7 +12425,8 @@
         "date": "2026-08-14",
         "bg": 69,
         "worst_bg": 59,
-        "cause_title": 3
+        "cause_title": "Rule did not match",
+        "cohort": "neutral"
        },
        {
         "id": "lows-synthetic-15",
@@ -12348,7 +12434,8 @@
         "date": "2026-08-15",
         "bg": 70,
         "worst_bg": 60,
-        "cause_title": 4
+        "cause_title": "Rule did not match",
+        "cohort": "neutral"
        },
        {
         "id": "lows-synthetic-16",
@@ -12356,7 +12443,8 @@
         "date": "2026-08-16",
         "bg": 68,
         "worst_bg": 61,
-        "cause_title": 5
+        "cause_title": "Rule did not match",
+        "cohort": "neutral"
        },
        {
         "id": "lows-synthetic-17",
@@ -12364,29 +12452,41 @@
         "date": "2026-08-17",
         "bg": 69,
         "worst_bg": 58,
-        "cause_title": 6
+        "cause_title": "Rule did not match",
+        "cohort": "neutral"
        }
       ]
      },
      "route": null,
      "occurrences": {
-      "capMeta": "entry → worst · Δ &nbsp;·&nbsp; 7 of 20 in Jul 13–Aug 11",
+      "cap": {
+       "key": "entry → worst · Δ",
+       "denominator": 20,
+       "window": "Jul 13–Aug 11"
+      },
+      "bandCaveat": "7 of 20 lows in Jul 13–Aug 11. The band scopes this list only — the comparison beside it always draws all three.",
       "residue": "7 claimed by another factor · 6 not comparable",
       "groups": [
        {
         "key": "fired",
         "lead": "Rule matched",
-        "phrase": "Correction on active insulin",
-        "rows": [
+        "cause": "Correction on active insulin",
+        "occurrences": [
          {
           "id": "lows-synthetic-18",
-          "when": "Aug 18 · 17:00",
-          "tier": "",
-          "both": true,
-          "entry": 70,
-          "worst": 59,
-          "delta": "−11",
-          "tag": ""
+          "date": "2026-08-18",
+          "t": "2026-08-18 17:00:00",
+          "bg": 70,
+          "worst_bg": 59,
+          "text": "Correction on active insulin matched the current rule.",
+          "verdicts": [
+           {
+            "classifier": "correction_on_iob",
+            "matched": true,
+            "evidence_tier": "observed",
+            "detail": "Correction on active insulin matched the current rule."
+           }
+          ]
          }
         ],
         "count": 1
@@ -12394,67 +12494,103 @@
        {
         "key": "neutral",
         "lead": "Rule did not match",
-        "phrase": "matched no factor’s rule",
-        "rows": [
+        "cause": "matched no factor’s rule",
+        "occurrences": [
          {
           "id": "lows-synthetic-12",
-          "when": "Aug 12 · 02:00",
-          "tier": "",
-          "both": true,
-          "entry": 70,
-          "worst": 61,
-          "delta": "−9",
-          "tag": ""
+          "date": "2026-08-12",
+          "t": "2026-08-12 02:00:00",
+          "bg": 70,
+          "worst_bg": 61,
+          "text": "Correction on active insulin did not match the current rule.",
+          "verdicts": [
+           {
+            "classifier": "correction_on_iob",
+            "matched": false,
+            "evidence_tier": "observed",
+            "detail": "Correction on active insulin did not match the current rule."
+           }
+          ]
          },
          {
           "id": "lows-synthetic-13",
-          "when": "Aug 13 · 08:00",
-          "tier": "",
-          "both": true,
-          "entry": 68,
-          "worst": 58,
-          "delta": "−10",
-          "tag": ""
+          "date": "2026-08-13",
+          "t": "2026-08-13 08:00:00",
+          "bg": 68,
+          "worst_bg": 58,
+          "text": "Correction on active insulin did not match the current rule.",
+          "verdicts": [
+           {
+            "classifier": "correction_on_iob",
+            "matched": false,
+            "evidence_tier": "observed",
+            "detail": "Correction on active insulin did not match the current rule."
+           }
+          ]
          },
          {
           "id": "lows-synthetic-14",
-          "when": "Aug 14 · 14:00",
-          "tier": "",
-          "both": true,
-          "entry": 69,
-          "worst": 59,
-          "delta": "−10",
-          "tag": ""
+          "date": "2026-08-14",
+          "t": "2026-08-14 14:00:00",
+          "bg": 69,
+          "worst_bg": 59,
+          "text": "Correction on active insulin did not match the current rule.",
+          "verdicts": [
+           {
+            "classifier": "correction_on_iob",
+            "matched": false,
+            "evidence_tier": "observed",
+            "detail": "Correction on active insulin did not match the current rule."
+           }
+          ]
          },
          {
           "id": "lows-synthetic-15",
-          "when": "Aug 15 · 20:00",
-          "tier": "",
-          "both": true,
-          "entry": 70,
-          "worst": 60,
-          "delta": "−10",
-          "tag": ""
+          "date": "2026-08-15",
+          "t": "2026-08-15 20:00:00",
+          "bg": 70,
+          "worst_bg": 60,
+          "text": "Correction on active insulin did not match the current rule.",
+          "verdicts": [
+           {
+            "classifier": "correction_on_iob",
+            "matched": false,
+            "evidence_tier": "observed",
+            "detail": "Correction on active insulin did not match the current rule."
+           }
+          ]
          },
          {
           "id": "lows-synthetic-16",
-          "when": "Aug 16 · 05:00",
-          "tier": "",
-          "both": true,
-          "entry": 68,
-          "worst": 61,
-          "delta": "−7",
-          "tag": ""
+          "date": "2026-08-16",
+          "t": "2026-08-16 05:00:00",
+          "bg": 68,
+          "worst_bg": 61,
+          "text": "Correction on active insulin did not match the current rule.",
+          "verdicts": [
+           {
+            "classifier": "correction_on_iob",
+            "matched": false,
+            "evidence_tier": "observed",
+            "detail": "Correction on active insulin did not match the current rule."
+           }
+          ]
          },
          {
           "id": "lows-synthetic-17",
-          "when": "Aug 17 · 11:00",
-          "tier": "",
-          "both": true,
-          "entry": 69,
-          "worst": 58,
-          "delta": "−11",
-          "tag": ""
+          "date": "2026-08-17",
+          "t": "2026-08-17 11:00:00",
+          "bg": 69,
+          "worst_bg": 58,
+          "text": "Correction on active insulin did not match the current rule.",
+          "verdicts": [
+           {
+            "classifier": "correction_on_iob",
+            "matched": false,
+            "evidence_tier": "observed",
+            "detail": "Correction on active insulin did not match the current rule."
+           }
+          ]
          }
         ],
         "count": 6
@@ -12481,7 +12617,8 @@
         "date": "2026-08-08",
         "bg": 69,
         "worst_bg": 61,
-        "cause_title": "Claimed by no finding"
+        "cause_title": "Claimed by no finding",
+        "cohort": "unclaimed"
        },
        {
         "id": "lows-synthetic-9",
@@ -12489,7 +12626,8 @@
         "date": "2026-08-09",
         "bg": 70,
         "worst_bg": 58,
-        "cause_title": "Claimed by no finding"
+        "cause_title": "Claimed by no finding",
+        "cohort": "unclaimed"
        },
        {
         "id": "lows-synthetic-10",
@@ -12497,7 +12635,8 @@
         "date": "2026-08-10",
         "bg": 68,
         "worst_bg": 59,
-        "cause_title": "Claimed by no finding"
+        "cause_title": "Claimed by no finding",
+        "cohort": "unclaimed"
        },
        {
         "id": "lows-synthetic-11",
@@ -12505,7 +12644,8 @@
         "date": "2026-08-11",
         "bg": 69,
         "worst_bg": 60,
-        "cause_title": "Claimed by no finding"
+        "cause_title": "Claimed by no finding",
+        "cohort": "unclaimed"
        },
        {
         "id": "lows-synthetic-12",
@@ -12513,7 +12653,8 @@
         "date": "2026-08-12",
         "bg": 70,
         "worst_bg": 61,
-        "cause_title": "Claimed by no finding"
+        "cause_title": "Claimed by no finding",
+        "cohort": "unclaimed"
        },
        {
         "id": "lows-synthetic-13",
@@ -12521,7 +12662,8 @@
         "date": "2026-08-13",
         "bg": 68,
         "worst_bg": 58,
-        "cause_title": "Claimed by no finding"
+        "cause_title": "Claimed by no finding",
+        "cohort": "unclaimed"
        },
        {
         "id": "lows-synthetic-14",
@@ -12529,7 +12671,8 @@
         "date": "2026-08-14",
         "bg": 69,
         "worst_bg": 59,
-        "cause_title": "Claimed by no finding"
+        "cause_title": "Claimed by no finding",
+        "cohort": "unclaimed"
        },
        {
         "id": "lows-synthetic-15",
@@ -12537,7 +12680,8 @@
         "date": "2026-08-15",
         "bg": 70,
         "worst_bg": 60,
-        "cause_title": "Claimed by no finding"
+        "cause_title": "Claimed by no finding",
+        "cohort": "unclaimed"
        },
        {
         "id": "lows-synthetic-16",
@@ -12545,7 +12689,8 @@
         "date": "2026-08-16",
         "bg": 68,
         "worst_bg": 61,
-        "cause_title": "Claimed by no finding"
+        "cause_title": "Claimed by no finding",
+        "cohort": "unclaimed"
        },
        {
         "id": "lows-synthetic-17",
@@ -12553,119 +12698,185 @@
         "date": "2026-08-17",
         "bg": 69,
         "worst_bg": 58,
-        "cause_title": "Claimed by no finding"
+        "cause_title": "Claimed by no finding",
+        "cohort": "unclaimed"
        }
       ]
      },
      "occurrences": {
-      "capMeta": "entry → worst · Δ &nbsp;·&nbsp; 10 of 20 in Jul 13–Aug 11",
+      "cap": {
+       "key": "entry → worst · Δ",
+       "denominator": 20,
+       "window": "Jul 13–Aug 11"
+      },
+      "bandCaveat": "10 of 20 lows in Jul 13–Aug 11. The band scopes this list only — the comparison beside it always draws all three.",
       "residue": "8 claimed by a finding",
       "groups": [
        {
         "key": "unclaimed",
         "lead": "Claimed by no finding",
-        "phrase": null,
+        "cause": null,
         "count": 10,
-        "rows": [
+        "occurrences": [
          {
           "id": "lows-synthetic-8",
-          "when": "Aug 8 · 22:00",
-          "tier": "",
-          "both": true,
-          "entry": 69,
-          "worst": 61,
-          "delta": "−8",
-          "tag": ""
+          "date": "2026-08-08",
+          "t": "2026-08-08 22:00:00",
+          "bg": 69,
+          "worst_bg": 61,
+          "text": "Over-treated low did not match the current rule.",
+          "verdicts": [
+           {
+            "classifier": "over_treated_low",
+            "matched": false,
+            "evidence_tier": "observed",
+            "detail": "Over-treated low did not match the current rule."
+           }
+          ]
          },
          {
           "id": "lows-synthetic-9",
-          "when": "Aug 9 · 06:00",
-          "tier": "",
-          "both": true,
-          "entry": 70,
-          "worst": 58,
-          "delta": "−12",
-          "tag": ""
+          "date": "2026-08-09",
+          "t": "2026-08-09 06:00:00",
+          "bg": 70,
+          "worst_bg": 58,
+          "text": "Over-treated low did not match the current rule.",
+          "verdicts": [
+           {
+            "classifier": "over_treated_low",
+            "matched": false,
+            "evidence_tier": "observed",
+            "detail": "Over-treated low did not match the current rule."
+           }
+          ]
          },
          {
           "id": "lows-synthetic-10",
-          "when": "Aug 10 · 12:00",
-          "tier": "",
-          "both": true,
-          "entry": 68,
-          "worst": 59,
-          "delta": "−9",
-          "tag": ""
+          "date": "2026-08-10",
+          "t": "2026-08-10 12:00:00",
+          "bg": 68,
+          "worst_bg": 59,
+          "text": "Over-treated low did not match the current rule.",
+          "verdicts": [
+           {
+            "classifier": "over_treated_low",
+            "matched": false,
+            "evidence_tier": "observed",
+            "detail": "Over-treated low did not match the current rule."
+           }
+          ]
          },
          {
           "id": "lows-synthetic-11",
-          "when": "Aug 11 · 18:00",
-          "tier": "",
-          "both": true,
-          "entry": 69,
-          "worst": 60,
-          "delta": "−9",
-          "tag": ""
+          "date": "2026-08-11",
+          "t": "2026-08-11 18:00:00",
+          "bg": 69,
+          "worst_bg": 60,
+          "text": "Over-treated low did not match the current rule.",
+          "verdicts": [
+           {
+            "classifier": "over_treated_low",
+            "matched": false,
+            "evidence_tier": "observed",
+            "detail": "Over-treated low did not match the current rule."
+           }
+          ]
          },
          {
           "id": "lows-synthetic-12",
-          "when": "Aug 12 · 02:00",
-          "tier": "",
-          "both": true,
-          "entry": 70,
-          "worst": 61,
-          "delta": "−9",
-          "tag": ""
+          "date": "2026-08-12",
+          "t": "2026-08-12 02:00:00",
+          "bg": 70,
+          "worst_bg": 61,
+          "text": "Over-treated low did not match the current rule.",
+          "verdicts": [
+           {
+            "classifier": "over_treated_low",
+            "matched": false,
+            "evidence_tier": "observed",
+            "detail": "Over-treated low did not match the current rule."
+           }
+          ]
          },
          {
           "id": "lows-synthetic-13",
-          "when": "Aug 13 · 08:00",
-          "tier": "",
-          "both": true,
-          "entry": 68,
-          "worst": 58,
-          "delta": "−10",
-          "tag": ""
+          "date": "2026-08-13",
+          "t": "2026-08-13 08:00:00",
+          "bg": 68,
+          "worst_bg": 58,
+          "text": "Over-treated low did not match the current rule.",
+          "verdicts": [
+           {
+            "classifier": "over_treated_low",
+            "matched": false,
+            "evidence_tier": "observed",
+            "detail": "Over-treated low did not match the current rule."
+           }
+          ]
          },
          {
           "id": "lows-synthetic-14",
-          "when": "Aug 14 · 14:00",
-          "tier": "",
-          "both": true,
-          "entry": 69,
-          "worst": 59,
-          "delta": "−10",
-          "tag": ""
+          "date": "2026-08-14",
+          "t": "2026-08-14 14:00:00",
+          "bg": 69,
+          "worst_bg": 59,
+          "text": "Over-treated low did not match the current rule.",
+          "verdicts": [
+           {
+            "classifier": "over_treated_low",
+            "matched": false,
+            "evidence_tier": "observed",
+            "detail": "Over-treated low did not match the current rule."
+           }
+          ]
          },
          {
           "id": "lows-synthetic-15",
-          "when": "Aug 15 · 20:00",
-          "tier": "",
-          "both": true,
-          "entry": 70,
-          "worst": 60,
-          "delta": "−10",
-          "tag": ""
+          "date": "2026-08-15",
+          "t": "2026-08-15 20:00:00",
+          "bg": 70,
+          "worst_bg": 60,
+          "text": "Over-treated low did not match the current rule.",
+          "verdicts": [
+           {
+            "classifier": "over_treated_low",
+            "matched": false,
+            "evidence_tier": "observed",
+            "detail": "Over-treated low did not match the current rule."
+           }
+          ]
          },
          {
           "id": "lows-synthetic-16",
-          "when": "Aug 16 · 05:00",
-          "tier": "",
-          "both": true,
-          "entry": 68,
-          "worst": 61,
-          "delta": "−7",
-          "tag": ""
+          "date": "2026-08-16",
+          "t": "2026-08-16 05:00:00",
+          "bg": 68,
+          "worst_bg": 61,
+          "text": "Over-treated low did not match the current rule.",
+          "verdicts": [
+           {
+            "classifier": "over_treated_low",
+            "matched": false,
+            "evidence_tier": "observed",
+            "detail": "Over-treated low did not match the current rule."
+           }
+          ]
          },
          {
           "id": "lows-synthetic-17",
-          "when": "Aug 17 · 11:00",
-          "tier": "",
-          "both": true,
-          "entry": 69,
-          "worst": 58,
-          "delta": "−11",
-          "tag": ""
+          "date": "2026-08-17",
+          "t": "2026-08-17 11:00:00",
+          "bg": 69,
+          "worst_bg": 58,
+          "text": "Over-treated low did not match the current rule.",
+          "verdicts": [
+           {
+            "classifier": "over_treated_low",
+            "matched": false,
+            "evidence_tier": "observed",
+            "detail": "Over-treated low did not match the current rule."
+           }
+          ]
          }
         ]
        }

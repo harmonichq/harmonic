@@ -548,11 +548,11 @@ button.entry .pill[data-empty="true"] { visibility: hidden; }
 .ev-group .n { font-family: var(--ck-mono); color: var(--mk-muted); }
 .ev-group.counter { color: var(--mk-muted); background: color-mix(in srgb, var(--ck-inset) 45%, transparent); }
 /* ONE shared column grid, so ten rows scan down as columns rather than as ten
-   sentences: when · entry → worst · delta · tier · chevron. Every column is a
+   sentences: when · entry → worst · delta · tier. Every column is a
    fixed width; only the tier column flexes. */
 .ev-row {
   display: grid;
-  grid-template-columns: 112px 30px 9px 30px 42px minmax(0, 1fr) 8px;
+  grid-template-columns: 112px 30px 9px 30px 42px minmax(0, 1fr);
   gap: 0 7px; align-items: baseline;
   width: 100%; text-align: left; padding: 4px var(--ck-pad); cursor: pointer;
   background: none; border: 0; color: inherit; font-family: var(--ck-mono); font-size: var(--ck-data);
@@ -577,8 +577,6 @@ button.entry .pill[data-empty="true"] { visibility: hidden; }
   color: var(--mk-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .ev-row[data-counter="true"] .worst, .ev-row[data-counter="true"] .only { color: var(--mk-secondary); }
-.ev-row .chev { color: color-mix(in srgb, var(--mk-muted) 70%, transparent); font-family: Inter, system-ui, sans-serif; }
-
 /* level 3: one occurrence, whole panel */
 .occ-head { display: flex; align-items: baseline; gap: 9px; }
 .occ-head .when { font-family: var(--ck-mono); font-size: var(--ck-emph); color: var(--mk-text); }

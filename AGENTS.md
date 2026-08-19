@@ -117,7 +117,9 @@ PLAYWRIGHT_MODULE="$PW/node_modules/playwright" VENDOR_DIR="$VENDOR" PAYLOAD=moc
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" VENDOR_DIR="$VENDOR" node --test frontend/cockpit-shell.browser.test.mjs
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" node --test frontend/browser-runner.browser.test.mjs
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" node frontend/plan-first-match.browser.mjs
-PLAYWRIGHT_MODULE="$PW/node_modules/playwright" VENDOR_DIR="$VENDOR" TARGET=app PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node frontend/diagnose-workstation-behavior.replay.mjs
+# In another terminal, first start the exact no-fetch server declared under
+# "The data boundary" below.
+PLAYWRIGHT_MODULE="$PW/node_modules/playwright" VENDOR_DIR="$VENDOR" BASE_URL=http://127.0.0.1:8765 TARGET=app PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node frontend/diagnose-workstation-behavior.replay.mjs
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" VENDOR_DIR="$VENDOR" TARGET=app node frontend/diagnose-event-comparison-behavior.replay.mjs
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" VENDOR_DIR="$VENDOR" TARGET=app node mockups/diagnose-event-comparison-support-audit.mjs
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" VENDOR_DIR="$VENDOR" TARGET=app PAYLOAD=mockups/verify-660-story.synthetic/payload.json node frontend/verify-660-story-behavior.replay.mjs
@@ -140,10 +142,18 @@ your own database — never a published one, and never a live pull.**
   No real patient data is ever committed to this repository.
 - **Open a snapshot read-only.** `Store.open_readonly` leaves the file alone;
   plain `Store.open` writes WAL sidecars and migration DDL into it.
-- **Never run `harmonic serve` or `harmonic fetch` in automated work.** Startup
-  fires a live OAuth login against the vendor (possibly 2FA) and pulls real
-  data; it cannot be exercised headless. Exercise the model through tests and
-  fixtures instead.
+- **Never run normal `harmonic serve` or any `harmonic fetch` in automated
+  work.** Normal startup fires a live OAuth login against the vendor (possibly
+  2FA) and pulls real data; it cannot be exercised headless. The sole offline
+  UI-design/replay exception is this exact command, whose `--no-fetch` flag is
+  mandatory and whose database is generated entirely by
+  `scripts/gen_revise_e2e_db.py`:
+
+  ```sh
+  uv run harmonic serve --no-fetch --db mockups/revise-e2e.synthetic/harmonic.sqlite
+  ```
+
+  Exercise every other model path through tests and fixtures instead.
 - **Committed fixtures come from a committed generator**, and carry a
   provenance stamp saying so. Do not hand-write a fixture out of real data, and
   do not paste real values into a test.

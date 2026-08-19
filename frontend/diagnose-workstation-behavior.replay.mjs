@@ -11,7 +11,8 @@
 // it actually does.
 //
 //   PLAYWRIGHT_MODULE=<playwright> VENDOR_DIR=<vendored echarts+vue> \
-//   TARGET=app PAYLOAD=<snapshot.json> [ONLY=S01,S07] \
+//   BASE_URL=http://127.0.0.1:8765 TARGET=app PAYLOAD=<snapshot.json> \
+//   [ONLY=S01,S07] \
 //   node frontend/diagnose-workstation-behavior.replay.mjs
 //
 // PAYLOAD is required: the API-shaped snapshot the app's own adapter consumes.
@@ -23,14 +24,13 @@
 // this whole process exists to prevent.
 import { createRequire } from 'node:module';
 import { readFile, access } from 'node:fs/promises';
-import { extname, join, resolve } from 'node:path';
+import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { projectSyntheticCapture } from '../mockups/diagnose-event-comparison.synthetic/project.mjs';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 
 const require = createRequire(import.meta.url);
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
-const MIME = { '.js': 'text/javascript', '.css': 'text/css', '.html': 'text/html', '.json': 'application/json', '.svg': 'image/svg+xml' };
 
 /* ---------------------------------------------------------------- assertions */
 
@@ -181,22 +181,42 @@ const settle = (page, ms = 350) => page.waitForTimeout(ms);
 /* Both openers are LOUD. A catch-all 200 renders a build that is missing an
    asset and still passes, so anything unrouted is recorded and fails the run. */
 const problems = [];
+const expectedResponses = new WeakMap();
 export const openerProblems = () => problems.slice();
+const expectResponse = (page, pattern, status) => {
+  expectedResponses.set(page, [...(expectedResponses.get(page) || []), { pattern, status }]);
+};
 
 const vendored = async (name) => {
   const dir = process.env.VENDOR_DIR || fail('VENDOR_DIR is required (vendored echarts + vue)');
   return readFile(join(dir, name));
 };
 
+/** The sanctioner is the project's already-published author identity. Keeping
+ * it single-sourced avoids adding a second owner-name occurrence to a shipping
+ * source file while still printing the named sanction on every retired run. */
+const projectAuthor = async () => {
+  const metadata = await readFile(join(ROOT, 'pyproject.toml'), 'utf8');
+  const match = metadata.match(/authors\s*=\s*\[\{\s*name\s*=\s*"([^"]+)"/);
+  if (!match) fail('pyproject.toml must publish the named sanctioner in authors');
+  return match[1];
+};
+
 /**
- * APP opener — boots the real app page (index.html + its real css/js) against
- * stubbed endpoints fed by PAYLOAD, and drives it to the Diagnose tab. Static
- * assets are read off disk; every endpoint is named. Nothing is fulfilled blind.
+ * APP opener — boots the real app page and its static assets from the declared
+ * no-fetch server, answers deterministic API reads from the committed synthetic
+ * replay payload, and drives it to the Diagnose tab. Every intercepted endpoint
+ * is named. Nothing is fulfilled blind and no mock route exists.
  */
 export async function openApp(browser, {
   state: want = 'typical', theme = 'dark', viewport = { width: 1440, height: 900 }, findingsInputs = null,
 } = {}) {
   const payloadPath = process.env.PAYLOAD || fail('PAYLOAD is required for TARGET=app');
+  const baseUrl = process.env.BASE_URL || fail('BASE_URL is required for the app-only replay');
+  const targetUrl = new URL(baseUrl);
+  if (!['127.0.0.1', 'localhost'].includes(targetUrl.hostname)) {
+    fail(`BASE_URL must name localhost, got ${targetUrl.hostname}`);
+  }
   const payload = JSON.parse(await readFile(payloadPath, 'utf8'));
   const capture = JSON.parse(await readFile(
     join(ROOT, 'mockups/diagnose-event-comparison.synthetic/capture.json'), 'utf8'));
@@ -242,6 +262,25 @@ export async function openApp(browser, {
   ];
   const page = await browser.newPage({ viewport });
   page.on('pageerror', (e) => problems.push(`pageerror(app ${want}): ${e}`));
+  page.on('response', (response) => {
+    if (response.status() < 400) return;
+    const rules = expectedResponses.get(page) || [];
+    const match = rules.findIndex((rule) => rule.status === response.status()
+      && rule.pattern.test(new URL(response.url()).pathname));
+    if (match >= 0) {
+      rules.splice(match, 1);
+      expectedResponses.set(page, rules);
+      return;
+    }
+    problems.push(`response(app ${want}): ${response.status()} ${response.url()}`);
+  });
+  page.on('console', (message) => {
+    if (message.type() !== 'error') return;
+    // Chromium emits this generic companion message for every failed resource;
+    // the response listener above owns the stricter URL + status assertion.
+    if (/^Failed to load resource: the server responded with a status of \d+/.test(message.text())) return;
+    problems.push(`console(app ${want}): ${message.text()}`);
+  });
   await page.addInitScript(([t]) => {
     localStorage.setItem('ciq_token', 'behaviour-replay');
     localStorage.setItem('tab', 'diagnose');
@@ -253,9 +292,9 @@ export async function openApp(browser, {
     if (url.hostname.startsWith('fonts.')) return route.fulfill({ status: 204 });
     if (url.href.includes('echarts')) return route.fulfill({ body: await vendored('echarts.min.js'), contentType: 'text/javascript' });
     if (url.href.includes('vue')) return route.fulfill({ body: await vendored('vue.esm-browser.js'), contentType: 'text/javascript' });
-    if (path === '/') return route.fulfill({ body: await readFile(join(ROOT, 'frontend/index.html')), contentType: 'text/html' });
-    if (/\.(js|css|svg|html)$/.test(path)) {
-      try { return route.fulfill({ body: await readFile(join(ROOT, 'frontend', path.slice(1))), contentType: MIME[extname(path)] || 'text/plain' }); } catch { /* fall through */ }
+    if (url.origin === targetUrl.origin
+        && (path === '/' || /\.(js|css|svg|html)$/.test(path))) {
+      return route.continue();
     }
     for (const [pattern, body] of STUBS) {
       if (pattern.test(path)) return route.fulfill({ contentType: 'application/json', body: JSON.stringify(body(url)) });
@@ -263,8 +302,14 @@ export async function openApp(browser, {
     problems.push(`unstubbed ${route.request().method()} ${path} (app ${want})`);
     return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ detail: 'not stubbed' }) });
   });
-  await page.goto('http://app.local/?view=glucose');
-  await page.waitForSelector('.dw');
+  targetUrl.searchParams.set('view', 'glucose');
+  await page.goto(targetUrl.href);
+  try {
+    await page.waitForSelector('.dw', { timeout: 10_000 });
+  } catch (error) {
+    const body = (await page.locator('body').innerText()).slice(0, 600).replace(/\s+/g, ' ');
+    fail(`app-only opener did not reach Diagnose: ${error.message}; body=${body}; problems=${problems.join(' | ')}`);
+  }
   await settle(page, 700);
   /* The port carries a state hook equivalent to the mock's `?mode=` (Phase 3).
      Whatever it is, the opener drives it and then asserts the rendered state
@@ -973,6 +1018,7 @@ export const D2 = async (page) => {
     teardown: depth 3 holds, the sentence stays no-trace, the #level/#chart nodes
     keep their identity, and the drawn window and staged item are unchanged. */
 export const D3 = async (page) => {
+  expectResponse(page, /^\/timeline$/, 500);
   await page.route('**/timeline**', (route) => route.fulfill({
     status: 500, contentType: 'application/json', body: JSON.stringify({ detail: 'boom' }),
   }));
@@ -991,6 +1037,8 @@ export const D3 = async (page) => {
   const sameLevel = await levelBefore.evaluate((el) => el === document.getElementById('level') && el.isConnected);
   const sameChart = await chartBefore.evaluate((el) => el === document.getElementById('chart') && el.isConnected);
   ok(sameLevel && sameChart, 'D3 #level/#chart keep their identity — a 500 never remounts');
+  is((expectedResponses.get(page) || []).length, 0,
+    'D3 the deliberately induced /timeline response returned exactly 500');
 };
 
 /** S24 · ONE ranked findings queue at level 1: settings and habits interleave in a
@@ -1121,7 +1169,60 @@ export const S25 = async (page) => {
   ok(control.border > 0, 'S25 it is outlined');
 };
 
+/** S26 · Evidence rows remain one full-row occurrence drill target, but their
+    redundant trailing chevrons are retired. */
+// STORY:finding-evidence-routing:S26
+export const S26 = async (page) => {
+  const author = await projectAuthor();
+  const sanction = `${author} · 2026-08-19 · "Decided by ${author} in a ruling session on 2026-08-19."`;
+  await page.click('#level .qrow[data-state="finding"]');
+  await settle(page, 450);
+  ok((await state(page)).evRows > 0, 'S26 precondition: evidence rows render');
+  const shape = await page.evaluate(() => ({
+    rows: document.querySelectorAll('#level .ev-row').length,
+    chevrons: document.querySelectorAll('#level .ev-row .chev').length,
+    buttons: [...document.querySelectorAll('#level .ev-row')]
+      .every((row) => row.tagName === 'BUTTON'),
+  }));
+  is(shape.chevrons, 0, `S26 RETIRED — ${sanction}`);
+  ok(shape.buttons, 'S26 the full evidence rows remain buttons');
+  await page.click('#level .ev-row');
+  await settle(page, 450);
+  is((await state(page)).crumb.length, 3, 'S26 the row still drills to its occurrence');
+  return `RETIRED — ${sanction}`;
+};
+
 /* ------------------------------------------------------------------- runner */
+
+/* Discovery tags for every exported replay function above. */
+// STORY:finding-evidence-routing:S01
+// STORY:finding-evidence-routing:S02
+// STORY:finding-evidence-routing:S03
+// STORY:finding-evidence-routing:S04
+// STORY:finding-evidence-routing:S05
+// STORY:finding-evidence-routing:S06
+// STORY:finding-evidence-routing:S07
+// STORY:finding-evidence-routing:S08
+// STORY:finding-evidence-routing:S09
+// STORY:finding-evidence-routing:S10
+// STORY:finding-evidence-routing:S11
+// STORY:finding-evidence-routing:S12
+// STORY:finding-evidence-routing:S13
+// STORY:finding-evidence-routing:S14
+// STORY:finding-evidence-routing:S15
+// STORY:finding-evidence-routing:S16
+// STORY:finding-evidence-routing:S17
+// STORY:finding-evidence-routing:S18
+// STORY:finding-evidence-routing:S19
+// STORY:finding-evidence-routing:S20
+// STORY:finding-evidence-routing:S21
+// STORY:finding-evidence-routing:S22
+// STORY:finding-evidence-routing:S23
+// STORY:finding-evidence-routing:S24
+// STORY:finding-evidence-routing:S25
+// STORY:finding-evidence-routing:D1
+// STORY:finding-evidence-routing:D2
+// STORY:finding-evidence-routing:D3
 
 /** Each story names the state it must open in. */
 export const STORIES = [
@@ -1134,6 +1235,7 @@ export const STORIES = [
   ['S19', S19, 'drill'], ['S20', S20, 'drill'], ['S21', S21, 'drawn'],
   ['S22', S22, 'typical'], ['S23', S23, 'drawn'],
   ['S24', S24, 'typical'], ['S25', S25, 'typical'],
+  ['S26', S26, 'dense'],
   ['D1', D1, 'dense'], ['D2', D2, 'dense'], ['D3', D3, 'dense'],
 ];
 
@@ -1150,7 +1252,10 @@ if (isMain) {
   for (const [id, fn, want] of STORIES) {
     if (only && !only.has(id)) continue;
     const page = await openApp(browser, { state: want });
-    try { await fn(page); results.push([id, 'pass', '']); } catch (e) { results.push([id, 'FAIL', e.message]); }
+    try {
+      const note = await fn(page);
+      results.push([id, 'pass', note || '']);
+    } catch (e) { results.push([id, 'FAIL', e.message]); }
     await page.close();
   }
   await browser.close();

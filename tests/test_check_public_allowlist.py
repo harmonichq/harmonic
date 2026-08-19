@@ -146,6 +146,14 @@ class TestCheckAgainstRealRepo(unittest.TestCase):
         ]:
             self.assertFalse(allowlist.disposition(path)[0], f"{path} should be excluded")
 
+    def test_revise_e2e_database_stays_local_only(self) -> None:
+        allowlist = allowlist_rules.load()
+        path = "mockups/revise-e2e.synthetic/harmonic.sqlite"
+        self.assertEqual(
+            allowlist.disposition(path),
+            (False, "binary-deny: .sqlite"),
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

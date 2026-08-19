@@ -47,6 +47,11 @@ jobs:
       # temp dir and byte-compare against the committed copy.
       - name: Check the committed demo fixture sets are current
         run: uv run python scripts/check_demo_fixtures.py
+      # A live app revision may use only this manufactured local store. Keep its
+      # logical SQLite contents tied to the committed generator before any
+      # supervised no-fetch server run is authorized.
+      - name: Check the revise E2E synthetic database is current
+        run: uv run python scripts/gen_revise_e2e_db.py --check
       # #730: the Diagnose findings queue is a server-owned projection, and its
       # fixture is that projection's own output over inputs run through the real
       # engines. A classification, merge, anchoring or ordering change that is not
@@ -214,7 +219,8 @@ jobs:
       # stories replaying against the built app forever.
           - gate: Diagnose workstation behaviour ledger
             vendor: true
-            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" VENDOR_DIR="$RUNNER_TEMP/ciq-vendor" TARGET=app PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node frontend/diagnose-workstation-behavior.replay.mjs
+            server: true
+            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" VENDOR_DIR="$RUNNER_TEMP/ciq-vendor" BASE_URL=http://127.0.0.1:8765 TARGET=app PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node frontend/diagnose-workstation-behavior.replay.mjs
       # #677/#694: Meals/Lows extend Diagnose with an eleven-story contract.
       # S12 mutates glucose after the mock's former server-owned support facts
       # were computed, so its production aggregation regression is app-only
@@ -242,6 +248,14 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: "22"
+      - name: Set up uv for the no-fetch app server
+        if: matrix.server
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Install the API runtime for the no-fetch app server
+        if: matrix.server
+        run: uv sync --frozen --extra api
       - name: Restore the isolated browser runner and Chromium
         id: browser-runner-cache
         uses: actions/cache@v4
@@ -263,6 +277,16 @@ jobs:
       - name: Require the vendored CDN module cache
         if: matrix.vendor && steps.vendor-cache.outputs.cache-hit != 'true'
         run: exit 1
+      - name: Start the declared synthetic no-fetch app server
+        if: matrix.server
+        run: |
+          uv run harmonic serve --no-fetch --db mockups/revise-e2e.synthetic/harmonic.sqlite > "$RUNNER_TEMP/harmonic-no-fetch.log" 2>&1 &
+          for attempt in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8765/health && exit 0
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/harmonic-no-fetch.log"
+          exit 1
       - name: Run browser gate
         env:
           PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/ciq-playwright-browsers

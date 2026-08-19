@@ -98,7 +98,7 @@ const SELECTORS = [
      The Align group is built from the same three classes, which is what "the
      same form as View and Window" has to mean to be verifiable. */
   '.instruments', '.instrument', '.instrument > .cap', '.seg',
-  /* STATE-SCOPED, for the same reason `.qrow[data-tier="priced"]` is: a bare
+  /* STATE-SCOPED, for the same reason the ranked queue selector below is: a bare
      `.seg button` compares the app's first segment (pressed) against the mock's
      first segment (`Glucose`, which is not — the mock stands on the Lows view),
      and reports the pressed state as drift. Both states exist on both sides. */
@@ -112,20 +112,20 @@ const SELECTORS = [
   '.level', '.level .inner', '.lvl-cap', '.lvl-cap .meta',
   /* TIER-SCOPED on purpose. The shipped queue keys a whole demoted register off
      `data-tier` / `data-state` (one weight step, one size step, a 72% tag hue),
-     and that attribute is PROJECTION data. The mock's finding header is priced
-     (findings-projection.json gives `finding:over_treated_low` priority 28);
-     the app's own payload leaves the same finding unpriced, so a bare `.qrow`
-     compares a priced row against a demoted one and reports the demotion as
-     drift. Comparing like with like is the only comparison that means anything;
-     if the app fixture has no priced row at all, these land in `absentInApp`
-     and the gap is reported rather than papered over. */
-  '.q', '.qrow[data-tier="priced"]', '.qrow[data-tier="priced"] .lab',
-  '.qrow[data-tier="priced"] .tag', '.qrow[data-tier="priced"] .tag .gly',
-  '.qrow[data-tier="priced"] .den', '.qrow[data-tier="priced"] .den .v',
+     and that attribute is PROJECTION data. `next_in_line` and `worth_a_look`
+     are the two ranked tiers, so this selector names both without inventing the
+     retired `priced` value. A missing row is reported on the side where it is
+     absent. */
+  '.q', '.qrow:is([data-tier="next_in_line"], [data-tier="worth_a_look"])',
+  '.qrow:is([data-tier="next_in_line"], [data-tier="worth_a_look"]) .lab',
+  '.qrow:is([data-tier="next_in_line"], [data-tier="worth_a_look"]) .tag',
+  '.qrow:is([data-tier="next_in_line"], [data-tier="worth_a_look"]) .tag .gly',
+  '.qrow:is([data-tier="next_in_line"], [data-tier="worth_a_look"]) .den',
+  '.qrow:is([data-tier="next_in_line"], [data-tier="worth_a_look"]) .den .v',
   /* Round 2 opens at the queue, so the demoted register, the chevron and the
      seam sentence are on the mock's surface too and compare against the app's. */
-  '.qrow[data-tier="tail"]', '.qrow[data-tier="tail"] .lab',
-  '.qrow[data-tier="tail"] .den', '.qrow .go', '.tailnote', '.quiet-line',
+  '.qrow[data-tier="noted"]', '.qrow[data-tier="noted"] .lab',
+  '.qrow[data-tier="noted"] .den', '.qrow .go', '.tailnote', '.quiet-line',
   /* ROUND 6, SEND-BACK 6 — `.slotlink` is the prose sentence the coincidence
      routes were set inside, and the mock no longer emits it (the routes take
      block 6's right-aligned action form instead). Left listed for the same
@@ -171,6 +171,8 @@ const SELECTORS = [
   '.lane-wrap', '.lane-stack', '.lane', '.lane button',
   '.lane-key', '.lane-key span', '.lane-key i', '.lane-key .lead', '.lane-key .t',
 ];
+
+const RANKED_QUEUE_SELECTORS = SELECTORS.filter((selector) => selector.startsWith('.qrow:is('));
 
 /* DELIBERATE deviations, each named with the reason it is not drift. Anything
    not in this map that differs is a real finding. */
@@ -495,7 +497,7 @@ const WINDOW_READER = () => JSON.parse(JSON.stringify((() => {
 })()));
 
 /** Probe the running app, in one theme, across both shipped surfaces. */
-async function probeApp(browser, theme, { writeChrome = false } = {}) {
+async function probeApp(browser, theme, findingsInputs, { writeChrome = false } = {}) {
   const app = {};
 
   const ws = await openApp(browser, { theme, viewport: VIEWPORT });
@@ -525,6 +527,17 @@ async function probeApp(browser, theme, { writeChrome = false } = {}) {
   if (!pooledOption) throw new Error('the app published no pooled-chart getOption() at level 1');
 
   const queueProbe = await ws.evaluate(probeScript, { props: PROPS, selectors: SELECTORS });
+
+  /* The shipped workstation capture is quiet at level 1. Open one second,
+     fixture-only queue to compare the ranked row grammar against the frozen
+     global projection, then keep every other selector on the normal surface. */
+  const rankedPage = await openApp(browser, {
+    state: 'dense', theme, viewport: VIEWPORT, findingsInputs,
+  });
+  const rankedQueueProbe = await rankedPage.evaluate(probeScript, {
+    props: PROPS, selectors: RANKED_QUEUE_SELECTORS,
+  });
+  await rankedPage.close();
 
   const drilled = await ws.evaluate(() => {
     const n = document.querySelector('.qrow[data-id="finding:over_treated_low"]');
@@ -579,6 +592,13 @@ async function probeApp(browser, theme, { writeChrome = false } = {}) {
       if (entry.rect.w === 0 && entry.rect.h === 0) continue;
       if (!held || (held.rect.w === 0 && held.rect.h === 0)) app[selector] = entry;
     }
+  }
+  for (const selector of RANKED_QUEUE_SELECTORS) {
+    const entry = rankedQueueProbe[selector];
+    if (!entry || (entry.rect.w === 0 && entry.rect.h === 0)) {
+      throw new Error(`frozen ranked queue did not lay out ${selector}`);
+    }
+    app[selector] = entry;
   }
   await ws.close();
 
@@ -695,13 +715,37 @@ const contentResolved = (prop, a, b) =>
   (prop === 'grid-template-columns' || prop === 'grid-template-rows')
   && a.split(/\s+/).length === b.split(/\s+/).length;
 
+const laidOut = (entry) => entry && (entry.rect.w !== 0 || entry.rect.h !== 0);
+
+/* A selector absent from both surfaces has no comparison at all. That is only
+   permitted when a future deliberate removal records its reason here; otherwise
+   the harness fails instead of certifying an empty assertion. */
+const DELIBERATELY_ABSENT_BOTH = {
+  '.qrow:is([data-tier="next_in_line"], [data-tier="worth_a_look"]) .tag .gly':
+    'the queue flavor tag prints its word without the retired decorative glyph',
+  '.tailnote': 'the mock replaces the tail sentence with its Watching section cap',
+  '.quiet-line': 'neither populated fixture reaches the empty findings state',
+  '.head-live .rd-note': 'neither current pooled-chart payload emits a read note',
+};
+
 function diffStyles(app, mock) {
-  const report = { checked: 0, matched: 0, absentInApp: [], mismatches: [], expected: [], contentResolved: [] };
+  const report = {
+    checked: 0, matched: 0, absentInApp: [], absentInMock: [], absentBoth: [],
+    mismatches: [], expected: [], contentResolved: [],
+  };
   for (const selector of SELECTORS) {
     const a = app[selector];
     const m = mock[selector];
-    if (!m) continue;
-    if (!a || (a.rect.w === 0 && a.rect.h === 0)) { report.absentInApp.push(selector); continue; }
+    const appPresent = laidOut(a);
+    const mockPresent = laidOut(m);
+    if (!appPresent && !mockPresent) {
+      const reason = DELIBERATELY_ABSENT_BOTH[selector];
+      if (!reason) throw new Error(`selector absent from app and mock: ${selector}`);
+      report.absentBoth.push(`${selector} — ${reason}`);
+      continue;
+    }
+    if (!appPresent) { report.absentInApp.push(selector); continue; }
+    if (!mockPresent) { report.absentInMock.push(selector); continue; }
     report.checked += 1;
     const bad = [];
     for (const prop of PROPS) {
@@ -807,11 +851,19 @@ async function main() {
   const browser = await chromium.launch();
   const problems = [];
   const results = {};
+  /* The workstation capture is deliberately quiet at level 1. The frozen
+     projection input below supplies the ranked queue row this fidelity harness
+     compares, while the app's other fixture-backed endpoints remain unchanged. */
+  const findingsInputs = JSON.parse(await readFile(
+    join(ROOT, 'frontend', '__fixtures__', 'findings-projection.json'), 'utf8',
+  )).inputs;
 
   for (const theme of ['dark', 'light']) {
     /* The chrome partial is written once, from the dark pass; it is the same DOM
        in both themes (the theme is a class on <html>, not different markup). */
-    const { app, option, pooledOption } = await probeApp(browser, theme, { writeChrome: theme === 'dark' });
+    const { app, option, pooledOption } = await probeApp(
+      browser, theme, findingsInputs, { writeChrome: theme === 'dark' },
+    );
     const page = await openMock(browser, theme, problems);
     const mock = await probeMock(page);
     /* ROUND 5 — the QUEUE ROOT's chart, read where it stands. */
@@ -1146,6 +1198,8 @@ async function main() {
       `\n[${theme}] computed-style diff — ${d.matched}/${d.checked} shared selectors identical, `
       + `${d.mismatches.length} unexplained, ${d.expected.length} named deviation(s), `
       + `${d.absentInApp.length} not laid out in the app, `
+      + `${d.absentInMock.length} not laid out in the mock, `
+      + `${d.absentBoth.length} deliberately absent on both sides, `
       + `${d.contentResolved.length} track(s) resolved against different content\n`
       + `[${theme}] lens chart-option diff — ${r.chartOptionDiff.length} difference(s), `
       + `${(r.chartOptionDiff.expected || []).length} named deviation(s)\n`

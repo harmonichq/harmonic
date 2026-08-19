@@ -193,6 +193,7 @@ class FindingsProjection:
         rows = self._parameter_rows(window, scoped=query.scoped)
         rows += self._finding_rows(window)
         rows.sort(key=_sort_key)
+        _assign_tiers(rows)
         counts = {name: 0 for name in ("assert", "held", "blind", "finding")}
         for row in rows:
             counts[row["register"]] += 1
@@ -479,6 +480,7 @@ def _row(**fields) -> dict:
     """One queue row, with every key present on every row (absent reads as null)."""
     row = {
         "id": None, "register": None, "kind": None, "title": None, "priority": None,
+        "tier": None,
         "parameter": None, "label": None, "span": None, "direction": None,
         "lean": None, "current": None, "recommended": None, "estimate": None,
         "support": None, "reason": None, "annotation": None, "members": None,
@@ -486,6 +488,22 @@ def _row(**fields) -> dict:
     }
     row.update(fields)
     return row
+
+
+def _assign_tiers(rows: Sequence[dict]) -> None:
+    """Stamp the sorted queue's closed ranking vocabulary onto every row (#41).
+
+    ``next_in_line`` is deliberately shared by every priced asserting row. The
+    server has no cross-parameter headline, so selecting the first such row would
+    claim more than its independent assertion establishes.
+    """
+    for row in rows:
+        if row["priority"] is None:
+            row["tier"] = "noted"
+        elif row["register"] == "assert":
+            row["tier"] = "next_in_line"
+        else:
+            row["tier"] = "worth_a_look"
 
 
 def _sort_key(row: dict):

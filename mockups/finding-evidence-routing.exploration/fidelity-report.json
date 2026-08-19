@@ -5,17 +5,45 @@
  },
  "dark": {
   "computedStyleDiff": {
-   "checked": 84,
-   "matched": 84,
+   "checked": 89,
+   "matched": 87,
    "absentInApp": [
-    ".qrow[data-tier=\"priced\"]",
-    ".qrow[data-tier=\"priced\"] .lab",
-    ".qrow[data-tier=\"priced\"] .tag",
-    ".qrow[data-tier=\"priced\"] .den",
-    ".qrow[data-tier=\"priced\"] .den .v",
     ".dw-canvas > .body"
    ],
-   "mismatches": [],
+   "absentInMock": [
+    ".ec-title-context",
+    ".qrow:is([data-tier=\"next_in_line\"], [data-tier=\"worth_a_look\"]) .tag .gly",
+    ".ec-boundary-note",
+    ".slotlink",
+    ".ev-group b",
+    ".ev-row .chev"
+   ],
+   "absentBoth": [
+    ".tailnote — the mock replaces the tail sentence with its Watching section cap",
+    ".quiet-line — neither populated fixture reaches the empty findings state",
+    ".head-live .rd-note — neither current pooled-chart payload emits a read note"
+   ],
+   "mismatches": [
+    {
+     "selector": ".qrow:is([data-tier=\"next_in_line\"], [data-tier=\"worth_a_look\"])",
+     "appTag": "BUTTON",
+     "mockTag": "DIV",
+     "bad": [
+      "font-size: app \"12px\" vs mock \"12.5px\"",
+      "padding-right: app \"10px\" vs mock \"12px\"",
+      "padding-left: app \"10px\" vs mock \"12px\"",
+      "grid-template-rows: app \"16px 17.3906px\" vs mock \"17.3906px\""
+     ]
+    },
+    {
+     "selector": ".qrow:is([data-tier=\"next_in_line\"], [data-tier=\"worth_a_look\"]) .den",
+     "appTag": "SPAN",
+     "mockTag": "SPAN",
+     "bad": [
+      "font-variant-numeric: app \"tabular-nums\" vs mock \"normal\""
+     ]
+    }
+   ],
    "expected": [
     ".ec-key-item row-gap: app \"1px\" vs mock \"6px\" — FINDING 3: one line has no row gap",
     ".ec-key-item display: app \"grid\" vs mock \"flex\" — FINDING 3: a legend chip is ONE LINE. The shipped item is an `inline-grid` that drops its detail under the label, which at three cohorts in a 430px canvas produced three wrapped paragraphs of engine caveat at data weight under the data — the thing DESIGN.md rule 5 forbids by name.",
@@ -66,7 +94,8 @@
     ".canvas-pane > header.canvas-head grid-template-rows: app \"21px\" vs mock \"29px\"",
     ".canvas-head .head-swap grid-template-rows: app \"14px\" vs mock \"29px\"",
     ".ec-chart-key grid-template-columns: app \"292px 292px 292px 0px 0px\" vs mock \"291.656px 291.672px 291.656px 0px 0px\"",
-    ".ec-chart-key grid-template-rows: app \"36px\" vs mock \"31px\""
+    ".ec-chart-key grid-template-rows: app \"36px\" vs mock \"31px\"",
+    ".qrow:is([data-tier=\"next_in_line\"], [data-tier=\"worth_a_look\"]) grid-template-columns: app \"305px 74px 12px\" vs mock \"301px 74px 12px\""
    ]
   },
   "chartOptionDiff": [
@@ -170,17 +199,45 @@
  "populationExpanderPresent": true,
  "light": {
   "computedStyleDiff": {
-   "checked": 84,
-   "matched": 84,
+   "checked": 89,
+   "matched": 87,
    "absentInApp": [
-    ".qrow[data-tier=\"priced\"]",
-    ".qrow[data-tier=\"priced\"] .lab",
-    ".qrow[data-tier=\"priced\"] .tag",
-    ".qrow[data-tier=\"priced\"] .den",
-    ".qrow[data-tier=\"priced\"] .den .v",
     ".dw-canvas > .body"
    ],
-   "mismatches": [],
+   "absentInMock": [
+    ".ec-title-context",
+    ".qrow:is([data-tier=\"next_in_line\"], [data-tier=\"worth_a_look\"]) .tag .gly",
+    ".ec-boundary-note",
+    ".slotlink",
+    ".ev-group b",
+    ".ev-row .chev"
+   ],
+   "absentBoth": [
+    ".tailnote — the mock replaces the tail sentence with its Watching section cap",
+    ".quiet-line — neither populated fixture reaches the empty findings state",
+    ".head-live .rd-note — neither current pooled-chart payload emits a read note"
+   ],
+   "mismatches": [
+    {
+     "selector": ".qrow:is([data-tier=\"next_in_line\"], [data-tier=\"worth_a_look\"])",
+     "appTag": "BUTTON",
+     "mockTag": "DIV",
+     "bad": [
+      "font-size: app \"12px\" vs mock \"12.5px\"",
+      "padding-right: app \"10px\" vs mock \"12px\"",
+      "padding-left: app \"10px\" vs mock \"12px\"",
+      "grid-template-rows: app \"16px 17.3906px\" vs mock \"17.3906px\""
+     ]
+    },
+    {
+     "selector": ".qrow:is([data-tier=\"next_in_line\"], [data-tier=\"worth_a_look\"]) .den",
+     "appTag": "SPAN",
+     "mockTag": "SPAN",
+     "bad": [
+      "font-variant-numeric: app \"tabular-nums\" vs mock \"normal\""
+     ]
+    }
+   ],
    "expected": [
     ".ec-key-item row-gap: app \"1px\" vs mock \"6px\" — FINDING 3: one line has no row gap",
     ".ec-key-item display: app \"grid\" vs mock \"flex\" — FINDING 3: a legend chip is ONE LINE. The shipped item is an `inline-grid` that drops its detail under the label, which at three cohorts in a 430px canvas produced three wrapped paragraphs of engine caveat at data weight under the data — the thing DESIGN.md rule 5 forbids by name.",
@@ -189,32 +246,32 @@
     ".ec-key-item align-items: app \"center\" vs mock \"baseline\" — FINDING 3: baseline, so the mark, the name and the count sit on one line",
     ".inspector grid-template-rows: app \"30px 661px 98px\" vs mock \"30px 731px 28px\" — round 5 block 8: the dock is no longer a 98px reserve, so the level track takes that height. This is the term-48 re-settle, in one number.",
     ".inspector > .body grid-template-rows: app \"32px 629px\" vs mock \"32px 438.172px 260.828px\" — ditto — the level track grows; the crumb row differs by 1px because the count accessory sits in it. ROUND 6, FORM 1 adds a THIRD track: the factor dropdown's rest line, which is a row of the column above the level rather than content inside it.",
-    ".crumb .trail button color: app \"color(srgb 0.0901961 0.133333 0.0980392 / 0.55)\" vs mock \"rgb(78, 88, 79)\" — F7: the crumb root is `--mk-text` at 55%, 3.56:1 in light. It is the column's one way back, so it takes `--mk-muted` — the designed meta ink, 6.21:1 light / 5.47:1 dark — rather than the dim register: a navigation control should not be reading at the floor.",
-    ".crumb .trail button border-top-color: app \"color(srgb 0.0901961 0.133333 0.0980392 / 0.55)\" vs mock \"rgb(78, 88, 79)\" — F7: not a border. .crumb .trail button paints no top edge here, so `currentColor` reports the element's own text ink a second time — the ink named in the `.crumb .trail button|color` entry above, and the same value. Same artifact the `.watch|border-top-color` entry names.",
-    ".crumb .trail button border-bottom-color: app \"color(srgb 0.0901961 0.133333 0.0980392 / 0.55)\" vs mock \"rgb(78, 88, 79)\" — F7: not a border. .crumb .trail button paints no bottom edge here, so `currentColor` reports the element's own text ink a second time — the ink named in the `.crumb .trail button|color` entry above, and the same value. Same artifact the `.watch|border-top-color` entry names.",
-    ".crumb .trail .chev color: app \"color(srgb 0.0901961 0.133333 0.0980392 / 0.35)\" vs mock \"color(srgb 0.0901961 0.133333 0.0980392 / 0.66)\" — F7: the crumb separator is `--mk-text` at 35% — 2.10:1 light / 2.90:1 dark, the worst text pair on the surface and failing in both themes. Same dim-meta ink.",
-    ".crumb .trail .chev border-top-color: app \"color(srgb 0.0901961 0.133333 0.0980392 / 0.35)\" vs mock \"color(srgb 0.0901961 0.133333 0.0980392 / 0.66)\" — F7: not a border. .crumb .trail .chev paints no top edge here, so `currentColor` reports the element's own text ink a second time — the ink named in the `.crumb .trail .chev|color` entry above, and the same value. Same artifact the `.watch|border-top-color` entry names.",
-    ".crumb .trail .chev border-bottom-color: app \"color(srgb 0.0901961 0.133333 0.0980392 / 0.35)\" vs mock \"color(srgb 0.0901961 0.133333 0.0980392 / 0.66)\" — F7: not a border. .crumb .trail .chev paints no bottom edge here, so `currentColor` reports the element's own text ink a second time — the ink named in the `.crumb .trail .chev|color` entry above, and the same value. Same artifact the `.watch|border-top-color` entry names.",
+    ".crumb .trail button color: app \"color(srgb 0.0784314 0.101961 0.0823529 / 0.55)\" vs mock \"rgb(74, 83, 74)\" — F7: the crumb root is `--mk-text` at 55%, 3.56:1 in light. It is the column's one way back, so it takes `--mk-muted` — the designed meta ink, 6.21:1 light / 5.47:1 dark — rather than the dim register: a navigation control should not be reading at the floor.",
+    ".crumb .trail button border-top-color: app \"color(srgb 0.0784314 0.101961 0.0823529 / 0.55)\" vs mock \"rgb(74, 83, 74)\" — F7: not a border. .crumb .trail button paints no top edge here, so `currentColor` reports the element's own text ink a second time — the ink named in the `.crumb .trail button|color` entry above, and the same value. Same artifact the `.watch|border-top-color` entry names.",
+    ".crumb .trail button border-bottom-color: app \"color(srgb 0.0784314 0.101961 0.0823529 / 0.55)\" vs mock \"rgb(74, 83, 74)\" — F7: not a border. .crumb .trail button paints no bottom edge here, so `currentColor` reports the element's own text ink a second time — the ink named in the `.crumb .trail button|color` entry above, and the same value. Same artifact the `.watch|border-top-color` entry names.",
+    ".crumb .trail .chev color: app \"color(srgb 0.0784314 0.101961 0.0823529 / 0.35)\" vs mock \"color(srgb 0.0784314 0.101961 0.082353 / 0.66)\" — F7: the crumb separator is `--mk-text` at 35% — 2.10:1 light / 2.90:1 dark, the worst text pair on the surface and failing in both themes. Same dim-meta ink.",
+    ".crumb .trail .chev border-top-color: app \"color(srgb 0.0784314 0.101961 0.0823529 / 0.35)\" vs mock \"color(srgb 0.0784314 0.101961 0.082353 / 0.66)\" — F7: not a border. .crumb .trail .chev paints no top edge here, so `currentColor` reports the element's own text ink a second time — the ink named in the `.crumb .trail .chev|color` entry above, and the same value. Same artifact the `.watch|border-top-color` entry names.",
+    ".crumb .trail .chev border-bottom-color: app \"color(srgb 0.0784314 0.101961 0.0823529 / 0.35)\" vs mock \"color(srgb 0.0784314 0.101961 0.082353 / 0.66)\" — F7: not a border. .crumb .trail .chev paints no bottom edge here, so `currentColor` reports the element's own text ink a second time — the ink named in the `.crumb .trail .chev|color` entry above, and the same value. Same artifact the `.watch|border-top-color` entry names.",
     ".level .inner padding-bottom: app \"8px\" vs mock \"14px\" — item 12: the judgment block closes with air before the claim selector, which item 4 moved outside `.inner`",
     ".lvl-cap margin-top: app \"0px\" vs mock \"6px\" — item 12: the Occurrences cap takes air above it, so the table reads as its own section rather than as more of the judgment block",
     ".lvl-cap .meta margin-left: app \"64.4062px\" vs mock \"66.8438px\" — an AUTO margin, resolved against a different string length — the rule is identical",
-    ".qrow .go color: app \"rgb(179, 91, 46)\" vs mock \"rgb(143, 69, 36)\" — F7: ditto — the queue row's chevron is the same `--ck-accent` at the same 3.95:1.",
-    ".qrow .go border-top-color: app \"rgb(179, 91, 46)\" vs mock \"rgb(143, 69, 36)\" — F7: not a border. .qrow .go paints no top edge here, so `currentColor` reports the element's own text ink a second time — the ink named in the `.qrow .go|color` entry above, and the same value. Same artifact the `.watch|border-top-color` entry names.",
-    ".qrow .go border-bottom-color: app \"rgb(179, 91, 46)\" vs mock \"rgb(143, 69, 36)\" — F7: not a border. .qrow .go paints no bottom edge here, so `currentColor` reports the element's own text ink a second time — the ink named in the `.qrow .go|color` entry above, and the same value. Same artifact the `.watch|border-top-color` entry names.",
+    ".qrow .go color: app \"rgb(169, 79, 33)\" vs mock \"rgb(135, 64, 26)\" — F7: ditto — the queue row's chevron is the same `--ck-accent` at the same 3.95:1.",
+    ".qrow .go border-top-color: app \"rgb(169, 79, 33)\" vs mock \"rgb(135, 64, 26)\" — F7: not a border. .qrow .go paints no top edge here, so `currentColor` reports the element's own text ink a second time — the ink named in the `.qrow .go|color` entry above, and the same value. Same artifact the `.watch|border-top-color` entry names.",
+    ".qrow .go border-bottom-color: app \"rgb(169, 79, 33)\" vs mock \"rgb(135, 64, 26)\" — F7: not a border. .qrow .go paints no bottom edge here, so `currentColor` reports the element's own text ink a second time — the ink named in the `.qrow .go|color` entry above, and the same value. Same artifact the `.watch|border-top-color` entry names.",
     ".linkbtn font-weight: app \"400\" vs mock \"500\" — FINDING 14: the routes inherit `.fer-open`'s weight as well as its ink, so the two kinds of route in this column read as one kind of thing",
-    ".linkbtn color: app \"rgb(179, 91, 46)\" vs mock \"rgb(143, 69, 36)\" — FINDING 14 + F7: the coincidence routes inherit `Open case file ›`'s treatment. The shipped `.linkbtn` is `--ck-accent` underlined, which is a website tell inside an app that navigates without a single underline anywhere else; the amendment also reserved the accent + right-alignment for the ONE action in this column, and two more of them turned a deliberate accent into noise. F7 moves the ink again, to `--primary-600`: `--ck-accent` on bone is 3.95:1 as text, so every accent-inked string on this surface failed AA in light at once. The accent's own next step clears it in both themes (5.78:1 light, 6.79:1 dark) without introducing a colour the app does not already pair.",
-    ".linkbtn border-top-color: app \"rgb(179, 91, 46)\" vs mock \"rgb(143, 69, 36)\" — F7: not a border. .linkbtn paints no top edge here, so `currentColor` reports the element's own text ink a second time — the ink named in the `.linkbtn|color` entry above, and the same value. Same artifact the `.watch|border-top-color` entry names.",
-    ".linkbtn border-bottom-color: app \"rgb(179, 91, 46)\" vs mock \"rgb(143, 69, 36)\" — F7: not a border. .linkbtn paints no bottom edge here, so `currentColor` reports the element's own text ink a second time — the ink named in the `.linkbtn|color` entry above, and the same value. Same artifact the `.watch|border-top-color` entry names.",
+    ".linkbtn color: app \"rgb(169, 79, 33)\" vs mock \"rgb(135, 64, 26)\" — FINDING 14 + F7: the coincidence routes inherit `Open case file ›`'s treatment. The shipped `.linkbtn` is `--ck-accent` underlined, which is a website tell inside an app that navigates without a single underline anywhere else; the amendment also reserved the accent + right-alignment for the ONE action in this column, and two more of them turned a deliberate accent into noise. F7 moves the ink again, to `--primary-600`: `--ck-accent` on bone is 3.95:1 as text, so every accent-inked string on this surface failed AA in light at once. The accent's own next step clears it in both themes (5.78:1 light, 6.79:1 dark) without introducing a colour the app does not already pair.",
+    ".linkbtn border-top-color: app \"rgb(169, 79, 33)\" vs mock \"rgb(135, 64, 26)\" — F7: not a border. .linkbtn paints no top edge here, so `currentColor` reports the element's own text ink a second time — the ink named in the `.linkbtn|color` entry above, and the same value. Same artifact the `.watch|border-top-color` entry names.",
+    ".linkbtn border-bottom-color: app \"rgb(169, 79, 33)\" vs mock \"rgb(135, 64, 26)\" — F7: not a border. .linkbtn paints no bottom edge here, so `currentColor` reports the element's own text ink a second time — the ink named in the `.linkbtn|color` entry above, and the same value. Same artifact the `.watch|border-top-color` entry names.",
     ".linkbtn padding-top: app \"0px\" vs mock \"6px\" — F8: the painted line is 14px tall and two of these stack 3px apart, so neither the target nor the spacing met WCAG 2.2 AA's 24x24. The padding takes each to 24px and sets the pitch to 27px, which a centred overlay of the same height could not have done without the two boxes overlapping and stealing each other's clicks.",
     ".linkbtn padding-bottom: app \"0px\" vs mock \"6px\" — F8: ditto — the other half of the same padding",
-    ".ev-row .arrow color: app \"color(srgb 0.305882 0.345098 0.309804 / 0.7)\" vs mock \"color(srgb 0.0901961 0.133333 0.0980392 / 0.66)\" — F7: the production table's `→` is `--mk-muted` at 70%, which measures 3.21:1 light and 3.42:1 dark — it fails in BOTH themes, which is why it is not fixed by a light-only override. It takes this surface's one dim-meta ink instead.",
-    ".ev-row .arrow border-top-color: app \"color(srgb 0.305882 0.345098 0.309804 / 0.7)\" vs mock \"color(srgb 0.0901961 0.133333 0.0980392 / 0.66)\" — F7: not a border. .ev-row .arrow paints no top edge here, so `currentColor` reports the element's own text ink a second time — the ink named in the `.ev-row .arrow|color` entry above, and the same value. Same artifact the `.watch|border-top-color` entry names.",
-    ".ev-row .arrow border-bottom-color: app \"color(srgb 0.305882 0.345098 0.309804 / 0.7)\" vs mock \"color(srgb 0.0901961 0.133333 0.0980392 / 0.66)\" — F7: not a border. .ev-row .arrow paints no bottom edge here, so `currentColor` reports the element's own text ink a second time — the ink named in the `.ev-row .arrow|color` entry above, and the same value. Same artifact the `.watch|border-top-color` entry names.",
-    ".more color: app \"rgb(179, 91, 46)\" vs mock \"rgb(143, 69, 36)\" — F7: the expander is `--ck-accent`, which on bone measures 3.95:1 as text — under DESIGN.md line 188's own 4.5:1 bar. It takes the surface's route ink (`--primary-600`, 5.78:1 light / 6.79:1 dark), which is the same step the two in-body routes take, so every accent-inked string in this column reads at one value.",
-    ".more border-top-color: app \"rgb(179, 91, 46)\" vs mock \"rgb(143, 69, 36)\" — F7: not a border. .more paints no top edge here, so `currentColor` reports the element's own text ink a second time — the ink named in the `.more|color` entry above, and the same value. Same artifact the `.watch|border-top-color` entry names.",
-    ".watch background-color: app \"rgb(227, 215, 197)\" vs mock \"rgba(0, 0, 0, 0)\" — block 8: unfilled — the hairline above it is what separates it now",
+    ".ev-row .arrow color: app \"color(srgb 0.290196 0.32549 0.290196 / 0.7)\" vs mock \"color(srgb 0.0784314 0.101961 0.082353 / 0.66)\" — F7: the production table's `→` is `--mk-muted` at 70%, which measures 3.21:1 light and 3.42:1 dark — it fails in BOTH themes, which is why it is not fixed by a light-only override. It takes this surface's one dim-meta ink instead.",
+    ".ev-row .arrow border-top-color: app \"color(srgb 0.290196 0.32549 0.290196 / 0.7)\" vs mock \"color(srgb 0.0784314 0.101961 0.082353 / 0.66)\" — F7: not a border. .ev-row .arrow paints no top edge here, so `currentColor` reports the element's own text ink a second time — the ink named in the `.ev-row .arrow|color` entry above, and the same value. Same artifact the `.watch|border-top-color` entry names.",
+    ".ev-row .arrow border-bottom-color: app \"color(srgb 0.290196 0.32549 0.290196 / 0.7)\" vs mock \"color(srgb 0.0784314 0.101961 0.082353 / 0.66)\" — F7: not a border. .ev-row .arrow paints no bottom edge here, so `currentColor` reports the element's own text ink a second time — the ink named in the `.ev-row .arrow|color` entry above, and the same value. Same artifact the `.watch|border-top-color` entry names.",
+    ".more color: app \"rgb(169, 79, 33)\" vs mock \"rgb(135, 64, 26)\" — F7: the expander is `--ck-accent`, which on bone measures 3.95:1 as text — under DESIGN.md line 188's own 4.5:1 bar. It takes the surface's route ink (`--primary-600`, 5.78:1 light / 6.79:1 dark), which is the same step the two in-body routes take, so every accent-inked string in this column reads at one value.",
+    ".more border-top-color: app \"rgb(169, 79, 33)\" vs mock \"rgb(135, 64, 26)\" — F7: not a border. .more paints no top edge here, so `currentColor` reports the element's own text ink a second time — the ink named in the `.more|color` entry above, and the same value. Same artifact the `.watch|border-top-color` entry names.",
+    ".watch background-color: app \"rgb(231, 228, 220)\" vs mock \"rgba(0, 0, 0, 0)\" — block 8: unfilled — the hairline above it is what separates it now",
     ".watch border-top-width: app \"0px\" vs mock \"1px\" — block 8: the hairline that replaces the fill",
-    ".watch border-top-color: app \"rgb(23, 34, 25)\" vs mock \"rgb(222, 210, 189)\" — block 8: the app declares no top border at all, so its \"colour\" is the inherited text ink of a 0px edge — the mock's is `--ck-hair`, the pane's own hairline",
+    ".watch border-top-color: app \"rgb(20, 26, 21)\" vs mock \"rgb(222, 218, 208)\" — block 8: the app declares no top border at all, so its \"colour\" is the inherited text ink of a 0px edge — the mock's is `--ck-hair`, the pane's own hairline",
     ".watch padding-top: app \"10px\" vs mock \"7px\" — block 8: padding sized to one line",
     ".watch padding-bottom: app \"11px\" vs mock \"7px\" — block 8: padding sized to one line",
     ".watch display: app \"grid\" vs mock \"block\" — block 8: one line, so no two-column grid",
@@ -223,8 +280,8 @@
     ".watch min-height: app \"98px\" vs mock \"0px\" — block 8: the dock is one line at the column's true bottom, not a 98px reserve (re-settles migrated lock term 48)",
     ".canvas-head .head-rest .meta margin-left: app \"367.016px\" vs mock \"0px\" — an AUTO margin, resolved against a different string length — the two fixtures pool different reading counts, so \"window N of M readings\" is not the same width. The rule is identical; same class as the `.lvl-cap .meta` entry above.",
     ".lane-stack grid-template-rows: app \"11px 11px\" vs mock \"11px\" — workstream A, omission (b): the shipped stack carries a second row of I:C block verdicts beneath the basal lane. The #31 ruling names the BASAL verdict lane, and with one lane the key's lead-word grammar (which exists to tell the two rows apart) is doing nothing. One row here, two in the app — a real divergence, not a resolution artifact.",
-    ".lane background-color: app \"color(srgb 0.0739608 0.112549 0.0932549)\" vs mock \"color(srgb 0.883922 0.854902 0.797961)\" — F5: the OTHER half of the same pair, and the half round 9 missed. `.lane`'s own ground was still `--ck-inset` — a black slab under the chart on bone (14.51:1 against the pane) and a strip that vanished into the pane on the desk (1.03:1). The strip's `gap: 1px` means the strip IS the boundary between the 48 cells, so this is a 1.4.11 mark and not a matter of taste. It is a recessive track in both themes now: 1.16:1 light / 1.47:1 dark against the pane it sits on.",
-    ".lane button background-color: app \"rgba(0, 0, 0, 0)\" vs mock \"color(srgb 0.452549 0.462745 0.417569)\" — FINDING 10 + F5: `--ck-inset` is a near-black in BOTH themes, so the strip was the loudest ink on a bone page and nearly invisible on the dark desk — one fill that never got its light/dark pass, under the least consequential element on the canvas. Round 9 re-tuned the CELL and left the strip, which inverted the pair instead of fixing it: 12.19:1 cell-against-strip in light and 1.37:1 in dark, at which no reader can see the 48 cell boundaries at all. One declaration now, derived from the column's own ink and surface, measured at 3.33:1 light / 4.39:1 dark against the strip below."
+    ".lane background-color: app \"color(srgb 0.0739608 0.112549 0.0932549)\" vs mock \"color(srgb 0.908235 0.902902 0.886902)\" — F5: the OTHER half of the same pair, and the half round 9 missed. `.lane`'s own ground was still `--ck-inset` — a black slab under the chart on bone (14.51:1 against the pane) and a strip that vanished into the pane on the desk (1.03:1). The strip's `gap: 1px` means the strip IS the boundary between the 48 cells, so this is a 1.4.11 mark and not a matter of taste. It is a recessive track in both themes now: 1.16:1 light / 1.47:1 dark against the pane it sits on.",
+    ".lane button background-color: app \"rgba(0, 0, 0, 0)\" vs mock \"color(srgb 0.457255 0.467608 0.449647)\" — FINDING 10 + F5: `--ck-inset` is a near-black in BOTH themes, so the strip was the loudest ink on a bone page and nearly invisible on the dark desk — one fill that never got its light/dark pass, under the least consequential element on the canvas. Round 9 re-tuned the CELL and left the strip, which inverted the pair instead of fixing it: 12.19:1 cell-against-strip in light and 1.37:1 in dark, at which no reader can see the 48 cell boundaries at all. One declaration now, derived from the column's own ink and surface, measured at 3.33:1 light / 4.39:1 dark against the strip below."
    ],
    "contentResolved": [
     ".pane grid-template-rows: app \"30px 759px\" vs mock \"38px 751px\"",
@@ -232,20 +289,21 @@
     ".canvas-pane > header.canvas-head grid-template-rows: app \"21px\" vs mock \"29px\"",
     ".canvas-head .head-swap grid-template-rows: app \"14px\" vs mock \"29px\"",
     ".ec-chart-key grid-template-columns: app \"292px 292px 292px 0px 0px\" vs mock \"291.656px 291.672px 291.656px 0px 0px\"",
-    ".ec-chart-key grid-template-rows: app \"36px\" vs mock \"31px\""
+    ".ec-chart-key grid-template-rows: app \"36px\" vs mock \"31px\"",
+    ".qrow:is([data-tier=\"next_in_line\"], [data-tier=\"worth_a_look\"]) grid-template-columns: app \"305px 74px 12px\" vs mock \"301px 74px 12px\""
    ]
   },
   "chartOptionDiff": [
-   "tooltip: app [{\"trigger\":\"axis\",\"showContent\":false,\"axisPointer\":{\"type\":\"cross\",\"label\":{\"show\":false},\"axis\":\"auto\",\"animation\":\"auto\",\"animationDurationUpdate\":200,\"animationEasingUpdate\":\"exponentialOut\",\"crossStyle\":{\"color\":\"#999\",\"width\":1,\"type\":\"dashed\",\"textStyle\":{}}},\"z\":60,\"show\":true,\"triggerOn\":\"mousemove|click\",\"alwaysShowContent\":false,\"displayMode\":\"single\",\"renderMode\":\"auto\",\"confine\":null,\"showDelay\":0,\"hideDelay\":100,\"transitionDuration\":0.4,\"enterable\":false,\"backgroundColor\":\"#fff\",\"shadowBlur\":10,\"shadowColor\":\"rgba(0, 0, 0, .2)\",\"shadowOffsetX\":1,\"shadowOffsetY\":2,\"borderRadius\":4,\"borderWidth\":1,\"padding\":null,\"extraCssText\":\"\",\"textStyle\":{\"color\":\"#666\",\"fontSize\":14}}] vs mock [{\"trigger\":\"axis\",\"showContent\":false,\"axisPointer\":{\"type\":\"cross\",\"crossStyle\":{\"color\":\"#4e584f\",\"width\":1,\"type\":\"dashed\",\"opacity\":0.7,\"textStyle\":{}},\"lineStyle\":{\"color\":\"#4e584f\",\"width\":1,\"type\":\"dashed\",\"opacity\":0.7},\"label\":{\"show\":true,\"backgroundColor\":\"#f3eadb\",\"borderColor\":\"#ded2bd\",\"borderWidth\":1,\"color\":\"#172219\",\"fontFamily\":\"ui-monospace, \\\"SF Mono\\\", \\\"JetBrains Mono\\\", Menlo, monospace\",\"fontSize\":10,\"padding\":[3,6]},\"axis\":\"auto\",\"animation\":\"auto\",\"animationDurationUpdate\":200,\"animationEasingUpdate\":\"exponentialOut\"},\"z\":60,\"show\":true,\"triggerOn\":\"mousemove|click\",\"alwaysShowContent\":false,\"displayMode\":\"single\",\"renderMode\":\"auto\",\"confine\":null,\"showDelay\":0,\"hideDelay\":100,\"transitionDuration\":0.4,\"enterable\":false,\"backgroundColor\":\"#fff\",\"shadowBlur\":10,\"shadowColor\":\"rgba(0, 0, 0, .2)\",\"shadowOffsetX\":1,\"shadowOffsetY\":2,\"borderRadius\":4,\"borderWidth\":1,\"padding\":null,\"extraCssText\":\"\",\"textStyle\":{\"color\":\"#666\",\"fontSize\":14}}]",
+   "tooltip: app [{\"trigger\":\"axis\",\"showContent\":false,\"axisPointer\":{\"type\":\"cross\",\"label\":{\"show\":false},\"axis\":\"auto\",\"animation\":\"auto\",\"animationDurationUpdate\":200,\"animationEasingUpdate\":\"exponentialOut\",\"crossStyle\":{\"color\":\"#999\",\"width\":1,\"type\":\"dashed\",\"textStyle\":{}}},\"z\":60,\"show\":true,\"triggerOn\":\"mousemove|click\",\"alwaysShowContent\":false,\"displayMode\":\"single\",\"renderMode\":\"auto\",\"confine\":null,\"showDelay\":0,\"hideDelay\":100,\"transitionDuration\":0.4,\"enterable\":false,\"backgroundColor\":\"#fff\",\"shadowBlur\":10,\"shadowColor\":\"rgba(0, 0, 0, .2)\",\"shadowOffsetX\":1,\"shadowOffsetY\":2,\"borderRadius\":4,\"borderWidth\":1,\"padding\":null,\"extraCssText\":\"\",\"textStyle\":{\"color\":\"#666\",\"fontSize\":14}}] vs mock [{\"trigger\":\"axis\",\"showContent\":false,\"axisPointer\":{\"type\":\"cross\",\"crossStyle\":{\"color\":\"#4a534a\",\"width\":1,\"type\":\"dashed\",\"opacity\":0.7,\"textStyle\":{}},\"lineStyle\":{\"color\":\"#4a534a\",\"width\":1,\"type\":\"dashed\",\"opacity\":0.7},\"label\":{\"show\":true,\"backgroundColor\":\"#faf8f4\",\"borderColor\":\"#dedad0\",\"borderWidth\":1,\"color\":\"#141a15\",\"fontFamily\":\"ui-monospace, \\\"SF Mono\\\", \\\"JetBrains Mono\\\", Menlo, monospace\",\"fontSize\":10,\"padding\":[3,6]},\"axis\":\"auto\",\"animation\":\"auto\",\"animationDurationUpdate\":200,\"animationEasingUpdate\":\"exponentialOut\"},\"z\":60,\"show\":true,\"triggerOn\":\"mousemove|click\",\"alwaysShowContent\":false,\"displayMode\":\"single\",\"renderMode\":\"auto\",\"confine\":null,\"showDelay\":0,\"hideDelay\":100,\"transitionDuration\":0.4,\"enterable\":false,\"backgroundColor\":\"#fff\",\"shadowBlur\":10,\"shadowColor\":\"rgba(0, 0, 0, .2)\",\"shadowOffsetX\":1,\"shadowOffsetY\":2,\"borderRadius\":4,\"borderWidth\":1,\"padding\":null,\"extraCssText\":\"\",\"textStyle\":{\"color\":\"#666\",\"fontSize\":14}}]",
    "yAxis.max: app 300 vs mock 240",
    "yAxis.name: app \"mg/dL\" vs mock \"\"",
    "yAxis.nameGap: app 8 vs mock 15",
-   "yAxis.nameTextStyle.color: app \"#4e584f\" vs mock undefined",
+   "yAxis.nameTextStyle.color: app \"#4a534a\" vs mock undefined",
    "yAxis.nameTextStyle.fontFamily: app \"Inter\" vs mock undefined",
    "yAxis.nameTextStyle.fontSize: app 10 vs mock undefined",
    "yAxis.nameTextStyle.align: app \"left\" vs mock undefined",
-   "series[near_rule:line:limited].lineStyle.color: app \"#9b562d\" vs mock \"#5d2a0c\"",
-   "series[near_rule:line:limited].itemStyle.borderColor: app \"#9b562d\" vs mock \"#5d2a0c\""
+   "series[near_rule:line:limited].lineStyle.color: app \"#94501f\" vs mock \"#5d2a0c\"",
+   "series[near_rule:line:limited].itemStyle.borderColor: app \"#94501f\" vs mock \"#5d2a0c\""
   ],
   "pooledOptionDiff": [],
   "chartOptionExpected": [

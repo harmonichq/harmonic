@@ -88,7 +88,7 @@ export function windowQuery(bounds) {
 /** Every key present on every row, absent reading as null (`_row`). */
 function row(fields) {
   return {
-    id: null, register: null, kind: null, title: null, priority: null,
+    id: null, register: null, kind: null, title: null, priority: null, tier: null,
     parameter: null, label: null, span: null, direction: null,
     lean: null, current: null, recommended: null, estimate: null,
     support: null, reason: null, annotation: null, members: null,
@@ -377,6 +377,11 @@ export function projectFindings(inputs, bounds = null) {
   if (!query.scoped) rows = rows.filter((r) => r.register === 'assert');
   rows = [...rows, ...findingRows(exposures, scenarios, query.pieces)];
   rows.sort(compare);
+  for (const row of rows) {
+    if (row.priority == null) row.tier = 'noted';
+    else if (row.register === 'assert') row.tier = 'next_in_line';
+    else row.tier = 'worth_a_look';
+  }
   const counts = { assert: 0, held: 0, blind: 0, finding: 0 };
   for (const r of rows) counts[r.register] += 1;
   return {

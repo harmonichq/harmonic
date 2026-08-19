@@ -66,13 +66,45 @@ test('term 42 · the seam opens once, before the first UNPRICED ranked row', () 
   assert.equal(TAIL_NOTE, 'Not recurring often enough to rank yet.');
 });
 
+test('term 42 · fixture windows never caption a held or blind row as the tail', () => {
+  // These are the fixture's server-owned queue positions. A held/blind row is
+  // demoted, but it is not the unpriced ranked row the tail sentence describes.
+  const expected = {
+    global: ['Correction stacking'],
+    afternoon: ['Correction stacking'],
+    low_block: [],
+    morning: [],
+    overnight: [],
+    quiet: [],
+    rebound: [],
+  };
+  for (const [window, titles] of Object.entries(expected)) {
+    assert.deepEqual(queueRows(W[window]).filter((row) => row.seam).map((row) => row.title),
+      titles, window);
+  }
+});
+
 test('term 42 · held and blind rows never open the seam — they are their own register', () => {
   const rows = queueRows(W.afternoon);
   const demoted = rows.filter((r) => r.register === 'held' || r.register === 'blind');
   assert.ok(demoted.length >= 2);
   assert.ok(demoted.every((r) => !r.seam));
-  // one demoted register for all three: unpriced, held and blind share the tier
-  assert.ok(demoted.every((r) => r.tier === 'tail'));
+  // the server's unpriced-tail tier also covers the held and blind tail rows
+  assert.ok(demoted.every((r) => r.tier === 'noted'));
+});
+
+test('the queue consumes the server tier and never reclassifies a row', () => {
+  const projection = {
+    ...W.global,
+    rows: W.global.rows.map((row) => ({
+      ...row,
+      // Deliberately contradict the fields the former browser derivation read.
+      register: row.register === 'assert' ? 'blind' : 'assert',
+      priority: row.priority == null ? 99 : null,
+    })),
+  };
+  const rows = queueRows(projection);
+  assert.deepEqual(rows.map((row) => row.tier), W.global.rows.map((row) => row.tier));
 });
 
 test('term 14/38 · a held row is words-first and offers no stage affordance', () => {
@@ -123,7 +155,9 @@ test('term 42 · with nothing priced there is no boundary, so no seam sentence',
   // priorities, so every ranked row is unpriced and the tail has nothing to follow
   const unpriced = {
     window: { scoped: false }, findings_window: { days: 30 },
-    rows: fixture.windows.global.rows.map((r) => ({ ...r, priority: null })),
+    rows: fixture.windows.global.rows.map((r) => ({
+      ...r, priority: null, tier: 'noted',
+    })),
   };
   assert.equal(queueRows(unpriced).filter((r) => r.seam).length, 0);
 });

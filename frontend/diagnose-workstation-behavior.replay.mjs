@@ -193,7 +193,9 @@ const vendored = async (name) => {
  * stubbed endpoints fed by PAYLOAD, and drives it to the Diagnose tab. Static
  * assets are read off disk; every endpoint is named. Nothing is fulfilled blind.
  */
-export async function openApp(browser, { state: want = 'typical', theme = 'dark', viewport = { width: 1440, height: 900 } } = {}) {
+export async function openApp(browser, {
+  state: want = 'typical', theme = 'dark', viewport = { width: 1440, height: 900 }, findingsInputs = null,
+} = {}) {
   const payloadPath = process.env.PAYLOAD || fail('PAYLOAD is required for TARGET=app');
   const payload = JSON.parse(await readFile(payloadPath, 'utf8'));
   const capture = JSON.parse(await readFile(
@@ -213,7 +215,7 @@ export async function openApp(browser, { state: want = 'typical', theme = 'dark'
        mirror, which `frontend/findings-projection-mirror.test.js` deep-compares
        against the real projection's own frozen output window for window. */
     [/^\/diagnose\/findings/, (url) => projectFindings(
-      { analysis: payload.analyze, exposures: payload.exposures, scenarios: payload.scenarios },
+      findingsInputs || { analysis: payload.analyze, exposures: payload.exposures, scenarios: payload.scenarios },
       url.searchParams.get('start_min') === null ? null : {
         start_min: Number(url.searchParams.get('start_min')),
         end_min: Number(url.searchParams.get('end_min')),
@@ -1044,7 +1046,7 @@ export const S24 = async (page) => {
   ok(drawn.queue.some((r) => r.register === 'held' || r.register === 'blind'),
     'S24 held/blind rows appear under an explicit window');
   ok(drawn.queue.filter((r) => r.register === 'held' || r.register === 'blind')
-    .every((r) => r.tier === 'tail'), 'S24 one demoted register for the whole queue');
+    .every((r) => r.tier === 'noted'), 'S24 one demoted register for the whole queue');
 
   // Esc clears the window and restores the global, asserting-only queue
   await page.keyboard.press('Escape');

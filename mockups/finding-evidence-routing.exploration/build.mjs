@@ -335,7 +335,7 @@ const FOOTER_VOICE = [
  *   NEXT IN LINE  the remaining priced `assert` rows — stageable, not the headline
  *   WORTH A LOOK  the priced `finding` rows — ranked, but no pump value to stage
  *   noted         the unpriced tail, which the shipped `queueRows` already
- *                 separates with its own seam (`tier: 'tail'`)
+ *                 separates with its own seam (`tier: 'noted'`)
  *
  * The tail's section name is CONTEXT.md's, not invented either: "**Watching**:
  * the subordinate Audit section for held and still-collecting tuning reads that
@@ -373,7 +373,7 @@ const TIER_WORD = {
 
 function rankingTiers(rows) {
   const tierOfRow = (row) => {
-    if (row.tier === 'tail') return 'noted';
+    if (row.tier === 'noted') return 'noted';
     if (row.register !== 'assert') return 'worth_a_look';
     /* EVERY asserting row is `next_in_line`. `decide_now` is deliberately
        unreachable — see the DECIDE NOW note above. */

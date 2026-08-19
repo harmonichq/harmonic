@@ -538,14 +538,14 @@ function paintQueue() {
      `Lows` opens `Findings › Lows` — so the routing never changes vocabulary
      mid-hop.
 
-     `data-tier="tail"` is kept and is NOT a demotion here: the shipped demoted
-     register resolves to exactly the 12.5/500 full-ink label the ruling asks
-     for, and the priced register is a size and a weight above it. Reported. */
+     `data-tier="noted"` uses the shipped queue's one demoted tier: its 12.5/500
+     full-ink label keeps these population destinations subordinate without
+     inventing a second display vocabulary. */
   level.insertAdjacentHTML('beforeend', `
     <div class="lvl-cap fer-browse-cap">${data.queue.populationCap}<span class="meta">${data.queue.populationCapMeta}</span></div>
     <div class="q fer-population">
       ${data.queue.populationRows.map((row) => `
-        <button type="button" class="qrow" data-state="population" data-tier="tail"
+        <button type="button" class="qrow" data-state="population" data-tier="noted"
                 data-id="${row.id}" data-drills="${row.drills}">
           <span class="lab">${row.title}</span>
           <span class="den"><span class="v">${row.count}</span></span>
@@ -843,7 +843,7 @@ function paintLevel() {
          verbatim from the projection, WITHOUT the title. The crumb one line
          above prints the name, and it prints it once (round 2, item 3). -->
     <div class="q fer-subject">
-      <div class="qrow" data-state="finding" data-tier="priced">
+      <div class="qrow" data-state="finding" data-tier="worth_a_look">
         <!-- ROUND 9, FINDING 16 — no glyph here either. The subject strip's tag is
              the queue row's tag, and dropping the dingbat from one and not the
              other would leave the surface saying HABIT two ways one drill apart. -->

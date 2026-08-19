@@ -113,8 +113,11 @@ function assertDetail(row) {
  *
  * The seam (term 42) opens before the first unpriced row of the ranked head —
  * `assert` and `finding`, the two registers priority can reach — and only where a
- * priced row precedes it. It uses the server's row facts to place existing markup;
- * it does not classify or infer the row's published tier.
+ * priced row precedes it. With nothing priced, the sentence would caption the
+ * whole list instead of the tail. The demoted `held` and `blind` registers follow
+ * the seam and are not its subject: each owns its own reason line. It uses the
+ * server's row facts to place existing markup; it does not classify or infer the
+ * row's published tier.
  */
 export function queueRows(projection) {
   const rows = projection?.rows || [];

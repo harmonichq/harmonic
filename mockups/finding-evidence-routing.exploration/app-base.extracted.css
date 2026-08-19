@@ -18,38 +18,42 @@
          ROLE rules (chrome bar · instrument rail · pane header rail · pane body ·
          dock floor) live in frontend/theme.css.
 
-         LIGHT — a parchment sheet on a dark evergreen desk. Burnt orange is
+         LIGHT — a bone sheet on a dark evergreen desk (#736 relit 2026-08-18:
+         the parchment family kept its warmth but gave up ~60% of its chroma, and
+         the rule darkened, because three grounds within 6% of each other over a
+         pale rule read as beige wash rather than as sheet, rail and field).
+         Burnt orange is
          interaction and high/attention and nothing else (term 5); the measured
          signal is forest; grounds keep their warmth and give up their
          saturation, so only marks carry chroma (term 11). */
       color-scheme: light;
-      --wk-canvas:#17231d; --wk-surface:#f3eadb; --wk-surface-rail:#ebe0cf; --wk-surface-sunken:#e3d7c5;
-      --wk-ink:#172219; --wk-ink-body:#354238; --wk-ink-meta:#4e584f; --wk-ink-nav:#53635a;
-      --wk-rule:#afa493; --wk-rule-strong:#6f7d71; --wk-hairline:1px; --wk-radius:5px;
-      --wk-shadow:0 1px 2px rgba(8,18,13,.2), 0 14px 30px -16px rgba(8,18,13,.58);
-      --wk-elevation:0 14px 30px -16px rgba(8,18,13,.62);
-      --wk-signal:#b35b2e; --wk-signal-well:#ead2c4;
-      --wk-status-incomplete:#7d5a10; --wk-status-adverse:#9c3f35; --wk-status-favorable:#296845;
+      --wk-canvas:#17231d; --wk-surface:#faf8f4; --wk-surface-rail:#f0eee8; --wk-surface-sunken:#e7e4dc;
+      --wk-ink:#141a15; --wk-ink-body:#2f382f; --wk-ink-meta:#4a534a; --wk-ink-nav:#4f5a50;
+      --wk-rule:#c3bfb4; --wk-rule-strong:#6b7669; --wk-hairline:1px; --wk-radius:5px;
+      --wk-shadow:0 1px 2px rgba(8,18,13,.16), 0 14px 30px -16px rgba(8,18,13,.5);
+      --wk-elevation:0 14px 30px -16px rgba(8,18,13,.54);
+      --wk-signal:#a94f21; --wk-signal-well:#f0dccd;
+      --wk-status-incomplete:#71510c; --wk-status-adverse:#93372d; --wk-status-favorable:#215c3b;
 
       --bg:var(--wk-canvas); --bg-tint:var(--wk-surface-sunken); --surface:var(--wk-surface); --surface-2:var(--wk-surface-sunken);
-      --primary:#b35b2e; --primary-600:#8f4524; --primary-100:#ead2c4; --on-primary:#ffffff;
-      --secondary:#526358; --accent:#b35b2e; --accent-100:#ead2c4;
+      --primary:#a94f21; --primary-600:#87401a; --primary-100:#f0dccd; --on-primary:#ffffff;
+      --secondary:#4d5c53; --accent:#a94f21; --accent-100:#f0dccd;
       --text:var(--wk-ink); --muted:var(--wk-ink-meta); --line:var(--wk-rule);
-      /* Term 4 — every ink below clears 4.5:1 on all three parchment grounds
-         (#F3EADB / #EBE0CF / #E3D7C5). The old text-safe *-ink split for --warn
+      /* Term 4 — every ink below clears 4.5:1 on all three bone grounds
+         (#FAF8F4 / #F0EEE8 / #E7E4DC). The old text-safe *-ink split for --warn
          is gone with it: --warn IS the text-safe value now. */
-      --danger:#a6371f; --danger-bg:#f1ddd8; --ok:#71857a; --ok-bg:#d6dfda;
-      --warn:#98431f; --warn-bg:#efe0d5; --ring:rgba(179,91,46,.28);
+      --danger:#9d3018; --danger-bg:#f6e3dd; --ok:#5d7368; --ok-bg:#dfe8e2;
+      --warn:#8d3c17; --warn-bg:#f3e3d8; --ring:rgba(169,79,33,.30);
       --shadow:var(--wk-shadow);
       --radius:var(--wk-radius); --radius-sm:var(--wk-radius); --grain-op:.02;
-      --in-range:#455f41; --high:#b35b2e; --low:#a6371f;
-      --ran-low:#71857a;  --ran-low-soft:#d6dfda;
-      --on-target:#455f41; --on-target-soft:#dde7df; --on-target-ink:#29452f;
+      --in-range:#3f5a3b; --high:#a94f21; --low:#9d3018;
+      --ran-low:#5d7368;  --ran-low-soft:#dfe8e2;
+      --on-target:#3f5a3b; --on-target-soft:#e2ece3; --on-target-ink:#215c3b;
       /* #126 manual carb log — a user CLAIM. Under Harmonic the claim joins the
          attention family rather than holding an amber of its own. */
-      --manual-carb:#b35b2e; --manual-carb-soft:#ead2c4;
+      --manual-carb:#a94f21; --manual-carb-soft:#f0dccd;
       /* #64 scenario screen — evidence-tier + basal colors */
-      --observed:#455f41; --inferred:#8b694f; --notindata:#757b73; --basal:#71857a;
+      --observed:#3f5a3b; --inferred:#7d5b41; --notindata:#6b7169; --basal:#5d7368;
     }
     html.dark {
       /* DARK IS DERIVED, NOT INVERTED (term 9): the role ratios below track the

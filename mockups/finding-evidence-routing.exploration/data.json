@@ -68,6 +68,7 @@
       "noun": "meal runs",
       "run_days": 90
      },
+     "tier": "next_in_line",
      "title": "Carb ratio · 12:00–24:00 · lower"
     },
     {
@@ -129,6 +130,7 @@
       "noun": "nights of steady data",
       "run_days": 30
      },
+     "tier": "next_in_line",
      "title": "Basal · 00:30–01:30 · raise"
     },
     {
@@ -183,6 +185,7 @@
       "noun": "nights of steady data",
       "run_days": 30
      },
+     "tier": "next_in_line",
      "title": "Basal · 05:30 · raise"
     },
     {
@@ -218,6 +221,7 @@
      "register": "finding",
      "span": null,
      "support": null,
+     "tier": "worth_a_look",
      "title": "Over-treated low"
     },
     {
@@ -253,6 +257,7 @@
      "register": "finding",
      "span": null,
      "support": null,
+     "tier": "worth_a_look",
      "title": "Carb undercount"
     },
     {
@@ -288,6 +293,7 @@
      "register": "finding",
      "span": null,
      "support": null,
+     "tier": "noted",
      "title": "Correction stacking"
     }
    ],

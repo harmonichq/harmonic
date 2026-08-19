@@ -69,7 +69,7 @@ assembled from the running app rather than drawn beside it:
 | 6 | **The verdict band's default** is the frame's first group, `Meets criteria`. The band renders only where the frame has **≥2 groups**; a one-group frame draws no band, because there is no split to state. "The band at `Meets criteria`" is the REST state of a drilled population, not a state a reader navigates to | gate | assertion at every frame |
 | 7 | **Occurrence selection defaults to none**, and the occurrence table defaults **collapsed at 5 rows** with a two-way expander (`N more` ⇄ `Show first 5`) | gate | assertion |
 | 8 | **No page scroll** at 1280×800 or 1440×900, in either theme, in any state — `documentElement` and `body` both 0px on x and y | gate | browser-gate assertion |
-| 9 | **The inspector column does not scroll internally in any state**, at either locked size, in either theme. A state that does not fit is fixed by giving back air, never by letting the column scroll and never by moving the dock. **Two states violate this at lock time and are recorded as an open deficit below — do not read this term as satisfied** | gate | `contrast-audit.mjs` overflow reads, extended to the expanded states |
+| 9 | **The inspector column does not scroll internally in any state**, at either locked size, in either theme. A state that does not fit is fixed by giving back air, never by letting the column scroll and never by moving the dock. **The two expanded states that violated this at lock time were closed before the lock shipped; widening the guard to this term's own "any state" then found four more — do not read this term as satisfied.** Both halves are recorded as an open deficit below | gate | `contrast-audit.mjs` overflow reads, over every state derived from the fixture — 51 states × 2 themes × 2 sizes |
 | 10 | **The dock is ONE reserved height across every state** — measured 28px in all 12 states × 2 themes × 2 sizes — so the column's floor never moves. It is pane furniture: mounted once, present at every level, never level-1 content, never scrolled away, never conditional on the queue's length. It is separated from the level above by a hairline and by space, not by a fill | gate | computed-style + rect assertion at every state |
 | 11 | **The dock is the single reporter of the watched-change object.** The domain exposes at most one active watched-change object, never two lists, and no second status for it appears anywhere on this surface. On this fixture it holds its idle line in every reachable state | gate | assertion |
 | 12 | The dock's line is one rank of type, never ellipsized, and never grows the reserve to fit | gate | assertion |
@@ -157,17 +157,50 @@ assembled from the running app rather than drawn beside it:
 Recorded rather than papered over. Neither is licensed by a term; both are
 work the build inherits with its eyes open.
 
-1. **Term 9 is violated in two states.** At **1280×800 only**, in **both**
-   themes, expanding the occurrence table overflows `#level`: the finding case
-   file by **7px** (7 rows) and the population case file by **12px** (7 rows).
-   Every other state, and every state at 1440×900, measures 0. The two states
-   are outside `contrast-audit.mjs`'s five-state list, which is why its overflow
-   leg passes — **that list is the second half of the fix**: the guard must
-   visit the expanded states before term 9 can be called satisfied. Round 11
-   closed the arrival state's 20px deficit and grew several control hit boxes to
-   clear the 24×24 floor in the same change; the expanded states are where that
-   height went. Fix it the way round 11 fixed the queue root — give back air —
-   never by moving the dock (term 10) and never by letting the column scroll.
+1. **Term 9: the two recorded states are CLOSED; four more were then found and
+   are open.**
+
+   **What lock time recorded, and what closed it.** At **1280×800 only**, in
+   **both** themes, expanding the occurrence table overflowed `#level` — the
+   finding case file by **7px**, the population case file by **12px** — with
+   every other state, and every state at 1440×900, measuring 0. Both were closed
+   before this lock shipped, in the commit `#31: close the lock's
+   internal-scroll deficit`, by the means this entry required: **air, given
+   back**. Seven mock-owned airs pay it — the coincidence block's foot, the
+   standing route line's head, the verdict band's head and foot, the gap between
+   the band's bar and its keys, the residue line's own padding, and the seam
+   above the Occurrences cap — for **−18px** in the finding case file and
+   **−23px** in the population case file. The dock did not move, the column does
+   not scroll, no shipped box was restyled, and both states now hold **11px** of
+   slack. The queue root was not touched and holds its **19px** (586px of content
+   in a 605px track).
+
+   **What "every other state measures 0" turned out to mean.** It meant every
+   other state *the guard listed*. The second half of the fix — widening
+   `contrast-audit.mjs` past its five hand-written states — is done, and the
+   widened guard derives the state space from the fixture instead: level ×
+   frame × verdict × projection × collapsed/expanded × unselected/selected ×
+   dropdown, **51 states**, with the expander's existence decided by the shipped
+   `tierOf` against the shipped `EVIDENCE_CAP`. It reports term 9 still violated
+   by **24px**, at **1280×800 only**, in **both** themes, in the four states
+   where the table is **expanded AND a row is selected**: `finding · fired` and
+   `population · over_treated_low · fired`, each under both projections.
+   Selecting a row appends the `Open … in Day ›` route (term 39) **below** the
+   table — 35px — so expanded + selected is the tallest this column can ever be,
+   and it is the combination a five-state list missed twice over.
+
+   **That 24px cannot be paid out of air, and the arithmetic is written down so
+   the next round does not re-derive it.** Everything still mock-owned and still
+   spendable in the finding case file totals **21px**: the Day route's own
+   separation (4), the level's last two pixels (2), the judgment block's foot
+   (5), the counts' margin (3), the coincidence block (4) and its route stack
+   (3). Twenty-one against twenty-four — and spending all of it would leave the
+   column with no air at all in its tallest state, which is how this deficit was
+   created in the first place. Every remaining route breaks a locked term:
+   shrinking or floating the dock (term 10), letting the column scroll (this
+   term), or restyling the shipped occurrence table — whose rows are 42px for
+   the reason recorded in 2 below. **It is the operator's call, and it is open.**
+   A build that inherits this must not close it by making `#level` scrollable.
 2. **Production defects this surface surfaced but does not own.** They are
    named here so the build does not adopt them as intent: `evidence_tier`
    carrying an outcome (CONTEXT.md is explicit that tier and outcome must never
@@ -177,7 +210,19 @@ work the build inherits with its eyes open.
    3.33:1 dark), deliberately excluded from `contrast-audit.mjs` so this mock's
    gate cannot fail on the app's authorship; `a.cockpit-day` taking the UA focus
    ring; and a 2px horizontal clip on `nav.cockpit-utilities`. Each is a
-   production issue, owed separately.
+   production issue, owed separately. **And one more, found while measuring this
+   round's overflow: every evidence row is 42px tall rather than the ~25px its
+   own rule asks for**, because `frontend/diagnose-workstation.css` gives the
+   class `.entry` — level 1's slot-lane staging button — `display: grid`,
+   `padding: 8px var(--ck-pad)` and a border on both edges, and the evidence
+   table's numeric cell is a `<span class="entry">` inside `.ev-row`. Nothing in
+   `.ev-row .entry` overrides any of it, so a three-digit glucose reading is laid
+   out as a 33px grid box and carries the row with it. The mock renders it
+   faithfully and the fidelity harness reports the two sides identical, which is
+   how it is known to be the app's and not the mock's. Seven rows pay 119px for
+   it, which is most of why term 9 is hard to satisfy at 1280×800 at all — but
+   it is a production defect, it is owed separately, and this surface must not
+   fork the shipped table to route around it.
 
 ## Fixture obligations
 

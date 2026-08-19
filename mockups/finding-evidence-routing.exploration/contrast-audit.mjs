@@ -20,8 +20,12 @@
  *          except the 48 basal cells, which the operator ruled stay as they are
  *          and which the manifest states as a constraint rather than a defect.
  *   SCROLL 0px of internal overflow on `#level`, at 1280x800 and 1440x900, in
- *          every state — the manifest is about to assert that this column does
- *          not scroll, and the arrival state was 20px over budget at 800.
+ *          EVERY state the surface can stand in — which is manifest term 9's
+ *          own claim, and which this guard did not used to check. It visited
+ *          five hand-listed states, none of them an expanded case file, and
+ *          reported green over a 7px and a 12px overflow. The state list is
+ *          DERIVED from the fixture now rather than remembered; see THE STATES
+ *          below for what that covers and why a list cannot be trusted here.
  *
  * Every ratio is composited the way a reader sees it: a translucent ink or fill
  * is resolved against the actual painted stack beneath it, walked up the tree
@@ -51,6 +55,12 @@ import { existsSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+/* The SHIPPED painter's own cap and its own tier predicate, so the question
+   "does this roster have an expander to press?" is asked exactly the way the
+   table asks it. Importing the extraction rather than re-deriving the rule is
+   the same discipline surface.js follows: no fork of the production table, not
+   even a one-line one inside a guard. */
+import { EVIDENCE_CAP, tierOf } from './evidence-table.extracted.js';
 
 const require = createRequire(import.meta.url);
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -81,16 +91,124 @@ if (missing.length) {
   process.exit(1);
 }
 
-/* The states this surface can stand at, each reached through the surface's own
-   routing — the same calls a click makes — so nothing is measured in a state a
-   reader could not walk to. */
-const STATES = {
-  queue: () => window.__ferGo(null),
-  finding: () => window.__ferGo('finding:over_treated_low'),
-  population: () => { window.__ferGo('population:lows'); },
-  dropdown: () => { window.__ferGo('population:lows'); window.__ferFactorOpen(true); },
-  lens: () => { window.__ferGo('finding:over_treated_low'); window.__ferProject('event'); },
+/* ===========================================================================
+   THE STATES.
+
+   THE OVERFLOW LEG VISITS EVERY ONE OF THEM. The contrast and target legs visit
+   the five their pairs are written against, and that asymmetry is deliberate: a
+   colour pair is tuned in one state and reads the same in the rest, while term 9
+   — "the inspector column does not scroll internally in ANY state, at either
+   locked size, in either theme" — is a claim about all of them at once.
+
+   WHY THE LIST IS DERIVED AND NOT WRITTEN OUT. Until this round it was five
+   hand-listed states, and none of them was an EXPANDED case file. The guard
+   therefore reported green over a real violation of the term it exists to hold:
+   7px in the finding case file and 12px in the population case file, at
+   1280x800, in both themes. A guard whose green means "the states I happened to
+   list" is the exact failure it is supposed to prevent, and the fix is not a
+   longer list — a longer list goes stale against the next fixture. The list
+   below is the PRODUCT of the surface's own controls, read off the fixture:
+
+     level        the queue root, the finding case file, the population case
+                  file. `__ferGo`, the call a row click makes, and the call that
+                  resets frame, roster, expansion and selection to their rest.
+     frame        every factor the population case file can be framed at, read
+                  off `data.scenes[...].frames`. `__ferFrame`.
+     verdict      every band position each frame can be drilled to, read off
+                  that frame's own occurrence groups. `__ferVerdict`.
+     projection   `By clock` and `By event`, at every drilled level.
+     the table    collapsed AND expanded, wherever the shipped painter emits an
+                  expander at all — decided by the shipped `tierOf` against the
+                  shipped `EVIDENCE_CAP`, because only tiered occurrences are
+                  capped and the counter rows below them are always drawn whole.
+     selection    no row, and a row. Selecting one appends the `Open ... in Day >`
+                  route BELOW the table, so EXPANDED + SELECTED is the tallest
+                  the column can ever be — and it is the combination both halves
+                  of the five-state list missed.
+     the dropdown open over the population case file, where it overlays.
+
+   Nothing is excluded and nothing is sampled. What that costs is stated in the
+   run line: the read count is the coverage, and a round that shrinks it has
+   narrowed the term.
+   =========================================================================== */
+const FINDING = 'finding:over_treated_low';
+const POPULATION = 'population:lows';
+
+/* One entering call for every state, driven through the surface's own routing —
+   the same calls a click makes — so nothing is measured in a state a reader
+   could not walk to. THE ORDER IS LOAD-BEARING: `__ferGo` and `__ferFrame` both
+   reset the roster, the expansion and the selection, so a descriptor applied out
+   of this order measures a state other than the one it names. The two clicks are
+   deliberately not optional-chained — a descriptor that says "expanded" where no
+   expander exists must throw and be reported, not quietly measure the rest
+   state under an expanded name. */
+const ENTER = (s) => {
+  window.__ferGo(s.level);
+  if (s.frame) window.__ferFrame(s.frame);
+  if (s.verdict) window.__ferVerdict(s.verdict);
+  if (s.level) window.__ferProject(s.projection);
+  if (s.dropdown) window.__ferFactorOpen(true);
+  if (s.expanded) document.querySelector('#level .more').click();
+  if (s.selected) document.querySelector('#level .ev-row').click();
 };
+
+const DATA = JSON.parse(await readFile(join(HERE, 'data.json'), 'utf8'));
+
+/* The four ways one roster can be standing, times the two projections. The two
+   expanded ones exist only where the shipped painter draws an expander. */
+const rosterStates = (label, base, group) => {
+  const out = [];
+  for (const projection of ['clock', 'event']) {
+    const stands = [{}, { selected: true }];
+    if (group.occurrences.filter(tierOf).length > EVIDENCE_CAP) {
+      stands.push({ expanded: true }, { expanded: true, selected: true });
+    }
+    for (const stand of stands) {
+      out.push({
+        id: `${label} · ${group.key} · ${projection}`
+          + `${stand.expanded ? ' · expanded' : ''}${stand.selected ? ' · selected' : ''}`,
+        ...base, projection, ...stand,
+      });
+    }
+  }
+  return out;
+};
+
+const population = DATA.scenes[POPULATION];
+const STATES = [
+  { id: 'queue', level: null },
+  /* The finding case file carries no verdict band — one group, no segments — so
+     its roster is whatever `go` rested it on. */
+  ...DATA.scenes[FINDING].occurrences.groups
+    .flatMap((g) => rosterStates('finding', { level: FINDING }, g)),
+  ...Object.entries(population.frames).flatMap(([frame, f]) => f.occurrences.groups
+    .flatMap((g) => rosterStates(`population · ${frame}`, { level: POPULATION, frame, verdict: g.key }, g))),
+  /* The dropdown overlays rather than pushing, which is term 16 — so it is a
+     state of the column even though it is meant to change nothing about it. */
+  { id: 'dropdown', level: POPULATION, projection: 'clock', dropdown: true },
+  { id: 'dropdown · event', level: POPULATION, projection: 'event', dropdown: true },
+];
+
+/* THE FIVE IDS THE PAIRS ARE WRITTEN AGAINST, mapped onto the derived states
+   they name so a colour keeps being measured where it was tuned. The rename is
+   asserted rather than assumed: if the fixture ever stops producing one of these
+   states the guard dies here, at the naming, instead of silently dropping every
+   pair that lives in it. (The "never resolved" sweep at the foot of `main` is
+   the second net under the same hole.) */
+const PAIR_STATE_IDS = {
+  'finding · fired · clock': 'finding',
+  'finding · fired · event': 'lens',
+  'population · over_treated_low · fired · clock': 'population',
+};
+for (const [derived, pairId] of Object.entries(PAIR_STATE_IDS)) {
+  const hit = STATES.filter((s) => s.id === derived);
+  if (hit.length !== 1) {
+    process.stderr.write(`contrast-audit.mjs cannot run — the pair state "${pairId}" maps to `
+      + `"${derived}", which the fixture produced ${hit.length} times (expected exactly 1)\n`);
+    process.exit(1);
+  }
+  hit[0].id = pairId;
+}
 
 /* EVERY PAIR THIS ROUND FIXED, plus the ones it had to leave alone, each named
    with the audit finding it comes from. `kind` decides the floor and how the
@@ -382,8 +500,17 @@ async function main() {
     for (const size of SIZES) {
       const key = `${theme} ${size.width}x${size.height}`;
       const page = await openMock(browser, theme, size, problems);
-      for (const [state, enter] of Object.entries(STATES)) {
-        await page.evaluate(enter);
+      for (const stand of STATES) {
+        const state = stand.id;
+        /* FAILS CLOSED at the door: a state that cannot be entered — a missing
+           expander, a frame the fixture stopped emitting — is a failure named
+           here, never a state quietly measured in some other configuration. */
+        try {
+          await page.evaluate(ENTER, stand);
+        } catch (e) {
+          failures.push(`${key} · ${state}: could not be entered — ${e.message}`);
+          continue;
+        }
         await page.waitForTimeout(450);
         const of = await page.evaluate(OVERFLOW);
         overflow[`${key} · ${state}`] = of;
@@ -466,7 +593,8 @@ async function main() {
   process.stdout.write(`\ncontrast + target + overflow guard — ${Object.keys(record).length} contrast `
     + `measurements (${PAIRS.length} pairs x 2 themes), ${Object.keys(targets).length} target-size reads `
     + `(${TARGETS.length} control classes x 2 themes x 2 sizes), ${Object.keys(overflow).length} `
-    + `state/size/theme overflow reads, ${failures.length} failure(s)\n`);
+    + `state/size/theme overflow reads (${STATES.length} states x 2 themes x 2 sizes — term 9's "any `
+    + `state", derived from the fixture), ${failures.length} failure(s)\n`);
   for (const f of failures) process.stdout.write(`  x ${f}\n`);
   if (failures.length) process.exit(1);
 }

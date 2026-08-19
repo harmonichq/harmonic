@@ -47,6 +47,11 @@ jobs:
       # temp dir and byte-compare against the committed copy.
       - name: Check the committed demo fixture sets are current
         run: uv run python scripts/check_demo_fixtures.py
+      # A live app revision may use only this manufactured local store. Keep its
+      # logical SQLite contents tied to the committed generator before any
+      # supervised no-fetch server run is authorized.
+      - name: Check the revise E2E synthetic database is current
+        run: uv run python scripts/gen_revise_e2e_db.py --check
       # #730: the Diagnose findings queue is a server-owned projection, and its
       # fixture is that projection's own output over inputs run through the real
       # engines. A classification, merge, anchoring or ordering change that is not

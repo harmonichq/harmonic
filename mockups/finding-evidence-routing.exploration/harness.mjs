@@ -505,8 +505,10 @@ async function probeApp(browser, theme, { writeChrome = false } = {}) {
      lives — probing only the drilled state left all eight of those selectors
      unverified against the app. */
   /* ROUND 5, WORKSTREAM A — the queue-root canvas, at the SAME WINDOW the mock
-     stands on. The mock has no preset instruments (the ruling retires them) and
-     therefore stands on 24 h permanently; the app opens on its configured
+     stands on. The mock's preset instruments are drawn but UNWIRED — a fixture
+     limit, not a ruling: #31 keeps the window control ("`WINDOW` stays, because
+     a reader viewing by clock can also filter by clock", ADR 31 part 3) — so the
+     mock stands on 24 h permanently; the app opens on its configured
      preset, so the app is pressed to 24 h before the option is read. Comparing a
      6-hour window against a 24-hour one would report the window as drift.
      Fails closed: no 24 h preset means no comparison, and it says so. */

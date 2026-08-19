@@ -1,0 +1,833 @@
+# Behaviour ledger — finding → evidence routing (Diagnose + Verify)
+
+**Status: SWEEP IN PROGRESS — not frozen.** This file carries only the §2
+**predecessor inventory** and its verdicts. The forward sweep (§1 inventory of
+the mock, §3 exercise, §4 replay script, the mock's own STORY entries) has not
+been run. There is no `★ FROZEN` header, and per `behavior-sweep.md` §7 building
+against this file is a blocking finding.
+
+**A ledger carrying a `missed` row cannot be frozen.** This one carries 43.
+
+---
+
+## §2 · Predecessor inventory
+
+**Predecessor:** the Diagnose workstation in the running app, at
+`origin/main` = `06bafa4`, served by `frontend/index.html`.
+
+Read as the predecessor, in full:
+
+- `frontend/diagnose-workstation.js` (1901 lines — the host)
+- `frontend/diagnose-workstation-chart.js` (817 — ECharts instance handlers,
+  `observeResize`)
+- `frontend/diagnose-workstation-data.js` (170 — pure adapter, registers nothing)
+- `frontend/diagnose-findings-queue.js` (243 — the queue painter)
+- `frontend/watched-change-dock.js` (the dock painter)
+- `frontend/diagnose-event-comparison.js` (837 — the lens, i.e. the predecessor
+  of the locked surface's `By event` projection)
+- `frontend/diagnose-workstation.css` (778), `frontend/diagnose-event-comparison.css` (483)
+
+**Handlers registered inside imported modules are in scope and were swept**, per
+§2's load-bearing clause. Four of the six files above are never named by
+`frontend/index.html`; the drawn window's grab handles (P02) and the lens's
+keyboard cursor (P27) both live there, and a host-only sweep would have missed
+both.
+
+**Excluded by name**, and why:
+
+- `frontend/index.html`'s cockpit shell — the topbar tab switcher, the theme
+  toggle, `＋ Log carbs`, the footer utilities. This is app chrome shared by
+  every tab, not this surface's behaviour; the mock lifts it as static DOM at
+  build time. Lock term 1 governs its **presence**, not its behaviour. Flagged
+  as a scoping call rather than settled silently.
+- `frontend/diagnose-workstation-data.js` — swept and empty: an adapter with no
+  registrations.
+
+**Diff target (the mock):** `mockups/finding-evidence-routing.exploration/` —
+`index.html`, `surface.js`, `chart.js`, `pooled.js`, `scene.css`, and the
+build-time extractions (`evidence-table.extracted.js`, `app-base.extracted.css`,
+`chrome.extracted.html`).
+
+**Contract:** `mockups/finding-evidence-routing.lock.md`, merged in PR #40,
+60 terms. **The lock has already closed**, so §2's ordering was not available:
+every `missed` row below is the post-lock case and lands in `resettle`
+(`behavior-sweep.md` §2, "Ordering"). No row here amends the lock.
+
+> **Editorial note, 2026-08-19 (harmonichq/harmonic#41) — added when this ledger
+> was brought onto `main`. No row, verdict or tally was touched.** The contract
+> named above **no longer exists**: this ledger's findings caused that lock to be
+> **retracted**, and `mockups/finding-evidence-routing.lock.md` was deleted. The
+> mock is an exploration draft again. ADR 31's decisions survive the retraction;
+> the manifest derived from them did not. The 43 `missed` rows below are
+> therefore no longer a `resettle` queue against a standing lock — they are the
+> open question that has to be answered before this surface can be locked at
+> all, and every one of them still needs an operator verdict. See
+> `openspec/changes/finding-evidence-routing/design.md`, "Amendment —
+> 2026-08-19".
+
+### Evidence base — the predecessor was driven, not read
+
+Static reading produced the row list. Every row's `evidence:` line names a live
+run against a **real browser engine**, never source:
+
+- **`replay`** — `frontend/diagnose-workstation-behavior.replay.mjs`, the
+  predecessor's own frozen ledger, run against the **built app**:
+
+  ```
+  PLAYWRIGHT_MODULE=/private/tmp/ciq-playwright-714/node_modules/playwright \
+  VENDOR_DIR=/private/tmp/ciq-event-vendor TARGET=app \
+  PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json \
+  node frontend/diagnose-workstation-behavior.replay.mjs
+  → app: 28 of 28 stories passed
+  ```
+
+- **`probe`** — four hand-written Playwright drivers written for this sweep, run
+  against the built app through the same opener (`openApp`) and against the mock
+  over a local static server at `127.0.0.1:8947`. They cover what the 28 stories
+  never asserted: cursor feedback, handle geometry and titles, suppression
+  states, lane dimming, the crumb elision ladder, the lens keyboard cursor, and
+  every absence claimed on the mock side. Scripts are scratch, not committed;
+  their readings are transcribed into the rows.
+
+Viewport for every mock-side read: **1280×800**, one of the lock's two stated
+sizes. App-side replay runs at 1440×900 with per-story resizes.
+
+### Verdicts used
+
+Two, deliberately:
+
+- **`kept`** — the mock implements it, or the lock contracts it as a build
+  obligation with a term that says so.
+- **`missed`** — the mock does not implement it. Per §2, `missed` is the
+  default, and a retirement argued by the agent that wrote the mock is `missed`.
+
+**No row reaches `retired`, because `retired` requires a sanction line and this
+sweep has no authority to write one.** Where a merged lock term or the #31 issue
+ruling already names and rules a behaviour, the row is annotated
+`lock-ruled: term N` or `issue-ruled: #31 §N` — that annotation is **not** a
+sanction and must not be read as one. It marks a question the operator can
+close in a word rather than re-decide. Rows annotated `lock-silent` are the ones
+nobody has ruled on at all.
+
+---
+
+## The rows
+
+### A · The drawn selection window
+
+`installDrag`, `frontend/diagnose-workstation.js:1636–1735`. Registered inside an
+imported module; `frontend/index.html` shows none of it.
+
+```
+P01 · Dragging in the plot body draws a custom selection window. mousedown
+      arms, first movement takes hold, mouseup commits; the window snaps to the
+      pooling grid and re-scopes the canvas, the inspector's denominators and
+      the queue together.
+  element:  #chart (mousedown/mousemove) + document (mousemove/mouseup)
+  source:   frontend/diagnose-workstation.js:1700-1721 (begin/move/end)
+  mock:     no #brace, no grip elements, no mousedown listener anywhere; a
+            25%→60% drag across the plot body leaves the scope readout and the
+            pressed preset byte-identical
+  evidence: replay S02 (app, pass) · probe-mock (mock, dragInPlot.changed=false)
+  verdict:  missed        lock-silent
+```
+
+```
+P02 · Two grab handles resize the window. #grip-a / #grip-b, each titled
+      "Drag to resize", 7×22px, cursor ew-resize, pointer-events auto, seated
+      below the window label's line so they never cover its text.
+  element:  #grip-a, #grip-b
+  source:   frontend/diagnose-workstation.js:1728-1729; .brace .grip,
+            frontend/diagnose-workstation.css:268-277
+  mock:     both ids absent from the DOM
+  evidence: replay S05 (app, pass) · probe (grips: title="Drag to resize",
+            7×22, ew-resize) · probe-mock (gripA=false, gripB=false)
+  verdict:  missed        lock-silent
+```
+
+```
+P03 · A resize grows away from the edge the reader is NOT dragging. Grabbing
+      grip-a anchors on drawn[1]; grabbing grip-b anchors on drawn[0]. One
+      grammar, so the far edge never moves under the hand.
+  source:   frontend/diagnose-workstation.js:1290-1296 (anchor assignment)
+  mock:     no resize path
+  evidence: replay S05 (app, pass)
+  verdict:  missed        lock-silent
+```
+
+```
+P04 · The dashed edge is grabbable down its WHOLE height, ±5px — not only at
+      the little grip. A press on the edge at mid-plot resizes; it does not
+      start a new window.
+  source:   frontend/diagnose-workstation.js:1668-1680 (EDGE_GRAB, edgeAt)
+  mock:     no edge
+  evidence: replay S03 (app, pass)
+  verdict:  missed        lock-silent
+```
+
+```
+P05 · Dragging INSIDE the window slides it whole — width preserved, both edges
+      live, clamped to 00:00–24:00.
+  source:   frontend/diagnose-workstation.js:1682-1685 (overInterior), 1305-1309
+  mock:     no interior hit test
+  evidence: replay S04 (app, pass)
+  verdict:  missed        lock-silent
+```
+
+```
+P06 · A press that never moves changes nothing. The press ARMS the gesture;
+      every mutation lives behind the first real movement, so a click-and-
+      release anywhere in the plot mints no window, unpresses no preset and
+      leaves no chip — by construction, not by an undo path.
+  source:   frontend/diagnose-workstation.js:1697-1717 (`moved`)
+  mock:     n/a
+  evidence: replay S06 (app, pass)
+  verdict:  missed        lock-silent
+```
+
+```
+P07 · The cursor is the only hover feedback in the plot, and it says which
+      gesture the next press will be: crosshair over open plot, grab over the
+      window's interior, col-resize over an edge.
+  source:   frontend/diagnose-workstation.js:1722-1727
+  mock:     #chart computes crosshair from the app's own stylesheet and never
+            changes — there is nothing to grab or resize
+  evidence: probe (leftMargin=crosshair, insideWindow=grab, onEdgeA=col-resize,
+            outsideWindow=crosshair) · probe-mock (chartCursor=crosshair, static)
+  verdict:  missed        lock-silent
+```
+
+```
+P08 · Mid-drag feedback: the edge under the hand goes solid and high-contrast
+      while the other stays a dashed reference, and a readout follows it
+      printing the snapped time it has landed on.
+  source:   frontend/diagnose-workstation.js:1337-1352 (paintLive);
+            .brace .edge.live / .brace .readout, diagnose-workstation.css:256-267
+  mock:     no brace, no readout
+  evidence: replay S02, S03 (app, pass — `live` and `readout` asserted)
+  verdict:  missed        lock-silent
+```
+
+```
+P09 · The window fills in DURING the drag, in its final committed skin. The
+      committed markArea treatment tracks the gesture through the same code
+      path, rAF-throttled to one canvas redraw per frame, and the inspector is
+      deliberately not repainted — so there is no rubber-band style to diverge
+      and no DOM rebuild per frame.
+  source:   frontend/diagnose-workstation.js:1614-1635 (liveRepaint)
+  mock:     no drag
+  evidence: replay S02 (app, pass)
+  verdict:  missed        lock-silent
+```
+
+```
+P10 · A drawn window snaps to the pooling grid and respects a 90-minute floor;
+      a slot's real 30-minute bounds are deliberately NOT run through this path.
+  source:   snapWindow, frontend/diagnose-workstation-chart.js; called at
+            diagnose-workstation.js:1298-1304; the floor is argued at 1237-1245
+  mock:     no drawn window
+  evidence: replay S02, S15 (app, pass)
+  verdict:  missed        lock-silent
+```
+
+```
+P11 · Esc belongs to the WINDOW: it clears the drawn window and restores the
+      last preset. It is bound with an abort signal and is NOT the level-pop key.
+  element:  document (keydown)
+  source:   frontend/diagnose-workstation.js:1731-1733; clearDrawn at 1478
+  mock:     document keydown exists but binds Esc to closing the factor dropdown
+            only (surface.js:797-799); with a row selected, Esc changes nothing
+  evidence: replay S07 (app, pass) · probe-mock3 (escDid=false)
+  verdict:  missed        lock-silent
+```
+
+```
+P12 · The follow chip's × is the same clearing act as Esc, and says so:
+      title "Clear the drawn window (Esc)".
+  element:  #seg-window [data-follow] .x
+  source:   frontend/diagnose-workstation.js:340-348
+  mock:     no follow chip in any state
+  evidence: replay S08 (app, pass) · probe (chip.title verbatim) ·
+            probe-mock (followChip=false)
+  verdict:  missed        lock-silent
+```
+
+```
+P13 · Margins are not the plot. A press left of the plot box or right of it is
+      ignored rather than clamped into a window.
+  source:   frontend/diagnose-workstation.js:1704-1706 (plotBox guard)
+  mock:     n/a
+  evidence: replay S02 (app, pass)
+  verdict:  missed        lock-silent
+```
+
+```
+P14 · The basal lane carries NO drag listener and stays click-only, while the
+      window's dashed edges project down THROUGH it on the plot's own spine —
+      measured: the edge runs from the plot's top edge to the lane stack's
+      bottom (845px), 26px past the chart's own box, and no further.
+  source:   frontend/diagnose-workstation.js:1481-1560 (paintBrace), and the
+            absence of any listener in renderLane at 464-479
+  mock:     no edges to project; the lane is a read-only strip
+  evidence: probe (edgeSpan: edgeBottom 845 == laneBottom 845, chartBottom 819)
+  verdict:  missed        lock-silent
+```
+
+```
+P15 · The handles are SUPPRESSED in at least one state. An I:C block selection
+      marks a window SEGMENT: the brace is hidden, the dashed edges stop being
+      hit-testable (`braceless` short-circuits edgeAt and overInterior), so a
+      data boundary can never be dragged into a user window by accident. The
+      lane dimming still runs, so the register stays readable.
+  source:   frontend/diagnose-workstation.js:1160-1165, 1669-1671, 1500-1502
+  mock:     no handles to suppress
+  evidence: replay S17 (app, pass) · probe2 (a wrapping block instead takes the
+            say-it-in-words path: chip null, preset left standing)
+  verdict:  missed        lock-silent
+```
+
+```
+P16 · The brace re-seats on viewport resize, so the window stays over its own
+      minutes when the pane changes width.
+  element:  window (resize, abortable)
+  source:   frontend/diagnose-workstation.js:1734
+  mock:     no brace
+  evidence: replay S23 (app, pass — live resize 1440→1280, no reload)
+  verdict:  missed        lock-silent
+```
+
+```
+P17 · ONE grammar: an EXPLICIT choice — a preset press OR a drag, the same kind
+      of act — outranks the window a frame would derive, and stands until a NEW
+      navigation. A user window is a workspace: it survives drilling and
+      popping. A lane click is the only navigation that releases it.
+  source:   frontend/diagnose-workstation.js:1176-1183 (`explicitPreset`),
+            1479-1480 (releaseWindow), 1213-1226 (paintChart's precedence chain)
+  mock:     the window group is inert, so no precedence exists to express
+  evidence: replay S01, S21 (app, pass)
+  verdict:  missed        lock-silent
+```
+
+### B · The window control and what it re-scopes
+
+```
+P18 · A preset press pins that window, clears any drawn one, and re-scopes the
+      canvas, the inspector's denominators and the queue TOGETHER.
+  element:  #seg-window button
+  source:   frontend/diagnose-workstation.js:302-312, 975-978
+  mock:     all five presets present, `24 h` pressed, none disabled, none wired
+            — pressing them changes nothing on the page
+  evidence: replay S01 (app, pass) · probe-mock2 (labels Overnight/Morning/
+            Afternoon/Evening/24 h, pressed=24 h, disabled=0, wired.changed=false)
+  verdict:  kept          lock term 60 — the fixture holds one 24 h window, so
+                          the group is drawn at its standing coordinate and is
+                          not wired; "a build that wires it is implementing the
+                          term, not violating it"
+```
+
+```
+P19 · The queue re-scopes with the window. The whole day is the unscoped global
+      queue; anything narrower is an explicit window the SERVER answers
+      (`/diagnose/findings?start_min=…`), keyed on the request so an unchanged
+      window costs no fetch and a response arriving after the reader moved on is
+      dropped. The crumb meta reads "N in this window" scoped, "N findings ·
+      30 days" global.
+  source:   frontend/diagnose-workstation.js:1096-1121 (ensureFindings)
+  mock:     one fixture, one window
+  evidence: probe/probe2 (app: pressing Evening → meta "5 in this window";
+            pressing 24 h → "5 findings · 30 days"; a drag → same re-scope)
+  verdict:  kept          lock term 60 (same deferral as P18)
+```
+
+```
+P19b · While a window's findings are in flight the level carries
+       `data-loading`, so the queue does not flash an empty list.
+  source:   frontend/diagnose-workstation.js:1447 (host.dataset.loading)
+  mock:     no async load
+  evidence: probe (observed on the app between preset presses)
+  verdict:  missed        lock-silent
+```
+
+### C · Frame-derived windows
+
+```
+P20 · Drilling a factor narrows the canvas to that factor's PEAK HOUR, labels
+      it `PEAK HH:MM–HH:MM`, prints "n of N" as the droppable count tail, and
+      names it in the chip as `Factor peak HH:MM–HH:MM`.
+  source:   frontend/diagnose-workstation.js:1227-1236
+  mock:     drilling a finding leaves the window at 24 h and prints no chip
+  evidence: replay S09 (app, pass) · probe-mock3 (windowPressed still ["24 h"]
+            after drilling finding:over_treated_low)
+  verdict:  missed        lock-silent — term 26 rules the OCCURRENCE case only
+```
+
+```
+P21 · Selecting an occurrence narrows the canvas to ±45 minutes around it — the
+      pooling radius, and never wider than the factor peak it was drilled from.
+  source:   frontend/diagnose-workstation.js:1237-1244
+  mock:     a row click selects in place and the window is byte-identical after
+  evidence: replay S11 (app, pass)
+  verdict:  missed        lock-ruled: term 26 ("Selecting an occurrence never
+                          moves the clock window … the window is byte-identical
+                          to what it was before")
+```
+
+```
+P22 · A slot frame marks the slot's span and a non-wrapping block shades its
+      segment; a block that WRAPS midnight draws nothing and states its hours in
+      words instead, leaving the standing window exactly as it was — because a
+      shaded region that is not the block would be a lie about it.
+  source:   frontend/diagnose-workstation.js:1245-1268
+  mock:     no parameter frames exist to derive a window from
+  evidence: replay S15, S17 (app, pass) · probe2 (clicking the I:C lane reaches
+            "Findings › Evening block", the wrapping block, preset left standing)
+  verdict:  missed        lock-silent
+```
+
+### D · Keyboard
+
+```
+P23 · Backspace pops exactly one level at depth ≥ 2, at any depth and from any
+      branch. Modifier-held keys are ignored.
+  element:  document (keydown, abortable)
+  source:   frontend/diagnose-workstation.js:1758-1766
+  mock:     no Backspace handler; pressing it in a drilled case file does nothing
+  evidence: replay S13 (app, pass) · probe-mock3 (backspacePopped=false)
+  verdict:  missed        lock-silent
+```
+
+```
+P24 · ←/→ step occurrences at the occurrence level and STOP at the ends rather
+      than wrapping — "an instrument should not silently return you to the first
+      reading". The panel and the day trace both follow from the frame.
+  source:   frontend/diagnose-workstation.js:1767-1776
+  mock:     no arrow handler; with a row selected, ArrowRight changes nothing
+  evidence: replay S12 (app, pass) · probe-mock3 (arrowStepped=false)
+  verdict:  missed        lock-silent
+```
+
+```
+P25 · The stepping is discoverable: the occurrence header prints "n of N" with
+      a `← →` keyhint beside it.
+  source:   frontend/diagnose-workstation.js:900-902
+  mock:     no occurrence level, no keyhint
+  evidence: probe (occurrence.pos = "1 of 6← →", keyhint = "← →")
+  verdict:  missed        lock-silent
+```
+
+```
+P26 · The lens chart is a keyboard instrument. `#ec-chart` is role="img",
+      tabindex 0; Arrow keys walk a 5-minute cursor across the alignment window,
+      Home/End jump to its ends, Esc clears the readout. Each step dispatches
+      `showTip`, repaints the docked readout, and REWRITES the chart's aria-label
+      with every cohort's median at that minute — so the comparison is readable
+      without a mouse and without sight.
+  element:  #ec-chart (keydown)
+  source:   frontend/diagnose-event-comparison.js:674-691
+  mock:     the mock's #ec-chart keeps role="img", tabindex 0 AND the aria-label
+            "Low response comparison. Use left and right arrow keys to inspect
+            five-minute points." — and registers NO keydown handler. Pressing
+            ArrowRight then End leaves the label byte-identical.
+  evidence: probe3 (app: label moves −5 h → +2 h → +1.9 h with live medians) ·
+            probe-mock2 (mock: lensKeyboard.moved=false, label unchanged)
+  verdict:  missed        lock-silent — and the surviving aria-label promises a
+                          path the mock does not have
+```
+
+```
+P27 · Segmented instrument groups take roving Arrow/Home/End focus with
+      wraparound (`installSegKeys`), scoped so it never collides with the
+      workstation rail's own Window group.
+  source:   frontend/diagnose-event-comparison.js:337-350
+  mock:     the Align group (`#fer-seg-align`) has no key handling; the mock
+            instead ADDS roving keys to the 48-cell basal strip (lock term 49),
+            which the shipped app does not have
+  evidence: probe3 (app: focus walks Glucose → Meals → Lows on ArrowRight/End) ·
+            probe-mock (mock lane: 48 cells, 1 tab stop — a mock addition)
+  verdict:  missed        lock-silent
+```
+
+### E · Hover and the docked readout
+
+```
+P28 · The pooled canvas reports the hovered bin in the header's live line —
+      time, median, 25–75, 10–90, n — with the median's ink saying which side of
+      the target band it sits on. No floating box anywhere.
+  source:   frontend/diagnose-workstation.js:135-160 (paintReadout);
+            diagnose-workstation-chart.js:800-812
+  mock:     kept — hovering mid-plot swaps the head to
+            "12:00 MEDIAN 181 25–75 170–190 10–90 161–197 N 54"
+  evidence: replay S19 (app, pass) · probe-mock2 (pooledHover.changed=true)
+  verdict:  kept
+```
+
+```
+P29 · An item hover LATCHES. Hovering an occurrence dot or a meal glyph reports
+      that item's own reading through the same channel, and the axis pointer
+      does not overwrite it on the very next mousemove — the latch releases on
+      mouseout / globalout.
+  source:   frontend/diagnose-workstation-chart.js:778-813 (`overItem`, four
+            instance handlers: mouseover, mouseout, updateAxisPointer, globalout)
+  mock:     binds only `updateAxisPointer` and `globalout` (surface.js:129-130)
+            — two of the four. There is no mouseover/mouseout pair, so no latch.
+  evidence: replay S19 (app, pass — dot and glyph readings asserted)
+  verdict:  missed        lock-silent. §2 names this exact shape: "a chart module
+                          that installs four instance handlers … is four
+                          inventory rows".
+```
+
+```
+P30 · Handlers are rebound, never stacked: renderCanvas calls chart.off() for
+      all four before re-registering, because getInstanceByDom hands back the
+      same chart on every window change.
+  source:   frontend/diagnose-workstation-chart.js:770-774
+  mock:     repaints through the same shipped path
+  evidence: replay S19 (app, pass across repeated window changes)
+  verdict:  kept
+```
+
+```
+P31 · A redraw ends the old hover — paintReadout(null) fires before every
+      renderCanvas, so the header never reports a bin the reader is no longer over.
+  source:   frontend/diagnose-workstation.js:1288
+  mock:     n/a (no window changes)
+  evidence: replay S19 (app, pass)
+  verdict:  missed        lock-silent (minor; follows the window control back)
+```
+
+```
+P32 · An evidence row's native `title` carries that occurrence's full sentence,
+      so the reader can read the narrative without leaving the table.
+  source:   frontend/diagnose-workstation.js:826 (`b.title = o.text || ''`)
+  mock:     the extracted painter still emits it and the mock strips it after
+            paint (surface.js round-7 item 3c) — 0 of 5 rows carry a title
+  evidence: probe (app: 5 of 5 titled, e.g. "Treated a low at 01:35 and the
+            glucose kept falling to 49 before it tu…") ·
+            probe-mock3 (mock: evTitled=0)
+  verdict:  missed        lock-ruled: term 25 ("0 rows carry a native title")
+```
+
+```
+P33 · Every clock-histogram bar carries a native title stating its band and its
+      share ("00:00–02:00 — 1 of 6").
+  source:   frontend/diagnose-workstation.js:497-503
+  mock:     no histogram at all (see P37)
+  evidence: probe (app: 12 bars, 12 titled)
+  verdict:  missed        lock-silent
+```
+
+```
+P34 · Basal lane cells and the lane key's swatches carry native titles and
+      aria-labels naming the slot and its verdict in long form.
+  source:   frontend/diagnose-workstation.js:469-473, 487-490
+  mock:     kept verbatim through pooled.js:127-159
+  evidence: probe-mock (mock lane: 48 cells with the shipped title/aria-label)
+  verdict:  kept
+```
+
+### F · The inspector's levels
+
+```
+P35 · An evidence row click opens the occurrence LEVEL — a new crumb level
+      where one occurrence owns the panel.
+  source:   frontend/diagnose-workstation.js:829, 1465-1467
+  mock:     a row click SELECTS in place; the crumb stays at
+            "Findings › Over-treated low" and one row takes emphasis
+  evidence: replay S11 (app, pass) · probe-mock3 (crumb unchanged, emph=1)
+  verdict:  missed        lock-ruled: term 31 ("The rows ARE the selection
+                          mechanism — row ↔ canvas mark are two reads of one
+                          selection")
+```
+
+```
+P36 · The occurrence level's CLASSIFIER READS: every classifier's verdict on
+      that occurrence, matched and not matched, each with its tier and its
+      detail sentence — with a matched read that merely repeats the headline
+      collapsing to its name, and non-matching reads always printed in full
+      because they are the counter-evidence. Plus the occurrence's own full
+      sentence, its entry→nadir numbers, and a line saying whether that day's
+      real CGM trace was captured or not.
+  source:   frontend/diagnose-workstation.js:866-919 (renderOccurrenceLevel)
+  mock:     no occurrence level exists, so none of this content has a home
+  evidence: probe (app: 2 classifier reads, 1 of them not-matched, day route
+            "Open Mar 1 in Day") · probe-mock3 (mock: no such level)
+  verdict:  missed        lock-silent — term 31 rules the row's ROLE, not the
+                          disposal of the level's content
+```
+
+```
+P37 · The when-it-lands histogram: 12 two-hour bars across the day, the peak
+      band marked, counts printed on each bar, an hour axis beneath, and a
+      caption "peak HH:MM–HH:MM · n of N".
+  source:   frontend/diagnose-workstation.js:493-507 (renderClockInto)
+  mock:     replaced by one sentence — "Busiest two-hour band 00:00–02:00 ·
+            1 of 7". The distribution across the rest of the day is gone.
+  evidence: probe (app: 12 bars) · probe-mock4 (mock: histogram=0)
+  verdict:  missed        lock-silent — and #31's own resolution kept it
+                          ("the when-it-lands histogram with coincidence lines")
+```
+
+```
+P38 · The two coincidence ROUTES: the factor's peak hour falls inside a real
+      basal slot AND a real I:C block, both stated on one line with their own
+      verdicts, each with its own button ("View slot", "View segment") landing
+      on that parameter's own level.
+  source:   frontend/diagnose-workstation.js:530-556
+  mock:     the two coincidence LINES are kept, as rows with chevrons
+            ("Basal · 00:00 · holds at current ›", "Morning carb-ratio block
+            00:00–12:00 · holds at current ›"). Whether they route is
+            unexercised: only two scenes exist in this fixture.
+  evidence: probe (app: linkBtns = ["View slot","View segment"], replay S20
+            confirms each lands on its own parameter) · probe-mock4
+  verdict:  kept          (routes unexercised on this fixture)
+```
+
+```
+P39 · Staging. A parameter level carries one button that toggles
+      `Stage change` ⇄ `Staged · Undo`, writes to the Plan draft through the
+      app's own callback, updates the cockpit's Plan badge, and re-paints the
+      dock's line with what is staged, in the same rounded numbers the panel
+      prints. Staged basal slots also take an accent underline in the lane.
+  source:   frontend/diagnose-workstation.js:611-622, 1449-1476, 1330-1358
+  mock:     no stage button in any reachable state; the dock holds
+            "Nothing staged · stage a change from a finding to start a trial"
+  evidence: replay S16, S25 (app, pass) · probe-mock4 (stageBtn=null, dock idle)
+  verdict:  missed        lock-silent. Term 11 records that the dock holds its
+                          idle line "on this fixture", which is a fixture limit,
+                          not a ruling that staging goes.
+```
+
+```
+P40 · The parameter case file itself — ONE panel for a basal slot, an I:C block
+      or the correction factor, same order and same reserved geometry for all
+      three: Current / Estimate / Recommended, the CI on the estimate with a
+      "(wide)" flag, the support denominator in that parameter's own noun, and
+      two hedges that fire on the data — one when the interval reaches the value
+      already programmed ("it includes no change at all"), one when the
+      recommendation does not sit between current and estimate.
+  source:   frontend/diagnose-workstation.js:568-627 (renderParamLevel) and its
+            three callers at 629-760
+  mock:     three of the eight queue rows are parameter rows (`ic:720`,
+            `basal:30-90`, `basal:330-360`); none of them routes anywhere,
+            because the fixture holds only two scenes. The lock's 60 terms
+            describe finding and population case files only.
+  evidence: replay S15, S16, S18 (app, pass) · probe-mock3 (rowIds vs sceneKeys:
+            6 of 8 rows route nowhere)
+  verdict:  missed        lock-silent
+```
+
+```
+P41 · The findings queue row click drills, keyed on the projection's own row id
+      — every row drills, held and blind included, and a row whose parameter the
+      payload cannot show keeps its chevron and simply does not move.
+  source:   frontend/diagnose-findings-queue.js:239; drillFinding at
+            diagnose-workstation.js:1129-1152
+  mock:     the shipped painter is reused and wired to `go(row.id)`; 2 of the 8
+            rows have a scene behind them
+  evidence: replay S24 (app, pass) · probe-mock3 (finding:over_treated_low drills)
+  verdict:  kept          (6 of 8 destinations unexercised on this fixture)
+```
+
+```
+P42 · A basal lane cell is a shortcut INTO the slot branch: it pushes a level
+      from the queue root and SWAPS in place from a slot frame, so clicking
+      cells never deepens the stack — and it releases whatever explicit window
+      was standing, because a lane click is a physical scope choice.
+  source:   frontend/diagnose-workstation.js:1194-1211 (pickCell), 473
+  mock:     the 48 cells are painted with their titles and aria-labels but carry
+            NO click handler — the strip is a read-only densitometer
+  evidence: replay S15 (app, pass) · probe-mock (mock lane: no click wiring)
+  verdict:  missed        lock-silent
+```
+
+```
+P43 · Lane cells outside the window are DIMMED to opacity .38 — de-emphasised,
+      never removed, because the verdict is still true, it is just not what the
+      canvas is scoped to. Both lanes, and a wrapping block piece by piece: one
+      piece inside the window and one outside are both true.
+  source:   frontend/diagnose-workstation.js:1538-1559; [data-outside="true"],
+            diagnose-workstation.css:307-308
+  mock:     0 of 48 cells carry data-outside in any state
+  evidence: probe (app, drawn state: 42 of 48 dimmed at opacity .38) ·
+            probe-mock (mock: laneOutside=0)
+  verdict:  missed        lock-silent (follows the window control back)
+```
+
+```
+P44 · The I:C lane — a second lane at TRUE minute boundaries rather than slot
+      indices, its cells clickable into the block branch, a wrapping block drawn
+      as two pieces of one block, each piece with its own title and aria-label
+      naming its part.
+  source:   frontend/diagnose-workstation.js:422-445 (renderIcLane)
+  mock:     no I:C lane; pooled.js names the omission in its own header
+  evidence: probe (app: 3 cells, 3 titled, e.g. "Evening I:C block 11:00–07:00 ·
+            holds at current") · probe-mock (mock: icLane=0)
+  verdict:  missed        issue-ruled: #31 scope guard ("The I:C lane retirement
+                          ruling carries forward from ciq-autotune#664: I:C
+                          enters via a findings-queue row, not a lane")
+```
+
+### G · Crumb, level transitions and chrome
+
+```
+P45 · The crumb is the navigation: ancestors are buttons that pop to their own
+      index, the leaf is inert and carries aria-current, separators are decor.
+  source:   frontend/diagnose-workstation.js:1374-1400 (drawTrail)
+  mock:     kept, one ancestor deep
+  evidence: replay S14 (app, pass) · probe-mock3 ("Findings › Over-treated low",
+            root clickable, leaf inert)
+  verdict:  kept
+```
+
+```
+P46 · The crumb's ELISION LADDER. When the path would run into the meta's
+      reserve the MIDDLE gives way, never the root and never the current item —
+      measured against scrollWidth rather than estimated, and stepped: whole
+      path → middle elided to `…` → middle gone entirely.
+  source:   frontend/diagnose-workstation.js:1402-1420 (paintCrumb)
+  mock:     the mock's crumb is at most root + leaf, so no ladder exists
+  evidence: probe2 (app, dense state at 1280×800: "Findings › … › Mar 3 06:50")
+  verdict:  missed        lock-silent
+```
+
+```
+P47 · The level swap is directional: `data-dir` is push or pop, the animation is
+      restarted on every transition, and it resolves to none under
+      prefers-reduced-motion.
+  source:   frontend/diagnose-workstation.js:1436-1441;
+            diagnose-workstation.css:415-419
+  mock:     links the same stylesheet and sets data-dir="push", but there is no
+            pop path — the crumb root is the only ancestor
+  evidence: probe (app: levelDir push, animationName push) · probe-mock4
+            (mock: levelDir="push" only)
+  verdict:  missed        lock-silent (minor — the pop direction only)
+```
+
+```
+P48 · Per-row chevrons on evidence rows.
+  source:   frontend/diagnose-workstation.js:833
+  mock:     stripped after paint; 0 chevrons in the DOM
+  evidence: probe (app: 5) · probe-mock3 (mock: evChevInDom=0)
+  verdict:  missed        lock-ruled: term 38 ("0 `.chev` inside `.ev-row`")
+```
+
+```
+P49 · The evidence cap is a real two-way toggle: five matched rows, then
+      "N more", then "Show first 5" — and the counter-example sub-group
+      ("Attributed here, but no classifier fired on the pattern") is never
+      capped, because that counter-evidence is load-bearing.
+  source:   frontend/diagnose-workstation.js:838-864
+  mock:     kept whole through the build-time extraction (lock term 30)
+  evidence: replay S10, S18 (app, pass) · probe-mock3 (mock: "2 more" present)
+  verdict:  kept          (the counter-group branch is dormant on this fixture —
+                          lock term 35 records the same gap for the verdict cell)
+```
+
+```
+P50 · The chart host is observed for resize behind a re-entrancy guard: the
+      observer compares rounded dimensions and defers to rAF, because the pane
+      grid animates its tracks and a naive observer→resize→layout chain makes
+      the browser report "ResizeObserver loop completed with undelivered
+      notifications".
+  source:   frontend/diagnose-workstation-chart.js:352-374 (observeResize)
+  mock:     `new ResizeObserver(() => chart.resize())`, twice, with no guard
+            (surface.js:131, 157)
+  evidence: replay S23 (app, pass — live resize, zero console errors) ·
+            static read of the mock's two registrations
+  verdict:  missed        lock-silent — and lock term 53 requires zero console
+                          warnings in every state × theme × size
+```
+
+```
+P51 · The dock's route affordance: where a watched change has a target, the
+      dock carries a `.go` control that routes to it.
+  source:   frontend/watched-change-dock.js:149
+  mock:     the dock is idle in every reachable state
+  evidence: replay S25 (app, pass) · probe-mock4 (mock: idle line only)
+  verdict:  kept          (unexercised — lock term 11 records the same fixture
+                          limit: "on this fixture it holds its idle line in
+                          every reachable state")
+```
+
+### H · The lens's own controls
+
+```
+P52 · The lens's inspector pane and its three selects — `#ec-factor`,
+      `#ec-another`, `#ec-occurrence` — plus `Clear trace`, the occurrence
+      detail block and the rescue note.
+  source:   frontend/diagnose-event-comparison.js:651-660
+  mock:     the lens is canvas-only; the inspector column is the workstation's
+  evidence: probe3 (app: all present and wired)
+  verdict:  missed        issue-ruled: #31 resolution §4 ("The event-comparison
+                          view's own inspector pane and occurrence dropdown
+                          retire app-wide")
+```
+
+```
+P53 · URL state and popstate: view / factor / block / another / occ live in the
+      query string, popstate re-requests the projection, and a stale response is
+      dropped by generation counter.
+  source:   frontend/diagnose-event-comparison.js:706-711, 790-820
+  mock:     the mock is one page with no URL state
+  evidence: probe3 (app: /?state=dense&theme=light&view=lows#diagnose)
+  verdict:  kept          lock term 19 (one URL-state contract, build-time
+                          evidence — "the hash/query-string split retires")
+```
+
+```
+P54 · The lens's two routes out: "Open this date in Day" on the selected
+      occurrence, and "Review the full-window Glucose recommendation →".
+  source:   frontend/diagnose-event-comparison.js:764-777
+  mock:     the Day route is kept as "Open Aug 1 in Day ›" on the selected row
+  evidence: probe3 (app) · probe-mock3 (mock: dayRoute present)
+  verdict:  kept          lock terms 39, 19
+```
+
+---
+
+## §3 completeness check
+
+- Every inventoried predecessor handler maps to ≥1 row: **yes**. Counted across
+  the six swept files: **33** `addEventListener` sites (20 workstation, 11 lens,
+  1 queue, 1 dock), **6** chart-instance handlers (4 pooled: mouseover,
+  mouseout, updateAxisPointer, globalout; 2 lens: updateAxisPointer, zr
+  globalout), **2** `ResizeObserver`s, **0** inline `on*=` and no
+  Intersection/Mutation observers. Each is accounted for in P01–P54, with
+  multi-handler gestures
+  (P01 assembles three, P26 one keydown across five keys) collapsed into the one
+  row a reader would recognise, as §2 requires.
+- **Every §2 predecessor row carries a verdict: yes.** 54 rows.
+- Every row was observed live: **yes**, except where the row's `evidence:` line
+  says otherwise. Two rows could not be driven to their full extent and say so
+  in place: P38 (the coincidence routes' destinations, mock side — only two
+  scenes exist in the fixture) and P51 (the dock's route control — the fixture
+  never produces a non-idle watched change, which lock term 11 already records).
+  Neither is asserted from source; both are recorded as unexercised.
+- CSS that encodes behaviour was swept: `:hover` on rows, queue rows and crumb
+  buttons, `:focus-visible` rings, the push/pop keyframes and their
+  reduced-motion override, and the cursor declarations. The hover washes and
+  focus rings arrive in the mock through the app's own linked stylesheets and
+  are `kept` without individual rows; only the ones the mock cannot reach
+  (P07's cursor states, P43's dimming, P47's pop direction) are rows.
+
+## Tally
+
+**55 rows · 12 kept · 43 missed · 0 retired.**
+
+Among the 43 missed: **6** are already named and ruled somewhere dated — 4 by a
+lock term (P21/term 26, P32/term 25, P35/term 31, P48/term 38) and 2 by the #31
+issue resolution (P44, P52). **37 have never been ruled on by anyone.**
+
+`retired` is 0 because a sanction line requires a person's name, the date they
+ruled, and their reason quoted in their own words, and this sweep has none to
+transcribe that meets that bar. The 6 annotated rows are the fastest to close;
+the other 37 are the actual question.
+
+---
+
+## §6 · QUESTION round
+
+Not resolved here. Carried to the operator as one numbered round, ordered by
+what a reader of their own glucose data would miss most. Each `missed` row above
+is in it. Because the lock has already merged, every ruling of `kept` lands in
+`resettle`, not in a build decision and not in a bug fix.

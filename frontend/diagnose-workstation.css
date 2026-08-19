@@ -539,6 +539,32 @@ button.entry .pill[data-empty="true"] { visibility: hidden; }
    stylesheet that still describes a component nobody renders is the next reader's
    wrong map. `.dw .qrow` at the foot of this file is what replaced them. */
 
+/* the verdict band — the split's own nouns (ADR 41), drilling the roster only */
+.vband { padding: 8px var(--ck-pad) 4px; }
+.vband .bar {
+  display: grid; gap: 2px; height: 10px; border-radius: 3px; overflow: hidden;
+}
+.vband .seg {
+  border: 0; padding: 0; cursor: pointer; background: var(--ck-inset);
+}
+.vband .seg[data-verdict="fired"] { background: var(--mk-ok); }
+.vband .seg[data-verdict="near_miss"] { background: var(--mk-warn); }
+.vband .seg[data-verdict="clean"] { background: color-mix(in srgb, var(--mk-muted) 55%, transparent); }
+.vband .seg[aria-pressed="true"] { outline: 1.5px solid var(--mk-text); outline-offset: 1px; }
+.vband .keys {
+  margin-top: 6px; display: flex; gap: 14px; flex-wrap: wrap;
+  font-size: 11px; color: var(--mk-secondary);
+}
+.vband .key {
+  display: flex; align-items: baseline; gap: 5px; border: 0; background: none;
+  padding: 0; cursor: pointer; color: inherit; font: inherit;
+}
+.vband .key[aria-pressed="true"] .lead { color: var(--mk-text); font-weight: 650; }
+.vband .key .n { font-family: var(--ck-mono); color: var(--mk-muted); }
+.vband-foot {
+  padding: 0 var(--ck-pad) 8px; font-size: 10.5px; color: var(--mk-muted);
+}
+
 /* evidence — a table on a shared numeric spine, not a feed */
 .ev-group {
   padding: 8px var(--ck-pad) 4px; font-size: 11.5px; color: var(--mk-secondary);
@@ -577,7 +603,15 @@ button.entry .pill[data-empty="true"] { visibility: hidden; }
   color: var(--mk-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .ev-row[data-counter="true"] .worst, .ev-row[data-counter="true"] .only { color: var(--mk-secondary); }
-/* level 3: one occurrence, whole panel */
+.ev-row[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--mk-primary-soft) 55%, transparent);
+}
+.ev-row[aria-pressed="true"] .when {
+  border-right-color: color-mix(in srgb, var(--mk-primary) 40%, transparent);
+}
+/* select-in-place (P35 retired): the emphasised row's detail, inline under the
+   roster — never a level of its own */
+.occ-detail { border-top: 1px solid var(--ck-hair); }
 .occ-head { display: flex; align-items: baseline; gap: 9px; }
 .occ-head .when { font-family: var(--ck-mono); font-size: var(--ck-emph); color: var(--mk-text); }
 .occ-head .pos {

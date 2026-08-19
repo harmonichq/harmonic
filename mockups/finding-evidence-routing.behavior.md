@@ -398,7 +398,10 @@ P20 · Drilling a factor narrows the canvas to that factor's PEAK HOUR, labels
 ```
 P21 · Selecting an occurrence narrows the canvas to ±45 minutes around it — the
       pooling radius, and never wider than the factor peak it was drilled from.
-  source:   frontend/diagnose-workstation.js:1237-1244
+  source:   was frontend/diagnose-workstation.js:1237-1244; select-in-place
+            (Revision amendment below) deletes the narrowing outright — the
+            factor frame's `paintChart` derives the window exactly as before
+            and a `selectedOcc` adds only the day trace and the mark
   mock:     a row click selects in place and the window is byte-identical after
             selection
   evidence: replay S11 (app, pass)
@@ -436,19 +439,30 @@ P23 · Backspace pops exactly one level at depth ≥ 2, at any depth and from an
 P24 · ←/→ step occurrences at the occurrence level and STOP at the ends rather
       than wrapping — "an instrument should not silently return you to the first
       reading". The panel and the day trace both follow from the frame.
-  source:   frontend/diagnose-workstation.js:1767-1776
+  source:   was frontend/diagnose-workstation.js:1767-1776; re-homed by the
+            Revision amendment below onto select-in-place — the keydown
+            handler now steps `f.selectedOcc` on the standing factor frame
+            through `rosterFor(f)` (the band's current drill), never a
+            frame of its own
   mock:     no arrow handler; with a row selected, ArrowRight changes nothing
   evidence: replay S12 (app, pass) · probe-mock3 (arrowStepped=false)
-  verdict:  kept          operator-ruled: Connor Griffin · 2026-08-19
+  verdict:  kept, re-homed      ruled by Connor, 2026-08-19 (same session as
+                                P21/P35) — the counter and the stepping survive
+                                select-in-place unchanged in form, only in home
 ```
 
 ```
 P25 · The stepping is discoverable: the occurrence header prints "n of N" with
       a `← →` keyhint beside it.
-  source:   frontend/diagnose-workstation.js:900-902
+  source:   was frontend/diagnose-workstation.js:900-902; re-homed by the
+            Revision amendment below — the same header markup now renders
+            inline under the roster (`renderOccurrenceDetail`, née
+            `renderOccurrenceLevel`) instead of on a pushed level
   mock:     no occurrence level, no keyhint
   evidence: probe (occurrence.pos = "1 of 6← →", keyhint = "← →")
-  verdict:  kept          operator-ruled: Connor Griffin · 2026-08-19
+  verdict:  kept, re-homed      ruled by Connor, 2026-08-19 (same session as
+                                P21/P35) — the counter and the keyhint survive
+                                select-in-place unchanged in form, only in home
 ```
 
 ```
@@ -564,12 +578,17 @@ P34 · Basal lane cells and the lane key's swatches carry native titles and
 ```
 P35 · An evidence row click opens the occurrence LEVEL — a new crumb level
       where one occurrence owns the panel.
-  source:   frontend/diagnose-workstation.js:829, 1465-1467
+  source:   was frontend/diagnose-workstation.js:829, 1465-1467; the Revision
+            amendment below replaces the push with `selectOcc(occ)`
+            (frontend/diagnose-workstation.js) — no frame, no crumb change
   mock:     a row click SELECTS in place; the crumb stays at
             "Findings › Over-treated low" and one row takes emphasis
   evidence: replay S11 (app, pass) · probe-mock3 (crumb unchanged, emph=1)
   verdict:  retired
-  sanction: Connor Griffin · 2026-08-19 · "Decided by Connor Griffin in a ruling session on 2026-08-19."
+  sanction: Connor Griffin · 2026-08-19 · "I don't find the content of the
+            drill-down view particularly useful. So, I think we could just
+            simply have the if there's a current specific detail that needs to
+            show, I think it should just mutate the standing screen."
   ruled-elsewhere: lock term 31 · "The rows are the selection mechanism — row ↔
                    canvas mark are two reads of one selection"
 ```
@@ -582,11 +601,14 @@ P36 · The occurrence level's CLASSIFIER READS: every classifier's verdict on
       because they are the counter-evidence. Plus the occurrence's own full
       sentence, its entry→nadir numbers, and a line saying whether that day's
       real CGM trace was captured or not.
-  source:   frontend/diagnose-workstation.js:866-919 (renderOccurrenceLevel)
+  source:   was frontend/diagnose-workstation.js:866-919 (renderOccurrenceLevel);
+            re-homed by the Revision amendment below into
+            `renderOccurrenceDetail`, unchanged in content, rendered inline
+            under the roster instead of on a pushed level
   mock:     no occurrence level exists, so none of this content has a home
   evidence: probe (app: 2 classifier reads, 1 of them not-matched, day route
             "Open Mar 1 in Day") · probe-mock3 (mock: no such level)
-  verdict:  kept          operator-ruled: Connor Griffin · 2026-08-19
+  verdict:  kept, re-homed      operator-ruled: Connor Griffin · 2026-08-19
 ```
 
 ```
@@ -874,3 +896,63 @@ S26 also asserts that every evidence row remains a full-row button and still
 opens its occurrence, so the retirement removes only the redundant trailing
 glyph. The old replay failed first with `expected 0, got 5`; the revised replay
 then passed.
+
+## Revision amendment — 2026-08-19 (verdict band + select-in-place)
+
+**P21 and P35 are now applied as permanent `RETIRED` entries; P24 and P25 move
+to `kept, re-homed`.** An evidence-row click no longer pushes a third crumb
+level. It calls `selectOcc(occ)` (frontend/diagnose-workstation.js), which sets
+`selectedOcc` on the standing factor frame and repaints in place: the crumb
+stays `Findings › <finding>`, and the canvas overlays that day's trace and
+marks the selected event without moving the clock window (P21's sanction,
+transcribed verbatim above; ADR 31 part 5). The occurrence level's own
+render (`renderOccurrenceLevel`) is renamed `renderOccurrenceDetail` and now
+mounts under the roster on the same standing screen (P35's sanction,
+transcribed verbatim above), carrying its classifier-reads content unchanged
+(P36, re-homed). The `n of N` counter and `← →` keyboard stepping (P24, P25)
+survive on the same frame, stepping `f.selectedOcc` through `rosterFor(f)`
+instead of walking a stack of occurrence frames — ruled by Connor, 2026-08-19,
+same session as P21/P35: "kept, but live on the in-place selection … there is
+no third breadcrumb crumb ever."
+
+**New in this slice: the verdict band (ADR 31 part 4, ADR 41).** The finding
+case file now renders the published finding row's `verdict_counts` as three
+drillable segments — `Meets criteria` (fired), `Borderline` (near_miss),
+`Does not meet` (clean) — with `outranked`/`no_data` printing on the roster's
+own footer line as `claimed by another factor` / `not comparable`. The mapping
+is ADR 41's, ruled by Connor and transcribed there, not here. Drilling a
+segment scopes the roster only (`rosterFor`); the canvas keeps plotting every
+occurrence regardless (ADR 31 part 5). The frontend reads `verdict_counts` and
+looks up each occurrence's published verdict by `ep_id`/`family`
+(`verdictForOcc`) — it counts nothing and classifies nothing (ADR 31 part 6).
+This is new behaviour with no predecessor row: it introduces no `P` entry.
+
+**Failed-first, captured against the new build with the OLD (pre-amendment)
+assertions**, `TARGET=app`, `ONLY=S11,S12,S13,S14,S21,S26,D1,D2,D3`:
+
+```
+FAIL S11 — S11 a second level pushed: expected 3, got 2
+FAIL S12 — S12 opens on the first occurrence (Over-treated low)
+FAIL S13 — S13 at depth 3: expected 3, got 2
+FAIL S14 — S14 both ancestors are clickable: expected 2, got 1
+  ok S21
+FAIL S26 — S26 the row still drills to its occurrence: expected 3, got 2
+FAIL D1 — D1 opens the occurrence at depth 3: expected 3, got 2
+FAIL D2 — D2 at the occurrence, depth 3: expected 3, got 2
+FAIL D3 — D3 still at the occurrence, depth 3 after a 500: expected 3, got 2
+
+app: 1 of 9 stories passed
+```
+
+Eight of nine stories failed for the right reason — each asserted the retired
+occurrence-level push, which select-in-place no longer performs. S21 passed
+unchanged: it never asserted crumb depth, only that opening/selecting an
+occurrence does not move the standing window, which is exactly P21's kept
+half. **S11, S12, S13, S14, S26, D1, D2 and D3 are amended** in
+`frontend/diagnose-workstation-behavior.replay.mjs` to assert select-in-place
+(crumb stays at depth 2, the row itself carries `aria-pressed="true"`, the
+inline detail renders under the roster) instead of a pushed occurrence level;
+S21's assertions are unchanged. The amended replay then passed — real counts
+are in the PR's gate report.
+
+Decision: harmonichq/harmonic#41, 2026-08-19.

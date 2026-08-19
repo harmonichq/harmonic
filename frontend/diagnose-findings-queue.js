@@ -111,16 +111,21 @@ function assertDetail(row) {
  * The queue's display rows, in the server's order, with the server's ranking tier
  * and each row's single detail line chosen.
  *
- * The seam (term 42) opens at the server's first `noted` run. It merely turns the
- * already-published tier boundary into markup; it does not classify, rank, or infer
- * a tier from a row's register or priority.
+ * The seam (term 42) opens before the first unpriced row of the ranked head —
+ * `assert` and `finding`, the two registers priority can reach — and only where a
+ * priced row precedes it. It uses the server's row facts to place existing markup;
+ * it does not classify or infer the row's published tier.
  */
 export function queueRows(projection) {
   const rows = projection?.rows || [];
-  let previousTier;
+  let pricedSeen = false;
+  let seamOpened = false;
   return rows.map((row) => {
-    const seam = row.tier === 'noted' && previousTier != null && previousTier !== 'noted';
-    previousTier = row.tier;
+    const ranked = row.register === 'assert' || row.register === 'finding';
+    const unpriced = ranked && row.priority == null;
+    const seam = unpriced && pricedSeen && !seamOpened;
+    if (seam) seamOpened = true;
+    if (ranked && !unpriced) pricedSeen = true;
     return {
       id: row.id,
       register: row.register,

@@ -66,6 +66,24 @@ test('term 42 · the seam opens once, before the first UNPRICED ranked row', () 
   assert.equal(TAIL_NOTE, 'Not recurring often enough to rank yet.');
 });
 
+test('term 42 · fixture windows never caption a held or blind row as the tail', () => {
+  // These are the fixture's server-owned queue positions. A held/blind row is
+  // demoted, but it is not the unpriced ranked row the tail sentence describes.
+  const expected = {
+    global: ['Correction stacking'],
+    afternoon: ['Correction stacking'],
+    low_block: [],
+    morning: [],
+    overnight: [],
+    quiet: [],
+    rebound: [],
+  };
+  for (const [window, titles] of Object.entries(expected)) {
+    assert.deepEqual(queueRows(W[window]).filter((row) => row.seam).map((row) => row.title),
+      titles, window);
+  }
+});
+
 test('term 42 · held and blind rows never open the seam — they are their own register', () => {
   const rows = queueRows(W.afternoon);
   const demoted = rows.filter((r) => r.register === 'held' || r.register === 'blind');
@@ -87,9 +105,6 @@ test('the queue consumes the server tier and never reclassifies a row', () => {
   };
   const rows = queueRows(projection);
   assert.deepEqual(rows.map((row) => row.tier), W.global.rows.map((row) => row.tier));
-  assert.deepEqual(rows.map((row) => row.seam),
-    W.global.rows.map((row, index) => index > 0 && row.tier === 'noted'
-      && W.global.rows[index - 1]?.tier !== 'noted'));
 });
 
 test('term 14/38 · a held row is words-first and offers no stage affordance', () => {

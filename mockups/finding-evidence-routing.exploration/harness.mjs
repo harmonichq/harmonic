@@ -124,8 +124,8 @@ const SELECTORS = [
   '.qrow[data-tier="priced"] .den', '.qrow[data-tier="priced"] .den .v',
   /* Round 2 opens at the queue, so the demoted register, the chevron and the
      seam sentence are on the mock's surface too and compare against the app's. */
-  '.qrow[data-tier="tail"]', '.qrow[data-tier="tail"] .lab',
-  '.qrow[data-tier="tail"] .den', '.qrow .go', '.tailnote', '.quiet-line',
+  '.qrow[data-tier="noted"]', '.qrow[data-tier="noted"] .lab',
+  '.qrow[data-tier="noted"] .den', '.qrow .go', '.tailnote', '.quiet-line',
   /* ROUND 6, SEND-BACK 6 — `.slotlink` is the prose sentence the coincidence
      routes were set inside, and the mock no longer emits it (the routes take
      block 6's right-aligned action form instead). Left listed for the same

@@ -384,12 +384,12 @@ html:not(.dark) :is(.dw, .vw) :is(select, .capchip, .occ-head .tag) {
    chart mark and no clinical token; the glyph carries the differentiation. */
 :is(.dw, .vw) .qrow .tag.setting,
 :is(.dw, .vw) .qrow .tag.habit { color: #6a5d4e; }
-:is(.dw, .vw) .qrow[data-tier="tail"] .tag.setting,
-:is(.dw, .vw) .qrow[data-tier="tail"] .tag.habit { color: color-mix(in srgb, #6a5d4e 72%, transparent); }
+:is(.dw, .vw) .qrow[data-tier="noted"] .tag.setting,
+:is(.dw, .vw) .qrow[data-tier="noted"] .tag.habit { color: color-mix(in srgb, #6a5d4e 72%, transparent); }
 html.dark :is(.dw, .vw) .qrow .tag.setting,
 html.dark :is(.dw, .vw) .qrow .tag.habit { color: #b3a48d; }
-html.dark :is(.dw, .vw) .qrow[data-tier="tail"] .tag.setting,
-html.dark :is(.dw, .vw) .qrow[data-tier="tail"] .tag.habit { color: color-mix(in srgb, #a2937f 72%, transparent); }
+html.dark :is(.dw, .vw) .qrow[data-tier="noted"] .tag.setting,
+html.dark :is(.dw, .vw) .qrow[data-tier="noted"] .tag.habit { color: color-mix(in srgb, #a2937f 72%, transparent); }
 /* One phrase, one ink: a bright value beside a dim noun inside four words read
    as two colours arguing, so the noun comes up to meet it. */
 html.dark :is(.dw, .vw) .qrow .den { color: #bdb1a0; }

@@ -688,11 +688,11 @@ button.entry .pill[data-empty="true"] { visibility: hidden; }
   margin: 14px 0 0; padding: 0 var(--ck-pad);
   font-size: 11.5px; color: var(--mk-muted); line-height: 1.5;
 }
-.dw .qrow[data-tier="tail"] { padding-top: 4px; padding-bottom: 4px; }
+.dw .qrow[data-tier="noted"] { padding-top: 4px; padding-bottom: 4px; }
 /* the tail recedes the flavor but never re-hues it: same identity, less ink, so
    the Setting/Habit read survives the demotion */
-.dw .qrow[data-tier="tail"] .tag.setting { color: color-mix(in srgb, var(--primary) 72%, transparent); }
-.dw .qrow[data-tier="tail"] .tag.habit { color: color-mix(in srgb, var(--mk-secondary) 72%, transparent); }
+.dw .qrow[data-tier="noted"] .tag.setting { color: color-mix(in srgb, var(--primary) 72%, transparent); }
+.dw .qrow[data-tier="noted"] .tag.habit { color: color-mix(in srgb, var(--mk-secondary) 72%, transparent); }
 
 /* ONE DEMOTED REGISTER for the whole queue. A row is demoted for exactly three
    reasons — it is HELD (no direction asserted), BLIND (no clean evidence to
@@ -704,7 +704,7 @@ button.entry .pill[data-empty="true"] { visibility: hidden; }
    holding and a basal span holding read identically. */
 .dw .qrow[data-state="held"] .lab,
 .dw .qrow[data-state="blind"] .lab,
-.dw .qrow[data-tier="tail"] .lab {
+.dw .qrow[data-tier="noted"] .lab {
   font-weight: 500; font-size: var(--ck-body);
 }
 /* one reason-line treatment too, for the same reason */

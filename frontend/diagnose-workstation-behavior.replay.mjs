@@ -1044,7 +1044,7 @@ export const S24 = async (page) => {
   ok(drawn.queue.some((r) => r.register === 'held' || r.register === 'blind'),
     'S24 held/blind rows appear under an explicit window');
   ok(drawn.queue.filter((r) => r.register === 'held' || r.register === 'blind')
-    .every((r) => r.tier === 'tail'), 'S24 one demoted register for the whole queue');
+    .every((r) => r.tier === 'noted'), 'S24 one demoted register for the whole queue');
 
   // Esc clears the window and restores the global, asserting-only queue
   await page.keyboard.press('Escape');

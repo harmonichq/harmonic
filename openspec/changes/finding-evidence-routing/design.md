@@ -217,3 +217,22 @@ instance of that claim is corrected in this change.
    amendable into truth.
 
 Decision: harmonichq/harmonic#41, 2026-08-19.
+
+## ADR 42 — Queue tiers name no cross-parameter headline
+
+**Decision.** Every priced row whose `register` is `assert` receives the same
+server-owned ranking tier, `next_in_line`. `decide_now` remains unreachable until
+the server publishes a cross-parameter headline predicate.
+
+**Context.** Correction factor earns `register: "assert"` from its own predicate,
+independently of the staging classifier it sits outside. As issue
+[#26](https://github.com/harmonichq/harmonic/issues/26) records, the first
+asserting row in server order can therefore recommend no number. Calling that row
+`Decide now` would make the product speak more strongly than the finding
+establishes.
+
+**Consequence.** Queue-tier assignment does not inspect row position or nominate a
+top asserting row. When a cross-parameter headline exists on the server, it must
+arrive as its own predicate and be tested at this projection boundary.
+
+Decision: harmonichq/harmonic#42, 2026-08-19.

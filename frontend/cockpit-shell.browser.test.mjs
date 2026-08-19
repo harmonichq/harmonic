@@ -11,6 +11,7 @@ import { extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { timeOfDay } from '../mockups/explore-investigation.fixture.js';
 import { projectSyntheticCapture } from '../mockups/diagnose-event-comparison.synthetic/project.mjs';
+import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 
 const require = createRequire(import.meta.url);
 // #672: fail closed. A missing prerequisite must exit nonzero, never `skip` —
@@ -248,6 +249,19 @@ async function routeApp(page, options = {}) {
       return route.fulfill({ json: projected });
     }
     if (url.pathname === '/analyze') return route.fulfill({ json: analyze });
+    // #735: level 1 IS the findings queue, and the workstation fails closed without
+    // it — an unserved projection renders "Diagnose is unavailable.", which is an
+    // empty body for every scenario that lands on the default Diagnose tab. Project
+    // it from this suite's own analyze/scenarios fixtures through the same
+    // fixture-only mirror the other browser legs route through.
+    if (url.pathname === '/diagnose/findings') {
+      const scoped = url.searchParams.get('start_min') === null ? null : {
+        start_min: Number(url.searchParams.get('start_min')),
+        end_min: Number(url.searchParams.get('end_min')),
+      };
+      return route.fulfill({ json: projectFindings({ analysis: analyze, scenarios }, scoped) });
+    }
+    if (url.pathname === '/explore/exposures') return route.fulfill({ json: {} });
     if (url.pathname === '/scenarios') return route.fulfill({ json: scenarios });
     if (url.pathname === '/audit/dismissals') return route.fulfill({ json: { dismissals: {} } });
     if (url.pathname === '/outcomes/trend') return route.fulfill({ json: {} });
@@ -295,6 +309,11 @@ async function openApp(browser, options = {}) {
   await page.locator('.cockpit-shell').waitFor();
   if (['meals', 'lows'].includes(options.eventView)) {
     await page.locator(options.expectEventError ? '.ec-error' : '.ec-surface').waitFor();
+  }
+  // index.html only mounts the Diagnose workstation (root class `.dw`) when the
+  // active tab is `diagnose`, so this wait is scoped to that default path.
+  if ((options.tab || 'diagnose') === 'diagnose' && !['meals', 'lows'].includes(options.eventView)) {
+    await page.locator('.dw').waitFor();
   }
   return page;
 }
@@ -785,7 +804,6 @@ test('build renders cover both locked sizes and themes',
           planDraftItems: [{ type: 'isf', key: 0, start_min: 0, value: 45 },
             { type: 'isf', key: 360, start_min: 360, value: 42 }],
         });
-        await production.locator('.dx').waitFor();
         await production.waitForTimeout(400);
         await production.screenshot({ path: join(SHOTS, `cockpit-shell-build-${label}.png`) });
       } finally { if (production) await production.close(); }

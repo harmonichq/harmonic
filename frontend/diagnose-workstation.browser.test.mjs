@@ -251,9 +251,11 @@ test('a held I:C block offers no stage button and says so in the locked words', 
       const before = openerProblems().length;
       const page = await openApp(browser, { state: 'typical' });
       // Same block-picking approach story S17 uses: the non-wrapping block, so
-      // its aria-label carries no "part N of 2". 'typical' state's two I:C
-      // blocks are both held on the real capture (mockups/diagnose-workstation
-      // .lock.md's fixture note: "BOTH hold"), so either block proves the gate.
+      // its aria-label carries no "part N of 2". Both of 'typical' state's I:C
+      // blocks are held — every entry in this repository's own fixture,
+      // mockups/diagnose-workstation.synthetic/payload.json, carries
+      // `asserts_move: false` under `analyze.ic_blocks` — so either block
+      // proves the gate.
       const idx = await page.evaluate(() => [...document.querySelectorAll('#iclane button')]
         .findIndex((b) => !/part \d of 2/.test(b.getAttribute('aria-label') || '')));
       assert.ok(idx >= 0, 'precondition: a non-wrapping I:C block exists');
@@ -273,8 +275,8 @@ test('a held I:C block offers no stage button and says so in the locked words', 
    != null` at diagnose-workstation.js) is unguarded at this layer:
    frontend/plan.test.js backstops the Plan draft, not the workstation's own
    stage button. This fixture's ISF row always carries `recommended: null`
-   (the lock manifest: "every ISF row's recommended is null"), so the
-   'typical' state proves the held side directly. */
+   (mockups/diagnose-workstation.synthetic/payload.json's single `analyze.isf`
+   row), so the 'typical' state proves the held side directly. */
 test('ISF is not stageable without a sized backend recommendation', async () => {
     const browser = await runner.browser();
     try {

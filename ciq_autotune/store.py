@@ -371,7 +371,7 @@ CREATE TABLE IF NOT EXISTS profile_settings (
     PRIMARY KEY (captured_at, idp)
 );
 
--- Single-row: the encrypted Tandem credentials (api/credentials.py). The
+-- Single-row: the encrypted Tandem credentials (credentials.py). The
 -- password is a Fernet token, not plaintext; the key that decrypts it lives
 -- outside the DB (tconnect-data/secret.key).
 CREATE TABLE IF NOT EXISTS credentials (
@@ -382,7 +382,7 @@ CREATE TABLE IF NOT EXISTS credentials (
     updated_at         TEXT NOT NULL
 );
 
--- Single-row: the hourly background fetch loop's last attempt (api/fetch_loop.py).
+-- Single-row: the hourly background fetch loop's last attempt (fetch_loop.py).
 CREATE TABLE IF NOT EXISTS fetch_status (
     id                INTEGER PRIMARY KEY CHECK (id = 1),
     last_attempt_at   TEXT,

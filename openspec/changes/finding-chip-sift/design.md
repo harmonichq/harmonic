@@ -88,7 +88,9 @@ ships.
 **Consequences.** The queue can show a rebound under `highs` and an overshoot
 under `lows` even when both findings belong to one day, while preserving the
 meal and correction context that explains what was counted. Chips are
-multi-membership and start unselected; choosing them sifts only the list. The
+multi-membership and start all active, with nothing sifted and every row shown,
+until the user deselects one; deselecting is what begins a sift. Choosing them
+sifts only the list. The
 chart remains the pooled time-of-day shape. Rows without an asserting
 direction remain outside the chip system and retain the queue's existing
 collapsed reachability while a sift is active.

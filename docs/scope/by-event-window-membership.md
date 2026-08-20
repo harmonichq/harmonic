@@ -28,11 +28,42 @@ point is a product decision about what the WINDOW control means under `By event`
   `paintAlign`, and the un-hidden clock header is what prints #62's own wrong window.
   `-> issue` (close #57 and #58 on this pull request)
 
+- Q3 (Connor, 2026-08-19): a cohort too thin for an aggregate draws its own episodes,
+  faint, named as episodes rather than as a typical response. Why: it answers what
+  actually happened without calling one meal typical, and an empty canvas was the
+  complaint that opened the ticket. `-> ADR`
+- Q4 (Connor, 2026-08-19): the canvas header states both the window it counted in and
+  that an episode joins by where its consequence landed. Why: a pooled meal's bolus
+  can sit outside the drawn window, and a reader who cannot tell that cannot judge the
+  number. `-> ADR`
+- Mine, recorded not asked: the block coordinate retires rather than living beside the
+  bounds, the shared membership rule is lifted into one home both projections import,
+  and the outcome minute is stamped at catalog-build time so the replay mirror
+  transcribes a filter instead of re-deriving anchoring. Why: charter reuse and
+  no-second-implementation rules. `-> ADR`
+
+### Risk contract
+
+Why: the lens is evidence-only and never enters Priority, Plan or a settings action,
+so the exposure is a reader misjudging evidence, not a mis-issued dose.
+Disposition: copied into the work order.
+
+- **Must prevent:** a caption asserting a population the canvas did not draw; the two
+  panes disagreeing without saying so; one occurrence becoming a median; any path from
+  this lens into a recommendation, Plan or settings action.
+- **Must recover:** nothing automatically.
+- **Accepted failure:** a failed projection fetch under `By event` leaves the reader on
+  the canvas already drawn, and they flip back by hand. This is today's behavior.
+- **Unsupported:** verification against real pump data; zero-span windows, which the
+  queue's own window rule already rejects.
+- **Evidence owed:** the two projections agreeing on membership for one window,
+  through their public interfaces; a window wrapping midnight; a thin cohort drawing
+  episodes rather than an aggregate; the replay mirror held identical to the Python
+  projection; the three browser-gate legs that drive this surface.
+
 ## Open questions
 
-- Q3. What the canvas says when a cohort holds too few episodes to draw. (round 2)
-- Q4. Whether an episode's trace is clipped at the window edge or drawn whole.
-  (round 2)
+- none; the frontier is empty.
 
 ## Spawned tasks
 

@@ -221,7 +221,9 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
   /* `view` is workstation-owned UX state:
      { selected: Set<string>|null, collapsedExpanded: boolean,
        onToggleCollapsed: () => void }. Null selection means no sift. */
-  const rows = queueRows(projection, view?.selected ?? null);
+  const selected = view?.selected ?? null;
+  const sifting = selected !== null;
+  const rows = queueRows(projection, selected);
   if (!rows.length) {
     const line = document.createElement('p');
     line.className = 'quiet-line';
@@ -231,18 +233,12 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
   }
   const shown = rows.filter((row) => !row.hidden && !row.collapsed);
   const collapsed = rows.filter((row) => row.collapsed);
-  if (!shown.length && !collapsed.length) {
-    const line = document.createElement('p');
-    line.className = 'quiet-line';
-    line.textContent = EMPTY_SIFT_LINE;
-    host.append(line);
-    return rows;
-  }
-  if (!shown.length && view?.selected !== null) {
+  if (sifting && !shown.length) {
     const line = document.createElement('p');
     line.className = 'quiet-line sift-empty';
     line.textContent = EMPTY_SIFT_LINE;
     host.append(line);
+    if (!collapsed.length) return rows;
   }
   const list = document.createElement('div');
   list.className = 'q';
@@ -287,7 +283,8 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
     const toggle = document.createElement('button');
     toggle.type = 'button';
     toggle.className = 'qcollapse';
-    toggle.textContent = `${collapsed.length} held or blind reads`;
+    const readWord = collapsed.length === 1 ? 'read' : 'reads';
+    toggle.textContent = `${collapsed.length} held or blind ${readWord}`;
     toggle.setAttribute('aria-expanded', String(Boolean(view?.collapsedExpanded)));
     toggle.addEventListener('click', () => view?.onToggleCollapsed?.());
     list.append(toggle);

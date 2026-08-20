@@ -295,7 +295,7 @@ def exposures():
             # row-relative rule — `over_treated_low`'s own classifier matched
             # on this anchor too, but `carb_undercount` was the episode's
             # actual, EARLIER driver. `over_treated_low`'s row must still read
-            # this occurrence `fired` (Connor's rule), never `outranked`.
+            # this occurrence `fired` (owner ruling, ADR 41), never `outranked`.
             _occurrence("ep11", "high", "10:15", lever=Lever.CARB_UNDERCOUNT,
                         bg=210.0, worst_bg=245.0,
                         text="A late meal bolus at 10:15 still ran high.",

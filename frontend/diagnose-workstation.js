@@ -814,7 +814,7 @@ function classifierName(id) {
  * sub-group. It split the OLD cause-filtered population (every member of
  * which was, by construction, this row's own driver) from a leftover that
  * could never be populated at rest — dead at rest and, once select-in-place
- * (P35, ADR 31 part 5, Connor 2026-08-19) made the roster homogeneous by
+ * (P35, ADR 31 part 5, owner ruling 2026-08-19) made the roster homogeneous by
  * verdict, no longer even a coherent split: near_miss/clean occurrences can
  * still carry a DIFFERENT classifier's match on the same anchor, which would
  * have silently routed a near-miss/clean row into a group labelled for

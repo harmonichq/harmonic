@@ -69,6 +69,7 @@ Disposition: copied into the work order.
 ## Open questions
 
 - none; the frontier is empty.
+- Round 3 cold review pending before the order is posted.
 
 ### Cold review, round 1 (two Codex reviewers, 2026-08-19)
 
@@ -89,6 +90,37 @@ Decisions taken while rewriting, recorded not asked:
 - The surface change goes through `/ui-craft`'s revise lane with fidelity evidence, per
   the charter's lock-then-build rule for user-facing surfaces.
 
+### Cold review, round 2 (fresh Codex reviewer, 2026-08-19)
+
+5 blocking objections, all `authoring`, none `injected`, none refuted. The two that
+changed the ticket's shape went back to the operator:
+
+- Q6 (Connor, 2026-08-19): the roster, canvas and factor header stop re-deriving window
+  membership in the browser and read the server's. Why: `inWindow`
+  (`frontend/diagnose-workstation.js:420`) filters exposures on the occurrence's own clock
+  minute, a THIRD membership rule; a low anchored at 13:00 whose consequence landed at
+  14:35 is in-window for the server and out for the browser, so the reported symptom
+  survives a fix that stops at the canvas. `-> ADR`
+- Q7 (Connor, 2026-08-19): the event capture's meals occurrences are re-keyed onto the
+  workstation fixture's meals episodes, so a roster row click can be proven end to end in
+  the browser; lows stay disjoint and the order says so. Full fixture unification is a
+  separate concern. Why: the two browser fixtures today share zero episodes (meals 5 vs 20,
+  lows 15 vs 20, overlap 0 on both), which makes #57 unprovable at the gate. `-> issue`
+  (file the fixture-unification ticket)
+
+Taken while revising, recorded not asked:
+- `mockups/diagnose-event-comparison.synthetic/generate.mjs` gains a byte-comparing
+  `--check` and a CI step. It has none today: any argument that is not `--write` prints the
+  fixture and exits 0, so that committed fixture has a generator and no drift gate, against
+  AGENTS.md's own rule.
+- Selection crosses the wire as an `ep_id` plus anchor-timestamp pair, not the catalog's
+  opaque id, because the roster row that selects has no catalog id to send.
+- The `/ui-craft` revise lane's output is REVISION EVIDENCE, produced by the chunk and
+  attached by the coordinator, which is the only agent that opens the pull request.
+
 ## Spawned tasks
+
+- File a ticket for unifying the browser fixture populations (one synthetic exposure
+  population behind both the workstation payload and the event-comparison capture).
 
 - none yet

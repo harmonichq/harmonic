@@ -31,6 +31,8 @@ def _empty_family() -> dict:
         "n": 0,
         "attributed": 0,
         "clean": 0,
+        # Occurrences whose EPISODE drew no lever at all — see ``build_exposures``.
+        "uncaused": 0,
         "levers": [],
         "by_cause": {},
         "occurrences": [],
@@ -52,7 +54,25 @@ def _exposure_verdict(verdict: dict) -> dict:
 
 
 def build_exposures(store, *, window_days: int = 30) -> dict:
-    """Return recent scenario anchors flattened for the Diagnose workstation."""
+    """Return recent scenario anchors flattened for the Diagnose workstation.
+
+    Three whole-window tallies come out beside each family's occurrence list, and
+    ``clean`` and ``uncaused`` are **not** the same question (#63):
+
+    * ``attributed`` — this occurrence is its episode's driver.
+    * ``clean`` = ``n - attributed`` — this occurrence is not the driver. It says
+      nothing about the episode: a high in a meal-driven episode is "clean" while its
+      episode carries a lever, because the meal anchor drove it.
+    * ``uncaused`` — this occurrence's EPISODE drew no lever anywhere, in any family.
+      This is the only one of the three that answers "the app found no cause for this
+      at all", which is why the Diagnose surface counts highs with it rather than with
+      ``clean``. Measured on the 30-day calibration snapshot the two differ by seven:
+      27 highs are not drivers, but only 20 sit in an episode with nothing attributed.
+
+    An occurrence outranked by an earlier driver is therefore neither ``attributed``
+    nor ``uncaused``: its match stayed diagnostic evidence, but its episode does have
+    a cause.
+    """
     basal = store.basal_events()
     cgm = store.cgm_readings()
     bolus = store.bolus_events()
@@ -60,6 +80,10 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
     now = max(times) if times else datetime.now()
     start = now - timedelta(days=window_days)
     families = {name: _empty_family() for name in _FAMILY_FOR_KIND.values()}
+    # Tallied in the anchor walk below rather than in the rollup: whether an episode
+    # drew a lever is a fact about the ATTRIBUTION, and by rollup time only the
+    # per-anchor driver flag survives on the occurrence.
+    uncaused = {name: 0 for name in families}
 
     if not times:
         return {
@@ -111,6 +135,8 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
             if family is None:
                 continue
             attributed = _is_driver(source_anchor, attribution)
+            if attribution.lever is None:
+                uncaused[_FAMILY_FOR_KIND[anchor["kind"]]] += 1
             lever = episode["lever"] if attributed else None
             cause_title = title(Lever(lever)) if lever is not None else None
             occurrence = {
@@ -132,11 +158,12 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
             }
             family["occurrences"].append(occurrence)
 
-    for family in families.values():
+    for name, family in families.items():
         occurrences = family["occurrences"]
         family["n"] = len(occurrences)
         family["attributed"] = sum(item["attributed"] for item in occurrences)
         family["clean"] = family["n"] - family["attributed"]
+        family["uncaused"] = uncaused[name]
         family["levers"] = list(dict.fromkeys(
             item["cause_lever"] for item in occurrences if item["cause_lever"] is not None
         ))

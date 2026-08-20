@@ -26,6 +26,24 @@ export const TAIL_NOTE = 'Not recurring often enough to rank yet.';
 /** Term 14 — a held row's reason line; the suffix is the backend's own words. */
 export const HELD_PREFIX = 'no direction asserted — ';
 
+/**
+ * The unexplained-highs line (#63) — the server's finished sentence, or `null`.
+ *
+ * READ, NEVER COMPOSED. The count, the noun's number and the whole sentence are
+ * authored in `findings_projection.UNCAUSED_HIGHS_COPY`; this returns what arrived
+ * and decides nothing, including whether there is anything to say — the server
+ * publishes `text: null` when the count is zero, so no threshold of ours sits
+ * between the data and the words (the #273/#465 rule, term 40).
+ *
+ * It is deliberately OUTSIDE `queueMeta`. The meta counts what is in the window;
+ * this counts highs across the whole findings window and never re-scopes, so
+ * putting the two in one slot would let a scoped reader take "N highs had no cause"
+ * as a statement about the hours they drew.
+ */
+export function uncausedNote(projection) {
+  return projection?.uncaused_highs?.text || null;
+}
+
 /* Term 36 — glyph + word, at caps-label rank. The GLYPH differentiates; the hue
    only has to stay out of the way (it is `--secondary`, never a clinical token and
    never a hue a chart mark spends). */
@@ -199,11 +217,23 @@ function paintDetail(node, detail) {
  */
 export function renderFindingsQueue(host, projection, onDrill) {
   const rows = queueRows(projection);
+  /* Appended in BOTH branches below, empty queue included: the sentence is about
+     the whole findings window, so a scope with nothing in it still owes the reader
+     the count rather than reading as though nothing went unexplained. */
+  const note = uncausedNote(projection);
+  const appendNote = () => {
+    if (!note) return;
+    const line = document.createElement('p');
+    line.className = 'uncaused-note';
+    line.textContent = note;
+    host.append(line);
+  };
   if (!rows.length) {
     const line = document.createElement('p');
     line.className = 'quiet-line';
     line.textContent = EMPTY_LINE;
     host.append(line);
+    appendNote();
     return rows;
   }
   const list = document.createElement('div');
@@ -239,5 +269,6 @@ export function renderFindingsQueue(host, projection, onDrill) {
     node.addEventListener('click', () => onDrill(row.raw));
     list.append(node);
   }
+  appendNote();
   return rows;
 }

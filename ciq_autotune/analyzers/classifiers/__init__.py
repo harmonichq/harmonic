@@ -16,10 +16,10 @@ Layout — one file per classifier, all sharing the primitives in this package:
   upstream cause* (a recent CGM low and/or a defensive-suspend episode) explain a
   pre-bolus rise? Reused by every classifier that must not mistake a
   rescue-rebound / post-low / post-suspend recovery for a behavior.
-* :mod:`.late_bolus`, :mod:`.missed_meal`, :mod:`.correction_stacking`,
-  :mod:`.correction_on_iob`, :mod:`.suspend`,
-  :mod:`.carb_undercount` — the instance classifiers (#71–#76, #150) the engine
-  wires into episodes.
+* :mod:`.late_bolus`, :mod:`.missed_meal`, :mod:`.meal_bolus_short`,
+  :mod:`.correction_stacking`, :mod:`.correction_on_iob`, :mod:`.suspend`,
+  :mod:`.carb_undercount` — the instance classifiers (#71–#76, #150, #63) the
+  engine wires into episodes.
 
 The parallel-build lane rule ("no engine wiring here") is lifted now that the
 engine consumes these — this package re-exports the whole classifier roster so the
@@ -44,6 +44,7 @@ from .correction_stacking import (
 )
 from .evidence import EvidenceTier, SilenceReason, Verdict
 from .late_bolus import LateBolusVerdict, classify_late_bolus
+from .meal_bolus_short import MealBolusShortVerdict, classify_meal_bolus_short
 from .missed_meal import MissedMealVerdict, classify_missed_meal
 from .suspend import SuspendVerdict, classify_suspend
 
@@ -61,6 +62,8 @@ __all__ = [
     "classify_late_bolus",
     "MissedMealVerdict",
     "classify_missed_meal",
+    "MealBolusShortVerdict",
+    "classify_meal_bolus_short",
     "CorrectionStackingVerdict",
     "classify_correction_stacking",
     "CorrectionOnIobVerdict",

@@ -22,7 +22,9 @@ The taxonomy table (#70 §2), by anchor kind → shape → lever:
   (a lone correction on live insulin drove a low, #150).
 * **correction cluster** → correction-stacking (stacked onto IOB, not chasing a
   runaway, drove a later low).
-* **high** → missed / unannounced meal (a meal-shaped rise with no bolus).
+* **high** → missed / unannounced meal (a meal-shaped rise with no bolus) ▸
+  meal-bolus-fell-short (a rise that kept climbing past a counted meal bolus and
+  needed a correction behind it, #63).
 
 An episode where nothing actionable fires gets **no lever** and does not surface
 (#70: a habit tool, not an alerts inbox).
@@ -44,6 +46,7 @@ from ..classifiers import (
     classify_correction_on_iob,
     classify_correction_stacking,
     classify_late_bolus,
+    classify_meal_bolus_short,
     classify_missed_meal,
 )
 from ..classifiers.evidence import EvidenceTier
@@ -451,8 +454,18 @@ def _high_lever(
     150-min lookback from the peak can just clear a real meal that a lookback from
     the onset would see — a same-evening missed-meal case (#118). The matched step carries
     the digestion window as a ``cited_window`` span so the chart shades what was
-    scanned. Returns ``((lever, driver_step), None)`` when it fires, else
-    ``(None, mm)`` — the missed-meal verdict is the high's silence reason.
+    scanned.
+
+    When missed-meal declines because a **counted meal bolus** already announced the
+    rise, the rise is handed to :func:`~...classifiers.meal_bolus_short.classify_meal_bolus_short`
+    (#63), which asks the next question: was that announcement enough? It matches only
+    when a correction was needed behind the dose, and it claims a shortfall, never a
+    carb count. The two split one population at exactly one line, so at most one of
+    them can ever fire on a given rise.
+
+    Returns ``((lever, driver_step), None)`` when either fires, else ``(None, mm)`` —
+    the missed-meal verdict remains the high's silence reason, because it is the more
+    general judgment and every unattributed high already reports it.
 
     A **rebound high-moment** (the synthesized anchor of a #155 split, marked with
     ``rebound_nadir_bg``) is the exception: it is the over-correction the crash
@@ -484,6 +497,20 @@ def _high_lever(
         )
         return (Lever.MISSED_MEAL, Step(
             t=onset, text=mm.detail, evidence_tier=mm.evidence_tier,
+            cited_window=cited_window,
+        )), None
+
+    mbs = classify_meal_bolus_short(
+        onset, cgm, bolus, basal, scenario_config=scenario_config
+    )
+    if mbs.matched:
+        cited_window = (
+            window_ref(mbs.digestion_window_start, onset)
+            if mbs.digestion_window_start is not None
+            else None
+        )
+        return (Lever.MEAL_BOLUS_SHORT, Step(
+            t=onset, text=mbs.detail, evidence_tier=mbs.evidence_tier,
             cited_window=cited_window,
         )), None
     return None, mm

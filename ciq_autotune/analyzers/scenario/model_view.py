@@ -47,6 +47,7 @@ from ..classifiers import (
     classify_carb_undercount,
     classify_correction_on_iob,
     classify_late_bolus,
+    classify_meal_bolus_short,
     classify_missed_meal,
 )
 from ..classifiers.evidence import EvidenceTier, SilenceReason
@@ -235,11 +236,15 @@ def _high_verdicts(
     *,
     scenario_config: ScenarioConfig = ScenarioConfig(),
 ) -> List[AnchorVerdict]:
-    """A high anchor's read: over-treated-low for a split rebound high-moment, else missed-meal.
+    """A high anchor's read: over-treated-low for a split rebound high-moment, else the
+    two rise judgments.
 
     Mirrors :func:`~.attribute._high_lever`: a synthesized rebound HIGH (#155,
     ``rebound_nadir_bg`` set) is the over-correction and reads over-treated-low; a real
-    HIGH run reads missed-meal, anchored at the rise onset (``reach_start``).
+    HIGH run reads missed-meal AND meal-bolus-fell-short (#63), both anchored at the rise
+    onset (``reach_start``). Both are swept even though at most one can match, because
+    the model view reports every judgment made about an anchor, matched or not — that is
+    what makes a silence legible.
     """
     if anchor.rebound_nadir_bg is not None:
         return [AnchorVerdict(
@@ -249,10 +254,16 @@ def _high_verdicts(
             evidence_tier=EvidenceTier.INFERRED,
             silence_reason=None,
         )]
-    return [_mv("missed_meal",
-                classify_missed_meal(
-                    anchor.reach_start, cgm, bolus, basal,
-                    scenario_config=scenario_config))]
+    return [
+        _mv("missed_meal",
+            classify_missed_meal(
+                anchor.reach_start, cgm, bolus, basal,
+                scenario_config=scenario_config)),
+        _mv("meal_bolus_short",
+            classify_meal_bolus_short(
+                anchor.reach_start, cgm, bolus, basal,
+                scenario_config=scenario_config)),
+    ]
 
 
 def _anchor_verdicts(

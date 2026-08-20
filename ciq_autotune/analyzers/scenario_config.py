@@ -235,6 +235,36 @@ class ScenarioConfig:
     #: Minimum carbs on a bolus to count as a "meal" for digestion-tail gating.
     missed_meal_min_carbs: float = 10.0
 
+    # --- meal-bolus-fell-short classifier (classifiers/meal_bolus_short.py) -----
+    # The first four MUST mirror the four ``missed_meal_*`` knobs above. The two
+    # classifiers split one population at exactly one line — a rise with a counted
+    # meal bolus in its digestion window is missed-meal's silence and this one's
+    # trigger — so a divergence here opens a rise neither judges, or one both do.
+    # Same shape as ``attribute_split_context_pad_min`` MUSTing match
+    # ``engine_context_pad_min``; ``tests/test_classifier_meal_bolus_short.py``
+    # (``test_the_two_digestion_windows_are_pinned_to_each_other``) pins the pairing.
+    #: CGM slope (mg/dL/min) at the anchor above which BG is "rising" despite the dose.
+    meal_bolus_short_rise_slope_mgdl_min: float = 1.0
+    #: How far back to fit the slope at the anchor (~4 CGM points).
+    meal_bolus_short_slope_lookback_min: int = 20
+    #: How far back to scan for the counted meal bolus whose dose is being judged.
+    meal_bolus_short_digestion_lookback_min: int = 150
+    #: Minimum carbs on a bolus to count as the "meal" whose dose fell short.
+    meal_bolus_short_min_carbs: float = 10.0
+    #: How far forward to look for the correction that corroborates the shortfall. All
+    #: seven of the measured 30-day cases took their correction 9-83 min after the rise
+    #: onset, so this 3 h horizon is not the binding constraint — the requirement that a
+    #: correction exist at all is. Beyond it the rise is a separate story.
+    meal_bolus_short_correction_horizon_min: float = 180.0
+    #: Smallest carb-free bolus (U) that stands as the corroborating correction; below
+    #: this a rounding-scale dose would be enough to claim a shortfall.
+    meal_bolus_short_correction_floor_u: float = 1.0
+    #: A carb-free bolus within this of the meal's OWN bolus is a dose-split (pre-bolus
+    #: + top-up, dual-wave), not a correction the meal dose earned. Mirrors
+    #: ``carb_undercount_same_meal_grace_min``, which draws the same line for the same
+    #: reason, and measured from the meal bolus, never chained.
+    meal_bolus_short_dose_split_grace_min: float = 30.0
+
     # --- user-override provenance (classifiers/user_override.py) ------------------
     #: Smallest override gap (U) that counts as a real directional override (not rounding).
     user_override_gap_floor_u: float = 0.05

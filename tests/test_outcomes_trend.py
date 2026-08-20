@@ -795,13 +795,13 @@ class PayloadShapeTest(unittest.TestCase):
         self.assertEqual(older["observed_days"], 0)
         self.assertFalse(older["fully_observed"])
 
-    def test_seven_behaviors_in_locked_order(self):
+    def test_eight_behaviors_in_locked_order(self):
         levers = [b["lever"] for b in json.loads(self._trend().to_json())["behaviors"]]
         self.assertEqual(
             levers,
             ["late_bolus", "carb_undercount", "meal_over_delivery", "over_treated_low",
              "correction_on_iob",
-             "correction_stacking", "missed_meal"],
+             "correction_stacking", "missed_meal", "meal_bolus_short"],
         )
 
     def test_metrics_in_locked_order_with_polarity(self):
@@ -850,7 +850,7 @@ class PayloadShapeTest(unittest.TestCase):
         trend = summarize_trend(_FakeStore(), window_days=14, now=datetime(2026, 7, 2))
         self.assertIsInstance(trend, OutcomesTrend)
         self.assertEqual(len(trend.windows), 1)
-        self.assertEqual(len(trend.behaviors), 7)
+        self.assertEqual(len(trend.behaviors), 8)
         # No data → metric series is a single None, not a fabricated zero.
         tir = next(m for m in trend.metrics if m.key == "tir")
         self.assertEqual(tir.series, [None])
@@ -1053,7 +1053,7 @@ class ApiRendererTest(unittest.TestCase):
         body = r.json()
         self.assertEqual(body["schema_version"], SCHEMA_VERSION)
         self.assertEqual(body["window_days"], 14)
-        self.assertEqual(len(body["behaviors"]), 7)
+        self.assertEqual(len(body["behaviors"]), 8)
         self.assertEqual(len(body["metrics"]), 4)
         self.assertIn("arc", body)
         self.assertGreaterEqual(len(body["windows"]), 2)

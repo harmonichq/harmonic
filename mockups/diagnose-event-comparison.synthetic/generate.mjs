@@ -31,7 +31,9 @@ const WINDOWS = [null, { start_min: 0, end_min: 360 },
   { start_min: 360, end_min: 720 }, { start_min: 720, end_min: 1080 },
   { start_min: 1080, end_min: 1440 }, { start_min: 1320, end_min: 120 },
   { start_min: 720, end_min: 960 }, { start_min: 840, end_min: 960 },
-  { start_min: 360, end_min: 480 }];
+  { start_min: 360, end_min: 480 }, { start_min: 455, end_min: 790 },
+  { start_min: 465, end_min: 780 }, { start_min: 720, end_min: 1440 },
+  { start_min: 840, end_min: 900 }];
 const workstationMeals = JSON.parse(readFileSync(
   new URL('../diagnose-workstation.synthetic/payload.json', import.meta.url), 'utf8'))
   .exposures.exposures.meals.occurrences;
@@ -85,6 +87,10 @@ function cgm(view, index) {
     }
     rows.push({ minute, bg: Math.max(42, Math.min(294, Math.round(bg))) });
   }
+  // The Python projection rounds an episode trace to its nearest five-minute
+  // bin. Keep one deliberately off-grid reading in the frozen fixture so the
+  // mirror cannot silently turn that into floor-binning.
+  if (view === 'meals' && index === 1) rows[0].minute += 3;
   return rows;
 }
 
@@ -225,6 +231,12 @@ function occurrence(view, index) {
   const hour = String(hours[index]).padStart(2, '0');
   const local = view === 'meals' ? workstationMeals[index % workstationMeals.length] : null;
   const stamp = local?.t || `2026-08-${day} ${hour}:00:00`;
+  // ADR 62 membership follows where the consequence landed, not the trigger.
+  // This shared 13:00 meal key lands at 14:35, so a 14:00–15:00 request must
+  // include it even though its anchor lies outside that window.
+  const outcomeMin = view === 'meals' && index === 1
+    ? 14 * 60 + 35
+    : Number(stamp.slice(11, 13)) * 60 + Number(stamp.slice(14, 16));
   const cohort = plan[index];
   const primary = factors[view][0];
   const trace = {
@@ -257,7 +269,7 @@ function occurrence(view, index) {
     ep_id: local?.ep_id || `${view}-ep-${index + 1}`,
     date: local?.date || `2026-08-${day}`,
     anchor_t: stamp,
-    outcome_min: Number(stamp.slice(11, 13)) * 60 + Number(stamp.slice(14, 16)),
+    outcome_min: outcomeMin,
     anchor_bg: view === 'meals' ? 132 + index : 68 + (index % 3),
     worst_bg: view === 'meals' ? 205 + index : 58 + (index % 4),
     label: view === 'meals' ? 'Completed carb bolus' : 'Low excursion',

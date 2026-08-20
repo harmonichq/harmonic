@@ -54,8 +54,7 @@ const quantile = (values, q) => {
 
 function supportFacts(view, factor, window, variant) {
   const key = `${variant}:${factor}:${windowKey(window)}`;
-  return view.visual_support?.[key]
-    || view.visual_support?.[`dense:${factor}:${windowKey(window)}`];
+  return view.visual_support?.[key];
 }
 
 const finiteNumber = (value) => typeof value === 'number' && Number.isFinite(value);

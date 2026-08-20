@@ -59,3 +59,24 @@ scope membership server-owned for that reason. Choosing a block coordinate in
 - ADR 31 part 3 kept `WINDOW` on the grounds that a reader viewing by clock can also
   filter by clock. This settles the half it left open: the window filters under both
   projections, and only the alignment changes.
+
+**Amendments — cold review, 2026-08-19.** Three cold panels against the work order
+turned up four decisions the record above did not settle. They are settled here rather
+than in a second record, because they are the same decision seen further down.
+
+6. **The browser stops re-deriving membership entirely, not just on the canvas.**
+   `inWindow` keeps an occurrence whose own clock minute falls in the window and feeds
+   that list to the factor header, the clock canvas and the roster, which is a third
+   rule disagreeing with the other two. The roster reads the keys the findings row
+   already publishes instead.
+7. **A finding the lens can re-project frames on the family its event view names.** A
+   finding can hold episodes of two kinds — the meal, and the high the meal ran into —
+   and framing on whichever holds more put a list of one kind beside a chart of the
+   other. The panel and the chart show the same episodes.
+8. **Selection keeps the server's unique occurrence id.** The episode-and-time pair is
+   published beside it for joining only: two completed boluses can share an episode and
+   an instant, distinguished solely by pump sequence number, and a pinned test says so.
+9. **A finding that leaves the window keeps the reader.** Narrowing the window until
+   the open finding has no row leaves the reader on it, both panes stating that no
+   findings match the selected window. The alternative was a browser-side fallback
+   filter, which is the thing part 6 retires.

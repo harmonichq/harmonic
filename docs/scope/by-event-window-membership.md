@@ -69,7 +69,7 @@ Disposition: copied into the work order.
 ## Open questions
 
 - none; the frontier is empty.
-- Round 3 cold review pending before the order is posted.
+- Round 3 cold review running before the order is posted.
 
 ### Cold review, round 1 (two Codex reviewers, 2026-08-19)
 

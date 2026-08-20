@@ -274,3 +274,49 @@ Verdict: **not countersigned**, five blocking objections, all `authoring`, zero
 Round 1 (inline, author self-review) also stands above: seven objections, all authoring.
 Across both rounds: twelve authoring defects, zero injected. The rewrite-clean signal
 never fired.
+
+## Plan review — round 3 (COLD, fresh panel, codex gpt-5.6-sol high, read-only)
+
+Verdict: **not countersigned**, five blocking. THREE `authoring`, **TWO `injected`** by
+round 2's own fixes. Injected climbed 0 -> 0 -> 2, which is the rewrite-clean signal
+firing; edits this round were applied with per-edit assertions rather than blind
+`replace`, after round 2's launch-field fix was found to have silently no-opped.
+
+1. **INJECTED, confirmed.** Round 2's `hidden` / `collapsed` split was internally
+   impossible: held and blind rows carry `chips: []`, so a "hidden = fails the
+   selection" rule marks them hidden under every sift, the renderer skips them, and the
+   expandable group can never render — the collapse would have been a silent drop, which
+   the risk contract forbids. Fixed: `hidden` applies only to rows carrying at least one
+   chip; held and blind are only ever `collapsed`, stated as explicit precedence.
+2. **INJECTED, confirmed.** Round 2's "reuse `EMPTY_LINE`" was me over-applying the
+   reuse rule. Its text is "No pattern or setting asserts a direction in this window"
+   (`diagnose-findings-queue.js:23`), which is FALSE when assertions exist and the chips
+   merely exclude them — the surface would state something untrue about the user's data.
+   Fixed: a new exported string for the filtered-empty case.
+3. **CONFIRMED.** The renderer's front door was still unspecified: how selection and
+   expansion state reach `renderFindingsQueue`. Fixed: one added argument, state owned
+   by the workstation, module holds none.
+4. **CONFIRMED, and round 2 claimed to have fixed it.** The launch entry still said
+   `executable` / `args` against a file using `runtimeExecutable` / `runtimeArgs`. The
+   round-2 edit's target string had already changed, so `str.replace` silently did
+   nothing and reported success. Fixed and verified in place this time.
+5. **CONFIRMED.** The gate was STILL short three CI steps even after round 2 completed
+   it: `gen_revise_e2e_db.py --check` (`ci.yml:50`), `screenshots.local.test.mjs`
+   (`ci.yml:114`), and the materialised public-tree link + contamination scan
+   (`ci.yml:81`). The first is directly load-bearing here: the order's no-fetch server
+   run is against that very database, so a run that mutates it fails the check.
+   Separately found while verifying: the order never named the FROZEN 29-story behaviour
+   ledger (`mockups/finding-evidence-routing.behavior.md`) whose replay is a CI browser
+   leg over this exact surface. Both fixed.
+
+### At the cap: one decision left, and it is the user's
+
+`plan-review` caps at three panels, and a blocker surviving the cap means an unsettled
+decision, not an undiscovered typo. Exactly one qualifies.
+
+**Which `/ui-craft` governs this repo.** `skills-lock.json` pins ui-craft to
+`ConnorGriffin/skills` ref `230e71a5`, and the vendored, git-tracked copy at
+`.claude/skills/ui-craft/` offers six modes — lock, build, critique, audit, polish,
+resettle — and has **no `revise`**. The operator's global copy at
+`~/.claude/skills/ui-craft/` is newer and does have `revise.md`. The order's step 10
+names the revise lane, which the repo's own pinned copy cannot execute. Put to the user.

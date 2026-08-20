@@ -811,118 +811,51 @@ test('build renders cover both locked sizes and themes',
   }
 });
 
-test('event comparisons keep the newest View, Factor, Anchor time, Other factors, occurrence, and selection clear',
+// RETIRED (issue #41) — this story asserted the newest-response race guard
+// across View, Factor, Anchor time, Other factors and occurrence selection,
+// all driven through controls that no longer exist. ADR 31 part 3 folds
+// View's function into the workstation's own ALIGN instrument and deletes
+// View; the rest retire under P52, sanctioned:
+//   Connor Griffin · 2026-08-19 · "Decided by Connor Griffin in a ruling
+//   session on 2026-08-19."
+// Failed first against the new build with the OLD assertion: a real 30s
+// Playwright timeout, `waiting for locator('.ec-view-seg [data-view="lows"]')`
+// — that control, and every other one this story drove, is gone. Replaced
+// with a loud absence assertion (the S26 pattern): every retired control is
+// confirmed gone from the lens, and the lens is confirmed to still be exactly
+// canvas + legend + readout — the P52 ruling ("the lens becomes canvas-only")
+// checked on the live surface, not just read off the diff.
+test('event comparisons: View, Factor, Anchor time, Other factors, the occurrence select and Clear trace are gone; the lens is canvas-only',
   async () => {
-  const queued = [];
-  const waiters = [];
-  let defer = false;
-  const nextQueued = () => {
-    if (queued.length) return Promise.resolve(queued.shift());
-    return new Promise((resolve) => waiters.push(resolve));
-  };
   const eventProjection = (url, capture) => {
     const view = ['meals', 'lows'].includes(url.searchParams.get('view'))
       ? url.searchParams.get('view') : 'meals';
-    const response = projectSyntheticCapture(capture, {
+    return projectSyntheticCapture(capture, {
       view,
       factor: url.searchParams.get('factor') || undefined,
       block: url.searchParams.get('block') || 'all',
       another: url.searchParams.get('another') === '1',
       occurrenceId: url.searchParams.get('occ') || undefined,
     });
-    if (!defer) return response;
-    return new Promise((resolve, reject) => {
-      const entry = { response, resolve, reject };
-      const waiter = waiters.shift();
-      if (waiter) waiter(entry);
-      else queued.push(entry);
-    });
   };
   const browser = await launch();
   let page;
   try {
     page = await openApp(browser, { eventView: 'meals', eventProjection });
-    defer = true;
+    await page.waitForFunction(() =>
+      window.__diagnoseEventComparison?.projection?.coordinates?.view === 'meals');
 
-    const expectCoordinate = async ({ view, factor, block, another, occurrenceId }) => {
-      await page.waitForFunction((expected) => {
-        const projection = window.__diagnoseEventComparison?.projection;
-        return projection
-          && projection.coordinates.view === expected.view
-          && projection.coordinates.factor === expected.factor
-          && projection.coordinates.block === expected.block
-          && projection.coordinates.another === expected.another
-          && (projection.selection.requested_id || null) === expected.occurrenceId;
-      }, { view, factor, block, another, occurrenceId });
-      assert.equal(await page.locator('.ec-error').count(), 0,
-        'a stale response must not replace the current surface with an error');
-    };
-    // Projection loads run through the shell's serial gate (#425), so at most one
-    // is ever in flight: the newer request is not issued until the stale one
-    // settles. The guarantee under test is therefore that the stale response is
-    // discarded by its generation check rather than rendered — not that two
-    // responses race in the browser, which the gate makes impossible.
-    const settleRace = async (beginStale, requestCurrent, expected) => {
-      await beginStale();
-      const stale = await nextQueued();
-      await requestCurrent();
-      stale.resolve(stale.response);
-      const current = await nextQueued();
-      current.resolve(current.response);
-      await expectCoordinate(expected);
-      await page.waitForTimeout(50);
-      await expectCoordinate(expected);
-    };
-    const meals = {
-      view: 'meals', factor: 'carb_undercount', block: 'all', another: false,
-      occurrenceId: null,
-    };
-
-    await settleRace(
-      () => page.locator('.ec-view-seg [data-view="lows"]').click(),
-      () => page.locator('.ec-view-seg [data-view="meals"]').click(),
-      meals,
-    );
-    await settleRace(
-      () => page.locator('#ec-factor').selectOption('late_bolus'),
-      () => page.locator('#ec-factor').selectOption('carb_undercount'),
-      meals,
-    );
-    await settleRace(
-      () => page.locator('[data-block="overnight"]').click(),
-      () => page.locator('[data-block="all"]').click(),
-      meals,
-    );
-    await settleRace(
-      () => page.locator('#ec-another').check(),
-      () => page.locator('#ec-another').uncheck(),
-      meals,
-    );
-    const occurrences = await page.locator('#ec-occurrence option').evaluateAll((options) =>
-      options.slice(1, 3).map((option) => option.value));
-    assert.equal(occurrences.length, 2, 'fixture needs two selectable Meals');
-    await settleRace(
-      () => page.locator('#ec-occurrence').selectOption(occurrences[0]),
-      () => page.locator('#ec-occurrence').selectOption(occurrences[1]),
-      { ...meals, occurrenceId: occurrences[1] },
-    );
-    await settleRace(
-      () => page.locator('#ec-occurrence').selectOption(occurrences[0]),
-      () => page.locator('#ec-clear').click(),
-      { ...meals, occurrenceId: null },
-    );
-
-    // Rejection takes the same stale branch as a late projection, but must not
-    // turn a later successful coordinate into the locked visible-error state.
-    await page.locator('#ec-factor').selectOption('late_bolus');
-    const staleFailure = await nextQueued();
-    await page.locator('#ec-factor').selectOption('carb_undercount');
-    staleFailure.reject(new Error('late comparison request failed'));
-    const current = await nextQueued();
-    current.resolve(current.response);
-    await expectCoordinate({ ...meals, occurrenceId: null });
-    await page.waitForTimeout(50);
-    await expectCoordinate({ ...meals, occurrenceId: null });
+    for (const selector of [
+      '.ec-view-seg', '#ec-factor', '.ec-block-seg', '#ec-another',
+      '#ec-occurrence', '#ec-clear', '.ec-inspector', '#ec-occ-detail', '#ec-rescue',
+    ]) {
+      assert.equal(await page.locator(selector).count(), 0, `${selector} did not retire`);
+    }
+    // What remains: the canvas, its legend and its hover readout — populated,
+    // not merely absent-of-error.
+    assert.ok(await page.locator('#ec-chart').isVisible(), 'the canvas itself did not render');
+    assert.ok((await page.locator('.ec-key-item').count()) > 0, 'the cohort legend did not render');
+    assert.equal(await page.locator('.ec-error').count(), 0);
   } finally { if (page) await page.close(); }
 });
 

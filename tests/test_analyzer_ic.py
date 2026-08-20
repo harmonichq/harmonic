@@ -1277,7 +1277,7 @@ class AnalyzeIcTest(unittest.TestCase):
         self.assertEqual(seg.estimate.value, 5.0)           # meals measure tighter
         self.assertEqual(seg.recommended, 6.0)              # held at current, not tightened
         self.assertFalse(seg.asserts_move)                  # the hold is canonical
-        self.assertIn("withheld", seg.annotation)
+        self.assertIn("meal-owned low", seg.annotation)
         self.assertNotIn("nudged", seg.annotation)
 
     def test_well_counted_meals_are_not_flagged_despite_tiny_jitter(self):

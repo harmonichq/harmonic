@@ -265,7 +265,7 @@ class BlockHarmTest(unittest.TestCase):
         held = by_id(blocks)[0]
         self.assertEqual(held.recommended, held.current_values[0])
         self.assertFalse(held.asserts_move)
-        self.assertIn("low printed", held.annotation)
+        self.assertIn("meal-owned low", held.annotation)
 
     def test_without_the_low_the_same_block_asserts(self):
         blocks, _ = blocks_for(self.SEGMENTS, self._events(),

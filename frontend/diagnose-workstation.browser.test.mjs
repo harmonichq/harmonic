@@ -247,21 +247,15 @@ test('locked panel geometry matches across both required viewports and light/dar
    (`dataset.verdict === 'up'`) and never opens a held item, so nothing else
    in the tree proves the deny side of this #273/#465 rule at the DOM layer —
    this is the single most safety-relevant assertion in this file. */
-test('a held I:C block offers no stage button and says so in the locked words', async () => {
+test('a held I:C finding enters through the findings queue with no stage button', async () => {
     const browser = await runner.browser();
     try {
       const before = openerProblems().length;
       const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
-      // Same block-picking approach story S17 uses: the non-wrapping block, so
-      // its aria-label carries no "part N of 2". Both of 'typical' state's I:C
-      // blocks are held — every entry in this repository's own fixture,
-      // mockups/diagnose-workstation.synthetic/payload.json, carries
-      // `asserts_move: false` under `analyze.ic_blocks` — so either block
-      // proves the gate.
-      const idx = await page.evaluate(() => [...document.querySelectorAll('#iclane button')]
-        .findIndex((b) => !/part \d of 2/.test(b.getAttribute('aria-label') || '')));
-      assert.ok(idx >= 0, 'precondition: a non-wrapping I:C block exists');
-      await page.click(`#iclane button:nth-child(${idx + 1})`);
+      const row = await page.$('#level .qrow[data-id^="ic:"]');
+      assert.ok(row, 'precondition: an I:C findings-queue row exists');
+      assert.equal(await page.$('#iclane'), null, 'the retired I:C lane is absent');
+      await row.click();
       await settle(page, 450);
       const s = await state(page);
       assert.equal(s.stage, null, 'a held I:C block renders no stage button');

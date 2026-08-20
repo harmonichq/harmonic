@@ -25,6 +25,17 @@ test('term 45 · the meta has three forms and no others', () => {
   }
 });
 
+test('term 45 · singular counts read "1 finding"/"1 day", never "1 findings"/"1 days"', () => {
+  const oneFinding = { rows: [{ register: 'finding' }], window: { scoped: false },
+    findings_window: { days: 30 } };
+  assert.equal(queueMeta(oneFinding), '1 finding · 30 days');
+  const oneDay = { rows: [{ register: 'finding' }], window: { scoped: false },
+    findings_window: { days: 1 } };
+  assert.equal(queueMeta(oneDay), '1 finding · 1 day');
+  const emptyOneDay = { rows: [], window: { scoped: false }, findings_window: { days: 1 } };
+  assert.equal(queueMeta(emptyOneDay), '1 day');
+});
+
 test('term 41 · a scoped EMPTY window says only how much history it looked at', () => {
   // term 41 governs an empty WINDOW, so the empty form beats the scoped one:
   // ranking language needs something ranked, and "0 in this window" counts a thing
@@ -51,7 +62,7 @@ test('term 36 · a row is flavored by the server register, glyph and word togeth
 test('term 35 · a finding keeps EVERY family appearance, never a merged total', () => {
   const overTreated = queueRows(W.global).find((r) => r.title === 'Over-treated low');
   assert.deepEqual(overTreated.detail,
-    { kind: 'appearances', parts: [{ count: '1 of 3', noun: 'highs' }, { count: '1 of 4', noun: 'lows' }] });
+    { kind: 'appearances', parts: [{ count: '1 of 4', noun: 'highs' }, { count: '1 of 6', noun: 'lows' }] });
 });
 
 test('term 42 · the seam opens once, before the first UNPRICED ranked row', () => {
@@ -113,7 +124,7 @@ test('term 14/38 · a held row is words-first and offers no stage affordance', (
   assert.equal(isf.stageable, false);
   assert.deepEqual(isf.detail, {
     kind: 'reason',
-    text: 'no direction asserted — your fasting data agrees with the set correction factor',
+    text: 'no direction asserted — fasting data agrees with the set factor',
   });
   assert.equal(HELD_PREFIX, 'no direction asserted — ');
 });

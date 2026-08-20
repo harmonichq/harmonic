@@ -30,6 +30,13 @@ import { toCaptures, isfVerdict } from './diagnose-workstation-data.js';
 // #735: level 1 is the server-owned findings queue, and the pane has a floor.
 import { renderFindingsQueue, queueMeta } from './diagnose-findings-queue.js';
 import { watchDockView, paintWatchDock } from './watched-change-dock.js';
+/* ADR 31 part 3 (issue #41) — ALIGN's "By event" mode reuses the lens's own
+   canvas-only render rather than a second implementation of the projection's
+   draw. `diagnose-event-comparison.js` imports `createDiagnoseWorkstation`
+   from this module too; the cycle is safe because neither side calls the
+   other's import at module-evaluation time, only from inside functions run
+   later, after both modules have finished loading. */
+import { renderEventSurface } from './diagnose-event-comparison.js';
 
 /* VERBATIM from the mock's shared harness chrome. The ported chartColors() calls it, and
    it must read the live stylesheet rather than any restated token (R3). */
@@ -56,6 +63,14 @@ const MARKUP = `
     <div class="instrument">
       <span class="cap">Window</span>
       <div class="seg" id="seg-window" role="group" aria-label="Clock window"></div>
+    </div>
+    <!-- ADR 31 part 3 (issue #41) — ALIGN, present only where the canvas is
+         showing a factor's events. A switch over already-selected data: it
+         never pushes, and WINDOW keeps filtering by clock under either
+         projection. Absorbs VIEW's function; VIEW itself is deleted. -->
+    <div class="instrument" id="align-group" hidden>
+      <span class="cap">Align</span>
+      <div class="seg" id="seg-align" role="group" aria-label="Alignment"></div>
     </div>
   </div>
 
@@ -87,13 +102,16 @@ const MARKUP = `
           <div class="grip" id="grip-b" title="Drag to resize"></div>
           <div class="readout" id="brace-readout" hidden></div>
         </div>
-        <div class="lane-wrap">
-          <div class="lane-stack" id="lane-stack">
-            <div class="lane" id="lane" role="group" aria-label="Basal slot verdicts"></div>
-            <div class="iclane" id="iclane" role="group" aria-label="I:C block verdicts"></div>
-          </div>
+        <div class="lane-wrap" id="lane-wrap">
+          <div class="lane" id="lane" role="group" aria-label="Basal slot verdicts"></div>
           <div class="lane-key" id="lane-key"></div>
         </div>
+        <!-- ALIGN's "By event" pane (ADR 31 part 3): the event-comparison
+             lens's own canvas-only render, mounted here rather than
+             re-implemented — the same projection, drawn the same way,
+             whether reached through the lens's own read path or through
+             this switch. Hidden and empty under "By clock". -->
+        <div class="ec-surface" id="align-canvas" hidden></div>
       </div>
     </section>
 
@@ -205,6 +223,26 @@ const WINDOWS = {
 };
 const winEdge = (m) => (m === 1440 ? '24:00' : hhmm(m));
 const winText = (w) => `${hhmm(w.range[0])}–${winEdge(w.range[1])}`;
+
+/* ADR 31 part 3 (issue #41) — which finding case files ALIGN can re-project.
+   The event-comparison lens's closed factor set (`diagnose-event-comparison.js`,
+   `factorKey`) is six of the seven levers title() names
+   (`ciq_autotune/analyzers/scenario/levers.py`); MISSED_MEAL is the one lever
+   outside it (an Exposure.HIGHS case file, which the lens has no view for).
+   Keyed on the lever's TITLE, because that is the string a factor frame
+   already carries as `factor.cause` (`buildFactors`/`cause_title`) — not a
+   second copy of the lever enum, just the same closed set's own titles read
+   back. A factor frame whose cause is not in this map has no event alignment;
+   ALIGN stays hidden and the canvas stays clock-only. */
+const ALIGN_FACTOR_BY_CAUSE = {
+  'Carb undercount': { view: 'meals', factor: 'carb_undercount' },
+  'Late bolus': { view: 'meals', factor: 'late_bolus' },
+  'Meal over-delivery': { view: 'meals', factor: 'meal_over_delivery' },
+  'Over-treated low': { view: 'lows', factor: 'over_treated_low' },
+  'Correction stacking': { view: 'lows', factor: 'correction_stacking' },
+  'Correction on active insulin': { view: 'lows', factor: 'correction_on_iob' },
+};
+const alignCoordinatesFor = (cause) => ALIGN_FACTOR_BY_CAUSE[cause] || null;
 
 /* ---- mock 1222-1242 — VERBATIM except the trailing `[state]` index:
        the app re-derives CFG per mount instead of once at load. ---- */
@@ -320,6 +358,23 @@ function renderInstruments(winKey, capture, onPreset) {
   if (days) days.textContent = `${daysBetween(capture.window.start, capture.window.end)} d`;
 }
 
+/** ALIGN (ADR 31 part 3): a switch over already-selected data, never a
+    navigation — it does not push, and nothing else in the instrument row is a
+    function of it. Rebuilt every paint from the standing frame's own align
+    state, same as `renderInstruments` rebuilds WINDOW from `winKey`. */
+function renderAlign(alignKey, onAlign) {
+  const seg = el('seg-align');
+  seg.innerHTML = '';
+  for (const [key, label] of [['clock', 'By clock'], ['event', 'By event']]) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = label;
+    b.setAttribute('aria-pressed', String(key === alignKey));
+    b.addEventListener('click', () => onAlign(key));
+    seg.append(b);
+  }
+}
+
 /**
  * The follow chip: ONE slot in the control row that reports whatever non-preset
  * window is in force — "Factor peak 02:00–04:00" or "Window 02:15–04:45". It is
@@ -368,16 +423,15 @@ const inWindow = (o, [a, b]) => { const m = occMinute(o); return m >= a && m < b
 
 /**
  * I:C blocks — maximal contiguous runs of one programmed ratio on the CIRCULAR
- * day, straight off the capture's `ic_blocks`. Boundaries are true minutes and
- * are kept as minutes all the way to the CSS: no snapping to the basal grid,
- * ever. A block whose end precedes its start wraps midnight and carries two
- * spans; both spans are the same block and open the same panel.
+ * day, straight off the capture's `ic_blocks`. A block whose end precedes its
+ * start wraps midnight and carries two spans for its detail and coincidence
+ * routes.
  *
  * The verdict is READ, not derived (term 14): `asserts_move` is the backend's
  * single I:C predicate, and which of the two held presentations a block gets
  * comes from the backend's own `state`.
  */
-function buildIcLane(blocks) {
+function buildIcBlocks(blocks) {
   const cells = blocks.map((b) => {
     const wraps = b.end_min <= b.start_min;
     const current = b.current_values[0];
@@ -408,41 +462,13 @@ function buildIcLane(blocks) {
       spans: wraps ? [[b.start_min, 1440], [0, b.end_min]] : [[b.start_min, b.end_min]],
     };
   });
-  const counts = {};
-  for (const c of cells) counts[c.verdict] = (counts[c.verdict] || 0) + 1;
-  return { cells, counts };
+  return cells;
 }
 
 /** The I:C block whose span contains `minute` — wraps included. */
-function icBlockAtMinute(icLane, minute) {
-  return icLane.cells.find((c) => c.spans.some(([a, b]) => minute >= a && minute < b))
-    || icLane.cells[0];
-}
-
-function renderIcLane(icLane, selectedId, icStaged, onPick) {
-  const host = el('iclane');
-  host.innerHTML = '';
-  for (const cell of icLane.cells) {
-    cell.spans.forEach(([a, b], piece) => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.dataset.verdict = cell.verdict;
-      btn.dataset.block = String(cell.id);
-      btn.dataset.staged = String(icStaged.has(cell.id));
-      btn.setAttribute('aria-pressed', String(selectedId === cell.id));
-      // TRUE MINUTES. Fractions of 1440 on the same track the basal lane spans —
-      // never the basal cell index, so a boundary that is not on a half-hour
-      // lands where it actually falls.
-      btn.style.left = `${(a / 1440) * 100}%`;
-      btn.style.width = `${((b - a) / 1440) * 100}%`;
-      btn.title = `${cell.label} I:C block ${cell.span} · ${VERDICT_KEY[cell.verdict]}`;
-      btn.setAttribute('aria-label',
-        `${cell.label} I:C block ${cell.span}${cell.wraps ? `, part ${piece + 1} of 2` : ''}, `
-        + VERDICT_KEY[cell.verdict]);
-      btn.addEventListener('click', () => onPick(cell));
-      host.append(btn);
-    });
-  }
+function icBlockAtMinute(icBlocks, minute) {
+  return icBlocks.find((c) => c.spans.some(([a, b]) => minute >= a && minute < b))
+    || icBlocks[0];
 }
 
 /** One swatch for the single-line key — same tokens as the cells themselves. */
@@ -476,18 +502,14 @@ function renderLane(lane, selectedCell, staged, onPick) {
 }
 
 /**
- * ONE key line for the whole stack. Each lane leads with its own word and
- * reconciles its own counts — 48 basal slots, n I:C blocks — because the two
- * lanes share a hue family and the lead word is the only thing telling a
- * "hold" in one row from a "hold" in the other. Wrapping is not an option: the
- * canvas pane's rows are fixed, so a second line would steal plot height.
+ * The basal verdict key reconciles the 48 slots on the canvas lane.
  */
-function renderLaneKey(lane, icLane) {
+function renderLaneKey(lane) {
   const order = ['up', 'down', 'hold', 'insufficient', 'nodata'];
   const group = (leadWord, counts) => `<span class="lead">${leadWord}</span>`
     + order.filter((k) => counts[k]).map((k) => `<span title="${VERDICT_KEY[k]}">`
       + `<i style="${keySwatch(k)}"></i>${VERDICT_SHORT[k]} <b class="t">${counts[k]}</b></span>`).join('');
-  el('lane-key').innerHTML = group('Basal slots', lane.counts) + group('I:C blocks', icLane.counts);
+  el('lane-key').innerHTML = group('Basal slots', lane.counts);
 }
 
 /* ------------------------------ inspector ----------------------------- */
@@ -511,7 +533,7 @@ function renderClockInto(host, occurrences, clock) {
 
 /** Level 2 head: the stat line, the histogram, the slot coincidence link. */
 function renderFactorHead(host, factor, occurrences, familyN, scopeText, clock, lane, onViewSlot,
-  icLane, onViewSegment) {
+  icBlocks, onViewSegment) {
   const box = document.createElement('div');
   box.className = 'inner';
   // stat lines, not prose — and the not-attributed remainder survives as a number
@@ -529,7 +551,7 @@ function renderFactorHead(host, factor, occurrences, familyN, scopeText, clock, 
        "looks stronger" would hide exactly the overlap the merged register
        exists to show. */
     const cell = cellAtMinute(lane, clock.peak.startMin);
-    const blk = icBlockAtMinute(icLane, clock.peak.startMin);
+    const blk = icBlockAtMinute(icBlocks, clock.peak.startMin);
     const link = document.createElement('div');
     link.className = 'slotlink';
     link.innerHTML = `<span>Peak hour falls in the ${cell.label} basal slot
@@ -686,7 +708,7 @@ function renderIcBlockLevel(host, cell, icStaged, onStage, demoNote) {
     // a made-up block says so on the panel its numbers print on, not only at
     // level 1 — this state can be opened straight into
     scopeSay: [demoNote, wrapSay].filter(Boolean).join(' '),
-    /* PORT NOTE (#654), same reasoning as buildIcLane's direction read above:
+    /* PORT NOTE (#654), same reasoning as buildIcBlocks's direction read above:
        the backend publishes no `direction` for I:C segments, so "tighter" vs
        "looser" here is a dose-comparison fallback, same as the lane's. It
        decides no eligibility — `canStage` (cell.asserts, i.e. ic_asserts_move)
@@ -781,28 +803,32 @@ function classifierName(id) {
 }
 
 /**
- * Evidence as a table on a shared numeric spine. The causal sentence prints ONCE
- * as the group header; rows carry date/time, the glucose figures, the swing and
- * the evidence tier. Occurrences the pattern did not fire on keep their own
- * sub-group — that counter-example is load-bearing.
+ * Evidence as a table on a shared numeric spine (finding 1). The roster is
+ * exactly ONE verdict's occurrences — the drilled band segment, or `fired`
+ * (Meets criteria) at rest, per the mock's roster form — so `verdictLabel`
+ * names that ONE published category once, as the group header, instead of
+ * the row's own evidence-tier quality. Rows carry date/time, the glucose
+ * figures, the swing and the (separate) evidence tier.
+ *
+ * RETIRED, 2026-08-19: the "Attributed here, but no classifier fired" counter
+ * sub-group. It split the OLD cause-filtered population (every member of
+ * which was, by construction, this row's own driver) from a leftover that
+ * could never be populated at rest — dead at rest and, once select-in-place
+ * (P35, ADR 31 part 5, Connor 2026-08-19) made the roster homogeneous by
+ * verdict, no longer even a coherent split: near_miss/clean occurrences can
+ * still carry a DIFFERENT classifier's match on the same anchor, which would
+ * have silently routed a near-miss/clean row into a group labelled for
+ * fired-but-uncredited leftovers. One flat list, captioned by the roster's own
+ * verdict, replaces it; `tierOf` still labels each row's own evidence tier.
  */
-function renderEvidence(host, factor, occurrences, onOpen, onMore, shownCount) {
+function renderEvidence(host, factor, occurrences, verdictLabel, onOpen, onMore, shownCount,
+  selected) {
   if (!occurrences.length) {
     // appended, never assigned: the factor head is already in this level
     host.insertAdjacentHTML('beforeend',
-      '<div class="empty">No attributed occurrences in this range.</div>');
+      '<div class="empty">No occurrences in this verdict.</div>');
     return;
   }
-  const fits = occurrences.filter((o) => tierOf(o));
-  const counter = occurrences.filter((o) => !tierOf(o));
-  // the hedged sentence, once, from the fixture's own text
-  /* The group header names the GROUP. It used to be built by regex-trimming one
-     occurrence's sentence, which produced a mid-sentence fragment with no
-     opening clause and no terminal punctuation — a sentence about ONE episode
-     masquerading as a label for all of them. It is now the factor's own causal
-     phrase, which is what the group actually is, and degrades to the bare hedge
-     if a factor somehow carries no title. */
-  const tier = fits.length ? tierOf(fits[0]) : null;
   const groupPhrase = (factor.cause || '').trim();
 
   /* Aligned numeric columns: entry → worst → Δ where the fixture holds BOTH
@@ -815,7 +841,9 @@ function renderEvidence(host, factor, occurrences, onOpen, onMore, shownCount) {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'ev-row';
-    b.dataset.counter = String(!tierOf(o));
+    // select-in-place (P35 retired): the emphasised row is a state of this
+    // same row, never a separate level
+    b.setAttribute('aria-pressed', String(o === selected));
     b.title = o.text || '';
     const nums = both
       ? `<span class="entry">${entry}</span><span class="arrow" aria-hidden="true">→</span>
@@ -829,39 +857,84 @@ function renderEvidence(host, factor, occurrences, onOpen, onMore, shownCount) {
     return { node: b, occ: o };
   });
 
-  if (fits.length) {
-    // The hedge prints ONCE, as this group's header, whether five rows or fifty
-    // are showing — it is a property of the group, not of a row, so expanding
-    // must never restate it.
-    host.insertAdjacentHTML('beforeend',
-      `<div class="ev-group">${groupPhrase ? `<b>${groupPhrase}</b> — ` : ''}${tier}, not confirmed`
-      + ` <span class="n">· ${fits.length} episode${fits.length === 1 ? '' : 's'}</span></div>`);
-    for (const { node } of rows(fits, shownCount)) host.append(node);
-    // the cap is a real toggle: five rows, then "N more", then back to five
-    if (fits.length > EVIDENCE_CAP) {
-      const more = document.createElement('button');
-      more.type = 'button';
-      more.className = 'more';
-      more.textContent = shownCount > EVIDENCE_CAP
-        ? `Show first ${EVIDENCE_CAP}`
-        : `${fits.length - EVIDENCE_CAP} more`;
-      more.addEventListener('click', onMore);
-      host.append(more);
-    }
-  }
-  if (counter.length) {
-    host.insertAdjacentHTML('beforeend',
-      `<div class="ev-group counter">Attributed here, but no classifier fired on the pattern
-        <span class="n">· ${counter.length}</span></div>`);
-    for (const { node } of rows(counter, counter.length)) host.append(node);
+  // The hedge prints ONCE, as this group's header, whether five rows or fifty
+  // are showing — it is a property of the group, not of a row, so expanding
+  // must never restate it.
+  host.insertAdjacentHTML('beforeend',
+    `<div class="ev-group">${groupPhrase ? `<b>${groupPhrase}</b> — ` : ''}${verdictLabel}`
+    + ` <span class="n">· ${occurrences.length} episode${occurrences.length === 1 ? '' : 's'}</span></div>`);
+  for (const { node } of rows(occurrences, shownCount)) host.append(node);
+  // the cap is a real toggle: five rows, then "N more", then back to five
+  if (occurrences.length > EVIDENCE_CAP) {
+    const more = document.createElement('button');
+    more.type = 'button';
+    more.className = 'more';
+    more.textContent = shownCount > EVIDENCE_CAP
+      ? `Show first ${EVIDENCE_CAP}`
+      : `${occurrences.length - EVIDENCE_CAP} more`;
+    more.addEventListener('click', onMore);
+    host.append(more);
   }
 }
 
 /**
- * Level 3 — one occurrence owns the panel: the full sentence, every classifier's
- * read (matched and not), and the link out to that day's context.
+ * The band's five anchor states, labelled the way ADR 41 maps them — the
+ * frontend reads `verdict_counts` and names categories; it counts nothing.
+ * `Meets criteria` / `Borderline` / `Does not meet` are the band's own three
+ * drillable segments; `outranked` / `no_data` are residue that never gets a
+ * segment and instead prints on the roster's own footer line.
  */
-function renderOccurrenceLevel(host, occ, factor, hasTrace, at, total, onDay) {
+const VERDICT_BAND_KEY = { fired: 'Meets criteria', near_miss: 'Borderline', clean: 'Does not meet' };
+const VERDICT_RESIDUE_KEY = { outranked: 'claimed by another factor', no_data: 'not comparable' };
+
+/**
+ * The verdict band (ADR 31 part 4, ADR 41). Drilling a segment scopes the
+ * roster only — the caller re-derives `scoped` and the canvas keeps drawing
+ * every occurrence regardless (ADR 31 part 5). No row means no published
+ * `verdict_counts`, so the band draws nothing rather than a false split.
+ *
+ * Counts come from `verdict_counts_by_family[family]` (finding 1): a lever
+ * spanning multiple families publishes one total, but the band sits on a
+ * single-family frame, so reading the total would count occurrences the
+ * roster below it can never show. Falls back to the row total only when the
+ * per-family breakdown is absent (an older payload shape).
+ */
+function renderVerdictBand(host, row, family, activeVerdict, onPick) {
+  if (!row || !row.verdict_counts) return;
+  const vc = row.verdict_counts_by_family?.[family] || row.verdict_counts;
+  const groups = Object.entries(VERDICT_BAND_KEY).map(([key, lead]) => ({ key, lead, count: vc[key] || 0 }));
+  const band = document.createElement('div');
+  band.className = 'vband';
+  const seg = (g) => `data-verdict="${g.key}" aria-pressed="${g.key === activeVerdict}"`;
+  band.innerHTML = `
+    <div class="bar" role="group" aria-label="Verdict split"
+         style="grid-template-columns:${groups.map((g) => Math.max(g.count, 0.001)).join('fr ')}fr">
+      ${groups.map((g) => `<button type="button" class="seg" ${seg(g)}
+          aria-label="${g.lead} · ${g.count}"></button>`).join('')}
+    </div>
+    <div class="keys">
+      ${groups.map((g) => `<button type="button" class="key" ${seg(g)}>
+          <span class="lead">${g.lead}</span><span class="n">${g.count}</span></button>`).join('')}
+    </div>`;
+  for (const b of band.querySelectorAll('button[data-verdict]')) {
+    b.addEventListener('click', () => onPick(b.dataset.verdict));
+  }
+  host.append(band);
+  const residue = Object.entries(VERDICT_RESIDUE_KEY)
+    .map(([key, noun]) => [vc[key] || 0, noun])
+    .filter(([n]) => n > 0)
+    .map(([n, noun]) => `${n} ${noun}`)
+    .join(' · ');
+  if (residue) host.insertAdjacentHTML('beforeend', `<div class="vband-foot">${residue}</div>`);
+}
+
+/**
+ * Select-in-place (P35 retired): the emphasised roster row's own detail —
+ * the full sentence, every classifier's read (matched and not), and the link
+ * out to that day's context — mutating the standing screen under the roster
+ * rather than owning a level of its own.
+ */
+function renderOccurrenceDetail(host, occ, factor, hasTrace, at, total, onDay) {
   const tier = tierOf(occ);
   /* The matched classifier's detail is often the very sentence already printed
      as the headline. Printing it again under "Classifier reads" told the reader
@@ -873,7 +946,7 @@ function renderOccurrenceLevel(host, occ, factor, hasTrace, at, total, onDay) {
   const nadir = occ.worst_bg != null ? Math.round(occ.worst_bg) : null;
   const entry = occ.bg != null ? Math.round(occ.bg) : null;
   const head = document.createElement('div');
-  head.className = 'inner';
+  head.className = 'inner occ-detail';
   head.innerHTML = `
     <div class="occ-head">
       <span class="when">${fmtDate(occ.date)} · ${occ.t.slice(11, 16)}</span>
@@ -912,8 +985,6 @@ function renderOccurrenceLevel(host, occ, factor, hasTrace, at, total, onDay) {
   dayBtn.textContent = `Open ${fmtDate(occ.date)} in Day`;
   dayBtn.addEventListener('click', onDay);
   foot.append(dayBtn);
-  foot.insertAdjacentHTML('beforeend',
-    '<span class="foot-note">Day view is not part of this mock.</span>');
   host.append(foot);
 }
 
@@ -954,7 +1025,7 @@ function boot(root, data, callbacks, signal) {
       + `can be seen.${lifted.has('recommended')
         ? ' Its measured numbers are the real ones; the recommendation is not.' : ''}`
     : '';
-  const icLane = buildIcLane(params.ic_blocks);
+  const icBlocks = buildIcBlocks(params.ic_blocks);
   const isf = params.isf[0];
   const exposures = exposureCapture.exposures;
   // The capture's `dense` state asserts moves on four slots with n=1..7 and wide
@@ -1039,13 +1110,20 @@ function boot(root, data, callbacks, signal) {
     return picked;
   }
 
-  /** One factor's occurrences and denominator, under the current scope. */
+  /** One factor's occurrences and denominator, under the current scope.
+      `occurrences` stays this factor's OWN attributed subset — the head
+      caption's "not attributed" remainder and the canvas plot both read off
+      it unchanged. `familyOccurrences` is new (finding 1 follow-up): the
+      frame family's FULL occurrence set, unfiltered by cause, which is what
+      the roster must draw from — every published verdict this lever's
+      classifier could have read, not only the ones it drove. */
   function scopedFor(f) {
     const win = scopeWindow();
     const all = exposures[f.family].occurrences;
     const inFamily = win ? all.filter((o) => inWindow(o, win)) : all;
     return {
       occurrences: inFamily.filter((o) => o.cause_title === f.cause).slice(0, CFG.occCap),
+      familyOccurrences: inFamily.slice(0, CFG.occCap),
       familyN: win ? inFamily.length : f.familyN,
     };
   }
@@ -1062,6 +1140,11 @@ function boot(root, data, callbacks, signal) {
   let chart = null;
   let shownRows = EVIDENCE_CAP;
   let dir = 'push';
+  /* ALIGN's mounted event-comparison canvas (ADR 31 part 3), and the request
+     generation that guards it against a stale response landing after the
+     reader has moved to a different frame or flipped back to `By clock`. */
+  let alignMount = null;
+  let alignGeneration = 0;
   let presetKey = CFG.win;                          // what Esc restores
   let shownRange = null;                            // the window the canvas resolved to
   let braceGripTop = 48;                            // y of the grip band, set by paintBrace
@@ -1136,12 +1219,14 @@ function boot(root, data, callbacks, signal) {
          occurrences and opened an empty table. Uncapped, because the queue's order
          is the server's and has nothing to do with this list's display cap. */
       const factor = buildFactors(scopeWindow(), Infinity).find((f) => f.cause === row.title);
-      if (factor) push({ k: 'factor', factor });
+      // rowId, not the row object itself: findings reload per window, so the
+      // verdict band re-resolves the live row on every paint (see findingRowFor)
+      if (factor) push({ k: 'factor', factor, rowId: row.id });
       return;
     }
     if (row.parameter === 'isf') { push({ k: 'isf' }); return; }
     if (row.parameter === 'carb_ratio') {
-      const cell = icLane.cells.find((c) => `ic:${c.id}` === row.id);
+      const cell = icBlocks.find((c) => `ic:${c.id}` === row.id);
       if (cell) pickBlock(cell);
       return;
     }
@@ -1173,21 +1258,84 @@ function boot(root, data, callbacks, signal) {
     push({ k: 'slot', cell });
   }
 
-  /** The same shortcut for the I:C lane: push from level 1, swap in place. */
+  /** The I:C findings-queue route: push from level 1, swap in place. */
   function pickBlock(cell) {
     releaseWindow();
     if (top().k === 'block') { top().cell = cell; paint(); return; }
     push({ k: 'block', cell });
   }
 
+  /* SELECT-IN-PLACE (P35 retired, ADR 31 part 5). An evidence-row click used to
+     push a third level, the occurrence's own crumb leaf. It now emphasises the
+     row in place, on the factor frame that is already standing: no push, no
+     crumb change, and — per P21's retirement — no window move either. The
+     canvas overlay (day trace + mark) and the arrow-stepping/`n of N` pair
+     (P24/P25, kept and re-homed) all read `f.selectedOcc` off the standing
+     frame instead of a frame of their own. */
+  function selectOcc(occ) {
+    const f = top();
+    if (f.k !== 'factor') return;
+    f.selectedOcc = occ;
+    paint();
+  }
+
+  /** The published finding row behind a factor frame, re-resolved from the
+      LIVE projection every paint (findings reload per window — a captured
+      reference would go stale). Keyed on the row's own id, carried onto the
+      frame by `drillFinding`, never guessed from a title. `verdict_counts`
+      and `evidence` are READ off it (ADR 31 part 6): nothing here counts,
+      classifies or re-derives membership. A frame opened without a queue
+      drill (the boot presets) carries no rowId, and draws no band. */
+  function findingRowFor(f) {
+    if (!f.rowId) return null;
+    return (findings?.rows || []).find((r) => r.id === f.rowId) || null;
+  }
+
+  /** One occurrence's published verdict, looked up by the id the projection
+      already carries (`ep_id` + family + `t`) — a lookup, never a
+      classification. `ep_id` alone is not unique: two same-kind anchors in one
+      episode (e.g. a low and its rebound high, both split_low_rebounds) share
+      an `ep_id`, so `.find()` on that alone silently takes the first and
+      misreports the second. `t` IS unique per occurrence and the projection
+      already publishes it, so joining on both closes the collision. */
+  function verdictForOcc(row, factor, occ) {
+    if (!row || !row.evidence) return null;
+    const hit = row.evidence.find((e) => (
+      e.family === factor.family && e.ep_id === occ.ep_id && e.t === occ.t
+    ));
+    return hit ? hit.verdict : null;
+  }
+
+  /** The roster the band's current drill scopes to (ADR 31 part 5 — the band
+      drills the ROSTER only; the canvas keeps plotting every occurrence).
+      Draws from the frame family's FULL occurrence set (finding 1 follow-up)
+      so a drill into Borderline/Does not meet has real members to find —
+      the old cause-filtered pool held only this lever's OWN attributed hits,
+      which read `fired` by construction, so every other segment was
+      structurally empty. Exactly one published verdict shows at a time: the
+      drilled segment, or `fired` at rest (the mock's roster form) — never
+      `outranked`/`no_data`, which have no band segment and print on the
+      band's own footer line instead. A frame opened without a queue drill
+      carries no row (and draws no band); it falls back to the legacy
+      attributed-only pool so it still shows something sensible. */
+  function rosterFor(f) {
+    const scoped = scopedFor(f.factor);
+    const row = findingRowFor(f);
+    if (!row) return scoped.occurrences;
+    const wanted = f.bandVerdict || 'fired';
+    return scoped.familyOccurrences.filter((o) => verdictForOcc(row, f.factor, o) === wanted);
+  }
+
   // opening depth per mock state
   const firstFactor = factors[0];
   if (CFG.level === 2 || CFG.level === 3) stack.push({ k: 'factor', factor: firstFactor });
   if (CFG.level === 3) {
+    // select-in-place (P35 retired): the occurrence lives on the factor frame,
+    // never on a level of its own
     const pool = occurrencesFor(firstFactor);
     const occ = pool.find((o) => day.days[o.date] && tierOf(o))
       || pool.find((o) => tierOf(o)) || pool[0];
-    if (occ) stack.push({ k: 'occ', occ });
+    if (occ) stack[stack.length - 1].selectedOcc = occ;
   }
   if (CFG.level === 'slot') {
     // opens with a cell selected AND one staged, so the badge, the underline and
@@ -1202,13 +1350,11 @@ function boot(root, data, callbacks, signal) {
   if (CFG.level === 'block' && !icMissing) {
     // prefer a block that asserts, so the asserting state opens on it; the held
     // capture has none and opens on its first block instead
-    const cell = icLane.cells.find((c) => c.asserts) || icLane.cells[0];
+    const cell = icBlocks.find((c) => c.asserts) || icBlocks[0];
     if (CFG.stageOpen && cell.asserts) icStaged.add(cell.id);
     stack.push({ k: 'block', cell });
   }
   if (CFG.level === 'isf') stack.push({ k: 'isf' });
-
-  const factorOf = () => (stack.find((f) => f.k === 'factor') || { factor: firstFactor }).factor;
 
   function paintChart() {
     const f = top();
@@ -1239,14 +1385,6 @@ function boot(root, data, callbacks, signal) {
         note = `${clock.peak.n} of ${clock.total}`;
         markWindowSegment(`Factor peak ${winText(win)}`);
       }
-    } else if (f.k === 'occ') {
-      // level 3 narrows the canvas to the hour around this one occurrence
-      const mins = Number(f.occ.t.slice(11, 13)) * 60 + Number(f.occ.t.slice(14, 16));
-      // ±45 min — the pooling radius, and the narrowest window the data supports.
-      // It must not be wider than the factor peak it was drilled from.
-      win = { range: [Math.max(0, mins - 45), Math.min(1440, mins + 45)] };
-      label = `${fmtDate(f.occ.date).toUpperCase()} ${f.occ.t.slice(11, 16)}`;
-      markWindowSegment(`Occurrence ${f.occ.t.slice(11, 16)}`);
     } else if (f.k === 'slot') {
       win = { label: 'Slot', range: [f.cell.startMin, f.cell.endMin] };
       label = `SLOT ${f.cell.label}`;
@@ -1279,12 +1417,15 @@ function boot(root, data, callbacks, signal) {
        user's window rather than on a peak the canvas no longer jumps to. */
     let occurrences = [];
     if (f.k === 'factor') occurrences = occurrencesFor(f.factor);
-    else if (f.k === 'occ') occurrences = [f.occ];
 
-    /* Level 3 puts that day's REAL trace over the pooled envelope when the CGM
-       capture holds the date. It is never synthesised: an uncaptured date gets
-       the envelope plus the marked entry point, and the panel says so. */
-    const traceDay = f.k === 'occ' ? day.days[f.occ.date] : null;
+    /* Selection puts that day's REAL trace over the pooled envelope when the
+       CGM capture holds the date. It is never synthesised: an uncaptured date
+       gets the envelope plus the marked entry point, and the panel says so.
+       This is select-in-place (P35 retired): the selected occurrence never
+       narrows the window (P21 retired) — it only adds the trace and the mark
+       on top of whatever window the factor frame already resolved above. */
+    const selectedOcc = f.k === 'factor' ? f.selectedOcc : null;
+    const traceDay = selectedOcc ? day.days[selectedOcc.date] : null;
     const trace = traceDay ? buildDayTrace(traceDay) : null;
     /* Whatever window the canvas landed on — preset, drawn, or frame-derived —
        is the one the brace draws and the one a handle grabs. One grammar. */
@@ -1295,6 +1436,7 @@ function boot(root, data, callbacks, signal) {
     chart = renderCanvas(el('chart'), window.echarts, {
       envelope, markers, colors, occurrences, stats, window: win.range,
       windowLabel: label, windowNote: note, trace, onHover: paintReadout,
+      selectedOcc,
     });
     /* The count is the WINDOW's, and the days are the CGM capture's own — not a
        coverage claim for the app. The basal run is a different, longer run and
@@ -1303,6 +1445,76 @@ function boot(root, data, callbacks, signal) {
       `window ${stats.readings.toLocaleString()} of ${envelope.readings.toLocaleString()} readings`;
     el('canvas-pool').textContent =
       `pooled from ${envelope.days} captured CGM days · ±${envelope.pool} min`;
+  }
+
+  /** Tear down whatever ALIGN mounted, and restore the clock canvas. */
+  function disposeAlign() {
+    alignMount?.observer?.disconnect();
+    alignMount?.chart?.dispose();
+    alignMount = null;
+    el('align-canvas').innerHTML = '';
+    el('align-canvas').hidden = true;
+    el('chart').hidden = false;
+    el('brace').hidden = braceless || !shownRange;
+    el('lane-wrap').hidden = false;
+  }
+
+  /**
+   * ALIGN (ADR 31 part 3). Present only on a finding case file whose factor
+   * the lens can re-project (`alignCoordinatesFor`); a switch over
+   * already-selected data, so picking `By event` never moves the crumb, the
+   * roster or the standing WINDOW — it re-projects the SAME occurrences the
+   * factor frame is already scoped to. WINDOW keeps filtering by clock under
+   * either projection: the block coordinate the request carries is this
+   * canvas's own standing preset (`presetKey`), the one taxonomy WINDOW and
+   * the lens's block share.
+   *
+   * The event-aligned canvas is the lens's own canvas-only render
+   * (`renderEventSurface`, `diagnose-event-comparison.js`) — reused, not
+   * reimplemented (charter reuse rule). A drawn/custom window has no block
+   * equivalent in that taxonomy, so `By event` always requests the standing
+   * PRESET regardless of a drawn brace; that is a scope narrowing, recorded
+   * in the PR report, not a silent approximation.
+   */
+  function paintAlign() {
+    const f = top();
+    const mapped = f.k === 'factor' ? alignCoordinatesFor(f.factor.cause) : null;
+    el('align-group').hidden = !mapped;
+    if (!mapped) {
+      if (alignMount) disposeAlign();
+      return;
+    }
+    const alignKey = f.align === 'event' ? 'event' : 'clock';
+    renderAlign(alignKey, (key) => {
+      if (f.align === key) return;
+      f.align = key;
+      paint();
+    });
+    if (alignKey === 'clock') {
+      if (alignMount) disposeAlign();
+      return;
+    }
+    // already showing the right projection for this frame: nothing to refetch
+    if (alignMount && alignMount.frame === f && alignMount.presetKey === presetKey) return;
+    el('chart').hidden = true;
+    el('brace').hidden = true;
+    el('lane-wrap').hidden = true;
+    const host = el('align-canvas');
+    host.hidden = false;
+    const generation = ++alignGeneration;
+    Promise.resolve(callbacks.loadProjection?.({
+      view: mapped.view, factor: mapped.factor, block: presetKey, another: false,
+    })).then((projection) => {
+      if (generation !== alignGeneration || top() !== f) return;
+      alignMount?.observer?.disconnect();
+      alignMount?.chart?.dispose();
+      alignMount = { ...renderEventSurface(host, projection), frame: f, presetKey };
+    }).catch(() => {
+      // ALIGN is a re-projection, not a navigation: a failed fetch leaves the
+      // reader on whatever the canvas already showed rather than erroring the
+      // whole workstation out from under an unrelated finding.
+      if (generation === alignGeneration) host.hidden = true;
+    });
   }
 
   /* The badge counts STAGED PARAMETER ITEMS — a basal slot, an I:C block, the
@@ -1334,7 +1546,7 @@ function boot(root, data, callbacks, signal) {
         : ` · ${u(head.current)} → ${u(head.recommended)} U/hr`;
       return { count: stagedTotal(), title: `Basal ${span}${numbers}` };
     }
-    const block = icLane.cells.find((c) => icStaged.has(c.id));
+    const block = icBlocks.find((c) => icStaged.has(c.id));
     if (block) {
       return { count: stagedTotal(),
         title: `I:C ${block.span} · ${u(block.current)} → ${u(block.block.recommended)} g/U` };
@@ -1364,8 +1576,9 @@ function boot(root, data, callbacks, signal) {
     if (frame.k === 'factor') return frame.factor.cause;
     if (frame.k === 'slot') return `${frame.cell.label} slot`;
     if (frame.k === 'block') return `${frame.cell.label} block`;
-    if (frame.k === 'isf') return 'ISF';
-    return `${fmtDate(frame.occ.date)} ${frame.occ.t.slice(11, 16)}`;
+    // 'isf' is the last frame kind: select-in-place (P35 retired) never adds a
+    // crumb level, so no frame ever reaches an `occ` branch here.
+    return 'ISF';
   }
 
   /** Draw one path. Ancestors pop; the current item is inert; separators are decor. */
@@ -1480,25 +1693,51 @@ function boot(root, data, callbacks, signal) {
       });
       return;
     }
-    if (f.k === 'factor') {
-      const { occurrences, familyN } = scopedFor(f.factor);
-      const clock = occurrences.length ? clockBuckets(occurrences) : null;
-      renderFactorHead(host, f.factor, occurrences, familyN, scopeLabel(), clock, lane, pickCell,
-        icLane, pickBlock);
-      // the numeric columns are captioned once, at the level — not per group
-      host.insertAdjacentHTML('beforeend',
-        `<div class="lvl-cap">Occurrences
-          <span class="meta">entry → worst · Δ &nbsp;·&nbsp; ${occurrences.length} of ${familyN} in ${scopeLabel()}</span></div>`);
-      renderEvidence(host, f.factor, occurrences,
-        (occ) => push({ k: 'occ', occ }),
-        () => { shownRows = shownRows > EVIDENCE_CAP ? EVIDENCE_CAP : Infinity; paint(); },
-        shownRows);
-      return;
+    // 'factor' is the only remaining frame kind: the finding case file.
+    const { occurrences, familyN } = scopedFor(f.factor);
+    const clock = occurrences.length ? clockBuckets(occurrences) : null;
+    renderFactorHead(host, f.factor, occurrences, familyN, scopeLabel(), clock, lane, pickCell,
+      icBlocks, pickBlock);
+
+    /* THE VERDICT BAND (ADR 31 part 4, ADR 41). Its counts come straight off
+       the published finding row's `verdict_counts` — the frontend labels the
+       five anchor states, it never counts or classifies into them (ADR 31
+       part 6). Drilling a segment scopes the ROSTER only (ADR 31 part 5): the
+       canvas above keeps plotting every occurrence regardless of `bandVerdict`. */
+    const row = findingRowFor(f);
+    renderVerdictBand(host, row, f.factor.family, f.bandVerdict, (v) => {
+      f.bandVerdict = f.bandVerdict === v ? null : v;
+      // a selection that falls outside the newly scoped roster cannot stand
+      if (f.selectedOcc && f.bandVerdict
+        && verdictForOcc(row, f.factor, f.selectedOcc) !== f.bandVerdict) {
+        f.selectedOcc = null;
+      }
+      paint();
+    });
+
+    const scoped = rosterFor(f);
+    // the roster's own verdict — the drilled segment, or `fired` at rest — is
+    // ONE published category, named once as the group header (never derived,
+    // just looked up in the same band vocabulary renderVerdictBand uses).
+    const rosterVerdict = f.bandVerdict || 'fired';
+    const verdictLabel = VERDICT_BAND_KEY[rosterVerdict] || rosterVerdict;
+    // the numeric columns are captioned once, at the level — not per group
+    host.insertAdjacentHTML('beforeend',
+      `<div class="lvl-cap">Occurrences
+        <span class="meta">entry → worst · Δ &nbsp;·&nbsp; ${scoped.length} of ${familyN} in ${scopeLabel()}</span></div>`);
+    renderEvidence(host, f.factor, scoped, verdictLabel, selectOcc,
+      () => { shownRows = shownRows > EVIDENCE_CAP ? EVIDENCE_CAP : Infinity; paint(); },
+      shownRows, f.selectedOcc);
+
+    /* SELECT-IN-PLACE (P35 retired): the selected row's detail mutates the
+       standing screen right here, under the roster it belongs to — never a
+       pushed level. P24/P25 (kept, re-homed) step it through `scoped`, the
+       roster the band's current drill actually shows. */
+    if (f.selectedOcc && scoped.includes(f.selectedOcc)) {
+      const at = scoped.indexOf(f.selectedOcc);
+      renderOccurrenceDetail(host, f.selectedOcc, f.factor, Boolean(day.days[f.selectedOcc.date]),
+        at, scoped.length, () => callbacks.day?.(f.selectedOcc));
     }
-    const siblings = occurrencesFor(factorOf());
-    renderOccurrenceLevel(host, f.occ, factorOf(), Boolean(day.days[f.occ.date]),
-      // PORT: the mock has no Day surface to open; the app does
-      siblings.indexOf(f.occ), siblings.length, () => callbacks.day?.(f.occ));
   }
 
   // Esc and the chip's × both mean "restore the last preset" — which is an
@@ -1518,11 +1757,9 @@ function boot(root, data, callbacks, signal) {
     const brace = el('brace');
     const chartEl = el('chart');
     const cells = el('lane').querySelectorAll('button');
-    const icCells = el('iclane').querySelectorAll('button');
     if (!shownRange) {
       brace.hidden = true;
       for (const b of cells) b.removeAttribute('data-outside');
-      for (const b of icCells) b.removeAttribute('data-outside');
       return;
     }
     // a block selection marks its segment WITHOUT a resizable brace (term 32);
@@ -1534,8 +1771,7 @@ function boot(root, data, callbacks, signal) {
     /* PLOT_TOP/PLOT_BOTTOM track the chart module's grid[0] insets. The edges
        run from the plot's top edge down to the bottom of the basal lane — the
        "project through the lane" spine, clipped at both ends. */
-    // the stack, not the basal lane alone: the edges project through BOTH rows
-    const laneEl = el('lane-stack');
+    const laneEl = el('lane');
     const laneBottom = laneEl.offsetTop + laneEl.offsetHeight;
     const plotTop = PLOT_TOP;
     const plotBottom = chartEl.clientHeight - PLOT_BOTTOM;
@@ -1557,15 +1793,6 @@ function boot(root, data, callbacks, signal) {
       if (!cells[i]) return;
       cells[i].dataset.outside = String(cell.endMin <= from || cell.startMin >= to);
     });
-    // the same for the block lane, piece by piece: a wrapped block can have one
-    // piece inside the window and one outside, and both are true
-    let piece = 0;
-    for (const cell of icLane.cells) {
-      for (const [a, b] of cell.spans) {
-        if (icCells[piece]) icCells[piece].dataset.outside = String(b <= from || a >= to);
-        piece += 1;
-      }
-    }
   }
 
   /**
@@ -1741,19 +1968,20 @@ function boot(root, data, callbacks, signal) {
     paintCrumb();
     paintLevel();
     renderLane(lane, top().k === 'slot' ? top().cell : null, staged, pickCell);
-    renderIcLane(icLane, top().k === 'block' ? top().cell.id : null, icStaged, pickBlock);
-    renderLaneKey(lane, icLane);
+    renderLaneKey(lane);
     paintWatch();
     paintChart();
     paintBrace();
+    paintAlign();
   }
 
 
   /* KEYBOARD. Esc is NOT bound here — it keeps its window semantics (see the
      design note's KEYBOARD block). Backspace pops a level at any depth; ← and →
-     are dedicated to stepping occurrences at level 3, the one place a sideways
-     move exists. Stepping STOPS at the ends rather than wrapping: an instrument
-     should not silently return you to the first reading. */
+     are dedicated to stepping the SELECTED occurrence (P24/P25, kept and
+     re-homed onto select-in-place — there is no occurrence level any more).
+     Stepping STOPS at the ends rather than wrapping: an instrument should not
+     silently return you to the first reading. */
   document.addEventListener('keydown', (ev) => {
     if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
     const f = top();
@@ -1764,14 +1992,15 @@ function boot(root, data, callbacks, signal) {
       paint();
       return;
     }
-    if (f.k !== 'occ' || (ev.key !== 'ArrowLeft' && ev.key !== 'ArrowRight')) return;
-    const siblings = occurrencesFor(factorOf());
-    const at = siblings.indexOf(f.occ);
+    if (f.k !== 'factor' || !f.selectedOcc
+      || (ev.key !== 'ArrowLeft' && ev.key !== 'ArrowRight')) return;
+    const siblings = rosterFor(f);   // the band's current drill, same list the roster shows
+    const at = siblings.indexOf(f.selectedOcc);
     const next = at + (ev.key === 'ArrowRight' ? 1 : -1);
     if (at < 0 || next < 0 || next >= siblings.length) return;
     ev.preventDefault();
-    f.occ = siblings[next];   // same depth, next reading — the panel and the
-    paint();                  // day trace both follow from the frame
+    f.selectedOcc = siblings[next];   // same frame, next reading — the panel and
+    paint();                          // the day trace both follow from the frame
   }, { signal });   // PORT: abortable
 
   observeResize(el('chart'), () => chart);

@@ -152,29 +152,30 @@ async function use(open, browser, options, fn) {
   try { await fn(page); } finally { await page.close(); }
 }
 
-// LOCK:diagnose-event-comparison:1 LOCK:diagnose-event-comparison:2
-// LOCK:diagnose-event-comparison:4 LOCK:diagnose-event-comparison:22
+// RETIRED (issue #41) — ADR 31 part 3: View is deleted, its function folded
+// into the workstation's own ALIGN instrument (a different surface entirely,
+// covered by the workstation's own replay). Sanctioned under P52's
+// "ruled-elsewhere" note (#31 resolution §4), same wording:
+//   Connor Griffin · 2026-08-19 · "Decided by Connor Griffin in a ruling
+//   session on 2026-08-19."
+// Failed first against the new build with the OLD assertions: a real 30s
+// timeout, `waiting for locator('[data-view="glucose"]')` — that control does
+// not exist anywhere any more. What survives is folded in as a loud absence
+// check, plus the three assertions that never depended on View: the shipped
+// chrome siblings, default routing on a bare open, and the fail-closed path
+// on a missing comparison — none of which click anything retired.
 export const S1 = async (open, browser) => use(open, browser, {}, async (page) => {
   ok(await page.locator('.cockpit-topbar').isVisible(), 'shipped cockpit sibling is missing');
   ok(await page.locator('.cockpit-footer').isVisible(), 'shipped footer sibling is missing');
-  await page.locator('[data-view="glucose"]').click();
-  await page.waitForSelector('.dw:not(.ec-surface)');
-  ok(await page.locator('[data-event-view="glucose"], body[data-capture]').count() > 0,
-    'Glucose did not become current');
-  /* The return path is the rail itself, exercised by clicking it — history
-     navigation would pass on a Glucose view that has no View control at all,
-     which is exactly how #685 shipped a dead end past this story. */
-  ok(await page.locator('.ec-view-seg [data-view="glucose"][aria-pressed="true"]').isVisible(),
-    'Glucose does not carry the View rail — Meals and Lows are unreachable');
-  ok(await page.locator('.instruments .ec-view-coordinate').count() === 1,
-    'the View instrument is not in the workstation rail as one optical row');
-  await page.locator('.ec-view-seg [data-view="meals"]').click();
-  await page.waitForSelector('.ec-surface');
+  for (const selector of ['.ec-view-seg', '.ec-view-coordinate', '[data-view]']) {
+    ok(await page.locator(selector).count() === 0, `${selector} did not retire`);
+  }
   /* No view param — how Diagnose is reached from the tab bar — opens Glucose,
-     the recommendation surface, not an evidence lens. */
+     the recommendation surface, not an evidence lens. Read off the root
+     dataset the workstation itself stamps, not a View control. */
   const bare = await open(browser, { view: null });
   try {
-    ok(await bare.locator('.ec-view-seg [data-view="glucose"][aria-pressed="true"]').isVisible(),
+    ok((await bare.locator('[data-event-view="glucose"]').count()) > 0,
       'a bare Diagnose open did not land on Glucose');
   } finally { await bare.close(); }
   const invalid = await open(browser, { invalidComparison: true });
@@ -185,22 +186,19 @@ export const S1 = async (open, browser) => use(open, browser, {}, async (page) =
   } finally { await invalid.close(); }
 });
 
-// LOCK:diagnose-event-comparison:3 LOCK:diagnose-event-comparison:8 LOCK:diagnose-event-comparison:21
+// RETIRED (issue #41) — the View rail's own keyboard focus stepping. There is
+// no View control left to step through (ADR 31 part 3). Same sanction as S1.
 export const S2 = async (open, browser) => use(open, browser, {}, async (page) => {
-  const first = page.locator('.ec-view-seg button').first();
-  await first.focus();
-  await page.keyboard.press('ArrowLeft');
-  ok(await page.locator('.ec-view-seg button').last().evaluate((el) => el === document.activeElement),
-    'ArrowLeft did not wrap focus');
-  await page.keyboard.press('Home');
-  ok(await first.evaluate((el) => el === document.activeElement), 'Home did not focus first view');
-  const pressed = await page.locator('.ec-view-seg button[aria-pressed="true"]').innerText();
-  ok(/Meals/i.test(pressed), 'focus movement activated another view');
+  ok(await page.locator('.ec-view-seg').count() === 0, '.ec-view-seg did not retire');
 });
 
-// LOCK:diagnose-event-comparison:4 LOCK:diagnose-event-comparison:5
-// LOCK:diagnose-event-comparison:9 LOCK:diagnose-event-comparison:14
-// LOCK:diagnose-event-comparison:15 LOCK:diagnose-event-comparison:16
+// AMENDED (issue #41) — P52 retires the inspector and the Factor select; ADR
+// 31 part 3 retires View. What this story checked THROUGH those controls —
+// meal identity, and the no-match copy's tone — is still true and still
+// checkable on the surviving canvas + legend, reached by URL coordinates
+// (P53 keeps the read path) instead of a click. The factor re-render and
+// occurrence-retention assertions, which lived entirely in the retired
+// inspector, do not survive.
 export const S3 = async (open, browser) => use(open, browser, {}, async (page) => {
   const identity = await page.evaluate(() => {
     const rendered = window.__diagnoseEventComparison || window.__issue677ReducedBands;
@@ -219,81 +217,53 @@ export const S3 = async (open, browser) => use(open, browser, {}, async (page) =
     });
   });
   ok(identity, 'a comparison Meal is not one atomic completed >=10g bolus');
-  const judgmentCopy = `${await page.locator('.ec-key-item[data-cohort="neutral"] strong').innerText()} ${await page.locator('#ec-judgment-summary').innerText()}`;
+  const judgmentCopy = await page.locator('.ec-key-item[data-cohort="neutral"] strong').innerText();
   ok(!/normal|correct behavior|behaved correctly/i.test(judgmentCopy),
     'no-match copy makes a normal/correct claim');
-  const before = await page.locator('#ec-judgment-title').innerText();
-  await page.locator('#ec-factor').selectOption('late_bolus');
-  await settle(page);
-  const after = await page.locator('#ec-judgment-title').innerText();
-  ok(before !== after && /Late bolus/i.test(after), 'factor did not re-render the inspector');
-  ok(await page.locator('#ec-occ-detail').isHidden(), 'factor change retained an occurrence');
+  const before = await page.locator('.ec-title-context').innerText();
+  const late = await open(browser, { factor: 'late_bolus' });
+  try {
+    const after = await late.locator('.ec-title-context').innerText();
+    ok(before !== after && /Late bolus/i.test(after), 'factor coordinate did not re-render the canvas');
+  } finally { await late.close(); }
 });
 
-// LOCK:diagnose-event-comparison:8 LOCK:diagnose-event-comparison:14
+// RETIRED (issue #41) — the anchor-time Block seg. P52 retires it with the
+// rest of the lens's own instrument row. The re-scoping behaviour itself
+// (the block coordinate changes which occurrences the projection routes) is
+// exercised through the SAME URL read path S3 now uses; a separate story for
+// it duplicates that coverage, so it is not re-added. Same sanction as S1.
 export const S4 = async (open, browser) => use(open, browser, {}, async (page) => {
-  const before = await page.locator('#ec-occurrence-count').innerText();
-  await page.locator('[data-block="overnight"]').click();
-  await settle(page);
-  const after = await page.locator('#ec-occurrence-count').innerText();
-  ok(before !== after, 'anchor-time block did not re-scope occurrences');
-  ok(await page.locator('[data-block="overnight"]').getAttribute('aria-pressed') === 'true',
-    'Overnight did not become current');
+  ok(await page.locator('.ec-block-seg').count() === 0, '.ec-block-seg did not retire');
 });
 
-// LOCK:diagnose-event-comparison:9 LOCK:diagnose-event-comparison:10 LOCK:diagnose-event-comparison:11
+// RETIRED (issue #41) — the near-rule disclosure sentence and the Other
+// factors checkbox both lived in the retired inspector (P52); the sentence
+// has no surviving home, and `another` is reachable only by URL now. Same
+// sanction as S1.
 export const S5 = async (open, browser) => use(open, browser, {}, async (page) => {
-  const boundary = await page.locator('.ec-boundary-note').innerText();
-  ok(/disclosure only/i.test(boundary) && /never enters Priority, a suggestion, or Plan/i.test(boundary),
-    'near-rule disclosure boundary is missing');
-  ok(await page.locator('.ec-key-item[data-cohort="another_factor"]').count() === 0,
-    'another-factor cohort was visible by default');
-  await page.locator('#ec-another').check();
-  await settle(page);
-  ok(await page.locator('.ec-key-item[data-cohort="another_factor"]').count() === 1,
-    'another-factor cohort did not appear');
-  ok(Number(await page.locator('#ec-another-count').innerText()) > 0,
-    'another-factor exact count is missing');
+  for (const selector of ['.ec-boundary-note', '#ec-another']) {
+    ok(await page.locator(selector).count() === 0, `${selector} did not retire`);
+  }
+  // the coordinate still routes by URL (P53) — the cohort itself still shows
+  const withAnother = await open(browser, { another: 1 });
+  try {
+    ok(await withAnother.locator('.ec-key-item[data-cohort="another_factor"]').count() === 1,
+      'another-factor cohort did not appear via the URL coordinate');
+  } finally { await withAnother.close(); }
 });
 
-// LOCK:diagnose-event-comparison:16 LOCK:diagnose-event-comparison:17 LOCK:diagnose-event-comparison:18
+// RETIRED (issue #41) — the occurrence select, the rescue sentence, the Day
+// link and Clear trace all lived in the retired inspector (P52); there is no
+// surviving affordance to reach an occurrence, read its rescue carbs, or
+// clear one. What is canvas-level (the selected-cohort legend item, the
+// selected trace's chart emphasis) is exercised through the URL `occ`
+// coordinate by S11, which never depended on any of these controls. Same
+// sanction as S1.
 export const S6 = async (open, browser) => use(open, browser, { view: 'lows' }, async (page) => {
-  const option = await page.locator('#ec-occurrence option').nth(1).getAttribute('value');
-  await page.locator('#ec-occurrence').selectOption(option);
-  await settle(page);
-  ok(await page.locator('#ec-occ-detail').isVisible(), 'occurrence detail did not open');
-  ok(await page.locator('.ec-key-item[data-cohort="selected"]').count() === 1,
-    'selected trace legend is missing');
-  const rescue = await page.locator('#ec-rescue').innerText();
-  ok(rescue === 'Rescue carbs: 8 g, 6 g, 4 g.',
-    `rescue sentence drifted from "Rescue carbs: 8 g, 6 g, 4 g." (got "${rescue}")`);
-  ok(!/manual|rise.prompt|low.prompt|no recorded amount/i.test(rescue),
-    'rescue provenance or null amount leaked to the inspector');
-  const markers = await page.evaluate(() => {
-    const state = window.__diagnoseEventComparison || window.__issue677ReducedBands;
-    const series = state.chart.getOption().series.find((item) => item.name === 'Rescue carbs');
-    return series?.data || [];
-  });
-  ok(markers.length === 3 && markers.every((marker) => marker[2] > 0),
-    'only finite positive rescue amounts may become markers');
-  ok(/date=.*2026-08-01|tab=day/.test(await page.locator('#ec-day-link').getAttribute('href')),
-    'dated Day link is missing');
-  const emphasis = await page.evaluate(() => {
-    const state = window.__diagnoseEventComparison || window.__issue677ReducedBands;
-    const lines = state.chart.getOption().series
-      .filter((series) => /:line:/.test(series.id || ''));
-    const selectedCohort = state.selected?.verdict?.cohort || state.selected?.__cohort;
-    const own = lines.filter((series) => series.id.startsWith(`${selectedCohort}:`))
-      .map((series) => series.lineStyle?.opacity || 0);
-    const other = lines.filter((series) => !series.id.startsWith(`${selectedCohort}:`))
-      .map((series) => series.lineStyle?.opacity || 0);
-    return { own: Math.max(...own), other: Math.max(...other) };
-  });
-  ok(emphasis.own > emphasis.other,
-    `selected cohort did not remain above other aggregates: ${JSON.stringify(emphasis)}`);
-  await page.locator('#ec-clear').click();
-  await settle(page);
-  ok(await page.locator('#ec-occ-detail').isHidden(), 'Clear trace did not restore aggregates');
+  for (const selector of ['#ec-occurrence', '#ec-occ-detail', '#ec-rescue', '#ec-day-link', '#ec-clear']) {
+    ok(await page.locator(selector).count() === 0, `${selector} did not retire`);
+  }
 });
 
 // LOCK:diagnose-event-comparison:12 LOCK:diagnose-event-comparison:13
@@ -362,68 +332,38 @@ export const S9 = async (open, browser) => {
       } finally { await statePage.close(); }
     }
   }
+  // AMENDED (issue #41) — the coordinate row and the inspector this story
+  // checked the narrow-width stacking of are retired (P52; ADR 31 part 3
+  // moves View into the workstation's own ALIGN instrument). What remains at
+  // narrow width is the canvas alone: no overflow, and the one pane fills the
+  // viewport rather than stacking against a sibling that no longer exists.
   await use(open, browser, { viewport: { width: 390, height: 844 } }, async (page) => {
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth
       - document.documentElement.clientWidth);
     ok(overflow <= 1, `narrow page overflows by ${overflow}px`);
-    const columns = await page.locator('.ec-coordinates').evaluate((el) =>
-      getComputedStyle(el).gridTemplateColumns);
-    ok(columns.split(' ').length === 1, `coordinates did not stack: ${columns}`);
-    const canvas = await page.locator('.ec-canvas').boundingBox();
-    const inspector = await page.locator('.ec-inspector').boundingBox();
-    ok(inspector.y >= canvas.y + canvas.height - 1, 'inspector did not stack below canvas');
+    const width = await page.locator('.ec-panes').evaluate((el) => el.getBoundingClientRect().width);
+    const canvasWidth = await page.locator('.ec-canvas').evaluate((el) => el.getBoundingClientRect().width);
+    ok(Math.abs(width - canvasWidth) < 2, `the single pane did not take the full column: ${width} vs ${canvasWidth}`);
+    ok(await page.locator('#ec-chart').isVisible(), 'the canvas did not render at narrow width');
   });
 };
 
-/* Shared chrome must not move when the reader switches views. Every geometry
-   here is read from the SHIPPED Glucose view first and every event view is
-   compared against it, so Glucose stays ground truth rather than the two
-   drifting together. */
-// LOCK:diagnose-event-comparison:23
-export const S10 = async (open, browser) => {
-  const chrome = (page) => page.evaluate(() => {
-    const box = (sel) => { const el = document.querySelector(sel); if (!el) return null;
-      const r = el.getBoundingClientRect(); return { top: +r.top.toFixed(1), h: +r.height.toFixed(1) }; };
-    const rail = document.querySelector('.instruments, .ec-coordinates');
-    const rc = getComputedStyle(rail);
-    const rr = rail.getBoundingClientRect();
-    return {
-      railTop: +rr.top.toFixed(1), railH: +rr.height.toFixed(1),
-      railGap: rc.gap, railPad: rc.padding,
-      cap: box('.instruments .cap, .ec-coordinates .cap'),
-      panes: box('.panes'),
-      canvasHead: box('.canvas-head'),
-      canvasBody: box('.canvas-pane > .body, .ec-canvas > .body'),
-      inspectorHead: box('.inspector > header, .ec-inspector > header'),
-    };
-  });
-  for (const width of [1280, 1440]) {
-    const viewport = { width, height: 800 };
-    const base = await open(browser, { view: 'glucose', viewport });
-    let truth;
-    try { truth = await chrome(base); } finally { await base.close(); }
-    for (const view of ['meals', 'lows']) {
-      const page = await open(browser, { view, viewport });
-      try {
-        const got = await chrome(page);
-        for (const key of Object.keys(truth)) {
-          ok(JSON.stringify(got[key]) === JSON.stringify(truth[key]),
-            `${view} at ${width}: ${key} is ${JSON.stringify(got[key])}, Glucose has ${JSON.stringify(truth[key])}`);
-        }
-        /* The canvas header reserves its hover readout's height at rest, so
-           inspecting the chart never reflows the pane under the pointer. */
-        const chart = await page.locator('#ec-chart').boundingBox();
-        await page.mouse.move(chart.x + chart.width / 2, chart.y + chart.height / 2);
-        await settle(page, 400);
-        const hovered = await chrome(page);
-        ok(JSON.stringify(hovered.canvasHead) === JSON.stringify(got.canvasHead),
-          `${view} at ${width}: hovering the chart resized the canvas header`);
-        ok(JSON.stringify(hovered.canvasBody) === JSON.stringify(got.canvasBody),
-          `${view} at ${width}: hovering the chart moved the chart body`);
-      } finally { await page.close(); }
-    }
+// RETIRED (issue #41) — this story's whole premise was that Meals/Lows shared
+// one optical rail row with Glucose (the View instrument, one-row-for-all
+// under #677 re-settle term 3). P52 makes the lens canvas-only: the
+// `?view=meals`/`lows` route now renders no rail at all — no `.instruments`,
+// no `.ec-coordinates` — so there is no rail left to compare against
+// Glucose's. That is the intended shape of "the lens becomes canvas-only",
+// not a regression this story should keep failing on. What the story's
+// hover-stability half checked (the canvas header does not reflow on hover)
+// is still true and is exercised on the surviving canvas by S7. Sanctioned
+// under P52's "ruled-elsewhere" note (#31 resolution §4), same wording as S1.
+export const S10 = async (open, browser) => use(open, browser, { view: 'meals' }, async (page) => {
+  for (const selector of ['.instruments', '.ec-coordinates']) {
+    ok(await page.locator(selector).count() === 0,
+      `${selector} did not retire — the lens rail should be gone entirely`);
   }
-};
+});
 
 // LOCK:diagnose-event-comparison:16 LOCK:diagnose-event-comparison:25
 export const S11 = async (open, browser) => use(open, browser, {

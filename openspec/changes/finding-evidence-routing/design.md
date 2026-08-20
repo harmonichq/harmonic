@@ -279,3 +279,29 @@ console errors. The screenshots remain external review evidence under
 `/private/tmp/harmonic-revise-evidence-01a01b87/` as
 `base-light-final.png`, `base-dark-evidence-final.png`,
 `revision-light-final.png`, and `revision-dark-final.png`.
+
+## ADR 41 — The verdict band's categories are the engine's anchor states
+
+The band's split is the closed five-state anchor taxonomy of ADR 0019 §2,
+published by the findings projection; the frontend labels categories and
+composes nothing. Mapping ruled by Connor on 2026-08-19: fired → Meets
+criteria; near_miss → Borderline; clean → Does not meet; outranked → claimed
+by another factor; no_data → not comparable. Basis, in his words: "My
+understanding is the server has rule fired, it has near misses, and it has
+items that aren't owned by any classifier. So those should all exist in the
+engine already."
+
+**Clarifying addendum — 2026-08-19.** The findings projection publishes a
+ROW-RELATIVE taxonomy, not a straight passthrough of ADR 0019 §2's anchor-level
+states: each occurrence's category is read off THIS row's own lever's
+classifier verdict (its entry in the occurrence's published `verdicts[]`),
+never the anchor's single precedence-collapsed `state`. The five state names
+are reused unchanged, and the mapping above is unchanged; what differs is the
+occurrence a name is computed FOR. Concretely, an occurrence whose own
+classifier matched reads `fired` for this row whether or not it also won the
+episode's attribution (`state` on the anchor might read `outranked` there, if
+some earlier lever won) — `outranked` is reserved for a calm lever when
+another lever demonstrably drove — and an occurrence this lever's classifier
+never evaluated at all (no entry in `verdicts[]`) reads `no_data` rather than
+`clean`, which stays reserved for an occurrence this lever's classifier
+actually evaluated and found calm.

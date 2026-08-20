@@ -35,6 +35,10 @@ from datetime import date, datetime, timedelta
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
 from ciq_autotune.analyzers.basal import _annotation_for  # noqa: E402
+from ciq_autotune.analyzers.classifiers.evidence import (  # noqa: E402
+    EvidenceTier,
+    SilenceReason,
+)
 from ciq_autotune.analyzers.ic import (  # noqa: E402
     IcConfig,
     analyze_ic_blocks,
@@ -206,15 +210,42 @@ def ic_blocks():
 
 # --- exposures: invented occurrences on the real feed's schema ------------------
 
-def _occurrence(ep_id, kind, at, *, lever=None, worst_bg=None, bg=None, text=""):
+def _verdict(classifier, *, matched, detail="", silence_reason=None):
+    """One classifier's read of one anchor, on the wire shape ``AnchorVerdict``
+    publishes (``model_view.AnchorVerdict.to_dict``). ``findings_projection``'s
+    row-relative verdict (finding 2) is read straight off this list, keyed by
+    ``classifier`` — so an occurrence that is meant to drive its lever's row must
+    carry a matched verdict for that lever, not just a bare ``cause_lever``.
+    """
+    return {
+        "classifier": classifier,
+        "matched": matched,
+        "detail": detail,
+        "evidence_tier": (EvidenceTier.OBSERVED if matched else EvidenceTier.INFERRED).value,
+        "silence_reason": None if silence_reason is None else silence_reason.value,
+    }
+
+
+def _occurrence(ep_id, kind, at, *, lever=None, worst_bg=None, bg=None, text="",
+                 verdicts=None):
+    """One exposures occurrence. A driving ``lever`` gets a matched verdict for its
+    own classifier by default (so ``findings_projection`` reads it as ``fired``,
+    not the ``verdicts=[]`` gap that let this row's own driver misread as
+    ``outranked``); pass ``verdicts`` explicitly to exercise the other four
+    row-relative categories (finding 3) instead.
+    """
+    if verdicts is None:
+        verdicts = ([_verdict(lever.value, matched=True, detail=text)]
+                    if lever is not None else [])
+    state = "fired" if lever is not None else "clean"
     stamp = f"{DAY.isoformat()} {at}:00"
     return {
         "t": stamp, "date": DAY.isoformat(), "bg": bg, "worst_bg": worst_bg,
-        "kind": kind, "label": kind.title(), "state": "fired",
+        "kind": kind, "label": kind.title(), "state": state,
         "attributed": lever is not None,
         "cause_lever": None if lever is None else lever.value,
         "cause_title": None if lever is None else title(lever),
-        "text": text, "verdicts": [], "ep_id": ep_id,
+        "text": text, "verdicts": verdicts, "ep_id": ep_id,
     }
 
 
@@ -236,6 +267,21 @@ def exposures():
                         text="Corrections stacked and carried glucose to 61."),
             _occurrence("ep4", "low", "02:40", bg=66.0, worst_bg=66.0),
             _occurrence("ep5", "low", "12:10", bg=68.0, worst_bg=68.0),
+            # Finding 3: exercise the row-relative categories `over_treated_low`'s
+            # own row never otherwise touches — a loud near-miss and a too-sparse
+            # read, both for a lever that did NOT drive this occurrence's episode.
+            _occurrence("ep9", "low", "05:15",
+                        bg=71.0, worst_bg=71.0,
+                        verdicts=[_verdict(
+                            "over_treated_low", matched=False,
+                            detail="Rebound stayed under the over-treatment threshold.",
+                            silence_reason=SilenceReason.UNDER_THRESHOLD)]),
+            _occurrence("ep10", "low", "08:45",
+                        bg=73.0, worst_bg=73.0,
+                        verdicts=[_verdict(
+                            "over_treated_low", matched=False,
+                            detail="Too few readings after the low to judge a rebound.",
+                            silence_reason=SilenceReason.INSUFFICIENT_DATA)]),
         ],
         "highs": [
             _occurrence("ep1", "high", "14:35", lever=Lever.OVER_TREATED_LOW,
@@ -245,13 +291,43 @@ def exposures():
                         bg=243.0, worst_bg=243.0,
                         text="Bolused 45 g at 07:10 and glucose still ran to 243."),
             _occurrence("ep6", "high", "21:40", bg=201.0, worst_bg=201.0),
+            # Finding 3 (test file) follow-up: the distinguishing case for the
+            # row-relative rule — `over_treated_low`'s own classifier matched
+            # on this anchor too, but `carb_undercount` was the episode's
+            # actual, EARLIER driver. `over_treated_low`'s row must still read
+            # this occurrence `fired` (Connor's rule), never `outranked`.
+            _occurrence("ep11", "high", "10:15", lever=Lever.CARB_UNDERCOUNT,
+                        bg=210.0, worst_bg=245.0,
+                        text="A late meal bolus at 10:15 still ran high.",
+                        verdicts=[
+                            _verdict("carb_undercount", matched=True,
+                                     detail="A late meal bolus at 10:15 still ran high."),
+                            _verdict("over_treated_low", matched=True,
+                                     detail="The same anchor also cleared the "
+                                            "over-treatment threshold."),
+                        ]),
         ],
         "meals": [
             _occurrence("ep2", "meal", "07:10", lever=Lever.CARB_UNDERCOUNT,
                         bg=112.0, worst_bg=243.0,
                         text="Bolused 45 g at 07:10 and glucose still ran to 243."),
-            _occurrence("ep7", "meal", "12:40", bg=118.0, worst_bg=155.0),
-            _occurrence("ep8", "meal", "18:50", bg=104.0, worst_bg=149.0),
+            # Finding 2 follow-up: `carb_undercount`'s own classifier always
+            # emits an explicit verdict (matched or not, `_meal_verdicts`), so
+            # unlike `over_treated_low` its row CAN read a genuine `clean` —
+            # ep8 carries the explicit calm verdict that proves it, where ep7's
+            # verdicts stays empty (`no_data`: this lever never evaluated it).
+            _occurrence("ep7", "meal", "12:40",
+                        bg=118.0, worst_bg=155.0,
+                        verdicts=[_verdict(
+                            "carb_undercount", matched=False,
+                            detail="The dose landed within the digestion window.",
+                            silence_reason=SilenceReason.UNDER_THRESHOLD)]),
+            _occurrence("ep8", "meal", "18:50",
+                        bg=104.0, worst_bg=149.0,
+                        verdicts=[_verdict(
+                            "carb_undercount", matched=False,
+                            detail="Bolus covered the meal; glucose stayed in range.",
+                            silence_reason=SilenceReason.NO_TRIGGER)]),
         ],
         "correction_clusters": [
             _occurrence("ep3", "correction", "15:10", lever=Lever.CORRECTION_STACKING,

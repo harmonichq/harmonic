@@ -352,5 +352,157 @@ class FindingsEndpointTest(unittest.TestCase):
             self.assertEqual(len(calls), 2)
 
 
+class FindingEvidenceBlockTest(unittest.TestCase):
+    """ADR 41: the verdict band's split is the engine's own closed five-state
+    taxonomy, published per finding row so the frontend composes nothing."""
+
+    def setUp(self):
+        self.exposures = gen.exposures()["exposures"]
+        self.projection = gen.projection()
+        self.rows = self.projection.project(WindowQuery.whole_day())["rows"]
+        self.row = _row(self.rows, "Over-treated low")
+
+    def test_a_near_miss_or_outranked_occurrence_carries_its_category_and_event_id(self):
+        outranked = [e for e in self.row["evidence"] if e["verdict"] == "outranked"]
+        self.assertTrue(outranked, "the fixture's over-treated low claims a family "
+                                    "another episode also fired in")
+        entry = outranked[0]
+        self.assertIn("ep_id", entry)
+        self.assertIsNotNone(entry["ep_id"])
+        self.assertIn("t", entry)
+        self.assertIn("date", entry)
+
+    def test_verdict_counts_carries_all_five_categories_zeros_included(self):
+        self.assertEqual(set(self.row["verdict_counts"]),
+                         {"fired", "outranked", "near_miss", "no_data", "clean"})
+
+    def test_verdict_counts_sums_to_the_appearances_denominator(self):
+        total_m = sum(a["m"] for a in self.row["appearances"])
+        self.assertEqual(sum(self.row["verdict_counts"].values()), total_m)
+        self.assertEqual(len(self.row["evidence"]), total_m)
+
+    def test_fired_count_is_at_least_the_appearances_numerator(self):
+        # `appearances.n` counts only occurrences this row's lever WON
+        # attribution on; `verdict_counts["fired"]` (finding 2) is broader —
+        # row-relative, it also counts an occurrence where this lever's own
+        # classifier matched but a DIFFERENT, earlier lever drove the episode
+        # (ep11 below), so `fired >= n`, not `fired == n`. Equality is exactly
+        # the pre-fix invariant this row-relative rule deliberately breaks.
+        total_n = sum(a["n"] for a in self.row["appearances"])
+        self.assertGreaterEqual(self.row["verdict_counts"]["fired"], total_n)
+
+    def test_a_lever_that_matched_but_did_not_drive_still_reads_fired(self):
+        # The distinguishing case (finding 2): this lever's own classifier
+        # matched on an anchor another lever actually drove. Connor's rule —
+        # "the server has rule fired" — makes this row-relative `fired`
+        # (Meets criteria), never `outranked`, even though the episode's
+        # attribution credited someone else.
+        matched_but_not_driver = [
+            o for family in self.exposures.values() for o in family["occurrences"]
+            if o.get("cause_lever") not in (None, "over_treated_low")
+            and any(v["classifier"] == "over_treated_low" and v["matched"]
+                    for v in o["verdicts"])
+        ]
+        self.assertTrue(matched_but_not_driver)
+        for occ in matched_but_not_driver:
+            entry = next(e for e in self.row["evidence"] if e["ep_id"] == occ["ep_id"]
+                         and e["t"] == occ["t"])
+            self.assertEqual(entry["verdict"], "fired")
+
+    def test_an_occurrence_another_lever_actually_fired_is_outranked_here_not_fired(self):
+        # An anchor that IS an episode's own driver reads "fired" at the anchor
+        # level (ADR 0019 §2) — but if that lever isn't THIS row's lever, this
+        # row must not claim it: it is claimed by another factor.
+        other_fired = [e for e in self.row["evidence"]
+                       if e["verdict"] == "outranked"
+                       and any(o.get("ep_id") == e["ep_id"] and o.get("state") == "fired"
+                               for family in self.exposures.values()
+                               for o in family["occurrences"])]
+        self.assertTrue(other_fired)
+
+    def test_this_levers_own_classifier_matching_reads_fired_row_relative(self):
+        # Finding 2: a row's own lever matching its own classifier is `fired`
+        # (Meets criteria) whether or not it also drove the episode's
+        # attribution — never re-derived from the anchor-level `state`.
+        own_matches = [
+            o for family in self.exposures.values() for o in family["occurrences"]
+            if any(v["classifier"] == "over_treated_low" and v["matched"]
+                   for v in o["verdicts"])
+        ]
+        self.assertTrue(own_matches)
+        for occ in own_matches:
+            entry = next(e for e in self.row["evidence"] if e["ep_id"] == occ["ep_id"]
+                         and e["t"] == occ["t"])
+            self.assertEqual(entry["verdict"], "fired")
+
+    def test_all_five_verdict_categories_are_exercised_somewhere_nonzero(self):
+        # Finding 3: the synthetic population must exercise every row-relative
+        # category, not just fired/outranked/clean. `over_treated_low` is
+        # inline attribution logic (model_view._low_verdicts) — it never
+        # emits an explicit non-match verdict, so its row can never itself
+        # read `clean` (finding 2 follow-up); `carb_undercount` DOES always
+        # emit an explicit matched/not-matched verdict (`_meal_verdicts`), so
+        # its row is where a genuine `clean` is exercised.
+        counts = _row(self.rows, "Carb undercount")["verdict_counts"]
+        for category in ("fired", "outranked", "near_miss", "no_data", "clean"):
+            self.assertGreater(counts[category], 0, category)
+
+    def test_no_verdict_entry_at_all_reads_no_data_never_clean(self):
+        # Finding 2 follow-up: an occurrence this lever's classifier never
+        # evaluated (no entry in `verdicts[]`) is not evidence of a calm
+        # read — `clean` would assert a criterion failed that nothing ever
+        # judged. `over_treated_low` is inline logic that never emits an
+        # explicit non-match, so EVERY one of its non-driving, unattributed
+        # occurrences must read `no_data`, never `clean`.
+        no_verdict_entry = [
+            o for o in self.exposures["lows"]["occurrences"] + self.exposures["highs"]["occurrences"]
+            if o.get("cause_lever") is None
+            and not any(v["classifier"] == "over_treated_low" for v in o["verdicts"])
+        ]
+        self.assertTrue(no_verdict_entry)
+        for occ in no_verdict_entry:
+            entry = next(e for e in self.row["evidence"] if e["ep_id"] == occ["ep_id"]
+                         and e["t"] == occ["t"])
+            self.assertEqual(entry["verdict"], "no_data")
+        self.assertEqual(self.row["verdict_counts"]["clean"], 0,
+                          "over_treated_low's row can never read clean: its classifier "
+                          "never emits an explicit non-match verdict")
+
+    def test_an_explicit_calm_verdict_reads_clean(self):
+        # The mirror image of the above: a lever whose classifier DOES emit
+        # an explicit non-match (a real matched=False verdict with a calm
+        # silence reason) reads `clean`, not `no_data`.
+        row = _row(self.rows, "Carb undercount")
+        calm_occ = next(
+            o for o in self.exposures["meals"]["occurrences"]
+            if any(v["classifier"] == "carb_undercount" and not v["matched"]
+                   and v["silence_reason"] in (None, "no_trigger") for v in o["verdicts"])
+        )
+        entry = next(e for e in row["evidence"] if e["ep_id"] == calm_occ["ep_id"]
+                     and e["t"] == calm_occ["t"])
+        self.assertEqual(entry["verdict"], "clean")
+
+    def test_verdict_counts_by_family_shares_a_denominator_with_the_roster(self):
+        # Finding 1: the band and the roster it scopes must agree on "N of M"
+        # for the SAME family, not the row's cross-family total.
+        by_family = self.row["verdict_counts_by_family"]
+        self.assertEqual(set(by_family), {"lows", "highs"})
+        for family, counts in by_family.items():
+            family_m = sum(1 for e in self.row["evidence"] if e["family"] == family)
+            self.assertEqual(sum(counts.values()), family_m)
+        total = self.row["verdict_counts"]
+        summed = {category: sum(counts[category] for counts in by_family.values())
+                  for category in total}
+        self.assertEqual(summed, total)
+
+    def test_two_occurrences_sharing_an_ep_id_are_disambiguated_by_t(self):
+        # Finding 4: `ep1` anchors twice (the low and its rebound high) and the
+        # evidence rows must carry distinct clock keys so a `(family, ep_id)`
+        # join can never silently collapse them onto one verdict.
+        ep1_rows = [e for e in self.row["evidence"] if e["ep_id"] == "ep1"]
+        self.assertEqual(len(ep1_rows), 2)
+        self.assertEqual(len({e["t"] for e in ep1_rows}), 2)
+
+
 if __name__ == "__main__":
     unittest.main()

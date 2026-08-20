@@ -524,11 +524,8 @@ def _recommend(programmed: Optional[float], est: Estimate, ch: IsfChannels,
     if programmed is None:
         val = median if median is not None else measured
         if val is None:
-            return (None, "not enough steady fasting data yet to measure your "
-                    "correction factor", None, None)
-        return (round(val, 1),
-                "measured overnight sensitivity (no set value to compare with)",
-                None, None)
+            return (None, "not enough fasting data yet", None, None)
+        return (round(val, 1), "measured; no set value to compare", None, None)
 
     # Lows own the direction: the weaken bar is checked first, so recurring
     # correction-caused lows weaken even when the fasting measurement is thin — the
@@ -537,8 +534,7 @@ def _recommend(programmed: Optional[float], est: Estimate, ch: IsfChannels,
     weaken = (_day_rate_recurs(ch.corr_low_days, ch.covered_days, cfg)
               or _day_rate_recurs(ch.rescue_days, ch.covered_days, cfg))
     if not weaken and measured is None and median is None:
-        return (None, "not enough steady fasting data yet to measure your "
-                "correction factor", None, None)
+        return (None, "not enough fasting data yet", None, None)
     if weaken:
         if median is None or median <= programmed:
             ann = ("corrections keep overshooting into lows, so more overnight data "
@@ -568,9 +564,8 @@ def _recommend(programmed: Optional[float], est: Estimate, ch: IsfChannels,
     if ch.corr_low_days > 0 or ch.rescue_days > 0:
         if (est.lo is not None and est.hi is not None
                 and est.lo <= programmed <= est.hi):
-            return None, "your fasting data agrees with the set correction factor", None, None
-        return None, ("a low after a correction is on record, so the correction "
-                      "factor stays as it is rather than going stronger"), None, None
+            return None, "fasting data agrees with the set factor", None, None
+        return None, "a correction low is on record", None, None
 
     # No lows and no rescues on record — but part of this window predates the rescue
     # log, so that quiet is *unknown*, not silence (#467). Same shape as the gate above:
@@ -578,19 +573,16 @@ def _recommend(programmed: Optional[float], est: Estimate, ch: IsfChannels,
     if not ch.rescue_observed:
         if (est.lo is not None and est.hi is not None
                 and est.lo <= programmed <= est.hi):
-            return None, "your fasting data agrees with the set correction factor", None, None
-        return None, ("rescue-carb history does not cover part of this window, so a "
-                      "quiet stretch cannot be confirmed and the correction factor "
-                      "stays as it is"), None, None
+            return None, "fasting data agrees with the set factor", None, None
+        return None, "rescue-carb history doesn't cover this window", None, None
 
     # Silence. The measurement may now assert — but only strengthen, and only when it
     # is not soft and the signal held on two consecutive decision points.
     if est.wide or median is None:
         if (est.lo is not None and est.hi is not None
                 and est.lo <= programmed <= est.hi):
-            return None, "your fasting data agrees with the set correction factor", None, None
-        return None, ("not enough independent fasting nights yet to suggest a "
-                      "change, so overnight data is still collecting"), None, None
+            return None, "fasting data agrees with the set factor", None, None
+        return None, "not enough fasting nights yet", None, None
     if _strengthen_signal(programmed, est, ch, cfg) and prior_strengthen_signal:
         rec = _half_gap(programmed, median, cfg)
         ann = ("overnight you look more sensitive to insulin than the set value, "
@@ -598,12 +590,10 @@ def _recommend(programmed: Optional[float], est: Estimate, ch: IsfChannels,
         return rec, ann, "strengthen", None
     if (not ch.night_fits and est.lo is not None and est.hi is not None
             and est.lo <= programmed <= est.hi):
-        return None, "your fasting data agrees with the set correction factor", None, None
+        return None, "fasting data agrees with the set factor", None, None
     # A single-window band exclusion that did not hold across two decision points is
     # noise — no card.
-    return None, ("the overnight reading differs from the set value but has not held "
-                  "across two weekly check-ins, so nothing is suggested yet"),\
-        None, None
+    return None, "reading differs but hasn't held twice", None, None
 
 
 _EV_FMT = "%Y-%m-%d %H:%M:%S"
@@ -760,8 +750,7 @@ def analyze_isf(
         )
         if adj.action is HarmAction.GATED:
             rec, direction, priced_target = adj.recommended, None, None
-            ann = ("a low after a correction is on record, so the correction factor "
-                   "stays as it is rather than going stronger")
+            ann = "a correction low is on record"
         evidence["harm"] = arm_harm_evidence(harm_arm, 0)
 
     # Night-honest recurrence + the impact currency's window-grounded inputs, stashed

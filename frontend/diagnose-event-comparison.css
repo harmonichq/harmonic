@@ -22,6 +22,13 @@
   --ec-focus: var(--mk-text);
   height: 100%;
   display: grid;
+  /* P52 (issue #41) — one row now that the coordinate row above `.ec-panes`
+     is gone: an unstated implicit row sized itself to content (~42px, the
+     canvas pane's header) and left `.ec-panes` collapsed, so `#ec-chart`'s
+     own `min-height: 310px` painted outside its clipped ancestor and stopped
+     receiving pointer events there. Explicit `1fr` gives the one remaining
+     row the whole surface. */
+  grid-template-rows: 1fr;
   overflow: hidden;
   font-size: var(--ck-body);
 }
@@ -29,77 +36,11 @@
 .ec-surface,
 .ec-surface * { box-sizing: border-box; }
 
-.ec-coordinates {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 14px;
-  padding: 0 14px;
-  background: var(--mk-bg);
-}
-
-.ec-another .ec-label {
-  color: var(--mk-muted);
-  font-size: var(--ck-micro);
-  font-weight: 650;
-  letter-spacing: var(--ck-track);
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.ec-factor-coordinate select,
-.ec-occurrence-select {
-  min-width: 0;
-  height: 28px;
-  border: 1px solid var(--ck-hair);
-  border-radius: 6px;
-  background: var(--ck-inset);
-  color: var(--mk-text);
-  font: 550 11.5px Inter, system-ui, sans-serif;
-  /* Adapter: index.html's global form rule adds 9px vertically, which clips
-     text inside this locked 28px instrument control. */
-  padding-block: 0;
-}
-
-/* Adapter: index.html's global `label { margin: 0 0 5px }` (line 182) reaches
-   the two rail instruments that are labels — Factor and Other factors — and a
-   bottom margin inside a center-aligned rail lifts them 2.5px above the two
-   segmented controls, breaking the locked one-optical-row (term 3). */
-.ec-coordinates label { margin-bottom: 0; }
-
-.ec-view-coordinate { flex: 0 0 auto; }
-.ec-factor-coordinate { flex: 0 1 230px; }
-.ec-factor-coordinate select { width: min(230px, 22vw); padding-inline: 7px 24px; }
-.ec-block-coordinate { flex: 0 0 auto; }
-.ec-block-seg button { padding-inline: 7px; }
-
-.ec-another {
-  display: inline-flex;
-  min-height: 28px;
-  align-items: center;
-  gap: 7px;
-  margin-left: auto;
-  color: var(--mk-secondary);
-  font-size: 11px;
-  white-space: nowrap;
-}
-
-.ec-another input { width: 15px; height: 15px; accent-color: var(--ck-accent); }
-.ec-another output { color: var(--mk-muted); font-family: var(--ck-mono); }
-
-.ec-factor-coordinate select:focus-visible,
-.ec-view-seg button:focus-visible,
-.ec-block-seg button:focus-visible,
-.ec-occurrence-select:focus-visible,
-.ec-another input:focus-visible,
-.ec-day-link:focus-visible,
-.ec-glucose-link:focus-visible,
-.ec-clear:focus-visible {
-  outline: 2px solid var(--ck-accent);
-  outline-offset: 2px;
-}
-
-.ec-panes { grid-template-columns: minmax(0, 1fr) var(--side, 430px); }
+/* P52 (issue #41) — the lens is canvas-only: one pane, not two. The shared
+   `.panes` base rule (diagnose-workstation.css) reserves a second column for
+   an inspector this surface no longer has; overridden to a single column
+   here rather than left to draw dead whitespace where the inspector was. */
+.ec-panes { grid-template-columns: minmax(0, 1fr); }
 /* No min-height: the shipped canvas header sizes itself to the same type ranks
    and lands at 22px. Holding ours at 26px pushed this pane's title and chart
    below where Glucose puts them. */
@@ -256,150 +197,6 @@
 
 .ec-key-item[data-selected-cohort="true"] strong { color: var(--mk-text); }
 
-.ec-inspector > .body {
-  display: block;
-  overflow-y: auto;
-  min-height: 0;
-}
-
-.ec-judgment {
-  padding: 10px var(--ck-pad) 12px;
-  border-bottom: 1px solid var(--ck-hair);
-}
-
-.ec-judgment h3 {
-  margin: 0;
-  color: var(--mk-text);
-  font-size: var(--ck-emph);
-  font-weight: 650;
-}
-
-.ec-judgment-summary {
-  margin: 7px 0 0;
-  color: var(--mk-secondary);
-  font-size: 11.5px;
-  line-height: 1.45;
-}
-
-.ec-boundary-note {
-  margin: 9px 0 0;
-  color: var(--mk-muted);
-  font-size: var(--ck-micro);
-  line-height: 1.45;
-}
-
-.ec-boundary-note b { color: var(--mk-secondary); font-weight: 650; }
-
-.ec-counts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px 16px;
-  margin-top: 9px;
-}
-
-.ec-count {
-  padding: 0;
-  color: var(--mk-muted);
-  font-size: var(--ck-micro);
-}
-
-.ec-count b { margin-right: 5px; color: var(--mk-text); font: 650 var(--ck-data)/1.2 var(--ck-mono); }
-
-.ec-count em {
-  margin-left: 5px;
-  color: var(--mk-muted);
-  font: 500 8.5px/1 var(--ck-mono);
-  font-style: normal;
-}
-
-.ec-zero {
-  margin-top: 10px;
-  padding: 7px 8px;
-  border: 1px solid var(--ck-insuff);
-  background: color-mix(in srgb, var(--mk-warn-soft) 62%, transparent);
-  color: var(--mk-secondary);
-  font-size: 11px;
-  line-height: 1.4;
-}
-
-.ec-occurrences { padding: 10px var(--ck-pad) 14px; }
-
-.ec-occurrences-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.ec-occurrences-head h3 {
-  margin: 0;
-  color: var(--mk-secondary);
-  font-size: var(--ck-micro);
-  font-weight: 700;
-  letter-spacing: var(--ck-track);
-  text-transform: uppercase;
-}
-
-.ec-occurrences-head span { color: var(--mk-muted); font: 500 var(--ck-micro)/1 var(--ck-mono); }
-.ec-occurrence-select { width: 100%; margin-top: 8px; padding-inline: 7px; }
-
-.ec-occ-detail {
-  margin-top: 11px;
-  padding-top: 10px;
-  border-top: 1px solid color-mix(in srgb, var(--ck-hair) 65%, transparent);
-}
-
-.ec-occ-detail[hidden] { display: none; }
-.ec-occ-title { display: flex; align-items: baseline; gap: 8px; }
-.ec-occ-title strong { color: var(--mk-text); font: 650 var(--ck-emph)/1.2 var(--ck-mono); }
-.ec-occ-title span { color: var(--mk-muted); font-size: var(--ck-micro); }
-
-.ec-occ-verdict {
-  margin: 8px 0 0;
-  color: var(--mk-secondary);
-  font-size: 11.5px;
-  line-height: 1.48;
-}
-
-.ec-occ-facts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px 12px;
-  margin-top: 8px;
-  color: var(--mk-muted);
-  font: 500 var(--ck-micro)/1.4 var(--ck-mono);
-}
-
-.ec-rescue {
-  margin-top: 8px;
-  color: var(--ck-manual);
-  font-size: 10.5px;
-  line-height: 1.4;
-}
-
-.ec-occ-actions { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
-.ec-day-link,
-.ec-glucose-link,
-.ec-clear {
-  border: 0;
-  background: transparent;
-  padding: 0;
-  color: var(--ck-accent);
-  font: 550 11.5px Inter, system-ui, sans-serif;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-.ec-clear { color: var(--mk-muted); }
-
-.ec-inspector-note {
-  margin: 0;
-  padding: 0 var(--ck-pad) 12px;
-  color: var(--mk-muted);
-  font-size: var(--ck-micro);
-  line-height: 1.45;
-}
-
 .ec-error {
   height: 100%;
   display: grid;
@@ -412,22 +209,6 @@
 
 .ec-error.dw-error { display: grid; }
 
-@media (max-width: 1360px) {
-  .ec-factor-coordinate { flex-basis: 260px; }
-  .ec-factor-coordinate select { width: 260px; }
-  /* The rail's gap and padding stay at the shipped values at every width — the
-     shipped rail has no such breakpoint, and shrinking ours moved the whole
-     row's left edge relative to Glucose's. Narrow reflow is handled at 760px. */
-  .ec-panes { --side: 390px; }
-}
-
-@media (max-width: 940px) {
-  .ec-another .ec-label { max-width: 116px; overflow: hidden; text-overflow: ellipsis; }
-  .ec-factor-coordinate { flex: 1 1 auto; }
-  .ec-factor-coordinate select { width: 100%; }
-  .ec-panes { --side: 350px; }
-}
-
 @media (max-width: 760px) {
   .cockpit-stage:has(.ec-surface) { overflow-x: hidden; overflow-y: auto; }
 
@@ -438,30 +219,9 @@
   .ec-surface {
     height: auto;
     min-height: 100%;
-    grid-template-rows: auto auto;
+    grid-template-rows: auto;
     overflow: visible;
   }
-
-  .ec-coordinates {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 8px;
-    padding-block: 8px;
-  }
-
-  .ec-coordinates .instrument {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 4px;
-  }
-
-  .ec-factor-coordinate select { width: 100%; }
-  .ec-view-seg,
-  .ec-block-seg { width: 100%; }
-  .ec-view-seg button { flex: 1; }
-  .ec-block-seg button { flex: 1; padding-inline: 4px; }
-  .ec-another { margin-left: 0; }
-  .ec-another .ec-label { max-width: none; }
 
   .ec-panes {
     display: flex;
@@ -471,7 +231,6 @@
   }
 
   .ec-canvas { min-height: 500px; }
-  .ec-inspector { min-height: 430px; }
   .ec-chart { min-height: 390px; }
   .ec-title-context { display: none; }
   .canvas-head .persist { display: none; }

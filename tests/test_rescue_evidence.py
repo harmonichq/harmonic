@@ -236,7 +236,7 @@ class StrengthenNeedsObservedSilenceTest(unittest.TestCase):
         self.assertIsNone(seg.evidence["direction"])
         self.assertIsNone(seg.recommended)
         self.assertFalse(seg.evidence["strengthen_signal"])
-        self.assertIn("stays as it is", seg.annotation.lower())
+        self.assertIn("rescue-carb history doesn't cover", seg.annotation.lower())
 
     def test_a_never_observed_window_does_not_strengthen(self):
         seg = self._run(self._coverage(None))

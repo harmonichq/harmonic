@@ -1678,8 +1678,7 @@ def analyze_ic(
             )
             if adj.action is HarmAction.GATED:
                 rec = adj.recommended
-                ann = ("meal-owned low printed — stronger meal-bolus move withheld; "
-                       "held at current")
+                ann = "meal-owned low; held at current"
             evidence["harm"] = arm_harm_evidence(harm, idx)
         if idx in gate_only_rescues:
             rescues = gate_only_rescues[idx]
@@ -1693,8 +1692,7 @@ def analyze_ic(
             )
             if adj.action is HarmAction.GATED:
                 rec = adj.recommended
-                ann = ("meal-attributed pre-empted low logged — stronger meal-bolus "
-                       "move withheld; held at current")
+                ann = "pre-empted low; held at current"
             evidence["preempted_low_gate"] = _rescue_evidence(rescues)
         row = SegmentEstimate(
             start_min=start_min,
@@ -2224,8 +2222,7 @@ def analyze_ic_blocks(
                     less_insulin_sign=1, nudge=False, ndigits=1)
                 if adj.action is HarmAction.GATED:
                     rec = adj.recommended
-                    hold_reason = ("meal-owned low printed — stronger meal-bolus move "
-                                   "withheld; held at current")
+                    hold_reason = "meal-owned low; held at current"
             if gated or bid in harm.gated_keys:
                 harm_evidence = arm_harm_evidence(harm, bid)
         if bid in gate_only_rescues:
@@ -2234,8 +2231,7 @@ def analyze_ic_blocks(
                 less_insulin_sign=1, nudge=False, ndigits=1)
             if adj.action is HarmAction.GATED:
                 rec = adj.recommended
-                hold_reason = ("meal-attributed pre-empted low logged — stronger "
-                               "meal-bolus move withheld; held at current")
+                hold_reason = "pre-empted low; held at current"
 
         # --- the four conditions, each stamped so the one predicate can read them and
         # the pane can say which one is holding.
@@ -2256,9 +2252,7 @@ def analyze_ic_blocks(
         }
         if (eligibility["runs_floor_met"] and band_excludes
                 and eligibility["names_a_move"] and not regime_supported):
-            hold_reason = hold_reason or (
-                "held while the meals dosed under the current ratio still bracket it "
-                "— the hold lifts as post-change meals accrue")
+            hold_reason = hold_reason or "meals still bracket the current ratio"
 
         # --- recurrence channels, ALL keyed to runs / the block's own 90-day span.
         # `tuning_priority` turns these into a Wilson bound; the denominator is fixed

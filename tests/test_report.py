@@ -32,7 +32,7 @@ def _result():
                             None, "no nights of steady data at this time yet", 0)],
         isf=[SegmentEstimate(0, "Fasting", "isf", 36.0,
                              Estimate(35.0, 30.0, 41.0, 120, 0.8, "bootstrap-ols-isf"),
-                             None, "your fasting data agrees with the set correction factor",
+                             None, "fasting data agrees with the set factor",
                              {"n_steps": 120})],
         ic=[SegmentEstimate(0, "00:00", "carb_ratio", 6.0,
                             Estimate(5.0, 4.5, 5.5, 5, 0.8, "bootstrap-mean"),

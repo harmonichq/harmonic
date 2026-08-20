@@ -1,7 +1,8 @@
 # Behaviour ledger — finding → evidence routing (Diagnose + Verify)
 
 **★ FROZEN — shipped-surface behavior contract.** Base:
-`origin/main` = `eda5cdfd318d638503defdd6f364a078042fe592`.
+`origin/main` = `a49b6db` (re-frozen 2026-08-19; previously
+`eda5cdfd318d638503defdd6f364a078042fe592`).
 
 The app-only replay is
 `frontend/diagnose-workstation-behavior.replay.mjs`: **29 exported stories**, all
@@ -23,6 +24,21 @@ VENDOR_DIR=/private/tmp/ciq-event-vendor BASE_URL=http://127.0.0.1:8765 \
 TARGET=app PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json \
 node frontend/diagnose-workstation-behavior.replay.mjs
 ```
+
+## Re-freeze — 2026-08-19, base `eda5cdf` → `a49b6db`
+
+Replayed before any design change, per `revise` §2's later-revision rule: the
+frozen ledger ran green against the base app at `a49b6db` — **29 of 29 stories
+passed**, S26 printing its retirement sanction — through the declared safe-start
+server and the synthetic database `AGENTS.md` names.
+
+The base re-inventory found no behavior delta to rule. Across the six swept
+files the `eda5cdf..a49b6db` diff adds and removes **zero** event handlers,
+chart-instance handlers and observers; the only source change on the surface is
+the already-ruled evidence-row chevron retirement (P48 / S26) and its stylesheet
+follow-through. No story is unreplayable, no observed behavior lacks a story,
+and no retirement lacks its sanction, so the contract carries forward unchanged
+at the new base.
 
 The 55 P-rows below are retained as the legacy predecessor inventory and the
 operator's completed rulings. The executable current contract is S01–S26 and
@@ -382,7 +398,10 @@ P20 · Drilling a factor narrows the canvas to that factor's PEAK HOUR, labels
 ```
 P21 · Selecting an occurrence narrows the canvas to ±45 minutes around it — the
       pooling radius, and never wider than the factor peak it was drilled from.
-  source:   frontend/diagnose-workstation.js:1237-1244
+  source:   was frontend/diagnose-workstation.js:1237-1244; select-in-place
+            (Revision amendment below) deletes the narrowing outright — the
+            factor frame's `paintChart` derives the window exactly as before
+            and a `selectedOcc` adds only the day trace and the mark
   mock:     a row click selects in place and the window is byte-identical after
             selection
   evidence: replay S11 (app, pass)
@@ -420,19 +439,30 @@ P23 · Backspace pops exactly one level at depth ≥ 2, at any depth and from an
 P24 · ←/→ step occurrences at the occurrence level and STOP at the ends rather
       than wrapping — "an instrument should not silently return you to the first
       reading". The panel and the day trace both follow from the frame.
-  source:   frontend/diagnose-workstation.js:1767-1776
+  source:   was frontend/diagnose-workstation.js:1767-1776; re-homed by the
+            Revision amendment below onto select-in-place — the keydown
+            handler now steps `f.selectedOcc` on the standing factor frame
+            through `rosterFor(f)` (the band's current drill), never a
+            frame of its own
   mock:     no arrow handler; with a row selected, ArrowRight changes nothing
   evidence: replay S12 (app, pass) · probe-mock3 (arrowStepped=false)
-  verdict:  kept          operator-ruled: Connor Griffin · 2026-08-19
+  verdict:  kept, re-homed      ruled by Connor, 2026-08-19 (same session as
+                                P21/P35) — the counter and the stepping survive
+                                select-in-place unchanged in form, only in home
 ```
 
 ```
 P25 · The stepping is discoverable: the occurrence header prints "n of N" with
       a `← →` keyhint beside it.
-  source:   frontend/diagnose-workstation.js:900-902
+  source:   was frontend/diagnose-workstation.js:900-902; re-homed by the
+            Revision amendment below — the same header markup now renders
+            inline under the roster (`renderOccurrenceDetail`, née
+            `renderOccurrenceLevel`) instead of on a pushed level
   mock:     no occurrence level, no keyhint
   evidence: probe (occurrence.pos = "1 of 6← →", keyhint = "← →")
-  verdict:  kept          operator-ruled: Connor Griffin · 2026-08-19
+  verdict:  kept, re-homed      ruled by Connor, 2026-08-19 (same session as
+                                P21/P35) — the counter and the keyhint survive
+                                select-in-place unchanged in form, only in home
 ```
 
 ```
@@ -548,12 +578,17 @@ P34 · Basal lane cells and the lane key's swatches carry native titles and
 ```
 P35 · An evidence row click opens the occurrence LEVEL — a new crumb level
       where one occurrence owns the panel.
-  source:   frontend/diagnose-workstation.js:829, 1465-1467
+  source:   was frontend/diagnose-workstation.js:829, 1465-1467; the Revision
+            amendment below replaces the push with `selectOcc(occ)`
+            (frontend/diagnose-workstation.js) — no frame, no crumb change
   mock:     a row click SELECTS in place; the crumb stays at
             "Findings › Over-treated low" and one row takes emphasis
   evidence: replay S11 (app, pass) · probe-mock3 (crumb unchanged, emph=1)
   verdict:  retired
-  sanction: Connor Griffin · 2026-08-19 · "Decided by Connor Griffin in a ruling session on 2026-08-19."
+  sanction: Connor Griffin · 2026-08-19 · "I don't find the content of the
+            drill-down view particularly useful. So, I think we could just
+            simply have the if there's a current specific detail that needs to
+            show, I think it should just mutate the standing screen."
   ruled-elsewhere: lock term 31 · "The rows are the selection mechanism — row ↔
                    canvas mark are two reads of one selection"
 ```
@@ -566,11 +601,14 @@ P36 · The occurrence level's CLASSIFIER READS: every classifier's verdict on
       because they are the counter-evidence. Plus the occurrence's own full
       sentence, its entry→nadir numbers, and a line saying whether that day's
       real CGM trace was captured or not.
-  source:   frontend/diagnose-workstation.js:866-919 (renderOccurrenceLevel)
+  source:   was frontend/diagnose-workstation.js:866-919 (renderOccurrenceLevel);
+            re-homed by the Revision amendment below into
+            `renderOccurrenceDetail`, unchanged in content, rendered inline
+            under the roster instead of on a pushed level
   mock:     no occurrence level exists, so none of this content has a home
   evidence: probe (app: 2 classifier reads, 1 of them not-matched, day route
             "Open Mar 1 in Day") · probe-mock3 (mock: no such level)
-  verdict:  kept          operator-ruled: Connor Griffin · 2026-08-19
+  verdict:  kept, re-homed      operator-ruled: Connor Griffin · 2026-08-19
 ```
 
 ```
@@ -673,7 +711,8 @@ P44 · The I:C lane — a second lane at TRUE minute boundaries rather than slot
       indices, its cells clickable into the block branch, a wrapping block drawn
       as two pieces of one block, each piece with its own title and aria-label
       naming its part.
-  source:   frontend/diagnose-workstation.js:422-445 (renderIcLane)
+  source:   was frontend/diagnose-workstation.js (renderIcLane); the Revision
+            amendment below deletes the lane markup, CSS, renderer and handlers
   mock:     no I:C lane; pooled.js names the omission in its own header
   evidence: probe (app: 3 cells, 3 titled, e.g. "Evening I:C block 11:00–07:00 ·
             holds at current") · probe-mock (mock: icLane=0)
@@ -858,3 +897,251 @@ S26 also asserts that every evidence row remains a full-row button and still
 opens its occurrence, so the retirement removes only the redundant trailing
 glyph. The old replay failed first with `expected 0, got 5`; the revised replay
 then passed.
+
+## Revision amendment — 2026-08-19 (verdict band + select-in-place)
+
+**P21 and P35 are now applied as permanent `RETIRED` entries; P24 and P25 move
+to `kept, re-homed`.** An evidence-row click no longer pushes a third crumb
+level. It calls `selectOcc(occ)` (frontend/diagnose-workstation.js), which sets
+`selectedOcc` on the standing factor frame and repaints in place: the crumb
+stays `Findings › <finding>`, and the canvas overlays that day's trace and
+marks the selected event without moving the clock window (P21's sanction,
+transcribed verbatim above; ADR 31 part 5). The occurrence level's own
+render (`renderOccurrenceLevel`) is renamed `renderOccurrenceDetail` and now
+mounts under the roster on the same standing screen (P35's sanction,
+transcribed verbatim above), carrying its classifier-reads content unchanged
+(P36, re-homed). The `n of N` counter and `← →` keyboard stepping (P24, P25)
+survive on the same frame, stepping `f.selectedOcc` through `rosterFor(f)`
+instead of walking a stack of occurrence frames — ruled by Connor, 2026-08-19,
+same session as P21/P35: "kept, but live on the in-place selection … there is
+no third breadcrumb crumb ever."
+
+**New in this slice: the verdict band (ADR 31 part 4, ADR 41).** The finding
+case file now renders the published finding row's `verdict_counts` as three
+drillable segments — `Meets criteria` (fired), `Borderline` (near_miss),
+`Does not meet` (clean) — with `outranked`/`no_data` printing on the roster's
+own footer line as `claimed by another factor` / `not comparable`. The mapping
+is ADR 41's, ruled by Connor and transcribed there, not here. Drilling a
+segment scopes the roster only (`rosterFor`); the canvas keeps plotting every
+occurrence regardless (ADR 31 part 5). The frontend reads `verdict_counts` and
+looks up each occurrence's published verdict by `ep_id`/`family`
+(`verdictForOcc`) — it counts nothing and classifies nothing (ADR 31 part 6).
+This is new behaviour with no predecessor row: it introduces no `P` entry.
+
+**Failed-first, captured against the new build with the OLD (pre-amendment)
+assertions**, `TARGET=app`, `ONLY=S11,S12,S13,S14,S21,S26,D1,D2,D3`:
+
+```
+FAIL S11 — S11 a second level pushed: expected 3, got 2
+FAIL S12 — S12 opens on the first occurrence (Over-treated low)
+FAIL S13 — S13 at depth 3: expected 3, got 2
+FAIL S14 — S14 both ancestors are clickable: expected 2, got 1
+  ok S21
+FAIL S26 — S26 the row still drills to its occurrence: expected 3, got 2
+FAIL D1 — D1 opens the occurrence at depth 3: expected 3, got 2
+FAIL D2 — D2 at the occurrence, depth 3: expected 3, got 2
+FAIL D3 — D3 still at the occurrence, depth 3 after a 500: expected 3, got 2
+
+app: 1 of 9 stories passed
+```
+
+Eight of nine stories failed for the right reason — each asserted the retired
+occurrence-level push, which select-in-place no longer performs. S21 passed
+unchanged: it never asserted crumb depth, only that opening/selecting an
+occurrence does not move the standing window, which is exactly P21's kept
+half. **S11, S12, S13, S14, S26, D1, D2 and D3 are amended** in
+`frontend/diagnose-workstation-behavior.replay.mjs` to assert select-in-place
+(crumb stays at depth 2, the row itself carries `aria-pressed="true"`, the
+inline detail renders under the roster) instead of a pushed occurrence level;
+S21's assertions are unchanged. The amended replay then passed — real counts
+are in the PR's gate report.
+
+Decision: harmonichq/harmonic#41, 2026-08-19.
+
+## Revision amendment — 2026-08-19 (I:C lane)
+
+P44 is now applied as a permanent `RETIRED` entry. S17 replaces its positive
+lane assertion with a loud absence assertion and prints this sanction on every
+run:
+
+`sanction: Connor Griffin · 2026-08-19 · "Decided by Connor Griffin in a ruling session on 2026-08-19."`
+
+The I:C lane's markup, CSS, renderer and handlers are removed. I:C continues to
+enter through its findings-queue row, which opens the existing block detail;
+the queue and its ranking tier are unchanged. The old replay failed first with
+`S17 precondition: a non-wrapping block exists`; the revised replay then passed.
+
+
+## Revision amendment — 2026-08-19 (ALIGN absorbs VIEW; the lens goes canvas-only)
+
+**P52 is now applied as a permanent `RETIRED` entry**, and its `ruled-elsewhere`
+note (#31 resolution §4) lands with it: the lens's inspector pane, its three
+selects (`#ec-factor`, `#ec-another`, `#ec-occurrence`), `Clear trace`, the
+occurrence detail block and the rescue note are all deleted from
+`frontend/diagnose-event-comparison.js`. **View is deleted in the same
+commit**, by ADR 31 part 3's own ruling — not scope-cut, absorbed: the
+workstation gains one instrument, `ALIGN` (`By clock` / `By event`), in the
+same optical row as `WINDOW`, present only on a finding case file
+(`{k:'factor'}`) whose factor the lens can re-project — the closed six of the
+lever taxonomy's seven titles the lens's own `factorKey` set already names
+(`carb_undercount`, `late_bolus`, `meal_over_delivery`, `over_treated_low`,
+`correction_stacking`, `correction_on_iob`; `missed_meal` has no lens view and
+ALIGN stays hidden on that case file). `By event` re-projects the SAME
+occurrences the factor frame is already scoped to, through the lens's own
+canvas-only render (`renderEventSurface`, now exported and reused, never
+reimplemented) mounted at `#align-canvas`; `WINDOW` keeps filtering by clock
+under either projection because the request's block coordinate is the
+canvas's own standing preset (`presetKey`) — WINDOW and the lens's block share
+one five-key taxonomy (`overnight`/`morning`/`afternoon`/`evening`/`all`).
+ALIGN is a switch over already-selected data (ADR 31 part 3's own form): it
+never writes the URL, it does not push a crumb level, and picking it never
+moves the roster, the WINDOW brace, or the crumb.
+
+The lens's own `?view=meals`/`lows` route (unreachable by any control once
+View is deleted) is kept as a harmless read path per P53 — it renders the same
+canvas-only surface directly, with no rail of its own, rather than being
+restructured.
+
+**Failed-first, captured against the new build with the OLD (pre-amendment)
+assertions:**
+
+- `frontend/cockpit-shell.browser.test.mjs`, the newest-projection race story:
+  `locator.click: Timeout 30000ms exceeded. … waiting for locator('.ec-view-seg
+  [data-view="lows"]')` — the control the story drove is gone.
+- `frontend/diagnose-event-comparison-behavior.replay.mjs`, S1 (the first
+  story run): `locator.click: Timeout 30000ms exceeded. … waiting for
+  locator('[data-view="glucose"]')` — same cause; every story after S1 asserts
+  against a retired selector too, confirmed by inspection and by individually
+  isolating each with `ONLY=`.
+
+**Amended stories**, all in `frontend/diagnose-event-comparison-behavior.replay.mjs`
+unless noted:
+
+- **S1, S2, S4, S6 — retired.** Replaced with loud absence assertions (the S26
+  pattern): each confirms its retired control (`.ec-view-seg`, `.ec-block-seg`,
+  `#ec-occurrence`/`#ec-occ-detail`/`#ec-rescue`/`#ec-day-link`/`#ec-clear`) is
+  gone from the DOM. S1 keeps the three assertions that never depended on
+  View — shipped chrome siblings, default routing on a bare open, and the
+  fail-closed path on a missing comparison — reached without a click.
+- **S3 — amended.** The meal-identity and no-match-copy assertions survive on
+  the canvas and legend, which are not retired; the factor coordinate is now
+  set by opening a second page with `?factor=late_bolus` (P53's read path)
+  instead of driving `#ec-factor`, and its title-context span (`.ec-title-context`,
+  the canvas-only surface's remaining factor readout) is checked in place of
+  the retired inspector title. The factor-re-render and occurrence-retention
+  assertions, which lived entirely in the retired inspector, do not survive.
+- **S5 — amended.** The near-rule disclosure sentence had no surviving home
+  and is dropped with the inspector; the `another_factor` cohort's own
+  visibility is re-checked by opening `?another=1` directly and reading the
+  legend, which is unchanged.
+- **S9 — amended.** The narrow-width assertions on `.ec-coordinates`'
+  grid-template-columns and `.ec-inspector`'s stacking position are replaced
+  with a check that the sole remaining pane (`.ec-panes`) takes the full
+  column width and the canvas renders — the coordinate row and the inspector
+  it checked no longer exist to stack.
+- **S10 — retired.** Its whole premise — that Meals/Lows shares one optical
+  rail row with Glucose — no longer holds: the canvas-only lens route has no
+  rail at all. Replaced with a loud absence check that `.instruments` and
+  `.ec-coordinates` are both gone from that route. The hover-stability half of
+  the old story (the canvas header does not reflow on hover) survives
+  unclaimed in S7, which already exercises it on the surviving canvas.
+- **S7, S8, S11, S12 — unchanged**, and pass unchanged: none of the four ever
+  drove a retired control, all four are URL-coordinate or keyboard/pointer
+  driven. (S7 surfaced one real regression during this slice, fixed alongside
+  the deletions rather than left in the replay's failed-first capture: with
+  the coordinate row's sibling removed, `.ec-surface`'s implicit grid row
+  collapsed to its header's own content height instead of filling the pane,
+  so `#ec-chart`'s own `min-height: 310px` painted outside its clipped
+  ancestor and stopped receiving pointer events there. Fixed with an explicit
+  `grid-template-rows: 1fr` on `.ec-surface` — a layout bug the deletion
+  exposed, not a behavior this ledger governs, so it carries no `P` entry.)
+
+The revised replay run: `12/12 stories passed against app`
+(`frontend/diagnose-event-comparison-behavior.replay.mjs`). The workstation's
+own 29-story replay (`frontend/diagnose-workstation-behavior.replay.mjs`)
+passed unchanged at the same count — ALIGN is additive there, and no existing
+story asserts against the instrument row in a way ALIGN's presence disturbs.
+
+**P53 tension, recorded rather than decided silently:** ALIGN's "By event"
+request always uses the canvas's *standing preset* (`presetKey`) as its block
+coordinate, even when a drawn/custom window (`drawn`) is in force — the lens's
+block taxonomy has no "custom" member to carry an arbitrary range. This is a
+scope narrowing on a drawn window, not a P53 violation (P53 governs the URL
+contract, and ALIGN writes no URL state at all), but it means `By event` can
+show a rule-matched population addressed at the last-pressed preset rather
+than the exact drawn range, exactly as WINDOW would if the reader flips
+between a preset and a drawn brace on the clock canvas itself. Selection is
+also NOT carried across projections in this slice: `By event` shows the
+factor's aggregate cohorts, unselected, even if the clock canvas had one
+occurrence selected. The two id spaces (the exposures episode id the
+workstation reads and the lens's own per-view occurrence id) are related
+through a shared `ep_id` on the server (`ciq_autotune/event_comparison.py`)
+but that field is stripped at the browser contract's JSON boundary
+(`validOccurrence`'s `identity` schema carries only `id`/`kind`), so bridging
+them client-side would mean widening that schema — a real design decision,
+not a mechanical one, left to a future issue rather than decided here.
+
+Decision: harmonichq/harmonic#41, 2026-08-19.
+
+## Revision amendment — 2026-08-19 (counter-example sub-group retired)
+
+**P49 is now applied as a permanent `RETIRED` entry.** P49's "kept" note
+already flagged the counter-group branch as dormant on this fixture; the #41
+safety-review round-3 audit found it is dormant everywhere at rest, not just
+on this fixture — select-in-place made every roster homogeneous by exactly
+one published verdict (P35's own change, quoted there), so the counter-group's
+population (occurrences the row is attributed to but whose classifier did not
+match) is empty by construction whenever the roster shows `fired`, and
+incoherent once drilled to `near_miss`/`clean` (an occurrence can still carry
+a DIFFERENT classifier's match on the same anchor, which would silently route
+it into a group captioned for fired-but-uncredited leftovers). `renderEvidence`
+(`frontend/diagnose-workstation.js`) drops the split outright: one flat list,
+captioned by the roster's own verdict; `frontend/diagnose-workstation.css`
+drops the now-unreachable `.ev-group.counter` and
+`.ev-row[data-counter="true"]` rules with it.
+
+Sanction (reused, not re-authored — P35's own, quoted there): Connor Griffin ·
+2026-08-19 · "I don't find the content of the drill-down view particularly
+useful. So, I think we could just simply have the if there's a current
+specific detail that needs to show, I think it should just mutate the
+standing screen." P49's counter-group existed to serve the same pre-select-in-
+place drill-down population P35 retired; it has no independent basis once that
+population no longer exists.
+
+S10 is amended in `frontend/diagnose-workstation-behavior.replay.mjs`: its
+counter-example clause is replaced by an explicit assertion that the
+`data-counter` attribute is gone from the DOM (`evCounterGone === 0`), so the
+retirement is asserted rather than left as a `0==0` tautology on two empty
+counts.
+
+Failed-first, captured against the PRE-fix build with the amended (post-fix)
+assertions, `TARGET=app`, `ONLY=S10`:
+
+```
+FAIL S10 — S10 RETIRED — the counter-example split is gone, not merely empty: expected 0, got 5
+
+app: 0 of 1 stories passed
+```
+
+(five, not zero — pre-fix `renderEvidence` still stamps `data-counter` on
+every `.ev-row`, all five of the drilled roster's rows.)
+
+The revised replay (post-fix, `data-counter` removed from `renderEvidence`)
+then passed: `app: 29 of 29 stories passed` — real gate output in the PR's
+report.
+
+Decision: harmonichq/harmonic#41, 2026-08-19 (safety-review round 3).
+
+## Revision amendment — 2026-08-19 (ALIGN's fixed position; the canvas header truncates at 1024px)
+
+Two deviations from the ported mock in `frontend/diagnose-workstation.css`, both direct rulings from Connor Griffin, 2026-08-19 (not filed through this ledger's replay/probe evidence process — layout-only CSS, asserted by real-browser geometry instead, below):
+
+**ALIGN's position.** Connor: "I want this to maintain a consistent position on the screen … visually aligned nicely with something, probably directly above the inspector." The ported `.instruments` was a flex row (mock 393-939, verbatim), so `#align-group`'s x-position slid with whatever content preceded it. `.instruments` now mirrors `.panes`' ACTUAL rendered geometry — `.panes`' own mock-ported padding/gap is itself zeroed by `theme.css`'s `:is(.dw, .vw) .panes { gap: 0; padding: 0; }` (the docked-workspace pane rule, term 1) — so `.instruments` takes the identical `grid-template-columns: minmax(0, 1fr) var(--side, 430px)` with zero gap/padding, reserving a second column that starts at the exact same x as the inspector pane whether or not `#align-group` is hidden.
+
+Verified against the running app (`--no-fetch` server, `mockups/revise-e2e.synthetic/harmonic.sqlite`), 1440×900: `#align-group.getBoundingClientRect().left === 1010 === panes[1].getBoundingClientRect().left`, byte-equal, both hidden and (structurally, since the grid track is defined on the container regardless of item visibility) shown.
+
+**The canvas header at 1024px.** Connor: "I should be able to view this on a tablet screen without the two windows getting fucked. This is a 1024 pixel view and things are out of line." At 1024px the canvas-pane's own column (1024 − 430 = 594px) could not hold the title, the "window N of M readings" meta and the "pooled from…" persist chip at their natural widths on one line; `<h2>` had no `min-width: 0` (a flex child's default is `min-width: auto`), so instead of yielding it wrapped onto a second line, dragging the meta with it. `.canvas-head h2` and `.head-line .meta` now truncate (`overflow: hidden; text-overflow: ellipsis; white-space: nowrap`) instead of wrapping — the header stays one line at every width the two-pane split can produce.
+
+Evidence: headless screenshots (Playwright, the same 1.61.1 the browser gates use), before/after, 1024×768 and 1440×900, `/private/tmp/claude-501/-Users-connor-Code-ConnorGriffin-harmonic/a6b1553c-a869-4b23-8b5d-babb92acbfb1/scratchpad/round3/{before,after}-{1024,1440}.png`. `before-1024.png` shows the title wrapped onto two lines ("GLUCOSE BY" / "TIME OF DAY") with the meta line wrapping under it; `after-1024.png` shows one line, "GLUCOSE BY T…" and "window 2,160 of 8,640 rea…", both cleanly ellipsized, the two-pane boundary and instrument row unaffected. 1440px is visually unchanged before/after (no truncation triggers at that width).
+
+Decision: harmonichq/harmonic#41, 2026-08-19 (safety-review round 3).

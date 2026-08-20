@@ -15,11 +15,16 @@
  * commit and the mockup lineage did not come across, so the terms restated in
  * this header are the whole of the contract that ships.
  *
- * RE-SETTLED TERMS 1 and 3 · 2026-08-13. The View
- * control is the rail's first instrument on EVERY view, Glucose included
- * (injected into the shipped workstation's rail via `railLead`), so no view is
- * a dead end; and Glucose, the recommendation surface, is the default view.
- * Supersedes the terms quoted in the lock manifest's re-settle block.
+ * RE-SETTLED TERMS 1 and 3 · 2026-08-13, SUPERSEDED · 2026-08-19 (issue #41).
+ * The View control and the lens's own instrument row (View / Factor /
+ * anchor-time) are retired: ADR 31 part 3 folds View's function into the
+ * workstation's own ALIGN instrument (`frontend/diagnose-workstation.js`),
+ * a `By clock` / `By event` switch present only where the canvas is showing a
+ * factor's events. The lens itself is canvas-only now (P52): no inspector,
+ * no selects, no `Clear trace`. What remains here is the canvas and whatever
+ * feeds it, reused by both this module's own `?view=meals`/`lows` read path
+ * (P53 keeps it, unreachable by any control) and the workstation's ALIGN
+ * "By event" mode.
  *
  * RE-SETTLED TERM 17 · 2026-08-16 · resolved via ADR 678. A selected Low
  * renders every in-window rescue-carb entry with
@@ -218,51 +223,16 @@ const fmtDate = (iso) => new Date(`${iso}T00:00:00`).toLocaleDateString(
   'en-US', { month: 'short', day: 'numeric' },
 );
 
-const fmtTime = (stamp) => stamp.slice(11, 16);
 const rounded = (value) => value == null ? '—' : String(Math.round(value));
 
-/* The lens selector is the rail's first instrument on every view, Glucose
-   included (#677 re-settle, term 3). Glucose renders it inside the shipped
-   workstation's own rail via `railLead`, so all three views share one optical
-   row and none of them is a dead end. */
-function createViewInstrumentMarkup(viewKey) {
-  return `
-      <div class="instrument ec-view-coordinate">
-        <span class="cap">View</span>
-        <div class="seg ec-view-seg" role="group" aria-label="Diagnose view">
-          ${VIEWS.map((key) => `<button type="button" data-view="${key}" aria-pressed="${key === viewKey}">${key[0].toUpperCase()}${key.slice(1)}</button>`).join('')}
-        </div>
-      </div>`;
-}
-
-function createCoordinateMarkup(viewKey, coordinates) {
-  return `
-    <div class="ec-coordinates" aria-label="Diagnose lens coordinates">
-      ${createViewInstrumentMarkup(viewKey)}
-      <label class="instrument ec-factor-coordinate">
-        <span class="cap">Factor</span>
-        <select id="ec-factor" aria-label="Factor">
-          ${coordinates.factor_options.map(({ key, label }) => `<option value="${key}" ${key === coordinates.factor ? 'selected' : ''}>${label}</option>`).join('')}
-        </select>
-      </label>
-      <div class="instrument ec-block-coordinate">
-        <span class="cap">Anchor time</span>
-        <div class="seg ec-block-seg" role="group" aria-label="Anchor time block">
-          ${coordinates.block_options.map(({ key, label }) => `<button type="button" data-block="${key}" aria-pressed="${key === coordinates.block}">${label}</button>`).join('')}
-        </div>
-      </div>
-      <label class="ec-another">
-        <input id="ec-another" type="checkbox" ${coordinates.another ? 'checked' : ''}>
-        <span class="ec-label">Other factors</span>
-        <output id="ec-another-count">0</output>
-      </label>
-    </div>`;
-}
-
+/* P52 (sanctioned) — the lens is canvas-only. No coordinate row (View, Factor,
+   anchor-time, Other factors all retired with it: ADR 31 part 3 folds View
+   into the workstation's own ALIGN instrument, and the rest have no reader
+   left to drive them once View is gone) and no inspector pane. What remains
+   is exactly the canvas, its legend and its hover readout. */
 function createSurfaceMarkup(viewKey, coordinates) {
   const copy = viewCopy[viewKey];
   return `
-    ${createCoordinateMarkup(viewKey, coordinates)}
     <main class="panes ec-panes">
       <section class="pane canvas-pane ec-canvas" aria-label="${copy.title}">
         <header class="canvas-head" id="ec-canvas-head" data-hover="0">
@@ -284,74 +254,7 @@ function createSurfaceMarkup(viewKey, coordinates) {
           <div class="ec-chart-key" id="ec-chart-key" aria-label="Cohort legend"></div>
         </div>
       </section>
-      <section class="pane inspector ec-inspector" aria-label="Factor inspector">
-        <header><h2>Factor judgment</h2><span class="meta" id="ec-inspector-meta">—</span></header>
-        <div class="body">
-          <section class="ec-judgment" aria-labelledby="ec-judgment-title">
-            <h3 id="ec-judgment-title">${coordinates.factor_options.find(({ key }) => key === coordinates.factor)?.label || coordinates.factor}</h3>
-            <p class="ec-judgment-summary" id="ec-judgment-summary"></p>
-            <div class="ec-counts" id="ec-counts"></div>
-            <p class="ec-boundary-note"><b>Near rule is disclosure only.</b> It explains the boundary and never enters Priority, a suggestion, or Plan.</p>
-            <div class="ec-zero" id="ec-zero" hidden>No events in this state met the current factor rule. Near-rule and neutral evidence remain visible.</div>
-          </section>
-          <section class="ec-occurrences" aria-labelledby="ec-occurrences-title">
-            <div class="ec-occurrences-head">
-              <h3 id="ec-occurrences-title">Inspect an occurrence</h3>
-              <span id="ec-occurrence-count">—</span>
-            </div>
-            <select class="ec-occurrence-select" id="ec-occurrence" aria-label="Occurrence overlay">
-              <option value="">No observed trace overlaid</option>
-            </select>
-            <div class="ec-occ-detail" id="ec-occ-detail" hidden>
-              <div class="ec-occ-title"><strong id="ec-occ-title"></strong><span id="ec-occ-cohort"></span></div>
-              <p class="ec-occ-verdict" id="ec-occ-verdict"></p>
-              <div class="ec-occ-facts" id="ec-occ-facts"></div>
-              <div class="ec-rescue" id="ec-rescue" hidden></div>
-              <div class="ec-occ-actions">
-                <a class="ec-day-link" id="ec-day-link" href="#">Open this date in Day</a>
-                <button class="ec-clear" id="ec-clear" type="button">Clear trace</button>
-              </div>
-            </div>
-          </section>
-          <p class="ec-inspector-note">This comparison describes recorded events. It does not change the current glucose recommendation or pump settings.<br><a class="ec-glucose-link" href="?view=glucose">Review the full-window Glucose recommendation →</a></p>
-        </div>
-      </section>
     </main>`;
-}
-
-/* Scoped to the View instrument alone, because on Glucose it is installed into
-   the shipped workstation's rail, which carries its own `.seg[role="group"]`
-   (Window) with its own key handling. */
-function installViewControls(scope) {
-  const group = scope.querySelector('.ec-view-seg');
-  for (const button of group.querySelectorAll('[data-view]')) {
-    button.addEventListener('click', () => setUrl({ view: button.dataset.view, factor: null, occ: null }));
-  }
-  installSegKeys([group]);
-}
-
-function installCoordinateControls(surface) {
-  installViewControls(surface);
-  for (const button of surface.querySelectorAll('[data-block]')) {
-    button.addEventListener('click', () => setUrl({ block: button.dataset.block, occ: null }));
-  }
-  installSegKeys(surface.querySelectorAll('.ec-block-seg[role="group"]'));
-}
-
-function installSegKeys(groups) {
-  for (const group of groups) {
-    group.addEventListener('keydown', (event) => {
-      if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
-      const buttons = [...group.querySelectorAll('button')];
-      const at = buttons.indexOf(event.target.closest('button'));
-      if (at < 0) return;
-      event.preventDefault();
-      const next = event.key === 'Home' ? 0
-        : event.key === 'End' ? buttons.length - 1
-          : (at + (event.key === 'ArrowRight' ? 1 : -1) + buttons.length) % buttons.length;
-      buttons[next].focus();
-    });
-  }
 }
 
 function colorFor(surface, cohort) {
@@ -579,65 +482,11 @@ function chartOption(surface, coordinates, copy, cohortOrder, cohorts, aggregate
   };
 }
 
-function summarySentence(counts) {
-  return `${counts.fired} events met this factor’s rule. ${counts.near_rule} sat narrowly outside it. ${counts.neutral} comparable events did not match any factor.`;
-}
-
-function boundaryFacts(facts) {
-  return facts.map(({ label, value, unit }) => `${label} ${value}${unit ? ` ${unit}` : ''}`);
-}
-
-function paintInspector(surface, projection, viewKey, cohortOrder, cohorts, selected) {
-  const { coordinates, population, occurrences } = projection;
-  const { counts } = population;
-  const unit = viewKey === 'meals' ? 'completed meals' : 'lows';
-  surface.querySelector('#ec-inspector-meta').textContent = `${fmtDate(coordinates.source_window.start)}–${fmtDate(coordinates.source_window.end)} · ${coordinates.block_options.find(({ key }) => key === coordinates.block)?.label || coordinates.block}`;
-  surface.querySelector('#ec-judgment-summary').textContent = `${summarySentence(counts)} ${counts.another_factor} had another factor; ${counts.excluded} of ${population.denominator} ${unit} were excluded as not safely comparable.`;
-  surface.querySelector('#ec-counts').innerHTML = ['fired', 'near_rule', 'neutral'].map((key) => `
-    <div class="ec-count" data-support="${cohorts[key].support}"><b>${counts[key]}</b>${COHORTS[key].label}<em>${cohorts[key].support[0].toUpperCase()}${cohorts[key].support.slice(1)}</em></div>`).join('');
-  const fired = cohorts.fired;
-  const withheld = surface.querySelector('#ec-zero');
-  withheld.hidden = fired.support !== 'withheld';
-  withheld.textContent = fired.routed_count === 0
-    ? 'No events met this rule. There is no aggregate to show; near-rule and no-match evidence remain available.'
-    : 'One event met this rule. Its exact occurrence remains available, but the cohort aggregate is withheld.';
-  surface.querySelector('#ec-another-count').textContent = String(
-    counts.another_factor,
-  );
-  surface.querySelector('#ec-occurrence-count').textContent = `${occurrences.length} available`;
-
-  const select = surface.querySelector('#ec-occurrence');
-  for (const occurrence of occurrences) {
-    const option = document.createElement('option');
-    option.value = occurrence.identity.id;
-    option.textContent = `${COHORTS[occurrence.verdict.cohort].label} · ${fmtDate(occurrence.anchor.date)} ${fmtTime(occurrence.anchor.t)}`;
-    option.selected = selected?.identity.id === occurrence.identity.id;
-    select.append(option);
-  }
-
-  const detail = surface.querySelector('#ec-occ-detail');
-  if (!selected) return;
-  detail.hidden = false;
-  surface.querySelector('#ec-occ-title').textContent = `${fmtDate(selected.anchor.date)} · ${fmtTime(selected.anchor.t)}`;
-  surface.querySelector('#ec-occ-cohort').textContent = COHORTS[selected.verdict.cohort].label;
-  surface.querySelector('#ec-occ-verdict').textContent = selected.verdict.detail || COHORTS[selected.verdict.cohort].note;
-  const facts = [
-    selected.anchor.bg == null ? null : `at anchor ${Math.round(selected.anchor.bg)} mg/dL`,
-    selected.anchor.worst_bg == null ? null : `range extreme ${Math.round(selected.anchor.worst_bg)} mg/dL`,
-    selected.verdict.evidence_tier?.replaceAll('_', ' '),
-    ...boundaryFacts(selected.verdict.boundary_facts),
-  ].filter(Boolean);
-  surface.querySelector('#ec-occ-facts').textContent = facts.join(' · ');
-  surface.querySelector('#ec-day-link').href = `../?tab=day&date=${selected.day_target.date}`;
-
-  const rescue = surface.querySelector('#ec-rescue');
-  if (viewKey === 'lows' && selected.markers.length) {
-    rescue.textContent = `Rescue carbs: ${selected.markers.map((item) => `${item.grams} g`).join(', ')}.`;
-    rescue.hidden = false;
-  }
-}
-
-function renderEventSurface(surface, projection) {
+/** Canvas-only render (P52): the chart, its legend and its hover readout —
+    nothing else. Reused as-is by both this module's own `?view=meals`/`lows`
+    read path and, once exported, the workstation's ALIGN "By event" mode
+    (ADR 31 part 3) — one implementation of the projection's draw, never two. */
+export function renderEventSurface(surface, projection) {
   const { coordinates } = projection;
   const viewKey = coordinates.view;
   const cohortOrder = projection.cohorts.map(({ key }) => key);
@@ -651,19 +500,6 @@ function renderEventSurface(surface, projection) {
   /* Comparison population is projection data, not an app-side `data-state`.
      Aside from duplicating server policy, a `dense` state on this `.dw` would
      collide with the workstation density selector and shift shared geometry. */
-  installCoordinateControls(surface);
-  surface.querySelector('#ec-factor').addEventListener('change', (event) =>
-    setUrl({ factor: event.target.value, occ: null }),
-  );
-  surface.querySelector('#ec-another').addEventListener('change', (event) =>
-    setUrl({ another: event.target.checked ? '1' : null, occ: null }),
-  );
-  surface.querySelector('#ec-occurrence').addEventListener('change', (event) =>
-    setUrl({ occ: event.target.value || null }),
-  );
-  surface.querySelector('#ec-clear').addEventListener('click', () => setUrl({ occ: null }));
-
-  paintInspector(surface, projection, viewKey, cohortOrder, cohorts, selected);
   paintLegend(surface, cohortOrder, cohorts, aggregates, selected);
 
   const chartElement = surface.querySelector('#ec-chart');
@@ -744,8 +580,7 @@ export function createDiagnoseEventComparison({ root, callbacks = {} }) {
       const glucoseRoot = document.createElement('div');
       glucoseRoot.className = 'ec-glucose';
       root.append(glucoseRoot);
-      const glucose = createDiagnoseWorkstation({ root: glucoseRoot, callbacks,
-        railLead: { markup: createViewInstrumentMarkup(viewKey), install: installViewControls } });
+      const glucose = createDiagnoseWorkstation({ root: glucoseRoot, callbacks });
       glucose.setData(payload);
       current = {
         refresh: () => glucose.refresh(),
@@ -764,20 +599,6 @@ export function createDiagnoseEventComparison({ root, callbacks = {} }) {
     surface.className = 'dw ec-surface';
     root.append(surface);
     current = renderEventSurface(surface, projection);
-
-    surface.querySelector('.ec-glucose-link')?.addEventListener('click', (event) => {
-      event.preventDefault();
-      setUrl({ view: 'glucose', factor: null, occ: null });
-    });
-    surface.querySelector('#ec-day-link')?.addEventListener('click', (event) => {
-      if (!current?.selected) return;
-      event.preventDefault();
-      callbacks.day?.({
-        t: current.selected.anchor.t,
-        text: current.selected.anchor.label || '',
-        cause_lever: current.factor,
-      });
-    });
   };
 
   const requestProjection = () => {

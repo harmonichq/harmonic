@@ -397,7 +397,7 @@ const edgeLine = (name, data, color, z) => ({
 
 /**
  * @param {object} opts { envelope, markers, colors, window:[startMin,endMin],
- *                        windowLabel, occurrences }
+ *                        windowLabel, occurrences, selectedOcc }
  */
 export function renderCanvas(el, echarts, opts) {
   const { envelope, markers, colors } = opts;
@@ -704,15 +704,27 @@ export function renderCanvas(el, echarts, opts) {
       {
         /* Occurrence marks. They used to float as unlabelled ticks in a reserved
            strip at the top of the plot, which read as debris; each one now sits
-           at its own recorded glucose value and is named in the legend. */
+           at its own recorded glucose value and is named in the legend.
+
+           SELECT-IN-PLACE (P35 retired): a selected roster row draws its own
+           mark bigger and outlined rather than moving the window (P21
+           retired) or opening a level of its own — the emphasis is drawn,
+           never a re-derived scope. */
         name: 'Occurrences', type: 'scatter', z: 11,
-        data: (opts.occurrences || []).map((o) => ({
-          value: [
-            Math.round(minuteOfDay(o.t) / BIN_MINUTES) % BIN_COUNT,
-            o.bg != null ? o.bg : (o.worst_bg != null ? o.worst_bg : OCCURRENCE_Y),
-          ],
-          meta: o,
-        })),
+        data: (opts.occurrences || []).map((o) => {
+          const selected = opts.selectedOcc && o.t === opts.selectedOcc.t && o.date === opts.selectedOcc.date;
+          return {
+            value: [
+              Math.round(minuteOfDay(o.t) / BIN_MINUTES) % BIN_COUNT,
+              o.bg != null ? o.bg : (o.worst_bg != null ? o.worst_bg : OCCURRENCE_Y),
+            ],
+            meta: o,
+            symbolSize: selected ? 11 : 7,
+            itemStyle: selected
+              ? { color: colors.text, opacity: 1, borderColor: colors.occurrence, borderWidth: 2 }
+              : undefined,
+          };
+        }),
         symbol: 'circle', symbolSize: 7,
         itemStyle: {
           color: colors.occurrence, opacity: 0.95,

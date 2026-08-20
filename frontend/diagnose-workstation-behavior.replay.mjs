@@ -91,12 +91,24 @@ export const state = (page) => page.evaluate(() => {
         box: (() => { const r = w.getBoundingClientRect(); return { top: Math.round(r.top), height: Math.round(r.height) }; })(),
       };
     })(),
-    levelHead: q('#level .slot-head, #level .who, #level .occ-head')?.innerText.replace(/\s+/g, ' ').trim() ?? null,
+    // select-in-place (2026-08-19 revision): `.occ-head` can now stand ALONGSIDE
+    // `.who` on the same factor level (P35 retired — no level swap clears one
+    // away), so this can no longer be a single comma-list querySelector, which
+    // would return whichever sits first in DOM order regardless of which one a
+    // reader actually cares about. The occurrence's own header wins when a
+    // selection stands; otherwise it falls back to the level's own headline.
+    levelHead: (q('#level .occ-head') || q('#level .slot-head') || q('#level .who'))
+      ?.innerText.replace(/\s+/g, ' ').trim() ?? null,
     evRows: document.querySelectorAll('#level .ev-row').length,
-    // the cap governs the MATCHED group only — the counter-example reads always
-    // print in full (term 17), so the two are counted apart
-    evFits: document.querySelectorAll('#level .ev-row[data-counter="false"]').length,
-    evCounter: document.querySelectorAll('#level .ev-row[data-counter="true"]').length,
+    // `evFits` is every row the roster is currently showing (the drilled
+    // verdict, or `fired` at rest). The `data-counter`/`evCounter` split
+    // RETIRED 2026-08-19: select-in-place (P35, ADR 31 part 5) made the
+    // roster homogeneous by verdict, and the counter-example sub-group it
+    // used to feed was dead at rest and incoherent once drilled (see
+    // renderEvidence's docstring). `evCounterGone` asserts the retirement
+    // stays true rather than silently reintroducing the attribute.
+    evFits: document.querySelectorAll('#level .ev-row').length,
+    evCounterGone: document.querySelectorAll('#level .ev-row[data-counter]').length,
     more: txt('#level .more'),
     stage: q('#level .stagebtn')?.innerText.replace(/\s+/g, ' ').trim() ?? null,
     stageStaged: q('#level .stagebtn')?.dataset.staged ?? null,
@@ -120,7 +132,6 @@ export const state = (page) => page.evaluate(() => {
     }).length,
     laneSelected: [...document.querySelectorAll('#lane button')].findIndex((b) => b.getAttribute('aria-pressed') === 'true'),
     laneCells: document.querySelectorAll('#lane button').length,
-    icCells: document.querySelectorAll('#iclane button').length,
     laneOutside: [...document.querySelectorAll('#lane button')].filter((b) => b.dataset.outside === 'true').length,
     laneKey: q('#lane-key')?.innerText.replace(/\s+/g, ' ').trim() ?? null,
     hover: q('#canvas-head')?.dataset.hover ?? null,
@@ -538,28 +549,40 @@ export const S09 = async (page) => {
   ok(s.evRows > 0, 'S09 evidence rows render');
 };
 
-/** S10 · Evidence is capped at five MATCHED rows and the cap is a real toggle.
-    The counter-example group is never capped — it always prints in full. */
+/** S10 · Evidence is capped at five rows and the cap is a real toggle.
+    RETIRED, 2026-08-19 (Connor's select-in-place ruling, P35/ADR 31 part 5,
+    transcribed in the behaviour ledger): the "counter-example group is never
+    capped" clause. Select-in-place made the roster homogeneous by verdict —
+    exactly one published category shows at a time — which structurally
+    empties the old counter-example split at rest and makes it incoherent
+    once drilled (a near-miss/clean occurrence can still carry a DIFFERENT
+    classifier's match on the same anchor, which used to route it into a
+    group captioned for fired-but-uncredited leftovers). `renderEvidence`
+    retires the split outright rather than leave a 0==0 tautology standing;
+    this story now asserts the retirement itself. */
 // LOCK:diagnose-workstation:17 LOCK:diagnose-workstation:18
 export const S10 = async (page) => {
   await page.click('#level .qrow[data-state="finding"]');
   await settle(page, 450);
   const capped = await state(page);
-  is(capped.evFits, 5, 'S10 five matched rows before expanding');
+  is(capped.evFits, 5, 'S10 five rows before expanding');
+  is(capped.evCounterGone, 0, 'S10 RETIRED — the counter-example split is gone, not merely empty');
   ok(/^\d+ more$/.test(capped.more || ''), `S10 the toggle names the remainder (${capped.more})`);
   await page.click('#level .more');
   await settle(page);
   const open = await state(page);
-  ok(open.evFits > 5, 'S10 expanding shows the rest of the matched group');
-  is(open.evCounter, capped.evCounter, 'S10 the counter-example group is unaffected by the cap');
+  ok(open.evFits > 5, 'S10 expanding shows the rest of the roster');
+  is(open.evCounterGone, 0, 'S10 RETIRED — still gone after expanding');
   is(open.more, 'Show first 5', 'S10 the toggle reverses');
   await page.click('#level .more');
   await settle(page);
   is((await state(page)).evFits, 5, 'S10 it collapses back to five');
 };
 
-/** S11 · An evidence row opens the occurrence level; the canvas narrows to the
-    pooling radius around it and the count nests inside the factor peak's. */
+/** S11 · SELECT-IN-PLACE (P35/P21 retired, 2026-08-19 revision). An evidence
+    row click emphasises it in place — no crumb push, and the window is
+    byte-identical to what it was before the click, because selection is
+    evidence, never viewport navigation (ADR 31 part 5). */
 // LOCK:diagnose-workstation:18 LOCK:diagnose-workstation:19 LOCK:diagnose-workstation:20
 export const S11 = async (page) => {
   await page.click('#level .qrow[data-state="finding"]');
@@ -568,14 +591,18 @@ export const S11 = async (page) => {
   await page.click('#level .ev-row');
   await settle(page, 450);
   const occ = await state(page);
-  is(occ.crumb.length, 3, 'S11 a second level pushed');
-  ok(/^Occurrence \d\d:\d\d$/.test(occ.chip || ''), `S11 the chip names the occurrence (${occ.chip})`);
-  const n = (s) => Number((s.scope || '').match(/window ([\d,]+) of/)?.[1].replace(/,/g, '') ?? NaN);
-  ok(n(occ) <= n(peak), `S11 the occurrence window nests inside the peak (${n(occ)} ≤ ${n(peak)})`);
-  ok(/← →/.test(occ.levelHead || ''), 'S11 the keyboard hint rides the occurrence header');
+  is(occ.crumb.length, 2, 'S11 select-in-place pushes no level (P35 retired)');
+  is(occ.chip, peak.chip, 'S11 selecting an occurrence does not move the window (P21 retired)');
+  const selected = await page.evaluate(() =>
+    document.querySelector('#level .ev-row[aria-pressed="true"]') !== null);
+  ok(selected, 'S11 the selected row carries aria-pressed');
+  ok(/← →/.test(occ.levelHead || ''), 'S11 the keyboard hint rides the inline detail');
 };
 
-/** S12 · ←/→ step occurrences at level 3 and STOP at the ends — no wrap. */
+/** S12 · ←/→ step the SELECTED occurrence (P24/P25, kept and re-homed onto
+    select-in-place) and STOP at the ends — no wrap. Stepping changes neither
+    the crumb (P35 retired) nor the window (P21 retired): only the panel and
+    the day trace follow. */
 // LOCK:diagnose-workstation:21
 export const S12 = async (page) => {
   await page.click('#level .qrow[data-state="finding"]');
@@ -591,24 +618,24 @@ export const S12 = async (page) => {
   await settle(page, 300);
   const second = await state(page);
   ok(/\b2 of \d+/.test(second.levelHead || ''), `S12 → steps one occurrence (${second.levelHead})`);
-  ok(second.crumb[2] !== first.crumb[2], 'S12 the trail leaf follows the step');
-  ok(second.chip !== first.chip, 'S12 the canvas follows the step');
+  is(second.crumb.length, first.crumb.length, 'S12 stepping never changes the crumb depth (P35 retired)');
+  is(second.chip, first.chip, 'S12 stepping never moves the window (P21 retired)');
   await page.keyboard.press('ArrowLeft');
   await settle(page, 300);
   is((await state(page)).levelHead, first.levelHead, 'S12 ← steps back');
 };
 
-/** S13 · Backspace pops exactly one level at depth ≥ 2. */
+/** S13 · Backspace pops exactly one level at depth ≥ 2. Selecting an
+    occurrence (P35 retired) never adds a level for it to pop. */
 // LOCK:diagnose-workstation:21
 export const S13 = async (page) => {
   await page.click('#level .qrow[data-state="finding"]');
   await settle(page, 450);
+  is((await state(page)).crumb.length, 2, 'S13 at depth 2');
   await page.click('#level .ev-row');
   await settle(page, 450);
-  is((await state(page)).crumb.length, 3, 'S13 at depth 3');
-  await page.keyboard.press('Backspace');
-  await settle(page);
-  is((await state(page)).crumb.length, 2, 'S13 Backspace pops one');
+  is((await state(page)).crumb.length, 2,
+    'S13 selecting an occurrence does not deepen the stack (P35 retired)');
   await page.keyboard.press('Backspace');
   await settle(page);
   is((await state(page)).crumb.length, 1, 'S13 Backspace pops to the root');
@@ -618,7 +645,8 @@ export const S13 = async (page) => {
 };
 
 /** S14 · The breadcrumb IS the navigation: ancestors are buttons, the current
-    item is inert, and there is no back button anywhere. */
+    item is inert, and there is no back button anywhere. Selecting an
+    occurrence in place (P35 retired) adds no ancestor of its own. */
 // LOCK:diagnose-workstation:4
 export const S14 = async (page) => {
   await page.click('#level .qrow[data-state="finding"]');
@@ -633,7 +661,7 @@ export const S14 = async (page) => {
     backButtons: [...document.querySelectorAll('#crumb-trail button, .inspector button')]
       .filter((b) => /^(back|‹|←)$/i.test(b.textContent.trim())).length,
   }));
-  is(shape.buttons.length, 2, 'S14 both ancestors are clickable');
+  is(shape.buttons.length, 1, 'S14 select-in-place adds no ancestor (P35 retired)');
   is(shape.currentIsButton, false, 'S14 the current item is not a button');
   ok(shape.ariaCurrent, 'S14 the current item is marked aria-current');
   is(shape.backButtons, 0, 'S14 no back button/chevron anywhere in the trail');
@@ -697,23 +725,14 @@ export const S16 = async (page) => {
   is(undone.badge, '0', 'S16 the badge follows back down');
 };
 
-/** S17 · An I:C block click marks a window SEGMENT, never a two-handle brace:
-    the brace is suppressed and its edges stop being hit-testable, so a data
-    boundary cannot be dragged into a user window. */
+/** S17 · The I:C lane is retired. I:C enters through its findings-queue row. */
 // LOCK:diagnose-workstation:12 LOCK:diagnose-workstation:32
 export const S17 = async (page) => {
-  const idx = await page.evaluate(() => [...document.querySelectorAll('#iclane button')]
-    .findIndex((b) => { const t = b.getAttribute('aria-label') || ''; return !/part \d of 2/.test(t); }));
-  ok(idx >= 0, 'S17 precondition: a non-wrapping block exists');
-  await page.click(`#iclane button:nth-child(${idx + 1})`);
-  await settle(page, 450);
-  const seg = await state(page);
-  ok(/^Block \d\d:\d\d–\d\d:\d\d$/.test(seg.chip || ''), `S17 the chip names a Block, not a Window (${seg.chip})`);
-  is(seg.braceHidden, true, 'S17 no two-handle brace on a block segment');
-  ok(/block$/.test(seg.crumb[seg.crumb.length - 1]), 'S17 the trail names the block');
-  const b = await plot(page);
-  await page.mouse.move(b.x + seg.gripA, b.y + b.h * 0.5);
-  is((await state(page)).cursor, 'crosshair', 'S17 the segment edge is NOT grabbable');
+  const author = await projectAuthor();
+  const sanction = `${author} · 2026-08-19 · "Decided by ${author} in a ruling session on 2026-08-19."`;
+  is(await page.evaluate(() => document.querySelector('#iclane') !== null), false,
+    `S17 RETIRED — ${sanction}`);
+  return `RETIRED — ${sanction}`;
 };
 
 /** S18 · ISF is a level-1 QUEUE row — not a lane, not a cell — and it derives NO
@@ -964,9 +983,10 @@ const D_CGM = [
 ];
 const D_CGM_VALUES = D_CGM.map((r) => r.bg);
 
-/** D1 · A DELAYED successful /timeline resolves the real trace AFTER the
-    occurrence level is already drawn. The late arrival repaints in place: the
-    reader stays at depth 3, the #level/#chart nodes keep their identity, and the
+/** D1 · A DELAYED successful /timeline resolves the real trace AFTER an
+    occurrence is selected in place (P35 retired: there is no occurrence level
+    to be "at"). The late arrival repaints in place: the reader stays at the
+    same drilled factor, the #level/#chart nodes keep their identity, and the
     drawn window and staged Plan item are untouched — proof the completion does
     NOT remount the surface (#666). */
 export const D1 = async (page) => {
@@ -977,14 +997,14 @@ export const D1 = async (page) => {
     await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ cgm: D_CGM }) });
   });
   await page.click('#level .ev-row');
-  await settle(page, 250);   // the level is drawn; the fetch is still in flight
+  await settle(page, 250);   // the row is selected; the fetch is still in flight
 
   // capture the stable nodes BEFORE the trace resolves
   const levelBefore = await page.$('#level');
   const chartBefore = await page.$('#chart');
   const before = await state(page);
-  is(before.crumb.length, 3, 'D1 opens the occurrence at depth 3');
-  const sentenceBefore = await page.evaluate(() => document.querySelector('#level .statline')?.textContent.trim() ?? null);
+  is(before.crumb.length, 2, 'D1 selects the occurrence in place (P35 retired)');
+  const sentenceBefore = await page.evaluate(() => document.querySelector('#level .occ-detail .statline')?.textContent.trim() ?? null);
   ok(/^No trace captured for this day/.test(sentenceBefore || ''), `D1 before: the no-trace sentence shows (${sentenceBefore})`);
   is(await traceSeries(page), null, 'D1 before: no "That day" series while the fetch is in flight');
   ok(/^Window /.test(before.chip || ''), 'D1 before: the drawn window still stands');
@@ -993,8 +1013,8 @@ export const D1 = async (page) => {
   // let the delayed response resolve and the in-place repaint run
   await settle(page, 1800);
   const after = await state(page);
-  is(after.crumb.length, 3, 'D1 after: STILL at depth 3 — not thrown back to the opening level');
-  const sentenceAfter = await page.evaluate(() => document.querySelector('#level .statline')?.textContent.trim() ?? null);
+  is(after.crumb.length, 2, 'D1 after: STILL at the drilled factor — not thrown back to the opening level');
+  const sentenceAfter = await page.evaluate(() => document.querySelector('#level .occ-detail .statline')?.textContent.trim() ?? null);
   is(sentenceAfter, 'The canvas shows this day\'s own CGM trace over the pooled envelope.',
     'D1 after: the real-trace explanation replaces the no-trace one');
   is(await traceSeries(page), D_CGM_VALUES,
@@ -1022,8 +1042,8 @@ export const D2 = async (page) => {
   await page.click('#level .ev-row');
   await settle(page, 900);   // past any fetch — an empty day never repaints
   const after = await state(page);
-  is(after.crumb.length, 3, 'D2 at the occurrence, depth 3');
-  const sentence = await page.evaluate(() => document.querySelector('#level .statline')?.textContent.trim() ?? null);
+  is(after.crumb.length, 2, 'D2 at the drilled factor, occurrence selected in place');
+  const sentence = await page.evaluate(() => document.querySelector('#level .occ-detail .statline')?.textContent.trim() ?? null);
   ok(/^No trace captured for this day/.test(sentence || ''), `D2 the deliberate no-trace sentence shows (${sentence})`);
   is(await traceSeries(page), null, 'D2 no "That day" series for an empty day');
   is(after.chip, setup.chip, 'D2 the drawn window is untouched');
@@ -1047,8 +1067,8 @@ export const D3 = async (page) => {
   await page.click('#level .ev-row');
   await settle(page, 900);
   const after = await state(page);
-  is(after.crumb.length, 3, 'D3 still at the occurrence, depth 3 after a 500');
-  const sentence = await page.evaluate(() => document.querySelector('#level .statline')?.textContent.trim() ?? null);
+  is(after.crumb.length, 2, 'D3 still at the drilled factor after a 500');
+  const sentence = await page.evaluate(() => document.querySelector('#level .occ-detail .statline')?.textContent.trim() ?? null);
   ok(/^No trace captured for this day/.test(sentence || ''), `D3 the no-trace sentence stands after a 500 (${sentence})`);
   is(await traceSeries(page), null, 'D3 no "That day" series after a failed fetch');
   is(after.chip, setup.chip, 'D3 the drawn window is unchanged');
@@ -1207,7 +1227,12 @@ export const S26 = async (page) => {
   ok(shape.buttons, 'S26 the full evidence rows remain buttons');
   await page.click('#level .ev-row');
   await settle(page, 450);
-  is((await state(page)).crumb.length, 3, 'S26 the row still drills to its occurrence');
+  // select-in-place (P35 retired, 2026-08-19 revision): the row still selects,
+  // it just no longer drills to a level of its own
+  is((await state(page)).crumb.length, 2, 'S26 the row selects in place, no crumb push (P35 retired)');
+  const selected = await page.evaluate(() =>
+    document.querySelector('#level .ev-row[aria-pressed="true"]') !== null);
+  ok(selected, 'S26 the row still emphasises in place');
   return `RETIRED — ${sanction}`;
 };
 

@@ -2,7 +2,8 @@
  *
  * Source: the archived ★ LOCKED cockpit mock (the fork that executes lock terms
  * 31-33). Lines 258-298 (tokens) and 393-939 (instrument row, pane grid, brace,
- * I:C lane, stacked inspector) are transferred VERBATIM.
+ * stacked inspector) are transferred VERBATIM. The I:C lane formerly in that
+ * range is retired by behavior-ledger row P44.
  *
  * NOT ported, deliberately: the mock's sections 1 (identity/workflow bar) and 4
  * (status strip), and its `.cockpit` page grid. #634 already built the app's
@@ -10,8 +11,8 @@
  * chrome rules on top would double-declare and fight it. The mock's `.mockbar`
  * is harness chrome and is excluded from the contract by the behaviour ledger.
  *
- * Edit this file only to re-sync it with the mock. A change that is not in the
- * mock is a deviation and needs a re-settle against the surface's lock manifest.
+ * Keep the ported rules synchronized with the mock. Any deviation needs a
+ * behavior-ledger amendment; P44 is the recorded retirement for the omitted lane.
  */
 
 /* ---- token adapter (NEW — the seam between the app's design system and the
@@ -111,10 +112,30 @@ html.dark .dw {
 
 /* ---- mock 393-939 — VERBATIM (one line rescoped, marked inline) ---- */
 /* ---- 2. instrument row ---------------------------------------------- */
+/* DEVIATION from the ported mock (Connor, 2026-08-19: "I want this to
+   maintain a consistent position on the screen … visually aligned nicely
+   with something, probably directly above the inspector"). The mock's row
+   was a flex row, so ALIGN's position slid with whatever sat before it in
+   flow. `.instruments` now mirrors `.panes`' ACTUAL rendered geometry — its
+   `.panes` base rule in the mock port is itself overridden by
+   `theme.css`'s ":is(.dw, .vw) .panes { gap: 0; padding: 0; }" (the "docked
+   workspace" pane rule, term 1), so the real column boundary is a bare
+   `100% - var(--side)` with no gap or padding to account for. Zero gap and
+   zero padding here reproduce that exactly, so the SECOND column starts at
+   the identical x as the inspector pane — reserved space directly above it
+   whether or not `#align-group` is hidden, since WINDOW (column 1) can never
+   push a sibling grid track. `#align-group` gets its own left inset instead
+   of the row's, matching `.pane > header`'s own content padding
+   (`--ck-pad`), so ALIGN's label lines up with the inspector's own header
+   text, not just its bare left edge. See the behaviour ledger's amendment
+   for the deviation this records. */
 .instruments {
-  display: flex; align-items: center; gap: 14px; padding: 0 14px;
+  display: grid; grid-template-columns: minmax(0, 1fr) var(--side, 430px);
+  align-items: center; gap: 0; padding: 0;
   background: var(--mk-bg);
 }
+.instruments > .instrument:first-child { padding-left: 14px; }
+#align-group { padding-left: var(--ck-pad); }
 .instrument { display: flex; align-items: center; gap: 7px; min-width: 0; }
 .instrument > .cap {
   font-size: var(--ck-micro); text-transform: uppercase; letter-spacing: var(--ck-track);
@@ -194,6 +215,21 @@ html.dark .dw {
   grid-area: 1 / 1; display: flex; align-items: baseline; gap: 10px;
   min-width: 0; transition: opacity .1s linear;
 }
+/* 1024px tablet fix (Connor, 2026-08-19: "I should be able to view this on a
+   tablet screen without the two windows getting fucked … things are out of
+   line"). At the narrower canvas-pane column a 594px-ish flex row (title +
+   "window N of M readings" + the persist chip) cannot hold three strings at
+   their natural width, and a flex child's default `min-width: auto` let the
+   title wrap onto a second line instead of yielding. Both give way by
+   TRUNCATING, never by wrapping: the header stays one line at every width
+   the two-pane split can produce, "squished out of line" becomes an ellipsis
+   instead of a broken line. */
+.canvas-head h2 {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.canvas-head .head-line .meta {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 .canvas-head .head-live {
   visibility: hidden; opacity: 0;
   font-family: var(--ck-mono); font-variant-numeric: tabular-nums;
@@ -241,6 +277,11 @@ html.dark .dw {
    geometry that never reflowed. The resize listener fires correctly the whole
    time — there is simply nothing to reflow. Behaviour-ledger Q3 (#651). */
 #chart { min-height: 0; min-width: 0; cursor: crosshair; }
+
+/* ALIGN's "By event" pane (ADR 31 part 3, issue #41) — spans the whole canvas
+   body (both grid rows), the same footprint `#chart` + `.lane-wrap` cover
+   together, so it replaces them rather than adding a third row underneath. */
+#align-canvas { grid-row: 1 / -1; grid-column: 1; min-height: 0; }
 
 /* ---- drawn-window brace ---------------------------------------------
    Two dashed edges on the SAME optical spine as the plot and the lane —
@@ -309,40 +350,6 @@ html.dark .dw {
   background: var(--ck-accent); border-radius: 1px;
 }
 
-/* ---- the second lane: I:C blocks, at TRUE MINUTE boundaries -----------
-   The stack is two rows, 4px apart, both 11px — 15px of the plot's height,
-   which is the whole budget for the extension. The basal lane above is a
-   48-cell grid; this one is NOT a grid, because a block is a data span: its
-   left and width are fractions of 1440 and a block that wraps midnight is
-   drawn as two pieces of the same block. Nothing is snapped to the basal
-   cells and nothing carries a minimum width — where a seam does not line up
-   with a slot edge, it must be seen not lining up. */
-.lane-stack { display: grid; gap: 4px; }
-.iclane {
-  position: relative; height: 11px;
-  margin-left: var(--ck-grid-left); margin-right: var(--ck-grid-right);
-  background: var(--ck-inset);
-  box-shadow: inset 0 0 0 1px var(--ck-hair);
-  border-radius: 2px;
-}
-.iclane button {
-  position: absolute; top: 0; bottom: 0; border: 0; padding: 0; cursor: pointer;
-  border-radius: 1px; background: var(--cell, var(--ck-inset)); min-width: 0;
-}
-/* ONE hue family with the lane above: these are the same three tokens, at the
-   same strengths. The lanes are told apart by ROW and by the key's lead word. */
-.iclane button[data-verdict="up"] { --cell: color-mix(in srgb, var(--ck-up) 72%, transparent); }
-.iclane button[data-verdict="down"] { --cell: color-mix(in srgb, var(--mk-danger) 72%, transparent); }
-.iclane button[data-verdict="hold"] { --cell: color-mix(in srgb, var(--ck-hold) 45%, var(--mk-surface)); }
-.iclane button[data-verdict="insufficient"] {
-  --cell: transparent; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ck-insuff) 75%, transparent);
-}
-.iclane button[aria-pressed="true"] { outline: 1px solid var(--mk-text); outline-offset: 1px; }
-.iclane button[data-outside="true"] { opacity: .38; }
-.iclane button[data-staged="true"]::after {
-  content: ''; position: absolute; left: 0; right: 0; bottom: -4px; height: 2px;
-  background: var(--ck-accent); border-radius: 1px;
-}
 /* one line, always: a wrapped key would grow the canvas pane's fixed rows */
 .lane-key {
   display: flex; flex-wrap: nowrap; gap: 11px; align-items: center; overflow: hidden;
@@ -539,6 +546,32 @@ button.entry .pill[data-empty="true"] { visibility: hidden; }
    stylesheet that still describes a component nobody renders is the next reader's
    wrong map. `.dw .qrow` at the foot of this file is what replaced them. */
 
+/* the verdict band — the split's own nouns (ADR 41), drilling the roster only */
+.vband { padding: 8px var(--ck-pad) 4px; }
+.vband .bar {
+  display: grid; gap: 2px; height: 10px; border-radius: 3px; overflow: hidden;
+}
+.vband .seg {
+  border: 0; padding: 0; cursor: pointer; background: var(--ck-inset);
+}
+.vband .seg[data-verdict="fired"] { background: var(--mk-ok); }
+.vband .seg[data-verdict="near_miss"] { background: var(--mk-warn); }
+.vband .seg[data-verdict="clean"] { background: color-mix(in srgb, var(--mk-muted) 55%, transparent); }
+.vband .seg[aria-pressed="true"] { outline: 1.5px solid var(--mk-text); outline-offset: 1px; }
+.vband .keys {
+  margin-top: 6px; display: flex; gap: 14px; flex-wrap: wrap;
+  font-size: 11px; color: var(--mk-secondary);
+}
+.vband .key {
+  display: flex; align-items: baseline; gap: 5px; border: 0; background: none;
+  padding: 0; cursor: pointer; color: inherit; font: inherit;
+}
+.vband .key[aria-pressed="true"] .lead { color: var(--mk-text); font-weight: 650; }
+.vband .key .n { font-family: var(--ck-mono); color: var(--mk-muted); }
+.vband-foot {
+  padding: 0 var(--ck-pad) 8px; font-size: 10.5px; color: var(--mk-muted);
+}
+
 /* evidence — a table on a shared numeric spine, not a feed */
 .ev-group {
   padding: 8px var(--ck-pad) 4px; font-size: 11.5px; color: var(--mk-secondary);
@@ -546,7 +579,6 @@ button.entry .pill[data-empty="true"] { visibility: hidden; }
 }
 .ev-group b { color: var(--mk-text); font-weight: 600; }
 .ev-group .n { font-family: var(--ck-mono); color: var(--mk-muted); }
-.ev-group.counter { color: var(--mk-muted); background: color-mix(in srgb, var(--ck-inset) 45%, transparent); }
 /* ONE shared column grid, so ten rows scan down as columns rather than as ten
    sentences: when · entry → worst · delta · tier. Every column is a
    fixed width; only the tier column flexes. */
@@ -576,8 +608,15 @@ button.entry .pill[data-empty="true"] { visibility: hidden; }
   text-align: right; font-family: Inter, system-ui, sans-serif; font-size: 10.5px;
   color: var(--mk-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.ev-row[data-counter="true"] .worst, .ev-row[data-counter="true"] .only { color: var(--mk-secondary); }
-/* level 3: one occurrence, whole panel */
+.ev-row[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--mk-primary-soft) 55%, transparent);
+}
+.ev-row[aria-pressed="true"] .when {
+  border-right-color: color-mix(in srgb, var(--mk-primary) 40%, transparent);
+}
+/* select-in-place (P35 retired): the emphasised row's detail, inline under the
+   roster — never a level of its own */
+.occ-detail { border-top: 1px solid var(--ck-hair); }
 .occ-head { display: flex; align-items: baseline; gap: 9px; }
 .occ-head .when { font-family: var(--ck-mono); font-size: var(--ck-emph); color: var(--mk-text); }
 .occ-head .pos {
@@ -633,19 +672,37 @@ button.entry .pill[data-empty="true"] { visibility: hidden; }
    flush beneath it. Right: the flavor tag in a FIXED column just inside the
    chevron, so it lands at the same x on every row instead of trailing a title of
    variable length. Nothing sits between the two. */
+/* CARD GEOMETRY, FIXED HEIGHT AGAIN (Connor, 2026-08-19, overriding round 4's
+   auto-height ruling: "They need to be fixed height. They just need to look
+   better"). Round 4's rejected box was 84px, invented headroom above the
+   content it held; this one is PINNED AT THE CONTENT'S OWN CEILING, measured
+   off the live queue rather than guessed — 8px even vertical padding + one
+   label line + 4px row gap + one clamped detail line (`.den` XOR `.why`,
+   never both — `detailFor` in diagnose-findings-queue.js picks exactly one
+   per row) rendered at 51.67px in the running app, so 52px is pinned, not
+   84px. A row with no detail line at all (rare: `assertDetail` can return
+   null) does not shrink the box or leave it top-heavy — `align-content:
+   center` centers whatever content the row has as a group within the fixed
+   height, so a title-only row reads centered rather than pinned to the top
+   with dead air below. If a future reason genuinely needs two lines, that is
+   a design decision to revisit, not something this box silently absorbs. */
 .dw .qrow {
-  --tag-col: 74px;
-  display: grid; width: 100%; text-align: left;
+  --tag-col: 58px;
+  display: grid; width: 100%; text-align: left; height: 52px;
   grid-template-columns: minmax(0, 1fr) var(--tag-col) 12px;
-  column-gap: 9px; row-gap: 2px;
-  align-items: baseline; padding: 6px var(--ck-pad);
-  border: 0; background: none; color: inherit;
+  grid-template-rows: auto auto;
+  column-gap: 9px; row-gap: 4px;
+  align-items: baseline; align-content: center; padding: 8px var(--ck-pad);
+  border: 0; background: none; color: inherit; overflow: hidden;
 }
 .dw button.qrow { cursor: pointer; }
 .dw button.qrow:hover { background: color-mix(in srgb, var(--mk-surface-2) 60%, transparent); }
 .dw button.qrow:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: -2px; }
 
-.dw .qrow .lab { grid-column: 1; grid-row: 1; font-size: var(--ck-emph); font-weight: 600; color: var(--mk-text); }
+.dw .qrow .lab {
+  grid-column: 1; grid-row: 1; font-size: var(--ck-emph); font-weight: 600; color: var(--mk-text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 /* FLAVOR TAGS (term 36) — glyph + word at caps-label rank, on the app's IDENTITY
    hues, never warn or danger, which are reserved for clinical state and would
    make a flavor read as a verdict. `--mk-accent` was tried for Habit and
@@ -664,7 +721,11 @@ button.entry .pill[data-empty="true"] { visibility: hidden; }
 .dw .qrow .tag.habit { color: var(--mk-secondary); }
 .dw .qrow .go { grid-column: 3; grid-row: 1; color: var(--ck-accent); font-size: 12px; }
 .dw .qrow .den {
-  grid-column: 1 / -1; font-size: var(--ck-data); color: var(--mk-muted); line-height: 1.45;
+  grid-column: 1 / -1; grid-row: 2; font-size: var(--ck-data); color: var(--mk-muted); line-height: 1.45;
+  /* one line, a backstop not a design target (see the geometry note above) —
+     nothing in the current queue's family appearances (term 35) needs a
+     second line, and overflow ellipsizes rather than growing the row */
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .dw .qrow .den .sep { margin: 0 6px; opacity: .6; }
 /* Monospace is reserved for column-aligned digits (the evidence table, the lane
@@ -686,7 +747,9 @@ button.entry .pill[data-empty="true"] { visibility: hidden; }
   margin: 14px 0 0; padding: 0 var(--ck-pad);
   font-size: 11.5px; color: var(--mk-muted); line-height: 1.5;
 }
-.dw .qrow[data-tier="noted"] { padding-top: 4px; padding-bottom: 4px; }
+/* No padding override in the demoted tail (Connor, 2026-08-19) — every row
+   shares the identical fixed height and padding; the tail's own weight/size
+   step off `.lab` already reads as quieter without shrinking the box. */
 /* the tail recedes the flavor but never re-hues it: same identity, less ink, so
    the Setting/Habit read survives the demotion */
 .dw .qrow[data-tier="noted"] .tag.setting { color: color-mix(in srgb, var(--primary) 72%, transparent); }
@@ -706,7 +769,10 @@ button.entry .pill[data-empty="true"] { visibility: hidden; }
   font-weight: 500; font-size: var(--ck-body);
 }
 /* one reason-line treatment too, for the same reason */
-.dw .qrow .why { grid-column: 1 / -1; font-size: 11.5px; color: var(--mk-secondary); line-height: 1.45; }
+.dw .qrow .why {
+  grid-column: 1 / -1; grid-row: 2; font-size: 11.5px; color: var(--mk-secondary); line-height: 1.45;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 
 /* Term 41 — the calm line is the WHOLE pane when there is nothing to rank, so it
    sits in the middle of it rather than clinging to the top edge under a header

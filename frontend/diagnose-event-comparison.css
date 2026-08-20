@@ -54,6 +54,16 @@
   white-space: nowrap;
 }
 
+/* #62 — the window context is the head's SECOND row (see the markup note in
+   `createSurfaceMarkup`). It never competes with the title for width, so it
+   wraps instead of clipping and stays whole at every width the pane can take. */
+.ec-canvas .head-swap > .ec-window-context {
+  grid-row: 2;
+  min-width: 0;
+  white-space: normal;
+  line-height: 1.4;
+}
+
 .ec-canvas-readout .ec-rd-time {
   min-width: 5ch;
   color: var(--mk-text);

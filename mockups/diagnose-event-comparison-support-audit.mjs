@@ -62,10 +62,17 @@ async function facts(page) {
       !series.id.startsWith(`${selectedCohort}:`));
     const cohorts = exposed.cohorts || exposed.support?.cohorts || {};
     return {
-      serverOwned: exposed.projection?.schema === 'diagnose-event-comparison-v2'
+      serverOwned: exposed.projection?.schema === 'diagnose-event-comparison-v3'
         || exposed.support?.server_owned === true,
       cohortSupport: Object.fromEntries(Object.entries(cohorts)
         .map(([key, value]) => [key, value.support])),
+      /* #62 — a cohort too thin for an aggregate draws its own episodes, faint
+         and named as episodes. The count the server published and the count on
+         the canvas have to be the same number. */
+      cohortUsable: Object.fromEntries(Object.entries(cohorts)
+        .map(([key, value]) => [key, value.usable_count])),
+      episodeSeries: Object.fromEntries(Object.entries(cohorts).map(([key]) => [key,
+        ids.filter((id) => id.startsWith(`${key}:episode:`)).length])),
       pointStates: Object.fromEntries(Object.entries(exposed.aggregates)
         .map(([key, rows]) => [key, [...new Set(rows.map((row) => row.support))].sort()])),
       maxSpread: Object.fromEntries(Object.entries(exposed.aggregates)
@@ -105,6 +112,11 @@ try {
       `${check.name}: legend omits cohort support`);
       assert.ok(!got.ids.some((id) => /:(?:line|spread):withheld$/.test(id)),
         `${check.name}: Withheld aggregate series exists`);
+      // one occurrence never becomes a median; it is drawn as itself instead
+      for (const [cohort, support] of Object.entries(got.cohortSupport)) {
+        assert.equal(got.episodeSeries[cohort], support === 'withheld' ? got.cohortUsable[cohort] : 0,
+          `${check.name}: ${cohort} drew ${got.episodeSeries[cohort]} episodes for ${got.cohortUsable[cohort]} usable (${support})`);
+      }
 
       if (check.state === 'dense') {
         assert.equal(got.cohortSupport.fired, 'supported', `${check.name}: fired cohort`);
@@ -122,8 +134,12 @@ try {
       }
       if (check.state === 'zero-fired') {
         assert.equal(got.cohortSupport.fired, 'withheld', `${check.name}: zero cohort not Withheld`);
+        /* #62 — a Withheld cohort now says WHY it draws no aggregate: with no
+           usable episode there is nothing to draw at all, which is a different
+           fact from a thin cohort drawing its episodes one by one. */
+        assert.equal(got.cohortUsable.fired, 0, `${check.name}: zero cohort has usable episodes`);
         assert.ok(got.legend.some((item) => item.cohort === 'fired'
-          && /0 events · aggregate not shown/.test(item.text)),
+          && /0 events · no usable episodes to draw/.test(item.text)),
         `${check.name}: zero cohort lacks the withheld state`);
       }
       if (check.name === 'selected-supported-dark') {

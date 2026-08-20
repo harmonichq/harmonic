@@ -230,7 +230,7 @@ const winText = (w) => `${hhmm(w.range[0])}–${winEdge(w.range[1])}`;
    (`ciq_autotune/analyzers/scenario/levers.py`); MISSED_MEAL is the one lever
    outside it (an Exposure.HIGHS case file, which the lens has no view for).
    Keyed on the lever's TITLE, because that is the string a factor frame
-   already carries as `factor.cause` (`buildFactors`/`cause_title`) — not a
+   already carries as `factor.cause` (`factorForFinding`/`cause_title`) — not a
    second copy of the lever enum, just the same closed set's own titles read
    back. A factor frame whose cause is not in this map has no event alignment;
    ALIGN stays hidden and the canvas stays clock-only. */
@@ -414,10 +414,6 @@ function pressPreset(winKey) {
     b.setAttribute('aria-pressed', String(keys[i] === winKey));
   });
 }
-
-/** Minute-of-day of an occurrence, for window filtering. */
-const occMinute = (o) => Number(o.t.slice(11, 13)) * 60 + Number(o.t.slice(14, 16));
-const inWindow = (o, [a, b]) => { const m = occMinute(o); return m >= a && m < b; };
 
 /* ------------------------------ verdict lane -------------------------- */
 
@@ -897,11 +893,16 @@ const VERDICT_RESIDUE_KEY = { outranked: 'claimed by another factor', no_data: '
  * spanning multiple families publishes one total, but the band sits on a
  * single-family frame, so reading the total would count occurrences the
  * roster below it can never show. Falls back to the row total only when the
- * per-family breakdown is absent (an older payload shape).
+ * whole per-family breakdown is absent (an older payload shape) — NOT when it
+ * is present and simply carries no entry for this family, which is a lever that
+ * claimed no hit here. Then there is no published split for the frame's family
+ * and the band draws nothing, exactly as it does with no row at all.
  */
 function renderVerdictBand(host, row, family, activeVerdict, onPick) {
   if (!row || !row.verdict_counts) return;
-  const vc = row.verdict_counts_by_family?.[family] || row.verdict_counts;
+  const vc = row.verdict_counts_by_family
+    ? row.verdict_counts_by_family[family] : row.verdict_counts;
+  if (!vc) return;
   const groups = Object.entries(VERDICT_BAND_KEY).map(([key, lead]) => ({ key, lead, count: vc[key] || 0 }));
   const band = document.createElement('div');
   band.className = 'vband';
@@ -1078,53 +1079,90 @@ function boot(root, data, callbacks, signal) {
      range and says so on one line. */
   const RESCOPABLE = Object.values(exposures).every((b) => b.occurrences.length === b.n);
 
-  /**
-   * Factors, ranked, for a scope window (null = full range). Both the numerator
-   * and the denominator come from the same filtered set, so a row always reads
-   * in-window n of in-window m.
-   */
-  function buildFactors(win, cap = CFG.factorCap) {
-    const rows = [];
-    for (const [family, block] of Object.entries(exposures)) {
-      const inFamily = win ? block.occurrences.filter((o) => inWindow(o, win)) : block.occurrences;
-      const familyN = win ? inFamily.length : block.n;
-      let byCause;
-      if (win) {
-        byCause = {};
-        for (const o of inFamily) {
-          if (o.cause_title) byCause[o.cause_title] = (byCause[o.cause_title] || 0) + 1;
-        }
-      } else {
-        byCause = block.by_cause || {};   // full range: the capture's own tally
-      }
-      for (const [cause, count] of Object.entries(byCause)) {
-        if (count) rows.push({ family, cause, count, familyN });
-      }
-    }
-    rows.sort((a, b) => b.count - a.count);
-    const picked = rows.slice(0, cap);
-    // the family qualifier earns its place only where a title is ambiguous
-    const seen = {};
-    for (const r of picked) seen[r.cause] = (seen[r.cause] || 0) + 1;
-    for (const r of picked) r.needsQual = seen[r.cause] > 1;
-    return picked;
+  /* WINDOW MEMBERSHIP IS THE SERVER'S (ADR 62 part 6). A finding row publishes
+     `evidence[]` over every in-window occurrence of every family its lever
+     claims — the queue's own outcome-anchored answer, which is why an episode
+     whose meal sits outside the window but whose consequence landed inside it
+     belongs to it. Joining on those keys IS that answer. The browser used to
+     keep an occurrence whose OWN clock minute fell in the window, a third rule
+     disagreeing with the endpoint and the queue; nothing here re-derives a
+     clock rule any more. */
+  const evidenceKey = (e) => `${e.family}\u0000${e.ep_id}\u0000${e.t}`;
+  const occurrenceKey = (family, o) => `${family}\u0000${o.ep_id}\u0000${o.t}`;
+
+  /** One family's published occurrences for a finding row, in capture order.
+      `ep_id` alone is not unique (two same-kind anchors in one episode share
+      it), so the join takes the family, the episode and the instant together —
+      the same three keys `verdictForOcc` looks a verdict up by. */
+  function publishedFor(row, family) {
+    if (!row || !exposures[family]) return [];
+    const allowed = new Set((row.evidence || [])
+      .filter((e) => e.family === family).map(evidenceKey));
+    return exposures[family].occurrences
+      .filter((o) => allowed.has(occurrenceKey(family, o)));
   }
 
-  /** One factor's occurrences and denominator, under the current scope.
-      `occurrences` stays this factor's OWN attributed subset — the head
-      caption's "not attributed" remainder and the canvas plot both read off
-      it unchanged. `familyOccurrences` is new (finding 1 follow-up): the
-      frame family's FULL occurrence set, unfiltered by cause, which is what
-      the roster must draw from — every published verdict this lever's
-      classifier could have read, not only the ones it drove. */
+  /**
+   * The (family, cause) pair a finding's case file frames on.
+   *
+   * ADR 62 part 7: a finding can hold episodes of two kinds — the meal, and the
+   * high the meal ran into — and framing on whichever held MORE put a list of
+   * one kind beside a chart of the other, with evidence keys that cannot even
+   * be joined. So where the lens can re-project this finding
+   * (`alignCoordinatesFor`), the family its event view names wins, and the
+   * panel lists the episodes the chart draws. A finding with no event view
+   * keeps the older routing — the family holding the most occurrences of this
+   * title — now read over the population the server published rather than over
+   * a browser-side clock filter.
+   */
+  function factorForFinding(row) {
+    const pair = (family) => {
+      if (!exposures[family]) return null;
+      const published = publishedFor(row, family);
+      return {
+        family,
+        cause: row.title,
+        count: published.filter((o) => o.cause_title === row.title).length,
+        familyN: published.length,
+        /* The family qualifier earns its place where this finding's own
+           episodes span more than one family: the reader is being shown one of
+           them, and which one is the fact the head has to carry. */
+        needsQual: new Set((row.evidence || []).map((e) => e.family)).size > 1,
+      };
+    };
+    const aligned = alignCoordinatesFor(row.title);
+    /* AN ALIGNED FINDING FRAMES ON ITS EVENT VIEW'S FAMILY EVEN WHEN THAT
+       FAMILY IS EMPTY IN THIS WINDOW. A lever claims evidence only in the
+       families it hit, so a published row can carry none in the family its
+       event view names — `Correction on active insulin` over 07:00–10:15 hits
+       only a correction cluster, and names `lows`. Returning nothing there left
+       a row the server published that did not move when it was clicked: no case
+       file, no message, no crumb. Framing on the empty family instead opens the
+       case file reading `0 of 0`, which is what the chart beside it draws.
+       Falling back to the family with the most episodes is NOT the repair — that
+       is exactly the panel/chart disagreement this rule retires. */
+    if (aligned) return pair(aligned.view);
+    return Object.keys(exposures).map(pair).filter((f) => f && f.count)
+      .sort((a, b) => b.count - a.count)[0] || null;
+  }
+
+  /** One FRAME's occurrences and denominator — the frame, not its factor,
+      because the population is the finding row's and the row is carried on the
+      frame. `occurrences` stays this factor's OWN attributed subset: the head
+      caption's "not attributed" remainder and the canvas plot both read off it
+      unchanged. `familyOccurrences` is the frame family's FULL published set,
+      unfiltered by cause, which is what the roster must draw from — every
+      published verdict this lever's classifier could have read, not only the
+      ones it drove. A frame whose row is not in the current window has no
+      published population at all, and says so rather than guessing one. */
   function scopedFor(f) {
-    const win = scopeWindow();
-    const all = exposures[f.family].occurrences;
-    const inFamily = win ? all.filter((o) => inWindow(o, win)) : all;
+    const row = findingRowFor(f);
+    if (!row) return { occurrences: [], familyOccurrences: [], familyN: 0 };
+    const published = publishedFor(row, f.factor.family);
     return {
-      occurrences: inFamily.filter((o) => o.cause_title === f.cause).slice(0, CFG.occCap),
-      familyOccurrences: inFamily.slice(0, CFG.occCap),
-      familyN: win ? inFamily.length : f.familyN,
+      occurrences: published.filter((o) => o.cause_title === f.factor.cause).slice(0, CFG.occCap),
+      familyOccurrences: published.slice(0, CFG.occCap),
+      familyN: published.length,
     };
   }
   const occurrencesFor = (f) => scopedFor(f).occurrences;
@@ -1170,8 +1208,19 @@ function boot(root, data, callbacks, signal) {
     const w = scopeWindow();
     return w ? `${hhmm(w[0])}–${winEdge(w[1])}` : 'full range';
   };
-  // the opening list is built under the opening scope, like every repaint after it
-  let factors = buildFactors(scopeWindow());
+  /* The opening depth of a mock state, as FRAMES. A factor frame is (factor,
+     rowId) together — the row is where its population comes from — so the boot
+     presets open on a published finding exactly as a queue drill does, rather
+     than on a factor the browser assembled for itself. The cap is the state
+     table's own. */
+  const bootFrames = (findings?.rows || [])
+    .filter((row) => row.register === 'finding')
+    .map((row) => {
+      const factor = factorForFinding(row);
+      return factor ? { k: 'factor', factor, rowId: row.id } : null;
+    })
+    .filter(Boolean)
+    .slice(0, CFG.factorCap);
 
   /* ---- the findings window (terms 37 · 39 · 40) --------------------------
      The whole day is NOT a window: it is the unscoped global queue, which is
@@ -1185,6 +1234,12 @@ function boot(root, data, callbacks, signal) {
     return w;
   };
   const windowKey = (w) => (w ? `${w[0]}-${w[1]}` : 'global');
+  /* IS THE WINDOW'S PUBLISHED POPULATION IN HAND? A window change ASKS the
+     server for its rows, so between the press and the response every count on
+     screen is the PREVIOUS window's while `scopeLabel()` already prints the new
+     one. That pairing is a caption asserting a population nothing drew, so the
+     counts are withheld until the answer lands rather than shown stale. */
+  const settled = () => pendingKey === null;
   let loadedKey = windowKey(findings?.window?.scoped
     ? [findings.window.start_min, findings.window.end_min] : null);
   let pendingKey = null;
@@ -1210,15 +1265,9 @@ function boot(root, data, callbacks, signal) {
       chevron and simply does not move (the app always carries all three). */
   function drillFinding(row) {
     if (row.register === 'finding') {
-      /* Level 2 is an evidence TABLE over one family's occurrences, keyed on the
-         occurrence's own `cause_title` — so the drill goes to the (family, cause)
-         pair the exposures feed actually holds, read through `buildFactors`, the one
-         place that already answers that question. The row's `appearances` are
-         counted per LEVER, and a lever and a title are not the same key: routing on
-         the largest appearance sent a row to a family holding none of its
-         occurrences and opened an empty table. Uncapped, because the queue's order
-         is the server's and has nothing to do with this list's display cap. */
-      const factor = buildFactors(scopeWindow(), Infinity).find((f) => f.cause === row.title);
+      /* A re-projectable finding frames on its event view's family, so the panel
+         and the event canvas name the same published episodes. */
+      const factor = factorForFinding(row);
       // rowId, not the row object itself: findings reload per window, so the
       // verdict band re-resolves the live row on every paint (see findingRowFor)
       if (factor) push({ k: 'factor', factor, rowId: row.id });
@@ -1284,8 +1333,10 @@ function boot(root, data, callbacks, signal) {
       reference would go stale). Keyed on the row's own id, carried onto the
       frame by `drillFinding`, never guessed from a title. `verdict_counts`
       and `evidence` are READ off it (ADR 31 part 6): nothing here counts,
-      classifies or re-derives membership. A frame opened without a queue
-      drill (the boot presets) carries no rowId, and draws no band. */
+      classifies or re-derives membership. Every factor frame carries a rowId —
+      the boot presets open on a published finding too — so a null here means
+      the row LEFT the window under the reader's feet, never that the frame
+      never had one (ADR 62 part 9). */
   function findingRowFor(f) {
     if (!f.rowId) return null;
     return (findings?.rows || []).find((r) => r.id === f.rowId) || null;
@@ -1315,24 +1366,24 @@ function boot(root, data, callbacks, signal) {
       structurally empty. Exactly one published verdict shows at a time: the
       drilled segment, or `fired` at rest (the mock's roster form) — never
       `outranked`/`no_data`, which have no band segment and print on the
-      band's own footer line instead. A frame opened without a queue drill
-      carries no row (and draws no band); it falls back to the legacy
-      attributed-only pool so it still shows something sensible. */
+      band's own footer line instead. A frame whose row has left the current
+      window has no published roster at all, and the panel says so instead of
+      falling back to a browser-side filter (ADR 62 part 9). */
   function rosterFor(f) {
-    const scoped = scopedFor(f.factor);
     const row = findingRowFor(f);
-    if (!row) return scoped.occurrences;
+    if (!row) return [];
+    const scoped = scopedFor(f);
     const wanted = f.bandVerdict || 'fired';
     return scoped.familyOccurrences.filter((o) => verdictForOcc(row, f.factor, o) === wanted);
   }
 
-  // opening depth per mock state
-  const firstFactor = factors[0];
-  if (CFG.level === 2 || CFG.level === 3) stack.push({ k: 'factor', factor: firstFactor });
+  // opening depth per mock state — a payload publishing no re-projectable
+  // finding simply opens at the queue rather than on an empty case file
+  if ((CFG.level === 2 || CFG.level === 3) && bootFrames[0]) stack.push({ ...bootFrames[0] });
   if (CFG.level === 3) {
     // select-in-place (P35 retired): the occurrence lives on the factor frame,
     // never on a level of its own
-    const pool = occurrencesFor(firstFactor);
+    const pool = occurrencesFor(top());
     const occ = pool.find((o) => day.days[o.date] && tierOf(o))
       || pool.find((o) => tierOf(o)) || pool[0];
     if (occ) stack[stack.length - 1].selectedOcc = occ;
@@ -1376,8 +1427,8 @@ function boot(root, data, callbacks, signal) {
          same reason — pressing one at any level is a scope CHANGE by the user,
          never a release back to derived scope. */
       pressPreset(presetKey);
-    } else if (f.k === 'factor') {
-      const occ = occurrencesFor(f.factor);
+    } else if (f.k === 'factor' && settled()) {
+      const occ = occurrencesFor(f);
       const clock = occ.length ? clockBuckets(occ) : null;
       if (clock) {
         win = { label: 'Factor peak', range: [clock.peak.startMin, clock.peak.endMin] };
@@ -1416,7 +1467,7 @@ function boot(root, data, callbacks, signal) {
        drilled inside an explicit workspace still shows its own dots, on the
        user's window rather than on a peak the canvas no longer jumps to. */
     let occurrences = [];
-    if (f.k === 'factor') occurrences = occurrencesFor(f.factor);
+    if (f.k === 'factor' && settled()) occurrences = occurrencesFor(f);
 
     /* Selection puts that day's REAL trace over the pooled envelope when the
        CGM capture holds the date. It is never synthesised: an uncaptured date
@@ -1441,8 +1492,13 @@ function boot(root, data, callbacks, signal) {
     /* The count is the WINDOW's, and the days are the CGM capture's own — not a
        coverage claim for the app. The basal run is a different, longer run and
        names itself separately in the slot panel and the status bar. */
+    /* A finding the current window no longer holds has no population to count,
+       so the canvas states that rather than printing a reading count under a
+       panel that is listing nothing (ADR 62 part 9). */
     el('canvas-scope').textContent =
-      `window ${stats.readings.toLocaleString()} of ${envelope.readings.toLocaleString()} readings`;
+      f.k === 'factor' && settled() && !findingRowFor(f)
+        ? 'No findings in the selected window'
+        : `window ${stats.readings.toLocaleString()} of ${envelope.readings.toLocaleString()} readings`;
     el('canvas-pool').textContent =
       `pooled from ${envelope.days} captured CGM days · ±${envelope.pool} min`;
   }
@@ -1643,7 +1699,10 @@ function boot(root, data, callbacks, signal) {
     el('crumb-meta').textContent = f.k === 'factors'
       ? queueMeta(findings)
       : f.k === 'factor'
-        ? (() => { const sc = scopedFor(f.factor); return `${sc.occurrences.length} of ${sc.familyN} · ${scopeLabel()}`; })()
+        ? (settled()
+          ? (() => { const sc = scopedFor(f); return `${sc.occurrences.length} of ${sc.familyN} · ${scopeLabel()}`; })()
+          // counting the new window: the old numbers are not this window's
+          : scopeLabel())
         /* #735 — this used to read `N staged`, which put the deleted header's exact
            words back on screen beside the dock's `Plan · staged` (term 47: two
            claims about one object). Every sibling level's meta names its OWN
@@ -1665,12 +1724,13 @@ function boot(root, data, callbacks, signal) {
     void host.offsetWidth;
     host.style.animation = '';
     const f = top();
+    // one place, every level: the pane says whether it is waiting on the server
+    host.dataset.loading = String(!settled());
     if (f.k === 'factors') {
       /* TERM 43 — no `Inferred patterns, not settled causes` banner here. A banner
          over a ranked list cannot say WHICH rows it hedges, and rank interleaves
          habits and settings, so no position scopes it honestly. The hedge belongs to
          the habit DETAIL panel, where it has exactly one subject. */
-      host.dataset.loading = String(pendingKey !== null);
       renderFindingsQueue(host, findings, drillFinding);
       return;
     }
@@ -1702,7 +1762,22 @@ function boot(root, data, callbacks, signal) {
       return;
     }
     // 'factor' is the only remaining frame kind: the finding case file.
-    const { occurrences, familyN } = scopedFor(f.factor);
+    /* Counted for the window that is ARRIVING, never the one that left. This
+       branch comes first so a stale row cannot rule the new window empty. */
+    if (!settled()) {
+      host.insertAdjacentHTML('beforeend',
+        `<div class="empty">Counting ${scopeLabel()}…</div>`);
+      return;
+    }
+    /* The reader STAYS on the finding when the window stops holding its row —
+       the alternative was a browser-side fallback filter, which is the thing
+       ADR 62 part 6 retires. Both panes say the same words. */
+    if (!findingRowFor(f)) {
+      host.insertAdjacentHTML('beforeend',
+        '<div class="empty">No findings in the selected window</div>');
+      return;
+    }
+    const { occurrences, familyN } = scopedFor(f);
     const clock = occurrences.length ? clockBuckets(occurrences) : null;
     renderFactorHead(host, f.factor, occurrences, familyN, scopeLabel(), clock, lane, pickCell,
       icBlocks, pickBlock);
@@ -1969,10 +2044,16 @@ function boot(root, data, callbacks, signal) {
   }
 
   function paint() {
-    // levels 2 and 3 still re-scope with the window, denominators included; level 1
-    // asks the SERVER for its rows instead (term 40)
-    factors = buildFactors(scopeWindow());
     ensureFindings();
+    /* A finding whose row left the window publishes no population, so there is
+       nothing for the lens to re-project, and neither does a frame whose event
+       view's family holds none of this window's evidence: the event canvas
+       would draw the window's own population beside a panel listing none of it,
+       which is the two panes disagreeing without saying so. The frame keeps the
+       reader; the canvas goes back to the clock and states what the panel does. */
+    const open = top();
+    if (open.k === 'factor' && open.align === 'event'
+      && settled() && !scopedFor(open).familyN) open.align = 'clock';
     paintCrumb();
     paintLevel();
     renderLane(lane, top().k === 'slot' ? top().cell : null, staged, pickCell);

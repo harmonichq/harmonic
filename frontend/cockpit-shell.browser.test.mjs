@@ -235,7 +235,10 @@ async function routeApp(page, options = {}) {
           view: ['meals', 'lows'].includes(requestUrl.searchParams.get('view'))
             ? requestUrl.searchParams.get('view') : 'meals',
           factor: requestUrl.searchParams.get('factor') || undefined,
-          block: requestUrl.searchParams.get('block') || 'all',
+          window: requestUrl.searchParams.get('start_min') === null ? null : {
+            start_min: Number(requestUrl.searchParams.get('start_min')),
+            end_min: Number(requestUrl.searchParams.get('end_min')),
+          },
           another: requestUrl.searchParams.get('another') === '1',
           occurrenceId: requestUrl.searchParams.get('occ') || undefined,
         }));
@@ -833,7 +836,10 @@ test('event comparisons: View, Factor, Anchor time, Other factors, the occurrenc
     return projectSyntheticCapture(capture, {
       view,
       factor: url.searchParams.get('factor') || undefined,
-      block: url.searchParams.get('block') || 'all',
+      window: url.searchParams.get('start_min') === null ? null : {
+        start_min: Number(url.searchParams.get('start_min')),
+        end_min: Number(url.searchParams.get('end_min')),
+      },
       another: url.searchParams.get('another') === '1',
       occurrenceId: url.searchParams.get('occ') || undefined,
     });

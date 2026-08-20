@@ -803,28 +803,25 @@ function classifierName(id) {
 }
 
 /**
- * Evidence as a table on a shared numeric spine. The causal sentence prints ONCE
- * as the group header; rows carry date/time, the glucose figures, the swing and
- * the evidence tier. Occurrences the pattern did not fire on keep their own
- * sub-group — that counter-example is load-bearing.
+ * Evidence as a table on a shared numeric spine (finding 1). The roster is
+ * exactly ONE verdict's occurrences — the drilled band segment, or `fired`
+ * (Meets criteria) at rest, per the mock's roster form — so `verdictLabel`
+ * names that ONE published category once, as the group header, instead of
+ * the row's own evidence-tier quality. Rows carry date/time, the glucose
+ * figures, the swing and the (separate) evidence tier. Occurrences the
+ * pattern did not fire on keep their own sub-group — that counter-example is
+ * load-bearing.
  */
-function renderEvidence(host, factor, occurrences, onOpen, onMore, shownCount, selected) {
+function renderEvidence(host, factor, occurrences, verdictLabel, onOpen, onMore, shownCount,
+  selected) {
   if (!occurrences.length) {
     // appended, never assigned: the factor head is already in this level
     host.insertAdjacentHTML('beforeend',
-      '<div class="empty">No attributed occurrences in this range.</div>');
+      '<div class="empty">No occurrences in this verdict.</div>');
     return;
   }
   const fits = occurrences.filter((o) => tierOf(o));
   const counter = occurrences.filter((o) => !tierOf(o));
-  // the hedged sentence, once, from the fixture's own text
-  /* The group header names the GROUP. It used to be built by regex-trimming one
-     occurrence's sentence, which produced a mid-sentence fragment with no
-     opening clause and no terminal punctuation — a sentence about ONE episode
-     masquerading as a label for all of them. It is now the factor's own causal
-     phrase, which is what the group actually is, and degrades to the bare hedge
-     if a factor somehow carries no title. */
-  const tier = fits.length ? tierOf(fits[0]) : null;
   const groupPhrase = (factor.cause || '').trim();
 
   /* Aligned numeric columns: entry → worst → Δ where the fixture holds BOTH
@@ -859,7 +856,7 @@ function renderEvidence(host, factor, occurrences, onOpen, onMore, shownCount, s
     // are showing — it is a property of the group, not of a row, so expanding
     // must never restate it.
     host.insertAdjacentHTML('beforeend',
-      `<div class="ev-group">${groupPhrase ? `<b>${groupPhrase}</b> — ` : ''}${tier}, not confirmed`
+      `<div class="ev-group">${groupPhrase ? `<b>${groupPhrase}</b> — ` : ''}${verdictLabel}`
       + ` <span class="n">· ${fits.length} episode${fits.length === 1 ? '' : 's'}</span></div>`);
     for (const { node } of rows(fits, shownCount)) host.append(node);
     // the cap is a real toggle: five rows, then "N more", then back to five
@@ -1115,13 +1112,20 @@ function boot(root, data, callbacks, signal) {
     return picked;
   }
 
-  /** One factor's occurrences and denominator, under the current scope. */
+  /** One factor's occurrences and denominator, under the current scope.
+      `occurrences` stays this factor's OWN attributed subset — the head
+      caption's "not attributed" remainder and the canvas plot both read off
+      it unchanged. `familyOccurrences` is new (finding 1 follow-up): the
+      frame family's FULL occurrence set, unfiltered by cause, which is what
+      the roster must draw from — every published verdict this lever's
+      classifier could have read, not only the ones it drove. */
   function scopedFor(f) {
     const win = scopeWindow();
     const all = exposures[f.family].occurrences;
     const inFamily = win ? all.filter((o) => inWindow(o, win)) : all;
     return {
       occurrences: inFamily.filter((o) => o.cause_title === f.cause).slice(0, CFG.occCap),
+      familyOccurrences: inFamily.slice(0, CFG.occCap),
       familyN: win ? inFamily.length : f.familyN,
     };
   }
@@ -1305,12 +1309,23 @@ function boot(root, data, callbacks, signal) {
   }
 
   /** The roster the band's current drill scopes to (ADR 31 part 5 — the band
-      drills the ROSTER only; the canvas keeps plotting every occurrence). */
+      drills the ROSTER only; the canvas keeps plotting every occurrence).
+      Draws from the frame family's FULL occurrence set (finding 1 follow-up)
+      so a drill into Borderline/Does not meet has real members to find —
+      the old cause-filtered pool held only this lever's OWN attributed hits,
+      which read `fired` by construction, so every other segment was
+      structurally empty. Exactly one published verdict shows at a time: the
+      drilled segment, or `fired` at rest (the mock's roster form) — never
+      `outranked`/`no_data`, which have no band segment and print on the
+      band's own footer line instead. A frame opened without a queue drill
+      carries no row (and draws no band); it falls back to the legacy
+      attributed-only pool so it still shows something sensible. */
   function rosterFor(f) {
-    const { occurrences } = scopedFor(f.factor);
-    if (!f.bandVerdict) return occurrences;
+    const scoped = scopedFor(f.factor);
     const row = findingRowFor(f);
-    return occurrences.filter((o) => verdictForOcc(row, f.factor, o) === f.bandVerdict);
+    if (!row) return scoped.occurrences;
+    const wanted = f.bandVerdict || 'fired';
+    return scoped.familyOccurrences.filter((o) => verdictForOcc(row, f.factor, o) === wanted);
   }
 
   // opening depth per mock state
@@ -1703,11 +1718,16 @@ function boot(root, data, callbacks, signal) {
     });
 
     const scoped = rosterFor(f);
+    // the roster's own verdict — the drilled segment, or `fired` at rest — is
+    // ONE published category, named once as the group header (never derived,
+    // just looked up in the same band vocabulary renderVerdictBand uses).
+    const rosterVerdict = f.bandVerdict || 'fired';
+    const verdictLabel = VERDICT_BAND_KEY[rosterVerdict] || rosterVerdict;
     // the numeric columns are captioned once, at the level — not per group
     host.insertAdjacentHTML('beforeend',
       `<div class="lvl-cap">Occurrences
         <span class="meta">entry → worst · Δ &nbsp;·&nbsp; ${scoped.length} of ${familyN} in ${scopeLabel()}</span></div>`);
-    renderEvidence(host, f.factor, scoped, selectOcc,
+    renderEvidence(host, f.factor, scoped, verdictLabel, selectOcc,
       () => { shownRows = shownRows > EVIDENCE_CAP ? EVIDENCE_CAP : Infinity; paint(); },
       shownRows, f.selectedOcc);
 

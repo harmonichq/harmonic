@@ -295,15 +295,17 @@ const NO_DATA_SILENCE_REASON = 'insufficient_data';
     never the anchor's overall `state`, which collapses every classifier that
     looked at the anchor and says nothing about THIS lever. A lever whose own
     classifier matched is `fired` whether or not it also drove the episode;
-    `outranked` is reserved for a calm lever when another lever drove. */
+    `outranked` is reserved for a calm lever when another lever drove. NO
+    verdict entry at all for this lever (never evaluated) is not the same
+    fact as evaluated-and-calm, so it reads `no_data` rather than `clean` —
+    unless another lever demonstrably drove, which still reads `outranked`. */
 function occurrenceVerdict(occurrence, lever) {
   const own = (occurrence.verdicts || []).find((v) => v.classifier === lever);
-  if (own) {
-    if (own.matched) return 'fired';
-    const reason = own.silence_reason;
-    if (reason === NO_DATA_SILENCE_REASON) return 'no_data';
-    if (!CALM_SILENCE_REASONS.has(reason)) return 'near_miss';
-  }
+  if (!own) return occurrence.cause_lever ? 'outranked' : 'no_data';
+  if (own.matched) return 'fired';
+  const reason = own.silence_reason;
+  if (reason === NO_DATA_SILENCE_REASON) return 'no_data';
+  if (!CALM_SILENCE_REASONS.has(reason)) return 'near_miss';
   return occurrence.cause_lever ? 'outranked' : 'clean';
 }
 

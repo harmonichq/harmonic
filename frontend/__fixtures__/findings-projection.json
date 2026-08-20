@@ -7206,9 +7206,9 @@
      ]
     },
     "highs": {
-     "attributed": 2,
+     "attributed": 3,
      "by_cause": {
-      "Carb undercount": 1,
+      "Carb undercount": 2,
       "Over-treated low": 1
      },
      "clean": 1,
@@ -7216,7 +7216,7 @@
       "over_treated_low",
       "carb_undercount"
      ],
-     "n": 3,
+     "n": 4,
      "occurrences": [
       {
        "attributed": true,
@@ -7278,6 +7278,36 @@
        "text": "",
        "verdicts": [],
        "worst_bg": 201.0
+      },
+      {
+       "attributed": true,
+       "bg": 210.0,
+       "cause_lever": "carb_undercount",
+       "cause_title": "Carb undercount",
+       "date": "2026-08-17",
+       "ep_id": "ep11",
+       "kind": "high",
+       "label": "High",
+       "state": "fired",
+       "t": "2026-08-17 10:15:00",
+       "text": "A late meal bolus at 10:15 still ran high.",
+       "verdicts": [
+        {
+         "classifier": "carb_undercount",
+         "detail": "A late meal bolus at 10:15 still ran high.",
+         "evidence_tier": "observed",
+         "matched": true,
+         "silence_reason": null
+        },
+        {
+         "classifier": "over_treated_low",
+         "detail": "The same anchor also cleared the over-treatment threshold.",
+         "evidence_tier": "observed",
+         "matched": true,
+         "silence_reason": null
+        }
+       ],
+       "worst_bg": 245.0
       }
      ]
     },
@@ -7464,7 +7494,15 @@
        "state": "clean",
        "t": "2026-08-17 12:40:00",
        "text": "",
-       "verdicts": [],
+       "verdicts": [
+        {
+         "classifier": "carb_undercount",
+         "detail": "The dose landed within the digestion window.",
+         "evidence_tier": "inferred",
+         "matched": false,
+         "silence_reason": "under_threshold"
+        }
+       ],
        "worst_bg": 155.0
       },
       {
@@ -7479,7 +7517,15 @@
        "state": "clean",
        "t": "2026-08-17 18:50:00",
        "text": "",
-       "verdicts": [],
+       "verdicts": [
+        {
+         "classifier": "carb_undercount",
+         "detail": "Bolus covered the meal; glucose stayed in range.",
+         "evidence_tier": "inferred",
+         "matched": false,
+         "silence_reason": "no_trigger"
+        }
+       ],
        "worst_bg": 149.0
       }
      ]
@@ -8139,7 +8185,7 @@
      "appearances": [
       {
        "family": "highs",
-       "m": 3,
+       "m": 4,
        "n": 1,
        "noun": "highs"
       },
@@ -8177,7 +8223,15 @@
        "family": "highs",
        "kind": "high",
        "t": "2026-08-17 21:40:00",
-       "verdict": "clean"
+       "verdict": "no_data"
+      },
+      {
+       "date": "2026-08-17",
+       "ep_id": "ep11",
+       "family": "highs",
+       "kind": "high",
+       "t": "2026-08-17 10:15:00",
+       "verdict": "fired"
       },
       {
        "date": "2026-08-17",
@@ -8201,7 +8255,7 @@
        "family": "lows",
        "kind": "low",
        "t": "2026-08-17 02:40:00",
-       "verdict": "clean"
+       "verdict": "no_data"
       },
       {
        "date": "2026-08-17",
@@ -8209,7 +8263,7 @@
        "family": "lows",
        "kind": "low",
        "t": "2026-08-17 12:10:00",
-       "verdict": "clean"
+       "verdict": "no_data"
       },
       {
        "date": "2026-08-17",
@@ -8244,25 +8298,25 @@
      "tier": "worth_a_look",
      "title": "Over-treated low",
      "verdict_counts": {
-      "clean": 3,
-      "fired": 2,
+      "clean": 0,
+      "fired": 3,
       "near_miss": 1,
-      "no_data": 1,
+      "no_data": 4,
       "outranked": 2
      },
      "verdict_counts_by_family": {
       "highs": {
-       "clean": 1,
-       "fired": 1,
+       "clean": 0,
+       "fired": 2,
        "near_miss": 0,
-       "no_data": 0,
+       "no_data": 1,
        "outranked": 1
       },
       "lows": {
-       "clean": 2,
+       "clean": 0,
        "fired": 1,
        "near_miss": 1,
-       "no_data": 1,
+       "no_data": 3,
        "outranked": 1
       }
      }
@@ -8272,8 +8326,8 @@
      "appearances": [
       {
        "family": "highs",
-       "m": 3,
-       "n": 1,
+       "m": 4,
+       "n": 2,
        "noun": "highs"
       },
       {
@@ -8285,7 +8339,7 @@
      ],
      "current": null,
      "direction": null,
-     "episodes": 1,
+     "episodes": 2,
      "estimate": null,
      "evidence": [
       {
@@ -8310,7 +8364,15 @@
        "family": "highs",
        "kind": "high",
        "t": "2026-08-17 21:40:00",
-       "verdict": "clean"
+       "verdict": "no_data"
+      },
+      {
+       "date": "2026-08-17",
+       "ep_id": "ep11",
+       "family": "highs",
+       "kind": "high",
+       "t": "2026-08-17 10:15:00",
+       "verdict": "fired"
       },
       {
        "date": "2026-08-17",
@@ -8326,7 +8388,7 @@
        "family": "meals",
        "kind": "meal",
        "t": "2026-08-17 12:40:00",
-       "verdict": "clean"
+       "verdict": "near_miss"
       },
       {
        "date": "2026-08-17",
@@ -8353,24 +8415,24 @@
      "tier": "worth_a_look",
      "title": "Carb undercount",
      "verdict_counts": {
-      "clean": 3,
-      "fired": 2,
-      "near_miss": 0,
-      "no_data": 0,
+      "clean": 1,
+      "fired": 3,
+      "near_miss": 1,
+      "no_data": 1,
       "outranked": 1
      },
      "verdict_counts_by_family": {
       "highs": {
-       "clean": 1,
-       "fired": 1,
+       "clean": 0,
+       "fired": 2,
        "near_miss": 0,
-       "no_data": 0,
+       "no_data": 1,
        "outranked": 1
       },
       "meals": {
-       "clean": 2,
+       "clean": 1,
        "fired": 1,
-       "near_miss": 0,
+       "near_miss": 1,
        "no_data": 0,
        "outranked": 0
       }
@@ -8427,7 +8489,7 @@
        "family": "lows",
        "kind": "low",
        "t": "2026-08-17 02:40:00",
-       "verdict": "clean"
+       "verdict": "no_data"
       },
       {
        "date": "2026-08-17",
@@ -8435,7 +8497,7 @@
        "family": "lows",
        "kind": "low",
        "t": "2026-08-17 12:10:00",
-       "verdict": "clean"
+       "verdict": "no_data"
       },
       {
        "date": "2026-08-17",
@@ -8443,7 +8505,7 @@
        "family": "lows",
        "kind": "low",
        "t": "2026-08-17 05:15:00",
-       "verdict": "clean"
+       "verdict": "no_data"
       },
       {
        "date": "2026-08-17",
@@ -8451,7 +8513,7 @@
        "family": "lows",
        "kind": "low",
        "t": "2026-08-17 08:45:00",
-       "verdict": "clean"
+       "verdict": "no_data"
       }
      ],
      "id": "finding:correction_stacking",
@@ -8470,10 +8532,10 @@
      "tier": "noted",
      "title": "Correction stacking",
      "verdict_counts": {
-      "clean": 4,
+      "clean": 0,
       "fired": 2,
       "near_miss": 0,
-      "no_data": 0,
+      "no_data": 4,
       "outranked": 1
      },
      "verdict_counts_by_family": {
@@ -8485,10 +8547,10 @@
        "outranked": 0
       },
       "lows": {
-       "clean": 4,
+       "clean": 0,
        "fired": 1,
        "near_miss": 0,
-       "no_data": 0,
+       "no_data": 4,
        "outranked": 1
       }
      }

@@ -484,23 +484,31 @@ def _occurrence_verdict(occurrence: dict, lever: str) -> str:
       whether or not it drove the episode).
     * this lever's classifier ran and came back a loud near-miss → ``near_miss``.
     * this lever's classifier ran but the window was too sparse → ``no_data``.
-    * this lever's classifier is calm (didn't run on this anchor kind, or ran
-      quiet) and no lever drove the episode → ``clean``.
-    * this lever's classifier is calm and another lever drove the episode →
-      ``outranked``.
+    * this lever's classifier ran, came back calm, and no lever drove the
+      episode → ``clean``.
+    * this lever's classifier ran, came back calm, and another lever drove
+      the episode → ``outranked``.
+    * this lever's classifier produced NO verdict entry at all for this
+      occurrence (``verdicts`` carries nothing under ``lever``) — it was
+      never evaluated, which is not the same fact as evaluated-and-calm.
+      ``clean`` would assert a criterion failed that nothing ever judged, so
+      this reads ``no_data`` instead, unless another lever demonstrably drove
+      the episode (``outranked`` — something is known to have happened here,
+      just not attributed to this lever).
     """
     own = next(
         (v for v in occurrence.get("verdicts") or [] if v.get("classifier") == lever),
         None,
     )
-    if own is not None:
-        if own.get("matched"):
-            return "fired"
-        reason = own.get("silence_reason")
-        if reason == _NO_DATA_SILENCE_REASON:
-            return "no_data"
-        if reason not in _CALM_SILENCE_REASONS:
-            return "near_miss"
+    if own is None:
+        return "outranked" if occurrence.get("cause_lever") else "no_data"
+    if own.get("matched"):
+        return "fired"
+    reason = own.get("silence_reason")
+    if reason == _NO_DATA_SILENCE_REASON:
+        return "no_data"
+    if reason not in _CALM_SILENCE_REASONS:
+        return "near_miss"
     return "outranked" if occurrence.get("cause_lever") else "clean"
 
 

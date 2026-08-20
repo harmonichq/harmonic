@@ -52,12 +52,11 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional, Sequence, Tuple
 
 from .analyzers.ic import BLOCK_WINDOW_DAYS
-from .analyzers.scenario.levers import outcome_kind
 from .safety import Status
+from .window_membership import DAY_MINUTES, WindowQuery, outcome_minute
 
 SCHEMA = "diagnose-findings-v1"
 
-DAY_MINUTES = 1440
 _SLOT_MINUTES = 30
 
 # The basal verdicts that WITHHOLD a move: the analyzer had something to say and
@@ -107,76 +106,9 @@ def _span_label(start_min: int, end_min: int) -> str:
     return f"{_hhmm(start_min)} to {_hhmm(end_min)}"
 
 
-def _segments(start_min: int, end_min: int) -> List[Tuple[int, int]]:
-    """Linear pieces of a clock interval on the circular day.
-
-    ``end_min <= start_min`` wraps past midnight (the I:C block convention), so it
-    yields two pieces; everything else is one.
-    """
-    if end_min > start_min:
-        return [(start_min, end_min)]
-    return [(start_min, DAY_MINUTES), (0, end_min)]
-
-
 def _overlaps(pieces: Sequence[Tuple[int, int]],
               window: Sequence[Tuple[int, int]]) -> bool:
     return any(max(a, c) < min(b, d) for a, b in pieces for c, d in window)
-
-
-def _contains(minute: int, window: Sequence[Tuple[int, int]]) -> bool:
-    return any(a <= minute < b for a, b in window)
-
-
-def _minute_of(stamp: str) -> int:
-    """Minutes past midnight of an exposures occurrence timestamp (``... HH:MM:SS``)."""
-    return int(stamp[11:13]) * 60 + int(stamp[14:16])
-
-
-@dataclass(frozen=True)
-class WindowQuery:
-    """The clock window a projection answers for — the whole day, or one interval.
-
-    ``start_min``/``end_min`` are minutes past midnight on the circular day, half-open
-    ``[start, end)``; ``end_min <= start_min`` wraps past midnight (an Overnight preset
-    is 1320 -> 360). The whole day is *not* a window: it is the unscoped global queue,
-    which is asserting-only (term 38).
-    """
-
-    start_min: Optional[int] = None
-    end_min: Optional[int] = None
-
-    @classmethod
-    def whole_day(cls) -> "WindowQuery":
-        return cls()
-
-    @classmethod
-    def clock(cls, start_min: int, end_min: int) -> "WindowQuery":
-        for name, value in (("start_min", start_min), ("end_min", end_min)):
-            if not isinstance(value, int) or isinstance(value, bool):
-                raise ValueError(f"{name} must be minutes past midnight")
-            if not 0 <= value <= DAY_MINUTES:
-                raise ValueError(f"{name} must be within 0..{DAY_MINUTES}")
-        if start_min % DAY_MINUTES == end_min % DAY_MINUTES:
-            raise ValueError("a window must span some part of the day")
-        return cls(start_min, end_min)
-
-    @property
-    def scoped(self) -> bool:
-        return self.start_min is not None
-
-    def _window(self) -> List[Tuple[int, int]]:
-        if not self.scoped:
-            return [(0, DAY_MINUTES)]
-        return _segments(self.start_min % DAY_MINUTES, self.end_min)
-
-    def to_dict(self) -> dict:
-        return {
-            "scoped": self.scoped,
-            "start_min": self.start_min,
-            "end_min": self.end_min,
-            "label": (None if not self.scoped
-                      else f"{_hhmm(self.start_min % DAY_MINUTES)}–{_hhmm(self.end_min)}"),
-        }
 
 
 @dataclass(frozen=True)
@@ -193,9 +125,8 @@ class FindingsProjection:
     _scenarios: dict
 
     def project(self, query: WindowQuery) -> dict:
-        window = query._window()
-        rows = self._parameter_rows(window, scoped=query.scoped)
-        rows += self._finding_rows(window)
+        rows = self._parameter_rows(query, scoped=query.scoped)
+        rows += self._finding_rows(query)
         rows.sort(key=_sort_key)
         _assign_tiers(rows)
         counts = {name: 0 for name in ("assert", "held", "blind", "finding")}
@@ -216,8 +147,8 @@ class FindingsProjection:
 
     # --- parameters: asserting / held / blind ---------------------------------
 
-    def _parameter_rows(self, window, *, scoped: bool) -> List[dict]:
-        rows = self._basal_rows(window) + self._ic_rows(window) + self._isf_rows()
+    def _parameter_rows(self, query: WindowQuery, *, scoped: bool) -> List[dict]:
+        rows = self._basal_rows(query) + self._ic_rows(query) + self._isf_rows()
         if not scoped:
             # The global queue is asserting-only: a quiet parameter is never listed
             # and never named (term 38).
@@ -230,7 +161,7 @@ class FindingsProjection:
                 return lever.get("priority")
         return None
 
-    def _basal_rows(self, window) -> List[dict]:
+    def _basal_rows(self, query: WindowQuery) -> List[dict]:
         """Merge the 48 slots into spans, then keep the spans overlapping the window.
 
         Spans are merged over the WHOLE day before filtering, never clipped to the
@@ -260,7 +191,7 @@ class FindingsProjection:
                 continue
             start_min = span[0]["slot"] * _SLOT_MINUTES
             end_min = (span[-1]["slot"] + 1) * _SLOT_MINUTES
-            if not _overlaps([(start_min, end_min)], window):
+            if not query.overlaps(start_min, end_min):
                 continue
             register, direction = key
             head = span[0]
@@ -299,11 +230,11 @@ class FindingsProjection:
             ))
         return rows
 
-    def _ic_rows(self, window) -> List[dict]:
+    def _ic_rows(self, query: WindowQuery) -> List[dict]:
         rows = []
         for block in self._analysis.get("ic_blocks") or []:
             start_min, end_min = block["start_min"], block["end_min"]
-            if not _overlaps(_segments(start_min, end_min), window):
+            if not query.overlaps(start_min, end_min):
                 continue
             asserts = bool(block.get("asserts_move"))
             estimate = block.get("estimate") or {}
@@ -384,10 +315,8 @@ class FindingsProjection:
 
     # --- findings: outcome-anchored membership + window-local denominators -----
 
-    def _finding_rows(self, window) -> List[dict]:
+    def _finding_rows(self, query: WindowQuery) -> List[dict]:
         families = (self._exposures.get("exposures") or {})
-        anchors = _episode_anchors(families)
-
         # Every occurrence, re-anchored to its finding's outcome, kept only where
         # that outcome lands inside the window. The family denominator is filtered
         # by the same anchor, so it can never be smaller than what it denominates.
@@ -395,7 +324,7 @@ class FindingsProjection:
         for family, payload in families.items():
             kept = [
                 occurrence for occurrence in payload.get("occurrences") or []
-                if _contains(_outcome_minute(occurrence, anchors), window)
+                if query.contains(outcome_minute(occurrence, self._exposures))
             ]
             in_window[family] = kept
 
@@ -634,39 +563,6 @@ def _sort_key(row: dict):
         span.get("start_min", DAY_MINUTES),
         row["title"] or "",
     )
-
-
-def _episode_anchors(families: dict) -> Dict[str, List[Tuple[int, str]]]:
-    """``ep_id -> [(minute, anchor kind)]`` across every family.
-
-    An episode's anchors are split across the family lists by kind, so the outcome
-    anchor of one occurrence generally lives in a *different* family's list.
-    """
-    anchors: Dict[str, List[Tuple[int, str]]] = {}
-    for family, payload in families.items():
-        kind = _KIND_FOR_FAMILY.get(family, family)
-        for occurrence in payload.get("occurrences") or []:
-            anchors.setdefault(occurrence.get("ep_id"), []).append(
-                (_minute_of(occurrence["t"]), occurrence.get("kind", kind)))
-    return anchors
-
-
-def _outcome_minute(occurrence: dict, anchors: Dict[str, List[Tuple[int, str]]]) -> int:
-    """The clock minute this occurrence is a member of a window BY (term 39).
-
-    An occurrence attributed to a lever moves to its episode's latest anchor of the
-    lever's declared outcome kind — the rebound for an over-treated low. An
-    unattributed occurrence *is* its own outcome and does not move, and neither does
-    an attributed one whose episode raised no anchor of that kind.
-    """
-    kind = outcome_kind(occurrence.get("cause_lever"))
-    if kind is not None:
-        landings = [minute for minute, anchor_kind
-                    in anchors.get(occurrence.get("ep_id"), [])
-                    if anchor_kind == kind]
-        if landings:
-            return max(landings)
-    return _minute_of(occurrence["t"])
 
 
 def _pattern_priorities(scenarios: dict) -> Dict[str, int]:

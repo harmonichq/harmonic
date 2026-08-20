@@ -82,7 +82,7 @@ class OutcomeAnchoredMembershipTest(unittest.TestCase):
         # is what stops the anchoring rule from being quietly removed.
         from unittest.mock import patch
 
-        import ciq_autotune.findings_projection as module
+        import ciq_autotune.window_membership as module
 
         with patch.object(module, "outcome_kind", lambda lever: None):
             rows = self.projection.project(WindowQuery.clock(*LOW_BLOCK))["rows"]

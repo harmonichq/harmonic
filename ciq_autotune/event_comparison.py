@@ -23,6 +23,7 @@ from .analyzers.scenario.attribute import _next_meal_bolus_t
 from .analyzers.scenario.meal_suspend import classify_meal_owned_suspend
 from .analyzers.scenario.segment import guarded_rebound
 from .analyzers.scenario_config import ScenarioConfig
+from .window_membership import WindowQuery, outcome_minute
 
 FMT = "%Y-%m-%d %H:%M:%S"
 CONFIG = ScenarioConfig()
@@ -57,20 +58,7 @@ FACTOR_LABELS = {
 }
 COHORTS = {"fired", "another_factor", "near_rule", "neutral", "excluded"}
 COHORT_ORDER = ("fired", "near_rule", "neutral")
-BLOCK_OPTIONS = (
-    ("overnight", "Overnight"),
-    ("morning", "Morning"),
-    ("afternoon", "Afternoon"),
-    ("evening", "Evening"),
-    ("all", "24 h"),
-)
-_BLOCK_HOURS = {
-    "overnight": range(0, 6),
-    "morning": range(6, 12),
-    "afternoon": range(12, 18),
-    "evening": range(18, 24),
-    "all": range(24),
-}
+COHORT_EPISODES_FIELD = "episodes"
 _BOUNDARY_FACTS = {
     "implied_carbs_g": ("Implied carbs", "g"),
     "logged_carbs_g": ("Logged carbs", "g"),
@@ -401,6 +389,8 @@ def _route_low(
 
 def _validate_capture(capture: dict) -> None:
     """Fail closed if the mock capture stops satisfying its locked identity."""
+    if capture.get("schema") != "issue-677-event-comparison-capture-v2":
+        raise AssertionError("event comparison capture schema is stale")
     meals = capture["views"]["meals"]
     for occurrence in meals["occurrences"]:
         anchor_rows = [
@@ -426,6 +416,10 @@ def _validate_capture(capture: dict) -> None:
         if set(view["factor_labels"]) != set(view["factors"]):
             raise AssertionError(f"{view_name}: factor roster/labels diverged")
         for occurrence in view["occurrences"]:
+            outcome_min = occurrence.get("outcome_min")
+            if (not isinstance(outcome_min, int) or isinstance(outcome_min, bool)
+                    or not 0 <= outcome_min < 1440):
+                raise AssertionError(f"{occurrence['id']}: missing outcome minute")
             if set(occurrence["routes"]) != set(view["factors"]):
                 raise AssertionError(f"{occurrence['id']}: incomplete factor routing")
             for factor, route in occurrence["routes"].items():
@@ -567,6 +561,7 @@ def _build_catalog_capture(
                     "ep_id": source["ep_id"],
                     "date": source["date"],
                     "anchor_t": source["t"],
+                    "outcome_min": outcome_minute(source, exposures_payload),
                     "anchor_bg": source.get("bg"),
                     "worst_bg": source.get("worst_bg"),
                     "label": source.get("label"),
@@ -591,7 +586,7 @@ def _build_catalog_capture(
         }
 
     capture = {
-        "schema": "issue-677-event-comparison-capture-v1",
+        "schema": "issue-677-event-comparison-capture-v2",
         "source_window": exposures_payload["window"],
         "views": views,
     }
@@ -604,28 +599,28 @@ class ComparisonQuery:
     """One closed set of event-comparison screen coordinates.
 
     The factories name the two settled view variants. The preparation validates
-    their fixed factor rosters and blocks before projecting a render payload.
+    their fixed factor rosters before projecting a render payload.
     """
 
     view: str
     factor: str | None = None
-    block: str = "all"
+    window: WindowQuery = WindowQuery()
     another: bool = False
     occurrence_id: str | None = None
 
     @classmethod
     def meals(
-        cls, *, factor: str | None = None, block: str = "all",
+        cls, *, factor: str | None = None, window: WindowQuery | None = None,
         another: bool = False, occurrence_id: str | None = None,
     ) -> "ComparisonQuery":
-        return cls("meals", factor, block, another, occurrence_id)
+        return cls("meals", factor, window or WindowQuery.whole_day(), another, occurrence_id)
 
     @classmethod
     def lows(
-        cls, *, factor: str | None = None, block: str = "all",
+        cls, *, factor: str | None = None, window: WindowQuery | None = None,
         another: bool = False, occurrence_id: str | None = None,
     ) -> "ComparisonQuery":
-        return cls("lows", factor, block, another, occurrence_id)
+        return cls("lows", factor, window or WindowQuery.whole_day(), another, occurrence_id)
 
 
 def _validate_query(query: ComparisonQuery) -> tuple[dict, str]:
@@ -637,8 +632,8 @@ def _validate_query(query: ComparisonQuery) -> tuple[dict, str]:
     factor = config["default_factor"] if query.factor is None else query.factor
     if factor not in config["factors"]:
         raise ValueError(f"{factor!r} is not a {query.view} comparison factor")
-    if query.block not in _BLOCK_HOURS:
-        raise ValueError("unknown anchor-time block")
+    if not isinstance(query.window, WindowQuery):
+        raise ValueError("event comparison window must be a WindowQuery")
     return config, factor
 
 
@@ -712,12 +707,18 @@ def _verdict(occurrence: dict, factor: str) -> dict:
 
 def _occurrence_summary(occurrence: dict, config: dict, factor: str) -> dict:
     return {
-        "identity": {
-            "id": occurrence["id"],
-            "kind": "meal" if config is VIEW_CONFIG["meals"] else "low",
-        },
+        "identity": _identity(occurrence, config),
         "anchor": _anchor(occurrence, config),
         "verdict": _verdict(occurrence, factor),
+    }
+
+
+def _identity(occurrence: dict, config: dict) -> dict:
+    return {
+        "id": occurrence["id"],
+        "kind": "meal" if config is VIEW_CONFIG["meals"] else "low",
+        "ep_id": occurrence["ep_id"],
+        "t": occurrence["anchor_t"],
     }
 
 
@@ -759,7 +760,7 @@ def _cohort_projection(
             "p25": _quantile(values_or_none, 0.25) if values_or_none else None,
             "p75": _quantile(values_or_none, 0.75) if values_or_none else None,
         })
-    return {
+    projection = {
         "key": cohort,
         "routed_count": len(occurrences),
         "usable_count": usable_count,
@@ -767,6 +768,19 @@ def _cohort_projection(
         "occurrence_ids": [occurrence["id"] for occurrence in occurrences],
         "points": points,
     }
+    if projection["support"] == "withheld":
+        projection[COHORT_EPISODES_FIELD] = [
+            {
+                "identity": _identity(occurrence, config),
+                "glucose": [
+                    {"minute": point["minute"], "bg": point["bg"]}
+                    for point in occurrence["trace"]["cgm"]
+                    if _finite(point.get("bg")) and _finite(point.get("minute"))
+                ],
+            }
+            for occurrence in occurrences
+        ]
+    return projection
 
 
 @dataclass(frozen=True)
@@ -785,7 +799,7 @@ class EventComparisonPreparation:
         config, factor = _validate_query(query)
         all_occurrences = [
             occurrence for occurrence in self._catalog[query.view]
-            if _dt(occurrence["anchor_t"]).hour in _BLOCK_HOURS[query.block]
+            if query.window.contains(occurrence["outcome_min"])
         ]
         counts = {key: 0 for key in ("fired", "near_rule", "neutral", "another_factor", "excluded")}
         for occurrence in all_occurrences:
@@ -852,11 +866,11 @@ class EventComparisonPreparation:
             }
 
         return {
-            "schema": "diagnose-event-comparison-v2",
+            "schema": "diagnose-event-comparison-v3",
             "coordinates": {
                 "view": query.view,
                 "factor": factor,
-                "block": query.block,
+                "window": query.window.to_dict(),
                 "another": query.another,
                 "source_window": deepcopy(self._exposures["window"]),
                 "anchor": {"kind": config["anchor_kind"], "label": config["anchor_label"]},
@@ -864,9 +878,6 @@ class EventComparisonPreparation:
                 "factor_options": [
                     {"key": key, "label": FACTOR_LABELS[key]}
                     for key in config["factors"]
-                ],
-                "block_options": [
-                    {"key": key, "label": label} for key, label in BLOCK_OPTIONS
                 ],
             },
             "population": {"denominator": len(all_occurrences), "counts": counts},

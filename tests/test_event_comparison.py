@@ -21,6 +21,7 @@ from ciq_autotune.event_comparison import (
     ComparisonQuery,
     prepare_event_comparisons,
 )
+from ciq_autotune.window_membership import WindowQuery
 from ciq_autotune.events import CarbEntry
 from ciq_autotune.store import Store
 
@@ -111,7 +112,7 @@ class EventComparisonTest(unittest.TestCase):
             preparation = prepare_event_comparisons(store)
             projection = preparation.project(ComparisonQuery.meals())
 
-        self.assertEqual(projection["schema"], "diagnose-event-comparison-v2")
+        self.assertEqual(projection["schema"], "diagnose-event-comparison-v3")
         self.assertEqual(projection["coordinates"]["view"], "meals")
         self.assertEqual(projection["population"], {
             "denominator": 1,
@@ -119,7 +120,8 @@ class EventComparisonTest(unittest.TestCase):
                        "another_factor": 0, "excluded": 0},
         })
         self.assertEqual(projection["occurrences"][0]["identity"], {
-            "id": "meals-42", "kind": "meal",
+            "id": "meals-42", "kind": "meal", "ep_id": "ep-1",
+            "t": "2026-08-01 12:00:00",
         })
         self.assertEqual(
             sum(projection["population"]["counts"].values()),
@@ -128,7 +130,7 @@ class EventComparisonTest(unittest.TestCase):
         cohort = projection["cohorts"][0]
         self.assertEqual(set(cohort), {
             "key", "routed_count", "usable_count", "support",
-            "occurrence_ids", "points",
+            "occurrence_ids", "points", "episodes",
         })
         self.assertEqual(cohort["support"], "withheld")
         self.assertTrue(all(point["median"] is None for point in cohort["points"]))
@@ -314,26 +316,8 @@ class EventComparisonTest(unittest.TestCase):
         self.assertEqual(set(projection), {
             "schema", "coordinates", "population", "cohorts", "occurrences", "selection",
         })
-        self.assertEqual(projection["coordinates"], {
-            "view": "lows",
-            "factor": "over_treated_low",
-            "block": "all",
-            "another": False,
-            "source_window": {"start": "2026-07-13", "end": "2026-08-11"},
-            "anchor": {"kind": "excursion_nadir", "label": "Low excursion"},
-            "alignment_window_min": [-300, 120],
-            "factor_options": [
-                {"key": "over_treated_low", "label": "Over-treated low"},
-                {"key": "correction_on_iob", "label": "Correction on active insulin"},
-                {"key": "correction_stacking", "label": "Correction stacking"},
-            ],
-            "block_options": [
-                {"key": "overnight", "label": "Overnight"},
-                {"key": "morning", "label": "Morning"},
-                {"key": "afternoon", "label": "Afternoon"},
-                {"key": "evening", "label": "Evening"},
-                {"key": "all", "label": "24 h"},
-            ],
+        self.assertEqual(projection["coordinates"]["window"], {
+            "scoped": False, "start_min": None, "end_min": None, "label": None,
         })
         self.assertEqual(base["selection"], {"state": "none", "detail": None})
         self.assertEqual(set(projection["selection"]), {"state", "requested_id", "detail"})
@@ -345,7 +329,7 @@ class EventComparisonTest(unittest.TestCase):
         for cohort in projection["cohorts"]:
             self.assertEqual(set(cohort), {
                 "key", "routed_count", "usable_count", "support",
-                "occurrence_ids", "points",
+                "occurrence_ids", "points", "episodes",
             })
             self.assertIn(cohort["support"], {"supported", "limited", "withheld"})
             for point in cohort["points"]:
@@ -443,7 +427,7 @@ class EventComparisonTest(unittest.TestCase):
                     meals, lows = _projection_evidence_producer()(store)
 
         self.assertEqual([meals["schema"], lows["schema"]], [
-            "diagnose-event-comparison-v2", "diagnose-event-comparison-v2",
+            "diagnose-event-comparison-v3", "diagnose-event-comparison-v3",
         ])
         self.assertEqual([meals["coordinates"]["view"], lows["coordinates"]["view"]],
                          ["meals", "lows"])
@@ -637,9 +621,10 @@ class EventComparisonTest(unittest.TestCase):
                 factor="late_bolus", another=True,
             ))
 
-        self.assertEqual(payload["schema"], "diagnose-event-comparison-v2")
+        self.assertEqual(payload["schema"], "diagnose-event-comparison-v3")
         meal = payload["occurrences"][0]
-        self.assertEqual(meal["identity"], {"id": "meals-42", "kind": "meal"})
+        self.assertEqual(meal["identity"], {"id": "meals-42", "kind": "meal",
+                                              "ep_id": "ep-1", "t": "2026-08-01 12:00:00"})
         self.assertEqual(meal["verdict"]["cohort"], "fired")
         self.assertEqual(
             late["occurrences"][0]["verdict"]["cohort"], "another_factor",
@@ -695,13 +680,46 @@ class EventComparisonTest(unittest.TestCase):
                   return_value=no_suspend),
             patch("ciq_autotune.event_comparison._effective_isf", return_value=None),
         ):
-            payload = prepare_event_comparisons(_Store(boluses)).project(
-                ComparisonQuery.meals()
-            )
+            preparation = prepare_event_comparisons(_Store(boluses))
+            payload = preparation.project(ComparisonQuery.meals())
 
         meals = payload["occurrences"]
         self.assertEqual([item["identity"]["id"] for item in meals],
                          ["meals-9", "meals-10"])
+        self.assertEqual(
+            [(item["identity"]["ep_id"], item["identity"]["t"]) for item in meals],
+            [("ep-1", "2026-08-01 12:00:00")] * 2,
+        )
+        self.assertEqual(
+            payload["selection"], {"state": "none", "detail": None},
+        )
+        for item in meals:
+            selected = preparation.project(ComparisonQuery.meals(
+                occurrence_id=item["identity"]["id"],
+            ))
+            self.assertEqual(selected["selection"]["state"], "selected")
+
+    def test_a_wrapping_window_keeps_occurrences_on_both_sides_of_midnight(self):
+        before = {
+            "t": "2026-08-01 23:30:00", "date": "2026-08-01", "bg": 150,
+            "worst_bg": 220, "label": "Meal", "ep_id": "before", "cause_lever": None,
+            "verdicts": [{"classifier": "carb_undercount", "matched": True,
+                          "detail": "matched", "evidence_tier": "observed",
+                          "silence_reason": "no_trigger"}],
+        }
+        after = {**before, "t": "2026-08-02 01:30:00", "date": "2026-08-02",
+                 "ep_id": "after"}
+        boluses = [SimpleNamespace(t=datetime(2026, 8, 1, 23, 30), completion="Completed",
+                                   insulin=3.0, carbs=30.0, carb_ratio=None, bg=None, seq_num=1),
+                   SimpleNamespace(t=datetime(2026, 8, 2, 1, 30), completion="Completed",
+                                   insulin=3.0, carbs=30.0, carb_ratio=None, bg=None, seq_num=2)]
+        with (patch("ciq_autotune.explore_exposures.build_exposures",
+                    return_value=_families_many([before, after])),
+              patch("ciq_autotune.event_comparison._effective_isf", return_value=None)):
+            result = prepare_event_comparisons(_Store(boluses)).project(
+                ComparisonQuery.meals(window=WindowQuery.clock(22 * 60, 2 * 60))
+            )
+        self.assertEqual(result["population"]["denominator"], 2)
 
     def test_meal_ids_use_stored_seq_num_through_a_real_store(self):
         # #715: the meals-view id must be derived from the anchor bolus's real
@@ -810,10 +828,7 @@ class EventComparisonRouteTest(unittest.TestCase):
                 "/diagnose/event-comparison?view=lows&factor=late_bolus"
             )
             bad = client.get("/diagnose/event-comparison?window=14")
-            low = client.get(
-                "/diagnose/event-comparison?view=lows&block=evening"
-                "&another=1&occ=stale-catalog-id"
-            )
+            low = client.get("/diagnose/event-comparison?view=lows&another=1")
             bad_block = client.get(
                 "/diagnose/event-comparison?view=meals&block=midday"
             )
@@ -827,34 +842,15 @@ class EventComparisonRouteTest(unittest.TestCase):
         self.assertEqual(missing.status_code, 400)
         self.assertEqual(good.status_code, 200, good.text)
         payload = good.json()
-        self.assertEqual(payload["schema"], "diagnose-event-comparison-v2")
+        self.assertEqual(payload["schema"], "diagnose-event-comparison-v3")
         self.assertEqual(payload["coordinates"]["view"], "meals")
         self.assertEqual(payload["coordinates"]["factor"], "carb_undercount")
         self.assertNotIn("exposures", payload)
         self.assertEqual(set(payload), {
             "schema", "coordinates", "population", "cohorts", "occurrences", "selection",
         })
-        self.assertEqual(set(payload["coordinates"]), {
-            "view", "factor", "block", "another", "source_window", "anchor",
-            "alignment_window_min", "factor_options", "block_options",
-        })
-        self.assertEqual(payload["coordinates"], {
-            "view": "meals", "factor": "carb_undercount", "block": "all",
-            "another": False, "source_window": payload["coordinates"]["source_window"],
-            "anchor": {"kind": "completed_carb_bolus", "label": "Completed carb bolus"},
-            "alignment_window_min": [-60, 300],
-            "factor_options": [
-                {"key": "carb_undercount", "label": "Carb undercount"},
-                {"key": "late_bolus", "label": "Late bolus"},
-                {"key": "meal_over_delivery", "label": "Meal over-delivery"},
-            ],
-            "block_options": [
-                {"key": "overnight", "label": "Overnight"},
-                {"key": "morning", "label": "Morning"},
-                {"key": "afternoon", "label": "Afternoon"},
-                {"key": "evening", "label": "Evening"},
-                {"key": "all", "label": "24 h"},
-            ],
+        self.assertEqual(payload["coordinates"]["window"], {
+            "scoped": False, "start_min": None, "end_min": None, "label": None,
         })
         self.assertEqual(set(payload["population"]["counts"]), {
             "fired", "near_rule", "neutral", "another_factor", "excluded",
@@ -865,7 +861,7 @@ class EventComparisonRouteTest(unittest.TestCase):
         for cohort in payload["cohorts"]:
             self.assertEqual(set(cohort), {
                 "key", "routed_count", "usable_count", "support",
-                "occurrence_ids", "points",
+                "occurrence_ids", "points", "episodes",
             })
             self.assertIn(cohort["support"], {"supported", "limited", "withheld"})
             for point in cohort["points"]:
@@ -879,9 +875,7 @@ class EventComparisonRouteTest(unittest.TestCase):
         self.assertEqual(low_payload["coordinates"]["another"], True)
         self.assertEqual([cohort["key"] for cohort in low_payload["cohorts"]],
                          ["fired", "near_rule", "neutral", "another_factor"])
-        self.assertEqual(low_payload["selection"], {
-            "state": "unavailable", "requested_id": "stale-catalog-id", "detail": None,
-        })
+        self.assertEqual(low_payload["selection"], {"state": "none", "detail": None})
         self.assertEqual(incompatible.status_code, 400)
         self.assertEqual(bad.status_code, 400)
         self.assertEqual(bad_block.status_code, 400)

@@ -34,7 +34,8 @@ from .config import resolve_runtime_configuration
 from .event_comparison import ComparisonQuery, prepare_event_comparisons
 from .explore_time_of_day import build_time_of_day
 from .events import CarbEntry, parse_t
-from .findings_projection import WindowQuery, prepare_findings_projection
+from .findings_projection import prepare_findings_projection
+from .window_membership import WindowQuery
 from .result import SCHEMA_VERSION
 from .result_cache import ResultCache
 from .store import Store
@@ -492,7 +493,9 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     @app.get("/diagnose/event-comparison")
     def diagnose_event_comparison_endpoint(
         view: Optional[str] = None, factor: Optional[str] = None,
-        block: str = "all", another: str = "0", occ: Optional[str] = None,
+        start_min: Optional[int] = None, end_min: Optional[int] = None,
+        occ_ep: Optional[str] = None, occ_t: Optional[str] = None,
+        block: Optional[str] = None, occ: Optional[str] = None, another: str = "0",
         window: int = 30, _: None = Depends(require_token),
     ) -> dict:
         """Evidence-only Meals and Lows cohorts for the Diagnose lenses."""
@@ -503,12 +506,30 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             )
         if another not in {"0", "1"}:
             raise HTTPException(status_code=400, detail="another must be 0 or 1")
-        query = ComparisonQuery(
-            view=view, factor=factor, block=block, another=another == "1",
-            occurrence_id=occ,
-        )
+        if block is not None:
+            raise HTTPException(status_code=400, detail="block is no longer a comparison coordinate")
+        if occ is not None:
+            raise HTTPException(status_code=400, detail="occ must be supplied as occ_ep and occ_t")
+        if (start_min is None) != (end_min is None):
+            raise HTTPException(status_code=400,
+                                detail="a window needs both start_min and end_min, or neither")
+        if (occ_ep is None) != (occ_t is None):
+            raise HTTPException(status_code=400,
+                                detail="selection needs both occ_ep and occ_t, or neither")
         try:
-            return event_comparison_preparation().project(query)
+            clock_window = (WindowQuery.whole_day() if start_min is None
+                            else WindowQuery.clock(start_min, end_min))
+            preparation = event_comparison_preparation()
+            occurrence_id = None
+            if occ_ep is not None:
+                occurrence_id = next((item["id"] for item in preparation._catalog[view]
+                                      if item["ep_id"] == occ_ep and item["anchor_t"] == occ_t),
+                                     f"unavailable:{occ_ep}:{occ_t}")
+            query = ComparisonQuery(
+                view=view, factor=factor, window=clock_window, another=another == "1",
+                occurrence_id=occurrence_id,
+            )
+            return preparation.project(query)
         except ValueError as error:
             raise HTTPException(status_code=400, detail=str(error)) from error
 

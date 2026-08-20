@@ -7,8 +7,12 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 import { makeDeps } from './data.js';
+
+const here = (path) => fileURLToPath(new URL(path, import.meta.url));
 
 // ---------------------------------------------------------------------------
 // Fake-fetch helpers
@@ -209,13 +213,128 @@ test('fetchExploreTimeOfDay builds the fixed server-owned endpoint', async () =>
 });
 
 test('fetchDiagnoseEventComparison builds one coordinate-owned projection request', async () => {
-  const { fetch, calls } = makeFakeFetch({ schema: 'diagnose-event-comparison-v2' });
+  const { fetch, calls } = makeFakeFetch({ schema: 'diagnose-event-comparison-v3' });
   await makeDeps({ fetch }).fetchDiagnoseEventComparison({
-    view: 'lows', factor: 'correction_on_iob', block: 'evening', another: true,
+    view: 'lows', factor: 'correction_on_iob', window: { start_min: 1320, end_min: 120 }, another: true,
     occurrenceId: 'lows-42',
   });
   assert.equal(calls[0].url,
-    '/diagnose/event-comparison?view=lows&factor=correction_on_iob&block=evening&another=1&occ=lows-42');
+    '/diagnose/event-comparison?view=lows&factor=correction_on_iob&start_min=1320&end_min=120&another=1&occ=lows-42');
+});
+
+test('event comparison accepts v3, drawing withheld episodes and supported aggregates', async () => {
+  const projection = JSON.parse(readFileSync(
+    here('./__fixtures__/event-comparison-mirror.json'), 'utf8')).windows.outcome_not_anchor;
+  const old = { window: globalThis.window, document: globalThis.document,
+    getComputedStyle: globalThis.getComputedStyle, ResizeObserver: globalThis.ResizeObserver,
+    location: globalThis.location, history: globalThis.history };
+  class Node {
+    constructor() { this.children = []; this.dataset = {}; this.attributes = {}; this.classList = { remove() {} }; }
+    set innerHTML(value) {
+      const selectors = ['#ec-chart', '#ec-chart-key', '.ec-title-context', '.ec-window-context', '#ec-canvas-head', '#ec-readout'];
+      this.nodes = new Map(selectors.filter((selector) => value.includes(selector.slice(1)))
+        .map((selector) => [selector, new Node()]));
+    }
+    get innerHTML() { return ''; }
+    querySelector(selector) { return this.nodes?.get(selector) || null; }
+    append(node) { this.children.push(node); }
+    replaceChildren(...nodes) { this.children = nodes; }
+    addEventListener() {}
+    setAttribute(name, value) { this.attributes[name] = value; }
+    getAttribute(name) { return this.attributes[name]; }
+  }
+  const charts = [];
+  globalThis.document = { createElement: () => new Node() };
+  globalThis.window = {
+    addEventListener() {}, removeEventListener() {},
+    echarts: { init: () => {
+      const chart = { setOption: (option) => { chart.option = option; }, on() {},
+        getZr: () => ({ on() {} }), dispose() {}, dispatchAction() {} };
+      charts.push(chart);
+      return chart;
+    } },
+  };
+  globalThis.getComputedStyle = () => ({ getPropertyValue: () => '#123456' });
+  globalThis.ResizeObserver = class { observe() {} disconnect() {} };
+  globalThis.location = { search: '?view=meals', pathname: '/diagnose', hash: '' };
+  globalThis.history = { pushState() {} };
+  try {
+    const { createDiagnoseEventComparison } = await import('./diagnose-event-comparison.js');
+    const root = new Node();
+    const instance = createDiagnoseEventComparison({ root, callbacks: {
+      loadProjection: async () => projection,
+    } });
+    instance.setData({});
+    await new Promise((resolve) => setImmediate(resolve));
+    const names = charts[0].option.series.map((series) => series.name);
+    assert.ok(names.includes('Rule matched episode'));
+    assert.ok(!charts[0].option.series.some((series) => /:line:/.test(series.id || '')));
+    assert.equal(root.children[0].querySelector('.ec-window-context').textContent,
+      'Window 14:00–15:00 · episodes join by where the consequence landed, not when the meal was');
+    instance.destroy();
+    const supported = JSON.parse(readFileSync(
+      here('./__fixtures__/event-comparison-mirror.json'), 'utf8')).windows.meals_default;
+    const supportedRoot = new Node();
+    const supportedInstance = createDiagnoseEventComparison({ root: supportedRoot, callbacks: {
+      loadProjection: async () => supported,
+    } });
+    supportedInstance.setData({});
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.ok(charts[1].option.series.some((series) => series.name === 'Rule matched supported'));
+    supportedInstance.destroy();
+  } finally {
+    Object.assign(globalThis, old);
+  }
+});
+
+test('event comparison rejects retired and conditionally malformed schemas through its public entry', async () => {
+  const projection = JSON.parse(readFileSync(
+    here('./__fixtures__/event-comparison-mirror.json'), 'utf8')).windows.meals_default;
+  const old = { window: globalThis.window, document: globalThis.document,
+    getComputedStyle: globalThis.getComputedStyle, ResizeObserver: globalThis.ResizeObserver,
+    location: globalThis.location, history: globalThis.history };
+  class Node {
+    constructor() { this.children = []; this.dataset = {}; this.classList = { remove() {} }; }
+    replaceChildren(...nodes) { this.children = nodes; }
+    append(node) { this.children.push(node); }
+  }
+  globalThis.document = { createElement: () => new Node() };
+  globalThis.window = { addEventListener() {}, removeEventListener() {} };
+  globalThis.location = { search: '?view=meals', pathname: '/diagnose', hash: '' };
+  globalThis.history = { pushState() {} };
+  try {
+    const { createDiagnoseEventComparison } = await import('./diagnose-event-comparison.js');
+    const retired = structuredClone(projection);
+    retired.schema = 'diagnose-event-comparison-v2';
+    retired.coordinates = { ...retired.coordinates, block: 'all', block_options: [
+      { key: 'overnight', label: 'Overnight' }, { key: 'morning', label: 'Morning' },
+      { key: 'afternoon', label: 'Afternoon' }, { key: 'evening', label: 'Evening' },
+      { key: 'all', label: '24 h' },
+    ] };
+    delete retired.coordinates.window;
+    for (const occurrence of retired.occurrences) {
+      delete occurrence.identity.ep_id;
+      delete occurrence.identity.t;
+    }
+    for (const cohort of retired.cohorts) delete cohort.episodes;
+    const supportedWithEpisodes = structuredClone(projection);
+    supportedWithEpisodes.cohorts.find((cohort) => cohort.support === 'supported').episodes = [];
+    const withheldWithoutEpisodes = structuredClone(JSON.parse(readFileSync(
+      here('./__fixtures__/event-comparison-mirror.json'), 'utf8')).windows.outcome_not_anchor);
+    delete withheldWithoutEpisodes.cohorts.find((cohort) => cohort.support === 'withheld').episodes;
+    for (const invalid of [retired, supportedWithEpisodes, withheldWithoutEpisodes]) {
+      const root = new Node();
+      const instance = createDiagnoseEventComparison({ root, callbacks: {
+        loadProjection: async () => invalid,
+      } });
+      instance.setData({});
+      await new Promise((resolve) => setImmediate(resolve));
+      assert.equal(root.textContent, 'Diagnose event comparison data is unavailable.');
+      instance.destroy();
+    }
+  } finally {
+    Object.assign(globalThis, old);
+  }
 });
 
 test('audit dismissal uses the stable item id and evidence fingerprint', async () => {

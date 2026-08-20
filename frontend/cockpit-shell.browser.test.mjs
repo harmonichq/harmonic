@@ -239,7 +239,10 @@ async function routeApp(page, options = {}) {
           view: ['meals', 'lows'].includes(requestUrl.searchParams.get('view'))
             ? requestUrl.searchParams.get('view') : 'meals',
           factor: requestUrl.searchParams.get('factor') || undefined,
-          block: requestUrl.searchParams.get('block') || 'all',
+          window: requestUrl.searchParams.get('start_min') === null ? null : {
+            start_min: Number(requestUrl.searchParams.get('start_min')),
+            end_min: Number(requestUrl.searchParams.get('end_min')),
+          },
           another: requestUrl.searchParams.get('another') === '1',
           occurrenceId: requestUrl.searchParams.get('occ') || undefined,
         }));
@@ -816,7 +819,7 @@ test('build renders cover both locked sizes and themes',
 });
 
 // RETIRED (issue #41) — this story asserted the newest-response race guard
-// across View, Factor, Anchor time, Other factors and occurrence selection,
+// across View, Factor, the retired anchor-time block, Other factors and
 // all driven through controls that no longer exist. ADR 31 part 3 folds
 // View's function into the workstation's own ALIGN instrument and deletes
 // View; the rest retire under P52, sanctioned:
@@ -829,7 +832,7 @@ test('build renders cover both locked sizes and themes',
 // confirmed gone from the lens, and the lens is confirmed to still be exactly
 // canvas + legend + readout — the P52 ruling ("the lens becomes canvas-only")
 // checked on the live surface, not just read off the diff.
-test('event comparisons: View, Factor, Anchor time, Other factors, the occurrence select and Clear trace are gone; the lens is canvas-only',
+test('event comparisons: View, Factor, the retired anchor-time block, Other factors, the occurrence select and Clear trace are gone; the lens is canvas-only',
   async () => {
   const eventProjection = (url, capture) => {
     const view = ['meals', 'lows'].includes(url.searchParams.get('view'))
@@ -837,7 +840,10 @@ test('event comparisons: View, Factor, Anchor time, Other factors, the occurrenc
     return projectSyntheticCapture(capture, {
       view,
       factor: url.searchParams.get('factor') || undefined,
-      block: url.searchParams.get('block') || 'all',
+      window: url.searchParams.get('start_min') === null ? null : {
+        start_min: Number(url.searchParams.get('start_min')),
+        end_min: Number(url.searchParams.get('end_min')),
+      },
       another: url.searchParams.get('another') === '1',
       occurrenceId: url.searchParams.get('occ') || undefined,
     });

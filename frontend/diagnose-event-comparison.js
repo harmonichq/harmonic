@@ -1,9 +1,9 @@
 /* ★ LOCKED 2026-08-13 by Codex for unattended ui-craft issue #677.
  * Meals and Lows are evidence-only lenses inside the shipped Diagnose
  * workstation; Glucose remains the recommendation and setting-action surface.
- * The instrument rail selects View, Factor, and a fixed anchor-time block. The
- * chart compares rule-matched, factor-specific near-rule, and rule-did-not-match
- * cohorts with median lines and hourly 25–75 whiskers; another-factor events are
+ * The chart compares rule-matched, factor-specific near-rule, and rule-did-not-match
+ * cohorts with aggregate lines and hourly 25–75 whiskers; a cohort too thin for
+ * an aggregate draws its individual episodes instead; another-factor events are
  * hidden by default. Meals align on one completed positive-dose carb bolus over
  * −1 h/+5 h; Lows align on the nadir over −5 h/+2 h; glucose stays fixed at
  * 40–300 mg/dL. Selecting one exact occurrence dims aggregates, overlays its
@@ -17,7 +17,7 @@
  *
  * RE-SETTLED TERMS 1 and 3 · 2026-08-13, SUPERSEDED · 2026-08-19 (issue #41).
  * The View control and the lens's own instrument row (View / Factor /
- * anchor-time) are retired: ADR 31 part 3 folds View's function into the
+ * anchor-time coordinate) are retired: ADR 31 part 3 folds View's function into the
  * workstation's own ALIGN instrument (`frontend/diagnose-workstation.js`),
  * a `By clock` / `By event` switch present only where the canvas is showing a
  * factor's events. The lens itself is canvas-only now (P52): no inspector,
@@ -25,6 +25,10 @@
  * feeds it, reused by both this module's own `?view=meals`/`lows` read path
  * (P53 keeps it, unreachable by any control) and the workstation's ALIGN
  * "By event" mode.
+ *
+ * RE-SETTLED · 2026-08-20 (issue #62). The clock window is the sole
+ * membership coordinate. It is server-owned and outcome-anchored: a thin
+ * cohort draws individual episodes, never an invented typical response.
  *
  * RE-SETTLED TERM 17 · 2026-08-16 · resolved via ADR 678. A selected Low
  * renders every in-window rescue-carb entry with
@@ -102,7 +106,14 @@ const factorKey = (value) => [
   'carb_undercount', 'late_bolus', 'meal_over_delivery',
   'over_treated_low', 'correction_on_iob', 'correction_stacking',
 ].includes(value);
-const blockKey = (value) => ['overnight', 'morning', 'afternoon', 'evening', 'all'].includes(value);
+const validWindow = (value) => hasExactKeys(value, ['scoped', 'start_min', 'end_min', 'label'])
+  && typeof value.scoped === 'boolean'
+  && (value.scoped
+    ? Number.isInteger(value.start_min) && Number.isInteger(value.end_min)
+      && value.start_min >= 0 && value.start_min <= 1440
+      && value.end_min >= 0 && value.end_min <= 1440
+      && value.start_min !== value.end_min && typeof value.label === 'string'
+    : value.start_min === null && value.end_min === null && value.label === null);
 
 function validOccurrence(value, view, selected = false) {
   const identityKind = view === 'meals' ? 'meal' : 'low';
@@ -111,10 +122,12 @@ function validOccurrence(value, view, selected = false) {
     ? ['identity', 'anchor', 'verdict', 'glucose', 'markers', 'day_target']
     : ['identity', 'anchor', 'verdict'];
   return hasExactKeys(value, keys)
-    && hasExactKeys(value.identity, ['id', 'kind'])
+    && hasExactKeys(value.identity, ['id', 'kind', 'ep_id', 't'])
     && typeof value.identity.id === 'string' && value.identity.kind === identityKind
+    && typeof value.identity.ep_id === 'string' && localTimestamp(value.identity.t)
     && hasExactKeys(value.anchor, ['kind', 't', 'date', 'bg', 'worst_bg', 'label'])
     && value.anchor.kind === anchorKind && localTimestamp(value.anchor.t)
+    && value.identity.t === value.anchor.t
     && isoDate(value.anchor.date) && nullableNumber(value.anchor.bg)
     && nullableNumber(value.anchor.worst_bg) && (value.anchor.label === null || typeof value.anchor.label === 'string')
     && hasExactKeys(value.verdict, ['factor', 'cohort', 'provenance', 'detail', 'evidence_tier', 'other_factors', 'boundary_facts'])
@@ -134,16 +147,15 @@ function validOccurrence(value, view, selected = false) {
 
 function validProjection(value, requestedView) {
   if (!hasExactKeys(value, ['schema', 'coordinates', 'population', 'cohorts', 'occurrences', 'selection'])
-      || value.schema !== 'diagnose-event-comparison-v2') return false;
+      || value.schema !== 'diagnose-event-comparison-v3') return false;
   const { coordinates, population, cohorts, occurrences, selection } = value;
   const factorKeys = coordinates?.view === 'meals'
     ? ['carb_undercount', 'late_bolus', 'meal_over_delivery']
     : ['over_treated_low', 'correction_on_iob', 'correction_stacking'];
   const alignmentWindow = coordinates?.view === 'meals' ? [-60, 300] : [-300, 120];
-  const blockKeys = ['overnight', 'morning', 'afternoon', 'evening', 'all'];
-  if (!hasExactKeys(coordinates, ['view', 'factor', 'block', 'another', 'source_window', 'anchor', 'alignment_window_min', 'factor_options', 'block_options'])
+  if (!hasExactKeys(coordinates, ['view', 'factor', 'another', 'source_window', 'anchor', 'alignment_window_min', 'factor_options', 'window'])
       || coordinates.view !== requestedView || !['meals', 'lows'].includes(coordinates.view)
-      || !factorKeys.includes(coordinates.factor) || !blockKey(coordinates.block)
+      || !factorKeys.includes(coordinates.factor) || !validWindow(coordinates.window)
       || typeof coordinates.another !== 'boolean'
       || !hasExactKeys(coordinates.source_window, ['start', 'end'])
       || !isoDate(coordinates.source_window.start) || !isoDate(coordinates.source_window.end)
@@ -151,14 +163,10 @@ function validProjection(value, requestedView) {
       || typeof coordinates.anchor.label !== 'string'
       || !Array.isArray(coordinates.alignment_window_min) || coordinates.alignment_window_min.length !== 2
       || coordinates.alignment_window_min.some((value, index) => value !== alignmentWindow[index])
-      || !Array.isArray(coordinates.factor_options) || !Array.isArray(coordinates.block_options)
+      || !Array.isArray(coordinates.factor_options)
       || coordinates.factor_options.length !== factorKeys.length
-      || coordinates.block_options.length !== blockKeys.length
       || !coordinates.factor_options.every((option, index) => hasExactKeys(option, ['key', 'label'])
         && option.key === factorKeys[index]
-        && typeof option.label === 'string')
-      || !coordinates.block_options.every((option, index) => hasExactKeys(option, ['key', 'label'])
-        && option.key === blockKeys[index]
         && typeof option.label === 'string')) return false;
   const anchorKind = coordinates.view === 'meals' ? 'completed_carb_bolus' : 'excursion_nadir';
   if (coordinates.anchor.kind !== anchorKind
@@ -170,8 +178,17 @@ function validProjection(value, requestedView) {
       || !countKeys.every((key) => Number.isInteger(population.counts[key]) && population.counts[key] >= 0)
       || population.denominator !== countKeys.reduce((sum, key) => sum + population.counts[key], 0)) return false;
   const visibleKeys = ['fired', 'near_rule', 'neutral', ...(coordinates.another ? ['another_factor'] : [])];
+  const validEpisode = (episode) => hasExactKeys(episode, ['identity', 'glucose'])
+    && hasExactKeys(episode.identity, ['id', 'kind', 'ep_id', 't'])
+    && typeof episode.identity.id === 'string' && episode.identity.kind === (coordinates.view === 'meals' ? 'meal' : 'low')
+    && typeof episode.identity.ep_id === 'string' && localTimestamp(episode.identity.t)
+    && Array.isArray(episode.glucose) && episode.glucose.every((point) => hasExactKeys(point, ['minute', 'bg'])
+      && Number.isInteger(point.minute) && finiteNumber(point.bg));
   if (!Array.isArray(cohorts) || cohorts.length !== visibleKeys.length
-      || !cohorts.every((cohort, index) => hasExactKeys(cohort, ['key', 'routed_count', 'usable_count', 'support', 'occurrence_ids', 'points'])
+      || !cohorts.every((cohort, index) => hasExactKeys(cohort, [
+        'key', 'routed_count', 'usable_count', 'support', 'occurrence_ids', 'points',
+        ...(isRecord(cohort) && cohort.support === 'withheld' ? ['episodes'] : []),
+      ])
         && cohort.key === visibleKeys[index] && Number.isInteger(cohort.routed_count)
         && cohort.routed_count >= 0 && Number.isInteger(cohort.usable_count)
         && cohort.usable_count >= 0 && cohort.usable_count <= cohort.routed_count
@@ -182,7 +199,10 @@ function validProjection(value, requestedView) {
           && Number.isInteger(point.minute) && Number.isInteger(point.n) && point.n >= 0
           && supportState(point.support) && nullableNumber(point.median)
           && nullableNumber(point.p25) && nullableNumber(point.p75)
-          && (point.support !== 'withheld' || (point.median === null && point.p25 === null && point.p75 === null))))) return false;
+          && (point.support !== 'withheld' || (point.median === null && point.p25 === null && point.p75 === null)))
+        && (cohort.support !== 'withheld' || (Array.isArray(cohort.episodes)
+          && cohort.episodes.length === cohort.usable_count && cohort.episodes.every(validEpisode)
+          && cohort.episodes.every((episode) => cohort.occurrence_ids.includes(episode.identity.id)))))) return false;
   if (!Array.isArray(occurrences) || !occurrences.every((occurrence) => validOccurrence(occurrence, coordinates.view))) return false;
   const occurrenceById = new Map(occurrences.map((occurrence) => [occurrence.identity.id, occurrence]));
   if (!isRecord(selection)) return false;
@@ -225,6 +245,21 @@ const fmtDate = (iso) => new Date(`${iso}T00:00:00`).toLocaleDateString(
 
 const rounded = (value) => value == null ? '—' : String(Math.round(value));
 
+/* #62 — the window and the consequence-landed rule are a SENTENCE, not a
+   coordinate chip, and three contexts will not share one head line. On the
+   title's own line the shipped truncation rule (set for #41's 1024px tablet
+   case: the h2 yields first, never wraps) fired against the TITLE instead —
+   "MEAL RESPONSES" read "MEAL RES..." at 1440px and collapsed to zero width at
+   1024px, while the 576px sentence overflowed the pane it was meant to caption.
+   It takes the row below the title line instead, where it stays whole and wraps
+   rather than clipping. Sitting outside .head-rest it also keeps standing while
+   the hover readout swaps in, which is right: the membership rule does not
+   change on hover. Nothing about its wording moved (ADR 62 decision 5).
+
+   NOTE for anyone editing the template below: it is a template literal, so a
+   backtick anywhere inside it — including in an HTML comment — closes the
+   string. That mistake renders as a caught fetch failure, not a syntax error. */
+
 /* P52 (sanctioned) — the lens is canvas-only. No coordinate row (View, Factor,
    anchor-time, Other factors all retired with it: ADR 31 part 3 folds View
    into the workstation's own ALIGN instrument, and the rest have no reader
@@ -246,6 +281,9 @@ function createSurfaceMarkup(viewKey, coordinates) {
                  header is the same height hovering or not. Left empty, the
                  header grew 2px and pushed the chart down on first hover. -->
             <div class="head-line head-live ec-canvas-readout" id="ec-readout" aria-hidden="true"><span class="ec-rd-time">--:--</span></div>
+            <!-- #62 — the window context is the head's SECOND row; see the
+                 note above this function for why it cannot share the first. -->
+            <div class="ec-window-context"></div>
           </div>
           <span class="meta persist">${copy.context}</span>
         </header>
@@ -327,6 +365,26 @@ function lineSeries(surface, cohort, aggregateRows, selectedCohort, support) {
   };
 }
 
+function episodeSeries(surface, cohort, episodes, selectedCohort) {
+  return episodes.map((episode) => ({
+    id: `${cohort}:episode:${episode.identity.id}`,
+    name: `${COHORTS[cohort].label} episode`,
+    type: 'line',
+    z: 3,
+    showSymbol: false,
+    connectNulls: false,
+    animation: false,
+    emphasis: { disabled: true },
+    data: episode.glucose.map((point) => [point.minute, point.bg]),
+    lineStyle: {
+      color: colorFor(surface, cohort),
+      width: 1.1,
+      type: COHORTS[cohort].lineType,
+      opacity: emphasisOpacity(selectedCohort, cohort, .34, .48, .1),
+    },
+  }));
+}
+
 function selectedSeries(surface, occurrence) {
   if (!occurrence) return [];
   const series = [{
@@ -365,7 +423,16 @@ function axisLabel(value, anchor) {
   return `${value < 0 ? '−' : '+'}${Number.isInteger(hours) ? hours : hours.toFixed(1)} h`;
 }
 
-function paintReadout(surface, minute, aggregates, cohortOrder, copy) {
+function cohortReadout(cohort, row, record) {
+  if (row?.support === 'withheld') {
+    return record.usable_count
+      ? `${COHORTS[cohort].label} episodes shown individually, n${record.usable_count}`
+      : `${COHORTS[cohort].label} has no usable episodes to draw`;
+  }
+  return `${COHORTS[cohort].label} median ${rounded(row?.median)} milligrams per deciliter`;
+}
+
+function paintReadout(surface, minute, aggregates, cohorts, cohortOrder, copy) {
   const head = surface.querySelector('#ec-canvas-head');
   const host = surface.querySelector('#ec-readout');
   if (minute == null) {
@@ -379,7 +446,8 @@ function paintReadout(surface, minute, aggregates, cohortOrder, copy) {
     const row = aggregates[cohort].find((item) => item.minute === snapped);
     const support = row?.support || 'withheld';
     const value = support === 'withheld' ? '—' : rounded(row?.median);
-    pieces.push(`<span class="ec-rd-value" data-support="${support}">${COHORTS[cohort].short} <b>${value}</b><em>${support[0].toUpperCase()}${support.slice(1)} · n${row?.n ?? 0}</em></span>`);
+    const summary = support === 'withheld' ? 'Episodes shown individually' : `${support[0].toUpperCase()}${support.slice(1)} · n${row?.n ?? 0}`;
+    pieces.push(`<span class="ec-rd-value" data-support="${support}">${COHORTS[cohort].short} <b>${value}</b><em>${summary}</em></span>`);
   }
   host.innerHTML = pieces.join('');
   host.setAttribute('aria-hidden', 'false');
@@ -402,8 +470,10 @@ function paintLegend(surface, cohortOrder, cohorts, aggregates, selected) {
     const record = cohorts[cohort];
     const support = record.support[0].toUpperCase() + record.support.slice(1);
     const selectedCohort = selected?.verdict.cohort === cohort;
-    const detail = record.support === 'withheld'
-      ? `${record.routed_count} ${record.routed_count === 1 ? 'event' : 'events'} · aggregate not shown`
+    const detail = record.support === 'withheld' && record.usable_count === 0
+      ? `${record.routed_count} events · no usable episodes to draw`
+      : record.support === 'withheld'
+        ? `${record.routed_count} events · ${record.usable_count} ${record.usable_count === 1 ? 'episode' : 'episodes'} shown individually`
       : `${record.routed_count} events · ${pointStateSummary(aggregates[cohort])} points`;
     return `
       <span class="ec-key-item" data-cohort="${cohort}" data-support="${record.support}" data-selected-cohort="${selectedCohort}">
@@ -441,6 +511,9 @@ function chartOption(surface, coordinates, copy, cohortOrder, cohorts, aggregate
       series.push(whiskerSeries(surface, cohort, aggregates[cohort], selectedCohort, support));
       series.push(lineSeries(surface, cohort, aggregates[cohort], selectedCohort, support));
     }
+    if (cohorts[cohort].support === 'withheld') {
+      series.push(...episodeSeries(surface, cohort, cohorts[cohort].episodes, selected?.verdict.cohort));
+    }
   }
   series.push(...selectedSeries(surface, selected));
 
@@ -450,7 +523,7 @@ function chartOption(surface, coordinates, copy, cohortOrder, cohorts, aggregate
     aria: {
       enabled: true,
       decal: { show: false },
-      description: `${copy.title}. Median lines compare ${cohortOrder.map((key) => COHORTS[key].label).join(', ')}. Sparse whiskers show the 25th to 75th percentile.`,
+      description: `${copy.title}. Aggregate lines compare supported cohorts; thin cohorts show individual episodes. Sparse whiskers show the 25th to 75th percentile.`,
     },
     grid: { left: 52, right: 22, top: 24, bottom: 42, containLabel: false },
     tooltip: { trigger: 'axis', showContent: false, axisPointer: { type: 'cross', label: { show: false } } },
@@ -497,6 +570,9 @@ export function renderEventSurface(surface, projection) {
   const copy = viewCopy[viewKey];
 
   surface.innerHTML = createSurfaceMarkup(viewKey, coordinates);
+  const context = surface.querySelector('.ec-window-context');
+  const windowLabel = coordinates.window.scoped ? coordinates.window.label : 'whole day';
+  context.textContent = `Window ${windowLabel} · episodes join by where the consequence landed, not when the meal was`;
   /* Comparison population is projection data, not an app-side `data-state`.
      Aside from duplicating server policy, a `dense` state on this `.dw` would
      collide with the workstation density selector and shift shared geometry. */
@@ -504,29 +580,32 @@ export function renderEventSurface(surface, projection) {
 
   const chartElement = surface.querySelector('#ec-chart');
   const chart = window.echarts.init(chartElement, null, { renderer: 'canvas' });
-  chart.setOption(chartOption(surface, coordinates, copy, cohortOrder, cohorts, aggregates, selected));
+  const option = chartOption(surface, coordinates, copy, cohortOrder, cohorts, aggregates, selected);
+  chart.setOption(option);
+  const keyboardSeriesIndex = Math.max(0, option.series.findIndex((series) =>
+    series.id?.includes(':line:') || series.id?.includes(':episode:')));
   chart.on('updateAxisPointer', (event) => {
     const minute = event.axesInfo?.[0]?.value;
-    paintReadout(surface, minute, aggregates, cohortOrder, copy);
+    paintReadout(surface, minute, aggregates, cohorts, cohortOrder, copy);
   });
-  chart.getZr().on('globalout', () => paintReadout(surface, null, aggregates, cohortOrder, copy));
+  chart.getZr().on('globalout', () => paintReadout(surface, null, aggregates, cohorts, cohortOrder, copy));
 
   let keyboardMinute = 0;
   chartElement.addEventListener('keydown', (event) => {
     if (!['ArrowLeft', 'ArrowRight', 'Home', 'End', 'Escape'].includes(event.key)) return;
     event.preventDefault();
     if (event.key === 'Escape') {
-      paintReadout(surface, null, aggregates, cohortOrder, copy);
+      paintReadout(surface, null, aggregates, cohorts, cohortOrder, copy);
       return;
     }
     if (event.key === 'Home') keyboardMinute = coordinates.alignment_window_min[0];
     else if (event.key === 'End') keyboardMinute = coordinates.alignment_window_min[1];
     else keyboardMinute = Math.max(coordinates.alignment_window_min[0], Math.min(coordinates.alignment_window_min[1], keyboardMinute + (event.key === 'ArrowRight' ? 5 : -5)));
-    chart.dispatchAction({ type: 'showTip', seriesIndex: 2, dataIndex: Math.round((keyboardMinute - coordinates.alignment_window_min[0]) / 5) });
-    paintReadout(surface, keyboardMinute, aggregates, cohortOrder, copy);
+    chart.dispatchAction({ type: 'showTip', seriesIndex: keyboardSeriesIndex, dataIndex: Math.round((keyboardMinute - coordinates.alignment_window_min[0]) / 5) });
+    paintReadout(surface, keyboardMinute, aggregates, cohorts, cohortOrder, copy);
     chartElement.setAttribute('aria-label', `${copy.title}. ${axisLabel(keyboardMinute, copy.axisAnchor)}. ${cohortOrder.map((cohort) => {
       const row = aggregates[cohort].find((item) => item.minute === keyboardMinute);
-      return `${COHORTS[cohort].label} median ${rounded(row?.median)} milligrams per deciliter`;
+      return cohortReadout(cohort, row, cohorts[cohort]);
     }).join('. ')}.`);
   });
 
@@ -559,10 +638,15 @@ export function createDiagnoseEventComparison({ root, callbacks = {} }) {
   const requestedCoordinates = () => {
     const view = params.get('view');
     if (view !== 'meals' && view !== 'lows') return null;
+    const start = params.get('start_min');
+    const end = params.get('end_min');
+    const window = start === null && end === null ? null : {
+      start_min: Number(start), end_min: Number(end),
+    };
     return {
       view,
       factor: params.get('factor') || undefined,
-      block: params.get('block') || undefined,
+      window,
       another: params.get('another') === '1',
       occurrenceId: params.get('occ') || undefined,
     };

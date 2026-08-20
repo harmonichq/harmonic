@@ -604,7 +604,9 @@ async function probeApp(browser, theme, findingsInputs, { writeChrome = false } 
 
   const lensPage = await openApp(browser, { theme, viewport: VIEWPORT });
   await lensPage.evaluate(() => {
-    history.pushState(null, '', '/?view=lows&factor=over_treated_low&block=all');
+    // #62 — the anchor-time block coordinate retired; the whole day is the
+    // absence of a clock window, so this probe carries no time coordinate.
+    history.pushState(null, '', '/?view=lows&factor=over_treated_low');
     dispatchEvent(new PopStateEvent('popstate'));
   });
   await lensPage.waitForSelector('.ec-chart-key .ec-key-item');

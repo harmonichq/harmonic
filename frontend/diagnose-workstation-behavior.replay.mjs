@@ -64,6 +64,22 @@ export const state = (page) => page.evaluate(() => {
       .map((n) => n.textContent.trim()).filter((t) => t !== '›'),
     crumbMeta: txt('#crumb-meta'),
     scope: txt('#canvas-scope'),
+    /* #62 — the case file's own head, and the line the panel prints when the
+       finding the reader is standing on has no row in the selected window. */
+    levelWho: q('#level .who')?.innerText.replace(/\s+/g, ' ').trim() ?? null,
+    levelStat: q('#level .statline')?.innerText.replace(/\s+/g, ' ').trim() ?? null,
+    levelEmpty: txt('#level .empty'),
+    levelLoading: q('#level')?.dataset.loading ?? null,
+    bandKeys: [...document.querySelectorAll('#level .vband .key .lead')].map((n) => n.textContent.trim()),
+    // ALIGN's two canvases: which one is mounted, and whose header is up
+    alignShown: q('#align-group') ? !q('#align-group').hidden : null,
+    alignPressed: [...document.querySelectorAll('#seg-align button')]
+      .filter((b) => b.getAttribute('aria-pressed') === 'true')
+      .map((b) => b.textContent.trim()),
+    eventCanvas: q('#align-canvas') ? !q('#align-canvas').hidden : null,
+    clockCanvas: q('#chart') ? !q('#chart').hidden : null,
+    clockHead: q('#canvas-head') ? !q('#canvas-head').hidden : null,
+    eventHeads: document.querySelectorAll('.ec-canvas .head-rest h2').length,
     pool: txt('#canvas-pool'),
     braceHidden: q('#brace')?.hidden ?? null,
     gripA: parseFloat(q('#grip-a')?.style.left || 'NaN'),
@@ -223,7 +239,7 @@ const projectAuthor = async () => {
  */
 export async function openApp(browser, {
   state: want = 'typical', theme = 'dark', viewport = { width: 1440, height: 900 }, findingsInputs = null,
-  appSource = 'server',
+  exposuresInputs = null, comparisonStatus = 0, findingsDelayMs = 0, appSource = 'server',
 } = {}) {
   const payloadPath = process.env.PAYLOAD || fail('PAYLOAD is required for TARGET=app');
   if (!['server', 'fixture'].includes(appSource)) fail(`unknown appSource: ${appSource}`);
@@ -237,13 +253,27 @@ export async function openApp(browser, {
   const payload = JSON.parse(await readFile(payloadPath, 'utf8'));
   const capture = JSON.parse(await readFile(
     join(ROOT, 'mockups/diagnose-event-comparison.synthetic/capture.json'), 'utf8'));
+  /* The committed payload is the default for BOTH server-owned populations.
+     A story that needs a shape the payload cannot pose supplies a function,
+     which derives the override from that payload inside this driver — never a
+     hand-written fixture, and never anything but synthetic input. The two
+     overrides are separate on purpose: the fidelity harness overrides only the
+     findings queue and relies on every other endpoint staying as it was. */
+  const defaults = { analysis: payload.analyze, exposures: payload.exposures, scenarios: payload.scenarios };
+  const findingsFrom = typeof findingsInputs === 'function'
+    ? await findingsInputs(defaults) : (findingsInputs || defaults);
+  const exposuresFrom = typeof exposuresInputs === 'function'
+    ? await exposuresInputs(defaults) : (exposuresInputs || payload.exposures);
   const STUBS = [
     // #698: the endpoint serves the bounded server-owned projection per
     // coordinate; exposures ride on their own #654 endpoint again.
     [/^\/diagnose\/event-comparison/, (url) => projectSyntheticCapture(capture, {
       view: url.searchParams.get('view') || 'meals',
       factor: url.searchParams.get('factor') || undefined,
-      block: url.searchParams.get('block') || 'all',
+      window: url.searchParams.get('start_min') === null ? null : {
+        start_min: Number(url.searchParams.get('start_min')),
+        end_min: Number(url.searchParams.get('end_min')),
+      },
       another: url.searchParams.get('another') === '1',
       occurrenceId: url.searchParams.get('occ') || undefined,
     })],
@@ -252,12 +282,12 @@ export async function openApp(browser, {
        mirror, which `frontend/findings-projection-mirror.test.js` deep-compares
        against the real projection's own frozen output window for window. */
     [/^\/diagnose\/findings/, (url) => projectFindings(
-      findingsInputs || { analysis: payload.analyze, exposures: payload.exposures, scenarios: payload.scenarios },
+      findingsFrom,
       url.searchParams.get('start_min') === null ? null : {
         start_min: Number(url.searchParams.get('start_min')),
         end_min: Number(url.searchParams.get('end_min')),
       })],
-    [/^\/explore\/exposures/, () => payload.exposures],
+    [/^\/explore\/exposures/, () => exposuresFrom],
     [/^\/analyze/, () => payload.analyze],
     [/^\/scenarios/, () => payload.scenarios],
     [/^\/explore\/time/, () => payload.evidence],
@@ -281,6 +311,8 @@ export async function openApp(browser, {
   page.on('pageerror', (e) => problems.push(`pageerror(app ${want}): ${e}`));
   page.on('response', (response) => {
     if (response.status() < 400) return;
+    // a story that is exercising the failed-projection path asks for the status
+    if (comparisonStatus && new URL(response.url()).pathname === '/diagnose/event-comparison') return;
     const rules = expectedResponses.get(page) || [];
     const match = rules.findIndex((rule) => rule.status === response.status()
       && rule.pattern.test(new URL(response.url()).pathname));
@@ -325,6 +357,16 @@ export async function openApp(browser, {
           });
         } catch { /* fall through to the loud unrouted response below */ }
       }
+    }
+    /* The findings queue is a SERVER round trip, so a story that is about what
+       the pane shows WHILE it is in flight needs that flight to last long enough
+       to read. Delay, never stub differently: the response is the same one. */
+    if (findingsDelayMs && path.startsWith('/diagnose/findings')) {
+      await new Promise((resolve) => { setTimeout(resolve, findingsDelayMs); });
+    }
+    if (comparisonStatus && path === '/diagnose/event-comparison') {
+      return route.fulfill({ status: comparisonStatus, contentType: 'application/json',
+        body: JSON.stringify({ detail: 'projection unavailable' }) });
     }
     for (const [pattern, body] of STUBS) {
       if (pattern.test(path)) return route.fulfill({ contentType: 'application/json', body: JSON.stringify(body(url)) });
@@ -1299,6 +1341,314 @@ export const S31 = async (page) => {
     'S31 the correction-factor row visibly declares its whole-day scope');
 };
 
+/* ----------------------------------------- issue #62 · one membership rule ---
+
+   The stories #62, #57 and #58 are judged by. The browser re-derived window
+   membership from an occurrence's OWN clock minute while the endpoint and the
+   findings queue both anchored it to where its consequence landed — three rules
+   over one population. These six prove the browser now reads the server's
+   answer and nothing else.
+
+   Three of them pose a shape the committed payload cannot: a meal the lever
+   actually fired on, a consequence that landed in a window its trigger sits
+   outside, and a finding whose episodes span two families. Each derives its
+   inputs from a committed synthetic fixture inside this driver, says what it
+   changed and why, and touches nothing on disk. */
+
+/** The one meals episode the roster stories select. The event-comparison
+    capture reuses this (episode, instant) pair across FOUR catalog
+    occurrences, which is exactly why selection travels by the endpoint's own
+    opaque id and this pair is only ever a join key. */
+const ROSTER_MEAL = { ep_id: '2020-03-01-ep72', t: '2020-03-01 19:10:00' };
+
+/** The committed payload, with the late-bolus classifier matched on one meal.
+    Every meals occurrence the payload ships reads `outranked`, and `outranked`
+    is residue with no band segment — a roster of none, and nothing to click. */
+const withFiredMeal = ({ analysis, exposures, scenarios }) => {
+  const next = structuredClone(exposures);
+  const meals = next.exposures.meals.occurrences;
+  const at = meals.findIndex((o) => o.ep_id === ROSTER_MEAL.ep_id);
+  if (at < 0) fail(`the payload no longer holds ${ROSTER_MEAL.ep_id}`);
+  meals[at] = { ...meals[at], verdicts: [{
+    classifier: 'late_bolus', matched: true, evidence_tier: 'inferred',
+    detail: 'the dose landed after the rise had started', silence_reason: null }] };
+  return { analysis, exposures: next, scenarios };
+};
+
+/** The committed payload, with the high the 13:00 late bolus never caught
+    recorded at 14:35 — the episode's own consequence. The queue anchors an
+    occurrence to where its consequence landed, so this meal belongs to
+    14:00–16:00 while its bolus sits a full hour outside it. The
+    event-comparison capture already stamps the same outcome minute on this
+    episode (`outcome_min: 875`), so both projections are answering for the
+    same instant. */
+const LATE_MEAL = { ep_id: '2020-03-03-ep71', t: '2020-03-03 13:00:00' };
+const withLateConsequence = ({ analysis, exposures, scenarios }) => {
+  const next = structuredClone(exposures);
+  const highs = next.exposures.highs;
+  highs.occurrences = [...highs.occurrences, {
+    ...highs.occurrences[0], ep_id: LATE_MEAL.ep_id, t: '2020-03-03 14:35:00',
+    date: '2020-03-03', kind: 'high', attributed: false, cause_lever: null,
+    cause_title: null, state: 'clean', verdicts: [],
+  }];
+  highs.n = highs.occurrences.length;
+  return { analysis, exposures: next, scenarios };
+};
+
+/** The frozen findings-projection inputs — the one committed fixture holding a
+    finding whose episodes span two families. Served to BOTH the queue and the
+    exposures feed, because a finding's evidence keys only join to the
+    population they were published over. */
+const twoFamilyInputs = async () => JSON.parse(await readFile(
+  join(ROOT, 'frontend/__fixtures__/findings-projection.json'), 'utf8')).inputs;
+
+/** Open one finding's case file from the queue, by the title a reader sees.
+    Waits for the window's own rows to be in hand first: the queue is a server
+    round trip, and clicking a row from the previous window's answer would be
+    testing the wrong population. */
+const clickQueueRow = async (page, title) => {
+  await page.waitForFunction(() => document.getElementById('level')?.dataset.loading !== 'true');
+  const at = await page.evaluate((want) => [...document.querySelectorAll('#level .qrow')]
+    .findIndex((row) => row.querySelector('.lab')?.textContent.trim() === want), title);
+  if (at < 0) fail(`the queue holds no row titled ${title}`);
+  await page.locator('#level .qrow').nth(at).click();
+  await settle(page, 500);
+};
+
+/** Draw an exact clock window. The plot's minute→pixel map is linear
+    (`xAtMinute`, diagnose-workstation-chart.js), so the brace the canvas is
+    already showing fixes it: two known edges, two known minutes. Solved rather
+    than estimated, because the story's whole subject is one exact window. */
+const drawWindow = async (page, [fromMin, toMin], [standingFrom, standingTo]) => {
+  const b = await plot(page);
+  const before = await state(page);
+  const perMinute = (before.gripB - before.gripA) / (standingTo - standingFrom);
+  const xAt = (m) => b.x + before.gripA + (m - standingFrom) * perMinute;
+  const y = b.y + b.h * 0.5;
+  await page.mouse.move(xAt(fromMin), y);
+  await page.mouse.down();
+  await page.mouse.move(xAt(toMin), y, { steps: 8 });
+  await page.mouse.up();
+  await settle(page, 500);
+};
+
+/** S32 · #57 — selecting a roster occurrence under `By event` draws it. The
+    roster carries the shared (episode, instant) key; the endpoint owns its own
+    opaque catalog id and reuses that pair across several occurrences, so the
+    selection is resolved to an id through the projection already in hand
+    rather than assumed unique. */
+// STORY:finding-evidence-routing:S32
+export const S32 = async (page) => {
+  await clickQueueRow(page, 'Late bolus');
+  const opened = await state(page);
+  ok(opened.evRows > 0, 'S32 precondition: the roster has a row to select');
+  ok(opened.alignShown, 'S32 precondition: ALIGN is offered on this case file');
+  await page.click('#seg-align button:nth-child(2)');
+  await page.locator('.ec-surface').waitFor();
+  await settle(page, 600);
+  await page.click('#level .ev-row');
+  await settle(page, 800);
+  const drawn = await page.evaluate(() => {
+    const exposed = window.__diagnoseEventComparison;
+    const selected = exposed?.selected || null;
+    const catalog = (exposed?.projection?.occurrences || [])
+      .filter((o) => o.identity.ep_id === selected?.identity?.ep_id
+        && o.identity.t === selected?.identity?.t)
+      .map((o) => o.identity.id);
+    return {
+      ep: selected?.identity?.ep_id ?? null,
+      t: selected?.identity?.t ?? null,
+      id: selected?.identity?.id ?? null,
+      requested: exposed?.projection?.selection?.requested_id ?? null,
+      state: exposed?.projection?.selection?.state ?? null,
+      catalog,
+      trace: (exposed?.chart.getOption().series || []).some((series) => series.name === 'Selected occurrence'),
+    };
+  });
+  is(drawn.state, 'selected', 'S32 the endpoint resolved a selection');
+  is(drawn.ep, ROSTER_MEAL.ep_id, 'S32 the event canvas selected the episode the roster row names');
+  is(drawn.t, ROSTER_MEAL.t, "S32 ... at that row's own instant");
+  ok(drawn.catalog.length > 1,
+    `S32 precondition: the (episode, instant) pair is NOT a unique address (${drawn.catalog.length} catalog ids)`);
+  ok(drawn.catalog.includes(drawn.id), 'S32 the selection travels by one of those catalog ids');
+  is(drawn.requested, drawn.id, "S32 ... and that id is what the request carried");
+  ok(drawn.trace, 'S32 the selected occurrence is drawn');
+};
+
+/** S33 · #58 — while the event canvas is mounted, its own header is the only
+    canvas header on screen. The clock canvas's header used to stay mounted
+    underneath and print the clock window over an event-aligned chart. */
+// STORY:finding-evidence-routing:S33
+export const S33 = async (page) => {
+  await clickQueueRow(page, 'Late bolus');
+  const clock = await state(page);
+  ok(clock.clockHead, 'S33 precondition: the clock canvas header is up');
+  is(clock.eventHeads, 0, 'S33 precondition: no event header yet');
+  await page.click('#seg-align button:nth-child(2)');
+  await page.locator('.ec-surface').waitFor();
+  await settle(page, 600);
+  const event = await state(page);
+  is(event.alignPressed, ['By event'], 'S33 the reader is on By event');
+  is(event.clockHead, false, "S33 the clock canvas's header is withdrawn");
+  is(event.eventHeads, 1, 'S33 exactly one canvas header is on screen');
+  is(event.clockCanvas, false, 'S33 the clock canvas is not left drawn underneath');
+  await page.click('#seg-align button:nth-child(1)');
+  await settle(page, 500);
+  const back = await state(page);
+  ok(back.clockHead, 'S33 By clock puts its own header back');
+  is(back.eventCanvas, false, 'S33 ... and takes the event canvas down');
+};
+
+/** S34 · A failed by-event fetch restores the clock canvas and leaves the
+    reader on the finding. Before #62 the clock canvas was hidden BEFORE the
+    fetch and the catch arm hid the event host, so a failed first fetch showed
+    neither canvas at all. */
+// STORY:finding-evidence-routing:S34
+export const S34 = async (page) => {
+  await clickQueueRow(page, 'Late bolus');
+  await page.click('#seg-align button:nth-child(2)');
+  await settle(page, 900);
+  const after = await state(page);
+  is(after.eventCanvas, false, 'S34 the failed event canvas is not left mounted');
+  ok(after.clockCanvas, 'S34 the clock canvas is restored');
+  ok(after.clockHead, 'S34 ... with its own header');
+  is(after.crumb[after.crumb.length - 1], 'Late bolus', 'S34 the reader is left on the finding');
+  ok(/^window [\d,]+ of [\d,]+ readings$/.test(after.scope),
+    `S34 the restored canvas states its own window (${after.scope})`);
+};
+
+/** S35 · A finding whose episodes span two families shows ONE family in the
+    panel and the chart alike. Framing on whichever family held more episodes
+    put a list of one kind beside a chart of the other, with evidence keys that
+    cannot even be joined; the family the event view names wins now. */
+// STORY:finding-evidence-routing:S35
+export const S35 = async (page) => {
+  await clickQueueRow(page, 'Carb undercount');
+  const framed = await state(page);
+  ok(/·\s*meals$/.test(framed.levelWho || ''),
+    `S35 the panel frames on the family the event view names (${framed.levelWho})`);
+  ok(/\bmeal responses\b/.test(framed.levelStat || ''),
+    `S35 ... and counts that family, not the larger one (${framed.levelStat})`);
+  await page.click('#seg-align button:nth-child(2)');
+  await page.locator('.ec-surface').waitFor();
+  await settle(page, 600);
+  const view = await page.evaluate(() =>
+    window.__diagnoseEventComparison?.projection?.coordinates?.view ?? null);
+  is(view, 'meals', 'S35 the chart draws the same family the panel listed');
+};
+
+/** S36 · Narrowing the window until the open finding has no row leaves the
+    reader ON it, with both panes saying so. The alternative was a browser-side
+    fallback filter, which is the third membership rule this change retires. */
+// STORY:finding-evidence-routing:S36
+export const S36 = async (page) => {
+  await clickQueueRow(page, 'Late bolus');
+  const opened = await state(page);
+  is(opened.crumb[opened.crumb.length - 1], 'Late bolus', 'S36 precondition: the finding is open');
+  ok(opened.levelStat !== null, 'S36 precondition: the case file has a population');
+  await page.click('#seg-window button:nth-child(1)');   // Overnight
+  await settle(page, 900);
+  const narrowed = await state(page);
+  is(narrowed.pressed, ['Overnight'], 'S36 the window narrowed');
+  is(narrowed.crumb[narrowed.crumb.length - 1], 'Late bolus', 'S36 the reader stays on the finding');
+  is(narrowed.levelEmpty, 'No findings in the selected window', 'S36 the inspector says so');
+  is(narrowed.scope, 'No findings in the selected window', 'S36 and the canvas says the same');
+  is(narrowed.levelStat, null, 'S36 no previous window content is left standing');
+};
+
+/** S37 · An occurrence whose TRIGGER sits outside the window and whose
+    CONSEQUENCE landed inside it appears in both panes. This is the shape the
+    old browser filter dropped: it kept an occurrence by its own clock minute,
+    so a meal bolused at 13:00 whose high landed at 14:35 was in-window for the
+    server and out for the reader. */
+// STORY:finding-evidence-routing:S37
+export const S37 = async (page) => {
+  const opening = await state(page);
+  is(opening.pressed, ['Overnight'], 'S37 precondition: opens on the Overnight preset');
+  await drawWindow(page, [840, 960], [0, 360]);
+  const drawnWindow = await state(page);
+  is(drawnWindow.chip, 'Window 14:00–16:00', `S37 the reader drew 14:00–16:00 (${drawnWindow.chip})`);
+  await clickQueueRow(page, 'Late bolus');
+  const panel = await state(page);
+  ok(/\b1 of 1 meal responses in 14:00–16:00\b/.test(panel.levelStat || ''),
+    `S37 the panel counts the meal in the drawn window (${panel.levelStat})`);
+  const ticks = await marks(page, 'Occurrences');
+  is(ticks.length, 1, 'S37 the canvas draws exactly that one occurrence');
+  is(ticks[0].meta.t, LATE_MEAL.t, 'S37 ... whose own trigger is at 13:00, outside the window');
+  await page.click('#seg-align button:nth-child(2)');
+  await page.locator('.ec-surface').waitFor();
+  await settle(page, 700);
+  const chart = await page.evaluate(() => {
+    const projection = window.__diagnoseEventComparison?.projection;
+    return {
+      label: projection?.coordinates?.window?.label ?? null,
+      scoped: projection?.coordinates?.window?.scoped ?? null,
+      denominator: projection?.population?.denominator ?? null,
+      context: document.querySelector('.ec-window-context')?.textContent.trim() ?? null,
+    };
+  });
+  is(chart.scoped, true, 'S37 the projection answered for a scoped window');
+  is(chart.label, '14:00–16:00', 'S37 the chart counted the reader\'s own window');
+  is(chart.denominator, 1, 'S37 ... and counted the same single occurrence the panel did');
+  ok(/consequence landed/.test(chart.context || ''),
+    `S37 the canvas states the rule it joined by (${chart.context})`);
+};
+
+
+/** S38 · A published finding whose event-view family holds NONE of this
+    window's evidence still opens, framed on that family. A lever claims
+    evidence only in the families it hit, so `Correction on active insulin` over
+    07:00-10:15 carries one correction cluster and no low, while its event view
+    names `lows`. Framing on nothing left a row the server published that did
+    not move when it was clicked: no case file, no message, no crumb. Framing on
+    the family holding more episodes instead is NOT the repair — that is the
+    panel/chart disagreement this rule exists to retire. */
+// STORY:finding-evidence-routing:S38
+export const S38 = async (page) => {
+  const opening = await state(page);
+  is(opening.pressed, ['Overnight'], 'S38 precondition: opens on the Overnight preset');
+  await drawWindow(page, [420, 615], [0, 360]);
+  const drawn = await state(page);
+  is(drawn.chip, 'Window 07:00–10:15', `S38 the reader drew 07:00–10:15 (${drawn.chip})`);
+  ok(drawn.queue.some((row) => row.title === 'Correction on active insulin'),
+    'S38 precondition: the server published this row for this window');
+  await clickQueueRow(page, 'Correction on active insulin');
+  const opened = await state(page);
+  is(opened.crumb[opened.crumb.length - 1], 'Correction on active insulin',
+    'S38 the published row opens rather than swallowing the click');
+  ok(/\b0 of 0 low episodes in 07:00–10:15\b/.test(opened.levelStat || ''),
+    `S38 it frames on the family its event view names, empty and saying so (${opened.levelStat})`);
+  ok(!/correction cluster/i.test(opened.levelStat || ''),
+    `S38 ... not on the family that happens to hold this window's evidence (${opened.levelStat})`);
+  is(opened.bandKeys, [],
+    'S38 no verdict split is drawn for a family the server published no split for');
+};
+
+/** S39 · A window change ASKS the server for its rows, and until they land the
+    pane counts nothing rather than counting the window that just left. Showing
+    the previous population under the new window's label is a caption asserting
+    a population the canvas did not draw. */
+// STORY:finding-evidence-routing:S39
+export const S39 = async (page) => {
+  await clickQueueRow(page, 'Late bolus');
+  const before = await state(page);
+  ok(/\b5 of 5 meal responses in 00:00–24:00\b/.test(before.levelStat || ''),
+    `S39 precondition: the whole-day population is on screen (${before.levelStat})`);
+  await page.click('#seg-window button:nth-child(3)');   // Afternoon
+  await settle(page, 250);                               // inside the flight
+  const during = await state(page);
+  is(during.levelLoading, 'true', 'S39 the pane declares it is waiting on the server');
+  is(during.levelStat, null, "S39 the previous window's counts are withdrawn");
+  is(during.levelEmpty, 'Counting 12:00–18:00…', 'S39 the pane names the window it is counting');
+  is(during.crumbMeta, '12:00–18:00', 'S39 the meta prints the window with no numbers under it');
+  ok(!/\b5 of 5\b/.test(JSON.stringify(during)), 'S39 no stale count survives anywhere on the pane');
+  await settle(page, 1400);
+  const after = await state(page);
+  is(after.levelLoading, 'false', 'S39 the wait ends when the rows land');
+  ok(/ meal responses in 12:00–18:00\b/.test(after.levelStat || ''),
+    `S39 the new window's own counts land under its own label (${after.levelStat})`);
+};
+
 /* ------------------------------------------------------------------- runner */
 
 /* Discovery tags for every exported replay function above. */
@@ -1327,11 +1677,26 @@ export const S31 = async (page) => {
 // STORY:finding-evidence-routing:S23
 // STORY:finding-evidence-routing:S24
 // STORY:finding-evidence-routing:S25
+// STORY:finding-evidence-routing:S26
+// STORY:finding-evidence-routing:S27
+// STORY:finding-evidence-routing:S28
+// STORY:finding-evidence-routing:S29
+// STORY:finding-evidence-routing:S30
+// STORY:finding-evidence-routing:S31
+// STORY:finding-evidence-routing:S32
+// STORY:finding-evidence-routing:S33
+// STORY:finding-evidence-routing:S34
+// STORY:finding-evidence-routing:S35
+// STORY:finding-evidence-routing:S36
+// STORY:finding-evidence-routing:S37
+// STORY:finding-evidence-routing:S38
+// STORY:finding-evidence-routing:S39
 // STORY:finding-evidence-routing:D1
 // STORY:finding-evidence-routing:D2
 // STORY:finding-evidence-routing:D3
 
-/** Each story names the state it must open in. */
+/** Each story names the state it must open in, and — where the shipped payload
+    cannot pose its shape — the synthetic override it opens on. */
 export const STORIES = [
   ['S01', S01, 'drawn'], ['S02', S02, 'typical'], ['S03', S03, 'drawn'],
   ['S04', S04, 'drawn'], ['S05', S05, 'drawn'], ['S06', S06, 'typical'],
@@ -1344,6 +1709,20 @@ export const STORIES = [
   ['S24', S24, 'typical'], ['S25', S25, 'typical'],
   ['S26', S26, 'dense'], ['S27', S27, 'typical'], ['S28', S28, 'typical'],
   ['S29', S29, 'typical'], ['S30', S30, 'typical'], ['S31', S31, 'typical'],
+  ['S32', S32, 'dense', { findingsInputs: withFiredMeal, exposuresInputs: (d) => withFiredMeal(d).exposures }],
+  ['S33', S33, 'dense', { findingsInputs: withFiredMeal, exposuresInputs: (d) => withFiredMeal(d).exposures }],
+  ['S34', S34, 'dense', { comparisonStatus: 500 }],
+  ['S35', S35, 'dense', {
+    findingsInputs: twoFamilyInputs,
+    exposuresInputs: async () => (await twoFamilyInputs()).exposures,
+  }],
+  ['S36', S36, 'dense'],
+  ['S37', S37, 'typical', {
+    findingsInputs: withLateConsequence,
+    exposuresInputs: (d) => withLateConsequence(d).exposures,
+  }],
+  ['S38', S38, 'typical'],
+  ['S39', S39, 'dense', { findingsDelayMs: 900 }],
   ['D1', D1, 'dense'], ['D2', D2, 'dense'], ['D3', D3, 'dense'],
 ];
 
@@ -1357,9 +1736,9 @@ if (isMain) {
   const only = process.env.ONLY ? new Set(process.env.ONLY.split(',')) : null;
   const browser = await chromium.launch({ executablePath: process.env.PLAYWRIGHT_EXECUTABLE_PATH || undefined });
   const results = [];
-  for (const [id, fn, want] of STORIES) {
+  for (const [id, fn, want, options] of STORIES) {
     if (only && !only.has(id)) continue;
-    const page = await openApp(browser, { state: want });
+    const page = await openApp(browser, { state: want, ...(options || {}) });
     try {
       const note = await fn(page);
       results.push([id, 'pass', note || '']);

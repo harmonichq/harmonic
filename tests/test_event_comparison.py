@@ -21,6 +21,7 @@ from ciq_autotune.event_comparison import (
     ComparisonQuery,
     prepare_event_comparisons,
 )
+from ciq_autotune.findings_projection import FindingsProjection
 from ciq_autotune.window_membership import WindowQuery
 from ciq_autotune.events import CarbEntry
 from ciq_autotune.store import Store
@@ -84,6 +85,21 @@ class EventComparisonTest(unittest.TestCase):
     def test_only_preparation_exposes_the_comparison_projection_interface(self):
         self.assertFalse(hasattr(event_comparison, "build_event_comparison"))
 
+    def test_capture_without_an_outcome_minute_fails_closed(self):
+        capture = {
+            "schema": "issue-677-event-comparison-capture-v2",
+            "views": {"meals": {
+                "factors": [], "factor_labels": {}, "occurrences": [{
+                    "id": "meals-1", "anchor_bolus": {"seq_num": 1},
+                    "trace": {"boluses": [{"minute": 0, "seq_num": 1,
+                                               "completion": "Completed", "insulin": 1,
+                                               "carbs": 20}]}, "routes": {},
+                }],
+            }},
+        }
+        with self.assertRaisesRegex(AssertionError, "missing outcome minute"):
+            event_comparison._validate_capture(capture)
+
     def test_preparation_projects_one_closed_meal_coordinate(self):
         occurrence = {
             "t": "2026-08-01 12:00:00", "date": "2026-08-01", "bg": 150,
@@ -134,6 +150,10 @@ class EventComparisonTest(unittest.TestCase):
         })
         self.assertEqual(cohort["support"], "withheld")
         self.assertTrue(all(point["median"] is None for point in cohort["points"]))
+        self.assertEqual(cohort["episodes"], [{
+            "identity": projection["occurrences"][0]["identity"],
+            "glucose": [{"minute": 0.0, "bg": 150}],
+        }])
         unavailable = preparation.project(ComparisonQuery.meals(
             occurrence_id="stale-catalog-id",
         ))
@@ -263,6 +283,7 @@ class EventComparisonTest(unittest.TestCase):
         point = next(item for item in cohort["points"] if item["minute"] == 5)
         self.assertEqual(point["n"], 5)
         self.assertEqual(point["support"], "supported")
+        self.assertNotIn("episodes", cohort)
 
     def test_half_cohort_demotion_boundary_is_pinned_both_sides(self):
         """count * 2 >= usable_count is the supported/limited boundary.
@@ -721,6 +742,62 @@ class EventComparisonTest(unittest.TestCase):
             )
         self.assertEqual(result["population"]["denominator"], 2)
 
+    def test_findings_and_event_comparison_share_outcome_anchored_membership(self):
+        meal = {
+            "t": "2026-08-01 13:00:00", "date": "2026-08-01", "bg": 150,
+            "worst_bg": 220, "label": "Meal", "ep_id": "shared", "cause_lever": "carb_undercount",
+            "cause_title": "Carb undercount", "verdicts": [{
+                "classifier": "carb_undercount", "matched": True, "detail": "matched",
+                "evidence_tier": "observed", "silence_reason": "no_trigger",
+            }],
+        }
+        high = {
+            "t": "2026-08-01 14:35:00", "date": "2026-08-01", "bg": 200,
+            "worst_bg": 220, "label": "High", "ep_id": "shared", "cause_lever": None,
+            "verdicts": [],
+        }
+        exposures = _families(meal)
+        exposures["exposures"]["highs"] = {"occurrences": [high]}
+        window = WindowQuery.clock(14 * 60, 15 * 60)
+        findings = FindingsProjection({}, exposures, {}).project(window)
+        bolus = SimpleNamespace(t=datetime(2026, 8, 1, 13), completion="Completed",
+                                insulin=3.0, carbs=30.0, carb_ratio=None, bg=None, seq_num=42)
+        with (patch("ciq_autotune.explore_exposures.build_exposures", return_value=exposures),
+              patch("ciq_autotune.event_comparison._effective_isf", return_value=None)):
+            event = prepare_event_comparisons(_Store([bolus])).project(
+                ComparisonQuery.meals(window=window)
+            )
+        finding = next(row for row in findings["rows"] if row.get("lever") == "carb_undercount")
+        finding_keys = {(item["ep_id"], item["t"])
+                        for item in finding["evidence"] if item["family"] == "meals"}
+        event_keys = {(item["identity"]["ep_id"], item["identity"]["t"])
+                      for item in event["occurrences"]}
+        self.assertEqual(finding_keys, event_keys)
+        self.assertIn(("shared", "2026-08-01 13:00:00"), event_keys)
+
+    def test_whole_day_population_includes_occurrences_a_narrow_window_excludes(self):
+        first = {
+            "t": "2026-08-01 08:00:00", "date": "2026-08-01", "bg": 150,
+            "worst_bg": 220, "label": "Meal", "ep_id": "early", "cause_lever": None,
+            "verdicts": [{"classifier": "carb_undercount", "matched": True,
+                          "detail": "matched", "evidence_tier": "observed",
+                          "silence_reason": "no_trigger"}],
+        }
+        second = {**first, "t": "2026-08-01 18:00:00", "ep_id": "late"}
+        boluses = [SimpleNamespace(t=datetime(2026, 8, 1, hour), completion="Completed",
+                                   insulin=3.0, carbs=30.0, carb_ratio=None, bg=None, seq_num=hour)
+                   for hour in (8, 18)]
+        with (patch("ciq_autotune.explore_exposures.build_exposures",
+                    return_value=_families_many([first, second])),
+              patch("ciq_autotune.event_comparison._effective_isf", return_value=None)):
+            preparation = prepare_event_comparisons(_Store(boluses))
+            whole_day = preparation.project(ComparisonQuery.meals())
+            narrow = preparation.project(ComparisonQuery.meals(
+                window=WindowQuery.clock(7 * 60, 9 * 60),
+            ))
+        self.assertEqual(whole_day["population"]["denominator"], 2)
+        self.assertEqual(narrow["population"]["denominator"], 1)
+
     def test_meal_ids_use_stored_seq_num_through_a_real_store(self):
         # #715: the meals-view id must be derived from the anchor bolus's real
         # seq_num, never a positional fallback. Use large seq_nums (way past any
@@ -828,9 +905,13 @@ class EventComparisonRouteTest(unittest.TestCase):
                 "/diagnose/event-comparison?view=lows&factor=late_bolus"
             )
             bad = client.get("/diagnose/event-comparison?window=14")
-            low = client.get("/diagnose/event-comparison?view=lows&another=1")
+            low = client.get("/diagnose/event-comparison?view=lows&another=1"
+                             "&occ=stale-catalog-id")
             bad_block = client.get(
                 "/diagnose/event-comparison?view=meals&block=midday"
+            )
+            retired_block = client.get(
+                "/diagnose/event-comparison?view=meals&block=evening"
             )
             bad_another = client.get(
                 "/diagnose/event-comparison?view=meals&another=true"
@@ -852,6 +933,7 @@ class EventComparisonRouteTest(unittest.TestCase):
         self.assertEqual(payload["coordinates"]["window"], {
             "scoped": False, "start_min": None, "end_min": None, "label": None,
         })
+        self.assertEqual(payload["population"]["denominator"], 0)
         self.assertEqual(set(payload["population"]["counts"]), {
             "fired", "near_rule", "neutral", "another_factor", "excluded",
         })
@@ -875,10 +957,13 @@ class EventComparisonRouteTest(unittest.TestCase):
         self.assertEqual(low_payload["coordinates"]["another"], True)
         self.assertEqual([cohort["key"] for cohort in low_payload["cohorts"]],
                          ["fired", "near_rule", "neutral", "another_factor"])
-        self.assertEqual(low_payload["selection"], {"state": "none", "detail": None})
+        self.assertEqual(low_payload["selection"], {
+            "state": "unavailable", "requested_id": "stale-catalog-id", "detail": None,
+        })
         self.assertEqual(incompatible.status_code, 400)
         self.assertEqual(bad.status_code, 400)
         self.assertEqual(bad_block.status_code, 400)
+        self.assertEqual(retired_block.status_code, 400)
         self.assertEqual(bad_another.status_code, 400)
         self.assertEqual(empty_factor.status_code, 400)
 

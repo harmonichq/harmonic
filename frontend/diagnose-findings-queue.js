@@ -65,9 +65,11 @@ function num(value) {
 export function queueMeta(projection) {
   const rows = projection?.rows || [];
   const days = projection?.findings_window?.days;
-  if (!rows.length) return `${days} days`;
+  const dayWord = days === 1 ? 'day' : 'days';
+  if (!rows.length) return `${days} ${dayWord}`;
   if (projection?.window?.scoped) return `${rows.length} in this window`;
-  return `${rows.length} findings · ${days} days`;
+  const findingWord = rows.length === 1 ? 'finding' : 'findings';
+  return `${rows.length} ${findingWord} · ${days} ${dayWord}`;
 }
 
 /** The `n of m <family noun>` phrases a finding carries, one per family appearance

@@ -672,21 +672,25 @@ button.entry .pill[data-empty="true"] { visibility: hidden; }
    flush beneath it. Right: the flavor tag in a FIXED column just inside the
    chevron, so it lands at the same x on every row instead of trailing a title of
    variable length. Nothing sits between the two. */
-/* UNIFORM CARD HEIGHT (Connor, 2026-08-19: "I really want each of these
-   finding cards to be the same size, even if they carry different content …
-   all of them being slightly different sizes is unacceptable"). A fixed
-   height sized for the worst case this row shape can hold — title (1 line) +
-   appearances (up to 2, term 35's multi-family list) + reason line (1, held
-   only) — with `grid-template-rows` reserving that same three-row budget on
-   EVERY row, whether or not a given row's content fills it. Overflow never
-   grows the card: `.lab`/`.den`/`.why` all clamp instead (below). */
+/* CARD GEOMETRY REBUILT (Connor, 2026-08-19, rejecting the fixed-84px card:
+   "these cards are… way too big, the padding is all wrong. If they're going
+   to be cards, this just isn't it"). "Equal size" is satisfied as equal
+   TREATMENT — identical padding, type scale and line-height on every row,
+   including the noted tier (no padding overrides) — not identical pixel
+   height. Row height is auto, sized by its real content: 8px vertical
+   padding (was an asymmetric 6px) + one label line + 4px row gap + one
+   detail line (`.den` XOR `.why` — `detailFor` in diagnose-findings-queue.js
+   picks exactly one per row, never both, so they were never two lines to
+   reserve for) ≈ 48-52px. If a future reason genuinely needs two lines that
+   row may grow; nothing in the current queue does, so `-webkit-line-clamp: 1`
+   on the detail line is a backstop, not a design target. */
 .dw .qrow {
-  --tag-col: 74px;
-  display: grid; width: 100%; text-align: left; height: 84px;
+  --tag-col: 58px;
+  display: grid; width: 100%; text-align: left;
   grid-template-columns: minmax(0, 1fr) var(--tag-col) 12px;
-  grid-template-rows: auto auto auto;
-  column-gap: 9px; row-gap: 2px;
-  align-items: baseline; padding: 6px var(--ck-pad);
+  grid-template-rows: auto auto;
+  column-gap: 9px; row-gap: 4px;
+  align-items: baseline; padding: 8px var(--ck-pad);
   border: 0; background: none; color: inherit; overflow: hidden;
 }
 .dw button.qrow { cursor: pointer; }
@@ -716,9 +720,10 @@ button.entry .pill[data-empty="true"] { visibility: hidden; }
 .dw .qrow .go { grid-column: 3; grid-row: 1; color: var(--ck-accent); font-size: 12px; }
 .dw .qrow .den {
   grid-column: 1 / -1; grid-row: 2; font-size: var(--ck-data); color: var(--mk-muted); line-height: 1.45;
-  /* clamps, never grows the card (Connor, 2026-08-19) — a finding with many
-     family appearances (term 35) gets the same box as one with a single line */
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  /* one line, a backstop not a design target (see the geometry note above) —
+     nothing in the current queue's family appearances (term 35) needs a
+     second line, and overflow ellipsizes rather than growing the row */
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .dw .qrow .den .sep { margin: 0 6px; opacity: .6; }
 /* Monospace is reserved for column-aligned digits (the evidence table, the lane
@@ -740,9 +745,9 @@ button.entry .pill[data-empty="true"] { visibility: hidden; }
   margin: 14px 0 0; padding: 0 var(--ck-pad);
   font-size: 11.5px; color: var(--mk-muted); line-height: 1.5;
 }
-/* Height stays the fixed card size even in the demoted tail (Connor,
-   2026-08-19) — the tail's own weight/size step off `.lab` already reads as
-   quieter without shrinking the box every card shares. */
+/* No padding override in the demoted tail (Connor, 2026-08-19) — "equal
+   size" is equal padding/type-scale/line-height treatment, not a shrunk box;
+   the tail's own weight/size step off `.lab` already reads as quieter. */
 /* the tail recedes the flavor but never re-hues it: same identity, less ink, so
    the Setting/Habit read survives the demotion */
 .dw .qrow[data-tier="noted"] .tag.setting { color: color-mix(in srgb, var(--primary) 72%, transparent); }
@@ -763,7 +768,7 @@ button.entry .pill[data-empty="true"] { visibility: hidden; }
 }
 /* one reason-line treatment too, for the same reason */
 .dw .qrow .why {
-  grid-column: 1 / -1; grid-row: 3; font-size: 11.5px; color: var(--mk-secondary); line-height: 1.45;
+  grid-column: 1 / -1; grid-row: 2; font-size: 11.5px; color: var(--mk-secondary); line-height: 1.45;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 

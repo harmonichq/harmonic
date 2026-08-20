@@ -25,6 +25,17 @@ test('term 45 · the meta has three forms and no others', () => {
   }
 });
 
+test('term 45 · singular counts read "1 finding"/"1 day", never "1 findings"/"1 days"', () => {
+  const oneFinding = { rows: [{ register: 'finding' }], window: { scoped: false },
+    findings_window: { days: 30 } };
+  assert.equal(queueMeta(oneFinding), '1 finding · 30 days');
+  const oneDay = { rows: [{ register: 'finding' }], window: { scoped: false },
+    findings_window: { days: 1 } };
+  assert.equal(queueMeta(oneDay), '1 finding · 1 day');
+  const emptyOneDay = { rows: [], window: { scoped: false }, findings_window: { days: 1 } };
+  assert.equal(queueMeta(emptyOneDay), '1 day');
+});
+
 test('term 41 · a scoped EMPTY window says only how much history it looked at', () => {
   // term 41 governs an empty WINDOW, so the empty form beats the scoped one:
   // ranking language needs something ranked, and "0 in this window" counts a thing

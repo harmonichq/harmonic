@@ -18,6 +18,19 @@
         "cd mockups && python3 -m http.server 8901"
       ],
       "port": 8901
+    },
+    {
+      "name": "harmonic-nofetch",
+      "runtimeExecutable": "uv",
+      "runtimeArgs": [
+        "run",
+        "harmonic",
+        "serve",
+        "--no-fetch",
+        "--db",
+        "mockups/revise-e2e.synthetic/harmonic.sqlite"
+      ],
+      "port": 8765
     }
   ]
 }

@@ -52,8 +52,13 @@ Disposition: copied into the work order.
   panes disagreeing without saying so; one occurrence becoming a median; any path from
   this lens into a recommendation, Plan or settings action.
 - **Must recover:** nothing automatically.
-- **Accepted failure:** a failed projection fetch under `By event` leaves the reader on
-  the canvas already drawn, and they flip back by hand. This is today's behavior.
+- **Accepted failure:** a failed projection fetch under `By event` restores the clock
+  canvas and leaves the reader there. CORRECTED 2026-08-19, cold review round 1: the
+  original line claimed this was today's behavior and it is not. `paintAlign` hides the
+  clock canvas before fetching and the catch arm hides the event host, so a first-fetch
+  failure today leaves neither canvas on screen. A failed re-projection must not
+  navigate, so restoring the clock canvas becomes work in the order rather than an
+  accepted outcome.
 - **Unsupported:** verification against real pump data; zero-span windows, which the
   queue's own window rule already rejects.
 - **Evidence owed:** the two projections agreeing on membership for one window,
@@ -64,6 +69,25 @@ Disposition: copied into the work order.
 ## Open questions
 
 - none; the frontier is empty.
+
+### Cold review, round 1 (two Codex reviewers, 2026-08-19)
+
+10 blocking objections, all `authoring`, none `injected`, none refuted on reproduction.
+Four were structural: no per-episode glucose on the wire for the thin-cohort draw, no
+occurrence key shared by the two projections, the 24 h preset rejected as a zero-span
+window, and the mirror's support stamp keyed on the retiring block coordinate. The
+order was rewritten clean rather than patched, and the work sliced into three serial
+sub-orders on the slicing rubric's multiple-artifacts and live-run traits.
+
+Decisions taken while rewriting, recorded not asked:
+- The occurrence identity both projections publish is `ep_id` plus the anchor's own
+  timestamp, the pair the inspector already joins on. `ep_id` alone collides.
+- A withheld cohort publishes its episodes' own traces as a bounded server-owned field,
+  because the reader-facing decision (Q3) cannot be met from the aggregate payload.
+- The response and capture schemas bump rather than mutating in place, since the
+  coordinate change is not backward compatible.
+- The surface change goes through `/ui-craft`'s revise lane with fidelity evidence, per
+  the charter's lock-then-build rule for user-facing surfaces.
 
 ## Spawned tasks
 

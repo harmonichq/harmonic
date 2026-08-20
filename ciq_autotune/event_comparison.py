@@ -773,12 +773,12 @@ def _cohort_projection(
             {
                 "identity": _identity(occurrence, config),
                 "glucose": [
-                    {"minute": point["minute"], "bg": point["bg"]}
+                    {"minute": _five_minute_bin(point["minute"]), "bg": point["bg"]}
                     for point in occurrence["trace"]["cgm"]
                     if _finite(point.get("bg")) and _finite(point.get("minute"))
                 ],
             }
-            for occurrence in occurrences
+            for occurrence in usable
         ]
     return projection
 

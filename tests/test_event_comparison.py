@@ -719,6 +719,8 @@ class EventComparisonTest(unittest.TestCase):
                 occurrence_id=item["identity"]["id"],
             ))
             self.assertEqual(selected["selection"]["state"], "selected")
+            self.assertEqual(selected["selection"]["detail"]["identity"]["id"],
+                             item["identity"]["id"])
 
     def test_a_wrapping_window_keeps_occurrences_on_both_sides_of_midnight(self):
         before = {
@@ -730,12 +732,15 @@ class EventComparisonTest(unittest.TestCase):
         }
         after = {**before, "t": "2026-08-02 01:30:00", "date": "2026-08-02",
                  "ep_id": "after"}
+        outside = {**before, "t": "2026-08-01 12:00:00", "ep_id": "outside"}
         boluses = [SimpleNamespace(t=datetime(2026, 8, 1, 23, 30), completion="Completed",
                                    insulin=3.0, carbs=30.0, carb_ratio=None, bg=None, seq_num=1),
                    SimpleNamespace(t=datetime(2026, 8, 2, 1, 30), completion="Completed",
-                                   insulin=3.0, carbs=30.0, carb_ratio=None, bg=None, seq_num=2)]
+                                   insulin=3.0, carbs=30.0, carb_ratio=None, bg=None, seq_num=2),
+                   SimpleNamespace(t=datetime(2026, 8, 1, 12), completion="Completed",
+                                   insulin=3.0, carbs=30.0, carb_ratio=None, bg=None, seq_num=3)]
         with (patch("ciq_autotune.explore_exposures.build_exposures",
-                    return_value=_families_many([before, after])),
+                    return_value=_families_many([before, after, outside])),
               patch("ciq_autotune.event_comparison._effective_isf", return_value=None)):
             result = prepare_event_comparisons(_Store(boluses)).project(
                 ComparisonQuery.meals(window=WindowQuery.clock(22 * 60, 2 * 60))
@@ -929,6 +934,10 @@ class EventComparisonRouteTest(unittest.TestCase):
         self.assertNotIn("exposures", payload)
         self.assertEqual(set(payload), {
             "schema", "coordinates", "population", "cohorts", "occurrences", "selection",
+        })
+        self.assertEqual(set(payload["coordinates"]), {
+            "view", "factor", "window", "another", "source_window", "anchor",
+            "alignment_window_min", "factor_options",
         })
         self.assertEqual(payload["coordinates"]["window"], {
             "scoped": False, "start_min": None, "end_min": None, "label": None,

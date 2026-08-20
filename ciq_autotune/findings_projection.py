@@ -78,11 +78,6 @@ _FAMILY_NOUN = {
     "correction_clusters": "correction clusters",
 }
 
-# The anchor kind each exposure family holds, so an occurrence can be found from its
-# episode when a lever re-anchors it (the inverse of `explore_exposures._FAMILY_FOR_KIND`).
-_KIND_FOR_FAMILY = {"lows": "low", "meals": "meal", "highs": "high",
-                    "correction_clusters": "correction"}
-
 # Register order in the queue: asserting and counted rows share the ranked head,
 # held and blind follow in the demoted register (term 38).
 _REGISTER_RANK = {"assert": 0, "finding": 0, "held": 1, "blind": 2}
@@ -104,11 +99,6 @@ def _span_label(start_min: int, end_min: int) -> str:
     if (start_min + _SLOT_MINUTES) % DAY_MINUTES == end_min % DAY_MINUTES:
         return _hhmm(start_min)
     return f"{_hhmm(start_min)} to {_hhmm(end_min)}"
-
-
-def _overlaps(pieces: Sequence[Tuple[int, int]],
-              window: Sequence[Tuple[int, int]]) -> bool:
-    return any(max(a, c) < min(b, d) for a, b in pieces for c, d in window)
 
 
 @dataclass(frozen=True)

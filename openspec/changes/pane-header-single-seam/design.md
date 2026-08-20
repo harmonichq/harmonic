@@ -44,8 +44,10 @@ matched; the canvas bottom was 115 px at 1440×900 and 111 px at 1280×800, whil
 the corresponding inspector bottom was one pixel lower. The same eight entries
 passed after the correction.
 
-The complete before/after matrix remains external review evidence, outside the
-publishable tree:
+Four representative synthetic renders are preserved beside this record under
+`evidence/`: populated Diagnose in the light theme and populated Verify in the
+dark theme, each before and after the shared-role correction. The complete
+eight-entry matrix remains local review evidence:
 
 - before: `/tmp/harmonic-59-before.4DQbP1/`;
 - after: `/tmp/harmonic-59-after.VrHcOq/`.

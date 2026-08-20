@@ -197,10 +197,11 @@ html.dark .cockpit-footer {
 :is(.dw, .vw) .pane > header {
   min-height: 30px;
   align-items: center;
+  padding-top: 4px;
+  padding-bottom: 4px;
   background: var(--wk-surface-rail);
   border-bottom: 1px solid var(--wk-rule);
 }
-:is(.dw, .vw) .canvas-pane > header { padding-top: 4px; padding-bottom: 4px; }
 
 /* Dark has to make the material step explicit or the inspector floats on the
    chart's own ground. Light never needed it stated: the sheet and the rail were

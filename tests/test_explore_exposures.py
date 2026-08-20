@@ -62,7 +62,7 @@ class ExploreExposuresTest(unittest.TestCase):
         })
         for family in payload["exposures"].values():
             self.assertEqual(family, {
-                "n": 0, "attributed": 0, "clean": 0,
+                "n": 0, "attributed": 0, "clean": 0, "uncaused": 0,
                 "levers": [], "by_cause": {}, "occurrences": [],
             })
 

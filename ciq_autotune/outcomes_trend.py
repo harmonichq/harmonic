@@ -140,6 +140,7 @@ _BEHAVIOR_ORDER = [
     Lever.CORRECTION_ON_IOB,
     Lever.CORRECTION_STACKING,
     Lever.MISSED_MEAL,
+    Lever.MEAL_BOLUS_SHORT,
 ]
 
 # The override-rate tile (#161) is NOT a scenario Lever — it is provenance, not a low

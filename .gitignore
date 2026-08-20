@@ -157,8 +157,6 @@ worktrees/
 .codex/worktrees/
 .claude/worktrees/
 .claude/settings.local.json
-.agents/skills/**/node_modules/
-.claude/skills/**/node_modules/
 
 # #394 screenshot harness scratch (pre-change builder copy)
 frontend/.chart-builders.before.mjs

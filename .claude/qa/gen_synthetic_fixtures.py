@@ -145,6 +145,11 @@ def build_exposures():
              for i, m in enumerate((455, 780, 1150, 465, 790))]
     highs = [occurrence(80 + i, m, Lever.MISSED_MEAL, rng)
              for i, m in enumerate((520, 830, 1200))]
+    # #63 — one high the engine accounts for NOTHING about, so the browser gates
+    # actually render the unexplained-highs line beneath the queue. Without it the
+    # count is zero, the server publishes no sentence, and the whole surface is
+    # certified by a fixture that can never show it.
+    highs += [occurrence(83, 1310, Lever.MISSED_MEAL, rng, matched=False)]
     clusters = [occurrence(90 + i, m, Lever.CORRECTION_ON_IOB, rng)
                 for i, m in enumerate((610, 900))]
 
@@ -154,8 +159,14 @@ def build_exposures():
             if o['attributed'] and o['cause_title']:
                 by_cause[o['cause_title']] = by_cause.get(o['cause_title'], 0) + 1
         # RESCOPABLE requires occurrences to be COMPLETE: len == n.
+        # `uncaused` counts occurrences whose EPISODE drew no lever anywhere (#63).
+        # Every occurrence here carries its own `ep_id`, so no episode is shared
+        # across families and an unattributed occurrence is alone in its episode —
+        # which is the one arrangement where this equals the unattributed count.
+        # Production does NOT have that property and must not derive it this way.
         return {'n': len(rows), 'attributed': sum(1 for o in rows if o['attributed']),
                 'clean': sum(1 for o in rows if not o['attributed']),
+                'uncaused': sum(1 for o in rows if not o['attributed']),
                 'levers': list(dict.fromkeys(
                     o['cause_lever'] for o in rows if o['cause_lever'] is not None)),
                 'by_cause': by_cause, 'occurrences': rows}

@@ -7203,7 +7203,8 @@
        ],
        "worst_bg": 61.0
       }
-     ]
+     ],
+     "uncaused": 0
     },
     "highs": {
      "attributed": 3,
@@ -7309,7 +7310,8 @@
        ],
        "worst_bg": 245.0
       }
-     ]
+     ],
+     "uncaused": 1
     },
     "lows": {
      "attributed": 2,
@@ -7446,7 +7448,8 @@
        ],
        "worst_bg": 73.0
       }
-     ]
+     ],
+     "uncaused": 4
     },
     "meals": {
      "attributed": 1,
@@ -7528,7 +7531,8 @@
        ],
        "worst_bg": 149.0
       }
-     ]
+     ],
+     "uncaused": 2
     }
    },
    "window": {
@@ -7620,6 +7624,10 @@
    },
    "rows": [],
    "schema": "diagnose-findings-v1",
+   "uncaused_highs": {
+    "count": 0,
+    "text": null
+   },
    "window": {
     "end_min": null,
     "label": null,
@@ -7641,6 +7649,10 @@
    },
    "rows": [],
    "schema": "diagnose-findings-v1",
+   "uncaused_highs": {
+    "count": 0,
+    "text": null
+   },
    "window": {
     "end_min": 480,
     "label": "04:30–08:00",
@@ -7995,6 +8007,10 @@
     }
    ],
    "schema": "diagnose-findings-v1",
+   "uncaused_highs": {
+    "count": 1,
+    "text": "1 high had no cause detected by the app"
+   },
    "window": {
     "end_min": 1260,
     "label": "14:00–21:00",
@@ -8557,6 +8573,10 @@
     }
    ],
    "schema": "diagnose-findings-v1",
+   "uncaused_highs": {
+    "count": 1,
+    "text": "1 high had no cause detected by the app"
+   },
    "window": {
     "end_min": null,
     "label": null,
@@ -8739,6 +8759,10 @@
     }
    ],
    "schema": "diagnose-findings-v1",
+   "uncaused_highs": {
+    "count": 1,
+    "text": "1 high had no cause detected by the app"
+   },
    "window": {
     "end_min": 840,
     "label": "12:00–14:00",
@@ -8915,6 +8939,10 @@
     }
    ],
    "schema": "diagnose-findings-v1",
+   "uncaused_highs": {
+    "count": 1,
+    "text": "1 high had no cause detected by the app"
+   },
    "window": {
     "end_min": 480,
     "label": "04:30–08:00",
@@ -9082,6 +9110,10 @@
     }
    ],
    "schema": "diagnose-findings-v1",
+   "uncaused_highs": {
+    "count": 1,
+    "text": "1 high had no cause detected by the app"
+   },
    "window": {
     "end_min": 120,
     "label": "22:00–02:00",
@@ -9142,6 +9174,10 @@
     }
    ],
    "schema": "diagnose-findings-v1",
+   "uncaused_highs": {
+    "count": 1,
+    "text": "1 high had no cause detected by the app"
+   },
    "window": {
     "end_min": 240,
     "label": "03:00–04:00",
@@ -9321,6 +9357,10 @@
     }
    ],
    "schema": "diagnose-findings-v1",
+   "uncaused_highs": {
+    "count": 1,
+    "text": "1 high had no cause detected by the app"
+   },
    "window": {
     "end_min": 960,
     "label": "14:00–16:00",

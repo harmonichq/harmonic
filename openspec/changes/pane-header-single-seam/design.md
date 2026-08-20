@@ -35,3 +35,21 @@ base 8 px padding and its natural content box lands one pixel taller. The
 implementation should normalize both consumers through the shared role without
 disturbing their distinct horizontal padding and readout anatomy, not add
 surface-specific offsets.
+
+## Verification evidence
+
+The rendered Cockpit regression failed before the shared-role correction in all
+eight populated surface/viewport/theme entries. The canvas and inspector tops
+matched; the canvas bottom was 115 px at 1440×900 and 111 px at 1280×800, while
+the corresponding inspector bottom was one pixel lower. The same eight entries
+passed after the correction.
+
+The complete before/after matrix remains external review evidence, outside the
+publishable tree:
+
+- before: `/tmp/harmonic-59-before.4DQbP1/`;
+- after: `/tmp/harmonic-59-after.VrHcOq/`.
+
+The post-fix safe running app also measured 30 px / 30 px at 1280×720 in light
+and dark themes. The frozen behavior replays passed unchanged: Verify 8/8 and
+Diagnose 42/42 stories.

@@ -647,6 +647,66 @@ test('cockpit chrome uses only the locked type ranks and three materials', async
   } finally { if (page) await page.close(); }
 });
 
+test('Diagnose and Verify pane headers meet on one seam at every desktop size and theme', async () => {
+  const mismatches = [];
+  if (SHOTS) await mkdir(SHOTS, { recursive: true });
+  for (const viewport of VIEWPORTS) {
+    for (const theme of ['light', 'dark']) {
+      for (const surface of ['diagnose', 'verify']) {
+        const browser = await launch();
+        let page;
+        try {
+          page = await openApp(browser, { viewport, theme, tab: surface });
+          const root = surface === 'diagnose' ? '.dw' : '.vw';
+          await page.locator(root).waitFor();
+          // This fixture opener is intentionally network-free, so it cannot load
+          // the shipped Inter webfont. Pin the 14px line box observed in the safe
+          // running app; otherwise Chromium's fallback font hides the 30px/31px
+          // split this gate exists to catch.
+          await page.addStyleTag({ content:
+            `${root} .pane > header h2, ${root} .pane > header .meta { line-height: 14px; }` });
+          const canvasHeader = surface === 'diagnose'
+            ? '.canvas-pane > header' : '.panes > .pane:first-child > header';
+          const seam = await page.evaluate(({ selector, canvasSelector }) => {
+            const rect = (suffix) => {
+              const box = document.querySelector(`${selector} ${suffix}`).getBoundingClientRect();
+              return { top: box.top, right: box.right, bottom: box.bottom, left: box.left };
+            };
+            const canvas = rect(canvasSelector);
+            const inspector = rect('.inspector > header');
+            return {
+              canvas,
+              inspector,
+              populated: selector === '.dw'
+                ? document.querySelectorAll(`${selector} .qrow`).length > 0
+                : Boolean(document.querySelector(`${selector} .trial-line`)),
+            };
+          }, { selector: root, canvasSelector: canvasHeader });
+          const label = `${surface} ${viewport.width}x${viewport.height} ${theme}`;
+          assert.equal(seam.populated, true, `${label} mounts its populated workstation`);
+          assert.ok(seam.canvas.left < seam.inspector.left,
+            `${label} keeps the canvas and inspector side by side`);
+          if (seam.canvas.top !== seam.inspector.top || seam.canvas.bottom !== seam.inspector.bottom) {
+            mismatches.push({
+              label,
+              canvas: { top: seam.canvas.top, bottom: seam.canvas.bottom },
+              inspector: { top: seam.inspector.top, bottom: seam.inspector.bottom },
+            });
+          }
+          if (SHOTS) {
+            await page.screenshot({
+              path: join(SHOTS, `header-seam-${surface}-${viewport.width}x${viewport.height}-${theme}.png`),
+              fullPage: true,
+            });
+          }
+        } finally { if (page) await page.close(); }
+      }
+    }
+  }
+  assert.deepEqual(mismatches, [],
+    'canvas and inspector header top and bottom border coordinates must match');
+});
+
 test('small widths retain a labeled destination drawer without changing desktop cockpit chrome', async () => {
   const browser = await launch();
   let page;

@@ -320,3 +320,29 @@ decision, not an undiscovered typo. Exactly one qualifies.
 resettle — and has **no `revise`**. The operator's global copy at
 `~/.claude/skills/ui-craft/` is newer and does have `revise.md`. The order's step 10
 names the revise lane, which the repo's own pinned copy cannot execute. Put to the user.
+
+## Closed
+
+Work order posted to the ticket as
+https://github.com/harmonichq/harmonic/issues/61#issuecomment-5352401833 and the ticket
+moved to `ready-for-agent`. Branch rebased onto `52bf135`.
+
+Corrected after posting: the order named the repo `ConnorGriffin/harmonic`. The remote
+is `harmonichq/harmonic` (`git remote -v`); the posted comment was edited in place. The
+same wrong slug was fixed in both handoff documents.
+
+Status label: the pipeline's own `agentflow:*` vocabulary has no "triaged" value and
+agentflow is retired as of #65, so the repo's `ready-for-agent` label was used and
+`agentflow:needs-grilling` removed.
+
+### Dispositions
+
+- D1/D5/D9 `-> ADR`: **owed by the implementation**, not by triage. The order's step 11
+  requires `## ADR 61 — Chipping a finding by its result, not by the event it is counted
+  over` in an OpenSpec change folder, and `scripts/check_adr_numbers.py` enforces the
+  identity in CI. Not yet written.
+- D4 `-> issue` (scope correction factor to a clock span): **not yet filed.**
+- D11 `-> issue` (unexplained highs, 3 of 30 attributed): handoff written and handed to
+  the operator, who reports it moved to its right place. Ticket id unknown to this
+  session.
+- Skills retirement: filed and merged as #65 (`52bf135`).

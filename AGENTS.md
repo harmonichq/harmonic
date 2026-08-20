@@ -60,6 +60,8 @@ uv run python scripts/gen_annotation_fixtures.py --check
 uv run python scripts/check_demo_fixtures.py   # the committed synthetic demo sets
 uv run python scripts/gen_findings_projection_fixtures.py --check
 uv run python scripts/gen_chart_builder_fixtures.py --check
+uv run python scripts/gen_event_comparison_mirror_fixtures.py --check
+node mockups/diagnose-event-comparison.synthetic/generate.mjs --check
 ```
 
 The frontend job runs a sixth, in Node, over a design exploration's build

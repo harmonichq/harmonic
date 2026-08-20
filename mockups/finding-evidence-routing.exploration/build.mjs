@@ -648,7 +648,7 @@ async function main() {
   if (!Number.isInteger(chipCount)) throw new Error('projection row carries no episode count');
 
   /* ---- the lens, twice: filtered to the finding, and unfiltered ---- */
-  const coords = { view: VIEW, factor: FACTOR, block: 'all' };
+  const coords = { view: VIEW, factor: FACTOR };
   const lens = projectSyntheticCapture(capture, coords);
   const wide = projectSyntheticCapture(capture, { ...coords, another: true });
   const cohortByKey = Object.fromEntries(lens.cohorts.map((c) => [c.key, c]));
@@ -797,7 +797,7 @@ async function main() {
      view appears in every factor's frame; what changes is which cohort claims
      it and which lows the factor cannot compare at all. */
   const frameFor = (factorKey) => {
-    const coordsFor = { view: VIEW, factor: factorKey, block: 'all' };
+    const coordsFor = { view: VIEW, factor: factorKey };
     /* ONE projection per frame, at the factor's own coordinates — the same three
        visible cohorts the finding drill draws. The table is grouped from THIS
        projection, not from a wider one: a table group the canvas has no cohort
@@ -977,7 +977,7 @@ async function main() {
   /* ---- the second population row's count, same producer, meals view ---- */
   const mealsView = capture.views.meals;
   const meals = projectSyntheticCapture(capture, {
-    view: 'meals', factor: mealsView.default_factor, block: 'all', another: true,
+    view: 'meals', factor: mealsView.default_factor, another: true,
   });
 
   const data = {
@@ -998,7 +998,7 @@ async function main() {
         + 'via the same producer on the meals view), so they name the CAPTURE\'s window, not the projection\'s '
         + '30 days.',
       population_case_file: 'mockups/diagnose-event-comparison.synthetic/capture.json via project.mjs — ONE '
-        + 'PROJECTION PER CLAIMED FACTOR (view lows, factor <k>, block all) for that frame\'s canvas, and the '
+        + 'PROJECTION PER CLAIMED FACTOR (view lows, factor <k>, whole-day window) for that frame\'s canvas, and the '
         + 'same coordinates with another=true for its regrouped table. The claim split itself is a tally of '
         + 'the capture\'s `routes`: a low is claimed when some factor routes it to `fired`.',
       queue_canvas: 'mockups/diagnose-workstation.synthetic/payload.json (evidence.pooled, analyze.basal, '

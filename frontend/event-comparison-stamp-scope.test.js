@@ -1,7 +1,7 @@
 /* The Event comparison stamp tripwire is scoped per cohort, not per request (#5).
  *
  * The projection derives each cohort's support fresh and uses the capture's
- * frozen `visual_support` stamp only as a fail-loud cross-check, with a
+ * frozen window-keyed `visual_support` stamp only as a fail-loud cross-check, with a
  * staleness exemption for the one replay story that rewrites occurrences.
  * That exemption must apply only to a cohort whose OWN stamped ids include
  * one no longer live: dropping an occurrence from one cohort must not switch
@@ -29,6 +29,8 @@ const blankReadings = (capture, id) => {
 };
 
 test('the untouched capture projects without tripping, at the frozen verdicts', () => {
+  assert.ok(pristine.views.meals.visual_support['dense:carb_undercount:whole-day'],
+    'the whole-day support fact uses the request window, not a retired block');
   const response = projectSyntheticCapture(clone(), { view: 'meals' });
   const byKey = Object.fromEntries(response.cohorts.map((cohort) => [cohort.key, cohort]));
   assert.equal(byKey.fired.support, 'supported');

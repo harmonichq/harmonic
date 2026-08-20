@@ -1,4 +1,4 @@
-/* Labeled-synthetic evidence producer for ADR 678's v2 wire contract.
+/* Labeled-synthetic evidence producer for ADR 62's v3 wire contract.
  *
  * This is deliberately fixture-only: it turns the frozen #677 capture into a
  * server response for browser replay. Production callers use the Python
@@ -9,10 +9,6 @@ const configs = {
   meals: { kind: 'meal', anchor: 'completed_carb_bolus', label: 'Completed carb bolus', window: [-60, 300] },
   lows: { kind: 'low', anchor: 'excursion_nadir', label: 'Low excursion', window: [-300, 120] },
 };
-const blockOptions = [
-  ['overnight', 'Overnight'], ['morning', 'Morning'],
-  ['afternoon', 'Afternoon'], ['evening', 'Evening'], ['all', '24 h'],
-];
 const labels = {
   carb_undercount: 'Carb undercount', late_bolus: 'Late bolus',
   meal_over_delivery: 'Meal over-delivery', over_treated_low: 'Over-treated low',
@@ -37,9 +33,16 @@ const localTimestamp = (anchor, minute) => {
   date.setUTCMinutes(date.getUTCMinutes() + minute);
   return date.toISOString().slice(0, 19).replace('T', ' ');
 };
-const inBlock = (occurrence, block) => block === 'all'
-  || ({ overnight: [0, 6], morning: [6, 12], afternoon: [12, 18], evening: [18, 24] }[block]
-    || [0, 24]).every((edge, index, range) => index ? Number(occurrence.anchor_t.slice(11, 13)) < edge : Number(occurrence.anchor_t.slice(11, 13)) >= edge);
+const windowKey = (window) => window ? `${window.start_min}-${window.end_min}` : 'whole-day';
+const hhmm = (minute) => minute === 1440 ? '24:00'
+  : `${String(Math.floor(minute / 60)).padStart(2, '0')}:${String(minute % 60).padStart(2, '0')}`;
+const windowWire = (window) => window ? {
+  scoped: true, start_min: window.start_min, end_min: window.end_min,
+  label: `${hhmm(window.start_min)}–${hhmm(window.end_min)}`,
+} : { scoped: false, start_min: null, end_min: null, label: null };
+const inWindow = (occurrence, window) => !window || (window.start_min < window.end_min
+  ? occurrence.outcome_min >= window.start_min && occurrence.outcome_min < window.end_min
+  : occurrence.outcome_min >= window.start_min || occurrence.outcome_min < window.end_min);
 const quantile = (values, q) => {
   const sorted = [...values].sort((left, right) => left - right);
   const rank = (sorted.length - 1) * q;
@@ -49,11 +52,10 @@ const quantile = (values, q) => {
     : sorted[lower] + (sorted[upper] - sorted[lower]) * (rank - lower);
 };
 
-function supportFacts(view, factor, block, variant) {
-  const key = `${variant}:${factor}:${block}`;
+function supportFacts(view, factor, window, variant) {
+  const key = `${variant}:${factor}:${windowKey(window)}`;
   return view.visual_support?.[key]
-    || view.visual_support?.[`dense:${factor}:${block}`]
-    || view.visual_support?.[`dense:${factor}:all`];
+    || view.visual_support?.[`dense:${factor}:${windowKey(window)}`];
 }
 
 const finiteNumber = (value) => typeof value === 'number' && Number.isFinite(value);
@@ -123,18 +125,18 @@ function pointRows(occurrences, window, usableCount) {
 // on an intentional, known divergence. Per-cohort, not per-request: a
 // cohort whose stamped ids are all still live keeps its cross-check even
 // when another cohort in the same request lost one (#5). The live set is
-// the whole view's occurrences, never the block-filtered subset — a
-// time-block coordinate's stamp names only in-block ids, and narrowing
-// would read the block filter itself as staleness.
+// the whole view's occurrences, never the window-filtered subset — a stamp
+// names only in-window ids, and narrowing would read the window itself as
+// staleness.
 function stampIsStale(liveIds, stamped) {
   return stamped.occurrence_ids.some((id) => !liveIds.has(id));
 }
 
-function assertMatchesStamp(view, factor, block, variant, key, cohort, facts) {
+function assertMatchesStamp(view, factor, window, variant, key, cohort, facts) {
   const stamped = facts.cohorts[key];
   const mismatch = (label, got, want) => {
     throw new Error(
-      `visual_support mismatch ${view}/${factor}/${block}/${variant} cohort ${key} `
+      `visual_support mismatch ${view}/${factor}/${windowKey(window)}/${variant} cohort ${key} `
       + `${label}: derived ${JSON.stringify(got)} != stamped ${JSON.stringify(want)}`,
     );
   };
@@ -170,7 +172,7 @@ function verdict(occurrence, factor) {
 
 function summary(occurrence, config, factor) {
   return {
-    identity: { id: occurrence.id, kind: config.kind },
+    identity: { id: occurrence.id, kind: config.kind, ep_id: occurrence.ep_id, t: occurrence.anchor_t },
     anchor: { kind: config.anchor, t: occurrence.anchor_t, date: occurrence.date,
       bg: occurrence.anchor_bg ?? null, worst_bg: occurrence.worst_bg ?? null,
       label: config.label },
@@ -178,9 +180,9 @@ function summary(occurrence, config, factor) {
   };
 }
 
-/** Return one faithful v2 response for a replay coordinate set. */
+/** Return one faithful v3 response for a replay coordinate set. */
 export function projectSyntheticCapture(capture, {
-  view = 'meals', factor, block = 'all', another = false, occurrenceId,
+  view = 'meals', factor, window = null, another = false, occurrenceId,
   state = 'dense',
 } = {}) {
   const source = capture.views[view];
@@ -188,9 +190,9 @@ export function projectSyntheticCapture(capture, {
   if (!source || !config) throw new Error(`unknown fixture view ${view}`);
   const chosenFactor = source.factors.includes(factor) ? factor : source.default_factor;
   const variant = state === 'sparse' || state === 'zero-fired' ? state : 'dense';
-  const facts = supportFacts(source, chosenFactor, block, variant);
-  if (!facts) throw new Error(`missing synthetic support for ${view}/${chosenFactor}/${block}/${variant}`);
-  const sourceInBlock = source.occurrences.filter((occurrence) => inBlock(occurrence, block));
+  const facts = supportFacts(source, chosenFactor, window, variant);
+  if (!facts) throw new Error(`missing synthetic support for ${view}/${chosenFactor}/${windowKey(window)}/${variant}`);
+  const sourceInWindow = source.occurrences.filter((occurrence) => inWindow(occurrence, window));
   const liveIds = new Set(source.occurrences.map((occurrence) => occurrence.id));
   const visibleKeys = ['fired', 'near_rule', 'neutral', ...(another ? ['another_factor'] : [])];
   // Membership is routed straight off `routes[chosenFactor].cohort`, the same
@@ -200,7 +202,7 @@ export function projectSyntheticCapture(capture, {
   // slice on top of the derived membership (mirroring generate.mjs's own
   // `visualProjection`), not read back off the stamp either.
   const cohorts = visibleKeys.map((key) => {
-    let occurrences = sourceInBlock.filter((occurrence) => occurrence.routes[chosenFactor]?.cohort === key);
+    let occurrences = sourceInWindow.filter((occurrence) => occurrence.routes[chosenFactor]?.cohort === key);
     if (variant === 'sparse') occurrences = occurrences.slice(0, 2);
     if (variant === 'zero-fired' && key === 'fired') occurrences = [];
     const usableCount = occurrences.filter((occurrence) =>
@@ -212,22 +214,30 @@ export function projectSyntheticCapture(capture, {
       occurrence_ids: occurrences.map((occurrence) => occurrence.id),
       points: pointRows(occurrences, config.window, usableCount),
     };
+    if (cohort.support === 'withheld') {
+      cohort.episodes = occurrences.filter((occurrence) => occurrence.trace.cgm
+        .some((point) => finiteNumber(point.bg))).map((occurrence) => ({
+        identity: { id: occurrence.id, kind: config.kind, ep_id: occurrence.ep_id, t: occurrence.anchor_t },
+        glucose: occurrence.trace.cgm.filter((point) => finiteNumber(point.bg) && finiteNumber(point.minute))
+          .map((point) => ({ minute: Math.floor(point.minute / 5 + .5) * 5, bg: point.bg })),
+      }));
+    }
     // The stamp becomes a tripwire, not the source of truth: any *unexpected*
     // divergence between this derivation and the capture's `visual_support`
     // fails loudly instead of silently rendering whichever one the caller
     // happened to read. A stale stamp (see `stampIsStale`) is a deliberate
     // divergence, not a bug, so it's exempted rather than silenced outright.
     if (!stampIsStale(liveIds, facts.cohorts[key])) {
-      assertMatchesStamp(view, chosenFactor, block, variant, key, cohort, facts);
+      assertMatchesStamp(view, chosenFactor, window, variant, key, cohort, facts);
     }
     return cohort;
   });
   const counts = Object.fromEntries(allCohorts.map((key) => [key, 0]));
   for (const cohort of cohorts) counts[cohort.key] += cohort.routed_count;
-  counts.excluded = sourceInBlock.filter((occurrence) => occurrence.routes[chosenFactor].cohort === 'excluded').length;
-  if (!another) counts.another_factor = sourceInBlock.filter((occurrence) =>
+  counts.excluded = sourceInWindow.filter((occurrence) => occurrence.routes[chosenFactor].cohort === 'excluded').length;
+  if (!another) counts.another_factor = sourceInWindow.filter((occurrence) =>
     occurrence.routes[chosenFactor].cohort === 'another_factor').length;
-  const selectable = cohorts.flatMap((cohort) => sourceInBlock.filter((occurrence) =>
+  const selectable = cohorts.flatMap((cohort) => sourceInWindow.filter((occurrence) =>
     cohort.occurrence_ids.includes(occurrence.id)));
   let resolvedId = occurrenceId;
   if (!resolvedId && state === 'selected-occurrence') {
@@ -254,11 +264,10 @@ export function projectSyntheticCapture(capture, {
     selection = { state: 'selected', requested_id: resolvedId, detail };
   }
   return {
-    schema: 'diagnose-event-comparison-v2',
-    coordinates: { view, factor: chosenFactor, block, another: Boolean(another),
+    schema: 'diagnose-event-comparison-v3',
+    coordinates: { view, factor: chosenFactor, window: windowWire(window), another: Boolean(another),
       source_window: capture.source_window, anchor: { kind: config.anchor, label: config.label },
-      alignment_window_min: config.window, factor_options: source.factors.map((key) => ({ key, label: labels[key] })),
-      block_options: blockOptions.map(([key, label]) => ({ key, label })) },
+      alignment_window_min: config.window, factor_options: source.factors.map((key) => ({ key, label: labels[key] })) },
     population: { denominator: Object.values(counts).reduce((sum, count) => sum + count, 0), counts },
     cohorts, occurrences: selectable.map((occurrence) => summary(occurrence, config, chosenFactor)), selection,
   };

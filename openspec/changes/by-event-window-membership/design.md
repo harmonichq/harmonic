@@ -80,3 +80,38 @@ than in a second record, because they are the same decision seen further down.
    the open finding has no row leaves the reader on it, both panes stating that no
    findings match the selected window. The alternative was a browser-side fallback
    filter, which is the thing part 6 retires.
+
+## Safe-start provenance — the `/ui-craft` revise lane (#62)
+
+Recorded by the coordinator before the revise lane ran, per `/ui-craft`'s
+"Prove the app is safe to start" precondition, which requires the declaration
+path, the quoted command, the named data source and that source's provenance to
+be written into the change's decision record.
+
+- **Declaration path.** `AGENTS.md`, section "The data boundary", line 159. That
+  section is the repository's own statement of what may be started and against
+  what; nothing here improvises an entrypoint.
+- **Quoted command**, verbatim and the only sanctioned one:
+
+  ```sh
+  uv run harmonic serve --no-fetch --db mockups/revise-e2e.synthetic/harmonic.sqlite
+  ```
+
+  `--no-fetch` is mandatory. `AGENTS.md` states that normal startup fires a live
+  OAuth login against the pump vendor, possibly with 2FA, and pulls real data, so
+  plain `harmonic serve` and every `harmonic fetch` are forbidden in automated
+  work and were not run.
+- **Named data source.** `mockups/revise-e2e.synthetic/harmonic.sqlite`, passed
+  explicitly on the command line. The database is never selected implicitly, so
+  the source is unambiguous.
+- **Source provenance.** The file is generated in full by the committed
+  `scripts/gen_revise_e2e_db.py`, whose own docstring records that every reading,
+  delivery and dose is manufactured from a fixed seed and that the database
+  "contains no account, credential, vendor, pump, or patient source data". The
+  generator carries a `--check` mode, so the committed database cannot silently
+  diverge from it.
+
+This satisfies the revise lane's stricter risk contract: the entrypoint is
+declared rather than discovered, the source is a synthetic database rather than a
+manufactured-looking snapshot, and no path in the command can reach real pump
+data. No trial run was used to establish any of the above.

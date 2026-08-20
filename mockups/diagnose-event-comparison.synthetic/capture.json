@@ -1,5 +1,5 @@
 {
-  "schema": "issue-677-event-comparison-capture-v1",
+  "schema": "issue-677-event-comparison-capture-v2",
   "fixture": "labeled-synthetic",
   "source_window": {
     "start": "2026-07-13",
@@ -26,9 +26,10 @@
       "occurrences": [
         {
           "id": "meals-synthetic-1",
-          "ep_id": "meals-ep-1",
-          "date": "2026-08-01",
-          "anchor_t": "2026-08-01 01:00:00",
+          "ep_id": "2020-03-02-ep70",
+          "date": "2020-03-02",
+          "anchor_t": "2020-03-02 07:35:00",
+          "outcome_min": 455,
           "anchor_bg": 132,
           "worst_bg": 205,
           "label": "Completed carb bolus",
@@ -389,9 +390,10 @@
         },
         {
           "id": "meals-synthetic-2",
-          "ep_id": "meals-ep-2",
-          "date": "2026-08-02",
-          "anchor_t": "2026-08-02 07:00:00",
+          "ep_id": "2020-03-03-ep71",
+          "date": "2020-03-03",
+          "anchor_t": "2020-03-03 13:00:00",
+          "outcome_min": 875,
           "anchor_bg": 133,
           "worst_bg": 206,
           "label": "Completed carb bolus",
@@ -441,7 +443,7 @@
           "trace": {
             "cgm": [
               {
-                "minute": -50,
+                "minute": -47,
                 "bg": 112
               },
               {
@@ -744,9 +746,10 @@
         },
         {
           "id": "meals-synthetic-3",
-          "ep_id": "meals-ep-3",
-          "date": "2026-08-03",
-          "anchor_t": "2026-08-03 13:00:00",
+          "ep_id": "2020-03-01-ep72",
+          "date": "2020-03-01",
+          "anchor_t": "2020-03-01 19:10:00",
+          "outcome_min": 1150,
           "anchor_bg": 134,
           "worst_bg": 207,
           "label": "Completed carb bolus",
@@ -1087,9 +1090,10 @@
         },
         {
           "id": "meals-synthetic-4",
-          "ep_id": "meals-ep-4",
-          "date": "2026-08-04",
-          "anchor_t": "2026-08-04 19:00:00",
+          "ep_id": "2020-03-02-ep73",
+          "date": "2020-03-02",
+          "anchor_t": "2020-03-02 07:45:00",
+          "outcome_min": 465,
           "anchor_bg": 135,
           "worst_bg": 208,
           "label": "Completed carb bolus",
@@ -1422,9 +1426,10 @@
         },
         {
           "id": "meals-synthetic-5",
-          "ep_id": "meals-ep-5",
-          "date": "2026-08-05",
-          "anchor_t": "2026-08-05 04:00:00",
+          "ep_id": "2020-03-03-ep74",
+          "date": "2020-03-03",
+          "anchor_t": "2020-03-03 13:10:00",
+          "outcome_min": 790,
           "anchor_bg": 136,
           "worst_bg": 209,
           "label": "Completed carb bolus",
@@ -1749,9 +1754,10 @@
         },
         {
           "id": "meals-synthetic-6",
-          "ep_id": "meals-ep-6",
-          "date": "2026-08-06",
-          "anchor_t": "2026-08-06 10:00:00",
+          "ep_id": "2020-03-02-ep70",
+          "date": "2020-03-02",
+          "anchor_t": "2020-03-02 07:35:00",
+          "outcome_min": 455,
           "anchor_bg": 137,
           "worst_bg": 210,
           "label": "Completed carb bolus",
@@ -2068,9 +2074,10 @@
         },
         {
           "id": "meals-synthetic-7",
-          "ep_id": "meals-ep-7",
-          "date": "2026-08-07",
-          "anchor_t": "2026-08-07 16:00:00",
+          "ep_id": "2020-03-03-ep71",
+          "date": "2020-03-03",
+          "anchor_t": "2020-03-03 13:00:00",
+          "outcome_min": 780,
           "anchor_bg": 138,
           "worst_bg": 211,
           "label": "Completed carb bolus",
@@ -2379,9 +2386,10 @@
         },
         {
           "id": "meals-synthetic-8",
-          "ep_id": "meals-ep-8",
-          "date": "2026-08-08",
-          "anchor_t": "2026-08-08 22:00:00",
+          "ep_id": "2020-03-01-ep72",
+          "date": "2020-03-01",
+          "anchor_t": "2020-03-01 19:10:00",
+          "outcome_min": 1150,
           "anchor_bg": 139,
           "worst_bg": 212,
           "label": "Completed carb bolus",
@@ -2698,9 +2706,10 @@
         },
         {
           "id": "meals-synthetic-9",
-          "ep_id": "meals-ep-9",
-          "date": "2026-08-09",
-          "anchor_t": "2026-08-09 06:00:00",
+          "ep_id": "2020-03-02-ep73",
+          "date": "2020-03-02",
+          "anchor_t": "2020-03-02 07:45:00",
+          "outcome_min": 465,
           "anchor_bg": 140,
           "worst_bg": 213,
           "label": "Completed carb bolus",
@@ -3017,9 +3026,10 @@
         },
         {
           "id": "meals-synthetic-10",
-          "ep_id": "meals-ep-10",
-          "date": "2026-08-10",
-          "anchor_t": "2026-08-10 12:00:00",
+          "ep_id": "2020-03-03-ep74",
+          "date": "2020-03-03",
+          "anchor_t": "2020-03-03 13:10:00",
+          "outcome_min": 790,
           "anchor_bg": 141,
           "worst_bg": 214,
           "label": "Completed carb bolus",
@@ -3336,9 +3346,10 @@
         },
         {
           "id": "meals-synthetic-11",
-          "ep_id": "meals-ep-11",
-          "date": "2026-08-11",
-          "anchor_t": "2026-08-11 18:00:00",
+          "ep_id": "2020-03-02-ep70",
+          "date": "2020-03-02",
+          "anchor_t": "2020-03-02 07:35:00",
+          "outcome_min": 455,
           "anchor_bg": 142,
           "worst_bg": 215,
           "label": "Completed carb bolus",
@@ -3667,9 +3678,10 @@
         },
         {
           "id": "meals-synthetic-12",
-          "ep_id": "meals-ep-12",
-          "date": "2026-08-12",
-          "anchor_t": "2026-08-12 02:00:00",
+          "ep_id": "2020-03-03-ep71",
+          "date": "2020-03-03",
+          "anchor_t": "2020-03-03 13:00:00",
+          "outcome_min": 780,
           "anchor_bg": 143,
           "worst_bg": 216,
           "label": "Completed carb bolus",
@@ -4024,9 +4036,10 @@
         },
         {
           "id": "meals-synthetic-13",
-          "ep_id": "meals-ep-13",
-          "date": "2026-08-13",
-          "anchor_t": "2026-08-13 08:00:00",
+          "ep_id": "2020-03-01-ep72",
+          "date": "2020-03-01",
+          "anchor_t": "2020-03-01 19:10:00",
+          "outcome_min": 1150,
           "anchor_bg": 144,
           "worst_bg": 217,
           "label": "Completed carb bolus",
@@ -4377,9 +4390,10 @@
         },
         {
           "id": "meals-synthetic-14",
-          "ep_id": "meals-ep-14",
-          "date": "2026-08-14",
-          "anchor_t": "2026-08-14 14:00:00",
+          "ep_id": "2020-03-02-ep73",
+          "date": "2020-03-02",
+          "anchor_t": "2020-03-02 07:45:00",
+          "outcome_min": 465,
           "anchor_bg": 145,
           "worst_bg": 218,
           "label": "Completed carb bolus",
@@ -4722,9 +4736,10 @@
         },
         {
           "id": "meals-synthetic-15",
-          "ep_id": "meals-ep-15",
-          "date": "2026-08-15",
-          "anchor_t": "2026-08-15 20:00:00",
+          "ep_id": "2020-03-03-ep74",
+          "date": "2020-03-03",
+          "anchor_t": "2020-03-03 13:10:00",
+          "outcome_min": 790,
           "anchor_bg": 146,
           "worst_bg": 219,
           "label": "Completed carb bolus",
@@ -5059,9 +5074,10 @@
         },
         {
           "id": "meals-synthetic-16",
-          "ep_id": "meals-ep-16",
-          "date": "2026-08-16",
-          "anchor_t": "2026-08-16 05:00:00",
+          "ep_id": "2020-03-02-ep70",
+          "date": "2020-03-02",
+          "anchor_t": "2020-03-02 07:35:00",
+          "outcome_min": 455,
           "anchor_bg": 147,
           "worst_bg": 220,
           "label": "Completed carb bolus",
@@ -5388,9 +5404,10 @@
         },
         {
           "id": "meals-synthetic-17",
-          "ep_id": "meals-ep-17",
-          "date": "2026-08-17",
-          "anchor_t": "2026-08-17 11:00:00",
+          "ep_id": "2020-03-03-ep71",
+          "date": "2020-03-03",
+          "anchor_t": "2020-03-03 13:00:00",
+          "outcome_min": 780,
           "anchor_bg": 148,
           "worst_bg": 221,
           "label": "Completed carb bolus",
@@ -5709,9 +5726,10 @@
         },
         {
           "id": "meals-synthetic-18",
-          "ep_id": "meals-ep-18",
-          "date": "2026-08-18",
-          "anchor_t": "2026-08-18 17:00:00",
+          "ep_id": "2020-03-01-ep72",
+          "date": "2020-03-01",
+          "anchor_t": "2020-03-01 19:10:00",
+          "outcome_min": 1150,
           "anchor_bg": 149,
           "worst_bg": 222,
           "label": "Completed carb bolus",
@@ -6072,9 +6090,10 @@
         },
         {
           "id": "meals-synthetic-19",
-          "ep_id": "meals-ep-19",
-          "date": "2026-08-19",
-          "anchor_t": "2026-08-19 03:00:00",
+          "ep_id": "2020-03-02-ep73",
+          "date": "2020-03-02",
+          "anchor_t": "2020-03-02 07:45:00",
+          "outcome_min": 465,
           "anchor_bg": 150,
           "worst_bg": 223,
           "label": "Completed carb bolus",
@@ -6429,9 +6448,10 @@
         },
         {
           "id": "meals-synthetic-20",
-          "ep_id": "meals-ep-20",
-          "date": "2026-08-20",
-          "anchor_t": "2026-08-20 15:00:00",
+          "ep_id": "2020-03-03-ep74",
+          "date": "2020-03-03",
+          "anchor_t": "2020-03-03 13:10:00",
+          "outcome_min": 790,
           "anchor_bg": 151,
           "worst_bg": 224,
           "label": "Completed carb bolus",
@@ -6786,197 +6806,7 @@
         }
       ],
       "visual_support": {
-        "dense:carb_undercount:overnight": {
-          "server_owned": true,
-          "cohorts": {
-            "fired": {
-              "support": "limited",
-              "occurrence_ids": [
-                "meals-synthetic-1",
-                "meals-synthetic-5"
-              ],
-              "points": [
-                "-60|-40|1|withheld",
-                "-35|280|2|limited",
-                "285|300|1|withheld"
-              ]
-            },
-            "near_rule": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|300|0|withheld"
-              ]
-            },
-            "neutral": {
-              "support": "limited",
-              "occurrence_ids": [
-                "meals-synthetic-12",
-                "meals-synthetic-16"
-              ],
-              "points": [
-                "-60|-50|1|withheld",
-                "-45|280|2|limited",
-                "285|300|1|withheld"
-              ]
-            },
-            "another_factor": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|300|0|withheld"
-              ]
-            }
-          }
-        },
-        "dense:carb_undercount:morning": {
-          "server_owned": true,
-          "cohorts": {
-            "fired": {
-              "support": "limited",
-              "occurrence_ids": [
-                "meals-synthetic-2",
-                "meals-synthetic-6"
-              ],
-              "points": [
-                "-60|-55|0|withheld",
-                "-50|-35|1|withheld",
-                "-30|275|2|limited",
-                "280|300|1|withheld"
-              ]
-            },
-            "near_rule": {
-              "support": "withheld",
-              "occurrence_ids": [
-                "meals-synthetic-9"
-              ],
-              "points": [
-                "-60|45|1|withheld",
-                "50|100|0|withheld",
-                "105|300|1|withheld"
-              ]
-            },
-            "neutral": {
-              "support": "limited",
-              "occurrence_ids": [
-                "meals-synthetic-13",
-                "meals-synthetic-17"
-              ],
-              "points": [
-                "-60|-45|1|withheld",
-                "-40|275|2|limited",
-                "280|295|1|withheld",
-                "300|300|0|withheld"
-              ]
-            },
-            "another_factor": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|300|0|withheld"
-              ]
-            }
-          }
-        },
-        "dense:carb_undercount:afternoon": {
-          "server_owned": true,
-          "cohorts": {
-            "fired": {
-              "support": "limited",
-              "occurrence_ids": [
-                "meals-synthetic-3",
-                "meals-synthetic-7"
-              ],
-              "points": [
-                "-60|-50|0|withheld",
-                "-45|-30|1|withheld",
-                "-25|270|2|limited",
-                "275|290|1|withheld",
-                "295|300|0|withheld"
-              ]
-            },
-            "near_rule": {
-              "support": "withheld",
-              "occurrence_ids": [
-                "meals-synthetic-10"
-              ],
-              "points": [
-                "-60|105|1|withheld",
-                "110|160|0|withheld",
-                "165|300|1|withheld"
-              ]
-            },
-            "neutral": {
-              "support": "withheld",
-              "occurrence_ids": [
-                "meals-synthetic-14"
-              ],
-              "points": [
-                "-60|-60|0|withheld",
-                "-55|290|1|withheld",
-                "295|300|0|withheld"
-              ]
-            },
-            "another_factor": {
-              "support": "withheld",
-              "occurrence_ids": [
-                "meals-synthetic-18"
-              ],
-              "points": [
-                "-60|300|1|withheld"
-              ]
-            }
-          }
-        },
-        "dense:carb_undercount:evening": {
-          "server_owned": true,
-          "cohorts": {
-            "fired": {
-              "support": "withheld",
-              "occurrence_ids": [
-                "meals-synthetic-4"
-              ],
-              "points": [
-                "-60|-45|0|withheld",
-                "-40|285|1|withheld",
-                "290|300|0|withheld"
-              ]
-            },
-            "near_rule": {
-              "support": "limited",
-              "occurrence_ids": [
-                "meals-synthetic-8",
-                "meals-synthetic-11"
-              ],
-              "points": [
-                "-60|-10|2|limited",
-                "-5|30|1|withheld",
-                "35|170|2|limited",
-                "175|225|1|withheld",
-                "230|300|2|limited"
-              ]
-            },
-            "neutral": {
-              "support": "withheld",
-              "occurrence_ids": [
-                "meals-synthetic-15"
-              ],
-              "points": [
-                "-60|-55|0|withheld",
-                "-50|285|1|withheld",
-                "290|300|0|withheld"
-              ]
-            },
-            "another_factor": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|300|0|withheld"
-              ]
-            }
-          }
-        },
-        "dense:carb_undercount:all": {
+        "dense:carb_undercount:whole-day": {
           "server_owned": true,
           "cohorts": {
             "fired": {
@@ -6991,8 +6821,7 @@
                 "meals-synthetic-7"
               ],
               "points": [
-                "-60|-55|1|withheld",
-                "-50|-50|2|limited",
+                "-60|-50|1|withheld",
                 "-45|-45|3|limited",
                 "-40|-40|4|limited",
                 "-35|-35|5|supported",
@@ -7059,7 +6888,579 @@
             }
           }
         },
-        "sparse:carb_undercount:all": {
+        "dense:carb_undercount:0-360": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            }
+          }
+        },
+        "dense:carb_undercount:360-720": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "limited",
+              "occurrence_ids": [
+                "meals-synthetic-1",
+                "meals-synthetic-4",
+                "meals-synthetic-6"
+              ],
+              "points": [
+                "-60|-45|1|withheld",
+                "-40|-35|2|limited",
+                "-30|275|3|limited",
+                "280|285|2|limited",
+                "290|300|1|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "limited",
+              "occurrence_ids": [
+                "meals-synthetic-9",
+                "meals-synthetic-11"
+              ],
+              "points": [
+                "-60|-10|2|limited",
+                "-5|30|1|withheld",
+                "35|45|2|limited",
+                "50|100|1|withheld",
+                "105|300|2|limited"
+              ]
+            },
+            "neutral": {
+              "support": "limited",
+              "occurrence_ids": [
+                "meals-synthetic-14",
+                "meals-synthetic-16"
+              ],
+              "points": [
+                "-60|-60|0|withheld",
+                "-55|-50|1|withheld",
+                "-45|280|2|limited",
+                "285|290|1|withheld",
+                "295|300|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            }
+          }
+        },
+        "dense:carb_undercount:720-1080": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "limited",
+              "occurrence_ids": [
+                "meals-synthetic-2",
+                "meals-synthetic-5",
+                "meals-synthetic-7"
+              ],
+              "points": [
+                "-60|-50|0|withheld",
+                "-45|-40|1|withheld",
+                "-35|-30|2|limited",
+                "-25|270|3|limited",
+                "275|280|2|limited",
+                "285|300|1|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "meals-synthetic-10"
+              ],
+              "points": [
+                "-60|105|1|withheld",
+                "110|160|0|withheld",
+                "165|300|1|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "limited",
+              "occurrence_ids": [
+                "meals-synthetic-12",
+                "meals-synthetic-15",
+                "meals-synthetic-17"
+              ],
+              "points": [
+                "-60|-55|1|withheld",
+                "-50|-45|2|limited",
+                "-40|275|3|limited",
+                "280|285|2|limited",
+                "290|300|1|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            }
+          }
+        },
+        "dense:carb_undercount:1080-1440": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "meals-synthetic-3"
+              ],
+              "points": [
+                "-60|-50|0|withheld",
+                "-45|290|1|withheld",
+                "295|300|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "meals-synthetic-8"
+              ],
+              "points": [
+                "-60|170|1|withheld",
+                "175|225|0|withheld",
+                "230|300|1|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "meals-synthetic-13"
+              ],
+              "points": [
+                "-60|295|1|withheld",
+                "300|300|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "meals-synthetic-18"
+              ],
+              "points": [
+                "-60|300|1|withheld"
+              ]
+            }
+          }
+        },
+        "dense:carb_undercount:1320-120": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            }
+          }
+        },
+        "dense:carb_undercount:720-960": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "limited",
+              "occurrence_ids": [
+                "meals-synthetic-2",
+                "meals-synthetic-5",
+                "meals-synthetic-7"
+              ],
+              "points": [
+                "-60|-50|0|withheld",
+                "-45|-40|1|withheld",
+                "-35|-30|2|limited",
+                "-25|270|3|limited",
+                "275|280|2|limited",
+                "285|300|1|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "meals-synthetic-10"
+              ],
+              "points": [
+                "-60|105|1|withheld",
+                "110|160|0|withheld",
+                "165|300|1|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "limited",
+              "occurrence_ids": [
+                "meals-synthetic-12",
+                "meals-synthetic-15",
+                "meals-synthetic-17"
+              ],
+              "points": [
+                "-60|-55|1|withheld",
+                "-50|-45|2|limited",
+                "-40|275|3|limited",
+                "280|285|2|limited",
+                "290|300|1|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            }
+          }
+        },
+        "dense:carb_undercount:840-960": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "meals-synthetic-2"
+              ],
+              "points": [
+                "-60|-50|0|withheld",
+                "-45|300|1|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            }
+          }
+        },
+        "dense:carb_undercount:360-480": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "limited",
+              "occurrence_ids": [
+                "meals-synthetic-1",
+                "meals-synthetic-4",
+                "meals-synthetic-6"
+              ],
+              "points": [
+                "-60|-45|1|withheld",
+                "-40|-35|2|limited",
+                "-30|275|3|limited",
+                "280|285|2|limited",
+                "290|300|1|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "limited",
+              "occurrence_ids": [
+                "meals-synthetic-9",
+                "meals-synthetic-11"
+              ],
+              "points": [
+                "-60|-10|2|limited",
+                "-5|30|1|withheld",
+                "35|45|2|limited",
+                "50|100|1|withheld",
+                "105|300|2|limited"
+              ]
+            },
+            "neutral": {
+              "support": "limited",
+              "occurrence_ids": [
+                "meals-synthetic-14",
+                "meals-synthetic-16"
+              ],
+              "points": [
+                "-60|-60|0|withheld",
+                "-55|-50|1|withheld",
+                "-45|280|2|limited",
+                "285|290|1|withheld",
+                "295|300|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            }
+          }
+        },
+        "dense:carb_undercount:455-790": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "limited",
+              "occurrence_ids": [
+                "meals-synthetic-1",
+                "meals-synthetic-4",
+                "meals-synthetic-6",
+                "meals-synthetic-7"
+              ],
+              "points": [
+                "-60|-45|1|withheld",
+                "-40|-35|2|limited",
+                "-30|-30|3|limited",
+                "-25|270|4|limited",
+                "275|275|3|limited",
+                "280|285|2|limited",
+                "290|300|1|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "limited",
+              "occurrence_ids": [
+                "meals-synthetic-9",
+                "meals-synthetic-11"
+              ],
+              "points": [
+                "-60|-10|2|limited",
+                "-5|30|1|withheld",
+                "35|45|2|limited",
+                "50|100|1|withheld",
+                "105|300|2|limited"
+              ]
+            },
+            "neutral": {
+              "support": "limited",
+              "occurrence_ids": [
+                "meals-synthetic-12",
+                "meals-synthetic-14",
+                "meals-synthetic-16",
+                "meals-synthetic-17"
+              ],
+              "points": [
+                "-60|-60|1|withheld",
+                "-55|-50|2|limited",
+                "-45|-45|3|limited",
+                "-40|275|4|limited",
+                "280|280|3|limited",
+                "285|290|2|limited",
+                "295|300|1|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            }
+          }
+        },
+        "dense:carb_undercount:465-780": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "meals-synthetic-4"
+              ],
+              "points": [
+                "-60|-45|0|withheld",
+                "-40|285|1|withheld",
+                "290|300|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "meals-synthetic-9"
+              ],
+              "points": [
+                "-60|45|1|withheld",
+                "50|100|0|withheld",
+                "105|300|1|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "meals-synthetic-14"
+              ],
+              "points": [
+                "-60|-60|0|withheld",
+                "-55|290|1|withheld",
+                "295|300|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            }
+          }
+        },
+        "dense:carb_undercount:720-1440": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "limited",
+              "occurrence_ids": [
+                "meals-synthetic-2",
+                "meals-synthetic-3",
+                "meals-synthetic-5",
+                "meals-synthetic-7"
+              ],
+              "points": [
+                "-60|-50|0|withheld",
+                "-45|-40|2|limited",
+                "-35|-30|3|limited",
+                "-25|270|4|limited",
+                "275|280|3|limited",
+                "285|290|2|limited",
+                "295|300|1|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "limited",
+              "occurrence_ids": [
+                "meals-synthetic-8",
+                "meals-synthetic-10"
+              ],
+              "points": [
+                "-60|105|2|limited",
+                "110|160|1|withheld",
+                "165|170|2|limited",
+                "175|225|1|withheld",
+                "230|300|2|limited"
+              ]
+            },
+            "neutral": {
+              "support": "limited",
+              "occurrence_ids": [
+                "meals-synthetic-12",
+                "meals-synthetic-13",
+                "meals-synthetic-15",
+                "meals-synthetic-17"
+              ],
+              "points": [
+                "-60|-55|2|limited",
+                "-50|-45|3|limited",
+                "-40|275|4|limited",
+                "280|285|3|limited",
+                "290|295|2|limited",
+                "300|300|1|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "meals-synthetic-18"
+              ],
+              "points": [
+                "-60|300|1|withheld"
+              ]
+            }
+          }
+        },
+        "dense:carb_undercount:840-900": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "meals-synthetic-2"
+              ],
+              "points": [
+                "-60|-50|0|withheld",
+                "-45|300|1|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            }
+          }
+        },
+        "sparse:carb_undercount:whole-day": {
           "server_owned": true,
           "cohorts": {
             "fired": {
@@ -7069,8 +7470,8 @@
                 "meals-synthetic-2"
               ],
               "points": [
-                "-60|-55|1|withheld",
-                "-50|300|2|limited"
+                "-60|-50|1|withheld",
+                "-45|300|2|limited"
               ]
             },
             "near_rule": {
@@ -7109,7 +7510,7 @@
             }
           }
         },
-        "zero-fired:carb_undercount:all": {
+        "zero-fired:carb_undercount:whole-day": {
           "server_owned": true,
           "cohorts": {
             "fired": {
@@ -7173,182 +7574,7 @@
             }
           }
         },
-        "dense:late_bolus:overnight": {
-          "server_owned": true,
-          "cohorts": {
-            "fired": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|300|0|withheld"
-              ]
-            },
-            "near_rule": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|300|0|withheld"
-              ]
-            },
-            "neutral": {
-              "support": "limited",
-              "occurrence_ids": [
-                "meals-synthetic-12",
-                "meals-synthetic-16"
-              ],
-              "points": [
-                "-60|-50|1|withheld",
-                "-45|280|2|limited",
-                "285|300|1|withheld"
-              ]
-            },
-            "another_factor": {
-              "support": "limited",
-              "occurrence_ids": [
-                "meals-synthetic-1",
-                "meals-synthetic-5"
-              ],
-              "points": [
-                "-60|-40|1|withheld",
-                "-35|280|2|limited",
-                "285|300|1|withheld"
-              ]
-            }
-          }
-        },
-        "dense:late_bolus:morning": {
-          "server_owned": true,
-          "cohorts": {
-            "fired": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|300|0|withheld"
-              ]
-            },
-            "near_rule": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|300|0|withheld"
-              ]
-            },
-            "neutral": {
-              "support": "limited",
-              "occurrence_ids": [
-                "meals-synthetic-13",
-                "meals-synthetic-17"
-              ],
-              "points": [
-                "-60|-45|1|withheld",
-                "-40|275|2|limited",
-                "280|295|1|withheld",
-                "300|300|0|withheld"
-              ]
-            },
-            "another_factor": {
-              "support": "limited",
-              "occurrence_ids": [
-                "meals-synthetic-2",
-                "meals-synthetic-6"
-              ],
-              "points": [
-                "-60|-55|0|withheld",
-                "-50|-35|1|withheld",
-                "-30|275|2|limited",
-                "280|300|1|withheld"
-              ]
-            }
-          }
-        },
-        "dense:late_bolus:afternoon": {
-          "server_owned": true,
-          "cohorts": {
-            "fired": {
-              "support": "withheld",
-              "occurrence_ids": [
-                "meals-synthetic-18"
-              ],
-              "points": [
-                "-60|300|1|withheld"
-              ]
-            },
-            "near_rule": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|300|0|withheld"
-              ]
-            },
-            "neutral": {
-              "support": "withheld",
-              "occurrence_ids": [
-                "meals-synthetic-14"
-              ],
-              "points": [
-                "-60|-60|0|withheld",
-                "-55|290|1|withheld",
-                "295|300|0|withheld"
-              ]
-            },
-            "another_factor": {
-              "support": "limited",
-              "occurrence_ids": [
-                "meals-synthetic-3",
-                "meals-synthetic-7"
-              ],
-              "points": [
-                "-60|-50|0|withheld",
-                "-45|-30|1|withheld",
-                "-25|270|2|limited",
-                "275|290|1|withheld",
-                "295|300|0|withheld"
-              ]
-            }
-          }
-        },
-        "dense:late_bolus:evening": {
-          "server_owned": true,
-          "cohorts": {
-            "fired": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|300|0|withheld"
-              ]
-            },
-            "near_rule": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|300|0|withheld"
-              ]
-            },
-            "neutral": {
-              "support": "withheld",
-              "occurrence_ids": [
-                "meals-synthetic-15"
-              ],
-              "points": [
-                "-60|-55|0|withheld",
-                "-50|285|1|withheld",
-                "290|300|0|withheld"
-              ]
-            },
-            "another_factor": {
-              "support": "withheld",
-              "occurrence_ids": [
-                "meals-synthetic-4"
-              ],
-              "points": [
-                "-60|-45|0|withheld",
-                "-40|285|1|withheld",
-                "290|300|0|withheld"
-              ]
-            }
-          }
-        },
-        "dense:late_bolus:all": {
+        "dense:late_bolus:whole-day": {
           "server_owned": true,
           "cohorts": {
             "fired": {
@@ -7402,8 +7628,7 @@
                 "meals-synthetic-7"
               ],
               "points": [
-                "-60|-55|1|withheld",
-                "-50|-50|2|limited",
+                "-60|-50|1|withheld",
                 "-45|-45|3|limited",
                 "-40|-40|4|limited",
                 "-35|-35|5|supported",
@@ -7418,7 +7643,535 @@
             }
           }
         },
-        "sparse:late_bolus:all": {
+        "dense:late_bolus:0-360": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            }
+          }
+        },
+        "dense:late_bolus:360-720": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "limited",
+              "occurrence_ids": [
+                "meals-synthetic-14",
+                "meals-synthetic-16"
+              ],
+              "points": [
+                "-60|-60|0|withheld",
+                "-55|-50|1|withheld",
+                "-45|280|2|limited",
+                "285|290|1|withheld",
+                "295|300|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "limited",
+              "occurrence_ids": [
+                "meals-synthetic-1",
+                "meals-synthetic-4",
+                "meals-synthetic-6"
+              ],
+              "points": [
+                "-60|-45|1|withheld",
+                "-40|-35|2|limited",
+                "-30|275|3|limited",
+                "280|285|2|limited",
+                "290|300|1|withheld"
+              ]
+            }
+          }
+        },
+        "dense:late_bolus:720-1080": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "limited",
+              "occurrence_ids": [
+                "meals-synthetic-12",
+                "meals-synthetic-15",
+                "meals-synthetic-17"
+              ],
+              "points": [
+                "-60|-55|1|withheld",
+                "-50|-45|2|limited",
+                "-40|275|3|limited",
+                "280|285|2|limited",
+                "290|300|1|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "limited",
+              "occurrence_ids": [
+                "meals-synthetic-2",
+                "meals-synthetic-5",
+                "meals-synthetic-7"
+              ],
+              "points": [
+                "-60|-50|0|withheld",
+                "-45|-40|1|withheld",
+                "-35|-30|2|limited",
+                "-25|270|3|limited",
+                "275|280|2|limited",
+                "285|300|1|withheld"
+              ]
+            }
+          }
+        },
+        "dense:late_bolus:1080-1440": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "meals-synthetic-18"
+              ],
+              "points": [
+                "-60|300|1|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "meals-synthetic-13"
+              ],
+              "points": [
+                "-60|295|1|withheld",
+                "300|300|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "meals-synthetic-3"
+              ],
+              "points": [
+                "-60|-50|0|withheld",
+                "-45|290|1|withheld",
+                "295|300|0|withheld"
+              ]
+            }
+          }
+        },
+        "dense:late_bolus:1320-120": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            }
+          }
+        },
+        "dense:late_bolus:720-960": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "limited",
+              "occurrence_ids": [
+                "meals-synthetic-12",
+                "meals-synthetic-15",
+                "meals-synthetic-17"
+              ],
+              "points": [
+                "-60|-55|1|withheld",
+                "-50|-45|2|limited",
+                "-40|275|3|limited",
+                "280|285|2|limited",
+                "290|300|1|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "limited",
+              "occurrence_ids": [
+                "meals-synthetic-2",
+                "meals-synthetic-5",
+                "meals-synthetic-7"
+              ],
+              "points": [
+                "-60|-50|0|withheld",
+                "-45|-40|1|withheld",
+                "-35|-30|2|limited",
+                "-25|270|3|limited",
+                "275|280|2|limited",
+                "285|300|1|withheld"
+              ]
+            }
+          }
+        },
+        "dense:late_bolus:840-960": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "meals-synthetic-2"
+              ],
+              "points": [
+                "-60|-50|0|withheld",
+                "-45|300|1|withheld"
+              ]
+            }
+          }
+        },
+        "dense:late_bolus:360-480": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "limited",
+              "occurrence_ids": [
+                "meals-synthetic-14",
+                "meals-synthetic-16"
+              ],
+              "points": [
+                "-60|-60|0|withheld",
+                "-55|-50|1|withheld",
+                "-45|280|2|limited",
+                "285|290|1|withheld",
+                "295|300|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "limited",
+              "occurrence_ids": [
+                "meals-synthetic-1",
+                "meals-synthetic-4",
+                "meals-synthetic-6"
+              ],
+              "points": [
+                "-60|-45|1|withheld",
+                "-40|-35|2|limited",
+                "-30|275|3|limited",
+                "280|285|2|limited",
+                "290|300|1|withheld"
+              ]
+            }
+          }
+        },
+        "dense:late_bolus:455-790": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "limited",
+              "occurrence_ids": [
+                "meals-synthetic-12",
+                "meals-synthetic-14",
+                "meals-synthetic-16",
+                "meals-synthetic-17"
+              ],
+              "points": [
+                "-60|-60|1|withheld",
+                "-55|-50|2|limited",
+                "-45|-45|3|limited",
+                "-40|275|4|limited",
+                "280|280|3|limited",
+                "285|290|2|limited",
+                "295|300|1|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "limited",
+              "occurrence_ids": [
+                "meals-synthetic-1",
+                "meals-synthetic-4",
+                "meals-synthetic-6",
+                "meals-synthetic-7"
+              ],
+              "points": [
+                "-60|-45|1|withheld",
+                "-40|-35|2|limited",
+                "-30|-30|3|limited",
+                "-25|270|4|limited",
+                "275|275|3|limited",
+                "280|285|2|limited",
+                "290|300|1|withheld"
+              ]
+            }
+          }
+        },
+        "dense:late_bolus:465-780": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "meals-synthetic-14"
+              ],
+              "points": [
+                "-60|-60|0|withheld",
+                "-55|290|1|withheld",
+                "295|300|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "meals-synthetic-4"
+              ],
+              "points": [
+                "-60|-45|0|withheld",
+                "-40|285|1|withheld",
+                "290|300|0|withheld"
+              ]
+            }
+          }
+        },
+        "dense:late_bolus:720-1440": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "meals-synthetic-18"
+              ],
+              "points": [
+                "-60|300|1|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "limited",
+              "occurrence_ids": [
+                "meals-synthetic-12",
+                "meals-synthetic-13",
+                "meals-synthetic-15",
+                "meals-synthetic-17"
+              ],
+              "points": [
+                "-60|-55|2|limited",
+                "-50|-45|3|limited",
+                "-40|275|4|limited",
+                "280|285|3|limited",
+                "290|295|2|limited",
+                "300|300|1|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "limited",
+              "occurrence_ids": [
+                "meals-synthetic-2",
+                "meals-synthetic-3",
+                "meals-synthetic-5",
+                "meals-synthetic-7"
+              ],
+              "points": [
+                "-60|-50|0|withheld",
+                "-45|-40|2|limited",
+                "-35|-30|3|limited",
+                "-25|270|4|limited",
+                "275|280|3|limited",
+                "285|290|2|limited",
+                "295|300|1|withheld"
+              ]
+            }
+          }
+        },
+        "dense:late_bolus:840-900": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "meals-synthetic-2"
+              ],
+              "points": [
+                "-60|-50|0|withheld",
+                "-45|300|1|withheld"
+              ]
+            }
+          }
+        },
+        "sparse:late_bolus:whole-day": {
           "server_owned": true,
           "cohorts": {
             "fired": {
@@ -7455,13 +8208,13 @@
                 "meals-synthetic-2"
               ],
               "points": [
-                "-60|-55|1|withheld",
-                "-50|300|2|limited"
+                "-60|-50|1|withheld",
+                "-45|300|2|limited"
               ]
             }
           }
         },
-        "zero-fired:late_bolus:all": {
+        "zero-fired:late_bolus:whole-day": {
           "server_owned": true,
           "cohorts": {
             "fired": {
@@ -7513,8 +8266,7 @@
                 "meals-synthetic-7"
               ],
               "points": [
-                "-60|-55|1|withheld",
-                "-50|-50|2|limited",
+                "-60|-50|1|withheld",
                 "-45|-45|3|limited",
                 "-40|-40|4|limited",
                 "-35|-35|5|supported",
@@ -7529,181 +8281,7 @@
             }
           }
         },
-        "dense:meal_over_delivery:overnight": {
-          "server_owned": true,
-          "cohorts": {
-            "fired": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|300|0|withheld"
-              ]
-            },
-            "near_rule": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|300|0|withheld"
-              ]
-            },
-            "neutral": {
-              "support": "limited",
-              "occurrence_ids": [
-                "meals-synthetic-12",
-                "meals-synthetic-16"
-              ],
-              "points": [
-                "-60|-50|1|withheld",
-                "-45|280|2|limited",
-                "285|300|1|withheld"
-              ]
-            },
-            "another_factor": {
-              "support": "limited",
-              "occurrence_ids": [
-                "meals-synthetic-1",
-                "meals-synthetic-5"
-              ],
-              "points": [
-                "-60|-40|1|withheld",
-                "-35|280|2|limited",
-                "285|300|1|withheld"
-              ]
-            }
-          }
-        },
-        "dense:meal_over_delivery:morning": {
-          "server_owned": true,
-          "cohorts": {
-            "fired": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|300|0|withheld"
-              ]
-            },
-            "near_rule": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|300|0|withheld"
-              ]
-            },
-            "neutral": {
-              "support": "limited",
-              "occurrence_ids": [
-                "meals-synthetic-13",
-                "meals-synthetic-17"
-              ],
-              "points": [
-                "-60|-45|1|withheld",
-                "-40|275|2|limited",
-                "280|295|1|withheld",
-                "300|300|0|withheld"
-              ]
-            },
-            "another_factor": {
-              "support": "limited",
-              "occurrence_ids": [
-                "meals-synthetic-2",
-                "meals-synthetic-6"
-              ],
-              "points": [
-                "-60|-55|0|withheld",
-                "-50|-35|1|withheld",
-                "-30|275|2|limited",
-                "280|300|1|withheld"
-              ]
-            }
-          }
-        },
-        "dense:meal_over_delivery:afternoon": {
-          "server_owned": true,
-          "cohorts": {
-            "fired": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|300|0|withheld"
-              ]
-            },
-            "near_rule": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|300|0|withheld"
-              ]
-            },
-            "neutral": {
-              "support": "withheld",
-              "occurrence_ids": [
-                "meals-synthetic-14"
-              ],
-              "points": [
-                "-60|-60|0|withheld",
-                "-55|290|1|withheld",
-                "295|300|0|withheld"
-              ]
-            },
-            "another_factor": {
-              "support": "limited",
-              "occurrence_ids": [
-                "meals-synthetic-3",
-                "meals-synthetic-7",
-                "meals-synthetic-18"
-              ],
-              "points": [
-                "-60|-50|1|withheld",
-                "-45|-30|2|limited",
-                "-25|270|3|limited",
-                "275|290|2|limited",
-                "295|300|1|withheld"
-              ]
-            }
-          }
-        },
-        "dense:meal_over_delivery:evening": {
-          "server_owned": true,
-          "cohorts": {
-            "fired": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|300|0|withheld"
-              ]
-            },
-            "near_rule": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|300|0|withheld"
-              ]
-            },
-            "neutral": {
-              "support": "withheld",
-              "occurrence_ids": [
-                "meals-synthetic-15"
-              ],
-              "points": [
-                "-60|-55|0|withheld",
-                "-50|285|1|withheld",
-                "290|300|0|withheld"
-              ]
-            },
-            "another_factor": {
-              "support": "withheld",
-              "occurrence_ids": [
-                "meals-synthetic-4"
-              ],
-              "points": [
-                "-60|-45|0|withheld",
-                "-40|285|1|withheld",
-                "290|300|0|withheld"
-              ]
-            }
-          }
-        },
-        "dense:meal_over_delivery:all": {
+        "dense:meal_over_delivery:whole-day": {
           "server_owned": true,
           "cohorts": {
             "fired": {
@@ -7756,8 +8334,7 @@
                 "meals-synthetic-18"
               ],
               "points": [
-                "-60|-55|2|limited",
-                "-50|-50|3|limited",
+                "-60|-50|2|limited",
                 "-45|-45|4|limited",
                 "-40|-40|5|supported",
                 "-35|-35|6|supported",
@@ -7772,7 +8349,533 @@
             }
           }
         },
-        "sparse:meal_over_delivery:all": {
+        "dense:meal_over_delivery:0-360": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            }
+          }
+        },
+        "dense:meal_over_delivery:360-720": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "limited",
+              "occurrence_ids": [
+                "meals-synthetic-14",
+                "meals-synthetic-16"
+              ],
+              "points": [
+                "-60|-60|0|withheld",
+                "-55|-50|1|withheld",
+                "-45|280|2|limited",
+                "285|290|1|withheld",
+                "295|300|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "limited",
+              "occurrence_ids": [
+                "meals-synthetic-1",
+                "meals-synthetic-4",
+                "meals-synthetic-6"
+              ],
+              "points": [
+                "-60|-45|1|withheld",
+                "-40|-35|2|limited",
+                "-30|275|3|limited",
+                "280|285|2|limited",
+                "290|300|1|withheld"
+              ]
+            }
+          }
+        },
+        "dense:meal_over_delivery:720-1080": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "limited",
+              "occurrence_ids": [
+                "meals-synthetic-12",
+                "meals-synthetic-15",
+                "meals-synthetic-17"
+              ],
+              "points": [
+                "-60|-55|1|withheld",
+                "-50|-45|2|limited",
+                "-40|275|3|limited",
+                "280|285|2|limited",
+                "290|300|1|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "limited",
+              "occurrence_ids": [
+                "meals-synthetic-2",
+                "meals-synthetic-5",
+                "meals-synthetic-7"
+              ],
+              "points": [
+                "-60|-50|0|withheld",
+                "-45|-40|1|withheld",
+                "-35|-30|2|limited",
+                "-25|270|3|limited",
+                "275|280|2|limited",
+                "285|300|1|withheld"
+              ]
+            }
+          }
+        },
+        "dense:meal_over_delivery:1080-1440": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "meals-synthetic-13"
+              ],
+              "points": [
+                "-60|295|1|withheld",
+                "300|300|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "limited",
+              "occurrence_ids": [
+                "meals-synthetic-3",
+                "meals-synthetic-18"
+              ],
+              "points": [
+                "-60|-50|1|withheld",
+                "-45|290|2|limited",
+                "295|300|1|withheld"
+              ]
+            }
+          }
+        },
+        "dense:meal_over_delivery:1320-120": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            }
+          }
+        },
+        "dense:meal_over_delivery:720-960": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "limited",
+              "occurrence_ids": [
+                "meals-synthetic-12",
+                "meals-synthetic-15",
+                "meals-synthetic-17"
+              ],
+              "points": [
+                "-60|-55|1|withheld",
+                "-50|-45|2|limited",
+                "-40|275|3|limited",
+                "280|285|2|limited",
+                "290|300|1|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "limited",
+              "occurrence_ids": [
+                "meals-synthetic-2",
+                "meals-synthetic-5",
+                "meals-synthetic-7"
+              ],
+              "points": [
+                "-60|-50|0|withheld",
+                "-45|-40|1|withheld",
+                "-35|-30|2|limited",
+                "-25|270|3|limited",
+                "275|280|2|limited",
+                "285|300|1|withheld"
+              ]
+            }
+          }
+        },
+        "dense:meal_over_delivery:840-960": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "meals-synthetic-2"
+              ],
+              "points": [
+                "-60|-50|0|withheld",
+                "-45|300|1|withheld"
+              ]
+            }
+          }
+        },
+        "dense:meal_over_delivery:360-480": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "limited",
+              "occurrence_ids": [
+                "meals-synthetic-14",
+                "meals-synthetic-16"
+              ],
+              "points": [
+                "-60|-60|0|withheld",
+                "-55|-50|1|withheld",
+                "-45|280|2|limited",
+                "285|290|1|withheld",
+                "295|300|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "limited",
+              "occurrence_ids": [
+                "meals-synthetic-1",
+                "meals-synthetic-4",
+                "meals-synthetic-6"
+              ],
+              "points": [
+                "-60|-45|1|withheld",
+                "-40|-35|2|limited",
+                "-30|275|3|limited",
+                "280|285|2|limited",
+                "290|300|1|withheld"
+              ]
+            }
+          }
+        },
+        "dense:meal_over_delivery:455-790": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "limited",
+              "occurrence_ids": [
+                "meals-synthetic-12",
+                "meals-synthetic-14",
+                "meals-synthetic-16",
+                "meals-synthetic-17"
+              ],
+              "points": [
+                "-60|-60|1|withheld",
+                "-55|-50|2|limited",
+                "-45|-45|3|limited",
+                "-40|275|4|limited",
+                "280|280|3|limited",
+                "285|290|2|limited",
+                "295|300|1|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "limited",
+              "occurrence_ids": [
+                "meals-synthetic-1",
+                "meals-synthetic-4",
+                "meals-synthetic-6",
+                "meals-synthetic-7"
+              ],
+              "points": [
+                "-60|-45|1|withheld",
+                "-40|-35|2|limited",
+                "-30|-30|3|limited",
+                "-25|270|4|limited",
+                "275|275|3|limited",
+                "280|285|2|limited",
+                "290|300|1|withheld"
+              ]
+            }
+          }
+        },
+        "dense:meal_over_delivery:465-780": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "meals-synthetic-14"
+              ],
+              "points": [
+                "-60|-60|0|withheld",
+                "-55|290|1|withheld",
+                "295|300|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "meals-synthetic-4"
+              ],
+              "points": [
+                "-60|-45|0|withheld",
+                "-40|285|1|withheld",
+                "290|300|0|withheld"
+              ]
+            }
+          }
+        },
+        "dense:meal_over_delivery:720-1440": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "limited",
+              "occurrence_ids": [
+                "meals-synthetic-12",
+                "meals-synthetic-13",
+                "meals-synthetic-15",
+                "meals-synthetic-17"
+              ],
+              "points": [
+                "-60|-55|2|limited",
+                "-50|-45|3|limited",
+                "-40|275|4|limited",
+                "280|285|3|limited",
+                "290|295|2|limited",
+                "300|300|1|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "supported",
+              "occurrence_ids": [
+                "meals-synthetic-2",
+                "meals-synthetic-3",
+                "meals-synthetic-5",
+                "meals-synthetic-7",
+                "meals-synthetic-18"
+              ],
+              "points": [
+                "-60|-50|1|withheld",
+                "-45|-40|3|limited",
+                "-35|-30|4|limited",
+                "-25|270|5|supported",
+                "275|280|4|limited",
+                "285|290|3|limited",
+                "295|300|2|limited"
+              ]
+            }
+          }
+        },
+        "dense:meal_over_delivery:840-900": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-60|300|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "meals-synthetic-2"
+              ],
+              "points": [
+                "-60|-50|0|withheld",
+                "-45|300|1|withheld"
+              ]
+            }
+          }
+        },
+        "sparse:meal_over_delivery:whole-day": {
           "server_owned": true,
           "cohorts": {
             "fired": {
@@ -7807,13 +8910,13 @@
                 "meals-synthetic-2"
               ],
               "points": [
-                "-60|-55|1|withheld",
-                "-50|300|2|limited"
+                "-60|-50|1|withheld",
+                "-45|300|2|limited"
               ]
             }
           }
         },
-        "zero-fired:meal_over_delivery:all": {
+        "zero-fired:meal_over_delivery:whole-day": {
           "server_owned": true,
           "cohorts": {
             "fired": {
@@ -7866,8 +8969,7 @@
                 "meals-synthetic-18"
               ],
               "points": [
-                "-60|-55|2|limited",
-                "-50|-50|3|limited",
+                "-60|-50|2|limited",
                 "-45|-45|4|limited",
                 "-40|-40|5|supported",
                 "-35|-35|6|supported",
@@ -7907,6 +9009,7 @@
           "ep_id": "lows-ep-1",
           "date": "2026-08-01",
           "anchor_t": "2026-08-01 01:00:00",
+          "outcome_min": 60,
           "anchor_bg": 68,
           "worst_bg": 58,
           "label": "Low excursion",
@@ -8327,6 +9430,7 @@
           "ep_id": "lows-ep-2",
           "date": "2026-08-02",
           "anchor_t": "2026-08-02 07:00:00",
+          "outcome_min": 420,
           "anchor_bg": 69,
           "worst_bg": 59,
           "label": "Low excursion",
@@ -8718,6 +9822,7 @@
           "ep_id": "lows-ep-3",
           "date": "2026-08-03",
           "anchor_t": "2026-08-03 13:00:00",
+          "outcome_min": 780,
           "anchor_bg": 70,
           "worst_bg": 60,
           "label": "Low excursion",
@@ -9097,6 +10202,7 @@
           "ep_id": "lows-ep-4",
           "date": "2026-08-04",
           "anchor_t": "2026-08-04 19:00:00",
+          "outcome_min": 1140,
           "anchor_bg": 68,
           "worst_bg": 61,
           "label": "Low excursion",
@@ -9468,6 +10574,7 @@
           "ep_id": "lows-ep-5",
           "date": "2026-08-05",
           "anchor_t": "2026-08-05 04:00:00",
+          "outcome_min": 240,
           "anchor_bg": 69,
           "worst_bg": 58,
           "label": "Low excursion",
@@ -9831,6 +10938,7 @@
           "ep_id": "lows-ep-6",
           "date": "2026-08-06",
           "anchor_t": "2026-08-06 10:00:00",
+          "outcome_min": 600,
           "anchor_bg": 70,
           "worst_bg": 59,
           "label": "Low excursion",
@@ -10186,6 +11294,7 @@
           "ep_id": "lows-ep-7",
           "date": "2026-08-07",
           "anchor_t": "2026-08-07 16:00:00",
+          "outcome_min": 960,
           "anchor_bg": 68,
           "worst_bg": 60,
           "label": "Low excursion",
@@ -10533,6 +11642,7 @@
           "ep_id": "lows-ep-8",
           "date": "2026-08-08",
           "anchor_t": "2026-08-08 22:00:00",
+          "outcome_min": 1320,
           "anchor_bg": 69,
           "worst_bg": 61,
           "label": "Low excursion",
@@ -10875,6 +11985,7 @@
           "ep_id": "lows-ep-9",
           "date": "2026-08-09",
           "anchor_t": "2026-08-09 06:00:00",
+          "outcome_min": 360,
           "anchor_bg": 70,
           "worst_bg": 58,
           "label": "Low excursion",
@@ -11225,6 +12336,7 @@
           "ep_id": "lows-ep-10",
           "date": "2026-08-10",
           "anchor_t": "2026-08-10 12:00:00",
+          "outcome_min": 720,
           "anchor_bg": 68,
           "worst_bg": 59,
           "label": "Low excursion",
@@ -11571,6 +12683,7 @@
           "ep_id": "lows-ep-11",
           "date": "2026-08-11",
           "anchor_t": "2026-08-11 18:00:00",
+          "outcome_min": 1080,
           "anchor_bg": 69,
           "worst_bg": 60,
           "label": "Low excursion",
@@ -11929,6 +13042,7 @@
           "ep_id": "lows-ep-12",
           "date": "2026-08-12",
           "anchor_t": "2026-08-12 02:00:00",
+          "outcome_min": 120,
           "anchor_bg": 70,
           "worst_bg": 61,
           "label": "Low excursion",
@@ -12322,6 +13436,7 @@
           "ep_id": "lows-ep-13",
           "date": "2026-08-13",
           "anchor_t": "2026-08-13 08:00:00",
+          "outcome_min": 480,
           "anchor_bg": 68,
           "worst_bg": 58,
           "label": "Low excursion",
@@ -12711,6 +13826,7 @@
           "ep_id": "lows-ep-14",
           "date": "2026-08-14",
           "anchor_t": "2026-08-14 14:00:00",
+          "outcome_min": 840,
           "anchor_bg": 69,
           "worst_bg": 59,
           "label": "Low excursion",
@@ -13092,6 +14208,7 @@
           "ep_id": "lows-ep-15",
           "date": "2026-08-15",
           "anchor_t": "2026-08-15 20:00:00",
+          "outcome_min": 1200,
           "anchor_bg": 70,
           "worst_bg": 60,
           "label": "Low excursion",
@@ -13465,6 +14582,7 @@
           "ep_id": "lows-ep-16",
           "date": "2026-08-16",
           "anchor_t": "2026-08-16 05:00:00",
+          "outcome_min": 300,
           "anchor_bg": 68,
           "worst_bg": 61,
           "label": "Low excursion",
@@ -13830,6 +14948,7 @@
           "ep_id": "lows-ep-17",
           "date": "2026-08-17",
           "anchor_t": "2026-08-17 11:00:00",
+          "outcome_min": 660,
           "anchor_bg": 69,
           "worst_bg": 58,
           "label": "Low excursion",
@@ -14187,6 +15306,7 @@
           "ep_id": "lows-ep-18",
           "date": "2026-08-18",
           "anchor_t": "2026-08-18 17:00:00",
+          "outcome_min": 1020,
           "anchor_bg": 70,
           "worst_bg": 59,
           "label": "Low excursion",
@@ -14586,6 +15706,7 @@
           "ep_id": "lows-ep-19",
           "date": "2026-08-19",
           "anchor_t": "2026-08-19 03:00:00",
+          "outcome_min": 180,
           "anchor_bg": 68,
           "worst_bg": 60,
           "label": "Low excursion",
@@ -14979,6 +16100,7 @@
           "ep_id": "lows-ep-20",
           "date": "2026-08-20",
           "anchor_t": "2026-08-20 15:00:00",
+          "outcome_min": 900,
           "anchor_bg": 69,
           "worst_bg": 61,
           "label": "Low excursion",
@@ -15369,7 +16491,90 @@
         }
       ],
       "visual_support": {
-        "dense:over_treated_low:overnight": {
+        "dense:over_treated_low:whole-day": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "supported",
+              "occurrence_ids": [
+                "lows-synthetic-1",
+                "lows-synthetic-2",
+                "lows-synthetic-3",
+                "lows-synthetic-4",
+                "lows-synthetic-5",
+                "lows-synthetic-6",
+                "lows-synthetic-7"
+              ],
+              "points": [
+                "-300|-295|1|withheld",
+                "-290|-290|2|limited",
+                "-285|-285|3|limited",
+                "-280|-280|4|limited",
+                "-275|-275|5|supported",
+                "-270|-270|6|supported",
+                "-265|90|7|supported",
+                "95|95|6|supported",
+                "100|100|5|supported",
+                "105|105|4|limited",
+                "110|110|3|limited",
+                "115|120|2|limited"
+              ]
+            },
+            "near_rule": {
+              "support": "limited",
+              "occurrence_ids": [
+                "lows-synthetic-8",
+                "lows-synthetic-9",
+                "lows-synthetic-10",
+                "lows-synthetic-11"
+              ],
+              "points": [
+                "-300|-245|4|limited",
+                "-240|-195|3|limited",
+                "-190|-175|4|limited",
+                "-170|-115|3|limited",
+                "-110|-105|4|limited",
+                "-100|-40|3|limited",
+                "-35|-35|4|limited",
+                "-30|35|3|limited",
+                "40|120|4|limited"
+              ]
+            },
+            "neutral": {
+              "support": "supported",
+              "occurrence_ids": [
+                "lows-synthetic-12",
+                "lows-synthetic-13",
+                "lows-synthetic-14",
+                "lows-synthetic-15",
+                "lows-synthetic-16",
+                "lows-synthetic-17"
+              ],
+              "points": [
+                "-300|-300|2|limited",
+                "-295|-295|3|limited",
+                "-290|-290|4|limited",
+                "-285|-285|5|supported",
+                "-280|95|6|supported",
+                "100|100|5|supported",
+                "105|105|4|limited",
+                "110|110|3|limited",
+                "115|115|2|limited",
+                "120|120|1|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "lows-synthetic-18"
+              ],
+              "points": [
+                "-300|120|1|withheld"
+              ]
+            }
+          }
+        },
+        "dense:over_treated_low:0-360": {
           "server_owned": true,
           "cohorts": {
             "fired": {
@@ -15412,7 +16617,7 @@
             }
           }
         },
-        "dense:over_treated_low:morning": {
+        "dense:over_treated_low:360-720": {
           "server_owned": true,
           "cohorts": {
             "fired": {
@@ -15461,7 +16666,7 @@
             }
           }
         },
-        "dense:over_treated_low:afternoon": {
+        "dense:over_treated_low:720-1080": {
           "server_owned": true,
           "cohorts": {
             "fired": {
@@ -15511,7 +16716,7 @@
             }
           }
         },
-        "dense:over_treated_low:evening": {
+        "dense:over_treated_low:1080-1440": {
           "server_owned": true,
           "cohorts": {
             "fired": {
@@ -15559,76 +16764,313 @@
             }
           }
         },
-        "dense:over_treated_low:all": {
+        "dense:over_treated_low:1320-120": {
           "server_owned": true,
           "cohorts": {
             "fired": {
-              "support": "supported",
+              "support": "withheld",
               "occurrence_ids": [
-                "lows-synthetic-1",
-                "lows-synthetic-2",
+                "lows-synthetic-1"
+              ],
+              "points": [
+                "-300|120|1|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "lows-synthetic-8"
+              ],
+              "points": [
+                "-300|-35|1|withheld",
+                "-30|35|0|withheld",
+                "40|120|1|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            }
+          }
+        },
+        "dense:over_treated_low:720-960": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "lows-synthetic-3"
+              ],
+              "points": [
+                "-300|-290|0|withheld",
+                "-285|110|1|withheld",
+                "115|120|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "lows-synthetic-10"
+              ],
+              "points": [
+                "-300|-105|1|withheld",
+                "-100|-40|0|withheld",
+                "-35|120|1|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "lows-synthetic-14"
+              ],
+              "points": [
+                "-300|-300|0|withheld",
+                "-295|110|1|withheld",
+                "115|120|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            }
+          }
+        },
+        "dense:over_treated_low:840-960": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "lows-synthetic-14"
+              ],
+              "points": [
+                "-300|-300|0|withheld",
+                "-295|110|1|withheld",
+                "115|120|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            }
+          }
+        },
+        "dense:over_treated_low:360-480": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "lows-synthetic-2"
+              ],
+              "points": [
+                "-300|-295|0|withheld",
+                "-290|120|1|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "lows-synthetic-9"
+              ],
+              "points": [
+                "-300|-175|1|withheld",
+                "-170|-115|0|withheld",
+                "-110|120|1|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            }
+          }
+        },
+        "dense:over_treated_low:455-790": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "limited",
+              "occurrence_ids": [
+                "lows-synthetic-3",
+                "lows-synthetic-6"
+              ],
+              "points": [
+                "-300|-290|0|withheld",
+                "-285|-275|1|withheld",
+                "-270|95|2|limited",
+                "100|110|1|withheld",
+                "115|120|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "lows-synthetic-10"
+              ],
+              "points": [
+                "-300|-105|1|withheld",
+                "-100|-40|0|withheld",
+                "-35|120|1|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "limited",
+              "occurrence_ids": [
+                "lows-synthetic-13",
+                "lows-synthetic-17"
+              ],
+              "points": [
+                "-300|-285|1|withheld",
+                "-280|95|2|limited",
+                "100|115|1|withheld",
+                "120|120|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            }
+          }
+        },
+        "dense:over_treated_low:465-780": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "lows-synthetic-6"
+              ],
+              "points": [
+                "-300|-275|0|withheld",
+                "-270|95|1|withheld",
+                "100|120|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "lows-synthetic-10"
+              ],
+              "points": [
+                "-300|-105|1|withheld",
+                "-100|-40|0|withheld",
+                "-35|120|1|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "limited",
+              "occurrence_ids": [
+                "lows-synthetic-13",
+                "lows-synthetic-17"
+              ],
+              "points": [
+                "-300|-285|1|withheld",
+                "-280|95|2|limited",
+                "100|115|1|withheld",
+                "120|120|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            }
+          }
+        },
+        "dense:over_treated_low:720-1440": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "limited",
+              "occurrence_ids": [
                 "lows-synthetic-3",
                 "lows-synthetic-4",
-                "lows-synthetic-5",
-                "lows-synthetic-6",
                 "lows-synthetic-7"
               ],
               "points": [
-                "-300|-295|1|withheld",
-                "-290|-290|2|limited",
-                "-285|-285|3|limited",
-                "-280|-280|4|limited",
-                "-275|-275|5|supported",
-                "-270|-270|6|supported",
-                "-265|90|7|supported",
-                "95|95|6|supported",
-                "100|100|5|supported",
-                "105|105|4|limited",
-                "110|110|3|limited",
-                "115|120|2|limited"
+                "-300|-290|0|withheld",
+                "-285|-285|1|withheld",
+                "-280|-270|2|limited",
+                "-265|90|3|limited",
+                "95|105|2|limited",
+                "110|110|1|withheld",
+                "115|120|0|withheld"
               ]
             },
             "near_rule": {
               "support": "limited",
               "occurrence_ids": [
                 "lows-synthetic-8",
-                "lows-synthetic-9",
                 "lows-synthetic-10",
                 "lows-synthetic-11"
               ],
               "points": [
-                "-300|-245|4|limited",
-                "-240|-195|3|limited",
-                "-190|-175|4|limited",
-                "-170|-115|3|limited",
-                "-110|-105|4|limited",
-                "-100|-40|3|limited",
-                "-35|-35|4|limited",
-                "-30|35|3|limited",
-                "40|120|4|limited"
+                "-300|-245|3|limited",
+                "-240|-195|2|limited",
+                "-190|-105|3|limited",
+                "-100|-40|2|limited",
+                "-35|-35|3|limited",
+                "-30|35|2|limited",
+                "40|120|3|limited"
               ]
             },
             "neutral": {
-              "support": "supported",
+              "support": "limited",
               "occurrence_ids": [
-                "lows-synthetic-12",
-                "lows-synthetic-13",
                 "lows-synthetic-14",
-                "lows-synthetic-15",
-                "lows-synthetic-16",
-                "lows-synthetic-17"
+                "lows-synthetic-15"
               ],
               "points": [
-                "-300|-300|2|limited",
-                "-295|-295|3|limited",
-                "-290|-290|4|limited",
-                "-285|-285|5|supported",
-                "-280|95|6|supported",
-                "100|100|5|supported",
-                "105|105|4|limited",
-                "110|110|3|limited",
-                "115|115|2|limited",
-                "120|120|1|withheld"
+                "-300|-300|0|withheld",
+                "-295|-295|1|withheld",
+                "-290|105|2|limited",
+                "110|110|1|withheld",
+                "115|120|0|withheld"
               ]
             },
             "another_factor": {
@@ -15642,7 +17084,44 @@
             }
           }
         },
-        "sparse:over_treated_low:all": {
+        "dense:over_treated_low:840-900": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "lows-synthetic-14"
+              ],
+              "points": [
+                "-300|-300|0|withheld",
+                "-295|110|1|withheld",
+                "115|120|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            }
+          }
+        },
+        "sparse:over_treated_low:whole-day": {
           "server_owned": true,
           "cohorts": {
             "fired": {
@@ -15692,7 +17171,7 @@
             }
           }
         },
-        "zero-fired:over_treated_low:all": {
+        "zero-fired:over_treated_low:whole-day": {
           "server_owned": true,
           "cohorts": {
             "fired": {
@@ -15756,7 +17235,77 @@
             }
           }
         },
-        "dense:correction_on_iob:overnight": {
+        "dense:correction_on_iob:whole-day": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "lows-synthetic-18"
+              ],
+              "points": [
+                "-300|120|1|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "supported",
+              "occurrence_ids": [
+                "lows-synthetic-12",
+                "lows-synthetic-13",
+                "lows-synthetic-14",
+                "lows-synthetic-15",
+                "lows-synthetic-16",
+                "lows-synthetic-17"
+              ],
+              "points": [
+                "-300|-300|2|limited",
+                "-295|-295|3|limited",
+                "-290|-290|4|limited",
+                "-285|-285|5|supported",
+                "-280|95|6|supported",
+                "100|100|5|supported",
+                "105|105|4|limited",
+                "110|110|3|limited",
+                "115|115|2|limited",
+                "120|120|1|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "supported",
+              "occurrence_ids": [
+                "lows-synthetic-1",
+                "lows-synthetic-2",
+                "lows-synthetic-3",
+                "lows-synthetic-4",
+                "lows-synthetic-5",
+                "lows-synthetic-6",
+                "lows-synthetic-7"
+              ],
+              "points": [
+                "-300|-295|1|withheld",
+                "-290|-290|2|limited",
+                "-285|-285|3|limited",
+                "-280|-280|4|limited",
+                "-275|-275|5|supported",
+                "-270|-270|6|supported",
+                "-265|90|7|supported",
+                "95|95|6|supported",
+                "100|100|5|supported",
+                "105|105|4|limited",
+                "110|110|3|limited",
+                "115|120|2|limited"
+              ]
+            }
+          }
+        },
+        "dense:correction_on_iob:0-360": {
           "server_owned": true,
           "cohorts": {
             "fired": {
@@ -15799,7 +17348,7 @@
             }
           }
         },
-        "dense:correction_on_iob:morning": {
+        "dense:correction_on_iob:360-720": {
           "server_owned": true,
           "cohorts": {
             "fired": {
@@ -15844,7 +17393,7 @@
             }
           }
         },
-        "dense:correction_on_iob:afternoon": {
+        "dense:correction_on_iob:720-1080": {
           "server_owned": true,
           "cohorts": {
             "fired": {
@@ -15890,7 +17439,7 @@
             }
           }
         },
-        "dense:correction_on_iob:evening": {
+        "dense:correction_on_iob:1080-1440": {
           "server_owned": true,
           "cohorts": {
             "fired": {
@@ -15931,7 +17480,245 @@
             }
           }
         },
-        "dense:correction_on_iob:all": {
+        "dense:correction_on_iob:1320-120": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "lows-synthetic-1"
+              ],
+              "points": [
+                "-300|120|1|withheld"
+              ]
+            }
+          }
+        },
+        "dense:correction_on_iob:720-960": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "lows-synthetic-14"
+              ],
+              "points": [
+                "-300|-300|0|withheld",
+                "-295|110|1|withheld",
+                "115|120|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "lows-synthetic-3"
+              ],
+              "points": [
+                "-300|-290|0|withheld",
+                "-285|110|1|withheld",
+                "115|120|0|withheld"
+              ]
+            }
+          }
+        },
+        "dense:correction_on_iob:840-960": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "lows-synthetic-14"
+              ],
+              "points": [
+                "-300|-300|0|withheld",
+                "-295|110|1|withheld",
+                "115|120|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            }
+          }
+        },
+        "dense:correction_on_iob:360-480": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "lows-synthetic-2"
+              ],
+              "points": [
+                "-300|-295|0|withheld",
+                "-290|120|1|withheld"
+              ]
+            }
+          }
+        },
+        "dense:correction_on_iob:455-790": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "limited",
+              "occurrence_ids": [
+                "lows-synthetic-13",
+                "lows-synthetic-17"
+              ],
+              "points": [
+                "-300|-285|1|withheld",
+                "-280|95|2|limited",
+                "100|115|1|withheld",
+                "120|120|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "limited",
+              "occurrence_ids": [
+                "lows-synthetic-3",
+                "lows-synthetic-6"
+              ],
+              "points": [
+                "-300|-290|0|withheld",
+                "-285|-275|1|withheld",
+                "-270|95|2|limited",
+                "100|110|1|withheld",
+                "115|120|0|withheld"
+              ]
+            }
+          }
+        },
+        "dense:correction_on_iob:465-780": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "limited",
+              "occurrence_ids": [
+                "lows-synthetic-13",
+                "lows-synthetic-17"
+              ],
+              "points": [
+                "-300|-285|1|withheld",
+                "-280|95|2|limited",
+                "100|115|1|withheld",
+                "120|120|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "lows-synthetic-6"
+              ],
+              "points": [
+                "-300|-275|0|withheld",
+                "-270|95|1|withheld",
+                "100|120|0|withheld"
+              ]
+            }
+          }
+        },
+        "dense:correction_on_iob:720-1440": {
           "server_owned": true,
           "cohorts": {
             "fired": {
@@ -15951,57 +17738,76 @@
               ]
             },
             "neutral": {
-              "support": "supported",
+              "support": "limited",
               "occurrence_ids": [
-                "lows-synthetic-12",
-                "lows-synthetic-13",
                 "lows-synthetic-14",
-                "lows-synthetic-15",
-                "lows-synthetic-16",
-                "lows-synthetic-17"
+                "lows-synthetic-15"
               ],
               "points": [
-                "-300|-300|2|limited",
-                "-295|-295|3|limited",
-                "-290|-290|4|limited",
-                "-285|-285|5|supported",
-                "-280|95|6|supported",
-                "100|100|5|supported",
-                "105|105|4|limited",
-                "110|110|3|limited",
-                "115|115|2|limited",
-                "120|120|1|withheld"
+                "-300|-300|0|withheld",
+                "-295|-295|1|withheld",
+                "-290|105|2|limited",
+                "110|110|1|withheld",
+                "115|120|0|withheld"
               ]
             },
             "another_factor": {
-              "support": "supported",
+              "support": "limited",
               "occurrence_ids": [
-                "lows-synthetic-1",
-                "lows-synthetic-2",
                 "lows-synthetic-3",
                 "lows-synthetic-4",
-                "lows-synthetic-5",
-                "lows-synthetic-6",
                 "lows-synthetic-7"
               ],
               "points": [
-                "-300|-295|1|withheld",
-                "-290|-290|2|limited",
-                "-285|-285|3|limited",
-                "-280|-280|4|limited",
-                "-275|-275|5|supported",
-                "-270|-270|6|supported",
-                "-265|90|7|supported",
-                "95|95|6|supported",
-                "100|100|5|supported",
-                "105|105|4|limited",
-                "110|110|3|limited",
-                "115|120|2|limited"
+                "-300|-290|0|withheld",
+                "-285|-285|1|withheld",
+                "-280|-270|2|limited",
+                "-265|90|3|limited",
+                "95|105|2|limited",
+                "110|110|1|withheld",
+                "115|120|0|withheld"
               ]
             }
           }
         },
-        "sparse:correction_on_iob:all": {
+        "dense:correction_on_iob:840-900": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "lows-synthetic-14"
+              ],
+              "points": [
+                "-300|-300|0|withheld",
+                "-295|110|1|withheld",
+                "115|120|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            }
+          }
+        },
+        "sparse:correction_on_iob:whole-day": {
           "server_owned": true,
           "cohorts": {
             "fired": {
@@ -16044,7 +17850,7 @@
             }
           }
         },
-        "zero-fired:correction_on_iob:all": {
+        "zero-fired:correction_on_iob:whole-day": {
           "server_owned": true,
           "cohorts": {
             "fired": {
@@ -16112,181 +17918,7 @@
             }
           }
         },
-        "dense:correction_stacking:overnight": {
-          "server_owned": true,
-          "cohorts": {
-            "fired": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-300|120|0|withheld"
-              ]
-            },
-            "near_rule": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-300|120|0|withheld"
-              ]
-            },
-            "neutral": {
-              "support": "limited",
-              "occurrence_ids": [
-                "lows-synthetic-12",
-                "lows-synthetic-16"
-              ],
-              "points": [
-                "-300|-290|1|withheld",
-                "-285|100|2|limited",
-                "105|120|1|withheld"
-              ]
-            },
-            "another_factor": {
-              "support": "limited",
-              "occurrence_ids": [
-                "lows-synthetic-1",
-                "lows-synthetic-5"
-              ],
-              "points": [
-                "-300|-280|1|withheld",
-                "-275|100|2|limited",
-                "105|120|1|withheld"
-              ]
-            }
-          }
-        },
-        "dense:correction_stacking:morning": {
-          "server_owned": true,
-          "cohorts": {
-            "fired": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-300|120|0|withheld"
-              ]
-            },
-            "near_rule": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-300|120|0|withheld"
-              ]
-            },
-            "neutral": {
-              "support": "limited",
-              "occurrence_ids": [
-                "lows-synthetic-13",
-                "lows-synthetic-17"
-              ],
-              "points": [
-                "-300|-285|1|withheld",
-                "-280|95|2|limited",
-                "100|115|1|withheld",
-                "120|120|0|withheld"
-              ]
-            },
-            "another_factor": {
-              "support": "limited",
-              "occurrence_ids": [
-                "lows-synthetic-2",
-                "lows-synthetic-6"
-              ],
-              "points": [
-                "-300|-295|0|withheld",
-                "-290|-275|1|withheld",
-                "-270|95|2|limited",
-                "100|120|1|withheld"
-              ]
-            }
-          }
-        },
-        "dense:correction_stacking:afternoon": {
-          "server_owned": true,
-          "cohorts": {
-            "fired": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-300|120|0|withheld"
-              ]
-            },
-            "near_rule": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-300|120|0|withheld"
-              ]
-            },
-            "neutral": {
-              "support": "withheld",
-              "occurrence_ids": [
-                "lows-synthetic-14"
-              ],
-              "points": [
-                "-300|-300|0|withheld",
-                "-295|110|1|withheld",
-                "115|120|0|withheld"
-              ]
-            },
-            "another_factor": {
-              "support": "limited",
-              "occurrence_ids": [
-                "lows-synthetic-3",
-                "lows-synthetic-7",
-                "lows-synthetic-18"
-              ],
-              "points": [
-                "-300|-290|1|withheld",
-                "-285|-270|2|limited",
-                "-265|90|3|limited",
-                "95|110|2|limited",
-                "115|120|1|withheld"
-              ]
-            }
-          }
-        },
-        "dense:correction_stacking:evening": {
-          "server_owned": true,
-          "cohorts": {
-            "fired": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-300|120|0|withheld"
-              ]
-            },
-            "near_rule": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-300|120|0|withheld"
-              ]
-            },
-            "neutral": {
-              "support": "withheld",
-              "occurrence_ids": [
-                "lows-synthetic-15"
-              ],
-              "points": [
-                "-300|-295|0|withheld",
-                "-290|105|1|withheld",
-                "110|120|0|withheld"
-              ]
-            },
-            "another_factor": {
-              "support": "withheld",
-              "occurrence_ids": [
-                "lows-synthetic-4"
-              ],
-              "points": [
-                "-300|-285|0|withheld",
-                "-280|105|1|withheld",
-                "110|120|0|withheld"
-              ]
-            }
-          }
-        },
-        "dense:correction_stacking:all": {
+        "dense:correction_stacking:whole-day": {
           "server_owned": true,
           "cohorts": {
             "fired": {
@@ -16355,7 +17987,507 @@
             }
           }
         },
-        "sparse:correction_stacking:all": {
+        "dense:correction_stacking:0-360": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "limited",
+              "occurrence_ids": [
+                "lows-synthetic-12",
+                "lows-synthetic-16"
+              ],
+              "points": [
+                "-300|-290|1|withheld",
+                "-285|100|2|limited",
+                "105|120|1|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "limited",
+              "occurrence_ids": [
+                "lows-synthetic-1",
+                "lows-synthetic-5"
+              ],
+              "points": [
+                "-300|-280|1|withheld",
+                "-275|100|2|limited",
+                "105|120|1|withheld"
+              ]
+            }
+          }
+        },
+        "dense:correction_stacking:360-720": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "limited",
+              "occurrence_ids": [
+                "lows-synthetic-13",
+                "lows-synthetic-17"
+              ],
+              "points": [
+                "-300|-285|1|withheld",
+                "-280|95|2|limited",
+                "100|115|1|withheld",
+                "120|120|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "limited",
+              "occurrence_ids": [
+                "lows-synthetic-2",
+                "lows-synthetic-6"
+              ],
+              "points": [
+                "-300|-295|0|withheld",
+                "-290|-275|1|withheld",
+                "-270|95|2|limited",
+                "100|120|1|withheld"
+              ]
+            }
+          }
+        },
+        "dense:correction_stacking:720-1080": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "lows-synthetic-14"
+              ],
+              "points": [
+                "-300|-300|0|withheld",
+                "-295|110|1|withheld",
+                "115|120|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "limited",
+              "occurrence_ids": [
+                "lows-synthetic-3",
+                "lows-synthetic-7",
+                "lows-synthetic-18"
+              ],
+              "points": [
+                "-300|-290|1|withheld",
+                "-285|-270|2|limited",
+                "-265|90|3|limited",
+                "95|110|2|limited",
+                "115|120|1|withheld"
+              ]
+            }
+          }
+        },
+        "dense:correction_stacking:1080-1440": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "lows-synthetic-15"
+              ],
+              "points": [
+                "-300|-295|0|withheld",
+                "-290|105|1|withheld",
+                "110|120|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "lows-synthetic-4"
+              ],
+              "points": [
+                "-300|-285|0|withheld",
+                "-280|105|1|withheld",
+                "110|120|0|withheld"
+              ]
+            }
+          }
+        },
+        "dense:correction_stacking:1320-120": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "lows-synthetic-1"
+              ],
+              "points": [
+                "-300|120|1|withheld"
+              ]
+            }
+          }
+        },
+        "dense:correction_stacking:720-960": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "lows-synthetic-14"
+              ],
+              "points": [
+                "-300|-300|0|withheld",
+                "-295|110|1|withheld",
+                "115|120|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "lows-synthetic-3"
+              ],
+              "points": [
+                "-300|-290|0|withheld",
+                "-285|110|1|withheld",
+                "115|120|0|withheld"
+              ]
+            }
+          }
+        },
+        "dense:correction_stacking:840-960": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "lows-synthetic-14"
+              ],
+              "points": [
+                "-300|-300|0|withheld",
+                "-295|110|1|withheld",
+                "115|120|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            }
+          }
+        },
+        "dense:correction_stacking:360-480": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "lows-synthetic-2"
+              ],
+              "points": [
+                "-300|-295|0|withheld",
+                "-290|120|1|withheld"
+              ]
+            }
+          }
+        },
+        "dense:correction_stacking:455-790": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "limited",
+              "occurrence_ids": [
+                "lows-synthetic-13",
+                "lows-synthetic-17"
+              ],
+              "points": [
+                "-300|-285|1|withheld",
+                "-280|95|2|limited",
+                "100|115|1|withheld",
+                "120|120|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "limited",
+              "occurrence_ids": [
+                "lows-synthetic-3",
+                "lows-synthetic-6"
+              ],
+              "points": [
+                "-300|-290|0|withheld",
+                "-285|-275|1|withheld",
+                "-270|95|2|limited",
+                "100|110|1|withheld",
+                "115|120|0|withheld"
+              ]
+            }
+          }
+        },
+        "dense:correction_stacking:465-780": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "limited",
+              "occurrence_ids": [
+                "lows-synthetic-13",
+                "lows-synthetic-17"
+              ],
+              "points": [
+                "-300|-285|1|withheld",
+                "-280|95|2|limited",
+                "100|115|1|withheld",
+                "120|120|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "lows-synthetic-6"
+              ],
+              "points": [
+                "-300|-275|0|withheld",
+                "-270|95|1|withheld",
+                "100|120|0|withheld"
+              ]
+            }
+          }
+        },
+        "dense:correction_stacking:720-1440": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "limited",
+              "occurrence_ids": [
+                "lows-synthetic-14",
+                "lows-synthetic-15"
+              ],
+              "points": [
+                "-300|-300|0|withheld",
+                "-295|-295|1|withheld",
+                "-290|105|2|limited",
+                "110|110|1|withheld",
+                "115|120|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "limited",
+              "occurrence_ids": [
+                "lows-synthetic-3",
+                "lows-synthetic-4",
+                "lows-synthetic-7",
+                "lows-synthetic-18"
+              ],
+              "points": [
+                "-300|-290|1|withheld",
+                "-285|-285|2|limited",
+                "-280|-270|3|limited",
+                "-265|90|4|limited",
+                "95|105|3|limited",
+                "110|110|2|limited",
+                "115|120|1|withheld"
+              ]
+            }
+          }
+        },
+        "dense:correction_stacking:840-900": {
+          "server_owned": true,
+          "cohorts": {
+            "fired": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "near_rule": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            },
+            "neutral": {
+              "support": "withheld",
+              "occurrence_ids": [
+                "lows-synthetic-14"
+              ],
+              "points": [
+                "-300|-300|0|withheld",
+                "-295|110|1|withheld",
+                "115|120|0|withheld"
+              ]
+            },
+            "another_factor": {
+              "support": "withheld",
+              "occurrence_ids": [],
+              "points": [
+                "-300|120|0|withheld"
+              ]
+            }
+          }
+        },
+        "sparse:correction_stacking:whole-day": {
           "server_owned": true,
           "cohorts": {
             "fired": {
@@ -16396,7 +18528,7 @@
             }
           }
         },
-        "zero-fired:correction_stacking:all": {
+        "zero-fired:correction_stacking:whole-day": {
           "server_owned": true,
           "cohorts": {
             "fired": {

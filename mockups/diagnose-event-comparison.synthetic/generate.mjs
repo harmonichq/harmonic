@@ -3,8 +3,10 @@
  * Detector verdicts remain fixture facts. The `visual_support` projection is
  * generated here, on the server side of the mock boundary, so the browser only
  * renders Supported / Limited / Withheld and never carries a numeric floor.
+ * Meals deliberately re-use the workstation fixture's five episode/time pairs;
+ * lows remain disjoint, pending the separate population-unification ticket.
  */
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 
 const factors = {
   meals: ['carb_undercount', 'late_bolus', 'meal_over_delivery'],
@@ -25,10 +27,16 @@ const plan = [
   'another_factor', 'excluded', 'excluded',
 ];
 const hours = [1, 7, 13, 19, 4, 10, 16, 22, 6, 12, 18, 2, 8, 14, 20, 5, 11, 17, 3, 15];
-const BLOCKS = {
-  overnight: [0, 6], morning: [6, 12], afternoon: [12, 18],
-  evening: [18, 24], all: [0, 24],
-};
+const WINDOWS = [null, { start_min: 0, end_min: 360 },
+  { start_min: 360, end_min: 720 }, { start_min: 720, end_min: 1080 },
+  { start_min: 1080, end_min: 1440 }, { start_min: 1320, end_min: 120 },
+  { start_min: 720, end_min: 960 }, { start_min: 840, end_min: 960 },
+  { start_min: 360, end_min: 480 }, { start_min: 455, end_min: 790 },
+  { start_min: 465, end_min: 780 }, { start_min: 720, end_min: 1440 },
+  { start_min: 840, end_min: 900 }];
+const workstationMeals = JSON.parse(readFileSync(
+  new URL('../diagnose-workstation.synthetic/payload.json', import.meta.url), 'utf8'))
+  .exposures.exposures.meals.occurrences;
 
 const cohortRank = (index) => plan.slice(0, index).filter((cohort) => cohort === plan[index]).length;
 
@@ -79,6 +87,10 @@ function cgm(view, index) {
     }
     rows.push({ minute, bg: Math.max(42, Math.min(294, Math.round(bg))) });
   }
+  // The Python projection rounds an episode trace to its nearest five-minute
+  // bin. Keep one deliberately off-grid reading in the frozen fixture so the
+  // mirror cannot silently turn that into floor-binning.
+  if (view === 'meals' && index === 1) rows[0].minute += 3;
   return rows;
 }
 
@@ -140,16 +152,22 @@ function supportRuns(rows, cohortCount, cohortSupport) {
   return runs.map((run) => `${run.start}|${run.end}|${run.n}|${run.support}`);
 }
 
-function inBlock(item, block) {
-  const hour = Number(item.anchor_t.slice(11, 13));
-  return hour >= block[0] && hour < block[1];
+function windowKey(window) {
+  return window ? `${window.start_min}-${window.end_min}` : 'whole-day';
 }
 
-function visualProjection(view, factor, block, variant = 'dense') {
+function inWindow(item, window) {
+  if (!window) return true;
+  return window.start_min < window.end_min
+    ? item.outcome_min >= window.start_min && item.outcome_min < window.end_min
+    : item.outcome_min >= window.start_min || item.outcome_min < window.end_min;
+}
+
+function visualProjection(view, factor, window, variant = 'dense') {
   const result = { server_owned: true, cohorts: {} };
   for (const cohort of ['fired', 'near_rule', 'neutral', 'another_factor']) {
     let occurrences = view.occurrences.filter((item) =>
-      item.routes[factor]?.cohort === cohort && inBlock(item, block));
+      item.routes[factor]?.cohort === cohort && inWindow(item, window));
     if (variant === 'sparse') occurrences = occurrences.slice(0, 2);
     if (variant === 'zero-fired' && cohort === 'fired') occurrences = [];
     const cohortSupport = supportForCount(occurrences.length);
@@ -169,11 +187,11 @@ function visualProjection(view, factor, block, variant = 'dense') {
 function attachVisualSupport(view) {
   const support = {};
   for (const factor of view.factors) {
-    for (const [blockName, block] of Object.entries(BLOCKS)) {
-      support[`dense:${factor}:${blockName}`] = visualProjection(view, factor, block);
+    for (const window of WINDOWS) {
+      support[`dense:${factor}:${windowKey(window)}`] = visualProjection(view, factor, window);
     }
-    support[`sparse:${factor}:all`] = visualProjection(view, factor, BLOCKS.all, 'sparse');
-    support[`zero-fired:${factor}:all`] = visualProjection(view, factor, BLOCKS.all, 'zero-fired');
+    support[`sparse:${factor}:whole-day`] = visualProjection(view, factor, null, 'sparse');
+    support[`zero-fired:${factor}:whole-day`] = visualProjection(view, factor, null, 'zero-fired');
   }
   view.visual_support = support;
   return view;
@@ -211,7 +229,14 @@ function routes(view, cohort) {
 function occurrence(view, index) {
   const day = String(index + 1).padStart(2, '0');
   const hour = String(hours[index]).padStart(2, '0');
-  const stamp = `2026-08-${day} ${hour}:00:00`;
+  const local = view === 'meals' ? workstationMeals[index % workstationMeals.length] : null;
+  const stamp = local?.t || `2026-08-${day} ${hour}:00:00`;
+  // ADR 62 membership follows where the consequence landed, not the trigger.
+  // This shared 13:00 meal key lands at 14:35, so a 14:00–15:00 request must
+  // include it even though its anchor lies outside that window.
+  const outcomeMin = view === 'meals' && index === 1
+    ? 14 * 60 + 35
+    : Number(stamp.slice(11, 13)) * 60 + Number(stamp.slice(14, 16));
   const cohort = plan[index];
   const primary = factors[view][0];
   const trace = {
@@ -241,9 +266,10 @@ function occurrence(view, index) {
   }
   return {
     id: `${view}-synthetic-${index + 1}`,
-    ep_id: `${view}-ep-${index + 1}`,
-    date: `2026-08-${day}`,
+    ep_id: local?.ep_id || `${view}-ep-${index + 1}`,
+    date: local?.date || `2026-08-${day}`,
     anchor_t: stamp,
+    outcome_min: outcomeMin,
     anchor_bg: view === 'meals' ? 132 + index : 68 + (index % 3),
     worst_bg: view === 'meals' ? 205 + index : 58 + (index % 4),
     label: view === 'meals' ? 'Completed carb bolus' : 'Low excursion',
@@ -263,7 +289,7 @@ function occurrence(view, index) {
 }
 
 const capture = {
-  schema: 'issue-677-event-comparison-capture-v1',
+  schema: 'issue-677-event-comparison-capture-v2',
   fixture: 'labeled-synthetic',
   source_window: { start: '2026-07-13', end: '2026-08-11' },
   views: {
@@ -282,8 +308,17 @@ const capture = {
   },
 };
 const serialized = JSON.stringify(capture, null, 2) + '\n';
-if (process.argv.includes('--write')) {
-  writeFileSync(new URL('./capture.json', import.meta.url), serialized);
+const target = new URL('./capture.json', import.meta.url);
+if (process.argv.includes('--check')) {
+  const current = readFileSync(target, 'utf8');
+  if (current !== serialized) {
+    process.stderr.write('stale fixture: mockups/diagnose-event-comparison.synthetic/capture.json — rerun generate.mjs --write\n');
+    process.exitCode = 1;
+  } else {
+    process.stdout.write('event-comparison synthetic capture current\n');
+  }
+} else if (process.argv.includes('--write')) {
+  writeFileSync(target, serialized);
 } else {
   process.stdout.write(serialized);
 }

@@ -59,6 +59,11 @@ jobs:
       # returns — the same drift class as the two checks above.
       - name: Check the generated findings-projection fixtures are current
         run: uv run python scripts/gen_findings_projection_fixtures.py --check
+      # #62: browser replays use a fixture-only event-comparison mirror. Freeze
+      # the Python projection's public answers, then let the Node test hold the
+      # mirror to those answers window for window.
+      - name: Check the generated event-comparison mirror fixtures are current
+        run: uv run python scripts/gen_event_comparison_mirror_fixtures.py --check
 
   docs:
     name: ADR numbering guard
@@ -111,6 +116,10 @@ jobs:
       # no npm/package.json (see CLAUDE.md conventions).
       - name: Run tests
         run: node --test 'frontend/**/*.test.js'
+      # The browser capture is generated too; a passing test must not run
+      # against bytes that have drifted from its support-stamp producer.
+      - name: Check the event-comparison synthetic capture is current
+        run: node mockups/diagnose-event-comparison.synthetic/generate.mjs --check
       - name: Exercise the local screenshot wrapper
         run: node --test scripts/screenshots.local.test.mjs
       # The same drift class the backend job guards for its five generators, in

@@ -51,7 +51,7 @@ python3 scripts/check_owned_identifiers.py # product-name guard
 python3 scripts/check_public_allowlist.py  # publishable-tree guard
 ```
 
-The backend job also runs five **drift checks**, so a committed
+The backend job also runs six **drift checks**, so a committed
 generator-authored artifact can never silently diverge from its generator:
 
 ```sh
@@ -60,12 +60,18 @@ uv run python scripts/gen_annotation_fixtures.py --check
 uv run python scripts/check_demo_fixtures.py   # the committed synthetic demo sets
 uv run python scripts/gen_findings_projection_fixtures.py --check
 uv run python scripts/gen_chart_builder_fixtures.py --check
+uv run python scripts/gen_event_comparison_mirror_fixtures.py --check
 ```
 
-The frontend job runs a sixth, in Node, over a design exploration's build
-script — the one generator here that is not a fixture builder. Its command
-lives in `.github/workflows/ci.yml`; the exploration itself is a private design
-artifact and does not ship, so it is not named here.
+The frontend job runs two drift checks in Node: the event-comparison synthetic
+capture and the design exploration's build script. The latter is the one
+generator here that is not a fixture builder; its command lives in
+`.github/workflows/ci.yml`, and the exploration itself is a private design
+artifact that does not ship.
+
+```sh
+node mockups/diagnose-event-comparison.synthetic/generate.mjs --check
+```
 
 **A mockup that extracts from the app is a generated artifact, and the same
 `--check` rule binds it.** Such a build typically commits a stylesheet lifted

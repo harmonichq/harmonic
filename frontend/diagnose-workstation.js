@@ -30,6 +30,13 @@ import { toCaptures, isfVerdict } from './diagnose-workstation-data.js';
 // #735: level 1 is the server-owned findings queue, and the pane has a floor.
 import { renderFindingsQueue, queueMeta } from './diagnose-findings-queue.js';
 import { watchDockView, paintWatchDock } from './watched-change-dock.js';
+/* ADR 31 part 3 (issue #41) — ALIGN's "By event" mode reuses the lens's own
+   canvas-only render rather than a second implementation of the projection's
+   draw. `diagnose-event-comparison.js` imports `createDiagnoseWorkstation`
+   from this module too; the cycle is safe because neither side calls the
+   other's import at module-evaluation time, only from inside functions run
+   later, after both modules have finished loading. */
+import { renderEventSurface } from './diagnose-event-comparison.js';
 
 /* VERBATIM from the mock's shared harness chrome. The ported chartColors() calls it, and
    it must read the live stylesheet rather than any restated token (R3). */
@@ -56,6 +63,14 @@ const MARKUP = `
     <div class="instrument">
       <span class="cap">Window</span>
       <div class="seg" id="seg-window" role="group" aria-label="Clock window"></div>
+    </div>
+    <!-- ADR 31 part 3 (issue #41) — ALIGN, present only where the canvas is
+         showing a factor's events. A switch over already-selected data: it
+         never pushes, and WINDOW keeps filtering by clock under either
+         projection. Absorbs VIEW's function; VIEW itself is deleted. -->
+    <div class="instrument" id="align-group" hidden>
+      <span class="cap">Align</span>
+      <div class="seg" id="seg-align" role="group" aria-label="Alignment"></div>
     </div>
   </div>
 
@@ -87,10 +102,16 @@ const MARKUP = `
           <div class="grip" id="grip-b" title="Drag to resize"></div>
           <div class="readout" id="brace-readout" hidden></div>
         </div>
-        <div class="lane-wrap">
+        <div class="lane-wrap" id="lane-wrap">
           <div class="lane" id="lane" role="group" aria-label="Basal slot verdicts"></div>
           <div class="lane-key" id="lane-key"></div>
         </div>
+        <!-- ALIGN's "By event" pane (ADR 31 part 3): the event-comparison
+             lens's own canvas-only render, mounted here rather than
+             re-implemented — the same projection, drawn the same way,
+             whether reached through the lens's own read path or through
+             this switch. Hidden and empty under "By clock". -->
+        <div class="ec-surface" id="align-canvas" hidden></div>
       </div>
     </section>
 
@@ -202,6 +223,26 @@ const WINDOWS = {
 };
 const winEdge = (m) => (m === 1440 ? '24:00' : hhmm(m));
 const winText = (w) => `${hhmm(w.range[0])}–${winEdge(w.range[1])}`;
+
+/* ADR 31 part 3 (issue #41) — which finding case files ALIGN can re-project.
+   The event-comparison lens's closed factor set (`diagnose-event-comparison.js`,
+   `factorKey`) is six of the seven levers title() names
+   (`ciq_autotune/analyzers/scenario/levers.py`); MISSED_MEAL is the one lever
+   outside it (an Exposure.HIGHS case file, which the lens has no view for).
+   Keyed on the lever's TITLE, because that is the string a factor frame
+   already carries as `factor.cause` (`buildFactors`/`cause_title`) — not a
+   second copy of the lever enum, just the same closed set's own titles read
+   back. A factor frame whose cause is not in this map has no event alignment;
+   ALIGN stays hidden and the canvas stays clock-only. */
+const ALIGN_FACTOR_BY_CAUSE = {
+  'Carb undercount': { view: 'meals', factor: 'carb_undercount' },
+  'Late bolus': { view: 'meals', factor: 'late_bolus' },
+  'Meal over-delivery': { view: 'meals', factor: 'meal_over_delivery' },
+  'Over-treated low': { view: 'lows', factor: 'over_treated_low' },
+  'Correction stacking': { view: 'lows', factor: 'correction_stacking' },
+  'Correction on active insulin': { view: 'lows', factor: 'correction_on_iob' },
+};
+const alignCoordinatesFor = (cause) => ALIGN_FACTOR_BY_CAUSE[cause] || null;
 
 /* ---- mock 1222-1242 — VERBATIM except the trailing `[state]` index:
        the app re-derives CFG per mount instead of once at load. ---- */
@@ -315,6 +356,23 @@ function renderInstruments(winKey, capture, onPreset) {
   if (range) range.textContent = `${fmtDate(capture.window.start)} – ${fmtDate(capture.window.end)}`;
   const days = el('scope-days');
   if (days) days.textContent = `${daysBetween(capture.window.start, capture.window.end)} d`;
+}
+
+/** ALIGN (ADR 31 part 3): a switch over already-selected data, never a
+    navigation — it does not push, and nothing else in the instrument row is a
+    function of it. Rebuilt every paint from the standing frame's own align
+    state, same as `renderInstruments` rebuilds WINDOW from `winKey`. */
+function renderAlign(alignKey, onAlign) {
+  const seg = el('seg-align');
+  seg.innerHTML = '';
+  for (const [key, label] of [['clock', 'By clock'], ['event', 'By event']]) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = label;
+    b.setAttribute('aria-pressed', String(key === alignKey));
+    b.addEventListener('click', () => onAlign(key));
+    seg.append(b);
+  }
 }
 
 /**
@@ -1074,6 +1132,11 @@ function boot(root, data, callbacks, signal) {
   let chart = null;
   let shownRows = EVIDENCE_CAP;
   let dir = 'push';
+  /* ALIGN's mounted event-comparison canvas (ADR 31 part 3), and the request
+     generation that guards it against a stale response landing after the
+     reader has moved to a different frame or flipped back to `By clock`. */
+  let alignMount = null;
+  let alignGeneration = 0;
   let presetKey = CFG.win;                          // what Esc restores
   let shownRange = null;                            // the window the canvas resolved to
   let braceGripTop = 48;                            // y of the grip band, set by paintBrace
@@ -1356,6 +1419,76 @@ function boot(root, data, callbacks, signal) {
       `window ${stats.readings.toLocaleString()} of ${envelope.readings.toLocaleString()} readings`;
     el('canvas-pool').textContent =
       `pooled from ${envelope.days} captured CGM days · ±${envelope.pool} min`;
+  }
+
+  /** Tear down whatever ALIGN mounted, and restore the clock canvas. */
+  function disposeAlign() {
+    alignMount?.observer?.disconnect();
+    alignMount?.chart?.dispose();
+    alignMount = null;
+    el('align-canvas').innerHTML = '';
+    el('align-canvas').hidden = true;
+    el('chart').hidden = false;
+    el('brace').hidden = braceless || !shownRange;
+    el('lane-wrap').hidden = false;
+  }
+
+  /**
+   * ALIGN (ADR 31 part 3). Present only on a finding case file whose factor
+   * the lens can re-project (`alignCoordinatesFor`); a switch over
+   * already-selected data, so picking `By event` never moves the crumb, the
+   * roster or the standing WINDOW — it re-projects the SAME occurrences the
+   * factor frame is already scoped to. WINDOW keeps filtering by clock under
+   * either projection: the block coordinate the request carries is this
+   * canvas's own standing preset (`presetKey`), the one taxonomy WINDOW and
+   * the lens's block share.
+   *
+   * The event-aligned canvas is the lens's own canvas-only render
+   * (`renderEventSurface`, `diagnose-event-comparison.js`) — reused, not
+   * reimplemented (charter reuse rule). A drawn/custom window has no block
+   * equivalent in that taxonomy, so `By event` always requests the standing
+   * PRESET regardless of a drawn brace; that is a scope narrowing, recorded
+   * in the PR report, not a silent approximation.
+   */
+  function paintAlign() {
+    const f = top();
+    const mapped = f.k === 'factor' ? alignCoordinatesFor(f.factor.cause) : null;
+    el('align-group').hidden = !mapped;
+    if (!mapped) {
+      if (alignMount) disposeAlign();
+      return;
+    }
+    const alignKey = f.align === 'event' ? 'event' : 'clock';
+    renderAlign(alignKey, (key) => {
+      if (f.align === key) return;
+      f.align = key;
+      paint();
+    });
+    if (alignKey === 'clock') {
+      if (alignMount) disposeAlign();
+      return;
+    }
+    // already showing the right projection for this frame: nothing to refetch
+    if (alignMount && alignMount.frame === f && alignMount.presetKey === presetKey) return;
+    el('chart').hidden = true;
+    el('brace').hidden = true;
+    el('lane-wrap').hidden = true;
+    const host = el('align-canvas');
+    host.hidden = false;
+    const generation = ++alignGeneration;
+    Promise.resolve(callbacks.loadProjection?.({
+      view: mapped.view, factor: mapped.factor, block: presetKey, another: false,
+    })).then((projection) => {
+      if (generation !== alignGeneration || top() !== f) return;
+      alignMount?.observer?.disconnect();
+      alignMount?.chart?.dispose();
+      alignMount = { ...renderEventSurface(host, projection), frame: f, presetKey };
+    }).catch(() => {
+      // ALIGN is a re-projection, not a navigation: a failed fetch leaves the
+      // reader on whatever the canvas already showed rather than erroring the
+      // whole workstation out from under an unrelated finding.
+      if (generation === alignGeneration) host.hidden = true;
+    });
   }
 
   /* The badge counts STAGED PARAMETER ITEMS — a basal slot, an I:C block, the
@@ -1808,6 +1941,7 @@ function boot(root, data, callbacks, signal) {
     paintWatch();
     paintChart();
     paintBrace();
+    paintAlign();
   }
 
 

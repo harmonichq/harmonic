@@ -243,6 +243,11 @@ html.dark .dw {
    time — there is simply nothing to reflow. Behaviour-ledger Q3 (#651). */
 #chart { min-height: 0; min-width: 0; cursor: crosshair; }
 
+/* ALIGN's "By event" pane (ADR 31 part 3, issue #41) — spans the whole canvas
+   body (both grid rows), the same footprint `#chart` + `.lane-wrap` cover
+   together, so it replaces them rather than adding a third row underneath. */
+#align-canvas { grid-row: 1 / -1; grid-column: 1; min-height: 0; }
+
 /* ---- drawn-window brace ---------------------------------------------
    Two dashed edges on the SAME optical spine as the plot and the lane —
    they span the whole canvas body, so they project down through the basal

@@ -970,3 +970,115 @@ The I:C lane's markup, CSS, renderer and handlers are removed. I:C continues to
 enter through its findings-queue row, which opens the existing block detail;
 the queue and its ranking tier are unchanged. The old replay failed first with
 `S17 precondition: a non-wrapping block exists`; the revised replay then passed.
+
+
+## Revision amendment — 2026-08-19 (ALIGN absorbs VIEW; the lens goes canvas-only)
+
+**P52 is now applied as a permanent `RETIRED` entry**, and its `ruled-elsewhere`
+note (#31 resolution §4) lands with it: the lens's inspector pane, its three
+selects (`#ec-factor`, `#ec-another`, `#ec-occurrence`), `Clear trace`, the
+occurrence detail block and the rescue note are all deleted from
+`frontend/diagnose-event-comparison.js`. **View is deleted in the same
+commit**, by ADR 31 part 3's own ruling — not scope-cut, absorbed: the
+workstation gains one instrument, `ALIGN` (`By clock` / `By event`), in the
+same optical row as `WINDOW`, present only on a finding case file
+(`{k:'factor'}`) whose factor the lens can re-project — the closed six of the
+lever taxonomy's seven titles the lens's own `factorKey` set already names
+(`carb_undercount`, `late_bolus`, `meal_over_delivery`, `over_treated_low`,
+`correction_stacking`, `correction_on_iob`; `missed_meal` has no lens view and
+ALIGN stays hidden on that case file). `By event` re-projects the SAME
+occurrences the factor frame is already scoped to, through the lens's own
+canvas-only render (`renderEventSurface`, now exported and reused, never
+reimplemented) mounted at `#align-canvas`; `WINDOW` keeps filtering by clock
+under either projection because the request's block coordinate is the
+canvas's own standing preset (`presetKey`) — WINDOW and the lens's block share
+one five-key taxonomy (`overnight`/`morning`/`afternoon`/`evening`/`all`).
+ALIGN is a switch over already-selected data (ADR 31 part 3's own form): it
+never writes the URL, it does not push a crumb level, and picking it never
+moves the roster, the WINDOW brace, or the crumb.
+
+The lens's own `?view=meals`/`lows` route (unreachable by any control once
+View is deleted) is kept as a harmless read path per P53 — it renders the same
+canvas-only surface directly, with no rail of its own, rather than being
+restructured.
+
+**Failed-first, captured against the new build with the OLD (pre-amendment)
+assertions:**
+
+- `frontend/cockpit-shell.browser.test.mjs`, the newest-projection race story:
+  `locator.click: Timeout 30000ms exceeded. … waiting for locator('.ec-view-seg
+  [data-view="lows"]')` — the control the story drove is gone.
+- `frontend/diagnose-event-comparison-behavior.replay.mjs`, S1 (the first
+  story run): `locator.click: Timeout 30000ms exceeded. … waiting for
+  locator('[data-view="glucose"]')` — same cause; every story after S1 asserts
+  against a retired selector too, confirmed by inspection and by individually
+  isolating each with `ONLY=`.
+
+**Amended stories**, all in `frontend/diagnose-event-comparison-behavior.replay.mjs`
+unless noted:
+
+- **S1, S2, S4, S6 — retired.** Replaced with loud absence assertions (the S26
+  pattern): each confirms its retired control (`.ec-view-seg`, `.ec-block-seg`,
+  `#ec-occurrence`/`#ec-occ-detail`/`#ec-rescue`/`#ec-day-link`/`#ec-clear`) is
+  gone from the DOM. S1 keeps the three assertions that never depended on
+  View — shipped chrome siblings, default routing on a bare open, and the
+  fail-closed path on a missing comparison — reached without a click.
+- **S3 — amended.** The meal-identity and no-match-copy assertions survive on
+  the canvas and legend, which are not retired; the factor coordinate is now
+  set by opening a second page with `?factor=late_bolus` (P53's read path)
+  instead of driving `#ec-factor`, and its title-context span (`.ec-title-context`,
+  the canvas-only surface's remaining factor readout) is checked in place of
+  the retired inspector title. The factor-re-render and occurrence-retention
+  assertions, which lived entirely in the retired inspector, do not survive.
+- **S5 — amended.** The near-rule disclosure sentence had no surviving home
+  and is dropped with the inspector; the `another_factor` cohort's own
+  visibility is re-checked by opening `?another=1` directly and reading the
+  legend, which is unchanged.
+- **S9 — amended.** The narrow-width assertions on `.ec-coordinates`'
+  grid-template-columns and `.ec-inspector`'s stacking position are replaced
+  with a check that the sole remaining pane (`.ec-panes`) takes the full
+  column width and the canvas renders — the coordinate row and the inspector
+  it checked no longer exist to stack.
+- **S10 — retired.** Its whole premise — that Meals/Lows shares one optical
+  rail row with Glucose — no longer holds: the canvas-only lens route has no
+  rail at all. Replaced with a loud absence check that `.instruments` and
+  `.ec-coordinates` are both gone from that route. The hover-stability half of
+  the old story (the canvas header does not reflow on hover) survives
+  unclaimed in S7, which already exercises it on the surviving canvas.
+- **S7, S8, S11, S12 — unchanged**, and pass unchanged: none of the four ever
+  drove a retired control, all four are URL-coordinate or keyboard/pointer
+  driven. (S7 surfaced one real regression during this slice, fixed alongside
+  the deletions rather than left in the replay's failed-first capture: with
+  the coordinate row's sibling removed, `.ec-surface`'s implicit grid row
+  collapsed to its header's own content height instead of filling the pane,
+  so `#ec-chart`'s own `min-height: 310px` painted outside its clipped
+  ancestor and stopped receiving pointer events there. Fixed with an explicit
+  `grid-template-rows: 1fr` on `.ec-surface` — a layout bug the deletion
+  exposed, not a behavior this ledger governs, so it carries no `P` entry.)
+
+The revised replay run: `12/12 stories passed against app`
+(`frontend/diagnose-event-comparison-behavior.replay.mjs`). The workstation's
+own 29-story replay (`frontend/diagnose-workstation-behavior.replay.mjs`)
+passed unchanged at the same count — ALIGN is additive there, and no existing
+story asserts against the instrument row in a way ALIGN's presence disturbs.
+
+**P53 tension, recorded rather than decided silently:** ALIGN's "By event"
+request always uses the canvas's *standing preset* (`presetKey`) as its block
+coordinate, even when a drawn/custom window (`drawn`) is in force — the lens's
+block taxonomy has no "custom" member to carry an arbitrary range. This is a
+scope narrowing on a drawn window, not a P53 violation (P53 governs the URL
+contract, and ALIGN writes no URL state at all), but it means `By event` can
+show a rule-matched population addressed at the last-pressed preset rather
+than the exact drawn range, exactly as WINDOW would if the reader flips
+between a preset and a drawn brace on the clock canvas itself. Selection is
+also NOT carried across projections in this slice: `By event` shows the
+factor's aggregate cohorts, unselected, even if the clock canvas had one
+occurrence selected. The two id spaces (the exposures episode id the
+workstation reads and the lens's own per-view occurrence id) are related
+through a shared `ep_id` on the server (`ciq_autotune/event_comparison.py`)
+but that field is stripped at the browser contract's JSON boundary
+(`validOccurrence`'s `identity` schema carries only `id`/`kind`), so bridging
+them client-side would mean widening that schema — a real design decision,
+not a mechanical one, left to a future issue rather than decided here.
+
+Decision: harmonichq/harmonic#41, 2026-08-19.

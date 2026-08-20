@@ -118,6 +118,31 @@ Taken while revising, recorded not asked:
 - The `/ui-craft` revise lane's output is REVISION EVIDENCE, produced by the chunk and
   attached by the coordinator, which is the only agent that opens the pull request.
 
+### Cold review, round 3 (fresh Codex reviewer, 2026-08-19) — the three-panel cap
+
+4 blocking objections, all verified, one of them `injected`: the `(ep_id, anchor_t)`
+selection key came from round 1's cheapest fix and round 3 disproved it with a pinned
+test. Blockers still arriving at the cap means unsettled decisions, so drafting stopped
+and they went to the operator.
+
+- Q8 (Connor, 2026-08-19): selection keeps the server's unique occurrence id; the
+  episode-and-time pair is published beside it for joining only. Why: two completed
+  boluses can share an episode and an instant
+  (`tests/test_event_comparison.py:670`), so the pair cannot address them. `-> ADR`
+- Q9 (Connor, 2026-08-19): a finding the lens can re-project frames on the family its
+  event view names. Why: a finding can hold episodes of two kinds, and framing on the
+  larger put a list of highs beside a chart of meals. `-> ADR`
+- Q10 (Connor, 2026-08-19): a finding that leaves the window keeps the reader, with both
+  panes stating `No findings in the selected window`. Why: the alternative is a
+  browser-side fallback filter, which is what this ticket retires. `-> ADR`
+- Mine, recorded not asked: the `/ui-craft` revise lane's renders are pull-request
+  evidence, not committed files, because the publishable-tree allowlist admits no images
+  under `frontend/`; the chunk commits the behavior ledger and replay output, and the
+  coordinator records safe-start provenance before that chunk starts. `-> ADR`
+
+All four are recorded as amendments 6 to 9 in ADR 62. No fourth panel was run: the cap
+is three, and these were decisions rather than defects.
+
 ## Spawned tasks
 
 - File a ticket for unifying the browser fixture populations (one synthetic exposure

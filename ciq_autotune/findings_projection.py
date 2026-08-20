@@ -431,7 +431,9 @@ class FindingsProjection:
         rows = []
         for lever, entry in by_lever.items():
             entry["appearances"].sort(key=lambda a: a["family"])
-            evidence, verdict_counts = _lever_evidence(lever, entry["families"], in_window)
+            evidence, verdict_counts, verdict_counts_by_family = _lever_evidence(
+                lever, entry["families"], in_window,
+            )
             rows.append(_row(
                 id=f"finding:{lever}",
                 register="finding",
@@ -449,45 +451,86 @@ class FindingsProjection:
                 # its five-state verdict *relative to this lever* — never dropped
                 # just because it wasn't the one that fired (item 3).
                 evidence=evidence,
+                # Kept for compatibility (a single-family lever's total IS its one
+                # family's count); a multi-family lever's band must key off
+                # `verdict_counts_by_family` instead (finding 1) so the band and the
+                # roster it scopes share one denominator.
                 verdict_counts=verdict_counts,
+                verdict_counts_by_family=verdict_counts_by_family,
             ))
         return rows
 
 
-def _occurrence_verdict(occurrence: dict, lever: str) -> str:
-    """This finding's own verdict on one occurrence (ADR 41).
+# Silence reasons that keep an occurrence "calm" for a lever whose classifier
+# looked and had nothing to flag (ADR 0019 §2's `_CALM_REASONS`, mirrored here
+# because this module reads the published `verdicts[]` contract, not the
+# model-view internals that own the enum).
+_CALM_SILENCE_REASONS = frozenset({None, "no_trigger"})
+_NO_DATA_SILENCE_REASON = "insufficient_data"
 
-    ``fired``/``near_miss``/``no_data``/``clean`` are read straight off the
-    occurrence's own anchor-level state (ADR 0019 §2's ``_anchor_state``), which
-    is never re-derived here — only ``fired`` needs a further check, because an
-    anchor can be the driver of some OTHER lever's episode. From this row's own
-    point of view that is a claim by another factor, i.e. ``outranked``, even
-    though the occurrence's raw state reads ``fired`` for the lever that actually
-    won it.
+
+def _occurrence_verdict(occurrence: dict, lever: str) -> str:
+    """This finding's own, ROW-RELATIVE verdict on one occurrence (ADR 41, item 2).
+
+    Read off the occurrence's own lever's classifier verdict — never the
+    anchor's overall ``state``, which is precedence-collapsed across every
+    classifier that looked at the anchor and says nothing about THIS lever.
+    Connor: "the server has rule fired" — a row's own lever matching is
+    ``fired`` (Meets criteria) whether or not it also won the episode's
+    attribution; ``outranked`` is reserved for an occurrence where this lever's
+    classifier never matched anything and some OTHER lever drove the episode.
+
+    * this lever's classifier matched → ``fired`` (row-relative: it fired
+      whether or not it drove the episode).
+    * this lever's classifier ran and came back a loud near-miss → ``near_miss``.
+    * this lever's classifier ran but the window was too sparse → ``no_data``.
+    * this lever's classifier is calm (didn't run on this anchor kind, or ran
+      quiet) and no lever drove the episode → ``clean``.
+    * this lever's classifier is calm and another lever drove the episode →
+      ``outranked``.
     """
-    if occurrence.get("state") == "fired" and occurrence.get("cause_lever") != lever:
-        return "outranked"
-    return occurrence.get("state")
+    own = next(
+        (v for v in occurrence.get("verdicts") or [] if v.get("classifier") == lever),
+        None,
+    )
+    if own is not None:
+        if own.get("matched"):
+            return "fired"
+        reason = own.get("silence_reason")
+        if reason == _NO_DATA_SILENCE_REASON:
+            return "no_data"
+        if reason not in _CALM_SILENCE_REASONS:
+            return "near_miss"
+    return "outranked" if occurrence.get("cause_lever") else "clean"
 
 
 def _lever_evidence(
     lever: str, families: Sequence[str], in_window: Dict[str, List[dict]],
-) -> Tuple[List[dict], Dict[str, int]]:
+) -> Tuple[List[dict], Dict[str, int], Dict[str, Dict[str, int]]]:
     """The evidence rows and verdict-band counts one finding row publishes.
 
     Drawn over every in-window occurrence of every family this lever claims a hit
     in — not just its hits — so the band's ``outranked``/``near_miss``/``no_data``/
     ``clean`` counts (which the frontend may not derive) have something to count.
+
+    Returns the evidence list, the total counts (kept for compatibility — a row
+    that claims one family still wants one number), and the SAME counts broken
+    out per family (finding 1): a multi-family lever's roster and its band must
+    share one denominator, which only the family it is currently framing on can
+    give it.
     """
     counts = {category: 0 for category in _VERDICT_CATEGORIES}
+    counts_by_family: Dict[str, Dict[str, int]] = {}
     evidence = []
     # Sorted, not first-seen: the family a lever hits first is an accident of the
     # exposures dict's own key order, and `appearances` already sorts alphabetically
     # for the same reason (a stable answer independent of that order).
     for family in sorted(set(families)):
+        family_counts = {category: 0 for category in _VERDICT_CATEGORIES}
         for occurrence in in_window.get(family, []):
             category = _occurrence_verdict(occurrence, lever)
             counts[category] += 1
+            family_counts[category] += 1
             evidence.append({
                 "ep_id": occurrence.get("ep_id"),
                 "t": occurrence.get("t"),
@@ -496,7 +539,8 @@ def _lever_evidence(
                 "kind": occurrence.get("kind"),
                 "verdict": category,
             })
-    return evidence, counts
+        counts_by_family[family] = family_counts
+    return evidence, counts, counts_by_family
 
 
 def _basal_key(slot: dict) -> Optional[Tuple[str, Optional[str]]]:
@@ -546,7 +590,7 @@ def _row(**fields) -> dict:
         "lean": None, "current": None, "recommended": None, "estimate": None,
         "support": None, "reason": None, "annotation": None, "members": None,
         "lever": None, "appearances": None, "episodes": None,
-        "evidence": None, "verdict_counts": None,
+        "evidence": None, "verdict_counts": None, "verdict_counts_by_family": None,
     }
     row.update(fields)
     return row

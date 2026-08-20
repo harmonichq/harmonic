@@ -396,6 +396,49 @@ class FindingEvidenceBlockTest(unittest.TestCase):
                                for o in family["occurrences"])]
         self.assertTrue(other_fired)
 
+    def test_this_levers_own_classifier_matching_reads_fired_row_relative(self):
+        # Finding 2: a row's own lever matching its own classifier is `fired`
+        # (Meets criteria) whether or not it also drove the episode's
+        # attribution — never re-derived from the anchor-level `state`.
+        own_matches = [
+            o for family in self.exposures.values() for o in family["occurrences"]
+            if any(v["classifier"] == "over_treated_low" and v["matched"]
+                   for v in o["verdicts"])
+        ]
+        self.assertTrue(own_matches)
+        for occ in own_matches:
+            entry = next(e for e in self.row["evidence"] if e["ep_id"] == occ["ep_id"]
+                         and e["t"] == occ["t"])
+            self.assertEqual(entry["verdict"], "fired")
+
+    def test_all_five_verdict_categories_are_exercised_somewhere_nonzero(self):
+        # Finding 3: the synthetic population must exercise every row-relative
+        # category, not just fired/outranked/clean.
+        counts = self.row["verdict_counts"]
+        for category in ("fired", "outranked", "near_miss", "no_data", "clean"):
+            self.assertGreater(counts[category], 0, category)
+
+    def test_verdict_counts_by_family_shares_a_denominator_with_the_roster(self):
+        # Finding 1: the band and the roster it scopes must agree on "N of M"
+        # for the SAME family, not the row's cross-family total.
+        by_family = self.row["verdict_counts_by_family"]
+        self.assertEqual(set(by_family), {"lows", "highs"})
+        for family, counts in by_family.items():
+            family_m = sum(1 for e in self.row["evidence"] if e["family"] == family)
+            self.assertEqual(sum(counts.values()), family_m)
+        total = self.row["verdict_counts"]
+        summed = {category: sum(counts[category] for counts in by_family.values())
+                  for category in total}
+        self.assertEqual(summed, total)
+
+    def test_two_occurrences_sharing_an_ep_id_are_disambiguated_by_t(self):
+        # Finding 4: `ep1` anchors twice (the low and its rebound high) and the
+        # evidence rows must carry distinct clock keys so a `(family, ep_id)`
+        # join can never silently collapse them onto one verdict.
+        ep1_rows = [e for e in self.row["evidence"] if e["ep_id"] == "ep1"]
+        self.assertEqual(len(ep1_rows), 2)
+        self.assertEqual(len({e["t"] for e in ep1_rows}), 2)
+
 
 if __name__ == "__main__":
     unittest.main()

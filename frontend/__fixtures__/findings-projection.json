@@ -7192,7 +7192,15 @@
        "state": "fired",
        "t": "2026-08-17 15:10:00",
        "text": "Corrections stacked and carried glucose to 61.",
-       "verdicts": [],
+       "verdicts": [
+        {
+         "classifier": "correction_stacking",
+         "detail": "Corrections stacked and carried glucose to 61.",
+         "evidence_tier": "observed",
+         "matched": true,
+         "silence_reason": null
+        }
+       ],
        "worst_bg": 61.0
       }
      ]
@@ -7222,7 +7230,15 @@
        "state": "fired",
        "t": "2026-08-17 14:35:00",
        "text": "Treated a low at 13:00 and it rebounded to 256.",
-       "verdicts": [],
+       "verdicts": [
+        {
+         "classifier": "over_treated_low",
+         "detail": "Treated a low at 13:00 and it rebounded to 256.",
+         "evidence_tier": "observed",
+         "matched": true,
+         "silence_reason": null
+        }
+       ],
        "worst_bg": 256.0
       },
       {
@@ -7237,7 +7253,15 @@
        "state": "fired",
        "t": "2026-08-17 09:05:00",
        "text": "Bolused 45 g at 07:10 and glucose still ran to 243.",
-       "verdicts": [],
+       "verdicts": [
+        {
+         "classifier": "carb_undercount",
+         "detail": "Bolused 45 g at 07:10 and glucose still ran to 243.",
+         "evidence_tier": "observed",
+         "matched": true,
+         "silence_reason": null
+        }
+       ],
        "worst_bg": 243.0
       },
       {
@@ -7249,7 +7273,7 @@
        "ep_id": "ep6",
        "kind": "high",
        "label": "High",
-       "state": "fired",
+       "state": "clean",
        "t": "2026-08-17 21:40:00",
        "text": "",
        "verdicts": [],
@@ -7263,12 +7287,12 @@
       "Correction stacking": 1,
       "Over-treated low": 1
      },
-     "clean": 2,
+     "clean": 4,
      "levers": [
       "over_treated_low",
       "correction_stacking"
      ],
-     "n": 4,
+     "n": 6,
      "occurrences": [
       {
        "attributed": true,
@@ -7282,7 +7306,15 @@
        "state": "fired",
        "t": "2026-08-17 13:00:00",
        "text": "Treated a low at 13:00 and it rebounded to 256.",
-       "verdicts": [],
+       "verdicts": [
+        {
+         "classifier": "over_treated_low",
+         "detail": "Treated a low at 13:00 and it rebounded to 256.",
+         "evidence_tier": "observed",
+         "matched": true,
+         "silence_reason": null
+        }
+       ],
        "worst_bg": 256.0
       },
       {
@@ -7297,7 +7329,15 @@
        "state": "fired",
        "t": "2026-08-17 16:20:00",
        "text": "Corrections stacked and carried glucose to 61.",
-       "verdicts": [],
+       "verdicts": [
+        {
+         "classifier": "correction_stacking",
+         "detail": "Corrections stacked and carried glucose to 61.",
+         "evidence_tier": "observed",
+         "matched": true,
+         "silence_reason": null
+        }
+       ],
        "worst_bg": 61.0
       },
       {
@@ -7309,7 +7349,7 @@
        "ep_id": "ep4",
        "kind": "low",
        "label": "Low",
-       "state": "fired",
+       "state": "clean",
        "t": "2026-08-17 02:40:00",
        "text": "",
        "verdicts": [],
@@ -7324,11 +7364,57 @@
        "ep_id": "ep5",
        "kind": "low",
        "label": "Low",
-       "state": "fired",
+       "state": "clean",
        "t": "2026-08-17 12:10:00",
        "text": "",
        "verdicts": [],
        "worst_bg": 68.0
+      },
+      {
+       "attributed": false,
+       "bg": 71.0,
+       "cause_lever": null,
+       "cause_title": null,
+       "date": "2026-08-17",
+       "ep_id": "ep9",
+       "kind": "low",
+       "label": "Low",
+       "state": "clean",
+       "t": "2026-08-17 05:15:00",
+       "text": "",
+       "verdicts": [
+        {
+         "classifier": "over_treated_low",
+         "detail": "Rebound stayed under the over-treatment threshold.",
+         "evidence_tier": "inferred",
+         "matched": false,
+         "silence_reason": "under_threshold"
+        }
+       ],
+       "worst_bg": 71.0
+      },
+      {
+       "attributed": false,
+       "bg": 73.0,
+       "cause_lever": null,
+       "cause_title": null,
+       "date": "2026-08-17",
+       "ep_id": "ep10",
+       "kind": "low",
+       "label": "Low",
+       "state": "clean",
+       "t": "2026-08-17 08:45:00",
+       "text": "",
+       "verdicts": [
+        {
+         "classifier": "over_treated_low",
+         "detail": "Too few readings after the low to judge a rebound.",
+         "evidence_tier": "inferred",
+         "matched": false,
+         "silence_reason": "insufficient_data"
+        }
+       ],
+       "worst_bg": 73.0
       }
      ]
     },
@@ -7355,7 +7441,15 @@
        "state": "fired",
        "t": "2026-08-17 07:10:00",
        "text": "Bolused 45 g at 07:10 and glucose still ran to 243.",
-       "verdicts": [],
+       "verdicts": [
+        {
+         "classifier": "carb_undercount",
+         "detail": "Bolused 45 g at 07:10 and glucose still ran to 243.",
+         "evidence_tier": "observed",
+         "matched": true,
+         "silence_reason": null
+        }
+       ],
        "worst_bg": 243.0
       },
       {
@@ -7367,7 +7461,7 @@
        "ep_id": "ep7",
        "kind": "meal",
        "label": "Meal",
-       "state": "fired",
+       "state": "clean",
        "t": "2026-08-17 12:40:00",
        "text": "",
        "verdicts": [],
@@ -7382,7 +7476,7 @@
        "ep_id": "ep8",
        "kind": "meal",
        "label": "Meal",
-       "state": "fired",
+       "state": "clean",
        "t": "2026-08-17 18:50:00",
        "text": "",
        "verdicts": [],
@@ -7562,7 +7656,8 @@
      },
      "tier": "next_in_line",
      "title": "I:C 12:00 to 24:00 · lower",
-     "verdict_counts": null
+     "verdict_counts": null,
+     "verdict_counts_by_family": null
     },
     {
      "annotation": null,
@@ -7631,6 +7726,22 @@
       "near_miss": 0,
       "no_data": 0,
       "outranked": 1
+     },
+     "verdict_counts_by_family": {
+      "highs": {
+       "clean": 0,
+       "fired": 1,
+       "near_miss": 0,
+       "no_data": 0,
+       "outranked": 0
+      },
+      "lows": {
+       "clean": 0,
+       "fired": 1,
+       "near_miss": 0,
+       "no_data": 0,
+       "outranked": 1
+      }
      }
     },
     {
@@ -7700,6 +7811,22 @@
       "near_miss": 0,
       "no_data": 0,
       "outranked": 1
+     },
+     "verdict_counts_by_family": {
+      "correction_clusters": {
+       "clean": 0,
+       "fired": 1,
+       "near_miss": 0,
+       "no_data": 0,
+       "outranked": 0
+      },
+      "lows": {
+       "clean": 0,
+       "fired": 1,
+       "near_miss": 0,
+       "no_data": 0,
+       "outranked": 1
+      }
      }
     },
     {
@@ -7737,7 +7864,8 @@
      },
      "tier": "noted",
      "title": "ISF",
-     "verdict_counts": null
+     "verdict_counts": null,
+     "verdict_counts_by_family": null
     },
     {
      "annotation": "no nights of steady data at this time yet",
@@ -7816,7 +7944,8 @@
      },
      "tier": "noted",
      "title": "Basal 19:30 to 21:00",
-     "verdict_counts": null
+     "verdict_counts": null,
+     "verdict_counts_by_family": null
     }
    ],
    "schema": "diagnose-findings-v1",
@@ -7879,7 +8008,8 @@
      },
      "tier": "next_in_line",
      "title": "I:C 12:00 to 24:00 · lower",
-     "verdict_counts": null
+     "verdict_counts": null,
+     "verdict_counts_by_family": null
     },
     {
      "annotation": "a step up, limited to 20% above the set rate",
@@ -7943,7 +8073,8 @@
      },
      "tier": "next_in_line",
      "title": "Basal 00:30 to 01:30 · raise",
-     "verdict_counts": null
+     "verdict_counts": null,
+     "verdict_counts_by_family": null
     },
     {
      "annotation": "a step up, limited to 20% above the set rate",
@@ -8000,7 +8131,8 @@
      },
      "tier": "next_in_line",
      "title": "Basal 05:30 · raise",
-     "verdict_counts": null
+     "verdict_counts": null,
+     "verdict_counts_by_family": null
     },
     {
      "annotation": null,
@@ -8013,7 +8145,7 @@
       },
       {
        "family": "lows",
-       "m": 4,
+       "m": 6,
        "n": 1,
        "noun": "lows"
       }
@@ -8045,7 +8177,7 @@
        "family": "highs",
        "kind": "high",
        "t": "2026-08-17 21:40:00",
-       "verdict": "outranked"
+       "verdict": "clean"
       },
       {
        "date": "2026-08-17",
@@ -8069,7 +8201,7 @@
        "family": "lows",
        "kind": "low",
        "t": "2026-08-17 02:40:00",
-       "verdict": "outranked"
+       "verdict": "clean"
       },
       {
        "date": "2026-08-17",
@@ -8077,7 +8209,23 @@
        "family": "lows",
        "kind": "low",
        "t": "2026-08-17 12:10:00",
-       "verdict": "outranked"
+       "verdict": "clean"
+      },
+      {
+       "date": "2026-08-17",
+       "ep_id": "ep9",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-17 05:15:00",
+       "verdict": "near_miss"
+      },
+      {
+       "date": "2026-08-17",
+       "ep_id": "ep10",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-17 08:45:00",
+       "verdict": "no_data"
       }
      ],
      "id": "finding:over_treated_low",
@@ -8096,11 +8244,27 @@
      "tier": "worth_a_look",
      "title": "Over-treated low",
      "verdict_counts": {
-      "clean": 0,
+      "clean": 3,
       "fired": 2,
-      "near_miss": 0,
-      "no_data": 0,
-      "outranked": 5
+      "near_miss": 1,
+      "no_data": 1,
+      "outranked": 2
+     },
+     "verdict_counts_by_family": {
+      "highs": {
+       "clean": 1,
+       "fired": 1,
+       "near_miss": 0,
+       "no_data": 0,
+       "outranked": 1
+      },
+      "lows": {
+       "clean": 2,
+       "fired": 1,
+       "near_miss": 1,
+       "no_data": 1,
+       "outranked": 1
+      }
      }
     },
     {
@@ -8146,7 +8310,7 @@
        "family": "highs",
        "kind": "high",
        "t": "2026-08-17 21:40:00",
-       "verdict": "outranked"
+       "verdict": "clean"
       },
       {
        "date": "2026-08-17",
@@ -8162,7 +8326,7 @@
        "family": "meals",
        "kind": "meal",
        "t": "2026-08-17 12:40:00",
-       "verdict": "outranked"
+       "verdict": "clean"
       },
       {
        "date": "2026-08-17",
@@ -8170,7 +8334,7 @@
        "family": "meals",
        "kind": "meal",
        "t": "2026-08-17 18:50:00",
-       "verdict": "outranked"
+       "verdict": "clean"
       }
      ],
      "id": "finding:carb_undercount",
@@ -8189,11 +8353,27 @@
      "tier": "worth_a_look",
      "title": "Carb undercount",
      "verdict_counts": {
-      "clean": 0,
+      "clean": 3,
       "fired": 2,
       "near_miss": 0,
       "no_data": 0,
-      "outranked": 4
+      "outranked": 1
+     },
+     "verdict_counts_by_family": {
+      "highs": {
+       "clean": 1,
+       "fired": 1,
+       "near_miss": 0,
+       "no_data": 0,
+       "outranked": 1
+      },
+      "meals": {
+       "clean": 2,
+       "fired": 1,
+       "near_miss": 0,
+       "no_data": 0,
+       "outranked": 0
+      }
      }
     },
     {
@@ -8207,7 +8387,7 @@
       },
       {
        "family": "lows",
-       "m": 4,
+       "m": 6,
        "n": 1,
        "noun": "lows"
       }
@@ -8247,7 +8427,7 @@
        "family": "lows",
        "kind": "low",
        "t": "2026-08-17 02:40:00",
-       "verdict": "outranked"
+       "verdict": "clean"
       },
       {
        "date": "2026-08-17",
@@ -8255,7 +8435,23 @@
        "family": "lows",
        "kind": "low",
        "t": "2026-08-17 12:10:00",
-       "verdict": "outranked"
+       "verdict": "clean"
+      },
+      {
+       "date": "2026-08-17",
+       "ep_id": "ep9",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-17 05:15:00",
+       "verdict": "clean"
+      },
+      {
+       "date": "2026-08-17",
+       "ep_id": "ep10",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-17 08:45:00",
+       "verdict": "clean"
       }
      ],
      "id": "finding:correction_stacking",
@@ -8274,11 +8470,27 @@
      "tier": "noted",
      "title": "Correction stacking",
      "verdict_counts": {
-      "clean": 0,
+      "clean": 4,
       "fired": 2,
       "near_miss": 0,
       "no_data": 0,
-      "outranked": 3
+      "outranked": 1
+     },
+     "verdict_counts_by_family": {
+      "correction_clusters": {
+       "clean": 0,
+       "fired": 1,
+       "near_miss": 0,
+       "no_data": 0,
+       "outranked": 0
+      },
+      "lows": {
+       "clean": 4,
+       "fired": 1,
+       "near_miss": 0,
+       "no_data": 0,
+       "outranked": 1
+      }
      }
     }
    ],
@@ -8342,7 +8554,8 @@
      },
      "tier": "next_in_line",
      "title": "I:C 12:00 to 24:00 · lower",
-     "verdict_counts": null
+     "verdict_counts": null,
+     "verdict_counts_by_family": null
     },
     {
      "annotation": "not enough nights of steady data yet to point one way",
@@ -8421,7 +8634,8 @@
      },
      "tier": "noted",
      "title": "Basal 12:30 to 14:00 · leaning lower",
-     "verdict_counts": null
+     "verdict_counts": null,
+     "verdict_counts_by_family": null
     },
     {
      "annotation": "your fasting data agrees with the set correction factor",
@@ -8458,7 +8672,8 @@
      },
      "tier": "noted",
      "title": "ISF",
-     "verdict_counts": null
+     "verdict_counts": null,
+     "verdict_counts_by_family": null
     }
    ],
    "schema": "diagnose-findings-v1",
@@ -8537,7 +8752,8 @@
      },
      "tier": "next_in_line",
      "title": "Basal 05:30 · raise",
-     "verdict_counts": null
+     "verdict_counts": null,
+     "verdict_counts_by_family": null
     },
     {
      "annotation": "not enough nights of steady data yet to point one way",
@@ -8594,7 +8810,8 @@
      },
      "tier": "noted",
      "title": "Basal 06:30 · leaning raise",
-     "verdict_counts": null
+     "verdict_counts": null,
+     "verdict_counts_by_family": null
     },
     {
      "annotation": "your fasting data agrees with the set correction factor",
@@ -8631,7 +8848,8 @@
      },
      "tier": "noted",
      "title": "ISF",
-     "verdict_counts": null
+     "verdict_counts": null,
+     "verdict_counts_by_family": null
     }
    ],
    "schema": "diagnose-findings-v1",
@@ -8694,7 +8912,8 @@
      },
      "tier": "next_in_line",
      "title": "I:C 12:00 to 24:00 · lower",
-     "verdict_counts": null
+     "verdict_counts": null,
+     "verdict_counts_by_family": null
     },
     {
      "annotation": "a step up, limited to 20% above the set rate",
@@ -8758,7 +8977,8 @@
      },
      "tier": "next_in_line",
      "title": "Basal 00:30 to 01:30 · raise",
-     "verdict_counts": null
+     "verdict_counts": null,
+     "verdict_counts_by_family": null
     },
     {
      "annotation": "your fasting data agrees with the set correction factor",
@@ -8795,7 +9015,8 @@
      },
      "tier": "noted",
      "title": "ISF",
-     "verdict_counts": null
+     "verdict_counts": null,
+     "verdict_counts_by_family": null
     }
    ],
    "schema": "diagnose-findings-v1",
@@ -8854,7 +9075,8 @@
      },
      "tier": "noted",
      "title": "ISF",
-     "verdict_counts": null
+     "verdict_counts": null,
+     "verdict_counts_by_family": null
     }
    ],
    "schema": "diagnose-findings-v1",
@@ -8917,7 +9139,8 @@
      },
      "tier": "next_in_line",
      "title": "I:C 12:00 to 24:00 · lower",
-     "verdict_counts": null
+     "verdict_counts": null,
+     "verdict_counts_by_family": null
     },
     {
      "annotation": null,
@@ -8978,6 +9201,22 @@
       "near_miss": 0,
       "no_data": 0,
       "outranked": 0
+     },
+     "verdict_counts_by_family": {
+      "highs": {
+       "clean": 0,
+       "fired": 1,
+       "near_miss": 0,
+       "no_data": 0,
+       "outranked": 0
+      },
+      "lows": {
+       "clean": 0,
+       "fired": 1,
+       "near_miss": 0,
+       "no_data": 0,
+       "outranked": 0
+      }
      }
     },
     {
@@ -9015,7 +9254,8 @@
      },
      "tier": "noted",
      "title": "ISF",
-     "verdict_counts": null
+     "verdict_counts": null,
+     "verdict_counts_by_family": null
     }
    ],
    "schema": "diagnose-findings-v1",

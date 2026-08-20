@@ -897,10 +897,16 @@ const VERDICT_RESIDUE_KEY = { outranked: 'claimed by another factor', no_data: '
  * roster only — the caller re-derives `scoped` and the canvas keeps drawing
  * every occurrence regardless (ADR 31 part 5). No row means no published
  * `verdict_counts`, so the band draws nothing rather than a false split.
+ *
+ * Counts come from `verdict_counts_by_family[family]` (finding 1): a lever
+ * spanning multiple families publishes one total, but the band sits on a
+ * single-family frame, so reading the total would count occurrences the
+ * roster below it can never show. Falls back to the row total only when the
+ * per-family breakdown is absent (an older payload shape).
  */
-function renderVerdictBand(host, row, activeVerdict, onPick) {
+function renderVerdictBand(host, row, family, activeVerdict, onPick) {
   if (!row || !row.verdict_counts) return;
-  const vc = row.verdict_counts;
+  const vc = row.verdict_counts_by_family?.[family] || row.verdict_counts;
   const groups = Object.entries(VERDICT_BAND_KEY).map(([key, lead]) => ({ key, lead, count: vc[key] || 0 }));
   const band = document.createElement('div');
   band.className = 'vband';
@@ -1284,10 +1290,17 @@ function boot(root, data, callbacks, signal) {
   }
 
   /** One occurrence's published verdict, looked up by the id the projection
-      already carries (`ep_id` + family) — a lookup, never a classification. */
+      already carries (`ep_id` + family + `t`) — a lookup, never a
+      classification. `ep_id` alone is not unique: two same-kind anchors in one
+      episode (e.g. a low and its rebound high, both split_low_rebounds) share
+      an `ep_id`, so `.find()` on that alone silently takes the first and
+      misreports the second. `t` IS unique per occurrence and the projection
+      already publishes it, so joining on both closes the collision. */
   function verdictForOcc(row, factor, occ) {
     if (!row || !row.evidence) return null;
-    const hit = row.evidence.find((e) => e.family === factor.family && e.ep_id === occ.ep_id);
+    const hit = row.evidence.find((e) => (
+      e.family === factor.family && e.ep_id === occ.ep_id && e.t === occ.t
+    ));
     return hit ? hit.verdict : null;
   }
 
@@ -1679,7 +1692,7 @@ function boot(root, data, callbacks, signal) {
        part 6). Drilling a segment scopes the ROSTER only (ADR 31 part 5): the
        canvas above keeps plotting every occurrence regardless of `bandVerdict`. */
     const row = findingRowFor(f);
-    renderVerdictBand(host, row, f.bandVerdict, (v) => {
+    renderVerdictBand(host, row, f.factor.family, f.bandVerdict, (v) => {
       f.bandVerdict = f.bandVerdict === v ? null : v;
       // a selection that falls outside the newly scoped roster cannot stand
       if (f.selectedOcc && f.bandVerdict

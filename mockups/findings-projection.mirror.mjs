@@ -95,7 +95,7 @@ function row(fields) {
     lean: null, current: null, recommended: null, estimate: null,
     support: null, reason: null, annotation: null, members: null,
     lever: null, appearances: null, episodes: null,
-    evidence: null, verdict_counts: null,
+    evidence: null, verdict_counts: null, verdict_counts_by_family: null,
     ...fields,
   };
 }
@@ -285,26 +285,43 @@ function outcomeMinute(occurrence, anchors) {
   return minuteOf(occurrence.t);
 }
 
-/** This finding's own verdict on one occurrence (ADR 41). `fired`/`near_miss`/
-    `no_data`/`clean` are read straight off the occurrence's own anchor-level
-    state; only `fired` needs a further check, because an anchor can be the
-    driver of some OTHER lever's episode — from this row's own point of view
-    that is a claim by another factor, i.e. `outranked`. */
+// Silence reasons that keep an occurrence "calm" for a lever whose classifier
+// looked and had nothing to flag (mirrors `_CALM_SILENCE_REASONS`).
+const CALM_SILENCE_REASONS = new Set([null, undefined, 'no_trigger']);
+const NO_DATA_SILENCE_REASON = 'insufficient_data';
+
+/** This finding's own, ROW-RELATIVE verdict on one occurrence (ADR 41, item 2).
+    Read off the occurrence's own lever's classifier verdict in `verdicts[]` —
+    never the anchor's overall `state`, which collapses every classifier that
+    looked at the anchor and says nothing about THIS lever. A lever whose own
+    classifier matched is `fired` whether or not it also drove the episode;
+    `outranked` is reserved for a calm lever when another lever drove. */
 function occurrenceVerdict(occurrence, lever) {
-  if (occurrence.state === 'fired' && occurrence.cause_lever !== lever) return 'outranked';
-  return occurrence.state;
+  const own = (occurrence.verdicts || []).find((v) => v.classifier === lever);
+  if (own) {
+    if (own.matched) return 'fired';
+    const reason = own.silence_reason;
+    if (reason === NO_DATA_SILENCE_REASON) return 'no_data';
+    if (!CALM_SILENCE_REASONS.has(reason)) return 'near_miss';
+  }
+  return occurrence.cause_lever ? 'outranked' : 'clean';
 }
 
 /** The evidence rows and verdict-band counts one finding row publishes, drawn
     over every in-window occurrence of every family this lever claims a hit in —
-    not just its hits — so the band's counts have something to count. */
+    not just its hits — so the band's counts have something to count. Returns
+    the total counts AND the same counts broken out per family (finding 1),
+    since a multi-family lever's band sits on one family's frame at a time. */
 function leverEvidence(lever, families, inWindow) {
   const counts = Object.fromEntries(VERDICT_CATEGORIES.map((c) => [c, 0]));
+  const countsByFamily = {};
   const evidence = [];
   for (const family of [...new Set(families)].sort()) {
+    const familyCounts = Object.fromEntries(VERDICT_CATEGORIES.map((c) => [c, 0]));
     for (const occurrence of inWindow.get(family) || []) {
       const category = occurrenceVerdict(occurrence, lever);
       counts[category] += 1;
+      familyCounts[category] += 1;
       evidence.push({
         ep_id: occurrence.ep_id ?? null,
         t: occurrence.t ?? null,
@@ -314,8 +331,9 @@ function leverEvidence(lever, families, inWindow) {
         verdict: category,
       });
     }
+    countsByFamily[family] = familyCounts;
   }
-  return { evidence, counts };
+  return { evidence, counts, countsByFamily };
 }
 
 function patternPriorities(scenarios) {
@@ -359,7 +377,7 @@ function findingRows(exposures, scenarios, window) {
   const rows = [];
   for (const [lever, entry] of byLever) {
     entry.appearances.sort((a, b) => (a.family < b.family ? -1 : a.family > b.family ? 1 : 0));
-    const { evidence, counts } = leverEvidence(lever, entry.families, inWindow);
+    const { evidence, counts, countsByFamily } = leverEvidence(lever, entry.families, inWindow);
     rows.push(row({
       id: `finding:${lever}`,
       register: 'finding',
@@ -376,6 +394,7 @@ function findingRows(exposures, scenarios, window) {
       // verdict relative to this lever.
       evidence,
       verdict_counts: counts,
+      verdict_counts_by_family: countsByFamily,
     }));
   }
   return rows;

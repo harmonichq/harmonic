@@ -51,7 +51,7 @@ test('term 36 · a row is flavored by the server register, glyph and word togeth
 test('term 35 · a finding keeps EVERY family appearance, never a merged total', () => {
   const overTreated = queueRows(W.global).find((r) => r.title === 'Over-treated low');
   assert.deepEqual(overTreated.detail,
-    { kind: 'appearances', parts: [{ count: '1 of 3', noun: 'highs' }, { count: '1 of 4', noun: 'lows' }] });
+    { kind: 'appearances', parts: [{ count: '1 of 3', noun: 'highs' }, { count: '1 of 6', noun: 'lows' }] });
 });
 
 test('term 42 · the seam opens once, before the first UNPRICED ranked row', () => {

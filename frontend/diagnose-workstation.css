@@ -112,7 +112,8 @@ html.dark .dw {
 
 /* ---- mock 393-939 — VERBATIM (one line rescoped, marked inline) ---- */
 /* ---- 2. instrument row ---------------------------------------------- */
-/* DEVIATION from the ported mock (Connor, 2026-08-19: "I want this to
+/* DEVIATION from the ported mock (owner ruling, 2026-08-19, see the behavior
+   ledger: "I want this to
    maintain a consistent position on the screen … visually aligned nicely
    with something, probably directly above the inspector"). The mock's row
    was a flex row, so ALIGN's position slid with whatever sat before it in
@@ -215,9 +216,10 @@ html.dark .dw {
   grid-area: 1 / 1; display: flex; align-items: baseline; gap: 10px;
   min-width: 0; transition: opacity .1s linear;
 }
-/* 1024px tablet fix (Connor, 2026-08-19: "I should be able to view this on a
-   tablet screen without the two windows getting fucked … things are out of
-   line"). At the narrower canvas-pane column a 594px-ish flex row (title +
+/* 1024px tablet fix (owner ruling, 2026-08-19, see the behavior ledger:
+   "I should be able to view this on a tablet screen without the two windows
+   getting fucked … things are out of line"). At the narrower canvas-pane
+   column a 594px-ish flex row (title +
    "window N of M readings" + the persist chip) cannot hold three strings at
    their natural width, and a flex child's default `min-width: auto` let the
    title wrap onto a second line instead of yielding. Both give way by
@@ -672,9 +674,10 @@ button.entry .pill[data-empty="true"] { visibility: hidden; }
    flush beneath it. Right: the flavor tag in a FIXED column just inside the
    chevron, so it lands at the same x on every row instead of trailing a title of
    variable length. Nothing sits between the two. */
-/* CARD GEOMETRY, FIXED HEIGHT AGAIN (Connor, 2026-08-19, overriding round 4's
-   auto-height ruling: "They need to be fixed height. They just need to look
-   better"). Round 4's rejected box was 84px, invented headroom above the
+/* CARD GEOMETRY, FIXED HEIGHT AGAIN (owner ruling, 2026-08-19, see the
+   behavior ledger, overriding round 4's auto-height ruling: "They need to be
+   fixed height. They just need to look better"). Round 4's rejected box was
+   84px, invented headroom above the
    content it held; this one is PINNED AT THE CONTENT'S OWN CEILING, measured
    off the live queue rather than guessed — 8px even vertical padding + one
    label line + 4px row gap + one clamped detail line (`.den` XOR `.why`,
@@ -747,7 +750,7 @@ button.entry .pill[data-empty="true"] { visibility: hidden; }
   margin: 14px 0 0; padding: 0 var(--ck-pad);
   font-size: 11.5px; color: var(--mk-muted); line-height: 1.5;
 }
-/* No padding override in the demoted tail (Connor, 2026-08-19) — every row
+/* No padding override in the demoted tail (owner ruling, 2026-08-19) — every row
    shares the identical fixed height and padding; the tail's own weight/size
    step off `.lab` already reads as quieter without shrinking the box. */
 /* the tail recedes the flavor but never re-hues it: same identity, less ink, so

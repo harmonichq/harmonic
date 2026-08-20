@@ -550,7 +550,7 @@ export const S09 = async (page) => {
 };
 
 /** S10 · Evidence is capped at five rows and the cap is a real toggle.
-    RETIRED, 2026-08-19 (Connor's select-in-place ruling, P35/ADR 31 part 5,
+    RETIRED, 2026-08-19 (owner's select-in-place ruling, P35/ADR 31 part 5,
     transcribed in the behaviour ledger): the "counter-example group is never
     capped" clause. Select-in-place made the roster homogeneous by verdict —
     exactly one published category shows at a time — which structurally

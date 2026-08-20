@@ -475,7 +475,7 @@ def _occurrence_verdict(occurrence: dict, lever: str) -> str:
     Read off the occurrence's own lever's classifier verdict — never the
     anchor's overall ``state``, which is precedence-collapsed across every
     classifier that looked at the anchor and says nothing about THIS lever.
-    Connor: "the server has rule fired" — a row's own lever matching is
+    Owner ruling (ADR 41, design.md): "the server has rule fired" — a row's own lever matching is
     ``fired`` (Meets criteria) whether or not it also won the episode's
     attribution; ``outranked`` is reserved for an occurrence where this lever's
     classifier never matched anything and some OTHER lever drove the episode.

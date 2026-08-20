@@ -816,7 +816,7 @@ test('build renders cover both locked sizes and themes',
 // all driven through controls that no longer exist. ADR 31 part 3 folds
 // View's function into the workstation's own ALIGN instrument and deletes
 // View; the rest retire under P52, sanctioned:
-//   Connor Griffin · 2026-08-19 · "Decided by Connor Griffin in a ruling
+//   owner ruling, 2026-08-19 (see the behavior ledger) · "Decided in a ruling
 //   session on 2026-08-19."
 // Failed first against the new build with the OLD assertion: a real 30s
 // Playwright timeout, `waiting for locator('.ec-view-seg [data-view="lows"]')`

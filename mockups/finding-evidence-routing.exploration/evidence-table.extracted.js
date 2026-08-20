@@ -18,23 +18,14 @@ export function tierOf(occ) {
   return matched ? matched.evidence_tier : null;
 }
 
-export function renderEvidence(host, factor, occurrences, onOpen, onMore, shownCount) {
+export function renderEvidence(host, factor, occurrences, verdictLabel, onOpen, onMore, shownCount,
+  selected) {
   if (!occurrences.length) {
     // appended, never assigned: the factor head is already in this level
     host.insertAdjacentHTML('beforeend',
-      '<div class="empty">No attributed occurrences in this range.</div>');
+      '<div class="empty">No occurrences in this verdict.</div>');
     return;
   }
-  const fits = occurrences.filter((o) => tierOf(o));
-  const counter = occurrences.filter((o) => !tierOf(o));
-  // the hedged sentence, once, from the fixture's own text
-  /* The group header names the GROUP. It used to be built by regex-trimming one
-     occurrence's sentence, which produced a mid-sentence fragment with no
-     opening clause and no terminal punctuation — a sentence about ONE episode
-     masquerading as a label for all of them. It is now the factor's own causal
-     phrase, which is what the group actually is, and degrades to the bare hedge
-     if a factor somehow carries no title. */
-  const tier = fits.length ? tierOf(fits[0]) : null;
   const groupPhrase = (factor.cause || '').trim();
 
   /* Aligned numeric columns: entry → worst → Δ where the fixture holds BOTH
@@ -47,7 +38,9 @@ export function renderEvidence(host, factor, occurrences, onOpen, onMore, shownC
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'ev-row';
-    b.dataset.counter = String(!tierOf(o));
+    // select-in-place (P35 retired): the emphasised row is a state of this
+    // same row, never a separate level
+    b.setAttribute('aria-pressed', String(o === selected));
     b.title = o.text || '';
     const nums = both
       ? `<span class="entry">${entry}</span><span class="arrow" aria-hidden="true">→</span>
@@ -61,30 +54,22 @@ export function renderEvidence(host, factor, occurrences, onOpen, onMore, shownC
     return { node: b, occ: o };
   });
 
-  if (fits.length) {
-    // The hedge prints ONCE, as this group's header, whether five rows or fifty
-    // are showing — it is a property of the group, not of a row, so expanding
-    // must never restate it.
-    host.insertAdjacentHTML('beforeend',
-      `<div class="ev-group">${groupPhrase ? `<b>${groupPhrase}</b> — ` : ''}${tier}, not confirmed`
-      + ` <span class="n">· ${fits.length} episode${fits.length === 1 ? '' : 's'}</span></div>`);
-    for (const { node } of rows(fits, shownCount)) host.append(node);
-    // the cap is a real toggle: five rows, then "N more", then back to five
-    if (fits.length > EVIDENCE_CAP) {
-      const more = document.createElement('button');
-      more.type = 'button';
-      more.className = 'more';
-      more.textContent = shownCount > EVIDENCE_CAP
-        ? `Show first ${EVIDENCE_CAP}`
-        : `${fits.length - EVIDENCE_CAP} more`;
-      more.addEventListener('click', onMore);
-      host.append(more);
-    }
-  }
-  if (counter.length) {
-    host.insertAdjacentHTML('beforeend',
-      `<div class="ev-group counter">Attributed here, but no classifier fired on the pattern
-        <span class="n">· ${counter.length}</span></div>`);
-    for (const { node } of rows(counter, counter.length)) host.append(node);
+  // The hedge prints ONCE, as this group's header, whether five rows or fifty
+  // are showing — it is a property of the group, not of a row, so expanding
+  // must never restate it.
+  host.insertAdjacentHTML('beforeend',
+    `<div class="ev-group">${groupPhrase ? `<b>${groupPhrase}</b> — ` : ''}${verdictLabel}`
+    + ` <span class="n">· ${occurrences.length} episode${occurrences.length === 1 ? '' : 's'}</span></div>`);
+  for (const { node } of rows(occurrences, shownCount)) host.append(node);
+  // the cap is a real toggle: five rows, then "N more", then back to five
+  if (occurrences.length > EVIDENCE_CAP) {
+    const more = document.createElement('button');
+    more.type = 'button';
+    more.className = 'more';
+    more.textContent = shownCount > EVIDENCE_CAP
+      ? `Show first ${EVIDENCE_CAP}`
+      : `${occurrences.length - EVIDENCE_CAP} more`;
+    more.addEventListener('click', onMore);
+    host.append(more);
   }
 }

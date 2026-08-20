@@ -156,7 +156,7 @@ async function use(open, browser, options, fn) {
 // into the workstation's own ALIGN instrument (a different surface entirely,
 // covered by the workstation's own replay). Sanctioned under P52's
 // "ruled-elsewhere" note (#31 resolution §4), same wording:
-//   Connor Griffin · 2026-08-19 · "Decided by Connor Griffin in a ruling
+//   owner ruling, 2026-08-19 (see the behavior ledger) · "Decided in a ruling
 //   session on 2026-08-19."
 // Failed first against the new build with the OLD assertions: a real 30s
 // timeout, `waiting for locator('[data-view="glucose"]')` — that control does

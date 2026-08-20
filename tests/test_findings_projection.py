@@ -393,8 +393,8 @@ class FindingEvidenceBlockTest(unittest.TestCase):
 
     def test_a_lever_that_matched_but_did_not_drive_still_reads_fired(self):
         # The distinguishing case (finding 2): this lever's own classifier
-        # matched on an anchor another lever actually drove. Connor's rule —
-        # "the server has rule fired" — makes this row-relative `fired`
+        # matched on an anchor another lever actually drove. The owner ruling
+        # (ADR 41) — "the server has rule fired" — makes this row-relative `fired`
         # (Meets criteria), never `outranked`, even though the episode's
         # attribution credited someone else.
         matched_but_not_driver = [

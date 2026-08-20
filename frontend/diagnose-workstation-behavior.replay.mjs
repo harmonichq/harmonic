@@ -69,6 +69,8 @@ export const state = (page) => page.evaluate(() => {
     levelWho: q('#level .who')?.innerText.replace(/\s+/g, ' ').trim() ?? null,
     levelStat: q('#level .statline')?.innerText.replace(/\s+/g, ' ').trim() ?? null,
     levelEmpty: txt('#level .empty'),
+    levelLoading: q('#level')?.dataset.loading ?? null,
+    bandKeys: [...document.querySelectorAll('#level .vband .key .lead')].map((n) => n.textContent.trim()),
     // ALIGN's two canvases: which one is mounted, and whose header is up
     alignShown: q('#align-group') ? !q('#align-group').hidden : null,
     alignPressed: [...document.querySelectorAll('#seg-align button')]
@@ -237,7 +239,7 @@ const projectAuthor = async () => {
  */
 export async function openApp(browser, {
   state: want = 'typical', theme = 'dark', viewport = { width: 1440, height: 900 }, findingsInputs = null,
-  exposuresInputs = null, comparisonStatus = 0, appSource = 'server',
+  exposuresInputs = null, comparisonStatus = 0, findingsDelayMs = 0, appSource = 'server',
 } = {}) {
   const payloadPath = process.env.PAYLOAD || fail('PAYLOAD is required for TARGET=app');
   if (!['server', 'fixture'].includes(appSource)) fail(`unknown appSource: ${appSource}`);
@@ -355,6 +357,12 @@ export async function openApp(browser, {
           });
         } catch { /* fall through to the loud unrouted response below */ }
       }
+    }
+    /* The findings queue is a SERVER round trip, so a story that is about what
+       the pane shows WHILE it is in flight needs that flight to last long enough
+       to read. Delay, never stub differently: the response is the same one. */
+    if (findingsDelayMs && path.startsWith('/diagnose/findings')) {
+      await new Promise((resolve) => { setTimeout(resolve, findingsDelayMs); });
     }
     if (comparisonStatus && path === '/diagnose/event-comparison') {
       return route.fulfill({ status: comparisonStatus, contentType: 'application/json',
@@ -1332,8 +1340,12 @@ const withLateConsequence = ({ analysis, exposures, scenarios }) => {
 const twoFamilyInputs = async () => JSON.parse(await readFile(
   join(ROOT, 'frontend/__fixtures__/findings-projection.json'), 'utf8')).inputs;
 
-/** Open one finding's case file from the queue, by the title a reader sees. */
+/** Open one finding's case file from the queue, by the title a reader sees.
+    Waits for the window's own rows to be in hand first: the queue is a server
+    round trip, and clicking a row from the previous window's answer would be
+    testing the wrong population. */
 const clickQueueRow = async (page, title) => {
+  await page.waitForFunction(() => document.getElementById('level')?.dataset.loading !== 'true');
   const at = await page.evaluate((want) => [...document.querySelectorAll('#level .qrow')]
     .findIndex((row) => row.querySelector('.lab')?.textContent.trim() === want), title);
   if (at < 0) fail(`the queue holds no row titled ${title}`);
@@ -1520,6 +1532,61 @@ export const S32 = async (page) => {
     `S32 the canvas states the rule it joined by (${chart.context})`);
 };
 
+
+/** S33 · A published finding whose event-view family holds NONE of this
+    window's evidence still opens, framed on that family. A lever claims
+    evidence only in the families it hit, so `Correction on active insulin` over
+    07:00-10:15 carries one correction cluster and no low, while its event view
+    names `lows`. Framing on nothing left a row the server published that did
+    not move when it was clicked: no case file, no message, no crumb. Framing on
+    the family holding more episodes instead is NOT the repair — that is the
+    panel/chart disagreement this rule exists to retire. */
+// STORY:finding-evidence-routing:S33
+export const S33 = async (page) => {
+  const opening = await state(page);
+  is(opening.pressed, ['Overnight'], 'S33 precondition: opens on the Overnight preset');
+  await drawWindow(page, [420, 615], [0, 360]);
+  const drawn = await state(page);
+  is(drawn.chip, 'Window 07:00–10:15', `S33 the reader drew 07:00–10:15 (${drawn.chip})`);
+  ok(drawn.queue.some((row) => row.title === 'Correction on active insulin'),
+    'S33 precondition: the server published this row for this window');
+  await clickQueueRow(page, 'Correction on active insulin');
+  const opened = await state(page);
+  is(opened.crumb[opened.crumb.length - 1], 'Correction on active insulin',
+    'S33 the published row opens rather than swallowing the click');
+  ok(/\b0 of 0 low episodes in 07:00–10:15\b/.test(opened.levelStat || ''),
+    `S33 it frames on the family its event view names, empty and saying so (${opened.levelStat})`);
+  ok(!/correction cluster/i.test(opened.levelStat || ''),
+    `S33 ... not on the family that happens to hold this window's evidence (${opened.levelStat})`);
+  is(opened.bandKeys, [],
+    'S33 no verdict split is drawn for a family the server published no split for');
+};
+
+/** S34 · A window change ASKS the server for its rows, and until they land the
+    pane counts nothing rather than counting the window that just left. Showing
+    the previous population under the new window's label is a caption asserting
+    a population the canvas did not draw. */
+// STORY:finding-evidence-routing:S34
+export const S34 = async (page) => {
+  await clickQueueRow(page, 'Late bolus');
+  const before = await state(page);
+  ok(/\b5 of 5 meal responses in 00:00–24:00\b/.test(before.levelStat || ''),
+    `S34 precondition: the whole-day population is on screen (${before.levelStat})`);
+  await page.click('#seg-window button:nth-child(3)');   // Afternoon
+  await settle(page, 250);                               // inside the flight
+  const during = await state(page);
+  is(during.levelLoading, 'true', 'S34 the pane declares it is waiting on the server');
+  is(during.levelStat, null, "S34 the previous window's counts are withdrawn");
+  is(during.levelEmpty, 'Counting 12:00–18:00…', 'S34 the pane names the window it is counting');
+  is(during.crumbMeta, '12:00–18:00', 'S34 the meta prints the window with no numbers under it');
+  ok(!/\b5 of 5\b/.test(JSON.stringify(during)), 'S34 no stale count survives anywhere on the pane');
+  await settle(page, 1400);
+  const after = await state(page);
+  is(after.levelLoading, 'false', 'S34 the wait ends when the rows land');
+  ok(/ meal responses in 12:00–18:00\b/.test(after.levelStat || ''),
+    `S34 the new window's own counts land under its own label (${after.levelStat})`);
+};
+
 /* ------------------------------------------------------------------- runner */
 
 /* Discovery tags for every exported replay function above. */
@@ -1555,6 +1622,8 @@ export const S32 = async (page) => {
 // STORY:finding-evidence-routing:S30
 // STORY:finding-evidence-routing:S31
 // STORY:finding-evidence-routing:S32
+// STORY:finding-evidence-routing:S33
+// STORY:finding-evidence-routing:S34
 // STORY:finding-evidence-routing:D1
 // STORY:finding-evidence-routing:D2
 // STORY:finding-evidence-routing:D3
@@ -1584,6 +1653,8 @@ export const STORIES = [
     findingsInputs: withLateConsequence,
     exposuresInputs: (d) => withLateConsequence(d).exposures,
   }],
+  ['S33', S33, 'typical'],
+  ['S34', S34, 'dense', { findingsDelayMs: 900 }],
   ['D1', D1, 'dense'], ['D2', D2, 'dense'], ['D3', D3, 'dense'],
 ];
 

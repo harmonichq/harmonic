@@ -245,6 +245,21 @@ const fmtDate = (iso) => new Date(`${iso}T00:00:00`).toLocaleDateString(
 
 const rounded = (value) => value == null ? '—' : String(Math.round(value));
 
+/* #62 — the window and the consequence-landed rule are a SENTENCE, not a
+   coordinate chip, and three contexts will not share one head line. On the
+   title's own line the shipped truncation rule (set for #41's 1024px tablet
+   case: the h2 yields first, never wraps) fired against the TITLE instead —
+   "MEAL RESPONSES" read "MEAL RES..." at 1440px and collapsed to zero width at
+   1024px, while the 576px sentence overflowed the pane it was meant to caption.
+   It takes the row below the title line instead, where it stays whole and wraps
+   rather than clipping. Sitting outside .head-rest it also keeps standing while
+   the hover readout swaps in, which is right: the membership rule does not
+   change on hover. Nothing about its wording moved (ADR 62 decision 5).
+
+   NOTE for anyone editing the template below: it is a template literal, so a
+   backtick anywhere inside it — including in an HTML comment — closes the
+   string. That mistake renders as a caught fetch failure, not a syntax error. */
+
 /* P52 (sanctioned) — the lens is canvas-only. No coordinate row (View, Factor,
    anchor-time, Other factors all retired with it: ADR 31 part 3 folds View
    into the workstation's own ALIGN instrument, and the rest have no reader
@@ -260,13 +275,15 @@ function createSurfaceMarkup(viewKey, coordinates) {
             <div class="head-line head-rest">
               <h2>${copy.title}</h2>
               <span class="ec-title-context">${coordinates.factor_options.find(({ key }) => key === coordinates.factor)?.label || coordinates.factor}</span>
-              <span class="ec-window-context"></span>
             </div>
             <!-- The resting placeholder is load-bearing, exactly as in the
                  shipped header: it holds the readout's line box open so the
                  header is the same height hovering or not. Left empty, the
                  header grew 2px and pushed the chart down on first hover. -->
             <div class="head-line head-live ec-canvas-readout" id="ec-readout" aria-hidden="true"><span class="ec-rd-time">--:--</span></div>
+            <!-- #62 — the window context is the head's SECOND row; see the
+                 note above this function for why it cannot share the first. -->
+            <div class="ec-window-context"></div>
           </div>
           <span class="meta persist">${copy.context}</span>
         </header>

@@ -5,8 +5,8 @@
 `eda5cdfd318d638503defdd6f364a078042fe592`).
 
 The app-only replay is
-`frontend/diagnose-workstation-behavior.replay.mjs`: **35 exported stories**
-(29 through 2026-08-19; six added by the #62 revision below), all
+`frontend/diagnose-workstation-behavior.replay.mjs`: **37 exported stories**
+(29 through 2026-08-19; eight added by the #62 revision below), all
 opened through the real no-fetch server and tagged
 `STORY:finding-evidence-routing:<id>`. Static HTML, CSS and JavaScript come from
 that server; deterministic API reads come from
@@ -1195,6 +1195,10 @@ S31 · narrowing the window until the open finding has no row leaves the reader
       on it, both panes reading `No findings in the selected window`
 S32 · an occurrence whose trigger sits outside the window and whose consequence
       landed inside it appears in both panes
+S33 · a published finding whose event-view family holds none of this window's
+      evidence still opens, framed on that family, reading `0 of 0`
+S34 · while the new window's rows are in flight the pane counts nothing rather
+      than counting the window that just left
 S13 · (lens replay) the clock window is the lens's only time coordinate, and a
       cohort too thin for an aggregate draws its own episodes
 ```
@@ -1213,7 +1217,7 @@ retired.
 **Replay output**, against the built revision through the declared server:
 
 ```
-app: 35 of 35 stories passed
+app: 37 of 37 stories passed
 13/13 stories passed against app     (diagnose-event-comparison-behavior.replay.mjs)
 PASS 7 issue #694 support renders against app   (diagnose-event-comparison-support-audit.mjs)
 ```
@@ -1222,13 +1226,16 @@ PASS 7 issue #694 support renders against app   (diagnose-event-comparison-suppo
 (the pre-existing render-coverage skip). `node --test
 frontend/diagnose-workstation.browser.test.mjs` → 7 pass, 0 fail.
 
-**Renders.** Four states — the finding case file under `By clock`, `By event`
+**Renders.** Six states — the finding case file under `By clock`, `By event`
 whole-day (which carries the supported aggregate and a one-episode withheld
-cohort side by side), `By event` over a drawn 14:00–16:00, and a finding the
-window no longer holds — at 1440×900 and 390×844, in both themes, from both the
-base and the revision worktrees: 32 files, handed to the coordinator as pull
-request evidence. They are not committed: the publishable-tree allowlist admits
-no images under `frontend/**`.
+cohort side by side), `By event` over a drawn 14:00–16:00, a finding the window
+no longer holds, a finding whose event-view family holds none of the window's
+evidence, and the pane while the new window's rows are in flight — at 1440×900
+and 390×844, in both themes, from both the base and the revision worktrees,
+handed to the coordinator as pull request evidence. They are not committed: the
+publishable-tree allowlist admits no images under `frontend/**`. The in-flight
+state is revision-side only: the base opener has no hook to hold a response
+open long enough to photograph.
 
 The sharpest pair is `by-event-thin-cohort` at 1440. On the base the queue lists
 `Late bolus` for 14:00–16:00 and the row **will not open** — `buildFactors` found
@@ -1240,21 +1247,53 @@ The `finding-out-of-window` pair is the other: the base printed
 `window 216 of 864 readings`; the revision says
 `No findings in the selected window` in both panes.
 
-**Two observations recorded, neither ruled here.**
+`empty-event-family` is the third, and it is the one amendment 7 is about. Over
+a drawn 07:00–10:15 the lever `Correction on active insulin` hit one correction
+cluster and no low. The base opens that row on `correction clusters` and reads
+`1 of 1 correction clusters in 07:00–10:15` — beside an `ALIGN` control whose
+`By event` mode draws **lows**, a panel and a chart over two different kinds of
+episode whose evidence keys cannot be joined. The revision opens the same row on
+`lows`, reading `0 of 0 low episodes in 07:00–10:15`, and draws no verdict split
+because the server published none for that family.
 
-1. *The event canvas's own head truncates its title at every width.* The window
-   context this revision adds (`Window 14:00–16:00 · episodes join by where the
-   consequence landed, not when the meal was`) shares the `.head-line` the title
-   and the factor context already occupied, and that line's shipped rule — set
-   for #41's 1024px tablet case — is that `h2` yields first. So `MEAL RESPONSES`
-   renders as `MEAL RES…` at 1440×900, where nothing truncated before. The rule
-   is behaving as specified; whether the head should carry three contexts on one
-   line is a design question this revision surfaces rather than settles.
-2. *At 390×844 the WINDOW presets are unreachable while a case file is open.*
+**The event canvas head takes a second row — deviation, ruled.** Ruled by
+Connor Griffin, 2026-08-20: *"`MEAL RESPONSES` rendering as `MEAL RES...` at
+1440x900, where nothing truncated before, is a fidelity regression this revision
+introduces on the surface being revised."*
+
+The window context this revision adds is a SENTENCE, not a coordinate chip, and
+three contexts will not share one head line. On `.head-line` it triggered the
+shipped truncation rule — set for #41's 1024px tablet case, where the `h2`
+yields first and never wraps — against the TITLE. Measured on the running app:
+
+```
+                     h2 width / natural      pane scrollWidth / width
+  before   1440px          69 / 177                1010 / 1010
+           1024px           0 / 177                 714 /  594   (overflowing)
+            760px           0 / 177                 638 /  330   (overflowing)
+  after    1440px         177 / 177                1010 / 1010
+           1024px         177 / 177                 594 /  594
+            760px         177 / 177                 330 /  330
+```
+
+So the title was not merely ellipsized at tablet width — it was gone, while the
+576px sentence meant to caption the pane overflowed it. The context now takes
+the row below the title line, inside `.head-swap` and outside `.head-rest`,
+where it stays whole and wraps rather than clipping. Two consequences, both
+deliberate: the event canvas's head is one micro line taller than the clock
+canvas's, which departs from the sibling-geometry note in
+`frontend/diagnose-event-comparison.css` (`the shipped canvas header … lands at
+22px`); and the context keeps standing while the hover readout swaps in, which
+is right — the membership rule does not change on hover. Its wording is
+untouched (ADR 62 decision 5).
+
+**One observation recorded, not ruled here.**
+
+1. *At 390×844 the WINDOW presets are unreachable while a case file is open.*
    `.instruments` is a 430px-wide grid whose ALIGN column overlays the preset
    row's hit area, and the clock canvas sits below the fold, so neither a preset
    press nor a brace drag lands. Measured identically on the base and the
    revision (`#align-group` covering `#seg-window`'s first button on both), so it
-   pre-dates #62 and is not this change's to fix. Two of the sixteen narrow
-   renders are `__blocked` on each side for that reason, and they are blocked the
+   pre-dates #62 and is not this change's to fix. The narrow renders that could
+   not be driven are marked `__blocked` on each side, and they are blocked the
    same way.

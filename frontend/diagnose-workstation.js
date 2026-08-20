@@ -893,11 +893,16 @@ const VERDICT_RESIDUE_KEY = { outranked: 'claimed by another factor', no_data: '
  * spanning multiple families publishes one total, but the band sits on a
  * single-family frame, so reading the total would count occurrences the
  * roster below it can never show. Falls back to the row total only when the
- * per-family breakdown is absent (an older payload shape).
+ * whole per-family breakdown is absent (an older payload shape) — NOT when it
+ * is present and simply carries no entry for this family, which is a lever that
+ * claimed no hit here. Then there is no published split for the frame's family
+ * and the band draws nothing, exactly as it does with no row at all.
  */
 function renderVerdictBand(host, row, family, activeVerdict, onPick) {
   if (!row || !row.verdict_counts) return;
-  const vc = row.verdict_counts_by_family?.[family] || row.verdict_counts;
+  const vc = row.verdict_counts_by_family
+    ? row.verdict_counts_by_family[family] : row.verdict_counts;
+  if (!vc) return;
   const groups = Object.entries(VERDICT_BAND_KEY).map(([key, lead]) => ({ key, lead, count: vc[key] || 0 }));
   const band = document.createElement('div');
   band.className = 'vband';
@@ -1112,8 +1117,8 @@ function boot(root, data, callbacks, signal) {
    */
   function factorForFinding(row) {
     const pair = (family) => {
+      if (!exposures[family]) return null;
       const published = publishedFor(row, family);
-      if (!published.length) return null;
       return {
         family,
         cause: row.title,
@@ -1126,6 +1131,16 @@ function boot(root, data, callbacks, signal) {
       };
     };
     const aligned = alignCoordinatesFor(row.title);
+    /* AN ALIGNED FINDING FRAMES ON ITS EVENT VIEW'S FAMILY EVEN WHEN THAT
+       FAMILY IS EMPTY IN THIS WINDOW. A lever claims evidence only in the
+       families it hit, so a published row can carry none in the family its
+       event view names — `Correction on active insulin` over 07:00–10:15 hits
+       only a correction cluster, and names `lows`. Returning nothing there left
+       a row the server published that did not move when it was clicked: no case
+       file, no message, no crumb. Framing on the empty family instead opens the
+       case file reading `0 of 0`, which is what the chart beside it draws.
+       Falling back to the family with the most episodes is NOT the repair — that
+       is exactly the panel/chart disagreement this rule retires. */
     if (aligned) return pair(aligned.view);
     return Object.keys(exposures).map(pair).filter((f) => f && f.count)
       .sort((a, b) => b.count - a.count)[0] || null;
@@ -1219,6 +1234,12 @@ function boot(root, data, callbacks, signal) {
     return w;
   };
   const windowKey = (w) => (w ? `${w[0]}-${w[1]}` : 'global');
+  /* IS THE WINDOW'S PUBLISHED POPULATION IN HAND? A window change ASKS the
+     server for its rows, so between the press and the response every count on
+     screen is the PREVIOUS window's while `scopeLabel()` already prints the new
+     one. That pairing is a caption asserting a population nothing drew, so the
+     counts are withheld until the answer lands rather than shown stale. */
+  const settled = () => pendingKey === null;
   let loadedKey = windowKey(findings?.window?.scoped
     ? [findings.window.start_min, findings.window.end_min] : null);
   let pendingKey = null;
@@ -1406,7 +1427,7 @@ function boot(root, data, callbacks, signal) {
          same reason — pressing one at any level is a scope CHANGE by the user,
          never a release back to derived scope. */
       pressPreset(presetKey);
-    } else if (f.k === 'factor') {
+    } else if (f.k === 'factor' && settled()) {
       const occ = occurrencesFor(f);
       const clock = occ.length ? clockBuckets(occ) : null;
       if (clock) {
@@ -1446,7 +1467,7 @@ function boot(root, data, callbacks, signal) {
        drilled inside an explicit workspace still shows its own dots, on the
        user's window rather than on a peak the canvas no longer jumps to. */
     let occurrences = [];
-    if (f.k === 'factor') occurrences = occurrencesFor(f);
+    if (f.k === 'factor' && settled()) occurrences = occurrencesFor(f);
 
     /* Selection puts that day's REAL trace over the pooled envelope when the
        CGM capture holds the date. It is never synthesised: an uncaptured date
@@ -1475,7 +1496,7 @@ function boot(root, data, callbacks, signal) {
        so the canvas states that rather than printing a reading count under a
        panel that is listing nothing (ADR 62 part 9). */
     el('canvas-scope').textContent =
-      f.k === 'factor' && !findingRowFor(f)
+      f.k === 'factor' && settled() && !findingRowFor(f)
         ? 'No findings in the selected window'
         : `window ${stats.readings.toLocaleString()} of ${envelope.readings.toLocaleString()} readings`;
     el('canvas-pool').textContent =
@@ -1678,7 +1699,10 @@ function boot(root, data, callbacks, signal) {
     el('crumb-meta').textContent = f.k === 'factors'
       ? queueMeta(findings)
       : f.k === 'factor'
-        ? (() => { const sc = scopedFor(f); return `${sc.occurrences.length} of ${sc.familyN} · ${scopeLabel()}`; })()
+        ? (settled()
+          ? (() => { const sc = scopedFor(f); return `${sc.occurrences.length} of ${sc.familyN} · ${scopeLabel()}`; })()
+          // counting the new window: the old numbers are not this window's
+          : scopeLabel())
         /* #735 — this used to read `N staged`, which put the deleted header's exact
            words back on screen beside the dock's `Plan · staged` (term 47: two
            claims about one object). Every sibling level's meta names its OWN
@@ -1700,12 +1724,13 @@ function boot(root, data, callbacks, signal) {
     void host.offsetWidth;
     host.style.animation = '';
     const f = top();
+    // one place, every level: the pane says whether it is waiting on the server
+    host.dataset.loading = String(!settled());
     if (f.k === 'factors') {
       /* TERM 43 — no `Inferred patterns, not settled causes` banner here. A banner
          over a ranked list cannot say WHICH rows it hedges, and rank interleaves
          habits and settings, so no position scopes it honestly. The hedge belongs to
          the habit DETAIL panel, where it has exactly one subject. */
-      host.dataset.loading = String(pendingKey !== null);
       renderFindingsQueue(host, findings, drillFinding);
       return;
     }
@@ -1737,6 +1762,13 @@ function boot(root, data, callbacks, signal) {
       return;
     }
     // 'factor' is the only remaining frame kind: the finding case file.
+    /* Counted for the window that is ARRIVING, never the one that left. This
+       branch comes first so a stale row cannot rule the new window empty. */
+    if (!settled()) {
+      host.insertAdjacentHTML('beforeend',
+        `<div class="empty">Counting ${scopeLabel()}…</div>`);
+      return;
+    }
     /* The reader STAYS on the finding when the window stops holding its row —
        the alternative was a browser-side fallback filter, which is the thing
        ADR 62 part 6 retires. Both panes say the same words. */
@@ -2014,12 +2046,14 @@ function boot(root, data, callbacks, signal) {
   function paint() {
     ensureFindings();
     /* A finding whose row left the window publishes no population, so there is
-       nothing for the lens to re-project: the event canvas would draw the
-       window's own population beside a panel listing none of it, which is the
-       two panes disagreeing without saying so. The frame keeps the reader; the
-       canvas goes back to the clock and states the same fact the panel does. */
+       nothing for the lens to re-project, and neither does a frame whose event
+       view's family holds none of this window's evidence: the event canvas
+       would draw the window's own population beside a panel listing none of it,
+       which is the two panes disagreeing without saying so. The frame keeps the
+       reader; the canvas goes back to the clock and states what the panel does. */
     const open = top();
-    if (open.k === 'factor' && open.align === 'event' && !findingRowFor(open)) open.align = 'clock';
+    if (open.k === 'factor' && open.align === 'event'
+      && settled() && !scopedFor(open).familyN) open.align = 'clock';
     paintCrumb();
     paintLevel();
     renderLane(lane, top().k === 'slot' ? top().cell : null, staged, pickCell);

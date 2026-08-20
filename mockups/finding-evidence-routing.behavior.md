@@ -5,7 +5,8 @@
 `eda5cdfd318d638503defdd6f364a078042fe592`).
 
 The app-only replay is
-`frontend/diagnose-workstation-behavior.replay.mjs`: **29 exported stories**, all
+`frontend/diagnose-workstation-behavior.replay.mjs`: **35 exported stories**
+(29 through 2026-08-19; six added by the #62 revision below), all
 opened through the real no-fetch server and tagged
 `STORY:finding-evidence-routing:<id>`. Static HTML, CSS and JavaScript come from
 that server; deterministic API reads come from
@@ -822,9 +823,14 @@ P52 · The lens's inspector pane and its three selects — `#ec-factor`,
 ```
 
 ```
-P53 · URL state and popstate: view / factor / block / another / occ live in the
+P53 · URL state and popstate: view / factor / window / another / occ live in the
       query string, popstate re-requests the projection, and a stale response is
       dropped by generation counter.
+      AMENDED #62, 2026-08-20 — the six-hour anchor-time `block` coordinate is
+      retired and the reader's own clock window (`start_min`/`end_min`, both or
+      neither) takes its place. The contract this term governs — coordinates in
+      the query string, popstate re-requests, stale responses dropped — is
+      unchanged; only the time coordinate's name and shape moved.
   source:   frontend/diagnose-event-comparison.js:706-711, 790-820
   mock:     the mock is one page with no URL state
   evidence: probe3 (app: /?state=dense&theme=light&view=lows#diagnose)
@@ -993,6 +999,11 @@ reimplemented) mounted at `#align-canvas`; `WINDOW` keeps filtering by clock
 under either projection because the request's block coordinate is the
 canvas's own standing preset (`presetKey`) — WINDOW and the lens's block share
 one five-key taxonomy (`overnight`/`morning`/`afternoon`/`evening`/`all`).
+**AMENDED #62, 2026-08-20:** the sentence above describes the shape #41 shipped
+and is kept as history. It no longer holds. The block coordinate is retired; the
+request now carries the reader's own findings window, a drawn brace included, and
+membership inside it is the queue's own outcome-anchored rule. See the revision
+section at the foot of this ledger.
 ALIGN is a switch over already-selected data (ADR 31 part 3's own form): it
 never writes the URL, it does not push a crumb level, and picking it never
 moves the roster, the WINDOW brace, or the crumb.
@@ -1062,7 +1073,8 @@ own 29-story replay (`frontend/diagnose-workstation-behavior.replay.mjs`)
 passed unchanged at the same count — ALIGN is additive there, and no existing
 story asserts against the instrument row in a way ALIGN's presence disturbs.
 
-**P53 tension, recorded rather than decided silently:** ALIGN's "By event"
+**P53 tension, recorded rather than decided silently** — RESOLVED by #62,
+2026-08-20; kept as the record of why it stood. ALIGN's "By event"
 request always uses the canvas's *standing preset* (`presetKey`) as its block
 coordinate, even when a drawn/custom window (`drawn`) is in force — the lens's
 block taxonomy has no "custom" member to carry an arbitrary range. This is a
@@ -1145,3 +1157,104 @@ Verified against the running app (`--no-fetch` server, `mockups/revise-e2e.synth
 Evidence: headless screenshots (Playwright, the same 1.61.1 the browser gates use), before/after, 1024×768 and 1440×900, `/private/tmp/claude-501/-Users-connor-Code-ConnorGriffin-harmonic/a6b1553c-a869-4b23-8b5d-babb92acbfb1/scratchpad/round3/{before,after}-{1024,1440}.png`. `before-1024.png` shows the title wrapped onto two lines ("GLUCOSE BY" / "TIME OF DAY") with the meta line wrapping under it; `after-1024.png` shows one line, "GLUCOSE BY T…" and "window 2,160 of 8,640 rea…", both cleanly ellipsized, the two-pane boundary and instrument row unaffected. 1440px is visually unchanged before/after (no truncation triggers at that width).
 
 Decision: harmonichq/harmonic#41, 2026-08-19 (safety-review round 3).
+
+## Revision — 2026-08-20, base `8cc3c99` (issue #62: one window-membership rule)
+
+`/ui-craft` revise lane. Base is the ticket branch's own branch point,
+`8cc3c99` — not the `a49b6db` this ledger last re-froze against, because #41's
+own revision (`1d06530`, `8cc3c99`) landed between the two and ALIGN is part of
+what #62 revises rather than part of what it changes. Safe-start provenance for
+this lane is recorded by the coordinator in
+`openspec/changes/by-event-window-membership/design.md`; the entrypoint was the
+declared `harmonic serve --no-fetch --db mockups/revise-e2e.synthetic/harmonic.sqlite`
+and nothing else was started.
+
+**What changed.** Three rules decided window membership over one population: the
+event-comparison endpoint matched a six-hour anchor-time block, the findings
+queue anchored an occurrence to where its consequence landed, and the browser
+kept an occurrence whose own clock minute fell in the window. The browser's rule
+is gone. `scopedFor` now filters the family population by the keys the frame's
+findings row published, and the factor header, the clock canvas and the roster
+all read that one population.
+
+**Behavior added** — six stories, `S27` to `S32` in
+`frontend/diagnose-workstation-behavior.replay.mjs`, plus `S13` in
+`frontend/diagnose-event-comparison-behavior.replay.mjs`:
+
+```
+S27 · selecting a roster occurrence under By event draws it (#57), by the
+      endpoint's own catalog id — the (episode, instant) pair the roster carries
+      addresses four catalog occurrences and is a join key only
+S28 · while the event canvas is mounted, its own header is the only canvas
+      header on screen (#58)
+S29 · a failed by-event fetch restores the clock canvas and leaves the reader on
+      the finding
+S30 · a finding whose episodes span two families shows one family in the panel
+      and the chart alike
+S31 · narrowing the window until the open finding has no row leaves the reader
+      on it, both panes reading `No findings in the selected window`
+S32 · an occurrence whose trigger sits outside the window and whose consequence
+      landed inside it appears in both panes
+S13 · (lens replay) the clock window is the lens's only time coordinate, and a
+      cohort too thin for an aggregate draws its own episodes
+```
+
+Three of them pose a shape the committed payload cannot: a meal the lever
+actually fired on, a consequence landing in a window its trigger sits outside,
+and a finding spanning two families. Each derives its inputs from a committed
+synthetic fixture inside the driver — `withFiredMeal`, `withLateConsequence`,
+and the frozen `frontend/__fixtures__/findings-projection.json` inputs — and
+none is hand-written or drawn from real data.
+
+**Behavior changed.** P53's coordinate list and the #41 narrative that ALIGN
+requests the standing preset's block are amended in place above. No story
+retired.
+
+**Replay output**, against the built revision through the declared server:
+
+```
+app: 35 of 35 stories passed
+13/13 stories passed against app     (diagnose-event-comparison-behavior.replay.mjs)
+PASS 7 issue #694 support renders against app   (diagnose-event-comparison-support-audit.mjs)
+```
+
+`node --test frontend/cockpit-shell.browser.test.mjs` → 9 pass, 0 fail, 1 skip
+(the pre-existing render-coverage skip). `node --test
+frontend/diagnose-workstation.browser.test.mjs` → 7 pass, 0 fail.
+
+**Renders.** Four states — the finding case file under `By clock`, `By event`
+whole-day (which carries the supported aggregate and a one-episode withheld
+cohort side by side), `By event` over a drawn 14:00–16:00, and a finding the
+window no longer holds — at 1440×900 and 390×844, in both themes, from both the
+base and the revision worktrees: 32 files, handed to the coordinator as pull
+request evidence. They are not committed: the publishable-tree allowlist admits
+no images under `frontend/**`.
+
+The sharpest pair is `by-event-thin-cohort` at 1440. On the base the queue lists
+`Late bolus` for 14:00–16:00 and the row **will not open** — `buildFactors` found
+none of its episodes, because the browser judged them by their 13:00 trigger
+while the server had already placed them by their 14:35 consequence. On the
+revision the same row opens and reads `1 of 1 meal responses in 14:00–16:00`.
+The `finding-out-of-window` pair is the other: the base printed
+`0 of 0 meal responses in 00:00–06:00` under a canvas still counting
+`window 216 of 864 readings`; the revision says
+`No findings in the selected window` in both panes.
+
+**Two observations recorded, neither ruled here.**
+
+1. *The event canvas's own head truncates its title at every width.* The window
+   context this revision adds (`Window 14:00–16:00 · episodes join by where the
+   consequence landed, not when the meal was`) shares the `.head-line` the title
+   and the factor context already occupied, and that line's shipped rule — set
+   for #41's 1024px tablet case — is that `h2` yields first. So `MEAL RESPONSES`
+   renders as `MEAL RES…` at 1440×900, where nothing truncated before. The rule
+   is behaving as specified; whether the head should carry three contexts on one
+   line is a design question this revision surfaces rather than settles.
+2. *At 390×844 the WINDOW presets are unreachable while a case file is open.*
+   `.instruments` is a 430px-wide grid whose ALIGN column overlays the preset
+   row's hit area, and the clock canvas sits below the fold, so neither a preset
+   press nor a brace drag lands. Measured identically on the base and the
+   revision (`#align-group` covering `#seg-window`'s first button on both), so it
+   pre-dates #62 and is not this change's to fix. Two of the sixteen narrow
+   renders are `__blocked` on each side for that reason, and they are blocked the
+   same way.

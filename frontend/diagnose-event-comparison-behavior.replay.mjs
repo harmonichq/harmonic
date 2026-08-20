@@ -44,12 +44,15 @@ async function vendored(name) {
 /* `view: null` opens with no view param at all, which is how a reader reaches
    Diagnose from the tab bar — the case that must land on Glucose. */
 const query = ({
-  state = 'dense', theme = 'light', view = 'meals', factor, block, another, occ,
+  state = 'dense', theme = 'light', view = 'meals', factor, startMin, endMin, another, occ,
 }) => {
   const search = new URLSearchParams({ state, theme });
   if (view !== null) search.set('view', view);
   if (factor) search.set('factor', factor);
-  if (block) search.set('block', block);
+  /* #62 — the clock window replaced the six-hour anchor-time block. Both bounds
+     travel or neither does; the whole day is the absence of them. */
+  if (startMin != null) search.set('start_min', String(startMin));
+  if (endMin != null) search.set('end_min', String(endMin));
   if (another) search.set('another', String(another));
   if (occ) search.set('occ', occ);
   return `?${search}`;
@@ -66,7 +69,10 @@ export async function openApp(browser, options = {}) {
     [/^\/diagnose\/event-comparison/, (url) => options.invalidComparison ? {} : projectSyntheticCapture(capture, {
       view: url.searchParams.get('view') || 'meals',
       factor: url.searchParams.get('factor') || undefined,
-      block: url.searchParams.get('block') || 'all',
+      window: url.searchParams.get('start_min') === null ? null : {
+        start_min: Number(url.searchParams.get('start_min')),
+        end_min: Number(url.searchParams.get('end_min')),
+      },
       another: url.searchParams.get('another') === '1',
       occurrenceId: url.searchParams.get('occ') || undefined,
       // A replay fixture is permitted to select the lock's seven required
@@ -229,10 +235,10 @@ export const S3 = async (open, browser) => use(open, browser, {}, async (page) =
 });
 
 // RETIRED (issue #41) — the anchor-time Block seg. P52 retires it with the
-// rest of the lens's own instrument row. The re-scoping behaviour itself
-// (the block coordinate changes which occurrences the projection routes) is
-// exercised through the SAME URL read path S3 now uses; a separate story for
-// it duplicates that coverage, so it is not re-added. Same sanction as S1.
+// rest of the lens's own instrument row. The coordinate it addressed retired
+// too (issue #62): the clock window replaced it, and S13 below exercises the
+// re-scoping behaviour itself through the SAME URL read path S3 uses. Same
+// sanction as S1.
 export const S4 = async (open, browser) => use(open, browser, {}, async (page) => {
   ok(await page.locator('.ec-block-seg').count() === 0, '.ec-block-seg did not retire');
 });
@@ -276,11 +282,11 @@ export const S7 = async (open, browser) => use(open, browser, { another: 1 }, as
     const ids = state.chart.getOption().series.map((series) => series.id).filter(Boolean);
     const cohorts = state.cohorts || state.support?.cohorts || {};
     return {
-      serverOwned: state.projection?.schema === 'diagnose-event-comparison-v2'
+      serverOwned: state.projection?.schema === 'diagnose-event-comparison-v3'
         || state.support?.server_owned === true,
       firedStates: [...new Set(fired.map((row) => row.support))].sort(),
       nearState: cohorts.near_rule?.support,
-      withheldHasAggregate: ids.some((id) => /^another_factor:/.test(id)),
+      withheldHasAggregate: ids.some((id) => /^another_factor:(?:line|spread):/.test(id)),
     };
   });
   ok(authority.serverOwned, 'browser did not consume server-owned support facts');
@@ -377,7 +383,7 @@ export const S11 = async (open, browser) => use(open, browser, {
     return {
       selected: selected?.identity?.id || selected?.id,
       support: cohorts.another_factor?.support,
-      aggregate: ids.some((id) => /^another_factor:/.test(id)),
+      aggregate: ids.some((id) => /^another_factor:(?:line|spread):/.test(id)),
       selectedTrace: state.chart.getOption().series.some((series) => series.name === 'Selected occurrence'),
     };
   });
@@ -435,7 +441,47 @@ export const S12 = async (open, browser) => {
   });
 };
 
-export const STORIES = { S1, S2, S3, S4, S5, S6, S7, S8, S9, S10, S11, S12 };
+/** The meal bolused at 13:00 whose high landed at 14:35 — trigger outside the
+    window, consequence inside it. The workstation replay's S32 shows the same
+    episode reaching both panes. */
+const EARLY_TRIGGER = { ep_id: '2020-03-03-ep71', t: '2020-03-03 13:00:00' };
+
+/* S13 · The clock window is the lens's only time coordinate (issue #62), it is
+   outcome-anchored, and a cohort too thin for an aggregate draws its own
+   episodes. 14:00-16:00 holds exactly one meal in this capture: the one bolused
+   at 13:00 whose high landed at 14:35, an hour outside the window it belongs
+   to. One occurrence never becomes a median, so it is drawn as itself. */
+export const S13 = async (open, browser) => use(open, browser, {
+  factor: 'late_bolus', startMin: 840, endMin: 960, another: 1,
+}, async (page) => {
+  const drawn = await page.evaluate(() => {
+    const exposed = window.__diagnoseEventComparison;
+    const cohort = exposed.projection.cohorts.find((c) => c.key === 'another_factor');
+    const ids = exposed.chart.getOption().series.map((series) => series.id).filter(Boolean);
+    return {
+      window: exposed.projection.coordinates.window,
+      denominator: exposed.projection.population.denominator,
+      support: cohort.support,
+      episodes: (cohort.episodes || []).map((e) => `${e.identity.ep_id}@${e.identity.t}`),
+      episodeSeries: ids.filter((id) => /^another_factor:episode:/.test(id)).length,
+      aggregateSeries: ids.filter((id) => /^another_factor:(?:line|spread):/.test(id)).length,
+      context: document.querySelector('.ec-window-context')?.textContent.trim() ?? null,
+    };
+  });
+  ok(drawn.window.scoped === true, 'the projection did not answer for a scoped clock window');
+  ok(drawn.window.label === '14:00\u201316:00',
+    `the canvas does not name the window it counted in: ${drawn.window.label}`);
+  ok(drawn.denominator === 1, `the window should hold exactly one occurrence, got ${drawn.denominator}`);
+  ok(drawn.support === 'withheld', `one occurrence must be withheld from an aggregate, got ${drawn.support}`);
+  ok(drawn.episodes.length === 1 && drawn.episodes[0] === `${EARLY_TRIGGER.ep_id}@${EARLY_TRIGGER.t}`,
+    `the drawn episode is not the one whose consequence landed in the window: ${JSON.stringify(drawn.episodes)}`);
+  ok(drawn.episodeSeries === 1, 'the thin cohort did not draw its own episode');
+  ok(drawn.aggregateSeries === 0, 'a median was built from one occurrence');
+  ok(/14:00\u201316:00/.test(drawn.context || '') && /consequence landed/.test(drawn.context || ''),
+    `the canvas does not state the window and the membership rule: ${drawn.context}`);
+});
+
+export const STORIES = { S1, S2, S3, S4, S5, S6, S7, S8, S9, S10, S11, S12, S13 };
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const target = process.env.TARGET;

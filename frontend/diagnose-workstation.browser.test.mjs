@@ -508,3 +508,43 @@ test('frontend contains no client-side verdict threshold or direction comparison
   assert.match(index, /v-show="hasToken && diagnoseReady"/);
   assert.match(index, /Diagnose needs an API token/);
 });
+
+/* #63 — the unexplained-highs line, rendered by the real app.
+ *
+ * The node tests around `uncausedNote` prove the pure read; this proves the words
+ * reach the screen, below the queue and outside it, and that a clock scope does not
+ * move the number. The fixture's highs rollup carries exactly one occurrence whose
+ * episode drew nothing (`.claude/qa/gen_synthetic_fixtures.py`), so the sentence
+ * being absent here means the surface lost it, not that the data went quiet. */
+test('#63 · the unexplained-highs sentence renders below the findings queue', async () => {
+    const browser = await runner.browser();
+    try {
+      const before = openerProblems().length;
+      const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
+      const note = await page.evaluate(
+        () => document.querySelector('#level .uncaused-note')?.textContent.trim() ?? null);
+      assert.equal(note, '1 high had no cause detected by the app',
+        'the server sentence renders verbatim');
+      // It is a SIBLING of the list, never a row inside it: a reader who can select
+      // every queue row must not be able to select this, and it carries no drill.
+      const placement = await page.evaluate(() => {
+        const el = document.querySelector('#level .uncaused-note');
+        return {
+          insideList: !!el.closest('.q'),
+          isRow: el.matches('.qrow'),
+          afterList: !!(document.querySelector('#level .q')?.compareDocumentPosition(el)
+            & Node.DOCUMENT_POSITION_FOLLOWING),
+          tag: el.tagName,
+        };
+      });
+      assert.deepEqual(placement,
+        { insideList: false, isRow: false, afterList: true, tag: 'P' });
+      // Scope invariance is pinned where it can be asserted exactly — over every
+      // frozen window in `findings-projection-mirror.test.js` and over three clock
+      // windows in `tests/test_meal_bolus_short_attribution.py`. What only the real
+      // app can show is the two above: the words, and where they sit.
+      await page.close();
+      assert.deepEqual(openerProblems().slice(before), [],
+        'no opener problems while reading the unexplained-highs line');
+    } finally { /* browser stays open; closed once in after() */ }
+  });

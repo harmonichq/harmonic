@@ -69,6 +69,18 @@ _HELD_STATUSES = frozenset({str(Status.INSUFFICIENT), str(Status.HARM_GATED),
 # No suggestion at all — the model saw no clean day in this slot.
 _BLIND_STATUS = str(Status.NO_DATA)
 
+# The one place the unexplained-highs sentence is written (#63). The operator-confirmed
+# wording is "N highs had no cause detected by the app"; the ONLY thing that varies is
+# the noun's number, because a surface that prints "1 highs" is a defect and inflecting
+# a noun is not rewording a confirmed sentence. The count is substituted HERE,
+# server-side, and the frontend renders the finished sentence verbatim — the same rule
+# every other line on this surface follows (term 40). Highs-only scope is explicit in
+# the words because the queue above it holds every family, and a bare "N had no cause"
+# would read as a claim about all of them. "highs" is the family noun `_FAMILY_NOUN`
+# already spells; the domain term for one of them is Occurrence, never "event"
+# (CONTEXT.md).
+UNCAUSED_HIGHS_COPY = "{n} {noun} had no cause detected by the app"
+
 # The exposure family a queue row's denominator is counted in, and the noun it is
 # counted with (term 16: every denominator names its own noun). Keyed by the family
 # names `explore_exposures` emits.
@@ -212,7 +224,31 @@ class FindingsProjection:
             # Keyed by the register name each row carries, so a count and a row can
             # never be read as two different vocabularies.
             "counts": counts,
+            "uncaused_highs": self._uncaused_highs(),
         }
+
+    def _uncaused_highs(self) -> dict:
+        """The whole-window count of highs the engine explained nothing about, and the
+        finished sentence that reports it (#63).
+
+        **Deliberately not scoped by the query.** Every other number on this surface
+        answers "in this window", and this one answers "in the findings window" — the
+        30 days the queue was built over. A clock scope narrows which rows are shown;
+        it does not change how many highs went unexplained, and re-counting it per
+        window would let an empty scope read as "0 highs had no cause", which is the
+        opposite of what happened.
+
+        Read straight off the exposures feed, which counts it episode-wise
+        (:func:`~.explore_exposures.build_exposures`); nothing is re-derived here, the
+        same way no row's membership is. ``text`` is ``None`` at zero so the surface
+        has one thing to test and no threshold of its own — a count with nothing to
+        report publishes no sentence.
+        """
+        highs = (self._exposures.get("exposures") or {}).get("highs") or {}
+        n = highs.get("uncaused") or 0
+        text = (UNCAUSED_HIGHS_COPY.format(n=n, noun="high" if n == 1 else "highs")
+                if n else None)
+        return {"count": n, "text": text}
 
     # --- parameters: asserting / held / blind ---------------------------------
 

@@ -80,6 +80,10 @@ export const LEVER_META = {
   missed_meal:                        { flavor: 'habit',   sev: .60, rec: .30, conf: .55 },
   correction_stacking:                { flavor: 'habit',   sev: .58, rec: .36, conf: .62 },
   correction_on_iob:                  { flavor: 'habit',   sev: .50, rec: .38, conf: .60 },
+  // #63 — behavioural, and the LOWEST `rec` in the set on purpose: its
+  // recommendation is observation-only, so it has less to act on than any
+  // lever that names a change.
+  meal_bolus_short:                   { flavor: 'habit',   sev: .55, rec: .25, conf: .55 },
 };
 
 /* the Plan mini-diff facsimile (a few illustrative slots). */

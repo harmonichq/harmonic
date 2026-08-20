@@ -777,6 +777,18 @@ button.entry .pill[data-empty="true"] { visibility: hidden; }
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
+/* #63 — the unexplained-highs line. It is NOT a queue row and must not read as one:
+   a hairline above separates it from the list, and it takes the same quiet register as
+   the tail sentence (`.tailnote`) because it is the same kind of thing — one sentence
+   about the list rather than an item in it. The rule is what says "the list ended
+   here", so it is carried in both states — including the empty queue, where the
+   sentence still reports the whole findings window. */
+.dw .uncaused-note {
+  margin: 16px 0 0; padding: 12px var(--ck-pad) 0;
+  border-top: 1px solid var(--ck-hair);
+  font-size: 11.5px; color: var(--mk-muted); line-height: 1.5;
+}
+
 /* Term 41 — the calm line is the WHOLE pane when there is nothing to rank, so it
    sits in the middle of it rather than clinging to the top edge under a header
    with nothing beneath it. Centred vertically, but LEFT on the queue's own

@@ -199,3 +199,40 @@ Round 1 settled Q1 to Q4 (see Decisions). Round 2 frontier:
 ## Spawned tasks
 
 _(none yet)_
+
+## Plan review — round 1 (inline; cold panel NOT spawned)
+
+Seven blocking objections, **all tagged `authoring`** (present since the draft), zero
+`injected`. The rewrite-clean signal did not fire. Deltas re-verified against the frozen
+corpus with no new defects.
+
+1. Verification command referenced `$PW` / `$VENDOR` with no producer anywhere in the
+   order. A fresh agent pasting it gets an empty `PLAYWRIGHT_MODULE` and the leg fails
+   closed. Fixed: the setup that produces both is inlined into the order.
+2. The six-pair settings mapping could not be evidenced. Measured: the frozen corpus
+   carries only `basal_rate raise` and `carb_ratio lower`; `basal_rate lower`,
+   `carb_ratio raise`, `isf strengthen` and `isf weaken` are all absent. Fixed: the
+   order requires a closed-set table test plus a `carb_ratio raise` fixture, that being
+   the inverting entry.
+3. Chip membership for four of seven levers was unexercised (`late_bolus`,
+   `meal_over_delivery`, `missed_meal`, `correction_on_iob` appear in no window). Fixed:
+   assert over `_OUTCOME_KIND`'s closed set.
+4. Acceptance cited real-snapshot behavior the executing agent may not be able to
+   reproduce. Fixed: binding criteria restated on named fixture windows; the real-data
+   check demoted to an explicitly optional sanity note.
+5. Interface shape for the mapping was left to build time ("one named place"). Fixed:
+   named as a module-level dict beside `_row` in `findings_projection.py`, with the
+   deletion-test reason for not creating a module.
+6. The settings mapping must ALSO be transcribed into the JS mirror, which builds its
+   own basal / carb-ratio / ISF rows (`isfRows` at line 227) and holds no
+   settings-direction table. The order did not say so. Fixed.
+7. Partly refuted, recorded: the fear that the fixture corpus could not carry the
+   headline acceptance. Reproduced and false — `global` populates all four chips,
+   `rebound` chips its over-treated low HIGH, and `afternoon` chips an over-treated low
+   HIGH and a correction stack LOW in one window. Kept as the binding acceptance.
+
+**Not done:** a cold reviewer panel. `plan-review` requires a reviewer with no stake,
+and this session authored the order; the session also carries a standing instruction not
+to spawn agents unasked. The review above is an author self-review with every factual
+claim reproduced against the repo, which is weaker than cold on judgment axes (interface
+shape, scope) and equal on grounding. Offered to the user at step 12.

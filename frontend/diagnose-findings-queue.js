@@ -21,6 +21,8 @@
 
 /** Term 41 — the empty findings window is a result, not a void. */
 export const EMPTY_LINE = 'No pattern or setting asserts a direction in this window.';
+/** A sift can exclude assertions without making the window itself empty. */
+export const EMPTY_SIFT_LINE = 'No findings match the current chips.';
 /** Term 42 — the sentence that lives inside the doubled gap, naming the tail. */
 export const TAIL_NOTE = 'Not recurring often enough to rank yet.';
 /** Term 14 — a held row's reason line; the suffix is the backend's own words. */
@@ -121,16 +123,32 @@ function assertDetail(row) {
  * server's row facts to place existing markup; it does not classify or infer the
  * row's published tier.
  */
-export function queueRows(projection) {
+export function queueRows(projection, selected = null) {
   const rows = projection?.rows || [];
+  const sifting = selected !== null;
+  const visible = rows.filter((row) => {
+    const chips = row.chips || [];
+    // Held and blind reads sit outside the chip system. They collapse during a
+    // sift, but must remain reachable rather than disappearing with no account.
+    if (!chips.length) return row.register !== 'held' && row.register !== 'blind';
+    return !sifting || chips.some((chip) => selected.has(chip));
+  });
   let pricedSeen = false;
   let seamOpened = false;
+  const visibleIds = new Set(visible.map((row) => row.id));
   return rows.map((row) => {
+    const chips = row.chips || [];
+    const heldOrBlind = row.register === 'held' || row.register === 'blind';
+    const hidden = chips.length > 0 && sifting && !visibleIds.has(row.id);
+    const collapsed = heldOrBlind && sifting;
+    // The divider belongs to rows the reader can currently see, not to an
+    // excluded row or to a read represented by the collapsed count.
+    const shown = !hidden && !collapsed;
     const ranked = row.register === 'assert' || row.register === 'finding';
     const unpriced = ranked && row.priority == null;
-    const seam = unpriced && pricedSeen && !seamOpened;
+    const seam = shown && unpriced && pricedSeen && !seamOpened;
     if (seam) seamOpened = true;
-    if (ranked && !unpriced) pricedSeen = true;
+    if (shown && ranked && !unpriced) pricedSeen = true;
     return {
       id: row.id,
       register: row.register,
@@ -138,6 +156,8 @@ export function queueRows(projection) {
       flavor: row.kind === 'setting' ? 'setting' : 'habit',
       tier: row.tier,
       seam,
+      hidden,
+      collapsed,
       /* Term 38: a held or blind row drills to its detail but offers no stage
          affordance. The predicate is the server's register, never a floor of ours. */
       stageable: row.register === 'assert',
@@ -165,7 +185,7 @@ const add = (parent, cls, text) => {
   return span;
 };
 
-function paintDetail(node, detail) {
+function paintDetail(node, detail, windowScope) {
   if (!detail) return;
   if (detail.kind === 'nums') {
     const den = add(node, 'den nums');
@@ -173,15 +193,21 @@ function paintDetail(node, detail) {
     const bold = document.createElement('b');
     bold.textContent = detail.then;
     den.append(bold);
+    if (windowScope === 'whole_day') add(den, 'scope-note', ' · Whole day');
     return;
   }
-  if (detail.kind === 'reason') { add(node, 'why', detail.text); return; }
+  if (detail.kind === 'reason') {
+    const why = add(node, 'why', detail.text);
+    if (windowScope === 'whole_day') add(why, 'scope-note', ' · Whole day');
+    return;
+  }
   const den = add(node, 'den');
   if (detail.kind === 'support') {
     const [{ count, noun }, run] = detail.parts;
     add(den, 'v', count);
     den.append(` ${noun}`);
     if (run) { add(den, 'sep', '·'); den.append(run); }
+    if (windowScope === 'whole_day') add(den, 'scope-note', ' · Whole day');
     return;
   }
   detail.parts.forEach((part, i) => {
@@ -189,6 +215,7 @@ function paintDetail(node, detail) {
     add(den, 'v', part.count);
     den.append(` ${part.noun}`);
   });
+  if (windowScope === 'whole_day') add(den, 'scope-note', ' · Whole day');
 }
 
 /**
@@ -197,8 +224,11 @@ function paintDetail(node, detail) {
  * `onDrill(row)` receives the SERVER row — every level below this one is keyed on
  * the projection's own ids, so no drill target is guessed from a title.
  */
-export function renderFindingsQueue(host, projection, onDrill) {
-  const rows = queueRows(projection);
+export function renderFindingsQueue(host, projection, onDrill, view = null) {
+  /* `view` is workstation-owned UX state:
+     { selected: Set<string>|null, collapsedExpanded: boolean,
+       onToggleCollapsed: () => void }. Null selection means no sift. */
+  const rows = queueRows(projection, view?.selected ?? null);
   if (!rows.length) {
     const line = document.createElement('p');
     line.className = 'quiet-line';
@@ -206,12 +236,27 @@ export function renderFindingsQueue(host, projection, onDrill) {
     host.append(line);
     return rows;
   }
+  const shown = rows.filter((row) => !row.hidden && !row.collapsed);
+  const collapsed = rows.filter((row) => row.collapsed);
+  if (!shown.length && !collapsed.length) {
+    const line = document.createElement('p');
+    line.className = 'quiet-line';
+    line.textContent = EMPTY_SIFT_LINE;
+    host.append(line);
+    return rows;
+  }
+  if (!shown.length && view?.selected !== null) {
+    const line = document.createElement('p');
+    line.className = 'quiet-line sift-empty';
+    line.textContent = EMPTY_SIFT_LINE;
+    host.append(line);
+  }
   const list = document.createElement('div');
   list.className = 'q';
   list.setAttribute('role', 'list');
   host.append(list);
 
-  for (const row of rows) {
+  const paintRow = (row) => {
     if (row.seam) {
       const note = document.createElement('p');
       note.className = 'tailnote';
@@ -235,9 +280,24 @@ export function renderFindingsQueue(host, projection, onDrill) {
     tag.append(FLAVOR[row.flavor].word);
     // every row drills, held and blind included (terms 22 / 38)
     add(node, 'go', '›').setAttribute('aria-hidden', 'true');
-    paintDetail(node, row.detail);
+    paintDetail(node, row.detail, row.raw.window_scope);
     node.addEventListener('click', () => onDrill(row.raw));
     list.append(node);
+  };
+  for (const row of shown) {
+    paintRow(row);
+  }
+  if (collapsed.length) {
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'qcollapse';
+    toggle.textContent = `${collapsed.length} held or blind reads`;
+    toggle.setAttribute('aria-expanded', String(Boolean(view?.collapsedExpanded)));
+    toggle.addEventListener('click', () => view?.onToggleCollapsed?.());
+    list.append(toggle);
+    if (view?.collapsedExpanded) {
+      for (const row of collapsed) paintRow(row);
+    }
   }
   return rows;
 }

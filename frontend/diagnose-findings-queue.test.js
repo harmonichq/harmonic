@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
-  EMPTY_LINE, HELD_PREFIX, TAIL_NOTE, queueMeta, queueRows,
+  EMPTY_LINE, EMPTY_SIFT_LINE, HELD_PREFIX, TAIL_NOTE, queueMeta, queueRows,
 } from './diagnose-findings-queue.js';
 
 const fixture = JSON.parse(readFileSync(
@@ -171,4 +171,27 @@ test('term 42 · with nothing priced there is no boundary, so no seam sentence',
     })),
   };
   assert.equal(queueRows(unpriced).filter((r) => r.seam).length, 0);
+});
+
+test('chips sift only on published membership and keep withheld reads reachable', () => {
+  const selected = new Set(['highs']);
+  const rows = queueRows(W.afternoon, selected);
+  for (const row of rows.filter((row) => row.raw.chips.length)) {
+    assert.equal(row.hidden, !row.raw.chips.includes('highs'), row.title);
+    assert.equal(row.collapsed, false, row.title);
+  }
+  const withheld = rows.filter((row) => row.register === 'held' || row.register === 'blind');
+  assert.ok(withheld.length > 0);
+  assert.ok(withheld.every((row) => !row.hidden && row.collapsed));
+  assert.equal(EMPTY_SIFT_LINE, 'No findings match the current chips.');
+});
+
+test('a sift computes its priced seam over only visible rows', () => {
+  const rows = queueRows(W.global, new Set(['lows', 'corrections']));
+  const hiddenTail = rows.find((row) => row.title === 'Correction stacking');
+  assert.equal(hiddenTail.hidden, false);
+  // It is the only visible ranked row and is unpriced, so there is no priced
+  // row before it. The unselected high rows cannot open a visible seam.
+  assert.deepEqual(rows.filter((row) => row.seam), []);
+  assert.ok(rows.filter((row) => row.hidden).every((row) => row.raw.priority != null));
 });

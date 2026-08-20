@@ -787,6 +787,14 @@ button.entry .pill[data-empty="true"] { visibility: hidden; }
   padding: 22px var(--ck-pad); text-align: left;
   font-size: var(--ck-body); color: var(--mk-body);
 }
+.dw .quiet-line.sift-empty { min-height: 0; padding-bottom: 10px; }
+.dw .qcollapse {
+  border: 0; background: none; color: var(--mk-secondary); cursor: pointer;
+  padding: 8px var(--ck-pad); text-align: left; font-size: var(--ck-data);
+}
+.dw .qcollapse::after { content: ' ▸'; }
+.dw .qcollapse[aria-expanded="true"]::after { content: ' ▾'; }
+.dw .scope-note { color: var(--mk-secondary); }
 /* The queue's meta is flowed text, so it takes the proportional face with tabular
    figures like every other sentence in this list. Scoped to level 1: the metas at
    deeper levels carry column-aligned readouts and keep the data face. Spelled out

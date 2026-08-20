@@ -236,3 +236,41 @@ and this session authored the order; the session also carries a standing instruc
 to spawn agents unasked. The review above is an author self-review with every factual
 claim reproduced against the repo, which is weaker than cold on judgment axes (interface
 shape, scope) and equal on grounding. Offered to the user at step 12.
+
+## Plan review — round 2 (COLD, codex gpt-5.6-sol high effort, read-only)
+
+Verdict: **not countersigned**, five blocking objections, all `authoring`, zero
+`injected`. Each reproduced against the repo before it was acted on.
+
+1. **CONFIRMED, and the round's most valuable finding.** The order's fast gate omitted
+   four CI steps: `check_adr_numbers.py` (`ci.yml:73`), `check_owned_identifiers.py`
+   (`ci.yml:75`), two fixture drift checks, and
+   `node mockups/finding-evidence-routing.exploration/build.mjs --check` (`ci.yml:128`).
+   Proven empirically: the exploration reads
+   `frontend/__fixtures__/findings-projection.json` and embeds **six projection rows
+   with their full field set** in its generated `data.json`, so adding a row field
+   drifts it. The order as written would have passed every check it named and then
+   failed CI — the light-theme-relight failure mode AGENTS.md documents, reproduced in
+   advance. Fixed: the gate is now the complete CI set, plus a Do step regenerating the
+   exploration in the same change.
+2. **CONFIRMED.** "Browser leg reports a nonzero test count" is vacuous; the existing
+   suite already satisfies it, so nothing about the chips would be certified. Fixed:
+   named new cases required in `diagnose-workstation.browser.test.mjs`, each observing a
+   rendered outcome that a vue-free test cannot reach.
+3. **CONFIRMED.** The backend interface was pinned and the frontend one left to build
+   time — the rubric's axis-3 failure verbatim. `queueRows` (line 124) and
+   `renderFindingsQueue` (line 200) already own this behavior and `EMPTY_LINE` already
+   ships an empty state. Fixed: specified as `queueRows(projection, selected = null)`
+   with an UNCHANGED return type, rows gaining `hidden` / `collapsed`, seam computed
+   over visible rows, no new module and no second placeholder string.
+4. **CONFIRMED.** A table test over the mapping dict passes even if no row builder ever
+   calls it. Fixed: the six pairs are asserted through `FindingsProjection.project()`.
+5. **SPLIT.** The wrong-field-names half is CONFIRMED — the order said
+   `executable` / `args` where the file uses `runtimeExecutable` / `runtimeArgs`
+   (`.claude/launch.json:4`), which would have produced a dead entry. The
+   remove-it-on-scope-grounds half is **REFUTED**: the user settled this in Q14. Panel 3
+   is told not to re-litigate it.
+
+Round 1 (inline, author self-review) also stands above: seven objections, all authoring.
+Across both rounds: twelve authoring defects, zero injected. The rewrite-clean signal
+never fired.

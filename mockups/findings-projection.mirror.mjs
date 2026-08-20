@@ -48,6 +48,12 @@ const OUTCOME_KIND = {
   over_treated_low: 'high', correction_stacking: 'low', correction_on_iob: 'low',
   missed_meal: 'high',
 };
+// Carb ratio is grams per unit, so raising it removes insulin and answers lows.
+const SETTINGS_CHIPS = {
+  basal_rate: { raise: ['highs'], lower: ['lows'] },
+  carb_ratio: { raise: ['lows'], lower: ['highs'] },
+  isf: { strengthen: ['highs'], weaken: ['lows'] },
+};
 // analyzers.ic.BLOCK_WINDOW_DAYS
 const BLOCK_WINDOW_DAYS = 90;
 
@@ -96,8 +102,30 @@ function row(fields) {
     support: null, reason: null, annotation: null, members: null,
     lever: null, appearances: null, episodes: null,
     evidence: null, verdict_counts: null, verdict_counts_by_family: null,
+    chips: null, window_scope: null,
     ...fields,
   };
+}
+
+function chipsFor(row) {
+  if (row.register === 'held' || row.register === 'blind') return [];
+  if (row.register === 'assert') return [...SETTINGS_CHIPS[row.parameter][row.direction]];
+
+  const chips = [];
+  const kind = OUTCOME_KIND[row.lever] ?? null;
+  if (kind === 'high') chips.push('highs');
+  else if (kind === 'low') chips.push('lows');
+  const families = new Set(row.appearances.map((appearance) => appearance.family));
+  if (families.has('meals')) chips.push('meals');
+  if (families.has('correction_clusters')) chips.push('corrections');
+  return chips;
+}
+
+function stampedRow(fields) {
+  const result = row(fields);
+  result.chips = chipsFor(result);
+  result.window_scope = result.parameter === 'isf' ? 'whole_day' : 'window';
+  return result;
 }
 
 const lean = (current, value) => {
@@ -150,7 +178,7 @@ function basalRows(analysis, window) {
     const head = span[0];
     const single = span.length === 1;
     const label = spanLabel(startMin, endMin);
-    rows.push(row({
+    rows.push(stampedRow({
       id: `basal:${startMin}-${endMin}`,
       register,
       kind: 'setting',
@@ -199,7 +227,7 @@ function icRows(analysis, window) {
     const register = asserts ? 'assert' : 'held';
     const label = spanLabel(startMin, endMin);
     const direction = asserts ? block.direction ?? null : lean(block.current, estimate.value);
-    rows.push(row({
+    rows.push(stampedRow({
       id: `ic:${block.block_id}`,
       register,
       kind: 'setting',
@@ -232,7 +260,7 @@ function isfRows(analysis) {
     const estimate = entry.estimate || {};
     if (direction == null && estimate.value == null) continue;
     const register = direction != null ? 'assert' : 'held';
-    rows.push(row({
+    rows.push(stampedRow({
       id: 'isf',
       register,
       kind: 'setting',
@@ -380,7 +408,7 @@ function findingRows(exposures, scenarios, window) {
   for (const [lever, entry] of byLever) {
     entry.appearances.sort((a, b) => (a.family < b.family ? -1 : a.family > b.family ? 1 : 0));
     const { evidence, counts, countsByFamily } = leverEvidence(lever, entry.families, inWindow);
-    rows.push(row({
+    rows.push(stampedRow({
       id: `finding:${lever}`,
       register: 'finding',
       kind: 'habit',
@@ -449,12 +477,17 @@ export function projectFindings(inputs, bounds = null) {
     else row.tier = 'worth_a_look';
   }
   const counts = { assert: 0, held: 0, blind: 0, finding: 0 };
-  for (const r of rows) counts[r.register] += 1;
+  const chip_counts = { highs: 0, lows: 0, meals: 0, corrections: 0 };
+  for (const r of rows) {
+    counts[r.register] += 1;
+    for (const chip of r.chips) chip_counts[chip] += 1;
+  }
   return {
     schema: SCHEMA,
     window: query.dict,
     findings_window: { days: analysis.window_days ?? null, ...(exposures.window || {}) },
     rows,
     counts,
+    chip_counts,
   };
 }

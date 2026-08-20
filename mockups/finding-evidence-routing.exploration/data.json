@@ -20,6 +20,12 @@
  },
  "queue": {
   "projection": {
+   "chip_counts": {
+    "corrections": 1,
+    "highs": 5,
+    "lows": 1,
+    "meals": 1
+   },
    "counts": {
     "assert": 3,
     "blind": 0,
@@ -35,6 +41,9 @@
     {
      "annotation": "post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb",
      "appearances": null,
+     "chips": [
+      "highs"
+     ],
      "current": 5.7,
      "direction": "lower",
      "episodes": null,
@@ -72,11 +81,15 @@
      "tier": "next_in_line",
      "title": "Carb ratio · 12:00–24:00 · lower",
      "verdict_counts": null,
-     "verdict_counts_by_family": null
+     "verdict_counts_by_family": null,
+     "window_scope": "window"
     },
     {
      "annotation": "a step up, limited to 20% above the set rate",
      "appearances": null,
+     "chips": [
+      "highs"
+     ],
      "current": null,
      "direction": "raise",
      "episodes": null,
@@ -137,11 +150,15 @@
      "tier": "next_in_line",
      "title": "Basal · 00:30–01:30 · raise",
      "verdict_counts": null,
-     "verdict_counts_by_family": null
+     "verdict_counts_by_family": null,
+     "window_scope": "window"
     },
     {
      "annotation": "a step up, limited to 20% above the set rate",
      "appearances": null,
+     "chips": [
+      "highs"
+     ],
      "current": 0.8,
      "direction": "raise",
      "episodes": null,
@@ -195,7 +212,8 @@
      "tier": "next_in_line",
      "title": "Basal · 05:30 · raise",
      "verdict_counts": null,
-     "verdict_counts_by_family": null
+     "verdict_counts_by_family": null,
+     "window_scope": "window"
     },
     {
      "annotation": null,
@@ -212,6 +230,9 @@
        "n": 1,
        "noun": "lows"
       }
+     ],
+     "chips": [
+      "highs"
      ],
      "current": null,
      "direction": null,
@@ -336,7 +357,8 @@
        "no_data": 3,
        "outranked": 1
       }
-     }
+     },
+     "window_scope": "window"
     },
     {
      "annotation": null,
@@ -353,6 +375,10 @@
        "n": 1,
        "noun": "meals"
       }
+     ],
+     "chips": [
+      "highs",
+      "meals"
      ],
      "current": null,
      "direction": null,
@@ -453,7 +479,8 @@
        "no_data": 0,
        "outranked": 0
       }
-     }
+     },
+     "window_scope": "window"
     },
     {
      "annotation": null,
@@ -470,6 +497,10 @@
        "n": 1,
        "noun": "lows"
       }
+     ],
+     "chips": [
+      "lows",
+      "corrections"
      ],
      "current": null,
      "direction": null,
@@ -570,7 +601,8 @@
        "no_data": 4,
        "outranked": 1
       }
-     }
+     },
+     "window_scope": "window"
     }
    ],
    "schema": "diagnose-findings-v1",

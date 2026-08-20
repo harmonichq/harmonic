@@ -100,10 +100,15 @@ export const state = (page) => page.evaluate(() => {
     levelHead: (q('#level .occ-head') || q('#level .slot-head') || q('#level .who'))
       ?.innerText.replace(/\s+/g, ' ').trim() ?? null,
     evRows: document.querySelectorAll('#level .ev-row').length,
-    // the cap governs the MATCHED group only — the counter-example reads always
-    // print in full (term 17), so the two are counted apart
-    evFits: document.querySelectorAll('#level .ev-row[data-counter="false"]').length,
-    evCounter: document.querySelectorAll('#level .ev-row[data-counter="true"]').length,
+    // `evFits` is every row the roster is currently showing (the drilled
+    // verdict, or `fired` at rest). The `data-counter`/`evCounter` split
+    // RETIRED 2026-08-19: select-in-place (P35, ADR 31 part 5) made the
+    // roster homogeneous by verdict, and the counter-example sub-group it
+    // used to feed was dead at rest and incoherent once drilled (see
+    // renderEvidence's docstring). `evCounterGone` asserts the retirement
+    // stays true rather than silently reintroducing the attribute.
+    evFits: document.querySelectorAll('#level .ev-row').length,
+    evCounterGone: document.querySelectorAll('#level .ev-row[data-counter]').length,
     more: txt('#level .more'),
     stage: q('#level .stagebtn')?.innerText.replace(/\s+/g, ' ').trim() ?? null,
     stageStaged: q('#level .stagebtn')?.dataset.staged ?? null,
@@ -544,20 +549,30 @@ export const S09 = async (page) => {
   ok(s.evRows > 0, 'S09 evidence rows render');
 };
 
-/** S10 · Evidence is capped at five MATCHED rows and the cap is a real toggle.
-    The counter-example group is never capped — it always prints in full. */
+/** S10 · Evidence is capped at five rows and the cap is a real toggle.
+    RETIRED, 2026-08-19 (Connor's select-in-place ruling, P35/ADR 31 part 5,
+    transcribed in the behaviour ledger): the "counter-example group is never
+    capped" clause. Select-in-place made the roster homogeneous by verdict —
+    exactly one published category shows at a time — which structurally
+    empties the old counter-example split at rest and makes it incoherent
+    once drilled (a near-miss/clean occurrence can still carry a DIFFERENT
+    classifier's match on the same anchor, which used to route it into a
+    group captioned for fired-but-uncredited leftovers). `renderEvidence`
+    retires the split outright rather than leave a 0==0 tautology standing;
+    this story now asserts the retirement itself. */
 // LOCK:diagnose-workstation:17 LOCK:diagnose-workstation:18
 export const S10 = async (page) => {
   await page.click('#level .qrow[data-state="finding"]');
   await settle(page, 450);
   const capped = await state(page);
-  is(capped.evFits, 5, 'S10 five matched rows before expanding');
+  is(capped.evFits, 5, 'S10 five rows before expanding');
+  is(capped.evCounterGone, 0, 'S10 RETIRED — the counter-example split is gone, not merely empty');
   ok(/^\d+ more$/.test(capped.more || ''), `S10 the toggle names the remainder (${capped.more})`);
   await page.click('#level .more');
   await settle(page);
   const open = await state(page);
-  ok(open.evFits > 5, 'S10 expanding shows the rest of the matched group');
-  is(open.evCounter, capped.evCounter, 'S10 the counter-example group is unaffected by the cap');
+  ok(open.evFits > 5, 'S10 expanding shows the rest of the roster');
+  is(open.evCounterGone, 0, 'S10 RETIRED — still gone after expanding');
   is(open.more, 'Show first 5', 'S10 the toggle reverses');
   await page.click('#level .more');
   await settle(page);

@@ -7055,7 +7055,7 @@
    "ic_runs": 24,
    "isf": [
     {
-     "annotation": "your fasting data agrees with the set correction factor",
+     "annotation": "fasting data agrees with the set factor",
      "asserts_move": null,
      "block_id": null,
      "current": 36.0,
@@ -7876,7 +7876,7 @@
      }
     },
     {
-     "annotation": "your fasting data agrees with the set correction factor",
+     "annotation": "fasting data agrees with the set factor",
      "appearances": null,
      "current": 36.0,
      "direction": null,
@@ -7899,7 +7899,7 @@
      "members": null,
      "parameter": "isf",
      "priority": null,
-     "reason": "your fasting data agrees with the set correction factor",
+     "reason": "fasting data agrees with the set factor",
      "recommended": null,
      "register": "held",
      "span": null,
@@ -8700,7 +8700,7 @@
      "verdict_counts_by_family": null
     },
     {
-     "annotation": "your fasting data agrees with the set correction factor",
+     "annotation": "fasting data agrees with the set factor",
      "appearances": null,
      "current": 36.0,
      "direction": null,
@@ -8723,7 +8723,7 @@
      "members": null,
      "parameter": "isf",
      "priority": null,
-     "reason": "your fasting data agrees with the set correction factor",
+     "reason": "fasting data agrees with the set factor",
      "recommended": null,
      "register": "held",
      "span": null,
@@ -8876,7 +8876,7 @@
      "verdict_counts_by_family": null
     },
     {
-     "annotation": "your fasting data agrees with the set correction factor",
+     "annotation": "fasting data agrees with the set factor",
      "appearances": null,
      "current": 36.0,
      "direction": null,
@@ -8899,7 +8899,7 @@
      "members": null,
      "parameter": "isf",
      "priority": null,
-     "reason": "your fasting data agrees with the set correction factor",
+     "reason": "fasting data agrees with the set factor",
      "recommended": null,
      "register": "held",
      "span": null,
@@ -9043,7 +9043,7 @@
      "verdict_counts_by_family": null
     },
     {
-     "annotation": "your fasting data agrees with the set correction factor",
+     "annotation": "fasting data agrees with the set factor",
      "appearances": null,
      "current": 36.0,
      "direction": null,
@@ -9066,7 +9066,7 @@
      "members": null,
      "parameter": "isf",
      "priority": null,
-     "reason": "your fasting data agrees with the set correction factor",
+     "reason": "fasting data agrees with the set factor",
      "recommended": null,
      "register": "held",
      "span": null,
@@ -9103,7 +9103,7 @@
    },
    "rows": [
     {
-     "annotation": "your fasting data agrees with the set correction factor",
+     "annotation": "fasting data agrees with the set factor",
      "appearances": null,
      "current": 36.0,
      "direction": null,
@@ -9126,7 +9126,7 @@
      "members": null,
      "parameter": "isf",
      "priority": null,
-     "reason": "your fasting data agrees with the set correction factor",
+     "reason": "fasting data agrees with the set factor",
      "recommended": null,
      "register": "held",
      "span": null,
@@ -9282,7 +9282,7 @@
      }
     },
     {
-     "annotation": "your fasting data agrees with the set correction factor",
+     "annotation": "fasting data agrees with the set factor",
      "appearances": null,
      "current": 36.0,
      "direction": null,
@@ -9305,7 +9305,7 @@
      "members": null,
      "parameter": "isf",
      "priority": null,
-     "reason": "your fasting data agrees with the set correction factor",
+     "reason": "fasting data agrees with the set factor",
      "recommended": null,
      "register": "held",
      "span": null,

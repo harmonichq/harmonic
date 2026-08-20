@@ -112,10 +112,30 @@ html.dark .dw {
 
 /* ---- mock 393-939 — VERBATIM (one line rescoped, marked inline) ---- */
 /* ---- 2. instrument row ---------------------------------------------- */
+/* DEVIATION from the ported mock (Connor, 2026-08-19: "I want this to
+   maintain a consistent position on the screen … visually aligned nicely
+   with something, probably directly above the inspector"). The mock's row
+   was a flex row, so ALIGN's position slid with whatever sat before it in
+   flow. `.instruments` now mirrors `.panes`' ACTUAL rendered geometry — its
+   `.panes` base rule in the mock port is itself overridden by
+   `theme.css`'s ":is(.dw, .vw) .panes { gap: 0; padding: 0; }" (the "docked
+   workspace" pane rule, term 1), so the real column boundary is a bare
+   `100% - var(--side)` with no gap or padding to account for. Zero gap and
+   zero padding here reproduce that exactly, so the SECOND column starts at
+   the identical x as the inspector pane — reserved space directly above it
+   whether or not `#align-group` is hidden, since WINDOW (column 1) can never
+   push a sibling grid track. `#align-group` gets its own left inset instead
+   of the row's, matching `.pane > header`'s own content padding
+   (`--ck-pad`), so ALIGN's label lines up with the inspector's own header
+   text, not just its bare left edge. See the behaviour ledger's amendment
+   for the deviation this records. */
 .instruments {
-  display: flex; align-items: center; gap: 14px; padding: 0 14px;
+  display: grid; grid-template-columns: minmax(0, 1fr) var(--side, 430px);
+  align-items: center; gap: 0; padding: 0;
   background: var(--mk-bg);
 }
+.instruments > .instrument:first-child { padding-left: 14px; }
+#align-group { padding-left: var(--ck-pad); }
 .instrument { display: flex; align-items: center; gap: 7px; min-width: 0; }
 .instrument > .cap {
   font-size: var(--ck-micro); text-transform: uppercase; letter-spacing: var(--ck-track);
@@ -194,6 +214,21 @@ html.dark .dw {
 .canvas-head .head-line {
   grid-area: 1 / 1; display: flex; align-items: baseline; gap: 10px;
   min-width: 0; transition: opacity .1s linear;
+}
+/* 1024px tablet fix (Connor, 2026-08-19: "I should be able to view this on a
+   tablet screen without the two windows getting fucked … things are out of
+   line"). At the narrower canvas-pane column a 594px-ish flex row (title +
+   "window N of M readings" + the persist chip) cannot hold three strings at
+   their natural width, and a flex child's default `min-width: auto` let the
+   title wrap onto a second line instead of yielding. Both give way by
+   TRUNCATING, never by wrapping: the header stays one line at every width
+   the two-pane split can produce, "squished out of line" becomes an ellipsis
+   instead of a broken line. */
+.canvas-head h2 {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.canvas-head .head-line .meta {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .canvas-head .head-live {
   visibility: hidden; opacity: 0;
@@ -544,7 +579,6 @@ button.entry .pill[data-empty="true"] { visibility: hidden; }
 }
 .ev-group b { color: var(--mk-text); font-weight: 600; }
 .ev-group .n { font-family: var(--ck-mono); color: var(--mk-muted); }
-.ev-group.counter { color: var(--mk-muted); background: color-mix(in srgb, var(--ck-inset) 45%, transparent); }
 /* ONE shared column grid, so ten rows scan down as columns rather than as ten
    sentences: when · entry → worst · delta · tier. Every column is a
    fixed width; only the tier column flexes. */
@@ -574,7 +608,6 @@ button.entry .pill[data-empty="true"] { visibility: hidden; }
   text-align: right; font-family: Inter, system-ui, sans-serif; font-size: 10.5px;
   color: var(--mk-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.ev-row[data-counter="true"] .worst, .ev-row[data-counter="true"] .only { color: var(--mk-secondary); }
 .ev-row[aria-pressed="true"] {
   background: color-mix(in srgb, var(--mk-primary-soft) 55%, transparent);
 }
@@ -639,19 +672,31 @@ button.entry .pill[data-empty="true"] { visibility: hidden; }
    flush beneath it. Right: the flavor tag in a FIXED column just inside the
    chevron, so it lands at the same x on every row instead of trailing a title of
    variable length. Nothing sits between the two. */
+/* UNIFORM CARD HEIGHT (Connor, 2026-08-19: "I really want each of these
+   finding cards to be the same size, even if they carry different content …
+   all of them being slightly different sizes is unacceptable"). A fixed
+   height sized for the worst case this row shape can hold — title (1 line) +
+   appearances (up to 2, term 35's multi-family list) + reason line (1, held
+   only) — with `grid-template-rows` reserving that same three-row budget on
+   EVERY row, whether or not a given row's content fills it. Overflow never
+   grows the card: `.lab`/`.den`/`.why` all clamp instead (below). */
 .dw .qrow {
   --tag-col: 74px;
-  display: grid; width: 100%; text-align: left;
+  display: grid; width: 100%; text-align: left; height: 84px;
   grid-template-columns: minmax(0, 1fr) var(--tag-col) 12px;
+  grid-template-rows: auto auto auto;
   column-gap: 9px; row-gap: 2px;
   align-items: baseline; padding: 6px var(--ck-pad);
-  border: 0; background: none; color: inherit;
+  border: 0; background: none; color: inherit; overflow: hidden;
 }
 .dw button.qrow { cursor: pointer; }
 .dw button.qrow:hover { background: color-mix(in srgb, var(--mk-surface-2) 60%, transparent); }
 .dw button.qrow:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: -2px; }
 
-.dw .qrow .lab { grid-column: 1; grid-row: 1; font-size: var(--ck-emph); font-weight: 600; color: var(--mk-text); }
+.dw .qrow .lab {
+  grid-column: 1; grid-row: 1; font-size: var(--ck-emph); font-weight: 600; color: var(--mk-text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 /* FLAVOR TAGS (term 36) — glyph + word at caps-label rank, on the app's IDENTITY
    hues, never warn or danger, which are reserved for clinical state and would
    make a flavor read as a verdict. `--mk-accent` was tried for Habit and
@@ -670,7 +715,10 @@ button.entry .pill[data-empty="true"] { visibility: hidden; }
 .dw .qrow .tag.habit { color: var(--mk-secondary); }
 .dw .qrow .go { grid-column: 3; grid-row: 1; color: var(--ck-accent); font-size: 12px; }
 .dw .qrow .den {
-  grid-column: 1 / -1; font-size: var(--ck-data); color: var(--mk-muted); line-height: 1.45;
+  grid-column: 1 / -1; grid-row: 2; font-size: var(--ck-data); color: var(--mk-muted); line-height: 1.45;
+  /* clamps, never grows the card (Connor, 2026-08-19) — a finding with many
+     family appearances (term 35) gets the same box as one with a single line */
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
 .dw .qrow .den .sep { margin: 0 6px; opacity: .6; }
 /* Monospace is reserved for column-aligned digits (the evidence table, the lane
@@ -692,7 +740,9 @@ button.entry .pill[data-empty="true"] { visibility: hidden; }
   margin: 14px 0 0; padding: 0 var(--ck-pad);
   font-size: 11.5px; color: var(--mk-muted); line-height: 1.5;
 }
-.dw .qrow[data-tier="noted"] { padding-top: 4px; padding-bottom: 4px; }
+/* Height stays the fixed card size even in the demoted tail (Connor,
+   2026-08-19) — the tail's own weight/size step off `.lab` already reads as
+   quieter without shrinking the box every card shares. */
 /* the tail recedes the flavor but never re-hues it: same identity, less ink, so
    the Setting/Habit read survives the demotion */
 .dw .qrow[data-tier="noted"] .tag.setting { color: color-mix(in srgb, var(--primary) 72%, transparent); }
@@ -712,7 +762,10 @@ button.entry .pill[data-empty="true"] { visibility: hidden; }
   font-weight: 500; font-size: var(--ck-body);
 }
 /* one reason-line treatment too, for the same reason */
-.dw .qrow .why { grid-column: 1 / -1; font-size: 11.5px; color: var(--mk-secondary); line-height: 1.45; }
+.dw .qrow .why {
+  grid-column: 1 / -1; grid-row: 3; font-size: 11.5px; color: var(--mk-secondary); line-height: 1.45;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 
 /* Term 41 — the calm line is the WHOLE pane when there is nothing to rank, so it
    sits in the middle of it rather than clinging to the top edge under a header

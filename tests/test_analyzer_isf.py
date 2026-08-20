@@ -147,7 +147,7 @@ class ClusterKeyTest(unittest.TestCase):
         self.assertEqual(seg.estimate.n_clusters, 1)
         self.assertTrue(seg.estimate.wide)
         self.assertIsNone(seg.recommended)
-        self.assertIn("independent", seg.annotation.lower())
+        self.assertIn("not enough fasting nights", seg.annotation.lower())
 
 
 class SyntheticRecoveryTest(unittest.TestCase):
@@ -212,7 +212,7 @@ class RecommendationTest(unittest.TestCase):
             36.0, self._est(40.0, 32.0, 48.0), self._ch(night_median=40.0), self.cfg)
         self.assertIsNone(rec)
         self.assertIsNone(direction)
-        self.assertIn("agrees with the set correction factor", ann.lower())
+        self.assertIn("agrees with the set factor", ann.lower())
 
     def test_recurring_correction_lows_own_the_weaken_direction(self):
         # 4-of-30 low days clears the priced day-rate bar; the card weakens. #468: the
@@ -245,7 +245,7 @@ class RecommendationTest(unittest.TestCase):
             self._ch(fits=[24.0, 25.0, 23.0], corr_low_days=1), self.cfg)
         self.assertIsNone(rec)
         self.assertIsNone(direction)
-        self.assertIn("stays as it is", ann.lower())
+        self.assertIn("correction low is on record", ann.lower())
 
     def test_measurement_cannot_assert_weaken_in_silence(self):
         # No lows, but the measurement reads more-sensitive/weaker (60 vs 36). The
@@ -309,7 +309,7 @@ class RecommendationTest(unittest.TestCase):
         rec, ann, direction, priced = _recommend(36.0, soft, self._ch(night_median=60.0), self.cfg)
         self.assertIsNone(rec)
         self.assertIsNone(direction)
-        self.assertIn("independent", ann.lower())
+        self.assertIn("not enough fasting nights", ann.lower())
 
     def test_no_programmed_reports_measured(self):
         rec, _, _, priced = _recommend(None, self._est(34.0, 30.0, 38.0),

@@ -6720,7 +6720,7 @@
      "state": "numeric"
     },
     {
-     "annotation": "held while the meals dosed under the current ratio still bracket it \u2014 the hold lifts as post-change meals accrue",
+     "annotation": "meals still bracket the current ratio",
      "asserts_move": false,
      "block_id": 720,
      "current_values": [
@@ -7420,7 +7420,7 @@
       ]
      },
      "harm": {},
-     "held_reason": "held while the meals dosed under the current ratio still bracket it \u2014 the hold lifts as post-change meals accrue",
+     "held_reason": "meals still bracket the current ratio",
      "impact_u_day": 0.1608,
      "label": "Evening",
      "member_start_mins": [
@@ -8329,7 +8329,7 @@
     ],
     "ic_blocks": [
      {
-      "annotation": "held while the meals dosed under the current ratio still bracket it \u2014 the hold lifts as post-change meals accrue",
+      "annotation": "meals still bracket the current ratio",
       "asserts_move": false,
       "block_id": 0,
       "current_values": [
@@ -9627,7 +9627,7 @@
        ]
       },
       "harm": {},
-      "held_reason": "held while the meals dosed under the current ratio still bracket it \u2014 the hold lifts as post-change meals accrue",
+      "held_reason": "meals still bracket the current ratio",
       "impact_u_day": 0.2894,
       "label": "All day",
       "member_start_mins": [

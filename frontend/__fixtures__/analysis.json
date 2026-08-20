@@ -7198,7 +7198,7 @@
  ],
  "isf": [
   {
-   "annotation": "rescue-carb history does not cover part of this window, so a quiet stretch cannot be confirmed and the correction factor stays as it is",
+   "annotation": "rescue-carb history doesn't cover this window",
    "asserts_move": null,
    "block_id": null,
    "current": 40.0,

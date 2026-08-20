@@ -1082,3 +1082,66 @@ them client-side would mean widening that schema — a real design decision,
 not a mechanical one, left to a future issue rather than decided here.
 
 Decision: harmonichq/harmonic#41, 2026-08-19.
+
+## Revision amendment — 2026-08-19 (counter-example sub-group retired)
+
+**P49 is now applied as a permanent `RETIRED` entry.** P49's "kept" note
+already flagged the counter-group branch as dormant on this fixture; the #41
+safety-review round-3 audit found it is dormant everywhere at rest, not just
+on this fixture — select-in-place made every roster homogeneous by exactly
+one published verdict (P35's own change, quoted there), so the counter-group's
+population (occurrences the row is attributed to but whose classifier did not
+match) is empty by construction whenever the roster shows `fired`, and
+incoherent once drilled to `near_miss`/`clean` (an occurrence can still carry
+a DIFFERENT classifier's match on the same anchor, which would silently route
+it into a group captioned for fired-but-uncredited leftovers). `renderEvidence`
+(`frontend/diagnose-workstation.js`) drops the split outright: one flat list,
+captioned by the roster's own verdict; `frontend/diagnose-workstation.css`
+drops the now-unreachable `.ev-group.counter` and
+`.ev-row[data-counter="true"]` rules with it.
+
+Sanction (reused, not re-authored — P35's own, quoted there): Connor Griffin ·
+2026-08-19 · "I don't find the content of the drill-down view particularly
+useful. So, I think we could just simply have the if there's a current
+specific detail that needs to show, I think it should just mutate the
+standing screen." P49's counter-group existed to serve the same pre-select-in-
+place drill-down population P35 retired; it has no independent basis once that
+population no longer exists.
+
+S10 is amended in `frontend/diagnose-workstation-behavior.replay.mjs`: its
+counter-example clause is replaced by an explicit assertion that the
+`data-counter` attribute is gone from the DOM (`evCounterGone === 0`), so the
+retirement is asserted rather than left as a `0==0` tautology on two empty
+counts.
+
+Failed-first, captured against the PRE-fix build with the amended (post-fix)
+assertions, `TARGET=app`, `ONLY=S10`:
+
+```
+FAIL S10 — S10 RETIRED — the counter-example split is gone, not merely empty: expected 0, got 5
+
+app: 0 of 1 stories passed
+```
+
+(five, not zero — pre-fix `renderEvidence` still stamps `data-counter` on
+every `.ev-row`, all five of the drilled roster's rows.)
+
+The revised replay (post-fix, `data-counter` removed from `renderEvidence`)
+then passed: `app: 29 of 29 stories passed` — real gate output in the PR's
+report.
+
+Decision: harmonichq/harmonic#41, 2026-08-19 (safety-review round 3).
+
+## Revision amendment — 2026-08-19 (ALIGN's fixed position; the canvas header truncates at 1024px)
+
+Two deviations from the ported mock in `frontend/diagnose-workstation.css`, both direct rulings from Connor Griffin, 2026-08-19 (not filed through this ledger's replay/probe evidence process — layout-only CSS, asserted by real-browser geometry instead, below):
+
+**ALIGN's position.** Connor: "I want this to maintain a consistent position on the screen … visually aligned nicely with something, probably directly above the inspector." The ported `.instruments` was a flex row (mock 393-939, verbatim), so `#align-group`'s x-position slid with whatever content preceded it. `.instruments` now mirrors `.panes`' ACTUAL rendered geometry — `.panes`' own mock-ported padding/gap is itself zeroed by `theme.css`'s `:is(.dw, .vw) .panes { gap: 0; padding: 0; }` (the docked-workspace pane rule, term 1) — so `.instruments` takes the identical `grid-template-columns: minmax(0, 1fr) var(--side, 430px)` with zero gap/padding, reserving a second column that starts at the exact same x as the inspector pane whether or not `#align-group` is hidden.
+
+Verified against the running app (`--no-fetch` server, `mockups/revise-e2e.synthetic/harmonic.sqlite`), 1440×900: `#align-group.getBoundingClientRect().left === 1010 === panes[1].getBoundingClientRect().left`, byte-equal, both hidden and (structurally, since the grid track is defined on the container regardless of item visibility) shown.
+
+**The canvas header at 1024px.** Connor: "I should be able to view this on a tablet screen without the two windows getting fucked. This is a 1024 pixel view and things are out of line." At 1024px the canvas-pane's own column (1024 − 430 = 594px) could not hold the title, the "window N of M readings" meta and the "pooled from…" persist chip at their natural widths on one line; `<h2>` had no `min-width: 0` (a flex child's default is `min-width: auto`), so instead of yielding it wrapped onto a second line, dragging the meta with it. `.canvas-head h2` and `.head-line .meta` now truncate (`overflow: hidden; text-overflow: ellipsis; white-space: nowrap`) instead of wrapping — the header stays one line at every width the two-pane split can produce.
+
+Evidence: headless screenshots (Playwright, the same 1.61.1 the browser gates use), before/after, 1024×768 and 1440×900, `/private/tmp/claude-501/-Users-connor-Code-ConnorGriffin-harmonic/a6b1553c-a869-4b23-8b5d-babb92acbfb1/scratchpad/round3/{before,after}-{1024,1440}.png`. `before-1024.png` shows the title wrapped onto two lines ("GLUCOSE BY" / "TIME OF DAY") with the meta line wrapping under it; `after-1024.png` shows one line, "GLUCOSE BY T…" and "window 2,160 of 8,640 rea…", both cleanly ellipsized, the two-pane boundary and instrument row unaffected. 1440px is visually unchanged before/after (no truncation triggers at that width).
+
+Decision: harmonichq/harmonic#41, 2026-08-19 (safety-review round 3).

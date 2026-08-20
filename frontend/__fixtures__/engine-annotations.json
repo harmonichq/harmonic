@@ -14,15 +14,15 @@
   "raise": "one cautious step up is supported at this time"
  },
  "isf": {
-  "collecting_range_too_wide": "not enough independent fasting nights yet to suggest a change, so overnight data is still collecting",
-  "confirmed": "your fasting data agrees with the set correction factor",
-  "held_after_a_low": "a low after a correction is on record, so the correction factor stays as it is rather than going stronger",
-  "held_rescue_log_incomplete": "rescue-carb history does not cover part of this window, so a quiet stretch cannot be confirmed and the correction factor stays as it is",
-  "no_baseline_measured": "measured overnight sensitivity (no set value to compare with)",
-  "no_baseline_no_data": "not enough steady fasting data yet to measure your correction factor",
-  "no_measurement": "not enough steady fasting data yet to measure your correction factor",
+  "collecting_range_too_wide": "not enough fasting nights yet",
+  "confirmed": "fasting data agrees with the set factor",
+  "held_after_a_low": "a correction low is on record",
+  "held_rescue_log_incomplete": "rescue-carb history doesn't cover this window",
+  "no_baseline_measured": "measured; no set value to compare",
+  "no_baseline_no_data": "not enough fasting data yet",
+  "no_measurement": "not enough fasting data yet",
   "strengthen": "overnight you look more sensitive to insulin than the set value, so corrections can run a little stronger",
-  "watching_not_yet_held": "the overnight reading differs from the set value but has not held across two weekly check-ins, so nothing is suggested yet",
+  "watching_not_yet_held": "reading differs but hasn't held twice",
   "weaken_easing": "corrections keep overshooting into lows, so the correction factor eases weaker",
   "weaken_easing_disagreeing_measurement": "corrections keep overshooting into lows, so the correction factor eases weaker (the overnight reading points the other way, but it is unsteady and the lows carry the decision)",
   "weaken_no_target": "corrections keep overshooting into lows, so more overnight data is needed before a new number"

@@ -1412,7 +1412,8 @@ class CachePreWarmTest(unittest.TestCase):
             ).status_code, 200)
             self.assertEqual(self.client.get(
                 "/diagnose/event-comparison",
-                params={"view": "lows", "block": "evening", "another": "1"},
+                params={"view": "lows", "start_min": 1080, "end_min": 1440,
+                        "another": "1"},
             ).status_code, 200)
             self.assertEqual(counts["event-comparison-source-catalog"], 1)
 

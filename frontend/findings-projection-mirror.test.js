@@ -55,6 +55,15 @@ test('the mirror reproduces the empty analysis, where term 41 lives', () => {
   }
 });
 
+test('the mirror publishes outcome chips, chip counts, and correction-factor scope', () => {
+  const afternoon = projectFindings(fixture.inputs, WINDOWS.afternoon);
+  const row = (title) => afternoon.rows.find((candidate) => candidate.title === title);
+  assert.deepEqual(row('Over-treated low').chips, ['highs']);
+  assert.deepEqual(row('Correction stacking').chips, ['lows', 'corrections']);
+  assert.equal(row('ISF').window_scope, 'whole_day');
+  assert.deepEqual(afternoon.chip_counts, fixture.windows.afternoon.chip_counts);
+});
+
 /* The deep-compare above would still pass if BOTH sides regressed the honest
  * unexplained-highs count to zero together, and a count frozen at zero is exactly the
  * silent-drift shape #63 exists to close. So name the value: the fixture's ep6 is a

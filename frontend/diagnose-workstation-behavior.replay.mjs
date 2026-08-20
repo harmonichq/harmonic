@@ -1278,6 +1278,68 @@ export const S26 = async (page) => {
   return `RETIRED — ${sanction}`;
 };
 
+/** S27 · The findings chips render the four server-published global counts. */
+// STORY:finding-evidence-routing:S27
+export const S27 = async (page) => {
+  await page.getByRole('button', { name: '24 h', exact: true }).click();
+  await settle(page, 450);
+  const chips = await page.locator('#seg-chips button').allTextContents();
+  is(chips, ['Highs 4', 'Lows 1', 'Meals 1', 'Corrections 1'],
+    'S27 the four chips spell the server-published global counts');
+};
+
+/** S28 · Removing a chip hides only rows that carry no remaining selected chip. */
+// STORY:finding-evidence-routing:S28
+export const S28 = async (page) => {
+  await page.getByRole('button', { name: '24 h', exact: true }).click();
+  await settle(page, 450);
+  await page.getByRole('button', { name: 'Highs 4', exact: true }).click();
+  await settle(page, 350);
+  const ids = await page.locator('#level .qrow').evaluateAll((rows) => rows.map((row) => row.dataset.id));
+  is(ids, ['finding:correction_on_iob', 'finding:late_bolus'],
+    'S28 a deselected Highs chip hides high-only rows while preserving multi-chip matches');
+};
+
+/** S29 · A sift collapses the held/blind group, which can expand in place. */
+// STORY:finding-evidence-routing:S29
+export const S29 = async (page) => {
+  await page.getByRole('button', { name: 'Overnight', exact: true }).click();
+  await settle(page, 450);
+  await page.getByRole('button', { name: /^Highs / }).click();
+  await settle(page, 350);
+  const toggle = page.locator('#level .qcollapse');
+  is(await toggle.innerText(), '4 held or blind reads', 'S29 the sift collapses held/blind reads');
+  is(await toggle.getAttribute('aria-expanded'), 'false', 'S29 the held/blind group starts collapsed');
+  is(await page.locator('#level .qrow').count(), 0,
+    'S29 collapsed held rows are not painted as ordinary queue rows');
+  await toggle.click();
+  await settle(page, 350);
+  is(await toggle.getAttribute('aria-expanded'), 'true', 'S29 the held/blind group expands');
+  const ids = await page.locator('#level .qrow').evaluateAll((rows) => rows.map((row) => row.dataset.id));
+  is(ids, ['basal:0-30', 'basal:210-240', 'ic:660', 'isf'],
+    'S29 expanding restores every collapsed held read to the rendered queue');
+};
+
+/** S30 · An all-hidden sift names itself while keeping held/blind reads reachable. */
+// STORY:finding-evidence-routing:S30
+export const S30 = async (page) => {
+  await page.getByRole('button', { name: 'Overnight', exact: true }).click();
+  await settle(page, 450);
+  await page.getByRole('button', { name: /^Highs / }).click();
+  await settle(page, 350);
+  is(await page.locator('#level .quiet-line.sift-empty').innerText(),
+    'No findings match the current chips.', 'S30 the all-hidden sift names itself');
+  is(await page.locator('#level .qcollapse').innerText(), '4 held or blind reads',
+    'S30 the collapsed held group remains reachable below the empty-sift line');
+};
+
+/** S31 · The correction-factor row declares its whole-day scope. */
+// STORY:finding-evidence-routing:S31
+export const S31 = async (page) => {
+  const row = page.locator('#level .qrow[data-id="isf"]');
+  is(await row.locator('.scope-note').innerText(), ' · Whole day',
+    'S31 the correction-factor row visibly declares its whole-day scope');
+};
 
 /* ----------------------------------------- issue #62 · one membership rule ---
 
@@ -1370,17 +1432,17 @@ const drawWindow = async (page, [fromMin, toMin], [standingFrom, standingTo]) =>
   await settle(page, 500);
 };
 
-/** S27 · #57 — selecting a roster occurrence under `By event` draws it. The
+/** S32 · #57 — selecting a roster occurrence under `By event` draws it. The
     roster carries the shared (episode, instant) key; the endpoint owns its own
     opaque catalog id and reuses that pair across several occurrences, so the
     selection is resolved to an id through the projection already in hand
     rather than assumed unique. */
-// STORY:finding-evidence-routing:S27
-export const S27 = async (page) => {
+// STORY:finding-evidence-routing:S32
+export const S32 = async (page) => {
   await clickQueueRow(page, 'Late bolus');
   const opened = await state(page);
-  ok(opened.evRows > 0, 'S27 precondition: the roster has a row to select');
-  ok(opened.alignShown, 'S27 precondition: ALIGN is offered on this case file');
+  ok(opened.evRows > 0, 'S32 precondition: the roster has a row to select');
+  ok(opened.alignShown, 'S32 precondition: ALIGN is offered on this case file');
   await page.click('#seg-align button:nth-child(2)');
   await page.locator('.ec-surface').waitFor();
   await settle(page, 600);
@@ -1403,116 +1465,116 @@ export const S27 = async (page) => {
       trace: (exposed?.chart.getOption().series || []).some((series) => series.name === 'Selected occurrence'),
     };
   });
-  is(drawn.state, 'selected', 'S27 the endpoint resolved a selection');
-  is(drawn.ep, ROSTER_MEAL.ep_id, 'S27 the event canvas selected the episode the roster row names');
-  is(drawn.t, ROSTER_MEAL.t, "S27 ... at that row's own instant");
+  is(drawn.state, 'selected', 'S32 the endpoint resolved a selection');
+  is(drawn.ep, ROSTER_MEAL.ep_id, 'S32 the event canvas selected the episode the roster row names');
+  is(drawn.t, ROSTER_MEAL.t, "S32 ... at that row's own instant");
   ok(drawn.catalog.length > 1,
-    `S27 precondition: the (episode, instant) pair is NOT a unique address (${drawn.catalog.length} catalog ids)`);
-  ok(drawn.catalog.includes(drawn.id), 'S27 the selection travels by one of those catalog ids');
-  is(drawn.requested, drawn.id, "S27 ... and that id is what the request carried");
-  ok(drawn.trace, 'S27 the selected occurrence is drawn');
+    `S32 precondition: the (episode, instant) pair is NOT a unique address (${drawn.catalog.length} catalog ids)`);
+  ok(drawn.catalog.includes(drawn.id), 'S32 the selection travels by one of those catalog ids');
+  is(drawn.requested, drawn.id, "S32 ... and that id is what the request carried");
+  ok(drawn.trace, 'S32 the selected occurrence is drawn');
 };
 
-/** S28 · #58 — while the event canvas is mounted, its own header is the only
+/** S33 · #58 — while the event canvas is mounted, its own header is the only
     canvas header on screen. The clock canvas's header used to stay mounted
     underneath and print the clock window over an event-aligned chart. */
-// STORY:finding-evidence-routing:S28
-export const S28 = async (page) => {
+// STORY:finding-evidence-routing:S33
+export const S33 = async (page) => {
   await clickQueueRow(page, 'Late bolus');
   const clock = await state(page);
-  ok(clock.clockHead, 'S28 precondition: the clock canvas header is up');
-  is(clock.eventHeads, 0, 'S28 precondition: no event header yet');
+  ok(clock.clockHead, 'S33 precondition: the clock canvas header is up');
+  is(clock.eventHeads, 0, 'S33 precondition: no event header yet');
   await page.click('#seg-align button:nth-child(2)');
   await page.locator('.ec-surface').waitFor();
   await settle(page, 600);
   const event = await state(page);
-  is(event.alignPressed, ['By event'], 'S28 the reader is on By event');
-  is(event.clockHead, false, "S28 the clock canvas's header is withdrawn");
-  is(event.eventHeads, 1, 'S28 exactly one canvas header is on screen');
-  is(event.clockCanvas, false, 'S28 the clock canvas is not left drawn underneath');
+  is(event.alignPressed, ['By event'], 'S33 the reader is on By event');
+  is(event.clockHead, false, "S33 the clock canvas's header is withdrawn");
+  is(event.eventHeads, 1, 'S33 exactly one canvas header is on screen');
+  is(event.clockCanvas, false, 'S33 the clock canvas is not left drawn underneath');
   await page.click('#seg-align button:nth-child(1)');
   await settle(page, 500);
   const back = await state(page);
-  ok(back.clockHead, 'S28 By clock puts its own header back');
-  is(back.eventCanvas, false, 'S28 ... and takes the event canvas down');
+  ok(back.clockHead, 'S33 By clock puts its own header back');
+  is(back.eventCanvas, false, 'S33 ... and takes the event canvas down');
 };
 
-/** S29 · A failed by-event fetch restores the clock canvas and leaves the
+/** S34 · A failed by-event fetch restores the clock canvas and leaves the
     reader on the finding. Before #62 the clock canvas was hidden BEFORE the
     fetch and the catch arm hid the event host, so a failed first fetch showed
     neither canvas at all. */
-// STORY:finding-evidence-routing:S29
-export const S29 = async (page) => {
+// STORY:finding-evidence-routing:S34
+export const S34 = async (page) => {
   await clickQueueRow(page, 'Late bolus');
   await page.click('#seg-align button:nth-child(2)');
   await settle(page, 900);
   const after = await state(page);
-  is(after.eventCanvas, false, 'S29 the failed event canvas is not left mounted');
-  ok(after.clockCanvas, 'S29 the clock canvas is restored');
-  ok(after.clockHead, 'S29 ... with its own header');
-  is(after.crumb[after.crumb.length - 1], 'Late bolus', 'S29 the reader is left on the finding');
+  is(after.eventCanvas, false, 'S34 the failed event canvas is not left mounted');
+  ok(after.clockCanvas, 'S34 the clock canvas is restored');
+  ok(after.clockHead, 'S34 ... with its own header');
+  is(after.crumb[after.crumb.length - 1], 'Late bolus', 'S34 the reader is left on the finding');
   ok(/^window [\d,]+ of [\d,]+ readings$/.test(after.scope),
-    `S29 the restored canvas states its own window (${after.scope})`);
+    `S34 the restored canvas states its own window (${after.scope})`);
 };
 
-/** S30 · A finding whose episodes span two families shows ONE family in the
+/** S35 · A finding whose episodes span two families shows ONE family in the
     panel and the chart alike. Framing on whichever family held more episodes
     put a list of one kind beside a chart of the other, with evidence keys that
     cannot even be joined; the family the event view names wins now. */
-// STORY:finding-evidence-routing:S30
-export const S30 = async (page) => {
+// STORY:finding-evidence-routing:S35
+export const S35 = async (page) => {
   await clickQueueRow(page, 'Carb undercount');
   const framed = await state(page);
   ok(/·\s*meals$/.test(framed.levelWho || ''),
-    `S30 the panel frames on the family the event view names (${framed.levelWho})`);
+    `S35 the panel frames on the family the event view names (${framed.levelWho})`);
   ok(/\bmeal responses\b/.test(framed.levelStat || ''),
-    `S30 ... and counts that family, not the larger one (${framed.levelStat})`);
+    `S35 ... and counts that family, not the larger one (${framed.levelStat})`);
   await page.click('#seg-align button:nth-child(2)');
   await page.locator('.ec-surface').waitFor();
   await settle(page, 600);
   const view = await page.evaluate(() =>
     window.__diagnoseEventComparison?.projection?.coordinates?.view ?? null);
-  is(view, 'meals', 'S30 the chart draws the same family the panel listed');
+  is(view, 'meals', 'S35 the chart draws the same family the panel listed');
 };
 
-/** S31 · Narrowing the window until the open finding has no row leaves the
+/** S36 · Narrowing the window until the open finding has no row leaves the
     reader ON it, with both panes saying so. The alternative was a browser-side
     fallback filter, which is the third membership rule this change retires. */
-// STORY:finding-evidence-routing:S31
-export const S31 = async (page) => {
+// STORY:finding-evidence-routing:S36
+export const S36 = async (page) => {
   await clickQueueRow(page, 'Late bolus');
   const opened = await state(page);
-  is(opened.crumb[opened.crumb.length - 1], 'Late bolus', 'S31 precondition: the finding is open');
-  ok(opened.levelStat !== null, 'S31 precondition: the case file has a population');
+  is(opened.crumb[opened.crumb.length - 1], 'Late bolus', 'S36 precondition: the finding is open');
+  ok(opened.levelStat !== null, 'S36 precondition: the case file has a population');
   await page.click('#seg-window button:nth-child(1)');   // Overnight
   await settle(page, 900);
   const narrowed = await state(page);
-  is(narrowed.pressed, ['Overnight'], 'S31 the window narrowed');
-  is(narrowed.crumb[narrowed.crumb.length - 1], 'Late bolus', 'S31 the reader stays on the finding');
-  is(narrowed.levelEmpty, 'No findings in the selected window', 'S31 the inspector says so');
-  is(narrowed.scope, 'No findings in the selected window', 'S31 and the canvas says the same');
-  is(narrowed.levelStat, null, 'S31 no previous window content is left standing');
+  is(narrowed.pressed, ['Overnight'], 'S36 the window narrowed');
+  is(narrowed.crumb[narrowed.crumb.length - 1], 'Late bolus', 'S36 the reader stays on the finding');
+  is(narrowed.levelEmpty, 'No findings in the selected window', 'S36 the inspector says so');
+  is(narrowed.scope, 'No findings in the selected window', 'S36 and the canvas says the same');
+  is(narrowed.levelStat, null, 'S36 no previous window content is left standing');
 };
 
-/** S32 · An occurrence whose TRIGGER sits outside the window and whose
+/** S37 · An occurrence whose TRIGGER sits outside the window and whose
     CONSEQUENCE landed inside it appears in both panes. This is the shape the
     old browser filter dropped: it kept an occurrence by its own clock minute,
     so a meal bolused at 13:00 whose high landed at 14:35 was in-window for the
     server and out for the reader. */
-// STORY:finding-evidence-routing:S32
-export const S32 = async (page) => {
+// STORY:finding-evidence-routing:S37
+export const S37 = async (page) => {
   const opening = await state(page);
-  is(opening.pressed, ['Overnight'], 'S32 precondition: opens on the Overnight preset');
+  is(opening.pressed, ['Overnight'], 'S37 precondition: opens on the Overnight preset');
   await drawWindow(page, [840, 960], [0, 360]);
   const drawnWindow = await state(page);
-  is(drawnWindow.chip, 'Window 14:00–16:00', `S32 the reader drew 14:00–16:00 (${drawnWindow.chip})`);
+  is(drawnWindow.chip, 'Window 14:00–16:00', `S37 the reader drew 14:00–16:00 (${drawnWindow.chip})`);
   await clickQueueRow(page, 'Late bolus');
   const panel = await state(page);
   ok(/\b1 of 1 meal responses in 14:00–16:00\b/.test(panel.levelStat || ''),
-    `S32 the panel counts the meal in the drawn window (${panel.levelStat})`);
+    `S37 the panel counts the meal in the drawn window (${panel.levelStat})`);
   const ticks = await marks(page, 'Occurrences');
-  is(ticks.length, 1, 'S32 the canvas draws exactly that one occurrence');
-  is(ticks[0].meta.t, LATE_MEAL.t, 'S32 ... whose own trigger is at 13:00, outside the window');
+  is(ticks.length, 1, 'S37 the canvas draws exactly that one occurrence');
+  is(ticks[0].meta.t, LATE_MEAL.t, 'S37 ... whose own trigger is at 13:00, outside the window');
   await page.click('#seg-align button:nth-child(2)');
   await page.locator('.ec-surface').waitFor();
   await settle(page, 700);
@@ -1525,15 +1587,15 @@ export const S32 = async (page) => {
       context: document.querySelector('.ec-window-context')?.textContent.trim() ?? null,
     };
   });
-  is(chart.scoped, true, 'S32 the projection answered for a scoped window');
-  is(chart.label, '14:00–16:00', 'S32 the chart counted the reader\'s own window');
-  is(chart.denominator, 1, 'S32 ... and counted the same single occurrence the panel did');
+  is(chart.scoped, true, 'S37 the projection answered for a scoped window');
+  is(chart.label, '14:00–16:00', 'S37 the chart counted the reader\'s own window');
+  is(chart.denominator, 1, 'S37 ... and counted the same single occurrence the panel did');
   ok(/consequence landed/.test(chart.context || ''),
-    `S32 the canvas states the rule it joined by (${chart.context})`);
+    `S37 the canvas states the rule it joined by (${chart.context})`);
 };
 
 
-/** S33 · A published finding whose event-view family holds NONE of this
+/** S38 · A published finding whose event-view family holds NONE of this
     window's evidence still opens, framed on that family. A lever claims
     evidence only in the families it hit, so `Correction on active insulin` over
     07:00-10:15 carries one correction cluster and no low, while its event view
@@ -1541,50 +1603,50 @@ export const S32 = async (page) => {
     not move when it was clicked: no case file, no message, no crumb. Framing on
     the family holding more episodes instead is NOT the repair — that is the
     panel/chart disagreement this rule exists to retire. */
-// STORY:finding-evidence-routing:S33
-export const S33 = async (page) => {
+// STORY:finding-evidence-routing:S38
+export const S38 = async (page) => {
   const opening = await state(page);
-  is(opening.pressed, ['Overnight'], 'S33 precondition: opens on the Overnight preset');
+  is(opening.pressed, ['Overnight'], 'S38 precondition: opens on the Overnight preset');
   await drawWindow(page, [420, 615], [0, 360]);
   const drawn = await state(page);
-  is(drawn.chip, 'Window 07:00–10:15', `S33 the reader drew 07:00–10:15 (${drawn.chip})`);
+  is(drawn.chip, 'Window 07:00–10:15', `S38 the reader drew 07:00–10:15 (${drawn.chip})`);
   ok(drawn.queue.some((row) => row.title === 'Correction on active insulin'),
-    'S33 precondition: the server published this row for this window');
+    'S38 precondition: the server published this row for this window');
   await clickQueueRow(page, 'Correction on active insulin');
   const opened = await state(page);
   is(opened.crumb[opened.crumb.length - 1], 'Correction on active insulin',
-    'S33 the published row opens rather than swallowing the click');
+    'S38 the published row opens rather than swallowing the click');
   ok(/\b0 of 0 low episodes in 07:00–10:15\b/.test(opened.levelStat || ''),
-    `S33 it frames on the family its event view names, empty and saying so (${opened.levelStat})`);
+    `S38 it frames on the family its event view names, empty and saying so (${opened.levelStat})`);
   ok(!/correction cluster/i.test(opened.levelStat || ''),
-    `S33 ... not on the family that happens to hold this window's evidence (${opened.levelStat})`);
+    `S38 ... not on the family that happens to hold this window's evidence (${opened.levelStat})`);
   is(opened.bandKeys, [],
-    'S33 no verdict split is drawn for a family the server published no split for');
+    'S38 no verdict split is drawn for a family the server published no split for');
 };
 
-/** S34 · A window change ASKS the server for its rows, and until they land the
+/** S39 · A window change ASKS the server for its rows, and until they land the
     pane counts nothing rather than counting the window that just left. Showing
     the previous population under the new window's label is a caption asserting
     a population the canvas did not draw. */
-// STORY:finding-evidence-routing:S34
-export const S34 = async (page) => {
+// STORY:finding-evidence-routing:S39
+export const S39 = async (page) => {
   await clickQueueRow(page, 'Late bolus');
   const before = await state(page);
   ok(/\b5 of 5 meal responses in 00:00–24:00\b/.test(before.levelStat || ''),
-    `S34 precondition: the whole-day population is on screen (${before.levelStat})`);
+    `S39 precondition: the whole-day population is on screen (${before.levelStat})`);
   await page.click('#seg-window button:nth-child(3)');   // Afternoon
   await settle(page, 250);                               // inside the flight
   const during = await state(page);
-  is(during.levelLoading, 'true', 'S34 the pane declares it is waiting on the server');
-  is(during.levelStat, null, "S34 the previous window's counts are withdrawn");
-  is(during.levelEmpty, 'Counting 12:00–18:00…', 'S34 the pane names the window it is counting');
-  is(during.crumbMeta, '12:00–18:00', 'S34 the meta prints the window with no numbers under it');
-  ok(!/\b5 of 5\b/.test(JSON.stringify(during)), 'S34 no stale count survives anywhere on the pane');
+  is(during.levelLoading, 'true', 'S39 the pane declares it is waiting on the server');
+  is(during.levelStat, null, "S39 the previous window's counts are withdrawn");
+  is(during.levelEmpty, 'Counting 12:00–18:00…', 'S39 the pane names the window it is counting');
+  is(during.crumbMeta, '12:00–18:00', 'S39 the meta prints the window with no numbers under it');
+  ok(!/\b5 of 5\b/.test(JSON.stringify(during)), 'S39 no stale count survives anywhere on the pane');
   await settle(page, 1400);
   const after = await state(page);
-  is(after.levelLoading, 'false', 'S34 the wait ends when the rows land');
+  is(after.levelLoading, 'false', 'S39 the wait ends when the rows land');
   ok(/ meal responses in 12:00–18:00\b/.test(after.levelStat || ''),
-    `S34 the new window's own counts land under its own label (${after.levelStat})`);
+    `S39 the new window's own counts land under its own label (${after.levelStat})`);
 };
 
 /* ------------------------------------------------------------------- runner */
@@ -1624,6 +1686,11 @@ export const S34 = async (page) => {
 // STORY:finding-evidence-routing:S32
 // STORY:finding-evidence-routing:S33
 // STORY:finding-evidence-routing:S34
+// STORY:finding-evidence-routing:S35
+// STORY:finding-evidence-routing:S36
+// STORY:finding-evidence-routing:S37
+// STORY:finding-evidence-routing:S38
+// STORY:finding-evidence-routing:S39
 // STORY:finding-evidence-routing:D1
 // STORY:finding-evidence-routing:D2
 // STORY:finding-evidence-routing:D3
@@ -1640,21 +1707,22 @@ export const STORIES = [
   ['S19', S19, 'drill'], ['S20', S20, 'drill'], ['S21', S21, 'drawn'],
   ['S22', S22, 'typical'], ['S23', S23, 'drawn'],
   ['S24', S24, 'typical'], ['S25', S25, 'typical'],
-  ['S26', S26, 'dense'],
-  ['S27', S27, 'dense', { findingsInputs: withFiredMeal, exposuresInputs: (d) => withFiredMeal(d).exposures }],
-  ['S28', S28, 'dense', { findingsInputs: withFiredMeal, exposuresInputs: (d) => withFiredMeal(d).exposures }],
-  ['S29', S29, 'dense', { comparisonStatus: 500 }],
-  ['S30', S30, 'dense', {
+  ['S26', S26, 'dense'], ['S27', S27, 'typical'], ['S28', S28, 'typical'],
+  ['S29', S29, 'typical'], ['S30', S30, 'typical'], ['S31', S31, 'typical'],
+  ['S32', S32, 'dense', { findingsInputs: withFiredMeal, exposuresInputs: (d) => withFiredMeal(d).exposures }],
+  ['S33', S33, 'dense', { findingsInputs: withFiredMeal, exposuresInputs: (d) => withFiredMeal(d).exposures }],
+  ['S34', S34, 'dense', { comparisonStatus: 500 }],
+  ['S35', S35, 'dense', {
     findingsInputs: twoFamilyInputs,
     exposuresInputs: async () => (await twoFamilyInputs()).exposures,
   }],
-  ['S31', S31, 'dense'],
-  ['S32', S32, 'typical', {
+  ['S36', S36, 'dense'],
+  ['S37', S37, 'typical', {
     findingsInputs: withLateConsequence,
     exposuresInputs: (d) => withLateConsequence(d).exposures,
   }],
-  ['S33', S33, 'typical'],
-  ['S34', S34, 'dense', { findingsDelayMs: 900 }],
+  ['S38', S38, 'typical'],
+  ['S39', S39, 'dense', { findingsDelayMs: 900 }],
   ['D1', D1, 'dense'], ['D2', D2, 'dense'], ['D3', D3, 'dense'],
 ];
 

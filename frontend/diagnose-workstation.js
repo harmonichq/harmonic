@@ -64,6 +64,10 @@ const MARKUP = `
       <span class="cap">Window</span>
       <div class="seg" id="seg-window" role="group" aria-label="Clock window"></div>
     </div>
+    <div class="instrument" id="chips-group">
+      <span class="cap">Sift</span>
+      <div class="seg" id="seg-chips" role="group" aria-label="Finding chips"></div>
+    </div>
     <!-- ADR 31 part 3 (issue #41) — ALIGN, present only where the canvas is
          showing a factor's events. A switch over already-selected data: it
          never pushes, and WINDOW keeps filtering by clock under either
@@ -372,6 +376,22 @@ function renderAlign(alignKey, onAlign) {
     b.textContent = label;
     b.setAttribute('aria-pressed', String(key === alignKey));
     b.addEventListener('click', () => onAlign(key));
+    seg.append(b);
+  }
+}
+
+const CHIP_LABELS = [['highs', 'Highs'], ['lows', 'Lows'], ['meals', 'Meals'], ['corrections', 'Corrections']];
+
+/** The chips only display server-published counts and retain workstation UX state. */
+function renderChips(chipCounts, selected, onSelect) {
+  const seg = el('seg-chips');
+  seg.innerHTML = '';
+  for (const [key, label] of CHIP_LABELS) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = `${label} ${chipCounts?.[key] ?? 0}`;
+    b.setAttribute('aria-pressed', String(selected === null || selected.has(key)));
+    b.addEventListener('click', () => onSelect(key));
     seg.append(b);
   }
 }
@@ -1005,6 +1025,9 @@ function boot(root, data, callbacks, signal) {
      queue in place, identically). Nothing about membership, order or a denominator
      is worked out here. */
   let findings = data.findings;
+  // Null is the all-active resting state; a Set exists only while a chip is off.
+  let selectedChips = null;
+  let collapsedFindingsExpanded = false;
   const watched = data.watched;
 
   /* ---- mock 1982-2011 — VERBATIM ---- */
@@ -1732,7 +1755,15 @@ function boot(root, data, callbacks, signal) {
          over a ranked list cannot say WHICH rows it hedges, and rank interleaves
          habits and settings, so no position scopes it honestly. The hedge belongs to
          the habit DETAIL panel, where it has exactly one subject. */
-      renderFindingsQueue(host, findings, drillFinding);
+      /* #62 hoisted the `data-loading` write above this branch so EVERY level
+         declares whether it is waiting on the server, not only the queue. Same
+         predicate — `settled()` is `pendingKey === null` — at a wider place, so
+         the copy that used to sit here would now write it twice. */
+      renderFindingsQueue(host, findings, drillFinding, {
+        selected: selectedChips,
+        collapsedExpanded: collapsedFindingsExpanded,
+        onToggleCollapsed: () => { collapsedFindingsExpanded = !collapsedFindingsExpanded; paint(); },
+      });
       return;
     }
     if (f.k === 'slot') {
@@ -2055,6 +2086,13 @@ function boot(root, data, callbacks, signal) {
     const open = top();
     if (open.k === 'factor' && open.align === 'event'
       && settled() && !scopedFor(open).familyN) open.align = 'clock';
+    renderChips(findings?.chip_counts, selectedChips, (key) => {
+      const next = new Set(selectedChips || CHIP_LABELS.map(([name]) => name));
+      if (next.has(key)) next.delete(key); else next.add(key);
+      selectedChips = next.size === CHIP_LABELS.length ? null : next;
+      collapsedFindingsExpanded = false;
+      paint();
+    });
     paintCrumb();
     paintLevel();
     renderLane(lane, top().k === 'slot' ? top().cell : null, staged, pickCell);

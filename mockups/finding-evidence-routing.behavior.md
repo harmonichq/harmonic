@@ -5,8 +5,9 @@
 `eda5cdfd318d638503defdd6f364a078042fe592`).
 
 The app-only replay is
-`frontend/diagnose-workstation-behavior.replay.mjs`: **37 exported stories**
-(29 through 2026-08-19; eight added by the #62 revision below), all
+`frontend/diagnose-workstation-behavior.replay.mjs`: **42 exported stories**
+(29 through 2026-08-19; five added by the excursion-chip sift, #61, at S27-S31;
+eight added by the #62 revision below, at S32-S39), all
 opened through the real no-fetch server and tagged
 `STORY:finding-evidence-routing:<id>`. Static HTML, CSS and JavaScript come from
 that server; deterministic API reads come from
@@ -42,7 +43,7 @@ and no retirement lacks its sanction, so the contract carries forward unchanged
 at the new base.
 
 The 55 P-rows below are retained as the legacy predecessor inventory and the
-operator's completed rulings. The executable current contract is S01–S26 and
+operator's completed rulings. The executable current contract is S01–S31 and
 D1–D3. The base-tip re-inventory found no new handlers since the predecessor
 pass: the intervening source delta only changed the queue to consume the
 server-published ranking tier and adjusted the corresponding `noted` styling.
@@ -1144,6 +1145,18 @@ report.
 
 Decision: harmonichq/harmonic#41, 2026-08-19 (safety-review round 3).
 
+## Revision amendment — 2026-08-20 (findings chips)
+
+This revision **ADDED S27–S31** for newly shipped findings-chip behaviour:
+the four server-published chip counts; chip deselection retaining only rows
+that carry another selected chip; the held/blind group collapsing under a sift
+and expanding again; an all-hidden sift naming itself while that group remains
+reachable; and the correction-factor row's whole-day scope.
+
+Before these additions, the pre-existing **29 of 29 stories replayed green
+against the changed app**. No existing story was retired or altered, and the
+legacy P-row inventory remains untouched.
+
 ## Revision amendment — 2026-08-19 (ALIGN's fixed position; the canvas header truncates at 1024px)
 
 Two deviations from the ported mock in `frontend/diagnose-workstation.css`, both direct rulings from Connor Griffin, 2026-08-19 (not filed through this ledger's replay/probe evidence process — layout-only CSS, asserted by real-browser geometry instead, below):
@@ -1177,27 +1190,27 @@ is gone. `scopedFor` now filters the family population by the keys the frame's
 findings row published, and the factor header, the clock canvas and the roster
 all read that one population.
 
-**Behavior added** — eight stories, `S27` to `S34` in
+**Behavior added** — eight stories, `S32` to `S39` in
 `frontend/diagnose-workstation-behavior.replay.mjs`, plus `S13` in
 `frontend/diagnose-event-comparison-behavior.replay.mjs`:
 
 ```
-S27 · selecting a roster occurrence under By event draws it (#57), by the
+S32 · selecting a roster occurrence under By event draws it (#57), by the
       endpoint's own catalog id — the (episode, instant) pair the roster carries
       addresses four catalog occurrences and is a join key only
-S28 · while the event canvas is mounted, its own header is the only canvas
+S33 · while the event canvas is mounted, its own header is the only canvas
       header on screen (#58)
-S29 · a failed by-event fetch restores the clock canvas and leaves the reader on
+S34 · a failed by-event fetch restores the clock canvas and leaves the reader on
       the finding
-S30 · a finding whose episodes span two families shows one family in the panel
+S35 · a finding whose episodes span two families shows one family in the panel
       and the chart alike
-S31 · narrowing the window until the open finding has no row leaves the reader
+S36 · narrowing the window until the open finding has no row leaves the reader
       on it, both panes reading `No findings in the selected window`
-S32 · an occurrence whose trigger sits outside the window and whose consequence
+S37 · an occurrence whose trigger sits outside the window and whose consequence
       landed inside it appears in both panes
-S33 · a published finding whose event-view family holds none of this window's
+S38 · a published finding whose event-view family holds none of this window's
       evidence still opens, framed on that family, reading `0 of 0`
-S34 · while the new window's rows are in flight the pane counts nothing rather
+S39 · while the new window's rows are in flight the pane counts nothing rather
       than counting the window that just left
 S13 · (lens replay) the clock window is the lens's only time coordinate, and a
       cohort too thin for an aggregate draws its own episodes
@@ -1217,14 +1230,17 @@ retired.
 **Replay output**, against the built revision through the declared server:
 
 ```
-app: 37 of 37 stories passed
+app: 42 of 42 stories passed
 13/13 stories passed against app     (diagnose-event-comparison-behavior.replay.mjs)
 PASS 7 issue #694 support renders against app   (diagnose-event-comparison-support-audit.mjs)
 ```
 
 `node --test frontend/cockpit-shell.browser.test.mjs` → 9 pass, 0 fail, 1 skip
 (the pre-existing render-coverage skip). `node --test
-frontend/diagnose-workstation.browser.test.mjs` → 7 pass, 0 fail.
+frontend/diagnose-workstation.browser.test.mjs` → 13 pass, 0 fail.
+
+Re-run after merging the excursion-chip sift (#61) from `main`: the same five
+legs, same counts, with the workstation replay carrying both story sets.
 
 **Renders.** Six states — the finding case file under `By clock`, `By event`
 whole-day (which carries the supported aggregate and a one-episode withheld

@@ -241,6 +241,98 @@ test('locked panel geometry matches across both required viewports and light/dar
     } finally { /* browser stays open; closed once in after() */ }
   });
 
+test('finding chips render each server-published count', async () => {
+    const browser = await runner.browser();
+    try {
+      const before = openerProblems().length;
+      const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
+      await page.getByRole('button', { name: '24 h', exact: true }).click();
+      await settle(page, 450);
+      assert.deepEqual(await page.locator('#seg-chips button').allTextContents(), [
+        'Highs 4', 'Lows 1', 'Meals 1', 'Corrections 1',
+      ], 'the four chips spell the server-published global counts');
+      await page.close();
+      assert.deepEqual(openerProblems().slice(before), [],
+        'no opener problems while rendering server-published chip counts');
+    } finally { /* browser stays open; closed once in after() */ }
+  });
+
+test('deselecting a chip leaves only rows matching the remaining chips', async () => {
+    const browser = await runner.browser();
+    try {
+      const before = openerProblems().length;
+      const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
+      await page.getByRole('button', { name: '24 h', exact: true }).click();
+      await settle(page, 450);
+      await page.getByRole('button', { name: 'Highs 4', exact: true }).click();
+      await settle(page, 350);
+      assert.deepEqual(await page.locator('#level .qrow').evaluateAll((rows) => rows.map((row) => row.dataset.id)), [
+        'finding:correction_on_iob', 'finding:late_bolus',
+      ], 'a deselected Highs chip hides high-only rows while preserving multi-chip matches');
+      await page.close();
+      assert.deepEqual(openerProblems().slice(before), [],
+        'no opener problems while sifting the queue by a chip');
+    } finally { /* browser stays open; closed once in after() */ }
+  });
+
+test('the held and blind group collapses during a sift and expands again', async () => {
+    const browser = await runner.browser();
+    try {
+      const before = openerProblems().length;
+      const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
+      await page.getByRole('button', { name: 'Overnight', exact: true }).click();
+      await settle(page, 450);
+      await page.getByRole('button', { name: /^Highs / }).click();
+      await settle(page, 350);
+      const toggle = page.locator('#level .qcollapse');
+      assert.equal(await toggle.innerText(), '4 held or blind reads');
+      assert.equal(await toggle.getAttribute('aria-expanded'), 'false');
+      assert.equal(await page.locator('#level .qrow').count(), 0,
+        'collapsed held rows are not painted as ordinary queue rows');
+      await toggle.click();
+      await settle(page, 350);
+      assert.equal(await toggle.getAttribute('aria-expanded'), 'true');
+      assert.deepEqual(await page.locator('#level .qrow').evaluateAll((rows) => rows.map((row) => row.dataset.id)), [
+        'basal:0-30', 'basal:210-240', 'ic:660', 'isf',
+      ], 'expanding restores every collapsed held read to the rendered queue');
+      await page.close();
+      assert.deepEqual(openerProblems().slice(before), [],
+        'no opener problems while collapsing and expanding held reads');
+    } finally { /* browser stays open; closed once in after() */ }
+  });
+
+test('an all-hidden sift names the empty result while retaining the held group', async () => {
+    const browser = await runner.browser();
+    try {
+      const before = openerProblems().length;
+      const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
+      await page.getByRole('button', { name: 'Overnight', exact: true }).click();
+      await settle(page, 450);
+      await page.getByRole('button', { name: /^Highs / }).click();
+      await settle(page, 350);
+      assert.equal(await page.locator('#level .quiet-line.sift-empty').innerText(),
+        'No findings match the current chips.');
+      assert.equal(await page.locator('#level .qcollapse').innerText(), '4 held or blind reads',
+        'the collapsed held group remains reachable below the empty-sift line');
+      await page.close();
+      assert.deepEqual(openerProblems().slice(before), [],
+        'no opener problems while rendering the all-hidden sift state');
+    } finally { /* browser stays open; closed once in after() */ }
+  });
+
+test('the correction-factor row visibly declares its whole-day scope', async () => {
+    const browser = await runner.browser();
+    try {
+      const before = openerProblems().length;
+      const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
+      const row = page.locator('#level .qrow[data-id="isf"]');
+      assert.equal(await row.locator('.scope-note').innerText(), ' · Whole day');
+      await page.close();
+      assert.deepEqual(openerProblems().slice(before), [],
+        'no opener problems while rendering the correction-factor scope note');
+    } finally { /* browser stays open; closed once in after() */ }
+  });
+
 /* LOCK:diagnose-workstation:14 — "Held/insufficient items print number + CI
    at FULL contrast, outline-only cell, no stage button, 'no direction
    asserted' language." Story S16 deliberately opens an ASSERTING slot

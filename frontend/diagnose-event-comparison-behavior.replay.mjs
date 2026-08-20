@@ -442,7 +442,7 @@ export const S12 = async (open, browser) => {
 };
 
 /** The meal bolused at 13:00 whose high landed at 14:35 — trigger outside the
-    window, consequence inside it. The workstation replay's S32 shows the same
+    window, consequence inside it. The workstation replay's S37 shows the same
     episode reaching both panes. */
 const EARLY_TRIGGER = { ep_id: '2020-03-03-ep71', t: '2020-03-03 13:00:00' };
 

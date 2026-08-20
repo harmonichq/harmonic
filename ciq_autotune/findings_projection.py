@@ -52,6 +52,10 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional, Sequence, Tuple
 
 from .analyzers.ic import BLOCK_WINDOW_DAYS
+# `_chips_for` (#61) asks each lever what kind of anchor its consequence lands
+# on. `window_membership` asks the same question for the same reason, so this is
+# one definition read twice, never a second copy of the mapping.
+from .analyzers.scenario.levers import outcome_kind
 from .safety import Status
 from .window_membership import DAY_MINUTES, WindowQuery, outcome_minute
 
@@ -132,8 +136,11 @@ class FindingsProjection:
         rows.sort(key=_sort_key)
         _assign_tiers(rows)
         counts = {name: 0 for name in ("assert", "held", "blind", "finding")}
+        chip_counts = {name: 0 for name in ("highs", "lows", "meals", "corrections")}
         for row in rows:
             counts[row["register"]] += 1
+            for chip in row["chips"]:
+                chip_counts[chip] += 1
         return {
             "schema": SCHEMA,
             "window": query.to_dict(),
@@ -145,6 +152,7 @@ class FindingsProjection:
             # Keyed by the register name each row carries, so a count and a row can
             # never be read as two different vocabularies.
             "counts": counts,
+            "chip_counts": chip_counts,
             "uncaused_highs": self._uncaused_highs(),
         }
 
@@ -544,6 +552,38 @@ def _title(name: str, register: str, direction: Optional[str]) -> str:
     return f"{name} · {direction}"
 
 
+# Carb ratio is grams per unit, so raising it removes insulin and answers lows.
+_SETTINGS_CHIPS = {
+    ("basal_rate", "raise"): ("highs",),
+    ("basal_rate", "lower"): ("lows",),
+    ("carb_ratio", "raise"): ("lows",),
+    ("carb_ratio", "lower"): ("highs",),
+    ("isf", "strengthen"): ("highs",),
+    ("isf", "weaken"): ("lows",),
+}
+
+
+def _chips_for(row: dict) -> List[str]:
+    """The filter chips a serialized queue row belongs under."""
+    if row["register"] in ("held", "blind"):
+        return []
+    if row["register"] == "assert":
+        return list(_SETTINGS_CHIPS[(row["parameter"], row["direction"])])
+
+    chips = []
+    kind = outcome_kind(row["lever"])
+    if kind == "high":
+        chips.append("highs")
+    elif kind == "low":
+        chips.append("lows")
+    families = {appearance["family"] for appearance in row["appearances"]}
+    if "meals" in families:
+        chips.append("meals")
+    if "correction_clusters" in families:
+        chips.append("corrections")
+    return chips
+
+
 def _row(**fields) -> dict:
     """One queue row, with every key present on every row (absent reads as null)."""
     row = {
@@ -554,8 +594,11 @@ def _row(**fields) -> dict:
         "support": None, "reason": None, "annotation": None, "members": None,
         "lever": None, "appearances": None, "episodes": None,
         "evidence": None, "verdict_counts": None, "verdict_counts_by_family": None,
+        "chips": None, "window_scope": None,
     }
     row.update(fields)
+    row["chips"] = _chips_for(row)
+    row["window_scope"] = "whole_day" if row["parameter"] == "isf" else "window"
     return row
 
 

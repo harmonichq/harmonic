@@ -215,6 +215,12 @@ class ChipProjectionTest(unittest.TestCase):
         self.assertEqual(afternoon["chip_counts"], {
             "highs": 2, "lows": 1, "meals": 0, "corrections": 1,
         })
+
+        global_counts = self.projection.project(WindowQuery.whole_day())["chip_counts"]
+        self.assertTrue(all(global_counts[chip] > 0
+                            for chip in ("highs", "lows", "meals", "corrections")),
+                        global_counts)
+
         raise_case = gen.payload()["settings_cases"]["carb_ratio_raise"]
         self.assertEqual(_row(raise_case["rows"], "I:C 00:00 to 12:00 · raise")["chips"],
                          ["lows"])

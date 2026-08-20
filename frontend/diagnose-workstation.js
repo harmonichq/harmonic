@@ -63,10 +63,10 @@ const MARKUP = `
     <div class="instrument">
       <span class="cap">Window</span>
       <div class="seg" id="seg-window" role="group" aria-label="Clock window"></div>
-      <div class="instrument" id="chips-group">
-        <span class="cap">Sift</span>
-        <div class="seg" id="seg-chips" role="group" aria-label="Finding chips"></div>
-      </div>
+    </div>
+    <div class="instrument" id="chips-group">
+      <span class="cap">Sift</span>
+      <div class="seg" id="seg-chips" role="group" aria-label="Finding chips"></div>
     </div>
     <!-- ADR 31 part 3 (issue #41) — ALIGN, present only where the canvas is
          showing a factor's events. A switch over already-selected data: it

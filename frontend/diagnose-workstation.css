@@ -131,7 +131,7 @@ html.dark .dw {
    text, not just its bare left edge. See the behaviour ledger's amendment
    for the deviation this records. */
 .instruments {
-  display: grid; grid-template-columns: minmax(0, 1fr) var(--side, 430px);
+  display: grid; grid-template-columns: minmax(0, 1fr) auto var(--side, 430px);
   align-items: center; gap: 0; padding: 0;
   background: var(--mk-bg);
 }

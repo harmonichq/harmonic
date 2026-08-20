@@ -195,3 +195,7 @@ test('a sift computes its priced seam over only visible rows', () => {
   assert.deepEqual(rows.filter((row) => row.seam), []);
   assert.ok(rows.filter((row) => row.hidden).every((row) => row.raw.priority != null));
 });
+
+test('a null selection is byte-identical to the unsifted queue', () => {
+  assert.deepEqual(queueRows(W.global), queueRows(W.global, null));
+});

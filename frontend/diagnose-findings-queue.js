@@ -126,21 +126,18 @@ function assertDetail(row) {
 export function queueRows(projection, selected = null) {
   const rows = projection?.rows || [];
   const sifting = selected !== null;
-  const visible = rows.filter((row) => {
+  const filtered = rows.map((row) => {
     const chips = row.chips || [];
+    const heldOrBlind = row.register === 'held' || row.register === 'blind';
     // Held and blind reads sit outside the chip system. They collapse during a
     // sift, but must remain reachable rather than disappearing with no account.
-    if (!chips.length) return row.register !== 'held' && row.register !== 'blind';
-    return !sifting || chips.some((chip) => selected.has(chip));
+    const hidden = chips.length > 0 && sifting && !chips.some((chip) => selected.has(chip));
+    const collapsed = heldOrBlind && sifting;
+    return { row, hidden, collapsed };
   });
   let pricedSeen = false;
   let seamOpened = false;
-  const visibleIds = new Set(visible.map((row) => row.id));
-  return rows.map((row) => {
-    const chips = row.chips || [];
-    const heldOrBlind = row.register === 'held' || row.register === 'blind';
-    const hidden = chips.length > 0 && sifting && !visibleIds.has(row.id);
-    const collapsed = heldOrBlind && sifting;
+  return filtered.map(({ row, hidden, collapsed }) => {
     // The divider belongs to rows the reader can currently see, not to an
     // excluded row or to a read represented by the collapsed count.
     const shown = !hidden && !collapsed;
@@ -185,7 +182,7 @@ const add = (parent, cls, text) => {
   return span;
 };
 
-function paintDetail(node, detail, windowScope) {
+function paintDetail(node, detail) {
   if (!detail) return;
   if (detail.kind === 'nums') {
     const den = add(node, 'den nums');
@@ -193,13 +190,10 @@ function paintDetail(node, detail, windowScope) {
     const bold = document.createElement('b');
     bold.textContent = detail.then;
     den.append(bold);
-    if (windowScope === 'whole_day') add(den, 'scope-note', ' · Whole day');
-    return;
+    return den;
   }
   if (detail.kind === 'reason') {
-    const why = add(node, 'why', detail.text);
-    if (windowScope === 'whole_day') add(why, 'scope-note', ' · Whole day');
-    return;
+    return add(node, 'why', detail.text);
   }
   const den = add(node, 'den');
   if (detail.kind === 'support') {
@@ -207,15 +201,14 @@ function paintDetail(node, detail, windowScope) {
     add(den, 'v', count);
     den.append(` ${noun}`);
     if (run) { add(den, 'sep', '·'); den.append(run); }
-    if (windowScope === 'whole_day') add(den, 'scope-note', ' · Whole day');
-    return;
+    return den;
   }
   detail.parts.forEach((part, i) => {
     if (i) add(den, 'sep', '·');
     add(den, 'v', part.count);
     den.append(` ${part.noun}`);
   });
-  if (windowScope === 'whole_day') add(den, 'scope-note', ' · Whole day');
+  return den;
 }
 
 /**
@@ -280,7 +273,10 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
     tag.append(FLAVOR[row.flavor].word);
     // every row drills, held and blind included (terms 22 / 38)
     add(node, 'go', '›').setAttribute('aria-hidden', 'true');
-    paintDetail(node, row.detail, row.raw.window_scope);
+    const detail = paintDetail(node, row.detail);
+    if (detail && row.raw.window_scope === 'whole_day') {
+      add(detail, 'scope-note', ' · Whole day');
+    }
     node.addEventListener('click', () => onDrill(row.raw));
     list.append(node);
   };

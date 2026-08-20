@@ -226,9 +226,10 @@ const winText = (w) => `${hhmm(w.range[0])}–${winEdge(w.range[1])}`;
 
 /* ADR 31 part 3 (issue #41) — which finding case files ALIGN can re-project.
    The event-comparison lens's closed factor set (`diagnose-event-comparison.js`,
-   `factorKey`) is six of the seven levers title() names
-   (`ciq_autotune/analyzers/scenario/levers.py`); MISSED_MEAL is the one lever
-   outside it (an Exposure.HIGHS case file, which the lens has no view for).
+   `factorKey`) is six of the eight levers title() names
+   (`ciq_autotune/analyzers/scenario/levers.py`); MISSED_MEAL and
+   MEAL_BOLUS_SHORT are the two outside it (both Exposure.HIGHS case files,
+   which the lens has no view for).
    Keyed on the lever's TITLE, because that is the string a factor frame
    already carries as `factor.cause` (`factorForFinding`/`cause_title`) — not a
    second copy of the lever enum, just the same closed set's own titles read

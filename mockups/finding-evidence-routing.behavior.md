@@ -1177,7 +1177,7 @@ is gone. `scopedFor` now filters the family population by the keys the frame's
 findings row published, and the factor header, the clock canvas and the roster
 all read that one population.
 
-**Behavior added** — six stories, `S27` to `S32` in
+**Behavior added** — eight stories, `S27` to `S34` in
 `frontend/diagnose-workstation-behavior.replay.mjs`, plus `S13` in
 `frontend/diagnose-event-comparison-behavior.replay.mjs`:
 

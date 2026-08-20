@@ -18,12 +18,21 @@ point is a product decision about what the WINDOW control means under `By event`
   preset instead, which is frontend-composed scope membership and sits against ADR 31
   part 6. `inline`
 
+- Q1 (Connor, 2026-08-19): the window filters the by-event canvas for real. The lens
+  takes the same clock bounds and the same outcome-anchored membership rule the
+  findings queue uses, so the canvas and the inspector count one population. Why: it
+  is the only shape where the inspector counting 10 while the canvas draws 1 cannot
+  happen, and it returns membership to the server per ADR 31 part 6. `-> ADR`
+- Q2 (Connor, 2026-08-19): #57 (selecting an occurrence draws nothing) and #58
+  (duplicated canvas header) land in this ticket. Why: all three defects are in
+  `paintAlign`, and the un-hidden clock header is what prints #62's own wrong window.
+  `-> issue` (close #57 and #58 on this pull request)
+
 ## Open questions
 
-- Q1. What the WINDOW control means under `By event`. (round 1, asked)
-- Q2. Whether #57 and #58 fold into this ticket or stay separate. (round 1, asked)
-- Q3. What the canvas should say when a cohort holds too few episodes to draw.
-  (blocked on Q1)
+- Q3. What the canvas says when a cohort holds too few episodes to draw. (round 2)
+- Q4. Whether an episode's trace is clipped at the window edge or drawn whole.
+  (round 2)
 
 ## Spawned tasks
 

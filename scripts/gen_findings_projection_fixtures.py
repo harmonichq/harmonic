@@ -340,16 +340,32 @@ def exposures():
                         text="Corrections stacked and carried glucose to 61."),
         ],
     }
+    # CROSS-FAMILY, and it has to be (#63). An episode's driver anchor lives in
+    # whichever family its kind belongs to, so `cause_lever` on a high says only
+    # "this high is the driver" — ep11's high drives its episode, while ep1's high
+    # carries the lever its LOW drove. Deriving `uncaused` from a single family's
+    # `cause_lever` would therefore count every non-driver high, which is exactly
+    # the 27-vs-20 error the honest count exists to avoid. Build the driven-episode
+    # set over ALL families first, then roll each family up against it.
+    driven = {item["ep_id"] for occurrences in families.values()
+              for item in occurrences if item["cause_lever"] is not None}
     return {
         "window": {"start": (DAY - timedelta(days=WINDOW_DAYS)).isoformat(),
                    "end": DAY.isoformat()},
-        "exposures": {name: _rollup(occurrences)
+        "exposures": {name: _rollup(occurrences, driven)
                       for name, occurrences in families.items()},
     }
 
 
-def _rollup(occurrences):
-    """The family rollup ``build_exposures`` emits around its occurrence list."""
+def _rollup(occurrences, driven):
+    """The family rollup ``build_exposures`` emits around its occurrence list.
+
+    ``driven`` is every episode id that drew a lever anywhere in the window; an
+    occurrence outside it is one the engine found no cause for at all. On this
+    fixture ep6 is the single such high, so the highs rollup carries
+    ``uncaused: 1`` — a non-zero value, because a rollup frozen at zero would let
+    the whole count regress to nothing without failing anything.
+    """
     by_cause = {}
     for item in occurrences:
         if item["cause_title"] is not None:
@@ -359,6 +375,7 @@ def _rollup(occurrences):
         "n": len(occurrences),
         "attributed": attributed,
         "clean": len(occurrences) - attributed,
+        "uncaused": sum(1 for item in occurrences if item["ep_id"] not in driven),
         "levers": list(dict.fromkeys(item["cause_lever"] for item in occurrences
                                      if item["cause_lever"] is not None)),
         "by_cause": by_cause,

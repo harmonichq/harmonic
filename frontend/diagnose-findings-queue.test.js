@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
-  EMPTY_LINE, EMPTY_SIFT_LINE, HELD_PREFIX, TAIL_NOTE, queueMeta, queueRows,
+  EMPTY_LINE, EMPTY_SIFT_LINE, HELD_PREFIX, TAIL_NOTE, queueMeta, queueRows, uncausedNote,
 } from './diagnose-findings-queue.js';
 
 const fixture = JSON.parse(readFileSync(
@@ -198,4 +198,45 @@ test('a sift computes its priced seam over only visible rows', () => {
 
 test('a null selection is byte-identical to the unsifted queue', () => {
   assert.deepEqual(queueRows(W.global), queueRows(W.global, null));
+});
+
+/* #63 — the unexplained-highs line. It is the server's finished sentence and the
+ * frontend's only job is to hand it back, so these tests are about what is NOT
+ * decided here: no count, no pluralization, no threshold, and no leak into the
+ * meta slot the queue's own copy owns. */
+
+test('#63 · the line is read off the projection, never composed', () => {
+  assert.equal(uncausedNote(W.global), '1 high had no cause detected by the app');
+  // the server publishes the finished string; changing it must change what renders
+  const relabelled = { ...W.global, uncaused_highs: { count: 9, text: 'nine of them' } };
+  assert.equal(uncausedNote(relabelled), 'nine of them');
+});
+
+test('#63 · a null text publishes no line, and the threshold is not ours', () => {
+  assert.equal(uncausedNote(fixture.no_data.global), null);
+  assert.equal(uncausedNote({ uncaused_highs: { count: 0, text: null } }), null);
+  // a count with no sentence still renders nothing: the server decides, not a
+  // predicate here (the #273/#465 rule the thin-slot hold kept escaping through)
+  assert.equal(uncausedNote({ uncaused_highs: { count: 4, text: null } }), null);
+  assert.equal(uncausedNote(null), null);
+  assert.equal(uncausedNote({}), null);
+});
+
+test('#63 · the line is whole-window, so every scope carries the same sentence', () => {
+  const scopes = ['global', 'morning', 'low_block', 'rebound', 'afternoon',
+    'overnight', 'quiet'];
+  for (const name of scopes) {
+    assert.equal(uncausedNote(W[name]), '1 high had no cause detected by the app',
+      `${name} must not re-scope the count`);
+  }
+});
+
+test('#63 · the sentence never enters the queue meta, which counts the window', () => {
+  // term 45: the meta is the queue's own copy and nothing else goes there. The two
+  // answer different questions — one counts rows in the window, the other counts
+  // highs across the whole findings window — and merging them would let a scoped
+  // reader take the highs number as a statement about the hours they drew.
+  for (const name of ['global', 'afternoon', 'quiet']) {
+    assert.doesNotMatch(queueMeta(W[name]), /no cause/);
+  }
 });

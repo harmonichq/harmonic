@@ -239,7 +239,11 @@ class ChipProjectionTest(unittest.TestCase):
             _exposures={"exposures": {"highs": {"occurrences": occurrences}}},
             _scenarios={"patterns": [], "low_confidence": []},
         )
-        rows = projection.project(WindowQuery.clock(0, 7 * 60))["rows"]
+        # The window is derived from the lever count, never a literal: each occurrence
+        # sits at hour `index`, so a hard-coded span silently drops the newest lever
+        # off its end the day one is added — which is precisely what the closed set
+        # exists to catch.
+        rows = projection.project(WindowQuery.clock(0, len(Lever) * 60))["rows"]
         self.assertEqual(len(rows), len(Lever))
         for row in rows:
             expected = "highs" if outcome_kind(row["lever"]) == "high" else "lows"

@@ -14,7 +14,7 @@
    "occurrences": [
     {
      "attributed": true,
-     "bg": 68.0,
+     "bg": 63.2,
      "cause_lever": "correction_on_iob",
      "cause_title": "Correction on active insulin",
      "date": "2020-03-01",
@@ -23,37 +23,7 @@
      "label": "Low",
      "state": "fired",
      "t": "2020-03-01 10:10:00",
-     "text": "Treated a low at 10:10 and the glucose kept falling to 49 before it turned \u2014 the treatment was larger than the fall needed.",
-     "verdicts": [
-      {
-       "classifier": "over_treated_low",
-       "detail": "glucose fell to 49 mg/dL after the treatment",
-       "evidence_tier": "inferred",
-       "matched": true,
-       "silence_reason": null
-      },
-      {
-       "classifier": "iob_stacking",
-       "detail": "no stacked correction precedes this episode",
-       "evidence_tier": "not_in_data",
-       "matched": false,
-       "silence_reason": "no_signal"
-      }
-     ],
-     "worst_bg": 49.3
-    },
-    {
-     "attributed": true,
-     "bg": 63.2,
-     "cause_lever": "correction_on_iob",
-     "cause_title": "Correction on active insulin",
-     "date": "2020-03-02",
-     "ep_id": "2020-03-02-ep91",
-     "kind": "low",
-     "label": "Low",
-     "state": "fired",
-     "t": "2020-03-02 15:00:00",
-     "text": "Treated a low at 15:00 and the glucose kept falling to 55 before it turned \u2014 the treatment was larger than the fall needed.",
+     "text": "Treated a low at 10:10 and the glucose kept falling to 55 before it turned \u2014 the treatment was larger than the fall needed.",
      "verdicts": [
       {
        "classifier": "over_treated_low",
@@ -71,19 +41,50 @@
       }
      ],
      "worst_bg": 55.2
+    },
+    {
+     "attributed": true,
+     "bg": 76.9,
+     "cause_lever": "correction_on_iob",
+     "cause_title": "Correction on active insulin",
+     "date": "2020-03-02",
+     "ep_id": "2020-03-02-ep91",
+     "kind": "low",
+     "label": "Low",
+     "state": "fired",
+     "t": "2020-03-02 15:00:00",
+     "text": "Treated a low at 15:00 and the glucose kept falling to 71 before it turned \u2014 the treatment was larger than the fall needed.",
+     "verdicts": [
+      {
+       "classifier": "over_treated_low",
+       "detail": "glucose fell to 71 mg/dL after the treatment",
+       "evidence_tier": "inferred",
+       "matched": true,
+       "silence_reason": null
+      },
+      {
+       "classifier": "iob_stacking",
+       "detail": "no stacked correction precedes this episode",
+       "evidence_tier": "not_in_data",
+       "matched": false,
+       "silence_reason": "no_signal"
+      }
+     ],
+     "worst_bg": 71.1
     }
-   ]
+   ],
+   "uncaused": 0
   },
   "highs": {
    "attributed": 3,
    "by_cause": {
     "Missed / unannounced meal": 3
    },
-   "clean": 0,
+   "clean": 1,
    "levers": [
     "missed_meal"
    ],
-   "n": 3,
+   "n": 4,
    "occurrences": [
     {
      "attributed": true,
@@ -174,8 +175,39 @@
       }
      ],
      "worst_bg": 53.2
+    },
+    {
+     "attributed": false,
+     "bg": 68.0,
+     "cause_lever": null,
+     "cause_title": null,
+     "date": "2020-03-03",
+     "ep_id": "2020-03-03-ep83",
+     "kind": "low",
+     "label": "Low",
+     "state": "no_data",
+     "t": "2020-03-03 21:50:00",
+     "text": "",
+     "verdicts": [
+      {
+       "classifier": "over_treated_low",
+       "detail": "glucose fell to 49 mg/dL after the treatment",
+       "evidence_tier": "not_in_data",
+       "matched": false,
+       "silence_reason": "insufficient_data"
+      },
+      {
+       "classifier": "iob_stacking",
+       "detail": "no stacked correction precedes this episode",
+       "evidence_tier": "not_in_data",
+       "matched": false,
+       "silence_reason": "no_signal"
+      }
+     ],
+     "worst_bg": 49.3
     }
-   ]
+   ],
+   "uncaused": 1
   },
   "lows": {
    "attributed": 13,
@@ -640,7 +672,8 @@
      ],
      "worst_bg": 41.0
     }
-   ]
+   ],
+   "uncaused": 2
   },
   "meals": {
    "attributed": 5,
@@ -803,7 +836,8 @@
      ],
      "worst_bg": 54.5
     }
-   ]
+   ],
+   "uncaused": 0
   }
  },
  "synthetic": true,

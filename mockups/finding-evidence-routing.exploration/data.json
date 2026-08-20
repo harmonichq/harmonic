@@ -606,6 +606,10 @@
     }
    ],
    "schema": "diagnose-findings-v1",
+   "uncaused_highs": {
+    "count": 1,
+    "text": "1 high had no cause detected by the app"
+   },
    "window": {
     "end_min": null,
     "label": null,

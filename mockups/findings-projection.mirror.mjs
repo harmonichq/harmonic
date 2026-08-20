@@ -46,7 +46,7 @@ const VERDICT_CATEGORIES = ['fired', 'outranked', 'near_miss', 'no_data', 'clean
 const OUTCOME_KIND = {
   carb_undercount: 'high', late_bolus: 'high', meal_over_delivery: 'low',
   over_treated_low: 'high', correction_stacking: 'low', correction_on_iob: 'low',
-  missed_meal: 'high',
+  missed_meal: 'high', meal_bolus_short: 'high',
 };
 // Carb ratio is grams per unit, so raising it removes insulin and answers lows.
 const SETTINGS_CHIPS = {
@@ -54,6 +54,10 @@ const SETTINGS_CHIPS = {
   carb_ratio: { raise: ['lows'], lower: ['highs'] },
   isf: { strengthen: ['highs'], weaken: ['lows'] },
 };
+// findings_projection.UNCAUSED_HIGHS_COPY — the operator-confirmed sentence, with
+// the noun's number as its only variation (a surface printing '1 highs' is a defect).
+const uncausedHighsCopy = (n) => `${n} ${n === 1 ? 'high' : 'highs'} had no cause `
+  + 'detected by the app';
 // analyzers.ic.BLOCK_WINDOW_DAYS
 const BLOCK_WINDOW_DAYS = 90;
 
@@ -482,6 +486,12 @@ export function projectFindings(inputs, bounds = null) {
     counts[r.register] += 1;
     for (const chip of r.chips) chip_counts[chip] += 1;
   }
+  /* findings_projection._uncaused_highs — WHOLE-WINDOW, never scoped by the query.
+     A clock scope narrows which rows show; it does not change how many highs the
+     engine explained nothing about, and re-counting it per window would let an empty
+     scope read as "0 highs had no cause". Read off the exposures rollup, which counts
+     it episode-wise; nothing is re-derived here. */
+  const uncaused = exposures.exposures?.highs?.uncaused || 0;
   return {
     schema: SCHEMA,
     window: query.dict,
@@ -489,5 +499,6 @@ export function projectFindings(inputs, bounds = null) {
     rows,
     counts,
     chip_counts,
+    uncaused_highs: { count: uncaused, text: uncaused ? uncausedHighsCopy(uncaused) : null },
   };
 }

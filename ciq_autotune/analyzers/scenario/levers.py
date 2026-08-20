@@ -58,6 +58,7 @@ class Lever(str, Enum):
     CORRECTION_STACKING = "correction_stacking"
     CORRECTION_ON_IOB = "correction_on_iob"
     MISSED_MEAL = "missed_meal"
+    MEAL_BOLUS_SHORT = "meal_bolus_short"
 
 
 # Per-lever metadata: title, the exposure denominator it scores against, the
@@ -119,6 +120,22 @@ _META = {
         "Glucose rose with the shape of a meal but no bolus sits near it. A meal "
         "that went un-bolused, or was bolused very late.",
     ),
+    # DELIBERATELY NOT CARB UNDERCOUNT (#63). That lever runs implied-I:C inference
+    # and asserts a quantified carb shortfall; this one asserts only that the dose
+    # given did not cover the outcome that followed, with the correction as its
+    # evidence. No copy below may imply underestimated carbs, inferred grams, or a
+    # ratio change — the recommendation is observation-only, and the meaning says
+    # outright that the claim is not about carb counting.
+    Lever.MEAL_BOLUS_SHORT: (
+        "Meal bolus fell short",
+        Exposure.HIGHS,
+        "A correction was needed behind this meal dose — worth watching how often "
+        "that happens before changing anything.",
+        "You bolused for the meal, glucose climbed anyway, and a correction was "
+        "needed afterward. The dose did not cover what followed. This says nothing "
+        "about how many carbs the meal held — only that the dose given fell short of "
+        "the outcome.",
+    ),
 }
 
 
@@ -146,6 +163,7 @@ _OUTCOME_KIND = {
     Lever.CORRECTION_STACKING: "low",    # the overshoot the stacked doses carried into
     Lever.CORRECTION_ON_IOB: "low",      # the low the doubled-up insulin reached
     Lever.MISSED_MEAL: "high",           # the un-bolused rise itself
+    Lever.MEAL_BOLUS_SHORT: "high",      # the run-away the meal dose did not cover
 }
 
 

@@ -5,7 +5,7 @@
 `eda5cdfd318d638503defdd6f364a078042fe592`).
 
 The app-only replay is
-`frontend/diagnose-workstation-behavior.replay.mjs`: **29 exported stories**, all
+`frontend/diagnose-workstation-behavior.replay.mjs`: **34 exported stories**, all
 opened through the real no-fetch server and tagged
 `STORY:finding-evidence-routing:<id>`. Static HTML, CSS and JavaScript come from
 that server; deterministic API reads come from
@@ -41,7 +41,7 @@ and no retirement lacks its sanction, so the contract carries forward unchanged
 at the new base.
 
 The 55 P-rows below are retained as the legacy predecessor inventory and the
-operator's completed rulings. The executable current contract is S01–S26 and
+operator's completed rulings. The executable current contract is S01–S31 and
 D1–D3. The base-tip re-inventory found no new handlers since the predecessor
 pass: the intervening source delta only changed the queue to consume the
 server-published ranking tier and adjusted the corresponding `noted` styling.
@@ -1131,6 +1131,18 @@ then passed: `app: 29 of 29 stories passed` — real gate output in the PR's
 report.
 
 Decision: harmonichq/harmonic#41, 2026-08-19 (safety-review round 3).
+
+## Revision amendment — 2026-08-20 (findings chips)
+
+This revision **ADDED S27–S31** for newly shipped findings-chip behaviour:
+the four server-published chip counts; chip deselection retaining only rows
+that carry another selected chip; the held/blind group collapsing under a sift
+and expanding again; an all-hidden sift naming itself while that group remains
+reachable; and the correction-factor row's whole-day scope.
+
+Before these additions, the pre-existing **29 of 29 stories replayed green
+against the changed app**. No existing story was retired or altered, and the
+legacy P-row inventory remains untouched.
 
 ## Revision amendment — 2026-08-19 (ALIGN's fixed position; the canvas header truncates at 1024px)
 

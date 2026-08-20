@@ -150,6 +150,8 @@ class GroundedWindowTest(unittest.TestCase):
         self.assertEqual(empty["rows"], [])
         self.assertEqual(empty["counts"],
                          {"assert": 0, "held": 0, "blind": 0, "finding": 0})
+        self.assertEqual(empty["chip_counts"],
+                         {"highs": 0, "lows": 0, "meals": 0, "corrections": 0})
 
     def test_a_window_wrapping_midnight_reaches_both_sides_of_it(self):
         rows = self.projection.project(WindowQuery.clock(22 * 60, 2 * 60))["rows"]
@@ -194,6 +196,98 @@ class SpanMergingTest(unittest.TestCase):
         # still names the run it really is.
         rows = self.projection.project(WindowQuery.clock(60, 75))["rows"]
         self.assertIn("Basal 00:30 to 01:30 · raise", _titles(rows, "assert"))
+
+
+class ChipProjectionTest(unittest.TestCase):
+    """The server publishes chip membership; the browser only reads these lists."""
+
+    def setUp(self):
+        self.projection = gen.projection()
+
+    def test_analyzer_built_windows_chip_findings_by_their_outcomes_and_contexts(self):
+        rebound = self.projection.project(WindowQuery.clock(*REBOUND))
+        self.assertEqual(_row(rebound["rows"], "Over-treated low")["chips"], ["highs"])
+
+        afternoon = self.projection.project(WindowQuery.clock(*AFTERNOON))
+        self.assertEqual(_row(afternoon["rows"], "Over-treated low")["chips"], ["highs"])
+        self.assertEqual(_row(afternoon["rows"], "Correction stacking")["chips"],
+                         ["lows", "corrections"])
+        self.assertEqual(afternoon["chip_counts"], {
+            "highs": 2, "lows": 1, "meals": 0, "corrections": 1,
+        })
+
+        global_counts = self.projection.project(WindowQuery.whole_day())["chip_counts"]
+        self.assertTrue(all(global_counts[chip] > 0
+                            for chip in ("highs", "lows", "meals", "corrections")),
+                        global_counts)
+
+        raise_case = gen.payload()["settings_cases"]["carb_ratio_raise"]
+        self.assertEqual(_row(raise_case["rows"], "I:C 00:00 to 12:00 · raise")["chips"],
+                         ["lows"])
+
+    def test_every_declared_lever_chips_by_its_closed_outcome_kind(self):
+        occurrences = []
+        for index, lever in enumerate(Lever):
+            occurrences.append({
+                "t": f"2026-08-17 {index:02d}:00:00", "date": "2026-08-17",
+                "kind": "high", "cause_lever": lever.value,
+                "cause_title": lever.value, "ep_id": lever.value,
+                "verdicts": [],
+            })
+        projection = FindingsProjection(
+            _analysis={"window_days": 30},
+            _exposures={"exposures": {"highs": {"occurrences": occurrences}}},
+            _scenarios={"patterns": [], "low_confidence": []},
+        )
+        # The window is derived from the lever count, never a literal: each occurrence
+        # sits at hour `index`, so a hard-coded span silently drops the newest lever
+        # off its end the day one is added — which is precisely what the closed set
+        # exists to catch.
+        rows = projection.project(WindowQuery.clock(0, len(Lever) * 60))["rows"]
+        self.assertEqual(len(rows), len(Lever))
+        for row in rows:
+            expected = "highs" if outcome_kind(row["lever"]) == "high" else "lows"
+            self.assertEqual(row["chips"], [expected], row["lever"])
+
+    def test_settings_direction_mapping_is_published_through_each_row_builder(self):
+        cases = (
+            ("basal_rate", "raise", "highs"),
+            ("basal_rate", "lower", "lows"),
+            ("carb_ratio", "raise", "lows"),
+            ("carb_ratio", "lower", "highs"),
+            ("isf", "strengthen", "highs"),
+            ("isf", "weaken", "lows"),
+        )
+        for parameter, direction, chip in cases:
+            with self.subTest(parameter=parameter, direction=direction):
+                analysis = {"window_days": 30, "basal": [], "ic_blocks": [], "isf": []}
+                if parameter == "basal_rate":
+                    analysis["basal"] = [{
+                        "slot": 0, "asserts_move": True, "direction": direction,
+                        "current": 1.0, "recommended": 1.1,
+                        "estimate": {"value": 1.1}, "days": 8,
+                    }]
+                elif parameter == "carb_ratio":
+                    analysis["ic_blocks"] = [{
+                        "block_id": 0, "start_min": 0, "end_min": 60,
+                        "asserts_move": True, "direction": direction,
+                        "current_values": [5.0], "recommended": 6.0,
+                        "estimate": {"value": 6.0}, "n_runs": 8,
+                    }]
+                else:
+                    analysis["isf"] = [{
+                        "current": 40.0, "recommended": 35.0,
+                        "estimate": {"value": 35.0},
+                        "evidence": {"direction": direction, "night_fits": []},
+                    }]
+                projection = FindingsProjection(
+                    _analysis=analysis, _exposures={"exposures": {}},
+                    _scenarios={"patterns": [], "low_confidence": []},
+                )
+                row = projection.project(WindowQuery.whole_day())["rows"][0]
+                self.assertEqual(row["chips"], [chip])
+                self.assertEqual(row["window_scope"],
+                                 "whole_day" if parameter == "isf" else "window")
 
 
 class QueueOrderTest(unittest.TestCase):

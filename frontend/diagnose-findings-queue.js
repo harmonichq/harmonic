@@ -21,6 +21,8 @@
 
 /** Term 41 — the empty findings window is a result, not a void. */
 export const EMPTY_LINE = 'No pattern or setting asserts a direction in this window.';
+/** A sift can exclude assertions without making the window itself empty. */
+export const EMPTY_SIFT_LINE = 'No findings match the current chips.';
 /** Term 42 — the sentence that lives inside the doubled gap, naming the tail. */
 export const TAIL_NOTE = 'Not recurring often enough to rank yet.';
 /** Term 14 — a held row's reason line; the suffix is the backend's own words. */
@@ -139,16 +141,29 @@ function assertDetail(row) {
  * server's row facts to place existing markup; it does not classify or infer the
  * row's published tier.
  */
-export function queueRows(projection) {
+export function queueRows(projection, selected = null) {
   const rows = projection?.rows || [];
+  const sifting = selected !== null;
+  const filtered = rows.map((row) => {
+    const chips = row.chips || [];
+    const heldOrBlind = row.register === 'held' || row.register === 'blind';
+    // Held and blind reads sit outside the chip system. They collapse during a
+    // sift, but must remain reachable rather than disappearing with no account.
+    const hidden = chips.length > 0 && sifting && !chips.some((chip) => selected.has(chip));
+    const collapsed = heldOrBlind && sifting;
+    return { row, hidden, collapsed };
+  });
   let pricedSeen = false;
   let seamOpened = false;
-  return rows.map((row) => {
+  return filtered.map(({ row, hidden, collapsed }) => {
+    // The divider belongs to rows the reader can currently see, not to an
+    // excluded row or to a read represented by the collapsed count.
+    const shown = !hidden && !collapsed;
     const ranked = row.register === 'assert' || row.register === 'finding';
     const unpriced = ranked && row.priority == null;
-    const seam = unpriced && pricedSeen && !seamOpened;
+    const seam = shown && unpriced && pricedSeen && !seamOpened;
     if (seam) seamOpened = true;
-    if (ranked && !unpriced) pricedSeen = true;
+    if (shown && ranked && !unpriced) pricedSeen = true;
     return {
       id: row.id,
       register: row.register,
@@ -156,6 +171,8 @@ export function queueRows(projection) {
       flavor: row.kind === 'setting' ? 'setting' : 'habit',
       tier: row.tier,
       seam,
+      hidden,
+      collapsed,
       /* Term 38: a held or blind row drills to its detail but offers no stage
          affordance. The predicate is the server's register, never a floor of ours. */
       stageable: row.register === 'assert',
@@ -191,22 +208,25 @@ function paintDetail(node, detail) {
     const bold = document.createElement('b');
     bold.textContent = detail.then;
     den.append(bold);
-    return;
+    return den;
   }
-  if (detail.kind === 'reason') { add(node, 'why', detail.text); return; }
+  if (detail.kind === 'reason') {
+    return add(node, 'why', detail.text);
+  }
   const den = add(node, 'den');
   if (detail.kind === 'support') {
     const [{ count, noun }, run] = detail.parts;
     add(den, 'v', count);
     den.append(` ${noun}`);
     if (run) { add(den, 'sep', '·'); den.append(run); }
-    return;
+    return den;
   }
   detail.parts.forEach((part, i) => {
     if (i) add(den, 'sep', '·');
     add(den, 'v', part.count);
     den.append(` ${part.noun}`);
   });
+  return den;
 }
 
 /**
@@ -215,11 +235,18 @@ function paintDetail(node, detail) {
  * `onDrill(row)` receives the SERVER row — every level below this one is keyed on
  * the projection's own ids, so no drill target is guessed from a title.
  */
-export function renderFindingsQueue(host, projection, onDrill) {
-  const rows = queueRows(projection);
-  /* Appended in BOTH branches below, empty queue included: the sentence is about
-     the whole findings window, so a scope with nothing in it still owes the reader
-     the count rather than reading as though nothing went unexplained. */
+export function renderFindingsQueue(host, projection, onDrill, view = null) {
+  /* `view` is workstation-owned UX state:
+     { selected: Set<string>|null, collapsedExpanded: boolean,
+       onToggleCollapsed: () => void }. Null selection means no sift. */
+  const selected = view?.selected ?? null;
+  const sifting = selected !== null;
+  const rows = queueRows(projection, selected);
+  /* Appended on EVERY exit below — empty queue and empty SIFT included: the sentence
+     is about the whole findings window, so a scope, or a chip selection, with nothing
+     in it still owes the reader the count rather than reading as though nothing went
+     unexplained. A sift narrows which findings show; it cannot change how many highs
+     the engine explained nothing about. */
   const note = uncausedNote(projection);
   const appendNote = () => {
     if (!note) return;
@@ -236,12 +263,21 @@ export function renderFindingsQueue(host, projection, onDrill) {
     appendNote();
     return rows;
   }
+  const shown = rows.filter((row) => !row.hidden && !row.collapsed);
+  const collapsed = rows.filter((row) => row.collapsed);
+  if (sifting && !shown.length) {
+    const line = document.createElement('p');
+    line.className = 'quiet-line sift-empty';
+    line.textContent = EMPTY_SIFT_LINE;
+    host.append(line);
+    if (!collapsed.length) { appendNote(); return rows; }
+  }
   const list = document.createElement('div');
   list.className = 'q';
   list.setAttribute('role', 'list');
   host.append(list);
 
-  for (const row of rows) {
+  const paintRow = (row) => {
     if (row.seam) {
       const note = document.createElement('p');
       note.className = 'tailnote';
@@ -265,9 +301,28 @@ export function renderFindingsQueue(host, projection, onDrill) {
     tag.append(FLAVOR[row.flavor].word);
     // every row drills, held and blind included (terms 22 / 38)
     add(node, 'go', '›').setAttribute('aria-hidden', 'true');
-    paintDetail(node, row.detail);
+    const detail = paintDetail(node, row.detail);
+    if (detail && row.raw.window_scope === 'whole_day') {
+      add(detail, 'scope-note', ' · Whole day');
+    }
     node.addEventListener('click', () => onDrill(row.raw));
     list.append(node);
+  };
+  for (const row of shown) {
+    paintRow(row);
+  }
+  if (collapsed.length) {
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'qcollapse';
+    const readWord = collapsed.length === 1 ? 'read' : 'reads';
+    toggle.textContent = `${collapsed.length} held or blind ${readWord}`;
+    toggle.setAttribute('aria-expanded', String(Boolean(view?.collapsedExpanded)));
+    toggle.addEventListener('click', () => view?.onToggleCollapsed?.());
+    list.append(toggle);
+    if (view?.collapsedExpanded) {
+      for (const row of collapsed) paintRow(row);
+    }
   }
   appendNote();
   return rows;

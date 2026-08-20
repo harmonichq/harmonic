@@ -194,14 +194,19 @@ def _meal(day, hour, carbs, dose, ratio, minute=0):
 
 
 def ic_blocks():
-    """A morning block that agrees with its setting and an evening block that does not.
-
-    The evening meals were dosed richer than the programmed 4.5, so the evening block
-    is the one that speaks; the morning block is left quiet on purpose, so the 04:30
-    window's asserting register is the basal slot alone.
-    """
+    """A morning block that agrees with its setting and an evening block that does not."""
     segments = [(0, 5.0), (720, 5.7)]
     events = ([_meal(d, 9, 60, 12.0, 5.0) for d in range(1, 25)]
+              + [_meal(d, 19, 60, 14.0, 5.7) for d in range(1, 25)])
+    blocks, _runs = analyze_ic_blocks(events, segments, config=IcConfig(),
+                                      observed_days=90)
+    return price_ic_blocks(blocks)
+
+
+def ic_raise_blocks():
+    """A real analyzer-built I:C raise, kept beside the primary fixture case."""
+    segments = [(0, 5.0), (720, 5.7)]
+    events = ([_meal(d, 9, 60, 10.0, 5.0) for d in range(1, 25)]
               + [_meal(d, 19, 60, 14.0, 5.7) for d in range(1, 25)])
     blocks, _runs = analyze_ic_blocks(events, segments, config=IcConfig(),
                                       observed_days=90)
@@ -406,11 +411,11 @@ def scenarios():
     ).to_dict()
 
 
-def analysis():
+def analysis(*, blocks=None):
     """The ``/analyze`` payload the projection reads, serialized by the real result."""
     basal = basal_rows()
     isf = isf_rows()
-    blocks = ic_blocks()
+    blocks = ic_blocks() if blocks is None else blocks
     return AnalysisResult(
         schema_version=SCHEMA_VERSION,
         generated_at=f"{DAY.isoformat()} 09:00:00",
@@ -472,6 +477,12 @@ def payload() -> dict:
                 WindowQuery.whole_day() if bounds is None
                 else WindowQuery.clock(*bounds))
             for name, bounds in WINDOWS.items()
+        },
+        "settings_cases": {
+            "carb_ratio_raise": FindingsProjection(
+                _analysis=analysis(blocks=ic_raise_blocks()), _exposures=exposures(),
+                _scenarios=scenarios(),
+            ).project(WindowQuery.whole_day()),
         },
         "no_data": {
             name: empty_projection().project(

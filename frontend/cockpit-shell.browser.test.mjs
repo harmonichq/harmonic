@@ -156,7 +156,11 @@ const analyze = {
     { parameter: 'isf', priority: 65, impact: .4, recurrence: .52 },
   ],
   basal: [
-    { slot: 2, label: '01:00', current: 1, recommended: 1.1, asserts_move: true, days: 12,
+    // An asserting settings row ALWAYS names its direction: the analyzer raises rather
+    // than serialize one without it, so a fixture omitting it describes a state the
+    // engine cannot produce — and the projection reads it to chip the row.
+    { slot: 2, label: '01:00', current: 1, recommended: 1.1, asserts_move: true,
+      direction: 'raise', days: 12,
       annotation: '12 nights of steady data support a cautious step.',
       estimate: { value: 1.09, lo: 1.02, hi: 1.15, n: 12, method: 'bootstrap median' },
       evidence: { points: [
@@ -172,7 +176,7 @@ const analyze = {
   ],
   ic_blocks: [
     { block_id: 'day', start_min: 720, end_min: 0, current_values: [6], recommended: 5.6,
-      member_start_mins: [720], asserts_move: true, priority: 68, n_runs: 10,
+      member_start_mins: [720], asserts_move: true, direction: 'lower', priority: 68, n_runs: 10,
       annotation: 'The engine found a consistent post-meal need in this block.',
       estimate: { value: 5.6, lo: 5.4, hi: 5.8, n: 10, method: 'closed meal ledger' },
       evidence: { correction_count: 6, rescue_count: 1,

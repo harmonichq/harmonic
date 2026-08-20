@@ -1236,6 +1236,69 @@ export const S26 = async (page) => {
   return `RETIRED — ${sanction}`;
 };
 
+/** S27 · The findings chips render the four server-published global counts. */
+// STORY:finding-evidence-routing:S27
+export const S27 = async (page) => {
+  await page.getByRole('button', { name: '24 h', exact: true }).click();
+  await settle(page, 450);
+  const chips = await page.locator('#seg-chips button').allTextContents();
+  is(chips, ['Highs 4', 'Lows 1', 'Meals 1', 'Corrections 1'],
+    'S27 the four chips spell the server-published global counts');
+};
+
+/** S28 · Removing a chip hides only rows that carry no remaining selected chip. */
+// STORY:finding-evidence-routing:S28
+export const S28 = async (page) => {
+  await page.getByRole('button', { name: '24 h', exact: true }).click();
+  await settle(page, 450);
+  await page.getByRole('button', { name: 'Highs 4', exact: true }).click();
+  await settle(page, 350);
+  const ids = await page.locator('#level .qrow').evaluateAll((rows) => rows.map((row) => row.dataset.id));
+  is(ids, ['finding:correction_on_iob', 'finding:late_bolus'],
+    'S28 a deselected Highs chip hides high-only rows while preserving multi-chip matches');
+};
+
+/** S29 · A sift collapses the held/blind group, which can expand in place. */
+// STORY:finding-evidence-routing:S29
+export const S29 = async (page) => {
+  await page.getByRole('button', { name: 'Overnight', exact: true }).click();
+  await settle(page, 450);
+  await page.getByRole('button', { name: /^Highs / }).click();
+  await settle(page, 350);
+  const toggle = page.locator('#level .qcollapse');
+  is(await toggle.innerText(), '4 held or blind reads', 'S29 the sift collapses held/blind reads');
+  is(await toggle.getAttribute('aria-expanded'), 'false', 'S29 the held/blind group starts collapsed');
+  is(await page.locator('#level .qrow').count(), 0,
+    'S29 collapsed held rows are not painted as ordinary queue rows');
+  await toggle.click();
+  await settle(page, 350);
+  is(await toggle.getAttribute('aria-expanded'), 'true', 'S29 the held/blind group expands');
+  const ids = await page.locator('#level .qrow').evaluateAll((rows) => rows.map((row) => row.dataset.id));
+  is(ids, ['basal:0-30', 'basal:210-240', 'ic:660', 'isf'],
+    'S29 expanding restores every collapsed held read to the rendered queue');
+};
+
+/** S30 · An all-hidden sift names itself while keeping held/blind reads reachable. */
+// STORY:finding-evidence-routing:S30
+export const S30 = async (page) => {
+  await page.getByRole('button', { name: 'Overnight', exact: true }).click();
+  await settle(page, 450);
+  await page.getByRole('button', { name: /^Highs / }).click();
+  await settle(page, 350);
+  is(await page.locator('#level .quiet-line.sift-empty').innerText(),
+    'No findings match the current chips.', 'S30 the all-hidden sift names itself');
+  is(await page.locator('#level .qcollapse').innerText(), '4 held or blind reads',
+    'S30 the collapsed held group remains reachable below the empty-sift line');
+};
+
+/** S31 · The correction-factor row declares its whole-day scope. */
+// STORY:finding-evidence-routing:S31
+export const S31 = async (page) => {
+  const row = page.locator('#level .qrow[data-id="isf"]');
+  is(await row.locator('.scope-note').innerText(), ' · Whole day',
+    'S31 the correction-factor row visibly declares its whole-day scope');
+};
+
 /* ------------------------------------------------------------------- runner */
 
 /* Discovery tags for every exported replay function above. */
@@ -1279,7 +1342,8 @@ export const STORIES = [
   ['S19', S19, 'drill'], ['S20', S20, 'drill'], ['S21', S21, 'drawn'],
   ['S22', S22, 'typical'], ['S23', S23, 'drawn'],
   ['S24', S24, 'typical'], ['S25', S25, 'typical'],
-  ['S26', S26, 'dense'],
+  ['S26', S26, 'dense'], ['S27', S27, 'typical'], ['S28', S28, 'typical'],
+  ['S29', S29, 'typical'], ['S30', S30, 'typical'], ['S31', S31, 'typical'],
   ['D1', D1, 'dense'], ['D2', D2, 'dense'], ['D3', D3, 'dense'],
 ];
 

@@ -1449,12 +1449,14 @@ function boot(root, data, callbacks, signal) {
 
   /** Tear down whatever ALIGN mounted, and restore the clock canvas. */
   function disposeAlign() {
+    ++alignGeneration;
     alignMount?.observer?.disconnect();
     alignMount?.chart?.dispose();
     alignMount = null;
     el('align-canvas').innerHTML = '';
     el('align-canvas').hidden = true;
     el('chart').hidden = false;
+    el('canvas-head').hidden = false;
     el('brace').hidden = braceless || !shownRange;
     el('lane-wrap').hidden = false;
   }
@@ -1465,23 +1467,16 @@ function boot(root, data, callbacks, signal) {
    * already-selected data, so picking `By event` never moves the crumb, the
    * roster or the standing WINDOW — it re-projects the SAME occurrences the
    * factor frame is already scoped to. WINDOW keeps filtering by clock under
-   * either projection: the block coordinate the request carries is this
-   * canvas's own standing preset (`presetKey`), the one taxonomy WINDOW and
-   * the lens's block share.
-   *
-   * The event-aligned canvas is the lens's own canvas-only render
-   * (`renderEventSurface`, `diagnose-event-comparison.js`) — reused, not
-   * reimplemented (charter reuse rule). A drawn/custom window has no block
-   * equivalent in that taxonomy, so `By event` always requests the standing
-   * PRESET regardless of a drawn brace; that is a scope narrowing, recorded
-   * in the PR report, not a silent approximation.
+   * either projection: the request carries the findings window, including a
+   * drawn brace. The whole-day window is omitted by the same normalization the
+   * findings queue uses.
    */
   function paintAlign() {
     const f = top();
     const mapped = f.k === 'factor' ? alignCoordinatesFor(f.factor.cause) : null;
     el('align-group').hidden = !mapped;
     if (!mapped) {
-      if (alignMount) disposeAlign();
+      disposeAlign();
       return;
     }
     const alignKey = f.align === 'event' ? 'event' : 'clock';
@@ -1491,29 +1486,42 @@ function boot(root, data, callbacks, signal) {
       paint();
     });
     if (alignKey === 'clock') {
-      if (alignMount) disposeAlign();
+      disposeAlign();
       return;
     }
-    // already showing the right projection for this frame: nothing to refetch
-    if (alignMount && alignMount.frame === f && alignMount.presetKey === presetKey) return;
+    const window = findingsWindow();
+    const selected = f.selectedOcc;
+    const occurrenceId = selected ? alignMount?.projection?.occurrences.find((occurrence) => (
+      occurrence.identity.ep_id === selected.ep_id && occurrence.identity.t === selected.t
+    ))?.identity.id || null : null;
+    // Frame, window, and selection all determine the server-owned projection.
+    if (alignMount && alignMount.frame === f && alignMount.windowKey === windowKey(window)
+      && alignMount.occurrenceId === occurrenceId) return;
     el('chart').hidden = true;
+    el('canvas-head').hidden = true;
     el('brace').hidden = true;
     el('lane-wrap').hidden = true;
     const host = el('align-canvas');
     host.hidden = false;
     const generation = ++alignGeneration;
     Promise.resolve(callbacks.loadProjection?.({
-      view: mapped.view, factor: mapped.factor, block: presetKey, another: false,
+      view: mapped.view, factor: mapped.factor,
+      window: window ? { start_min: window[0], end_min: window[1] } : null,
+      another: false, occurrenceId,
     })).then((projection) => {
       if (generation !== alignGeneration || top() !== f) return;
       alignMount?.observer?.disconnect();
       alignMount?.chart?.dispose();
-      alignMount = { ...renderEventSurface(host, projection), frame: f, presetKey };
+      alignMount = { ...renderEventSurface(host, projection), frame: f, windowKey: windowKey(window), occurrenceId };
+      // The roster has the shared episode-and-time key, while the endpoint owns
+      // its opaque catalog id. Once the just-loaded catalog supplies that id,
+      // re-project the selected occurrence through the public endpoint.
+      if (selected && !occurrenceId) paintAlign();
     }).catch(() => {
       // ALIGN is a re-projection, not a navigation: a failed fetch leaves the
       // reader on whatever the canvas already showed rather than erroring the
       // whole workstation out from under an unrelated finding.
-      if (generation === alignGeneration) host.hidden = true;
+      if (generation === alignGeneration) disposeAlign();
     });
   }
 

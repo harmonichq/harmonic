@@ -46,7 +46,8 @@
    below where Glucose puts them. */
 .ec-canvas > .body { grid-template-rows: minmax(0, 1fr) auto; }
 
-.ec-title-context {
+.ec-title-context,
+.ec-window-context {
   color: var(--mk-muted);
   font-family: var(--ck-mono);
   font-size: var(--ck-micro);

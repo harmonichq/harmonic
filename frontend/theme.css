@@ -134,7 +134,6 @@ html.dark .cockpit-footer {
 }
 .cockpit-step[aria-current="step"] {
   border-color: color-mix(in srgb, var(--ck-accent) 75%, #f5f1e9);
-  background: var(--ck-accent-soft);
   color: #fff8f1;
 }
 .cockpit-step[aria-current="step"] .cockpit-step-number {

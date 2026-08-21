@@ -1675,8 +1675,8 @@ export const S37 = async (page) => {
   is(drawnWindow.chip, 'Window 14:00–16:00', `S37 the reader drew 14:00–16:00 (${drawnWindow.chip})`);
   await clickQueueRow(page, 'Late bolus');
   const panel = await state(page);
-  ok(/\b1 of 1 meal responses in 14:00–16:00\b/.test(panel.levelStat || ''),
-    `S37 the panel counts the meal in the drawn window (${panel.levelStat})`);
+  ok(/\b1 of 3 meal responses in 14:00–16:00 · 2 not attributed\b/.test(panel.levelStat || ''),
+    `S37 the panel preserves the drawn window's three-meal population (${panel.levelStat})`);
   const ticks = await marks(page, 'Occurrences');
   is(ticks.length, 1, 'S37 the canvas draws exactly that one occurrence');
   is(ticks[0].meta.t, LATE_MEAL.t, 'S37 ... whose own trigger is at 13:00, outside the window');
@@ -1694,7 +1694,7 @@ export const S37 = async (page) => {
   });
   is(chart.scoped, true, 'S37 the projection answered for a scoped window');
   is(chart.label, '14:00–16:00', 'S37 the chart counted the reader\'s own window');
-  is(chart.denominator, 1, 'S37 ... and counted the same single occurrence the panel did');
+  is(chart.denominator, 3, 'S37 ... and counted the same three-meal population the panel did');
   is(chart.caption, null, "S37 RETIRED 2026-08-20 Connor Griffin: Drop all that shit. It's a chart.");
 };
 
@@ -1736,7 +1736,7 @@ export const S38 = async (page) => {
 export const S39 = async (page) => {
   await clickQueueRow(page, 'Late bolus');
   const before = await state(page);
-  ok(/\b5 of 5 meal responses in 00:00–24:00\b/.test(before.levelStat || ''),
+  ok(/\b2 of 20 meal responses in 00:00–24:00 · 18 not attributed\b/.test(before.levelStat || ''),
     `S39 precondition: the whole-day population is on screen (${before.levelStat})`);
   await page.click('#seg-window button:nth-child(3)');   // Afternoon
   await settle(page, 250);                               // inside the flight
@@ -1745,7 +1745,7 @@ export const S39 = async (page) => {
   is(during.levelStat, null, "S39 the previous window's counts are withdrawn");
   is(during.levelEmpty, 'Counting 12:00–18:00…', 'S39 the pane names the window it is counting');
   is(during.crumbMeta, '12:00–18:00', 'S39 the meta prints the window with no numbers under it');
-  ok(!/\b5 of 5\b/.test(JSON.stringify(during)), 'S39 no stale count survives anywhere on the pane');
+  ok(!/\b2 of 20\b/.test(JSON.stringify(during)), 'S39 no stale count survives anywhere on the pane');
   await settle(page, 1400);
   const after = await state(page);
   is(after.levelLoading, 'false', 'S39 the wait ends when the rows land');

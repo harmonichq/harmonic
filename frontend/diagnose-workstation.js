@@ -281,22 +281,25 @@ const chartColors = (root) => {
      faithful translation is to read each workstation token from .dw, the
      element that declares it, rather than the app document root. */
   const css = (n) => getComputedStyle(root).getPropertyValue(n).trim();
-  /* THEME DEVIATION (#736) — the one mix ratio that cannot be one number.
+  /* THEME DEVIATION (#736) — the mix ratios cannot be one number.
      The 10–90 envelope is ceiling-bound in DARK: at 13% of the measured signal
      it composites to rgb(36,39,30) on the dark field and measures 1.22:1, and
      no token can lift it, because the ceiling is the ratio and not the source —
      even a pure-white source at 13% over that field stops at 1.52:1
-     (the Harmonic theme lock's "owed obligations"). Parchment does not
-     have the problem: the same 13% lands at 1.21:1 there too, but a subtractive
-     tint on a light ground reads at a contrast an additive one does not.
+     (the Harmonic theme lock's "owed obligations"). Light does not have that
+     ceiling: a subtractive tint on a light ground reads at a contrast an
+     additive one does not, so its two bands can spend more chroma on the
+     measured shape without competing with the median.
      So the ratio is theme-specific. It is read off `color-scheme`, which both
      themes declare, rather than off a class name — this builder samples the
      live stylesheet for every other value it returns and must not start
      restating theme facts from memory (R3, and the wrong ink in #644). The
-     25–75 band is deliberately NOT widened with it: the envelope has to stay
-     nested, and 26/38 keeps a clear step (1.59:1 vs 2.09:1) where a matched
-     rise would flatten the two into one shape. */
-  const bandOuterMix = getComputedStyle(root).colorScheme === 'dark' ? '26%' : '13%';
+     25–75 band stays at 38% in dark so 26/38 keeps a clear step (1.59:1 vs
+     2.09:1); light can open the same visual step further. */
+  const dark = getComputedStyle(root).colorScheme === 'dark';
+  const bandOuterMix = dark ? '26%' : '18%';
+  const bandInnerMix = dark ? '38%' : '46%';
+  const bandEdgeMix = dark ? '55%' : '68%';
   return {
     ...c,
     surface2: c['surface-2'],
@@ -305,8 +308,8 @@ const chartColors = (root) => {
     grid: `color-mix(in srgb, ${c.line} 80%, transparent)`,
     gridStrong: c.line,
     bandOuter: `color-mix(in srgb, ${c.primary} ${bandOuterMix}, transparent)`,
-    bandInner: `color-mix(in srgb, ${c.primary} 38%, transparent)`,
-    bandEdge: `color-mix(in srgb, ${c.primary} 55%, transparent)`,
+    bandInner: `color-mix(in srgb, ${c.primary} ${bandInnerMix}, transparent)`,
+    bandEdge: `color-mix(in srgb, ${c.primary} ${bandEdgeMix}, transparent)`,
     median: c['primary-600'] || c.primary,
     /* The ink for text sitting ON the median fill — the axis-riding value tag
        (term 25). It was read as `colors.onAccent` and never defined anywhere:

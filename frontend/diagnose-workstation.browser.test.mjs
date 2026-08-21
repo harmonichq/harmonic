@@ -184,6 +184,51 @@ test('Diagnose scopes the readable user-claim palette in both themes', async () 
     }
   });
 
+test('populated Diagnose renders readable theme-specific ink and chart marks', async () => {
+  for (const [theme, expected] of [
+    ['light', {
+      surface: 'rgb(250, 248, 244)', body: 'rgb(40, 59, 47)', meta: 'rgb(61, 88, 72)',
+      signal: 'rgb(47, 107, 79)', median: 'rgb(18, 61, 43)', meal: 'rgb(159, 96, 48)',
+    }],
+    ['dark', {
+      surface: 'rgb(38, 34, 32)', body: 'rgb(219, 207, 188)', meta: 'rgb(163, 150, 138)',
+      signal: 'rgb(134, 173, 120)', median: 'rgb(195, 180, 156)', meal: 'rgb(192, 141, 82)',
+    }],
+  ]) {
+    const browser = await runner.browser();
+    const page = await openApp(browser, { state: 'typical', theme, appSource: 'fixture' });
+    try {
+      const colors = await page.locator('.dw').evaluate((node) => {
+        const resolved = (property, value) => {
+          const probe = document.createElement('span');
+          probe.style[property] = value;
+          node.append(probe);
+          const color = getComputedStyle(probe)[property];
+          probe.remove();
+          return color;
+        };
+        return {
+          surface: resolved('backgroundColor', 'var(--ck-rail)'),
+          body: resolved('color', 'var(--wk-ink-body)'),
+          meta: resolved('color', 'var(--wk-ink-meta)'),
+          signal: resolved('color', 'var(--mk-primary)'),
+          median: resolved('color', 'var(--mk-primary-600)'),
+          meal: resolved('color', 'var(--ck-meal)'),
+        };
+      });
+      assert.deepEqual(colors, expected, `${theme} ink and chart palette`);
+      assert.ok(contrastRatio(colors.body, colors.surface) >= 4.5,
+        `${theme} body ink meets WCAG AA on the chart surface`);
+      assert.ok(contrastRatio(colors.meta, colors.surface) >= 4.5,
+        `${theme} metadata ink meets WCAG AA on the chart surface`);
+      for (const mark of ['signal', 'median', 'meal']) {
+        assert.ok(contrastRatio(colors[mark], colors.surface) >= 3,
+          `${theme} ${mark} clears the non-text contrast floor on the chart surface`);
+      }
+    } finally { await page.close(); }
+  }
+});
+
 /* LOCK:diagnose-workstation:1 — no page scroll at both required viewports (a
    narrower slice of term 1 than story S22 already owns: S22 covers it for
    the full "every state" contract; this only opens 'typical'). The

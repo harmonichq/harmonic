@@ -28,7 +28,7 @@
          saturation, so only marks carry chroma (term 11). */
       color-scheme: light;
       --wk-canvas:#17231d; --wk-surface:#faf8f4; --wk-surface-rail:#f0eee8; --wk-surface-sunken:#e7e4dc;
-      --wk-ink:#141a15; --wk-ink-body:#2f382f; --wk-ink-meta:#4a534a; --wk-ink-nav:#4f5a50;
+      --wk-ink:#141a15; --wk-ink-body:#283b2f; --wk-ink-meta:#3d5848; --wk-ink-nav:#405b49;
       --wk-rule:#c3bfb4; --wk-rule-strong:#6b7669; --wk-hairline:1px; --wk-radius:5px;
       --wk-shadow:0 1px 2px rgba(8,18,13,.16), 0 14px 30px -16px rgba(8,18,13,.5);
       --wk-elevation:0 14px 30px -16px rgba(8,18,13,.54);

@@ -1365,12 +1365,12 @@ export const S31 = async (page) => {
    changed and why, and touches nothing on disk. */
 
 /** The one meals episode the roster stories select. The event-comparison
-    capture reuses this (episode, instant) pair across FOUR catalog
+    capture reuses this (episode, instant) pair across TWO catalog
     occurrences, which is exactly why selection travels by the endpoint's own
     opaque id and this pair is only ever a join key. */
 const ROSTER_MEAL = { ep_id: '2020-03-01-ep72', t: '2020-03-01 19:10:00' };
 
-/** The committed payload, with the late-bolus classifier matched on one meal.
+/** The committed payload, with the carb-undercount classifier matched on one meal.
     Every meals occurrence the payload ships reads `outranked`, and `outranked`
     is residue with no band segment — a roster of none, and nothing to click. */
 const withFiredMeal = ({ analysis, exposures, scenarios }) => {
@@ -1378,9 +1378,9 @@ const withFiredMeal = ({ analysis, exposures, scenarios }) => {
   const meals = next.exposures.meals.occurrences;
   const at = meals.findIndex((o) => o.ep_id === ROSTER_MEAL.ep_id);
   if (at < 0) fail(`the payload no longer holds ${ROSTER_MEAL.ep_id}`);
-  meals[at] = { ...meals[at], verdicts: [{
-    classifier: 'late_bolus', matched: true, evidence_tier: 'inferred',
-    detail: 'the dose landed after the rise had started', silence_reason: null }] };
+  meals[at] = { ...meals[at], cause_lever: 'carb_undercount', cause_title: 'Carb undercount', verdicts: [{
+    classifier: 'carb_undercount', matched: true, evidence_tier: 'inferred',
+    detail: 'the entered carbs understated the rise', silence_reason: null }] };
   return { analysis, exposures: next, scenarios };
 };
 
@@ -1448,40 +1448,94 @@ const drawWindow = async (page, [fromMin, toMin], [standingFrom, standingTo]) =>
     rather than assumed unique. */
 // STORY:finding-evidence-routing:S32
 export const S32 = async (page) => {
-  await clickQueueRow(page, 'Late bolus');
+  await clickQueueRow(page, 'Carb undercount');
   const opened = await state(page);
   ok(opened.evRows > 0, 'S32 precondition: the roster has a row to select');
   ok(opened.alignShown, 'S32 precondition: ALIGN is offered on this case file');
   await page.click('#seg-align button:nth-child(2)');
   await page.locator('.ec-surface').waitFor();
   await settle(page, 600);
+  const request = page.waitForRequest((candidate) => {
+    const url = new URL(candidate.url());
+    return url.pathname === '/diagnose/event-comparison' && url.searchParams.has('occ');
+  });
   await page.click('#level .ev-row');
+  const requested = new URL((await request).url()).searchParams.get('occ');
   await settle(page, 800);
   const drawn = await page.evaluate(() => {
     const exposed = window.__diagnoseEventComparison;
-    const selected = exposed?.selected || null;
+    const selection = exposed?.projection?.selection || null;
+    const selected = selection?.detail || null;
     const catalog = (exposed?.projection?.occurrences || [])
       .filter((o) => o.identity.ep_id === selected?.identity?.ep_id
         && o.identity.t === selected?.identity?.t)
       .map((o) => o.identity.id);
+    const trace = (exposed?.chart.getOption().series || [])
+      .find((series) => series.name === 'Selected occurrence');
     return {
+      row: document.querySelector('#level .ev-row[aria-pressed="true"] .when')?.textContent.trim() ?? null,
       ep: selected?.identity?.ep_id ?? null,
       t: selected?.identity?.t ?? null,
       id: selected?.identity?.id ?? null,
-      requested: exposed?.projection?.selection?.requested_id ?? null,
-      state: exposed?.projection?.selection?.state ?? null,
+      join: selected ? `${new Date(`${selected.anchor.date}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · ${selected.identity.t.slice(11, 16)}` : null,
+      state: selection?.state ?? null,
       catalog,
-      trace: (exposed?.chart.getOption().series || []).some((series) => series.name === 'Selected occurrence'),
+      trace: trace?.data ?? null,
+      responseTrace: selected?.glucose?.map((point) => [point.minute, point.bg]) ?? null,
     };
   });
   is(drawn.state, 'selected', 'S32 the endpoint resolved a selection');
   is(drawn.ep, ROSTER_MEAL.ep_id, 'S32 the event canvas selected the episode the roster row names');
   is(drawn.t, ROSTER_MEAL.t, "S32 ... at that row's own instant");
+  is(drawn.join, drawn.row, 'S32 the selected response carries the visible roster row\'s join key');
   ok(drawn.catalog.length > 1,
     `S32 precondition: the (episode, instant) pair is NOT a unique address (${drawn.catalog.length} catalog ids)`);
   ok(drawn.catalog.includes(drawn.id), 'S32 the selection travels by one of those catalog ids');
-  is(drawn.requested, drawn.id, "S32 ... and that id is what the request carried");
-  ok(drawn.trace, 'S32 the selected occurrence is drawn');
+  is(requested, drawn.id, 'S32 the browser request carried the resolved opaque occurrence id');
+  is(drawn.trace, drawn.responseTrace, 'S32 the drawn trace carries that selected response');
+};
+
+/** S40 · #64 — the visible lows roster and By event canvas select the same
+    shared-population occurrence. The row's episode-and-time pair joins the
+    response and trace; the browser request still travels by the endpoint's
+    opaque occurrence id. */
+// STORY:finding-evidence-routing:S40
+export const S40 = async (page) => {
+  await clickQueueRow(page, 'Over-treated low');
+  const opened = await state(page);
+  ok(opened.evRows > 0, 'S40 precondition: the low roster has a visible row to select');
+  ok(opened.alignShown, 'S40 precondition: ALIGN is offered on this low case file');
+  await page.click('#seg-align button:nth-child(2)');
+  await page.locator('.ec-surface').waitFor();
+  await settle(page, 600);
+  const request = page.waitForRequest((candidate) => {
+    const url = new URL(candidate.url());
+    return url.pathname === '/diagnose/event-comparison' && url.searchParams.has('occ');
+  });
+  await page.click('#level .ev-row');
+  const requested = new URL((await request).url()).searchParams.get('occ');
+  await settle(page, 800);
+  const drawn = await page.evaluate(() => {
+    const exposed = window.__diagnoseEventComparison;
+    const selection = exposed?.projection?.selection || null;
+    const selected = selection?.detail || null;
+    const trace = (exposed?.chart.getOption().series || [])
+      .find((series) => series.name === 'Selected occurrence');
+    return {
+      row: document.querySelector('#level .ev-row[aria-pressed="true"] .when')?.textContent.trim() ?? null,
+      id: selected?.identity?.id ?? null,
+      kind: selected?.identity?.kind ?? null,
+      join: selected ? `${new Date(`${selected.anchor.date}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · ${selected.identity.t.slice(11, 16)}` : null,
+      state: selection?.state ?? null,
+      trace: trace?.data ?? null,
+      responseTrace: selected?.glucose?.map((point) => [point.minute, point.bg]) ?? null,
+    };
+  });
+  is(drawn.state, 'selected', 'S40 the endpoint resolved the visible low row');
+  is(drawn.kind, 'low', 'S40 the selected response is a low occurrence');
+  is(drawn.join, drawn.row, 'S40 the selected response carries the visible low row\'s join key');
+  is(requested, drawn.id, 'S40 the browser request carried the resolved opaque occurrence id');
+  is(drawn.trace, drawn.responseTrace, 'S40 the drawn trace carries that selected low response');
 };
 
 /** S33 · #58 — while the event canvas is mounted, its own header is the only
@@ -1621,8 +1675,8 @@ export const S37 = async (page) => {
   is(drawnWindow.chip, 'Window 14:00–16:00', `S37 the reader drew 14:00–16:00 (${drawnWindow.chip})`);
   await clickQueueRow(page, 'Late bolus');
   const panel = await state(page);
-  ok(/\b1 of 1 meal responses in 14:00–16:00\b/.test(panel.levelStat || ''),
-    `S37 the panel counts the meal in the drawn window (${panel.levelStat})`);
+  ok(/\b1 of 3 meal responses in 14:00–16:00 · 2 not attributed\b/.test(panel.levelStat || ''),
+    `S37 the panel preserves the drawn window's three-meal population (${panel.levelStat})`);
   const ticks = await marks(page, 'Occurrences');
   is(ticks.length, 1, 'S37 the canvas draws exactly that one occurrence');
   is(ticks[0].meta.t, LATE_MEAL.t, 'S37 ... whose own trigger is at 13:00, outside the window');
@@ -1640,7 +1694,7 @@ export const S37 = async (page) => {
   });
   is(chart.scoped, true, 'S37 the projection answered for a scoped window');
   is(chart.label, '14:00–16:00', 'S37 the chart counted the reader\'s own window');
-  is(chart.denominator, 1, 'S37 ... and counted the same single occurrence the panel did');
+  is(chart.denominator, 3, 'S37 ... and counted the same three-meal population the panel did');
   is(chart.caption, null, "S37 RETIRED 2026-08-20 Connor Griffin: Drop all that shit. It's a chart.");
 };
 
@@ -1682,7 +1736,7 @@ export const S38 = async (page) => {
 export const S39 = async (page) => {
   await clickQueueRow(page, 'Late bolus');
   const before = await state(page);
-  ok(/\b5 of 5 meal responses in 00:00–24:00\b/.test(before.levelStat || ''),
+  ok(/\b2 of 20 meal responses in 00:00–24:00 · 18 not attributed\b/.test(before.levelStat || ''),
     `S39 precondition: the whole-day population is on screen (${before.levelStat})`);
   await page.click('#seg-window button:nth-child(3)');   // Afternoon
   await settle(page, 250);                               // inside the flight
@@ -1691,7 +1745,7 @@ export const S39 = async (page) => {
   is(during.levelStat, null, "S39 the previous window's counts are withdrawn");
   is(during.levelEmpty, 'Counting 12:00–18:00…', 'S39 the pane names the window it is counting');
   is(during.crumbMeta, '12:00–18:00', 'S39 the meta prints the window with no numbers under it');
-  ok(!/\b5 of 5\b/.test(JSON.stringify(during)), 'S39 no stale count survives anywhere on the pane');
+  ok(!/\b2 of 20\b/.test(JSON.stringify(during)), 'S39 no stale count survives anywhere on the pane');
   await settle(page, 1400);
   const after = await state(page);
   is(after.levelLoading, 'false', 'S39 the wait ends when the rows land');
@@ -1741,6 +1795,7 @@ export const S39 = async (page) => {
 // STORY:finding-evidence-routing:S37
 // STORY:finding-evidence-routing:S38
 // STORY:finding-evidence-routing:S39
+// STORY:finding-evidence-routing:S40
 // STORY:finding-evidence-routing:D1
 // STORY:finding-evidence-routing:D2
 // STORY:finding-evidence-routing:D3
@@ -1773,6 +1828,7 @@ export const STORIES = [
   }],
   ['S38', S38, 'typical'],
   ['S39', S39, 'dense', { findingsDelayMs: 900 }],
+  ['S40', S40, 'typical'],
   ['D1', D1, 'dense'], ['D2', D2, 'dense'], ['D3', D3, 'dense'],
 ];
 

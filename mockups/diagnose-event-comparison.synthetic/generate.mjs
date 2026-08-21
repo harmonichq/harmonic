@@ -3,10 +3,11 @@
  * Detector verdicts remain fixture facts. The `visual_support` projection is
  * generated here, on the server side of the mock boundary, so the browser only
  * renders Supported / Limited / Withheld and never carries a numeric floor.
- * Meals deliberately re-use the workstation fixture's five episode/time pairs;
- * lows remain disjoint, pending the separate population-unification ticket.
+ * Identity and calendar facts come from the workstation's single synthetic
+ * exposure population; comparison-specific shapes stay local here.
  */
 import { readFileSync, writeFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 const factors = {
   meals: ['carb_undercount', 'late_bolus', 'meal_over_delivery'],
@@ -26,7 +27,15 @@ const plan = [
   'neutral', 'neutral', 'neutral', 'neutral', 'neutral', 'neutral',
   'another_factor', 'excluded', 'excluded',
 ];
-const hours = [1, 7, 13, 19, 4, 10, 16, 22, 6, 12, 18, 2, 8, 14, 20, 5, 11, 17, 3, 15];
+// Comparison membership is fixture-local. Workstation rows supply the canonical
+// identity/anchor/date tuple, but their counter-example attribution must never
+// rewrite this capture's twenty-row cohort or outcome plan (ADR 64).
+const outcomeMinutes = {
+  meals: [455, 875, 1150, 465, 790, 1010, 80, 365, 730, 1085,
+    290, 1150, 920, 1235, 205, 650, 990, 350, 845, 1180],
+  lows: [95, 140, 185, 230, 275, 320, 505, 640, 905, 1075,
+    410, 700, 1015, 160, 980, 55, 365, 515, 755, 835],
+};
 const WINDOWS = [null, { start_min: 0, end_min: 360 },
   { start_min: 360, end_min: 720 }, { start_min: 720, end_min: 1080 },
   { start_min: 1080, end_min: 1440 }, { start_min: 1320, end_min: 120 },
@@ -34,10 +43,6 @@ const WINDOWS = [null, { start_min: 0, end_min: 360 },
   { start_min: 360, end_min: 480 }, { start_min: 455, end_min: 790 },
   { start_min: 465, end_min: 780 }, { start_min: 720, end_min: 1440 },
   { start_min: 840, end_min: 900 }];
-const workstationMeals = JSON.parse(readFileSync(
-  new URL('../diagnose-workstation.synthetic/payload.json', import.meta.url), 'utf8'))
-  .exposures.exposures.meals.occurrences;
-
 const cohortRank = (index) => plan.slice(0, index).filter((cohort) => cohort === plan[index]).length;
 
 function traceIncludes(cohort, rank, minute, start, end) {
@@ -226,17 +231,12 @@ function routes(view, cohort) {
   return result;
 }
 
-function occurrence(view, index) {
-  const day = String(index + 1).padStart(2, '0');
-  const hour = String(hours[index]).padStart(2, '0');
-  const local = view === 'meals' ? workstationMeals[index % workstationMeals.length] : null;
-  const stamp = local?.t || `2026-08-${day} ${hour}:00:00`;
+function occurrence(view, index, source) {
+  const stamp = source.t;
   // ADR 62 membership follows where the consequence landed, not the trigger.
   // This shared 13:00 meal key lands at 14:35, so a 14:00–15:00 request must
   // include it even though its anchor lies outside that window.
-  const outcomeMin = view === 'meals' && index === 1
-    ? 14 * 60 + 35
-    : Number(stamp.slice(11, 13)) * 60 + Number(stamp.slice(14, 16));
+  const outcomeMin = outcomeMinutes[view][index];
   const cohort = plan[index];
   const primary = factors[view][0];
   const trace = {
@@ -266,8 +266,8 @@ function occurrence(view, index) {
   }
   return {
     id: `${view}-synthetic-${index + 1}`,
-    ep_id: local?.ep_id || `${view}-ep-${index + 1}`,
-    date: local?.date || `2026-08-${day}`,
+    ep_id: source.ep_id,
+    date: source.date,
     anchor_t: stamp,
     outcome_min: outcomeMin,
     anchor_bg: view === 'meals' ? 132 + index : 68 + (index % 3),
@@ -288,37 +288,66 @@ function occurrence(view, index) {
   };
 }
 
-const capture = {
-  schema: 'issue-677-event-comparison-capture-v2',
-  fixture: 'labeled-synthetic',
-  source_window: { start: '2026-07-13', end: '2026-08-11' },
-  views: {
-    meals: attachVisualSupport({
-      anchor: 'completed carb-bolus', window: [-60, 300],
-      factors: factors.meals, default_factor: 'carb_undercount',
-      factor_labels: Object.fromEntries(factors.meals.map((key) => [key, labels[key]])),
-      occurrences: plan.map((_, index) => occurrence('meals', index)),
-    }),
-    lows: attachVisualSupport({
-      anchor: 'excursion nadir', window: [-300, 120],
-      factors: factors.lows, default_factor: 'over_treated_low',
-      factor_labels: Object.fromEntries(factors.lows.map((key) => [key, labels[key]])),
-      occurrences: plan.map((_, index) => occurrence('lows', index)),
-    }),
-  },
-};
-const serialized = JSON.stringify(capture, null, 2) + '\n';
-const target = new URL('./capture.json', import.meta.url);
-if (process.argv.includes('--check')) {
-  const current = readFileSync(target, 'utf8');
-  if (current !== serialized) {
-    process.stderr.write('stale fixture: mockups/diagnose-event-comparison.synthetic/capture.json — rerun generate.mjs --write\n');
-    process.exitCode = 1;
-  } else {
-    process.stdout.write('event-comparison synthetic capture current\n');
+function sourceRows(workstationExposures, family) {
+  const rows = workstationExposures?.exposures?.[family]?.occurrences;
+  if (!Array.isArray(rows) || rows.length !== plan.length) {
+    throw new Error(`incomplete ${family} exposure population: expected ${plan.length} rows, got ${rows?.length ?? 0}`);
   }
-} else if (process.argv.includes('--write')) {
-  writeFileSync(target, serialized);
-} else {
-  process.stdout.write(serialized);
+  const window = workstationExposures?.window;
+  if (!window?.start || !window?.end) throw new Error('missing workstation exposure window');
+  for (const [index, row] of rows.entries()) {
+    if (!row?.ep_id || !row?.t || !row?.date) {
+      throw new Error(`incomplete ${family} source row ${index + 1}`);
+    }
+    if (row.date < window.start || row.date > window.end) {
+      throw new Error(`${family} source row ${index + 1} date ${row.date} outside inclusive window ${window.start}..${window.end}`);
+    }
+  }
+  return rows;
+}
+
+/** Build and validate the fixture-only capture from the canonical workstation input. */
+export function buildCapture(workstationExposures) {
+  const meals = sourceRows(workstationExposures, 'meals');
+  const lows = sourceRows(workstationExposures, 'lows');
+  return {
+    schema: 'issue-677-event-comparison-capture-v2',
+    fixture: 'labeled-synthetic',
+    source_window: structuredClone(workstationExposures.window),
+    views: {
+      meals: attachVisualSupport({
+        anchor: 'completed carb-bolus', window: [-60, 300],
+        factors: factors.meals, default_factor: 'carb_undercount',
+        factor_labels: Object.fromEntries(factors.meals.map((key) => [key, labels[key]])),
+        occurrences: plan.map((_, index) => occurrence('meals', index, meals[index])),
+      }),
+      lows: attachVisualSupport({
+        anchor: 'excursion nadir', window: [-300, 120],
+        factors: factors.lows, default_factor: 'over_treated_low',
+        factor_labels: Object.fromEntries(factors.lows.map((key) => [key, labels[key]])),
+        occurrences: plan.map((_, index) => occurrence('lows', index, lows[index])),
+      }),
+    },
+  };
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  const workstationExposures = JSON.parse(readFileSync(
+    new URL('../diagnose-workstation.synthetic/payload.json', import.meta.url), 'utf8')).exposures;
+  const capture = buildCapture(workstationExposures);
+  const serialized = JSON.stringify(capture, null, 2) + '\n';
+  const target = new URL('./capture.json', import.meta.url);
+  if (process.argv.includes('--check')) {
+    const current = readFileSync(target, 'utf8');
+    if (current !== serialized) {
+      process.stderr.write('stale fixture: mockups/diagnose-event-comparison.synthetic/capture.json — rerun generate.mjs --write\n');
+      process.exitCode = 1;
+    } else {
+      process.stdout.write('event-comparison synthetic capture current\n');
+    }
+  } else if (process.argv.includes('--write')) {
+    writeFileSync(target, serialized);
+  } else {
+    process.stdout.write(serialized);
+  }
 }

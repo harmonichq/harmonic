@@ -45,8 +45,9 @@
 - Backend: 1,857 passed, 1 conditional skip, 0 failures.
 - Frontend: 374 passed, 0 skipped, 0 failures.
 - ADR, owned-identifier, and public-allowlist guards: all passed.
-- All Python and JavaScript fixture drift checks: current.
-- Non-served browser legs: Day 3/3; Diagnose 14/14; cockpit 10 passed with its
+- All Python and JavaScript fixture drift checks, including the extracted
+  finding-evidence-routing exploration: current.
+- Non-served browser legs: Day 3/3; Diagnose 14/14; cockpit 11 passed with its
   declared render-matrix skip; browser runner 1/1; first-plan reconcile 4/4.
 - Served browser legs: Diagnose 43/43; event comparison 13/13; support audit 7
   renders; Verify 8/8. The server used only the documented generated database

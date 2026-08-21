@@ -43,7 +43,7 @@
 
 - `uv sync --frozen --extra api --extra sync`: 53 packages checked.
 - Backend: 1,857 passed, 1 conditional skip, 0 failures.
-- Frontend: 372 passed, 0 skipped, 0 failures.
+- Frontend: 374 passed, 0 skipped, 0 failures.
 - ADR, owned-identifier, and public-allowlist guards: all passed.
 - All Python and JavaScript fixture drift checks: current.
 - Non-served browser legs: Day 3/3; Diagnose 14/14; cockpit 10 passed with its

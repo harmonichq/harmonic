@@ -45,12 +45,13 @@
 :root {
   /* the measured signal is forest, and the median (`--mk-primary-600`) is the
      darkest step of it against the sheet */
-  --mk-primary: #455f41;
-  --mk-primary-600: #183326;
-  --mk-primary-soft: #dde7de;
+  --mk-primary: #2f6b4f;
+  --mk-primary-600: #123d2b;
+  --mk-primary-soft: #d6e8dc;
+  --mk-ok: #347354;
   /* the plot draws no frame of its own: the grid recedes beneath the data so
      the dashed target rails outrank the gridlines (term 6) */
-  --mk-line: #dedad0;
+  --mk-line: #d4cfc3;
 }
 /* Light ALONE splits the warn/danger marks from their text inks: term 4 raises
    --warn and --danger far enough to clear 4.5:1 as small text, and a mark
@@ -334,9 +335,9 @@ html.dark .vw .verify-strip .cap { color: #c6b7a2; }
 /* Term 5. Meals take clay, neutral proportions take forest, and insufficiency
    takes neutral ink plus a structural tell. */
 :is(.dw, .vw) {
-  --ck-meal: #8a6a3c;
+  --ck-meal: #9f6030;
   --ck-insuff: #5e645b;
-  --ck-up: #455f41;
+  --ck-up: #2f6b4f;
 }
 html.dark :is(.dw, .vw) {
   --ck-rail: var(--wk-surface);

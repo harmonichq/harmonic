@@ -143,3 +143,5 @@ it unchanged for execution; this ledger remains the non-normative session record
   undefined omitted/invalid `selected_id` outcomes were `injected` by panel 1's
   interface fix. Both claims were reproduced against the fixed 30-day behavioral
   endpoint and the current findings schema before revision.
+- Panel 3: 0 blockers and 0 injected defects. The fresh cold pass returned
+  `countersigned`; adversarial review terminated at the clean-pass condition.

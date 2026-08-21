@@ -2,7 +2,7 @@
 
 ## Decisions
 
-- Treat the Carb ratio information-only destination as a revision of the shipped
+- Treat the I:C information-only destination as a revision of the shipped
   Diagnose finding-to-evidence surface, not as a greenfield mock lock. The one
   inspector and evidence canvas already ship, and `ui-craft` requires a new view
   inside a shipped shell to use its `revise` lane. `inline`

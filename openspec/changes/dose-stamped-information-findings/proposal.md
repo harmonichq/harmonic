@@ -2,7 +2,7 @@
 
 ## Why
 
-ADR 20 preserves a Carb ratio measurement after its programmed setting has been
+ADR 20 preserves an I:C measurement after its programmed setting has been
 retired, but only the currently programmed regime may assert a move. The shipped
 Diagnose surface has no settled destination for that historical read. Without
 one, a later build could make past evidence look like a recommendation or quietly

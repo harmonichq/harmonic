@@ -1,8 +1,8 @@
 # Design — dose-stamped-information-findings
 
-## ADR 22 — A retired Carb ratio is a historical measurement, never current advice
+## ADR 22 — A retired I:C is a historical measurement, never current advice
 
-**Ruling.** A dose-stamped Carb ratio regime that is no longer programmed enters
+**Ruling.** A dose-stamped I:C regime that is no longer programmed enters
 Diagnose as a `history` Audit item while its analyzer-published estimate remains
 non-null. It is a tuning item, never a behavioral Finding. Its primary read is
 conclusion first:
@@ -30,7 +30,7 @@ Each history row has this server-owned contract:
 | measurement | Distinct `past_setting`, `programmed_now`, `estimate`, and `support` fields |
 | action fields | `recommended`, `direction`, and `lean` are `null` |
 | `chips` | Empty; during a sift the row joins the collapsed `1 Watching read` / `{n} Watching reads` toggle |
-| route | The historical Carb ratio case-file variant, selected by `register` plus `parameter` |
+| route | The historical I:C case-file variant, selected by `register` plus `parameter` |
 
 History is part of the subordinate Watching section, never Audit's action-ready
 rank. The global projection includes every active history row. An explicit clock
@@ -74,12 +74,15 @@ remains evidence-only and never moves the reader's clock window.
 `By event` reads a new, read-only
 `GET /diagnose/carb-ratio-history/events?history_id=<id>` projection. Its response
 schema is `diagnose-carb-ratio-history-events-v1` and carries
-`{schema, history_id, window_days, run_ids, series}`. `window_days` is `90`;
+`{schema, history_id, window_days, run_ids, selected_run_id, series}`. `window_days` is `90`;
 `run_ids` is the complete analyzer-published membership; and `series` has one entry
 per run id with that `run_id`, its meal time, and glucose points expressed as
-minutes from the meal event. An optional `selected_run_id` selects one member
-without changing `run_ids` or `series`. Membership is read from the history item
-and never recomputed in this projection or the frontend.
+minutes from the meal event. When the optional `selected_run_id` is omitted, the
+response carries `selected_run_id: null`; a member is echoed without changing
+`run_ids` or `series`. A malformed value returns HTTP 400 with a specific detail,
+and a well-formed run outside this history item's published membership returns HTTP
+404. Those failures preserve the prior inspector/canvas pair. Membership is read
+from the history item and never recomputed in this projection or the frontend.
 The shipped `/diagnose/event-comparison` endpoint remains the behavioral
 `meals`/`lows` projection over its fixed 30-day window; history neither extends nor
 truncates through it.

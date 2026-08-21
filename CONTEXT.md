@@ -391,9 +391,9 @@ The decision mode within the top-level Diagnose tab. It holds one ranked queue o
 engine-qualified **Audit items**: tuning items and behavioral **Findings**. Only a
 tuning item can stage a move into **Plan**; behavioral Findings remain advisory. Its
 boundary is deliberate: an observation in **Explore** is not an Audit item until the
-engine independently qualifies it. Held and still-collecting tuning reads remain
-visible in a separate **Watching** section beneath the action-ready queue; they do not
-compete in its rank.
+engine independently qualifies it. Held, still-collecting, and historical tuning
+reads remain visible in a separate **Watching** section beneath the action-ready
+queue; they do not compete in its rank.
 _Avoid_: settings screen, recommendation list (too broad), Plan (Audit decides; Plan
 holds the staged pump change).
 
@@ -404,9 +404,9 @@ I:C estimate; it is not itself a Finding.
 _Avoid_: Finding when the item is tuning, recommendation (not every item can act).
 
 **Watching**:
-The subordinate Audit section for held and still-collecting tuning reads that are not
-available for a decision. It keeps incomplete evidence visible without promoting it
-into Audit's action-ready rank.
+The subordinate Audit section for held, still-collecting, and historical tuning
+reads that are not available for a decision. It keeps incomplete or past evidence
+visible without promoting it into Audit's action-ready rank.
 _Avoid_: queue, backlog, snoozed findings.
 
 **Explore**:

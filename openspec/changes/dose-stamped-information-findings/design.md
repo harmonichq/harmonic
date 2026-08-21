@@ -29,7 +29,7 @@ Each history row has this server-owned contract:
 | `priority` / `tier` | `null` / `noted` |
 | measurement | Distinct `past_setting`, `programmed_now`, `estimate`, and `support` fields |
 | action fields | `recommended`, `direction`, and `lean` are `null` |
-| `chips` | Empty; the row follows Watching's existing collapsed-count behavior during a sift |
+| `chips` | Empty; during a sift the row joins the collapsed `1 Watching read` / `{n} Watching reads` toggle |
 | route | The historical Carb ratio case-file variant, selected by `register` plus `parameter` |
 
 History is part of the subordinate Watching section, never Audit's action-ready

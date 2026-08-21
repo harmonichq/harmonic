@@ -1,10 +1,10 @@
 # Cockpit shell behavior ledger
 
-★ FROZEN 2026-08-21 · base 0df7716bb4e4035733abed8d82e75c0c080da660 · generator n/a · window n/a · fixtures diagnose-workstation payload: cc0276b36f73, event-comparison capture: 3e8d2675d105, explore fixture module: 2331cbe8efad, findings mirror: 4fee56325999 · predecessor shipped app at base · retired 0
+★ FROZEN 2026-08-21 · base b075c715a497b55e684f966cf046dc9179f428ab · generator n/a · window n/a · fixtures diagnose-workstation payload: 80bc31c8b528, event-comparison capture: d72cabec05bf, explore fixture module: 2331cbe8efad, findings mirror: 4fee56325999, generated findings projection: 6cee39026000 · predecessor shipped app at base · retired 1
 
-The exact transported bytes are `mockups/diagnose-workstation.synthetic/payload.json`, `mockups/diagnose-event-comparison.synthetic/capture.json`, `mockups/explore-investigation.fixture.js`, and `mockups/findings-projection.mirror.mjs` at the pinned base SHA. They are manufactured/synthetic inputs served by the app-only opener in `frontend/cockpit-shell.browser.test.mjs`; no live server, fetch, personal database, credential, or network response participates. Source inventory covered the shell markup and Vue handlers in `frontend/index.html`, the interaction selectors in `frontend/shell.css` and `frontend/theme.css`, the imported tab-routing helper, and the fixture projections imported by the opener.
+The exact transported bytes are `mockups/diagnose-workstation.synthetic/payload.json`, `mockups/diagnose-event-comparison.synthetic/capture.json`, `mockups/explore-investigation.fixture.js`, `mockups/findings-projection.mirror.mjs`, and `frontend/__fixtures__/findings-projection.json` at the pinned base SHA. They are manufactured/synthetic inputs served by the app-only opener in `frontend/cockpit-shell.browser.test.mjs`; no live server, fetch, personal database, credential, or network response participates. Source inventory covered the shell markup and Vue handlers in `frontend/index.html`, the interaction selectors in `frontend/shell.css` and `frontend/theme.css`, the imported tab-routing helper, and the fixture projections imported by the opener.
 
-No QUESTION or retirement was found. Every story below is exported, tagged, and registered in `COCKPIT_SHELL_STORIES`; the replay prints its nonzero applicable count and the opener aborts unknown or missing requests.
+No QUESTION remains open. Every active story and permanent retirement below is exported, tagged, and registered in `COCKPIT_SHELL_STORIES`; the replay prints its nonzero applicable count and every retirement sanction, and the opener aborts unknown or missing requests.
 
 ## Stories
 
@@ -72,6 +72,15 @@ S10 · Opening Theme and hovering the unchecked row paints a neutral 95% panel /
   old-fail/new-pass: the amended hover relationship would fail on the base because hover equaled `--ck-accent-soft`; it passes after the ADR 49 CSS revision; deliberate signal-well-restoration mutations fail in both themes
   status: amended 2026-08-21 · replayed-pass on revision
 
+## Retired behavior
+
+R1 · The obsolete occurrence-list route stays retired while the Diagnose Inspector remains the sole populated occurrence-evidence path.
+  sanction: Connor · 2026-08-18 · "the dead `occurrenceModal` hash machinery goes with them."
+  handlers/invariants: a fixture-derived stale `modal=occurrences` URL canonicalizes to `#diagnose`; no accessible occurrences dialog or second roster appears; a public finding-row click populates the Inspector
+  source: `frontend/index.html`; generated findings/exposures inputs in `frontend/__fixtures__/findings-projection.json`
+  evidence: `STORY:cockpit-shell:R1` / exported `R1`; source-adjacent `RETIRED:Connor:2026-08-18`; independent canonical-hash and duplicate-route mutations
+  status: retired 2026-08-21 · replayed-pass on revision
+
 ## Inventory completeness
 
-All shell navigation, Theme, quick Carb log entry, Carb questions, Glossary, drawer, hover, focus, checked/current state, viewport, cross-tab, cross-theme, count, material, type-rank, and responsive invariants map to S1–S10. The browser gate's Diagnose/Verify seam and event-comparison assertions remain independent carried regressions; they do not register cockpit-shell handlers and are not relabeled as shell stories.
+All shell navigation, Theme, quick Carb log entry, Carb questions, Glossary, drawer, hover, focus, checked/current state, viewport, cross-tab, cross-theme, count, material, type-rank, and responsive invariants map to S1–S10. The retired occurrence-list route maps permanently to R1. The browser gate's Diagnose/Verify seam and event-comparison assertions remain independent carried regressions; they do not register cockpit-shell handlers and are not relabeled as shell stories.

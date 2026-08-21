@@ -60,3 +60,4 @@ Disposition: inline in this proposal and unchanged in the locked work order.
 Production impact is limited to deleting an inert frontend route from
 `frontend/index.html`. Contract and test changes are limited to the existing
 Cockpit shell ledger/browser adapter and OpenSpec evidence. No API, stored-data,
+fixture-content, finding, model, safety, or Plan behavior changes.

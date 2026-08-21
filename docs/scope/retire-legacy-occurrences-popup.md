@@ -96,3 +96,5 @@ Disposition: copied unchanged into the proposal and locked work order.
 - **Cold round 2:** the same panel found two injected seams (the wrong fixture
   identifier source and underspecified sanction validation) plus remaining
   authoring gaps in source-removal proof and concrete Inspector evidence. The
+  locked work order incorporates all four corrections and keeps the resulting
+  implementation in one flat ticket.

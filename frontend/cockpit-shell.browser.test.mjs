@@ -53,12 +53,17 @@ if (missing.length) {
 // the fail-closed checks above have confirmed a usable chromium is available.
 const { createBrowserRunner } = require('./browser-runner.js');
 
-const FRONTEND = fileURLToPath(new URL('.', import.meta.url));
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
+const APP_ROOT = process.env.COCKPIT_APP_ROOT || ROOT;
+const FRONTEND = join(APP_ROOT, 'frontend');
 const DIAGNOSE_PAYLOAD = JSON.parse(await readFile(
   join(ROOT, 'mockups/diagnose-workstation.synthetic/payload.json'), 'utf8'));
 const EVENT_COMPARISON = JSON.parse(await readFile(
   join(ROOT, 'mockups/diagnose-event-comparison.synthetic/capture.json'), 'utf8'));
+const FINDINGS_PROJECTION = JSON.parse(await readFile(
+  join(FRONTEND, '__fixtures__/findings-projection.json'), 'utf8'));
+const COCKPIT_LEDGER = await readFile(join(ROOT, 'mockups/cockpit-shell.behavior.md'), 'utf8');
+const REPLAY_SOURCE = await readFile(fileURLToPath(import.meta.url), 'utf8');
 const SHOTS = process.env.COCKPIT_SHOTS;
 const RENDER_PHASE = process.env.COCKPIT_RENDER_PHASE || 'revision';
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml' };
@@ -72,6 +77,40 @@ const VIEWPORTS = [
   { width: 1440, height: 900 },
   { width: 1280, height: 800 },
 ];
+const RETIRED_OCCURRENCE_SOURCE_TOKENS = Object.freeze([
+  'occurrenceModal',
+  'openOccurrences',
+  'closeOccurrences',
+  'formatOccurrenceTime',
+  'goToOccurrence',
+  'modal=occurrences',
+]);
+const R1_OWNER = 'Connor';
+const R1_DATE = '2026-08-18';
+const R1_SANCTION = 'the dead `occurrenceModal` hash machinery goes with them.';
+const retiredSection = COCKPIT_LEDGER.split('\n## Retired behavior\n')[1]?.split('\n## ')[0];
+const retiredHeaderCount = Number(COCKPIT_LEDGER.match(/· retired (\d+)$/m)?.[1]);
+const retiredRecords = retiredSection?.match(/^R\d+ ·[^\n]*(?:\n  [^\n]*)*/gm) || [];
+assert.equal(retiredRecords.length, retiredHeaderCount,
+  'the frozen retired count must match the permanent retirement records');
+const r1Records = retiredRecords.filter((record) => record.startsWith('R1 ·'));
+assert.equal(r1Records.length, 1, 'the behavior ledger must contain exactly one R1 record');
+const r1Record = r1Records[0];
+const r1Sanction = r1Record?.match(/^  sanction: ([^·]+) · (\d{4}-\d{2}-\d{2}) · "([^"]+)"$/m);
+assert.deepEqual(r1Sanction?.slice(1).map((part) => part.trim()),
+  [R1_OWNER, R1_DATE, R1_SANCTION],
+  'R1 must match the behavior ledger owner, date, and exact sanction');
+const r1SourceTag = REPLAY_SOURCE.match(
+  /\/\/ RETIRED:([^:\n]+):(\d{4}-\d{2}-\d{2})\nexport async function R1\(/);
+assert.deepEqual(r1SourceTag?.slice(1), r1Sanction?.slice(1, 3).map((part) => part.trim()),
+  'R1 must keep its ledger owner/date tag adjacent to the exported replay');
+
+test('the retired occurrence route has no production source', async () => {
+  const source = await readFile(join(FRONTEND, 'index.html'), 'utf8');
+  const survivors = RETIRED_OCCURRENCE_SOURCE_TOKENS.filter((token) => source.includes(token));
+  assert.deepEqual(survivors, [],
+    `frontend/index.html still carries retired occurrence-route source: ${survivors.join(', ')}`);
+});
 
 const maturing = {
   id: 'profile-all-20260710090000', parameter: 'profile', slot: null,
@@ -267,9 +306,12 @@ async function routeApp(page, options = {}) {
         start_min: Number(url.searchParams.get('start_min')),
         end_min: Number(url.searchParams.get('end_min')),
       };
-      return route.fulfill({ json: projectFindings({ analysis: analyze, scenarios }, scoped) });
+      const input = options.findingsInput || { analysis: analyze, scenarios };
+      return route.fulfill({ json: projectFindings(input, scoped) });
     }
-    if (url.pathname === '/explore/exposures') return route.fulfill({ json: {} });
+    if (url.pathname === '/explore/exposures') {
+      return route.fulfill({ json: options.exposuresInput || {} });
+    }
     if (url.pathname === '/scenarios') return route.fulfill({ json: scenarios });
     if (url.pathname === '/audit/dismissals') return route.fulfill({ json: { dismissals: {} } });
     if (url.pathname === '/outcomes/trend') return route.fulfill({ json: {} });
@@ -313,7 +355,10 @@ async function openApp(browser, options = {}) {
     localStorage.setItem('tab', tab);
     localStorage.setItem('theme', theme);
   }, { tab: options.tab || 'diagnose', theme: options.theme || 'light' });
-  await page.goto(`http://ciq.local/?view=${options.eventView || 'glucose'}#${options.tab || 'diagnose'}`);
+  const initialHash = options.initialHash || `#${options.tab || 'diagnose'}`;
+  const query = new URLSearchParams({ view: options.eventView || 'glucose' });
+  if (options.state) query.set('mode', options.state);
+  await page.goto(`http://ciq.local/?${query}${initialHash}`);
   await page.locator('.cockpit-shell').waitFor();
   if (['meals', 'lows'].includes(options.eventView)) {
     await page.locator(options.expectEventError ? '.ec-error' : '.ec-surface').waitFor();
@@ -836,8 +881,95 @@ export async function S10(browser) {
   }
 }
 
+async function assertRetiredOccurrenceRoute(page) {
+  assert.equal(await page.evaluate(() => location.hash), '#diagnose',
+    'the stale occurrence-list URL must canonicalize to #diagnose');
+  const duplicates = await page.evaluate(() => ({
+    dialogs: [...document.querySelectorAll('[role="dialog"]')]
+      .filter((node) => /occurrences/i.test(
+        node.getAttribute('aria-label') || node.getAttribute('aria-labelledby') || node.textContent || ''))
+      .length,
+    outsideRoster: [...document.querySelectorAll('.ev-group, .ev-row')]
+      .filter((node) => !node.closest('#level')).length,
+  }));
+  assert.deepEqual(duplicates, { dialogs: 0, outsideRoster: 0 },
+    'no accessible occurrences dialog or second occurrence roster may exist');
+}
+
+async function openRetiredOccurrence(browser, options = {}) {
+  const lever = FINDINGS_PROJECTION.inputs.scenarios.patterns[0].lever;
+  assert.ok(lever, 'R1 requires a generated scenario lever');
+  const page = await openApp(browser, {
+    ...options,
+    state: 'dense',
+    initialHash: `#diagnose?modal=occurrences&detector=${encodeURIComponent(lever)}`,
+    findingsInput: {
+      analysis: FINDINGS_PROJECTION.inputs.analysis,
+      exposures: FINDINGS_PROJECTION.inputs.exposures,
+      scenarios: FINDINGS_PROJECTION.inputs.scenarios,
+    },
+    exposuresInput: FINDINGS_PROJECTION.inputs.exposures,
+  });
+  await page.locator('[aria-label="Inspector"]').waitFor();
+  const row = page.locator('#level .qrow[data-state="finding"]').first();
+  try {
+    await row.waitFor({ timeout: 5_000 });
+  } catch (error) {
+    const level = await page.locator('#level').innerText();
+    const states = await page.locator('#level .qrow').evaluateAll((nodes) =>
+      nodes.map((node) => `${node.dataset.state}:${node.dataset.id}`));
+    throw new Error(`R1 did not render a fixture-backed finding row; states=${states.join(',')}; level=${level}`, {
+      cause: error,
+    });
+  }
+  await assertRetiredOccurrenceRoute(page);
+  await row.click();
+  await page.locator('#level .ev-group .n').waitFor();
+  assert.ok(await page.locator('#level .ev-row').count() > 0,
+    'the public finding row must populate occurrence rows in the Inspector');
+  await assertRetiredOccurrenceRoute(page);
+  return page;
+}
+
+// STORY:cockpit-shell:R1
+// RETIRED:Connor:2026-08-18
+export async function R1(browser) {
+  const page = await openRetiredOccurrence(browser);
+  try {
+    await proveRedOnce('R1 canonical hash',
+      () => assertRetiredOccurrenceRoute(page), async () => {
+        await page.evaluate(() => history.replaceState(null, '',
+          '#diagnose?modal=occurrences&detector=mutation'));
+        return () => page.evaluate(() => history.replaceState(null, '', '#diagnose'));
+      });
+    await proveRedOnce('R1 duplicate occurrence route',
+      () => assertRetiredOccurrenceRoute(page), async () => {
+        await page.evaluate(() => {
+          const dialog = document.createElement('div');
+          dialog.id = 'r1-retired-route-mutation';
+          dialog.setAttribute('role', 'dialog');
+          dialog.setAttribute('aria-label', 'Occurrences');
+          dialog.innerHTML = '<div class="ev-group">Retired roster</div>';
+          document.body.append(dialog);
+        });
+        return () => page.locator('#r1-retired-route-mutation').evaluate((node) => node.remove());
+      });
+
+    const output = `cockpit-shell retirement R1: ${r1Sanction[1].trim()} · ${r1Sanction[2].trim()} · "${r1Sanction[3].trim()}"`;
+    const captured = [];
+    const originalLog = console.log;
+    console.log = (...parts) => {
+      captured.push(parts.join(' '));
+      originalLog(...parts);
+    };
+    try { console.log(output); }
+    finally { console.log = originalLog; }
+    assert.deepEqual(captured, [output], 'R1 must capture its ledger-validated sanction output');
+  } finally { await page.close(); }
+}
+
 export const COCKPIT_SHELL_STORIES = Object.freeze([
-  S1, S2, S3, S4, S5, S6, S7, S8, S9, S10,
+  S1, S2, S3, S4, S5, S6, S7, S8, S9, S10, R1,
 ]);
 
 test('cockpit shell behavior ledger replays every registered story', async () => {
@@ -1133,6 +1265,25 @@ test('build renders cover both locked sizes and themes',
         const image = await readFile(path);
         assert.ok(image.length > 0, `${label} writes a populated ${RENDER_PHASE} capture`);
       } finally { if (production) await production.close(); }
+    }
+  }
+});
+
+test('retired occurrence route evidence covers both desktop sizes and themes',
+  { skip: !SHOTS }, async () => {
+  await mkdir(SHOTS, { recursive: true });
+  for (const theme of ['light', 'dark']) {
+    for (const viewport of VIEWPORTS) {
+      const label = `${viewport.width}x${viewport.height}-${theme}`;
+      const browser = await launch();
+      let page;
+      try {
+        page = await openRetiredOccurrence(browser, { viewport, theme });
+        const path = join(SHOTS, `occurrence-retirement-${RENDER_PHASE}-${label}.png`);
+        await page.screenshot({ path });
+        assert.ok((await readFile(path)).length > 0,
+          `${label} writes a populated ${RENDER_PHASE} retirement capture`);
+      } finally { if (page) await page.close(); }
     }
   }
 });

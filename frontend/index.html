@@ -3770,14 +3770,13 @@ html.dark .viz .tie:hover::before { opacity:.13; }
     };
 
     // URL hash is the source of truth for shareable view state (tab + daily
-    // date, #16/#19; modals, #19 follow-up): #<tab>?date=YYYY-MM-DD&modal=...
+    // date, #16/#19; modal state, #19 follow-up): #<tab>?date=YYYY-MM-DD&modal=...
     // localStorage remains a fallback for theme + token only — those aren't
-    // shareable. Three modals exist, each with its own param shape:
-    //   modal=occurrences&detector=<id>                          (openOccurrences)
+    // shareable. The surviving modal-shaped params are:
     //   modal=dataquality                                        (openDataQuality)
-    //   modal=occurrence&occt=<ISO ts>&occd=<detail text>        (goToOccurrence's
-    //     resulting highlight on the daily tab — not a modal itself, but the
-    //     thing "Back" from it should restore/dismiss like one)
+    //   modal=occurrence&occt=<ISO ts>&occd=<detail text>        (goToMoment's
+    //     resulting highlight on Day — not a modal itself, but "Back" should
+    //     restore/dismiss it like one)
     // Patterns / Investigate deep-links (#132): #patterns?mode=investigate&day=YYYY-MM-DD&ep=<id>
     //   Also accepts the flat ?-less format emitted by Daily flag cards:
     //   #tab=patterns&mode=investigate&day=YYYY-MM-DD&ep=<id>
@@ -3803,7 +3802,6 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         result.date = params.get('date');
         const win = params.get('window');
         if (win) result.window = win; // '1' | '7' | '14' | '28' (days, anchor-ending)
-        const modal = params.get('modal');
         result.scnMode = params.get('mode') || null;
         result.scnDay = params.get('day') || null;
         result.scnEp = params.get('ep') || null;
@@ -3986,7 +3984,6 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         const applyingPlan = ref(false);
         const planReviewGuidance = ref(null);
 
-        const occurrenceModal = ref(null);
         // The single most-recently-clicked occurrence/evidence point — kept
         // separate from the filtered set below so it can always render in the
         // accent color even if its detector isn't in the active filter (jumping
@@ -4280,9 +4277,6 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         // hashchange listener below (applyingHash).
         let applyingHash = false;
         function currentModalParam() {
-          if (occurrenceModal.value && occurrenceModal.value.detector != null) {
-            return `modal=occurrences&detector=${encodeURIComponent(occurrenceModal.value.detector)}`;
-          }
           if (dataQualityModalOpen.value) return 'modal=dataquality';
           if (dailyHighlight.value) {
             const det = dailyHighlight.value.detector ? `&occdet=${encodeURIComponent(dailyHighlight.value.detector)}` : '';
@@ -4292,11 +4286,6 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         }
         function syncHashFromState() {
           if (applyingHash) return;
-          // A cold evidence/occurrences deep-link cannot resolve until /analyze
-          // arrives. Preserve that initial hash instead of briefly treating the
-          // still-null modal state as a user dismissal and overwriting it.
-          if (!analysis.value && initialHash && initialHash.modal
-              && initialHash.modal.kind === 'occurrences') return;
           const params = [];
           // #248: the Day surface's selected date rides the hash — `#day?date=YYYY-MM-DD`
           // deep-links to a day (and back/forward moves the day). Skip it until cold
@@ -4322,41 +4311,18 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         // Pull URL hash -> tab/date/modal, for back/forward navigation and direct links.
         function reopenModalFromHash(modal) {
           if (!modal) {
-            occurrenceModal.value = null;
             dataQualityModalOpen.value = false;
             return;
           }
           if (modal.kind === 'dataquality') {
-            occurrenceModal.value = null;
             dataQualityModalOpen.value = true;
             return;
           }
-          if (modal.kind === 'occurrences') {
-            dataQualityModalOpen.value = false;
-            if (!analysis.value) return; // reopened once loadAnalysis resolves, see watch below
-            const finding = analysis.value.behavioral.find((f) => f.detector === modal.detector);
-            if (finding) openOccurrences(finding, { fromHash: true });
-            return;
-          }
           if (modal.kind === 'occurrence') {
-            occurrenceModal.value = null;
             dataQualityModalOpen.value = false;
             if (modal.t) dailyHighlight.value = { t: modal.t, detail: modal.detail || '', detector: modal.detector || null };
           }
         }
-
-        // analysis loads asynchronously; if a direct link/reload names an
-        // evidence or occurrences modal before analysis has arrived, retry
-        // the reopen once it lands.
-        watch(analysis, (val) => {
-          if (!val) return;
-          const parsed = parseHash();
-          if (parsed && parsed.modal && parsed.modal.kind === 'occurrences') {
-            applyingHash = true;
-            try { reopenModalFromHash(parsed.modal); }
-            finally { nextTick(() => { applyingHash = false; }); }
-          }
-        });
 
         window.addEventListener('hashchange', () => {
           const parsed = parseHash();
@@ -4821,7 +4787,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         // state -> URL hash. Registered here (not next to syncHashFromState) so
         // the scenario refs above are already initialized — the source array
         // reads them, so an earlier registration would trip their TDZ (#132).
-        watch([tab, dailyDate, occurrenceModal, dataQualityModalOpen, dailyHighlight,
+        watch([tab, dailyDate, dataQualityModalOpen, dailyHighlight,
                scnMode, scnPickDay, scnActiveInvestigateId],
           syncHashFromState);
 
@@ -5564,19 +5530,6 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         }
 
 
-        // --- Behavioral findings: occurrence drill-down into the Daily report --
-
-        function openOccurrences(finding, opts) {
-          occurrenceModal.value = { title: findingTitle(finding.detector) + ' — occurrences', items: finding.occurrences, detector: finding.detector };
-        }
-        function closeOccurrences() {
-          occurrenceModal.value = null;
-          history.back();
-        }
-        function formatOccurrenceTime(t) {
-          return t.replace('T', ' ').slice(0, 16);
-        }
-
         function openDataQuality() {
           dataQualityModalOpen.value = true;
         }
@@ -5585,20 +5538,17 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           history.back();
         }
 
-        // Shared drill-down: jump to the Daily report at the day containing `t`,
-        // highlighted in accent. Used by behavioral "View occurrences" rows and
-        // (#20) by basal/ISF/I:C "View evidence" rows — one consistent path
-        // instead of behavioral findings being special-cased.
+        // Shared drill-down: jump to Day at the day containing `t`, highlighted
+        // in accent. Diagnose findings and setting evidence use one path.
         function goToMoment(t, detail, detector, lever) {
           const day = t.slice(0, 10);
           // #272: `lever` (optional) pre-selects the Day Lever filter + rings this moment
-          // on arrival — the restored Occurrence→Day deep-link contract (ADR 0037). Other
-          // callers (evidence points, occurrence modal) pass none and land unfiltered.
+          // on arrival — the restored Occurrence→Day deep-link contract (ADR 0037).
+          // Other evidence callers pass none and land unfiltered.
           dailyHighlight.value = { t, detail, detector, lever: lever || null };
           // #136: Daily is one day — the deep-link just picks the arrived-at day;
           // the nav bar (date-button + bounded arrows) reads dailyDate directly.
           pendingDailyDate.value = day;
-          occurrenceModal.value = null;
           // #248: the "See full day →" deep-link lands on the merged Day surface.
           tab.value = 'day';
           resolveDailyDate();
@@ -5611,10 +5561,6 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         // scnHumanizeLever (retires SCN_LEVER_TITLE). A ref, so panels update
         // once the catalog lands.
         provide('scnLeverTitles', catalogLeverTitles);
-        function goToOccurrence(o) {
-          goToMoment(o.t, o.detail, occurrenceModal.value && occurrenceModal.value.detector);
-        }
-
         async function loadAll() {
           if (!hasToken.value) return;
           // allSettled, not all: one failing loader (e.g. /credentials can 500 when the
@@ -5642,17 +5588,12 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         function handleModalEscape(e) {
           if (e.key !== 'Escape') return;
           if (glossaryOpen.value) { glossaryOpen.value = false; return; }
-          if (occurrenceModal.value) { closeOccurrences(); return; }
           if (dataQualityModalOpen.value) { closeDataQuality(); return; }
         }
 
         onMounted(() => {
-          // dataquality and the occurrence-highlight pseudo-modal don't depend
-          // on /analyze having resolved to be *set* (dataquality's template
-          // gates on `analysis` itself; the highlight is just two strings) —
-          // apply those immediately. evidence/occurrences need analysis.value
-          // populated to look up their item/finding; the watch(analysis, ...)
-          // above handles those once loadAll()'s loadAnalysis() resolves.
+          // Data quality and the occurrence-highlight pseudo-modal don't depend
+          // on /analyze having resolved to be set, so apply those immediately.
           if (initialHash && initialHash.modal) {
             if (initialHash.modal.kind === 'dataquality' || initialHash.modal.kind === 'occurrence') {
               applyingHash = true;
@@ -5862,7 +5803,6 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           ribbonEl, setEvidenceStripEl,
           fmt, direction, directionBadgeClass, severityBadgeClass, findingTitle, mealsStartHighFinding,
           inPlan, togglePlan,
-          occurrenceModal, openOccurrences, closeOccurrences, formatOccurrenceTime, goToOccurrence,
           planItems, planHistory, applyingPlan, planReviewGuidance,
           // #99 Plan layers (deliverable via plan.js)
           planChips, deliverableRows, deliverableCount, deliverableHasChanges,

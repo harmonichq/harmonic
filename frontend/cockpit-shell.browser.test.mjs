@@ -643,6 +643,8 @@ export async function S3(browser) {
     assert.equal(await page.locator('.cockpit-utility-menu').isVisible(), true);
     await page.getByRole('menuitemradio', { name: 'Dark' }).click();
     assert.equal(await page.locator('html').evaluate((node) => node.classList.contains('dark')), true);
+    assert.equal(await page.evaluate(() => localStorage.getItem('theme')), 'dark',
+      'theme choice persists');
     assert.equal(await page.locator('.cockpit-utility-menu').isVisible(), false,
       'choosing a theme closes the menu');
     await page.locator('.cockpit-theme').click();
@@ -782,14 +784,20 @@ export async function S10(browser) {
         const menu = getComputedStyle(node.parentElement);
         const probe = document.createElement('i');
         probe.style.background = style.getPropertyValue('--ck-accent-soft').trim();
-        document.body.appendChild(probe);
+        probe.style.color = 'var(--ck-accent)';
+        node.appendChild(probe);
         const well = getComputedStyle(probe).backgroundColor;
+        const accent = getComputedStyle(probe).color;
+        probe.style.background = 'color-mix(in srgb, var(--ck-panel) 95%, var(--ck-meta))';
+        const expected = getComputedStyle(probe).backgroundColor;
         probe.remove();
         return {
           background: style.backgroundColor,
           color: style.color,
           panel: menu.backgroundColor,
           well,
+          accent,
+          expected,
         };
       });
       const checkedStyle = await checked.evaluate((node) => {
@@ -797,11 +805,13 @@ export async function S10(browser) {
         return { color: style.color, background: style.backgroundColor };
       });
       assert.notEqual(seen.background, 'rgba(0, 0, 0, 0)', `${theme} hover paints a lift`);
+      assert.equal(seen.background, seen.expected, `${theme} hover uses the exact 95/5 neutral lift`);
       assert.notEqual(seen.background, seen.panel, `${theme} hover is distinct from the panel`);
       assert.notEqual(seen.background, seen.well, `${theme} hover is distinct from the orange well`);
       assert.ok(contrastRatio(seen.color, seen.background) >= 4.5,
         `${theme} unchecked row ink clears 4.5:1 on hover`);
       assert.equal(await checked.getAttribute('aria-checked'), 'true', `${theme} checked state remains semantic`);
+      assert.equal(checkedStyle.color, seen.accent, `${theme} checked row resolves to accent ink`);
       assert.ok(contrastRatio(checkedStyle.color, checkedStyle.background) >= 4.5,
         `${theme} checked row ink clears 4.5:1`);
       await row.focus();
@@ -813,15 +823,15 @@ export async function S10(browser) {
       assert.ok(contrastRatio(focus.color, seen.background) >= 3,
         `${theme} theme-row focus clears 3:1 against hover`);
       console.log(`cockpit-shell ${theme} menu ratios: unchecked ${contrastRatio(seen.color, seen.background).toFixed(2)}, checked ${contrastRatio(checkedStyle.color, checkedStyle.background).toFixed(2)}, focus ${contrastRatio(focus.color, seen.background).toFixed(2)}`);
-      const neutral = async () => assert.notEqual(
-        await row.evaluate((node) => getComputedStyle(node).backgroundColor), seen.well,
-        `${theme} hover stays distinct from the orange well`);
+      const exactNeutral = async () => assert.equal(
+        await row.evaluate((node) => getComputedStyle(node).backgroundColor), seen.expected,
+        `${theme} hover uses the exact 95/5 neutral lift`);
       await row.evaluate((node) => node.style.setProperty(
-        'background', 'var(--ck-accent-soft)', 'important'));
-      await assert.rejects(neutral, undefined,
-        `${theme} hover assertion must fail when the signal well returns`);
+        'background', 'color-mix(in srgb, var(--ck-panel) 50%, var(--ck-meta))', 'important'));
+      await assert.rejects(exactNeutral, undefined,
+        `${theme} hover assertion must fail when the neutral recipe drifts`);
       await row.evaluate((node) => node.style.removeProperty('background'));
-      await neutral();
+      await exactNeutral();
     } finally { await page.close(); }
   }
 }

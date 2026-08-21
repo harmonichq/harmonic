@@ -47,7 +47,10 @@ from .uncertainty import Confidence, Estimate
 # from per-segment rows to per-programmed-value BLOCKS measured over a fixed trailing
 # 90 days, and `ic` rows become window-scoped display with `asserts_move` always
 # False. Both fields default empty/0, so older producers/consumers still read.
-SCHEMA_VERSION = 8
+# v9 (issue #10): additive `ic_history` — analyzer-owned, dose-stamped historical
+# regime measurements with canonical identities and lifecycle. These records carry
+# no recommendation or assertion fields and cannot enter the action path.
+SCHEMA_VERSION = 9
 
 DISCLAIMER = (
     "Advisory only — not medical advice. Every number is shown with its "
@@ -366,6 +369,74 @@ class IcBlock:
 
 
 @dataclass(frozen=True)
+class IcHistoryRunRecord:
+    """One closed meal run in a historical regime's current 90-day membership.
+
+    The run starts at its first member bolus, matching :class:`MealRun` and the
+    existing analyzer row identity. Offsets and display bounds are analyzer-owned;
+    projections consume them without reconstructing a second ledger.
+    """
+
+    run_id: str
+    first_member_at: str
+    last_member_at: str
+    member_offsets_min: List[float]
+    cgm_start_min: float
+    cgm_end_min: float
+    outcome_min: float
+
+    def to_dict(self) -> dict:
+        return {
+            "run_id": self.run_id,
+            "first_member_at": self.first_member_at,
+            "last_member_at": self.last_member_at,
+            "member_offsets_min": list(self.member_offsets_min),
+            "cgm_start_min": self.cgm_start_min,
+            "cgm_end_min": self.cgm_end_min,
+            "outcome_min": self.outcome_min,
+        }
+
+
+@dataclass(frozen=True)
+class IcHistory:
+    """One ever-publishable retired, dose-stamped I:C regime.
+
+    This shape is measurement-only by construction: it deliberately has no
+    recommendation, direction, lean, priority, assertion, or Plan field.
+    """
+
+    history_id: str
+    block_start_min: int
+    block_end_min: int
+    label: str
+    past_setting: float
+    programmed_now: Optional[float]
+    estimate: Optional[Estimate]
+    support: Optional[int]
+    lifecycle: str                 # "active" | "aged_out" | "unavailable"
+    regime_end: Optional[str]
+    runs: List[IcHistoryRunRecord] = field(default_factory=list)
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.history_id,
+            "block_start_min": self.block_start_min,
+            "block_end_min": self.block_end_min,
+            "label": self.label,
+            "past_setting": self.past_setting,
+            "programmed_now": self.programmed_now,
+            "estimate": self.estimate.to_dict() if self.estimate is not None else None,
+            "support": self.support,
+            "lifecycle": self.lifecycle,
+            "regime_end": self.regime_end,
+            "runs": [run.to_dict() for run in self.runs],
+        }
+
+
+IcHistoryRecord = IcHistory
+
+
+@dataclass(frozen=True)
 class ProfileSegment:
     """One segment of the consolidated, pump-programmable **four-parameter** profile
     (#98, grew out of the basal-only #87 ``BasalSegment``).
@@ -568,6 +639,10 @@ class AnalysisResult:
     # single top-level number by contract: never summed across `ic` rows or
     # `ic_blocks` (a run can span blocks, so a sum would double-count it).
     ic_runs: int = 0
+    # Additive #10 catalog of ever-publishable retired dose-stamped regimes. The
+    # current programmed regime remains exclusively in `ic_blocks`, the sole action
+    # path; history is analyzer-owned measurement data only.
+    ic_history: List[IcHistory] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
@@ -591,6 +666,7 @@ class AnalysisResult:
             "priority_active_threshold": self.priority_active_threshold,
             "ic_blocks": [b.to_dict() for b in self.ic_blocks],
             "ic_runs": self.ic_runs,
+            "ic_history": [row.to_dict() for row in self.ic_history],
         }
 
     def to_json(self, indent: Optional[int] = None) -> str:

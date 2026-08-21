@@ -18,6 +18,8 @@ from ciq_autotune.result import (
     DataQuality,
     EpochInfo,
     Finding,
+    IcHistory,
+    IcHistoryRunRecord,
     Occurrence,
     SegmentEstimate,
     SlotEstimate,
@@ -104,6 +106,30 @@ class ResultSerializationTest(unittest.TestCase):
         self.assertEqual(got["evidence"]["eligibility"]["runs_floor"], 8)
         # An asserting block emits the run age when the analyzer supplies it.
         self.assertNotIn("days_observed", got)
+
+    def test_ic_history_round_trips_as_measurement_only(self):
+        row = IcHistory(
+            history_id="ich1_example", block_start_min=420, block_end_min=720,
+            label="Morning", past_setting=6.0, programmed_now=5.0,
+            estimate=Estimate(5.6, 5.2, 5.9, 4, 0.8,
+                              "bootstrap-pooled-ratio-clustered"),
+            support=4, lifecycle="active", regime_end="2026-05-01T09:00:00",
+            runs=[IcHistoryRunRecord(
+                run_id="icr1_example", first_member_at="2026-04-01T08:00:00",
+                last_member_at="2026-04-01T10:00:00",
+                member_offsets_min=[0.0, 120.0], cgm_start_min=-10.0,
+                cgm_end_min=435.0, outcome_min=420.0,
+            )],
+        )
+        got = json.loads(json.dumps(
+            replace(_minimal_result(), ic_history=[row]).to_dict()))["ic_history"][0]
+
+        self.assertEqual(got["id"], "ich1_example")
+        self.assertEqual(got["estimate"]["value"], 5.6)
+        self.assertEqual(got["runs"][0]["member_offsets_min"], [0.0, 120.0])
+        for forbidden in ("recommended", "direction", "lean", "priority",
+                          "asserts_move", "plan"):
+            self.assertNotIn(forbidden, got)
 
     def test_a_collecting_block_carries_its_day_countdown(self):
         from ciq_autotune.result import IcBlock

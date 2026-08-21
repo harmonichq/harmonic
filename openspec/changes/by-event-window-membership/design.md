@@ -115,3 +115,20 @@ This satisfies the revise lane's stricter risk contract: the entrypoint is
 declared rather than discovered, the source is a synthetic database rather than a
 manufactured-looking snapshot, and no path in the command can reach real pump
 data. No trial run was used to establish any of the above.
+
+## Rendered-header regression correction — #58, 2026-08-20
+
+The original S33 replay read only `#canvas-head.hidden`. The mount set that
+property correctly, but the shipped `.canvas-pane > header.canvas-head` rule
+still computed to `display: grid`, so the clock header occupied a full row above
+the event header while the story reported success. The strengthened story reads
+computed display and layout presence for both headers after driving the visible
+ALIGN buttons in both directions.
+
+Against base `f50055c`, that story produced the required red result: 41 of 42
+stories passed, with S33 alone reporting `expected "none", got "grid"`. The
+correction keeps the existing `hidden` state owner and gives that state its
+missing rendered effect in the workstation stylesheet. S33 and the failed-fetch
+recovery story S34 then passed together, and the full built-app replay passed all
+42 stories. No membership, selection, support, chart, inspector, or advisory
+behavior changed.

@@ -55,6 +55,8 @@ export const near = (got, want, tol, what) => {
 export const state = (page) => page.evaluate(() => {
   const q = (s) => document.querySelector(s);
   const txt = (s) => q(s)?.textContent.trim() ?? null;
+  const display = (node) => node ? getComputedStyle(node).display : null;
+  const rendered = (node) => node ? display(node) !== 'none' && node.getClientRects().length > 0 : false;
   return {
     chip: q('#seg-window [data-follow]')?.textContent.replace('×', '').trim() || null,
     pressed: [...document.querySelectorAll('#seg-window button')]
@@ -78,8 +80,9 @@ export const state = (page) => page.evaluate(() => {
       .map((b) => b.textContent.trim()),
     eventCanvas: q('#align-canvas') ? !q('#align-canvas').hidden : null,
     clockCanvas: q('#chart') ? !q('#chart').hidden : null,
-    clockHead: q('#canvas-head') ? !q('#canvas-head').hidden : null,
-    eventHeads: document.querySelectorAll('.ec-canvas .head-rest h2').length,
+    clockHead: rendered(q('#canvas-head')),
+    clockHeadDisplay: display(q('#canvas-head')),
+    eventHeads: [...document.querySelectorAll('.ec-canvas .head-rest h2')].filter(rendered).length,
     pool: txt('#canvas-pool'),
     braceHidden: q('#brace')?.hidden ?? null,
     gripA: parseFloat(q('#grip-a')?.style.left || 'NaN'),
@@ -1489,7 +1492,8 @@ export const S33 = async (page) => {
   await settle(page, 600);
   const event = await state(page);
   is(event.alignPressed, ['By event'], 'S33 the reader is on By event');
-  is(event.clockHead, false, "S33 the clock canvas's header is withdrawn");
+  is(event.clockHeadDisplay, 'none', "S33 the clock canvas's header occupies no rendered layout");
+  is(event.clockHead, false, "S33 the clock canvas's header is not rendered");
   is(event.eventHeads, 1, 'S33 exactly one canvas header is on screen');
   is(event.clockCanvas, false, 'S33 the clock canvas is not left drawn underneath');
   await page.click('#seg-align button:nth-child(1)');

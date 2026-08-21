@@ -1198,8 +1198,9 @@ all read that one population.
 S32 · selecting a roster occurrence under By event draws it (#57), by the
       endpoint's own catalog id — the (episode, instant) pair the roster carries
       addresses four catalog occurrences and is a join key only
-S33 · while the event canvas is mounted, its own header is the only canvas
-      header on screen (#58)
+S33 · while the event canvas is mounted, its own header is the only rendered
+      canvas header on screen (#58); the replay reads computed display and
+      layout presence for both headers, never the DOM `hidden` property alone
 S34 · a failed by-event fetch restores the clock canvas and leaves the reader on
       the finding
 S35 · a finding whose episodes span two families shows one family in the panel

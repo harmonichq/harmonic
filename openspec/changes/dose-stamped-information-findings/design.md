@@ -71,6 +71,19 @@ Both views are required because they answer different checks on the same histori
 measurement. They never become a regime-comparison view. Selecting an occurrence
 remains evidence-only and never moves the reader's clock window.
 
+`By event` reads a new, read-only
+`GET /diagnose/carb-ratio-history/events?history_id=<id>` projection. Its response
+schema is `diagnose-carb-ratio-history-events-v1` and carries
+`{schema, history_id, window_days, run_ids, series}`. `window_days` is `90`;
+`run_ids` is the complete analyzer-published membership; and `series` has one entry
+per run id with that `run_id`, its meal time, and glucose points expressed as
+minutes from the meal event. An optional `selected_run_id` selects one member
+without changing `run_ids` or `series`. Membership is read from the history item
+and never recomputed in this projection or the frontend.
+The shipped `/diagnose/event-comparison` endpoint remains the behavioral
+`meals`/`lows` projection over its fixed 30-day window; history neither extends nor
+truncates through it.
+
 ### Decay, selection, and retirement
 
 The backend owns the fixed 90-day measurement window and every lifecycle verdict.
@@ -83,12 +96,18 @@ When the estimate becomes null, the item leaves Watching.
 history-row `id`. The v2 response returns `selection: {id, disposition, message}`
 in the same snapshot as its rows:
 
+- when `selected_id` is omitted, `selection` is `null`;
 - `present`: the selected history row is in this projection; `message` is null;
 - `out_of_scope`: the row remains active globally but its block does not overlap
   this explicit clock window; `message` is `Past-setting evidence is outside the
   selected window.`; and
 - `aged_out`: the identity is valid history but its estimate is now null;
   `message` is `Past-setting evidence aged out of the 90-day window.`
+
+A malformed `selected_id` returns HTTP 400 with a specific detail. A well-formed
+identity that never belonged to a history item returns HTTP 404. Those failures
+preserve the prior inspector/canvas pair like every failed findings request; they
+are never reclassified as `aged_out` in the browser.
 
 Only `aged_out` returns the inspector and canvas atomically to the queue and shows
 its server-published message. `out_of_scope` keeps the reader in the case file and
@@ -119,8 +138,11 @@ remains.
   translating a retired regime's estimate into advice for the current setting.
 - **Evidence owed:** analyzer-built synthetic fixtures proving current-regime-only
   assertion and below-floor history visibility; projection tests proving the
-  `history` row schema, global/scoped membership, ordering, and explicit selection
-  dispositions; frozen browser stories for queue, case-file, both projections,
+  `history` row schema, global/scoped membership, ordering, no-selection and invalid
+  selection behavior, and explicit selection dispositions; history-event
+  projection tests proving exact 90-day analyzer-owned run membership without
+  changing the behavioral event-comparison endpoint; frozen browser stories for
+  queue, case-file, both projections,
   selection, empty, aging, retirement, failed requests, and superseded out-of-order
   responses; live synthetic before/after judgment that history reads first and
   current context second in both themes at 1440×900, 1280×800, and the narrow

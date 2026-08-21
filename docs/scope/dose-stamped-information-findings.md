@@ -43,6 +43,10 @@
   shows the meal-response evidence for the server-published run membership of
   that same regime. Neither projection compares regimes or translates the past
   estimate into current advice. `→ ADR`
+- The 90-day history event population gets its own read-only projection seam; it
+  does not extend or truncate through the shipped behavioral event-comparison
+  endpoint's fixed 30-day contract. The response echoes the history-row identity
+  and carries exactly the analyzer-published run membership. `→ ADR`
 - History is reachable in the subordinate Watching section both globally and
   under an explicit clock window. The global projection includes every active
   history row; an explicit window includes only rows whose server-published block
@@ -74,8 +78,11 @@
   translating a retired regime's estimate into advice for the current setting.
 - **Evidence owed:** analyzer-built synthetic fixtures proving current-regime-only
   assertion and below-floor history visibility; projection tests proving the
-  `history` row schema, global/scoped membership, ordering, and explicit selection
-  dispositions; frozen browser stories for queue, case-file, both projections,
+  `history` row schema, global/scoped membership, ordering, no-selection and invalid
+  selection behavior, and explicit selection dispositions; history-event
+  projection tests proving exact 90-day analyzer-owned run membership without
+  changing the behavioral event-comparison endpoint; frozen browser stories for
+  queue, case-file, both projections,
   selection, empty, aging, retirement, failed requests, and superseded out-of-order
   responses; live synthetic before/after judgment that history reads first and
   current context second in both themes at 1440×900, 1280×800, and the narrow
@@ -132,3 +139,7 @@ it unchanged for execution; this ledger remains the non-normative session record
   hierarchy; missing failure/supersession evidence; and em-dash copy conflicting
   with `DESIGN.md`. Every claim was reproduced against the ticket worktree before
   revision.
+- Panel 2: 2 blockers: the missing 90-day history-event seam was `authoring`; the
+  undefined omitted/invalid `selected_id` outcomes were `injected` by panel 1's
+  interface fix. Both claims were reproduced against the fixed 30-day behavioral
+  endpoint and the current findings schema before revision.

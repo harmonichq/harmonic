@@ -12,8 +12,8 @@ discard it.
 
 - Add `history` to the Register vocabulary for a tuning Audit item measured under
   a setting that is no longer programmed.
-- Record the row, selection, case-file, evidence, decay, and retirement contract
-  for that item in ADR 22.
+- Record the row, selection, case-file, history-event projection, decay, and
+  retirement contract for that item in ADR 22.
 - Reuse the shipped Diagnose inspector, Watching section, existing `noted` tier,
   and `By clock` / `By event` projections without creating a mock or lock manifest.
 - Preserve every existing assertion, staging, Plan, and selection rule except the

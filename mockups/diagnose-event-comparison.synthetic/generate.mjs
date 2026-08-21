@@ -27,6 +27,15 @@ const plan = [
   'neutral', 'neutral', 'neutral', 'neutral', 'neutral', 'neutral',
   'another_factor', 'excluded', 'excluded',
 ];
+// Comparison membership is fixture-local. Workstation rows supply the canonical
+// identity/anchor/date tuple, but their counter-example attribution must never
+// rewrite this capture's twenty-row cohort or outcome plan (ADR 64).
+const outcomeMinutes = {
+  meals: [455, 875, 1150, 465, 790, 1010, 80, 365, 730, 1085,
+    290, 1150, 920, 1235, 205, 650, 990, 350, 845, 1180],
+  lows: [95, 140, 185, 230, 275, 320, 505, 640, 905, 1075,
+    410, 700, 1015, 160, 980, 55, 365, 515, 755, 835],
+};
 const WINDOWS = [null, { start_min: 0, end_min: 360 },
   { start_min: 360, end_min: 720 }, { start_min: 720, end_min: 1080 },
   { start_min: 1080, end_min: 1440 }, { start_min: 1320, end_min: 120 },
@@ -227,9 +236,7 @@ function occurrence(view, index, source) {
   // ADR 62 membership follows where the consequence landed, not the trigger.
   // This shared 13:00 meal key lands at 14:35, so a 14:00–15:00 request must
   // include it even though its anchor lies outside that window.
-  const outcomeMin = view === 'meals' && index === 1
-    ? 14 * 60 + 35
-    : Number(stamp.slice(11, 13)) * 60 + Number(stamp.slice(14, 16));
+  const outcomeMin = outcomeMinutes[view][index];
   const cohort = plan[index];
   const primary = factors[view][0];
   const trace = {

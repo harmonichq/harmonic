@@ -61,6 +61,31 @@ test('the expanded meal population preserves the workstation queue sift shape', 
     'the remaining population rows stay as counter-examples');
 });
 
+test('comparison keeps plan-local outcomes and verdicts when workstation attribution changes', () => {
+  const altered = structuredClone(payload.exposures);
+  altered.exposures.meals.occurrences = altered.exposures.meals.occurrences.map((row, index) => ({
+    ...row,
+    t: `2020-03-0${index % 3 + 1} 00:00:00`,
+    date: `2020-03-0${index % 3 + 1}`,
+    attributed: false,
+    cause_lever: null,
+    cause_title: null,
+    state: 'clean',
+    verdicts: [],
+  }));
+
+  const rebuilt = buildCapture(altered);
+  const localFacts = (occurrences) => occurrences.map(({ outcome_min, routes, verdicts }) =>
+    ({ outcome_min, routes, verdicts }));
+  assert.deepEqual(localFacts(rebuilt.views.meals.occurrences),
+    localFacts(capture.views.meals.occurrences),
+    'comparison outcomes and verdicts come from its local plan, not workstation attribution');
+  assert.deepEqual(rebuilt.views.meals.occurrences.map(({ ep_id, anchor_t, date }) =>
+    ({ ep_id, anchor_t, date })), altered.exposures.meals.occurrences.map(({ ep_id, t, date }) =>
+      ({ ep_id, anchor_t: t, date })),
+  'comparison preserves canonical workstation identity and anchor time');
+});
+
 test('buildCapture rejects an incomplete source family by name', () => {
   const input = structuredClone(payload.exposures);
   input.exposures.lows.occurrences.pop();

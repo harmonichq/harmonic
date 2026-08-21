@@ -14,7 +14,7 @@
    "occurrences": [
     {
      "attributed": true,
-     "bg": 63.2,
+     "bg": 70.5,
      "cause_lever": "correction_on_iob",
      "cause_title": "Correction on active insulin",
      "date": "2020-03-01",
@@ -40,11 +40,11 @@
        "silence_reason": "no_signal"
       }
      ],
-     "worst_bg": 55.2
+     "worst_bg": 55.0
     },
     {
      "attributed": true,
-     "bg": 76.9,
+     "bg": 65.5,
      "cause_lever": "correction_on_iob",
      "cause_title": "Correction on active insulin",
      "date": "2020-03-02",
@@ -53,11 +53,11 @@
      "label": "Low",
      "state": "fired",
      "t": "2020-03-02 15:00:00",
-     "text": "Treated a low at 15:00 and the glucose kept falling to 71 before it turned \u2014 the treatment was larger than the fall needed.",
+     "text": "Treated a low at 15:00 and the glucose kept falling to 53 before it turned \u2014 the treatment was larger than the fall needed.",
      "verdicts": [
       {
        "classifier": "over_treated_low",
-       "detail": "glucose fell to 71 mg/dL after the treatment",
+       "detail": "glucose fell to 53 mg/dL after the treatment",
        "evidence_tier": "inferred",
        "matched": true,
        "silence_reason": null
@@ -70,7 +70,7 @@
        "silence_reason": "no_signal"
       }
      ],
-     "worst_bg": 71.1
+     "worst_bg": 52.8
     }
    ],
    "uncaused": 0
@@ -88,7 +88,7 @@
    "occurrences": [
     {
      "attributed": true,
-     "bg": 62.1,
+     "bg": 77.8,
      "cause_lever": "missed_meal",
      "cause_title": "Missed / unannounced meal",
      "date": "2020-03-03",
@@ -97,7 +97,37 @@
      "label": "Low",
      "state": "fired",
      "t": "2020-03-03 08:40:00",
-     "text": "Treated a low at 08:40 and the glucose kept falling to 54 before it turned \u2014 the treatment was larger than the fall needed.",
+     "text": "Treated a low at 08:40 and the glucose kept falling to 68 before it turned \u2014 the treatment was larger than the fall needed.",
+     "verdicts": [
+      {
+       "classifier": "over_treated_low",
+       "detail": "glucose fell to 68 mg/dL after the treatment",
+       "evidence_tier": "inferred",
+       "matched": true,
+       "silence_reason": null
+      },
+      {
+       "classifier": "iob_stacking",
+       "detail": "no stacked correction precedes this episode",
+       "evidence_tier": "not_in_data",
+       "matched": false,
+       "silence_reason": "no_signal"
+      }
+     ],
+     "worst_bg": 68.2
+    },
+    {
+     "attributed": true,
+     "bg": 70.0,
+     "cause_lever": "missed_meal",
+     "cause_title": "Missed / unannounced meal",
+     "date": "2020-03-01",
+     "ep_id": "2020-03-01-ep81",
+     "kind": "low",
+     "label": "Low",
+     "state": "fired",
+     "t": "2020-03-01 13:50:00",
+     "text": "Treated a low at 13:50 and the glucose kept falling to 54 before it turned \u2014 the treatment was larger than the fall needed.",
      "verdicts": [
       {
        "classifier": "over_treated_low",
@@ -114,41 +144,11 @@
        "silence_reason": "no_signal"
       }
      ],
-     "worst_bg": 53.6
+     "worst_bg": 54.2
     },
     {
      "attributed": true,
-     "bg": 65.3,
-     "cause_lever": "missed_meal",
-     "cause_title": "Missed / unannounced meal",
-     "date": "2020-03-01",
-     "ep_id": "2020-03-01-ep81",
-     "kind": "low",
-     "label": "Low",
-     "state": "fired",
-     "t": "2020-03-01 13:50:00",
-     "text": "Treated a low at 13:50 and the glucose kept falling to 53 before it turned \u2014 the treatment was larger than the fall needed.",
-     "verdicts": [
-      {
-       "classifier": "over_treated_low",
-       "detail": "glucose fell to 53 mg/dL after the treatment",
-       "evidence_tier": "inferred",
-       "matched": true,
-       "silence_reason": null
-      },
-      {
-       "classifier": "iob_stacking",
-       "detail": "no stacked correction precedes this episode",
-       "evidence_tier": "not_in_data",
-       "matched": false,
-       "silence_reason": "no_signal"
-      }
-     ],
-     "worst_bg": 52.7
-    },
-    {
-     "attributed": true,
-     "bg": 63.0,
+     "bg": 76.4,
      "cause_lever": "missed_meal",
      "cause_title": "Missed / unannounced meal",
      "date": "2020-03-02",
@@ -157,11 +157,11 @@
      "label": "Low",
      "state": "fired",
      "t": "2020-03-02 20:00:00",
-     "text": "Treated a low at 20:00 and the glucose kept falling to 53 before it turned \u2014 the treatment was larger than the fall needed.",
+     "text": "Treated a low at 20:00 and the glucose kept falling to 67 before it turned \u2014 the treatment was larger than the fall needed.",
      "verdicts": [
       {
        "classifier": "over_treated_low",
-       "detail": "glucose fell to 53 mg/dL after the treatment",
+       "detail": "glucose fell to 67 mg/dL after the treatment",
        "evidence_tier": "inferred",
        "matched": true,
        "silence_reason": null
@@ -174,11 +174,11 @@
        "silence_reason": "no_signal"
       }
      ],
-     "worst_bg": 53.2
+     "worst_bg": 67.1
     },
     {
      "attributed": false,
-     "bg": 68.0,
+     "bg": 72.1,
      "cause_lever": null,
      "cause_title": null,
      "date": "2020-03-03",
@@ -191,7 +191,7 @@
      "verdicts": [
       {
        "classifier": "over_treated_low",
-       "detail": "glucose fell to 49 mg/dL after the treatment",
+       "detail": "glucose fell to 68 mg/dL after the treatment",
        "evidence_tier": "not_in_data",
        "matched": false,
        "silence_reason": "insufficient_data"
@@ -204,23 +204,23 @@
        "silence_reason": "no_signal"
       }
      ],
-     "worst_bg": 49.3
+     "worst_bg": 67.7
     }
    ],
    "uncaused": 1
   },
   "lows": {
-   "attributed": 13,
+   "attributed": 18,
    "by_cause": {
     "Correction on active insulin": 3,
-    "Over-treated low": 10
+    "Over-treated low": 15
    },
    "clean": 2,
    "levers": [
     "over_treated_low",
     "correction_on_iob"
    ],
-   "n": 15,
+   "n": 20,
    "occurrences": [
     {
      "attributed": true,
@@ -671,33 +671,19 @@
       }
      ],
      "worst_bg": 41.0
-    }
-   ],
-   "uncaused": 2
-  },
-  "meals": {
-   "attributed": 5,
-   "by_cause": {
-    "Late bolus": 5
-   },
-   "clean": 0,
-   "levers": [
-    "late_bolus"
-   ],
-   "n": 5,
-   "occurrences": [
+    },
     {
      "attributed": true,
      "bg": 70.9,
-     "cause_lever": "late_bolus",
-     "cause_title": "Late bolus",
+     "cause_lever": "over_treated_low",
+     "cause_title": "Over-treated low",
      "date": "2020-03-02",
-     "ep_id": "2020-03-02-ep70",
+     "ep_id": "2020-03-02-ep100",
      "kind": "low",
      "label": "Low",
      "state": "fired",
-     "t": "2020-03-02 07:35:00",
-     "text": "Treated a low at 07:35 and the glucose kept falling to 56 before it turned \u2014 the treatment was larger than the fall needed.",
+     "t": "2020-03-02 00:55:00",
+     "text": "Treated a low at 00:55 and the glucose kept falling to 56 before it turned \u2014 the treatment was larger than the fall needed.",
      "verdicts": [
       {
        "classifier": "over_treated_low",
@@ -719,15 +705,15 @@
     {
      "attributed": true,
      "bg": 65.5,
-     "cause_lever": "late_bolus",
-     "cause_title": "Late bolus",
+     "cause_lever": "over_treated_low",
+     "cause_title": "Over-treated low",
      "date": "2020-03-03",
-     "ep_id": "2020-03-03-ep71",
+     "ep_id": "2020-03-03-ep101",
      "kind": "low",
      "label": "Low",
      "state": "fired",
-     "t": "2020-03-03 13:00:00",
-     "text": "Treated a low at 13:00 and the glucose kept falling to 59 before it turned \u2014 the treatment was larger than the fall needed.",
+     "t": "2020-03-03 06:05:00",
+     "text": "Treated a low at 06:05 and the glucose kept falling to 59 before it turned \u2014 the treatment was larger than the fall needed.",
      "verdicts": [
       {
        "classifier": "over_treated_low",
@@ -749,6 +735,170 @@
     {
      "attributed": true,
      "bg": 65.2,
+     "cause_lever": "over_treated_low",
+     "cause_title": "Over-treated low",
+     "date": "2020-03-01",
+     "ep_id": "2020-03-01-ep102",
+     "kind": "low",
+     "label": "Low",
+     "state": "fired",
+     "t": "2020-03-01 08:35:00",
+     "text": "Treated a low at 08:35 and the glucose kept falling to 53 before it turned \u2014 the treatment was larger than the fall needed.",
+     "verdicts": [
+      {
+       "classifier": "over_treated_low",
+       "detail": "glucose fell to 53 mg/dL after the treatment",
+       "evidence_tier": "inferred",
+       "matched": true,
+       "silence_reason": null
+      },
+      {
+       "classifier": "iob_stacking",
+       "detail": "no stacked correction precedes this episode",
+       "evidence_tier": "not_in_data",
+       "matched": false,
+       "silence_reason": "no_signal"
+      }
+     ],
+     "worst_bg": 53.1
+    },
+    {
+     "attributed": true,
+     "bg": 77.6,
+     "cause_lever": "over_treated_low",
+     "cause_title": "Over-treated low",
+     "date": "2020-03-02",
+     "ep_id": "2020-03-02-ep103",
+     "kind": "low",
+     "label": "Low",
+     "state": "fired",
+     "t": "2020-03-02 12:35:00",
+     "text": "Treated a low at 12:35 and the glucose kept falling to 73 before it turned \u2014 the treatment was larger than the fall needed.",
+     "verdicts": [
+      {
+       "classifier": "over_treated_low",
+       "detail": "glucose fell to 73 mg/dL after the treatment",
+       "evidence_tier": "inferred",
+       "matched": true,
+       "silence_reason": null
+      },
+      {
+       "classifier": "iob_stacking",
+       "detail": "no stacked correction precedes this episode",
+       "evidence_tier": "not_in_data",
+       "matched": false,
+       "silence_reason": "no_signal"
+      }
+     ],
+     "worst_bg": 72.7
+    },
+    {
+     "attributed": true,
+     "bg": 72.6,
+     "cause_lever": "over_treated_low",
+     "cause_title": "Over-treated low",
+     "date": "2020-03-03",
+     "ep_id": "2020-03-03-ep104",
+     "kind": "low",
+     "label": "Low",
+     "state": "fired",
+     "t": "2020-03-03 13:55:00",
+     "text": "Treated a low at 13:55 and the glucose kept falling to 54 before it turned \u2014 the treatment was larger than the fall needed.",
+     "verdicts": [
+      {
+       "classifier": "over_treated_low",
+       "detail": "glucose fell to 54 mg/dL after the treatment",
+       "evidence_tier": "inferred",
+       "matched": true,
+       "silence_reason": null
+      },
+      {
+       "classifier": "iob_stacking",
+       "detail": "no stacked correction precedes this episode",
+       "evidence_tier": "not_in_data",
+       "matched": false,
+       "silence_reason": "no_signal"
+      }
+     ],
+     "worst_bg": 54.5
+    }
+   ],
+   "uncaused": 2
+  },
+  "meals": {
+   "attributed": 20,
+   "by_cause": {
+    "Late bolus": 20
+   },
+   "clean": 0,
+   "levers": [
+    "late_bolus"
+   ],
+   "n": 20,
+   "occurrences": [
+    {
+     "attributed": true,
+     "bg": 62.1,
+     "cause_lever": "late_bolus",
+     "cause_title": "Late bolus",
+     "date": "2020-03-02",
+     "ep_id": "2020-03-02-ep70",
+     "kind": "low",
+     "label": "Low",
+     "state": "fired",
+     "t": "2020-03-02 07:35:00",
+     "text": "Treated a low at 07:35 and the glucose kept falling to 54 before it turned \u2014 the treatment was larger than the fall needed.",
+     "verdicts": [
+      {
+       "classifier": "over_treated_low",
+       "detail": "glucose fell to 54 mg/dL after the treatment",
+       "evidence_tier": "inferred",
+       "matched": true,
+       "silence_reason": null
+      },
+      {
+       "classifier": "iob_stacking",
+       "detail": "no stacked correction precedes this episode",
+       "evidence_tier": "not_in_data",
+       "matched": false,
+       "silence_reason": "no_signal"
+      }
+     ],
+     "worst_bg": 53.6
+    },
+    {
+     "attributed": true,
+     "bg": 65.3,
+     "cause_lever": "late_bolus",
+     "cause_title": "Late bolus",
+     "date": "2020-03-03",
+     "ep_id": "2020-03-03-ep71",
+     "kind": "low",
+     "label": "Low",
+     "state": "fired",
+     "t": "2020-03-03 13:00:00",
+     "text": "Treated a low at 13:00 and the glucose kept falling to 53 before it turned \u2014 the treatment was larger than the fall needed.",
+     "verdicts": [
+      {
+       "classifier": "over_treated_low",
+       "detail": "glucose fell to 53 mg/dL after the treatment",
+       "evidence_tier": "inferred",
+       "matched": true,
+       "silence_reason": null
+      },
+      {
+       "classifier": "iob_stacking",
+       "detail": "no stacked correction precedes this episode",
+       "evidence_tier": "not_in_data",
+       "matched": false,
+       "silence_reason": "no_signal"
+      }
+     ],
+     "worst_bg": 52.7
+    },
+    {
+     "attributed": true,
+     "bg": 63.0,
      "cause_lever": "late_bolus",
      "cause_title": "Late bolus",
      "date": "2020-03-01",
@@ -774,11 +924,11 @@
        "silence_reason": "no_signal"
       }
      ],
-     "worst_bg": 53.1
+     "worst_bg": 53.2
     },
     {
      "attributed": true,
-     "bg": 77.6,
+     "bg": 68.0,
      "cause_lever": "late_bolus",
      "cause_title": "Late bolus",
      "date": "2020-03-02",
@@ -787,11 +937,11 @@
      "label": "Low",
      "state": "fired",
      "t": "2020-03-02 07:45:00",
-     "text": "Treated a low at 07:45 and the glucose kept falling to 73 before it turned \u2014 the treatment was larger than the fall needed.",
+     "text": "Treated a low at 07:45 and the glucose kept falling to 49 before it turned \u2014 the treatment was larger than the fall needed.",
      "verdicts": [
       {
        "classifier": "over_treated_low",
-       "detail": "glucose fell to 73 mg/dL after the treatment",
+       "detail": "glucose fell to 49 mg/dL after the treatment",
        "evidence_tier": "inferred",
        "matched": true,
        "silence_reason": null
@@ -804,11 +954,11 @@
        "silence_reason": "no_signal"
       }
      ],
-     "worst_bg": 72.7
+     "worst_bg": 49.3
     },
     {
      "attributed": true,
-     "bg": 72.6,
+     "bg": 63.2,
      "cause_lever": "late_bolus",
      "cause_title": "Late bolus",
      "date": "2020-03-03",
@@ -817,7 +967,307 @@
      "label": "Low",
      "state": "fired",
      "t": "2020-03-03 13:10:00",
-     "text": "Treated a low at 13:10 and the glucose kept falling to 54 before it turned \u2014 the treatment was larger than the fall needed.",
+     "text": "Treated a low at 13:10 and the glucose kept falling to 55 before it turned \u2014 the treatment was larger than the fall needed.",
+     "verdicts": [
+      {
+       "classifier": "over_treated_low",
+       "detail": "glucose fell to 55 mg/dL after the treatment",
+       "evidence_tier": "inferred",
+       "matched": true,
+       "silence_reason": null
+      },
+      {
+       "classifier": "iob_stacking",
+       "detail": "no stacked correction precedes this episode",
+       "evidence_tier": "not_in_data",
+       "matched": false,
+       "silence_reason": "no_signal"
+      }
+     ],
+     "worst_bg": 55.2
+    },
+    {
+     "attributed": true,
+     "bg": 76.9,
+     "cause_lever": "late_bolus",
+     "cause_title": "Late bolus",
+     "date": "2020-03-01",
+     "ep_id": "2020-03-01-ep75",
+     "kind": "low",
+     "label": "Low",
+     "state": "fired",
+     "t": "2020-03-01 16:50:00",
+     "text": "Treated a low at 16:50 and the glucose kept falling to 71 before it turned \u2014 the treatment was larger than the fall needed.",
+     "verdicts": [
+      {
+       "classifier": "over_treated_low",
+       "detail": "glucose fell to 71 mg/dL after the treatment",
+       "evidence_tier": "inferred",
+       "matched": true,
+       "silence_reason": null
+      },
+      {
+       "classifier": "iob_stacking",
+       "detail": "no stacked correction precedes this episode",
+       "evidence_tier": "not_in_data",
+       "matched": false,
+       "silence_reason": "no_signal"
+      }
+     ],
+     "worst_bg": 71.1
+    },
+    {
+     "attributed": true,
+     "bg": 65.5,
+     "cause_lever": "late_bolus",
+     "cause_title": "Late bolus",
+     "date": "2020-03-02",
+     "ep_id": "2020-03-02-ep76",
+     "kind": "low",
+     "label": "Low",
+     "state": "fired",
+     "t": "2020-03-02 01:20:00",
+     "text": "Treated a low at 01:20 and the glucose kept falling to 59 before it turned \u2014 the treatment was larger than the fall needed.",
+     "verdicts": [
+      {
+       "classifier": "over_treated_low",
+       "detail": "glucose fell to 59 mg/dL after the treatment",
+       "evidence_tier": "inferred",
+       "matched": true,
+       "silence_reason": null
+      },
+      {
+       "classifier": "iob_stacking",
+       "detail": "no stacked correction precedes this episode",
+       "evidence_tier": "not_in_data",
+       "matched": false,
+       "silence_reason": "no_signal"
+      }
+     ],
+     "worst_bg": 59.1
+    },
+    {
+     "attributed": true,
+     "bg": 67.1,
+     "cause_lever": "late_bolus",
+     "cause_title": "Late bolus",
+     "date": "2020-03-03",
+     "ep_id": "2020-03-03-ep77",
+     "kind": "low",
+     "label": "Low",
+     "state": "fired",
+     "t": "2020-03-03 06:05:00",
+     "text": "Treated a low at 06:05 and the glucose kept falling to 60 before it turned \u2014 the treatment was larger than the fall needed.",
+     "verdicts": [
+      {
+       "classifier": "over_treated_low",
+       "detail": "glucose fell to 60 mg/dL after the treatment",
+       "evidence_tier": "inferred",
+       "matched": true,
+       "silence_reason": null
+      },
+      {
+       "classifier": "iob_stacking",
+       "detail": "no stacked correction precedes this episode",
+       "evidence_tier": "not_in_data",
+       "matched": false,
+       "silence_reason": "no_signal"
+      }
+     ],
+     "worst_bg": 60.5
+    },
+    {
+     "attributed": true,
+     "bg": 77.3,
+     "cause_lever": "late_bolus",
+     "cause_title": "Late bolus",
+     "date": "2020-03-01",
+     "ep_id": "2020-03-01-ep78",
+     "kind": "low",
+     "label": "Low",
+     "state": "fired",
+     "t": "2020-03-01 12:10:00",
+     "text": "Treated a low at 12:10 and the glucose kept falling to 69 before it turned \u2014 the treatment was larger than the fall needed.",
+     "verdicts": [
+      {
+       "classifier": "over_treated_low",
+       "detail": "glucose fell to 69 mg/dL after the treatment",
+       "evidence_tier": "inferred",
+       "matched": true,
+       "silence_reason": null
+      },
+      {
+       "classifier": "iob_stacking",
+       "detail": "no stacked correction precedes this episode",
+       "evidence_tier": "not_in_data",
+       "matched": false,
+       "silence_reason": "no_signal"
+      }
+     ],
+     "worst_bg": 68.7
+    },
+    {
+     "attributed": true,
+     "bg": 66.9,
+     "cause_lever": "late_bolus",
+     "cause_title": "Late bolus",
+     "date": "2020-03-02",
+     "ep_id": "2020-03-02-ep79",
+     "kind": "low",
+     "label": "Low",
+     "state": "fired",
+     "t": "2020-03-02 18:05:00",
+     "text": "Treated a low at 18:05 and the glucose kept falling to 61 before it turned \u2014 the treatment was larger than the fall needed.",
+     "verdicts": [
+      {
+       "classifier": "over_treated_low",
+       "detail": "glucose fell to 61 mg/dL after the treatment",
+       "evidence_tier": "inferred",
+       "matched": true,
+       "silence_reason": null
+      },
+      {
+       "classifier": "iob_stacking",
+       "detail": "no stacked correction precedes this episode",
+       "evidence_tier": "not_in_data",
+       "matched": false,
+       "silence_reason": "no_signal"
+      }
+     ],
+     "worst_bg": 61.2
+    },
+    {
+     "attributed": true,
+     "bg": 72.4,
+     "cause_lever": "late_bolus",
+     "cause_title": "Late bolus",
+     "date": "2020-03-03",
+     "ep_id": "2020-03-03-ep80",
+     "kind": "low",
+     "label": "Low",
+     "state": "fired",
+     "t": "2020-03-03 04:50:00",
+     "text": "Treated a low at 04:50 and the glucose kept falling to 63 before it turned \u2014 the treatment was larger than the fall needed.",
+     "verdicts": [
+      {
+       "classifier": "over_treated_low",
+       "detail": "glucose fell to 63 mg/dL after the treatment",
+       "evidence_tier": "inferred",
+       "matched": true,
+       "silence_reason": null
+      },
+      {
+       "classifier": "iob_stacking",
+       "detail": "no stacked correction precedes this episode",
+       "evidence_tier": "not_in_data",
+       "matched": false,
+       "silence_reason": "no_signal"
+      }
+     ],
+     "worst_bg": 62.8
+    },
+    {
+     "attributed": true,
+     "bg": 59.1,
+     "cause_lever": "late_bolus",
+     "cause_title": "Late bolus",
+     "date": "2020-03-01",
+     "ep_id": "2020-03-01-ep72",
+     "kind": "low",
+     "label": "Low",
+     "state": "fired",
+     "t": "2020-03-01 19:10:00",
+     "text": "Treated a low at 09:20 and the glucose kept falling to 45 before it turned \u2014 the treatment was larger than the fall needed.",
+     "verdicts": [
+      {
+       "classifier": "over_treated_low",
+       "detail": "glucose fell to 45 mg/dL after the treatment",
+       "evidence_tier": "inferred",
+       "matched": true,
+       "silence_reason": null
+      },
+      {
+       "classifier": "iob_stacking",
+       "detail": "no stacked correction precedes this episode",
+       "evidence_tier": "not_in_data",
+       "matched": false,
+       "silence_reason": "no_signal"
+      }
+     ],
+     "worst_bg": 45.4
+    },
+    {
+     "attributed": true,
+     "bg": 74.5,
+     "cause_lever": "late_bolus",
+     "cause_title": "Late bolus",
+     "date": "2020-03-02",
+     "ep_id": "2020-03-02-ep82",
+     "kind": "low",
+     "label": "Low",
+     "state": "fired",
+     "t": "2020-03-02 15:20:00",
+     "text": "Treated a low at 15:20 and the glucose kept falling to 60 before it turned \u2014 the treatment was larger than the fall needed.",
+     "verdicts": [
+      {
+       "classifier": "over_treated_low",
+       "detail": "glucose fell to 60 mg/dL after the treatment",
+       "evidence_tier": "inferred",
+       "matched": true,
+       "silence_reason": null
+      },
+      {
+       "classifier": "iob_stacking",
+       "detail": "no stacked correction precedes this episode",
+       "evidence_tier": "not_in_data",
+       "matched": false,
+       "silence_reason": "no_signal"
+      }
+     ],
+     "worst_bg": 59.6
+    },
+    {
+     "attributed": true,
+     "bg": 77.9,
+     "cause_lever": "late_bolus",
+     "cause_title": "Late bolus",
+     "date": "2020-03-03",
+     "ep_id": "2020-03-03-ep83",
+     "kind": "low",
+     "label": "Low",
+     "state": "fired",
+     "t": "2020-03-03 20:35:00",
+     "text": "Treated a low at 20:35 and the glucose kept falling to 66 before it turned \u2014 the treatment was larger than the fall needed.",
+     "verdicts": [
+      {
+       "classifier": "over_treated_low",
+       "detail": "glucose fell to 66 mg/dL after the treatment",
+       "evidence_tier": "inferred",
+       "matched": true,
+       "silence_reason": null
+      },
+      {
+       "classifier": "iob_stacking",
+       "detail": "no stacked correction precedes this episode",
+       "evidence_tier": "not_in_data",
+       "matched": false,
+       "silence_reason": "no_signal"
+      }
+     ],
+     "worst_bg": 66.1
+    },
+    {
+     "attributed": true,
+     "bg": 74.1,
+     "cause_lever": "late_bolus",
+     "cause_title": "Late bolus",
+     "date": "2020-03-01",
+     "ep_id": "2020-03-01-ep84",
+     "kind": "low",
+     "label": "Low",
+     "state": "fired",
+     "t": "2020-03-01 03:25:00",
+     "text": "Treated a low at 03:25 and the glucose kept falling to 54 before it turned \u2014 the treatment was larger than the fall needed.",
      "verdicts": [
       {
        "classifier": "over_treated_low",
@@ -834,7 +1284,157 @@
        "silence_reason": "no_signal"
       }
      ],
-     "worst_bg": 54.5
+     "worst_bg": 54.0
+    },
+    {
+     "attributed": true,
+     "bg": 71.1,
+     "cause_lever": "late_bolus",
+     "cause_title": "Late bolus",
+     "date": "2020-03-02",
+     "ep_id": "2020-03-02-ep85",
+     "kind": "low",
+     "label": "Low",
+     "state": "fired",
+     "t": "2020-03-02 10:50:00",
+     "text": "Treated a low at 10:50 and the glucose kept falling to 51 before it turned \u2014 the treatment was larger than the fall needed.",
+     "verdicts": [
+      {
+       "classifier": "over_treated_low",
+       "detail": "glucose fell to 51 mg/dL after the treatment",
+       "evidence_tier": "inferred",
+       "matched": true,
+       "silence_reason": null
+      },
+      {
+       "classifier": "iob_stacking",
+       "detail": "no stacked correction precedes this episode",
+       "evidence_tier": "not_in_data",
+       "matched": false,
+       "silence_reason": "no_signal"
+      }
+     ],
+     "worst_bg": 51.0
+    },
+    {
+     "attributed": true,
+     "bg": 75.7,
+     "cause_lever": "late_bolus",
+     "cause_title": "Late bolus",
+     "date": "2020-03-03",
+     "ep_id": "2020-03-03-ep86",
+     "kind": "low",
+     "label": "Low",
+     "state": "fired",
+     "t": "2020-03-03 16:30:00",
+     "text": "Treated a low at 16:30 and the glucose kept falling to 70 before it turned \u2014 the treatment was larger than the fall needed.",
+     "verdicts": [
+      {
+       "classifier": "over_treated_low",
+       "detail": "glucose fell to 70 mg/dL after the treatment",
+       "evidence_tier": "inferred",
+       "matched": true,
+       "silence_reason": null
+      },
+      {
+       "classifier": "iob_stacking",
+       "detail": "no stacked correction precedes this episode",
+       "evidence_tier": "not_in_data",
+       "matched": false,
+       "silence_reason": "no_signal"
+      }
+     ],
+     "worst_bg": 70.2
+    },
+    {
+     "attributed": true,
+     "bg": 66.8,
+     "cause_lever": "late_bolus",
+     "cause_title": "Late bolus",
+     "date": "2020-03-01",
+     "ep_id": "2020-03-01-ep87",
+     "kind": "low",
+     "label": "Low",
+     "state": "fired",
+     "t": "2020-03-01 05:50:00",
+     "text": "Treated a low at 05:50 and the glucose kept falling to 50 before it turned \u2014 the treatment was larger than the fall needed.",
+     "verdicts": [
+      {
+       "classifier": "over_treated_low",
+       "detail": "glucose fell to 50 mg/dL after the treatment",
+       "evidence_tier": "inferred",
+       "matched": true,
+       "silence_reason": null
+      },
+      {
+       "classifier": "iob_stacking",
+       "detail": "no stacked correction precedes this episode",
+       "evidence_tier": "not_in_data",
+       "matched": false,
+       "silence_reason": "no_signal"
+      }
+     ],
+     "worst_bg": 50.4
+    },
+    {
+     "attributed": true,
+     "bg": 75.0,
+     "cause_lever": "late_bolus",
+     "cause_title": "Late bolus",
+     "date": "2020-03-02",
+     "ep_id": "2020-03-02-ep88",
+     "kind": "low",
+     "label": "Low",
+     "state": "fired",
+     "t": "2020-03-02 14:05:00",
+     "text": "Treated a low at 14:05 and the glucose kept falling to 64 before it turned \u2014 the treatment was larger than the fall needed.",
+     "verdicts": [
+      {
+       "classifier": "over_treated_low",
+       "detail": "glucose fell to 64 mg/dL after the treatment",
+       "evidence_tier": "inferred",
+       "matched": true,
+       "silence_reason": null
+      },
+      {
+       "classifier": "iob_stacking",
+       "detail": "no stacked correction precedes this episode",
+       "evidence_tier": "not_in_data",
+       "matched": false,
+       "silence_reason": "no_signal"
+      }
+     ],
+     "worst_bg": 63.7
+    },
+    {
+     "attributed": true,
+     "bg": 61.3,
+     "cause_lever": "late_bolus",
+     "cause_title": "Late bolus",
+     "date": "2020-03-03",
+     "ep_id": "2020-03-03-ep89",
+     "kind": "low",
+     "label": "Low",
+     "state": "fired",
+     "t": "2020-03-03 19:40:00",
+     "text": "Treated a low at 19:40 and the glucose kept falling to 40 before it turned \u2014 the treatment was larger than the fall needed.",
+     "verdicts": [
+      {
+       "classifier": "over_treated_low",
+       "detail": "glucose fell to 40 mg/dL after the treatment",
+       "evidence_tier": "inferred",
+       "matched": true,
+       "silence_reason": null
+      },
+      {
+       "classifier": "iob_stacking",
+       "detail": "no stacked correction precedes this episode",
+       "evidence_tier": "not_in_data",
+       "matched": false,
+       "silence_reason": "no_signal"
+      }
+     ],
+     "worst_bg": 39.8
     }
    ],
    "uncaused": 0
@@ -844,6 +1444,6 @@
  "why": "Manufactured fixture for the behaviour-replay CI gate. No real CGM, pump or personal data. Shapes only \u2014 see .claude/qa/gen_synthetic_fixtures.py.",
  "window": {
   "end": "2020-03-03",
-  "start": "2020-02-01"
+  "start": "2020-02-02"
  }
 }

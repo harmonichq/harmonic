@@ -35,6 +35,7 @@ OUT = sys.argv[1] if len(sys.argv) > 1 else 'mockups/diagnose-workstation.synthe
 SEED = 620
 DATES = ['2020-03-01', '2020-03-02', '2020-03-03']
 WINDOW = {'start': '2020-02-01', 'end': '2020-03-03'}
+COMPARISON_POPULATION_SIZE = 20
 
 LABEL = {
     'synthetic': True,
@@ -141,8 +142,21 @@ def build_exposures():
     # a counter-example: attributed to the family, no classifier fired
     lows += [occurrence(60 + i, m, Lever.OVER_TREATED_LOW, rng, matched=False)
              for i, m in enumerate((160, 980))]
+    lows += [occurrence(100 + i, m, Lever.OVER_TREATED_LOW, rng)
+             for i, m in enumerate((55, 365, 515, 755, 835))]
     meals = [occurrence(70 + i, m, Lever.LATE_BOLUS, rng)
              for i, m in enumerate((455, 780, 1150, 465, 790))]
+    meals += [occurrence(75 + i, m, Lever.LATE_BOLUS, rng)
+              for i, m in enumerate((1010, 80, 365, 730, 1085, 290, 560, 920,
+                                     1235, 205, 650, 990, 350, 845, 1180))]
+    # S32 proves that an episode-and-time pair only joins an occurrence: the
+    # endpoint's opaque id selects it. Keep one duplicate in the SOURCE rows;
+    # the event fixture must never manufacture it by reusing a shorter list.
+    meals[11]['ep_id'] = meals[2]['ep_id']
+    meals[11]['t'] = meals[2]['t']
+    meals[11]['date'] = meals[2]['date']
+    assert len(lows) == COMPARISON_POPULATION_SIZE
+    assert len(meals) == COMPARISON_POPULATION_SIZE
     highs = [occurrence(80 + i, m, Lever.MISSED_MEAL, rng)
              for i, m in enumerate((520, 830, 1200))]
     # #63 — one high the engine accounts for NOTHING about, so the browser gates
@@ -338,7 +352,7 @@ def build_payload(scenarios, evidence, exposures, audit, ic, ic_asserting):
 
 
 os.makedirs(OUT, exist_ok=True)
-day, exposures, audit = build_day(), build_exposures(), build_audit()
+day, manufactured_exposures, audit = build_day(), build_exposures(), build_audit()
 ic, ic_asserting = build_ic(False), build_ic(True)
 evidence, endpoint_exposures, scenarios = endpoint_feeds(day)
 # The manufactured three-day trace does not yield enough production anchors for
@@ -347,15 +361,22 @@ evidence, endpoint_exposures, scenarios = endpoint_feeds(day)
 if not has_replay_exposure_shapes(endpoint_exposures):
     endpoint_exposures = {
         'window': endpoint_exposures['window'],
-        'exposures': exposures['exposures'],
+        'exposures': manufactured_exposures['exposures'],
     }
+# The workstation capture and payload publish this one selected object. The
+# reader remains the authority where its manufactured trace has enough shape;
+# otherwise the fixed-seed fallback supplies the replay population.
+browser_exposures = {
+    'window': endpoint_exposures['window'],
+    'exposures': endpoint_exposures['exposures'],
+}
 files = {
     'explore-day.capture.json': day,
-    'explore-exposures.capture.json': exposures,
+    'explore-exposures.capture.json': {**LABEL, **browser_exposures},
     'settings-audit.capture.json': audit,
     'ic-blocks.capture.json': ic,
     'ic-blocks-asserting.capture.json': ic_asserting,
-    'payload.json': build_payload(scenarios, evidence, endpoint_exposures, audit, ic,
+    'payload.json': build_payload(scenarios, evidence, browser_exposures, audit, ic,
                                   ic_asserting),
 }
 for name, body in files.items():

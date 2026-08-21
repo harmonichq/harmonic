@@ -65,6 +65,7 @@ export const state = (page) => page.evaluate(() => {
     crumb: [...document.querySelectorAll('#crumb-trail > *')]
       .map((n) => n.textContent.trim()).filter((t) => t !== '›'),
     crumbMeta: txt('#crumb-meta'),
+    levelText: txt('#level'),
     scope: txt('#canvas-scope'),
     /* #62 — the case file's own head, and the line the panel prints when the
        finding the reader is standing on has no row in the selected window. */
@@ -137,6 +138,11 @@ export const state = (page) => page.evaluate(() => {
     more: txt('#level .more'),
     stage: q('#level .stagebtn')?.innerText.replace(/\s+/g, ' ').trim() ?? null,
     stageStaged: q('#level .stagebtn')?.dataset.staged ?? null,
+    sift: [...document.querySelectorAll('#seg-chips button')].map((button) => ({
+      text: button.textContent.trim(),
+      pressed: button.getAttribute('aria-pressed'),
+      disabled: button.disabled,
+    })),
     slotLink: q('#level .slotlink')?.innerText.replace(/\s+/g, ' ').trim() ?? null,
     linkBtns: [...document.querySelectorAll('#level .slotlink .linkbtn')].map((b) => b.textContent.trim()),
     // #735 — level 1 is the findings queue (terms 34-45), not a factor grid over
@@ -248,7 +254,8 @@ const projectAuthor = async () => {
  */
 export async function openApp(browser, {
   state: want = 'typical', theme = 'dark', viewport = { width: 1440, height: 900 }, findingsInputs = null,
-  exposuresInputs = null, comparisonStatus = 0, findingsDelayMs = 0, appSource = 'server',
+  exposuresInputs = null, comparisonStatus = 0, findingsDelayMs = 0,
+  findingsDelays = {}, findingsFailures = {}, appSource = 'server',
 } = {}) {
   const payloadPath = process.env.PAYLOAD || fail('PAYLOAD is required for TARGET=app');
   if (!['server', 'fixture'].includes(appSource)) fail(`unknown appSource: ${appSource}`);
@@ -297,8 +304,8 @@ export async function openApp(browser, {
         end_min: Number(url.searchParams.get('end_min')),
       })],
     [/^\/explore\/exposures/, () => exposuresFrom],
-    [/^\/analyze/, () => payload.analyze],
-    [/^\/scenarios/, () => payload.scenarios],
+    [/^\/analyze/, () => findingsFrom.analysis],
+    [/^\/scenarios/, () => findingsFrom.scenarios],
     [/^\/explore\/time/, () => payload.evidence],
     [/^\/status/, () => ({ ok: true, last_fetch: payload.analyze.generated_at, counts: payload.analyze.data_quality?.counts || {} })],
     [/^\/plan\/history/, () => ({ history: [] })],
@@ -370,8 +377,16 @@ export async function openApp(browser, {
     /* The findings queue is a SERVER round trip, so a story that is about what
        the pane shows WHILE it is in flight needs that flight to last long enough
        to read. Delay, never stub differently: the response is the same one. */
-    if (findingsDelayMs && path.startsWith('/diagnose/findings')) {
-      await new Promise((resolve) => { setTimeout(resolve, findingsDelayMs); });
+    if (path === '/diagnose/findings') {
+      const start = url.searchParams.get('start_min');
+      const key = start === null ? 'global' : `${start}-${url.searchParams.get('end_min')}`;
+      const delay = findingsDelays[key] ?? findingsDelayMs;
+      if (delay) await new Promise((resolve) => { setTimeout(resolve, delay); });
+      if (findingsFailures[key]) {
+        expectResponse(page, /^\/diagnose\/findings$/, findingsFailures[key]);
+        return route.fulfill({ status: findingsFailures[key], contentType: 'application/json',
+          body: JSON.stringify({ detail: 'findings unavailable' }) });
+      }
     }
     if (comparisonStatus && path === '/diagnose/event-comparison') {
       return route.fulfill({ status: comparisonStatus, contentType: 'application/json',
@@ -1753,6 +1768,123 @@ export const S39 = async (page) => {
     `S39 the new window's own counts land under its own label (${after.levelStat})`);
 };
 
+/** S41 · #81 — a replacement findings window owns the entire inspector while
+    its server projection is unresolved. The old queue, parameter detail,
+    support, staging controls, and counts never borrow the new clock label; a
+    superseded response cannot paint after a newer window settles. */
+// STORY:finding-evidence-routing:S41
+export const S41 = async (page) => {
+  await page.click('#seg-window button:nth-child(1)');   // Overnight, contains 05:30
+  await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false');
+  await page.click('#seg-chips button:nth-child(2)');    // retain one explicit SIFT state
+  const siftPressed = (await state(page)).sift.map((button) => button.pressed);
+  await clickQueueRow(page, 'Basal 05:30 · raise');
+  const opened = await state(page);
+  ok(opened.levelText.includes('Recommended'), 'S41 precondition: the morning basal detail is open');
+  ok(opened.stage !== null, 'S41 precondition: the morning basal change can be staged');
+
+  await drawWindow(page, [900, 1260], [330, 360]);      // 15:00–21:00, delayed
+  const pending = await state(page);
+  is(pending.levelLoading, 'true', 'S41 the replacement declares loading at setting depth');
+  is(pending.levelText, 'Counting 15:00–21:00…', 'S41 only the arriving range is rendered');
+  is(pending.crumbMeta, '15:00–21:00', 'S41 the crumb carries the arriving range without counts');
+  is(pending.stage, null, 'S41 the previous staging control is withdrawn');
+  is(pending.sift.map((button) => button.text), ['Highs', 'Lows', 'Meals', 'Corrections'],
+    'S41 SIFT labels carry no previous projection counts while loading');
+  is(pending.sift.map((button) => button.pressed), siftPressed,
+    'S41 SIFT pressed state survives the replacement');
+  ok(pending.sift.every((button) => !button.disabled), 'S41 SIFT controls remain enabled');
+
+  await settle(page, 900);
+  const absent = await state(page);
+  is(absent.levelLoading, 'false', 'S41 the matching projection settles');
+  is(absent.levelText, 'No findings in the selected window',
+    'S41 the open basal depth stays put and reports its settled absence');
+  is(absent.crumbMeta, '15:00–21:00', 'S41 settled absence keeps the selected range in the crumb');
+  is(absent.stage, null, 'S41 settled absence has no staging control');
+
+  await page.click('#seg-chips button:nth-child(2)');    // restore the full queue
+  await page.click('#crumb-trail button');               // Findings
+  await settle(page, 250);
+  const queue = await state(page);
+  ok(queue.queue.some((row) => row.title === 'Basal 19:30 to 21:00'),
+    'S41 the settled queue contains the server-published evening basal row');
+  ok(!queue.queue.some((row) => row.title === 'Basal 05:30 · raise'),
+    'S41 the settled queue excludes the morning basal row');
+
+  await page.click('#seg-window button:nth-child(3)');   // Afternoon, delayed longer
+  await settle(page, 100);
+  const eveningResponse = page.waitForResponse((candidate) => {
+    const url = new URL(candidate.url());
+    return url.pathname === '/diagnose/findings' && url.searchParams.get('start_min') === '1080';
+  });
+  await page.click('#seg-window button:nth-child(4)');   // Evening, settles first
+  await eveningResponse;
+  await settle(page, 100);
+  const newest = await state(page);
+  is(newest.pressed, ['Evening'], 'S41 the newest window settles first');
+  is(newest.levelLoading, 'false', 'S41 the newest response settles the inspector');
+  ok(newest.queue.some((row) => row.title === 'Basal 19:30 to 21:00'),
+    'S41 the newest response paints its server rows');
+  ok(!newest.queue.some((row) => row.title === 'Basal 12:30 to 14:00 · leaning lower'),
+    'S41 no superseded afternoon row painted');
+  await settle(page, 1100);                              // let superseded response arrive
+  const afterStale = await state(page);
+  is(afterStale.pressed, ['Evening'], 'S41 the superseded response cannot move the window');
+  const rowIdentity = (rows) => rows.map(({ title, register, tier }) => ({ title, register, tier }));
+  is(rowIdentity(afterStale.queue), rowIdentity(newest.queue),
+    'S41 the superseded response cannot replace the newest rows');
+};
+
+/** S42 · #81 — a failed scoped projection leaves the selected clock window
+    standing but withdraws every advisory claim from the prior population. The
+    reader can choose another window and settle normally. */
+// STORY:finding-evidence-routing:S42
+export const S42 = async (page) => {
+  await page.click('#seg-window button:nth-child(1)');   // first scoped load succeeds
+  await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false');
+  await clickQueueRow(page, 'Basal 05:30 · raise');
+  const failedResponse = page.waitForResponse((candidate) => {
+    const url = new URL(candidate.url());
+    return candidate.status() === 500 && url.pathname === '/diagnose/findings';
+  });
+  await drawWindow(page, [900, 1260], [330, 360]);      // only this scoped load fails
+  await failedResponse;
+  await settle(page, 150);
+  const detail = await state(page);
+  is(detail.levelLoading, 'false', 'S42 failure is not presented as an endless load');
+  is(detail.levelText,
+    'Findings unavailable for 15:00–21:00. Choose another window to try again.',
+    'S42 setting depth renders the exact unavailable state');
+  is(detail.crumbMeta, '15:00–21:00', 'S42 failed setting depth keeps only the selected range');
+  is(detail.stage, null, 'S42 failed setting depth has no prior staging control');
+  is(detail.sift.map((button) => button.text), ['Highs', 'Lows', 'Meals', 'Corrections'],
+    'S42 failed SIFT labels carry no prior projection counts');
+  ok(detail.sift.every((button) => !button.disabled), 'S42 failed SIFT controls remain enabled');
+
+  await page.click('#crumb-trail button');               // Findings
+  await settle(page, 100);
+  const queue = await state(page);
+  is(queue.levelText,
+    'Findings unavailable for 15:00–21:00. Choose another window to try again.',
+    'S42 queue depth renders the same unavailable state');
+  is(queue.queue, [], 'S42 queue depth exposes no previous rows');
+
+  const recoveryResponse = page.waitForResponse((candidate) => {
+    const url = new URL(candidate.url());
+    return candidate.status() === 200 && url.pathname === '/diagnose/findings'
+      && url.searchParams.get('start_min') === '1080';
+  });
+  await page.click('#seg-window button:nth-child(4)');   // another window retries normally
+  await recoveryResponse;
+  await settle(page, 100);
+  const recovered = await state(page);
+  is(recovered.levelLoading, 'false', 'S42 a later window settles after failure');
+  is(recovered.pressed, ['Evening'], 'S42 recovery keeps the later selected window');
+  ok(recovered.queue.some((row) => row.title === 'Basal 19:30 to 21:00'),
+    'S42 recovery paints the later window\'s server rows');
+};
+
 /* ------------------------------------------------------------------- runner */
 
 /* Discovery tags for every exported replay function above. */
@@ -1796,6 +1928,8 @@ export const S39 = async (page) => {
 // STORY:finding-evidence-routing:S38
 // STORY:finding-evidence-routing:S39
 // STORY:finding-evidence-routing:S40
+// STORY:finding-evidence-routing:S41
+// STORY:finding-evidence-routing:S42
 // STORY:finding-evidence-routing:D1
 // STORY:finding-evidence-routing:D2
 // STORY:finding-evidence-routing:D3
@@ -1829,6 +1963,15 @@ export const STORIES = [
   ['S38', S38, 'typical'],
   ['S39', S39, 'dense', { findingsDelayMs: 900 }],
   ['S40', S40, 'typical'],
+  ['S41', S41, 'typical', {
+    findingsInputs: twoFamilyInputs,
+    findingsDelayMs: 900,
+    findingsDelays: { '900-1260': 900, '720-1080': 1200, '1080-1440': 100 },
+  }],
+  ['S42', S42, 'typical', {
+    findingsInputs: twoFamilyInputs,
+    findingsFailures: { '900-1260': 500 },
+  }],
   ['D1', D1, 'dense'], ['D2', D2, 'dense'], ['D3', D3, 'dense'],
 ];
 

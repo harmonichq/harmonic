@@ -392,7 +392,7 @@ function renderChips(chipCounts, selected, onSelect) {
   for (const [key, label] of CHIP_LABELS) {
     const b = document.createElement('button');
     b.type = 'button';
-    b.textContent = `${label} ${chipCounts?.[key] ?? 0}`;
+    b.textContent = chipCounts == null ? label : `${label} ${chipCounts[key] ?? 0}`;
     b.setAttribute('aria-pressed', String(selected === null || selected.has(key)));
     b.addEventListener('click', () => onSelect(key));
     seg.append(b);
@@ -1266,25 +1266,34 @@ function boot(root, data, callbacks, signal) {
      screen is the PREVIOUS window's while `scopeLabel()` already prints the new
      one. That pairing is a caption asserting a population nothing drew, so the
      counts are withheld until the answer lands rather than shown stale. */
-  const settled = () => pendingKey === null;
   let loadedKey = windowKey(findings?.window?.scoped
     ? [findings.window.start_min, findings.window.end_min] : null);
   let pendingKey = null;
+  let failedKey = null;
+  const currentFindingsKey = () => windowKey(findingsWindow());
+  const settled = () => loadedKey === currentFindingsKey()
+    && pendingKey === null && failedKey === null;
   function ensureFindings() {
-    const key = windowKey(findingsWindow());
-    if (key === loadedKey || key === pendingKey) return;
+    const key = currentFindingsKey();
+    if (failedKey !== null && failedKey !== key) failedKey = null;
+    if (key === loadedKey || key === pendingKey || key === failedKey) return;
     pendingKey = key;
     const w = findingsWindow();
     Promise.resolve(callbacks.loadFindings?.(w ? { start_min: w[0], end_min: w[1] } : null))
       .then((next) => {
         if (pendingKey !== key) return;      // the reader moved on; this is stale
         pendingKey = null;
-        if (!next) return;
+        if (!next) { failedKey = key; paint(); return; }
         findings = next;
         loadedKey = key;
         paint();
       })
-      .catch(() => { if (pendingKey === key) pendingKey = null; });
+      .catch(() => {
+        if (pendingKey !== key) return;
+        pendingKey = null;
+        failedKey = key;
+        paint();
+      });
   }
 
   /** A queue row's drill target — keyed on the projection's own row id, never
@@ -1300,15 +1309,15 @@ function boot(root, data, callbacks, signal) {
       if (factor) push({ k: 'factor', factor, rowId: row.id });
       return;
     }
-    if (row.parameter === 'isf') { push({ k: 'isf' }); return; }
+    if (row.parameter === 'isf') { push({ k: 'isf', rowId: row.id }); return; }
     if (row.parameter === 'carb_ratio') {
       const cell = icBlocks.find((c) => `ic:${c.id}` === row.id);
-      if (cell) pickBlock(cell);
+      if (cell) pickBlock(cell, row.id);
       return;
     }
     if (row.parameter === 'basal_rate') {
       const cell = lane.cells.find((c) => c.startMin === row.span?.start_min);
-      if (cell) pickCell(cell);
+      if (cell) pickCell(cell, row.id);
     }
   }
 
@@ -1320,7 +1329,7 @@ function boot(root, data, callbacks, signal) {
   const popTo = (i) => { dir = 'pop'; stack.length = i + 1; paint(); };
   /* The lane is a shortcut INTO the slot branch: from level 1 it pushes, from a
      slot frame it swaps in place, so clicking cells never deepens the stack. */
-  function pickCell(cell) {
+  function pickCell(cell, rowId = null) {
     /* Selecting a slot is a NAVIGATION that carries its own window, so it
        releases whatever explicit choice was standing and lets the slot frame
        supply the window. Minting a `drawn` window here was wrong twice over: it
@@ -1330,15 +1339,15 @@ function boot(root, data, callbacks, signal) {
        the 90-min floor a DRAWN window must respect — a slot boundary is data,
        not a drawn sample, and only the frame path renders it unsnapped. */
     releaseWindow();
-    if (top().k === 'slot') { top().cell = cell; paint(); return; }
-    push({ k: 'slot', cell });
+    if (top().k === 'slot') { Object.assign(top(), { cell, rowId }); paint(); return; }
+    push({ k: 'slot', cell, rowId });
   }
 
   /** The I:C findings-queue route: push from level 1, swap in place. */
-  function pickBlock(cell) {
+  function pickBlock(cell, rowId = null) {
     releaseWindow();
-    if (top().k === 'block') { top().cell = cell; paint(); return; }
-    push({ k: 'block', cell });
+    if (top().k === 'block') { Object.assign(top(), { cell, rowId }); paint(); return; }
+    push({ k: 'block', cell, rowId });
   }
 
   /* SELECT-IN-PLACE (P35 retired, ADR 31 part 5). An evidence-row click used to
@@ -1367,6 +1376,14 @@ function boot(root, data, callbacks, signal) {
   function findingRowFor(f) {
     if (!f.rowId) return null;
     return (findings?.rows || []).find((r) => r.id === f.rowId) || null;
+  }
+
+  /** Parameter details opened from the queue retain the server row identity.
+      A settled projection either republishes that exact row or owns its absence;
+      slot and block times are never used as a second membership rule. */
+  function parameterRowFor(f) {
+    if (!f.rowId) return true;       // lane navigation is not projection-backed
+    return (findings?.rows || []).find((row) => row.id === f.rowId) || null;
   }
 
   /** One occurrence's published verdict, looked up by the id the projection
@@ -1727,7 +1744,11 @@ function boot(root, data, callbacks, signal) {
        (the follow chip and the chart's own window label both print the hours, and a
        third copy one line apart is noise). */
     el('crumb-meta').toggleAttribute('data-queue', f.k === 'factors');
-    el('crumb-meta').textContent = f.k === 'factors'
+    el('crumb-meta').textContent = !settled()
+      || (f.k === 'factor' && !findingRowFor(f))
+      || (f.k !== 'factors' && f.k !== 'factor' && !parameterRowFor(f))
+      ? scopeLabel()
+      : f.k === 'factors'
       ? queueMeta(findings)
       : f.k === 'factor'
         ? (settled()
@@ -1755,8 +1776,23 @@ function boot(root, data, callbacks, signal) {
     void host.offsetWidth;
     host.style.animation = '';
     const f = top();
-    // one place, every level: the pane says whether it is waiting on the server
-    host.dataset.loading = String(!settled());
+    // One projection state governs every level before any old row can render.
+    host.dataset.loading = String(pendingKey === currentFindingsKey());
+    if (failedKey === currentFindingsKey()) {
+      host.insertAdjacentHTML('beforeend',
+        `<div class="empty">Findings unavailable for ${scopeLabel()}. Choose another window to try again.</div>`);
+      return;
+    }
+    if (!settled()) {
+      host.insertAdjacentHTML('beforeend',
+        `<div class="empty">Counting ${scopeLabel()}…</div>`);
+      return;
+    }
+    if (f.k !== 'factors' && f.k !== 'factor' && !parameterRowFor(f)) {
+      host.insertAdjacentHTML('beforeend',
+        '<div class="empty">No findings in the selected window</div>');
+      return;
+    }
     if (f.k === 'factors') {
       /* TERM 43 — no `Inferred patterns, not settled causes` banner here. A banner
          over a ranked list cannot say WHICH rows it hedges, and rank interleaves
@@ -1801,13 +1837,6 @@ function boot(root, data, callbacks, signal) {
       return;
     }
     // 'factor' is the only remaining frame kind: the finding case file.
-    /* Counted for the window that is ARRIVING, never the one that left. This
-       branch comes first so a stale row cannot rule the new window empty. */
-    if (!settled()) {
-      host.insertAdjacentHTML('beforeend',
-        `<div class="empty">Counting ${scopeLabel()}…</div>`);
-      return;
-    }
     /* The reader STAYS on the finding when the window stops holding its row —
        the alternative was a browser-side fallback filter, which is the thing
        ADR 62 part 6 retires. Both panes say the same words. */
@@ -2100,7 +2129,7 @@ function boot(root, data, callbacks, signal) {
        first, so the clock repaint starts with its own header restored. */
     if (alignMount && (open.k !== 'factor' || open.align !== 'event'
       || !alignCoordinatesFor(open.factor.cause))) disposeAlign();
-    renderChips(findings?.chip_counts, selectedChips, (key) => {
+    renderChips(settled() ? findings?.chip_counts : null, selectedChips, (key) => {
       const next = new Set(selectedChips || CHIP_LABELS.map(([name]) => name));
       if (next.has(key)) next.delete(key); else next.add(key);
       selectedChips = next.size === CHIP_LABELS.length ? null : next;

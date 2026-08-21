@@ -698,11 +698,14 @@ verbatim and composes nothing. See ADR 730.
 _Avoid_: filter, query result, window payload.
 
 **Register**:
-Which of the four things a queue row is: it **asserts** a direction, it is
-**held** (a number, but the analyzer withheld the move, with its reason), it is
-**blind** (no clean day here at all), or it is a **finding** (a behavior, with its
-window-local `n of m` denominators). Quiet parameters — the ones whose delivery
-agrees with their setting — are in no register and are never listed.
+Which of the five things a queue row is: it **asserts** a direction, it is
+**held** (a current setting has a number, but the analyzer withheld the move,
+with its reason), it is **blind** (no clean day here at all), it is **history**
+(a measurement from a setting that is no longer programmed and can never assert
+a current move), or it is a **finding** (a behavior, with its window-local `n of
+m` denominators). History is a tuning Audit item, not a behavioral Finding.
+Quiet current parameters — the ones whose delivery agrees with their setting —
+are in no register and are never listed.
 _Avoid_: state, category, bucket, tier.
 
 **Outcome anchor**:

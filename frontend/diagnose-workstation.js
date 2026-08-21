@@ -777,10 +777,14 @@ function renderIsfLevel(host, isf, isfStaged, onStage) {
      this level's own weaken sentence, and disagreed with the queue row that
      drilled into it. Both facts come from `isfVerdict` now. */
   const { direction, canStage, nights } = isfVerdict(isf);
+  const roundedNoop = !canStage && direction === 'strengthen'
+    && isf.current != null && isf.recommended === isf.current;
   renderParamLevel(host, {
     head: 'ISF',
     verdict: canStage ? 'suggests a change'
-      : direction ? 'corrections look stronger than needed'
+      : roundedNoop ? 'conservative step rounds to the programmed factor'
+        : direction === 'weaken' ? 'corrections look stronger than needed'
+          : direction === 'strengthen' ? 'corrections look weaker than needed'
         : 'no direction asserted',
     scopeSay: ISF_SCOPE,
     unit: 'mg/dL/U',
@@ -789,7 +793,8 @@ function renderIsfLevel(host, isf, isfStaged, onStage) {
     recommended: canStage ? isf.recommended : null,
     recommendedQual: canStage
       ? 'mg/dL/U, one conservative step'
-      : direction ? 'no new number is suggested'
+      : roundedNoop ? 'the conservative step rounds to the programmed factor'
+        : direction ? 'no new number is suggested'
         : 'no direction asserted, so nothing is recommended',
     currentNoun: 'correction factor',
     moveWord: 'move',
@@ -801,8 +806,12 @@ function renderIsfLevel(host, isf, isfStaged, onStage) {
     sentence: isf.annotation,
     canStage,
     isStaged: isfStaged,
-    footNote: direction
-      ? 'Corrections look stronger than needed, but recent lows make a new number unsafe to suggest.'
+    footNote: roundedNoop
+      ? 'The conservative step rounds to the programmed factor, so there is no settings change to stage.'
+      : direction === 'weaken'
+        ? 'Corrections look stronger than needed, but recent lows make a new number unsafe to suggest.'
+        : direction === 'strengthen'
+          ? 'This result is held, so there is no settings change to stage; the estimate and interval remain visible.'
       : `${e.wide ? 'The interval is wide and no' : 'No'} direction is asserted here, so `
         + 'there is nothing to stage; the number and its interval are shown as measured.',
     onStage,

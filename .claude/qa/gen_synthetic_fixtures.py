@@ -28,6 +28,7 @@ import sys
 from ciq_autotune.explore_exposures import build_exposures as build_endpoint_exposures
 from ciq_autotune.explore_time_of_day import build_time_of_day
 from ciq_autotune.analyzers.scenario import build_scenarios
+from ciq_autotune.analyzers.isf import isf_asserts_move
 from ciq_autotune.analyzers.scenario.levers import Lever, title as lever_title
 from ciq_autotune.store import Store
 
@@ -267,7 +268,10 @@ def build_ic(asserting):
                        False, None, 2, 9,
                        'too few meal runs in these hours to assert a direction',
                        'unmeasured-alone')
-    isf = [{'start_min': 0, 'label': 'Fasting', 'parameter': 'isf', 'current': 42.0,
+    current_isf = 42.0
+    direction = None
+    recommended_isf = None
+    isf = [{'start_min': 0, 'label': 'Fasting', 'parameter': 'isf', 'current': current_isf,
             'estimate': estimate(31.4, 18.2, 46.9, 1583, wide=True), 'recommended': None,
             'annotation': 'corrections keep overshooting into lows, so the correction factor '
                           'eases weaker',
@@ -278,7 +282,8 @@ def build_ic(asserting):
                          'night_fits': [{'date': d, 'isf': isf}
                                         for d, isf in zip(DATES * 8,
                                                           [28.5, 31.4, 34.2] * 8)]},
-            'asserts_move': None, 'block_id': None}]
+            'asserts_move': isf_asserts_move(current_isf, direction, recommended_isf),
+            'block_id': None}]
     out = {**LABEL, 'schema_version': 8, 'generated': f'{WINDOW["end"]}T00:00:00+00:00',
            'ic': [], 'ic_blocks': [evening, morning], 'isf': isf}
     if asserting:
@@ -354,6 +359,25 @@ def build_payload(scenarios, evidence, exposures, audit, ic, ic_asserting):
         'scenarios': scenarios,
         'evidence': evidence,
         'exposures': exposures,
+        'pump_settings': {
+            'configured': True,
+            'fetched_at': f'{WINDOW["end"]} 00:00:00',
+            'other_profile_count': 0,
+            'profile': {
+                'idp': 1, 'name': 'Synthetic multi-segment', 'dia_hours': 5.0,
+                'max_bolus': 10.0, 'carb_entry': True,
+                'segments': [
+                    {'start_min': 0, 'basal_rate': 0.8, 'isf': 42,
+                     'carb_ratio': 5.6, 'target_bg': 110},
+                    {'start_min': 360, 'basal_rate': 0.9, 'isf': 45,
+                     'carb_ratio': 6.0, 'target_bg': 110},
+                    {'start_min': 780, 'basal_rate': 0.75, 'isf': 38,
+                     'carb_ratio': 5.2, 'target_bg': 110},
+                    {'start_min': 1200, 'basal_rate': 0.7, 'isf': 50,
+                     'carb_ratio': 6.4, 'target_bg': 110},
+                ],
+            },
+        },
     }
 
 

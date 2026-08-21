@@ -115,7 +115,6 @@ body { background: var(--ck-ground); }
 .cockpit-step:hover { color: var(--ck-text); }
 .cockpit-step[aria-current="step"] {
   border-color: color-mix(in srgb, var(--ck-accent) 45%, transparent);
-  background: var(--ck-accent-soft);
   color: var(--ck-text);
 }
 .cockpit-step-number {
@@ -330,7 +329,9 @@ body { background: var(--ck-ground); }
   font-size: var(--ck-data);
   text-align: left;
 }
-.cockpit-utility-menu button:hover { background: var(--ck-accent-soft); }
+.cockpit-utility-menu button:hover {
+  background: color-mix(in srgb, var(--ck-panel) 95%, var(--ck-meta));
+}
 .cockpit-utility-menu button[aria-checked="true"] { color: var(--ck-accent); font-weight: 700; }
 
 .cockpit-menu-button,

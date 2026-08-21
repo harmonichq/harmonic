@@ -281,7 +281,6 @@ html.dark :is(.dw, .vw) :is(.instruments, .ec-coordinates) .seg button[aria-pres
 :is(.dw, .vw) .instrument > .cap,
 :is(.dw, .vw) .lane-key .t,
 :is(.dw, .vw) .lvl-cap .meta,
-:is(.dw, .vw) .entry .sub,
 :is(.dw, .vw) .slot-stats,
 :is(.dw, .vw) .ev-row button,
 :is(.dw, .vw) .head-live .rd-note {

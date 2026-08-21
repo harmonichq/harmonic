@@ -35,7 +35,7 @@ button.
   findings queue or parameter detail, renaming the evidence cell, or verifying
   against real pump data or a fetch-enabled server.
 - **Evidence owed:** a test that fails on the ticket base for the retired selector
-  inventory and passes after deletion; the complete frontend fast gate; the
+  inventory and passes after deletion; the complete frontend CI job; the
   existing S24 behavior contract remains unchanged and continues to assert zero
   per-parameter tier rows in CI.
 

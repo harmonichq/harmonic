@@ -21,8 +21,8 @@
 
 ## 3. Verify and review
 
-- [ ] Run the complete frontend fast gate and the exploration drift check from
-      `AGENTS.md`; all checks exit zero.
+- [ ] Run all four commands in `.github/workflows/ci.yml`'s `frontend` job
+      exactly as committed; all tests pass and both drift checks report current.
 - [ ] Confirm the existing S24 app replay remains untouched and CI still owns its
       public assertion that level one renders zero per-parameter tier rows.
 - [ ] Update this record with red/green evidence, run `/review` at Targeted depth,

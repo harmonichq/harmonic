@@ -28,3 +28,17 @@ return. Live parameter detail, basal-lane navigation, staging, and Plan behavior
 do not change.
 
 Decision: harmonichq/harmonic#39, 2026-08-21.
+
+## Triage review rounds
+
+- **Preflight:** the shipped emitter and selector inventories were generated from
+  the ticket worktree. The existing compact-cell test passed, while a throwaway
+  two-assertion absence test failed on both retired selector owners. The four
+  frontend CI commands passed on the ticket base and both generated artifacts
+  reported current.
+- **Cold panel 1:** three independent lenses found one authoring blocker and zero
+  injected blockers. The draft called a two-command subset the complete frontend
+  job; the verification source now names all four committed commands.
+- **Delta recheck:** the objecting reviewer reproduced the corrected CI wiring
+  and the two-stylesheet box scan, then countersigned. The grounding/execution and
+  risk/cost lenses also countersigned with no blocking objections.

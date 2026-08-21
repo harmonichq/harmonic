@@ -1197,7 +1197,7 @@ all read that one population.
 ```
 S32 · selecting a roster occurrence under By event draws it (#57), by the
       endpoint's own catalog id — the (episode, instant) pair the roster carries
-      addresses four catalog occurrences and is a join key only
+      addresses two catalog occurrences and is a join key only
 S33 · while the event canvas is mounted, its own header is the only rendered
       canvas header on screen (#58); the replay reads computed display and
       layout presence for both headers, never the DOM `hidden` property alone

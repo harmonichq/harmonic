@@ -1365,7 +1365,7 @@ export const S31 = async (page) => {
    changed and why, and touches nothing on disk. */
 
 /** The one meals episode the roster stories select. The event-comparison
-    capture reuses this (episode, instant) pair across FOUR catalog
+    capture reuses this (episode, instant) pair across TWO catalog
     occurrences, which is exactly why selection travels by the endpoint's own
     opaque id and this pair is only ever a join key. */
 const ROSTER_MEAL = { ep_id: '2020-03-01-ep72', t: '2020-03-01 19:10:00' };

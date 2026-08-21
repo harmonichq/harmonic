@@ -1,0 +1,434 @@
+[
+  {
+    "file": "accepted-1440x900-light-clock-rest.png",
+    "viewport": "1440x900",
+    "theme": "light",
+    "alignment": "clock",
+    "state": "rest",
+    "header": {
+      "top": 85,
+      "bottom": 115,
+      "height": 30,
+      "title": "Glucose by time of day",
+      "label": null,
+      "hover": "0"
+    },
+    "eventHeader": null,
+    "caption": null,
+    "pane": {
+      "top": 85,
+      "bottom": 874,
+      "height": 789
+    },
+    "chart": {
+      "top": 115,
+      "bottom": 834,
+      "height": 719
+    }
+  },
+  {
+    "file": "accepted-1440x900-light-clock-hover.png",
+    "viewport": "1440x900",
+    "theme": "light",
+    "alignment": "clock",
+    "state": "hover",
+    "header": {
+      "top": 85,
+      "bottom": 115,
+      "height": 30,
+      "title": "Glucose by time of day",
+      "label": null,
+      "hover": "1"
+    },
+    "eventHeader": null,
+    "caption": null,
+    "pane": {
+      "top": 85,
+      "bottom": 874,
+      "height": 789
+    },
+    "chart": {
+      "top": 115,
+      "bottom": 834,
+      "height": 719
+    }
+  },
+  {
+    "file": "accepted-1440x900-light-event-rest.png",
+    "viewport": "1440x900",
+    "theme": "light",
+    "alignment": "event",
+    "state": "rest",
+    "header": {
+      "top": 85,
+      "bottom": 115,
+      "height": 30,
+      "title": "Low response comparison",
+      "label": "Over-treated low",
+      "hover": "0"
+    },
+    "eventHeader": null,
+    "caption": null,
+    "pane": {
+      "top": 85,
+      "bottom": 874,
+      "height": 789
+    },
+    "chart": {
+      "top": 115,
+      "bottom": 823,
+      "height": 708
+    }
+  },
+  {
+    "file": "accepted-1440x900-light-event-hover.png",
+    "viewport": "1440x900",
+    "theme": "light",
+    "alignment": "event",
+    "state": "hover",
+    "header": {
+      "top": 85,
+      "bottom": 115,
+      "height": 30,
+      "title": "Low response comparison",
+      "label": "Over-treated low",
+      "hover": "1"
+    },
+    "eventHeader": null,
+    "caption": null,
+    "pane": {
+      "top": 85,
+      "bottom": 874,
+      "height": 789
+    },
+    "chart": {
+      "top": 115,
+      "bottom": 823,
+      "height": 708
+    }
+  },
+  {
+    "file": "accepted-1440x900-dark-clock-rest.png",
+    "viewport": "1440x900",
+    "theme": "dark",
+    "alignment": "clock",
+    "state": "rest",
+    "header": {
+      "top": 85,
+      "bottom": 115,
+      "height": 30,
+      "title": "Glucose by time of day",
+      "label": null,
+      "hover": "0"
+    },
+    "eventHeader": null,
+    "caption": null,
+    "pane": {
+      "top": 85,
+      "bottom": 874,
+      "height": 789
+    },
+    "chart": {
+      "top": 115,
+      "bottom": 834,
+      "height": 719
+    }
+  },
+  {
+    "file": "accepted-1440x900-dark-clock-hover.png",
+    "viewport": "1440x900",
+    "theme": "dark",
+    "alignment": "clock",
+    "state": "hover",
+    "header": {
+      "top": 85,
+      "bottom": 115,
+      "height": 30,
+      "title": "Glucose by time of day",
+      "label": null,
+      "hover": "1"
+    },
+    "eventHeader": null,
+    "caption": null,
+    "pane": {
+      "top": 85,
+      "bottom": 874,
+      "height": 789
+    },
+    "chart": {
+      "top": 115,
+      "bottom": 834,
+      "height": 719
+    }
+  },
+  {
+    "file": "accepted-1440x900-dark-event-rest.png",
+    "viewport": "1440x900",
+    "theme": "dark",
+    "alignment": "event",
+    "state": "rest",
+    "header": {
+      "top": 85,
+      "bottom": 115,
+      "height": 30,
+      "title": "Low response comparison",
+      "label": "Over-treated low",
+      "hover": "0"
+    },
+    "eventHeader": null,
+    "caption": null,
+    "pane": {
+      "top": 85,
+      "bottom": 874,
+      "height": 789
+    },
+    "chart": {
+      "top": 115,
+      "bottom": 823,
+      "height": 708
+    }
+  },
+  {
+    "file": "accepted-1440x900-dark-event-hover.png",
+    "viewport": "1440x900",
+    "theme": "dark",
+    "alignment": "event",
+    "state": "hover",
+    "header": {
+      "top": 85,
+      "bottom": 115,
+      "height": 30,
+      "title": "Low response comparison",
+      "label": "Over-treated low",
+      "hover": "1"
+    },
+    "eventHeader": null,
+    "caption": null,
+    "pane": {
+      "top": 85,
+      "bottom": 874,
+      "height": 789
+    },
+    "chart": {
+      "top": 115,
+      "bottom": 823,
+      "height": 708
+    }
+  },
+  {
+    "file": "accepted-1024x900-light-clock-rest.png",
+    "viewport": "1024x900",
+    "theme": "light",
+    "alignment": "clock",
+    "state": "rest",
+    "header": {
+      "top": 85,
+      "bottom": 115,
+      "height": 30,
+      "title": "Glucose by time of day",
+      "label": null,
+      "hover": "0"
+    },
+    "eventHeader": null,
+    "caption": null,
+    "pane": {
+      "top": 85,
+      "bottom": 874,
+      "height": 789
+    },
+    "chart": {
+      "top": 115,
+      "bottom": 834,
+      "height": 719
+    }
+  },
+  {
+    "file": "accepted-1024x900-light-clock-hover.png",
+    "viewport": "1024x900",
+    "theme": "light",
+    "alignment": "clock",
+    "state": "hover",
+    "header": {
+      "top": 85,
+      "bottom": 115,
+      "height": 30,
+      "title": "Glucose by time of day",
+      "label": null,
+      "hover": "1"
+    },
+    "eventHeader": null,
+    "caption": null,
+    "pane": {
+      "top": 85,
+      "bottom": 874,
+      "height": 789
+    },
+    "chart": {
+      "top": 115,
+      "bottom": 834,
+      "height": 719
+    }
+  },
+  {
+    "file": "accepted-1024x900-light-event-rest.png",
+    "viewport": "1024x900",
+    "theme": "light",
+    "alignment": "event",
+    "state": "rest",
+    "header": {
+      "top": 85,
+      "bottom": 115,
+      "height": 30,
+      "title": "Low response comparison",
+      "label": "Over-treated low",
+      "hover": "0"
+    },
+    "eventHeader": null,
+    "caption": null,
+    "pane": {
+      "top": 85,
+      "bottom": 874,
+      "height": 789
+    },
+    "chart": {
+      "top": 115,
+      "bottom": 788,
+      "height": 673
+    }
+  },
+  {
+    "file": "accepted-1024x900-light-event-hover.png",
+    "viewport": "1024x900",
+    "theme": "light",
+    "alignment": "event",
+    "state": "hover",
+    "header": {
+      "top": 85,
+      "bottom": 115,
+      "height": 30,
+      "title": "Low response comparison",
+      "label": "Over-treated low",
+      "hover": "1"
+    },
+    "eventHeader": null,
+    "caption": null,
+    "pane": {
+      "top": 85,
+      "bottom": 874,
+      "height": 789
+    },
+    "chart": {
+      "top": 115,
+      "bottom": 788,
+      "height": 673
+    }
+  },
+  {
+    "file": "accepted-1024x900-dark-clock-rest.png",
+    "viewport": "1024x900",
+    "theme": "dark",
+    "alignment": "clock",
+    "state": "rest",
+    "header": {
+      "top": 85,
+      "bottom": 115,
+      "height": 30,
+      "title": "Glucose by time of day",
+      "label": null,
+      "hover": "0"
+    },
+    "eventHeader": null,
+    "caption": null,
+    "pane": {
+      "top": 85,
+      "bottom": 874,
+      "height": 789
+    },
+    "chart": {
+      "top": 115,
+      "bottom": 834,
+      "height": 719
+    }
+  },
+  {
+    "file": "accepted-1024x900-dark-clock-hover.png",
+    "viewport": "1024x900",
+    "theme": "dark",
+    "alignment": "clock",
+    "state": "hover",
+    "header": {
+      "top": 85,
+      "bottom": 115,
+      "height": 30,
+      "title": "Glucose by time of day",
+      "label": null,
+      "hover": "1"
+    },
+    "eventHeader": null,
+    "caption": null,
+    "pane": {
+      "top": 85,
+      "bottom": 874,
+      "height": 789
+    },
+    "chart": {
+      "top": 115,
+      "bottom": 834,
+      "height": 719
+    }
+  },
+  {
+    "file": "accepted-1024x900-dark-event-rest.png",
+    "viewport": "1024x900",
+    "theme": "dark",
+    "alignment": "event",
+    "state": "rest",
+    "header": {
+      "top": 85,
+      "bottom": 115,
+      "height": 30,
+      "title": "Low response comparison",
+      "label": "Over-treated low",
+      "hover": "0"
+    },
+    "eventHeader": null,
+    "caption": null,
+    "pane": {
+      "top": 85,
+      "bottom": 874,
+      "height": 789
+    },
+    "chart": {
+      "top": 115,
+      "bottom": 788,
+      "height": 673
+    }
+  },
+  {
+    "file": "accepted-1024x900-dark-event-hover.png",
+    "viewport": "1024x900",
+    "theme": "dark",
+    "alignment": "event",
+    "state": "hover",
+    "header": {
+      "top": 85,
+      "bottom": 115,
+      "height": 30,
+      "title": "Low response comparison",
+      "label": "Over-treated low",
+      "hover": "1"
+    },
+    "eventHeader": null,
+    "caption": null,
+    "pane": {
+      "top": 85,
+      "bottom": 874,
+      "height": 789
+    },
+    "chart": {
+      "top": 115,
+      "bottom": 788,
+      "height": 673
+    }
+  }
+]

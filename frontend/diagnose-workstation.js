@@ -166,7 +166,7 @@ const rdVerdict = (v) => {
 };
 function paintReadout(r) {
   const head = el('canvas-head');
-  if (!head) return;
+  if (!head || !head.querySelector('#rd-time')) return;
   if (!r) { head.dataset.hover = '0'; return; }
   const stats = r.kind === 'bin';
   for (const id of ['rd-p-med', 'rd-p-iqr', 'rd-p-band', 'rd-p-n']) {
@@ -1535,11 +1535,11 @@ function boot(root, data, callbacks, signal) {
     ++alignGeneration;
     alignMount?.observer?.disconnect();
     alignMount?.chart?.dispose();
+    alignMount?.restoreHeader?.();
     alignMount = null;
     el('align-canvas').innerHTML = '';
     el('align-canvas').hidden = true;
     el('chart').hidden = false;
-    el('canvas-head').hidden = false;
     el('brace').hidden = braceless || !shownRange;
     el('lane-wrap').hidden = false;
   }
@@ -1565,6 +1565,7 @@ function boot(root, data, callbacks, signal) {
     const alignKey = f.align === 'event' ? 'event' : 'clock';
     renderAlign(alignKey, (key) => {
       if (f.align === key) return;
+      if (key === 'clock') disposeAlign();
       f.align = key;
       paint();
     });
@@ -1581,7 +1582,6 @@ function boot(root, data, callbacks, signal) {
     if (alignMount && alignMount.frame === f && alignMount.windowKey === windowKey(window)
       && alignMount.occurrenceId === occurrenceId) return;
     el('chart').hidden = true;
-    el('canvas-head').hidden = true;
     el('brace').hidden = true;
     el('lane-wrap').hidden = true;
     const host = el('align-canvas');
@@ -1595,16 +1595,20 @@ function boot(root, data, callbacks, signal) {
       if (generation !== alignGeneration || top() !== f) return;
       alignMount?.observer?.disconnect();
       alignMount?.chart?.dispose();
-      alignMount = { ...renderEventSurface(host, projection), frame: f, windowKey: windowKey(window), occurrenceId };
+      alignMount?.restoreHeader?.();
+      alignMount = { ...renderEventSurface(host, projection, { headerHost: el('canvas-head') }), frame: f, windowKey: windowKey(window), occurrenceId };
       // The roster has the shared episode-and-time key, while the endpoint owns
       // its opaque catalog id. Once the just-loaded catalog supplies that id,
       // re-project the selected occurrence through the public endpoint.
       if (selected && !occurrenceId) paintAlign();
     }).catch(() => {
-      // ALIGN is a re-projection, not a navigation: a failed fetch leaves the
-      // reader on whatever the canvas already showed rather than erroring the
-      // whole workstation out from under an unrelated finding.
-      if (generation === alignGeneration) disposeAlign();
+      // ALIGN is a re-projection, not a navigation: a failed fetch preserves
+      // the finding and selection while returning its canvas to By clock.
+      if (generation === alignGeneration) {
+        f.align = 'clock';
+        disposeAlign();
+        paint();
+      }
     });
   }
 
@@ -2089,6 +2093,13 @@ function boot(root, data, callbacks, signal) {
     const open = top();
     if (open.k === 'factor' && open.align === 'event'
       && settled() && !scopedFor(open).familyN) open.align = 'clock';
+    /* The mounted event surface owns both the visible canvas and the shared
+       header until its replacement projection lands. Repainting the hidden
+       clock canvas in between would write its header fields while the event
+       markup is mounted. Navigation that ends event ownership releases it
+       first, so the clock repaint starts with its own header restored. */
+    if (alignMount && (open.k !== 'factor' || open.align !== 'event'
+      || !alignCoordinatesFor(open.factor.cause))) disposeAlign();
     renderChips(findings?.chip_counts, selectedChips, (key) => {
       const next = new Set(selectedChips || CHIP_LABELS.map(([name]) => name));
       if (next.has(key)) next.delete(key); else next.add(key);
@@ -2101,8 +2112,10 @@ function boot(root, data, callbacks, signal) {
     renderLane(lane, top().k === 'slot' ? top().cell : null, staged, pickCell);
     renderLaneKey(lane);
     paintWatch();
-    paintChart();
-    paintBrace();
+    if (!alignMount) {
+      paintChart();
+      paintBrace();
+    }
     paintAlign();
   }
 

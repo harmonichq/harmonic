@@ -1198,8 +1198,9 @@ all read that one population.
 S32 · selecting a roster occurrence under By event draws it (#57), by the
       endpoint's own catalog id — the (episode, instant) pair the roster carries
       addresses four catalog occurrences and is a join key only
-S33 · while the event canvas is mounted, its own header is the only canvas
-      header on screen (#58)
+S33 · while the event canvas is mounted, its own header is the only rendered
+      canvas header on screen (#58); the replay reads computed display and
+      layout presence for both headers, never the DOM `hidden` property alone
 S34 · a failed by-event fetch restores the clock canvas and leaves the reader on
       the finding
 S35 · a finding whose episodes span two families shows one family in the panel
@@ -1272,36 +1273,12 @@ episode whose evidence keys cannot be joined. The revision opens the same row on
 `lows`, reading `0 of 0 low episodes in 07:00–10:15`, and draws no verdict split
 because the server published none for that family.
 
-**The event canvas head takes a second row — deviation, ruled.** Ruled by
-Connor Griffin, 2026-08-20: *"`MEAL RESPONSES` rendering as `MEAL RES...` at
-1440x900, where nothing truncated before, is a fidelity regression this revision
-introduces on the surface being revised."*
+### RETIRED — rendered window-membership caption (2026-08-20)
 
-The window context this revision adds is a SENTENCE, not a coordinate chip, and
-three contexts will not share one head line. On `.head-line` it triggered the
-shipped truncation rule — set for #41's 1024px tablet case, where the `h2`
-yields first and never wraps — against the TITLE. Measured on the running app:
-
-```
-                     h2 width / natural      pane scrollWidth / width
-  before   1440px          69 / 177                1010 / 1010
-           1024px           0 / 177                 714 /  594   (overflowing)
-            760px           0 / 177                 638 /  330   (overflowing)
-  after    1440px         177 / 177                1010 / 1010
-           1024px         177 / 177                 594 /  594
-            760px         177 / 177                 330 /  330
-```
-
-So the title was not merely ellipsized at tablet width — it was gone, while the
-576px sentence meant to caption the pane overflowed it. The context now takes
-the row below the title line, inside `.head-swap` and outside `.head-rest`,
-where it stays whole and wraps rather than clipping. Two consequences, both
-deliberate: the event canvas's head is one micro line taller than the clock
-canvas's, which departs from the sibling-geometry note in
-`frontend/diagnose-event-comparison.css` (`the shipped canvas header … lands at
-22px`); and the context keeps standing while the hover readout swaps in, which
-is right — the membership rule does not change on hover. Its wording is
-untouched (ADR 62 decision 5).
+The rendered `Window episodes` context is retired from the workstation and the
+standalone lens. Projection and population membership behavior remain covered by
+S37 and S13. Sanction: Connor Griffin · 2026-08-20 · "Drop all that shit. It's a
+chart." S33, S34, S37 and S13 print this sanction when their absence assertion runs.
 
 **One observation recorded, not ruled here.**
 

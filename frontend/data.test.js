@@ -231,7 +231,7 @@ test('event comparison accepts v3, drawing withheld episodes and supported aggre
   class Node {
     constructor() { this.children = []; this.dataset = {}; this.attributes = {}; this.classList = { remove() {} }; }
     set innerHTML(value) {
-      const selectors = ['#ec-chart', '#ec-chart-key', '.ec-title-context', '.ec-window-context', '#ec-canvas-head', '#ec-readout'];
+      const selectors = ['#ec-chart', '#ec-chart-key', '.ec-title-context', '#ec-canvas-head', '#ec-readout'];
       this.nodes = new Map(selectors.filter((selector) => value.includes(selector.slice(1)))
         .map((selector) => [selector, new Node()]));
     }
@@ -269,8 +269,7 @@ test('event comparison accepts v3, drawing withheld episodes and supported aggre
     const names = charts[0].option.series.map((series) => series.name);
     assert.ok(names.includes('Rule matched episode'));
     assert.ok(!charts[0].option.series.some((series) => /:line:/.test(series.id || '')));
-    assert.equal(root.children[0].querySelector('.ec-window-context').textContent,
-      'Window 14:00–15:00 · episodes join by where the consequence landed, not when the meal was');
+    assert.equal(root.children[0].querySelector('.ec-window-context'), null);
     instance.destroy();
     const supported = JSON.parse(readFileSync(
       here('./__fixtures__/event-comparison-mirror.json'), 'utf8')).windows.meals_default;

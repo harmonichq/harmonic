@@ -465,7 +465,7 @@ export const S13 = async (open, browser) => use(open, browser, {
       episodes: (cohort.episodes || []).map((e) => `${e.identity.ep_id}@${e.identity.t}`),
       episodeSeries: ids.filter((id) => /^another_factor:episode:/.test(id)).length,
       aggregateSeries: ids.filter((id) => /^another_factor:(?:line|spread):/.test(id)).length,
-      context: document.querySelector('.ec-window-context')?.textContent.trim() ?? null,
+      caption: document.querySelector('.ec-window-context')?.textContent.trim() ?? null,
     };
   });
   ok(drawn.window.scoped === true, 'the projection did not answer for a scoped clock window');
@@ -477,8 +477,8 @@ export const S13 = async (open, browser) => use(open, browser, {
     `the drawn episode is not the one whose consequence landed in the window: ${JSON.stringify(drawn.episodes)}`);
   ok(drawn.episodeSeries === 1, 'the thin cohort did not draw its own episode');
   ok(drawn.aggregateSeries === 0, 'a median was built from one occurrence');
-  ok(/14:00\u201316:00/.test(drawn.context || '') && /consequence landed/.test(drawn.context || ''),
-    `the canvas does not state the window and the membership rule: ${drawn.context}`);
+  ok(await page.locator('#ec-canvas-head').count() === 1, 'the standalone lens does not own exactly one header');
+  ok(drawn.caption == null, "S13 RETIRED 2026-08-20 Connor Griffin: Drop all that shit. It's a chart.");
 });
 
 export const STORIES = { S1, S2, S3, S4, S5, S6, S7, S8, S9, S10, S11, S12, S13 };

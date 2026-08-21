@@ -55,6 +55,8 @@ export const near = (got, want, tol, what) => {
 export const state = (page) => page.evaluate(() => {
   const q = (s) => document.querySelector(s);
   const txt = (s) => q(s)?.textContent.trim() ?? null;
+  const display = (node) => node ? getComputedStyle(node).display : null;
+  const rendered = (node) => node ? display(node) !== 'none' && node.getClientRects().length > 0 : false;
   return {
     chip: q('#seg-window [data-follow]')?.textContent.replace('×', '').trim() || null,
     pressed: [...document.querySelectorAll('#seg-window button')]
@@ -78,8 +80,15 @@ export const state = (page) => page.evaluate(() => {
       .map((b) => b.textContent.trim()),
     eventCanvas: q('#align-canvas') ? !q('#align-canvas').hidden : null,
     clockCanvas: q('#chart') ? !q('#chart').hidden : null,
-    clockHead: q('#canvas-head') ? !q('#canvas-head').hidden : null,
-    eventHeads: document.querySelectorAll('.ec-canvas .head-rest h2').length,
+    clockHead: rendered(q('#canvas-head')),
+    clockHeadDisplay: display(q('#canvas-head')),
+    canvasHead: (() => {
+      const node = q('#canvas-head');
+      const r = node?.getBoundingClientRect();
+      return node && r ? { top: Math.round(r.top), bottom: Math.round(r.bottom), height: Math.round(r.height), title: txt('#canvas-head h2'), label: txt('#canvas-head .ec-title-context'), hover: node.dataset.hover } : null;
+    })(),
+    eventHeads: [...document.querySelectorAll('.ec-canvas .head-rest h2')].filter(rendered).length,
+    eventCaption: q('.ec-window-context')?.textContent.trim() ?? null,
     pool: txt('#canvas-pool'),
     braceHidden: q('#brace')?.hidden ?? null,
     gripA: parseFloat(q('#grip-a')?.style.left || 'NaN'),
@@ -1480,22 +1489,52 @@ export const S32 = async (page) => {
     underneath and print the clock window over an event-aligned chart. */
 // STORY:finding-evidence-routing:S33
 export const S33 = async (page) => {
-  await clickQueueRow(page, 'Late bolus');
+  await clickQueueRow(page, 'Over-treated low');
   const clock = await state(page);
   ok(clock.clockHead, 'S33 precondition: the clock canvas header is up');
+  is(clock.canvasHead.title, 'Glucose by time of day', 'S33 precondition: By clock owns the shared title');
   is(clock.eventHeads, 0, 'S33 precondition: no event header yet');
+  const originalRect = clock.canvasHead;
+  const clockChart = await page.locator('#chart').boundingBox();
+  await page.mouse.move(clockChart.x + clockChart.width * .45, clockChart.y + clockChart.height * .5);
+  await settle(page);
+  is((await state(page)).canvasHead.hover, '1', 'S33 By clock pointer opens its readout in the shared header');
+  await page.mouse.move(1, 1); await settle(page);
+  is((await state(page)).canvasHead.hover, '0', 'S33 By clock pointer restores its title');
   await page.click('#seg-align button:nth-child(2)');
   await page.locator('.ec-surface').waitFor();
   await settle(page, 600);
   const event = await state(page);
   is(event.alignPressed, ['By event'], 'S33 the reader is on By event');
-  is(event.clockHead, false, "S33 the clock canvas's header is withdrawn");
-  is(event.eventHeads, 1, 'S33 exactly one canvas header is on screen');
+  is(event.clockHeadDisplay, 'grid', 'S33 the shared header remains rendered');
+  ok(event.clockHead, 'S33 the shared header remains on screen');
+  is(event.eventHeads, 0, 'S33 no nested event header remains');
+  is(event.canvasHead, { ...originalRect, title: 'Low response comparison', label: 'Over-treated low', hover: '0' }, 'S33 By event replaces the exact shared header rectangle and finding label');
+  is(event.eventCaption, null, "S33 RETIRED 2026-08-20 Connor Griffin: Drop all that shit. It's a chart.");
   is(event.clockCanvas, false, 'S33 the clock canvas is not left drawn underneath');
+  const eventChart = await page.locator('#ec-chart').boundingBox();
+  await page.mouse.move(eventChart.x + eventChart.width * .45, eventChart.y + eventChart.height * .5);
+  await settle(page);
+  const hovered = await state(page);
+  is(hovered.canvasHead.hover, '1', 'S33 event pointer swaps the shared header to its readout');
+  await page.mouse.move(1, 1); await settle(page);
+  const restored = await state(page);
+  is(restored.canvasHead.hover, '0', 'S33 event pointer restores the shared header');
+  is(restored.canvasHead.title, 'Low response comparison', 'S33 event pointer restores the comparison title');
   await page.click('#seg-align button:nth-child(1)');
   await settle(page, 500);
   const back = await state(page);
   ok(back.clockHead, 'S33 By clock puts its own header back');
+  is(back.canvasHead, { ...originalRect, title: 'Glucose by time of day', hover: '0' }, 'S33 By clock restores the original shared header rectangle');
+  const restoredClockChart = await page.locator('#chart').boundingBox();
+  await page.mouse.move(restoredClockChart.x + restoredClockChart.width * .45, restoredClockChart.y + restoredClockChart.height * .5);
+  await settle(page);
+  is((await state(page)).canvasHead.hover, '1', 'S33 restored By clock pointer opens its readout in the shared header');
+  await page.mouse.move(1, 1); await settle(page);
+  const restoredClock = await state(page);
+  is(restoredClock.canvasHead.hover, '0', 'S33 restored By clock pointer restores its title');
+  is(restoredClock.canvasHead.title, 'Glucose by time of day', 'S33 restored By clock title returns after hover');
+  is(restoredClock.eventCaption, null, "S33 RETIRED 2026-08-20 Connor Griffin: Drop all that shit. It's a chart.");
   is(back.eventCanvas, false, 'S33 ... and takes the event canvas down');
 };
 
@@ -1506,12 +1545,24 @@ export const S33 = async (page) => {
 // STORY:finding-evidence-routing:S34
 export const S34 = async (page) => {
   await clickQueueRow(page, 'Late bolus');
+  const originalClock = await state(page);
+  const originalRect = originalClock.canvasHead;
   await page.click('#seg-align button:nth-child(2)');
   await settle(page, 900);
   const after = await state(page);
   is(after.eventCanvas, false, 'S34 the failed event canvas is not left mounted');
   ok(after.clockCanvas, 'S34 the clock canvas is restored');
   ok(after.clockHead, 'S34 ... with its own header');
+  is(after.canvasHead, { ...originalRect, title: 'Glucose by time of day', hover: '0' }, 'S34 failed projection restores the original clock header rectangle and title');
+  is(after.eventCaption, null, "S34 RETIRED 2026-08-20 Connor Griffin: Drop all that shit. It's a chart.");
+  const recoveredChart = await page.locator('#chart').boundingBox();
+  await page.mouse.move(recoveredChart.x + recoveredChart.width * .45, recoveredChart.y + recoveredChart.height * .5);
+  await settle(page);
+  is((await state(page)).canvasHead.hover, '1', 'S34 recovered clock pointer opens its readout');
+  await page.mouse.move(1, 1); await settle(page);
+  const recovered = await state(page);
+  is(recovered.canvasHead.hover, '0', 'S34 recovered clock pointer restores its title');
+  is(recovered.canvasHead.title, 'Glucose by time of day', 'S34 recovered clock title returns after hover');
   is(after.crumb[after.crumb.length - 1], 'Late bolus', 'S34 the reader is left on the finding');
   ok(/^window [\d,]+ of [\d,]+ readings$/.test(after.scope),
     `S34 the restored canvas states its own window (${after.scope})`);
@@ -1584,14 +1635,13 @@ export const S37 = async (page) => {
       label: projection?.coordinates?.window?.label ?? null,
       scoped: projection?.coordinates?.window?.scoped ?? null,
       denominator: projection?.population?.denominator ?? null,
-      context: document.querySelector('.ec-window-context')?.textContent.trim() ?? null,
+      caption: document.querySelector('.ec-window-context')?.textContent.trim() ?? null,
     };
   });
   is(chart.scoped, true, 'S37 the projection answered for a scoped window');
   is(chart.label, '14:00–16:00', 'S37 the chart counted the reader\'s own window');
   is(chart.denominator, 1, 'S37 ... and counted the same single occurrence the panel did');
-  ok(/consequence landed/.test(chart.context || ''),
-    `S37 the canvas states the rule it joined by (${chart.context})`);
+  is(chart.caption, null, "S37 RETIRED 2026-08-20 Connor Griffin: Drop all that shit. It's a chart.");
 };
 
 

@@ -448,9 +448,10 @@ const EARLY_TRIGGER = { ep_id: '2020-03-03-ep71', t: '2020-03-03 13:00:00' };
 
 /* S13 · The clock window is the lens's only time coordinate (issue #62), it is
    outcome-anchored, and a cohort too thin for an aggregate draws its own
-   episodes. 14:00-16:00 holds exactly one meal in this capture: the one bolused
-   at 13:00 whose high landed at 14:35, an hour outside the window it belongs
-   to. One occurrence never becomes a median, so it is drawn as itself. */
+   episodes. 14:00-16:00 holds three total meal occurrences in this capture;
+   another_factor still holds exactly the one bolused at 13:00 whose high landed
+   at 14:35, an hour outside the window it belongs to. That one cohort occurrence
+   never becomes a median, so it is drawn as itself. */
 export const S13 = async (open, browser) => use(open, browser, {
   factor: 'late_bolus', startMin: 840, endMin: 960, another: 1,
 }, async (page) => {
@@ -471,7 +472,7 @@ export const S13 = async (open, browser) => use(open, browser, {
   ok(drawn.window.scoped === true, 'the projection did not answer for a scoped clock window');
   ok(drawn.window.label === '14:00\u201316:00',
     `the canvas does not name the window it counted in: ${drawn.window.label}`);
-  ok(drawn.denominator === 1, `the window should hold exactly one occurrence, got ${drawn.denominator}`);
+  ok(drawn.denominator === 3, `the window should hold exactly three total occurrences, got ${drawn.denominator}`);
   ok(drawn.support === 'withheld', `one occurrence must be withheld from an aggregate, got ${drawn.support}`);
   ok(drawn.episodes.length === 1 && drawn.episodes[0] === `${EARLY_TRIGGER.ep_id}@${EARLY_TRIGGER.t}`,
     `the drawn episode is not the one whose consequence landed in the window: ${JSON.stringify(drawn.episodes)}`);

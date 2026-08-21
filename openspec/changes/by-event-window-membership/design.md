@@ -132,3 +132,12 @@ missing rendered effect in the workstation stylesheet. S33 and the failed-fetch
 recovery story S34 then passed together, and the full built-app replay passed all
 42 stories. No membership, selection, support, chart, inspector, or advisory
 behavior changed.
+
+The paired review evidence is committed under
+`docs/screenshots/issue-58/f6717d1/`: base and corrected **By clock** / **By
+event** states in light and dark at 1440×900 desktop and 1024×900 tablet widths,
+16 renders in all. Every render used the declared no-fetch server, generated
+SQLite database, committed Diagnose payload, and the same `Late bolus` public
+interaction path as S33. The corrected By event renders show one chart-header
+band with no duplicate, overlap, or wrapped header at either width; the By clock
+renders retain the clock header.

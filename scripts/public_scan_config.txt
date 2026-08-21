@@ -81,13 +81,17 @@ frontend/day-surface.browser.mjs | 8 invented round test dates (§3.1 [R6])
 tests/test_api.py | 8 invented round test dates (§3.1 [R6])
 mockups/diagnose-event-comparison.synthetic/capture.json | dates a synthetic projection carries in its own source_window field; carries no value, dose or ratio; ships by ruling (§3.1 [R3])
 
-# --- The one ruled prose exemption (§3.1 [R5]) ---------------------------
+# --- Narrow ruled prose exemptions (§3.1 [R5]) ----------------------------
 # pyproject.toml's `authors` entry is deliberate authorship and stays,
 # which §3.1 rules explicitly while §0.5.5.3 forbids pinning prose. Encoded as
 # its own directive, scoped to the single check it exempts, so it can never
 # silently cover the credential, dose, user-path or dated-event checks on this
 # file, and so no structural pin is ever read as suppressing prose.
 prose-exempt pyproject.toml owner-name | deliberate authorship, ruled to stay (§3.1 [R5])
+# The permanent dated acceptance sanction is an observable replay contract, so
+# these exact source files retain it. Each exemption reaches owner-name only.
+prose-exempt frontend/diagnose-event-comparison-behavior.replay.mjs owner-name | required permanent dated acceptance sanction (#58)
+prose-exempt frontend/diagnose-workstation-behavior.replay.mjs owner-name | required permanent dated acceptance sanction (#58)
 # The licence names its licensor for the same reason, and a licence with no
 # licensor named is not a licence. Same class as the pyproject.toml authorship;
 # holds under the pending swap to PolyForm Noncommercial 1.0.0, which also

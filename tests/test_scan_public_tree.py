@@ -535,6 +535,19 @@ class ShippedConfigTest(unittest.TestCase):
             ("pyproject.toml", "owner-name"), config.prose_exempt,
         )
 
+    def test_permanent_sanction_owner_name_exemptions_are_exact(self):
+        config = scan.load_config()
+        owner_name_exemptions = {
+            exemption for exemption in config.prose_exempt
+            if exemption[1] == "owner-name"
+        }
+        self.assertEqual({
+            ("LICENSE", "owner-name"),
+            ("pyproject.toml", "owner-name"),
+            ("frontend/diagnose-event-comparison-behavior.replay.mjs", "owner-name"),
+            ("frontend/diagnose-workstation-behavior.replay.mjs", "owner-name"),
+        }, owner_name_exemptions)
+
     def test_every_authorized_synthetic_clearance_is_named_and_reasoned(self):
         """The stamp that says "a human cleared this" is honoured only where the
         config says so, one path at a time. If this list ever grows, somebody

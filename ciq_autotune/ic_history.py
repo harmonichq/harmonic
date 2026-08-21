@@ -219,7 +219,18 @@ def schedule_blocks(
     schedule: Sequence[Tuple[int, Optional[float]]],
 ) -> Tuple[ScheduleBlock, ...]:
     """Return the circular maximal-value blocks for one typed I:C schedule."""
-    segs = sorted((int(start), None if value is None else float(value))
+    def established_ratio(value: Optional[float]) -> Optional[float]:
+        if value is None:
+            return None
+        try:
+            return float(_ratio_text(value))
+        except ValueError:
+            # Invalid durable values establish a boundary but no programmed
+            # ratio.  Every proof/current-identity caller receives the same
+            # non-provable representation from this single schedule boundary.
+            return None
+
+    segs = sorted((int(start), established_ratio(value))
                   for start, value in schedule)
     if not segs:
         return ()
@@ -279,9 +290,10 @@ def prove_runs(
     """Prove eligible run membership in one ordered pass over retained evidence.
 
     Runs before the first snapshot, crossing the next relevant change, spanning a
-    block boundary, carrying a missing dose stamp, or carrying mixed stamps are
-    absent from the result.  Absence is the only unsupported verdict; no fallback
-    to the newest schedule exists.
+    block boundary, carrying a missing dose stamp, carrying mixed stamps, or
+    disagreeing with the snapshot-established block value are absent from the
+    result. Absence is the only unsupported verdict; no fallback to the newest
+    schedule exists.
     """
     intervals = schedule_intervals(snapshots)
     if not intervals:
@@ -316,6 +328,10 @@ def prove_runs(
             continue
         block = next(iter(blocks))
         assert block is not None
+        if block.value is None:
+            continue
+        if _ratio_text(block.value) != ratio_texts[0]:
+            continue
         identity = HistoryIdentity(block.start_min, block.end_min,
                                    float(ratio_texts[0]))
         run_id = RunIdentity(row.started_at)

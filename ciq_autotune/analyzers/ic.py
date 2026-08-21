@@ -2224,6 +2224,10 @@ def analyze_ic_blocks(
     display, which is exactly how a block is honestly reported as ``unmeasured-alone``
     — meals happen here, and none of them ever sat alone.
 
+    The returned ``whole_day_run_count`` is different: it counts each qualifying
+    closed ledger once, including a run that crosses a block boundary. It feeds the
+    whole-day settling gate and is never assembled from per-block pools.
+
     ``observed_days`` is how many days of history actually exist (capped at the block
     window by the caller); below the full window every block reads ``collecting``,
     because a pool that has not had 90 days to fill cannot be called short.
@@ -2319,11 +2323,14 @@ def analyze_ic_blocks(
         touching = [r for r, ids in zip(runs, run_blocks) if bid in ids]
         coverage_meals = [m for r in touching for m in r.meals
                           if _block_of(_tod(m.t), groups) == bid]
-        if snapshots is not None and programmed is not None:
-            current_identity = HistoryIdentity(
-                g["start_min"], g["end_min"], float(programmed))
-            inside = [run for run in inside
-                      if identity_by_run.get(RunIdentity(run.t)) == current_identity]
+        if snapshots is not None:
+            if programmed is None:
+                inside = []
+            else:
+                current_identity = HistoryIdentity(
+                    g["start_min"], g["end_min"], float(programmed))
+                inside = [run for run in inside
+                          if identity_by_run.get(RunIdentity(run.t)) == current_identity]
         pool = _run_pool(inside)
         pool_ids = {id(r) for r in pool}
         est = estimate_pooled_ratio_clustered(
@@ -2530,18 +2537,7 @@ def analyze_ic_blocks(
         )
         out.append(replace(block, held_reason=held_reason))
 
-    if snapshots is None:
-        whole_day_runs = len(_run_pool(runs))
-    else:
-        current_ids = {
-            HistoryIdentity(group["start_min"], group["end_min"], float(group["value"]))
-            for group in groups if group["value"] is not None
-        }
-        whole_day_runs = sum(
-            len(_run_pool([
-                run for run in runs
-                if identity_by_run.get(RunIdentity(run.t)) == identity
-            ]))
-            for identity in current_ids
-        )
-    return out, whole_day_runs
+    # Settling speaks in ONE whole-day run total. Block membership and dose-stamp
+    # proof govern numeric regime pools above; they must not drop a qualifying run
+    # that crosses a block or count one once per block here.
+    return out, len(_run_pool(runs))

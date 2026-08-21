@@ -85,7 +85,7 @@ def _raw_settings(isf=50, cr_mu=6000):
 def _raw_ic_schedule(schedule, *, active_idp=4, profile_name="4"):
     segments = [
         {"startTime": start, "basalRate": 600, "isf": 50,
-         "carbRatio": int(ratio * 1000), "targetBg": 110}
+         "carbRatio": int(round(ratio * 1000)), "targetBg": 110}
         for start, ratio in schedule
     ]
     segments += [
@@ -1744,6 +1744,79 @@ class DoseStampedIcHistoryTest(unittest.TestCase):
         self.assertTrue(current_block.asserts_move)
         self.assertFalse(any(hasattr(row, "asserts_move") for row in catalog))
 
+    def test_whole_day_run_total_counts_cross_block_run_once(self):
+        first = datetime(2026, 1, 1)
+        now = datetime(2026, 1, 10)
+        schedule = [(0, 5.0), (720, 6.0)]
+        snapshots = [self._snapshot(first, schedule)]
+        events = [
+            BolusEvent(t=first + timedelta(hours=1), insulin=1.0),
+            stamped_meal(first + timedelta(days=1, hours=9), 5.0),
+            stamped_meal(first + timedelta(days=2, hours=15), 6.0),
+            stamped_meal(first + timedelta(days=3, hours=11), 5.0),
+            stamped_meal(first + timedelta(days=3, hours=13), 6.0),
+        ]
+
+        blocks, runs, _catalog = self._analyze(events, snapshots, schedule, now=now)
+
+        self.assertEqual([block.n_runs for block in blocks], [1, 1])
+        self.assertEqual(runs, 3)
+
+    def test_dose_stamp_conflicting_with_snapshot_block_is_withheld(self):
+        first = datetime(2026, 1, 1)
+        now = datetime(2026, 1, 10)
+        snapshots = [self._snapshot(first, [(0, 6.0)])]
+        events = [BolusEvent(t=first + timedelta(hours=1), insulin=1.0)] + [
+            stamped_meal(first + timedelta(days=day, hours=9), 9.0)
+            for day in (1, 2, 3)
+        ]
+
+        blocks, _runs, catalog = self._analyze(
+            events, snapshots, [(0, 6.0)], now=now)
+
+        self.assertEqual(blocks[0].n_runs, 0)
+        self.assertEqual(catalog, [])
+
+    def test_malformed_multiblock_snapshot_value_is_withheld(self):
+        first = datetime(2026, 1, 1)
+        now = datetime(2026, 1, 10)
+        latest_schedule = [(0, 0.0), (720, 6.0)]
+        snapshots = [self._snapshot(first, latest_schedule)]
+        events = [BolusEvent(t=first + timedelta(hours=1), insulin=1.0)] + [
+            stamped_meal(first + timedelta(days=day, hours=9), 6.0)
+            for day in (1, 2, 3)
+        ]
+
+        blocks, _runs, catalog = self._analyze(
+            events, snapshots, latest_schedule, now=now)
+
+        self.assertEqual(blocks[0].n_runs, 0)
+        self.assertEqual(catalog, [])
+
+    def test_profile_switch_cuts_interval_when_visible_ic_schedule_is_equal(self):
+        first = datetime(2026, 1, 1)
+        switched = datetime(2026, 1, 5, 12)
+        now = datetime(2026, 1, 10)
+        schedule = [(0, 6.0)]
+        snapshots = [self._snapshot(first, schedule, active_idp=4),
+                     self._snapshot(switched, schedule, active_idp=9)]
+        crossing = stamped_meal(switched - timedelta(hours=1), 6.0)
+        events = [
+            BolusEvent(t=first + timedelta(hours=1), insulin=1.0),
+            stamped_meal(first + timedelta(days=1, hours=9), 6.0),
+            crossing,
+            stamped_meal(first + timedelta(days=6, hours=9), 6.0),
+        ]
+
+        blocks, _runs, _catalog = self._analyze(
+            events, snapshots, schedule, now=now)
+
+        self.assertEqual(blocks[0].n_runs, 2)
+        self.assertNotIn(
+            crossing.t.isoformat(),
+            {run["t"] for run in blocks[0].evidence["runs"] if run["in_pool"]},
+        )
+
     def test_multi_meal_run_publishes_one_closed_ledger_and_terminal_window(self):
         first = datetime(2026, 1, 1)
         changed = datetime(2026, 2, 1)
@@ -1839,43 +1912,87 @@ class DoseStampedIcHistoryTest(unittest.TestCase):
                  for d in (5, 6)]
 
         active_now = datetime(2025, 2, 10)
-        active_snaps = [self._snapshot(first, [(0, 6.0)]),
-                        self._snapshot(changed, [(0, 5.0)])]
+        active_snaps = [self._snapshot(first, [(0, 6.0), (720, 9.0)]),
+                        self._snapshot(changed, [(0, 5.0), (720, 8.0)])]
         _blocks, _runs, active = self._analyze(
-            old_events + never, active_snaps, [(0, 5.0)], now=active_now)
+            old_events + never, active_snaps, [(0, 5.0), (720, 8.0)], now=active_now)
         self.assertEqual([row.lifecycle for row in active], ["active"])
+        active_row = active[0]
+        expected_events = old_events[1:]
+        self.assertEqual(
+            [(run.run_id, run.first_member_at, run.last_member_at)
+             for run in active_row.runs],
+            [(encode_run_id(RunIdentity(event.t)), event.t.isoformat(), event.t.isoformat())
+             for event in expected_events],
+        )
 
         aged_now = datetime(2025, 8, 1)
         _blocks, _runs, aged = self._analyze(
-            old_events + never, active_snaps, [(0, 5.0)], now=aged_now)
+            old_events + never, active_snaps, [(0, 5.0), (720, 8.0)], now=aged_now)
         self.assertEqual([row.lifecycle for row in aged], ["aged_out"])
         self.assertIsNone(aged[0].estimate)
         self.assertIsNone(aged[0].support)
 
-        split_snaps = [self._snapshot(first, [(0, 6.0)]),
-                       self._snapshot(changed, [(0, 5.0)]),
+        split_snaps = [self._snapshot(first, [(0, 6.0), (720, 9.0)]),
+                       self._snapshot(changed, [(0, 5.0), (720, 8.0)]),
                        self._snapshot(datetime(2025, 3, 1),
-                                      [(0, 5.0), (720, 7.0)])]
+                                      [(0, 5.0), (360, 7.0), (720, 8.0)])]
         _blocks, _runs, unavailable = self._analyze(
-            old_events + never, split_snaps, [(0, 5.0), (720, 7.0)], now=aged_now)
+            old_events + never, split_snaps,
+            [(0, 5.0), (360, 7.0), (720, 8.0)], now=aged_now)
         self.assertEqual([row.lifecycle for row in unavailable], ["unavailable"])
         self.assertIsNone(unavailable[0].programmed_now)
         self.assertFalse(any(row.past_setting == 9.0 for row in unavailable))
 
-    def test_long_retained_history_builds_the_run_ledger_once(self):
+    def test_many_identity_history_bounds_recognition_and_estimator_work(self):
         import ciq_autotune.analyzers.ic as ic_module
 
         first = datetime(2024, 1, 1)
-        changed = datetime(2025, 1, 1)
-        now = datetime(2025, 2, 1)
-        events = [stamped_meal(first + timedelta(days=day, hours=9), 6.0)
-                  for day in range(365)]
-        snapshots = [self._snapshot(first, [(0, 6.0)]),
-                     self._snapshot(changed, [(0, 5.0)])]
-        with patch("ciq_autotune.analyzers.ic.run_burdens",
-                   wraps=ic_module.run_burdens) as ledger:
-            self._analyze(events, snapshots, [(0, 5.0)], now=now)
-        ledger.assert_called_once()
+        identities = 40
+        snapshots = []
+        events = [BolusEvent(t=first + timedelta(hours=1), insulin=1.0)]
+        for identity in range(identities):
+            start = first + timedelta(days=identity * 7)
+            ratio = 4.0 + identity / 10.0
+            snapshots.append(self._snapshot(start, [(0, ratio)]))
+            events.extend(stamped_meal(start + timedelta(days=day, hours=9), ratio)
+                          for day in (1, 2, 3))
+        now = first + timedelta(days=identities * 7)
+        current = [(0, 4.0 + (identities - 1) / 10.0)]
+
+        retained_run_visits = 0
+        original_catalog = ic_module._history_catalog
+
+        class CountedRuns:
+            def __init__(self, runs):
+                self._runs = runs
+
+            def __iter__(self):
+                nonlocal retained_run_visits
+                for run in self._runs:
+                    retained_run_visits += 1
+                    yield run
+
+        def observed_catalog(all_runs, *args, **kwargs):
+            return original_catalog(CountedRuns(all_runs), *args, **kwargs)
+
+        with patch("ciq_autotune.analyzers.ic._history_catalog",
+                   side_effect=observed_catalog) as catalog_build, patch(
+                       "ciq_autotune.analyzers.ic.prove_runs",
+                   wraps=ic_module.prove_runs) as proof, patch(
+                       "ciq_autotune.analyzers.ic._run_is_numeric_candidate",
+                       wraps=ic_module._run_is_numeric_candidate) as visits, patch(
+                       "ciq_autotune.analyzers.ic.estimate_pooled_ratio_clustered",
+                       wraps=ic_module.estimate_pooled_ratio_clustered) as estimates:
+            _blocks, _runs, catalog = self._analyze(
+                events, snapshots, current, now=now)
+
+        self.assertEqual(len(catalog), identities - 1)
+        catalog_build.assert_called_once()
+        proof.assert_called_once()
+        self.assertLessEqual(retained_run_visits, len(events))
+        self.assertLessEqual(visits.call_count, len(events) * 6)
+        self.assertLessEqual(estimates.call_count, 2 * identities + 2)
 
 
 if __name__ == "__main__":

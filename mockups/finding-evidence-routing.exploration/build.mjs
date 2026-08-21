@@ -22,7 +22,7 @@
  *
  * THE TWO FIXTURES HOLD DISJOINT SYNTHETIC POPULATIONS (issue #31 resolution,
  * term 5): the projection's Over-treated low row claims 1 episode over
- * 2026-07-18..08-17; the lens capture holds 20 lows over 2026-07-13..08-11, 7
+ * 2026-07-18..08-17; the lens capture holds 20 lows over 2020-02-02..03-03, 7
  * of which the over_treated_low rule matched. They are NOT reconciled here.
  * The scope chip prints the projection's own count (the number the clicked
  * queue row promised); the canvas and the occurrences table render the lens's
@@ -98,10 +98,11 @@ const CHECK = process.argv.includes('--check');
 /* ROUND 6, FORM 3 — the day traces the CLOCK projection lays over the pooled
    envelope when an event is drilled (amendment: "the day-trace overlay is KEPT
    as the clock projection's drill state"). This is the FOURTH committed
-   synthetic fixture on this surface and it is disjoint from the other three
-   again: three captured CGM days in 2020, against a lens capture of twenty lows
-   in 2026. The join is stamped in `provenance.day_traces` and nothing pretends
-   the day belongs to the event. */
+   synthetic fixture on this surface and remains a separate population from the
+   other three: its three captured CGM days and the lens's twenty lows are
+   independently generated even where their 2020 dates overlap. The join is
+   stamped in `provenance.day_traces` and nothing pretends the day belongs to the
+   event. */
 const DAY_CAPTURE = 'mockups/diagnose-workstation.synthetic/explore-day.capture.json';
 /** VERBATIM — diagnose-workstation.js `WINDOWS.all`, `winEdge`, and the
     `${LABEL.toUpperCase()} ${winText}` string it builds for a pressed preset. */
@@ -1021,8 +1022,9 @@ async function main() {
       day_traces: 'mockups/diagnose-workstation.synthetic/explore-day.capture.json through the SHIPPED '
         + 'buildDayTrace — the real captured CGM days the clock projection lays over the pooled envelope '
         + 'when an event is drilled. WHICH day belongs to which event is a JOIN THIS BUILD MAKES and no '
-        + 'fixture carries: the capture holds three days of a fourth synthetic population (2020), the lens '
-        + 'capture holds twenty lows of another (2026), and neither references the other. The assignment is '
+        + 'fixture carries: the capture holds three days of a fourth synthetic population, the lens capture '
+        + 'holds twenty independently generated lows, and neither references the other even where their 2020 '
+        + 'dates overlap. The assignment is '
         + 'positional (the view\'s occurrence order, cycled over the sorted day keys) and deterministic. '
         + 'ROUND 8, ITEM 2 — a drill carries the DAY and nothing else. It used to carry a window too (the '
         + 'lens\'s alignment window re-anchored on the event\'s wall-clock minute), and handing that to the '

@@ -92,6 +92,18 @@ test('buildCapture rejects an incomplete source family by name', () => {
   assert.throws(() => buildCapture(input), /incomplete lows exposure population/);
 });
 
+test('buildCapture rejects a missing canonical source window by name', () => {
+  const input = structuredClone(payload.exposures);
+  delete input.window;
+  assert.throws(() => buildCapture(input), /missing workstation exposure window/);
+});
+
+test('buildCapture rejects a source row missing its identity by name', () => {
+  const input = structuredClone(payload.exposures);
+  delete input.exposures.meals.occurrences[0].ep_id;
+  assert.throws(() => buildCapture(input), /incomplete meals source row 1/);
+});
+
 test('buildCapture rejects a source row outside the inclusive window by name', () => {
   const input = structuredClone(payload.exposures);
   input.exposures.meals.occurrences[0].date = '1999-12-31';

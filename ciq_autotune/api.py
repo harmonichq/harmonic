@@ -35,6 +35,7 @@ from .event_comparison import ComparisonQuery, prepare_event_comparisons
 from .explore_time_of_day import build_time_of_day
 from .events import CarbEntry, parse_t
 from .findings_projection import UnknownHistorySelection, prepare_findings_projection
+from .finding_case_file import prepare as prepare_finding_cases, wrap as wrap_finding_cases
 from .ic_history import InvalidIcHistoryId, InvalidIcRunId
 from .ic_history_events import (
     HistoryAgedOut,
@@ -89,8 +90,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         import asyncio
         import contextlib
 
-        from fastapi import Body, Depends, FastAPI, Header, HTTPException
-        from fastapi.responses import FileResponse
+        from fastapi import Body, Depends, FastAPI, Header, HTTPException, Request
+        from fastapi.responses import FileResponse, JSONResponse
     except ImportError as e:  # pragma: no cover - depends on the optional extra
         raise RuntimeError(
             "The HTTP API needs the 'api' extra: `uv sync --extra api` "
@@ -98,6 +99,10 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         ) from e
 
     configuration = resolve_runtime_configuration(DEFAULT_DB, credentials.DEFAULT_KEY_PATH)
+    # ``from __future__ import annotations`` defers local FastAPI imports.  Publish
+    # Request for FastAPI's signature resolver so these raw-query routes cannot
+    # degrade into a default 422 validation error.
+    globals()["Request"] = Request
     db_path = db_path or configuration.db_path
     token = token if token is not None else configuration.api_token
     key_path = key_path or configuration.secret_key_path
@@ -153,6 +158,36 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 return findings, events
 
         return cache.stable_read(("findings-history-snapshot", window), compute)
+
+    def _case_error(status, code, message):
+        return JSONResponse(status_code=status, content={"detail": {"code": code, "message": message}})
+
+    def _case_params(request, case=False):
+        allowed = {"projection_id", "finding_id", "alignment", "occ"} if case else {"start_min", "end_min"}
+        params = request.query_params
+        if any(key not in allowed or len(params.getlist(key)) != 1 for key in params):
+            raise ValueError("unknown or repeated query parameter")
+        if case:
+            pid, finding, alignment, occ = params.get("projection_id"), params.get("finding_id"), params.get("alignment"), params.get("occ")
+            if (not isinstance(pid, str) or not re.fullmatch(r"fp_[0-9a-f]{32}", pid) or not isinstance(finding, str) or not re.fullmatch(r"finding:[a-z_]+", finding) or alignment not in {"clock", "event"} or (occ is not None and not re.fullmatch(r"o_[0-9a-f]{32}", occ))):
+                raise ValueError("malformed case-file coordinate")
+            return pid, finding, alignment, occ
+        start, end = params.get("start_min"), params.get("end_min")
+        if (start is None) != (end is None): raise ValueError("a window needs both start_min and end_min, or neither")
+        if start is None: return WindowQuery.whole_day()
+        if not start.isdecimal() or not end.isdecimal(): raise ValueError("window coordinates must be decimal minutes")
+        return WindowQuery.clock(int(start), int(end))
+
+    def _prepared_cases(query):
+        key = ("finding-case-file", query.start_min, query.end_min)
+        for _ in range(2):
+            version = cache.version
+            with Store.open(db_path) as store:
+                value = prepare_finding_cases(store, query=query, version=version)
+            retained, reason = cache.commit_preparation(key, value, version)
+            if reason is None: return retained
+            if reason == "capacity": return None
+        raise RuntimeError("changed")
 
     def require_token(authorization: str = Header(default="")) -> None:
         if token and authorization != f"Bearer {token}":
@@ -630,6 +665,31 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 "code": "analysis_generation_mismatch",
                 "message": "Evidence changed. Refresh findings.",
             }) from error
+
+    @app.get("/diagnose/finding-case-file-preparation")
+    def finding_case_file_preparation(request: Request, _: None = Depends(require_token)):
+        try:
+            prepared = _prepared_cases(_case_params(request))
+            return _case_error(503, "preparation_capacity", "All preparations are leased.") if prepared is None else wrap_finding_cases(prepared)
+        except ValueError as error:
+            return _case_error(400, "invalid_request", str(error))
+        except RuntimeError:
+            return _case_error(503, "preparation_changed", "Data changed during preparation.")
+
+    @app.get("/diagnose/finding-case-file")
+    def finding_case_file(request: Request, _: None = Depends(require_token)):
+        try: projection_id, finding_id, alignment, occ = _case_params(request, True)
+        except ValueError as error: return _case_error(400, "invalid_request", str(error))
+        prepared = cache.acquire_preparation(projection_id)
+        if prepared is None: return _case_error(409, "stale_projection", "Preparation is unavailable.")
+        try:
+            result = prepared.case(finding_id, alignment, occ)
+            if result is None: return _case_error(404, "finding_unavailable", "Finding has no inspectable member.")
+            response = JSONResponse(result); response.body
+            return response
+        except (KeyError, ValueError):
+            return _case_error(500, "inconsistent_projection", "Case population is inconsistent.")
+        finally: cache.release_preparation(prepared)
 
     @app.get("/audit/dismissals")
     def audit_dismissals_endpoint(_: None = Depends(require_token)) -> dict:

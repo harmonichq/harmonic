@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import secrets
 import threading
+import time
 from collections import OrderedDict
 from typing import Callable, Hashable, TypeVar
 
@@ -58,6 +59,7 @@ class ResultCache:
         # key compute once instead of racing — the second waits, then hits the cache
         # the first filled. Guarded by ``_lock``; entries are dropped after compute.
         self._flights: "dict[Hashable, threading.Lock]" = {}
+        self._preparations: "OrderedDict[Hashable, object]" = OrderedDict()
 
     @property
     def version(self) -> int:
@@ -75,7 +77,38 @@ class ResultCache:
         """Invalidate: clear the map and advance ``version``. Called after any write."""
         with self._lock:
             self._map.clear()
+            self._preparations.clear()
             self._version += 1
+
+    def commit_preparation(self, key, value, version, *, cap=64):
+        """Atomically deduplicate/install a current leased preparation."""
+        with self._lock:
+            if version != self._version:
+                return None, "changed"
+            if key in self._preparations:
+                self._preparations.move_to_end(key)
+                return self._preparations[key], None
+            evictable = next((k for k, v in self._preparations.items()
+                              if getattr(v, "lease_until", 0) <= time.monotonic() and not getattr(v, "pins", 0)), None)
+            if len(self._preparations) >= cap:
+                if evictable is None:
+                    return None, "capacity"
+                self._preparations.pop(evictable)
+            self._preparations[key] = value
+            return value, None
+
+    def acquire_preparation(self, projection_id):
+        with self._lock:
+            for key, value in self._preparations.items():
+                if getattr(value, "projection_id", None) == projection_id:
+                    self._preparations.move_to_end(key)
+                    value.pins += 1
+                    return value
+            return None
+
+    def release_preparation(self, value):
+        with self._lock:
+            value.pins -= 1
 
     def get_or_compute(self, key: Hashable, compute: Callable[[], T]) -> T:
         """Return ``key``'s cached value, or compute + store it.

@@ -5,9 +5,9 @@
 `eda5cdfd318d638503defdd6f364a078042fe592`).
 
 The app-only replay is
-`frontend/diagnose-workstation-behavior.replay.mjs`: **42 exported stories**
+`frontend/diagnose-workstation-behavior.replay.mjs`: **43 exported stories**
 (29 through 2026-08-19; five added by the excursion-chip sift, #61, at S27-S31;
-eight added by the #62 revision below, at S32-S39), all
+eight added by the #62 revision below, at S32-S39; one added by #64, S40), all
 opened through the real no-fetch server and tagged
 `STORY:finding-evidence-routing:<id>`. Static HTML, CSS and JavaScript come from
 that server; deterministic API reads come from
@@ -1290,3 +1290,16 @@ chart." S33, S34, S37 and S13 print this sanction when their absence assertion r
    pre-dates #62 and is not this change's to fix. The narrow renders that could
    not be driven are marked `__blocked` on each side, and they are blocked the
    same way.
+
+## Revision — issue #64: unified browser exposure population
+
+**Behavior added** — `S40` opens the visible `Over-treated low` finding, moves
+to `By event`, and selects a visible low roster row. It observes the browser's
+actual `/diagnose/event-comparison` request and asserts that its `occ` value is
+the resolved opaque identity id. Separately, the selected response and the
+drawn `Selected occurrence` trace carry the row's published episode-and-time
+join key. S32 receives the same request observation while retaining its
+deliberately non-unique meal join-pair precondition.
+
+**Result.** The app-only replay enumerates **43 of 43 stories**, including S40;
+an `ONLY` selection that names no stories still fails closed.

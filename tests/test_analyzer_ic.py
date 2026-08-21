@@ -9,12 +9,19 @@ not a wrong ratio -> a behavioral Finding instead.
 
 import unittest
 from datetime import datetime, timedelta
+from unittest.mock import patch
 
 from ciq_autotune.analyze import analyze
 from ciq_autotune.analyzers.ic import (
-    TARGET_BG, IcConfig, _acted, _recommend, analyze_ic, meal_burdens)
+    BLOCK_WINDOW_DAYS, TARGET_BG, IcConfig, _acted, _recommend, analyze_ic,
+    analyze_ic_blocks, meal_burdens)
 from ciq_autotune.events import BasalEvent, BolusEvent, CarbEntry, CgmReading
 from ciq_autotune.harm import HarmArm, HarmConfig, PrintedLow
+from ciq_autotune.ic_history import (
+    HistoryIdentity, InvalidIcHistoryId, InvalidIcRunId, RunIdentity,
+    decode_history_id, decode_run_id, encode_history_id, encode_run_id,
+    validate_history_id, validate_run_id,
+)
 from ciq_autotune.settings import Snapshot, parse_pump_settings
 
 IC_6 = [(0, 6.0)]  # programmed I:C: 6 g/U all day
@@ -73,6 +80,28 @@ def _raw_settings(isf=50, cr_mu=6000):
                              "isf": isf, "carbRatio": cr_mu,
                              "targetBg": 110}] + pad}]},
             "cgmSettings": {}}
+
+
+def _raw_ic_schedule(schedule, *, active_idp=4, profile_name="4"):
+    segments = [
+        {"startTime": start, "basalRate": 600, "isf": 50,
+         "carbRatio": int(ratio * 1000), "targetBg": 110}
+        for start, ratio in schedule
+    ]
+    segments += [
+        {"startTime": 0, "basalRate": 0, "isf": 0,
+         "carbRatio": 0, "targetBg": 0}
+        for _ in range(16 - len(segments))
+    ]
+    return {"profiles": {"activeIdp": active_idp, "profile": [
+        {"name": profile_name, "idp": active_idp, "insulinDuration": 300,
+         "carbEntry": 1, "maxBolus": 15000, "tDependentSegs": segments}
+    ]}, "cgmSettings": {}}
+
+
+def stamped_meal(at, ratio, *, carbs=60.0, dose=10.0, bg=None):
+    return BolusEvent(t=at, insulin=dose, carbs=carbs, carb_ratio=ratio,
+                      completion="Completed", bg=bg)
 
 
 class _FakeAnalyzeStore:
@@ -1630,6 +1659,223 @@ class PostMealCorrectionBurdenTest(unittest.TestCase):
         self.assertEqual(len(occ), 3)
         self.assertIn("you 3.0 U", occ[0].detail)
         self.assertIn("CIQ 1.0 U", occ[0].detail)
+
+
+class IcHistoryCodecTest(unittest.TestCase):
+    def test_history_and_run_ids_round_trip_byte_stably(self):
+        history = HistoryIdentity(1200, 420, 5.0)
+        run = RunIdentity(datetime(2026, 3, 4, 9, 8, 7))
+        history_id = encode_history_id(history)
+        run_id = encode_run_id(run)
+
+        self.assertEqual(encode_history_id(decode_history_id(history_id)), history_id)
+        self.assertEqual(encode_run_id(decode_run_id(run_id)), run_id)
+        self.assertTrue(validate_history_id(history_id))
+        self.assertTrue(validate_run_id(run_id))
+
+    def test_malformed_and_noncanonical_ids_fail_explicitly(self):
+        canonical = encode_history_id(HistoryIdentity(0, 1440, 5.0))
+        with self.assertRaises(InvalidIcHistoryId):
+            decode_history_id(canonical + "=")
+        with self.assertRaises(InvalidIcHistoryId):
+            decode_history_id("ich1_WzAsMTQ0MCwiNS4wIl0")
+        with self.assertRaises(InvalidIcRunId):
+            decode_run_id("icr1_WyIyMDI2LTAxLTAxVDAwOjAwOjAwLjAwMDAwMCJd")
+
+
+class DoseStampedIcHistoryTest(unittest.TestCase):
+    def _snapshot(self, at, schedule, *, active_idp=4):
+        return Snapshot(at, parse_pump_settings(
+            _raw_ic_schedule(schedule, active_idp=active_idp,
+                             profile_name=str(active_idp))))
+
+    def _analyze(self, events, snapshots, current_schedule, *, now):
+        catalog = []
+        blocks, runs = analyze_ic_blocks(
+            events, current_schedule,
+            config=IcConfig(), observed_days=BLOCK_WINDOW_DAYS,
+            analysis_start=now - timedelta(days=BLOCK_WINDOW_DAYS),
+            analysis_end=now, snapshots=snapshots, history_catalog=catalog,
+        )
+        return blocks, runs, catalog
+
+    def test_switch_proof_withholds_pre_snapshot_cross_change_and_mixed_stamp_runs(self):
+        first = datetime(2026, 1, 1)
+        changed = datetime(2026, 2, 1, 12)
+        now = datetime(2026, 2, 10)
+        old = [(0, 6.0), (720, 7.0)]
+        current = [(0, 5.0), (600, 8.0)]
+        snapshots = [
+            self._snapshot(first, old, active_idp=4),
+            self._snapshot(changed, current, active_idp=9),
+        ]
+        valid = [stamped_meal(first + timedelta(days=day, hours=9), 6.0)
+                 for day in (1, 2, 3)]
+        pre_snapshot = stamped_meal(first - timedelta(days=1) + timedelta(hours=9), 6.0)
+        crossing = [
+            stamped_meal(changed - timedelta(hours=2), 6.0),
+            stamped_meal(changed + timedelta(hours=1), 6.0),
+        ]
+        mixed = [
+            stamped_meal(first + timedelta(days=5, hours=9), 6.0),
+            stamped_meal(first + timedelta(days=5, hours=11), 5.0),
+        ]
+        unstamped = stamped_meal(first + timedelta(days=6, hours=9), None)
+        current_events = [
+            stamped_meal(changed + timedelta(days=day, hours=-3), 5.0, dose=15.0)
+            for day in range(1, 9)
+        ]
+
+        blocks, _runs, catalog = self._analyze(
+            valid + [pre_snapshot] + crossing + mixed + [unstamped] + current_events,
+            snapshots, current, now=now,
+        )
+
+        retired = next(row for row in catalog if row.past_setting == 6.0)
+        self.assertEqual(retired.lifecycle, "unavailable")
+        self.assertIsNone(retired.programmed_now)
+        self.assertEqual(retired.support, 3)
+        self.assertEqual(
+            {run.first_member_at for run in retired.runs},
+            {event.t.isoformat() for event in valid},
+        )
+        current_block = next(block for block in blocks if block.start_min == 0)
+        self.assertEqual(current_block.estimate.n, 8)
+        self.assertTrue(current_block.asserts_move)
+        self.assertFalse(any(hasattr(row, "asserts_move") for row in catalog))
+
+    def test_multi_meal_run_publishes_one_closed_ledger_and_terminal_window(self):
+        first = datetime(2026, 1, 1)
+        changed = datetime(2026, 2, 1)
+        now = datetime(2026, 2, 5)
+        snapshots = [self._snapshot(first, [(0, 6.0)]),
+                     self._snapshot(changed, [(0, 5.0)])]
+        events = [BolusEvent(t=first + timedelta(hours=1), insulin=1.0)]
+        for day in (1, 2, 3):
+            events.extend([
+                stamped_meal(first + timedelta(days=day, hours=9), 6.0),
+                stamped_meal(first + timedelta(days=day, hours=11), 6.0),
+            ])
+        _blocks, _runs, catalog = self._analyze(events, snapshots, [(0, 5.0)], now=now)
+
+        row = catalog[0]
+        self.assertEqual(row.support, 3)
+        run = row.runs[0]
+        self.assertEqual(run.member_offsets_min, [0.0, 120.0])
+        self.assertEqual(run.cgm_start_min, -IcConfig().bg0_max_gap_min)
+        self.assertEqual(run.cgm_end_min, 120 + IcConfig().post_meal_min)
+        self.assertEqual(run.outcome_min, 120 + IcConfig().outcome_at_min)
+        self.assertEqual(run.last_member_at,
+                         (datetime.fromisoformat(run.first_member_at)
+                          + timedelta(minutes=120)).isoformat())
+
+    def test_terminal_ledger_crossing_a_change_is_withheld(self):
+        first = datetime(2026, 1, 1)
+        changed = datetime(2026, 1, 10, 12)
+        now = datetime(2026, 1, 15)
+        snapshots = [self._snapshot(first, [(0, 6.0)]),
+                     self._snapshot(changed, [(0, 5.0)])]
+        valid = [stamped_meal(first + timedelta(days=day, hours=9), 6.0)
+                 for day in (1, 2, 3)]
+        terminal_crossing = stamped_meal(changed - timedelta(minutes=5), 6.0)
+        lead_in = BolusEvent(t=first + timedelta(hours=1), insulin=1.0)
+
+        _blocks, _runs, catalog = self._analyze(
+            [lead_in] + valid + [terminal_crossing], snapshots, [(0, 5.0)], now=now)
+
+        self.assertEqual(catalog[0].support, 3)
+        self.assertNotIn(
+            terminal_crossing.t.isoformat(),
+            {run.first_member_at for run in catalog[0].runs},
+        )
+
+    def test_retained_boundary_does_not_invent_support_for_the_first_meal(self):
+        first = datetime(2026, 1, 1)
+        now = datetime(2026, 1, 20)
+        snapshots = [self._snapshot(first, [(0, 5.0)])]
+        events = [stamped_meal(first + timedelta(days=day, hours=9), 5.0, dose=15.0)
+                  for day in range(8)]
+
+        blocks, runs, _catalog = self._analyze(events, snapshots, [(0, 5.0)], now=now)
+
+        self.assertEqual(runs, 7)
+        self.assertEqual(blocks[0].n_runs, 7)
+        self.assertFalse(blocks[0].asserts_move)
+
+    def test_outcome_preference_is_applied_inside_each_dose_regime(self):
+        first = datetime(2026, 1, 1)
+        changed = datetime(2026, 2, 1)
+        now = datetime(2026, 2, 15)
+        snapshots = [self._snapshot(first, [(0, 6.0)]),
+                     self._snapshot(changed, [(0, 5.0)])]
+        lead_in = BolusEvent(t=first + timedelta(hours=1), insulin=1.0)
+        old = [stamped_meal(first + timedelta(days=day, hours=9), 6.0,
+                            dose=10.0, bg=110.0)
+               for day in (1, 2, 3)]
+        cgm = [CgmReading(event.t + timedelta(minutes=minute), 110.0)
+               for event in old for minute in (290, 295, 300, 305, 310)]
+        current = [stamped_meal(changed + timedelta(days=day, hours=9), 5.0,
+                                dose=15.0)
+                   for day in range(1, 9)]
+        catalog = []
+
+        blocks, _runs = analyze_ic_blocks(
+            [lead_in] + old + current, [(0, 5.0)], cgm_readings=cgm,
+            isf_effective=50.0, observed_days=BLOCK_WINDOW_DAYS,
+            analysis_start=now - timedelta(days=BLOCK_WINDOW_DAYS),
+            analysis_end=now, snapshots=snapshots, history_catalog=catalog,
+        )
+
+        self.assertEqual(blocks[0].n_runs, 8)
+        self.assertTrue(blocks[0].asserts_move)
+        self.assertEqual(catalog[0].support, 3)
+
+    def test_catalog_distinguishes_active_aged_out_unavailable_and_never_publishable(self):
+        first = datetime(2025, 1, 1)
+        changed = datetime(2025, 2, 1)
+        old_events = [stamped_meal(first + timedelta(days=d, hours=9), 6.0)
+                      for d in (1, 2, 3, 4)]
+        never = [stamped_meal(first + timedelta(days=d, hours=15), 9.0)
+                 for d in (5, 6)]
+
+        active_now = datetime(2025, 2, 10)
+        active_snaps = [self._snapshot(first, [(0, 6.0)]),
+                        self._snapshot(changed, [(0, 5.0)])]
+        _blocks, _runs, active = self._analyze(
+            old_events + never, active_snaps, [(0, 5.0)], now=active_now)
+        self.assertEqual([row.lifecycle for row in active], ["active"])
+
+        aged_now = datetime(2025, 8, 1)
+        _blocks, _runs, aged = self._analyze(
+            old_events + never, active_snaps, [(0, 5.0)], now=aged_now)
+        self.assertEqual([row.lifecycle for row in aged], ["aged_out"])
+        self.assertIsNone(aged[0].estimate)
+        self.assertIsNone(aged[0].support)
+
+        split_snaps = [self._snapshot(first, [(0, 6.0)]),
+                       self._snapshot(changed, [(0, 5.0)]),
+                       self._snapshot(datetime(2025, 3, 1),
+                                      [(0, 5.0), (720, 7.0)])]
+        _blocks, _runs, unavailable = self._analyze(
+            old_events + never, split_snaps, [(0, 5.0), (720, 7.0)], now=aged_now)
+        self.assertEqual([row.lifecycle for row in unavailable], ["unavailable"])
+        self.assertIsNone(unavailable[0].programmed_now)
+        self.assertFalse(any(row.past_setting == 9.0 for row in unavailable))
+
+    def test_long_retained_history_builds_the_run_ledger_once(self):
+        import ciq_autotune.analyzers.ic as ic_module
+
+        first = datetime(2024, 1, 1)
+        changed = datetime(2025, 1, 1)
+        now = datetime(2025, 2, 1)
+        events = [stamped_meal(first + timedelta(days=day, hours=9), 6.0)
+                  for day in range(365)]
+        snapshots = [self._snapshot(first, [(0, 6.0)]),
+                     self._snapshot(changed, [(0, 5.0)])]
+        with patch("ciq_autotune.analyzers.ic.run_burdens",
+                   wraps=ic_module.run_burdens) as ledger:
+            self._analyze(events, snapshots, [(0, 5.0)], now=now)
+        ledger.assert_called_once()
 
 
 if __name__ == "__main__":

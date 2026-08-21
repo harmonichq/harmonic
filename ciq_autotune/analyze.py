@@ -417,37 +417,42 @@ def analyze(
     # change, and a test pins their rows byte-identical across the split.
     block_start = now - timedelta(days=BLOCK_WINDOW_DAYS)
     ic_harm_lows = None
+    retained_ic_harm_lows = None
     if harm_config is not None:
-        ic_harm_lows = [
+        retained_ic_harm_lows = [
             low for low in find_printed_lows(
-                drop_readings(_between(cgm, block_start - _BOLUS_LEADIN, now), fl_spans),
-                _between(bolus, block_start - _BOLUS_LEADIN, now),
+                drop_readings([reading for reading in cgm if reading.t <= now], fl_spans),
+                [event for event in bolus if event.t <= now],
                 harm_config,
             )
-            if block_start <= low.t <= now
+            if low.t <= now
         ]
+        ic_harm_lows = [low for low in retained_ic_harm_lows
+                        if block_start <= low.t <= now]
     # How much history actually exists, capped at the block window. A pool that has not
     # had 90 days to fill is `collecting`, never "short" — the state machine reads this.
     observed_days = min(
         BLOCK_WINDOW_DAYS,
         int((now - (insulin_history_start or now)).total_seconds() // 86400),
     )
+    ic_history = []
     ic_blocks, ic_runs = analyze_ic_blocks(
-        _between(bolus, block_start - _BOLUS_LEADIN, now),
+        [event for event in bolus if event.t <= now],
         settings.active_schedule(snaps, "carb_ratio"),
         config=IcConfig(),
-        cgm_readings=_between(cgm, block_start, now),
+        cgm_readings=[reading for reading in cgm if reading.t <= now],
         isf_effective=settings.effective_isf(isf_rows, snaps),
-        carb_entries=_between(current_carbs, block_start, now),
-        basal_events=_between(basal, block_start, now),
+        carb_entries=[entry for entry in current_carbs if entry.t <= now],
+        basal_events=[event for event in basal if event.t <= now],
         harm_config=harm_config,
         harm_lows=ic_harm_lows,
+        history_harm_lows=retained_ic_harm_lows,
         analysis_start=block_start,
-        prior_action_observed_from=max(
-            block_start - _BOLUS_LEADIN,
-            insulin_history_start or block_start,
-        ),
+        analysis_end=now,
+        prior_action_observed_from=insulin_history_start or block_start,
         observed_days=observed_days,
+        snapshots=snaps,
+        history_catalog=ic_history,
     )
 
     # Behavioral aggregate-detector output was removed with the scenario-engine
@@ -537,6 +542,7 @@ def analyze(
         priority_active_threshold=scenario_config.priority_active_threshold,
         ic_blocks=ic_blocks,
         ic_runs=ic_runs,
+        ic_history=ic_history,
     )
 
 

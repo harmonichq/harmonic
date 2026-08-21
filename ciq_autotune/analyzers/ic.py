@@ -44,8 +44,26 @@ from ..insulin import (
     InsulinActivity,
 )
 from ..model import _CgmSeries
-from ..result import Finding, IcBlock, Occurrence, SegmentEstimate
+from ..ic_history import (
+    HistoryIdentity,
+    RunEvidence,
+    RunIdentity,
+    encode_history_id,
+    encode_run_id,
+    programmed_values_over_span,
+    prove_runs,
+    schedule_blocks,
+)
+from ..result import (
+    Finding,
+    IcBlock,
+    IcHistory,
+    IcHistoryRunRecord,
+    Occurrence,
+    SegmentEstimate,
+)
 from ..safety import _MIN_SUPPORTED_BLOCK_RUNS
+from ..settings import Snapshot
 from ..uncertainty import (
     Estimate,
     estimate_pooled_ratio,
@@ -1946,32 +1964,15 @@ def ic_blocks_from_segments(
     equal values merge; if the first and last groups then share a value they are one
     block that wraps, whose members read start-first around the clock.
     """
-    segs = sorted((int(s), v) for s, v in ic_segments)
-    if not segs:
-        return []
-    groups: List[Dict] = []
-    for i, (start, value) in enumerate(segs):
-        end = segs[i + 1][0] if i + 1 < len(segs) else DAY_MINUTES
-        if groups and _same_ratio(groups[-1]["value"], value):
-            groups[-1]["end_min"] = end
-            groups[-1]["member_start_mins"].append(start)
-        else:
-            groups.append({"start_min": start, "end_min": end, "value": value,
-                           "member_start_mins": [start]})
-    # The circular join: a schedule whose last group and first group carry the same
-    # value has ONE block spanning midnight, not two. The merged block starts where
-    # the trailing group starts, so its members read forward around the clock.
-    if len(groups) > 1 and _same_ratio(groups[0]["value"], groups[-1]["value"]):
-        tail = groups.pop()
-        head = groups[0]
-        groups[0] = {
-            "start_min": tail["start_min"],
-            "end_min": head["end_min"],
-            "value": head["value"],
-            "member_start_mins": (tail["member_start_mins"]
-                                  + head["member_start_mins"]),
+    return [
+        {
+            "start_min": block.start_min,
+            "end_min": block.end_min,
+            "value": block.value,
+            "member_start_mins": list(block.member_start_mins),
         }
-    return groups
+        for block in schedule_blocks(ic_segments)
+    ]
 
 
 def _block_of(tod_min: int, blocks: Sequence[Dict]) -> Optional[int]:
@@ -1997,10 +1998,13 @@ def _run_pool(runs: Sequence[MealRun]) -> List[MealRun]:
     (they centre differently from the correction-only fallback); only when none has an
     outcome do the fallbacks estimate.
     """
-    supported = [r for r in runs
-                 if r.prior_action_status == "supported" and not r.directional_only]
+    supported = [r for r in runs if _run_is_numeric_candidate(r)]
     confirmed = [r for r in supported if r.has_outcome]
     return confirmed if confirmed else supported
+
+
+def _run_is_numeric_candidate(run: MealRun) -> bool:
+    return run.prior_action_status == "supported" and not run.directional_only
 
 
 def _run_is_on_regime(members: Sequence[BolusEvent],
@@ -2033,6 +2037,153 @@ def _block_annotation(state: str, label: str, recommend_ann: str,
     return recommend_ann
 
 
+def _run_members(
+    runs: Sequence[MealRun], bolus_events: Sequence[BolusEvent], cfg: IcConfig,
+) -> Dict[RunIdentity, List[BolusEvent]]:
+    """Match analyzer-built run members back to their dose-stamped source rows."""
+    bolus_at: Dict[datetime, List[BolusEvent]] = {}
+    for bolus in bolus_events:
+        if _is_meal(bolus, cfg):
+            bolus_at.setdefault(bolus.t, []).append(bolus)
+    out: Dict[RunIdentity, List[BolusEvent]] = {}
+    for run in runs:
+        members: List[BolusEvent] = []
+        # Same-second meal legs form one run. Include that source bucket once rather
+        # than once per RunMeal, or two legs would be published four times.
+        for member_t in dict.fromkeys(meal.t for meal in run.meals):
+            members.extend(bolus_at.get(member_t, []))
+        out[RunIdentity(run.t)] = members
+    return out
+
+
+def _history_run_record(run: MealRun, cfg: IcConfig) -> IcHistoryRunRecord:
+    duration = (run.end_t - run.t).total_seconds() / 60.0
+    offsets = [(meal.t - run.t).total_seconds() / 60.0 for meal in run.meals]
+    return IcHistoryRunRecord(
+        run_id=encode_run_id(RunIdentity(run.t)),
+        first_member_at=run.t.isoformat(),
+        last_member_at=run.end_t.isoformat(),
+        member_offsets_min=offsets,
+        cgm_start_min=-float(cfg.bg0_max_gap_min),
+        cgm_end_min=duration + cfg.post_meal_min,
+        outcome_min=duration + cfg.outcome_at_min,
+    )
+
+
+def _ever_publishable(runs: Sequence[MealRun], cfg: IcConfig) -> bool:
+    """Whether one retained 90-day slice ever produced a non-null regime estimate."""
+    ordered = sorted(runs, key=lambda run: run.t)
+    left = 0
+    supported = 0
+    confirmed = 0
+    span = timedelta(days=BLOCK_WINDOW_DAYS)
+    for right, run in enumerate(ordered):
+        if _run_is_numeric_candidate(run):
+            supported += 1
+            confirmed += int(run.has_outcome)
+        while run.t - ordered[left].t > span:
+            leaving = ordered[left]
+            if _run_is_numeric_candidate(leaving):
+                supported -= 1
+                confirmed -= int(leaving.has_outcome)
+            left += 1
+        qualifying = (confirmed >= cfg.min_runs
+                      or (confirmed == 0 and supported >= cfg.min_runs))
+        if qualifying:
+            window_pool = _run_pool(ordered[left:right + 1])
+            estimate = estimate_pooled_ratio_clustered([
+                [(item.carbs_covered, item.effective_insulin)]
+                for item in window_pool
+            ])
+            if estimate.value is not None:
+                return True
+    return False
+
+
+def _history_catalog(
+    all_runs: Sequence[MealRun],
+    members: Dict[RunIdentity, List[BolusEvent]],
+    snapshots: Sequence[Snapshot],
+    current_schedule: Sequence[Tuple[int, float]],
+    *,
+    window_start: datetime,
+    window_end: datetime,
+    cfg: IcConfig,
+) -> Tuple[List[IcHistory], Dict[RunIdentity, HistoryIdentity]]:
+    evidence = []
+    by_id = {RunIdentity(run.t): run for run in all_runs}
+    for run_id, run in by_id.items():
+        source = members.get(run_id, [])
+        evidence.append(RunEvidence(
+            started_at=run.t,
+            # The closed ledger keeps reading corrections/CGM through this terminal
+            # window. A setting change anywhere inside it makes regime attribution
+            # ambiguous even when every member bolus preceded the boundary.
+            ended_at=run.end_t + timedelta(minutes=cfg.post_meal_min),
+            member_times=tuple(meal.t for meal in run.meals),
+            stamped_ratios=tuple(bolus.carb_ratio for bolus in source),
+        ))
+    proven = prove_runs(evidence, snapshots)
+    identity_by_run = {run_id: proof.history_id for run_id, proof in proven.items()}
+
+    pools: Dict[HistoryIdentity, List[MealRun]] = {}
+    regime_ends: Dict[HistoryIdentity, List[datetime]] = {}
+    for run_id, proof in proven.items():
+        run = by_id.get(run_id)
+        if run is None:
+            continue
+        pools.setdefault(proof.history_id, []).append(run)
+        if proof.regime_end is not None:
+            regime_ends.setdefault(proof.history_id, []).append(proof.regime_end)
+
+    current_identities = {
+        HistoryIdentity(group["start_min"], group["end_min"], float(group["value"]))
+        for group in ic_blocks_from_segments(current_schedule)
+        if group["value"] is not None
+    }
+    catalog: List[IcHistory] = []
+    for identity, identity_runs in pools.items():
+        if identity in current_identities or not _ever_publishable(identity_runs, cfg):
+            continue
+        current_runs = _run_pool([
+            run for run in identity_runs if window_start <= run.t <= window_end
+        ])
+        estimate = estimate_pooled_ratio_clustered([
+            [(run.carbs_covered, run.effective_insulin)] for run in current_runs
+        ])
+        measured = estimate if len(current_runs) >= cfg.min_runs else None
+        programmed = programmed_values_over_span(identity, current_schedule)
+        if len(programmed) != 1:
+            lifecycle = "unavailable"
+            programmed_now = None
+        elif measured is None or measured.value is None:
+            lifecycle = "aged_out"
+            programmed_now = programmed[0]
+        else:
+            lifecycle = "active"
+            programmed_now = programmed[0]
+        visible_runs = current_runs if measured is not None else []
+        ended = max(regime_ends.get(identity, []), default=None)
+        if ended is None:
+            ended = max((run.end_t for run in identity_runs), default=None)
+        catalog.append(IcHistory(
+            history_id=encode_history_id(identity),
+            block_start_min=identity.block_start_min,
+            block_end_min=identity.block_end_min,
+            label=_block_label(identity.block_start_min, identity.block_end_min),
+            past_setting=identity.ratio,
+            programmed_now=programmed_now,
+            estimate=measured,
+            support=len(visible_runs) if measured is not None else None,
+            lifecycle=lifecycle,
+            regime_end=ended.isoformat() if ended is not None else None,
+            runs=[_history_run_record(run, cfg) for run in visible_runs],
+        ))
+    catalog.sort(key=lambda row: (row.block_start_min, row.regime_end or ""),
+                 reverse=False)
+    return catalog, identity_by_run
+
+
 def analyze_ic_blocks(
     bolus_events: List[BolusEvent],
     ic_segments: List[Tuple[int, float]],
@@ -2047,14 +2198,18 @@ def analyze_ic_blocks(
     analysis_start: Optional[datetime] = None,
     prior_action_observed_from: Optional[datetime] = None,
     observed_days: Optional[int] = None,
+    snapshots: Optional[Sequence[Snapshot]] = None,
+    analysis_end: Optional[datetime] = None,
+    history_catalog: Optional[List[IcHistory]] = None,
+    history_harm_lows: Optional[Sequence[PrintedLow]] = None,
 ) -> Tuple[List[IcBlock], int]:
     """Per-programmed-value carb-ratio blocks off the meal-run ledger (#518).
 
-    Returns ``(blocks, whole_day_run_count)``. Every stream handed in must already be
-    sliced to the block window — a FIXED trailing :data:`BLOCK_WINDOW_DAYS`, not the
-    request's ``window_days`` (see that constant, and ADR 518 decision 10). The caller
-    owns the slicing so this function measures exactly what it is given; mixing spans
-    is the one failure mode the convention has.
+    Returns ``(blocks, whole_day_run_count)``. Without ``snapshots``, streams retain
+    the legacy convention of arriving pre-sliced to the fixed block window. With
+    ``snapshots``, streams carry retained local evidence once; ``analysis_start`` and
+    ``analysis_end`` select the current 90-day measurement while the same run-ledger
+    pass recognizes ever-publishable retired regimes.
 
     The estimate is :func:`run_burdens` pooled per block by
     :func:`~ciq_autotune.uncertainty.estimate_pooled_ratio_clustered`, with the RUN as
@@ -2085,26 +2240,36 @@ def analyze_ic_blocks(
         lows = (harm_lows if harm_lows is not None
                 else find_printed_lows(cgm_readings or [], bolus_events, harm_config))
 
-    runs = run_burdens(bolus_events, cfg,
+    if snapshots is not None and prior_action_observed_from is None:
+        # Retained history starts at the first stored event. Claiming a lead-in before
+        # it would turn unknown prior meal action into supported evidence.
+        prior_action_observed_from = min(
+            (bolus.t for bolus in bolus_events), default=None)
+    all_runs = run_burdens(bolus_events, cfg,
                        cgm_readings=cgm_readings, isf_effective=isf_effective,
                        carb_entries=carb_entries, basal_events=basal_events,
-                       harm_lows=lows,
+                       harm_lows=(history_harm_lows
+                                  if history_harm_lows is not None else lows),
                        prior_action_observed_from=prior_action_observed_from)
-    if analysis_start is not None:
-        runs = [r for r in runs if r.t >= analysis_start]
+    members_by_run = _run_members(all_runs, bolus_events, cfg)
+    identity_by_run: Dict[RunIdentity, HistoryIdentity] = {}
+    if snapshots is not None:
+        if analysis_start is None or analysis_end is None:
+            raise ValueError("snapshot-proven history requires analysis_start and analysis_end")
+        catalog, identity_by_run = _history_catalog(
+            all_runs, members_by_run, snapshots, ic_segments,
+            window_start=analysis_start, window_end=analysis_end, cfg=cfg,
+        )
+        if history_catalog is not None:
+            history_catalog.extend(catalog)
+    runs = [run for run in all_runs
+            if (analysis_start is None or run.t >= analysis_start)
+            and (analysis_end is None or run.t <= analysis_end)]
 
     # Index the member boluses of each run so the regime bracket can read their stamped
     # ratios. `run_burdens` keeps member times; match them back to the source events.
-    bolus_at: Dict[datetime, List[BolusEvent]] = {}
-    for b in bolus_events:
-        if _is_meal(b, cfg):
-            bolus_at.setdefault(b.t, []).append(b)
-
     def _members_of(run: MealRun) -> List[BolusEvent]:
-        out: List[BolusEvent] = []
-        for m in run.meals:
-            out.extend(bolus_at.get(m.t, []))
-        return out
+        return members_by_run.get(RunIdentity(run.t), [])
 
     # Assign every run to the set of blocks its member meals fall in. A run enters a
     # block's NUMERIC pool only when that set is exactly ``{block}``; it counts toward
@@ -2122,6 +2287,10 @@ def analyze_ic_blocks(
     gate_only_rescues: Dict[int, List[PreemptedLowEntry]] = {}
     for rescue in _preempted_rescues(carb_entries, bolus_events, cgm_readings):
         if rescue.bucket != "ic" or rescue.bolus_t is None:
+            continue
+        if analysis_start is not None and rescue.bolus_t < analysis_start:
+            continue
+        if analysis_end is not None and rescue.bolus_t > analysis_end:
             continue
         if rescue.entry.t in numeric_rescue_times:
             continue
@@ -2150,6 +2319,11 @@ def analyze_ic_blocks(
         touching = [r for r, ids in zip(runs, run_blocks) if bid in ids]
         coverage_meals = [m for r in touching for m in r.meals
                           if _block_of(_tod(m.t), groups) == bid]
+        if snapshots is not None and programmed is not None:
+            current_identity = HistoryIdentity(
+                g["start_min"], g["end_min"], float(programmed))
+            inside = [run for run in inside
+                      if identity_by_run.get(RunIdentity(run.t)) == current_identity]
         pool = _run_pool(inside)
         pool_ids = {id(r) for r in pool}
         est = estimate_pooled_ratio_clustered(
@@ -2356,4 +2530,18 @@ def analyze_ic_blocks(
         )
         out.append(replace(block, held_reason=held_reason))
 
-    return out, len(_run_pool(runs))
+    if snapshots is None:
+        whole_day_runs = len(_run_pool(runs))
+    else:
+        current_ids = {
+            HistoryIdentity(group["start_min"], group["end_min"], float(group["value"]))
+            for group in groups if group["value"] is not None
+        }
+        whole_day_runs = sum(
+            len(_run_pool([
+                run for run in runs
+                if identity_by_run.get(RunIdentity(run.t)) == identity
+            ]))
+            for identity in current_ids
+        )
+    return out, whole_day_runs

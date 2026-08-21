@@ -6,6 +6,7 @@ AnalysisResult is well-formed, setting-epoch metadata-aware, and JSON-serializab
 
 import json
 import random
+import tempfile
 import unittest
 from datetime import datetime, timedelta
 from unittest.mock import patch
@@ -60,6 +61,7 @@ class AnalyzeFacadeTest(unittest.TestCase):
     def test_result_is_versioned_and_json_serializable(self):
         d = self.result.to_dict()
         self.assertEqual(d["schema_version"], SCHEMA_VERSION)
+        self.assertIn("ic_history", d)
         json.dumps(d)  # must not raise
 
     def test_carb_entry_excludes_basal_minutes_through_the_facade(self):
@@ -381,6 +383,43 @@ def _bolus_raw(t, isf=None, carbs=None, carb_ratio=None):
         "description": "Bolus", "completion": "Completed", "insulin": 5.0,
         "carbs": carbs, "isf": isf, "carb_ratio": carb_ratio,
     }
+
+
+class IcHistoryFacadeTest(unittest.TestCase):
+    def test_fresh_analysis_rebuilds_the_same_retired_catalog_from_store_history(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = f"{directory}/harmonic.sqlite"
+            store = Store.open(path)
+            first = datetime(2026, 1, 1)
+            changed = datetime(2026, 1, 10)
+            store.upsert_settings_snapshot(
+                first.strftime("%Y-%m-%d %H:%M:%S"),
+                parse_pump_settings(_raw_settings(cr_mu=6000)),
+            )
+            store.upsert_bolus([_bolus_raw(first + timedelta(hours=1))])
+            for day in (1, 2, 3):
+                row = _bolus_raw(first + timedelta(days=day, hours=9),
+                                 carbs=60, carb_ratio=6.0)
+                row["insulin"] = 10.0
+                store.upsert_bolus([row])
+            store.upsert_settings_snapshot(
+                changed.strftime("%Y-%m-%d %H:%M:%S"),
+                parse_pump_settings(_raw_settings(cr_mu=5000)),
+            )
+
+            first_result = analyze(store, now=datetime(2026, 1, 15), harm_config=None)
+            store.close()
+            reopened = Store.open(path)
+            second_result = analyze(reopened, now=datetime(2026, 1, 15), harm_config=None)
+            reopened.close()
+
+        self.assertEqual(len(first_result.ic_history), 1)
+        self.assertEqual(first_result.ic_history[0].lifecycle, "active")
+        self.assertEqual(first_result.ic_history[0].past_setting, 6.0)
+        self.assertEqual(first_result.ic_history[0].programmed_now, 5.0)
+        self.assertEqual(first_result.ic_history[0].support, 3)
+        self.assertEqual(first_result.ic_history[0].history_id,
+                         second_result.ic_history[0].history_id)
 
 
 class DoseSettingEpochReconciliationTest(unittest.TestCase):

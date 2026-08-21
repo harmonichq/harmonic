@@ -391,9 +391,9 @@ The decision mode within the top-level Diagnose tab. It holds one ranked queue o
 engine-qualified **Audit items**: tuning items and behavioral **Findings**. Only a
 tuning item can stage a move into **Plan**; behavioral Findings remain advisory. Its
 boundary is deliberate: an observation in **Explore** is not an Audit item until the
-engine independently qualifies it. Held and still-collecting tuning reads remain
-visible in a separate **Watching** section beneath the action-ready queue; they do not
-compete in its rank.
+engine independently qualifies it. Held, still-collecting, and historical tuning
+reads remain visible in a separate **Watching** section beneath the action-ready
+queue; they do not compete in its rank.
 _Avoid_: settings screen, recommendation list (too broad), Plan (Audit decides; Plan
 holds the staged pump change).
 
@@ -404,9 +404,9 @@ I:C estimate; it is not itself a Finding.
 _Avoid_: Finding when the item is tuning, recommendation (not every item can act).
 
 **Watching**:
-The subordinate Audit section for held and still-collecting tuning reads that are not
-available for a decision. It keeps incomplete evidence visible without promoting it
-into Audit's action-ready rank.
+The subordinate Audit section for held, still-collecting, and historical tuning
+reads that are not available for a decision. It keeps incomplete or past evidence
+visible without promoting it into Audit's action-ready rank.
 _Avoid_: queue, backlog, snoozed findings.
 
 **Explore**:
@@ -698,11 +698,14 @@ verbatim and composes nothing. See ADR 730.
 _Avoid_: filter, query result, window payload.
 
 **Register**:
-Which of the four things a queue row is: it **asserts** a direction, it is
-**held** (a number, but the analyzer withheld the move, with its reason), it is
-**blind** (no clean day here at all), or it is a **finding** (a behavior, with its
-window-local `n of m` denominators). Quiet parameters — the ones whose delivery
-agrees with their setting — are in no register and are never listed.
+Which of the five things a queue row is: it **asserts** a direction, it is
+**held** (a current setting has a number, but the analyzer withheld the move,
+with its reason), it is **blind** (no clean day here at all), it is **history**
+(a measurement from a setting that is no longer programmed and can never assert
+a current move), or it is a **finding** (a behavior, with its window-local `n of
+m` denominators). History is a tuning Audit item, not a behavioral Finding.
+Quiet current parameters — the ones whose delivery agrees with their setting —
+are in no register and are never listed.
 _Avoid_: state, category, bucket, tier.
 
 **Outcome anchor**:

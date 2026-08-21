@@ -448,6 +448,13 @@ def _half_gap(programmed: float, target: float, cfg: IsfConfig) -> float:
     return round(min(max(rec, lo), hi), 1)
 
 
+def isf_asserts_move(current: Optional[float], direction: Optional[str],
+                     recommended: Optional[float]) -> bool:
+    """Whether the final ISF verdict may stage a real settings move."""
+    return (current is not None and direction is not None
+            and recommended is not None and recommended != current)
+
+
 @dataclass(frozen=True)
 class IsfChannels:
     """The night-honest + harm evidence the ISF direction is decided from (#413)."""
@@ -525,7 +532,7 @@ def _recommend(programmed: Optional[float], est: Estimate, ch: IsfChannels,
         val = median if median is not None else measured
         if val is None:
             return (None, "not enough fasting data yet", None, None)
-        return (round(val, 1), "measured; no set value to compare", None, None)
+        return (None, "measured; no set value to compare", None, None)
 
     # Lows own the direction: the weaken bar is checked first, so recurring
     # correction-caused lows weaken even when the fasting measurement is thin — the
@@ -804,4 +811,5 @@ def analyze_isf(
         recommended=rec,
         annotation=ann,
         evidence=evidence,
+        asserts_move=isf_asserts_move(programmed, direction, rec),
     )]

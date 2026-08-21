@@ -311,10 +311,10 @@ class RecommendationTest(unittest.TestCase):
         self.assertIsNone(direction)
         self.assertIn("not enough fasting nights", ann.lower())
 
-    def test_no_programmed_reports_measured(self):
+    def test_no_programmed_withholds_a_recommendation(self):
         rec, _, _, priced = _recommend(None, self._est(34.0, 30.0, 38.0),
                                self._ch(night_median=34.0), self.cfg)
-        self.assertEqual(rec, 34.0)
+        self.assertIsNone(rec)
 
     def test_recurrent_correction_lows_withhold_a_number_without_a_night_target(self):
         # Harm still asserts weaken, but it may not invent a fallback percentage when
@@ -383,6 +383,7 @@ class LowsOwnDirectionTest(unittest.TestCase):
         self.assertEqual(seg.evidence["direction"], "weaken")
         self.assertGreater(seg.evidence["night_median"], 50.0)
         self.assertIsNone(seg.recommended)
+        self.assertIs(seg.to_dict()["asserts_move"], False)
         self.assertEqual(seg.evidence["recurrence_channels"]["corr_low_days"], 4)
         self.assertEqual(seg.evidence["recurrence_channels"]["covered_days"], 30)
         self.assertAlmostEqual(
@@ -435,6 +436,7 @@ class LowsOwnDirectionTest(unittest.TestCase):
         self.assertTrue(seg.estimate.lo <= 36.0 <= seg.estimate.hi)  # band covers
         self.assertIsNone(seg.evidence["direction"])
         self.assertIsNone(seg.recommended)
+        self.assertIs(seg.asserts_move, False)
         self.assertEqual(isf_lever(rows).priority, 0)
 
     def test_single_correction_low_blocks_a_strengthen_move(self):
@@ -447,12 +449,51 @@ class LowsOwnDirectionTest(unittest.TestCase):
         self.assertIsNone(seg.recommended)
         self.assertIsNone(seg.evidence["direction"])
 
+    def test_sustained_strengthen_stages_its_existing_numeric_move(self):
+        bolus, basal, cgm, windows = self._nights(24.0)
+        seg = analyze_isf(
+            bolus, basal, cgm, ISF_36, rest_windows=windows, window_days=30,
+            prior_strengthen_signal=True,
+        )[0]
+
+        self.assertEqual(seg.evidence["direction"], "strengthen")
+        self.assertEqual(seg.recommended, 29.5)
+        self.assertIs(seg.asserts_move, True)
+
+    def test_rounded_strengthen_no_op_cannot_stage(self):
+        bolus, basal, cgm, windows = self._nights(36.85)
+        seg = analyze_isf(
+            bolus, basal, cgm, ISF_36, rest_windows=windows, window_days=30,
+            prior_strengthen_signal=True,
+        )[0]
+
+        self.assertEqual(seg.evidence["direction"], "strengthen")
+        self.assertEqual(seg.recommended, seg.current)
+        self.assertIs(seg.asserts_move, False)
+
+    def test_no_programmed_factor_keeps_measurement_but_cannot_stage(self):
+        bolus, basal, cgm, windows = self._nights(34.0)
+        seg = analyze_isf(bolus, basal, cgm, [], rest_windows=windows,
+                          window_days=30)[0]
+
+        self.assertIsNone(seg.current)
+        self.assertIsNotNone(seg.estimate.value)
+        self.assertIsNotNone(seg.estimate.lo)
+        self.assertIsNotNone(seg.estimate.hi)
+        self.assertGreater(seg.estimate.n, 0)
+        self.assertTrue(seg.evidence["night_fits"])
+        self.assertIsNotNone(seg.evidence["night_median"])
+        self.assertIn("no set value to compare", seg.annotation)
+        self.assertIsNone(seg.recommended)
+        self.assertIs(seg.asserts_move, False)
+
 
 class ResultShapeTest(unittest.TestCase):
     def test_no_data_gives_single_valueless_estimate(self):
         rows = analyze_isf([], [], [], ISF_36)
         self.assertEqual(len(rows), 1)
         self.assertIsNone(rows[0].estimate.value)
+        self.assertIs(rows[0].asserts_move, False)
         self.assertIsNone(rows[0].recommended)
 
     def test_evidence_is_scatter_plus_window_no_per_step_timestamps(self):

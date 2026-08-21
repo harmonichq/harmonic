@@ -9,10 +9,11 @@ and ordered. The frontend renders them verbatim and composes nothing (term 40).
 Four registers, assigned by one mechanical rule and stamped on every row as
 ``register``:
 
-* ``assert`` — a parameter whose backend predicate asserts a direction
-  (``SlotEstimate.asserts_move`` for basal, ``IcBlock.asserts_move`` for I:C, the
-  ISF analyzer's own ``evidence.direction`` for ISF). Contiguous asserting basal
-  slots sharing a direction are ONE row named by its span (term 13).
+* ``assert`` — a parameter whose backend evidence asserts a direction
+  (``SlotEstimate.asserts_move`` for basal, ``IcBlock.asserts_move`` for I:C, and
+  the ISF analyzer's own ``evidence.direction`` for ISF). ISF stageability is a
+  separate explicit verdict carried beside this register. Contiguous asserting
+  basal slots sharing a direction are ONE row named by its span (term 13).
 * ``held`` — a parameter with a number but no assertion, carrying its hold reason
   transcribed **verbatim** from the analyzer (``safety_status`` / ``held_reason``).
   Contiguous held slots sharing a lean merge the same way.
@@ -308,8 +309,9 @@ class FindingsProjection:
     def _isf_rows(self) -> List[dict]:
         """ISF is one value for the whole day (term 31), so it meets every window.
 
-        Its verdict is the analyzer's own ``evidence.direction`` — the one ISF
-        predicate — never re-derived from the band and the programmed value.
+        Its register decision is the analyzer's own ``evidence.direction`` — never
+        re-derived from the band and the programmed value. Its independent staging
+        decision is copied from ``asserts_move``.
 
         Unlike basal, a no-direction ISF with a number is HELD rather than quiet: the
         parameter is one row for the whole day and its analyzer always says in words
@@ -335,6 +337,7 @@ class FindingsProjection:
                 priority=self._lever_priority("isf") if direction is not None else None,
                 span=None,
                 direction=direction,
+                asserts_move=row.get("asserts_move"),
                 lean=None,
                 current=row.get("current"),
                 recommended=row.get("recommended"),
@@ -590,6 +593,7 @@ def _row(**fields) -> dict:
         "id": None, "register": None, "kind": None, "title": None, "priority": None,
         "tier": None,
         "parameter": None, "label": None, "span": None, "direction": None,
+        "asserts_move": None,
         "lean": None, "current": None, "recommended": None, "estimate": None,
         "support": None, "reason": None, "annotation": None, "members": None,
         "lever": None, "appearances": None, "episodes": None,

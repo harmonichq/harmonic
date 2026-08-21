@@ -1,0 +1,466 @@
+[
+  {
+    "file": "base-1440x900-light-clock-rest.png",
+    "viewport": "1440x900",
+    "theme": "light",
+    "alignment": "clock",
+    "state": "rest",
+    "header": {
+      "top": 85,
+      "bottom": 115,
+      "height": 30,
+      "title": "Glucose by time of day",
+      "label": null,
+      "hover": "0"
+    },
+    "eventHeader": null,
+    "caption": null,
+    "pane": {
+      "top": 85,
+      "bottom": 874,
+      "height": 789
+    },
+    "chart": {
+      "top": 115,
+      "bottom": 834,
+      "height": 719
+    }
+  },
+  {
+    "file": "base-1440x900-light-clock-hover.png",
+    "viewport": "1440x900",
+    "theme": "light",
+    "alignment": "clock",
+    "state": "hover",
+    "header": {
+      "top": 85,
+      "bottom": 115,
+      "height": 30,
+      "title": "Glucose by time of day",
+      "label": null,
+      "hover": "1"
+    },
+    "eventHeader": null,
+    "caption": null,
+    "pane": {
+      "top": 85,
+      "bottom": 874,
+      "height": 789
+    },
+    "chart": {
+      "top": 115,
+      "bottom": 834,
+      "height": 719
+    }
+  },
+  {
+    "file": "base-1440x900-light-event-rest.png",
+    "viewport": "1440x900",
+    "theme": "light",
+    "alignment": "event",
+    "state": "rest",
+    "header": {
+      "top": 0,
+      "bottom": 0,
+      "height": 0,
+      "title": "Glucose by time of day",
+      "label": null,
+      "hover": "0"
+    },
+    "eventHeader": {
+      "top": 86,
+      "bottom": 124,
+      "height": 38
+    },
+    "caption": "Window whole day · episodes join by where the consequence landed, not when the meal was",
+    "pane": {
+      "top": 85,
+      "bottom": 874,
+      "height": 789
+    },
+    "chart": {
+      "top": 124,
+      "bottom": 434,
+      "height": 310
+    }
+  },
+  {
+    "file": "base-1440x900-light-event-hover.png",
+    "viewport": "1440x900",
+    "theme": "light",
+    "alignment": "event",
+    "state": "hover",
+    "header": {
+      "top": 0,
+      "bottom": 0,
+      "height": 0,
+      "title": "Glucose by time of day",
+      "label": null,
+      "hover": "0"
+    },
+    "eventHeader": {
+      "top": 86,
+      "bottom": 124,
+      "height": 38
+    },
+    "caption": "Window whole day · episodes join by where the consequence landed, not when the meal was",
+    "pane": {
+      "top": 85,
+      "bottom": 874,
+      "height": 789
+    },
+    "chart": {
+      "top": 124,
+      "bottom": 434,
+      "height": 310
+    }
+  },
+  {
+    "file": "base-1440x900-dark-clock-rest.png",
+    "viewport": "1440x900",
+    "theme": "dark",
+    "alignment": "clock",
+    "state": "rest",
+    "header": {
+      "top": 85,
+      "bottom": 115,
+      "height": 30,
+      "title": "Glucose by time of day",
+      "label": null,
+      "hover": "0"
+    },
+    "eventHeader": null,
+    "caption": null,
+    "pane": {
+      "top": 85,
+      "bottom": 874,
+      "height": 789
+    },
+    "chart": {
+      "top": 115,
+      "bottom": 834,
+      "height": 719
+    }
+  },
+  {
+    "file": "base-1440x900-dark-clock-hover.png",
+    "viewport": "1440x900",
+    "theme": "dark",
+    "alignment": "clock",
+    "state": "hover",
+    "header": {
+      "top": 85,
+      "bottom": 115,
+      "height": 30,
+      "title": "Glucose by time of day",
+      "label": null,
+      "hover": "1"
+    },
+    "eventHeader": null,
+    "caption": null,
+    "pane": {
+      "top": 85,
+      "bottom": 874,
+      "height": 789
+    },
+    "chart": {
+      "top": 115,
+      "bottom": 834,
+      "height": 719
+    }
+  },
+  {
+    "file": "base-1440x900-dark-event-rest.png",
+    "viewport": "1440x900",
+    "theme": "dark",
+    "alignment": "event",
+    "state": "rest",
+    "header": {
+      "top": 0,
+      "bottom": 0,
+      "height": 0,
+      "title": "Glucose by time of day",
+      "label": null,
+      "hover": "0"
+    },
+    "eventHeader": {
+      "top": 86,
+      "bottom": 124,
+      "height": 38
+    },
+    "caption": "Window whole day · episodes join by where the consequence landed, not when the meal was",
+    "pane": {
+      "top": 85,
+      "bottom": 874,
+      "height": 789
+    },
+    "chart": {
+      "top": 124,
+      "bottom": 434,
+      "height": 310
+    }
+  },
+  {
+    "file": "base-1440x900-dark-event-hover.png",
+    "viewport": "1440x900",
+    "theme": "dark",
+    "alignment": "event",
+    "state": "hover",
+    "header": {
+      "top": 0,
+      "bottom": 0,
+      "height": 0,
+      "title": "Glucose by time of day",
+      "label": null,
+      "hover": "0"
+    },
+    "eventHeader": {
+      "top": 86,
+      "bottom": 124,
+      "height": 38
+    },
+    "caption": "Window whole day · episodes join by where the consequence landed, not when the meal was",
+    "pane": {
+      "top": 85,
+      "bottom": 874,
+      "height": 789
+    },
+    "chart": {
+      "top": 124,
+      "bottom": 434,
+      "height": 310
+    }
+  },
+  {
+    "file": "base-1024x900-light-clock-rest.png",
+    "viewport": "1024x900",
+    "theme": "light",
+    "alignment": "clock",
+    "state": "rest",
+    "header": {
+      "top": 85,
+      "bottom": 115,
+      "height": 30,
+      "title": "Glucose by time of day",
+      "label": null,
+      "hover": "0"
+    },
+    "eventHeader": null,
+    "caption": null,
+    "pane": {
+      "top": 85,
+      "bottom": 874,
+      "height": 789
+    },
+    "chart": {
+      "top": 115,
+      "bottom": 834,
+      "height": 719
+    }
+  },
+  {
+    "file": "base-1024x900-light-clock-hover.png",
+    "viewport": "1024x900",
+    "theme": "light",
+    "alignment": "clock",
+    "state": "hover",
+    "header": {
+      "top": 85,
+      "bottom": 115,
+      "height": 30,
+      "title": "Glucose by time of day",
+      "label": null,
+      "hover": "1"
+    },
+    "eventHeader": null,
+    "caption": null,
+    "pane": {
+      "top": 85,
+      "bottom": 874,
+      "height": 789
+    },
+    "chart": {
+      "top": 115,
+      "bottom": 834,
+      "height": 719
+    }
+  },
+  {
+    "file": "base-1024x900-light-event-rest.png",
+    "viewport": "1024x900",
+    "theme": "light",
+    "alignment": "event",
+    "state": "rest",
+    "header": {
+      "top": 0,
+      "bottom": 0,
+      "height": 0,
+      "title": "Glucose by time of day",
+      "label": null,
+      "hover": "0"
+    },
+    "eventHeader": {
+      "top": 86,
+      "bottom": 140,
+      "height": 54
+    },
+    "caption": "Window whole day · episodes join by where the consequence landed, not when the meal was",
+    "pane": {
+      "top": 85,
+      "bottom": 874,
+      "height": 789
+    },
+    "chart": {
+      "top": 140,
+      "bottom": 450,
+      "height": 310
+    }
+  },
+  {
+    "file": "base-1024x900-light-event-hover.png",
+    "viewport": "1024x900",
+    "theme": "light",
+    "alignment": "event",
+    "state": "hover",
+    "header": {
+      "top": 0,
+      "bottom": 0,
+      "height": 0,
+      "title": "Glucose by time of day",
+      "label": null,
+      "hover": "0"
+    },
+    "eventHeader": {
+      "top": 86,
+      "bottom": 140,
+      "height": 54
+    },
+    "caption": "Window whole day · episodes join by where the consequence landed, not when the meal was",
+    "pane": {
+      "top": 85,
+      "bottom": 874,
+      "height": 789
+    },
+    "chart": {
+      "top": 140,
+      "bottom": 450,
+      "height": 310
+    }
+  },
+  {
+    "file": "base-1024x900-dark-clock-rest.png",
+    "viewport": "1024x900",
+    "theme": "dark",
+    "alignment": "clock",
+    "state": "rest",
+    "header": {
+      "top": 85,
+      "bottom": 115,
+      "height": 30,
+      "title": "Glucose by time of day",
+      "label": null,
+      "hover": "0"
+    },
+    "eventHeader": null,
+    "caption": null,
+    "pane": {
+      "top": 85,
+      "bottom": 874,
+      "height": 789
+    },
+    "chart": {
+      "top": 115,
+      "bottom": 834,
+      "height": 719
+    }
+  },
+  {
+    "file": "base-1024x900-dark-clock-hover.png",
+    "viewport": "1024x900",
+    "theme": "dark",
+    "alignment": "clock",
+    "state": "hover",
+    "header": {
+      "top": 85,
+      "bottom": 115,
+      "height": 30,
+      "title": "Glucose by time of day",
+      "label": null,
+      "hover": "1"
+    },
+    "eventHeader": null,
+    "caption": null,
+    "pane": {
+      "top": 85,
+      "bottom": 874,
+      "height": 789
+    },
+    "chart": {
+      "top": 115,
+      "bottom": 834,
+      "height": 719
+    }
+  },
+  {
+    "file": "base-1024x900-dark-event-rest.png",
+    "viewport": "1024x900",
+    "theme": "dark",
+    "alignment": "event",
+    "state": "rest",
+    "header": {
+      "top": 0,
+      "bottom": 0,
+      "height": 0,
+      "title": "Glucose by time of day",
+      "label": null,
+      "hover": "0"
+    },
+    "eventHeader": {
+      "top": 86,
+      "bottom": 140,
+      "height": 54
+    },
+    "caption": "Window whole day · episodes join by where the consequence landed, not when the meal was",
+    "pane": {
+      "top": 85,
+      "bottom": 874,
+      "height": 789
+    },
+    "chart": {
+      "top": 140,
+      "bottom": 450,
+      "height": 310
+    }
+  },
+  {
+    "file": "base-1024x900-dark-event-hover.png",
+    "viewport": "1024x900",
+    "theme": "dark",
+    "alignment": "event",
+    "state": "hover",
+    "header": {
+      "top": 0,
+      "bottom": 0,
+      "height": 0,
+      "title": "Glucose by time of day",
+      "label": null,
+      "hover": "0"
+    },
+    "eventHeader": {
+      "top": 86,
+      "bottom": 140,
+      "height": 54
+    },
+    "caption": "Window whole day · episodes join by where the consequence landed, not when the meal was",
+    "pane": {
+      "top": 85,
+      "bottom": 874,
+      "height": 789
+    },
+    "chart": {
+      "top": 140,
+      "bottom": 450,
+      "height": 310
+    }
+  }
+]

@@ -34,9 +34,8 @@ what population a number is over cannot judge the number.
 - A cohort too thin for an aggregate draws its own episodes, faint and named as
   episodes. The comparison-support floor is unchanged: one occurrence never
   becomes a median.
-- The canvas states both facts it stands on — the window it counted in, and that
-  an episode joins that window by where its consequence landed rather than by
-  when its meal was.
+- The projection retains its outcome-anchored membership rule without a rendered
+  explanatory caption.
 - The browser stops re-deriving membership anywhere, not just on the canvas. The
   roster, the factor header and the clock canvas read the keys the findings row
   already publishes.

@@ -53,8 +53,8 @@ through a hand-set fixture flag.
       there.
 - [x] A withheld cohort renders its episodes, faint and named as episodes, never
       as a median — on the visual legend and on the accessible readout alike.
-- [x] The canvas states the window it counted in and the consequence-landed rule,
-      at every viewport.
+- [x] The rendered window-membership caption is retired from both public callers;
+      projection and population behavior remain covered by their public replays.
 - [x] The lens's own retained read path moves off the block coordinate.
 
 ## 4. The roster on the server's clock, and the surface re-settled

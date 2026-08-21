@@ -36,6 +36,9 @@ point is a product decision about what the WINDOW control means under `By event`
   that an episode joins by where its consequence landed. Why: a pooled meal's bolus
   can sit outside the drawn window, and a reader who cannot tell that cannot judge the
   number. `-> ADR`
+- Superseding ruling (Connor, 2026-08-20): retire that rendered caption from both
+  public callers while preserving the projection and population membership behavior.
+  "Drop all that shit. It's a chart." `-> ADR 62 amendment`
 - Mine, recorded not asked: the block coordinate retires rather than living beside the
   bounds, the shared membership rule is lifted into one home both projections import,
   and the outcome minute is stamped at catalog-build time so the replay mirror

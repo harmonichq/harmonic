@@ -245,54 +245,34 @@ const fmtDate = (iso) => new Date(`${iso}T00:00:00`).toLocaleDateString(
 
 const rounded = (value) => value == null ? '—' : String(Math.round(value));
 
-/* #62 — the window and the consequence-landed rule are a SENTENCE, not a
-   coordinate chip, and three contexts will not share one head line. On the
-   title's own line the shipped truncation rule (set for #41's 1024px tablet
-   case: the h2 yields first, never wraps) fired against the TITLE instead —
-   "MEAL RESPONSES" read "MEAL RES..." at 1440px and collapsed to zero width at
-   1024px, while the 576px sentence overflowed the pane it was meant to caption.
-   It takes the row below the title line instead, where it stays whole and wraps
-   rather than clipping. Sitting outside .head-rest it also keeps standing while
-   the hover readout swaps in, which is right: the membership rule does not
-   change on hover. Nothing about its wording moved (ADR 62 decision 5).
-
-   NOTE for anyone editing the template below: it is a template literal, so a
-   backtick anywhere inside it — including in an HTML comment — closes the
-   string. That mistake renders as a caught fetch failure, not a syntax error. */
-
 /* P52 (sanctioned) — the lens is canvas-only. No coordinate row (View, Factor,
    anchor-time, Other factors all retired with it: ADR 31 part 3 folds View
    into the workstation's own ALIGN instrument, and the rest have no reader
    left to drive them once View is gone) and no inspector pane. What remains
    is exactly the canvas, its legend and its hover readout. */
-function createSurfaceMarkup(viewKey, coordinates) {
+function createHeaderMarkup(viewKey, coordinates) {
   const copy = viewCopy[viewKey];
   return `
-    <main class="panes ec-panes">
-      <section class="pane canvas-pane ec-canvas" aria-label="${copy.title}">
-        <header class="canvas-head" id="ec-canvas-head" data-hover="0">
-          <div class="head-swap">
-            <div class="head-line head-rest">
-              <h2>${copy.title}</h2>
-              <span class="ec-title-context">${coordinates.factor_options.find(({ key }) => key === coordinates.factor)?.label || coordinates.factor}</span>
-            </div>
-            <!-- The resting placeholder is load-bearing, exactly as in the
-                 shipped header: it holds the readout's line box open so the
-                 header is the same height hovering or not. Left empty, the
-                 header grew 2px and pushed the chart down on first hover. -->
-            <div class="head-line head-live ec-canvas-readout" id="ec-readout" aria-hidden="true"><span class="ec-rd-time">--:--</span></div>
-            <!-- #62 — the window context is the head's SECOND row; see the
-                 note above this function for why it cannot share the first. -->
-            <div class="ec-window-context"></div>
-          </div>
-          <span class="meta persist">${copy.context}</span>
-        </header>
-        <div class="body">
-          <div id="ec-chart" class="ec-chart" role="img" tabindex="0" aria-label="${copy.title}. Use left and right arrow keys to inspect five-minute points."></div>
-          <div class="ec-chart-key" id="ec-chart-key" aria-label="Cohort legend"></div>
-        </div>
-      </section>
-    </main>`;
+    <div class="head-swap">
+      <div class="head-line head-rest">
+        <h2>${copy.title}</h2>
+        <span class="ec-title-context">${coordinates.factor_options.find(({ key }) => key === coordinates.factor)?.label || coordinates.factor}</span>
+      </div>
+      <div class="head-line head-live ec-canvas-readout" id="ec-readout" aria-hidden="true"><span class="ec-rd-time">--:--</span></div>
+    </div>
+    <span class="meta persist">${copy.context}</span>`;
+}
+
+function createSurfaceMarkup(viewKey, coordinates, headerHost) {
+  const copy = viewCopy[viewKey];
+  const body = `<div class="body ec-event-body">
+    <div id="ec-chart" class="ec-chart" role="img" tabindex="0" aria-label="${copy.title}. Use left and right arrow keys to inspect five-minute points."></div>
+    <div class="ec-chart-key" id="ec-chart-key" aria-label="Cohort legend"></div>
+  </div>`;
+  if (headerHost) return body;
+  return `<main class="panes ec-panes"><section class="pane canvas-pane ec-canvas" aria-label="${copy.title}">
+    <header class="canvas-head" id="ec-canvas-head" data-hover="0">${createHeaderMarkup(viewKey, coordinates)}</header>${body}
+  </section></main>`;
 }
 
 function colorFor(surface, cohort) {
@@ -432,9 +412,9 @@ function cohortReadout(cohort, row, record) {
   return `${COHORTS[cohort].label} median ${rounded(row?.median)} milligrams per deciliter`;
 }
 
-function paintReadout(surface, minute, aggregates, cohorts, cohortOrder, copy) {
-  const head = surface.querySelector('#ec-canvas-head');
-  const host = surface.querySelector('#ec-readout');
+function paintReadout(surface, headerHost, minute, aggregates, cohorts, cohortOrder, copy) {
+  const head = headerHost || surface.querySelector('#ec-canvas-head');
+  const host = (headerHost || surface).querySelector('#ec-readout');
   if (minute == null) {
     head.dataset.hover = '0';
     host.setAttribute('aria-hidden', 'true');
@@ -559,7 +539,7 @@ function chartOption(surface, coordinates, copy, cohortOrder, cohorts, aggregate
     nothing else. Reused as-is by both this module's own `?view=meals`/`lows`
     read path and, once exported, the workstation's ALIGN "By event" mode
     (ADR 31 part 3) — one implementation of the projection's draw, never two. */
-export function renderEventSurface(surface, projection) {
+export function renderEventSurface(surface, projection, { headerHost = null } = {}) {
   const { coordinates } = projection;
   const viewKey = coordinates.view;
   const cohortOrder = projection.cohorts.map(({ key }) => key);
@@ -569,10 +549,12 @@ export function renderEventSurface(surface, projection) {
     ? projection.selection.detail : null;
   const copy = viewCopy[viewKey];
 
-  surface.innerHTML = createSurfaceMarkup(viewKey, coordinates);
-  const context = surface.querySelector('.ec-window-context');
-  const windowLabel = coordinates.window.scoped ? coordinates.window.label : 'whole day';
-  context.textContent = `Window ${windowLabel} · episodes join by where the consequence landed, not when the meal was`;
+  const previousHeader = headerHost ? { html: headerHost.innerHTML, hover: headerHost.dataset.hover } : null;
+  if (headerHost) {
+    headerHost.innerHTML = createHeaderMarkup(viewKey, coordinates);
+    headerHost.dataset.hover = '0';
+  }
+  surface.innerHTML = createSurfaceMarkup(viewKey, coordinates, headerHost);
   /* Comparison population is projection data, not an app-side `data-state`.
      Aside from duplicating server policy, a `dense` state on this `.dw` would
      collide with the workstation density selector and shift shared geometry. */
@@ -586,23 +568,23 @@ export function renderEventSurface(surface, projection) {
     series.id?.includes(':line:') || series.id?.includes(':episode:')));
   chart.on('updateAxisPointer', (event) => {
     const minute = event.axesInfo?.[0]?.value;
-    paintReadout(surface, minute, aggregates, cohorts, cohortOrder, copy);
+    paintReadout(surface, headerHost, minute, aggregates, cohorts, cohortOrder, copy);
   });
-  chart.getZr().on('globalout', () => paintReadout(surface, null, aggregates, cohorts, cohortOrder, copy));
+  chart.getZr().on('globalout', () => paintReadout(surface, headerHost, null, aggregates, cohorts, cohortOrder, copy));
 
   let keyboardMinute = 0;
   chartElement.addEventListener('keydown', (event) => {
     if (!['ArrowLeft', 'ArrowRight', 'Home', 'End', 'Escape'].includes(event.key)) return;
     event.preventDefault();
     if (event.key === 'Escape') {
-      paintReadout(surface, null, aggregates, cohorts, cohortOrder, copy);
+      paintReadout(surface, headerHost, null, aggregates, cohorts, cohortOrder, copy);
       return;
     }
     if (event.key === 'Home') keyboardMinute = coordinates.alignment_window_min[0];
     else if (event.key === 'End') keyboardMinute = coordinates.alignment_window_min[1];
     else keyboardMinute = Math.max(coordinates.alignment_window_min[0], Math.min(coordinates.alignment_window_min[1], keyboardMinute + (event.key === 'ArrowRight' ? 5 : -5)));
     chart.dispatchAction({ type: 'showTip', seriesIndex: keyboardSeriesIndex, dataIndex: Math.round((keyboardMinute - coordinates.alignment_window_min[0]) / 5) });
-    paintReadout(surface, keyboardMinute, aggregates, cohorts, cohortOrder, copy);
+    paintReadout(surface, headerHost, keyboardMinute, aggregates, cohorts, cohortOrder, copy);
     chartElement.setAttribute('aria-label', `${copy.title}. ${axisLabel(keyboardMinute, copy.axisAnchor)}. ${cohortOrder.map((cohort) => {
       const row = aggregates[cohort].find((item) => item.minute === keyboardMinute);
       return cohortReadout(cohort, row, cohorts[cohort]);
@@ -611,7 +593,12 @@ export function renderEventSurface(surface, projection) {
 
   const observer = new ResizeObserver(() => chart.resize());
   observer.observe(chartElement);
-  const rendered = { chart, observer, projection, view: viewKey,
+  const restoreHeader = () => {
+    if (!previousHeader) return;
+    headerHost.innerHTML = previousHeader.html;
+    headerHost.dataset.hover = previousHeader.hover;
+  };
+  const rendered = { chart, observer, restoreHeader, projection, view: viewKey,
     factor: coordinates.factor, selected, cohorts, aggregates };
   window.__diagnoseEventComparison = rendered;
   return rendered;

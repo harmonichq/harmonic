@@ -41,10 +41,8 @@ scope membership server-owned for that reason. Choosing a block coordinate in
 4. **A cohort too thin for an aggregate draws its own episodes**, faint and named as
    episodes rather than as a typical response. The comparison-support floor is
    unchanged: one occurrence never becomes a median.
-5. **The canvas states both facts it is standing on** — the window it counted in, and
-   that an episode joins that window by where its consequence landed rather than by
-   when its meal was. A pooled meal's bolus may sit outside the drawn window; that is
-   the rule working, and it is said out loud.
+5. **The projection retains both membership facts** — its outcome-anchored window
+   and the consequence-landed rule — without re-deriving either in the browser.
 
 **Consequences.**
 
@@ -141,3 +139,44 @@ SQLite database, committed Diagnose payload, and the same `Late bolus` public
 interaction path as S33. The corrected By event renders show one chart-header
 band with no duplicate, overlap, or wrapped header at either width; the By clock
 renders retain the clock header.
+
+## Amendment — shared chart header and caption retirement (#58, 2026-08-20)
+
+ADR 62 amendment 5 is superseded only in its rendered-caption requirement. Both
+public callers retain projection and population membership behavior, but no longer
+render the `Window episodes` explanation. The standalone lens owns one
+self-contained header. The embedded lens receives the workstation's existing
+`canvas-head`, replaces its contents while `By event` is active, and restores the
+clock title and readout on every exit path.
+
+Sanction: Connor Griffin · 2026-08-20 · "Drop all that shit. It's a chart."
+
+## Accepted shared-header evidence — #58, 2026-08-20
+
+Connor Griffin accepted Candidate 1 on 2026-08-20. The accepted visual evidence
+lives in `docs/screenshots/issue-58/shared-header/`. It is a deterministic
+32-render matrix: the pre-revision base worktree at
+`dd1dace59b44e060e34732f90a480791176c44b6` and the accepted candidate, each at
+1440×900 and 1024×900, light and dark, By clock and By event, at rest and while
+hovering the chart. `base-measurements.json` and `accepted-measurements.json`
+record the accompanying geometry observations.
+
+Every render used the repository's Diagnose replay opener against the declared
+offline command and generated synthetic database:
+
+```sh
+uv run harmonic serve --no-fetch --db mockups/revise-e2e.synthetic/harmonic.sqlite
+```
+
+The captured public interaction selects the visible `Over-treated low` finding
+and drives the visible ALIGN buttons. In all accepted renders the shared header
+occupies the same 85–115 px band (30 px) under both alignments. By event renders
+`LOW RESPONSE COMPARISON` with the `Over-treated low` label in that rail; hover
+uses the same rail. No accepted event render has a second header or the retired
+window-membership caption, and the pane retains its 85–874 px bounds. The base
+evidence visibly retains the rejected lower event header (38 px at 1440 px and
+54 px at 1024 px) and its caption.
+
+The prior after-renders under `docs/screenshots/issue-58/f6717d1/` are
+superseded as acceptance evidence by this matrix. They remain in the repository
+as historical correction evidence.

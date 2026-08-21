@@ -544,6 +544,7 @@ class ShippedConfigTest(unittest.TestCase):
         self.assertEqual({
             ("LICENSE", "owner-name"),
             ("pyproject.toml", "owner-name"),
+            ("frontend/cockpit-shell.browser.test.mjs", "owner-name"),
             ("frontend/diagnose-event-comparison-behavior.replay.mjs", "owner-name"),
             ("frontend/diagnose-workstation-behavior.replay.mjs", "owner-name"),
         }, owner_name_exemptions)

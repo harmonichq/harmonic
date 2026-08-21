@@ -50,6 +50,17 @@ test('browser fixtures preserve both twenty-row populations, their joins, and th
     'the S32 source population must retain a deliberately non-unique join pair');
 });
 
+test('the expanded meal population preserves the workstation queue sift shape', () => {
+  const meals = payload.exposures.exposures.meals.occurrences;
+  const fired = meals.filter((row) => row.cause_lever === 'late_bolus');
+  assert.equal(fired.length, 2,
+    'only the two intended meal findings contribute to the unpriced queue order');
+  assert.ok(fired.every((row) => Number(row.t.slice(11, 13)) * 60 + Number(row.t.slice(14, 16)) >= 360),
+    'the fired meal findings stay outside the Overnight all-hidden sift');
+  assert.equal(meals.filter((row) => !row.attributed).length, 18,
+    'the remaining population rows stay as counter-examples');
+});
+
 test('buildCapture rejects an incomplete source family by name', () => {
   const input = structuredClone(payload.exposures);
   input.exposures.lows.occurrences.pop();

@@ -144,11 +144,17 @@ def build_exposures():
              for i, m in enumerate((160, 980))]
     lows += [occurrence(100 + i, m, Lever.OVER_TREATED_LOW, rng)
              for i, m in enumerate((55, 365, 515, 755, 835))]
+    # The expanded source population supplies event-comparison coverage, not
+    # twenty instances of one queue finding. Two daytime late boluses retain
+    # the fired-meal shape; the remaining source rows are counter-examples, so
+    # the unpriced correction finding stays ahead of it and Overnight stays
+    # all-hidden after its Highs chip is deselected.
     meals = [occurrence(70 + i, m, Lever.LATE_BOLUS, rng)
-             for i, m in enumerate((455, 780, 1150, 465, 790))]
-    meals += [occurrence(75 + i, m, Lever.LATE_BOLUS, rng)
-              for i, m in enumerate((1010, 80, 365, 730, 1085, 290, 560, 920,
-                                     1235, 205, 650, 990, 350, 845, 1180))]
+             for i, m in enumerate((455, 780))]
+    meals += [occurrence(72 + i, m, Lever.LATE_BOLUS, rng, matched=False)
+              for i, m in enumerate((1150, 465, 790, 1010, 80, 365, 730, 1085,
+                                     290, 560, 920, 1235, 205, 650, 990, 350,
+                                     845, 1180))]
     # S32 proves that an episode-and-time pair only joins an occurrence: the
     # endpoint's opaque id selects it. Keep one duplicate in the SOURCE rows;
     # the event fixture must never manufacture it by reusing a shorter list.

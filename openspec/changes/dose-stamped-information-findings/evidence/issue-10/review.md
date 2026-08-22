@@ -116,13 +116,15 @@ Observed 2026-08-21 from the final CI and integration evidence for `2cd8369`:
 - Backend CI gate: 1,903 passed, 1 sanctioned skip, 0 failed.
 - Frontend Node CI gate: 400/400 passed.
 - Frontend screenshot-wrapper test: 1/1 passed.
-- Complete Diagnose browser product suite in integration evidence: 30/30 passed.
-  This is broader than any single PR workflow entry. The exact PR browser
-  workflow matrix contains nine independent legs, and all nine passed (9/9).
+- Complete Diagnose browser product suite: 30/30 passed both in integration
+  evidence and in the exact PR `Diagnose workstation` matrix leg under pinned
+  Node 22 and Playwright.
 - Frozen app-only Diagnose replay: 74/74 passed (all 43 predecessors and
   S41–S71).
-- Complete PR browser aggregate across the nine workflow legs: 131 passed,
-  2 sanctioned skips, 0 failed.
+- Complete PR browser aggregate across the nine workflow legs: 152 passed
+  (3 Day + 30 Diagnose + 12 Cockpit + 1 browser runner + 4 Plan + 74
+  workstation ledger + 13 event comparisons + 7 support audit + 8 Verify),
+  2 sanctioned `COCKPIT_SHOTS` skips, 0 failed.
 - Backend drift checks: all eight passed — I:C blocks, annotations, chart
   builders, demo fixtures, revise-E2E database, findings projection, I:C
   history events, and event-comparison mirror.

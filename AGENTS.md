@@ -236,7 +236,7 @@ one flag. `ic.py` imports exactly one name from `safety.py`,
 `_MIN_SUPPORTED_BLOCK_RUNS` — the same floor of eight, applied to closed meal
 runs.
 
-**Correction factor has the same one-predicate staging invariant, but not basal's
+**ISF has the same one-predicate staging invariant, but not basal's
 safety machinery.** `analyzers/isf.isf_asserts_move` is evaluated from the final
 post-harm values and stamped onto the analyzer's `SegmentEstimate`. It is true
 only when a current programmed value and a direction both exist and the

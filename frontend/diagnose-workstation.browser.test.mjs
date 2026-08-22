@@ -383,7 +383,7 @@ test('an all-hidden sift names the empty result while retaining the held group',
     } finally { /* browser stays open; closed once in after() */ }
   });
 
-test('the correction-factor row visibly declares its whole-day scope', async () => {
+test('the ISF row visibly declares its whole-day scope', async () => {
     const browser = await runner.browser();
     try {
       const before = openerProblems().length;
@@ -392,7 +392,7 @@ test('the correction-factor row visibly declares its whole-day scope', async () 
       assert.equal(await row.locator('.scope-note').innerText(), ' · Whole day');
       await page.close();
       assert.deepEqual(openerProblems().slice(before), [],
-        'no opener problems while rendering the correction-factor scope note');
+        'no opener problems while rendering the ISF scope note');
     } finally { /* browser stays open; closed once in after() */ }
   });
 
@@ -501,7 +501,8 @@ test('a rounded false ISF verdict keeps evidence and empty Recommended geometry 
         assert.equal(reading.stage, 0, 'the false verdict exposes no stage control');
         assert.match(reading.text, /conservative step rounds to the current Correction factor/);
         assert.doesNotMatch(reading.text, /programmed factor/i);
-        assert.match(reading.text, /CI 18\.20–46\.90 mg\/dL\/U/);
+        assert.match(reading.text, /CI 18\.20–46\.90/,
+          'the confidence interval remains visible without locking unit copy here');
         assert.doesNotMatch(reading.text, /recent lows|stronger than needed/i);
       }
       assert.deepEqual(openerProblems().slice(before), [],

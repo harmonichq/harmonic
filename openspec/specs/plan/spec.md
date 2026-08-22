@@ -41,6 +41,6 @@ An ISF recommendation that carries only a direction (no `recommended` value) may
 ### Requirement: A stageable fasting ISF applies to every programmed ISF segment
 
 ISF analysis produces one fasting recommendation while the pump stores a segmented
-correction-factor schedule. When that analyzer row carries `asserts_move = true`,
+ISF schedule. When that analyzer row carries `asserts_move = true`,
 staging applies the unchanged capped recommendation to every currently programmed
 ISF segment. Plan does not recalculate, distribute, or otherwise alter the value.

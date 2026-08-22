@@ -194,10 +194,10 @@ be the failure this capability exists to prevent.
 ### Requirement: The verdict is the only staging and delivery predicate
 
 The safety verdict — exposed as `SlotEstimate.asserts_move` for basal and as the I:C
-and correction-factor analyzers' own single eligibility flags — is what every
+and ISF analyzers' own single eligibility flags — is what every
 downstream consumer reads to decide whether a change may move a deliverable schedule
 or be staged into a plan. Basal and I:C also use that same eligibility when counting
-actionable priority; correction-factor ranking remains independently priced from its
+actionable priority; ISF ranking remains independently priced from its
 direction and never treats stageability as its register or priority gate. **No other
 layer may re-derive an evidence floor of its own.** Not the consolidated-profile
 builder, not the ranking layer, not any frontend surface. This is the invariant this
@@ -219,9 +219,9 @@ it currently agrees.
   nothing, because each keys on the verdict and none re-derives eligibility from the
   recommendation, the interval width, or the day count
 
-#### Scenario: A correction-factor row carries a stale-looking recommendation
+#### Scenario: An ISF row carries a stale-looking recommendation
 
-- **GIVEN** a correction-factor row whose recommendation is present but whose
+- **GIVEN** an ISF row whose recommendation is present but whose
   backend `asserts_move` verdict is false or absent
 - **WHEN** Diagnose, Plan, or any fixture-only projection consumes that row
 - **THEN** it stages nothing and shows no actionable number, even if the direction
@@ -276,16 +276,16 @@ is the point.
 
 ### Requirement: ISF and I:C moves are half-gap steps under the same 20% cap
 
-The correction-factor and carb-ratio analyzers do not route through the basal cap;
+The ISF and I:C analyzers do not route through the basal cap;
 each computes its own recommendation as half the gap from the programmed value toward
 its measured target, clamped to ±20% of the programmed value. Moving halfway per
 window converges on the right value while re-measuring at each step, where repeated
 full steps overshoot and reverse. The ±20% clamp is the same per-pass limit the basal
 step cap enforces, applied to a different parameter.
 
-### Requirement: One backend predicate decides whether a correction-factor row may stage
+### Requirement: One backend predicate decides whether an ISF row may stage
 
-`isf_asserts_move` is the correction-factor staging decision. It is evaluated after
+`isf_asserts_move` is the ISF staging decision. It is evaluated after
 the harm gate from the final values that the analyzer publishes, and is true only
 when the current programmed value exists, a direction is named, a recommendation
 exists, and that recommendation differs from current. A direction-only weakening, a
@@ -294,13 +294,13 @@ Consumers require the exact boolean `true`; an absent legacy field fails closed.
 
 This predicate controls staging only. The harm and measurement channels still own
 direction, the findings projection still derives its queue register from that
-direction, and the ISF analyzer still owns its half-gap cap. Correction factor does
+direction, and the ISF analyzer still owns its half-gap cap. ISF does
 not inherit basal's `Status`, evidence floors, or consolidated-profile path merely
 because it now shares the one-verdict staging invariant.
 
-#### Scenario: No programmed correction factor exists
+#### Scenario: No programmed ISF exists
 
-- **GIVEN** a trustworthy fasting measurement but no programmed correction factor
+- **GIVEN** a trustworthy fasting measurement but no programmed ISF
 - **WHEN** the analyzer publishes its row
 - **THEN** the estimate, interval, support, and evidence remain visible, while
   `recommended` is empty and `asserts_move` is false
@@ -308,7 +308,7 @@ because it now shares the one-verdict staging invariant.
 #### Scenario: Rounding removes the proposed move
 
 - **GIVEN** a named strengthen direction whose final recommendation rounds back to
-  the current programmed correction factor
+  the current programmed ISF
 - **WHEN** the final staging predicate is evaluated
 - **THEN** the direction remains available for explanation, but `asserts_move` is
   false and no consumer may stage the row
@@ -317,7 +317,7 @@ because it now shares the one-verdict staging invariant.
 
 Where harm evidence establishes a direction but the measurement cannot supply a value
 worth programming, no recommendation is emitted at all. Recurring correction-caused
-lows weaken the correction factor as a *direction*, and if the supporting overnight
+lows weaken ISF as a *direction*, and if the supporting overnight
 median is absent or points the other way, the recommendation stays empty and nothing
 can be staged or programmed — a number is never manufactured to give the direction
 something to carry. Conversely, a move toward *stronger* corrections requires observed
@@ -329,7 +329,7 @@ the rescue log is unknown, not silence, and may never license a stronger correct
 #### Scenario: A single attributed low with no recurrence
 
 - **GIVEN** one correction-attributed low on record and a measurement that would
-  otherwise support a stronger correction factor
-- **WHEN** the correction-factor recommendation is computed
+  otherwise support a stronger ISF
+- **WHEN** the ISF recommendation is computed
 - **THEN** the setting is held as it is; a single low is enough to gate a move toward
   more insulin even though it is not enough to force one away from it

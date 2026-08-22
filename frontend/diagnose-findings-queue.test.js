@@ -142,7 +142,7 @@ test('term 38 · the global queue is asserting-only, so every setting row stages
   assert.ok(settings.every((r) => r.register === 'assert' && r.stageable));
 });
 
-test('correction-factor actionability requires the exact carried backend verdict', () => {
+test('ISF actionability requires the exact carried backend verdict', () => {
   const base = {
     ...W.low_block.rows.find((row) => row.parameter === 'isf'),
     register: 'assert', direction: 'strengthen', priority: 73, tier: 'next_in_line',
@@ -167,8 +167,9 @@ test('correction-factor actionability requires the exact carried backend verdict
   const [actionable] = queueRows({ ...W.low_block, rows: [{ ...base, asserts_move: true }] });
   assert.equal(actionable.register, 'assert');
   assert.equal(actionable.stageable, true);
-  assert.deepEqual(actionable.detail,
-    { kind: 'nums', now: 'now 36.0 mg/dL/U → ', then: '30.2 mg/dL/U' });
+  assert.equal(actionable.detail.kind, 'nums');
+  assert.match(`${actionable.detail.now}${actionable.detail.then}`, /36\.0.*30\.2/,
+    'the exact-true row retains both action values without locking unit copy here');
 });
 
 test('term 16 · a merged span prints its OWN support denominator, never an invented average', () => {

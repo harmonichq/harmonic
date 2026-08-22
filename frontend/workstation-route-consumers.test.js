@@ -212,6 +212,38 @@ test('P53 rejects a successful full-day response for a scoped another-factor rou
   assert.deepEqual(published, []);
 });
 
+test('P53 rejects when only the successful response another coordinate differs', async () => {
+  const window = { start_min: 840, end_min: 960 };
+  const projection = projectSyntheticCapture(eventCapture, {
+    view: 'meals', factor: 'carb_undercount', window, another: true,
+  });
+  projection.coordinates.another = false;
+  const published = [];
+  const routes = createRouteResolver();
+  routes.register('diagnose', createDiagnoseRouteConsumer({
+    loadWorkstation: async () => assert.fail('P53 must not load workstation evidence'),
+    loadComparison: async (request) => {
+      assert.equal(request.view, projection.coordinates.view);
+      assert.equal(request.factor, projection.coordinates.factor);
+      assert.deepEqual(request.window, {
+        start_min: projection.coordinates.window.start_min,
+        end_min: projection.coordinates.window.end_min,
+      });
+      assert.equal(request.another, true);
+      return projection;
+    },
+    publish: (...args) => published.push(args),
+  }));
+
+  const resolution = await routes.dispatch(parseRoute(
+    '/app/diagnose?view=meals&factor=carb_undercount'
+    + '&start_min=840&end_min=960&another=1'));
+
+  assert.equal(resolution.outcome.kind, 'InvalidRoute');
+  resolution.publish();
+  assert.deepEqual(published, []);
+});
+
 test('P53 rejects a successful scoped response for an omitted whole-day window', async () => {
   const routes = createRouteResolver();
   routes.register('diagnose', createDiagnoseRouteConsumer({
@@ -230,6 +262,87 @@ test('P53 rejects a named Occurrence whose successful response says it is unavai
   const projection = structuredClone(eventFixtures.windows.selection);
   const occurrenceId = projection.selection.requested_id;
   projection.selection = { state: 'unavailable', requested_id: occurrenceId, detail: null };
+  const published = [];
+  const routes = createRouteResolver();
+  routes.register('diagnose', createDiagnoseRouteConsumer({
+    loadWorkstation: async () => assert.fail('P53 must not load workstation evidence'),
+    loadComparison: async () => projection,
+    publish: (...args) => published.push(args),
+  }));
+
+  const resolution = await routes.dispatch(parseRoute(
+    `/app/diagnose?view=meals&factor=carb_undercount&occ=${occurrenceId}`));
+
+  assert.equal(resolution.outcome.kind, 'InvalidRoute');
+  resolution.publish();
+  assert.deepEqual(published, []);
+});
+
+test('P53 accepts selected Occurrence copies whose object keys use another order', async () => {
+  const projection = structuredClone(eventFixtures.windows.selection);
+  const occurrenceId = projection.selection.requested_id;
+  const summary = projection.occurrences.find((candidate) => (
+    candidate.identity.id === occurrenceId
+  ));
+  summary.verdict.boundary_facts = [{
+    key: 'delta', label: 'Delta', value: 1, unit: 'mg/dL',
+  }];
+  projection.selection.detail.verdict.boundary_facts = [{
+    unit: 'mg/dL', value: 1, label: 'Delta', key: 'delta',
+  }];
+  for (const key of ['identity', 'anchor', 'verdict']) {
+    projection.selection.detail[key] = Object.fromEntries(
+      Object.entries(projection.selection.detail[key]).reverse(),
+    );
+  }
+  const published = [];
+  const routes = createRouteResolver();
+  routes.register('diagnose', createDiagnoseRouteConsumer({
+    loadWorkstation: async () => assert.fail('P53 must not load workstation evidence'),
+    loadComparison: async () => projection,
+    publish: (...args) => published.push(args),
+  }));
+
+  const resolution = await routes.dispatch(parseRoute(
+    `/app/diagnose?view=meals&factor=carb_undercount&occ=${occurrenceId}`));
+
+  assert.equal(resolution.outcome.kind, 'ResolvedRoute');
+  resolution.publish();
+  assert.equal(published.length, 1);
+});
+
+test('P53 rejects a selected Occurrence copy with a semantic detail mismatch', async () => {
+  const projection = structuredClone(eventFixtures.windows.selection);
+  const occurrenceId = projection.selection.requested_id;
+  projection.selection.detail.anchor.label += ' changed';
+  const published = [];
+  const routes = createRouteResolver();
+  routes.register('diagnose', createDiagnoseRouteConsumer({
+    loadWorkstation: async () => assert.fail('P53 must not load workstation evidence'),
+    loadComparison: async () => projection,
+    publish: (...args) => published.push(args),
+  }));
+
+  const resolution = await routes.dispatch(parseRoute(
+    `/app/diagnose?view=meals&factor=carb_undercount&occ=${occurrenceId}`));
+
+  assert.equal(resolution.outcome.kind, 'InvalidRoute');
+  resolution.publish();
+  assert.deepEqual(published, []);
+});
+
+test('P53 treats reordered selected-detail arrays as a semantic mismatch', async () => {
+  const projection = structuredClone(eventFixtures.windows.selection);
+  const occurrenceId = projection.selection.requested_id;
+  const summary = projection.occurrences.find((candidate) => (
+    candidate.identity.id === occurrenceId
+  ));
+  const facts = [
+    { key: 'first', label: 'First', value: 1, unit: 'mg/dL' },
+    { key: 'second', label: 'Second', value: 2, unit: 'mg/dL' },
+  ];
+  summary.verdict.boundary_facts = structuredClone(facts);
+  projection.selection.detail.verdict.boundary_facts = structuredClone(facts).reverse();
   const published = [];
   const routes = createRouteResolver();
   routes.register('diagnose', createDiagnoseRouteConsumer({

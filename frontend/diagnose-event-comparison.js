@@ -104,6 +104,19 @@ const factorKey = (value) => [
   'carb_undercount', 'late_bolus', 'meal_over_delivery',
   'over_treated_low', 'correction_on_iob', 'correction_stacking',
 ].includes(value);
+const sameValue = (left, right) => {
+  if (Object.is(left, right)) return true;
+  if (Array.isArray(left) || Array.isArray(right)) {
+    return Array.isArray(left) && Array.isArray(right)
+      && left.length === right.length
+      && left.every((value, index) => sameValue(value, right[index]));
+  }
+  if (left === null || right === null
+      || typeof left !== 'object' || typeof right !== 'object') return false;
+  const keys = Object.keys(left);
+  return keys.length === Object.keys(right).length
+    && keys.every((key) => Object.hasOwn(right, key) && sameValue(left[key], right[key]));
+};
 const validWindow = (value) => hasExactKeys(value, ['scoped', 'start_min', 'end_min', 'label'])
   && typeof value.scoped === 'boolean'
   && (value.scoped
@@ -225,9 +238,9 @@ export function validProjection(value, requestedView) {
       || (coordinates.view === 'meals' && selection.detail.markers.length !== 0)
       || !hasExactKeys(selection.detail.day_target, ['date']) || !isoDate(selection.detail.day_target.date)) return false;
   const summary = occurrenceById.get(selection.requested_id);
-  return JSON.stringify(summary.identity) === JSON.stringify(selection.detail.identity)
-    && JSON.stringify(summary.anchor) === JSON.stringify(selection.detail.anchor)
-    && JSON.stringify(summary.verdict) === JSON.stringify(selection.detail.verdict);
+  return sameValue(summary.identity, selection.detail.identity)
+    && sameValue(summary.anchor, selection.detail.anchor)
+    && sameValue(summary.verdict, selection.detail.verdict);
 }
 
 const css = (element, name) =>

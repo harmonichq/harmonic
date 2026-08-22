@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseRoute, resolveRoute, serializeRoute } from './url-state.js';
+import { createRouteResolver, parseRoute, resolveRoute, serializeRoute } from './url-state.js';
 
 const parse = (path) => parseRoute(`http://example.test${path}`);
 test('all six canonical paths parse as pending routes', () => {
@@ -33,7 +33,35 @@ test('all invalid classes stop atomically', () => {
 test('resolution inserts defaults and rejects unresolved membership', () => {
   const day = resolveRoute(parse('/app/day'), { day: () => ({ date: '2026-07-15' }) });
   assert.equal(serializeRoute(day), '/app/day?date=2026-07-15');
+  const verify = resolveRoute(parse('/app/verify'), { verify: () => ({ trial: 'trial-1' }) });
+  assert.equal(serializeRoute(verify), '/app/verify?trial=trial-1');
+  assert.equal(serializeRoute(resolveRoute(parse('/app/verify'), { verify: () => ({}) })), '/app/verify');
   assert.equal(resolveRoute(parse('/app/verify?trial=nope'), { verify: () => ({ invalid: true }) }).kind, 'InvalidRoute');
+});
+test('runtime-owned identities fail closed until their page resolver is registered', () => {
+  assert.equal(resolveRoute(parse('/app/verify')).kind, 'InvalidRoute');
+  assert.equal(resolveRoute(parse('/app/verify?trial=trial-1')).kind, 'InvalidRoute');
+  assert.equal(resolveRoute(parse('/app/diagnose?finding=f1&factor=ic.day')).kind, 'InvalidRoute');
+  assert.equal(serializeRoute(resolveRoute(parse('/app/diagnose'))), '/app/diagnose');
+});
+test('page consumers register one resolver and dispatch complete routes through it', async () => {
+  const routes = createRouteResolver();
+  const pending = parse('/app/verify?trial=trial-1');
+  assert.equal((await routes.resolve(pending)).kind, 'InvalidRoute');
+
+  const unregister = routes.register('verify', (query) => query);
+  assert.equal(serializeRoute(await routes.resolve(pending)), '/app/verify?trial=trial-1');
+  assert.throws(() => routes.register('verify', () => ({ trial: 'trial-2' })), /already registered/);
+
+  unregister();
+  assert.equal((await routes.resolve(pending)).kind, 'InvalidRoute');
+});
+test('consumer resolution may add defaults but cannot replace named route state', async () => {
+  const routes = createRouteResolver();
+  routes.register('verify', () => ({ trial: 'trial-2' }));
+  const resolved = await routes.resolve(parse('/app/verify?trial=trial-1'));
+  assert.equal(resolved.kind, 'InvalidRoute');
+  assert.equal(resolved.reason, 'resolver-contract');
 });
 test('workstation occurrence is valid for clock or event and rejects malformed triples', () => {
   const occ = 'WyJpYyIsImVwMSIsIjIwMjYtMDctMTVUMTI6MDA6MDAiXQ';

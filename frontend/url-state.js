@@ -144,9 +144,42 @@ export function parseRoute(address) {
 /** Resolver supplies server-owned membership/defaults, never partial page state. */
 export function resolveRoute(route, resolve = {}) {
   if (route.kind !== 'PendingRoute') return route;
+  const needsResolver = route.page === 'day' || route.page === 'guide' || route.page === 'verify'
+    || (route.page === 'diagnose' && Object.keys(route.query).length > 0);
+  if (needsResolver && !resolve[route.page]) return invalid(serializeRoute(route), 'resolver-unavailable');
   const result = resolve[route.page] ? resolve[route.page](route.query) : route.query;
   if (!result || result.invalid) return invalid(serializeRoute(route), 'membership');
+  if (typeof result !== 'object' || Array.isArray(result)
+      || Object.entries(route.query).some(([key, value]) => result[key] !== value)) {
+    return invalid(serializeRoute(route), 'resolver-contract');
+  }
+  const candidate = { kind: 'ResolvedRoute', page: route.page, query: result };
+  const reparsed = parseRoute(serializeRoute(candidate));
+  if (reparsed.kind !== 'PendingRoute'
+      || Object.keys(reparsed.query).length !== Object.keys(result).length
+      || Object.entries(reparsed.query).some(([key, value]) => result[key] !== value)) {
+    return invalid(serializeRoute(route), 'resolver-contract');
+  }
   return freeze({ kind: 'ResolvedRoute', page: route.page, query: freeze(result) });
+}
+
+export function createRouteResolver() {
+  const resolvers = new Map();
+  return freeze({
+    register(page, resolver) {
+      if (!PAGE_IDS.has(page) || typeof resolver !== 'function') throw new TypeError('invalid route resolver');
+      if (resolvers.has(page)) throw new Error(`route resolver already registered for ${page}`);
+      resolvers.set(page, resolver);
+      return () => { if (resolvers.get(page) === resolver) resolvers.delete(page); };
+    },
+    async resolve(route, context) {
+      if (route.kind !== 'PendingRoute') return route;
+      const resolver = resolvers.get(route.page);
+      if (!resolver) return resolveRoute(route);
+      const result = await resolver(route.query, context);
+      return resolveRoute(route, { [route.page]: () => result });
+    },
+  });
 }
 
 export function serializeRoute(route) {

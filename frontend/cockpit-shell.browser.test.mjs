@@ -74,6 +74,32 @@ const CDN = new Map([
 const ADVISORY = 'Advisory only — review with your clinician before changing pump settings.';
 const TABS = ['diagnose', 'plan', 'verify', 'day', 'guide', 'settings'];
 const S2_ROUTE_SEQUENCE = ['diagnose', 'plan', 'verify', 'day', 'settings', 'guide'];
+const DIAGNOSE_ROUTE_FIXTURE_RESOLVER = `
+        routeResolvers.register('diagnose', async (query) => {
+          if (!query.view) return query;
+          const projection = await dataFetchDiagnoseEventComparison({
+            view: query.view,
+            factor: query.factor,
+            window: query.start_min == null ? null : {
+              start_min: Number(query.start_min), end_min: Number(query.end_min),
+            },
+            another: query.another === '1',
+            occurrenceId: query.occ,
+          });
+          const factor = query.factor || projection?.coordinates?.factor;
+          const options = projection?.coordinates?.factor_options || [];
+          if (!factor || !options.some((option) => option.key === factor)) return { invalid: true };
+          return { ...query, factor };
+        });`;
+const VERIFY_ROUTE_FIXTURE_RESOLVER = `
+        routeResolvers.register('verify', async (query) => {
+          const roster = await dataFetchVerifyTrials();
+          const trials = roster?.trials || [];
+          const trial = query.trial
+            ? trials.find((candidate) => candidate.id === query.trial)
+            : trials.find((candidate) => candidate.state === 'maturing') || trials[0];
+          return trial ? { trial: trial.id } : {};
+        });`;
 const VIEWPORTS = [
   { width: 1440, height: 900 },
   { width: 1280, height: 800 },
@@ -338,6 +364,18 @@ async function routeApp(page, options = {}) {
           "state = queryState('typical');",
           `state = queryState('${options.diagnoseState}');`);
       }
+      if (options.eventView && file === join(FRONTEND, 'index.html')) {
+        const source = body.toString();
+        body = /routeResolvers\.register\(\s*['"]diagnose['"]/.test(source) ? source : source.replace(
+          'const routeResolvers = createRouteResolver();',
+          `const routeResolvers = createRouteResolver();${DIAGNOSE_ROUTE_FIXTURE_RESOLVER}`);
+      }
+      if (file === join(FRONTEND, 'index.html')) {
+        const source = body.toString();
+        body = /routeResolvers\.register\(\s*['"]verify['"]/.test(source) ? source : source.replace(
+          'const routeResolvers = createRouteResolver();',
+          `const routeResolvers = createRouteResolver();${VERIFY_ROUTE_FIXTURE_RESOLVER}`);
+      }
       return route.fulfill({
         body, contentType: MIME[extname(file)] || 'application/octet-stream',
       });
@@ -369,7 +407,8 @@ async function openApp(browser, options = {}) {
   const tab = options.tab || 'diagnose';
   const query = new URLSearchParams();
   if (['meals', 'lows'].includes(options.eventView)) query.set('view', options.eventView);
-  const address = options.initialPath || `/app/${tab}${query.size ? `?${query}` : ''}`;
+  const address = options.initialPath || process.env.COCKPIT_ENTRY_PATH
+    || `/app/${tab}${query.size ? `?${query}` : ''}`;
   await page.goto(`http://ciq.local${address}`);
   await page.locator('.cockpit-shell').waitFor();
   if (['meals', 'lows'].includes(options.eventView)) {
@@ -389,15 +428,27 @@ async function chooseTab(page, id) {
   const expected = {
     day: '/app/day?date=2026-07-15',
     guide: '/app/guide?article=start-here',
+    verify: `/app/verify?trial=${maturing.id}`,
   }[id] || `/app/${id}`;
   await waitForCanonicalRoute(page, id, expected);
   return expected;
 }
 
 async function waitForCanonicalRoute(page, id, expected) {
-  await page.waitForFunction(({ id, expected }) =>
-    location.pathname + location.search === expected
-      && !!document.querySelector(`[data-shell-tab="${id}"][aria-current]`), { id, expected });
+  const timeout = Number(process.env.COCKPIT_ROUTE_TIMEOUT_MS) || 30000;
+  try {
+    await page.waitForFunction(({ id, expected }) =>
+      location.pathname + location.search === expected
+        && !!document.querySelector(`[data-shell-tab="${id}"][aria-current]`),
+    { id, expected }, { timeout });
+  } catch {
+    const observed = await page.evaluate(() => ({
+      address: location.pathname + location.search + location.hash,
+      current: [...document.querySelectorAll('[data-shell-tab][aria-current]')]
+        .map((node) => node.dataset.shellTab),
+    }));
+    throw new Error(`expected canonical ${expected} with current ${id}; observed ${observed.address} with current ${observed.current.join(',') || 'none'}`);
+  }
 }
 
 async function assertInvalidStop(page, address) {
@@ -719,13 +770,62 @@ export async function S2(browser) {
     await waitForCanonicalRoute(page, 'settings', '/app/settings');
   } finally { await page.close(); }
 
-  for (const [id, path] of [
-    ['diagnose', '/app/diagnose'], ['plan', '/app/plan'], ['verify', '/app/verify'],
+  let releasePendingDay;
+  let pendingDayStatusRequested;
+  const pendingDayStatusStarted = new Promise((resolve) => { pendingDayStatusRequested = resolve; });
+  const pendingDayStatus = new Promise((resolve) => { releasePendingDay = resolve; });
+  const pendingDay = await openApp(browser, {
+    statusRoute: async (route) => {
+      pendingDayStatusRequested();
+      await pendingDayStatus;
+      return route.fulfill({ json: { earliest_data_day: '2026-05-01', latest_data_day: '2026-07-15' } });
+    },
+  });
+  try {
+    await pendingDayStatusStarted;
+    await pendingDay.locator('[data-shell-tab="day"]:visible').first().click();
+    assert.equal(await pendingDay.evaluate(() => location.pathname + location.search), '/app/diagnose',
+      'a page control writes no pending Day URL before resolution commits');
+    assert.equal(await pendingDay.locator('[data-shell-tab="diagnose"][aria-current]').count() > 0, true,
+      'the prior page remains applied while Day resolution is pending');
+    assert.equal(await pendingDay.locator('[data-shell-tab="day"][aria-current]').count(), 0,
+      'pending Day is not visible page state');
+    releasePendingDay();
+    await waitForCanonicalRoute(pendingDay, 'day', '/app/day?date=2026-07-15');
+  } finally { await pendingDay.close(); }
+
+  const history = await openApp(browser, { initialPath: '/app/day?date=2026-07-14' });
+  try {
+    await waitForCanonicalRoute(history, 'day', '/app/day?date=2026-07-14');
+    await chooseTab(history, 'guide');
+    await history.locator('.nav-item', { hasText: 'Reading a Day' }).click();
+    await waitForCanonicalRoute(history, 'guide', '/app/guide?article=reading-day');
+    assert.equal(await history.locator('.art-title').innerText(), 'Reading a Day');
+    for (let round = 0; round < 2; round++) {
+      await history.goBack();
+      await waitForCanonicalRoute(history, 'guide', '/app/guide?article=start-here');
+      await history.goBack();
+      await waitForCanonicalRoute(history, 'day', '/app/day?date=2026-07-14');
+      await history.goForward();
+      await waitForCanonicalRoute(history, 'guide', '/app/guide?article=start-here');
+      await history.goForward();
+      await waitForCanonicalRoute(history, 'guide', '/app/guide?article=reading-day');
+    }
+    await history.evaluate(() => {
+      history.pushState(null, '', '/app/day?date=2026-07-16');
+      dispatchEvent(new PopStateEvent('popstate'));
+    });
+    await assertInvalidStop(history, '/app/day?date=2026-07-16');
+  } finally { await history.close(); }
+
+  for (const [id, path, expected = path] of [
+    ['diagnose', '/app/diagnose'], ['plan', '/app/plan'],
+    ['verify', '/app/verify', `/app/verify?trial=${maturing.id}`],
     ['day', '/app/day?date=2026-07-15'], ['guide', '/app/guide?article=start-here'],
     ['settings', '/app/settings'],
   ]) {
     const direct = await openApp(browser, { initialPath: path });
-    try { await waitForCanonicalRoute(direct, id, path); }
+    try { await waitForCanonicalRoute(direct, id, expected); }
     finally { await direct.close(); }
   }
 
@@ -747,15 +847,26 @@ export async function S2(browser) {
   }
 
   let releaseDayStatus;
+  let releaseFreshStatus;
   let dayStatusRequested;
+  let freshStatusRequested;
+  let statusRequestCount = 0;
   const dayStatusStarted = new Promise((resolve) => { dayStatusRequested = resolve; });
+  const freshStatusStarted = new Promise((resolve) => { freshStatusRequested = resolve; });
   const heldDayStatus = new Promise((resolve) => { releaseDayStatus = resolve; });
+  const heldFreshStatus = new Promise((resolve) => { releaseFreshStatus = resolve; });
   const staleDay = await openApp(browser, {
     initialPath: '/app/day',
     statusRoute: async (route) => {
-      dayStatusRequested();
-      await heldDayStatus;
-      return route.fulfill({ json: { earliest_data_day: '2026-05-01', latest_data_day: '2026-07-15' } });
+      statusRequestCount += 1;
+      if (statusRequestCount === 1) {
+        dayStatusRequested();
+        await heldDayStatus;
+        return route.fulfill({ json: { earliest_data_day: '2026-05-01', latest_data_day: '2026-07-15' } });
+      }
+      freshStatusRequested();
+      await heldFreshStatus;
+      return route.fulfill({ json: { earliest_data_day: '2026-06-01', latest_data_day: '2026-07-14' } });
     },
   });
   try {
@@ -764,8 +875,10 @@ export async function S2(browser) {
     const delivered = staleDay.waitForResponse((response) => new URL(response.url()).pathname === '/status');
     releaseDayStatus();
     await delivered;
-    await staleDay.evaluate(() => new Promise((resolve) => requestAnimationFrame(
-      () => requestAnimationFrame(resolve))));
+    await freshStatusStarted;
+    assert.equal(await staleDay.locator('.cockpit-scope-range').innerText(), '—',
+      'a stale Day status response cannot commit shared bounds');
+    releaseFreshStatus();
     await waitForCanonicalRoute(staleDay, 'settings', '/app/settings');
   } finally { await staleDay.close(); }
 

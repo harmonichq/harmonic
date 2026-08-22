@@ -14,12 +14,12 @@ S1 · The viewport stays fixed while each populated pane scrolls internally, and
   evidence: `STORY:cockpit-shell:S1` / exported `S1`; full matrix remains in the surrounding Cockpit browser gate
   status: replayed-pass on base
 
-S2 · The numbered Diagnose → Plan → Verify workflow, Day link, utility destinations, and canonical `/app/<page>` route all route through their visible public affordances; Back restores the preceding page and the mobile drawer completes and closes its route.
+S2 · The numbered Diagnose → Plan → Verify workflow, Day link, utility destinations, and canonical `/app/<page>` route all route through their visible public affordances; a pending destination leaves the applied page and URL untouched, repeated Back/Forward restores a nondefault Day and Guide article byte-for-byte, and the mobile drawer completes and closes its route.
   amendment: Connor · 2026-08-21 · ADR 53, approved work order: paths identify pages and the URL adapter is the sole route-state authority.
   handlers/invariants: `@click="shellGo(...)"`; native Day link; mobile drawer; `url-state.js`
   source: `frontend/index.html` cockpit top bar, footer utilities, and `shellGo`
   evidence: `STORY:cockpit-shell:S2` / exported `S2`
-  old-fail/new-pass: base emits hash destinations and serves the duplicate-key address as a 404; revision emits canonical paths and renders the atomic invalid-link stop.
+  old-fail/new-pass: base emits hash destinations and serves the duplicate-key address as a 404; the first revision wrote `/app/day` before its held resolver returned; the completed revision emits only resolved canonical paths, repeats `/app/day?date=2026-07-14` and `/app/guide?article=reading-day` byte-for-byte through Back/Forward, and renders restored invalid membership with no current page.
   status: amended 2026-08-21 · replayed-pass on revision
 
 S3 · Theme opens a radio menu; choosing Dark updates the rendered theme, checked state, persisted choice, and closes the menu.

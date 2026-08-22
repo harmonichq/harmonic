@@ -109,35 +109,27 @@ Its single full run passed all 74 frozen stories: 43 predecessors (S01–S40 and
 D1–D3) plus S41–S71. The recovery screenshots are taken at the explicit
 in-story pending seams, not reconstructed after the fact.
 
-## Final correction verification
+## Final fixed-point verification
 
-Observed 2026-08-21 from the correction worktree after installing the repository's
-frozen `api` and `sync` extras:
+Observed 2026-08-21 from the final CI and integration evidence for `2cd8369`:
 
-- Frontend Node gate: 392 passed, 0 failed.
-- Frontend screenshot-wrapper test: 1 passed, 0 failed.
-- Backend gate: 1,900 passed, 1 skipped, 0 failed (169 warnings).
-- Diagnose workstation browser gate: 22 passed, 0 failed, including the generated
-  seven-row Watching density case.
-- Focused recovery replay: S47/S59/S63/S64/S70 passed 5/5 with assertions over
-  the rendered clock highlight, scope copy, lane treatment, and ECharts series,
-  not only identity/generation attributes.
-- Frozen app-only Diagnose replay: 74/74 (all 43 predecessors and S41–S71).
-- ADR 22 fidelity replay: S43/S45 passed in both themes at 1440x900, 1280x800,
-  and 390x844; all twelve dedicated before/after PNGs were visually inspected.
-- Backend drift checks: I:C blocks, annotations, chart builders, demo fixtures,
-  revise-E2E database, findings projection, I:C history events, and
-  event-comparison mirror all passed.
-- Frontend drift checks: the synthetic event-comparison capture and the
-  finding-evidence-routing extracted artifacts both passed.
-- Repository guards: 20 ADRs across 15 design files; 30 owned-identifier rules;
-  public allowlist dispositioned 321 tracked files to ship and 398 as excluded.
-- Materialized public-tree link check: 290 shipping documents scanned; every
+- Backend CI gate: 1,903 passed, 1 sanctioned skip, 0 failed.
+- Frontend Node CI gate: 400/400 passed.
+- Frontend screenshot-wrapper test: 1/1 passed.
+- Complete Diagnose browser product suite in integration evidence: 30/30 passed.
+  This is broader than any single PR workflow entry. The exact PR browser
+  workflow matrix contains nine independent legs, and all nine passed (9/9).
+- Frozen app-only Diagnose replay: 74/74 passed (all 43 predecessors and
+  S41–S71).
+- Complete PR browser aggregate across the nine workflow legs: 131 passed,
+  2 sanctioned skips, 0 failed.
+- Backend drift checks: all eight passed — I:C blocks, annotations, chart
+  builders, demo fixtures, revise-E2E database, findings projection, I:C
+  history events, and event-comparison mirror.
+- Frontend drift checks: both passed — the synthetic event-comparison capture
+  and the finding-evidence-routing extracted artifacts.
+- Repository documentation guards: 21 ADRs; the public allowlist dispositioned
+  322 tracked files to ship and 492 as excluded.
+- Materialized public-tree link check: 291 shipping documents scanned; every
   link, path reference, and symlink resolved inside the tree.
-- Materialized public-tree contamination scan: 321 files scanned, 17 stamped,
-  5 pinned, 154 acknowledged dose-ratio strings, and 0 findings. The seven new
-  density-catalog ratios were reviewed as synthetic and recorded through the
-  scanner's generated dose-ratio baseline.
-- Self-review: the staged source diff and generated evidence were checked for
-  mixed history state, queue-return coherence, fixture provenance, scope creep,
-  and whitespace errors; no unresolved finding remained.
+- Materialized public-tree contamination scan: 322 files scanned, 0 findings.

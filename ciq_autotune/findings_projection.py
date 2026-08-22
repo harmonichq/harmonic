@@ -111,7 +111,8 @@ _REGISTER_RANK = {"assert": 0, "finding": 0, "held": 1, "blind": 2, "history": 3
 
 # ADR 0019 §2's closed five-state anchor taxonomy, the verdict band's own vocabulary
 # (ADR 41). The frontend only labels these; it never derives membership or counts.
-_VERDICT_CATEGORIES = ("fired", "outranked", "near_miss", "no_data", "clean")
+FINDING_VERDICTS = ("fired", "outranked", "near_miss", "no_data", "clean")
+DIAGNOSE_SOURCE_WINDOW_DAYS = 30
 
 
 def _hhmm(minute: int) -> str:
@@ -574,14 +575,14 @@ def _lever_evidence(
     share one denominator, which only the family it is currently framing on can
     give it.
     """
-    counts = {category: 0 for category in _VERDICT_CATEGORIES}
+    counts = {category: 0 for category in FINDING_VERDICTS}
     counts_by_family: Dict[str, Dict[str, int]] = {}
     evidence = []
     # Sorted, not first-seen: the family a lever hits first is an accident of the
     # exposures dict's own key order, and `appearances` already sorts alphabetically
     # for the same reason (a stable answer independent of that order).
     for family in sorted(set(families)):
-        family_counts = {category: 0 for category in _VERDICT_CATEGORIES}
+        family_counts = {category: 0 for category in FINDING_VERDICTS}
         for occurrence in in_window.get(family, []):
             category = _occurrence_verdict(occurrence, lever)
             counts[category] += 1
@@ -741,7 +742,9 @@ def _pattern_priorities(scenarios: dict) -> Dict[str, int]:
     return priced
 
 
-def prepare_findings_projection(store, *, window_days: int = 30) -> FindingsProjection:
+def prepare_findings_projection(
+    store, *, window_days: int = DIAGNOSE_SOURCE_WINDOW_DAYS,
+) -> FindingsProjection:
     """Read one findings window from ``store`` and keep all queue policy behind
     :meth:`FindingsProjection.project`.
 

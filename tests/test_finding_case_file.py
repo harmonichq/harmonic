@@ -1,10 +1,15 @@
 """Deep public projection contract for ADR 79 Finding case files."""
 
+from copy import deepcopy
 from datetime import datetime, timedelta
+import json
+import tempfile
+import threading
 import time
 
 import pytest
 
+from ciq_autotune import event_comparison, finding_case_file, findings_projection
 from ciq_autotune.analyzers.scenario.levers import Exposure, Lever, exposure
 from ciq_autotune.analyzers.scenario.opportunities import Opportunity
 from ciq_autotune.events import BasalEvent, BolusEvent, CgmReading
@@ -12,6 +17,7 @@ from ciq_autotune.finding_case_file import (
     InconsistentProjection, Member, PreparedCases, wrap,
 )
 from ciq_autotune.window_membership import WindowQuery
+from ciq_autotune.store import Store
 
 
 def _opportunity(lever, *, anchor=None):
@@ -82,6 +88,136 @@ def test_all_eight_levers_publish_one_exact_case_file_population(lever):
     assert case["selection"] == {"state": "none", "requested_id": None, "detail": None}
 
 
+def test_case_file_consumes_the_authoritative_verdict_order(monkeypatch):
+    reordered = tuple(reversed(findings_projection.FINDING_VERDICTS))
+    monkeypatch.setattr(findings_projection, "FINDING_VERDICTS", reordered)
+
+    case = _prepared(Lever.LATE_BOLUS).case("finding:late_bolus", "event", None)
+    _, authoritative_counts, _ = findings_projection._lever_evidence(
+        Lever.LATE_BOLUS.value, ["meals"], {"meals": []},
+    )
+
+    assert tuple(authoritative_counts) == reordered
+    assert tuple(case["verdict_counts"]) == reordered
+    assert tuple(cohort["key"] for cohort in case["projection"]["cohorts"]) == reordered
+
+
+def test_case_file_consumes_the_authoritative_diagnose_window(monkeypatch):
+    observed = []
+    monkeypatch.setattr(findings_projection, "DIAGNOSE_SOURCE_WINDOW_DAYS", 17)
+
+    class Projection:
+        _scenarios = {}
+
+        @staticmethod
+        def project(query):
+            return {"rows": []}
+
+    def fake_projection(store, *, window_days):
+        observed.append(("queue", window_days))
+        return Projection()
+
+    def fake_population(store, basal, cgm, bolus, *, window_days):
+        observed.append(("population", window_days))
+        return ({lever: () for lever in Lever},
+                {lever: frozenset() for lever in Lever},
+                {lever: () for lever in Lever}, frozenset())
+
+    class Connection:
+        @staticmethod
+        def execute(statement):
+            assert statement == "BEGIN"
+
+        @staticmethod
+        def rollback():
+            pass
+
+    class Store:
+        conn = Connection()
+        basal_events = cgm_readings = bolus_events = carb_entries = lambda self: []
+
+    monkeypatch.setattr(findings_projection, "prepare_findings_projection", fake_projection)
+    monkeypatch.setattr(finding_case_file, "_population", fake_population)
+    prepared = finding_case_file.prepare(
+        Store(), query=WindowQuery.whole_day(), version=0,
+    )
+
+    assert observed == [("queue", 17), ("population", 17)]
+    assert finding_case_file.wrap(prepared)["coordinates"]["source_window_days"] == 17
+
+
+def test_preparation_reads_one_sqlite_generation_across_constituent_reads():
+    with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
+        with Store.open(database.name) as seed:
+            seed.upsert_basal([{
+                "seq_num": 1, "time": "2026-08-01 12:00:00",
+                "delivery_type": "profile", "basal_rate": 1.0,
+                "profile_basal_rate": 1.0,
+            }])
+            seed.upsert_cgm([{
+                "EventDateTime": "2026-08-01 12:00:00",
+                "Readings (CGM / BGM)": 120, "Description": "EGV",
+            }])
+
+        writer_errors = []
+        writer_finished = threading.Event()
+
+        def write_next_generation():
+            try:
+                with Store.open(database.name) as writer:
+                    writer.upsert_cgm([{
+                        "EventDateTime": "2026-08-01 12:05:00",
+                        "Readings (CGM / BGM)": 125, "Description": "EGV",
+                    }])
+            except Exception as error:  # pragma: no cover - asserted below
+                writer_errors.append(error)
+            finally:
+                writer_finished.set()
+
+        with Store.open_queryonly(database.name) as reader:
+            class InterleavedStore:
+                conn = reader.conn
+
+                def __getattr__(self, name):
+                    return getattr(reader, name)
+
+                def basal_events(self, *args, **kwargs):
+                    rows = reader.basal_events(*args, **kwargs)
+                    writer = threading.Thread(target=write_next_generation)
+                    writer.start()
+                    assert writer_finished.wait(2), "WAL writer blocked by read snapshot"
+                    writer.join(2)
+                    return rows
+
+            prepared = finding_case_file.prepare(
+                InterleavedStore(), query=WindowQuery.whole_day(), version=0,
+            )
+
+        assert writer_errors == []
+        assert [row.bg for row in prepared.cgm] == [120]
+        with Store.open_queryonly(database.name) as latest:
+            assert [row.bg for row in latest.cgm_readings()] == [120, 125]
+
+
+@pytest.mark.parametrize("lever,view", [
+    (Lever.LATE_BOLUS, "meals"),
+    (Lever.OVER_TREATED_LOW, "lows"),
+])
+def test_meal_and_low_event_facts_come_from_legacy_authority(monkeypatch, lever, view):
+    changed = dict(event_comparison.VIEW_CONFIG[view])
+    changed.update({"anchor_kind": "mutated_anchor", "anchor_label": "Mutated anchor",
+                    "window": [-5, 10]})
+    monkeypatch.setitem(event_comparison.VIEW_CONFIG, view, changed)
+
+    case = _prepared(lever).case(f"finding:{lever.value}", "event", None)
+
+    assert case["occurrences"][0]["anchor"]["label"] == "Mutated anchor"
+    assert case["projection"]["anchor"] == {
+        "kind": "mutated_anchor", "label": "Mutated anchor",
+    }
+    assert case["projection"]["window_min"] == [-5, 10]
+
+
 def test_factor_specific_event_horizons_and_far_pair_selected_evidence():
     expected = {
         Lever.CARB_UNDERCOUNT: [-60, 300],
@@ -142,13 +278,38 @@ def test_named_field_wrapper_preserves_unknown_row_and_top_level_selection():
     unknown = {"id": "future:row", "register": "future", "nested": {"bytes": [1, 2]}}
     findings = _findings(lever, extra_rows=(unknown,))
     findings["selection"] = {"sentinel": ["unchanged"]}
+    findings["rows"][1].update({
+        "priority": 42,
+        "tier": "worth_a_look",
+        "chips": ["lows", "meals"],
+        "future_policy": {"opaque": [1, {"two": 2}]},
+    })
+    original = deepcopy(findings)
     prepared = _prepared(lever, findings=findings)
     payload = wrap(prepared)
-    assert payload["findings"] == findings
+    assert payload["findings"] == original
     assert payload["rendered_rows"][0] == unknown
     behavioral = payload["rendered_rows"][1]
     assert behavioral["evidence"] is None
     assert behavioral["case_header"] == payload["behavioral_case_headers"][behavioral["id"]]
+    changed_fields = {
+        key for key in set(original["rows"][1]) | set(behavioral)
+        if original["rows"][1].get(key) != behavioral.get(key)
+    }
+    allowed_changes = {
+        "appearances", "episodes", "evidence", "verdict_counts",
+        "verdict_counts_by_family", "case_header",
+    }
+    assert changed_fields <= allowed_changes
+    assert allowed_changes - {"episodes"} <= changed_fields
+    for key in set(original["rows"][1]) - allowed_changes:
+        before = json.dumps(original["rows"][1][key], separators=(",", ":")).encode()
+        after = json.dumps(behavioral[key], separators=(",", ":")).encode()
+        assert after == before
+    assert json.dumps(payload["findings"]["selection"]).encode() == json.dumps(
+        original["selection"]
+    ).encode()
+    assert findings == original
 
 
 def test_noncanonical_attribution_is_withheld_instead_of_rendered():

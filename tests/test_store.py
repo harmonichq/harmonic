@@ -245,6 +245,21 @@ class OpenReadonlyTest(unittest.TestCase):
                                         "Readings (CGM / BGM)": "102",
                                         "Description": "EGV"}])
 
+    def test_queryonly_does_not_mutate_database_bytes_or_create_sidecars(self):
+        before_files = sorted(os.listdir(self.dir))
+        with open(self.path, "rb") as database:
+            before_bytes = database.read()
+
+        with Store.open_queryonly(self.path) as store:
+            self.assertEqual([row.bg for row in store.cgm_readings()], [100.0])
+
+        with open(self.path, "rb") as database:
+            after_bytes = database.read()
+        self.assertEqual(after_bytes, before_bytes)
+        self.assertEqual(sorted(os.listdir(self.dir)), before_files)
+        self.assertFalse(os.path.exists(self.path + "-wal"))
+        self.assertFalse(os.path.exists(self.path + "-shm"))
+
 
 class CredentialsStoreTest(unittest.TestCase):
     def setUp(self):

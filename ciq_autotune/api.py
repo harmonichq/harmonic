@@ -35,6 +35,7 @@ from .config import resolve_runtime_configuration
 from .event_comparison import ComparisonQuery, prepare_event_comparisons
 from .explore_time_of_day import build_time_of_day
 from .events import CarbEntry, parse_t
+from . import findings_projection as findings_projection_module
 from .findings_projection import UnknownHistorySelection, prepare_findings_projection
 from .finding_case_file import (
     prepare as prepare_finding_cases,
@@ -565,13 +566,18 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         view: Optional[str] = None, factor: Optional[str] = None,
         start_min: Optional[int] = None, end_min: Optional[int] = None,
         block: Optional[str] = None, occ: Optional[str] = None, another: str = "0",
-        window: int = 30, _: None = Depends(require_token),
+        window: int = findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS,
+        _: None = Depends(require_token),
     ) -> dict:
         """Evidence-only Meals and Lows cohorts for the Diagnose lenses."""
-        if window != 30 or view not in {"meals", "lows"}:
+        if (window != findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS
+                or view not in {"meals", "lows"}):
             raise HTTPException(
                 status_code=400,
-                detail="event comparison requires meals or lows in its fixed 30-day window",
+                detail=(
+                    "event comparison requires meals or lows in its fixed "
+                    f"{findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS}-day window"
+                ),
             )
         if another not in {"0", "1"}:
             raise HTTPException(status_code=400, detail="another must be 0 or 1")
@@ -594,7 +600,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     @app.get("/diagnose/findings")
     def diagnose_findings_endpoint(
         start_min: Optional[int] = None, end_min: Optional[int] = None,
-        window: int = 30, selected_id: Optional[str] = None,
+        window: int = findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS,
+        selected_id: Optional[str] = None,
         _: None = Depends(require_token),
     ) -> dict:
         """The Diagnose findings queue for one clock window (#730).

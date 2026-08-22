@@ -23,12 +23,11 @@ from .analyzers.scenario.attribute import _next_meal_bolus_t
 from .analyzers.scenario.meal_suspend import classify_meal_owned_suspend
 from .analyzers.scenario.segment import guarded_rebound
 from .analyzers.scenario_config import ScenarioConfig
+from . import findings_projection
 from .window_membership import WindowQuery, outcome_minute
 
 FMT = "%Y-%m-%d %H:%M:%S"
 CONFIG = ScenarioConfig()
-_SOURCE_WINDOW_DAYS = 30
-
 VIEW_CONFIG = {
     "meals": {
         "anchor": "completed carb-bolus",
@@ -925,9 +924,10 @@ def prepare_event_comparisons(store) -> EventComparisonPreparation:
     """Read one fixed window and keep all comparison policy behind ``project``."""
     from .explore_exposures import build_exposures
 
-    exposures_payload = build_exposures(store, window_days=_SOURCE_WINDOW_DAYS)
+    window_days = findings_projection.DIAGNOSE_SOURCE_WINDOW_DAYS
+    exposures_payload = build_exposures(store, window_days=window_days)
     capture = _build_catalog_capture(
-        store, window_days=_SOURCE_WINDOW_DAYS, exposures_payload=exposures_payload,
+        store, window_days=window_days, exposures_payload=exposures_payload,
     )
     return EventComparisonPreparation(
         _exposures=exposures_payload,

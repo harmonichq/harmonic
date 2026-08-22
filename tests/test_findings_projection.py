@@ -633,6 +633,31 @@ class FindingsEndpointTest(unittest.TestCase):
                             params={"start_min": 600, "end_min": 600})
         self.assertEqual(r.status_code, 400)
 
+    def test_the_route_default_reads_the_canonical_source_window(self):
+        import ciq_autotune.api as api_mod
+        from unittest.mock import patch
+
+        real = api_mod.prepare_findings_projection
+        windows = []
+
+        def capture(*args, **kwargs):
+            windows.append(kwargs["window_days"])
+            return real(*args, **kwargs)
+
+        with patch.object(
+            api_mod.findings_projection_module,
+            "DIAGNOSE_SOURCE_WINDOW_DAYS",
+            17,
+        ), patch.object(api_mod, "prepare_findings_projection", capture):
+            client = TestClient(api_mod.create_app(
+                db_path=self.tmp.name, token=None, enable_fetch_loop=False,
+            ))
+            response = client.get("/diagnose/findings")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(windows, [17])
+        self.assertEqual(response.json()["findings_window"]["days"], 17)
+
     def test_it_answers_from_the_cache_and_a_write_invalidates_it(self):
         import ciq_autotune.api as api_mod
         from unittest.mock import patch

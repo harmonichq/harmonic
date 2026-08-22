@@ -18,15 +18,13 @@ from .analyzers.scenario.model_view import _CONTEXT_PAD_MIN, _build_episode_view
 from .analyzers.scenario import opportunities
 from .analyzers.scenario.segment import segment, split_double_humps, split_low_rebounds
 from .analyzers.scenario_config import ScenarioConfig
-from .event_comparison import project_cohort
+from . import event_comparison, findings_projection
 from .false_low import drop_readings, false_low_span_records, spans_from_records
-from .findings_projection import _occurrence_verdict, prepare_findings_projection
 from .result_cache import PREPARATION_LEASE_SECONDS
 from .window_membership import WindowQuery
 
 PREPARATION_SCHEMA = "diagnose-finding-case-file-preparation-v1"
 CASE_SCHEMA = "diagnose-finding-case-file-v1"
-VERDICTS = ("fired", "outranked", "near_miss", "no_data", "clean")
 FMT = "%Y-%m-%d %H:%M:%S"
 
 
@@ -82,6 +80,7 @@ class PreparedCases:
     bolus: tuple
     carbs: tuple
     lease_until: float
+    source_window_days: int = findings_projection.DIAGNOSE_SOURCE_WINDOW_DAYS
     pins: int = 0
 
     def _roster(self, lever):
@@ -104,7 +103,10 @@ class PreparedCases:
         claimed_ids = self.associations[lever].intersection(member.id for member in roster)
         if not claimed_ids:
             return None
-        counts = {key: sum(member.verdict == key for member in roster) for key in VERDICTS}
+        counts = {
+            key: sum(member.verdict == key for member in roster)
+            for key in findings_projection.FINDING_VERDICTS
+        }
         if (len(roster) != sum(counts.values()) or len(claimed_ids) > counts["fired"]
                 or row.get("episodes") != len(claimed_ids)):
             raise InconsistentProjection("inconsistent_projection")
@@ -146,30 +148,41 @@ def prepare(store, *, query, version):
         cgm = tuple(store.cgm_readings())
         bolus = tuple(store.bolus_events())
         carbs = tuple(store.carb_entries())
-        projection = prepare_findings_projection(store)
+        window_days = findings_projection.DIAGNOSE_SOURCE_WINDOW_DAYS
+        projection = findings_projection.prepare_findings_projection(
+            store, window_days=window_days,
+        )
         findings = projection.project(query)
         recurrence = {
             Lever(row["lever"]): (row["confidence"]["k"], row["confidence"]["n"])
             for row in ((projection._scenarios.get("patterns") or [])
                         + (projection._scenarios.get("low_confidence") or []))
         }
-        members, associations, provenance, withheld = _population(store, basal, cgm, bolus)
+        members, associations, provenance, withheld = _population(
+            store, basal, cgm, bolus, window_days=window_days,
+        )
     finally:
         store.conn.rollback()
     return PreparedCases("fp_" + uuid.uuid4().hex, version, query, findings, recurrence,
                          members, associations, provenance, withheld, cgm, basal, bolus, carbs,
-                         time.monotonic() + PREPARATION_LEASE_SECONDS)
+                         time.monotonic() + PREPARATION_LEASE_SECONDS,
+                         source_window_days=window_days)
 
 
-def _population(store, basal, cgm, bolus):
+def _population(
+    store, basal, cgm, bolus, *,
+    window_days=None,
+):
     config = ScenarioConfig()
+    if window_days is None:
+        window_days = findings_projection.DIAGNOSE_SOURCE_WINDOW_DAYS
     times = [row.t for row in basal] + [row.t for row in cgm]
     if not times:
         return ({lever: () for lever in Lever},
                 {lever: frozenset() for lever in Lever},
                 {lever: () for lever in Lever}, frozenset())
     end = max(times)
-    start = end - timedelta(days=30)
+    start = end - timedelta(days=window_days)
     filtered_cgm = drop_readings(_slice(cgm, start, end), spans_from_records(
         false_low_span_records(cgm, store.prompt_responses())))
     filtered_bolus = _slice(bolus, start, end)
@@ -211,7 +224,9 @@ def _population(store, basal, cgm, bolus):
             occurrence = {"verdicts": row["verdicts"], "cause_lever": cause}
             for lever in Lever:
                 if exposure(lever) is family:
-                    states[lever][key] = _occurrence_verdict(occurrence, lever.value)
+                    states[lever][key] = findings_projection._occurrence_verdict(
+                        occurrence, lever.value,
+                    )
         if attr.lever is None:
             continue
         association = _association(attr, episode, by_family)
@@ -242,8 +257,11 @@ def _population(store, basal, cgm, bolus):
                                                                "value", verdict.silence_reason)}],
                       "cause_lever": None}
         if item.source_key not in outcomes[Lever.CORRECTION_STACKING]:
-            states[Lever.CORRECTION_STACKING][item.source_key] = _occurrence_verdict(
-                occurrence, Lever.CORRECTION_STACKING.value)
+            states[Lever.CORRECTION_STACKING][item.source_key] = (
+                findings_projection._occurrence_verdict(
+                    occurrence, Lever.CORRECTION_STACKING.value,
+                )
+            )
 
     members = {}
     for lever in Lever:
@@ -312,7 +330,10 @@ def wrap(prepared):
                         "case_header": header})
         rendered.append(changed); headers[finding_id] = header
     return {"schema": PREPARATION_SCHEMA, "projection_id": prepared.projection_id,
-            "coordinates": {"source_window_days": 30, "window": prepared.query.to_dict()},
+            "coordinates": {
+                "source_window_days": prepared.source_window_days,
+                "window": prepared.query.to_dict(),
+            },
             "findings": deepcopy(prepared.findings), "rendered_rows": rendered,
             "behavioral_case_headers": headers, "withheld_findings": withheld}
 
@@ -321,14 +342,21 @@ def _noun(family):
     return "correction clusters" if family is Exposure.CORRECTION_CLUSTERS else family.value
 
 
-_ANCHORS = {Exposure.MEALS: ("completed_carb_bolus", "Completed carb bolus"),
-            Exposure.LOWS: ("excursion_nadir", "Low excursion"),
-            Exposure.CORRECTION_CLUSTERS: ("second_correction", "Second correction"),
-            Exposure.HIGHS: ("high_peak", "High peak")}
+_CASE_ANCHORS = {
+    Exposure.CORRECTION_CLUSTERS: ("second_correction", "Second correction"),
+    Exposure.HIGHS: ("high_peak", "High peak"),
+}
+
+
+def _event_anchor(family):
+    legacy = event_comparison.VIEW_CONFIG.get(family.value)
+    if legacy is not None:
+        return legacy["anchor_kind"], legacy["anchor_label"]
+    return _CASE_ANCHORS[family]
 
 
 def _occurrence(member):
-    _, label = _ANCHORS[member.opportunity.family]
+    _, label = _event_anchor(member.opportunity.family)
     return {"id": member.id, "date": member.opportunity.anchor_t.date().isoformat(),
             "anchor": {"t": member.opportunity.anchor_t.strftime(FMT),
                        "kind": member.opportunity.anchor_kind, "label": label,
@@ -353,9 +381,13 @@ def _clock(roster, claimed_ids):
 def _trace_bounds(member, lever):
     item, config = member.opportunity, ScenarioConfig()
     if item.family is Exposure.MEALS:
-        return item.anchor_t - timedelta(minutes=60), item.anchor_t + timedelta(minutes=300)
+        before, after = event_comparison.VIEW_CONFIG["meals"]["window"]
+        return (item.anchor_t + timedelta(minutes=before),
+                item.anchor_t + timedelta(minutes=after))
     if item.family is Exposure.LOWS:
-        return item.anchor_t - timedelta(minutes=300), item.anchor_t + timedelta(minutes=120)
+        before, after = event_comparison.VIEW_CONFIG["lows"]["window"]
+        return (item.anchor_t + timedelta(minutes=before),
+                item.anchor_t + timedelta(minutes=after))
     if item.family is Exposure.CORRECTION_CLUSTERS:
         before = max(config.stacking_window_min, config.stacking_slope_lookback_min,
                      config.gate_lookback_min)
@@ -389,10 +421,15 @@ def _event(lever, roster, cgm):
     start = int(math.floor(min(row[0] for row in bounds) / 5) * 5)
     end = int(math.ceil(max(row[1] for row in bounds) / 5) * 5)
     by_id = {member.id: member for member in roster}
-    cohorts = [project_cohort(key, [trace for trace in traces
-                                    if by_id[trace["id"]].verdict == key], (start, end))
-               for key in VERDICTS]
-    kind, label = _ANCHORS[exposure(lever)]
+    cohorts = [
+        event_comparison.project_cohort(
+            key,
+            [trace for trace in traces if by_id[trace["id"]].verdict == key],
+            (start, end),
+        )
+        for key in findings_projection.FINDING_VERDICTS
+    ]
+    kind, label = _event_anchor(exposure(lever))
     return {"alignment": "event", "anchor": {"kind": kind, "label": label},
             "window_min": [start, end], "cohorts": cohorts, "clock": None}
 

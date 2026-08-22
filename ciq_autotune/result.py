@@ -413,6 +413,9 @@ class IcHistory:
     programmed_now: Optional[float]
     estimate: Optional[Estimate]
     support: Optional[int]
+    # Finished analyzer-owned conclusion. Non-null only while this catalog record
+    # carries a current measurement; consumers copy it verbatim and derive no advice.
+    annotation: Optional[str]
     lifecycle: str                 # "active" | "aged_out" | "unavailable"
     regime_end: Optional[str]
     runs: List[IcHistoryRunRecord] = field(default_factory=list)
@@ -427,6 +430,7 @@ class IcHistory:
             "programmed_now": self.programmed_now,
             "estimate": self.estimate.to_dict() if self.estimate is not None else None,
             "support": self.support,
+            "annotation": self.annotation,
             "lifecycle": self.lifecycle,
             "regime_end": self.regime_end,
             "runs": [run.to_dict() for run in self.runs],

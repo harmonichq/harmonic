@@ -113,7 +113,10 @@ class ResultSerializationTest(unittest.TestCase):
             label="Morning", past_setting=6.0, programmed_now=5.0,
             estimate=Estimate(5.6, 5.2, 5.9, 4, 0.8,
                               "bootstrap-pooled-ratio-clustered"),
-            support=4, lifecycle="active", regime_end="2026-05-01T09:00:00",
+            support=4,
+            annotation=("When Carb ratio was 6 g/U, 4 meal runs measured 5.6 g/U "
+                        "(CI 5.2–5.9). Past setting. No change suggested."),
+            lifecycle="active", regime_end="2026-05-01T09:00:00",
             runs=[IcHistoryRunRecord(
                 run_id="icr1_example", first_member_at="2026-04-01T08:00:00",
                 last_member_at="2026-04-01T10:00:00",
@@ -126,6 +129,11 @@ class ResultSerializationTest(unittest.TestCase):
 
         self.assertEqual(got["id"], "ich1_example")
         self.assertEqual(got["estimate"]["value"], 5.6)
+        self.assertEqual(
+            got["annotation"],
+            "When Carb ratio was 6 g/U, 4 meal runs measured 5.6 g/U "
+            "(CI 5.2–5.9). Past setting. No change suggested.",
+        )
         self.assertEqual(got["runs"][0]["member_offsets_min"], [0.0, 120.0])
         for forbidden in ("recommended", "direction", "lean", "priority",
                           "asserts_move", "plan"):

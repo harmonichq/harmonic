@@ -2325,7 +2325,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
 
   <script type="module">
     import { createApp, ref, reactive, computed, onMounted, onUnmounted, watch, nextTick, provide, inject } from 'vue';
-    import { TABS, parseRoute, resolveRoute, pushRoute, replaceRoute, subscribeRoutes } from '/url-state.js';
+    import { TABS, parseRoute, resolveRoute, serializeRoute, pushRoute, replaceRoute, subscribeRoutes } from '/url-state.js';
 
     /* =========================================================================
        #64 SCENARIO SCREEN — the pure chart logic (SCN_* consts + helpers, incl.
@@ -3793,7 +3793,9 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         // outcomes → verify (#245). #246 (ADR 0027) retires Recommendations + Patterns
         // into Diagnose, so `review`/`patterns` (and the legacy `dashboard`/`pump`) all
         // migrate to `diagnose`.
-        const tab = ref(currentRoute.kind === 'PendingRoute' ? currentRoute.page : 'diagnose');
+        // A pending address is deliberately not page state. The shell resolves
+        // it below before a pane is allowed to mount.
+        const tab = ref(null);
         const dark = ref(document.documentElement.classList.contains('dark'));
         // #248 / ADR 0024: the developer flag. Tier-2 reasoning (near-miss, outranked,
         // per-detector meaning, model steps) is always on; this gates only tier-3
@@ -4158,6 +4160,12 @@ html.dark .viz .tie:hover::before { opacity:.13; }
 
         function setTab(t) {
           if (!TABS.some((item) => item.id === t)) return;
+          if (t === 'day' || t === 'guide') {
+            const pending = parseRoute(`/app/${t}`);
+            pushRoute(pending);
+            applyPendingRoute(pending);
+            return;
+          }
           pushRoute({ kind: 'ResolvedRoute', page: t, query: {} });
           tab.value = t;
           // #99: Plan reads the latest pump snapshot for its active-profile
@@ -4240,15 +4248,36 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         watch(dark, () => { if (verifyView) verifyView.refresh(); });
         // Restored entries pass through the same static parser before any page
         // state changes.  Dynamic membership is resolved by the page adapters.
-        const stopRouteSubscription = subscribeRoutes((restored) => {
-          if (restored.kind !== 'PendingRoute') { routeError.value = restored; return; }
+        async function applyPendingRoute(route) {
+          if (route.kind !== 'PendingRoute') { routeError.value = route; return; }
+          let resolved;
+          if (route.page === 'day') {
+            if (!status.value) await loadStatus();
+            const explicit = route.query.date;
+            const earliest = status.value?.earliest_data_day, latest = status.value?.latest_data_day;
+            if (explicit && (!earliest || !latest || explicit < earliest || explicit > latest)) {
+              routeError.value = { kind: 'InvalidRoute', address: serializeRoute(route), reason: 'day-membership' };
+              return;
+            }
+            resolved = resolveRoute(route, { day: () => explicit ? { date: explicit } : (latest ? { date: latest } : {}) });
+          } else if (route.page === 'guide') {
+            resolved = resolveRoute(route, { guide: (query) => {
+              const article = query.article || 'start-here';
+              return KB_ARTICLES.some((entry) => entry.slug === article) ? { article } : { invalid: true };
+            } });
+          } else {
+            resolved = resolveRoute(route);
+          }
+          if (resolved.kind === 'InvalidRoute') { routeError.value = resolved; return; }
           routeError.value = null;
-          tab.value = restored.page;
-          currentRoute = restored;
-          if (restored.page === 'day') { pendingDailyDate.value = restored.query.date || null; resolveDailyDate(); }
-          if (restored.page === 'guide') kbCurrent.value = restored.query.article || 'start-here';
-          setTabLoads(restored.page);
-        });
+          currentRoute = resolved;
+          if (serializeRoute(resolved) !== serializeRoute(route)) replaceRoute(resolved);
+          tab.value = resolved.page;
+          if (resolved.page === 'day') { pendingDailyDate.value = resolved.query.date || null; resolveDailyDate(false); }
+          if (resolved.page === 'guide') { kbCurrent.value = resolved.query.article; kbFetchArticle(resolved.query.article); }
+          setTabLoads(resolved.page);
+        }
+        const stopRouteSubscription = subscribeRoutes(applyPendingRoute);
         function setTabLoads(t) {
           if (t === 'plan' && !pumpSettings.value) loadPumpSettings();
           if (t === 'day') resolveDailyDate();
@@ -5490,7 +5519,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         }
 
         onMounted(() => {
-          loadAll();
+          applyPendingRoute(currentRoute).then(loadAll);
           pqLoadPrompts();   // #128: seed the Review badge count on load
           window.addEventListener('resize', () => {
             if (ribbonChart) ribbonChart.resize();

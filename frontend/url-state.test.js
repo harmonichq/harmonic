@@ -24,3 +24,11 @@ test('resolution inserts defaults and rejects unresolved membership', () => {
   assert.equal(serializeRoute(day), '/app/day?date=2026-07-15');
   assert.equal(resolveRoute(parse('/app/verify?trial=nope'), { verify: () => ({ invalid: true }) }).kind, 'InvalidRoute');
 });
+test('workstation occurrence is valid for clock or event and rejects malformed triples', () => {
+  const occ = 'WyJpYyIsImVwMSIsIjIwMjYtMDctMTVUMTI6MDA6MDAiXQ';
+  assert.equal(parse(`/app/diagnose?finding=f1&factor=ic.day&occ=${occ}`).kind, 'PendingRoute');
+  assert.equal(parse(`/app/diagnose?finding=f1&factor=ic.day&projection=event&occ=${occ}`).kind, 'PendingRoute');
+  for (const bad of ['not-base64!', 'WzEsMiwzXQ', 'WyJpYyIsImVwMSJd', 'WyJpYyIsICJlcDEiLCAidCJd']) {
+    assert.equal(parse(`/app/diagnose?finding=f1&factor=ic.day&occ=${bad}`).kind, 'InvalidRoute', bad);
+  }
+});

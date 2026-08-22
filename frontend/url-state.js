@@ -56,6 +56,16 @@ function checkKeys(params, allowed) {
   }
   return true;
 }
+function validOccurrence(value) {
+  if (!OCC.test(value)) return false;
+  try {
+    const padded = value.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - value.length % 4) % 4);
+    const text = new TextDecoder('utf-8', { fatal: true }).decode(Uint8Array.from(atob(padded), (c) => c.charCodeAt(0)));
+    if (/\s/.test(text)) return false;
+    const parsed = JSON.parse(text);
+    return Array.isArray(parsed) && parsed.length === 3 && parsed.every((part) => typeof part === 'string' && part.length > 0);
+  } catch { return false; }
+}
 
 /** Parse static syntax only; membership and defaults happen in resolveRoute. */
 export function parseRoute(address) {
@@ -102,7 +112,7 @@ export function parseRoute(address) {
       if (hasFinding !== hasFactor || (!hasFinding && (Object.keys(bounds).length || params.has('projection') || params.has('occ')))) return invalid(shown, 'workstation-pair');
       if (hasFinding && (!IDENTIFIER.test(params.get('finding')) || !/^[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$/.test(params.get('factor')))) return invalid(shown, 'finding');
       if (params.has('projection') && params.get('projection') !== 'event') return invalid(shown, 'projection');
-      if (params.has('occ') && (!OCC.test(params.get('occ')) || !params.has('projection'))) return invalid(shown, 'occ');
+      if (params.has('occ') && !validOccurrence(params.get('occ'))) return invalid(shown, 'occ');
       query = hasFinding ? { finding: params.get('finding'), factor: params.get('factor'), ...bounds,
         ...(params.has('projection') ? { projection: 'event' } : {}), ...(params.has('occ') ? { occ: params.get('occ') } : {}) } : {};
     }

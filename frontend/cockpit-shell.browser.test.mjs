@@ -323,7 +323,7 @@ async function routeApp(page, options = {}) {
       return route.fulfill({ json: { history: [], focuses: [] } });
     }
     if (url.pathname === '/favicon.ico') return route.fulfill({ status: 204, body: '' });
-    const file = url.pathname === '/' ? join(FRONTEND, 'index.html')
+    const file = (url.pathname === '/' || url.pathname.startsWith('/app/')) ? join(FRONTEND, 'index.html')
       : url.pathname.startsWith('/mockups/') ? join(ROOT, url.pathname.slice(1))
       : join(FRONTEND, url.pathname.slice(1));
     try {
@@ -355,17 +355,18 @@ async function openApp(browser, options = {}) {
     localStorage.setItem('tab', tab);
     localStorage.setItem('theme', theme);
   }, { tab: options.tab || 'diagnose', theme: options.theme || 'light' });
-  const initialHash = options.initialHash || `#${options.tab || 'diagnose'}`;
-  const query = new URLSearchParams({ view: options.eventView || 'glucose' });
-  if (options.state) query.set('mode', options.state);
-  await page.goto(`http://ciq.local/?${query}${initialHash}`);
+  const tab = options.tab || 'diagnose';
+  const query = new URLSearchParams();
+  if (['meals', 'lows'].includes(options.eventView)) query.set('view', options.eventView);
+  const address = options.initialPath || `/app/${tab}${query.size ? `?${query}` : ''}`;
+  await page.goto(`http://ciq.local${address}`);
   await page.locator('.cockpit-shell').waitFor();
   if (['meals', 'lows'].includes(options.eventView)) {
     await page.locator(options.expectEventError ? '.ec-error' : '.ec-surface').waitFor();
   }
   // index.html only mounts the Diagnose workstation (root class `.dw`) when the
   // active tab is `diagnose`, so this wait is scoped to that default path.
-  if ((options.tab || 'diagnose') === 'diagnose' && !['meals', 'lows'].includes(options.eventView)) {
+  if (!options.initialPath && tab === 'diagnose' && !['meals', 'lows'].includes(options.eventView)) {
     await page.locator('.dw').waitFor();
   }
   return page;
@@ -374,7 +375,7 @@ async function openApp(browser, options = {}) {
 async function chooseTab(page, id) {
   const trigger = page.locator(`[data-shell-tab="${id}"]:visible`).first();
   await trigger.click();
-  await page.waitForFunction((tab) => location.hash.startsWith(`#${tab}`), id);
+  await page.waitForFunction((tab) => location.pathname === `/app/${tab}`, id);
 }
 
 async function proveRedOnce(term, check, mutate) {
@@ -601,7 +602,7 @@ test('top bar and footer expose the locked destination inventory and neutral pro
 
     for (const id of TABS) {
       await chooseTab(page, id);
-      assert.equal(locationHash(await page.evaluate(() => location.hash)), id);
+      assert.equal(await page.evaluate(() => location.pathname), `/app/${id}`);
     }
     await page.locator('.cockpit-glossary').click();
     assert.equal(await page.locator('.glossary[role="dialog"]').isVisible(), true);
@@ -630,10 +631,6 @@ test('top bar and footer expose the locked destination inventory and neutral pro
     assert.equal(await page.locator('.pq-drawer').isVisible(), true);
   } finally { await page.close(); }
 });
-
-function locationHash(hash) {
-  return hash.slice(1).split('?')[0];
-}
 
 function contrastRatio(foreground, background) {
   const parse = (color) => {
@@ -675,9 +672,29 @@ export async function S2(browser) {
     await assertDestinationInventory(page);
     for (const id of TABS) {
       await chooseTab(page, id);
-      assert.equal(locationHash(await page.evaluate(() => location.hash)), id);
+      assert.equal(await page.evaluate(() => location.pathname), `/app/${id}`);
     }
+    await page.goBack();
+    assert.equal(await page.evaluate(() => location.pathname), '/app/settings',
+      'Back restores the preceding canonical page');
   } finally { await page.close(); }
+  const mobile = await openApp(browser, { viewport: { width: 390, height: 844 } });
+  try {
+    await mobile.locator('.cockpit-menu-button').click();
+    await mobile.locator('#navigation-drawer [data-shell-tab="plan"]').click();
+    await mobile.waitForFunction(() => location.pathname === '/app/plan');
+    assert.equal(await mobile.locator('.cockpit-menu-button').getAttribute('aria-expanded'), 'false',
+      'drawer navigation closes after completing its canonical route');
+  } finally { await mobile.close(); }
+  const invalid = await openApp(browser, {
+    initialPath: '/app/diagnose?start_min=60&start_min=60&end_min=120',
+  });
+  try {
+    const stop = invalid.locator('[data-route-error="invalid-link"]');
+    await stop.waitFor();
+    assert.match(await stop.innerText(), /No selection was applied/,
+      'invalid input stops atomically instead of applying partial evidence state');
+  } finally { await invalid.close(); }
 }
 
 // STORY:cockpit-shell:S3
@@ -882,8 +899,8 @@ export async function S10(browser) {
 }
 
 async function assertRetiredOccurrenceRoute(page) {
-  assert.equal(await page.evaluate(() => location.hash), '#diagnose',
-    'the stale occurrence-list URL must canonicalize to #diagnose');
+  assert.equal(await page.evaluate(() => location.pathname), '/app/diagnose',
+    'the retired occurrence route must leave the canonical Diagnose path');
   const duplicates = await page.evaluate(() => ({
     dialogs: [...document.querySelectorAll('[role="dialog"]')]
       .filter((node) => /occurrences/i.test(
@@ -901,8 +918,7 @@ async function openRetiredOccurrence(browser, options = {}) {
   assert.ok(lever, 'R1 requires a generated scenario lever');
   const page = await openApp(browser, {
     ...options,
-    state: 'dense',
-    initialHash: `#diagnose?modal=occurrences&detector=${encodeURIComponent(lever)}`,
+    initialPath: '/app/diagnose',
     findingsInput: {
       analysis: FINDINGS_PROJECTION.inputs.analysis,
       exposures: FINDINGS_PROJECTION.inputs.exposures,
@@ -936,11 +952,11 @@ async function openRetiredOccurrence(browser, options = {}) {
 export async function R1(browser) {
   const page = await openRetiredOccurrence(browser);
   try {
-    await proveRedOnce('R1 canonical hash',
+    await proveRedOnce('R1 canonical path',
       () => assertRetiredOccurrenceRoute(page), async () => {
         await page.evaluate(() => history.replaceState(null, '',
-          '#diagnose?modal=occurrences&detector=mutation'));
-        return () => page.evaluate(() => history.replaceState(null, '', '#diagnose'));
+          '/app/diagnose?modal=occurrences&detector=mutation'));
+        return () => page.evaluate(() => history.replaceState(null, '', '/app/diagnose'));
       });
     await proveRedOnce('R1 duplicate occurrence route',
       () => assertRetiredOccurrenceRoute(page), async () => {

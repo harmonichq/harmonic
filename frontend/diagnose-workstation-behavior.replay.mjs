@@ -57,6 +57,12 @@ export const state = (page) => page.evaluate(() => {
   const txt = (s) => q(s)?.textContent.trim() ?? null;
   const display = (node) => node ? getComputedStyle(node).display : null;
   const rendered = (node) => node ? display(node) !== 'none' && node.getClientRects().length > 0 : false;
+  const textLeft = (node) => {
+    if (!node) return null;
+    const range = document.createRange();
+    range.selectNodeContents(node);
+    return Math.round(range.getBoundingClientRect().left);
+  };
   return {
     chip: q('#seg-window [data-follow]')?.textContent.replace('×', '').trim() || null,
     pressed: [...document.querySelectorAll('#seg-window button')]
@@ -65,12 +71,14 @@ export const state = (page) => page.evaluate(() => {
     crumb: [...document.querySelectorAll('#crumb-trail > *')]
       .map((n) => n.textContent.trim()).filter((t) => t !== '›'),
     crumbMeta: txt('#crumb-meta'),
+    levelText: txt('#level'),
     scope: txt('#canvas-scope'),
     /* #62 — the case file's own head, and the line the panel prints when the
        finding the reader is standing on has no row in the selected window. */
     levelWho: q('#level .who')?.innerText.replace(/\s+/g, ' ').trim() ?? null,
     levelStat: q('#level .statline')?.innerText.replace(/\s+/g, ' ').trim() ?? null,
     levelEmpty: txt('#level .empty'),
+    levelEmptyLeft: textLeft(q('#level .empty')),
     levelLoading: q('#level')?.dataset.loading ?? null,
     bandKeys: [...document.querySelectorAll('#level .vband .key .lead')].map((n) => n.textContent.trim()),
     // ALIGN's two canvases: which one is mounted, and whose header is up
@@ -137,6 +145,11 @@ export const state = (page) => page.evaluate(() => {
     more: txt('#level .more'),
     stage: q('#level .stagebtn')?.innerText.replace(/\s+/g, ' ').trim() ?? null,
     stageStaged: q('#level .stagebtn')?.dataset.staged ?? null,
+    sift: [...document.querySelectorAll('#seg-chips button')].map((button) => ({
+      text: button.textContent.trim(),
+      pressed: button.getAttribute('aria-pressed'),
+      disabled: button.disabled,
+    })),
     slotLink: q('#level .slotlink')?.innerText.replace(/\s+/g, ' ').trim() ?? null,
     linkBtns: [...document.querySelectorAll('#level .slotlink .linkbtn')].map((b) => b.textContent.trim()),
     // #735 — level 1 is the findings queue (terms 34-45), not a factor grid over
@@ -148,6 +161,10 @@ export const state = (page) => page.evaluate(() => {
       tier: n.dataset.tier ?? null,
       tagX: Math.round(n.querySelector('.tag')?.getBoundingClientRect().right ?? -1),
     })),
+    queueLeft: q('#level .qrow .lab')
+      ? Math.round(q('#level .qrow .lab').getBoundingClientRect().left) : null,
+    crumbLeft: q('#crumb-trail')
+      ? Math.round(q('#crumb-trail').getBoundingClientRect().left) : null,
     queueSeam: txt('#level .tailnote'),
     queueEmpty: txt('#level .quiet-line'),
     // term 44 — no hairline between queue rows, in any state
@@ -248,7 +265,8 @@ const projectAuthor = async () => {
  */
 export async function openApp(browser, {
   state: want = 'typical', theme = 'dark', viewport = { width: 1440, height: 900 }, findingsInputs = null,
-  exposuresInputs = null, comparisonStatus = 0, findingsDelayMs = 0, appSource = 'server',
+  exposuresInputs = null, comparisonStatus = 0, findingsDelayMs = 0,
+  findingsDelays = {}, findingsFailures = {}, appSource = 'server',
 } = {}) {
   const payloadPath = process.env.PAYLOAD || fail('PAYLOAD is required for TARGET=app');
   if (!['server', 'fixture'].includes(appSource)) fail(`unknown appSource: ${appSource}`);
@@ -297,8 +315,8 @@ export async function openApp(browser, {
         end_min: Number(url.searchParams.get('end_min')),
       })],
     [/^\/explore\/exposures/, () => exposuresFrom],
-    [/^\/analyze/, () => payload.analyze],
-    [/^\/scenarios/, () => payload.scenarios],
+    [/^\/analyze/, () => findingsFrom.analysis],
+    [/^\/scenarios/, () => findingsFrom.scenarios],
     [/^\/explore\/time/, () => payload.evidence],
     [/^\/status/, () => ({ ok: true, last_fetch: payload.analyze.generated_at, counts: payload.analyze.data_quality?.counts || {} })],
     [/^\/plan\/history/, () => ({ history: [] })],
@@ -370,8 +388,16 @@ export async function openApp(browser, {
     /* The findings queue is a SERVER round trip, so a story that is about what
        the pane shows WHILE it is in flight needs that flight to last long enough
        to read. Delay, never stub differently: the response is the same one. */
-    if (findingsDelayMs && path.startsWith('/diagnose/findings')) {
-      await new Promise((resolve) => { setTimeout(resolve, findingsDelayMs); });
+    if (path === '/diagnose/findings') {
+      const start = url.searchParams.get('start_min');
+      const key = start === null ? 'global' : `${start}-${url.searchParams.get('end_min')}`;
+      const delay = findingsDelays[key] ?? findingsDelayMs;
+      if (delay) await new Promise((resolve) => { setTimeout(resolve, delay); });
+      if (findingsFailures[key]) {
+        expectResponse(page, /^\/diagnose\/findings$/, findingsFailures[key]);
+        return route.fulfill({ status: findingsFailures[key], contentType: 'application/json',
+          body: JSON.stringify({ detail: 'findings unavailable' }) });
+      }
     }
     if (comparisonStatus && path === '/diagnose/event-comparison') {
       return route.fulfill({ status: comparisonStatus, contentType: 'application/json',
@@ -1441,6 +1467,20 @@ const drawWindow = async (page, [fromMin, toMin], [standingFrom, standingTo]) =>
   await settle(page, 500);
 };
 
+/** Resize the public clock brace's leading edge to an exact minute. */
+const resizeWindowStart = async (page, toMin, [standingFrom, standingTo]) => {
+  const b = await plot(page);
+  const before = await state(page);
+  const perMinute = (before.gripB - before.gripA) / (standingTo - standingFrom);
+  const y = b.y + b.h * 0.5;
+  await page.mouse.move(b.x + before.gripA, y);
+  await page.mouse.down();
+  await page.mouse.move(b.x + before.gripA + (toMin - standingFrom) * perMinute, y,
+    { steps: 8 });
+  await page.mouse.up();
+  await settle(page, 500);
+};
+
 /** S32 · #57 — selecting a roster occurrence under `By event` draws it. The
     roster carries the shared (episode, instant) key; the endpoint owns its own
     opaque catalog id and reuses that pair across several occurrences, so the
@@ -1743,7 +1783,8 @@ export const S39 = async (page) => {
   const during = await state(page);
   is(during.levelLoading, 'true', 'S39 the pane declares it is waiting on the server');
   is(during.levelStat, null, "S39 the previous window's counts are withdrawn");
-  is(during.levelEmpty, 'Counting 12:00–18:00…', 'S39 the pane names the window it is counting');
+  is(during.levelEmpty, 'Loading findings for 12:00–18:00…',
+    'S39 the pane names what is loading and its window');
   is(during.crumbMeta, '12:00–18:00', 'S39 the meta prints the window with no numbers under it');
   ok(!/\b2 of 20\b/.test(JSON.stringify(during)), 'S39 no stale count survives anywhere on the pane');
   await settle(page, 1400);
@@ -1751,6 +1792,173 @@ export const S39 = async (page) => {
   is(after.levelLoading, 'false', 'S39 the wait ends when the rows land');
   ok(/ meal responses in 12:00–18:00\b/.test(after.levelStat || ''),
     `S39 the new window's own counts land under its own label (${after.levelStat})`);
+};
+
+/** S41 · #81 — a replacement findings window owns the entire inspector while
+    its server projection is unresolved. The old queue, parameter detail,
+    support, staging controls, and counts never borrow the new clock label; a
+    superseded response cannot paint after a newer window settles. */
+// STORY:finding-evidence-routing:S41
+export const S41 = async (page) => {
+  await page.click('#seg-window button:nth-child(1)');   // Overnight, contains 05:30
+  await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false');
+  await page.click('#seg-chips button:nth-child(2)');    // retain one explicit SIFT state
+  const siftPressed = (await state(page)).sift.map((button) => button.pressed);
+  await clickQueueRow(page, 'Basal 05:30 · raise');
+  const opened = await state(page);
+  ok(opened.levelText.includes('Recommended'), 'S41 precondition: the morning basal detail is open');
+  ok(opened.stage !== null, 'S41 precondition: the morning basal change can be staged');
+
+  await drawWindow(page, [900, 1260], [330, 360]);      // 15:00–21:00, delayed
+  const pending = await state(page);
+  is(pending.levelLoading, 'true', 'S41 the replacement declares loading at setting depth');
+  is(pending.levelText, 'Loading findings for 15:00–21:00…',
+    'S41 names what is loading and the arriving range');
+  is(pending.levelEmptyLeft, pending.crumbLeft,
+    'S41 the loading line lands on the inspector content spine');
+  is(pending.crumbMeta, '15:00–21:00', 'S41 the crumb carries the arriving range without counts');
+  is(pending.stage, null, 'S41 the previous staging control is withdrawn');
+  is(pending.sift.map((button) => button.text), ['Highs', 'Lows', 'Meals', 'Corrections'],
+    'S41 SIFT labels carry no previous projection counts while loading');
+  is(pending.sift.map((button) => button.pressed), siftPressed,
+    'S41 SIFT pressed state survives the replacement');
+  ok(pending.sift.every((button) => !button.disabled), 'S41 SIFT controls remain enabled');
+
+  await settle(page, 900);
+  const absent = await state(page);
+  is(absent.levelLoading, 'false', 'S41 the matching projection settles');
+  is(absent.levelText, 'No findings in the selected window',
+    'S41 the open basal depth stays put and reports its settled absence');
+  is(absent.crumbMeta, '15:00–21:00', 'S41 settled absence keeps the selected range in the crumb');
+  is(absent.stage, null, 'S41 settled absence has no staging control');
+
+  await page.click('#seg-chips button:nth-child(2)');    // restore the full queue
+  await page.click('#crumb-trail button');               // Findings
+  await settle(page, 250);
+  const queue = await state(page);
+  ok(queue.queue.some((row) => row.title === 'Basal 19:30 to 21:00'),
+    'S41 the settled queue contains the server-published evening basal row');
+  ok(!queue.queue.some((row) => row.title === 'Basal 05:30 · raise'),
+    'S41 the settled queue excludes the morning basal row');
+
+  await page.click('#seg-window button:nth-child(3)');   // Afternoon, delayed longer
+  await settle(page, 100);
+  const eveningResponse = page.waitForResponse((candidate) => {
+    const url = new URL(candidate.url());
+    return url.pathname === '/diagnose/findings' && url.searchParams.get('start_min') === '1080';
+  });
+  await page.click('#seg-window button:nth-child(4)');   // Evening, settles first
+  await eveningResponse;
+  await settle(page, 100);
+  const newest = await state(page);
+  is(newest.pressed, ['Evening'], 'S41 the newest window settles first');
+  is(newest.levelLoading, 'false', 'S41 the newest response settles the inspector');
+  ok(newest.queue.some((row) => row.title === 'Basal 19:30 to 21:00'),
+    'S41 the newest response paints its server rows');
+  ok(!newest.queue.some((row) => row.title === 'Basal 12:30 to 14:00 · leaning lower'),
+    'S41 no superseded afternoon row painted');
+  await settle(page, 1100);                              // let superseded response arrive
+  const afterStale = await state(page);
+  is(afterStale.pressed, ['Evening'], 'S41 the superseded response cannot move the window');
+  const rowIdentity = (rows) => rows.map(({ title, register, tier }) => ({ title, register, tier }));
+  is(rowIdentity(afterStale.queue), rowIdentity(newest.queue),
+    'S41 the superseded response cannot replace the newest rows');
+
+  await page.click('#seg-window button:nth-child(3)');   // leave loaded Evening
+  await settle(page, 100);                              // Afternoon remains in flight
+  await page.click('#seg-window button:nth-child(4)');   // return to loaded Evening
+  await settle(page, 100);
+  const returned = await state(page);
+  is(returned.levelLoading, 'false', 'S41 returning to the loaded window settles immediately');
+  is(returned.pressed, ['Evening'], 'S41 the loaded window remains selected after the return');
+  is(rowIdentity(returned.queue), rowIdentity(newest.queue),
+    'S41 returning to the loaded window restores its rows without a refetch');
+  await settle(page, 1100);                              // let abandoned Afternoon resolve
+  const afterReturnStale = await state(page);
+  is(afterReturnStale.levelLoading, 'false', 'S41 the abandoned response cannot unsettle the loaded window');
+  is(rowIdentity(afterReturnStale.queue), rowIdentity(newest.queue),
+    'S41 the abandoned response cannot replace the restored loaded rows');
+};
+
+/** S42 · #81 — a failed scoped projection leaves the selected clock window
+    standing but withdraws every advisory claim from the prior population. The
+    reader can choose another window and settle normally. */
+// STORY:finding-evidence-routing:S42
+export const S42 = async (page) => {
+  await page.click('#seg-window button:nth-child(1)');   // first scoped load succeeds
+  await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false');
+  await page.click('#seg-chips button:nth-child(2)');    // retain one explicit SIFT state
+  const siftPressed = (await state(page)).sift.map((button) => button.pressed);
+  await clickQueueRow(page, 'Basal 05:30 · raise');
+  const failedResponse = page.waitForResponse((candidate) => {
+    const url = new URL(candidate.url());
+    return candidate.status() === 500 && url.pathname === '/diagnose/findings';
+  });
+  await drawWindow(page, [900, 1260], [330, 360]);      // only this scoped load fails
+  await failedResponse;
+  await settle(page, 150);
+  const detail = await state(page);
+  is(detail.levelLoading, 'false', 'S42 failure is not presented as an endless load');
+  is(detail.levelText,
+    'Findings unavailable for 15:00–21:00. Choose another window to try again.',
+    'S42 setting depth renders the exact unavailable state');
+  is(detail.crumbMeta, '15:00–21:00', 'S42 failed setting depth keeps only the selected range');
+  is(detail.stage, null, 'S42 failed setting depth has no prior staging control');
+  is(detail.sift.map((button) => button.text), ['Highs', 'Lows', 'Meals', 'Corrections'],
+    'S42 failed SIFT labels carry no prior projection counts');
+  is(detail.sift.map((button) => button.pressed), siftPressed,
+    'S42 failed SIFT pressed state survives the replacement');
+  ok(detail.sift.every((button) => !button.disabled), 'S42 failed SIFT controls remain enabled');
+
+  await page.click('#crumb-trail button');               // Findings
+  await settle(page, 100);
+  const queue = await state(page);
+  is(queue.levelText,
+    'Findings unavailable for 15:00–21:00. Choose another window to try again.',
+    'S42 queue depth renders the same unavailable state');
+  is(queue.queue, [], 'S42 queue depth exposes no previous rows');
+
+  await page.click('#seg-chips button:nth-child(2)');    // restore the full queue
+  const recoveryResponse = page.waitForResponse((candidate) => {
+    const url = new URL(candidate.url());
+    return candidate.status() === 200 && url.pathname === '/diagnose/findings'
+      && url.searchParams.get('start_min') === '1080';
+  });
+  await page.click('#seg-window button:nth-child(4)');   // another window retries normally
+  await recoveryResponse;
+  await settle(page, 100);
+  const recovered = await state(page);
+  is(recovered.levelLoading, 'false', 'S42 a later window settles after failure');
+  is(recovered.pressed, ['Evening'], 'S42 recovery keeps the later selected window');
+  ok(recovered.queue.some((row) => row.title === 'Basal 19:30 to 21:00'),
+    'S42 recovery paints the later window\'s server rows');
+};
+
+/** S43 · #81 review — a settled slice keeps its own matching findings rather
+    than proving exclusion only through an empty state. The same server-owned
+    projection publishes six whole-day rows and two rows for 04:30–06:00. */
+// STORY:finding-evidence-routing:S43
+export const S43 = async (page) => {
+  await page.click('#seg-window button:nth-child(5)');   // 24 h
+  await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false');
+  await settle(page, 150);                              // the level's 90 ms swap has landed
+  const wholeDay = await state(page);
+  is(wholeDay.crumbMeta, '6 findings · 30 days', 'S43 whole day publishes all six findings');
+  is(wholeDay.queue.length, 6, 'S43 whole day renders all six server rows');
+
+  await page.click('#seg-window button:nth-child(1)');   // Overnight, 00:00–06:00
+  await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false');
+  await resizeWindowStart(page, 330, [0, 360]);          // minimum-width 04:30–06:00 slice
+  await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false');
+  const sliced = await state(page);
+  is(sliced.chip, 'Window 04:30–06:00', 'S43 the public brace lands on the intended slice');
+  is(sliced.crumbMeta, '2 in this window', 'S43 the slice publishes its smaller non-empty count');
+  is(sliced.queue.map((row) => row.title), ['Basal 05:30 · raise', 'ISF'],
+    'S43 the slice keeps exactly its two server-published findings');
+  ok(!sliced.queue.some((row) => row.title === 'Basal 00:30 to 01:30 · raise'),
+    'S43 the slice excludes an unrelated whole-day basal row');
+  is(sliced.queueLeft, wholeDay.queueLeft,
+    'S43 the sliced queue stays on the same inspector content spine');
 };
 
 /* ------------------------------------------------------------------- runner */
@@ -1796,6 +2004,9 @@ export const S39 = async (page) => {
 // STORY:finding-evidence-routing:S38
 // STORY:finding-evidence-routing:S39
 // STORY:finding-evidence-routing:S40
+// STORY:finding-evidence-routing:S41
+// STORY:finding-evidence-routing:S42
+// STORY:finding-evidence-routing:S43
 // STORY:finding-evidence-routing:D1
 // STORY:finding-evidence-routing:D2
 // STORY:finding-evidence-routing:D3
@@ -1829,6 +2040,16 @@ export const STORIES = [
   ['S38', S38, 'typical'],
   ['S39', S39, 'dense', { findingsDelayMs: 900 }],
   ['S40', S40, 'typical'],
+  ['S41', S41, 'typical', {
+    findingsInputs: twoFamilyInputs,
+    findingsDelayMs: 900,
+    findingsDelays: { '900-1260': 900, '720-1080': 1200, '1080-1440': 100 },
+  }],
+  ['S42', S42, 'typical', {
+    findingsInputs: twoFamilyInputs,
+    findingsFailures: { '900-1260': 500 },
+  }],
+  ['S43', S43, 'typical', { findingsInputs: twoFamilyInputs }],
   ['D1', D1, 'dense'], ['D2', D2, 'dense'], ['D3', D3, 'dense'],
 ];
 

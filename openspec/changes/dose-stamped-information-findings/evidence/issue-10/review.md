@@ -100,7 +100,8 @@ in-story pending seams, not reconstructed after the fact.
 
 ## Final verification
 
-- Frontend Node gate: 387 passed, 0 failed.
+- Frontend Node gate: 392 passed, 0 failed.
+- Frontend screenshot-wrapper test: 1 passed, 0 failed.
 - Backend gate: 1,891 passed, 1 skipped, 0 failed (169 warnings).
 - Diagnose workstation browser gate: 14 passed, 0 failed.
 - Review-fix replay: S42/S55/S56/S67/S71 passed 5/5; the corrected mobile
@@ -109,8 +110,10 @@ in-story pending seams, not reconstructed after the fact.
   skips, 0 failed; browser-runner 1/1; first Plan match 4/4; event-comparison
   replay 13/13; event-comparison support audit 7/7 renders; Verify replay 8/8.
 - Frozen app-only Diagnose replay: 74/74 (all 43 predecessors and S41–S71).
-- Generator and mirror drift checks: I:C blocks, annotations, demo fixtures,
-  findings projection, chart builders, event-comparison mirror, and synthetic
-  event-comparison capture all passed.
+- Backend drift checks: I:C blocks, annotations, chart builders, demo fixtures,
+  revise-E2E database, findings projection, I:C history events, and
+  event-comparison mirror all passed.
+- Frontend drift checks: the synthetic event-comparison capture and the
+  finding-evidence-routing extracted artifacts both passed.
 - Repository guards: 14 ADRs across 12 design files; 30 owned-identifier rules;
   public allowlist passed.

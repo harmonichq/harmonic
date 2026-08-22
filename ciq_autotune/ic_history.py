@@ -343,16 +343,17 @@ def programmed_values_over_span(
     identity: HistoryIdentity,
     current_schedule: Sequence[Tuple[int, Optional[float]]],
 ) -> Tuple[float, ...]:
-    """Distinct current programmed values overlapping a historical block span."""
-    blocks = schedule_blocks(current_schedule)
-    values = {
-        float(block.value)
-        for block in blocks
-        if block.value is not None and _spans_overlap(
+    """Distinct current values over a historical span, or no proof if one is invalid."""
+    values = set()
+    for block in schedule_blocks(current_schedule):
+        if not _spans_overlap(
             identity.block_start_min, identity.block_end_min,
             block.start_min, block.end_min,
-        )
-    }
+        ):
+            continue
+        if block.value is None:
+            return ()
+        values.add(float(block.value))
     return tuple(sorted(values))
 
 

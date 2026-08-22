@@ -20,7 +20,7 @@ from ciq_autotune.harm import HarmArm, HarmConfig, PrintedLow
 from ciq_autotune.ic_history import (
     HistoryIdentity, InvalidIcHistoryId, InvalidIcRunId, RunIdentity,
     decode_history_id, decode_run_id, encode_history_id, encode_run_id,
-    validate_history_id, validate_run_id,
+    programmed_values_over_span, validate_history_id, validate_run_id,
 )
 from ciq_autotune.settings import Snapshot, parse_pump_settings
 
@@ -1681,6 +1681,18 @@ class IcHistoryCodecTest(unittest.TestCase):
             decode_history_id("ich1_WzAsMTQ0MCwiNS4wIl0")
         with self.assertRaises(InvalidIcRunId):
             decode_run_id("icr1_WyIyMDI2LTAxLTAxVDAwOjAwOjAwLjAwMDAwMCJd")
+
+    def test_current_program_proof_fails_only_for_overlapping_invalid_blocks(self):
+        schedule = [(0, 5.0), (360, 0.0), (720, 5.0)]
+
+        self.assertEqual(
+            programmed_values_over_span(HistoryIdentity(0, 1440, 6.0), schedule),
+            (),
+        )
+        self.assertEqual(
+            programmed_values_over_span(HistoryIdentity(720, 1440, 6.0), schedule),
+            (5.0,),
+        )
 
 
 class DoseStampedIcHistoryTest(unittest.TestCase):

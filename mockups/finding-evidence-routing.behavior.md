@@ -7,7 +7,8 @@
 The app-only replay is
 `frontend/diagnose-workstation-behavior.replay.mjs`: **45 exported stories**
 (29 through 2026-08-19; five added by the excursion-chip sift, #61, at S27-S31;
-eight added by the #62 revision below, at S32-S39; one added by #64, S40), all
+eight added by the #62 revision below, at S32-S39; one added by #64, S40; two
+added by #81, S41-S42), all
 opened through the real no-fetch server and tagged
 `STORY:finding-evidence-routing:<id>`. Static HTML, CSS and JavaScript come from
 that server; deterministic API reads come from
@@ -45,7 +46,7 @@ declaration in `AGENTS.md`):
 
 ```
 PLAYWRIGHT_MODULE=/private/tmp/ciq-playwright-714/node_modules/playwright \
-VENDOR_DIR=/private/tmp/ciq-event-vendor BASE_URL=http://127.0.0.1:8765 \
+VENDOR_DIR=/private/tmp/ciq-vendor-714/out BASE_URL=http://127.0.0.1:28765 \
 TARGET=app PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json \
 node frontend/diagnose-workstation-behavior.replay.mjs
 ```

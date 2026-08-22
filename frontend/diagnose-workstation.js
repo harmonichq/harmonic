@@ -1276,7 +1276,15 @@ function boot(root, data, callbacks, signal) {
   function ensureFindings() {
     const key = currentFindingsKey();
     if (failedKey !== null && failedKey !== key) failedKey = null;
-    if (key === loadedKey || key === pendingKey || key === failedKey) return;
+    if (key === loadedKey) {
+      // Returning to the projection already in hand abandons any other flight.
+      // Its eventual response must fail the request-key guard below rather than
+      // keep the known-loaded window looking unresolved or replace its rows.
+      pendingKey = null;
+      failedKey = null;
+      return;
+    }
+    if (key === pendingKey || key === failedKey) return;
     pendingKey = key;
     const w = findingsWindow();
     Promise.resolve(callbacks.loadFindings?.(w ? { start_min: w[0], end_min: w[1] } : null))

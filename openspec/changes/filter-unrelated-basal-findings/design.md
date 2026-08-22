@@ -60,10 +60,13 @@ used.
 ### Rendered evidence
 
 The paired 1440×900 synthetic evidence is committed under
-`docs/screenshots/issue-81/`. `base-pending-{detail,queue}-{light,dark}.png`
-shows the prior basal recommendation and queue retained under 15:00–21:00.
-The corresponding `revision-pending-*` images show only the count-free range
-state; `revision-failed-*` shows the explicit unavailable state; and
+`docs/screenshots/issue-81/`. The `base-pending-queue-*` and
+`revision-pending-queue-*` images are the strict before/after pair: both use the
+same committed synthetic projection with its `05:30` basal row, and differ only
+in the revision withdrawing that population under 15:00–21:00. The detail
+images are complementary depth coverage, not a one-variable pair: the exact-base
+generated database exposes a `07:00` basal detail while the projection fixture
+exposes `05:30`. `revision-failed-*` shows the explicit unavailable state, and
 `revision-settled-{absence-detail,queue}-*` shows the absent `05:30` detail and
 the server-published `19:30 to 21:00` basal row. Queue and open-setting depths
 were inspected in both themes. No overlap, clipping, new visual language, or

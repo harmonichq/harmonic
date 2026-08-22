@@ -1834,6 +1834,21 @@ export const S41 = async (page) => {
   const rowIdentity = (rows) => rows.map(({ title, register, tier }) => ({ title, register, tier }));
   is(rowIdentity(afterStale.queue), rowIdentity(newest.queue),
     'S41 the superseded response cannot replace the newest rows');
+
+  await page.click('#seg-window button:nth-child(3)');   // leave loaded Evening
+  await settle(page, 100);                              // Afternoon remains in flight
+  await page.click('#seg-window button:nth-child(4)');   // return to loaded Evening
+  await settle(page, 100);
+  const returned = await state(page);
+  is(returned.levelLoading, 'false', 'S41 returning to the loaded window settles immediately');
+  is(returned.pressed, ['Evening'], 'S41 the loaded window remains selected after the return');
+  is(rowIdentity(returned.queue), rowIdentity(newest.queue),
+    'S41 returning to the loaded window restores its rows without a refetch');
+  await settle(page, 1100);                              // let abandoned Afternoon resolve
+  const afterReturnStale = await state(page);
+  is(afterReturnStale.levelLoading, 'false', 'S41 the abandoned response cannot unsettle the loaded window');
+  is(rowIdentity(afterReturnStale.queue), rowIdentity(newest.queue),
+    'S41 the abandoned response cannot replace the restored loaded rows');
 };
 
 /** S42 · #81 — a failed scoped projection leaves the selected clock window
@@ -1843,6 +1858,8 @@ export const S41 = async (page) => {
 export const S42 = async (page) => {
   await page.click('#seg-window button:nth-child(1)');   // first scoped load succeeds
   await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false');
+  await page.click('#seg-chips button:nth-child(2)');    // retain one explicit SIFT state
+  const siftPressed = (await state(page)).sift.map((button) => button.pressed);
   await clickQueueRow(page, 'Basal 05:30 · raise');
   const failedResponse = page.waitForResponse((candidate) => {
     const url = new URL(candidate.url());
@@ -1860,6 +1877,8 @@ export const S42 = async (page) => {
   is(detail.stage, null, 'S42 failed setting depth has no prior staging control');
   is(detail.sift.map((button) => button.text), ['Highs', 'Lows', 'Meals', 'Corrections'],
     'S42 failed SIFT labels carry no prior projection counts');
+  is(detail.sift.map((button) => button.pressed), siftPressed,
+    'S42 failed SIFT pressed state survives the replacement');
   ok(detail.sift.every((button) => !button.disabled), 'S42 failed SIFT controls remain enabled');
 
   await page.click('#crumb-trail button');               // Findings
@@ -1870,6 +1889,7 @@ export const S42 = async (page) => {
     'S42 queue depth renders the same unavailable state');
   is(queue.queue, [], 'S42 queue depth exposes no previous rows');
 
+  await page.click('#seg-chips button:nth-child(2)');    // restore the full queue
   const recoveryResponse = page.waitForResponse((candidate) => {
     const url = new URL(candidate.url());
     return candidate.status() === 200 && url.pathname === '/diagnose/findings'

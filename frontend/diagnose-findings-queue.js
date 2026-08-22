@@ -52,6 +52,7 @@ export function uncausedNote(projection) {
 export const FLAVOR = {
   setting: { word: 'Setting', glyph: '⚙' },
   habit: { word: 'Habit', glyph: '◈' },
+  watching: { word: 'Watching', glyph: '◌' },
 };
 
 /* Display units per parameter. Formatting, not policy: the projection publishes the
@@ -146,11 +147,12 @@ export function queueRows(projection, selected = null) {
   const sifting = selected !== null;
   const filtered = rows.map((row) => {
     const chips = row.chips || [];
-    const heldOrBlind = row.register === 'held' || row.register === 'blind';
-    // Held and blind reads sit outside the chip system. They collapse during a
-    // sift, but must remain reachable rather than disappearing with no account.
+    const watching = row.register === 'held' || row.register === 'blind'
+      || row.register === 'history';
+    // Watching reads sit outside the chip system. They collapse during a sift,
+    // but must remain reachable rather than disappearing with no account.
     const hidden = chips.length > 0 && sifting && !chips.some((chip) => selected.has(chip));
-    const collapsed = heldOrBlind && sifting;
+    const collapsed = watching && sifting;
     return { row, hidden, collapsed };
   });
   let pricedSeen = false;
@@ -168,7 +170,8 @@ export function queueRows(projection, selected = null) {
       id: row.id,
       register: row.register,
       title: row.title,
-      flavor: row.kind === 'setting' ? 'setting' : 'habit',
+      flavor: row.register === 'history' ? 'watching'
+        : row.kind === 'setting' ? 'setting' : 'habit',
       tier: row.tier,
       seam,
       hidden,
@@ -185,6 +188,10 @@ export function queueRows(projection, selected = null) {
 function detailFor(row) {
   if (row.register === 'finding') return { kind: 'appearances', parts: appearanceParts(row) };
   if (row.register === 'assert') return assertDetail(row);
+  if (row.register === 'history') {
+    const runs = row.support === 1 ? '1 meal run' : `${row.support} meal runs`;
+    return { kind: 'history', past: `past ${num(row.past_setting)} g/U`, support: runs };
+  }
   // held / blind — WORDS, not a number spine (term 14). The reason is verbatim
   // backend copy; only the prefix is ours, and the lock pins it byte for byte.
   return { kind: 'reason', text: `${HELD_PREFIX}${row.reason || ''}` };
@@ -212,6 +219,13 @@ function paintDetail(node, detail) {
   }
   if (detail.kind === 'reason') {
     return add(node, 'why', detail.text);
+  }
+  if (detail.kind === 'history') {
+    const den = add(node, 'den history-detail');
+    add(den, 'v', detail.past);
+    add(den, 'sep', '·');
+    den.append(detail.support);
+    return den;
   }
   const den = add(node, 'den');
   if (detail.kind === 'support') {
@@ -316,7 +330,7 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
     toggle.type = 'button';
     toggle.className = 'qcollapse';
     const readWord = collapsed.length === 1 ? 'read' : 'reads';
-    toggle.textContent = `${collapsed.length} held or blind ${readWord}`;
+    toggle.textContent = `Watching · ${collapsed.length} ${readWord}`;
     toggle.setAttribute('aria-expanded', String(Boolean(view?.collapsedExpanded)));
     toggle.addEventListener('click', () => view?.onToggleCollapsed?.());
     list.append(toggle);

@@ -25,6 +25,7 @@ import {
   buildEnvelope, buildMealMarkers, renderCanvas, clockBuckets, observeResize,
   buildSlotLane, cellAtMinute, windowStats, hhmm, BIN_MINUTES, MIN_SUPPORTED_NIGHTS,
   snapWindow, minuteAtX, xAtMinute, plotBox, buildDayTrace,
+  renderHistoryEvents, validateHistoryEvents,
 } from './diagnose-workstation-chart.js';
 import { toCaptures, isfVerdict } from './diagnose-workstation-data.js';
 // #735: level 1 is the server-owned findings queue, and the pane has a floor.
@@ -809,6 +810,85 @@ function renderIsfLevel(host, isf, isfStaged, onStage) {
   });
 }
 
+const HISTORY_CONCLUSION = 'Past setting. No change suggested.';
+
+/** ADR 22: a retired I:C measurement is an evidence read, never a change panel. */
+function renderHistoryLevel(host, frame, onSelectRun, onRetry) {
+  const row = frame.row;
+  const estimate = row.estimate;
+  host.dataset.historyId = frame.id;
+  host.dataset.analysisGeneration = frame.generation;
+  host.dataset.selectedRunId = frame.selectedRunId || '';
+  const box = document.createElement('div');
+  box.className = 'inner history-case';
+  box.innerHTML = `
+    <p class="history-conclusion">${HISTORY_CONCLUSION}</p>
+    <div class="slot-head">
+      <span class="time">${row.title}</span>
+      <span class="verdict">${row.span.label}</span>
+    </div>
+    <div class="history-evidence" aria-label="Past-setting evidence">
+      <div class="numrow"><span class="k">Past setting</span><b>${u(row.past_setting)}</b>
+        <span class="qual">g/U</span></div>
+      <div class="numrow"><span class="k">Measured</span><b>${u(estimate.value)}</b>
+        <span class="qual">g/U</span></div>
+      <div class="slot-stats">CI ${u(estimate.lo)}–${u(estimate.hi)} g/U${estimate.wide ? ' <span>(wide)</span>' : ''}</div>
+      <div class="slot-stats">${row.support} meal run${row.support === 1 ? '' : 's'}</div>
+    </div>
+    <div class="history-current">Current program · <b>${u(row.programmed_now)} g/U</b></div>`;
+  if (frame.notice) {
+    const notice = document.createElement('p');
+    notice.className = 'history-notice';
+    notice.textContent = frame.notice;
+    box.append(notice);
+  }
+  if (frame.pending) {
+    const pending = document.createElement('p');
+    pending.className = 'history-pending';
+    pending.textContent = 'Checking for coherent evidence…';
+    box.append(pending);
+  }
+  if (frame.stale) {
+    const stale = document.createElement('div');
+    stale.className = 'history-stale';
+    stale.setAttribute('role', 'status');
+    stale.innerHTML = '<span>Evidence may be stale. The last coherent view is still shown.</span>';
+    const retry = document.createElement('button');
+    retry.type = 'button';
+    retry.className = 'linkbtn history-retry';
+    retry.textContent = 'Retry';
+    retry.addEventListener('click', onRetry);
+    stale.append(retry);
+    box.append(stale);
+  }
+  if (frame.align === 'event' && frame.events) {
+    const cap = document.createElement('div');
+    cap.className = 'lvl-cap history-runs-cap';
+    cap.textContent = `${frame.events.run_ids.length} meal runs`;
+    box.append(cap);
+    const roster = document.createElement('div');
+    roster.className = 'history-runs';
+    roster.setAttribute('role', 'group');
+    roster.setAttribute('aria-label', 'Meal runs');
+    for (const run of frame.events.series) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'history-run';
+      button.dataset.runId = run.run_id;
+      button.setAttribute('aria-pressed', String(frame.events.selected_run_id === run.run_id));
+      const day = new Date(run.first_member_at).toLocaleDateString('en-US', {
+        month: 'short', day: 'numeric', year: 'numeric',
+      });
+      const offsets = run.member_offsets_min.map((minute) => `${minute >= 0 ? '+' : ''}${minute} min`).join(', ');
+      button.innerHTML = `<span>${day}</span><small>${run.member_offsets_min.length} meal${run.member_offsets_min.length === 1 ? '' : 's'} · ${offsets}</small>`;
+      button.addEventListener('click', () => onSelectRun(run.run_id));
+      roster.append(button);
+    }
+    box.append(roster);
+  }
+  host.append(box);
+}
+
 /* Level 1 is the findings queue (terms 34–45), rendered by
    `diagnose-findings-queue.js` straight off the server's projection. The factor
    grid, the settings/patterns tiers and the three per-parameter staging entry rows
@@ -1028,6 +1108,8 @@ function boot(root, data, callbacks, signal) {
      queue in place, identically). Nothing about membership, order or a denominator
      is worked out here. */
   let findings = data.findings;
+  let retirementNotice = null;
+  let historyRequestGeneration = 0;
   // Null is the all-active resting state; a Set exists only while a chip is off.
   let selectedChips = null;
   let collapsedFindingsExpanded = false;
@@ -1270,9 +1352,198 @@ function boot(root, data, callbacks, signal) {
   let loadedKey = windowKey(findings?.window?.scoped
     ? [findings.window.start_min, findings.window.end_min] : null);
   let pendingKey = null;
+
+  const historyFrame = () => top()?.k === 'history' ? top() : null;
+  const requestWindow = () => {
+    const w = findingsWindow();
+    return w ? { start_min: w[0], end_min: w[1] } : null;
+  };
+
+  function historyRetired(frame, message, nextFindings = null) {
+    ++historyRequestGeneration;
+    if (nextFindings) findings = nextFindings;
+    pendingKey = null;
+    loadedKey = windowKey(findingsWindow());
+    retirementNotice = message;
+    stack.length = 1;
+    dir = 'pop';
+    paint();
+  }
+
+  const typedRetirement = (error) => error?.status === 410
+    && (error.code === 'history_aged_out' || error.code === 'history_unavailable');
+
+  function validateHistorySelection(next, frame) {
+    if (next?.schema !== 'diagnose-findings-v2'
+      || typeof next.analysis_generation !== 'string' || next.analysis_generation.length === 0
+      || !Array.isArray(next.rows)
+      || next.selection?.id !== frame.id) {
+      throw new Error('Server did not return one coherent history selection.');
+    }
+    const selection = next.selection;
+    const dispositions = ['present', 'out_of_scope', 'aged_out', 'unavailable'];
+    const messageInvalid = selection.disposition === 'present'
+      ? selection.message !== null
+      : typeof selection.message !== 'string' || selection.message.length === 0;
+    const rowContradictsDisposition = selection.disposition !== 'present'
+      && next.rows.some((row) => row.id === frame.id);
+    if (!dispositions.includes(selection.disposition) || messageInvalid || rowContradictsDisposition) {
+      throw new Error('Server returned a contradictory history selection.');
+    }
+    return selection;
+  }
+
+  /** A typed 410 is evidence to refresh selection, never authority to retire it. */
+  async function refreshHistoryRetirement(frame, request) {
+    try {
+      const next = await callbacks.loadFindings?.(requestWindow(), frame.id);
+      if (request !== historyRequestGeneration || top() !== frame) return;
+      const selection = validateHistorySelection(next, frame);
+      if (selection.disposition !== 'aged_out' && selection.disposition !== 'unavailable') {
+        throw new Error('Retired history did not have a matching findings disposition.');
+      }
+      historyRetired(frame, selection.message, next);
+    } catch {
+      if (request !== historyRequestGeneration || top() !== frame) return;
+      pendingKey = null;
+      frame.pending = false;
+      frame.stale = true;
+      paint();
+    }
+  }
+
+  /**
+   * Coordinated recovery: findings first, then event evidence when that is the
+   * standing projection. The visible pair is not mutated until both responses
+   * validate. `attempt=0` permits one automatic retry; explicit Retry starts at
+   * one so it performs exactly one coordinated attempt.
+   */
+  async function refreshHistoryPair(frame, {
+    wantEvent = frame.align === 'event', selectedRunId = frame.selectedRunId,
+    attempt = 0, request = ++historyRequestGeneration,
+  } = {}) {
+    if (top() !== frame) return;
+    const key = windowKey(findingsWindow());
+    pendingKey = key;
+    frame.pending = true;
+    frame.stale = false;
+    paint();
+    try {
+      const next = await callbacks.loadFindings?.(requestWindow(), frame.id);
+      if (request !== historyRequestGeneration || top() !== frame) return;
+      const selection = validateHistorySelection(next, frame);
+      if (selection.disposition === 'aged_out' || selection.disposition === 'unavailable') {
+        historyRetired(frame, selection.message, next);
+        return;
+      }
+      if (selection.disposition === 'out_of_scope') {
+        findings = next;
+        loadedKey = key;
+        pendingKey = null;
+        frame.pending = false;
+        frame.stale = false;
+        frame.notice = selection.message;
+        paint();
+        return;
+      }
+      if (selection.disposition !== 'present') {
+        throw new Error('Server returned an unknown history selection disposition.');
+      }
+      const row = next.rows.find((candidate) => candidate.id === frame.id);
+      if (!row || row.register !== 'history') {
+        throw new Error('Server did not return the selected history row.');
+      }
+      let events = null;
+      if (wantEvent) {
+        events = await callbacks.loadHistoryEvents?.({
+          historyId: frame.id,
+          analysisGeneration: next.analysis_generation,
+          selectedRunId,
+        });
+        if (request !== historyRequestGeneration || top() !== frame) return;
+        validateHistoryEvents(events, {
+          historyId: frame.id,
+          analysisGeneration: next.analysis_generation,
+          selectedRunId,
+        });
+      }
+      if (request !== historyRequestGeneration || top() !== frame) return;
+      findings = next;
+      loadedKey = key;
+      pendingKey = null;
+      frame.row = row;
+      frame.generation = next.analysis_generation;
+      frame.events = events;
+      frame.selectedRunId = selectedRunId || null;
+      frame.align = wantEvent ? 'event' : 'clock';
+      frame.pending = false;
+      frame.stale = false;
+      frame.notice = null;
+      retirementNotice = null;
+      paint();
+    } catch (error) {
+      if (request !== historyRequestGeneration || top() !== frame) return;
+      if (typedRetirement(error)) {
+        refreshHistoryRetirement(frame, request);
+        return;
+      }
+      if (attempt === 0) {
+        refreshHistoryPair(frame, { wantEvent, selectedRunId, attempt: 1, request });
+        return;
+      }
+      pendingKey = null;
+      frame.pending = false;
+      frame.stale = true;
+      paint();
+    }
+  }
+
+  async function requestHistoryEvents(frame, selectedRunId = null) {
+    const request = ++historyRequestGeneration;
+    pendingKey = windowKey(findingsWindow());
+    frame.pending = true;
+    frame.stale = false;
+    paint();
+    try {
+      const events = await callbacks.loadHistoryEvents?.({
+        historyId: frame.id,
+        analysisGeneration: frame.generation,
+        selectedRunId,
+      });
+      if (request !== historyRequestGeneration || top() !== frame) return;
+      validateHistoryEvents(events, {
+        historyId: frame.id,
+        analysisGeneration: frame.generation,
+        selectedRunId,
+      });
+      pendingKey = null;
+      frame.events = events;
+      frame.selectedRunId = selectedRunId;
+      frame.align = 'event';
+      frame.pending = false;
+      frame.notice = null;
+      paint();
+    } catch (error) {
+      if (request !== historyRequestGeneration || top() !== frame) return;
+      if (typedRetirement(error)) {
+        refreshHistoryRetirement(frame, request);
+        return;
+      }
+      refreshHistoryPair(frame, {
+        wantEvent: true, selectedRunId, attempt: 1, request,
+      });
+    }
+  }
+
   function ensureFindings() {
     const key = windowKey(findingsWindow());
     if (key === loadedKey || key === pendingKey) return;
+    const history = historyFrame();
+    if (history) {
+      if (history.stale) return;
+      refreshHistoryPair(history);
+      return;
+    }
     pendingKey = key;
     const w = findingsWindow();
     Promise.resolve(callbacks.loadFindings?.(w ? { start_min: w[0], end_min: w[1] } : null))
@@ -1291,6 +1562,15 @@ function boot(root, data, callbacks, signal) {
       guessed from a title. A row whose parameter this payload cannot show keeps its
       chevron and simply does not move (the app always carries all three). */
   function drillFinding(row) {
+    if (row.register === 'history') {
+      retirementNotice = null;
+      push({
+        k: 'history', id: row.id, row, generation: findings.analysis_generation,
+        align: 'clock', events: null, selectedRunId: null,
+        pending: false, stale: false, notice: null,
+      });
+      return;
+    }
     if (row.register === 'finding') {
       /* A re-projectable finding frames on its event view's family, so the panel
          and the event canvas name the same published episodes. */
@@ -1516,6 +1796,27 @@ function boot(root, data, callbacks, signal) {
       windowLabel: label, windowNote: note, trace, onHover: paintReadout,
       selectedOcc,
     });
+    const chartNode = el('chart');
+    const priorNotice = chartNode.parentElement.querySelector('.history-canvas-notice');
+    priorNotice?.remove();
+    if (f.k === 'history') {
+      chartNode.dataset.historyId = f.id;
+      chartNode.dataset.analysisGeneration = f.generation;
+      chartNode.dataset.selectedRunId = f.selectedRunId || '';
+      const noticeText = f.stale
+        ? 'Evidence may be stale. The last coherent view is still shown.'
+        : f.notice || (f.pending ? 'Checking for coherent evidence…' : null);
+      if (noticeText) {
+        const notice = document.createElement('p');
+        notice.className = 'history-canvas-notice';
+        notice.textContent = noticeText;
+        chartNode.parentElement.append(notice);
+      }
+    } else {
+      delete chartNode.dataset.historyId;
+      delete chartNode.dataset.analysisGeneration;
+      delete chartNode.dataset.selectedRunId;
+    }
     /* The count is the WINDOW's, and the days are the CGM capture's own — not a
        coverage claim for the app. The basal run is a different, longer run and
        names itself separately in the slot panel and the status bar. */
@@ -1556,15 +1857,29 @@ function boot(root, data, callbacks, signal) {
    */
   function paintAlign() {
     const f = top();
+    const history = f.k === 'history';
     const mapped = f.k === 'factor' ? alignCoordinatesFor(f.factor.cause) : null;
-    el('align-group').hidden = !mapped;
-    if (!mapped) {
+    el('align-group').hidden = !mapped && !history;
+    if (!mapped && !history) {
       disposeAlign();
       return;
     }
     const alignKey = f.align === 'event' ? 'event' : 'clock';
     renderAlign(alignKey, (key) => {
-      if (f.align === key) return;
+      if (f.align === key && !(history && f.pending && key === 'clock')) return;
+      if (history) {
+        if (key === 'clock') {
+          ++historyRequestGeneration;
+          pendingKey = null;
+          f.pending = false;
+          f.align = 'clock';
+          disposeAlign();
+          paint();
+        } else {
+          requestHistoryEvents(f, f.selectedRunId);
+        }
+        return;
+      }
       if (key === 'clock') disposeAlign();
       f.align = key;
       paint();
@@ -1573,13 +1888,51 @@ function boot(root, data, callbacks, signal) {
       disposeAlign();
       return;
     }
-    const window = findingsWindow();
+    if (history) {
+      if (!f.events) return;
+      const mounted = alignMount?.frame === f
+        && alignMount.analysisGeneration === f.generation
+        && alignMount.selectedRunId === (f.selectedRunId || null);
+      if (mounted) return;
+      el('chart').hidden = true;
+      el('brace').hidden = true;
+      el('lane-wrap').hidden = true;
+      const host = el('align-canvas');
+      host.hidden = false;
+      alignMount?.observer?.disconnect();
+      alignMount?.chart?.dispose();
+      alignMount?.restoreHeader?.();
+      const title = el('canvas-head').querySelector('h2');
+      const old = {
+        title: title.textContent,
+        scope: el('canvas-scope').textContent,
+        pool: el('canvas-pool').textContent,
+      };
+      title.textContent = 'Meal runs after the past setting';
+      el('canvas-scope').textContent = `${f.events.run_ids.length} meal runs`;
+      el('canvas-pool').textContent = `analysis ${f.generation}`;
+      const historyChart = renderHistoryEvents(host, window.echarts, f.events, colors);
+      alignMount = {
+        chart: historyChart,
+        observer: observeResize(host, () => historyChart),
+        restoreHeader: () => {
+          title.textContent = old.title;
+          el('canvas-scope').textContent = old.scope;
+          el('canvas-pool').textContent = old.pool;
+        },
+        frame: f,
+        analysisGeneration: f.generation,
+        selectedRunId: f.selectedRunId || null,
+      };
+      return;
+    }
+    const currentWindow = findingsWindow();
     const selected = f.selectedOcc;
     const occurrenceId = selected ? alignMount?.projection?.occurrences.find((occurrence) => (
       occurrence.identity.ep_id === selected.ep_id && occurrence.identity.t === selected.t
     ))?.identity.id || null : null;
     // Frame, window, and selection all determine the server-owned projection.
-    if (alignMount && alignMount.frame === f && alignMount.windowKey === windowKey(window)
+    if (alignMount && alignMount.frame === f && alignMount.windowKey === windowKey(currentWindow)
       && alignMount.occurrenceId === occurrenceId) return;
     el('chart').hidden = true;
     el('brace').hidden = true;
@@ -1589,14 +1942,14 @@ function boot(root, data, callbacks, signal) {
     const generation = ++alignGeneration;
     Promise.resolve(callbacks.loadProjection?.({
       view: mapped.view, factor: mapped.factor,
-      window: window ? { start_min: window[0], end_min: window[1] } : null,
+      window: currentWindow ? { start_min: currentWindow[0], end_min: currentWindow[1] } : null,
       another: false, occurrenceId,
     })).then((projection) => {
       if (generation !== alignGeneration || top() !== f) return;
       alignMount?.observer?.disconnect();
       alignMount?.chart?.dispose();
       alignMount?.restoreHeader?.();
-      alignMount = { ...renderEventSurface(host, projection, { headerHost: el('canvas-head') }), frame: f, windowKey: windowKey(window), occurrenceId };
+      alignMount = { ...renderEventSurface(host, projection, { headerHost: el('canvas-head') }), frame: f, windowKey: windowKey(currentWindow), occurrenceId };
       // The roster has the shared episode-and-time key, while the endpoint owns
       // its opaque catalog id. Once the just-loaded catalog supplies that id,
       // re-project the selected occurrence through the public endpoint.
@@ -1671,6 +2024,7 @@ function boot(root, data, callbacks, signal) {
     if (frame.k === 'factor') return frame.factor.cause;
     if (frame.k === 'slot') return `${frame.cell.label} slot`;
     if (frame.k === 'block') return `${frame.cell.label} block`;
+    if (frame.k === 'history') return frame.row.label;
     // 'isf' is the last frame kind: select-in-place (P35 retired) never adds a
     // crumb level, so no frame ever reaches an `occ` branch here.
     return 'ISF';
@@ -1729,6 +2083,7 @@ function boot(root, data, callbacks, signal) {
     el('crumb-meta').toggleAttribute('data-queue', f.k === 'factors');
     el('crumb-meta').textContent = f.k === 'factors'
       ? queueMeta(findings)
+      : f.k === 'history' ? `${f.row.support} meal run${f.row.support === 1 ? '' : 's'}`
       : f.k === 'factor'
         ? (settled()
           ? (() => { const sc = scopedFor(f); return `${sc.occurrences.length} of ${sc.familyN} · ${scopeLabel()}`; })()
@@ -1749,6 +2104,9 @@ function boot(root, data, callbacks, signal) {
   function paintLevel() {
     const host = el('level');
     host.innerHTML = '';
+    delete host.dataset.historyId;
+    delete host.dataset.analysisGeneration;
+    delete host.dataset.selectedRunId;
     host.dataset.dir = dir;
     // restart the swap animation on every transition
     host.style.animation = 'none';
@@ -1771,6 +2129,19 @@ function boot(root, data, callbacks, signal) {
         collapsedExpanded: collapsedFindingsExpanded,
         onToggleCollapsed: () => { collapsedFindingsExpanded = !collapsedFindingsExpanded; paint(); },
       });
+      if (retirementNotice) {
+        const notice = document.createElement('p');
+        notice.className = 'history-retirement';
+        notice.setAttribute('role', 'status');
+        notice.textContent = retirementNotice;
+        host.prepend(notice);
+      }
+      return;
+    }
+    if (f.k === 'history') {
+      renderHistoryLevel(host, f,
+        (runId) => requestHistoryEvents(f, runId),
+        () => refreshHistoryPair(f, { attempt: 1 }));
       return;
     }
     if (f.k === 'slot') {
@@ -2098,8 +2469,10 @@ function boot(root, data, callbacks, signal) {
        clock canvas in between would write its header fields while the event
        markup is mounted. Navigation that ends event ownership releases it
        first, so the clock repaint starts with its own header restored. */
-    if (alignMount && (open.k !== 'factor' || open.align !== 'event'
-      || !alignCoordinatesFor(open.factor.cause))) disposeAlign();
+    const ownsAlign = (open.k === 'factor' && open.align === 'event'
+      && alignCoordinatesFor(open.factor.cause))
+      || (open.k === 'history' && open.align === 'event');
+    if (alignMount && !ownsAlign) disposeAlign();
     renderChips(findings?.chip_counts, selectedChips, (key) => {
       const next = new Set(selectedChips || CHIP_LABELS.map(([name]) => name));
       if (next.has(key)) next.delete(key); else next.add(key);
@@ -2117,6 +2490,18 @@ function boot(root, data, callbacks, signal) {
       paintBrace();
     }
     paintAlign();
+    const canvasBody = el('chart').parentElement;
+    canvasBody.querySelector('.history-canvas-notice')?.remove();
+    const history = top().k === 'history' ? top() : null;
+    const canvasNotice = history?.stale
+      ? 'Evidence may be stale. The last coherent view is still shown.'
+      : history?.notice || (history?.pending ? 'Checking for coherent evidence…' : null);
+    if (canvasNotice) {
+      const note = document.createElement('p');
+      note.className = 'history-canvas-notice';
+      note.textContent = canvasNotice;
+      canvasBody.append(note);
+    }
   }
 
 

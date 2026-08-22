@@ -320,7 +320,7 @@ test('deselecting a chip leaves only rows matching the remaining chips', async (
     } finally { /* browser stays open; closed once in after() */ }
   });
 
-test('the held and blind group collapses during a sift and expands again', async () => {
+test('the Watching group collapses during a sift and expands again', async () => {
     const browser = await runner.browser();
     try {
       const before = openerProblems().length;
@@ -330,7 +330,7 @@ test('the held and blind group collapses during a sift and expands again', async
       await page.getByRole('button', { name: /^Highs / }).click();
       await settle(page, 350);
       const toggle = page.locator('#level .qcollapse');
-      assert.equal(await toggle.innerText(), '4 held or blind reads');
+      assert.equal(await toggle.innerText(), 'Watching · 4 reads');
       assert.equal(await toggle.getAttribute('aria-expanded'), 'false');
       assert.equal(await page.locator('#level .qrow').count(), 0,
         'collapsed held rows are not painted as ordinary queue rows');
@@ -357,8 +357,8 @@ test('an all-hidden sift names the empty result while retaining the held group',
       await settle(page, 350);
       assert.equal(await page.locator('#level .quiet-line.sift-empty').innerText(),
         'No findings match the current chips.');
-      assert.equal(await page.locator('#level .qcollapse').innerText(), '4 held or blind reads',
-        'the collapsed held group remains reachable below the empty-sift line');
+      assert.equal(await page.locator('#level .qcollapse').innerText(), 'Watching · 4 reads',
+        'the collapsed Watching group remains reachable below the empty-sift line');
       await page.close();
       assert.deepEqual(openerProblems().slice(before), [],
         'no opener problems while rendering the all-hidden sift state');

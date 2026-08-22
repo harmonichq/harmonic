@@ -2070,6 +2070,29 @@ def _history_run_record(run: MealRun, cfg: IcConfig) -> IcHistoryRunRecord:
     )
 
 
+def _history_annotation(
+    past_setting: float,
+    estimate: Optional[Estimate],
+    support: Optional[int],
+) -> Optional[str]:
+    """Finished ADR 22 conclusion for a current historical measurement."""
+    if estimate is None or estimate.value is None or support is None:
+        return None
+
+    def number(value: float) -> str:
+        return format(float(value), "g")
+
+    interval = ""
+    if estimate.lo is not None and estimate.hi is not None:
+        interval = f" (CI {number(estimate.lo)}–{number(estimate.hi)})"
+    run_noun = "meal run" if support == 1 else "meal runs"
+    return (
+        f"When Carb ratio was {number(past_setting)} g/U, "
+        f"{support} {run_noun} measured {number(estimate.value)} g/U"
+        f"{interval}. Past setting. No change suggested."
+    )
+
+
 def _ever_publishable(runs: Sequence[MealRun], cfg: IcConfig) -> bool:
     """Whether one retained 90-day slice ever produced a non-null regime estimate."""
     ordered = sorted(runs, key=lambda run: run.t)
@@ -2163,6 +2186,7 @@ def _history_catalog(
             lifecycle = "active"
             programmed_now = programmed[0]
         visible_runs = current_runs if measured is not None else []
+        support = len(visible_runs) if measured is not None else None
         ended = max(regime_ends.get(identity, []), default=None)
         if ended is None:
             ended = max((run.end_t for run in identity_runs), default=None)
@@ -2174,7 +2198,8 @@ def _history_catalog(
             past_setting=identity.ratio,
             programmed_now=programmed_now,
             estimate=measured,
-            support=len(visible_runs) if measured is not None else None,
+            support=support,
+            annotation=_history_annotation(identity.ratio, measured, support),
             lifecycle=lifecycle,
             regime_end=ended.isoformat() if ended is not None else None,
             runs=[_history_run_record(run, cfg) for run in visible_runs],

@@ -17,10 +17,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
+import {
+  projectFindings, projectIcHistoryEvents,
+} from '../mockups/findings-projection.mirror.mjs';
 
 const fixture = JSON.parse(readFileSync(
   fileURLToPath(new URL('./__fixtures__/findings-projection.json', import.meta.url)), 'utf8'));
+const historyEvents = JSON.parse(readFileSync(fileURLToPath(new URL(
+  '../mockups/diagnose-workstation.synthetic/ic-history-events.capture.json',
+  import.meta.url)), 'utf8'));
 
 // The generator's own window table, re-declared here as the request each frozen
 // answer was made for — a window read back out of the answer would be circular.
@@ -47,12 +52,46 @@ test('the mirror reproduces the empty analysis, where term 41 lives', () => {
     analysis: { window_days: 30, basal: [], isf: [], ic_blocks: [] },
     exposures: { window: { start: null, end: null }, exposures: {} },
     scenarios: { patterns: [], low_confidence: [] },
+    analysis_generation: fixture.inputs.analysis_generation,
   };
   for (const [name, bounds] of [['global', null], ['morning', WINDOWS.morning]]) {
     const got = projectFindings(empty, bounds);
     assert.deepEqual(got.rows, [], `${name} has no rows`);
     assert.deepEqual(got, fixture.no_data[name], `${name} matches the frozen empty answer`);
   }
+});
+
+test('the mirror reproduces every server-owned history selection disposition', () => {
+  const selectedId = fixture.selection_cases.present.selection.id;
+  const cases = {
+    present: null,
+    out_of_scope: { start_min: 720, end_min: 900 },
+    aged_out: null,
+    unavailable: null,
+  };
+  for (const [name, bounds] of Object.entries(cases)) {
+    const inputs = { ...fixture.inputs, analysis: fixture.selection_inputs[name] };
+    assert.deepEqual(projectFindings(inputs, bounds, selectedId), fixture.selection_cases[name],
+      `selection ${name} diverges from the server projection`);
+  }
+  const catalogHistory = fixture.inputs.analysis.ic_history.find(
+    (history) => history.id === selectedId);
+  const projectedHistory = fixture.selection_cases.present.rows.find(
+    (row) => row.id === selectedId);
+  assert.equal(projectedHistory.annotation, catalogHistory.annotation,
+    'history copy must pass through from the analyzer catalog verbatim');
+});
+
+test('the history-event mirror preserves exact run membership and selection', () => {
+  const allRuns = historyEvents.cases.all_runs;
+  assert.equal(allRuns.analysis_generation, fixture.windows.global.analysis_generation,
+    'the generated cross-endpoint pair must be browser-acceptable');
+  assert.deepEqual(
+    projectIcHistoryEvents(historyEvents.inputs, allRuns.history_id), allRuns);
+  const selected = historyEvents.cases.selected_run;
+  assert.deepEqual(projectIcHistoryEvents(
+    historyEvents.inputs, selected.history_id, selected.selected_run_id), selected);
+  assert.deepEqual(allRuns.series[0].member_offsets_min, [0, 120]);
 });
 
 test('the mirror publishes outcome chips, chip counts, and correction-factor scope', () => {
@@ -86,6 +125,7 @@ test('an empty scoped queue still carries the whole-window count', () => {
     analysis: { window_days: 30, basal: [], isf: [], ic_blocks: [] },
     exposures: { window: { start: null, end: null }, exposures: { highs: { uncaused: 4 } } },
     scenarios: { patterns: [], low_confidence: [] },
+    analysis_generation: fixture.inputs.analysis_generation,
   };
   const got = projectFindings(inputs, WINDOWS.quiet);
   assert.deepEqual(got.rows, []);
@@ -98,6 +138,7 @@ test('the mirror publishes no sentence when nothing went unexplained', () => {
     analysis: { window_days: 30, basal: [], isf: [], ic_blocks: [] },
     exposures: { window: { start: null, end: null }, exposures: {} },
     scenarios: { patterns: [], low_confidence: [] },
+    analysis_generation: fixture.inputs.analysis_generation,
   };
   assert.deepEqual(projectFindings(empty, null).uncaused_highs, { count: 0, text: null });
 });

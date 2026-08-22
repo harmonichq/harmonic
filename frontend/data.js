@@ -16,6 +16,17 @@
    index.html — the app owns staleness; only the transport belongs here.
    ========================================================================= */
 
+export class ApiTransportError extends Error {
+  constructor(status, detail, fallback) {
+    const structured = detail && typeof detail === 'object' ? detail : null;
+    super(structured?.message || detail || fallback);
+    this.name = 'ApiTransportError';
+    this.status = status;
+    this.code = structured?.code || null;
+    this.detail = detail ?? null;
+  }
+}
+
 /**
  * Build a bound API namespace whose transport can be replaced.
  *
@@ -44,9 +55,9 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
     if (token) headers['Authorization'] = 'Bearer ' + token;
     const res = await _fetch(url, Object.assign({}, opts, { headers }));
     if (!res.ok) {
-      let d = res.statusText;
-      try { d = (await res.json()).detail || d; } catch (e) {}
-      throw new Error(d);
+      let detail = null;
+      try { detail = (await res.json()).detail ?? null; } catch (e) {}
+      throw new ApiTransportError(res.status, detail, res.statusText);
     }
     return res;
   }
@@ -250,6 +261,16 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
     const query = params.toString();
     return api('/diagnose/findings' + (query ? '?' + query : ''));
   }
+  /** Exact active analyzer-run evidence for one retired I:C history item. */
+  function fetchDiagnoseCarbRatioHistoryEvents({
+    historyId, analysisGeneration, selectedRunId,
+  } = {}) {
+    const params = new URLSearchParams();
+    if (historyId) params.set('history_id', historyId);
+    if (analysisGeneration) params.set('analysis_generation', analysisGeneration);
+    if (selectedRunId) params.set('selected_run_id', selectedRunId);
+    return api('/diagnose/carb-ratio-history/events?' + params.toString());
+  }
   function fetchAuditDismissals() { return api('/audit/dismissals'); }
   function dismissAuditItem(item_id, evidence_fingerprint) {
     return api('/audit/dismissals', { method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -415,6 +436,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
     fetchExploreExposures,
     fetchDiagnoseEventComparison,
     fetchDiagnoseFindings,
+    fetchDiagnoseCarbRatioHistoryEvents,
     fetchAuditDismissals,
     dismissAuditItem,
     fetchTimeline,
@@ -458,6 +480,8 @@ export const fetchExploreTimeOfDay = _defaults.fetchExploreTimeOfDay;
 export const fetchExploreExposures = _defaults.fetchExploreExposures;
 export const fetchDiagnoseEventComparison = _defaults.fetchDiagnoseEventComparison;
 export const fetchDiagnoseFindings = _defaults.fetchDiagnoseFindings;
+export const fetchDiagnoseCarbRatioHistoryEvents =
+  _defaults.fetchDiagnoseCarbRatioHistoryEvents;
 export const fetchAuditDismissals = _defaults.fetchAuditDismissals;
 export const dismissAuditItem = _defaults.dismissAuditItem;
 export const fetchTimeline     = _defaults.fetchTimeline;

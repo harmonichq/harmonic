@@ -37,7 +37,10 @@ NOTE = (
 )
 SEED = 620
 FIRST_DAY = date(2020, 2, 3)
-DAY_COUNT = 30
+DAY_COUNT = 100
+SETTING_CHANGE_OFFSET = 45
+PAST_CARB_RATIO = 6.0
+CURRENT_CARB_RATIO = 5.6
 
 
 def _hhmm(minute: int) -> str:
@@ -64,7 +67,7 @@ def _profile_rate(minute: int) -> float:
     return 0.90
 
 
-def _settings() -> PumpSettings:
+def _settings(carb_ratio: float) -> PumpSettings:
     profile = ProfileSettings(
         idp=1,
         name="Synthetic profile",
@@ -72,7 +75,7 @@ def _settings() -> PumpSettings:
         carb_entry=True,
         max_bolus=10.0,
         segments=tuple(
-            ProfileSegment(start, basal, 42, 5.6, 110)
+            ProfileSegment(start, basal, 42, carb_ratio, 110)
             for start, basal in ((0, 0.80), (420, 0.95), (660, 0.85), (1080, 0.90))
         ),
     )
@@ -117,11 +120,13 @@ def _rows() -> tuple[list[dict], list[dict], list[dict]]:
             })
             basal_seq += 1
 
+        carb_ratio = (PAST_CARB_RATIO if offset < SETTING_CHANGE_OFFSET
+                      else CURRENT_CARB_RATIO)
         for minute, carbs in (
             (445, 38), (455, 22), (770, 51),
             (1130, 44), (1145, 27), (1150, 19),
         ):
-            insulin = round(carbs / 5.6, 2)
+            insulin = round(carbs / carb_ratio, 2)
             boluses.append({
                 "seq_num": bolus_seq,
                 "request_time": f"{day} {_hhmm(minute)}:00",
@@ -138,7 +143,7 @@ def _rows() -> tuple[list[dict], list[dict], list[dict]]:
                 "pump_iob": 0.0,
                 "isf": 42,
                 "target_bg": 110,
-                "carb_ratio": 5.6,
+                "carb_ratio": carb_ratio,
             })
             bolus_seq += 1
 
@@ -156,7 +161,11 @@ def generate(output: Path) -> None:
         store.upsert_basal(basal)
         store.upsert_bolus(boluses)
         store.upsert_settings_snapshot(
-            f"{FIRST_DAY.isoformat()} 00:00:00", _settings()
+            f"{FIRST_DAY.isoformat()} 00:00:00", _settings(PAST_CARB_RATIO)
+        )
+        changed = FIRST_DAY + timedelta(days=SETTING_CHANGE_OFFSET)
+        store.upsert_settings_snapshot(
+            f"{changed.isoformat()} 00:00:00", _settings(CURRENT_CARB_RATIO)
         )
         with store.conn:
             store.conn.execute(

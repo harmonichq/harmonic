@@ -20,7 +20,7 @@ import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
-const FRONTEND = fileURLToPath(new URL('.', import.meta.url));
+const FRONTEND = process.env.PLAN_APP_ROOT || fileURLToPath(new URL('.', import.meta.url));
 const MIME = { '.css': 'text/css', '.html': 'text/html', '.js': 'text/javascript' };
 
 // The staged change: noon I:C 5.4 -> 5.7, still a chip in the draft.
@@ -86,7 +86,8 @@ function fixtureServer({ items, matched }) {
     if (url.pathname === '/focus') return json({ focuses: [] });
     if (url.pathname === '/favicon.ico') { res.writeHead(204); res.end(); return; }
 
-    const file = url.pathname === '/' ? 'index.html' : url.pathname.slice(1);
+    const file = (url.pathname === '/' || url.pathname.startsWith('/app/'))
+      ? 'index.html' : url.pathname.slice(1);
     try {
       const body = await readFile(join(FRONTEND, file));
       res.writeHead(200, { 'content-type': MIME[extname(file)] || 'application/octet-stream' });
@@ -101,7 +102,7 @@ async function openPlanCard(page, origin) {
     localStorage.setItem('ciq_token', 'fixture-token');
     localStorage.setItem('tab', 'plan');
   });
-  await page.goto(`${origin}/#plan`);
+  await page.goto(`${origin}/app/plan`);
   const card = page.locator('.card.full', { has: page.locator('h2', { hasText: 'Deliverable' }) });
   await card.waitFor();
   return card;

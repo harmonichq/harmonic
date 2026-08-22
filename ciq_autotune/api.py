@@ -150,6 +150,13 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     def index() -> FileResponse:
         return FileResponse(_FRONTEND_INDEX)
 
+    # ADR 53: pages live below /app without moving root JSON interfaces such as
+    # /plan. Unknown page names deliberately receive the shell so its route
+    # adapter can render the invalid-link stop rather than a misleading 404.
+    @app.get("/app/{path:path}")
+    def app_index(path: str) -> FileResponse:
+        return FileResponse(_FRONTEND_INDEX)
+
     # Serve the frontend's sibling ES-module / stylesheet assets (#100). These
     # are explicit per-file routes (not a StaticFiles mount) so they can never
     # shadow an API route or the ``/`` index. No token, same as ``index``.
@@ -157,9 +164,9 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     # browser rejects the .js MIME type.
     _FRONTEND_DIR = _FRONTEND_INDEX.parent
 
-    @app.get("/tab-routing.js")
-    def tab_routing_js() -> FileResponse:
-        return FileResponse(_FRONTEND_DIR / "tab-routing.js",
+    @app.get("/url-state.js")
+    def url_state_js() -> FileResponse:
+        return FileResponse(_FRONTEND_DIR / "url-state.js",
                             media_type="text/javascript")
 
     @app.get("/scenario-chart.js")

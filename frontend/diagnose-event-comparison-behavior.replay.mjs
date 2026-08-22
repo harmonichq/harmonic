@@ -46,7 +46,7 @@ async function vendored(name) {
 const query = ({
   state = 'dense', theme = 'light', view = 'meals', factor, startMin, endMin, another, occ,
 }) => {
-  const search = new URLSearchParams({ state, theme });
+  const search = new URLSearchParams();
   if (view !== null) search.set('view', view);
   if (factor) search.set('factor', factor);
   /* #62 — the clock window replaced the six-hour anchor-time block. Both bounds
@@ -55,9 +55,9 @@ const query = ({
   if (endMin != null) search.set('end_min', String(endMin));
   if (another) search.set('another', String(another));
   if (occ) search.set('occ', occ);
-  return `?${search}`;
+  return search.toString();
 };
-const landsOnGlucose = (options) => options.view === 'glucose' || options.view === null;
+const landsOnGlucose = (options) => options.view === null;
 
 export async function openApp(browser, options = {}) {
   const viewport = options.viewport || { width: 1280, height: 720 };
@@ -65,6 +65,8 @@ export async function openApp(browser, options = {}) {
   const capture = options.invalidComparison ? {} : options.capture ?? JSON.parse(
     await readFile(process.env.CAPTURE || SYNTHETIC, 'utf8'));
   const payload = JSON.parse(await readFile(BASE_PAYLOAD, 'utf8'));
+  let comparisonRequests = 0;
+  page.comparisonRequestCount = () => comparisonRequests;
   const stubs = [
     [/^\/diagnose\/event-comparison/, (url) => options.invalidComparison ? {} : projectSyntheticCapture(capture, {
       view: url.searchParams.get('view') || 'meals',
@@ -110,11 +112,11 @@ export async function openApp(browser, options = {}) {
     [/^\/pump/, () => ({ settings: {} })],
   ];
   page.on('pageerror', (error) => problems.push(`pageerror(app): ${error}`));
-  await page.addInitScript(([theme]) => {
+  await page.addInitScript(([theme, diagnoseState]) => {
     localStorage.setItem('ciq_token', 'event-comparison-replay');
-    localStorage.setItem('tab', 'diagnose');
     localStorage.setItem('theme', theme);
-  }, [options.theme || 'light']);
+    window.__harmonicBrowserAdapter = { diagnoseState };
+  }, [options.theme || 'light', options.state || 'dense']);
   await page.route('**/*', async (route) => {
     const url = new URL(route.request().url());
     const path = url.pathname;
@@ -125,7 +127,7 @@ export async function openApp(browser, options = {}) {
     if (url.href.includes('vue')) {
       return route.fulfill({ body: await vendored('vue.esm-browser.js'), contentType: 'text/javascript' });
     }
-    if (path === '/') {
+    if (path === '/app/diagnose') {
       return route.fulfill({ body: await readFile(join(ROOT, 'frontend/index.html')), contentType: 'text/html' });
     }
     if (/\.(js|css|svg|html)$/.test(path)) {
@@ -136,6 +138,14 @@ export async function openApp(browser, options = {}) {
         });
       } catch { /* named API stubs below */ }
     }
+    if (path === '/diagnose/event-comparison') {
+      comparisonRequests += 1;
+      if (comparisonRequests > 1 && options.comparisonDelayAfterFirstMs) {
+        await new Promise((resolve) => {
+          setTimeout(resolve, options.comparisonDelayAfterFirstMs);
+        });
+      }
+    }
     for (const [pattern, body] of stubs) {
       if (pattern.test(path)) {
         return route.fulfill({ body: JSON.stringify(body(url)), contentType: 'application/json' });
@@ -144,7 +154,8 @@ export async function openApp(browser, options = {}) {
     problems.push(`unstubbed ${route.request().method()} ${path} (app)`);
     return route.fulfill({ status: 404, body: JSON.stringify({ detail: 'not stubbed' }) });
   });
-  await page.goto(`http://app.local/${query(options)}`);
+  const search = query(options);
+  await page.goto(`http://app.local/app/diagnose${search ? `?${search}` : ''}`);
   await page.waitForSelector(options.invalidComparison
     ? '.ec-error' : landsOnGlucose(options) ? '[data-event-view="glucose"] .dw' : '.ec-surface',
     { timeout: 15000 });
@@ -482,7 +493,55 @@ export const S13 = async (open, browser) => use(open, browser, {
   ok(drawn.caption == null, "S13 RETIRED 2026-08-20 Connor Griffin: Drop all that shit. It's a chart.");
 });
 
-export const STORIES = { S1, S2, S3, S4, S5, S6, S7, S8, S9, S10, S11, S12, S13 };
+/** R04 · Browser traversal re-resolves the complete direct-comparison route.
+    A slower response from an older restoration cannot repaint the newer Plan
+    route after Forward wins. */
+// STORY:finding-evidence-routing:R04
+export const R04 = async (open, browser) => use(open, browser, {
+  view: 'lows', factor: 'over_treated_low', startMin: 0, endMin: 360,
+  comparisonDelayAfterFirstMs: 900,
+}, async (page) => {
+  const diagnoseUrl = page.url();
+  const before = await page.locator('.ec-title-context').innerText();
+  ok(/Over-treated low/i.test(before), `R04 initial evidence is wrong: ${before}`);
+  ok(page.comparisonRequestCount() === 1,
+    'R04 initial direct comparison did not make exactly one endpoint request');
+
+  await page.locator('.cockpit-topbar [data-shell-tab="plan"]').click();
+  await page.waitForFunction(() => location.pathname === '/app/plan');
+  const planUrl = new URL(page.url());
+  ok(planUrl.search === '', 'R04 page exit retained Diagnose keys');
+
+  await page.goBack();
+  await page.waitForFunction(() => location.pathname === '/app/diagnose');
+  await page.goForward();
+  await page.waitForFunction(() => location.pathname === '/app/plan');
+  await settle(page, 1200);
+  ok(page.comparisonRequestCount() === 2,
+    'R04 first Back restored cached evidence without re-requesting the endpoint');
+  ok(new URL(page.url()).pathname === '/app/plan',
+    'R04 older projection changed the winning address');
+  ok(await page.locator('.ec-surface:visible').count() === 0,
+    'R04 older projection repainted after Forward selected Plan');
+
+  await page.goBack();
+  await page.waitForFunction((address) => location.href === address, diagnoseUrl);
+  await page.waitForSelector('.ec-surface:visible');
+  await page.waitForFunction((label) => (
+    document.querySelector('.ec-title-context')?.textContent.trim() === label.trim()
+  ), before);
+  ok(page.comparisonRequestCount() === 3,
+    'R04 second Back restored cached evidence without re-requesting the endpoint');
+  const restored = new URL(page.url());
+  ok(restored.searchParams.get('factor') === 'over_treated_low'
+      && restored.searchParams.get('start_min') === '0'
+      && restored.searchParams.get('end_min') === '360',
+  'R04 Back did not restore the same evidence coordinates');
+});
+
+export const STORIES = {
+  S1, S2, S3, S4, S5, S6, S7, S8, S9, S10, S11, S12, S13, R04,
+};
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const target = process.env.TARGET;

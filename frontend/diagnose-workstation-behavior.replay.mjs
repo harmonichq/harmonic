@@ -28,6 +28,7 @@ import { extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { projectSyntheticCapture } from '../mockups/diagnose-event-comparison.synthetic/project.mjs';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
+import { encodeDiagnoseOccurrence } from './workstation-route-consumers.js';
 
 const require = createRequire(import.meta.url);
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -315,7 +316,9 @@ export async function openApp(browser, {
   state: want = 'typical', theme = 'dark', viewport = { width: 1440, height: 900 }, findingsInputs = null,
   findingsProjectionInputs = null, exposuresInputs = null, analysisInputs = null, pumpSettingsInputs = null,
   onPlanDraft = null, comparisonStatus = 0, findingsDelayMs = 0,
+  findingsDelayAfter = Infinity, findingsDelayAfterMs = 0,
   findingsDelays = {}, findingsFailures = {}, appSource = 'server',
+  routeCase = null, routeQuery = null, expectInvalid = false,
 } = {}) {
   const payloadPath = process.env.PAYLOAD || fail('PAYLOAD is required for TARGET=app');
   /* Source selection belongs to the caller. Standalone replay pins `server`
@@ -347,6 +350,26 @@ export async function openApp(browser, {
     ? await findingsInputs(defaults) : (findingsInputs || defaults);
   const exposuresFrom = typeof exposuresInputs === 'function'
     ? await exposuresInputs(defaults) : (exposuresInputs || payload.exposures);
+  if (routeCase === 'complete-case-file') {
+    const routeWindow = { start_min: 0, end_min: 360 };
+    const projected = projectFindings(findingsFrom, routeWindow);
+    const row = projected.rows.find((candidate) => candidate.lever === 'over_treated_low')
+      || fail('complete route fixture has no over-treated-low finding');
+    const evidence = row.evidence.find((candidate) => candidate.family === 'lows'
+      && candidate.verdict === 'fired')
+      || fail('complete route fixture has no fired low occurrence');
+    const occurrence = (exposuresFrom.exposures?.lows?.occurrences || []).find((candidate) => (
+      candidate.ep_id === evidence.ep_id && candidate.t === evidence.t
+    )) || fail('complete route fixture occurrence is absent from exposures');
+    routeQuery = {
+      finding: row.id,
+      factor: `lows.${row.lever}`,
+      start_min: String(routeWindow.start_min),
+      end_min: String(routeWindow.end_min),
+      projection: 'event',
+      occ: encodeDiagnoseOccurrence('lows', occurrence),
+    };
+  }
   const STUBS = [
     // #698: the endpoint serves the bounded server-owned projection per
     // coordinate; exposures ride on their own #654 endpoint again.
@@ -395,6 +418,8 @@ export async function openApp(browser, {
     [/^\/pump/, () => ({ settings: {} })],
   ];
   const page = await browser.newPage({ viewport });
+  const routeRequests = [];
+  let findingsRequestCount = 0;
   page.on('pageerror', (e) => problems.push(`pageerror(app ${want}): ${e}`));
   page.on('response', (response) => {
     if (response.status() < 400) return;
@@ -417,23 +442,26 @@ export async function openApp(browser, {
     if (/^Failed to load resource: the server responded with a status of \d+/.test(message.text())) return;
     problems.push(`console(app ${want}): ${message.text()}`);
   });
-  await page.addInitScript(([t]) => {
+  await page.addInitScript(([t, diagnoseState]) => {
     localStorage.setItem('ciq_token', 'behaviour-replay');
-    localStorage.setItem('tab', 'diagnose');
     localStorage.setItem('theme', t);
-  }, [theme]);
+    window.__harmonicBrowserAdapter = { diagnoseState };
+  }, [theme, want]);
   await page.route('**/*', async (route) => {
     const url = new URL(route.request().url());
     const path = url.pathname;
+    if (['/analyze', '/diagnose/findings', '/explore/exposures'].includes(path)) {
+      routeRequests.push(path);
+    }
     if (url.hostname.startsWith('fonts.')) return route.fulfill({ status: 204 });
     if (url.href.includes('echarts')) return route.fulfill({ body: await vendored('echarts.min.js'), contentType: 'text/javascript' });
     if (url.href.includes('vue')) return route.fulfill({ body: await vendored('vue.esm-browser.js'), contentType: 'text/javascript' });
     if (appSource === 'server' && url.origin === targetUrl.origin
-        && (path === '/' || /\.(js|css|svg|html)$/.test(path))) {
+        && (path.startsWith('/app/') || /\.(js|css|svg|html)$/.test(path))) {
       return route.continue();
     }
     if (appSource === 'fixture' && url.origin === targetUrl.origin) {
-      if (path === '/') {
+      if (path === '/app/diagnose') {
         return route.fulfill({ body: await readFile(join(ROOT, 'frontend/index.html')), contentType: 'text/html' });
       }
       if (/\.(js|css|svg|html)$/.test(path)) {
@@ -449,9 +477,12 @@ export async function openApp(browser, {
        the pane shows WHILE it is in flight needs that flight to last long enough
        to read. Delay, never stub differently: the response is the same one. */
     if (path === '/diagnose/findings') {
+      findingsRequestCount += 1;
       const start = url.searchParams.get('start_min');
       const key = start === null ? 'global' : `${start}-${url.searchParams.get('end_min')}`;
-      const delay = findingsDelays[key] ?? findingsDelayMs;
+      const delayedCommit = findingsRequestCount > findingsDelayAfter
+        ? findingsDelayAfterMs : 0;
+      const delay = Math.max(findingsDelays[key] ?? findingsDelayMs, delayedCommit);
       if (delay) await new Promise((resolve) => { setTimeout(resolve, delay); });
       if (findingsFailures[key]) {
         expectResponse(page, /^\/diagnose\/findings$/, findingsFailures[key]);
@@ -476,34 +507,23 @@ export async function openApp(browser, {
     problems.push(`unstubbed ${route.request().method()} ${path} (app ${want})`);
     return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ detail: 'not stubbed' }) });
   });
-  targetUrl.searchParams.set('view', 'glucose');
+  targetUrl.pathname = '/app/diagnose';
+  targetUrl.search = routeQuery ? new URLSearchParams(routeQuery).toString() : '';
+  targetUrl.hash = '';
   await page.goto(targetUrl.href);
   try {
-    await page.waitForSelector('.dw', { timeout: 10_000 });
+    await page.waitForSelector(expectInvalid
+      ? '[data-route-error="invalid-link"]' : '.dw', { timeout: 10_000 });
   } catch (error) {
     const body = (await page.locator('body').innerText()).slice(0, 600).replace(/\s+/g, ' ');
     fail(`app-only opener did not reach Diagnose: ${error.message}; body=${body}; problems=${problems.join(' | ')}`);
   }
   await settle(page, 700);
-  /* The port carries a state hook equivalent to the mock's `?mode=` (Phase 3).
-     Whatever it is, the opener drives it and then asserts the rendered state
-     equals the requested one — the same loudness the mock side gets. */
-  await gotoState(page, want);
+  page.routeRequests = routeRequests;
+  if (expectInvalid) return page;
   const got = await page.evaluate(() => document.body.dataset.state || document.querySelector('.dw')?.dataset.state);
   if (got !== want) fail(`state addressability drift (app): asked ${want}, rendered ${got}`);
   return page;
-}
-
-/** Drive the built app into one enumerated state. Port-side hook. */
-export async function gotoState(page, want) {
-  await page.evaluate((s) => {
-    if (window.__dwGotoState) return window.__dwGotoState(s);
-    const url = new URL(window.location.href);
-    url.searchParams.set('mode', s);
-    window.history.replaceState({}, '', url);
-    return null;
-  }, want);
-  await settle(page, 600);
 }
 
 /* -------------------------------------------------------------- the stories */
@@ -1181,9 +1201,10 @@ export const D2 = async (page) => {
     contentType: 'application/json', body: JSON.stringify({ events: [], cgm: [] }),
   }));
   const setup = await setupWorkspaceAtFactor(page);
+  await page.click('#level .ev-row');
+  await page.waitForSelector('#level .occ-detail'); // the winning occurrence route committed
   const levelBefore = await page.$('#level');
   const chartBefore = await page.$('#chart');
-  await page.click('#level .ev-row');
   await settle(page, 900);   // past any fetch — an empty day never repaints
   const after = await state(page);
   is(after.crumb.length, 2, 'D2 at the drilled factor, occurrence selected in place');
@@ -1206,9 +1227,10 @@ export const D3 = async (page) => {
     status: 500, contentType: 'application/json', body: JSON.stringify({ detail: 'boom' }),
   }));
   const setup = await setupWorkspaceAtFactor(page);
+  await page.click('#level .ev-row');
+  await page.waitForSelector('#level .occ-detail'); // the winning occurrence route committed
   const levelBefore = await page.$('#level');
   const chartBefore = await page.$('#chart');
-  await page.click('#level .ev-row');
   await settle(page, 900);
   const after = await state(page);
   is(after.crumb.length, 2, 'D3 still at the drilled factor after a 500');
@@ -1510,11 +1532,19 @@ const twoFamilyInputs = async () => JSON.parse(await readFile(
     testing the wrong population. */
 const clickQueueRow = async (page, title) => {
   await page.waitForFunction(() => document.getElementById('level')?.dataset.loading !== 'true');
-  const at = await page.evaluate((want) => [...document.querySelectorAll('#level .qrow')]
-    .findIndex((row) => row.querySelector('.lab')?.textContent.trim() === want), title);
+  const match = await page.evaluate((want) => {
+    const rows = [...document.querySelectorAll('#level .qrow')];
+    const at = rows.findIndex((row) => row.querySelector('.lab')?.textContent.trim() === want);
+    return at < 0 ? null : { at, finding: rows[at].dataset.state === 'finding' };
+  }, title);
+  const at = match?.at ?? -1;
   if (at < 0) fail(`the queue holds no row titled ${title}`);
   await page.locator('#level .qrow').nth(at).click();
-  await settle(page, 500);
+  await page.waitForFunction(([want, finding]) => {
+    const here = document.querySelector('#crumb-trail .here')?.textContent.trim();
+    return finding ? here === want : Boolean(here && here !== 'Findings');
+  }, [title, match.finding]);
+  await settle(page, 100);
 };
 
 /** Draw an exact clock window. The plot's minute→pixel map is linear
@@ -1770,34 +1800,23 @@ export const S33 = async (page) => {
   is(back.eventCanvas, false, 'S33 ... and takes the event canvas down');
 };
 
-/** S34 · A failed by-event fetch restores the clock canvas and leaves the
-    reader on the finding. Before #62 the clock canvas was hidden BEFORE the
-    fetch and the catch arm hid the event host, so a failed first fetch showed
-    neither canvas at all. */
+/** S34 · AMENDED #53. A committed By-event route whose projection transport
+    fails keeps the named URL but shows the page's data error. It cannot leave
+    the old clock evidence visible under an address that names By event. */
 // STORY:finding-evidence-routing:S34
 export const S34 = async (page) => {
   await clickQueueRow(page, 'Late bolus');
-  const originalClock = await state(page);
-  const originalRect = originalClock.canvasHead;
   await page.click('#seg-align button:nth-child(2)');
-  await settle(page, 900);
-  const after = await state(page);
-  is(after.eventCanvas, false, 'S34 the failed event canvas is not left mounted');
-  ok(after.clockCanvas, 'S34 the clock canvas is restored');
-  ok(after.clockHead, 'S34 ... with its own header');
-  is(after.canvasHead, { ...originalRect, title: 'Glucose by time of day', hover: '0' }, 'S34 failed projection restores the original clock header rectangle and title');
-  is(after.eventCaption, null, "S34 RETIRED 2026-08-20 Connor Griffin: Drop all that shit. It's a chart.");
-  const recoveredChart = await page.locator('#chart').boundingBox();
-  await page.mouse.move(recoveredChart.x + recoveredChart.width * .45, recoveredChart.y + recoveredChart.height * .5);
-  await settle(page);
-  is((await state(page)).canvasHead.hover, '1', 'S34 recovered clock pointer opens its readout');
-  await page.mouse.move(1, 1); await settle(page);
-  const recovered = await state(page);
-  is(recovered.canvasHead.hover, '0', 'S34 recovered clock pointer restores its title');
-  is(recovered.canvasHead.title, 'Glucose by time of day', 'S34 recovered clock title returns after hover');
-  is(after.crumb[after.crumb.length - 1], 'Late bolus', 'S34 the reader is left on the finding');
-  ok(/^window [\d,]+ of [\d,]+ readings$/.test(after.scope),
-    `S34 the restored canvas states its own window (${after.scope})`);
+  await page.waitForSelector('.ec-error');
+  ok(/projection unavailable|unavailable/i.test(await page.locator('.ec-error').innerText()),
+    'S34 transport failure did not retain the Diagnose data error');
+  is(await page.locator('#chart:visible, #align-canvas:visible, .ec-surface:visible').count(), 0,
+    'S34 stale evidence remains visible under the failed route');
+  const address = new URL(page.url());
+  is(address.searchParams.get('factor'), 'meals.late_bolus',
+    'S34 data-error address lost the named factor');
+  is(address.searchParams.get('projection'), 'event',
+    'S34 data-error address lost the committed projection');
 };
 
 /** S35 · A finding whose episodes span two families shows ONE family in the
@@ -1820,9 +1839,9 @@ export const S35 = async (page) => {
   is(view, 'meals', 'S35 the chart draws the same family the panel listed');
 };
 
-/** S36 · Narrowing the window until the open finding has no row leaves the
-    reader ON it, with both panes saying so. The alternative was a browser-side
-    fallback filter, which is the third membership rule this change retires. */
+/** S36 · AMENDED #53. Narrowing until the named finding is absent from the
+    successful projection is invalid runtime membership. The route stops
+    atomically instead of leaving the old finding visible under the new scope. */
 // STORY:finding-evidence-routing:S36
 export const S36 = async (page) => {
   await clickQueueRow(page, 'Late bolus');
@@ -1830,13 +1849,14 @@ export const S36 = async (page) => {
   is(opened.crumb[opened.crumb.length - 1], 'Late bolus', 'S36 precondition: the finding is open');
   ok(opened.levelStat !== null, 'S36 precondition: the case file has a population');
   await page.click('#seg-window button:nth-child(1)');   // Overnight
-  await settle(page, 900);
-  const narrowed = await state(page);
-  is(narrowed.pressed, ['Overnight'], 'S36 the window narrowed');
-  is(narrowed.crumb[narrowed.crumb.length - 1], 'Late bolus', 'S36 the reader stays on the finding');
-  is(narrowed.levelEmpty, 'No findings in the selected window', 'S36 the inspector says so');
-  is(narrowed.scope, 'No findings in the selected window', 'S36 and the canvas says the same');
-  is(narrowed.levelStat, null, 'S36 no previous window content is left standing');
+  await page.waitForSelector('[data-route-error="invalid-link"]');
+  const alert = page.locator('[data-route-error="invalid-link"]');
+  ok(/start_min=0.*end_min=360/.test(await alert.innerText()),
+    'S36 invalid stop does not preserve the rejected paired window');
+  ok(/No selection was applied/.test(await alert.innerText()),
+    'S36 invalid stop does not state atomic non-application');
+  is(await page.locator('.dw:visible').count(), 0,
+    'S36 previous finding evidence remains visible after invalid membership');
 };
 
 /** S37 · An occurrence whose TRIGGER sits outside the window and whose
@@ -1906,28 +1926,27 @@ export const S38 = async (page) => {
     'S38 no verdict split is drawn for a family the server published no split for');
 };
 
-/** S39 · A window change ASKS the server for its rows, and until they land the
-    pane counts nothing rather than counting the window that just left. Showing
-    the previous population under the new window's label is a caption asserting
-    a population the canvas did not draw. */
+/** S39 · AMENDED #53. A routed factor window stays on the complete old URL and
+    evidence while the replacement is staged. Only the winning transaction
+    publishes the new address and its matching projection. */
 // STORY:finding-evidence-routing:S39
 export const S39 = async (page) => {
   await clickQueueRow(page, 'Late bolus');
   const before = await state(page);
+  const beforeUrl = page.url();
   ok(/\b2 of 20 meal responses in 00:00–24:00 · 18 not attributed\b/.test(before.levelStat || ''),
     `S39 precondition: the whole-day population is on screen (${before.levelStat})`);
   await page.click('#seg-window button:nth-child(3)');   // Afternoon
   await settle(page, 250);                               // inside the flight
   const during = await state(page);
-  is(during.levelLoading, 'true', 'S39 the pane declares it is waiting on the server');
-  is(during.levelStat, null, "S39 the previous window's counts are withdrawn");
-  is(during.levelEmpty, 'Loading findings for 12:00–18:00…',
-    'S39 the pane names what is loading and its window');
-  is(during.crumbMeta, '12:00–18:00', 'S39 the meta prints the window with no numbers under it');
-  ok(!/\b2 of 20\b/.test(JSON.stringify(during)), 'S39 no stale count survives anywhere on the pane');
-  await settle(page, 1400);
+  is(page.url(), beforeUrl, 'S39 pending route changed the address before resolution');
+  is(during.levelStat, before.levelStat,
+    'S39 pending route exposed a partial replacement over the old address');
+  is(during.pressed, before.pressed, 'S39 pending route applied the new window early');
+  await page.waitForFunction((address) => location.href !== address, beforeUrl);
   const after = await state(page);
   is(after.levelLoading, 'false', 'S39 the wait ends when the rows land');
+  is(after.pressed, ['Afternoon'], 'S39 winning commit publishes the new window');
   ok(/ meal responses in 12:00–18:00\b/.test(after.levelStat || ''),
     `S39 the new window's own counts land under its own label (${after.levelStat})`);
 };
@@ -2099,6 +2118,79 @@ export const S43 = async (page) => {
     'S43 the sliced queue stays on the same inspector content spine');
 };
 
+/** R01 · A copied canonical Diagnose case-file URL restores every named
+    coordinate before any evidence becomes visible. */
+// STORY:finding-evidence-routing:R01
+export const R01 = async (page) => {
+  const address = new URL(page.url());
+  is(address.pathname, '/app/diagnose', 'R01 canonical page');
+  for (const key of ['finding', 'factor', 'start_min', 'end_min', 'projection', 'occ']) {
+    ok(address.searchParams.has(key), `R01 copied route lost ${key}`);
+  }
+  is(address.searchParams.get('factor'), 'lows.over_treated_low', 'R01 factor identity');
+  is(address.searchParams.get('projection'), 'event', 'R01 projection identity');
+  is([address.searchParams.get('start_min'), address.searchParams.get('end_min')], ['0', '360'],
+    'R01 paired clock window');
+  const restored = await state(page);
+  is(restored.crumb, ['Findings', 'Over-treated low'], 'R01 finding and factor restored atomically');
+  is(restored.pressed, ['Overnight'], 'R01 window restored before paint');
+  is(restored.alignPressed, ['By event'], 'R01 event projection restored before paint');
+  ok(/\b1 of \d+/.test(restored.levelHead || ''),
+    `R01 selected occurrence was not restored (${restored.levelHead})`);
+  is(await page.locator('.dw .ev-row[aria-pressed="true"]').count(), 1,
+    'R01 exactly one occurrence is selected');
+
+  const projectionHistory = await page.evaluate(() => history.length);
+  await page.locator('#seg-align button').first().click();
+  await page.waitForFunction(() => !new URL(location.href).searchParams.has('projection'));
+  is(await page.evaluate(() => history.length), projectionHistory + 1,
+    'R01 committed By clock selection pushes exactly once');
+
+  const beforeDragUrl = page.url();
+  const beforeDragHistory = await page.evaluate(() => history.length);
+  const beforeDragState = await state(page);
+  const grip = await page.locator('#grip-b').boundingBox();
+  await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(grip.x + grip.width / 2 + 40, grip.y + grip.height / 2,
+    { steps: 6 });
+  is(page.url(), beforeDragUrl, 'R01 intermediate resize wrote the URL');
+  is(await page.evaluate(() => history.length), beforeDragHistory,
+    'R01 intermediate resize wrote History');
+  await page.mouse.up();
+  await settle(page, 150);
+  const pendingDrag = await state(page);
+  is(page.url(), beforeDragUrl, 'R01 pending committed resize changed the URL early');
+  is(pendingDrag.pressed, beforeDragState.pressed,
+    'R01 pending committed resize exposed the new window early');
+  is(pendingDrag.levelStat, beforeDragState.levelStat,
+    'R01 pending committed resize exposed replacement evidence early');
+  await page.waitForFunction((address) => location.href !== address, beforeDragUrl);
+  is(await page.evaluate(() => history.length), beforeDragHistory + 1,
+    'R01 committed resize did not push exactly once');
+  const resized = new URL(page.url());
+  ok(resized.searchParams.has('start_min') && resized.searchParams.has('end_min'),
+    'R01 committed resize lost its paired window');
+  is(resized.searchParams.get('occ'), address.searchParams.get('occ'),
+    'R01 committed resize changed the selected occurrence identity');
+};
+
+/** R03 · Successful data plus an unknown runtime identity stops at the exact
+    invalid link. No Diagnose selection is applied underneath it. */
+// STORY:finding-evidence-routing:R03
+export const R03 = async (page) => {
+  const alert = page.locator('[data-route-error="invalid-link"]');
+  ok(await alert.isVisible(), 'R03 invalid-link stop is not visible');
+  ok(/No selection was applied/.test(await alert.innerText()),
+    'R03 invalid-link stop did not state atomic non-application');
+  is(await page.locator('.dw:visible').count(), 0, 'R03 applied Diagnose evidence behind the stop');
+  is(new URL(page.url()).searchParams.get('finding'), 'finding:not-in-roster',
+    'R03 invalid address was not preserved exactly');
+  ok(page.routeRequests.includes('/diagnose/findings')
+      && page.routeRequests.includes('/analyze'),
+  'R03 membership stop did not follow successful Diagnose data resolution');
+};
+
 /* ------------------------------------------------------------------- runner */
 
 /* Discovery tags for every exported replay function above. */
@@ -2220,6 +2312,13 @@ export const STORIES = [
     onPlanDraft: (draft) => TRUE_ISF_DRAFTS.push(draft),
   }],
   ['D1', D1, 'dense'], ['D2', D2, 'dense'], ['D3', D3, 'dense'],
+  ['R01', R01, 'typical', {
+    routeCase: 'complete-case-file', findingsDelayAfter: 2, findingsDelayAfterMs: 900,
+  }],
+  ['R03', R03, 'typical', {
+    routeQuery: { finding: 'finding:not-in-roster', factor: 'lows.over_treated_low' },
+    expectInvalid: true,
+  }],
 ];
 
 const isMain = process.argv[1] && import.meta.url === new URL(`file://${resolve(process.argv[1])}`).href;

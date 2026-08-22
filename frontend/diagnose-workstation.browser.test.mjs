@@ -73,6 +73,7 @@ import {
   withoutIsfProjectionVerdict,
 } from './diagnose-workstation-behavior.replay.mjs';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
+import { projectSyntheticCapture } from '../mockups/diagnose-event-comparison.synthetic/project.mjs';
 
 const require = createRequire(import.meta.url);
 // #672: fail closed. A missing prerequisite must exit nonzero, never `skip` —
@@ -154,6 +155,52 @@ test('an explicit fixture opener ignores a hostile ambient app-source override',
     if (previous === undefined) delete process.env.DIAGNOSE_APP_SOURCE;
     else process.env.DIAGNOSE_APP_SOURCE = previous;
   }
+});
+
+test('event projection accepts reordered selected copies but rejects semantic mismatches', async () => {
+  const capture = JSON.parse(await readFile(
+    join(ROOT, 'mockups/diagnose-event-comparison.synthetic/capture.json'), 'utf8'));
+  const catalog = projectSyntheticCapture(capture, {
+    view: 'meals', factor: 'carb_undercount',
+  });
+  const projection = projectSyntheticCapture(capture, {
+    view: 'meals', factor: 'carb_undercount',
+    occurrenceId: catalog.occurrences[0].identity.id,
+  });
+  const summary = projection.occurrences.find((candidate) => (
+    candidate.identity.id === projection.selection.requested_id
+  ));
+  const facts = [
+    { key: 'first', label: 'First', value: 1, unit: 'mg/dL' },
+    { key: 'second', label: 'Second', value: 2, unit: 'mg/dL' },
+  ];
+  summary.verdict.boundary_facts = structuredClone(facts);
+  projection.selection.detail.verdict.boundary_facts = facts.map((fact) => (
+    Object.fromEntries(Object.entries(fact).reverse())
+  ));
+  for (const key of ['identity', 'anchor', 'verdict']) {
+    projection.selection.detail[key] = Object.fromEntries(
+      Object.entries(projection.selection.detail[key]).reverse(),
+    );
+  }
+  const valueMismatch = structuredClone(projection);
+  valueMismatch.selection.detail.verdict.detail += ' changed';
+  const arrayMismatch = structuredClone(projection);
+  arrayMismatch.selection.detail.verdict.boundary_facts.reverse();
+
+  const browser = await runner.browser();
+  const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
+  try {
+    const accepted = await page.evaluate(async ({ compatible, wrongValue, wrongOrder }) => {
+      const { validProjection } = await import('/diagnose-event-comparison.js');
+      return {
+        compatible: validProjection(compatible, 'meals'),
+        wrongValue: validProjection(wrongValue, 'meals'),
+        wrongOrder: validProjection(wrongOrder, 'meals'),
+      };
+    }, { compatible: projection, wrongValue: valueMismatch, wrongOrder: arrayMismatch });
+    assert.deepEqual(accepted, { compatible: true, wrongValue: false, wrongOrder: false });
+  } finally { await page.close(); }
 });
 
 function contrastRatio(foreground, background) {
@@ -775,7 +822,8 @@ test('frontend contains no client-side verdict threshold or direction comparison
   // LOCK:diagnose-workstation:29 — occurrence handoff retains claim date into Day.
   const index = await readFile(join(ROOT, 'frontend/index.html'), 'utf8');
   assert.match(index, /day: \(occurrence\) => goToMoment\(occurrence\.t, occurrence\.text/);
-  assert.match(index, /import \{ createDiagnoseEventComparison \} from '\.\/diagnose-event-comparison\.js';/);
+  assert.match(index,
+    /import \{\s*createDiagnoseEventComparison, validProjection as validDiagnoseProjection,\s*\} from '\.\/diagnose-event-comparison\.js';/);
   assert.match(index, /diagnoseView = createDiagnoseEventComparison\(\{ root: diagnoseRoot\.value,/);
   assert.match(index, /diagnoseStageItemsFor\(item\.key, diagnoseAnalysis\.value\)/);
   assert.match(index, /keepOnlyPlanFamily\(planItemFamily\(items\[0\]\)\)/);

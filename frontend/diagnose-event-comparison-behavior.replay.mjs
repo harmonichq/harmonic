@@ -66,6 +66,7 @@ export async function openApp(browser, options = {}) {
     await readFile(process.env.CAPTURE || SYNTHETIC, 'utf8'));
   const payload = JSON.parse(await readFile(BASE_PAYLOAD, 'utf8'));
   let comparisonRequests = 0;
+  page.comparisonRequestCount = () => comparisonRequests;
   const stubs = [
     [/^\/diagnose\/event-comparison/, (url) => options.invalidComparison ? {} : projectSyntheticCapture(capture, {
       view: url.searchParams.get('view') || 'meals',
@@ -503,6 +504,8 @@ export const R04 = async (open, browser) => use(open, browser, {
   const diagnoseUrl = page.url();
   const before = await page.locator('.ec-title-context').innerText();
   ok(/Over-treated low/i.test(before), `R04 initial evidence is wrong: ${before}`);
+  ok(page.comparisonRequestCount() === 1,
+    'R04 initial direct comparison did not make exactly one endpoint request');
 
   await page.locator('.cockpit-topbar [data-shell-tab="plan"]').click();
   await page.waitForFunction(() => location.pathname === '/app/plan');
@@ -514,6 +517,8 @@ export const R04 = async (open, browser) => use(open, browser, {
   await page.goForward();
   await page.waitForFunction(() => location.pathname === '/app/plan');
   await settle(page, 1200);
+  ok(page.comparisonRequestCount() === 2,
+    'R04 first Back restored cached evidence without re-requesting the endpoint');
   ok(new URL(page.url()).pathname === '/app/plan',
     'R04 older projection changed the winning address');
   ok(await page.locator('.ec-surface:visible').count() === 0,
@@ -525,6 +530,8 @@ export const R04 = async (open, browser) => use(open, browser, {
   await page.waitForFunction((label) => (
     document.querySelector('.ec-title-context')?.textContent.trim() === label.trim()
   ), before);
+  ok(page.comparisonRequestCount() === 3,
+    'R04 second Back restored cached evidence without re-requesting the endpoint');
   const restored = new URL(page.url());
   ok(restored.searchParams.get('factor') === 'over_treated_low'
       && restored.searchParams.get('start_min') === '0'

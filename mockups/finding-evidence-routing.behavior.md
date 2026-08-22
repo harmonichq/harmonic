@@ -882,11 +882,17 @@ P53 · URL state and popstate: view / factor / window / another / occ live in th
       that projection and canonical URL. A superseded response is still dropped
       by the shell generation, including across Back/Forward. No page-global
       URLSearchParams, History writer or popstate listener remains here.
+      AMENDED #53 FULL REVIEW, 2026-08-22 — a successful response answers the
+      complete requested coordinate set: view, factor, exact scoped/whole-day
+      window and another-factor inclusion. A named occurrence resolves only
+      when `selection.state` is `selected` and its detail matches the occurrence
+      summary inside that response. An echoed unavailable id is not a selection.
   source:   frontend/workstation-route-consumers.js (`resolveComparison`);
             frontend/index.html (Diagnose route registration / shell commit);
             frontend/diagnose-event-comparison.js (`setRoute`)
   mock:     the mock is one page with no URL state
-  evidence: replay R04 (canonical `/app/diagnose?view=lows&factor=…` Back/Forward)
+  evidence: replay R04 (canonical `/app/diagnose?view=lows&factor=…` Back/Forward;
+            endpoint request count 1 on arrival, 2 after first Back, 3 after second)
   verdict:  kept          lock term 19 (one URL-state contract, build-time
                           evidence — "the hash/query-string split retires")
 ```
@@ -1428,8 +1434,13 @@ against a successful roster and resolves omission through `initialTrial`.
 Staged state remains invisible until the winning shell commit. Committed
 selection gestures push once; omission canonicalizes by replacement; leaving
 Diagnose clears its keys. A data transport/auth failure remains the page's data
-error, while a successful roster/projection that does not contain the named
-identity is the exact invalid-link stop with no selection.
+error. Every successful findings projection must answer its requested scoped or
+whole-day window; every event projection must answer its requested view, factor,
+window and another-factor coordinate. A named event occurrence additionally
+requires a genuinely selected, internally matching detail. A successful
+roster/projection that fails any of those bindings is the exact invalid-link
+stop with no selection. These trust-boundary probes live at the public consumer
+interface in `frontend/workstation-route-consumers.test.js`.
 
 **Added route stories:**
 
@@ -1440,8 +1451,10 @@ R02 · Verify omission replaces with initialTrial; sibling selection pushes
       once; Back/Forward restores the same Trial evidence
 R03 · an unknown runtime identity after successful data resolution shows the
       exact invalid-link stop and applies no Diagnose selection
-R04 · Back re-requests the complete P53 evidence; Forward can win while that
-      response is held, and the older projection cannot repaint the newer page
+R04 · initial arrival and each Back re-request the complete P53 evidence (the
+      observed endpoint count advances 1 → 2 → 3); Forward can win while the
+      first restoration is held, and that older projection cannot repaint the
+      newer page
 ```
 
 They are tagged in the app-only replays as

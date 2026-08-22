@@ -46,23 +46,53 @@ function comparisonCoordinates(query) {
   };
 }
 
+function sameValue(left, right) {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function hasSelectedDetail(projection, requestedId) {
+  const occurrence = (projection?.occurrences || [])
+    .find((candidate) => candidate?.identity?.id === requestedId);
+  const selection = projection?.selection;
+  return Boolean(occurrence
+    && selection?.state === 'selected'
+    && selection.requested_id === requestedId
+    && selection.detail
+    && sameValue(selection.detail.identity, occurrence.identity)
+    && sameValue(selection.detail.anchor, occurrence.anchor)
+    && sameValue(selection.detail.verdict, occurrence.verdict));
+}
+
+function answersWindow(answer, requested) {
+  if (requested === null) {
+    return answer?.scoped === false
+      && answer.start_min === null && answer.end_min === null;
+  }
+  return answer?.scoped === true
+    && answer.start_min === requested.start_min
+    && answer.end_min === requested.end_min;
+}
+
+function answersComparisonRequest(projection, request, factor) {
+  return projection?.coordinates?.view === request.view
+    && projection.coordinates.factor === factor
+    && projection.coordinates.another === request.another
+    && answersWindow(projection.coordinates.window, request.window);
+}
+
 async function resolveComparison(query, transaction, loadComparison) {
-  const projection = await loadComparison(comparisonCoordinates(query));
+  const request = comparisonCoordinates(query);
+  const projection = await loadComparison(request);
   const factorOptions = Array.isArray(projection?.coordinates?.factor_options)
     ? projection.coordinates.factor_options : [];
   const factor = query.factor || projection?.coordinates?.factor;
   if (!factor || !factorOptions.some((option) => option?.key === factor)) {
     return transaction.invalid();
   }
-  if (projection?.coordinates?.view !== query.view
-      || projection?.coordinates?.factor !== factor) {
+  if (!answersComparisonRequest(projection, request, factor)) {
     return transaction.invalid();
   }
-  if (query.occ && !(projection?.occurrences || [])
-    .some((occurrence) => occurrence?.identity?.id === query.occ)) {
-    return transaction.invalid();
-  }
-  if (query.occ && projection?.selection?.requested_id !== query.occ) {
+  if (query.occ && !hasSelectedDetail(projection, query.occ)) {
     return transaction.invalid();
   }
   const complete = { ...query, factor };
@@ -80,6 +110,9 @@ async function resolveWorkstation(query, transaction, loadWorkstation, loadCompa
     start_min: Number(query.start_min), end_min: Number(query.end_min),
   };
   const payload = await loadWorkstation(window);
+  if (!answersWindow(payload?.findings?.window, window)) {
+    return transaction.invalid();
+  }
   if (!query.finding) {
     return transaction.resolved({}, {
       kind: 'workstation', payload, selection: null, query: {},
@@ -118,8 +151,7 @@ async function resolveWorkstation(query, transaction, loadWorkstation, loadCompa
       ...coordinates, window, another: false, occurrenceId: undefined,
     };
     const catalog = await loadComparison(request);
-    if (catalog?.coordinates?.view !== coordinates.view
-        || catalog?.coordinates?.factor !== coordinates.factor) {
+    if (!answersComparisonRequest(catalog, request, coordinates.factor)) {
       return transaction.invalid();
     }
     if (occurrence) {
@@ -131,9 +163,12 @@ async function resolveWorkstation(query, transaction, loadWorkstation, loadCompa
       comparison = await loadComparison({
         ...request, occurrenceId: eventOccurrence.identity.id,
       });
-      if (comparison?.coordinates?.view !== coordinates.view
-          || comparison?.coordinates?.factor !== coordinates.factor
-          || comparison?.selection?.requested_id !== eventOccurrence.identity.id) {
+      const selectedOccurrence = (comparison?.occurrences || []).find((candidate) => (
+        candidate?.identity?.id === eventOccurrence.identity.id
+      ));
+      if (!answersComparisonRequest(comparison, request, coordinates.factor)
+          || !hasSelectedDetail(comparison, eventOccurrence.identity.id)
+          || !sameValue(selectedOccurrence?.identity, eventOccurrence.identity)) {
         return transaction.invalid();
       }
     } else comparison = catalog;

@@ -285,6 +285,8 @@ class Attribution:
     steps: List[Step]
     silence: Optional[Verdict] = None
     rebound_end: Optional[datetime] = None
+    correction_pair: Optional[tuple[int, int]] = None
+    driver_anchor: Optional[Anchor] = None
 
 
 # Each ``_*_lever`` helper returns ``(lever_result, silence)``: the ``(lever, step)``
@@ -433,7 +435,12 @@ def _correction_lever(
         return None, None
     cs = classify_correction_stacking(corrections, cgm, basal, scenario_config=scenario_config)
     if cs.matched and cs.stack_t is not None:
-        return (Lever.CORRECTION_STACKING, _step(cs.stack_t, cs), cs.stack_t), None
+        return (
+            Lever.CORRECTION_STACKING,
+            _step(cs.stack_t, cs),
+            cs.stack_t,
+            (cs.previous_seq_num, cs.second_seq_num),
+        ), None
     return None, cs
 
 
@@ -565,10 +572,11 @@ def attribute(
     Returns an :class:`Attribution`; ``lever is None`` means the episode resolved
     with no actionable behavior and must not surface.
     """
-    driver: Optional[tuple] = None       # (lever, trigger_kind, trigger_t, driver_step)
+    driver: Optional[tuple] = None       # (lever, trigger_kind, trigger_t, driver_step, anchor)
     # The guarded rebound scan's terminal for the winning driver, when it is an
     # over-treated low — threaded up so the engine scores the whole excursion (#124).
     rebound_end: Optional[datetime] = None
+    correction_pair: Optional[tuple[int, int]] = None
     consequences: List[Step] = []
     # When nothing fires, the episode still owes a reason. Retain the first anchor's
     # most-specific non-firing verdict (anchors are in time order, mirroring the
@@ -631,6 +639,7 @@ def attribute(
             if correction_result is not None:
                 correction_used = True
                 result = (correction_result[0], correction_result[1])
+                correction_pair = correction_result[3]
             else:
                 sil = correction_silence
 
@@ -640,7 +649,17 @@ def attribute(
             continue
         lever, step = result
         if driver is None:
-            driver = (lever, a.kind, trig_t, step)
+            driver_anchor = a
+            if lever is Lever.CORRECTION_STACKING and correction_pair is not None:
+                driver_anchor = next(
+                    (candidate for candidate in episode.anchors
+                     if candidate.kind is AnchorKind.CORRECTION
+                     and candidate.bolus is not None
+                     and candidate.bolus.seq_num == correction_pair[1]),
+                    a,
+                )
+                trig_t = driver_anchor.t
+            driver = (lever, driver_anchor.kind, trig_t, step, driver_anchor)
             rebound_end = this_rebound_end
         else:
             # A later actionable behavior: narrate as a consequence, don't re-flag.
@@ -651,7 +670,7 @@ def attribute(
             lever=None, trigger="", trigger_t=episode.start, steps=[], silence=silence
         )
 
-    lever, kind, trigger_t, driver_step = driver
+    lever, kind, trigger_t, driver_step, driver_anchor = driver
     steps = [driver_step] + consequences
     return Attribution(
         lever=lever,
@@ -659,6 +678,8 @@ def attribute(
         trigger_t=trigger_t,
         steps=steps,
         rebound_end=rebound_end,
+        correction_pair=(correction_pair if lever is Lever.CORRECTION_STACKING else None),
+        driver_anchor=driver_anchor,
     )
 
 

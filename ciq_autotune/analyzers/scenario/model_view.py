@@ -64,6 +64,7 @@ from .attribute import (
     over_treated_rebound,
     split_caused_over_treatments,
 )
+from .levers import Lever
 from .segment import segment, split_double_humps, split_low_rebounds
 from .severity import worst_bg
 
@@ -293,7 +294,12 @@ def _anchor_verdicts(
         return _high_verdicts(anchor, cgm, bolus, basal, scenario_config=scenario_config)
     if anchor.kind is AnchorKind.CORRECTION:
         result, silence = correction
-        if result is not None and len(result) > 2 and result[2] == anchor.t:
+        if (
+            result is not None
+            and len(result) > 3
+            and anchor.bolus is not None
+            and result[3][1] == anchor.bolus.seq_num
+        ):
             # The stacking dose the cluster attributes at — a matched verdict here.
             return [AnchorVerdict(
                 classifier="correction_stacking", matched=True,
@@ -331,6 +337,13 @@ def _is_driver(anchor: Anchor, attr) -> bool:
     """Is this anchor the episode's lever driver? (trigger_t sits at ``t`` or the rise onset.)"""
     if attr.lever is None:
         return False
+    if (
+        attr.lever is Lever.CORRECTION_STACKING
+        and attr.correction_pair is not None
+        and anchor.kind is AnchorKind.CORRECTION
+        and anchor.bolus is not None
+    ):
+        return anchor.bolus.seq_num == attr.correction_pair[1]
     return anchor.t == attr.trigger_t or anchor.reach_start == attr.trigger_t
 
 

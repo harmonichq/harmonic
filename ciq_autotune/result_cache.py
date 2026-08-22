@@ -36,6 +36,8 @@ from typing import Callable, Hashable, TypeVar
 T = TypeVar("T")
 
 DEFAULT_CAP = 256
+PREPARATION_CAP = 64
+PREPARATION_LEASE_SECONDS = 60
 
 
 class ResultCache:
@@ -60,6 +62,7 @@ class ResultCache:
         # the first filled. Guarded by ``_lock``; entries are dropped after compute.
         self._flights: "dict[Hashable, threading.Lock]" = {}
         self._preparations: "OrderedDict[Hashable, object]" = OrderedDict()
+        self._preparation_flights: "dict[Hashable, threading.Lock]" = {}
 
     @property
     def version(self) -> int:
@@ -80,22 +83,70 @@ class ResultCache:
             self._preparations.clear()
             self._version += 1
 
-    def commit_preparation(self, key, value, version, *, cap=64):
-        """Atomically deduplicate/install a current leased preparation."""
+    def _commit_preparation(self, key, value, version, *, cap):
+        """Commit under ``_lock``; version, capacity, and registration are one step."""
+        if version != self._version:
+            return None, "changed"
+        if key in self._preparations:
+            current = self._preparations[key]
+            current.lease_until = time.monotonic() + PREPARATION_LEASE_SECONDS
+            self._preparations.move_to_end(key)
+            return current, None
+        if len(self._preparations) >= cap:
+            evictable = next((
+                candidate for candidate, prepared in self._preparations.items()
+                if prepared.lease_until <= time.monotonic() and prepared.pins == 0
+            ), None)
+            if evictable is None:
+                return None, "capacity"
+            self._preparations.pop(evictable)
+        self._preparations[key] = value
+        return value, None
+
+    def get_or_build_preparation(self, key, build, *, cap=PREPARATION_CAP, attempts=2,
+                                 before_commit=None):
+        """Return one retained preparation for ``key`` or its ADR 79 failure code.
+
+        ``build(version)`` runs outside the synchronization boundary. Identical
+        coordinates share a per-key flight; the final version check, lease/capacity
+        decision, and registration happen under the same lock as :meth:`bump`.
+        """
         with self._lock:
-            if version != self._version:
-                return None, "changed"
-            if key in self._preparations:
+            current = self._preparations.get(key)
+            if current is not None:
+                current.lease_until = time.monotonic() + PREPARATION_LEASE_SECONDS
                 self._preparations.move_to_end(key)
-                return self._preparations[key], None
-            evictable = next((k for k, v in self._preparations.items()
-                              if getattr(v, "lease_until", 0) <= time.monotonic() and not getattr(v, "pins", 0)), None)
-            if len(self._preparations) >= cap:
-                if evictable is None:
-                    return None, "capacity"
-                self._preparations.pop(evictable)
-            self._preparations[key] = value
-            return value, None
+                return current, None
+            flight = self._preparation_flights.get(key)
+            if flight is None:
+                flight = self._preparation_flights[key] = threading.Lock()
+
+        with flight:
+            try:
+                for _ in range(attempts):
+                    with self._lock:
+                        current = self._preparations.get(key)
+                        if current is not None:
+                            current.lease_until = (
+                                time.monotonic() + PREPARATION_LEASE_SECONDS
+                            )
+                            self._preparations.move_to_end(key)
+                            return current, None
+                        version = self._version
+                    value = build(version)
+                    if before_commit is not None:
+                        before_commit()
+                    with self._lock:
+                        retained, reason = self._commit_preparation(
+                            key, value, version, cap=cap,
+                        )
+                    if reason != "changed":
+                        return retained, reason
+                return None, "changed"
+            finally:
+                with self._lock:
+                    if self._preparation_flights.get(key) is flight:
+                        self._preparation_flights.pop(key, None)
 
     def acquire_preparation(self, projection_id):
         with self._lock:

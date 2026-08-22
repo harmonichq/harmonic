@@ -8,7 +8,7 @@ from typing import Mapping, Sequence
 
 from ...events import BasalEvent, BolusEvent, CgmReading
 from ..scenario_config import ScenarioConfig
-from .anchors import AnchorKind, _is_meal, _is_user_correction, collect_anchors
+from .anchors import Anchor, AnchorKind, _is_meal, _is_user_correction, collect_anchors
 from .levers import Exposure
 
 
@@ -23,6 +23,17 @@ class Opportunity:
     anchor_bg: float | None = None
     reach_start: datetime | None = None
     members: tuple[BolusEvent, ...] = ()
+
+
+def canonical_anchor_key(anchor: Anchor) -> tuple[Exposure | None, tuple | None]:
+    """Return the opportunity identity encoded by this canonical anchor."""
+    if anchor.kind is AnchorKind.MEAL and anchor.bolus is not None:
+        return Exposure.MEALS, (anchor.bolus.seq_num,)
+    if anchor.kind is AnchorKind.LOW:
+        return Exposure.LOWS, (anchor.span_start, anchor.span_end, anchor.t)
+    if anchor.kind is AnchorKind.HIGH:
+        return Exposure.HIGHS, (anchor.span_start, anchor.span_end, anchor.t)
+    return None, None
 
 
 def build_opportunities(
@@ -46,12 +57,14 @@ def build_opportunities(
             ))
     for anchor in anchors:
         if anchor.kind is AnchorKind.LOW:
+            _, source_key = canonical_anchor_key(anchor)
             families[Exposure.LOWS].append(Opportunity(
-                Exposure.LOWS, (anchor.span_start, anchor.span_end, anchor.t), anchor.t, "low", anchor.bg,
+                Exposure.LOWS, source_key, anchor.t, "low", anchor.bg,
             ))
         elif anchor.kind is AnchorKind.HIGH:
+            _, source_key = canonical_anchor_key(anchor)
             families[Exposure.HIGHS].append(Opportunity(
-                Exposure.HIGHS, (anchor.span_start, anchor.span_end, anchor.t), anchor.t, "high", anchor.bg,
+                Exposure.HIGHS, source_key, anchor.t, "high", anchor.bg,
                 reach_start=anchor.reach_start,
             ))
     corrections = sorted(

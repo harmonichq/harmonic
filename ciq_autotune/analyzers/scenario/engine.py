@@ -47,13 +47,11 @@ from ...uncertainty import Confidence
 from ..scenario_config import ScenarioConfig
 from .anchors import (
     AnchorKind,
-    _is_meal,
-    _is_user_correction,
     collect_anchors,
 )
 from .attribute import LowPromptAnswer, attribute, split_caused_over_treatments
 from .levers import Exposure, Lever, exposure, recommendation
-from .opportunities import build_opportunities
+from . import opportunities
 from .narrate import narrate
 from .preempted import compute_preempted_lows
 from .payload import (
@@ -103,10 +101,10 @@ def _exposure_counts(
       the old correction-stacking detector scored against).
     * highs — >250 CGM runs (peak anchors).
     """
-    opportunities = build_opportunities(
+    families = opportunities.build_opportunities(
         bolus, cgm, basal, scenario_config=scenario_config,
     )
-    return {family: len(items) for family, items in opportunities.items()}
+    return {family: len(items) for family, items in families.items()}
 
 
 def tally_attributions(

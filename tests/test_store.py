@@ -233,6 +233,18 @@ class OpenReadonlyTest(unittest.TestCase):
                                    "Readings (CGM / BGM)": "101",
                                    "Description": "EGV"}])
 
+    def test_queryonly_reads_live_database_but_cannot_write(self):
+        with Store.open(self.path) as writer:
+            writer.upsert_cgm([{"EventDateTime": "2022-05-27T02:00:00",
+                                "Readings (CGM / BGM)": "101",
+                                "Description": "EGV"}])
+            with Store.open_queryonly(self.path) as reader:
+                self.assertEqual([row.bg for row in reader.cgm_readings()], [100.0, 101.0])
+                with self.assertRaises(sqlite3.OperationalError):
+                    reader.upsert_cgm([{"EventDateTime": "2022-05-27T03:00:00",
+                                        "Readings (CGM / BGM)": "102",
+                                        "Description": "EGV"}])
+
 
 class CredentialsStoreTest(unittest.TestCase):
     def setUp(self):

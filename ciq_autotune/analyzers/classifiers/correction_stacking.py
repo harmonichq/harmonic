@@ -151,6 +151,7 @@ def classify_correction_stacking(
     basal_events: Sequence[BasalEvent] = (),
     *,
     scenario_config: ScenarioConfig = ScenarioConfig(),
+    iob_boluses: Optional[Sequence[BolusEvent]] = None,
 ) -> CorrectionStackingVerdict:
     """Was this cluster of corrections a genuine over-stack, or a rational runaway chase?
 
@@ -270,7 +271,8 @@ def classify_correction_stacking(
     # 4. IOB-aware, outcome-gated harm. Reconstruct bolus IOB from *all* prior
     # boluses so the first correction (and any meal) counts toward what was on
     # board when the stacking dose landed.
-    iob = BolusIob(list(corrections), iob_peak_min, iob_dia_min)
+    iob = BolusIob(list(iob_boluses if iob_boluses is not None else corrections),
+                   iob_peak_min, iob_dia_min)
     iob_at_stack = iob.at(stack.t)
 
     nadir_bg, nadir_t = _first_low_after(

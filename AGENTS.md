@@ -236,13 +236,17 @@ one flag. `ic.py` imports exactly one name from `safety.py`,
 `_MIN_SUPPORTED_BLOCK_RUNS` — the same floor of eight, applied to closed meal
 runs.
 
-**The invariant covers basal and carb ratio. It does not cover correction
-factor.** `analyzers/isf.py` imports nothing from `safety.py`: its caps are its
-own (`IsfConfig.max_step_frac`, `_half_gap`), it never sets
-`SegmentEstimate.asserts_move`, and its rows are deliberately not fed into the
-consolidated pump-profile schedule. Do not restate the invariant as universal,
-and do not assume an ISF segment is gated the way a basal slot is. Putting
-correction factor on the same classifier is open work, not a settled fact.
+**Correction factor has the same one-predicate staging invariant, but not basal's
+safety machinery.** `analyzers/isf.isf_asserts_move` is evaluated from the final
+post-harm values and stamped onto the analyzer's `SegmentEstimate`. It is true
+only when a current programmed value and a direction both exist and the
+recommendation differs from current. A direction-only weakening, a missing
+programmed value, a hold, and a rounded no-op all remain visible but cannot
+stage. `isf.py` still imports nothing from `safety.py`: its caps are its own
+(`IsfConfig.max_step_frac`, `_half_gap`), and its rows are deliberately not fed
+into the consolidated pump-profile schedule. The shared invariant is one
+backend staging verdict, not one universal classifier, cap, evidence floor, or
+delivery path.
 
 **Put any hold in the backend predicate, never in a frontend gate.** The
 frontend re-derives no floor, no threshold and no direction for any parameter;

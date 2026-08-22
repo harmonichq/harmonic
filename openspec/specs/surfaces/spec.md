@@ -12,7 +12,7 @@ The frontend is a single `frontend/index.html` file containing inlined Vue 3 and
 
 ### Requirement: Diagnose surface asks "what tuning moves are available now?"
 
-Diagnose reads the current analysis result and presents an action-ready queue of tuning recommendations (Audit), ranked by the engine's priority. Each recommendation carries the evidence behind it, severity, and a staging button. Only recommendations with `asserts_move = true` appear in this queue; held or still-collecting items stay visible in a separate "Watching" section below. Diagnose also hosts an Explore mode for inspecting glucose, insulin, and behavioral evidence without generating advice.
+Diagnose reads the current analysis result and presents a server-ranked queue of tuning findings (Audit). Each finding carries the evidence and severity behind it. The queue register is server-owned and direction-derived, so a direction-only correction-factor finding may remain in the asserted register even though it cannot stage. A staging control and actionable Recommended number appear only when the exact backend `asserts_move` verdict is true; a false or missing verdict fails closed. Findings in the held or still-collecting registers stay visible in a separate "Watching" section below. Diagnose also hosts an Explore mode for inspecting glucose, insulin, and behavioral evidence without generating advice.
 
 ### Requirement: Plan surface asks "what will I program into my pump?"
 

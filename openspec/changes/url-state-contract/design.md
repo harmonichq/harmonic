@@ -96,8 +96,10 @@ Verify stories to the umbrella shipped ledger, and preserve unrelated stories.
 The live proof covers these eight rows—no implicit “every affected state” set.
 `D1` is 1440×900, `D2` is 1280×800, and `M1` is 390×844. Each listed viewport is
 captured in Light and Dark, first on base and then on revision, sequentially on
-the same authorized server port. Base uses the equivalent shipped hash/query
-address; the invalid-link base is the currently observed `/app/` 404.
+the same authorized server port. Base uses the shipped hash/query address when
+one exists; state that was not addressable is reached through shipped controls
+and captured with the unchanged old address, which is the baseline defect. The
+invalid-link base is the currently observed `/app/` 404.
 
 | Row | State | Viewports | Behavioral proof |
 |---|---|---|---|

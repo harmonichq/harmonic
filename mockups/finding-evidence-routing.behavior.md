@@ -1345,7 +1345,7 @@ multi-segment profile from that payload; its `PUT /plan` body, not the badge
 alone, proves the fan-out.
 
 **Result.** The app-only replay reports **47 of 47 stories passed**. The Diagnose
-workstation browser suite reports **17 passed, 0 failed**, and the cockpit-shell
+workstation browser suite reports **18 passed, 0 failed**, and the cockpit-shell
 suite reports **12 passed, 0 failed, 2 pre-existing evidence-only skips**. The
 same rounded-false DOM regression run against detached base worktree `21df720`
 fails on the retired recommendation-presence gate after writing all four base

@@ -226,8 +226,7 @@ test('event comparison accepts v3, drawing withheld episodes and supported aggre
   const projection = JSON.parse(readFileSync(
     here('./__fixtures__/event-comparison-mirror.json'), 'utf8')).windows.outcome_not_anchor;
   const old = { window: globalThis.window, document: globalThis.document,
-    getComputedStyle: globalThis.getComputedStyle, ResizeObserver: globalThis.ResizeObserver,
-    location: globalThis.location, history: globalThis.history };
+    getComputedStyle: globalThis.getComputedStyle, ResizeObserver: globalThis.ResizeObserver };
   class Node {
     constructor() { this.children = []; this.dataset = {}; this.attributes = {}; this.classList = { remove() {} }; }
     set innerHTML(value) {
@@ -256,16 +255,11 @@ test('event comparison accepts v3, drawing withheld episodes and supported aggre
   };
   globalThis.getComputedStyle = () => ({ getPropertyValue: () => '#123456' });
   globalThis.ResizeObserver = class { observe() {} disconnect() {} };
-  globalThis.location = { search: '?view=meals', pathname: '/diagnose', hash: '' };
-  globalThis.history = { pushState() {} };
   try {
     const { createDiagnoseEventComparison } = await import('./diagnose-event-comparison.js');
     const root = new Node();
-    const instance = createDiagnoseEventComparison({ root, callbacks: {
-      loadProjection: async () => projection,
-    } });
-    instance.setData({});
-    await new Promise((resolve) => setImmediate(resolve));
+    const instance = createDiagnoseEventComparison({ root });
+    instance.setRoute({ kind: 'comparison', projection, query: { view: 'meals' } });
     const names = charts[0].option.series.map((series) => series.name);
     assert.ok(names.includes('Rule matched episode'));
     assert.ok(!charts[0].option.series.some((series) => /:line:/.test(series.id || '')));
@@ -274,11 +268,8 @@ test('event comparison accepts v3, drawing withheld episodes and supported aggre
     const supported = JSON.parse(readFileSync(
       here('./__fixtures__/event-comparison-mirror.json'), 'utf8')).windows.meals_default;
     const supportedRoot = new Node();
-    const supportedInstance = createDiagnoseEventComparison({ root: supportedRoot, callbacks: {
-      loadProjection: async () => supported,
-    } });
-    supportedInstance.setData({});
-    await new Promise((resolve) => setImmediate(resolve));
+    const supportedInstance = createDiagnoseEventComparison({ root: supportedRoot });
+    supportedInstance.setRoute({ kind: 'comparison', projection: supported, query: { view: 'meals' } });
     assert.ok(charts[1].option.series.some((series) => series.name === 'Rule matched supported'));
     supportedInstance.destroy();
   } finally {
@@ -290,8 +281,7 @@ test('event comparison rejects retired and conditionally malformed schemas throu
   const projection = JSON.parse(readFileSync(
     here('./__fixtures__/event-comparison-mirror.json'), 'utf8')).windows.meals_default;
   const old = { window: globalThis.window, document: globalThis.document,
-    getComputedStyle: globalThis.getComputedStyle, ResizeObserver: globalThis.ResizeObserver,
-    location: globalThis.location, history: globalThis.history };
+    getComputedStyle: globalThis.getComputedStyle, ResizeObserver: globalThis.ResizeObserver };
   class Node {
     constructor() { this.children = []; this.dataset = {}; this.classList = { remove() {} }; }
     replaceChildren(...nodes) { this.children = nodes; }
@@ -299,8 +289,6 @@ test('event comparison rejects retired and conditionally malformed schemas throu
   }
   globalThis.document = { createElement: () => new Node() };
   globalThis.window = { addEventListener() {}, removeEventListener() {} };
-  globalThis.location = { search: '?view=meals', pathname: '/diagnose', hash: '' };
-  globalThis.history = { pushState() {} };
   try {
     const { createDiagnoseEventComparison } = await import('./diagnose-event-comparison.js');
     const retired = structuredClone(projection);
@@ -323,11 +311,8 @@ test('event comparison rejects retired and conditionally malformed schemas throu
     delete withheldWithoutEpisodes.cohorts.find((cohort) => cohort.support === 'withheld').episodes;
     for (const invalid of [retired, supportedWithEpisodes, withheldWithoutEpisodes]) {
       const root = new Node();
-      const instance = createDiagnoseEventComparison({ root, callbacks: {
-        loadProjection: async () => invalid,
-      } });
-      instance.setData({});
-      await new Promise((resolve) => setImmediate(resolve));
+      const instance = createDiagnoseEventComparison({ root });
+      instance.setRoute({ kind: 'comparison', projection: invalid, query: { view: 'meals' } });
       assert.equal(root.textContent, 'Diagnose event comparison data is unavailable.');
       instance.destroy();
     }

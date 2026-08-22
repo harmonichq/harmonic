@@ -6,8 +6,8 @@
  *
  * What is NOT verbatim, and why:
  *   - the chart module is imported from its ported path;
- *   - `_shell.js` is mock-harness chrome. `resolveColors` and `queryState` are
- *     copied from it below because the ported code calls them; `applyTheme` and
+ *   - `_shell.js` is mock-harness chrome. `resolveColors` is copied from it
+ *     below because the ported code calls it; `applyTheme` and
  *     `renderMockBar` are dropped (the app owns its theme, and the mock bar is
  *     excluded from the contract by the behaviour ledger, story S22's note);
  *   - `loadCapture()` is replaced by injected data. The mock fetches four
@@ -30,6 +30,9 @@ import { toCaptures, isfVerdict } from './diagnose-workstation-data.js';
 // #735: level 1 is the server-owned findings queue, and the pane has a floor.
 import { renderFindingsQueue, queueMeta } from './diagnose-findings-queue.js';
 import { watchDockView, paintWatchDock } from './watched-change-dock.js';
+import {
+  diagnoseAlignmentCoordinates, encodeDiagnoseOccurrence,
+} from './workstation-route-consumers.js';
 /* ADR 31 part 3 (issue #41) — ALIGN's "By event" mode reuses the lens's own
    canvas-only render rather than a second implementation of the projection's
    draw. `diagnose-event-comparison.js` imports `createDiagnoseWorkstation`
@@ -45,13 +48,6 @@ export function resolveColors() {
   const names = ['primary', 'primary-600', 'primary-soft', 'surface', 'surface-2',
     'text', 'muted', 'line', 'ok', 'ok-soft', 'warn', 'warn-soft', 'danger', 'danger-soft'];
   return Object.fromEntries(names.map((name) => [name, styles.getPropertyValue(`--mk-${name}`).trim()]));
-}
-
-/* VERBATIM from the mock's shared harness chrome. `?mode=` is the mock's state parameter;
-   `?state=` is silently ignored there, and the port keeps the same name so one
-   URL drives both sides. */
-export function queryState(fallback, param = 'mode') {
-  return new URLSearchParams(window.location.search).get(param) || fallback;
 }
 
 /* The surface's markup — VERBATIM from the mock's body, lines 1025-1094 (the
@@ -142,8 +138,8 @@ const MARKUP = `
   </main>
 `;
 
-/* The mock reads its state once, at module load, straight off the URL. The app
-   re-derives both on every mount so `?mode=` can change without a reload. */
+/* Browser fixtures select a manufactured state through the explicit adapter.
+   Product URLs contain only the canonical Diagnose grammar. */
 let state = 'typical';
 let CFG = null;
 
@@ -227,27 +223,6 @@ const WINDOWS = {
 };
 const winEdge = (m) => (m === 1440 ? '24:00' : hhmm(m));
 const winText = (w) => `${hhmm(w.range[0])}–${winEdge(w.range[1])}`;
-
-/* ADR 31 part 3 (issue #41) — which finding case files ALIGN can re-project.
-   The event-comparison lens's closed factor set (`diagnose-event-comparison.js`,
-   `factorKey`) is six of the eight levers title() names
-   (`ciq_autotune/analyzers/scenario/levers.py`); MISSED_MEAL and
-   MEAL_BOLUS_SHORT are the two outside it (both Exposure.HIGHS case files,
-   which the lens has no view for).
-   Keyed on the lever's TITLE, because that is the string a factor frame
-   already carries as `factor.cause` (`factorForFinding`/`cause_title`) — not a
-   second copy of the lever enum, just the same closed set's own titles read
-   back. A factor frame whose cause is not in this map has no event alignment;
-   ALIGN stays hidden and the canvas stays clock-only. */
-const ALIGN_FACTOR_BY_CAUSE = {
-  'Carb undercount': { view: 'meals', factor: 'carb_undercount' },
-  'Late bolus': { view: 'meals', factor: 'late_bolus' },
-  'Meal over-delivery': { view: 'meals', factor: 'meal_over_delivery' },
-  'Over-treated low': { view: 'lows', factor: 'over_treated_low' },
-  'Correction stacking': { view: 'lows', factor: 'correction_stacking' },
-  'Correction on active insulin': { view: 'lows', factor: 'correction_on_iob' },
-};
-const alignCoordinatesFor = (cause) => ALIGN_FACTOR_BY_CAUSE[cause] || null;
 
 /* ---- mock 1222-1242 — VERBATIM except the trailing `[state]` index:
        the app re-derives CFG per mount instead of once at load. ---- */
@@ -1028,7 +1003,7 @@ function renderOccurrenceDetail(host, occ, factor, hasTrace, at, total, onDay) {
    receives the already-adapted captures instead, and returns a teardown so the
    surface can be re-mounted (the mock never re-mounts; it reloads the page).
    `signal` aborts the document/window listeners the ported code registers. */
-function boot(root, data, callbacks, signal) {
+function boot(root, data, callbacks, signal, route = {}) {
   const { day, exposureCapture, audit, params, icMissing } = data;
   const { envelope: envelopeIn, markers: markersIn } = data;
   /* #735 — the queue's rows and the dock's object, both server-owned. `findings`
@@ -1082,7 +1057,8 @@ function boot(root, data, callbacks, signal) {
 
   renderInstruments(CFG.win, exposureCapture, (key) => {
     // a preset always clears the brace AND pins itself over any frame window
-    presetKey = key; drawn = null; explicitPreset = true; paint();
+    presetKey = key; drawn = null; explicitPreset = true;
+    if (top().k === 'factor') commitRoute(); else paint();
   });
   /* PORT DEVIATION (#654), same reason as the scope readout above: the status
      strip is the app shell's footer, shared by every tab and already carrying
@@ -1151,22 +1127,24 @@ function boot(root, data, callbacks, signal) {
    * title — now read over the population the server published rather than over
    * a browser-side clock filter.
    */
-  function factorForFinding(row) {
-    const pair = (family) => {
-      if (!exposures[family]) return null;
-      const published = publishedFor(row, family);
-      return {
-        family,
-        cause: row.title,
-        count: published.filter((o) => o.cause_title === row.title).length,
-        familyN: published.length,
-        /* The family qualifier earns its place where this finding's own
-           episodes span more than one family: the reader is being shown one of
-           them, and which one is the fact the head has to carry. */
-        needsQual: new Set((row.evidence || []).map((e) => e.family)).size > 1,
-      };
+  function factorInFamily(row, family) {
+    if (!exposures[family]) return null;
+    const published = publishedFor(row, family);
+    return {
+      family,
+      lever: row.lever,
+      cause: row.title,
+      count: published.filter((o) => o.cause_title === row.title).length,
+      familyN: published.length,
+      /* The family qualifier earns its place where this finding's own
+         episodes span more than one family: the reader is being shown one of
+         them, and which one is the fact the head has to carry. */
+      needsQual: new Set((row.evidence || []).map((e) => e.family)).size > 1,
     };
-    const aligned = alignCoordinatesFor(row.title);
+  }
+
+  function factorForFinding(row) {
+    const aligned = diagnoseAlignmentCoordinates(row.lever);
     /* AN ALIGNED FINDING FRAMES ON ITS EVENT VIEW'S FAMILY EVEN WHEN THAT
        FAMILY IS EMPTY IN THIS WINDOW. A lever claims evidence only in the
        families it hit, so a published row can carry none in the family its
@@ -1177,8 +1155,9 @@ function boot(root, data, callbacks, signal) {
        case file reading `0 of 0`, which is what the chart beside it draws.
        Falling back to the family with the most episodes is NOT the repair — that
        is exactly the panel/chart disagreement this rule retires. */
-    if (aligned) return pair(aligned.view);
-    return Object.keys(exposures).map(pair).filter((f) => f && f.count)
+    if (aligned) return factorInFamily(row, aligned.view);
+    return Object.keys(exposures).map((family) => factorInFamily(row, family))
+      .filter((f) => f && f.count)
       .sort((a, b) => b.count - a.count)[0] || null;
   }
 
@@ -1205,7 +1184,17 @@ function boot(root, data, callbacks, signal) {
 
   const staged = new Set();        // basal slots staged for Plan
   const icStaged = new Set();      // I:C blocks staged for Plan
-  let isfStaged = false;           // the ISF value, staged for Plan
+  for (const cell of lane.cells) {
+    if (callbacks.isStaged?.({ family: 'basal', key: cell.slot.__planKey })) {
+      staged.add(cell.i);
+    }
+  }
+  for (const cell of icBlocks) {
+    if (callbacks.isStaged?.({ family: 'ic', key: cell.block.__planKey })) {
+      icStaged.add(cell.id);
+    }
+  }
+  let isfStaged = Boolean(callbacks.isStaged?.({ family: 'isf', raw: isf }));
   /* A block selection marks a window SEGMENT, never a two-handle brace (term
      32): the dashed edges and their grips are suppressed and the edges stop
      being hit-testable, so a data boundary can never be dragged into a user
@@ -1219,6 +1208,7 @@ function boot(root, data, callbacks, signal) {
      reader has moved to a different frame or flipped back to `By clock`. */
   let alignMount = null;
   let alignGeneration = 0;
+  let initialComparison = route.comparison || null;
   let presetKey = CFG.win;                          // what Esc restores
   let shownRange = null;                            // the window the canvas resolved to
   let braceGripTop = 48;                            // y of the grip band, set by paintBrace
@@ -1229,6 +1219,20 @@ function boot(root, data, callbacks, signal) {
      they clear together and reassert together. */
   let explicitPreset = false;
   let drawn = CFG.drawn ? CFG.drawn.slice() : null; // the custom window, or none
+  if (route.selection?.window) {
+    const restored = route.selection.window;
+    const preset = Object.entries(WINDOWS).find(([, spec]) => (
+      spec.range[0] === restored[0] && spec.range[1] === restored[1]
+    ));
+    if (preset) {
+      presetKey = preset[0];
+      explicitPreset = true;
+      drawn = null;
+    } else {
+      drawn = restored.slice();
+      explicitPreset = false;
+    }
+  }
   /* ONE scope, for the canvas and the inspector alike: whatever window is in
      force — a drawn one, else the pressed preset. A preset and a drawn window
      are the same kind of act, so they re-scope the same things; 24 h is the
@@ -1323,7 +1327,13 @@ function boot(root, data, callbacks, signal) {
       const factor = factorForFinding(row);
       // rowId, not the row object itself: findings reload per window, so the
       // verdict band re-resolves the live row on every paint (see findingRowFor)
-      if (factor) push({ k: 'factor', factor, rowId: row.id });
+      if (factor) {
+        const routeFamily = (row.evidence || []).some((evidence) => evidence.family === factor.family)
+          ? factor.family : row.evidence?.[0]?.family;
+        if (!routeFamily) return;
+        push({ k: 'factor', factor, routeFamily, rowId: row.id }, false);
+        commitRoute();
+      }
       return;
     }
     if (row.parameter === 'isf') { push({ k: 'isf', rowId: row.id }); return; }
@@ -1342,8 +1352,42 @@ function boot(root, data, callbacks, signal) {
      {k:'factors'} · {k:'factor', factor} · {k:'occ', occ} · {k:'slot', cell}. */
   const stack = [{ k: 'factors' }];
   const top = () => stack[stack.length - 1];
-  const push = (frame) => { dir = 'push'; stack.push(frame); shownRows = EVIDENCE_CAP; paint(); };
-  const popTo = (i) => { dir = 'pop'; stack.length = i + 1; paint(); };
+  const push = (frame, paintNow = true) => {
+    dir = 'push'; stack.push(frame); shownRows = EVIDENCE_CAP;
+    if (paintNow) paint();
+  };
+  const popTo = (i) => {
+    const leavingRoute = top().k === 'factor';
+    dir = 'pop'; stack.length = i + 1;
+    if (leavingRoute) callbacks.route?.({}); else paint();
+  };
+
+  function completeRouteQuery() {
+    const frame = top();
+    if (frame.k !== 'factor') return {};
+    const routeFamily = frame.selectedOcc
+      ? frame.factor.family : (frame.routeFamily || frame.factor.family);
+    const query = {
+      finding: frame.rowId,
+      factor: `${routeFamily}.${frame.factor.lever}`,
+    };
+    if (drawn || explicitPreset) {
+      const routeWindow = findingsWindow();
+      if (routeWindow) {
+        query.start_min = String(routeWindow[0]);
+        query.end_min = String(routeWindow[1]);
+      }
+    }
+    if (frame.align === 'event') query.projection = 'event';
+    if (frame.selectedOcc) {
+      query.occ = encodeDiagnoseOccurrence(routeFamily, frame.selectedOcc);
+    }
+    return query;
+  }
+
+  function commitRoute() {
+    if (top().k === 'factor') callbacks.route?.(completeRouteQuery());
+  }
   /* The lane is a shortcut INTO the slot branch: from level 1 it pushes, from a
      slot frame it swaps in place, so clicking cells never deepens the stack. */
   function pickCell(cell, rowId = null) {
@@ -1378,7 +1422,7 @@ function boot(root, data, callbacks, signal) {
     const f = top();
     if (f.k !== 'factor') return;
     f.selectedOcc = occ;
-    paint();
+    commitRoute();
   }
 
   /** The published finding row behind a factor frame, re-resolved from the
@@ -1438,35 +1482,43 @@ function boot(root, data, callbacks, signal) {
     return scoped.familyOccurrences.filter((o) => verdictForOcc(row, f.factor, o) === wanted);
   }
 
-  // opening depth per mock state — a payload publishing no re-projectable
-  // finding simply opens at the queue rather than on an empty case file
-  if ((CFG.level === 2 || CFG.level === 3) && bootFrames[0]) stack.push({ ...bootFrames[0] });
-  if (CFG.level === 3) {
-    // select-in-place (P35 retired): the occurrence lives on the factor frame,
-    // never on a level of its own
-    const pool = occurrencesFor(top());
-    const occ = pool.find((o) => day.days[o.date] && tierOf(o))
-      || pool.find((o) => tierOf(o)) || pool[0];
-    if (occ) stack[stack.length - 1].selectedOcc = occ;
+  if (route.selection) {
+    const row = (findings?.rows || []).find((candidate) => candidate.id === route.selection.finding);
+    const factor = row ? factorInFamily(row, route.selection.family) : null;
+    if (row && factor) {
+      const frame = {
+        k: 'factor', factor, rowId: row.id,
+        routeFamily: route.selection.routeFamily,
+        align: route.selection.projection,
+      };
+      if (route.selection.occurrence) {
+        frame.selectedOcc = route.selection.occurrence;
+        frame.bandVerdict = verdictForOcc(row, factor, route.selection.occurrence);
+      }
+      stack.push(frame);
+    }
+  } else {
+    // opening depth per browser-fixture state — a payload publishing no
+    // re-projectable finding simply opens at the queue.
+    if ((CFG.level === 2 || CFG.level === 3) && bootFrames[0]) stack.push({ ...bootFrames[0] });
+    if (CFG.level === 3) {
+      const pool = occurrencesFor(top());
+      const occ = pool.find((o) => day.days[o.date] && tierOf(o))
+        || pool.find((o) => tierOf(o)) || pool[0];
+      if (occ) stack[stack.length - 1].selectedOcc = occ;
+    }
+    if (CFG.level === 'slot') {
+      const cell = lane.cells.find((c) => c.verdict === 'up') || lane.cells[0];
+      if (cell.asserts) staged.add(cell.i);
+      stack.push({ k: 'slot', cell });
+    }
+    if (CFG.level === 'block' && !icMissing) {
+      const cell = icBlocks.find((c) => c.asserts) || icBlocks[0];
+      if (CFG.stageOpen && cell.asserts) icStaged.add(cell.id);
+      stack.push({ k: 'block', cell });
+    }
+    if (CFG.level === 'isf') stack.push({ k: 'isf' });
   }
-  if (CFG.level === 'slot') {
-    // opens with a cell selected AND one staged, so the badge, the underline and
-    // the Undo affordance are all visible at rest
-    const cell = lane.cells.find((c) => c.verdict === 'up') || lane.cells[0];
-    if (cell.asserts) staged.add(cell.i);
-    stack.push({ k: 'slot', cell });
-  }
-  /* If the asserting capture is missing, this state opens at LEVEL 1 instead of
-     on a block — that is where the missing-capture line prints, and a state
-     that silently showed a held block would misreport what it is. */
-  if (CFG.level === 'block' && !icMissing) {
-    // prefer a block that asserts, so the asserting state opens on it; the held
-    // capture has none and opens on its first block instead
-    const cell = icBlocks.find((c) => c.asserts) || icBlocks[0];
-    if (CFG.stageOpen && cell.asserts) icStaged.add(cell.id);
-    stack.push({ k: 'block', cell });
-  }
-  if (CFG.level === 'isf') stack.push({ k: 'isf' });
 
   function paintChart() {
     const f = top();
@@ -1590,7 +1642,7 @@ function boot(root, data, callbacks, signal) {
    */
   function paintAlign() {
     const f = top();
-    const mapped = f.k === 'factor' ? alignCoordinatesFor(f.factor.cause) : null;
+    const mapped = f.k === 'factor' ? diagnoseAlignmentCoordinates(f.factor.lever) : null;
     el('align-group').hidden = !mapped;
     if (!mapped) {
       disposeAlign();
@@ -1599,9 +1651,8 @@ function boot(root, data, callbacks, signal) {
     const alignKey = f.align === 'event' ? 'event' : 'clock';
     renderAlign(alignKey, (key) => {
       if (f.align === key) return;
-      if (key === 'clock') disposeAlign();
       f.align = key;
-      paint();
+      commitRoute();
     });
     if (alignKey === 'clock') {
       disposeAlign();
@@ -1609,7 +1660,8 @@ function boot(root, data, callbacks, signal) {
     }
     const window = findingsWindow();
     const selected = f.selectedOcc;
-    const occurrenceId = selected ? alignMount?.projection?.occurrences.find((occurrence) => (
+    const knownProjection = alignMount?.projection || initialComparison;
+    const occurrenceId = selected ? knownProjection?.occurrences.find((occurrence) => (
       occurrence.identity.ep_id === selected.ep_id && occurrence.identity.t === selected.t
     ))?.identity.id || null : null;
     // Frame, window, and selection all determine the server-owned projection.
@@ -1620,6 +1672,15 @@ function boot(root, data, callbacks, signal) {
     el('lane-wrap').hidden = true;
     const host = el('align-canvas');
     host.hidden = false;
+    if (initialComparison) {
+      const projection = initialComparison;
+      initialComparison = null;
+      alignMount = {
+        ...renderEventSurface(host, projection, { headerHost: el('canvas-head') }),
+        frame: f, windowKey: windowKey(window), occurrenceId,
+      };
+      return;
+    }
     const generation = ++alignGeneration;
     Promise.resolve(callbacks.loadProjection?.({
       view: mapped.view, factor: mapped.factor,
@@ -1910,7 +1971,10 @@ function boot(root, data, callbacks, signal) {
 
   // Esc and the chip's × both mean "restore the last preset" — which is an
   // explicit choice in its own right, so it outranks the frame's window too
-  function clearDrawn() { drawn = null; explicitPreset = true; paint(); }
+  function clearDrawn() {
+    drawn = null; explicitPreset = true;
+    if (top().k === 'factor') commitRoute(); else paint();
+  }
 
   /** A lane click is a physical scope choice, so it REPLACES the workspace.
       This is the only navigation that clears one — drilling never does. */
@@ -1973,6 +2037,7 @@ function boot(root, data, callbacks, signal) {
     const chartEl = el('chart');
     let mode = null; let anchor = 0; let width = 0; let grabOffset = 0;
     let moved = false; let pressMinute = 0;
+    let priorWindow = null;
     let rafId = 0;
 
     /* LIVE SHADING. Two moving dashed edges with nothing between them gave no
@@ -2057,7 +2122,17 @@ function boot(root, data, callbacks, signal) {
       // and nothing to undo — leave the panel exactly as the press found it
       if (!dragged) return;
       paintLive(null);
-      paint();   // commit: the window now renders in the full brace treatment
+      // A factor's committed window is route state: the winning shell publish
+      // performs the full paint. Queue/parameter windows remain local because
+      // the canonical Diagnose grammar has no window-only form.
+      if (top().k === 'factor') {
+        const query = completeRouteQuery();
+        drawn = priorWindow.drawn;
+        presetKey = priorWindow.presetKey;
+        explicitPreset = priorWindow.explicitPreset;
+        paint();
+        callbacks.route?.(query);
+      } else paint();
     }
     /* Is this press inside the shown window's interior? Hit-tested rather than
        overlaid: an interior <div> would swallow the chart's own hover tooltip
@@ -2106,6 +2181,11 @@ function boot(root, data, callbacks, signal) {
       ev.preventDefault();
       mode = kind;
       moved = false;
+      priorWindow = {
+        drawn: drawn ? drawn.slice() : null,
+        presetKey,
+        explicitPreset,
+      };
       pressMinute = minuteAt(ev);
       document.addEventListener('mousemove', move);
       document.addEventListener('mouseup', end);
@@ -2130,22 +2210,14 @@ function boot(root, data, callbacks, signal) {
 
   function paint() {
     ensureFindings();
-    /* A finding whose row left the window publishes no population, so there is
-       nothing for the lens to re-project, and neither does a frame whose event
-       view's family holds none of this window's evidence: the event canvas
-       would draw the window's own population beside a panel listing none of it,
-       which is the two panes disagreeing without saying so. The frame keeps the
-       reader; the canvas goes back to the clock and states what the panel does. */
     const open = top();
-    if (open.k === 'factor' && open.align === 'event'
-      && settled() && !scopedFor(open).familyN) open.align = 'clock';
     /* The mounted event surface owns both the visible canvas and the shared
        header until its replacement projection lands. Repainting the hidden
        clock canvas in between would write its header fields while the event
        markup is mounted. Navigation that ends event ownership releases it
        first, so the clock repaint starts with its own header restored. */
     if (alignMount && (open.k !== 'factor' || open.align !== 'event'
-      || !alignCoordinatesFor(open.factor.cause))) disposeAlign();
+      || !diagnoseAlignmentCoordinates(open.factor.lever))) disposeAlign();
     renderChips(settled() ? findings?.chip_counts : null, selectedChips, (key) => {
       const next = new Set(selectedChips || CHIP_LABELS.map(([name]) => name));
       if (next.has(key)) next.delete(key); else next.add(key);
@@ -2179,7 +2251,7 @@ function boot(root, data, callbacks, signal) {
       ev.preventDefault();
       dir = 'pop';
       stack.pop();
-      paint();
+      if (f.k === 'factor') callbacks.route?.({}); else paint();
       return;
     }
     if (f.k !== 'factor' || !f.selectedOcc
@@ -2190,7 +2262,7 @@ function boot(root, data, callbacks, signal) {
     if (at < 0 || next < 0 || next >= siblings.length) return;
     ev.preventDefault();
     f.selectedOcc = siblings[next];   // same frame, next reading — the panel and
-    paint();                          // the day trace both follow from the frame
+    commitRoute();
   }, { signal });   // PORT: abortable
 
   observeResize(el('chart'), () => chart);
@@ -2229,8 +2301,11 @@ function boot(root, data, callbacks, signal) {
    lens control Meals and Lows do, in the same optical row. `render()` rewrites
    the whole root, and the surface calls it on its own state changes, so the
    lead has to be re-injected here rather than once by the caller. */
-export function createDiagnoseWorkstation({ root, callbacks = {}, railLead = null }) {
+export function createDiagnoseWorkstation({
+  root, callbacks = {}, railLead = null, browserAdapter = null,
+}) {
   let payload = null;
+  let routeState = {};
   let captures = null;
   let teardown = null;
   let repaintDay = null;
@@ -2253,7 +2328,7 @@ export function createDiagnoseWorkstation({ root, callbacks = {}, railLead = nul
     repaintDay = null;
     if (aborter) { aborter.abort(); aborter = null; }
     if (!payload) return;
-    state = queryState('typical');
+    state = browserAdapter?.diagnoseState || 'typical';
     if (!Object.prototype.hasOwnProperty.call(CFG_BY_STATE, state)) state = 'typical';
     CFG = CFG_BY_STATE[state];
     captures = toCaptures(payload, { ...callbacks, state });
@@ -2289,31 +2364,22 @@ export function createDiagnoseWorkstation({ root, callbacks = {}, railLead = nul
       railLead.install(root.querySelector('.instruments'));
     }
     aborter = new AbortController();
-    const booted = boot(root, captures, callbacks, aborter.signal);
+    const booted = boot(root, captures, callbacks, aborter.signal, routeState);
     teardown = booted.destroy;
     repaintDay = booted.repaintDay;
   }
 
-  /* State addressability. The mock is driven by `?mode=`; so is the build, and
-     the parameter is written into the URL so a reload keeps the state (behaviour
-     stories S22 and S23 both reload). */
-  function gotoState(next) {
-    const url = new URL(window.location.href);
-    url.searchParams.set('mode', next);
-    window.history.replaceState({}, '', url);
-    render();
-    return root.dataset.state;
-  }
-  window.__dwGotoState = gotoState;
-
   return {
-    setData(nextPayload) { payload = nextPayload; render(); },
+    setData(nextPayload, nextRoute = {}) {
+      payload = nextPayload;
+      routeState = nextRoute;
+      render();
+    },
     setError(message) { showError(message); },
     refresh() { render(); },
     /* A day's real trace resolved: repaint in place off the live boot instance,
        preserving navigation state. No-op if the surface is unmounted or in its
        error state (#666). */
     repaintDay() { repaintDay?.(); },
-    gotoState,
   };
 }

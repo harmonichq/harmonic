@@ -65,9 +65,13 @@ const settle = (page, ms) => page.waitForTimeout(ms);
 const scoped = (page, prefix) => (selector) => page.locator(prefix + selector);
 
 /** The BUILT workstation, its API answered from the same data. */
-export async function openApp(browser, { state = 'complete', theme = 'light' } = {}) {
+export async function openApp(browser, {
+  state = 'complete', theme = 'light', omitTrial = false,
+} = {}) {
   const payloadPath = process.env.PAYLOAD || fail('PAYLOAD is required for TARGET=app');
   const payload = JSON.parse(await readFile(payloadPath, 'utf8'));
+  const routeTrial = payload.roster.trials.find((trial) => trial.state === state);
+  if (!routeTrial) fail(`payload has no ${state} Trial for the browser adapter`);
   const STUBS = [
     // The surface's own feed: the roster, then one detail per Trial.
     [/^\/verify\/trials/, (url) => {
@@ -105,7 +109,7 @@ export async function openApp(browser, { state = 'complete', theme = 'light' } =
     if (url.hostname.startsWith('fonts.')) return route.fulfill({ status: 204 });
     if (url.href.includes('echarts')) return route.fulfill({ body: await vendored('echarts.min.js'), contentType: 'text/javascript' });
     if (url.href.includes('vue')) return route.fulfill({ body: await vendored('vue.esm-browser.js'), contentType: 'text/javascript' });
-    if (path === '/') return route.fulfill({ body: await readFile(join(ROOT, 'frontend/index.html')), contentType: 'text/html' });
+    if (path === '/app/verify') return route.fulfill({ body: await readFile(join(ROOT, 'frontend/index.html')), contentType: 'text/html' });
     if (/\.(js|css|svg|html)$/.test(path)) {
       try { return route.fulfill({ body: await readFile(join(ROOT, 'frontend', path.slice(1))), contentType: MIME[extname(path)] || 'text/plain' }); } catch { /* fall through to the stubs */ }
     }
@@ -115,19 +119,18 @@ export async function openApp(browser, { state = 'complete', theme = 'light' } =
     problems.push(`unstubbed ${route.request().method()} ${path} (app ${state})`);
     return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ detail: 'not stubbed' }) });
   });
-  // The app carries the ported `?state=` hook, so the harness drives it
-  // directly and asserts the state it actually rendered.
-  await page.goto(`http://app.local/?state=${state}#verify`);
+  const address = new URL('http://app.local/app/verify');
+  if (!omitTrial) address.searchParams.set('trial', routeTrial.id);
+  await page.goto(address.href);
   await page.waitForSelector('.vw .trial-line .subject', { timeout: 15000 });
   await settle(page, 900);
   const $ = scoped(page, '.vw ');
   await assertState($, state, `app ${state}`);
-  return { page, $, close: () => page.close() };
+  return { page, $, trial: routeTrial, close: () => page.close() };
 }
 
-/** State addressability, loud on both sides: a `?state=` the surface silently
-    ignores renders a plausible screen and hides the drift (the `?mode=` bug
-    the Diagnose comparator shipped with). */
+/** Fixture-state addressability stays loud without entering the product URL.
+    A plausible default screen would otherwise hide adapter drift. */
 async function assertState($, want, where) {
   const subject = await $('.trial-line .subject').innerText();
   const expected = want === 'maturing' ? /maturing/i : /complete/i;
@@ -137,7 +140,7 @@ async function assertState($, want, where) {
 /* ------------------------------------------------------------------ stories */
 
 /* S1 — trial popover toggles from its button; aria-expanded tracks. */
-// LOCK:verify-660-story:3 LOCK:verify-660-story:4
+// STORY:finding-evidence-routing:V01
 export const S1 = async (open, browser) => {
   const { $, close } = await open(browser);
   const more = $('.trial-more'), pop = $('.trial-pop');
@@ -151,14 +154,24 @@ export const S1 = async (open, browser) => {
 
 /* S2 — selecting a sibling re-renders the whole surface (strip subject, hero
    family title, inspector) and closes the popover. */
-// LOCK:verify-660-story:3 LOCK:verify-660-story:6 LOCK:verify-660-story:12
+// STORY:finding-evidence-routing:V02
 export const S2 = async (open, browser) => {
-  const { $, close } = await open(browser);
+  const { page, $, close } = await open(browser);
   const before = await $('.trial-line .subject').innerText();
+  const beforeRaw = await $('.trial-line .subject').textContent();
+  const beforeHistory = await page.evaluate(() => history.length);
+  const beforeUrl = page.url();
   await $('.trial-more').click();
   await $('.trial-pop button').first().click();
+  await page.waitForFunction((oldSubject) => (
+    document.querySelector('.vw .trial-line .subject')?.textContent !== oldSubject
+  ), beforeRaw);
   const after = await $('.trial-line .subject').innerText();
   ok(after !== before, 'subject did not change on trial switch');
+  ok(page.url() !== beforeUrl && new URL(page.url()).searchParams.has('trial'),
+    'sibling Trial did not publish one canonical route');
+  ok(await page.evaluate(() => history.length) === beforeHistory + 1,
+    'sibling Trial selection did not push exactly once');
   ok(!(await $('.trial-pop').isVisible()), 'popover stayed open after switch');
   // innerText reflects the caps-rank text-transform, so match case-insensitively
   const title = await $('#hero-title').innerText();
@@ -167,7 +180,7 @@ export const S2 = async (open, browser) => {
 };
 
 /* S3 — outside click dismisses the popover. */
-// LOCK:verify-660-story:4
+// STORY:finding-evidence-routing:V03
 export const S3 = async (open, browser) => {
   const { $, close } = await open(browser);
   await $('.trial-more').click();
@@ -177,7 +190,7 @@ export const S3 = async (open, browser) => {
 };
 
 /* S4 — Escape dismisses the popover. */
-// LOCK:verify-660-story:4
+// STORY:finding-evidence-routing:V04
 export const S4 = async (open, browser) => {
   const { page, $, close } = await open(browser);
   await $('.trial-more').click();
@@ -188,7 +201,7 @@ export const S4 = async (open, browser) => {
 
 /* S5 — chart hover swaps the pane header to the live readout: time, BEFORE,
    TRIAL, signed Δ; crosshair only, no floating tooltip. */
-// LOCK:verify-660-story:10
+// STORY:finding-evidence-routing:V05
 export const S5 = async (open, browser) => {
   const { page, $, close } = await open(browser);
   const box = await $('#hero-chart').boundingBox();
@@ -208,7 +221,7 @@ export const S5 = async (open, browser) => {
 };
 
 /* S6 — leaving the chart restores the rest header. */
-// LOCK:verify-660-story:10
+// STORY:finding-evidence-routing:V06
 export const S6 = async (open, browser) => {
   const { page, $, close } = await open(browser);
   const box = await $('#hero-chart').boundingBox();
@@ -221,7 +234,7 @@ export const S6 = async (open, browser) => {
 };
 
 /* S7 — ≤900px stacks the panes and the content column scrolls (no overlap). */
-// LOCK:verify-660-story:17
+// STORY:finding-evidence-routing:V07
 export const S7 = async (open, browser) => {
   const { page, $, close } = await open(browser);
   await page.setViewportSize({ width: 800, height: 900 });
@@ -240,7 +253,7 @@ export const S7 = async (open, browser) => {
 
 /* S8 — maturing withholds Keep/Revert behind the readiness word; complete
    shows both actions under "Ready to judge". */
-// LOCK:verify-660-story:16
+// STORY:finding-evidence-routing:V08
 export const S8 = async (open, browser) => {
   let { $, close } = await open(browser, { state: 'maturing' });
   ok(await $('.decide .btns button').count() === 0, 'maturing rendered action buttons');
@@ -252,9 +265,56 @@ export const S8 = async (open, browser) => {
   await close();
 };
 
+/* R02 — omission resolves through initialTrial and replaces the address;
+   sibling selection is one push, and browser traversal restores the same
+   Trial evidence in both directions. */
+// STORY:finding-evidence-routing:R02
+export const R02 = async (open, browser) => {
+  const { page, $, trial, close } = await open(browser, {
+    state: 'maturing', omitTrial: true,
+  });
+  const firstUrl = new URL(page.url());
+  ok(firstUrl.searchParams.get('trial') === trial.id,
+    'omitted Trial did not resolve and replace with initialTrial');
+  ok(!['state', 'mode', 'theme'].some((key) => firstUrl.searchParams.has(key)),
+    'browser fixture controls leaked into the Verify URL');
+
+  const firstSubject = await $('.trial-line .subject').textContent();
+  const historyBefore = await page.evaluate(() => history.length);
+  await $('.trial-more').click();
+  await $('.trial-pop button').first().click();
+  await page.waitForFunction((oldSubject) => (
+    document.querySelector('.vw .trial-line .subject')?.textContent !== oldSubject
+  ), firstSubject);
+  const siblingUrl = new URL(page.url());
+  const siblingTrial = siblingUrl.searchParams.get('trial');
+  ok(siblingTrial && siblingTrial !== trial.id, 'sibling selection did not name its Trial');
+  ok(await page.evaluate(() => history.length) === historyBefore + 1,
+    'sibling selection did not add exactly one history entry');
+
+  await page.goBack();
+  await page.waitForFunction((id) => new URL(location.href).searchParams.get('trial') === id,
+    trial.id);
+  await page.waitForFunction((oldSubject) => (
+    document.querySelector('.vw .trial-line .subject')?.textContent === oldSubject
+  ), firstSubject);
+  ok(/maturing/i.test(await $('.trial-line .subject').innerText()),
+    'Back did not restore the initial Trial evidence');
+
+  await page.goForward();
+  await page.waitForFunction((id) => new URL(location.href).searchParams.get('trial') === id,
+    siblingTrial);
+  await page.waitForFunction((oldSubject) => (
+    document.querySelector('.vw .trial-line .subject')?.textContent !== oldSubject
+  ), firstSubject);
+  ok((await $('.trial-line .subject').textContent()) !== firstSubject,
+    'Forward did not restore the sibling Trial evidence');
+  await close();
+};
+
 /* ------------------------------------------------------------------- runner */
 
-const STORIES = { S1, S2, S3, S4, S5, S6, S7, S8 };
+const STORIES = { S1, S2, S3, S4, S5, S6, S7, S8, R02 };
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const target = process.env.TARGET;

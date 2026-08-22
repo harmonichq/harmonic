@@ -1331,8 +1331,8 @@ S41 · a recommendation-bearing explicit false verdict stays in the direction-
       offers no stage control
 S42 · a recommendation-bearing legacy row with no verdict fails closed while
       retaining weaken direction and the recent-low refusal evidence
-S43 · a strengthen recommendation rounded back to the programmed factor names
-      that rounding hold and never claims weaken or recent lows
+S43 · a strengthen recommendation rounded back to the current Correction
+      factor names that rounding hold and never claims weaken or recent lows
 S44 · exact true keeps the capped action number; the real stage affordance PUTs
       one unchanged capped value for each of the committed generated profile's
       four segments, and the Plan badge reports the same count

@@ -300,7 +300,9 @@ export async function openApp(browser, {
   onPlanDraft = null, comparisonStatus = 0, findingsDelayMs = 0, appSource = 'server',
 } = {}) {
   const payloadPath = process.env.PAYLOAD || fail('PAYLOAD is required for TARGET=app');
-  appSource = process.env.DIAGNOSE_APP_SOURCE || appSource;
+  /* Source selection belongs to the caller. Standalone replay pins `server`
+     below; browser tests opt into `fixture` per call. Ambient process state
+     must never turn a built-app replay into an on-disk HTML run. */
   if (!['server', 'fixture'].includes(appSource)) fail(`unknown appSource: ${appSource}`);
   const baseUrl = appSource === 'server'
     ? process.env.BASE_URL || fail('BASE_URL is required for the app-only replay')
@@ -1636,7 +1638,7 @@ export const S42 = async (page) => {
   ok(/recent lows make a new number unsafe to suggest/i.test(text), 'S42 refusal language remains visible');
 };
 
-/** S43 · A strengthen step rounded back to the programmed factor names that
+/** S43 · A strengthen step rounded back to the current Correction factor names that
     no-op rather than borrowing weaken/recent-low refusal copy. */
 // STORY:finding-evidence-routing:S43
 export const S43 = async (page) => {
@@ -1646,7 +1648,9 @@ export const S43 = async (page) => {
   await settle(page, 450);
   const text = await page.locator('#level').innerText();
   is((await state(page)).stage, null, 'S43 rounded no-op offers no stage control');
-  ok(/conservative step rounds to the programmed factor/i.test(text), 'S43 names the rounding hold');
+  ok(/conservative step rounds to the current Correction factor/.test(text),
+    'S43 names the rounding hold in sanctioned user language');
+  ok(!/programmed factor/i.test(text), 'S43 never exposes the retired user phrase');
   ok(!/recent lows|stronger than needed/i.test(text), 'S43 never claims weaken or recent lows');
 };
 
@@ -1983,7 +1987,7 @@ export const STORIES = [
   ['S43', S43, 'typical', {
     analysisInputs: (analysis) => withIsfVerdict(analysis, {
       direction: 'strengthen', recommended: 42, assertsMove: false,
-      annotation: 'The conservative strengthen step rounds to the programmed factor.',
+      annotation: 'The conservative strengthen step rounds to the current Correction factor.',
     }),
   }],
   ['S44', S44, 'typical', {
@@ -2009,7 +2013,7 @@ if (isMain) {
   const results = [];
   for (const [id, fn, want, options] of STORIES) {
     if (only && !only.has(id)) continue;
-    const page = await openApp(browser, { state: want, ...(options || {}) });
+    const page = await openApp(browser, { state: want, ...(options || {}), appSource: 'server' });
     try {
       const note = await fn(page);
       results.push([id, 'pass', note || '']);

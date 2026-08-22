@@ -141,6 +141,21 @@ async function shot(page, family, state_, viewport, theme) {
 
 const VIEWPORTS = [{ width: 1440, height: 900 }, { width: 1280, height: 800 }];
 
+test('an explicit fixture opener ignores a hostile ambient app-source override', async () => {
+  const browser = await runner.browser();
+  const previous = process.env.DIAGNOSE_APP_SOURCE;
+  process.env.DIAGNOSE_APP_SOURCE = 'hostile-fixture-bypass';
+  try {
+    const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
+    assert.equal(await page.locator('.dw').count(), 1,
+      'the explicit fixture caller still reaches the Diagnose shell');
+    await page.close();
+  } finally {
+    if (previous === undefined) delete process.env.DIAGNOSE_APP_SOURCE;
+    else process.env.DIAGNOSE_APP_SOURCE = previous;
+  }
+});
+
 function contrastRatio(foreground, background) {
   const rgb = (color) => color.match(/\d+/g).map(Number).slice(0, 3);
   const luminance = (color) => rgb(color).map((channel) => {
@@ -455,7 +470,7 @@ test('a rounded false ISF verdict keeps evidence and empty Recommended geometry 
             state: 'typical', viewport, theme, appSource: 'fixture',
             analysisInputs: (analysis) => withIsfVerdict(analysis, {
               direction: 'strengthen', recommended: 42, assertsMove: false,
-              annotation: 'The conservative strengthen step rounds to the programmed factor.',
+              annotation: 'The conservative strengthen step rounds to the current Correction factor.',
             }),
           });
           const row = page.locator('#level .qrow[data-id="isf"]');
@@ -484,7 +499,8 @@ test('a rounded false ISF verdict keeps evidence and empty Recommended geometry 
         assert.equal(reading.recommended, '--', 'Recommended keeps its reserved row with no numeric value');
         assert.equal(reading.estimate, '31.40', 'the estimate remains visible');
         assert.equal(reading.stage, 0, 'the false verdict exposes no stage control');
-        assert.match(reading.text, /conservative step rounds to the programmed factor/i);
+        assert.match(reading.text, /conservative step rounds to the current Correction factor/);
+        assert.doesNotMatch(reading.text, /programmed factor/i);
         assert.match(reading.text, /CI 18\.20–46\.90 mg\/dL\/U/);
         assert.doesNotMatch(reading.text, /recent lows|stronger than needed/i);
       }

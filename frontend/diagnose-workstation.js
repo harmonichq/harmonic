@@ -782,7 +782,7 @@ function renderIsfLevel(host, isf, isfStaged, onStage) {
   renderParamLevel(host, {
     head: 'ISF',
     verdict: canStage ? 'suggests a change'
-      : roundedNoop ? 'conservative step rounds to the programmed factor'
+      : roundedNoop ? 'conservative step rounds to the current Correction factor'
         : direction === 'weaken' ? 'corrections look stronger than needed'
           : direction === 'strengthen' ? 'corrections look weaker than needed'
         : 'no direction asserted',
@@ -793,7 +793,7 @@ function renderIsfLevel(host, isf, isfStaged, onStage) {
     recommended: canStage ? isf.recommended : null,
     recommendedQual: canStage
       ? 'mg/dL/U, one conservative step'
-      : roundedNoop ? 'the conservative step rounds to the programmed factor'
+      : roundedNoop ? 'the conservative step rounds to the current Correction factor'
         : direction ? 'no new number is suggested'
         : 'no direction asserted, so nothing is recommended',
     currentNoun: 'correction factor',
@@ -807,7 +807,7 @@ function renderIsfLevel(host, isf, isfStaged, onStage) {
     canStage,
     isStaged: isfStaged,
     footNote: roundedNoop
-      ? 'The conservative step rounds to the programmed factor, so there is no settings change to stage.'
+      ? 'The conservative step rounds to the current Correction factor, so there is no settings change to stage.'
       : direction === 'weaken'
         ? 'Corrections look stronger than needed, but recent lows make a new number unsafe to suggest.'
         : direction === 'strengthen'

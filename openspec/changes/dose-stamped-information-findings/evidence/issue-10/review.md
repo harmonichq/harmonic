@@ -22,7 +22,8 @@ the older parent brief's proposed seven-row density shape.
 | Pass | Accessibility | Performance | Responsive | Theming | Anti-patterns | Total | P0 | P1 | P2 |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | Initial audit | 3 | 3 | 2 | 4 | 4 | 16/20 | 0 | 2 | 1 |
-| Re-audit | 4 | 3 | 4 | 4 | 4 | 19/20 | 0 | 0 | 0 |
+| Independent full review | 3 | 3 | 2 | 4 | 4 | 16/20 | 0 | 2 | 0 |
+| Fix re-audit | 4 | 3 | 4 | 4 | 4 | 19/20 | 0 | 0 | 0 |
 
 Initial P1 findings were 34 px segment controls and 10–13 px history evidence
 type at 390x844. The P2 finding was the redundant 69-entry chart legend. The
@@ -30,13 +31,21 @@ polish pass raised narrow-layout controls to 44x44, raised history evidence to
 at least 14 px, added an accessible chart name, and left the complete member
 roster in the inspector while reducing the chart legend to its meal-marker key.
 
-The re-audit rendered clock and event evidence in light and dark at 1440x900,
-1024x768, and 390x844. Across all six pairs it found:
+An independent full review then found two selectors the first re-audit had not
+reached: the retirement notice still resolved to 11.5 px because it is outside
+`.history-case`, and the issue-10 Watching collapse control had no 44 px mobile
+minimum. The fix scopes the retirement rule to `.dw .history-retirement`, gives
+`.dw .qcollapse` a 44 px mobile minimum, and adds rendered assertions for both.
+
+The fix re-audit rendered clock and event evidence in light and dark at
+1440x900, 1024x768, and 390x844, then reran S42, S55, and S56 at 390x844 in
+both themes. The eight affected mobile PNGs were replaced. The combined audit
+found:
 
 - zero console, page, or unexpected HTTP errors;
 - zero document horizontal or vertical overflow;
-- zero issue-10 controls below 44x44 at the narrow viewport;
-- zero issue-10 text below 14 px at the narrow viewport;
+- a 44 px-high issue-10 Watching target at the narrow viewport;
+- 14 px retirement copy in both narrow-viewport themes;
 - one current-program line and zero stage controls in every open case;
 - one mounted event chart with all 69 database members in every event render.
 
@@ -94,6 +103,8 @@ in-story pending seams, not reconstructed after the fact.
 - Frontend Node gate: 387 passed, 0 failed.
 - Backend gate: 1,891 passed, 1 skipped, 0 failed (169 warnings).
 - Diagnose workstation browser gate: 14 passed, 0 failed.
+- Review-fix replay: S42/S55/S56/S67/S71 passed 5/5; the corrected mobile
+  evidence replay passed S42/S55/S56 3/3 in light and 3/3 in dark.
 - Remaining browser gates: Day 3/3; cockpit shell 12 passed, 2 evidence-only
   skips, 0 failed; browser-runner 1/1; first Plan match 4/4; event-comparison
   replay 13/13; event-comparison support audit 7/7 renders; Verify replay 8/8.

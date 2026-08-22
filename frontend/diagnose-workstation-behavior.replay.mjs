@@ -285,7 +285,7 @@ const projectAuthor = async () => {
 export async function openApp(browser, {
   state: want = 'typical', theme = 'dark', viewport = { width: 1440, height: 900 }, findingsInputs = null,
   exposuresInputs = null, comparisonStatus = 0, findingsDelayMs = 0, appSource = 'server',
-  history = false, selectedFindingsResponses = [], historyResponses = [],
+  history = false, selectedFindingsResponses = [], historyResponses = [], stageProbe = false,
 } = {}) {
   const payloadPath = process.env.PAYLOAD || fail('PAYLOAD is required for TARGET=app');
   if (!['server', 'fixture'].includes(appSource)) fail(`unknown appSource: ${appSource}`);
@@ -381,11 +381,12 @@ export async function openApp(browser, {
     if (/^Failed to load resource: the server responded with a status of \d+/.test(message.text())) return;
     problems.push(`console(app ${want}): ${message.text()}`);
   });
-  await page.addInitScript(([t]) => {
+  await page.addInitScript(([t, observeStage]) => {
     localStorage.setItem('ciq_token', 'behaviour-replay');
     localStorage.setItem('tab', 'diagnose');
     localStorage.setItem('theme', t);
-  }, [theme]);
+    if (observeStage) window.__diagnoseStageProbe = { calls: [] };
+  }, [theme, stageProbe]);
   await page.route('**/*', async (route) => {
     const url = new URL(route.request().url());
     const path = url.pathname;
@@ -394,6 +395,23 @@ export async function openApp(browser, {
     if (url.href.includes('vue')) return route.fulfill({ body: await vendored('vue.esm-browser.js'), contentType: 'text/javascript' });
     if (appSource === 'server' && url.origin === targetUrl.origin
         && (path === '/' || /\.(js|css|svg|html)$/.test(path))) {
+      if (stageProbe && path === '/diagnose-workstation.js') {
+        const source = await readFile(join(ROOT, 'frontend/diagnose-workstation.js'), 'utf8');
+        const seam = 'export function createDiagnoseWorkstation({ root, callbacks = {}, railLead = null }) {';
+        if (source.split(seam).length !== 2) fail('S71 staging seam must occur exactly once');
+        const instrumented = source.replace(seam, `${seam}
+  /* Replay-only wrapper: preserve the real callback and arguments while making
+     any invocation observable. The production module served by the app is not
+     edited; this route-local probe exists only for S71. */
+  if (window.__diagnoseStageProbe) {
+    const stage = callbacks.stage;
+    callbacks = { ...callbacks, stage(...args) {
+      window.__diagnoseStageProbe.calls.push({ family: args[0]?.family ?? null, desired: args[1] ?? null });
+      return stage?.apply(callbacks, args);
+    } };
+  }`);
+        return route.fulfill({ body: instrumented, contentType: 'text/javascript' });
+      }
       return route.continue();
     }
     if (appSource === 'fixture' && url.origin === targetUrl.origin) {
@@ -1642,6 +1660,10 @@ export const S42 = async (page) => {
   await settle(page, 250);
   const toggle = page.locator('#level .qcollapse');
   ok(/^Watching · \d+ reads?$/.test(await toggle.innerText()), 'S42 one Watching control owns the count');
+  if (page.viewportSize().width <= 760) {
+    const box = await toggle.boundingBox();
+    ok(box && box.height >= 44, `S42 mobile Watching target is at least 44px high (${box?.height})`);
+  }
   const pressed = await page.getByRole('button', { name: /^Highs / }).getAttribute('aria-pressed');
   await captureEvidence(page, 'S42-sift-collapsed');
   await toggle.click();
@@ -1792,6 +1814,11 @@ const assertRetired = async (page, message, story) => {
   is(s.history.retirement, message, `${story} exact retirement notice`);
   is(s.queue.some((row) => row.register === 'history'), false,
     `${story} refreshed queue does not retain the retired history row`);
+  if (page.viewportSize().width <= 760) {
+    const fontSize = await page.locator('.history-retirement').evaluate((node) =>
+      parseFloat(getComputedStyle(node).fontSize));
+    ok(fontSize >= 14, `${story} mobile retirement copy is at least 14px (${fontSize})`);
+  }
   ok(await page.locator('#chart').isVisible(), `${story} clock canvas restored`);
 };
 
@@ -1942,8 +1969,55 @@ export const S65 = async (page) => assertTypedRunFailure(page, 400, 'invalid_his
 // STORY:finding-evidence-routing:S66
 export const S66 = async (page) => assertTypedRunFailure(page, 404, 'history_run_not_found', 'S66');
 
+const RESTART_GENERATION = 'findings-fixture-process:restart';
+const withRestartGeneration = (payload) => ({ ...payload, analysis_generation: RESTART_GENERATION });
+const withoutProcessGeneration = (payload) => {
+  const copy = structuredClone(payload);
+  delete copy.analysis_generation;
+  return copy;
+};
+
 // STORY:finding-evidence-routing:S67
-export const S67 = async (page) => S60(page);
+export const S67 = async (page) => {
+  const eventRequests = [];
+  page.on('request', (request) => {
+    const url = new URL(request.url());
+    if (url.pathname === '/diagnose/carb-ratio-history/events') {
+      eventRequests.push({
+        historyId: url.searchParams.get('history_id'),
+        generation: url.searchParams.get('analysis_generation'),
+      });
+    }
+  });
+  const firstResponse = page.waitForResponse((response) =>
+    new URL(response.url()).pathname === '/diagnose/carb-ratio-history/events' && response.status() === 200);
+  await openHistoryEvents(page);
+  const firstPayload = await (await firstResponse).json();
+  const before = await state(page);
+
+  await page.getByRole('button', { name: 'By clock', exact: true }).click();
+  expectResponse(page, /\/diagnose\/carb-ratio-history\/events/, 409);
+  const restartedResponse = page.waitForResponse((response) =>
+    new URL(response.url()).pathname === '/diagnose/carb-ratio-history/events' && response.status() === 200);
+  await page.getByRole('button', { name: 'By event', exact: true }).click();
+  const restartedPayload = await (await restartedResponse).json();
+  await settle(page, 700);
+  const after = await state(page);
+
+  is(after.history.id, before.history.id, 'S67 opaque history identity survives process restart');
+  ok(after.history.generation !== before.history.generation,
+    'S67 process restart publishes a distinct opaque generation');
+  is(after.history.generation, RESTART_GENERATION, 'S67 replacement commits the restarted generation');
+  is(withoutProcessGeneration(restartedPayload), withoutProcessGeneration(firstPayload),
+    'S67 projected database bytes are unchanged apart from process generation');
+  is(eventRequests.map((request) => request.historyId),
+    eventRequests.map(() => before.history.id), 'S67 every request carries the unchanged history id');
+  is(eventRequests.map((request) => request.generation),
+    [before.history.generation, before.history.generation, RESTART_GENERATION],
+    'S67 stale generation is rejected once, then the refreshed generation is requested');
+  is(after.history.canvasGeneration, after.history.generation,
+    'S67 restarted inspector/canvas pair commits coherently');
+};
 
 // STORY:finding-evidence-routing:S68
 export const S68 = async (page) => {
@@ -1984,15 +2058,85 @@ export const S70 = async (page) => {
     [s.history.id, s.history.generation, s.history.selectedRunId], 'S70 rendered pair exposes identical coordinates');
 };
 
+const historySafetyState = (page, draftWrites) => page.evaluate((writes) => {
+  const setup = document.querySelector('#app')?.__vue_app__?._instance?.setupState;
+  const planItems = setup?.planItems;
+  const tab = setup?.tab?.value ?? setup?.tab ?? null;
+  return {
+    stageCalls: window.__diagnoseStageProbe?.calls ?? null,
+    planDraftWrites: writes,
+    planItems: Number.isFinite(planItems?.size) ? planItems.size : null,
+    planBadge: document.querySelector('#plan-badge')?.dataset.count ?? null,
+    tab,
+    storedTab: localStorage.getItem('tab'),
+    planCurrent: document.querySelector('[data-shell-tab="plan"]')?.getAttribute('aria-current') ?? null,
+  };
+}, draftWrites);
+
+const assertHistorySafety = async (page, draftWrites, label) => {
+  const safety = await historySafetyState(page, draftWrites);
+  ok(Array.isArray(safety.stageCalls), `S71 ${label}: staging callback probe is installed`);
+  is(safety.stageCalls, [], `S71 ${label}: callbacks.stage is not invoked`);
+  is(safety.planDraftWrites, 0, `S71 ${label}: no Plan draft request is written`);
+  is(safety.planItems, 0, `S71 ${label}: reactive Plan draft remains empty`);
+  is(safety.planBadge, '0', `S71 ${label}: rendered Plan state remains empty`);
+  is(safety.tab, 'diagnose', `S71 ${label}: app state remains on Diagnose`);
+  is(safety.storedTab, 'diagnose', `S71 ${label}: persisted navigation remains on Diagnose`);
+  is(safety.planCurrent, null, `S71 ${label}: Plan never becomes the current route`);
+};
+
 // STORY:finding-evidence-routing:S71
 export const S71 = async (page) => {
-  await openHistoryEvents(page);
-  await page.locator('.history-run').first().click();
-  await settle(page, 600);
+  let draftWrites = 0;
+  page.on('request', (request) => {
+    const url = new URL(request.url());
+    if (url.pathname === '/plan' && request.method() !== 'GET') draftWrites += 1;
+  });
+
+  await assertHistorySafety(page, draftWrites, 'before interaction');
+  await page.locator('.qrow[data-state="history"]').first().click();
+  await settle(page, 450);
+  await assertHistorySafety(page, draftWrites, 'queue click/open');
+
+  await page.getByRole('button', { name: 'By event', exact: true }).click();
+  await settle(page, 650);
+  await assertHistorySafety(page, draftWrites, 'ALIGN switch to By event');
   await page.getByRole('button', { name: 'By clock', exact: true }).click();
-  const s = await state(page);
-  is(s.history.stageCount, 0, 'S71 no history state offers staging');
-  is(await page.evaluate(() => localStorage.getItem('tab')), 'diagnose', 'S71 history never navigates to Plan');
+  await settle(page, 250);
+  await assertHistorySafety(page, draftWrites, 'ALIGN switch to By clock');
+
+  await page.getByRole('button', { name: 'By event', exact: true }).click();
+  await settle(page, 650);
+  await page.locator('.history-run').first().click();
+  await settle(page, 650);
+  await assertHistorySafety(page, draftWrites, 'member selection');
+
+  expectResponse(page, /\/diagnose\/carb-ratio-history\/events/, 500);
+  await page.locator('.history-run').nth(1).click();
+  await settle(page, 950);
+  is((await state(page)).history.stale, false, 'S71 ordinary recovery succeeds once');
+  await assertHistorySafety(page, draftWrites, 'ordinary recovery');
+
+  expectResponse(page, /\/diagnose\/carb-ratio-history\/events/, 409);
+  await page.locator('.history-run').first().click();
+  await settle(page, 950);
+  is((await state(page)).history.generation, RESTART_GENERATION,
+    'S71 coordinated recovery commits one coherent replacement generation');
+  await assertHistorySafety(page, draftWrites, 'coordinated recovery');
+
+  expectResponse(page, /\/diagnose\/carb-ratio-history\/events/, 500);
+  expectResponse(page, /\/diagnose\/findings/, 500);
+  await page.locator('.history-run').nth(1).click();
+  await settle(page, 850);
+  is((await state(page)).history.stale, true, 'S71 terminal recovery exposes explicit Retry');
+  await assertHistorySafety(page, draftWrites, 'terminal recovery');
+
+  await page.getByRole('button', { name: 'Retry', exact: true }).click();
+  await settle(page, 950);
+  const final = await state(page);
+  is(final.history.stale, false, 'S71 explicit Retry resolves coherently');
+  is(final.history.stageCount, 0, 'S71 no history state offers staging');
+  await assertHistorySafety(page, draftWrites, 'explicit Retry');
 };
 
 /** S33 · #58 — while the event canvas is mounted, its own header is the only
@@ -2372,8 +2516,11 @@ export const STORIES = [
     { status: 404, detail: { code: 'history_run_not_found', message: 'History run was not found.' } },
     { status: 404, detail: { code: 'history_run_not_found', message: 'History run was not found.' } },
   ] }],
-  ['S67', S67, 'typical', { history: true, historyResponses: [{ status: 409,
-    detail: { code: 'analysis_generation_mismatch', message: 'Evidence changed. Refresh findings.' } }] }],
+  ['S67', S67, 'typical', { history: true, historyResponses: [
+    {},
+    { status: 409, detail: { code: 'analysis_generation_mismatch', message: 'Evidence changed. Refresh findings.' } },
+    { body: withRestartGeneration },
+  ], selectedFindingsResponses: [{ body: withRestartGeneration }] }],
   ['S68', S68, 'typical', { history: true, selectedFindingsResponses: [
     { delayMs: 700 }, {},
   ] }],
@@ -2381,7 +2528,21 @@ export const STORIES = [
     { delayMs: 700 }, {}, { delayMs: 700 }, {},
   ] }],
   ['S70', S70, 'typical', { history: true }],
-  ['S71', S71, 'typical', { history: true }],
+  ['S71', S71, 'typical', { history: true, stageProbe: true,
+    historyResponses: [
+      {}, {}, {},
+      { status: 500, detail: 'ordinary recovery' }, {},
+      { status: 409, detail: { code: 'analysis_generation_mismatch', message: 'Evidence changed. Refresh findings.' } },
+      { body: withRestartGeneration },
+      { status: 500, detail: 'terminal recovery' },
+      { body: withRestartGeneration },
+    ],
+    selectedFindingsResponses: [
+      {},
+      { body: withRestartGeneration },
+      { status: 500, detail: 'coordinated retry failed' },
+      { body: withRestartGeneration },
+    ] }],
   ['D1', D1, 'dense'], ['D2', D2, 'dense'], ['D3', D3, 'dense'],
 ];
 

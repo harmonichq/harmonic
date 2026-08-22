@@ -889,7 +889,8 @@ button.entry .pill[data-empty="true"] { visibility: hidden; }
     max-width: none; font-size: 14px;
   }
   .history-case :is(.verdict, .qual, .history-current, .history-notice,
-    .history-pending, .history-stale) { font-size: 14px; }
+    .history-pending, .history-stale), .dw .history-retirement { font-size: 14px; }
+  .dw .qcollapse { min-height: 44px; }
   .history-run {
     grid-template-columns: minmax(0, 1fr); gap: 2px; font-size: 14px;
   }

@@ -160,7 +160,7 @@ async function shippedInstruments() {
    blanked the tier column, and `.fer-group` replaced the shipped group header
    with a hairline rule. All four are DELETED, not kept beside the real thing.
 
-   What replaces them is `renderEvidence` itself, lifted out of
+   What replaces them is `renderCaseRoster` itself, lifted out of
    frontend/diagnose-workstation.js at build time exactly the way the toolbar's
    two standing groups are — the function is module-private there, so there is
    no export to import, and a transcription is the one thing this ruling
@@ -181,29 +181,44 @@ async function shippedEvidenceTable() {
   };
   const cap = grab('EVIDENCE_CAP', /^const EVIDENCE_CAP = \d+;$/m);
   const fmt = grab('fmtDate', /^const fmtDate = [\s\S]*?;$/m);
-  const tier = grab('tierOf', /^function tierOf\(occ\) \{[\s\S]*?\n\}$/m);
-  const render = grab('renderEvidence', /^function renderEvidence\([\s\S]*?\n\}$/m);
+  const bandKey = grab('VERDICT_BAND_KEY', /^const VERDICT_BAND_KEY = .*;$/m);
+  const residueKey = grab('VERDICT_RESIDUE_KEY', /^const VERDICT_RESIDUE_KEY = .*;$/m);
+  const render = grab('renderCaseRoster', /^function renderCaseRoster\([\s\S]*?\n\}$/m);
   /* The three things the fidelity comparison hangs off. If the shipped painter
      ever stops emitting them the mock's table is no longer the app's, and the
      build says so here rather than in a screenshot nobody re-reads. */
-  for (const needle of ["className = 'ev-row'", 'class="ev-group"', "className = 'more'"]) {
+  for (const needle of ["className = 'ev-row case-occurrence'", 'class="ev-group"', "className = 'more'"]) {
     if (!render.includes(needle)) {
-      throw new Error(`extracted \`renderEvidence\` no longer emits ${needle} — extraction is corrupt`);
+      throw new Error(`extracted \`renderCaseRoster\` no longer emits ${needle} — extraction is corrupt`);
     }
   }
   return `/* EXTRACTED VERBATIM from ${path} by\n`
     + ' * mockups/finding-evidence-routing.exploration/build.mjs. Do not edit —\n'
     + ' * re-run the build script.\n'
     + ' *\n'
-    + ' * This IS the production Diagnose evidence table: its group headers, its\n'
-    + ' * seven-column rows, its five-row cap and two-way expander, its tier word.\n'
-    + ' * The exploration draws no table of its own (round 8, item 1). The only\n'
-    + ' * edits are the three `export` keywords, so the surface can import it and\n'
-    + ' * split a group the same way it does (`tierOf` decides fits from counter).\n'
+    + ' * This contains the production Diagnose case-file roster: its group\n'
+    + ' * headers, rows, server-verdict labels, and two-way expander. The small\n'
+    + ' * adapter below reshapes this archived exploration\'s rows, then calls the\n'
+    + ' * extracted renderer; it does not paint a second table.\n'
     + ' */\n'
     + `${cap.replace(/^const /, 'export const ')}\n\n`
-    + `${fmt}\n\n${tier.replace(/^function /, 'export function ')}\n\n`
-    + `${render.replace(/^function /, 'export function ')}\n`;
+    + `${fmt}\n${bandKey}\n${residueKey}\n\n${render}\n\n`
+    + `export function tierOf(occ) {\n`
+    + `  const matched = (occ.verdicts || []).find((item) => item.matched);\n`
+    + `  return matched ? matched.evidence_tier : null;\n`
+    + `}\n\n`
+    + `export function renderEvidence(host, factor, occurrences, verdictLabel, onOpen, onMore, shownCount, selected) {\n`
+    + `  const verdict = ({ 'Meets criteria': 'fired', Borderline: 'near_miss', 'Does not meet': 'clean' })[verdictLabel] || 'fired';\n`
+    + `  const rows = occurrences.map((occurrence) => ({\n`
+    + `    id: occurrence.id, date: occurrence.date, verdict,\n`
+    + `    anchor: { t: occurrence.t, bg: occurrence.worst_bg ?? occurrence.bg ?? null, label: 'Low excursion' },\n`
+    + `  }));\n`
+    + `  const caseFile = { occurrences: rows, verdict_counts: { [verdict]: rows.length },\n`
+    + `    summary: { denominator: factor.denominator ?? rows.length },\n`
+    + `    finding: { title: factor.title || (factor.cause || '').trim() } };\n`
+    + `  renderCaseRoster(host, caseFile, verdict, selected?.id || null,\n`
+    + `    (id) => onOpen(occurrences.find((occurrence) => occurrence.id === id)), onMore, shownCount);\n`
+    + `}\n`;
 }
 
 /* ---------------------------------------------------------------- verbatim
@@ -1502,7 +1517,7 @@ async function main() {
       + `${f.occurrences.groups.length} group(s), `
       + `${f.occurrences.groups.reduce((n, g) => n + g.occurrences.length, 0)} rows\n`).join('')
     + `app-base.extracted.css written — ${blocks.length} style block(s) from frontend/index.html\n`
-    + `evidence-table.extracted.js written — the production renderEvidence, ${evidenceTable.split('\n').length} lines `
+    + `evidence-table.extracted.js written — the production renderCaseRoster, ${evidenceTable.split('\n').length} lines `
     + 'from frontend/diagnose-workstation.js\n',
   );
   return 0;

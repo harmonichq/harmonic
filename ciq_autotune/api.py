@@ -174,7 +174,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     def _case_params(request, case=False):
         allowed = (
             {"projection_id", "finding_id", "alignment", "occ"}
-            if case else {"start_min", "end_min"}
+            if case else {"start_min", "end_min", "selected_id"}
         )
         params = request.query_params
         if any(key not in allowed or len(params.getlist(key)) != 1 for key in params):
@@ -192,19 +192,23 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 raise ValueError("malformed case-file coordinate")
             return pid, finding, alignment, occ
         start, end = params.get("start_min"), params.get("end_min")
+        selected_id = params.get("selected_id")
         if (start is None) != (end is None):
             raise ValueError("a window needs both start_min and end_min, or neither")
         if start is None:
-            return WindowQuery.whole_day()
+            return WindowQuery.whole_day(), selected_id
         if not start.isdecimal() or not end.isdecimal():
             raise ValueError("window coordinates must be decimal minutes")
-        return WindowQuery.clock(int(start), int(end))
+        return WindowQuery.clock(int(start), int(end)), selected_id
 
-    def _prepared_cases(query):
-        key = ("finding-case-file", query.start_min, query.end_min)
+    def _prepared_cases(query, selected_id):
+        key = ("finding-case-file", query.start_min, query.end_min, selected_id)
         def build(version):
             with Store.open_queryonly(db_path) as store:
-                return prepare_finding_cases(store, query=query, version=version)
+                return prepare_finding_cases(
+                    store, query=query, version=version, selected_id=selected_id,
+                    analysis_generation=cache.generation_for_version(version),
+                )
         def before_commit():
             hook = app.state.finding_case_file_before_commit
             if hook is not None:
@@ -699,16 +703,20 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     @app.get("/diagnose/finding-case-file-preparation")
     def finding_case_file_preparation(request: Request, _: None = Depends(require_token)):
         try:
-            query = _case_params(request)
+            query, selected_id = _case_params(request)
         except ValueError as error:
             return _case_error(400, "invalid_request", str(error))
         try:
-            prepared, reason = _prepared_cases(query)
+            prepared, reason = _prepared_cases(query, selected_id)
             if reason == "capacity":
                 return _case_error(503, "preparation_capacity", "All preparations are leased.")
             if reason == "changed":
                 return _case_error(503, "preparation_changed", "Data changed during preparation.")
             return wrap_finding_cases(prepared)
+        except InvalidIcHistoryId as error:
+            return _case_error(400, "invalid_history_id", str(error))
+        except UnknownHistorySelection:
+            return _case_error(404, "history_not_found", "Past-setting evidence was not found.")
         except Exception:
             logger.exception("Finding case-file preparation was inconsistent")
             return _case_error(500, "inconsistent_projection", "Case population is inconsistent.")

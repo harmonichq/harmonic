@@ -110,7 +110,9 @@ def test_case_file_consumes_the_authoritative_diagnose_window(monkeypatch):
         _scenarios = {}
 
         @staticmethod
-        def project(query):
+        def project(query, selected_id=None, *, analysis_generation="standalone:0"):
+            assert selected_id is None
+            assert analysis_generation == "standalone:0"
             return {"rows": []}
 
     def fake_projection(store, *, window_days):

@@ -23,7 +23,6 @@ from .analyzers.scenario.attribute import _next_meal_bolus_t
 from .analyzers.scenario.meal_suspend import classify_meal_owned_suspend
 from .analyzers.scenario.segment import guarded_rebound
 from .analyzers.scenario_config import ScenarioConfig
-from . import findings_projection
 from .window_membership import WindowQuery, outcome_minute
 
 FMT = "%Y-%m-%d %H:%M:%S"
@@ -923,6 +922,7 @@ class EventComparisonPreparation:
 def prepare_event_comparisons(store) -> EventComparisonPreparation:
     """Read one fixed window and keep all comparison policy behind ``project``."""
     from .explore_exposures import build_exposures
+    from . import findings_projection
 
     window_days = findings_projection.DIAGNOSE_SOURCE_WINDOW_DAYS
     exposures_payload = build_exposures(store, window_days=window_days)

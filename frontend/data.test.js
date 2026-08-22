@@ -248,13 +248,14 @@ test('history events carries the findings generation and optional run selection'
     '/diagnose/carb-ratio-history/events?history_id=ich1_history&analysis_generation=process%3A4&selected_run_id=icr1_run');
 });
 
-test('Finding case-file preparation keeps the server-owned clock window as its only coordinate', async () => {
+test('Finding case-file preparation forwards the server-owned window and history selection', async () => {
   const { fetch, calls } = makeFakeFetch({ schema: 'diagnose-finding-case-file-preparation-v1' });
   const api = makeDeps({ fetch });
-  await api.fetchDiagnoseFindingCasePreparation({ start_min: 1320, end_min: 120 });
+  await api.fetchDiagnoseFindingCasePreparation(
+    { start_min: 1320, end_min: 120 }, 'ich1_WzAsNzIwLCI2Il0');
   await api.fetchDiagnoseFindingCasePreparation(null);
   assert.equal(calls[0].url,
-    '/diagnose/finding-case-file-preparation?start_min=1320&end_min=120');
+    '/diagnose/finding-case-file-preparation?start_min=1320&end_min=120&selected_id=ich1_WzAsNzIwLCI2Il0');
   assert.equal(calls[1].url, '/diagnose/finding-case-file-preparation');
 });
 

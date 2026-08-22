@@ -140,7 +140,7 @@ class PreparedCases:
         }
 
 
-def prepare(store, *, query, version):
+def prepare(store, *, query, version, selected_id=None, analysis_generation="standalone:0"):
     """Materialize queue, opportunities, attribution, and traces in one read snapshot."""
     store.conn.execute("BEGIN")
     try:
@@ -152,7 +152,9 @@ def prepare(store, *, query, version):
         projection = findings_projection.prepare_findings_projection(
             store, window_days=window_days,
         )
-        findings = projection.project(query)
+        findings = projection.project(
+            query, selected_id, analysis_generation=analysis_generation,
+        )
         recurrence = {
             Lever(row["lever"]): (row["confidence"]["k"], row["confidence"]["n"])
             for row in ((projection._scenarios.get("patterns") or [])

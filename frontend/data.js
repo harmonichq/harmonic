@@ -276,14 +276,15 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
   /**
    * GET /diagnose/finding-case-file-preparation — one retained server-owned
    * Finding generation. The optional clock window is the preparation's only
-   * membership coordinate and must be sent as a pair.
+   * membership coordinate; history selection passes through to the wrapped queue.
    */
-  function fetchDiagnoseFindingCasePreparation(window = null) {
+  function fetchDiagnoseFindingCasePreparation(window = null, selectedHistoryId = null) {
     const params = new URLSearchParams();
     if (window) {
       params.set('start_min', window.start_min);
       params.set('end_min', window.end_min);
     }
+    if (selectedHistoryId) params.set('selected_id', selectedHistoryId);
     const query = params.toString();
     return api('/diagnose/finding-case-file-preparation' + (query ? '?' + query : ''));
   }

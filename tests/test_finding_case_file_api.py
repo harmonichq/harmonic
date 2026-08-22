@@ -100,7 +100,10 @@ class FindingCaseFileRouteTest(unittest.TestCase):
         self.tmp = tempfile.NamedTemporaryFile(suffix=".sqlite")
         with Store.open(self.tmp.name):
             pass
-        self.app = create_app(db_path=self.tmp.name, token=None, enable_fetch_loop=False)
+        self.app = create_app(
+            db_path=self.tmp.name, token=None, enable_fetch_loop=False,
+            analysis_incarnation="case-http",
+        )
         self.client = TestClient(self.app)
 
     def tearDown(self):
@@ -117,9 +120,54 @@ class FindingCaseFileRouteTest(unittest.TestCase):
         self.assertEqual(set(payload), {"schema", "projection_id", "coordinates",
                                        "findings", "rendered_rows",
                                        "behavioral_case_headers", "withheld_findings"})
-        self.assertEqual(set(payload["findings"]), {"schema", "window", "findings_window",
-                                                   "rows", "counts", "chip_counts",
-                                                   "uncaused_highs"})
+        self.assertEqual(set(payload["findings"]), {
+            "schema", "analysis_generation", "window", "findings_window", "rows",
+            "selection", "counts", "chip_counts", "uncaused_highs",
+        })
+        self.assertEqual(payload["findings"]["analysis_generation"], "case-http:0")
+        self.assertIsNone(payload["findings"]["selection"])
+
+    def test_preparation_forwards_history_selection_and_generation(self):
+        sentinel = {
+            "id": "ich1_selected", "disposition": "out_of_scope",
+            "message": "Past-setting evidence is outside the selected window.",
+        }
+
+        class Projection:
+            _scenarios = {}
+
+            def project(self, query, selected_id=None, *, analysis_generation):
+                self.arguments = (query, selected_id, analysis_generation)
+                return {
+                    "schema": "diagnose-findings-v2",
+                    "analysis_generation": analysis_generation,
+                    "window": query.to_dict(),
+                    "findings_window": {"days": 30, "start": None, "end": None},
+                    "rows": [{"id": "history:sentinel", "register": "history"}],
+                    "selection": sentinel,
+                    "counts": {"assert": 0, "held": 0, "blind": 0,
+                               "finding": 0, "history": 1},
+                    "chip_counts": {"highs": 0, "lows": 0, "meals": 1,
+                                    "corrections": 0},
+                    "uncaused_highs": {"count": 0, "text": "None"},
+                }
+
+        projection = Projection()
+        with patch(
+            "ciq_autotune.finding_case_file.findings_projection.prepare_findings_projection",
+            return_value=projection,
+        ):
+            response = self.client.get(
+                "/diagnose/finding-case-file-preparation",
+                params={"start_min": 0, "end_min": 300,
+                        "selected_id": "ich1_selected"},
+            )
+
+        self.assertEqual(response.status_code, 200, response.text)
+        payload = response.json()
+        self.assertEqual(projection.arguments[1:], ("ich1_selected", "case-http:0"))
+        self.assertEqual(payload["findings"]["selection"], sentinel)
+        self.assertEqual(payload["findings"]["rows"], payload["rendered_rows"])
 
     def test_raw_query_failures_use_the_structured_400_envelope(self):
         for url in (
@@ -311,7 +359,7 @@ class FindingCaseFileRouteTest(unittest.TestCase):
         cache = self.app.state.result_cache
         broken = Broken()
         cache.get_or_build_preparation(
-            ("finding-case-file", None, None), lambda version: broken,
+            ("finding-case-file", None, None, None), lambda version: broken,
         )
         response = self.client.get("/diagnose/finding-case-file-preparation")
         self.assertEqual(response.status_code, 500)
@@ -350,12 +398,14 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
         self.assert_window_tree(prepared["coordinates"]["window"])
         findings = prepared["findings"]
         self.assertEqual(set(findings), {
-            "schema", "window", "findings_window", "rows", "counts", "chip_counts",
-            "uncaused_highs",
+            "schema", "analysis_generation", "window", "findings_window", "rows",
+            "selection", "counts", "chip_counts", "uncaused_highs",
         })
         self.assert_window_tree(findings["window"])
         self.assertEqual(set(findings["findings_window"]), {"days", "start", "end"})
-        self.assertEqual(set(findings["counts"]), {"assert", "held", "blind", "finding"})
+        self.assertEqual(set(findings["counts"]), {
+            "assert", "held", "blind", "finding", "history",
+        })
         self.assertEqual(set(findings["chip_counts"]), {
             "highs", "lows", "meals", "corrections",
         })
@@ -459,7 +509,7 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
         self.assert_case_tree(case)
         self.assertEqual(case["schema"], "diagnose-finding-case-file-v1")
         self.assertEqual(case["summary"], {
-            "claimed": 4, "denominator": 180, "noun": "meals",
+            "claimed": 2, "denominator": 180, "noun": "meals",
         })
         self.assertEqual(sum(case["verdict_counts"].values()), 180)
         self.assertEqual(len(case["occurrences"]), 180)

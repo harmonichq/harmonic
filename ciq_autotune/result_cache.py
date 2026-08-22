@@ -76,6 +76,10 @@ class ResultCache:
         with self._lock:
             return f"{self._incarnation}:{self._version}"
 
+    def generation_for_version(self, version: int) -> str:
+        """Opaque identity for a version captured by a guarded cache operation."""
+        return f"{self._incarnation}:{version}"
+
     def bump(self) -> None:
         """Invalidate: clear the map and advance ``version``. Called after any write."""
         with self._lock:

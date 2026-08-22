@@ -53,6 +53,11 @@ class ResultCacheTest(unittest.TestCase):
 
         self.assertNotEqual(first.generation, restarted.generation)
 
+    def test_captured_version_has_the_same_opaque_generation_identity(self):
+        cache = ResultCache(incarnation="captured")
+        cache.bump()
+        self.assertEqual(cache.generation_for_version(cache.version), cache.generation)
+
     def test_miss_computes_hit_does_not(self):
         cache = ResultCache()
         calls = []

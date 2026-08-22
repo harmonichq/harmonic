@@ -1607,7 +1607,7 @@ export const S40 = async (page) => {
 
 const TRUE_ISF_DRAFTS = [];
 
-/** S41 · A recommendation-bearing false correction-factor verdict keeps its
+/** S41 · A recommendation-bearing false ISF verdict keeps its
     direction-derived register but exposes no queue action line or stage control. */
 // STORY:finding-evidence-routing:S41
 export const S41 = async (page) => {
@@ -1623,7 +1623,7 @@ export const S41 = async (page) => {
     'S41 direction-only weaken keeps its direction language');
 };
 
-/** S42 · A legacy correction-factor row with no verdict fails closed exactly like
+/** S42 · A legacy ISF row with no verdict fails closed exactly like
     explicit false while keeping its direction and refusal evidence. */
 // STORY:finding-evidence-routing:S42
 export const S42 = async (page) => {
@@ -1654,7 +1654,7 @@ export const S43 = async (page) => {
   ok(!/recent lows|stronger than needed/i.test(text), 'S43 never claims weaken or recent lows');
 };
 
-/** S44 · Exact true stages the capped correction-factor recommendation across
+/** S44 · Exact true stages the capped ISF recommendation across
     every segment of the generated profile, then reports the same Plan count. */
 // STORY:finding-evidence-routing:S44
 export const S44 = async (page) => {

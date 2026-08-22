@@ -1305,7 +1305,7 @@ deliberately non-unique meal join-pair precondition.
 **Result.** The app-only replay enumerates **43 of 43 stories**, including S40;
 an `ONLY` selection that names no stories still fails closed.
 
-## Revision — 2026-08-21, base `21df720` (issue #13: correction-factor staging verdict)
+## Revision — 2026-08-21, base `21df720` (issue #13: ISF staging verdict)
 
 `/ui-craft` revise lane. The base contract replayed **43 of 43 stories** before
 editing against the declared manufactured database
@@ -1314,7 +1314,7 @@ process and was left untouched; this lane verified isolated port 18765 was free,
 started the same `harmonic serve --no-fetch` command there, and passed that
 explicit `BASE_URL` to the replay.
 
-**Behavior changed.** Correction-factor direction still decides the queue
+**Behavior changed.** ISF direction still decides the queue
 register, tier and rank. It no longer grants actionability. The serialized
 `asserts_move` verdict is independent permission: exact `true` alone may show a
 numeric queue action, expose a detail-level stage control, or fan out into Plan.
@@ -1338,7 +1338,7 @@ S44 · exact true keeps the capped action number; the real stage affordance PUTs
       four segments, and the Plan badge reports the same count
 ```
 
-All four derive the correction-factor analysis from the committed synthetic
+All four derive the ISF analysis from the committed synthetic
 Diagnose payload. The same derived analysis answers `/analyze` and feeds the
 findings projection. Only S44 injects `/pump-settings`, by copying the generated
 multi-segment profile from that payload; its `PUT /plan` body, not the badge

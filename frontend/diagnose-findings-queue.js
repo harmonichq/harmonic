@@ -121,7 +121,7 @@ function supportPart(row) {
  * moves against another's.
  */
 function assertDetail(row) {
-  // Correction factor keeps its direction-derived queue register, but only the
+  // ISF keeps its direction-derived queue register, but only the
   // backend's exact permission verdict may expose an action number. Legacy,
   // malformed, and explicitly held rows keep their evidence denominator here.
   if (row.parameter === 'isf' && row.asserts_move !== true) {
@@ -180,7 +180,7 @@ export function queueRows(projection, selected = null) {
       seam,
       hidden,
       collapsed,
-      /* Correction factor carries an independent backend staging verdict. Its
+      /* ISF carries an independent backend staging verdict. Its
          direction-derived register and rank remain untouched when that verdict
          holds the row; exact true alone exposes the stage affordance. */
       stageable: row.register === 'assert'

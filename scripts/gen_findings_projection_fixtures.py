@@ -244,6 +244,44 @@ def history_catalogs():
     return active, aged, unavailable
 
 
+def density_history_catalog():
+    """Seven active past-setting blocks, all produced by the real analyzer.
+
+    Each block receives five isolated invented meals before one snapshot-observed
+    schedule change.  Meals land on separate days so the analyzer, rather than
+    fixture code, owns every run boundary, estimate, lifecycle, and identity.
+    """
+    first = datetime(2026, 5, 20)
+    changed = datetime(2026, 7, 1)
+    starts = list(range(0, 7 * 180, 180))
+    old_schedule = [(start, 6.0 + index * 0.2)
+                    for index, start in enumerate(starts)]
+    current_schedule = [(start, ratio - 0.5)
+                        for start, ratio in old_schedule]
+    snapshots = [_snapshot(first, old_schedule), _snapshot(changed, current_schedule)]
+    events = []
+    for index, (start, ratio) in enumerate(old_schedule):
+        hour = (start + 60) // 60
+        for sample in range(5):
+            events.append(BolusEvent(
+                t=first + timedelta(days=1 + index * 5 + sample, hours=hour),
+                insulin=30.0 / ratio, carbs=30.0, carb_ratio=ratio,
+                completion="Completed",
+            ))
+    answer = []
+    analyze_ic_blocks(
+        events, current_schedule, config=IcConfig(), observed_days=90,
+        analysis_start=datetime(2026, 8, 17) - timedelta(days=90),
+        analysis_end=datetime(2026, 8, 17), snapshots=snapshots,
+        history_catalog=answer,
+    )
+    active = [row for row in answer if row.lifecycle == "active"]
+    if len(active) != 7:
+        raise SystemExit("synthetic density history no longer produces seven active "
+                         f"rows (got {len(active)})")
+    return active
+
+
 def ic_blocks():
     """A morning block that agrees with its setting and an evening block that does not."""
     segments = [(0, 5.0), (720, 5.7)]
@@ -507,6 +545,7 @@ def empty_projection() -> FindingsProjection:
 def payload() -> dict:
     prepared = projection()
     active_history, aged_history, unavailable_history = history_catalogs()
+    density_history = density_history_catalog()
     selected_id = active_history[0].history_id
 
     def with_catalog(catalog):
@@ -534,6 +573,10 @@ def payload() -> dict:
             "scenarios": prepared._scenarios,
             "analysis_generation": ANALYSIS_GENERATION,
         },
+        # The browser derives its density input from `inputs` by replacing only
+        # this generator-authored analyzer catalog.  Freezing the whole input a
+        # second time would duplicate the unrelated exposures and scenarios.
+        "density_history": [row.to_dict() for row in density_history],
         "windows": {
             name: prepared.project(
                 WindowQuery.whole_day() if bounds is None

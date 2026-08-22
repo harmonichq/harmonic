@@ -1370,6 +1370,10 @@ function boot(root, data, callbacks, signal) {
     const w = findingsWindow();
     return w ? { start_min: w[0], end_min: w[1] } : null;
   };
+  const historyCanvasScope = () => ({
+    presetKey,
+    drawn: drawn ? drawn.slice() : null,
+  });
 
   function historyRetired(frame, message, nextFindings = null) {
     ++historyRequestGeneration;
@@ -1491,6 +1495,7 @@ function boot(root, data, callbacks, signal) {
       frame.events = events;
       frame.selectedRunId = selectedRunId || null;
       frame.align = wantEvent ? 'event' : 'clock';
+      frame.canvasScope = historyCanvasScope();
       frame.pending = false;
       frame.stale = false;
       frame.notice = null;
@@ -1597,6 +1602,7 @@ function boot(root, data, callbacks, signal) {
       push({
         k: 'history', id: row.id, row, generation: findings.analysis_generation,
         align: 'clock', events: null, selectedRunId: null,
+        canvasScope: historyCanvasScope(),
         pending: false, stale: false, notice: null,
       });
       return;
@@ -1754,24 +1760,29 @@ function boot(root, data, callbacks, signal) {
 
   function paintChart() {
     const f = top();
-    const preset = WINDOWS[presetKey];
+    const retainedHistoryScope = f.k === 'history' && f.canvasScope
+      && (f.pending || f.stale || f.notice);
+    const canvasPresetKey = retainedHistoryScope ? f.canvasScope.presetKey : presetKey;
+    const canvasDrawn = retainedHistoryScope ? f.canvasScope.drawn : drawn;
+    const preset = WINDOWS[canvasPresetKey];
     let win = preset;
     let label = `${preset.label.toUpperCase()} ${winText(preset)}`;
     let note = '';   // the droppable count tail — shed first when space is tight
     braceless = false;
-    if (drawn) {
+    if (canvasDrawn) {
       /* USER SCOPE BEATS DERIVED SCOPE, ALWAYS. A drawn window is a persistent
          workspace: drilling a factor or opening an occurrence scopes WITHIN it
          and never moves the brace. Reported in the chip slot the peak chip
          already occupies. */
-      win = { label: 'Window', range: drawn };
+      win = { label: 'Window', range: canvasDrawn };
       label = `WINDOW ${winText(win)}`;
-      markWindowSegment(`Window ${hhmm(drawn[0])}–${hhmm(drawn[1])}`, clearDrawn);
-    } else if (explicitPreset) {
+      markWindowSegment(`Window ${hhmm(canvasDrawn[0])}–${hhmm(canvasDrawn[1])}`,
+        retainedHistoryScope ? null : clearDrawn);
+    } else if (explicitPreset || retainedHistoryScope) {
       /* A pressed preset is a workspace too, and it outranks the frame for the
          same reason — pressing one at any level is a scope CHANGE by the user,
          never a release back to derived scope. */
-      pressPreset(presetKey);
+      pressPreset(canvasPresetKey);
     } else if (f.k === 'factor' && settled()) {
       const occ = occurrencesFor(f);
       const clock = occ.length ? clockBuckets(occ) : null;
@@ -1804,9 +1815,9 @@ function boot(root, data, callbacks, signal) {
     } else if (f.k === 'isf') {
       // ISF derives NO canvas window (term 31): the brace does not move, no lane
       // cell re-tints. Whatever window stands, stands.
-      pressPreset(presetKey);
+      pressPreset(canvasPresetKey);
     } else {
-      pressPreset(presetKey);
+      pressPreset(canvasPresetKey);
     }
     /* Occurrence marks follow the FRAME, whatever set the window — so a factor
        drilled inside an explicit workspace still shows its own dots, on the

@@ -71,6 +71,7 @@ import { fileURLToPath } from 'node:url';
 import {
   derivedPumpSettings, openApp, openerProblems, state, withIsfVerdict,
   withoutIsfProjectionVerdict, twoFamilyInputs,
+  densityHistoryInputs,
   issue81PendingProjection, issue81FailedProjection, issue81SlicedProjection,
 } from './diagnose-workstation-behavior.replay.mjs';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
@@ -141,6 +142,47 @@ async function shot(page, family, state_, viewport, theme) {
 }
 
 const VIEWPORTS = [{ width: 1440, height: 900 }, { width: 1280, height: 800 }];
+
+test('seven generated history reads remain ordered, reachable, laid out, and non-stageable', async () => {
+  const browser = await runner.browser();
+  const inputs = await densityHistoryInputs();
+  const expected = projectFindings(inputs).rows
+    .filter((row) => row.register === 'history').map((row) => row.id);
+  assert.equal(expected.length, 7, 'the generator publishes seven simultaneous history rows');
+
+  const page = await openApp(browser, {
+    state: 'dense', viewport: { width: 390, height: 844 }, theme: 'light',
+    history: true, findingsInputs: inputs, appSource: 'fixture', stageProbe: true,
+  });
+  try {
+    const historyRows = page.locator('#level .qrow[data-state="history"]');
+    assert.deepEqual(await historyRows.evaluateAll((rows) => rows.map((row) => row.dataset.id)), expected,
+      'the Watching history rows keep the server projection order');
+    assert.equal(await historyRows.locator('.stagebtn').count(), 0,
+      'no dense history row exposes staging');
+
+    await page.getByRole('button', { name: /^Highs / }).click();
+    const collapse = page.locator('#level .qcollapse');
+    assert.match(await collapse.innerText(), /^Watching · \d+ reads$/,
+      'the sift owns one reachable Watching disclosure');
+    assert.equal(await historyRows.count(), 0, 'history rows collapse during the sift');
+    await collapse.click();
+    assert.deepEqual(await historyRows.evaluateAll((rows) => rows.map((row) => row.dataset.id)), expected,
+      'expanding Watching restores all seven rows in order');
+
+    await historyRows.nth(3).click();
+    const rendered = await state(page);
+    assert.equal(rendered.history.conclusion, 'Past setting. No change suggested.',
+      'the dense row opens the normal history inspector hierarchy');
+    assert.equal(rendered.history.currentCopies, 1,
+      'the dense inspector keeps one quieter current-program line');
+    assert.equal(rendered.history.stageCount, 0, 'the dense inspector remains non-stageable');
+    assert.ok(rendered.hScroll <= 0 && rendered.vScroll <= 0,
+      `the narrow dense inspector stays inside its pane (${rendered.hScroll}, ${rendered.vScroll})`);
+  } finally {
+    await page.close();
+  }
+});
 
 test('an explicit fixture opener ignores a hostile ambient app-source override', async () => {
   const browser = await runner.browser();

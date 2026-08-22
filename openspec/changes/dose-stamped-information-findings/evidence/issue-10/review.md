@@ -12,10 +12,12 @@ states use the generator-authored findings and history-event captures through
 the same app-only replay seam. No personal data, live fetch, alternate route,
 or mock application was used.
 
-The frozen generator contract publishes one active history identity in each
-applicable findings projection. The database stress state carries 69 exact
-meal-run members. The browser does not duplicate the server row to manufacture
-the older parent brief's proposed seven-row density shape.
+The primary frozen generator contract publishes one active history identity in
+each applicable findings projection. A separate generator-authored density
+catalog publishes seven simultaneous analyzer-built history rows, each with its
+own analyzer-owned identity, support, estimate, lifecycle, and clock span. The
+database stress state carries 69 exact meal-run members. No browser test
+duplicates a server row or hand-writes a history fixture.
 
 ## UI Craft audit, polish, re-audit
 
@@ -49,6 +51,13 @@ found:
 - one current-program line and zero stage controls in every open case;
 - one mounted event chart with all 69 database members in every event render.
 
+The final correction added the ADR 22 queue-to-case before/after pair at
+1440x900, 1280x800, and 390x844 in both themes. Visual QA of all twelve PNGs
+confirmed that the Watching row remains subordinate in the queue, the case file
+leads with the historical conclusion, the one current-program line remains
+quieter and last, and the narrow layout stacks without clipping. The dedicated
+stems are `ADR22-before-history-queue-*` and `ADR22-after-history-case-*`.
+
 The UI Craft detector reports inherited workstation warnings for the locked
 ported typeface and compact radii. They predate issue 10, are required by the
 shipping theme/Diagnose geometry, and this change adds neither a banned side
@@ -57,8 +66,10 @@ stripe, gradient text, glass surface, hero metric, card grid, nor new color.
 ## Frozen parent-order matrix
 
 Each story-named row below has six PNGs: light and dark at 1440x900, 1024x768,
-and 390x844. `actual-database-clock-*` and `actual-database-event-*` are the
-dense 69-member database renders at the same six coordinates.
+and 390x844. S43 and S45 additionally carry 1280x800 renders. The dedicated ADR
+22 before/after pair carries light and dark at 1440x900, 1280x800, and 390x844.
+`actual-database-clock-*` and `actual-database-event-*` are the dense 69-member
+database renders at the original six coordinates.
 
 | Parent-order state | Evidence stem | Verdict |
 |---|---|---|
@@ -85,7 +96,7 @@ dense 69-member database renders at the same six coordinates.
 | History-first hierarchy | PASS — the server conclusion is the first case-file sentence in every viewport and theme. |
 | Quieter current context | PASS — exactly one `Current program` line follows evidence, using the muted/context role. |
 | Non-actionability | PASS — history has no stage control, no Plan route, no action chip, and no staging callback. |
-| Density | PASS — the exact database's 69-run plot and inspector roster remain internally scrollable without document overflow. |
+| Density | PASS — the exact database's 69-run plot remains internally scrollable, and the generated seven-row Watching catalog stays server-ordered, collapses to one reachable disclosure during a sift, restores all seven rows, opens the normal inspector, and exposes no stage path at 390x844. |
 | Both themes | PASS — all matrix states were rendered in light and dark with theme-token ink and marks. |
 | All viewports | PASS — 1440x900, 1024x768, and 390x844 have complete evidence; narrow controls and type meet the polish floor. |
 | Accessibility | PASS — native buttons, visible focus, pressed states, chart role/name, keyboard Retry, AA token contrast, reduced motion, and non-color labels are present. |
@@ -98,22 +109,35 @@ Its single full run passed all 74 frozen stories: 43 predecessors (S01–S40 and
 D1–D3) plus S41–S71. The recovery screenshots are taken at the explicit
 in-story pending seams, not reconstructed after the fact.
 
-## Final verification
+## Final correction verification
+
+Observed 2026-08-21 from the correction worktree after installing the repository's
+frozen `api` and `sync` extras:
 
 - Frontend Node gate: 392 passed, 0 failed.
 - Frontend screenshot-wrapper test: 1 passed, 0 failed.
-- Backend gate: 1,891 passed, 1 skipped, 0 failed (169 warnings).
-- Diagnose workstation browser gate: 14 passed, 0 failed.
-- Review-fix replay: S42/S55/S56/S67/S71 passed 5/5; the corrected mobile
-  evidence replay passed S42/S55/S56 3/3 in light and 3/3 in dark.
-- Remaining browser gates: Day 3/3; cockpit shell 12 passed, 2 evidence-only
-  skips, 0 failed; browser-runner 1/1; first Plan match 4/4; event-comparison
-  replay 13/13; event-comparison support audit 7/7 renders; Verify replay 8/8.
+- Backend gate: 1,900 passed, 1 skipped, 0 failed (169 warnings).
+- Diagnose workstation browser gate: 22 passed, 0 failed, including the generated
+  seven-row Watching density case.
+- Focused recovery replay: S47/S59/S63/S64/S70 passed 5/5 with assertions over
+  the rendered clock highlight, scope copy, lane treatment, and ECharts series,
+  not only identity/generation attributes.
 - Frozen app-only Diagnose replay: 74/74 (all 43 predecessors and S41–S71).
+- ADR 22 fidelity replay: S43/S45 passed in both themes at 1440x900, 1280x800,
+  and 390x844; all twelve dedicated before/after PNGs were visually inspected.
 - Backend drift checks: I:C blocks, annotations, chart builders, demo fixtures,
   revise-E2E database, findings projection, I:C history events, and
   event-comparison mirror all passed.
 - Frontend drift checks: the synthetic event-comparison capture and the
   finding-evidence-routing extracted artifacts both passed.
-- Repository guards: 14 ADRs across 12 design files; 30 owned-identifier rules;
-  public allowlist passed.
+- Repository guards: 20 ADRs across 15 design files; 30 owned-identifier rules;
+  public allowlist dispositioned 321 tracked files to ship and 398 as excluded.
+- Materialized public-tree link check: 290 shipping documents scanned; every
+  link, path reference, and symlink resolved inside the tree.
+- Materialized public-tree contamination scan: 321 files scanned, 17 stamped,
+  5 pinned, 154 acknowledged dose-ratio strings, and 0 findings. The seven new
+  density-catalog ratios were reviewed as synthetic and recorded through the
+  scanner's generated dose-ratio baseline.
+- Self-review: the staged source diff and generated evidence were checked for
+  mixed history state, queue-return coherence, fixture provenance, scope creep,
+  and whitespace errors; no unresolved finding remained.

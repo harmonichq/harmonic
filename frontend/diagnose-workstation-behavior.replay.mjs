@@ -187,6 +187,11 @@ export const state = (page) => page.evaluate(() => {
     history: (() => {
       const level = q('#level');
       const chart = q('#align-canvas:not([hidden]), #chart:not([hidden])');
+      const instance = chart ? window.echarts?.getInstanceByDom(chart) : null;
+      const option = instance?.getOption?.() || {};
+      const axis = Array.isArray(option.xAxis) ? option.xAxis[0] : option.xAxis;
+      const context = (option.series || []).find((series) => series.name === '__context');
+      const highlight = context?.markArea?.data?.[1] || null;
       return {
         id: level?.dataset.historyId || null,
         generation: level?.dataset.analysisGeneration || null,
@@ -206,6 +211,22 @@ export const state = (page) => page.evaluate(() => {
         runLabels: [...document.querySelectorAll('.history-run')].map((node) => node.innerText.replace(/\s+/g, ' ').trim()),
         selectedRuns: [...document.querySelectorAll('.history-run[aria-pressed="true"]')].map((node) => node.dataset.runId),
         stageCount: document.querySelectorAll('.history-case .stagebtn').length,
+        canvasRender: chart ? {
+          kind: chart.id === 'align-canvas' ? 'event' : 'clock',
+          scope: txt('#canvas-scope'),
+          label: txt('#canvas-head .ec-title-context'),
+          window: [axis?.min ?? null, axis?.max ?? null],
+          highlight: highlight ? [highlight[0]?.xAxis ?? null, highlight[1]?.xAxis ?? null] : null,
+          laneOutside: [...document.querySelectorAll('#lane button')]
+            .filter((button) => button.dataset.outside === 'true').length,
+          series: (option.series || []).map((series) => ({
+            name: series.name ?? null,
+            type: series.type ?? null,
+            points: Array.isArray(series.data) ? series.data.length : null,
+            opacity: series.lineStyle?.opacity ?? null,
+            width: series.lineStyle?.width ?? null,
+          })),
+        } : null,
       };
     })(),
     laneSelected: [...document.querySelectorAll('#lane button')].findIndex((b) => b.getAttribute('aria-pressed') === 'true'),
@@ -1608,6 +1629,20 @@ const withLateConsequence = ({ analysis, exposures, scenarios }) => {
 export const twoFamilyInputs = async () => JSON.parse(await readFile(
   join(ROOT, 'frontend/__fixtures__/findings-projection.json'), 'utf8')).inputs;
 
+/** Seven simultaneous analyzer-built history rows, committed by the findings
+ * fixture generator for density and reachability coverage. */
+export const densityHistoryInputs = async () => {
+  const fixture = JSON.parse(await readFile(
+    join(ROOT, 'frontend/__fixtures__/findings-projection.json'), 'utf8'));
+  if (fixture.density_history?.length !== 7) {
+    fail('generated findings fixture has no seven-row density_history shape');
+  }
+  return {
+    ...fixture.inputs,
+    analysis: { ...fixture.inputs.analysis, ic_history: fixture.density_history },
+  };
+};
+
 /** Open one finding's case file from the queue, by the title a reader sees.
     Waits for the window's own rows to be in hand first: the queue is a server
     round trip, and clicking a row from the previous window's answer would be
@@ -1787,6 +1822,7 @@ export const S43 = async (page) => {
   ok(/past 6\.0 g\/U/.test(text) && /3 meal runs/.test(text), 'S43 past setting and support render');
   ok(!/Current|programmed now|5\.0 g\/U/.test(text), 'S43 queue omits current program');
   is(await row.locator('.stagebtn').count(), 0, 'S43 queue history cannot stage');
+  await captureEvidence(page, 'ADR22-before-history-queue');
 };
 
 // STORY:finding-evidence-routing:S44
@@ -1805,6 +1841,7 @@ export const S45 = async (page) => {
   is(s.history.currentCopies, 1, 'S45 current program appears exactly once');
   ok(s.history.caseText.indexOf(s.history.conclusion) < s.history.caseText.indexOf('Current program'),
     'S45 current program follows the conclusion and evidence');
+  await captureEvidence(page, 'ADR22-after-history-case');
 };
 
 // STORY:finding-evidence-routing:S46
@@ -1827,6 +1864,8 @@ export const S47 = async (page) => {
   const after = await state(page);
   is(after.history.id, before.history.id, 'S47 out-of-scope keeps the case');
   is(after.history.generation, before.history.generation, 'S47 out-of-scope keeps prior generation');
+  is(after.history.canvasRender, before.history.canvasRender,
+    'S47 out-of-scope keeps the prior rendered clock window and content');
   is(after.history.notice, 'Past-setting evidence is outside the selected window.', 'S47 exact server message');
   is(await page.locator('.history-canvas-notice').innerText(), after.history.notice, 'S47 both panes show the message');
 };
@@ -1984,6 +2023,8 @@ export const S59 = async (page) => {
   const pending = await state(page);
   is(pending.history.id, before.history.id, 'S59 prior inspector survives pending recovery');
   is(pending.history.canvasId, before.history.canvasId, 'S59 prior canvas survives pending recovery');
+  is(pending.history.canvasRender, before.history.canvasRender,
+    'S59 pending recovery keeps the prior rendered canvas scope and content');
   await captureEvidence(page, 'S59-first-recovery-pending');
   await settle(page, 900);
   is((await state(page)).history.stale, false, 'S59 one coordinated recovery succeeds');
@@ -2051,6 +2092,8 @@ const assertTypedFindingsFailure = async (page, status, code, story) => {
   await settle(page, 750);
   const after = await state(page);
   is(after.history.id, before.history.id, `${story} opaque id is not repaired`);
+  is(after.history.canvasRender, before.history.canvasRender,
+    `${story} terminal failure keeps the prior rendered clock window and content`);
   is(after.history.stale, true, `${story} ${code} stops visibly stale`);
 };
 
@@ -2159,11 +2202,21 @@ export const S69 = async (page) => {
 // STORY:finding-evidence-routing:S70
 export const S70 = async (page) => {
   await openHistoryEvents(page);
+  const before = await state(page);
   await page.locator('.history-run').first().click();
   await settle(page, 650);
   const s = await state(page);
   is([s.history.canvasId, s.history.canvasGeneration, s.history.canvasRunId],
     [s.history.id, s.history.generation, s.history.selectedRunId], 'S70 rendered pair exposes identical coordinates');
+  is(s.history.canvasRender.kind, 'event', 'S70 replacement remains the event canvas');
+  is(s.history.canvasRender.window, before.history.canvasRender.window,
+    'S70 run selection keeps the event window');
+  is(s.history.canvasRender.series.length, before.history.canvasRender.series.length,
+    'S70 run selection keeps the complete rendered event population');
+  is(s.history.canvasRender.series.filter((series) => series.type === 'line' && series.opacity === 0.88).length,
+    1, 'S70 selected-run content paints exactly one active trace');
+  is(s.history.canvasRender.series.filter((series) => series.type === 'line' && series.opacity === 0.2).length,
+    s.history.runIds.length - 1, 'S70 selected-run content quiets every other trace');
 };
 
 const historySafetyState = (page, draftWrites) => page.evaluate((writes) => {

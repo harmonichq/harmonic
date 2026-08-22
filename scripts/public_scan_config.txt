@@ -154,7 +154,7 @@ authorized-synthetic mockups/diagnose-workstation.synthetic/settings-audit.captu
 # which prints the full delta first. Never edit it by hand: the digest is
 # checked at parse time and a hand edit fails the config closed.
 # BEGIN dose-ratio baseline
-dose-ratio-baseline 147 85a1eeb4ffe5d2890e636d759e0234e6f7d5ed4e4012e9787f7311f6c2298bee
+dose-ratio-baseline 154 a16a3bae08f5602455bb481c90958d8de2d27915617c78c26450408a06f5e8c1
 dose-ratio-ack CONTEXT.md:441 | 0.2 U
 dose-ratio-ack CONTEXT.md:65 | 1 U : 36 mg/dL
 dose-ratio-ack CONTEXT.md:87 | 0.5 U
@@ -178,26 +178,33 @@ dose-ratio-ack ciq_autotune/insulin.py:220 | 0.1 U
 dose-ratio-ack ciq_autotune/pattern_sweep.py:1042 | 1 U
 dose-ratio-ack ciq_autotune/tandemsource_map.py:207 | 65.535 U
 dose-ratio-ack docs/kb/start-here.md:12 | 4.5 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:24227 | 6 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:31453 | 6 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:38679 | 6 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:39517 | 6 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:40594 | 6 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:41066 | 6 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:41316 | 6 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:41443 | 6 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:7057 | 6 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:9298 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:151 | 6.4 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:229 | 6.6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:24787 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:307 | 6.8 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:32013 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:385 | 7 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:39239 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:40084 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:41173 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:41652 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:41906 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:42035 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:463 | 7.2 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:6 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:73 | 6.2 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:7594 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:9851 | 6 g/U
 dose-ratio-ack frontend/kb.test.js:186 | 0.5 U
 dose-ratio-ack frontend/kb.test.js:206 | 0.5 U
-dose-ratio-ack frontend/plan.js:666 | 0.001 U
-dose-ratio-ack frontend/plan.js:668 | 0.1 g/U
+dose-ratio-ack frontend/plan.js:665 | 0.001 U
+dose-ratio-ack frontend/plan.js:667 | 0.1 g/U
 dose-ratio-ack mockups/diagnose-workstation.synthetic/ic-history-events.capture.json:2288 | 6 g/U
 dose-ratio-ack openspec/specs/behavioral-layer/spec.md:19 | 0.3 U
 dose-ratio-ack openspec/specs/behavioral-layer/spec.md:27 | 10 U
-dose-ratio-ack openspec/specs/safety/spec.md:26 | 0.1 U
-dose-ratio-ack openspec/specs/safety/spec.md:27 | 3.0 U
-dose-ratio-ack openspec/specs/safety/spec.md:64 | 0.05 U
+dose-ratio-ack openspec/specs/safety/spec.md:28 | 0.1 U
+dose-ratio-ack openspec/specs/safety/spec.md:29 | 3.0 U
+dose-ratio-ack openspec/specs/safety/spec.md:66 | 0.05 U
 dose-ratio-ack scripts/gen_chart_builder_fixtures.py:163 | 0.04 U
 dose-ratio-ack tests/test_analyzer_basal.py:109 | 0.9 U
 dose-ratio-ack tests/test_analyzer_basal.py:901 | 0.30 U

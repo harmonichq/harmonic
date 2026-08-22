@@ -1,6 +1,543 @@
 {
  "_generated_by": "scripts/gen_findings_projection_fixtures.py",
  "_note": "SYNTHETIC. Every window below is the real projection's own output over invented inputs run through the real engines — never hand-assembled. Regenerate with `python3 scripts/gen_findings_projection_fixtures.py`.",
+ "density_history": [
+  {
+   "annotation": "When Carb ratio was 6 g/U, 4 meal runs measured 6 g/U (CI 6–6). Past setting. No change suggested.",
+   "block_end_min": 180,
+   "block_start_min": 0,
+   "estimate": {
+    "confidence": 0.8,
+    "hi": 6.0,
+    "lo": 6.0,
+    "method": "bootstrap-pooled-ratio-clustered",
+    "n": 4,
+    "value": 6.0,
+    "wide": false
+   },
+   "id": "ich1_WzAsMTgwLCI2Il0",
+   "label": "Overnight",
+   "lifecycle": "active",
+   "past_setting": 6.0,
+   "programmed_now": 5.5,
+   "regime_end": "2026-07-01T00:00:00",
+   "runs": [
+    {
+     "cgm_end_min": 315.0,
+     "cgm_start_min": -10.0,
+     "first_member_at": "2026-05-22T01:00:00",
+     "last_member_at": "2026-05-22T01:00:00",
+     "member_offsets_min": [
+      0.0
+     ],
+     "outcome_min": 300.0,
+     "run_id": "icr1_WyIyMDI2LTA1LTIyVDAxOjAwOjAwIl0"
+    },
+    {
+     "cgm_end_min": 315.0,
+     "cgm_start_min": -10.0,
+     "first_member_at": "2026-05-23T01:00:00",
+     "last_member_at": "2026-05-23T01:00:00",
+     "member_offsets_min": [
+      0.0
+     ],
+     "outcome_min": 300.0,
+     "run_id": "icr1_WyIyMDI2LTA1LTIzVDAxOjAwOjAwIl0"
+    },
+    {
+     "cgm_end_min": 315.0,
+     "cgm_start_min": -10.0,
+     "first_member_at": "2026-05-24T01:00:00",
+     "last_member_at": "2026-05-24T01:00:00",
+     "member_offsets_min": [
+      0.0
+     ],
+     "outcome_min": 300.0,
+     "run_id": "icr1_WyIyMDI2LTA1LTI0VDAxOjAwOjAwIl0"
+    },
+    {
+     "cgm_end_min": 315.0,
+     "cgm_start_min": -10.0,
+     "first_member_at": "2026-05-25T01:00:00",
+     "last_member_at": "2026-05-25T01:00:00",
+     "member_offsets_min": [
+      0.0
+     ],
+     "outcome_min": 300.0,
+     "run_id": "icr1_WyIyMDI2LTA1LTI1VDAxOjAwOjAwIl0"
+    }
+   ],
+   "support": 4
+  },
+  {
+   "annotation": "When Carb ratio was 6.2 g/U, 5 meal runs measured 6.2 g/U (CI 6.2–6.2). Past setting. No change suggested.",
+   "block_end_min": 360,
+   "block_start_min": 180,
+   "estimate": {
+    "confidence": 0.8,
+    "hi": 6.2,
+    "lo": 6.2,
+    "method": "bootstrap-pooled-ratio-clustered",
+    "n": 5,
+    "value": 6.2,
+    "wide": false
+   },
+   "id": "ich1_WzE4MCwzNjAsIjYuMiJd",
+   "label": "Overnight",
+   "lifecycle": "active",
+   "past_setting": 6.2,
+   "programmed_now": 5.7,
+   "regime_end": "2026-07-01T00:00:00",
+   "runs": [
+    {
+     "cgm_end_min": 315.0,
+     "cgm_start_min": -10.0,
+     "first_member_at": "2026-05-26T04:00:00",
+     "last_member_at": "2026-05-26T04:00:00",
+     "member_offsets_min": [
+      0.0
+     ],
+     "outcome_min": 300.0,
+     "run_id": "icr1_WyIyMDI2LTA1LTI2VDA0OjAwOjAwIl0"
+    },
+    {
+     "cgm_end_min": 315.0,
+     "cgm_start_min": -10.0,
+     "first_member_at": "2026-05-27T04:00:00",
+     "last_member_at": "2026-05-27T04:00:00",
+     "member_offsets_min": [
+      0.0
+     ],
+     "outcome_min": 300.0,
+     "run_id": "icr1_WyIyMDI2LTA1LTI3VDA0OjAwOjAwIl0"
+    },
+    {
+     "cgm_end_min": 315.0,
+     "cgm_start_min": -10.0,
+     "first_member_at": "2026-05-28T04:00:00",
+     "last_member_at": "2026-05-28T04:00:00",
+     "member_offsets_min": [
+      0.0
+     ],
+     "outcome_min": 300.0,
+     "run_id": "icr1_WyIyMDI2LTA1LTI4VDA0OjAwOjAwIl0"
+    },
+    {
+     "cgm_end_min": 315.0,
+     "cgm_start_min": -10.0,
+     "first_member_at": "2026-05-29T04:00:00",
+     "last_member_at": "2026-05-29T04:00:00",
+     "member_offsets_min": [
+      0.0
+     ],
+     "outcome_min": 300.0,
+     "run_id": "icr1_WyIyMDI2LTA1LTI5VDA0OjAwOjAwIl0"
+    },
+    {
+     "cgm_end_min": 315.0,
+     "cgm_start_min": -10.0,
+     "first_member_at": "2026-05-30T04:00:00",
+     "last_member_at": "2026-05-30T04:00:00",
+     "member_offsets_min": [
+      0.0
+     ],
+     "outcome_min": 300.0,
+     "run_id": "icr1_WyIyMDI2LTA1LTMwVDA0OjAwOjAwIl0"
+    }
+   ],
+   "support": 5
+  },
+  {
+   "annotation": "When Carb ratio was 6.4 g/U, 5 meal runs measured 6.4 g/U (CI 6.4–6.4). Past setting. No change suggested.",
+   "block_end_min": 540,
+   "block_start_min": 360,
+   "estimate": {
+    "confidence": 0.8,
+    "hi": 6.4,
+    "lo": 6.4,
+    "method": "bootstrap-pooled-ratio-clustered",
+    "n": 5,
+    "value": 6.4,
+    "wide": false
+   },
+   "id": "ich1_WzM2MCw1NDAsIjYuNCJd",
+   "label": "Morning",
+   "lifecycle": "active",
+   "past_setting": 6.4,
+   "programmed_now": 5.9,
+   "regime_end": "2026-07-01T00:00:00",
+   "runs": [
+    {
+     "cgm_end_min": 315.0,
+     "cgm_start_min": -10.0,
+     "first_member_at": "2026-05-31T07:00:00",
+     "last_member_at": "2026-05-31T07:00:00",
+     "member_offsets_min": [
+      0.0
+     ],
+     "outcome_min": 300.0,
+     "run_id": "icr1_WyIyMDI2LTA1LTMxVDA3OjAwOjAwIl0"
+    },
+    {
+     "cgm_end_min": 315.0,
+     "cgm_start_min": -10.0,
+     "first_member_at": "2026-06-01T07:00:00",
+     "last_member_at": "2026-06-01T07:00:00",
+     "member_offsets_min": [
+      0.0
+     ],
+     "outcome_min": 300.0,
+     "run_id": "icr1_WyIyMDI2LTA2LTAxVDA3OjAwOjAwIl0"
+    },
+    {
+     "cgm_end_min": 315.0,
+     "cgm_start_min": -10.0,
+     "first_member_at": "2026-06-02T07:00:00",
+     "last_member_at": "2026-06-02T07:00:00",
+     "member_offsets_min": [
+      0.0
+     ],
+     "outcome_min": 300.0,
+     "run_id": "icr1_WyIyMDI2LTA2LTAyVDA3OjAwOjAwIl0"
+    },
+    {
+     "cgm_end_min": 315.0,
+     "cgm_start_min": -10.0,
+     "first_member_at": "2026-06-03T07:00:00",
+     "last_member_at": "2026-06-03T07:00:00",
+     "member_offsets_min": [
+      0.0
+     ],
+     "outcome_min": 300.0,
+     "run_id": "icr1_WyIyMDI2LTA2LTAzVDA3OjAwOjAwIl0"
+    },
+    {
+     "cgm_end_min": 315.0,
+     "cgm_start_min": -10.0,
+     "first_member_at": "2026-06-04T07:00:00",
+     "last_member_at": "2026-06-04T07:00:00",
+     "member_offsets_min": [
+      0.0
+     ],
+     "outcome_min": 300.0,
+     "run_id": "icr1_WyIyMDI2LTA2LTA0VDA3OjAwOjAwIl0"
+    }
+   ],
+   "support": 5
+  },
+  {
+   "annotation": "When Carb ratio was 6.6 g/U, 5 meal runs measured 6.5999 g/U (CI 6.5999–6.5999). Past setting. No change suggested.",
+   "block_end_min": 720,
+   "block_start_min": 540,
+   "estimate": {
+    "confidence": 0.8,
+    "hi": 6.5999,
+    "lo": 6.5999,
+    "method": "bootstrap-pooled-ratio-clustered",
+    "n": 5,
+    "value": 6.5999,
+    "wide": false
+   },
+   "id": "ich1_WzU0MCw3MjAsIjYuNiJd",
+   "label": "Morning",
+   "lifecycle": "active",
+   "past_setting": 6.6,
+   "programmed_now": 6.1,
+   "regime_end": "2026-07-01T00:00:00",
+   "runs": [
+    {
+     "cgm_end_min": 315.0,
+     "cgm_start_min": -10.0,
+     "first_member_at": "2026-06-05T10:00:00",
+     "last_member_at": "2026-06-05T10:00:00",
+     "member_offsets_min": [
+      0.0
+     ],
+     "outcome_min": 300.0,
+     "run_id": "icr1_WyIyMDI2LTA2LTA1VDEwOjAwOjAwIl0"
+    },
+    {
+     "cgm_end_min": 315.0,
+     "cgm_start_min": -10.0,
+     "first_member_at": "2026-06-06T10:00:00",
+     "last_member_at": "2026-06-06T10:00:00",
+     "member_offsets_min": [
+      0.0
+     ],
+     "outcome_min": 300.0,
+     "run_id": "icr1_WyIyMDI2LTA2LTA2VDEwOjAwOjAwIl0"
+    },
+    {
+     "cgm_end_min": 315.0,
+     "cgm_start_min": -10.0,
+     "first_member_at": "2026-06-07T10:00:00",
+     "last_member_at": "2026-06-07T10:00:00",
+     "member_offsets_min": [
+      0.0
+     ],
+     "outcome_min": 300.0,
+     "run_id": "icr1_WyIyMDI2LTA2LTA3VDEwOjAwOjAwIl0"
+    },
+    {
+     "cgm_end_min": 315.0,
+     "cgm_start_min": -10.0,
+     "first_member_at": "2026-06-08T10:00:00",
+     "last_member_at": "2026-06-08T10:00:00",
+     "member_offsets_min": [
+      0.0
+     ],
+     "outcome_min": 300.0,
+     "run_id": "icr1_WyIyMDI2LTA2LTA4VDEwOjAwOjAwIl0"
+    },
+    {
+     "cgm_end_min": 315.0,
+     "cgm_start_min": -10.0,
+     "first_member_at": "2026-06-09T10:00:00",
+     "last_member_at": "2026-06-09T10:00:00",
+     "member_offsets_min": [
+      0.0
+     ],
+     "outcome_min": 300.0,
+     "run_id": "icr1_WyIyMDI2LTA2LTA5VDEwOjAwOjAwIl0"
+    }
+   ],
+   "support": 5
+  },
+  {
+   "annotation": "When Carb ratio was 6.8 g/U, 5 meal runs measured 6.7999 g/U (CI 6.7999–6.7999). Past setting. No change suggested.",
+   "block_end_min": 900,
+   "block_start_min": 720,
+   "estimate": {
+    "confidence": 0.8,
+    "hi": 6.7999,
+    "lo": 6.7999,
+    "method": "bootstrap-pooled-ratio-clustered",
+    "n": 5,
+    "value": 6.7999,
+    "wide": false
+   },
+   "id": "ich1_WzcyMCw5MDAsIjYuOCJd",
+   "label": "Afternoon",
+   "lifecycle": "active",
+   "past_setting": 6.8,
+   "programmed_now": 6.3,
+   "regime_end": "2026-07-01T00:00:00",
+   "runs": [
+    {
+     "cgm_end_min": 315.0,
+     "cgm_start_min": -10.0,
+     "first_member_at": "2026-06-10T13:00:00",
+     "last_member_at": "2026-06-10T13:00:00",
+     "member_offsets_min": [
+      0.0
+     ],
+     "outcome_min": 300.0,
+     "run_id": "icr1_WyIyMDI2LTA2LTEwVDEzOjAwOjAwIl0"
+    },
+    {
+     "cgm_end_min": 315.0,
+     "cgm_start_min": -10.0,
+     "first_member_at": "2026-06-11T13:00:00",
+     "last_member_at": "2026-06-11T13:00:00",
+     "member_offsets_min": [
+      0.0
+     ],
+     "outcome_min": 300.0,
+     "run_id": "icr1_WyIyMDI2LTA2LTExVDEzOjAwOjAwIl0"
+    },
+    {
+     "cgm_end_min": 315.0,
+     "cgm_start_min": -10.0,
+     "first_member_at": "2026-06-12T13:00:00",
+     "last_member_at": "2026-06-12T13:00:00",
+     "member_offsets_min": [
+      0.0
+     ],
+     "outcome_min": 300.0,
+     "run_id": "icr1_WyIyMDI2LTA2LTEyVDEzOjAwOjAwIl0"
+    },
+    {
+     "cgm_end_min": 315.0,
+     "cgm_start_min": -10.0,
+     "first_member_at": "2026-06-13T13:00:00",
+     "last_member_at": "2026-06-13T13:00:00",
+     "member_offsets_min": [
+      0.0
+     ],
+     "outcome_min": 300.0,
+     "run_id": "icr1_WyIyMDI2LTA2LTEzVDEzOjAwOjAwIl0"
+    },
+    {
+     "cgm_end_min": 315.0,
+     "cgm_start_min": -10.0,
+     "first_member_at": "2026-06-14T13:00:00",
+     "last_member_at": "2026-06-14T13:00:00",
+     "member_offsets_min": [
+      0.0
+     ],
+     "outcome_min": 300.0,
+     "run_id": "icr1_WyIyMDI2LTA2LTE0VDEzOjAwOjAwIl0"
+    }
+   ],
+   "support": 5
+  },
+  {
+   "annotation": "When Carb ratio was 7 g/U, 5 meal runs measured 7 g/U (CI 7–7). Past setting. No change suggested.",
+   "block_end_min": 1080,
+   "block_start_min": 900,
+   "estimate": {
+    "confidence": 0.8,
+    "hi": 7.0,
+    "lo": 7.0,
+    "method": "bootstrap-pooled-ratio-clustered",
+    "n": 5,
+    "value": 7.0,
+    "wide": false
+   },
+   "id": "ich1_WzkwMCwxMDgwLCI3Il0",
+   "label": "Afternoon",
+   "lifecycle": "active",
+   "past_setting": 7.0,
+   "programmed_now": 6.5,
+   "regime_end": "2026-07-01T00:00:00",
+   "runs": [
+    {
+     "cgm_end_min": 315.0,
+     "cgm_start_min": -10.0,
+     "first_member_at": "2026-06-15T16:00:00",
+     "last_member_at": "2026-06-15T16:00:00",
+     "member_offsets_min": [
+      0.0
+     ],
+     "outcome_min": 300.0,
+     "run_id": "icr1_WyIyMDI2LTA2LTE1VDE2OjAwOjAwIl0"
+    },
+    {
+     "cgm_end_min": 315.0,
+     "cgm_start_min": -10.0,
+     "first_member_at": "2026-06-16T16:00:00",
+     "last_member_at": "2026-06-16T16:00:00",
+     "member_offsets_min": [
+      0.0
+     ],
+     "outcome_min": 300.0,
+     "run_id": "icr1_WyIyMDI2LTA2LTE2VDE2OjAwOjAwIl0"
+    },
+    {
+     "cgm_end_min": 315.0,
+     "cgm_start_min": -10.0,
+     "first_member_at": "2026-06-17T16:00:00",
+     "last_member_at": "2026-06-17T16:00:00",
+     "member_offsets_min": [
+      0.0
+     ],
+     "outcome_min": 300.0,
+     "run_id": "icr1_WyIyMDI2LTA2LTE3VDE2OjAwOjAwIl0"
+    },
+    {
+     "cgm_end_min": 315.0,
+     "cgm_start_min": -10.0,
+     "first_member_at": "2026-06-18T16:00:00",
+     "last_member_at": "2026-06-18T16:00:00",
+     "member_offsets_min": [
+      0.0
+     ],
+     "outcome_min": 300.0,
+     "run_id": "icr1_WyIyMDI2LTA2LTE4VDE2OjAwOjAwIl0"
+    },
+    {
+     "cgm_end_min": 315.0,
+     "cgm_start_min": -10.0,
+     "first_member_at": "2026-06-19T16:00:00",
+     "last_member_at": "2026-06-19T16:00:00",
+     "member_offsets_min": [
+      0.0
+     ],
+     "outcome_min": 300.0,
+     "run_id": "icr1_WyIyMDI2LTA2LTE5VDE2OjAwOjAwIl0"
+    }
+   ],
+   "support": 5
+  },
+  {
+   "annotation": "When Carb ratio was 7.2 g/U, 5 meal runs measured 7.1999 g/U (CI 7.1999–7.1999). Past setting. No change suggested.",
+   "block_end_min": 1440,
+   "block_start_min": 1080,
+   "estimate": {
+    "confidence": 0.8,
+    "hi": 7.1999,
+    "lo": 7.1999,
+    "method": "bootstrap-pooled-ratio-clustered",
+    "n": 5,
+    "value": 7.1999,
+    "wide": false
+   },
+   "id": "ich1_WzEwODAsMTQ0MCwiNy4yIl0",
+   "label": "Evening",
+   "lifecycle": "active",
+   "past_setting": 7.2,
+   "programmed_now": 6.7,
+   "regime_end": "2026-07-01T00:00:00",
+   "runs": [
+    {
+     "cgm_end_min": 315.0,
+     "cgm_start_min": -10.0,
+     "first_member_at": "2026-06-20T19:00:00",
+     "last_member_at": "2026-06-20T19:00:00",
+     "member_offsets_min": [
+      0.0
+     ],
+     "outcome_min": 300.0,
+     "run_id": "icr1_WyIyMDI2LTA2LTIwVDE5OjAwOjAwIl0"
+    },
+    {
+     "cgm_end_min": 315.0,
+     "cgm_start_min": -10.0,
+     "first_member_at": "2026-06-21T19:00:00",
+     "last_member_at": "2026-06-21T19:00:00",
+     "member_offsets_min": [
+      0.0
+     ],
+     "outcome_min": 300.0,
+     "run_id": "icr1_WyIyMDI2LTA2LTIxVDE5OjAwOjAwIl0"
+    },
+    {
+     "cgm_end_min": 315.0,
+     "cgm_start_min": -10.0,
+     "first_member_at": "2026-06-22T19:00:00",
+     "last_member_at": "2026-06-22T19:00:00",
+     "member_offsets_min": [
+      0.0
+     ],
+     "outcome_min": 300.0,
+     "run_id": "icr1_WyIyMDI2LTA2LTIyVDE5OjAwOjAwIl0"
+    },
+    {
+     "cgm_end_min": 315.0,
+     "cgm_start_min": -10.0,
+     "first_member_at": "2026-06-23T19:00:00",
+     "last_member_at": "2026-06-23T19:00:00",
+     "member_offsets_min": [
+      0.0
+     ],
+     "outcome_min": 300.0,
+     "run_id": "icr1_WyIyMDI2LTA2LTIzVDE5OjAwOjAwIl0"
+    },
+    {
+     "cgm_end_min": 315.0,
+     "cgm_start_min": -10.0,
+     "first_member_at": "2026-06-24T19:00:00",
+     "last_member_at": "2026-06-24T19:00:00",
+     "member_offsets_min": [
+      0.0
+     ],
+     "outcome_min": 300.0,
+     "run_id": "icr1_WyIyMDI2LTA2LTI0VDE5OjAwOjAwIl0"
+    }
+   ],
+   "support": 5
+  }
+ ],
  "inputs": {
   "analysis": {
    "basal": [

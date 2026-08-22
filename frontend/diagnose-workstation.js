@@ -28,6 +28,11 @@ import {
   renderHistoryEvents, validateHistoryEvents,
 } from './diagnose-workstation-chart.js';
 import { toCaptures, isfVerdict } from './diagnose-workstation-data.js';
+import {
+  assertMatchingFindingCasePreparation,
+  inconsistentFindingProjection,
+  sameFindingCaseWindow,
+} from './finding-case-file-validation.js';
 // #735: level 1 is the server-owned findings queue, and the pane has a floor.
 import {
   eventChartCoordinate, renderFindingsQueue, queueMeta,
@@ -1102,6 +1107,10 @@ function boot(root, data, callbacks, signal) {
      cannot supply an in-window denominator, and then nothing re-scopes at all —
      never half-scope. */
   const scopeWindow = () => drawn || WINDOWS[presetKey].range;
+  const scopeLabel = () => {
+    const w = scopeWindow();
+    return w ? `${hhmm(w[0])}–${winEdge(w[1])}` : 'full range';
+  };
   /* The opening depth of a mock state, as FRAMES. A factor frame is (factor,
      rowId) together — the row is where its population comes from — so the boot
      presets open on a published finding exactly as a queue drill does, rather
@@ -1136,6 +1145,8 @@ function boot(root, data, callbacks, signal) {
   let pendingKey = null;
   let failedKey = null;
   const currentFindingsKey = () => windowKey(findingsWindow());
+  const currentPreparationKey = () => windowKey(findingsWindow());
+  let preparationGeneration = 0;
   const settled = () => loadedKey === currentFindingsKey()
     && pendingKey === null && failedKey === null;
   const historyFrame = () => top()?.k === 'history' ? top() : null;
@@ -1331,23 +1342,125 @@ function boot(root, data, callbacks, signal) {
     alignment,
     ...(occ ? { occ } : {}),
   });
-  const matchingCase = (caseFile, source, frame) => {
-    if (caseFile?.projection_id === source.projection_id
-      && caseFile?.finding?.id === frame.rowId) return caseFile;
-    const error = new Error('The Finding case file did not match the active preparation.');
-    error.detail = { code: 'inconsistent_projection', message: error.message };
-    throw error;
+  const matchingPreparation = assertMatchingFindingCasePreparation;
+  const eventChartIn = (source, frame) => eventChartCoordinate(
+    source?.rendered_rows?.find((row) => row.id === frame.rowId),
+  );
+  const caseAlignmentIn = (source, frame) => {
+    const row = source?.rendered_rows?.find((row) => row.id === frame.rowId);
+    return eventChartCoordinate(row);
+  };
+  const availableAlignment = (source, frame, requested) =>
+    requested === 'event'
+      && (frame.eventDiscovery ? eventChartIn(source, frame) : caseAlignmentIn(source, frame))
+      ? 'event' : 'clock';
+  const validCount = (value) => Number.isInteger(value) && value >= 0;
+  const validNumberOrNull = (value) => value === null || Number.isFinite(value);
+  const validAnchor = (anchor) => typeof anchor?.t === 'string'
+    && typeof anchor.kind === 'string' && typeof anchor.label === 'string'
+    && validNumberOrNull(anchor.bg);
+  const validCaseShape = (caseFile) => {
+    const verdicts = ['fired', 'outranked', 'near_miss', 'no_data', 'clean'];
+    const counts = caseFile?.verdict_counts;
+    const occurrences = caseFile?.occurrences;
+    const projection = caseFile?.projection;
+    const selection = caseFile?.selection;
+    if (!caseFile?.finding || typeof caseFile.finding.lever !== 'string'
+      || typeof caseFile.finding.title !== 'string' || typeof caseFile.family !== 'string'
+      || !validCount(caseFile?.summary?.claimed) || !validCount(caseFile?.summary?.denominator)
+      || caseFile.summary.claimed > caseFile.summary.denominator
+      || typeof caseFile.summary.noun !== 'string'
+      || !counts || !verdicts.every((key) => validCount(counts[key]))
+      || verdicts.reduce((sum, key) => sum + counts[key], 0) !== caseFile.summary.denominator
+      || !Array.isArray(occurrences) || occurrences.length !== caseFile.summary.denominator
+      || !occurrences.every((row) => /^o_[0-9a-f]{32}$/.test(row?.id || '')
+        && typeof row.date === 'string' && verdicts.includes(row.verdict)
+        && validAnchor(row.anchor))) return false;
+    if (projection?.alignment === 'clock') {
+      const clock = projection.clock;
+      if (projection.anchor !== null || projection.window_min !== null
+        || !Array.isArray(projection.cohorts) || projection.cohorts.length !== 0
+        || !validCount(clock?.total) || clock.total !== caseFile.summary.claimed
+        || !validCount(clock?.peak_bucket_index) || clock.peak_bucket_index >= 12
+        || !Array.isArray(clock?.buckets) || clock.buckets.length !== 12
+        || !clock.buckets.every((bucket) => validCount(bucket?.n)
+          && Number.isFinite(bucket.start_min) && Number.isFinite(bucket.end_min)
+          && Array.isArray(bucket.occurrence_ids)
+          && bucket.occurrence_ids.every((id) => typeof id === 'string'))
+        || clock.buckets.reduce((sum, bucket) => sum + bucket.n, 0) !== clock.total) return false;
+    } else if (projection?.alignment === 'event') {
+      if (typeof projection.anchor?.kind !== 'string'
+        || typeof projection.anchor?.label !== 'string'
+        || !Array.isArray(projection.window_min) || projection.window_min.length !== 2
+        || !projection.window_min.every(Number.isFinite)
+        || projection.clock !== null || !Array.isArray(projection.cohorts)
+        || !projection.cohorts.every((cohort) => typeof cohort?.key === 'string'
+          && validCount(cohort.routed_count) && validCount(cohort.usable_count)
+          && Array.isArray(cohort.occurrence_ids)
+          && cohort.occurrence_ids.every((id) => typeof id === 'string')
+          && Array.isArray(cohort.points) && cohort.points.every((point) =>
+            Number.isFinite(point?.minute) && validCount(point.n)
+            && typeof point.support === 'string' && validNumberOrNull(point.median)
+            && validNumberOrNull(point.p25) && validNumberOrNull(point.p75)))) return false;
+    } else return false;
+    if (!selection || !['none', 'selected', 'unavailable'].includes(selection.state)) return false;
+    if (selection.state === 'selected') {
+      const detail = selection.detail;
+      if (!detail || detail.id !== selection.requested_id
+        || typeof detail.date !== 'string' || !validAnchor(detail.anchor)
+        || !verdicts.includes(detail.verdict) || !Array.isArray(detail.glucose)
+        || !detail.glucose.every((point) => typeof point?.t === 'string'
+          && Number.isFinite(point.minute) && Number.isFinite(point.bg))
+        || !Array.isArray(detail.markers)
+        || !detail.markers.every((marker) => typeof marker?.kind === 'string'
+          && typeof marker.t === 'string' && Number.isFinite(marker.minute))
+        || !Array.isArray(detail.source_corrections)
+        || !detail.source_corrections.every((dose) => typeof dose?.t === 'string'
+          && Number.isFinite(dose.insulin))
+        || typeof detail.day_target?.date !== 'string'
+        || !occurrences.some((row) => row.id === detail.id && row.date === detail.date
+          && row.verdict === detail.verdict
+          && JSON.stringify(row.anchor) === JSON.stringify(detail.anchor))) return false;
+    } else if (selection.detail !== null) return false;
+    return true;
+  };
+  const matchingCase = (caseFile, source, frame, alignment, occ) => {
+    const selection = caseFile?.selection;
+    const selectionMatches = occ
+      ? ['selected', 'unavailable'].includes(selection?.state)
+        && selection?.requested_id === occ
+        && (selection.state !== 'selected' || selection.detail?.id === occ)
+      : selection?.state === 'none' && selection?.requested_id === null;
+    const sourceWindow = source?.coordinates?.window;
+    const requestedWindow = sourceWindow?.scoped
+      ? { start_min: sourceWindow.start_min, end_min: sourceWindow.end_min } : null;
+    if (caseFile?.schema === 'diagnose-finding-case-file-v1' && validCaseShape(caseFile)
+      && caseFile?.projection_id === source.projection_id
+      && caseFile?.finding?.id === frame.rowId
+      && sameFindingCaseWindow(caseFile?.window, requestedWindow)
+      && caseFile?.projection?.alignment === alignment
+      && selectionMatches) return caseFile;
+    inconsistentFindingProjection(
+      'The Finding case file did not match the requested coordinates.',
+    );
   };
 
   function recoverCase(frame, alignment, occ, generation) {
     const w = findingsWindow();
-    Promise.resolve(callbacks.loadPreparation?.(w ? { start_min: w[0], end_min: w[1] } : null))
-      .then((shadowPreparation) => {
+    const requested = w ? { start_min: w[0], end_min: w[1] } : null;
+    Promise.resolve(callbacks.loadPreparation?.(requested))
+      .then((response) => {
         if (!isCurrentCaseRequest(generation, frame)) return null;
+        const shadowPreparation = matchingPreparation(response, requested);
+        const shadowAlignment = availableAlignment(
+          shadowPreparation, frame, alignment,
+        );
         return Promise.resolve(callbacks.loadCase?.(
-          caseCoordinates(shadowPreparation, frame, alignment, occ),
+          caseCoordinates(shadowPreparation, frame, shadowAlignment, occ),
         )).then((shadowCase) => ({ shadowPreparation,
-          shadowCase: matchingCase(shadowCase, shadowPreparation, frame) }));
+          shadowCase: matchingCase(
+            shadowCase, shadowPreparation, frame, shadowAlignment, occ,
+          ) }));
       })
       .then((shadow) => {
         if (!shadow || !isCurrentCaseRequest(generation, frame)) return;
@@ -1374,10 +1487,11 @@ function boot(root, data, callbacks, signal) {
 
   function refreshQueueAfterUnavailable(frame, generation, originalError) {
     const w = findingsWindow();
-    Promise.resolve(callbacks.loadPreparation?.(w
-      ? { start_min: w[0], end_min: w[1] } : null))
-      .then((next) => {
+    const requested = w ? { start_min: w[0], end_min: w[1] } : null;
+    Promise.resolve(callbacks.loadPreparation?.(requested))
+      .then((response) => {
         if (!isCurrentCaseRequest(generation, frame)) return;
+        const next = matchingPreparation(response, requested);
         preparation = next;
         findings = findingsFromPreparation(next);
         loadedKey = windowKey(findingsWindow());
@@ -1409,7 +1523,7 @@ function boot(root, data, callbacks, signal) {
     Promise.resolve(callbacks.loadCase?.(caseCoordinates(source, frame, alignment, occ)))
       .then((response) => {
         if (!isCurrentCaseRequest(generation, frame)) return;
-        const next = matchingCase(response, source, frame);
+        const next = matchingCase(response, source, frame, alignment, occ);
         frame.loading = false;
         frame.caseFile = next;
         frame.requestedAlignment = next.projection.alignment;
@@ -1427,6 +1541,12 @@ function boot(root, data, callbacks, signal) {
           refreshQueueAfterUnavailable(frame, generation, error);
           return;
         }
+        if (alignment === 'event' && !frame.caseFile) {
+          frame.loading = false;
+          frame.requestedAlignment = 'clock';
+          requestCase(frame, 'clock', occ, source);
+          return;
+        }
         frame.loading = false;
         activeCaseError = caseErrorFrom(error);
         paint();
@@ -1434,7 +1554,7 @@ function boot(root, data, callbacks, signal) {
   }
 
   function ensurePreparation() {
-    const key = windowKey(findingsWindow());
+    const key = currentPreparationKey();
     const history = historyFrame();
     if (history) {
       if (history.pending || history.stale || key === loadedKey) return;
@@ -1442,16 +1562,24 @@ function boot(root, data, callbacks, signal) {
       return;
     }
     if (failedKey !== null && failedKey !== key) failedKey = null;
-    if (key === loadedKey || key === pendingKey || key === failedKey) return;
+    if (key === loadedKey) {
+      pendingKey = null;
+      failedKey = null;
+      return;
+    }
+    if (key === pendingKey || key === failedKey) return;
     pendingKey = key;
     activeCaseError = null;
     const w = findingsWindow();
-    const generation = ++caseGeneration;
+    const requested = w ? { start_min: w[0], end_min: w[1] } : null;
+    ++caseGeneration;
+    const generation = ++preparationGeneration;
     const frame = top().k === 'factor' ? top() : null;
     if (frame) frame.loading = true;
-    Promise.resolve(callbacks.loadPreparation?.(w ? { start_min: w[0], end_min: w[1] } : null))
-      .then((next) => {
-        if (generation !== caseGeneration || pendingKey !== key) return null;
+    Promise.resolve(callbacks.loadPreparation?.(requested))
+      .then((response) => {
+        if (generation !== preparationGeneration || currentPreparationKey() !== key) return null;
+        const next = matchingPreparation(response, requested);
         if (!frame) {
           preparation = next;
           findings = findingsFromPreparation(next);
@@ -1462,14 +1590,20 @@ function boot(root, data, callbacks, signal) {
           return null;
         }
         const desired = frame.pendingCaseRequest;
-        return Promise.resolve(callbacks.loadCase?.(caseCoordinates(
+        const alignment = availableAlignment(
           next, frame, desired?.alignment || frame.requestedAlignment || 'clock',
+        );
+        return Promise.resolve(callbacks.loadCase?.(caseCoordinates(
+          next, frame, alignment,
           desired ? desired.occ : frame.selectedId,
-        ))).then((shadowCase) => ({ next,
-          shadowCase: matchingCase(shadowCase, next, frame) }));
+        ))).then((shadowCase) => {
+          const occ = desired ? desired.occ : frame.selectedId;
+          return { next, shadowCase: matchingCase(shadowCase, next, frame, alignment, occ) };
+        });
       })
       .then((shadow) => {
-        if (!shadow || generation !== caseGeneration || pendingKey !== key || top() !== frame) return;
+        if (!shadow || generation !== preparationGeneration
+          || currentPreparationKey() !== key || top() !== frame) return;
         preparation = shadow.next;
         findings = findingsFromPreparation(shadow.next);
         frame.caseFile = shadow.shadowCase;
@@ -1484,7 +1618,7 @@ function boot(root, data, callbacks, signal) {
         paint();
       })
       .catch((error) => {
-        if (generation !== caseGeneration || pendingKey !== key) return;
+        if (generation !== preparationGeneration || currentPreparationKey() !== key) return;
         pendingKey = null;
         failedKey = key;
         if (frame) frame.loading = false;
@@ -1509,11 +1643,13 @@ function boot(root, data, callbacks, signal) {
       return;
     }
     if (row.register === 'finding') {
+      const entryAlignment = eventChartsOnly && eventChartCoordinate(row) ? 'event' : 'clock';
       const frame = { k: 'factor', rowId: row.id, title: row.title,
-        caseFile: null, requestedAlignment: 'clock', selectedId: null,
-        bandVerdict: null, loading: false };
+        caseFile: null, requestedAlignment: entryAlignment, selectedId: null,
+        bandVerdict: null, loading: false,
+        eventDiscovery: entryAlignment === 'event' };
       push(frame);
-      requestCase(frame, 'clock');
+      requestCase(frame, entryAlignment);
       return;
     }
     if (row.parameter === 'isf') { push({ k: 'isf', rowId: row.id }); return; }
@@ -1544,6 +1680,11 @@ function boot(root, data, callbacks, signal) {
     filterOpen = false;
     dir = 'pop'; stack.length = i + 1; paint();
   };
+
+  function findingRowFor(frame) {
+    if (frame.k !== 'factor') return null;
+    return (findings?.rows || []).find((row) => row.id === frame.rowId) || null;
+  }
 
   function parameterRowFor(frame) {
     if (!frame.rowId) return true;
@@ -1621,7 +1762,8 @@ function boot(root, data, callbacks, signal) {
     let label = `${preset.label.toUpperCase()} ${winText(preset)}`;
     let note = '';   // the droppable count tail — shed first when space is tight
     braceless = false;
-    if (f.k === 'factor' && f.caseFile) {
+    if (f.k === 'factor' && f.caseFile
+      && !(f.eventDiscovery && (drawn || explicitPreset))) {
       const caseWindow = f.caseFile.window;
       const clock = f.caseFile.projection.alignment === 'clock'
         ? f.caseFile.projection.clock : null;
@@ -1766,8 +1908,12 @@ function boot(root, data, callbacks, signal) {
     const f = top();
     const isCase = f.k === 'factor';
     const isHistory = f.k === 'history';
-    el('align-group').hidden = !isCase && !isHistory;
-    if (!isCase && !isHistory) {
+    const liveRow = isCase && settled() ? findingRowFor(f) : null;
+    const mappedCase = liveRow && (f.eventDiscovery
+      ? eventChartCoordinate(liveRow)
+      : caseAlignmentIn(preparation, f) ? { caseFile: true } : null);
+    el('align-group').hidden = !mappedCase && !isHistory;
+    if (!mappedCase && !isHistory) {
       disposeAlign();
       return;
     }

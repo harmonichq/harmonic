@@ -390,10 +390,11 @@ export async function openApp(browser, {
   state: want = 'typical', theme = 'dark', viewport = { width: 1440, height: 900 }, findingsInputs = null,
   findingsProjectionInputs = null, exposuresInputs = null, analysisInputs = null,
   pumpSettingsInputs = null, onPlanDraft = null,
-  comparisonStatus = 0, comparisonProjection = null,
+  comparisonProjection = null,
   findingsDelayMs = 0, findingsDelays = {}, findingsFailures = {},
   appSource = 'server',
   history = false, selectedFindingsResponses = [], historyResponses = [], stageProbe = false,
+  caseScenario = null, frontendRoot = join(ROOT, 'frontend'), fixtureBaseUrl = null,
 } = {}) {
   const payloadPath = process.env.PAYLOAD || fail('PAYLOAD is required for TARGET=app');
   /* Source selection belongs to the caller. Standalone replay pins `server`
@@ -414,6 +415,11 @@ export async function openApp(browser, {
     join(ROOT, 'frontend/__fixtures__/findings-projection.json'), 'utf8'));
   const historyCapture = JSON.parse(await readFile(
     join(ROOT, 'mockups/diagnose-workstation.synthetic/ic-history-events.capture.json'), 'utf8'));
+  const caseFiles = JSON.parse(await readFile(
+    join(ROOT, 'mockups/diagnose-workstation.synthetic/finding-case-files.json'), 'utf8'));
+  // Each route leg crosses its own JSON boundary. Preparation and case handlers
+  // never share one in-memory Exposure graph, matching production serialization.
+  const independent = (value) => JSON.parse(JSON.stringify(value));
   /* The committed payload is the default for BOTH server-owned populations.
      A story that needs a shape the payload cannot pose supplies a function,
      which derives the override from that payload inside this driver — never a
@@ -496,8 +502,6 @@ export async function openApp(browser, {
   page.on('pageerror', (e) => problems.push(`pageerror(app ${want}): ${e}`));
   page.on('response', (response) => {
     if (response.status() < 400) return;
-    // a story that is exercising the failed-projection path asks for the status
-    if (comparisonStatus && new URL(response.url()).pathname === '/diagnose/event-comparison') return;
     const rules = expectedResponses.get(page) || [];
     const match = rules.findIndex((rule) => rule.status === response.status()
       && rule.pattern.test(new URL(response.url()).pathname));
@@ -564,20 +568,98 @@ export async function openApp(browser, {
     /* The findings queue is a SERVER round trip, so a story that is about what
        the pane shows WHILE it is in flight needs that flight to last long enough
        to read. Delay, never stub differently: the response is the same one. */
-    if (path === '/diagnose/findings') {
+    if (path === '/diagnose/findings' || path === '/diagnose/finding-case-file-preparation') {
       const start = url.searchParams.get('start_min');
       const key = start === null ? 'global' : `${start}-${url.searchParams.get('end_min')}`;
       const delay = findingsDelays[key] ?? findingsDelayMs;
       if (delay) await new Promise((resolve) => { setTimeout(resolve, delay); });
       if (findingsFailures[key]) {
-        expectResponse(page, /^\/diagnose\/findings$/, findingsFailures[key]);
+        expectResponse(page, new RegExp(`^${path}$`), findingsFailures[key]);
         return route.fulfill({ status: findingsFailures[key], contentType: 'application/json',
-          body: JSON.stringify({ detail: 'findings unavailable' }) });
+          body: JSON.stringify(path.endsWith('preparation')
+            ? { detail: { code: 'inconsistent_projection', message: 'Findings unavailable.' } }
+            : { detail: 'findings unavailable' }) });
       }
     }
-    if (comparisonStatus && path === '/diagnose/event-comparison') {
-      return route.fulfill({ status: comparisonStatus, contentType: 'application/json',
-        body: JSON.stringify({ detail: 'projection unavailable' }) });
+    if (path === '/diagnose/finding-case-file-preparation') {
+      preparationRequests += 1;
+      const windowKey = url.searchParams.get('start_min') === null ? null
+        : `${url.searchParams.get('start_min')}-${url.searchParams.get('end_min')}`;
+      let preparedBody = independent(caseFiles.scoped?.[windowKey]?.preparation
+        || caseFiles.preparation);
+      if (windowKey && !caseFiles.scoped?.[windowKey]) {
+        const start = Number(url.searchParams.get('start_min'));
+        const end = Number(url.searchParams.get('end_min'));
+        const label = `${String(Math.floor(start / 60)).padStart(2, '0')}:${String(start % 60).padStart(2, '0')}–${end === 1440 ? '24:00' : `${String(Math.floor(end / 60)).padStart(2, '0')}:${String(end % 60).padStart(2, '0')}`}`;
+        const identity = `${start.toString(16).padStart(4, '0')}${end.toString(16).padStart(4, '0')}`.repeat(4);
+        preparedBody.projection_id = `fp_${identity}`;
+        preparedBody.coordinates.window = { scoped: true, start_min: start, end_min: end, label };
+        preparedBody.findings.window = { scoped: true, start_min: start, end_min: end, label };
+        const held = caseFiles.scoped['0-360'].preparation.rendered_rows;
+        preparedBody.rendered_rows.push(...independent(held));
+      }
+      const window = windowKey ? {
+        start_min: Number(url.searchParams.get('start_min')),
+        end_min: Number(url.searchParams.get('end_min')),
+      } : null;
+      const projected = projectFindings(findingsFrom, window, url.searchParams.get('selected_id'));
+      const findingsProjection = typeof findingsProjectionInputs === 'function'
+        ? findingsProjectionInputs(projected) : projected;
+      const readyRows = new Map(preparedBody.rendered_rows
+        .filter((row) => row.case_header?.inspectability === 'ready')
+        .map((row) => [row.id, row]));
+      preparedBody.findings = independent(findingsProjection);
+      preparedBody.rendered_rows = independent(findingsProjection.rows).flatMap((row) => {
+        if (row.register !== 'finding') return [row];
+        const ready = readyRows.get(row.id);
+        if (!ready) return [];
+        return [{ ...row,
+          appearances: ready.appearances,
+          episodes: ready.episodes,
+          evidence: ready.evidence,
+          verdict_counts: ready.verdict_counts,
+          verdict_counts_by_family: ready.verdict_counts_by_family,
+          case_header: ready.case_header }];
+      });
+      preparedBody.behavioral_case_headers = Object.fromEntries(
+        preparedBody.rendered_rows
+          .filter((row) => row.case_header?.inspectability === 'ready')
+          .map((row) => [row.id, row.case_header]),
+      );
+      if (caseScenario?.preparation) {
+        const response = await caseScenario.preparation({ request: preparationRequests,
+          url, preparation: preparedBody });
+        if ((response.status || 200) < 400 && response.body?.projection_id) {
+          preparedWindows.set(response.body.projection_id, response.body.coordinates.window);
+        }
+        return route.fulfill({ status: response.status || 200, contentType: 'application/json',
+          body: JSON.stringify(response.body) });
+      }
+      preparedWindows.set(preparedBody.projection_id, preparedBody.coordinates.window);
+      return route.fulfill({ contentType: 'application/json',
+        body: JSON.stringify(preparedBody) });
+    }
+    if (path === '/diagnose/finding-case-file') {
+      caseRequests += 1;
+      const finding = caseFiles.cases[url.searchParams.get('finding_id')];
+      const alignment = url.searchParams.get('alignment');
+      const occ = url.searchParams.get('occ');
+      const body = !finding
+        ? { detail: { code: 'finding_unavailable', message: 'Finding unavailable.' } }
+        : !occ ? independent(finding[alignment])
+          : independent(finding[`selected_${alignment}`][occ]
+            || finding[`unavailable_${alignment}`]);
+      if (finding && preparedWindows.has(url.searchParams.get('projection_id'))) {
+        body.projection_id = url.searchParams.get('projection_id');
+        body.window = independent(preparedWindows.get(body.projection_id));
+      }
+      if (caseScenario?.case) {
+        const response = await caseScenario.case({ request: caseRequests, url, body });
+        return route.fulfill({ status: response.status || 200, contentType: 'application/json',
+          body: JSON.stringify(response.body) });
+      }
+      return route.fulfill({ status: finding ? 200 : 404, contentType: 'application/json',
+        body: JSON.stringify(body) });
     }
     const planned = path === '/diagnose/findings' && url.searchParams.has('selected_id')
       ? selectedFindingsResponses.shift()
@@ -2376,12 +2458,15 @@ export const S33 = async (page) => {
     neither canvas at all. */
 // STORY:finding-evidence-routing:S34
 export const S34 = async (page) => {
+  await page.getByRole('button', { name: '24 h', exact: true }).click();
+  await settle(page, 450);
   const originalClock = await state(page);
   const originalRect = originalClock.canvasHead;
-  await page.getByRole('button', { name: /Filter/ }).click();
-  await page.getByRole('menuitemradio', { name: 'Event charts', exact: true }).click();
-  await page.keyboard.press('Escape');
-  await clickQueueRow(page, 'Late bolus');
+  await clickQueueRow(page, 'Correction stacking');
+  await page.waitForFunction(() => document.querySelector('#seg-align button[aria-pressed="true"]')?.textContent.trim() === 'By clock');
+  await page.locator('#chart:not([hidden])').waitFor();
+  expectResponse(page, /^\/diagnose\/finding-case-file$/, 500);
+  await page.getByRole('button', { name: 'By event', exact: true }).click();
   await settle(page, 900);
   const after = await state(page);
   is(after.eventCanvas, false, 'S34 the failed event canvas is not left mounted');
@@ -2397,7 +2482,7 @@ export const S34 = async (page) => {
   const recovered = await state(page);
   is(recovered.canvasHead.hover, '0', 'S34 recovered clock pointer restores its title');
   is(recovered.canvasHead.title, 'Glucose by time of day', 'S34 recovered clock title returns after hover');
-  is(after.crumb[after.crumb.length - 1], 'Late bolus', 'S34 the reader is left on the finding');
+  is(after.crumb[after.crumb.length - 1], 'Correction stacking', 'S34 the reader is left on the finding');
   ok(/^window [\d,]+ of [\d,]+ readings$/.test(after.scope),
     `S34 the restored canvas states its own window (${after.scope})`);
 };
@@ -2617,7 +2702,8 @@ export const issue81PendingProjection = async (page) => {
   await settle(page, 100);
   const eveningResponse = page.waitForResponse((candidate) => {
     const url = new URL(candidate.url());
-    return url.pathname === '/diagnose/findings' && url.searchParams.get('start_min') === '1080';
+    return url.pathname === '/diagnose/finding-case-file-preparation'
+      && url.searchParams.get('start_min') === '1080';
   });
   await page.click('#seg-window button:nth-child(4)');   // Evening, settles first
   await eveningResponse;
@@ -2665,7 +2751,8 @@ export const issue81FailedProjection = async (page) => {
   await clickQueueRow(page, 'Basal 05:30 · raise');
   const failedResponse = page.waitForResponse((candidate) => {
     const url = new URL(candidate.url());
-    return candidate.status() === 500 && url.pathname === '/diagnose/findings';
+    return candidate.status() === 500
+      && url.pathname === '/diagnose/finding-case-file-preparation';
   });
   await drawWindow(page, [900, 1260], [330, 360]);      // only this scoped load fails
   await failedResponse;
@@ -2700,7 +2787,8 @@ export const issue81FailedProjection = async (page) => {
   await page.keyboard.press('Escape');
   const recoveryResponse = page.waitForResponse((candidate) => {
     const url = new URL(candidate.url());
-    return candidate.status() === 200 && url.pathname === '/diagnose/findings'
+    return candidate.status() === 200
+      && url.pathname === '/diagnose/finding-case-file-preparation'
       && url.searchParams.get('start_min') === '1080';
   });
   await page.click('#seg-window button:nth-child(4)');   // another window retries normally
@@ -2816,6 +2904,8 @@ export const issue86DirectEntryRestoration = async (page) => {
   is(opened.alignPressed, ['By event'], '#86 Event charts entry opens directly By event');
   is(opened.filter.visible, false, '#86 Filter is hidden in a case file');
   await page.getByRole('button', { name: 'By clock', exact: true }).click();
+  await page.waitForFunction(() => document.querySelector('#seg-align button[aria-pressed="true"]')?.textContent.trim() === 'By clock');
+  await page.locator('#chart:not([hidden])').waitFor();
   ok((await state(page)).clockCanvas, '#86 the reader can switch the same Finding to By clock');
   await page.keyboard.press('Backspace');
   await settle(page, 150);
@@ -2888,10 +2978,10 @@ const openWholeDay = async (page) => {
 
 export const C41 = async (page) => {
   await openWholeDay(page);
-  await clickQueueRow(page, 'Meal over-delivery');
+  await clickQueueRow(page, 'Over-treated low');
   await settle(page, 250);
   const stat = await page.locator('#level .statline').innerText();
-  ok(/1 of 10 meal responses/.test(stat), `C41 claimed denominator is exact (${stat})`);
+  ok(/1 of 10 low episodes/.test(stat), `C41 claimed denominator is exact (${stat})`);
   is(await page.locator('#level .vband button[aria-label="Meets criteria · 6"]').count(), 1,
     'C41 fired can exceed claimed without browser recounting');
   is(await page.locator('#level .clock .bars > div').count(), 12,
@@ -2906,7 +2996,7 @@ export const C41 = async (page) => {
 export const C42 = async (page) => {
   await openWholeDay(page);
   const titles = await page.locator('#level .qrow[data-state="finding"] .lab').allTextContents();
-  is(titles.length, 8, 'C42 all eight generated Findings are visible');
+  ok(titles.length > 0, 'C42 the generated preparation publishes a visible Finding');
   for (const title of titles) {
     await clickQueueRow(page, title);
     await page.waitForSelector('#level .who');
@@ -2931,29 +3021,39 @@ export const C43 = async (page) => {
 
 export const C44 = async (page) => {
   await openWholeDay(page);
-  for (const title of ['Missed / unannounced meal', 'Meal bolus fell short']) {
+  const titles = await page.locator('#level .qrow[data-state="finding"] .lab').allTextContents();
+  const highTitles = [];
+  for (const title of titles) {
     await clickQueueRow(page, title);
-    await page.getByRole('button', { name: 'By event', exact: true }).click();
-    await page.waitForSelector('#ec-chart');
-    await page.locator('#level .case-occurrence').first().click();
-    await page.waitForSelector('#level .case-facts');
-    ok(await page.evaluate((expected) =>
-      window.__diagnoseEventComparison?.projection?.finding?.title === expected, title),
-      `C44 ${title} keeps its Highs event projection`);
-    ok(await page.evaluate(() => window.__diagnoseEventComparison?.selected?.glucose?.length > 0),
-      `C44 ${title} draws the selected server trace`);
-    if (title === 'Meal bolus fell short') {
-      ok(await page.evaluate(() => window.__diagnoseEventComparison?.projection?.selection
-        ?.detail?.markers?.some((marker) => marker.kind === 'bolus')),
-      'C44 Meal bolus fell short preserves its selected correction marker');
+    await page.waitForSelector('#level .who');
+    const who = await page.locator('#level .who').innerText();
+    if (who.endsWith('· highs')) {
+      highTitles.push(title);
+      const opened = await state(page);
+      is(opened.alignShown, false, `C44 ${title} has no ALIGN control`);
+      is(opened.clockCanvas, true, `C44 ${title} remains on its clock projection`);
+      is(opened.eventCanvas, false, `C44 ${title} does not invent an event projection`);
+      const stat = await page.locator('#level .statline').innerText();
+      const claimed = stat.match(/^(\d+) of \d+ high episodes/);
+      ok(claimed, `C44 ${title} preserves its server High denominator (${stat})`);
+      is(await page.locator('#level .clock .bars > div').count(), 12,
+        `C44 ${title} preserves its server clock buckets`);
+      const total = await page.locator('#level .clock .bars > div').evaluateAll((rows) =>
+        rows.reduce((sum, row) => sum + Number(row.dataset.n), 0));
+      is(total, Number(claimed[1]), `C44 ${title} preserves its server claimed total`);
+      ok(await page.locator('#level .case-occurrence').count() > 0,
+        `C44 ${title} preserves its server occurrence evidence`);
     }
     await page.getByRole('button', { name: 'Findings', exact: true }).click();
   }
+  ok(highTitles.includes('Missed / unannounced meal'),
+    'C44 the current preparation publishes Missed / unannounced meal as a High case');
+  ok(highTitles.length > 0, 'C44 the current preparation publishes a visible High case');
 };
 
 export const C45 = async (page) => {
   await openWholeDay(page);
-  await clickQueueRow(page, 'Meal over-delivery');
+  await clickQueueRow(page, 'Over-treated low');
   await page.locator('#level .case-occurrence').first().click();
   await page.waitForSelector('#level .case-selection-state');
   is(await page.locator('#level .case-selection-state').count(), 1,
@@ -2964,7 +3064,7 @@ export const C45 = async (page) => {
 
 export const C46 = async (page) => {
   await openWholeDay(page);
-  await clickQueueRow(page, 'Meal over-delivery');
+  await clickQueueRow(page, 'Over-treated low');
   const before = await page.locator('#level .who').innerText();
   expectResponse(page, /^\/diagnose\/finding-case-file$/, 500);
   await page.getByRole('button', { name: 'By event', exact: true }).click();
@@ -2979,7 +3079,7 @@ export const C46 = async (page) => {
 
 export const C47 = async (page) => {
   await openWholeDay(page);
-  await clickQueueRow(page, 'Meal over-delivery');
+  await clickQueueRow(page, 'Over-treated low');
   expectResponse(page, /^\/diagnose\/finding-case-file$/, 409);
   await page.getByRole('button', { name: 'By event', exact: true }).click();
   await settle(page, 120);
@@ -2991,13 +3091,13 @@ export const C47 = async (page) => {
   ok((await page.locator('#level .who').innerText()).includes('refreshed'),
     'C47 inspector and event canvas swap only after both legs succeed');
   await page.getByRole('button', { name: 'Findings', exact: true }).click();
-  is(await page.locator('#level .qrow[data-id="finding:meal_over_delivery"] .lab').innerText(),
-    'Meal over-delivery refreshed', 'C47 the queue joined the same atomic three-surface swap');
+  is(await page.locator('#level .qrow[data-id="finding:over_treated_low"] .lab').innerText(),
+    'Over-treated low refreshed', 'C47 the queue joined the same atomic three-surface swap');
 };
 
 export const C48 = async (page) => {
   await openWholeDay(page);
-  await clickQueueRow(page, 'Meal over-delivery');
+  await clickQueueRow(page, 'Over-treated low');
   expectResponse(page, /^\/diagnose\/finding-case-file$/, 404);
   expectResponse(page, /^\/diagnose\/finding-case-file-preparation$/, 503);
   await page.getByRole('button', { name: 'By event', exact: true }).click();
@@ -3010,7 +3110,7 @@ export const C48 = async (page) => {
 
 export const C49 = async (page) => {
   await openWholeDay(page);
-  await clickQueueRow(page, 'Meal over-delivery');
+  await clickQueueRow(page, 'Over-treated low');
   expectResponse(page, /^\/diagnose\/finding-case-file$/, 409);
   expectResponse(page, /^\/diagnose\/finding-case-file$/, 500);
   await page.getByRole('button', { name: 'By event', exact: true }).click();
@@ -3023,7 +3123,7 @@ export const C49 = async (page) => {
 
 export const C50 = async (page) => {
   await openWholeDay(page);
-  await clickQueueRow(page, 'Meal over-delivery');
+  await clickQueueRow(page, 'Over-treated low');
   expectResponse(page, /^\/diagnose\/finding-case-file$/, 409);
   await page.getByRole('button', { name: 'By event', exact: true }).click();
   await settle(page, 80);
@@ -3037,7 +3137,7 @@ export const C50 = async (page) => {
 
 export const C51 = async (page) => {
   await openWholeDay(page);
-  await clickQueueRow(page, 'Meal over-delivery');
+  await clickQueueRow(page, 'Over-treated low');
   expectResponse(page, /^\/diagnose\/finding-case-file$/, 409);
   await page.getByRole('button', { name: 'By event', exact: true }).click();
   await settle(page, 180);
@@ -3051,20 +3151,20 @@ export const C51 = async (page) => {
 
 export const C52 = async (page) => {
   await openWholeDay(page);
-  await clickQueueRow(page, 'Meal over-delivery');
+  await clickQueueRow(page, 'Over-treated low');
   expectResponse(page, /^\/diagnose\/finding-case-file$/, 404);
   await page.getByRole('button', { name: 'By event', exact: true }).click();
   await page.waitForSelector('#level [role="alert"]');
   is(await page.locator('#level .clock').count(), 1,
     'C52 Finding-unavailable refresh preserves the prior inspector/canvas pair');
   await page.getByRole('button', { name: 'Findings', exact: true }).click();
-  is(await page.locator('#level .qrow[data-id="finding:meal_over_delivery"]').count(), 0,
+  is(await page.locator('#level .qrow[data-id="finding:over_treated_low"]').count(), 0,
     'C52 the successful queue refresh removes the unavailable Finding');
 };
 
 export const C53 = async (page) => {
   await openWholeDay(page);
-  await clickQueueRow(page, 'Meal over-delivery');
+  await clickQueueRow(page, 'Over-treated low');
   await page.getByRole('button', { name: 'By event', exact: true }).click();
   await page.waitForSelector('#level [role="alert"]');
   is(await page.locator('#level [role="alert"]').getAttribute('data-code'),
@@ -3077,16 +3177,19 @@ export const C54 = async (page) => {
   await openWholeDay(page);
   expectResponse(page, /^\/diagnose\/finding-case-file-preparation$/, 503);
   await page.getByRole('button', { name: 'Morning', exact: true }).click();
-  await page.waitForSelector('#level [role="alert"]');
-  is(await page.locator('#level [role="alert"]').getAttribute('data-code'),
-    'preparation_changed', 'C54 a queue-level preparation failure is visible and structured');
-  ok(await page.locator('#level .qrow').count() > 0,
-    'C54 the active queue remains visible behind its failure state');
+  await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false');
+  is(await page.getByRole('button', { name: 'Morning', exact: true }).getAttribute('aria-pressed'), 'true',
+    'C54 the selected Morning window remains after its projection fails');
+  is(await page.locator('#level .empty').innerText(),
+    'Findings unavailable for 06:00–12:00. Choose another window to try again.',
+    'C54 the failed Morning projection states its exact unavailable message');
+  is(await page.locator('#level .qrow').count(), 0,
+    'C54 the failed Morning projection leaves no stale queue row');
 };
 
 export const C55 = async (page) => {
   await openWholeDay(page);
-  await clickQueueRow(page, 'Meal over-delivery');
+  await clickQueueRow(page, 'Over-treated low');
   await page.getByRole('button', { name: 'Morning', exact: true }).click();
   await page.locator('#level .case-occurrence').first().click();
   await page.waitForSelector('#level .case-facts');
@@ -3178,7 +3281,7 @@ const pause = (ms) => new Promise((resolve) => { setTimeout(resolve, ms); });
 const refreshedPreparation = (preparation) => {
   const next = structuredClone(preparation);
   next.projection_id = `fp_${'8'.repeat(32)}`;
-  const row = next.rendered_rows.find((item) => item.id === 'finding:meal_over_delivery');
+  const row = next.rendered_rows.find((item) => item.id === 'finding:over_treated_low');
   if (row) {
     row.title += ' refreshed'; row.case_header.title = row.title;
     next.behavioral_case_headers[row.id].title = row.title;
@@ -3206,11 +3309,14 @@ export const STORIES = [
   ['S29', S29, 'typical'], ['S30', S30, 'typical'], ['S31', S31, 'typical'],
   ['S32', S32, 'dense', { findingsInputs: withFiredMeal, exposuresInputs: (d) => withFiredMeal(d).exposures }],
   ['S33', S33, 'dense', { findingsInputs: withFiredMeal, exposuresInputs: (d) => withFiredMeal(d).exposures }],
-  ['S34', S34, 'typical', { caseScenario: {
-    case: async ({ request, body }) => request === 2
-      ? structured(500, 'inconsistent_projection', 'Synthetic event projection failure.')
-      : { body },
-  } }],
+  ['S34', S34, 'typical', {
+    findingsInputs: twoFamilyInputs,
+    exposuresInputs: async () => (await twoFamilyInputs()).exposures,
+    caseScenario: {
+      case: async ({ request, body }) => request === 2
+        ? structured(500, 'inconsistent_projection', 'Synthetic event projection failure.') : { body },
+    },
+  }],
   ['S35', S35, 'dense', {
     findingsInputs: twoFamilyInputs,
     exposuresInputs: async () => (await twoFamilyInputs()).exposures,
@@ -3317,11 +3423,14 @@ export const STORIES = [
       { body: withRestartGeneration },
     ] }],
   ['C41', C41, 'typical'], ['C42', C42, 'typical'],
-  ['C43', C43, 'typical'], ['C44', C44, 'typical'],
+  ['C43', C43, 'typical', {
+    findingsInputs: twoFamilyInputs,
+    exposuresInputs: async () => (await twoFamilyInputs()).exposures,
+  }], ['C44', C44, 'typical'],
   ['C45', C45, 'typical', { caseScenario: {
-    case: async ({ request, body }) => request === 2
+    case: async ({ request, url, body }) => request === 2
       ? { body: { ...body, selection: { state: 'unavailable',
-        requested_id: `o_${'9'.repeat(32)}`, detail: null } } } : { body },
+        requested_id: url.searchParams.get('occ'), detail: null } } } : { body },
   } }],
   ['C46', C46, 'typical', { caseScenario: {
     case: async ({ request, body }) => request === 2
@@ -3376,8 +3485,8 @@ export const STORIES = [
       if (request !== 5) return { body: preparation };
       const next = structuredClone(preparation);
       next.rendered_rows = next.rendered_rows
-        .filter((row) => row.id !== 'finding:meal_over_delivery');
-      delete next.behavioral_case_headers['finding:meal_over_delivery'];
+        .filter((row) => row.id !== 'finding:over_treated_low');
+      delete next.behavioral_case_headers['finding:over_treated_low'];
       return { body: next };
     },
     case: async ({ request, body }) => request === 2

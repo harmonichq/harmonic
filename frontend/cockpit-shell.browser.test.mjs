@@ -250,6 +250,7 @@ const scenarios = {
 
 async function routeApp(page, options = {}) {
   const { promptCount = 0, planDraftItems = [] } = options;
+  const findingsInput = options.findingsInput || { analysis: analyze, scenarios };
   await page.route('**/*', async (route) => {
     const requestUrl = route.request().url();
     if (CDN.has(requestUrl)) return route.fulfill({
@@ -276,7 +277,48 @@ async function routeApp(page, options = {}) {
     if (url.pathname === '/credentials') return route.fulfill({ json: { configured: false } });
     if (url.pathname === '/explore/time-of-day') return route.fulfill({ json: timeOfDay });
     if (url.pathname === '/diagnose/finding-case-file-preparation') {
-      return route.fulfill({ body: JSON.stringify(FINDING_CASE_FILES.preparation),
+      const windowKey = url.searchParams.get('start_min') === null ? null
+        : `${url.searchParams.get('start_min')}-${url.searchParams.get('end_min')}`;
+      const preparedBody = structuredClone(FINDING_CASE_FILES.scoped?.[windowKey]?.preparation
+        || FINDING_CASE_FILES.preparation);
+      if (windowKey && !FINDING_CASE_FILES.scoped?.[windowKey]) {
+        const start = Number(url.searchParams.get('start_min'));
+        const end = Number(url.searchParams.get('end_min'));
+        const label = `${String(Math.floor(start / 60)).padStart(2, '0')}:${String(start % 60).padStart(2, '0')}–${end === 1440 ? '24:00' : `${String(Math.floor(end / 60)).padStart(2, '0')}:${String(end % 60).padStart(2, '0')}`}`;
+        const identity = `${start.toString(16).padStart(4, '0')}${end.toString(16).padStart(4, '0')}`.repeat(4);
+        preparedBody.projection_id = `fp_${identity}`;
+        preparedBody.coordinates.window = { scoped: true, start_min: start, end_min: end, label };
+        const held = FINDING_CASE_FILES.scoped['0-360'].preparation.rendered_rows;
+        preparedBody.rendered_rows.push(...structuredClone(held));
+      }
+      const window = windowKey ? {
+        start_min: Number(url.searchParams.get('start_min')),
+        end_min: Number(url.searchParams.get('end_min')),
+      } : null;
+      const projected = projectFindings(findingsInput, window,
+        url.searchParams.get('selected_id'));
+      const readyRows = new Map(preparedBody.rendered_rows
+        .filter((row) => row.case_header?.inspectability === 'ready')
+        .map((row) => [row.id, row]));
+      preparedBody.findings = structuredClone(projected);
+      preparedBody.rendered_rows = structuredClone(projected.rows).flatMap((row) => {
+        if (row.register !== 'finding') return [row];
+        const ready = readyRows.get(row.id);
+        if (!ready) return [];
+        return [{ ...row,
+          appearances: ready.appearances,
+          episodes: ready.episodes,
+          evidence: ready.evidence,
+          verdict_counts: ready.verdict_counts,
+          verdict_counts_by_family: ready.verdict_counts_by_family,
+          case_header: ready.case_header }];
+      });
+      preparedBody.behavioral_case_headers = Object.fromEntries(
+        preparedBody.rendered_rows
+          .filter((row) => row.case_header?.inspectability === 'ready')
+          .map((row) => [row.id, row.case_header]),
+      );
+      return route.fulfill({ body: JSON.stringify(preparedBody),
         contentType: 'application/json' });
     }
     if (url.pathname === '/diagnose/finding-case-file') {
@@ -325,8 +367,8 @@ async function routeApp(page, options = {}) {
         start_min: Number(url.searchParams.get('start_min')),
         end_min: Number(url.searchParams.get('end_min')),
       };
-      const input = options.findingsInput || { analysis: analyze, scenarios };
-      return route.fulfill({ json: projectFindings(input, scoped) });
+      return route.fulfill({ json: projectFindings(findingsInput, scoped,
+        url.searchParams.get('selected_id')) });
     }
     if (url.pathname === '/explore/exposures') {
       return route.fulfill({ json: options.exposuresInput || {} });
@@ -1058,6 +1100,8 @@ test('Diagnose and Verify pane headers meet on one seam at every desktop size an
           page = await openApp(browser, { viewport, theme, tab: surface });
           const root = surface === 'diagnose' ? '.dw' : '.vw';
           await page.locator(root).waitFor();
+          const populated = surface === 'diagnose' ? '.dw .qrow' : '.vw .trial-line';
+          await page.locator(populated).first().waitFor();
           // This fixture opener is intentionally network-free, so it cannot load
           // the shipped Inter webfont. Pin the 14px line box observed in the safe
           // running app; otherwise Chromium's fallback font hides the 30px/31px

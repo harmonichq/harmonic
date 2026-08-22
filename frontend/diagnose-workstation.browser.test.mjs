@@ -242,7 +242,13 @@ for (const [name, probe, options] of [
   ['direct event entry and root restoration', issue86DirectEntryRestoration, { state: 'typical' }],
   ['pending root projection', issue86PendingRoot, { state: 'typical', findingsDelayMs: 900 }],
   ['malformed event evidence recovery', issue86MalformedRecovery, {
-    state: 'typical', comparisonProjection: { schema: 'malformed-event-comparison' },
+    state: 'typical', caseScenario: { case: async ({ url, body }) =>
+      url.searchParams.get('alignment') === 'event' ? { body: {
+        schema: 'malformed-finding-case-file',
+        projection_id: body.projection_id,
+        finding: body.finding,
+        projection: null,
+      } } : { body } },
   }],
 ]) {
   test(`#86 issue-scoped probe · ${name}`, async () => {
@@ -506,6 +512,8 @@ test('#83 · Event charts opens By event and return restores the root filters', 
         'Filter is root-only');
 
       await page.getByRole('button', { name: 'By clock', exact: true }).click();
+      await page.waitForFunction(() => document.querySelector('#seg-align button[aria-pressed="true"]')?.textContent.trim() === 'By clock');
+      await page.locator('#chart:not([hidden])').waitFor();
       assert.equal(await page.locator('#chart').isVisible(), true);
       await page.keyboard.press('Backspace');
       await page.locator('#level .qrow').first().waitFor();
@@ -557,9 +565,7 @@ test('deselecting a Sift item leaves only rows matching the remaining choices', 
       await page.getByRole('menuitemcheckbox', { name: 'Highs 4', exact: true }).click();
       await settle(page, 350);
       assert.deepEqual(await page.locator('#level .qrow').evaluateAll((rows) => rows.map((row) => row.dataset.id)), [
-        'finding:carb_undercount', 'finding:late_bolus', 'finding:meal_over_delivery',
-        'finding:over_treated_low', 'finding:correction_stacking',
-        'finding:correction_on_iob',
+        'finding:correction_on_iob', 'finding:late_bolus',
       ], 'a deselected Highs chip hides high-only rows while preserving multi-chip matches');
       await page.close();
       assert.deepEqual(openerProblems().slice(before), [],

@@ -267,6 +267,11 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         return FileResponse(_FRONTEND_DIR / "diagnose-workstation-data.js",
                             media_type="text/javascript")
 
+    @app.get("/finding-case-file-validation.js")
+    def finding_case_file_validation_js() -> FileResponse:
+        return FileResponse(_FRONTEND_DIR / "finding-case-file-validation.js",
+                            media_type="text/javascript")
+
     @app.get("/diagnose-findings-queue.js")
     def diagnose_findings_queue_js() -> FileResponse:  # #735: the inspector's level 1
         return FileResponse(_FRONTEND_DIR / "diagnose-findings-queue.js",

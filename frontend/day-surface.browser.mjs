@@ -1,7 +1,7 @@
 // Browser-level lifecycle coverage for the keyed Day surface. This deliberately
 // uses the real Vue app and browser fetches rather than evaluating index.html or
 // calling component hooks: the surface must not mount until /status has clamped
-// a cold hash date to the available pump-data bounds.
+// a cold canonical path date after /status has resolved it.
 import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const { createBrowserRunner } = require('./browser-runner.js');
-const FRONTEND = fileURLToPath(new URL('.', import.meta.url));
+const FRONTEND = process.env.DAY_APP_ROOT || fileURLToPath(new URL('.', import.meta.url));
 const MIME = { '.css': 'text/css', '.html': 'text/html', '.js': 'text/javascript' };
 
 // #554: one Chromium process for the whole command; each subtest still gets
@@ -32,7 +32,7 @@ function fixtureServer(days = [], { readDelay = 0 } = {}) {
     }, delay);
 
     if (url.pathname === '/status') {
-      // Keep status pending long enough to reproduce the cold-hash race.
+      // Keep status pending long enough to reproduce the cold-route race.
       json({ earliest_data_day: '2026-07-05', latest_data_day: '2026-07-13' }, 100);
       return;
     }
@@ -63,7 +63,8 @@ function fixtureServer(days = [], { readDelay = 0 } = {}) {
     }
     if (url.pathname === '/favicon.ico') { res.writeHead(204); res.end(); return; }
 
-    const file = url.pathname === '/' ? 'index.html' : url.pathname.slice(1);
+    const file = (url.pathname === '/' || url.pathname.startsWith('/app/'))
+      ? 'index.html' : url.pathname.slice(1);
     try {
       const body = await readFile(join(FRONTEND, file));
       res.writeHead(200, { 'content-type': MIME[extname(file)] || 'application/octet-stream' });
@@ -76,7 +77,7 @@ function fixtureServer(days = [], { readDelay = 0 } = {}) {
   return { server, timelineRequests, missingRequests };
 }
 
-test('a cold Day hash mounts only the status-clamped day and fetches its timeline once', async () => {
+test('a cold canonical Day path mounts its named data day and fetches its timeline once', async () => {
   const { server, timelineRequests, missingRequests } = fixtureServer();
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   const { port } = server.address();
@@ -90,9 +91,10 @@ test('a cold Day hash mounts only the status-clamped day and fetches its timelin
   await page.addInitScript(() => localStorage.setItem('ciq_token', 'fixture-token'));
 
   try {
-    await page.goto(`http://127.0.0.1:${port}/#day?date=2026-07-19`);
+    const timeline = page.waitForRequest((request) => new URL(request.url()).pathname === '/timeline');
+    await page.goto(`http://127.0.0.1:${port}/app/day?date=2026-07-13`);
     await page.waitForSelector('.ds-root');
-    await page.waitForTimeout(150);
+    await timeline;
 
     assert.deepEqual(timelineRequests, ['2026-07-13T00:00:00']);
     assert.equal(await page.locator('.dn-sel-date').textContent(), 'Jul 13');
@@ -134,14 +136,20 @@ test('rapid back-navigation cancels the days stepped through, not just the one l
   await page.addInitScript(() => localStorage.setItem('ciq_token', 'fixture-token'));
 
   try {
-    await page.goto(`http://127.0.0.1:${port}/#day?date=2026-07-13`);
+    await page.goto(`http://127.0.0.1:${port}/app/day?date=2026-07-13`);
     await page.waitForSelector('.ds-root');
     const prev = page.locator('.dn-daynav button[title="Previous day with data"]');
     await prev.waitFor();
+    const oneAbort = page.waitForEvent('requestfailed', (req) => {
+      const path = new URL(req.url()).pathname;
+      return /^\/(timeline|model-view|carbs)$/.test(path)
+        && /ERR_ABORTED/.test(req.failure()?.errorText || '');
+    });
     // Step Jul 13 → 09 faster than the 400ms reads can settle: each step remounts
     // the keyed surface, and the outgoing day's in-flight reads must abort.
     for (let i = 0; i < 4; i++) await prev.click();
-    await page.waitForTimeout(700);  // let the abort fire and the landed day settle
+    await oneAbort;
+    await page.locator('.dn-sel-date').getByText('Jul 9').waitFor();
 
     // The days stepped through had their reads cancelled (never completed).
     assert.ok(aborted.length >= 1, `expected stepped-through reads to abort, got ${JSON.stringify(aborted)}`);
@@ -176,7 +184,7 @@ test('Day navigator names mixed excursions in both tile summaries', async () => 
   await page.addInitScript(() => localStorage.setItem('ciq_token', 'fixture-token'));
 
   try {
-    await page.goto(`http://127.0.0.1:${port}/#day?date=2026-07-13`);
+    await page.goto(`http://127.0.0.1:${port}/app/day?date=2026-07-13`);
     const calmTile = page.locator('.dn-col[aria-label="Sun Jul 12 — on target, 75% TIR"]');
     await calmTile.waitFor();
     assert.equal((await calmTile.getAttribute('aria-label')).match(/% TIR/g).length, 1);

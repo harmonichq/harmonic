@@ -2014,7 +2014,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         <main class="article">
           <p class="crumbs">
             <b>Guide</b> / {{ kbCategoryLabel(kbArticle.category) }}
-            <span class="hash">#guide?article={{ kbArticle.slug }}</span>
+            <span class="hash">/app/guide?article={{ kbArticle.slug }}</span>
           </p>
           <h1 class="art-title">{{ kbArticle.title }}</h1>
           <p class="art-kicker">{{ kbKicker(kbArticle) }}</p>
@@ -3771,7 +3771,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
       `,
     };
 
-    /* Retired hash route parser (ADR 53 replaces this block). */
+    /* ADR 53's canonical route entry. */
     const initialRoute = parseRoute();
     const app = createApp({
       setup() {
@@ -3782,6 +3782,10 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         const routeError = ref(initialRoute.kind === 'InvalidRoute' ? initialRoute : null);
         if (initialRoute.kind === 'LegacyRedirect') replaceRoute(initialRoute);
         let currentRoute = initialRoute.kind === 'LegacyRedirect' ? parseRoute() : initialRoute;
+        // Only the latest parse/resolve transaction may choose a pane or
+        // canonicalize history.  Day resolution awaits /status; a newer click
+        // or restored entry must win while that request is in flight.
+        let routeGeneration = 0;
         // #132: if the initial URL is a patterns/investigate deep-link, stash the
         // #246: the old Patterns/Investigate deep-link is retired with the tab.
         let pendingScnDeepLink = null;
@@ -4160,26 +4164,16 @@ html.dark .viz .tie:hover::before { opacity:.13; }
 
         function setTab(t) {
           if (!TABS.some((item) => item.id === t)) return;
+          const generation = ++routeGeneration;
           if (t === 'day' || t === 'guide') {
-            const pending = parseRoute(`/app/${t}`);
+            const pending = { kind: 'PendingRoute', page: t, query: {} };
             pushRoute(pending);
-            applyPendingRoute(pending);
+            applyPendingRoute(pending, generation);
             return;
           }
-          pushRoute({ kind: 'ResolvedRoute', page: t, query: {} });
-          tab.value = t;
-          // #99: Plan reads the latest pump snapshot for its active-profile
-          // reference + Confirmation-B on-pump detection; load it lazily.
-          if (t === 'plan' && !pumpSettings.value) loadPumpSettings();
-          // #248 Day surface (ADR 0027): status resolves dailyDate; the keyed
-          // DaySurface then owns the selected day's model, timeline, and carb reads.
-          if (t === 'day') resolveDailyDate();
-          // #246 Diagnose (ADR 0027): the ranked lever queue binds live /analyze(pooled)
-          // + /scenarios + /backtest. Load them lazily on first open; the ECharts inside
-          if (t === 'diagnose') loadAudit();
-          // #157: lazy-load the Guide / About catalog the first time it opens.
-          if (t === 'guide') loadCatalog();
-          if (t === 'verify') loadVerify();
+          const route = { kind: 'ResolvedRoute', page: t, query: {} };
+          pushRoute(route);
+          commitResolvedRoute(route, null, generation);
         }
 
         // #660 Verify: the ported workstation renders the whole screen from the
@@ -4248,14 +4242,27 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         watch(dark, () => { if (verifyView) verifyView.refresh(); });
         // Restored entries pass through the same static parser before any page
         // state changes.  Dynamic membership is resolved by the page adapters.
-        async function applyPendingRoute(route) {
+        function commitResolvedRoute(resolved, pendingRoute, generation) {
+          if (generation !== routeGeneration) return false;
+          routeError.value = null;
+          currentRoute = resolved;
+          if (pendingRoute && serializeRoute(resolved) !== serializeRoute(pendingRoute)) replaceRoute(resolved);
+          tab.value = resolved.page;
+          if (resolved.page === 'day') { pendingDailyDate.value = resolved.query.date || null; resolveDailyDate(false); }
+          if (resolved.page === 'guide') { kbCurrent.value = resolved.query.article; kbFetchArticle(resolved.query.article); }
+          setTabLoads(resolved.page);
+          return true;
+        }
+
+        async function applyPendingRoute(route, generation = ++routeGeneration) {
           if (route.kind !== 'PendingRoute') { routeError.value = route; return; }
           let resolved;
           if (route.page === 'day') {
-            if (!status.value) await loadStatus();
+            const statusSucceeded = status.value ? true : await loadStatus();
+            if (generation !== routeGeneration) return;
             const explicit = route.query.date;
             const earliest = status.value?.earliest_data_day, latest = status.value?.latest_data_day;
-            if (explicit && (!earliest || !latest || explicit < earliest || explicit > latest)) {
+            if (statusSucceeded && explicit && (!earliest || !latest || explicit < earliest || explicit > latest)) {
               routeError.value = { kind: 'InvalidRoute', address: serializeRoute(route), reason: 'day-membership' };
               return;
             }
@@ -4268,14 +4275,9 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           } else {
             resolved = resolveRoute(route);
           }
+          if (generation !== routeGeneration) return;
           if (resolved.kind === 'InvalidRoute') { routeError.value = resolved; return; }
-          routeError.value = null;
-          currentRoute = resolved;
-          if (serializeRoute(resolved) !== serializeRoute(route)) replaceRoute(resolved);
-          tab.value = resolved.page;
-          if (resolved.page === 'day') { pendingDailyDate.value = resolved.query.date || null; resolveDailyDate(false); }
-          if (resolved.page === 'guide') { kbCurrent.value = resolved.query.article; kbFetchArticle(resolved.query.article); }
-          setTabLoads(resolved.page);
+          commitResolvedRoute(resolved, route, generation);
         }
         const stopRouteSubscription = subscribeRoutes(applyPendingRoute);
         function setTabLoads(t) {
@@ -4316,8 +4318,8 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         }
 
         async function loadStatus() {
-          try { status.value = await dataFetchStatus(); }
-          catch (e) { status.value = null; }
+          try { status.value = await dataFetchStatus(); return true; }
+          catch (e) { status.value = null; return false; }
         }
         async function fetchNow() {
           fetching.value = true;
@@ -4355,12 +4357,21 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         // /status and clamps it to the available CGM-day bounds.
         function resolveDailyDate(canonicalize = true) {
           if (!hasToken.value || !status.value) return;
+          const explicit = currentRoute.kind === 'ResolvedRoute' && currentRoute.page === 'day'
+            ? currentRoute.query.date : null;
+          if (explicit && (!dailyEarliest.value || !dailyLatest.value
+              || explicit < dailyEarliest.value || explicit > dailyLatest.value)) {
+            routeError.value = { kind: 'InvalidRoute', address: serializeRoute(currentRoute), reason: 'day-membership' };
+            tab.value = null;
+            return;
+          }
           const requested = pendingDailyDate.value || dailyDate.value
             || coldArrivalDay(dailyLatest.value, localTodayStr());
           dailyDate.value = clampDay(requested, dailyEarliest.value, dailyLatest.value);
           pendingDailyDate.value = null;
           if (canonicalize && tab.value === 'day' && dailyDate.value) {
-            replaceRoute({ kind: 'ResolvedRoute', page: 'day', query: { date: dailyDate.value } });
+            currentRoute = { kind: 'ResolvedRoute', page: 'day', query: { date: dailyDate.value } };
+            replaceRoute(currentRoute);
           }
         }
 
@@ -4370,10 +4381,11 @@ html.dark .viz .tie:hover::before { opacity:.13; }
 
         function navJumpTo(day) {
           if (!day) return;
+          const generation = ++routeGeneration;
           dailyHighlight.value = null;
-          pendingDailyDate.value = day;
-          resolveDailyDate(false);
-          if (dailyDate.value) pushRoute({ kind: 'ResolvedRoute', page: 'day', query: { date: dailyDate.value } });
+          const route = { kind: 'ResolvedRoute', page: 'day', query: { date: day } };
+          pushRoute(route);
+          commitResolvedRoute(route, null, generation);
         }
 
         // --- Dashboard: recommendation cards ---------------------------------
@@ -4907,9 +4919,10 @@ html.dark .viz .tie:hover::before { opacity:.13; }
 
         function kbGo(slug) {
           if (!KB_ARTICLES.some((a) => a.slug === slug)) return;
-          kbCurrent.value = slug;
-          kbFetchArticle(slug);
-          pushRoute({ kind: 'ResolvedRoute', page: 'guide', query: { article: slug } });
+          const generation = ++routeGeneration;
+          const route = { kind: 'ResolvedRoute', page: 'guide', query: { article: slug } };
+          pushRoute(route);
+          commitResolvedRoute(route, null, generation);
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }
         // The article -> app-surface handoff: switch to the real tab via the router.
@@ -5461,7 +5474,6 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         }
         function closeDataQuality() {
           dataQualityModalOpen.value = false;
-          history.back();
         }
 
         // Shared drill-down: jump to Day at the day containing `t`, highlighted
@@ -5474,11 +5486,11 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           dailyHighlight.value = { t, detail, detector, lever: lever || null };
           // #136: Daily is one day — the deep-link just picks the arrived-at day;
           // the nav bar (date-button + bounded arrows) reads dailyDate directly.
-          pendingDailyDate.value = day;
           // #248: the "See full day →" deep-link lands on the merged Day surface.
-          pushRoute({ kind: 'ResolvedRoute', page: 'day', query: { date: day } });
-          tab.value = 'day';
-          resolveDailyDate();
+          const generation = ++routeGeneration;
+          const route = { kind: 'PendingRoute', page: 'day', query: { date: day } };
+          pushRoute(route);
+          applyPendingRoute(route, generation);
         }
         // #119: expose the Daily deep-link to the scenario Episode panel so a
         // "See full day →" affordance can jump from an Episode to the full-day
@@ -5502,7 +5514,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           // mounts afterward and performs the visible day's reads once.
           if (tab.value === 'day') resolveDailyDate();
           if (tab.value === 'diagnose') loadAudit();   // #495
-          if (tab.value === 'guide') loadCatalog();       // #269: initial #guide deep-link
+          if (tab.value === 'guide') loadCatalog();       // #269: initial Guide deep-link
           if (tab.value === 'verify') {
             loadVerify();
           }

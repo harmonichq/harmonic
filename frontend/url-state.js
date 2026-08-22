@@ -15,6 +15,14 @@ const FACTOR_PART = /^[a-z][a-z0-9_]*$/;
 const ARTICLE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const OCC = /^[A-Za-z0-9_-]{1,512}$/;
 const INTEGER = /^(?:0|[1-9][0-9]*)$/;
+const QUERY_ORDER = Object.freeze({
+  day: Object.freeze(['date']),
+  diagnose: Object.freeze(['finding', 'factor', 'start_min', 'end_min', 'projection', 'occ', 'view', 'another']),
+  verify: Object.freeze(['trial']),
+  plan: Object.freeze([]),
+  settings: Object.freeze([]),
+  guide: Object.freeze(['article']),
+});
 
 function freeze(value) { return Object.freeze(value); }
 function invalid(address, reason) { return freeze({ kind: 'InvalidRoute', address, reason }); }
@@ -38,13 +46,21 @@ function pairedBounds(params) {
       (startMin === 0 && endMin === 1440) || (startMin === 1440 && endMin === 0)) return null;
   return { start_min: start, end_min: end };
 }
-function validRawSearch(address, params, query) {
-  const serialized = queryString(query);
+function validRawSearch(address, page, query) {
+  const serialized = queryString(page, query);
   return address.search === serialized;
 }
-function queryString(query) {
+function queryOrder(page, query) {
+  if (page !== 'diagnose') return QUERY_ORDER[page];
+  return Object.hasOwn(query, 'view')
+    ? ['view', 'factor', 'start_min', 'end_min', 'another', 'occ']
+    : ['finding', 'factor', 'start_min', 'end_min', 'projection', 'occ'];
+}
+function queryString(page, query) {
   const params = new URLSearchParams();
-  for (const [key, value] of Object.entries(query)) if (value != null) params.set(key, value);
+  for (const key of queryOrder(page, query)) {
+    if (query[key] != null) params.set(key, query[key]);
+  }
   const value = params.toString();
   return value ? `?${value}` : '';
 }
@@ -60,7 +76,11 @@ function validOccurrence(value) {
   if (!OCC.test(value)) return false;
   try {
     const padded = value.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - value.length % 4) % 4);
-    const text = new TextDecoder('utf-8', { fatal: true }).decode(Uint8Array.from(atob(padded), (c) => c.charCodeAt(0)));
+    const bytes = Uint8Array.from(atob(padded), (c) => c.charCodeAt(0));
+    const canonical = btoa(String.fromCharCode(...bytes))
+      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    if (canonical !== value) return false;
+    const text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
     if (/\s/.test(text)) return false;
     const parsed = JSON.parse(text);
     return Array.isArray(parsed) && parsed.length === 3 && parsed.every((part) => typeof part === 'string' && part.length > 0);
@@ -117,7 +137,7 @@ export function parseRoute(address) {
         ...(params.has('projection') ? { projection: 'event' } : {}), ...(params.has('occ') ? { occ: params.get('occ') } : {}) } : {};
     }
   }
-  if (!validRawSearch(url, params, query)) return invalid(shown, 'non-canonical');
+  if (!validRawSearch(url, page, query)) return invalid(shown, 'non-canonical');
   return pending(page, query);
 }
 
@@ -132,7 +152,7 @@ export function resolveRoute(route, resolve = {}) {
 export function serializeRoute(route) {
   if (route.kind === 'LegacyRedirect') return route.to;
   if (route.kind === 'InvalidRoute') return route.address;
-  return `/app/${route.page}${queryString(route.query)}`;
+  return `/app/${route.page}${queryString(route.page, route.query)}`;
 }
 
 export function pushRoute(route) { history.pushState(null, '', serializeRoute(route)); }

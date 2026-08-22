@@ -10,8 +10,19 @@ test('all six canonical paths parse as pending routes', () => {
 });
 test('root is the one legacy redirect and canonical queries serialize byte-stably', () => {
   assert.deepEqual(parse('/?old=state#day'), { kind: 'LegacyRedirect', address: '/?old=state#day', to: '/app/diagnose' });
-  const route = parse('/app/diagnose?finding=f1&factor=ic.day&start_min=720&end_min=60&projection=event&occ=abc');
-  assert.equal(serializeRoute(route), '/app/diagnose?finding=f1&factor=ic.day&start_min=720&end_min=60&projection=event&occ=abc');
+  const occ = 'WyJpYyIsImVwMSIsIjIwMjYtMDctMTVUMTI6MDA6MDAiXQ';
+  const route = parse(`/app/diagnose?finding=f1&factor=ic.day&start_min=720&end_min=60&projection=event&occ=${occ}`);
+  assert.equal(serializeRoute(route), `/app/diagnose?finding=f1&factor=ic.day&start_min=720&end_min=60&projection=event&occ=${occ}`);
+});
+test('resolved routes serialize in the ADR 53 page order, not caller object order', () => {
+  assert.equal(serializeRoute({ kind: 'ResolvedRoute', page: 'diagnose', query: {
+    occ: 'occ-1', another: '1', end_min: '60', factor: 'ic', view: 'lows', start_min: '720',
+  } }), '/app/diagnose?view=lows&factor=ic&start_min=720&end_min=60&another=1&occ=occ-1');
+  assert.equal(serializeRoute({ kind: 'ResolvedRoute', page: 'diagnose', query: {
+    occ: 'WyJpYyIsImVwMSIsInQiXQ', projection: 'event', end_min: '60', finding: 'f1', factor: 'ic.day', start_min: '720',
+  } }), '/app/diagnose?finding=f1&factor=ic.day&start_min=720&end_min=60&projection=event&occ=WyJpYyIsImVwMSIsInQiXQ');
+  assert.equal(serializeRoute({ kind: 'ResolvedRoute', page: 'guide', query: { article: 'start-here' } }),
+    '/app/guide?article=start-here');
 });
 test('all invalid classes stop atomically', () => {
   for (const path of ['/app/day#x', '/app/plan?x=1', '/app/day?date=', '/app/day?date=2026-02-30',
@@ -28,7 +39,8 @@ test('workstation occurrence is valid for clock or event and rejects malformed t
   const occ = 'WyJpYyIsImVwMSIsIjIwMjYtMDctMTVUMTI6MDA6MDAiXQ';
   assert.equal(parse(`/app/diagnose?finding=f1&factor=ic.day&occ=${occ}`).kind, 'PendingRoute');
   assert.equal(parse(`/app/diagnose?finding=f1&factor=ic.day&projection=event&occ=${occ}`).kind, 'PendingRoute');
-  for (const bad of ['not-base64!', 'WzEsMiwzXQ', 'WyJpYyIsImVwMSJd', 'WyJpYyIsICJlcDEiLCAidCJd']) {
+  const alias = `${occ.slice(0, -1)}R`; // XQ and XR decode alike, but only XQ is canonical base64url.
+  for (const bad of ['not-base64!', alias, 'WzEsMiwzXQ', 'WyJpYyIsImVwMSJd', 'WyJpYyIsICJlcDEiLCAidCJd']) {
     assert.equal(parse(`/app/diagnose?finding=f1&factor=ic.day&occ=${bad}`).kind, 'InvalidRoute', bad);
   }
 });

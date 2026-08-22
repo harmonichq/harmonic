@@ -268,11 +268,15 @@ async function routeApp(page, options = {}) {
         anchor_t: `2026-07-1${index}T08:00:00`, kind: 'rise', answer: null,
       })) });
     }
+    if (url.pathname === '/status' && options.statusRoute) return options.statusRoute(route);
     if (url.pathname === '/status') return route.fulfill({
       json: { earliest_data_day: '2026-05-01', latest_data_day: '2026-07-15' },
     });
     if (url.pathname === '/pump-settings') return route.fulfill({ json: pumpSettings });
     if (url.pathname === '/credentials') return route.fulfill({ json: { configured: false } });
+    if (url.pathname === '/api/catalog') return route.fulfill({ json: {
+      exposures: [], levers: [], silence_reasons: [], tiers: [], pipeline: { chain: [] }, worked: null,
+    } });
     if (url.pathname === '/explore/time-of-day') return route.fulfill({ json: timeOfDay });
     if (url.pathname === '/diagnose/event-comparison') {
       const project = options.eventProjection || ((requestUrl, capture) =>
@@ -386,8 +390,25 @@ async function chooseTab(page, id) {
     day: '/app/day?date=2026-07-15',
     guide: '/app/guide?article=start-here',
   }[id] || `/app/${id}`;
-  await page.waitForFunction((path) => location.pathname + location.search === path, expected);
+  await waitForCanonicalRoute(page, id, expected);
   return expected;
+}
+
+async function waitForCanonicalRoute(page, id, expected) {
+  await page.waitForFunction(({ id, expected }) =>
+    location.pathname + location.search === expected
+      && !!document.querySelector(`[data-shell-tab="${id}"][aria-current]`), { id, expected });
+}
+
+async function assertInvalidStop(page, address) {
+  const stop = page.locator('[data-route-error="invalid-link"]');
+  await stop.waitFor();
+  assert.match(await stop.innerText(), new RegExp(address.replace(/[?]/g, '\\?')),
+    `${address} is named by the atomic invalid-link stop`);
+  assert.match(await stop.innerText(), /No selection was applied/,
+    `${address} applies no partial page state`);
+  assert.equal(await page.locator('[data-shell-tab][aria-current]').count(), 0,
+    `${address} has no current page`);
 }
 
 async function proveRedOnce(term, check, mutate) {
@@ -687,28 +708,85 @@ export async function S2(browser) {
       assert.equal(await page.evaluate(() => location.pathname + location.search), expected);
     }
     await page.goBack();
+    await waitForCanonicalRoute(page, 'settings', '/app/settings');
     assert.equal(await page.evaluate(() => location.pathname + location.search), '/app/settings',
       'Back restores the preceding canonical page');
-    assert.equal(await page.evaluate(() => location.pathname), '/app/settings',
-      'Back restores the preceding canonical page');
+    await page.goForward();
+    await waitForCanonicalRoute(page, 'guide', '/app/guide?article=start-here');
+    assert.equal(await page.locator('.art-title').count() > 0, true,
+      'Forward restores the Guide article selected by its canonical URL');
+    await page.goBack();
+    await waitForCanonicalRoute(page, 'settings', '/app/settings');
   } finally { await page.close(); }
+
+  for (const [id, path] of [
+    ['diagnose', '/app/diagnose'], ['plan', '/app/plan'], ['verify', '/app/verify'],
+    ['day', '/app/day?date=2026-07-15'], ['guide', '/app/guide?article=start-here'],
+    ['settings', '/app/settings'],
+  ]) {
+    const direct = await openApp(browser, { initialPath: path });
+    try { await waitForCanonicalRoute(direct, id, path); }
+    finally { await direct.close(); }
+  }
+
+  const legacy = await openApp(browser, { initialPath: '/?retired=1#day' });
+  try {
+    await waitForCanonicalRoute(legacy, 'diagnose', '/app/diagnose');
+    assert.equal(await legacy.evaluate(() => location.pathname + location.search + location.hash), '/app/diagnose',
+      'root retirement discards its old query and fragment in one exact replacement');
+  } finally { await legacy.close(); }
+
+  for (const address of [
+    '/app/day#fragment', '/app/not-a-page', '/app/plan?unexpected=1',
+    '/app/diagnose?start_min=60&start_min=60&end_min=120',
+    '/app/day?date=2026-07-16',
+  ]) {
+    const invalid = await openApp(browser, { initialPath: address });
+    try { await assertInvalidStop(invalid, address); }
+    finally { await invalid.close(); }
+  }
+
+  let releaseDayStatus;
+  let dayStatusRequested;
+  const dayStatusStarted = new Promise((resolve) => { dayStatusRequested = resolve; });
+  const heldDayStatus = new Promise((resolve) => { releaseDayStatus = resolve; });
+  const staleDay = await openApp(browser, {
+    initialPath: '/app/day',
+    statusRoute: async (route) => {
+      dayStatusRequested();
+      await heldDayStatus;
+      return route.fulfill({ json: { earliest_data_day: '2026-05-01', latest_data_day: '2026-07-15' } });
+    },
+  });
+  try {
+    await dayStatusStarted;
+    await chooseTab(staleDay, 'settings');
+    const delivered = staleDay.waitForResponse((response) => new URL(response.url()).pathname === '/status');
+    releaseDayStatus();
+    await delivered;
+    await staleDay.evaluate(() => new Promise((resolve) => requestAnimationFrame(
+      () => requestAnimationFrame(resolve))));
+    await waitForCanonicalRoute(staleDay, 'settings', '/app/settings');
+  } finally { await staleDay.close(); }
+
+  const statusFailure = await openApp(browser, {
+    initialPath: '/app/day?date=2026-07-15',
+    statusRoute: (route) => route.fulfill({ status: 401, body: 'unauthorized' }),
+  });
+  try {
+    await waitForCanonicalRoute(statusFailure, 'day', '/app/day?date=2026-07-15');
+    assert.equal(await statusFailure.locator('[data-route-error="invalid-link"]').count(), 0,
+      'a Day status transport/auth error stays a Day data error, never an invalid link');
+  } finally { await statusFailure.close(); }
+
   const mobile = await openApp(browser, { viewport: { width: 390, height: 844 } });
   try {
     await mobile.locator('.cockpit-menu-button').click();
     await mobile.locator('#navigation-drawer [data-shell-tab="plan"]').click();
-    await mobile.waitForFunction(() => location.pathname === '/app/plan');
+    await waitForCanonicalRoute(mobile, 'plan', '/app/plan');
     assert.equal(await mobile.locator('.cockpit-menu-button').getAttribute('aria-expanded'), 'false',
       'drawer navigation closes after completing its canonical route');
   } finally { await mobile.close(); }
-  const invalid = await openApp(browser, {
-    initialPath: '/app/diagnose?start_min=60&start_min=60&end_min=120',
-  });
-  try {
-    const stop = invalid.locator('[data-route-error="invalid-link"]');
-    await stop.waitFor();
-    assert.match(await stop.innerText(), /No selection was applied/,
-      'invalid input stops atomically instead of applying partial evidence state');
-  } finally { await invalid.close(); }
 }
 
 // STORY:cockpit-shell:S3

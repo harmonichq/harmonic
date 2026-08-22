@@ -2400,6 +2400,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
       fetchExploreExposures as dataFetchExploreExposures,
       fetchDiagnoseEventComparison as dataFetchDiagnoseEventComparison,
       fetchDiagnoseFindings as dataFetchDiagnoseFindings,
+      fetchDiagnoseCarbRatioHistoryEvents as dataFetchDiagnoseCarbRatioHistoryEvents,
       fetchTimeline as dataFetchTimeline,
       fetchCarbs as dataFetchCarbs,
       createCarb as dataCreateCarb,
@@ -5731,7 +5732,10 @@ html.dark .viz .tie:hover::before { opacity:.13; }
               // #735: a pressed preset and a drawn brace both ask the server for
               // that window's rows (lock terms 37/40) — the frontend re-scopes
               // nothing itself.
-              loadFindings: (window) => enqueue(() => dataFetchDiagnoseFindings(window)),
+              loadFindings: (window, selectedHistoryId) => enqueue(() =>
+                dataFetchDiagnoseFindings(window, selectedHistoryId)),
+              loadHistoryEvents: (coordinates) => enqueue(() =>
+                dataFetchDiagnoseCarbRatioHistoryEvents(coordinates)),
               // the dock's outlined route control, term 49
               go: (to) => setTab(to),
             } });

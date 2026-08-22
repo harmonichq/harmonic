@@ -23,15 +23,27 @@
 // never skips: a green run that executed zero stories is the exact silent pass
 // this whole process exists to prevent.
 import { createRequire } from 'node:module';
-import { readFile, access } from 'node:fs/promises';
+import { readFile, access, mkdir } from 'node:fs/promises';
 import { extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { projectSyntheticCapture } from '../mockups/diagnose-event-comparison.synthetic/project.mjs';
-import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
+import { projectFindings, projectIcHistoryEvents } from '../mockups/findings-projection.mirror.mjs';
 
 const require = createRequire(import.meta.url);
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const MIME = { '.js': 'text/javascript', '.css': 'text/css', '.html': 'text/html', '.json': 'application/json', '.svg': 'image/svg+xml' };
+
+const evidenceDir = process.env.DIAGNOSE_EVIDENCE_DIR || null;
+const evidenceViewport = () => process.env.VIEWPORT || '1440x900';
+const evidenceTheme = () => process.env.THEME || 'dark';
+async function captureEvidence(page, label) {
+  if (!evidenceDir) return;
+  await mkdir(evidenceDir, { recursive: true });
+  await page.screenshot({
+    path: join(evidenceDir, `${label}-${evidenceViewport()}-${evidenceTheme()}.png`),
+    fullPage: false,
+  });
+}
 
 /* ---------------------------------------------------------------- assertions */
 
@@ -155,6 +167,30 @@ export const state = (page) => page.evaluate(() => {
       const s = getComputedStyle(n);
       return ['Top', 'Bottom'].some((side) => parseFloat(s[`border${side}Width`]) > 0);
     }).length,
+    history: (() => {
+      const level = q('#level');
+      const chart = q('#align-canvas:not([hidden]), #chart:not([hidden])');
+      return {
+        id: level?.dataset.historyId || null,
+        generation: level?.dataset.analysisGeneration || null,
+        selectedRunId: level?.dataset.selectedRunId || null,
+        canvasId: chart?.dataset.historyId || null,
+        canvasGeneration: chart?.dataset.analysisGeneration || null,
+        canvasRunId: chart?.dataset.selectedRunId || null,
+        conclusion: txt('.history-conclusion'),
+        currentCopies: document.querySelectorAll('#level .history-current').length,
+        caseText: q('.history-case')?.innerText.replace(/\s+/g, ' ').trim() ?? null,
+        notice: txt('.history-notice'),
+        retirement: txt('.history-retirement'),
+        pending: Boolean(q('.history-pending')),
+        stale: Boolean(q('.history-stale')),
+        retry: txt('.history-retry'),
+        runIds: [...document.querySelectorAll('.history-run')].map((node) => node.dataset.runId),
+        runLabels: [...document.querySelectorAll('.history-run')].map((node) => node.innerText.replace(/\s+/g, ' ').trim()),
+        selectedRuns: [...document.querySelectorAll('.history-run[aria-pressed="true"]')].map((node) => node.dataset.runId),
+        stageCount: document.querySelectorAll('.history-case .stagebtn').length,
+      };
+    })(),
     laneSelected: [...document.querySelectorAll('#lane button')].findIndex((b) => b.getAttribute('aria-pressed') === 'true'),
     laneCells: document.querySelectorAll('#lane button').length,
     laneOutside: [...document.querySelectorAll('#lane button')].filter((b) => b.dataset.outside === 'true').length,
@@ -249,6 +285,7 @@ const projectAuthor = async () => {
 export async function openApp(browser, {
   state: want = 'typical', theme = 'dark', viewport = { width: 1440, height: 900 }, findingsInputs = null,
   exposuresInputs = null, comparisonStatus = 0, findingsDelayMs = 0, appSource = 'server',
+  history = false, selectedFindingsResponses = [], historyResponses = [],
 } = {}) {
   const payloadPath = process.env.PAYLOAD || fail('PAYLOAD is required for TARGET=app');
   if (!['server', 'fixture'].includes(appSource)) fail(`unknown appSource: ${appSource}`);
@@ -262,6 +299,10 @@ export async function openApp(browser, {
   const payload = JSON.parse(await readFile(payloadPath, 'utf8'));
   const capture = JSON.parse(await readFile(
     join(ROOT, 'mockups/diagnose-event-comparison.synthetic/capture.json'), 'utf8'));
+  const findingsFixture = JSON.parse(await readFile(
+    join(ROOT, 'frontend/__fixtures__/findings-projection.json'), 'utf8'));
+  const historyCapture = JSON.parse(await readFile(
+    join(ROOT, 'mockups/diagnose-workstation.synthetic/ic-history-events.capture.json'), 'utf8'));
   /* The committed payload is the default for BOTH server-owned populations.
      A story that needs a shape the payload cannot pose supplies a function,
      which derives the override from that payload inside this driver — never a
@@ -269,8 +310,9 @@ export async function openApp(browser, {
      overrides are separate on purpose: the fidelity harness overrides only the
      findings queue and relies on every other endpoint staying as it was. */
   const defaults = { analysis: payload.analyze, exposures: payload.exposures, scenarios: payload.scenarios };
+  const historyDefaults = history ? findingsFixture.inputs : defaults;
   const findingsFrom = typeof findingsInputs === 'function'
-    ? await findingsInputs(defaults) : (findingsInputs || defaults);
+    ? await findingsInputs(historyDefaults) : (findingsInputs || historyDefaults);
   const exposuresFrom = typeof exposuresInputs === 'function'
     ? await exposuresInputs(defaults) : (exposuresInputs || payload.exposures);
   const STUBS = [
@@ -295,7 +337,7 @@ export async function openApp(browser, {
       url.searchParams.get('start_min') === null ? null : {
         start_min: Number(url.searchParams.get('start_min')),
         end_min: Number(url.searchParams.get('end_min')),
-      })],
+      }, url.searchParams.get('selected_id'))],
     [/^\/explore\/exposures/, () => exposuresFrom],
     [/^\/analyze/, () => payload.analyze],
     [/^\/scenarios/, () => payload.scenarios],
@@ -377,6 +419,34 @@ export async function openApp(browser, {
       return route.fulfill({ status: comparisonStatus, contentType: 'application/json',
         body: JSON.stringify({ detail: 'projection unavailable' }) });
     }
+    const planned = path === '/diagnose/findings' && url.searchParams.has('selected_id')
+      ? selectedFindingsResponses.shift()
+      : path === '/diagnose/carb-ratio-history/events' ? historyResponses.shift() : null;
+    if (planned) {
+      if (planned.delayMs) await new Promise((resolve) => { setTimeout(resolve, planned.delayMs); });
+      const status = planned.status || 200;
+      if (status >= 400) {
+        return route.fulfill({ status, contentType: 'application/json',
+          body: JSON.stringify({ detail: planned.detail }) });
+      }
+      const generated = path === '/diagnose/findings'
+        ? projectFindings(findingsFrom,
+          url.searchParams.get('start_min') === null ? null : {
+            start_min: Number(url.searchParams.get('start_min')),
+            end_min: Number(url.searchParams.get('end_min')),
+          }, url.searchParams.get('selected_id'))
+        : projectIcHistoryEvents(historyCapture.inputs, url.searchParams.get('history_id'),
+          url.searchParams.get('selected_run_id'));
+      const body = typeof planned.body === 'function' ? planned.body(generated, url)
+        : planned.body || generated;
+      return route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
+    }
+    if (path === '/diagnose/carb-ratio-history/events') {
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify(
+        projectIcHistoryEvents(historyCapture.inputs, url.searchParams.get('history_id'),
+          url.searchParams.get('selected_run_id')),
+      ) });
+    }
     for (const [pattern, body] of STUBS) {
       if (pattern.test(path)) return route.fulfill({ contentType: 'application/json', body: JSON.stringify(body(url)) });
     }
@@ -412,6 +482,21 @@ export async function gotoState(page, want) {
   }, want);
   await settle(page, 600);
 }
+
+const openHistoryCase = async (page) => {
+  const row = page.locator('#level .qrow[data-state="history"]').first();
+  await row.waitFor({ state: 'visible' });
+  await row.click();
+  await settle(page, 350);
+  ok(await page.locator('.history-case').isVisible(), 'history row opens its case file');
+};
+
+const openHistoryEvents = async (page) => {
+  await openHistoryCase(page);
+  await page.getByRole('button', { name: 'By event', exact: true }).click();
+  await settle(page, 650);
+  ok(await page.locator('#align-canvas').isVisible(), 'history event canvas is visible');
+};
 
 /* -------------------------------------------------------------- the stories */
 
@@ -1317,7 +1402,7 @@ export const S29 = async (page) => {
   await page.getByRole('button', { name: /^Highs / }).click();
   await settle(page, 350);
   const toggle = page.locator('#level .qcollapse');
-  is(await toggle.innerText(), '4 held or blind reads', 'S29 the sift collapses held/blind reads');
+  is(await toggle.innerText(), 'Watching · 4 reads', 'S29 the sift collapses held/blind reads under Watching');
   is(await toggle.getAttribute('aria-expanded'), 'false', 'S29 the held/blind group starts collapsed');
   is(await page.locator('#level .qrow').count(), 0,
     'S29 collapsed held rows are not painted as ordinary queue rows');
@@ -1338,7 +1423,7 @@ export const S30 = async (page) => {
   await settle(page, 350);
   is(await page.locator('#level .quiet-line.sift-empty').innerText(),
     'No findings match the current chips.', 'S30 the all-hidden sift names itself');
-  is(await page.locator('#level .qcollapse').innerText(), '4 held or blind reads',
+  is(await page.locator('#level .qcollapse').innerText(), 'Watching · 4 reads',
     'S30 the collapsed held group remains reachable below the empty-sift line');
 };
 
@@ -1536,6 +1621,378 @@ export const S40 = async (page) => {
   is(drawn.join, drawn.row, 'S40 the selected response carries the visible low row\'s join key');
   is(requested, drawn.id, 'S40 the browser request carried the resolved opaque occurrence id');
   is(drawn.trace, drawn.responseTrace, 'S40 the drawn trace carries that selected low response');
+};
+
+// STORY:finding-evidence-routing:S41
+export const S41 = async (page) => {
+  await page.getByRole('button', { name: 'Morning', exact: true }).click();
+  await settle(page, 450);
+  const rows = await page.locator('#level .qrow').evaluateAll((nodes) => nodes.map((node) => node.dataset.state));
+  is(rows.at(-1), 'history', 'S41 history follows every held/blind row');
+  ok(rows.slice(0, -1).some((register) => register === 'held' || register === 'blind'),
+    'S41 scoped queue includes a predecessor Watching register before history');
+  is((await state(page)).queue.at(-1).tag.replace(/\s+/g, ''), '◌Watching', 'S41 history is Watching');
+};
+
+// STORY:finding-evidence-routing:S42
+export const S42 = async (page) => {
+  await page.getByRole('button', { name: 'Morning', exact: true }).click();
+  await settle(page, 450);
+  await page.getByRole('button', { name: /^Highs / }).click();
+  await settle(page, 250);
+  const toggle = page.locator('#level .qcollapse');
+  ok(/^Watching · \d+ reads?$/.test(await toggle.innerText()), 'S42 one Watching control owns the count');
+  const pressed = await page.getByRole('button', { name: /^Highs / }).getAttribute('aria-pressed');
+  await captureEvidence(page, 'S42-sift-collapsed');
+  await toggle.click();
+  is(await page.getByRole('button', { name: /^Highs / }).getAttribute('aria-pressed'), pressed,
+    'S42 expansion preserves the sift');
+  ok(await page.locator('#level .qrow[data-state="history"]').isVisible(), 'S42 history is reachable after expansion');
+};
+
+// STORY:finding-evidence-routing:S43
+export const S43 = async (page) => {
+  const row = page.locator('#level .qrow[data-state="history"]').first();
+  const text = await row.innerText();
+  ok(/past 6\.0 g\/U/.test(text) && /3 meal runs/.test(text), 'S43 past setting and support render');
+  ok(!/Current|programmed now|5\.0 g\/U/.test(text), 'S43 queue omits current program');
+  is(await row.locator('.stagebtn').count(), 0, 'S43 queue history cannot stage');
+};
+
+// STORY:finding-evidence-routing:S44
+export const S44 = async (page) => {
+  const id = await page.locator('.qrow[data-state="history"]').first().getAttribute('data-id');
+  await openHistoryCase(page);
+  is((await state(page)).history.id, id, 'S44 opaque row id opens the case');
+  is((await state(page)).history.stageCount, 0, 'S44 case exposes no stage path');
+};
+
+// STORY:finding-evidence-routing:S45
+export const S45 = async (page) => {
+  await openHistoryCase(page);
+  const s = await state(page);
+  is(s.history.conclusion, 'Past setting. No change suggested.', 'S45 conclusion is exact and first');
+  is(s.history.currentCopies, 1, 'S45 current program appears exactly once');
+  ok(s.history.caseText.indexOf(s.history.conclusion) < s.history.caseText.indexOf('Current program'),
+    'S45 current program follows the conclusion and evidence');
+};
+
+// STORY:finding-evidence-routing:S46
+export const S46 = async (page) => {
+  await openHistoryCase(page);
+  const id = (await state(page)).history.id;
+  await page.getByRole('button', { name: 'Morning', exact: true }).click();
+  await settle(page, 600);
+  const after = await state(page);
+  is(after.history.id, id, 'S46 overlapping scope preserves selected id');
+  is(after.history.notice, null, 'S46 overlapping scope remains present');
+};
+
+// STORY:finding-evidence-routing:S47
+export const S47 = async (page) => {
+  await openHistoryCase(page);
+  const before = await state(page);
+  await page.getByRole('button', { name: 'Afternoon', exact: true }).click();
+  await settle(page, 650);
+  const after = await state(page);
+  is(after.history.id, before.history.id, 'S47 out-of-scope keeps the case');
+  is(after.history.generation, before.history.generation, 'S47 out-of-scope keeps prior generation');
+  is(after.history.notice, 'Past-setting evidence is outside the selected window.', 'S47 exact server message');
+  is(await page.locator('.history-canvas-notice').innerText(), after.history.notice, 'S47 both panes show the message');
+};
+
+// STORY:finding-evidence-routing:S48
+export const S48 = async (page) => {
+  await openHistoryCase(page);
+  const s = await state(page);
+  is(s.history.canvasId, s.history.id, 'S48 clock canvas and inspector share id');
+  is(s.history.canvasGeneration, s.history.generation, 'S48 clock canvas and inspector share generation');
+};
+
+// STORY:finding-evidence-routing:S49
+export const S49 = async (page) => {
+  const requests = [];
+  page.on('request', (request) => {
+    if (new URL(request.url()).pathname === '/diagnose/carb-ratio-history/events') requests.push(new URL(request.url()));
+  });
+  await openHistoryEvents(page);
+  const s = await state(page);
+  is(requests.at(-1).searchParams.get('history_id'), s.history.id, 'S49 exact selected id sent');
+  is(requests.at(-1).searchParams.get('analysis_generation'), s.history.generation, 'S49 exact generation sent');
+  is(s.history.canvasGeneration, s.history.generation, 'S49 pair swaps together');
+};
+
+// STORY:finding-evidence-routing:S50
+export const S50 = async (page) => {
+  await openHistoryEvents(page);
+  const before = await state(page);
+  await page.getByRole('button', { name: 'By clock', exact: true }).click();
+  await settle(page, 250);
+  const after = await state(page);
+  is(after.history.id, before.history.id, 'S50 id survives return to clock');
+  is(after.history.generation, before.history.generation, 'S50 generation survives return to clock');
+  is(after.history.selectedRunId, before.history.selectedRunId, 'S50 selected run survives return to clock');
+  is(after.history.stageCount, 0, 'S50 remains non-stageable');
+};
+
+// STORY:finding-evidence-routing:S51
+export const S51 = async (page) => {
+  await openHistoryEvents(page);
+  const before = await state(page);
+  is(await page.getByRole('group', { name: 'Meal runs' }).count(), 1,
+    'S51 the roster has one accessible group');
+  is(await page.getByRole('button', { name: /2 meals/ }).count(), before.history.runIds.length,
+    'S51 every member remains a native pressed-state button');
+  await page.locator('.history-run').first().click();
+  await settle(page, 650);
+  const after = await state(page);
+  is(after.history.runIds, before.history.runIds, 'S51 ordered population is unchanged');
+  is(after.history.selectedRuns, [before.history.runIds[0]], 'S51 selected opaque member is emphasized');
+};
+
+// STORY:finding-evidence-routing:S52
+export const S52 = async (page) => {
+  await openHistoryEvents(page);
+  const before = await state(page);
+  ok(before.history.runLabels.every((label) => /2 meals · \+0 min, \+120 min/.test(label)),
+    'S52 every server meal offset stays under its run');
+  await page.locator('.history-run').first().click();
+  await settle(page, 600);
+  is((await state(page)).history.runIds.length, before.history.runIds.length, 'S52 selection does not split a run');
+};
+
+// STORY:finding-evidence-routing:S53
+export const S53 = async (page) => {
+  await openHistoryCase(page);
+  const s = await state(page);
+  ok(/CI 4\.00–8\.00 g\/U \(wide\)/.test(s.history.caseText), 'S53 wide interval remains visible');
+  ok(/1 meal run/.test(s.history.caseText), 'S53 thin support remains visible');
+  is(s.history.stageCount, 0, 'S53 thin history remains non-actionable');
+};
+
+// STORY:finding-evidence-routing:S54
+export const S54 = async (page) => {
+  const row = page.locator('.qrow[data-state="history"]').first();
+  ok(await row.isVisible(), 'S54 non-null history is present because the server published it');
+  const source = await readFile(join(ROOT, 'frontend/diagnose-workstation.js'), 'utf8');
+  ok(!/estimate\?\.value\s*==\s*null|support\s*[<>]=?\s*\d+|Date\.now\(\).*regime/.test(source),
+    'S54 frontend carries no history retirement/support/age predicate');
+  await row.click();
+  await page.getByRole('button', { name: 'Morning', exact: true }).click();
+  await settle(page, 750);
+  const after = await state(page);
+  ok(after.history.id, 'S54 a disposition cannot retire a row the server still publishes');
+  is(after.history.stale, true, 'S54 contradictory disposition/row responses stop visibly stale');
+};
+
+const assertRetired = async (page, message, story) => {
+  await settle(page, 650);
+  const s = await state(page);
+  is(s.history.id, null, `${story} case returned atomically to queue`);
+  is(s.history.retirement, message, `${story} exact retirement notice`);
+  is(s.queue.some((row) => row.register === 'history'), false,
+    `${story} refreshed queue does not retain the retired history row`);
+  ok(await page.locator('#chart').isVisible(), `${story} clock canvas restored`);
+};
+
+// STORY:finding-evidence-routing:S55
+export const S55 = async (page) => {
+  await openHistoryCase(page);
+  await page.getByRole('button', { name: 'Morning', exact: true }).click();
+  await assertRetired(page, 'Past-setting evidence aged out of the 90-day window.', 'S55');
+};
+
+// STORY:finding-evidence-routing:S56
+export const S56 = async (page) => {
+  await openHistoryCase(page);
+  await page.getByRole('button', { name: 'Morning', exact: true }).click();
+  await assertRetired(page, 'Past-setting evidence no longer maps to one current program block.', 'S56');
+};
+
+// STORY:finding-evidence-routing:S57
+export const S57 = async (page) => {
+  const calls = { findings: 0, events: 0 };
+  page.on('request', (request) => {
+    const url = new URL(request.url());
+    if (url.pathname === '/diagnose/findings' && url.searchParams.has('selected_id')) calls.findings += 1;
+    if (url.pathname === '/diagnose/carb-ratio-history/events') calls.events += 1;
+  });
+  await openHistoryCase(page);
+  expectResponse(page, /\/diagnose\/carb-ratio-history\/events/, 410);
+  await page.getByRole('button', { name: 'By event', exact: true }).click();
+  await assertRetired(page, 'Past-setting evidence aged out of the 90-day window.', 'S57');
+  is(calls, { findings: 1, events: 1 }, 'S57 refreshes selection once and never retries event evidence');
+};
+
+// STORY:finding-evidence-routing:S58
+export const S58 = async (page) => {
+  const calls = { findings: 0, events: 0 };
+  page.on('request', (request) => {
+    const url = new URL(request.url());
+    if (url.pathname === '/diagnose/findings' && url.searchParams.has('selected_id')) calls.findings += 1;
+    if (url.pathname === '/diagnose/carb-ratio-history/events') calls.events += 1;
+  });
+  await openHistoryCase(page);
+  expectResponse(page, /\/diagnose\/carb-ratio-history\/events/, 410);
+  await page.getByRole('button', { name: 'By event', exact: true }).click();
+  await assertRetired(page, 'Past-setting evidence no longer maps to one current program block.', 'S58');
+  is(calls, { findings: 1, events: 1 }, 'S58 refreshes selection once and never retries event evidence');
+};
+
+// STORY:finding-evidence-routing:S59
+export const S59 = async (page) => {
+  await openHistoryCase(page);
+  const before = await state(page);
+  expectResponse(page, /\/diagnose\/carb-ratio-history\/events/, 500);
+  await page.getByRole('button', { name: 'By event', exact: true }).click();
+  await settle(page, 150);
+  const pending = await state(page);
+  is(pending.history.id, before.history.id, 'S59 prior inspector survives pending recovery');
+  is(pending.history.canvasId, before.history.canvasId, 'S59 prior canvas survives pending recovery');
+  await captureEvidence(page, 'S59-first-recovery-pending');
+  await settle(page, 900);
+  is((await state(page)).history.stale, false, 'S59 one coordinated recovery succeeds');
+};
+
+// STORY:finding-evidence-routing:S60
+export const S60 = async (page) => {
+  const calls = [];
+  page.on('request', (request) => {
+    const url = new URL(request.url());
+    if (url.pathname.startsWith('/diagnose/')) calls.push(url.pathname);
+  });
+  await openHistoryCase(page);
+  expectResponse(page, /\/diagnose\/carb-ratio-history\/events/, 409);
+  await page.getByRole('button', { name: 'By event', exact: true }).click();
+  await settle(page, 900);
+  ok(calls.slice(-2)[0] === '/diagnose/findings'
+    && calls.slice(-2)[1] === '/diagnose/carb-ratio-history/events', 'S60 retry is findings then events');
+  const s = await state(page);
+  is(s.history.canvasGeneration, s.history.generation, 'S60 coherent replacement generation commits');
+};
+
+// STORY:finding-evidence-routing:S61
+export const S61 = async (page) => {
+  let requests = 0;
+  page.on('request', (request) => { if (new URL(request.url()).pathname.startsWith('/diagnose/')) requests += 1; });
+  await openHistoryCase(page);
+  const before = await state(page);
+  expectResponse(page, /\/diagnose\/carb-ratio-history\/events/, 500);
+  expectResponse(page, /\/diagnose\/findings/, 500);
+  await page.getByRole('button', { name: 'By event', exact: true }).click();
+  await settle(page, 850);
+  const terminal = await state(page);
+  is(terminal.history.id, before.history.id, 'S61 last pair remains');
+  is(terminal.history.stale, true, 'S61 terminal stale notice is visible');
+  is(terminal.history.retry, 'Retry', 'S61 explicit Retry is offered');
+  const stopped = requests;
+  await settle(page, 500);
+  is(requests, stopped, 'S61 automatic loop stopped');
+};
+
+// STORY:finding-evidence-routing:S62
+export const S62 = async (page) => {
+  await openHistoryCase(page);
+  expectResponse(page, /\/diagnose\/carb-ratio-history\/events/, 500);
+  expectResponse(page, /\/diagnose\/findings/, 500);
+  await page.getByRole('button', { name: 'By event', exact: true }).click();
+  await settle(page, 750);
+  const stale = await state(page);
+  await page.getByRole('button', { name: 'Retry', exact: true }).click();
+  await captureEvidence(page, 'S62-explicit-retry-pending');
+  await settle(page, 900);
+  const fresh = await state(page);
+  is(fresh.history.id, stale.history.id, 'S62 explicit retry preserves selected id');
+  is(fresh.history.stale, false, 'S62 stale notice clears only after coherent success');
+  is(fresh.history.canvasGeneration, fresh.history.generation, 'S62 replacement pair is coherent');
+};
+
+const assertTypedFindingsFailure = async (page, status, code, story) => {
+  await openHistoryCase(page);
+  const before = await state(page);
+  expectResponse(page, /\/diagnose\/findings/, status);
+  expectResponse(page, /\/diagnose\/findings/, status);
+  await page.getByRole('button', { name: 'Morning', exact: true }).click();
+  await settle(page, 750);
+  const after = await state(page);
+  is(after.history.id, before.history.id, `${story} opaque id is not repaired`);
+  is(after.history.stale, true, `${story} ${code} stops visibly stale`);
+};
+
+// STORY:finding-evidence-routing:S63
+export const S63 = async (page) => assertTypedFindingsFailure(page, 400, 'invalid_history_id', 'S63');
+
+// STORY:finding-evidence-routing:S64
+export const S64 = async (page) => assertTypedFindingsFailure(page, 404, 'history_not_found', 'S64');
+
+const assertTypedRunFailure = async (page, status, code, story) => {
+  await openHistoryEvents(page);
+  expectResponse(page, /\/diagnose\/carb-ratio-history\/events/, status);
+  expectResponse(page, /\/diagnose\/carb-ratio-history\/events/, status);
+  await page.locator('.history-run').first().click();
+  await settle(page, 850);
+  const s = await state(page);
+  is(s.history.stale, true, `${story} ${code} stops visibly stale`);
+  is(s.history.runIds.length, 3, `${story} prior population remains complete`);
+};
+
+// STORY:finding-evidence-routing:S65
+export const S65 = async (page) => assertTypedRunFailure(page, 400, 'invalid_history_run_id', 'S65');
+
+// STORY:finding-evidence-routing:S66
+export const S66 = async (page) => assertTypedRunFailure(page, 404, 'history_run_not_found', 'S66');
+
+// STORY:finding-evidence-routing:S67
+export const S67 = async (page) => S60(page);
+
+// STORY:finding-evidence-routing:S68
+export const S68 = async (page) => {
+  await openHistoryCase(page);
+  await page.getByRole('button', { name: 'Afternoon', exact: true }).click();
+  await settle(page, 60);
+  await page.getByRole('button', { name: 'Morning', exact: true }).click();
+  await settle(page, 1000);
+  const s = await state(page);
+  is(s.history.notice, null, 'S68 superseded out-of-scope response cannot land');
+  is(s.history.canvasGeneration, s.history.generation, 'S68 newest coherent pair owns both panes');
+};
+
+// STORY:finding-evidence-routing:S69
+export const S69 = async (page) => {
+  await openHistoryCase(page);
+  const event = page.getByRole('button', { name: 'By event', exact: true });
+  await event.click();
+  await settle(page, 60);
+  await event.click();
+  await settle(page, 950);
+  const all = await state(page);
+  is(all.history.runIds.length, 3, 'S69 newest all-runs response owns the pair');
+  await page.locator('.history-run').nth(0).click();
+  await settle(page, 60);
+  await page.locator('.history-run').nth(1).click();
+  await settle(page, 950);
+  is((await state(page)).history.selectedRuns, [all.history.runIds[1]], 'S69 newest selected-run response wins whole');
+};
+
+// STORY:finding-evidence-routing:S70
+export const S70 = async (page) => {
+  await openHistoryEvents(page);
+  await page.locator('.history-run').first().click();
+  await settle(page, 650);
+  const s = await state(page);
+  is([s.history.canvasId, s.history.canvasGeneration, s.history.canvasRunId],
+    [s.history.id, s.history.generation, s.history.selectedRunId], 'S70 rendered pair exposes identical coordinates');
+};
+
+// STORY:finding-evidence-routing:S71
+export const S71 = async (page) => {
+  await openHistoryEvents(page);
+  await page.locator('.history-run').first().click();
+  await settle(page, 600);
+  await page.getByRole('button', { name: 'By clock', exact: true }).click();
+  const s = await state(page);
+  is(s.history.stageCount, 0, 'S71 no history state offers staging');
+  is(await page.evaluate(() => localStorage.getItem('tab')), 'diagnose', 'S71 history never navigates to Plan');
 };
 
 /** S33 · #58 — while the event canvas is mounted, its own header is the only
@@ -1753,6 +2210,29 @@ export const S39 = async (page) => {
     `S39 the new window's own counts land under its own label (${after.levelStat})`);
 };
 
+const historyDisposition = (disposition, message) => (body) => ({
+  ...body,
+  rows: body.rows.filter((row) => row.register !== 'history'),
+  selection: { id: body.selection.id, disposition, message },
+});
+const contradictoryHistoryDisposition = (disposition, message) => (body) => ({
+  ...body,
+  selection: { id: body.selection.id, disposition, message },
+});
+const missingRowsDisposition = (disposition, message) => (body) => {
+  const next = { ...body, selection: { id: body.selection.id, disposition, message } };
+  delete next.rows;
+  return next;
+};
+
+const thinHistoryInputs = (inputs) => {
+  const copy = structuredClone(inputs);
+  const history = copy.analysis.ic_history.find((row) => row.lifecycle === 'active');
+  history.support = 1;
+  history.estimate = { ...history.estimate, value: 6, lo: 4, hi: 8, n: 1, wide: true };
+  return copy;
+};
+
 /* ------------------------------------------------------------------- runner */
 
 /* Discovery tags for every exported replay function above. */
@@ -1829,6 +2309,79 @@ export const STORIES = [
   ['S38', S38, 'typical'],
   ['S39', S39, 'dense', { findingsDelayMs: 900 }],
   ['S40', S40, 'typical'],
+  ['S41', S41, 'typical', { history: true }],
+  ['S42', S42, 'typical', { history: true }],
+  ['S43', S43, 'typical', { history: true }],
+  ['S44', S44, 'typical', { history: true }],
+  ['S45', S45, 'typical', { history: true }],
+  ['S46', S46, 'typical', { history: true }],
+  ['S47', S47, 'typical', { history: true }],
+  ['S48', S48, 'typical', { history: true }],
+  ['S49', S49, 'typical', { history: true }],
+  ['S50', S50, 'typical', { history: true }],
+  ['S51', S51, 'typical', { history: true }],
+  ['S52', S52, 'typical', { history: true }],
+  ['S53', S53, 'typical', { history: true, findingsInputs: thinHistoryInputs }],
+  ['S54', S54, 'typical', { history: true, findingsInputs: thinHistoryInputs,
+    selectedFindingsResponses: [
+      { body: contradictoryHistoryDisposition('aged_out', 'contradictory retirement') },
+      { body: missingRowsDisposition('aged_out', 'missing-row-list retirement') },
+    ] }],
+  ['S55', S55, 'typical', { history: true, selectedFindingsResponses: [{
+    body: historyDisposition('aged_out', 'Past-setting evidence aged out of the 90-day window.'),
+  }] }],
+  ['S56', S56, 'typical', { history: true, selectedFindingsResponses: [{
+    body: historyDisposition('unavailable', 'Past-setting evidence no longer maps to one current program block.'),
+  }] }],
+  ['S57', S57, 'typical', { history: true, historyResponses: [{ status: 410,
+    detail: { code: 'history_aged_out', message: 'Past-setting evidence aged out of the 90-day window.' } }],
+    selectedFindingsResponses: [{
+      body: historyDisposition('aged_out', 'Past-setting evidence aged out of the 90-day window.'),
+    }] }],
+  ['S58', S58, 'typical', { history: true, historyResponses: [{ status: 410,
+    detail: { code: 'history_unavailable', message: 'Past-setting evidence no longer maps to one current program block.' } }],
+    selectedFindingsResponses: [{
+      body: historyDisposition('unavailable', 'Past-setting evidence no longer maps to one current program block.'),
+    }] }],
+  ['S59', S59, 'typical', { history: true,
+    historyResponses: [{ status: 500, detail: 'temporary failure' }],
+    selectedFindingsResponses: [{ delayMs: 650 }] }],
+  ['S60', S60, 'typical', { history: true, historyResponses: [{ status: 409,
+    detail: { code: 'analysis_generation_mismatch', message: 'Evidence changed. Refresh findings.' } }] }],
+  ['S61', S61, 'typical', { history: true,
+    historyResponses: [{ status: 500, detail: 'temporary failure' }],
+    selectedFindingsResponses: [{ status: 500, detail: 'retry failed' }] }],
+  ['S62', S62, 'typical', { history: true,
+    historyResponses: [{ status: 500, detail: 'temporary failure' }],
+    selectedFindingsResponses: [{ status: 500, detail: 'retry failed' }] }],
+  ['S63', S63, 'typical', { history: true, selectedFindingsResponses: [
+    { status: 400, detail: { code: 'invalid_history_id', message: 'Invalid history identity.' } },
+    { status: 400, detail: { code: 'invalid_history_id', message: 'Invalid history identity.' } },
+  ] }],
+  ['S64', S64, 'typical', { history: true, selectedFindingsResponses: [
+    { status: 404, detail: { code: 'history_not_found', message: 'Past-setting evidence was not found.' } },
+    { status: 404, detail: { code: 'history_not_found', message: 'Past-setting evidence was not found.' } },
+  ] }],
+  ['S65', S65, 'typical', { history: true, historyResponses: [
+    {},
+    { status: 400, detail: { code: 'invalid_history_run_id', message: 'Invalid history run identity.' } },
+    { status: 400, detail: { code: 'invalid_history_run_id', message: 'Invalid history run identity.' } },
+  ] }],
+  ['S66', S66, 'typical', { history: true, historyResponses: [
+    {},
+    { status: 404, detail: { code: 'history_run_not_found', message: 'History run was not found.' } },
+    { status: 404, detail: { code: 'history_run_not_found', message: 'History run was not found.' } },
+  ] }],
+  ['S67', S67, 'typical', { history: true, historyResponses: [{ status: 409,
+    detail: { code: 'analysis_generation_mismatch', message: 'Evidence changed. Refresh findings.' } }] }],
+  ['S68', S68, 'typical', { history: true, selectedFindingsResponses: [
+    { delayMs: 700 }, {},
+  ] }],
+  ['S69', S69, 'typical', { history: true, historyResponses: [
+    { delayMs: 700 }, {}, { delayMs: 700 }, {},
+  ] }],
+  ['S70', S70, 'typical', { history: true }],
+  ['S71', S71, 'typical', { history: true }],
   ['D1', D1, 'dense'], ['D2', D2, 'dense'], ['D3', D3, 'dense'],
 ];
 
@@ -1840,13 +2393,25 @@ if (isMain) {
   const { chromium } = require(modulePath);
   await access(join(process.env.VENDOR_DIR || '', 'echarts.min.js'));
   const only = process.env.ONLY ? new Set(process.env.ONLY.split(',')) : null;
+  const viewport = process.env.VIEWPORT
+    ? Object.fromEntries(['width', 'height'].map((key, index) => [key, Number(process.env.VIEWPORT.split('x')[index])]))
+    : undefined;
+  if (viewport && (!Number.isInteger(viewport.width) || !Number.isInteger(viewport.height))) {
+    fail(`VIEWPORT must be WIDTHxHEIGHT, got ${process.env.VIEWPORT}`);
+  }
   const browser = await chromium.launch({ executablePath: process.env.PLAYWRIGHT_EXECUTABLE_PATH || undefined });
   const results = [];
   for (const [id, fn, want, options] of STORIES) {
     if (only && !only.has(id)) continue;
-    const page = await openApp(browser, { state: want, ...(options || {}) });
+    const page = await openApp(browser, {
+      state: want,
+      ...(options || {}),
+      ...(process.env.THEME ? { theme: process.env.THEME } : {}),
+      ...(viewport ? { viewport } : {}),
+    });
     try {
       const note = await fn(page);
+      await captureEvidence(page, id);
       results.push([id, 'pass', note || '']);
     } catch (e) { results.push([id, 'FAIL', e.message]); }
     await page.close();

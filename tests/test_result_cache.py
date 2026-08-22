@@ -14,6 +14,38 @@ from ciq_autotune.result_cache import ResultCache
 
 
 class ResultCacheTest(unittest.TestCase):
+    def test_stable_read_retries_a_compute_crossed_by_a_bump(self):
+        cache = ResultCache(incarnation="test-process")
+        calls = []
+
+        def compute():
+            calls.append(1)
+            if len(calls) == 1:
+                cache.bump()
+                return "stale"
+            return "fresh"
+
+        generation, value = cache.stable_read(("k",), compute)
+
+        self.assertEqual((generation, value), ("test-process:1", "fresh"))
+        self.assertEqual(len(calls), 2)
+
+    def test_stable_read_aborts_after_repeated_crossed_computes(self):
+        cache = ResultCache(incarnation="test-process")
+
+        def compute():
+            cache.bump()
+            return "stale"
+
+        with self.assertRaises(ResultCache.GenerationChanged):
+            cache.stable_read(("k",), compute, attempts=2)
+
+    def test_generations_do_not_collide_across_process_incarnations(self):
+        first = ResultCache(incarnation="process-a")
+        restarted = ResultCache(incarnation="process-b")
+
+        self.assertNotEqual(first.generation, restarted.generation)
+
     def test_miss_computes_hit_does_not(self):
         cache = ResultCache()
         calls = []

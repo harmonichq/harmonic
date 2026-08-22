@@ -59,6 +59,8 @@ jobs:
       # returns — the same drift class as the two checks above.
       - name: Check the generated findings-projection fixtures are current
         run: uv run python scripts/gen_findings_projection_fixtures.py --check
+      - name: Check the generated I:C history-event fixtures are current
+        run: uv run python scripts/gen_ic_history_event_fixtures.py --check
       # #62: browser replays use a fixture-only event-comparison mirror. Freeze
       # the Python projection's public answers, then let the Node test hold the
       # mirror to those answers window for window.

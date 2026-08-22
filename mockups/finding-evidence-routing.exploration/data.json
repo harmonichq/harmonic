@@ -20,6 +20,7 @@
  },
  "queue": {
   "projection": {
+   "analysis_generation": "findings-fixture-process:0",
    "chip_counts": {
     "corrections": 1,
     "highs": 5,
@@ -30,7 +31,8 @@
     "assert": 3,
     "blind": 0,
     "finding": 3,
-    "held": 0
+    "held": 0,
+    "history": 1
    },
    "findings_window": {
     "days": 30,
@@ -64,10 +66,14 @@
      "lever": null,
      "members": null,
      "parameter": "carb_ratio",
+     "past_setting": null,
      "priority": 66,
+     "programmed_now": null,
      "reason": null,
      "recommended": 5,
+     "regime_end": null,
      "register": "assert",
+     "run_ids": null,
      "span": {
       "end_min": 1440,
       "label": "12:00 to 24:00",
@@ -133,10 +139,14 @@
       }
      ],
      "parameter": "basal_rate",
+     "past_setting": null,
      "priority": 39,
+     "programmed_now": null,
      "reason": null,
      "recommended": null,
+     "regime_end": null,
      "register": "assert",
+     "run_ids": null,
      "span": {
       "end_min": 90,
       "label": "00:30 to 01:30",
@@ -195,10 +205,14 @@
       }
      ],
      "parameter": "basal_rate",
+     "past_setting": null,
      "priority": 39,
+     "programmed_now": null,
      "reason": null,
      "recommended": 0.96,
+     "regime_end": null,
      "register": "assert",
+     "run_ids": null,
      "span": {
       "end_min": 360,
       "label": "05:30",
@@ -327,10 +341,14 @@
      "lever": "over_treated_low",
      "members": null,
      "parameter": null,
+     "past_setting": null,
      "priority": 28,
+     "programmed_now": null,
      "reason": null,
      "recommended": null,
+     "regime_end": null,
      "register": "finding",
+     "run_ids": null,
      "span": null,
      "support": null,
      "tier": "worth_a_look",
@@ -449,10 +467,14 @@
      "lever": "carb_undercount",
      "members": null,
      "parameter": null,
+     "past_setting": null,
      "priority": 21,
+     "programmed_now": null,
      "reason": null,
      "recommended": null,
+     "regime_end": null,
      "register": "finding",
+     "run_ids": null,
      "span": null,
      "support": null,
      "tier": "worth_a_look",
@@ -571,10 +593,14 @@
      "lever": "correction_stacking",
      "members": null,
      "parameter": null,
+     "past_setting": null,
      "priority": null,
+     "programmed_now": null,
      "reason": null,
      "recommended": null,
+     "regime_end": null,
      "register": "finding",
+     "run_ids": null,
      "span": null,
      "support": null,
      "tier": "noted",
@@ -603,9 +629,58 @@
       }
      },
      "window_scope": "window"
+    },
+    {
+     "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (CI 6–6). Past setting. No change suggested.",
+     "appearances": null,
+     "chips": [],
+     "current": null,
+     "direction": null,
+     "episodes": null,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 6,
+      "lo": 6,
+      "method": "bootstrap-pooled-ratio-clustered",
+      "n": 3,
+      "value": 6,
+      "wide": false
+     },
+     "evidence": null,
+     "id": "ich1_WzAsNzIwLCI2Il0",
+     "kind": "setting",
+     "label": "Morning",
+     "lean": null,
+     "lever": null,
+     "members": null,
+     "parameter": "carb_ratio",
+     "past_setting": 6,
+     "priority": null,
+     "programmed_now": 5,
+     "reason": null,
+     "recommended": null,
+     "regime_end": "2026-07-01T00:00:00",
+     "register": "history",
+     "run_ids": [
+      "icr1_WyIyMDI2LTA1LTI2VDA5OjAwOjAwIl0",
+      "icr1_WyIyMDI2LTA1LTMwVDA5OjAwOjAwIl0",
+      "icr1_WyIyMDI2LTA2LTAzVDA5OjAwOjAwIl0"
+     ],
+     "span": {
+      "end_min": 720,
+      "label": "00:00 to 12:00",
+      "start_min": 0
+     },
+     "support": {},
+     "tier": "noted",
+     "title": "Carb ratio Morning. Past setting.",
+     "verdict_counts": null,
+     "verdict_counts_by_family": null,
+     "window_scope": "window"
     }
    ],
-   "schema": "diagnose-findings-v1",
+   "schema": "diagnose-findings-v2",
+   "selection": null,
    "uncaused_highs": {
     "count": 1,
     "text": "1 high had no cause detected by the app"
@@ -618,7 +693,7 @@
    }
   },
   "root": "Findings",
-  "meta": "6 findings · 30 days",
+  "meta": "7 findings · 30 days",
   "tiers": {
    "ic:720": {
     "tier": "next_in_line",

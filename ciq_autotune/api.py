@@ -34,7 +34,15 @@ from .config import resolve_runtime_configuration
 from .event_comparison import ComparisonQuery, prepare_event_comparisons
 from .explore_time_of_day import build_time_of_day
 from .events import CarbEntry, parse_t
-from .findings_projection import prepare_findings_projection
+from .findings_projection import UnknownHistorySelection, prepare_findings_projection
+from .ic_history import InvalidIcHistoryId, InvalidIcRunId
+from .ic_history_events import (
+    HistoryAgedOut,
+    HistoryUnavailable,
+    UnknownHistoryId,
+    UnknownHistoryRunId,
+    prepare_ic_history_events,
+)
 from .window_membership import WindowQuery
 from .result import SCHEMA_VERSION
 from .result_cache import ResultCache
@@ -65,7 +73,8 @@ def _latest_instant(store) -> Optional[datetime]:
 
 
 def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
-               key_path: Optional[str] = None, enable_fetch_loop: Optional[bool] = None):
+               key_path: Optional[str] = None, enable_fetch_loop: Optional[bool] = None,
+               analysis_incarnation: Optional[str] = None):
     """Build the FastAPI app. ``db_path`` / ``token`` default to the
     canonical ``HARMONIC_DB`` / ``HARMONIC_API_TOKEN`` env vars. Their legacy
     ``CIQ_*`` spellings remain deprecated fallbacks. ``key_path`` (the Fernet
@@ -117,7 +126,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     # endpoints answer from it until a write bumps it; every mutating endpoint and
     # the hourly fetch loop clear it. A per-app instance (not a module singleton)
     # keeps two-DB tests isolated. See ADR 0035.
-    cache = ResultCache()
+    cache = ResultCache(incarnation=analysis_incarnation)
+    app.state.result_cache = cache
 
     def event_comparison_preparation():
         """One fixed-window source/classifier preparation per cache version."""
@@ -127,8 +137,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
 
         return cache.get_or_compute(("event-comparison-preparation",), compute)
 
-    def findings_projection(window: int):
-        """One findings-window preparation per cache version, projected per request.
+    def history_snapshot(window: int):
+        """One coherent findings + history-evidence preparation per cache version.
 
         The heavy read is the preparation (the analysis, the exposures feed and the
         scenario report for one findings window); projecting a clock window out of it
@@ -138,9 +148,11 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         """
         def compute():
             with Store.open(db_path) as store:
-                return prepare_findings_projection(store, window_days=window)
+                findings = prepare_findings_projection(store, window_days=window)
+                events = prepare_ic_history_events(store, findings)
+                return findings, events
 
-        return cache.get_or_compute(("findings-projection", window), compute)
+        return cache.stable_read(("findings-history-snapshot", window), compute)
 
     def require_token(authorization: str = Header(default="")) -> None:
         if token and authorization != f"Bearer {token}":
@@ -524,7 +536,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     @app.get("/diagnose/findings")
     def diagnose_findings_endpoint(
         start_min: Optional[int] = None, end_min: Optional[int] = None,
-        window: int = 30, _: None = Depends(require_token),
+        window: int = 30, selected_id: Optional[str] = None,
+        _: None = Depends(require_token),
     ) -> dict:
         """The Diagnose findings queue for one clock window (#730).
 
@@ -543,7 +556,80 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                      else WindowQuery.clock(start_min, end_min))
         except ValueError as error:
             raise HTTPException(status_code=400, detail=str(error)) from error
-        return findings_projection(window).project(query)
+        try:
+            generation, (findings, _events) = history_snapshot(window)
+            return findings.project(
+                query, selected_id, analysis_generation=generation)
+        except InvalidIcHistoryId as error:
+            raise HTTPException(status_code=400, detail={
+                "code": "invalid_history_id", "message": str(error)}) from error
+        except UnknownHistorySelection as error:
+            raise HTTPException(status_code=404, detail={
+                "code": "history_not_found",
+                "message": "Past-setting evidence was not found.",
+            }) from error
+        except ResultCache.GenerationChanged as error:
+            raise HTTPException(status_code=409, detail={
+                "code": "analysis_generation_mismatch",
+                "message": "Evidence changed. Refresh findings.",
+            }) from error
+
+    @app.get("/diagnose/carb-ratio-history/events")
+    def diagnose_ic_history_events_endpoint(
+        history_id: Optional[str] = None,
+        analysis_generation: Optional[str] = None,
+        selected_run_id: Optional[str] = None,
+        _: None = Depends(require_token),
+    ) -> dict:
+        """Exact 90-day event evidence for one active history catalog identity."""
+        if history_id is None:
+            raise HTTPException(status_code=400, detail={
+                "code": "invalid_history_id", "message": "history_id is required"})
+        if analysis_generation is None:
+            raise HTTPException(status_code=400, detail={
+                "code": "analysis_generation_required",
+                "message": "analysis_generation is required"})
+        try:
+            generation, (_findings, events) = history_snapshot(30)
+            if analysis_generation != generation:
+                raise HTTPException(status_code=409, detail={
+                    "code": "analysis_generation_mismatch",
+                    "message": "Evidence changed. Refresh findings.",
+                })
+            return events.project(
+                history_id, selected_run_id, analysis_generation=generation)
+        except (InvalidIcHistoryId, InvalidIcRunId) as error:
+            code = ("invalid_history_id" if isinstance(error, InvalidIcHistoryId)
+                    else "invalid_history_run_id")
+            raise HTTPException(status_code=400, detail={
+                "code": code, "message": str(error)}) from error
+        except UnknownHistoryId as error:
+            raise HTTPException(status_code=404, detail={
+                "code": "history_not_found",
+                "message": "Past-setting evidence was not found.",
+            }) from error
+        except UnknownHistoryRunId as error:
+            raise HTTPException(status_code=404, detail={
+                "code": "history_run_not_found",
+                "message": "Meal-run evidence is not a member of this history item.",
+            }) from error
+        except HistoryAgedOut as error:
+            raise HTTPException(status_code=410, detail={
+                "code": "history_aged_out",
+                "message": "Past-setting evidence aged out of the 90-day window.",
+            }) from error
+        except HistoryUnavailable as error:
+            raise HTTPException(status_code=410, detail={
+                "code": "history_unavailable",
+                "message": (
+                    "Past-setting evidence no longer maps to one current program block."
+                ),
+            }) from error
+        except ResultCache.GenerationChanged as error:
+            raise HTTPException(status_code=409, detail={
+                "code": "analysis_generation_mismatch",
+                "message": "Evidence changed. Refresh findings.",
+            }) from error
 
     @app.get("/audit/dismissals")
     def audit_dismissals_endpoint(_: None = Depends(require_token)) -> dict:

@@ -27,6 +27,7 @@ Stdlib only, imported by nothing in core — it stays out of the ``api`` extra's
 
 from __future__ import annotations
 
+import secrets
 import threading
 from collections import OrderedDict
 from typing import Callable, Hashable, TypeVar
@@ -44,8 +45,12 @@ class ResultCache:
     everything and advances ``version``.
     """
 
-    def __init__(self, cap: int = DEFAULT_CAP) -> None:
+    class GenerationChanged(RuntimeError):
+        """Every allowed stable-read attempt crossed an invalidation."""
+
+    def __init__(self, cap: int = DEFAULT_CAP, *, incarnation: str | None = None) -> None:
         self._cap = cap
+        self._incarnation = incarnation or secrets.token_urlsafe(18)
         self._lock = threading.Lock()
         self._map: "OrderedDict[Hashable, object]" = OrderedDict()
         self._version = 0
@@ -59,6 +64,12 @@ class ResultCache:
         """The monotonic data version — advanced by every :meth:`bump`."""
         with self._lock:
             return self._version
+
+    @property
+    def generation(self) -> str:
+        """Opaque identity for this process incarnation and data version."""
+        with self._lock:
+            return f"{self._incarnation}:{self._version}"
 
     def bump(self) -> None:
         """Invalidate: clear the map and advance ``version``. Called after any write."""
@@ -113,3 +124,25 @@ class ResultCache:
                 with self._lock:
                     self._flights.pop(key, None)
         return value
+
+    def stable_read(
+        self, key: Hashable, compute: Callable[[], T], *, attempts: int = 3,
+    ) -> tuple[str, T]:
+        """Return one generation and value only when no invalidation crossed it.
+
+        A write may land while a heavy read is outside the lock.  In that case
+        :meth:`get_or_compute` correctly declines to cache the stale value, and this
+        interface additionally declines to label those bytes with the newer
+        generation.  It retries from the cleared cache, then fails explicitly if a
+        busy writer crosses every bounded attempt.
+        """
+        if attempts < 1:
+            raise ValueError("attempts must be at least 1")
+        for _ in range(attempts):
+            with self._lock:
+                snapshot = self._version
+            value = self.get_or_compute(key, compute)
+            with self._lock:
+                if self._version == snapshot:
+                    return f"{self._incarnation}:{snapshot}", value
+        raise self.GenerationChanged("result cache changed during stable read")

@@ -70,6 +70,7 @@ from ciq_autotune.result import (  # noqa: E402
     SlotEstimate,
     Span,
 )
+from ciq_autotune.settings import Snapshot, parse_pump_settings  # noqa: E402
 from ciq_autotune.safety import SafetyConfig, cap  # noqa: E402
 from ciq_autotune.uncertainty import Confidence, Estimate  # noqa: E402
 
@@ -82,6 +83,7 @@ DAY = date(2026, 8, 17)
 BASE = datetime(2026, 5, 19)      # the I:C block ledger's own 90-day run
 _SAFETY = SafetyConfig()
 _ISF_CFG = IsfConfig()
+ANALYSIS_GENERATION = "findings-fixture-process:0"
 
 # The windows frozen here: the global queue, the two D34 anchoring windows, the
 # grounded morning and afternoon reads, a window that wraps midnight, and a stretch
@@ -191,6 +193,52 @@ def _meal(day, hour, carbs, dose, ratio, minute=0):
     return BolusEvent(t=BASE + timedelta(days=day, hours=hour, minutes=minute),
                       insulin=dose, carbs=carbs, carb_ratio=ratio,
                       completion="Completed")
+
+
+def _snapshot(at, schedule):
+    rows = [{"startTime": start, "basalRate": 600, "isf": 30,
+             "carbRatio": int(ratio * 1000), "targetBg": 110}
+            for start, ratio in schedule]
+    rows += [{"startTime": 0, "basalRate": 0, "isf": 0,
+              "carbRatio": 0, "targetBg": 0}] * (16 - len(rows))
+    return Snapshot(at, parse_pump_settings({
+        "profiles": {"activeIdp": 4, "profile": [{
+            "name": "4", "idp": 4, "insulinDuration": 300,
+            "carbEntry": 1, "maxBolus": 15000, "tDependentSegs": rows,
+        }]}, "cgmSettings": {},
+    }))
+
+
+def history_catalogs():
+    """Active, aged and unmappable catalogs, all produced by the real analyzer."""
+    first = datetime(2026, 5, 20)
+    changed = datetime(2026, 7, 1)
+    old_schedule = [(0, 6.0), (720, 5.7)]
+    current_schedule = [(0, 5.0), (720, 5.7)]
+    snapshots = [_snapshot(first, old_schedule), _snapshot(changed, current_schedule)]
+    events = [
+        BolusEvent(t=first + timedelta(days=day, hours=hour), insulin=5.0,
+                   carbs=30.0, carb_ratio=6.0, completion="Completed")
+        for day in (2, 6, 10, 14) for hour in (9, 11)
+    ]
+
+    def catalog(now, schedule, snaps=snapshots):
+        answer = []
+        analyze_ic_blocks(
+            events, schedule, config=IcConfig(), observed_days=90,
+            analysis_start=now - timedelta(days=90), analysis_end=now,
+            snapshots=snaps, history_catalog=answer,
+        )
+        return answer
+
+    active = catalog(datetime(2026, 8, 17), current_schedule)
+    aged = catalog(datetime(2026, 12, 17), current_schedule)
+    split_schedule = [(0, 5.0), (360, 7.0), (720, 5.7)]
+    split_snapshots = snapshots + [_snapshot(datetime(2026, 8, 1), split_schedule)]
+    unavailable = catalog(datetime(2026, 8, 17), split_schedule, split_snapshots)
+    if not (active and aged and unavailable):
+        raise SystemExit("synthetic history cases no longer produce a catalog")
+    return active, aged, unavailable
 
 
 def ic_blocks():
@@ -416,6 +464,7 @@ def analysis(*, blocks=None):
     basal = basal_rows()
     isf = isf_rows()
     blocks = ic_blocks() if blocks is None else blocks
+    active_history, _aged_history, _unavailable_history = history_catalogs()
     return AnalysisResult(
         schema_version=SCHEMA_VERSION,
         generated_at=f"{DAY.isoformat()} 09:00:00",
@@ -428,7 +477,7 @@ def analysis(*, blocks=None):
         tuning_levers=build_tuning_levers(
             basal, isf, blocks, slot_minutes=SLOT_MINUTES,
             robust_daily_insulin_u=42.0),
-        ic_blocks=blocks, ic_runs=24,
+        ic_blocks=blocks, ic_runs=24, ic_history=active_history,
     ).to_dict()
 
 
@@ -454,6 +503,15 @@ def empty_projection() -> FindingsProjection:
 
 def payload() -> dict:
     prepared = projection()
+    active_history, aged_history, unavailable_history = history_catalogs()
+    selected_id = active_history[0].history_id
+
+    def with_catalog(catalog):
+        analysis_payload = dict(prepared._analysis)
+        analysis_payload["ic_history"] = [row.to_dict() for row in catalog]
+        return FindingsProjection(analysis_payload, prepared._exposures,
+                                  prepared._scenarios)
+
     return {
         "_generated_by": "scripts/gen_findings_projection_fixtures.py",
         "_note": ("SYNTHETIC. Every window below is the real projection's own output "
@@ -471,23 +529,47 @@ def payload() -> dict:
             "analysis": prepared._analysis,
             "exposures": prepared._exposures,
             "scenarios": prepared._scenarios,
+            "analysis_generation": ANALYSIS_GENERATION,
         },
         "windows": {
             name: prepared.project(
                 WindowQuery.whole_day() if bounds is None
-                else WindowQuery.clock(*bounds))
+                else WindowQuery.clock(*bounds),
+                analysis_generation=ANALYSIS_GENERATION)
             for name, bounds in WINDOWS.items()
         },
         "settings_cases": {
             "carb_ratio_raise": FindingsProjection(
                 _analysis=analysis(blocks=ic_raise_blocks()), _exposures=exposures(),
                 _scenarios=scenarios(),
-            ).project(WindowQuery.whole_day()),
+            ).project(WindowQuery.whole_day(),
+                      analysis_generation=ANALYSIS_GENERATION),
+        },
+        "selection_cases": {
+            "present": prepared.project(
+                WindowQuery.whole_day(), selected_id,
+                analysis_generation=ANALYSIS_GENERATION),
+            "out_of_scope": prepared.project(
+                WindowQuery.clock(720, 900), selected_id,
+                analysis_generation=ANALYSIS_GENERATION),
+            "aged_out": with_catalog(aged_history).project(
+                WindowQuery.whole_day(), aged_history[0].history_id,
+                analysis_generation=ANALYSIS_GENERATION),
+            "unavailable": with_catalog(unavailable_history).project(
+                WindowQuery.whole_day(), unavailable_history[0].history_id,
+                analysis_generation=ANALYSIS_GENERATION),
+        },
+        "selection_inputs": {
+            "present": prepared._analysis,
+            "out_of_scope": prepared._analysis,
+            "aged_out": with_catalog(aged_history)._analysis,
+            "unavailable": with_catalog(unavailable_history)._analysis,
         },
         "no_data": {
             name: empty_projection().project(
                 WindowQuery.whole_day() if bounds is None
-                else WindowQuery.clock(*bounds))
+                else WindowQuery.clock(*bounds),
+                analysis_generation=ANALYSIS_GENERATION)
             for name, bounds in (("global", None), ("morning", WINDOWS["morning"]))
         },
     }

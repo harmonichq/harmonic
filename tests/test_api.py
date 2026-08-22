@@ -997,6 +997,17 @@ class ApiAuthTest(unittest.TestCase):
     def test_plan_history_requires_token(self):
         self.assertEqual(self.client.get("/plan/history").status_code, 401)
 
+    def test_history_events_authenticates_before_query_validation(self):
+        path = "/diagnose/carb-ratio-history/events"
+        self.assertEqual(self.client.get(path).status_code, 401)
+        self.assertEqual(self.client.get(
+            path, headers={"Authorization": "Bearer wrong"},
+            params={"history_id": "malformed"}).status_code, 401)
+        authenticated = self.client.get(
+            path, headers={"Authorization": "Bearer s3cret"})
+        self.assertEqual(authenticated.status_code, 400)
+        self.assertEqual(authenticated.json()["detail"]["code"], "invalid_history_id")
+
     def test_root_does_not_require_token(self):
         # No login screen (#10): the SPA shell itself must load unauthenticated.
         r = self.client.get("/", headers={"Authorization": "Bearer nope"})

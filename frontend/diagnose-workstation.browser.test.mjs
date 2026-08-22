@@ -22,8 +22,8 @@
  * asserted by NOTHING in this repo — known gaps, not covered here, not
  * claimed here. Two of the safety-relevant ones are restored below (both
  * facets of term 14, the #273/#465 rule): a held item offers no stage button,
- * and ISF's own `recommended != null` gate holds without a sized backend
- * number. The rest (fabricated day traces/19, the inference caveat
+ * and ISF's own exact-true backend verdict gate holds without action permission.
+ * The rest (fabricated day traces/19, the inference caveat
  * string/17, the Current/Estimate/Recommended table/15/16, verdict-lane
  * x-axis register/12, window-survives-pop/7, further I:C and ISF staging
  * paths/13) remain open — deliberately not grown into this file; tracked for
@@ -68,7 +68,10 @@ import { existsSync } from 'node:fs';
 import { mkdir, readFile } from 'node:fs/promises';
 import { extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { openApp, openerProblems, state } from './diagnose-workstation-behavior.replay.mjs';
+import {
+  derivedPumpSettings, openApp, openerProblems, state, withIsfVerdict,
+  withoutIsfProjectionVerdict,
+} from './diagnose-workstation-behavior.replay.mjs';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 
 const require = createRequire(import.meta.url);
@@ -137,6 +140,21 @@ async function shot(page, family, state_, viewport, theme) {
 }
 
 const VIEWPORTS = [{ width: 1440, height: 900 }, { width: 1280, height: 800 }];
+
+test('an explicit fixture opener ignores a hostile ambient app-source override', async () => {
+  const browser = await runner.browser();
+  const previous = process.env.DIAGNOSE_APP_SOURCE;
+  process.env.DIAGNOSE_APP_SOURCE = 'hostile-fixture-bypass';
+  try {
+    const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
+    assert.equal(await page.locator('.dw').count(), 1,
+      'the explicit fixture caller still reaches the Diagnose shell');
+    await page.close();
+  } finally {
+    if (previous === undefined) delete process.env.DIAGNOSE_APP_SOURCE;
+    else process.env.DIAGNOSE_APP_SOURCE = previous;
+  }
+});
 
 function contrastRatio(foreground, background) {
   const rgb = (color) => color.match(/\d+/g).map(Number).slice(0, 3);
@@ -410,7 +428,7 @@ test('a held I:C finding enters through the findings queue with no stage button'
    stage button. This fixture's ISF row always carries `recommended: null`
    (mockups/diagnose-workstation.synthetic/payload.json's single `analyze.isf`
    row), so the 'typical' state proves the held side directly. */
-test('ISF is not stageable without a sized backend recommendation', async () => {
+test('ISF is not stageable without an exact true backend verdict', async () => {
     const browser = await runner.browser();
     try {
       const before = openerProblems().length;
@@ -434,10 +452,129 @@ test('ISF is not stageable without a sized backend recommendation', async () => 
         /Measured in the overnight fasting window\. Daytime ISF is not separately identifiable/,
         'the ISF level actually opened (its own locked scope sentence)');
       const s = await state(page);
-      assert.equal(s.stage, null, 'ISF with no sized recommendation offers no stage button');
+      assert.equal(s.stage, null, 'ISF without exact backend permission offers no stage button');
       await page.close();
       assert.deepEqual(openerProblems().slice(before), [],
         'no opener problems while exercising the ISF gate');
+    } finally { /* browser stays open; closed once in after() */ }
+  });
+
+test('a rounded false ISF verdict keeps evidence and empty Recommended geometry at every review render', async () => {
+    const browser = await runner.browser();
+    const observed = [];
+    try {
+      const before = openerProblems().length;
+      for (const viewport of VIEWPORTS) {
+        for (const theme of ['light', 'dark']) {
+          const page = await openApp(browser, {
+            state: 'typical', viewport, theme, appSource: 'fixture',
+            analysisInputs: (analysis) => withIsfVerdict(analysis, {
+              direction: 'strengthen', recommended: 42, assertsMove: false,
+              annotation: 'The conservative strengthen step rounds to the current Correction factor.',
+            }),
+          });
+          const row = page.locator('#level .qrow[data-id="isf"]');
+          const root = {
+            state: await row.getAttribute('data-state'),
+            tier: await row.getAttribute('data-tier'),
+            nums: await row.locator('.den.nums').count(),
+          };
+          await row.click();
+          await settle(page, 450);
+          await shot(page, 'isf-verdict', 'false-drilled', viewport, theme);
+          observed.push({
+            viewport, theme, root,
+            recommended: await page.locator('#level .numrow').nth(2).locator('b').innerText(),
+            estimate: await page.locator('#level .numrow').nth(1).locator('b').innerText(),
+            text: await page.locator('#level').innerText(),
+            stage: await page.locator('#level .stagebtn').count(),
+          });
+          await page.close();
+        }
+      }
+      assert.equal(observed.length, VIEWPORTS.length * 2);
+      for (const reading of observed) {
+        assert.deepEqual(reading.root, { state: 'assert', tier: 'next_in_line', nums: 0 },
+          `${reading.viewport.width}x${reading.viewport.height} ${reading.theme}: queue register survives without an action number`);
+        assert.equal(reading.recommended, '--', 'Recommended keeps its reserved row with no numeric value');
+        assert.equal(reading.estimate, '31.40', 'the estimate remains visible');
+        assert.equal(reading.stage, 0, 'the false verdict exposes no stage control');
+        assert.match(reading.text, /conservative step rounds to the current Correction factor/);
+        assert.doesNotMatch(reading.text, /programmed factor/i);
+        assert.match(reading.text, /CI 18\.20–46\.90 mg\/dL\/U/);
+        assert.doesNotMatch(reading.text, /recent lows|stronger than needed/i);
+      }
+      assert.deepEqual(openerProblems().slice(before), [],
+        'no opener problems across rounded-false evidence renders');
+    } finally { /* browser stays open; closed once in after() */ }
+  });
+
+test('a recommendation-bearing legacy ISF row with a missing verdict fails closed without losing its direction', async () => {
+    const browser = await runner.browser();
+    try {
+      const before = openerProblems().length;
+      const page = await openApp(browser, {
+        state: 'typical', appSource: 'fixture',
+        analysisInputs: (analysis) => withIsfVerdict(analysis, {
+          direction: 'weaken', recommended: 47, omitVerdict: true,
+          annotation: 'Corrections keep overshooting into lows, so the correction factor eases weaker.',
+        }),
+        findingsProjectionInputs: withoutIsfProjectionVerdict,
+      });
+      const row = page.locator('#level .qrow[data-id="isf"]');
+      assert.equal(await row.getAttribute('data-state'), 'assert');
+      assert.equal(await row.locator('.den.nums').count(), 0,
+        'the queue suppresses the stale numeric action line before drill-in');
+      await row.click();
+      await settle(page, 450);
+      const text = await page.locator('#level').innerText();
+      assert.equal(await page.locator('#level .numrow').nth(2).locator('b').innerText(), '--');
+      assert.equal(await page.locator('#level .stagebtn').count(), 0);
+      assert.match(text, /corrections look stronger than needed/i,
+        'direction-only weaken retains its direction language');
+      assert.match(text, /Corrections keep overshooting into lows/,
+        'the analyzer refusal evidence remains visible');
+      assert.match(text, /recent lows make a new number unsafe to suggest/i);
+      await page.close();
+      assert.deepEqual(openerProblems().slice(before), [],
+        'no opener problems while exercising a missing legacy verdict');
+    } finally { /* browser stays open; closed once in after() */ }
+  });
+
+test('an exact true capped ISF verdict stages one unchanged value per generated pump segment', async () => {
+    const browser = await runner.browser();
+    try {
+      const before = openerProblems().length;
+      const drafts = [];
+      const page = await openApp(browser, {
+        state: 'typical', appSource: 'fixture',
+        analysisInputs: (analysis) => withIsfVerdict(analysis, {
+          direction: 'strengthen', recommended: 33.6, assertsMove: true,
+          annotation: 'A conservative recommendation, capped to one ≤20% step from current.',
+        }),
+        pumpSettingsInputs: derivedPumpSettings,
+        onPlanDraft: (draft) => drafts.push(draft),
+      });
+      const row = page.locator('#level .qrow[data-id="isf"]');
+      assert.equal(await row.locator('.den.nums').count(), 1,
+        'exact true retains the queue action number');
+      await row.click();
+      await settle(page, 450);
+      await page.locator('#level .stagebtn').click();
+      await page.waitForFunction(() => document.querySelector('#plan-badge')?.textContent.trim() === '4');
+      await page.waitForTimeout(100);
+      assert.equal(drafts.length, 1, 'the real stage affordance issues one PUT /plan');
+      assert.deepEqual(drafts[0].items, [
+        { type: 'isf', key: 0, start_min: 0, label: '00:00', current: 42, recommended: 33.6, value: 33.6 },
+        { type: 'isf', key: 360, start_min: 360, label: '06:00', current: 45, recommended: 33.6, value: 33.6 },
+        { type: 'isf', key: 780, start_min: 780, label: '13:00', current: 38, recommended: 33.6, value: 33.6 },
+        { type: 'isf', key: 1200, start_min: 1200, label: '20:00', current: 50, recommended: 33.6, value: 33.6 },
+      ]);
+      assert.equal(await page.locator('#plan-badge').innerText(), '4',
+        'the Plan badge matches the four persisted segment items');
+      await page.close();
+      assert.deepEqual(openerProblems().slice(before), [],
+        'no opener problems while staging the exact-true ISF verdict');
     } finally { /* browser stays open; closed once in after() */ }
   });
 

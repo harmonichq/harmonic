@@ -26,4 +26,4 @@
 - [x] Update the safety, Plan, Surfaces, and parameter-analysis baseline specifications so stageability, direction, and queue register have one non-contradictory owner each.
 - [x] Update `AGENTS.md` so the shared staging invariant includes ISF without claiming that it uses basal caps, floors, status, or the consolidated profile.
 - [x] Run the full fast gate, every affected generator drift check, the public-tree checks, the Diagnose workstation browser suite, the frozen behavior replay, and the cockpit-shell browser suite.
-- [ ] Attach before/after Diagnose detail renders and raw replay output to the pull request.
+- [x] Attach before/after Diagnose detail renders and raw replay output to the pull request.

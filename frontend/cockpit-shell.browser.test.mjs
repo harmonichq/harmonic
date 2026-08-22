@@ -674,6 +674,8 @@ export async function S2(browser) {
       await chooseTab(page, id);
       assert.equal(await page.evaluate(() => location.pathname), `/app/${id}`);
     }
+    await page.waitForFunction(() =>
+      location.pathname === '/app/guide' && location.search === '?article=start-here');
     await page.goBack();
     await page.waitForFunction(() => location.pathname === '/app/settings');
     assert.equal(await page.evaluate(() => location.pathname), '/app/settings',

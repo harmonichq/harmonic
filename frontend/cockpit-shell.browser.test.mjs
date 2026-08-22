@@ -462,7 +462,7 @@ async function assertDestinationInventory(page) {
   const day = page.locator('.cockpit-day');
   assert.equal(await day.innerText(), 'Day');
   assert.equal(await day.evaluate((node) => node.tagName), 'A', 'Day keeps native link semantics');
-  assert.equal(await day.getAttribute('href'), '#day');
+  assert.equal(await day.getAttribute('href'), '/app/day');
   assert.equal(await day.locator('.cockpit-step-number').count(), 0, 'Day is never numbered');
   const dayStyle = await day.evaluate((node) => {
     const style = getComputedStyle(node);
@@ -675,6 +675,7 @@ export async function S2(browser) {
       assert.equal(await page.evaluate(() => location.pathname), `/app/${id}`);
     }
     await page.goBack();
+    await page.waitForFunction(() => location.pathname === '/app/settings');
     assert.equal(await page.evaluate(() => location.pathname), '/app/settings',
       'Back restores the preceding canonical page');
   } finally { await page.close(); }

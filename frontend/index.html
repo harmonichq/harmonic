@@ -5505,10 +5505,6 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           if (tab.value === 'guide') loadCatalog();       // #269: initial #guide deep-link
           if (tab.value === 'verify') {
             loadVerify();
-          } else if (currentRoute.kind !== 'PendingRoute') {
-            await loadVerify();
-            if (verifyTrials.value.some((trial) => trial.state === 'maturing')
-                && tab.value === 'diagnose') tab.value = 'verify';
           }
         }
 

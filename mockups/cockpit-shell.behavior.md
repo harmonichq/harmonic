@@ -20,7 +20,7 @@ S2 · The numbered Diagnose → Plan → Verify workflow, Day link, utility dest
   source: `frontend/index.html` cockpit top bar, footer utilities, and `shellGo`
   evidence: `STORY:cockpit-shell:S2` / exported `S2`
   old-fail/new-pass: base emits hash destinations and serves the duplicate-key address as a 404; revision emits canonical paths and renders the atomic invalid-link stop.
-  status: amended 2026-08-21 · pending replay on revision
+  status: amended 2026-08-21 · replayed-pass on revision
 
 S3 · Theme opens a radio menu; choosing Dark updates the rendered theme, checked state, persisted choice, and closes the menu.
   handlers/invariants: Theme `@click`; menu-row `@click="setDark(...)"`; `toggleDark` and `setDark`

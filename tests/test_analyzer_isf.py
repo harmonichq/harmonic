@@ -17,6 +17,7 @@ from ciq_autotune.analyzers.isf import (
     _recommend,
     analyze_isf,
     fasting_steps,
+    isf_asserts_move,
 )
 from ciq_autotune.events import BasalEvent, BolusEvent, CarbEntry, CgmReading
 from ciq_autotune.harm import HarmArm, HarmConfig, PrintedLow
@@ -26,6 +27,24 @@ from ciq_autotune.store import Store
 from ciq_autotune.uncertainty import Estimate
 
 ISF_36 = [(0, 36.0), (300, 36.0), (540, 36.0), (720, 36.0)]
+
+
+class IsfAssertsMoveTest(unittest.TestCase):
+    def test_requires_current_direction_and_a_real_recommendation(self):
+        cases = [
+            (None, "strengthen", 40.0, False, "no programmed value"),
+            (42.0, None, 40.0, False, "no direction"),
+            (42.0, "weaken", None, False, "direction only"),
+            (42.0, "strengthen", None, False, "held without recommendation"),
+            (42.0, "strengthen", 42.0, False, "rounded no-op"),
+            (42.0, "strengthen", 40.0, True, "strengthen move"),
+            (42.0, "weaken", 47.0, True, "sized weaken move"),
+        ]
+        for current, direction, recommended, expected, label in cases:
+            with self.subTest(label=label):
+                self.assertIs(
+                    isf_asserts_move(current, direction, recommended), expected
+                )
 
 
 def rw(day, start_h=0, end_h=8):

@@ -194,11 +194,14 @@ be the failure this capability exists to prevent.
 ### Requirement: The verdict is the only staging and delivery predicate
 
 The safety verdict — exposed as `SlotEstimate.asserts_move` for basal and as the I:C
-and correction-factor analyzers' own single eligibility flags — is what every downstream consumer reads to
-decide whether a change may move a deliverable schedule, be staged into a plan, or
-count toward a priority tally. **No other layer may re-derive an evidence floor of
-its own.** Not the consolidated-profile builder, not the ranking layer, not any
-frontend surface. This is the invariant this codebase has regressed on repeatedly:
+and correction-factor analyzers' own single eligibility flags — is what every
+downstream consumer reads to decide whether a change may move a deliverable schedule
+or be staged into a plan. Basal and I:C also use that same eligibility when counting
+actionable priority; correction-factor ranking remains independently priced from its
+direction and never treats stageability as its register or priority gate. **No other
+layer may re-derive an evidence floor of its own.** Not the consolidated-profile
+builder, not the ranking layer, not any frontend surface. This is the invariant this
+codebase has regressed on repeatedly:
 each recurrence took the form of a second predicate — a display-only thinness marker,
 a `not wide` check, an extra "has a recommendation" test — placed at one call site
 while the verdict underneath kept admitting the move, so the change was held in one

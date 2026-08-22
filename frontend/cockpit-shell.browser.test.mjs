@@ -73,6 +73,7 @@ const CDN = new Map([
 ]);
 const ADVISORY = 'Advisory only — review with your clinician before changing pump settings.';
 const TABS = ['diagnose', 'plan', 'verify', 'day', 'guide', 'settings'];
+const S2_ROUTE_SEQUENCE = ['diagnose', 'plan', 'verify', 'day', 'settings', 'guide'];
 const VIEWPORTS = [
   { width: 1440, height: 900 },
   { width: 1280, height: 800 },
@@ -327,8 +328,14 @@ async function routeApp(page, options = {}) {
       : url.pathname.startsWith('/mockups/') ? join(ROOT, url.pathname.slice(1))
       : join(FRONTEND, url.pathname.slice(1));
     try {
+      let body = await readFile(file);
+      if (options.diagnoseState && url.pathname === '/diagnose-workstation.js') {
+        body = body.toString().replace(
+          "state = queryState('typical');",
+          `state = queryState('${options.diagnoseState}');`);
+      }
       return route.fulfill({
-        body: await readFile(file), contentType: MIME[extname(file)] || 'application/octet-stream',
+        body, contentType: MIME[extname(file)] || 'application/octet-stream',
       });
     } catch {
       return route.abort('failed');
@@ -375,7 +382,12 @@ async function openApp(browser, options = {}) {
 async function chooseTab(page, id) {
   const trigger = page.locator(`[data-shell-tab="${id}"]:visible`).first();
   await trigger.click();
-  await page.waitForFunction((tab) => location.pathname === `/app/${tab}`, id);
+  const expected = {
+    day: '/app/day?date=2026-07-15',
+    guide: '/app/guide?article=start-here',
+  }[id] || `/app/${id}`;
+  await page.waitForFunction((path) => location.pathname + location.search === path, expected);
+  return expected;
 }
 
 async function proveRedOnce(term, check, mutate) {
@@ -670,14 +682,13 @@ export async function S2(browser) {
   const page = await openApp(browser, { promptCount: 2 });
   try {
     await assertDestinationInventory(page);
-    for (const id of TABS) {
-      await chooseTab(page, id);
-      assert.equal(await page.evaluate(() => location.pathname), `/app/${id}`);
+    for (const id of S2_ROUTE_SEQUENCE) {
+      const expected = await chooseTab(page, id);
+      assert.equal(await page.evaluate(() => location.pathname + location.search), expected);
     }
-    await page.waitForFunction(() =>
-      location.pathname === '/app/guide' && location.search === '?article=start-here');
     await page.goBack();
-    await page.waitForFunction(() => location.pathname === '/app/settings');
+    assert.equal(await page.evaluate(() => location.pathname + location.search), '/app/settings',
+      'Back restores the preceding canonical page');
     assert.equal(await page.evaluate(() => location.pathname), '/app/settings',
       'Back restores the preceding canonical page');
   } finally { await page.close(); }
@@ -902,8 +913,8 @@ export async function S10(browser) {
 }
 
 async function assertRetiredOccurrenceRoute(page) {
-  assert.equal(await page.evaluate(() => location.pathname), '/app/diagnose',
-    'the retired occurrence route must leave the canonical Diagnose path');
+  assert.equal(await page.evaluate(() => location.pathname + location.search), '/app/diagnose',
+    'the retired occurrence route must leave the exact canonical Diagnose address');
   const duplicates = await page.evaluate(() => ({
     dialogs: [...document.querySelectorAll('[role="dialog"]')]
       .filter((node) => /occurrences/i.test(
@@ -922,6 +933,7 @@ async function openRetiredOccurrence(browser, options = {}) {
   const page = await openApp(browser, {
     ...options,
     initialPath: '/app/diagnose',
+    diagnoseState: 'dense',
     findingsInput: {
       analysis: FINDINGS_PROJECTION.inputs.analysis,
       exposures: FINDINGS_PROJECTION.inputs.exposures,
@@ -929,6 +941,8 @@ async function openRetiredOccurrence(browser, options = {}) {
     },
     exposuresInput: FINDINGS_PROJECTION.inputs.exposures,
   });
+  // Screenshot-only density is selected by the browser adapter's module copy,
+  // never by a product URL (ADR 53).
   await page.locator('[aria-label="Inspector"]').waitFor();
   const row = page.locator('#level .qrow[data-state="finding"]').first();
   try {

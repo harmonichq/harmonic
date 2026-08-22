@@ -14,12 +14,12 @@ S1 · The viewport stays fixed while each populated pane scrolls internally, and
   evidence: `STORY:cockpit-shell:S1` / exported `S1`; full matrix remains in the surrounding Cockpit browser gate
   status: replayed-pass on base
 
-S2 · The numbered Diagnose → Plan → Verify workflow, Day link, utility destinations, and canonical `/app/<page>` route all route through their visible public affordances; a pending destination leaves the applied page and URL untouched, repeated Back/Forward restores a nondefault Day and Guide article byte-for-byte, and the mobile drawer completes and closes its route.
+S2 · The numbered Diagnose → Plan → Verify workflow, Day link, utility destinations, and canonical `/app/<page>` route all route through their visible public affordances; a clicked pending destination leaves the applied page and URL untouched, a restored pending destination immediately makes the prior selection and evidence inert, transport failure publishes the target page's data-error state without named evidence, repeated Back/Forward restores a nondefault Day and Guide article byte-for-byte, and the mobile drawer completes and closes its route.
   amendment: Connor · 2026-08-21 · ADR 53, approved work order: paths identify pages and the URL adapter is the sole route-state authority.
   handlers/invariants: `@click="shellGo(...)"`; native Day link; mobile drawer; `url-state.js`
   source: `frontend/index.html` cockpit top bar, footer utilities, and `shellGo`
   evidence: `STORY:cockpit-shell:S2` / exported `S2`
-  old-fail/new-pass: base emits hash destinations and serves the duplicate-key address as a 404; the first revision wrote `/app/day` before its held resolver returned; the completed revision emits only resolved canonical paths, repeats `/app/day?date=2026-07-14` and `/app/guide?article=reading-day` byte-for-byte through Back/Forward, and renders restored invalid membership with no current page.
+  old-fail/new-pass: base emits hash destinations and serves the duplicate-key address as a 404; earlier revisions wrote `/app/day` before a held click resolved, retained Plan evidence after Forward had restored `/app/day`, and treated `/status` failure as valid Day membership; the completed revision keeps clicked state paired, makes restored state inert, publishes Day's data error without a named date, repeats `/app/day?date=2026-07-14` and `/app/guide?article=reading-day` byte-for-byte through Back/Forward, and renders restored invalid membership with no current page.
   status: amended 2026-08-21 · replayed-pass on revision
 
 S3 · Theme opens a radio menu; choosing Dark updates the rendered theme, checked state, persisted choice, and closes the menu.
@@ -78,9 +78,9 @@ S10 · Opening Theme and hovering the unchecked row paints a neutral 95% panel /
 
 R1 · The obsolete occurrence-list route stays retired while the Diagnose Inspector remains the sole populated occurrence-evidence path; malformed canonical addresses stop in the shell without applying a selection.
   sanction: Connor · 2026-08-18 · "the dead `occurrenceModal` hash machinery goes with them."
-  handlers/invariants: `/app/diagnose` remains the sole Inspector route; no accessible occurrences dialog or second roster appears; a public finding-row click populates the Inspector
+  handlers/invariants: exact `/app/diagnose` remains the sole Inspector route; no accessible occurrences dialog or second roster appears; a public finding-row click populates the Inspector; restored `/app/diagnose?` stops as the exact malformed address with no applied selection
   source: `frontend/index.html`; generated findings/exposures inputs in `frontend/__fixtures__/findings-projection.json`
-  evidence: `STORY:cockpit-shell:R1` / exported `R1`; source-adjacent `RETIRED:Connor:2026-08-18`; independent canonical-path and duplicate-route mutations
+  evidence: `STORY:cockpit-shell:R1` / exported `R1`; source-adjacent `RETIRED:Connor:2026-08-18`; full-address, malformed-entry, and duplicate-route assertions
   status: retired 2026-08-21 · replayed-pass on revision
 
 ## Inventory completeness

@@ -1699,9 +1699,14 @@ html.dark .viz .tie:hover::before { opacity:.13; }
          Model view's reasoning folds in as tier-2 inline disclosure (ADR 0024). Both
          are self-contained components; the parent supplies the selected date. -->
     <div v-show="tab === 'day'">
-      <day-navigator :date="dailyDate" @pick="navJumpTo"></day-navigator>
+      <day-navigator v-if="!dailyRouteError" :date="dailyDate" @pick="navJumpTo"></day-navigator>
       <day-surface v-if="dailyDate" :key="dailyDate" :date="dailyDate" :dev="devMode"
                    :highlight="dailyHighlight"></day-surface>
+      <div v-else-if="dailyRouteError" class="placeholder" role="alert" data-route-data-error="day">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 7v6M12 17h.01"/></svg>
+        <h2>Day is unavailable</h2>
+        <p>{{ dailyRouteError }}</p>
+      </div>
       <div v-else class="placeholder">
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16"/></svg>
         <h2>Day</h2>
@@ -3862,6 +3867,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         // The retired window model (#22/#35 presets, custom range, anchor+lookback
         // stack) is gone; nav bounds come from /status, never re-derived here.
         const dailyDate = ref(null);
+        const dailyRouteError = ref(null);
 
         // Earliest / latest pump-local day WITH data, from /status (#137). These
         // bound the arrows and the date-picker; null until /status resolves.
@@ -4147,27 +4153,39 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         });
 
         const routeResolvers = createRouteResolver();
-        routeResolvers.register('day', async (query, transaction) => {
-          let routeStatus = status.value;
-          if (!routeStatus) {
-            try { routeStatus = await dataFetchStatus(); }
-            catch {
-              transaction.dailyDate = query.date || null;
-              return query;
+        routeResolvers.register('day', {
+          async resolve(query, transaction) {
+            const routeStatus = status.value || await dataFetchStatus();
+            const explicit = query.date;
+            const earliest = routeStatus?.earliest_data_day, latest = routeStatus?.latest_data_day;
+            if (explicit && (!earliest || !latest || explicit < earliest || explicit > latest)) {
+              return transaction.invalid();
             }
-          }
-          transaction.status = routeStatus;
-          const explicit = query.date;
-          const earliest = routeStatus?.earliest_data_day, latest = routeStatus?.latest_data_day;
-          if (explicit && (!earliest || !latest || explicit < earliest || explicit > latest)) {
-            return { invalid: true };
-          }
-          transaction.dailyDate = explicit || latest || null;
-          return transaction.dailyDate ? { date: transaction.dailyDate } : {};
+            const date = explicit || latest || null;
+            return transaction.resolved(date ? { date } : {}, { status: routeStatus, date });
+          },
+          publish(state, outcome) {
+            if (outcome.kind === 'RouteDataError') {
+              status.value = null;
+              dailyDate.value = null;
+              dailyRouteError.value = outcome.message;
+              return;
+            }
+            status.value = state.status;
+            dailyDate.value = state.date;
+            dailyRouteError.value = null;
+          },
         });
-        routeResolvers.register('guide', (query) => {
-          const article = query.article || 'start-here';
-          return KB_ARTICLES.some((entry) => entry.slug === article) ? { article } : { invalid: true };
+        routeResolvers.register('guide', {
+          resolve(query, transaction) {
+            const article = query.article || 'start-here';
+            return KB_ARTICLES.some((entry) => entry.slug === article)
+              ? transaction.resolved({ article }, { article }) : transaction.invalid();
+          },
+          publish(state) {
+            kbCurrent.value = state.article;
+            kbFetchArticle(state.article);
+          },
         });
 
         function setTab(t, afterCommit) {
@@ -4249,21 +4267,27 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           routeError.value = route;
           tab.value = null;
           dailyDate.value = null;
+          dailyRouteError.value = null;
           kbCurrent.value = null;
           return true;
         }
 
-        function commitResolvedRoute(resolved, pendingRoute, generation, transaction, options) {
+        function makeAppliedRouteInert(generation) {
           if (generation !== routeGeneration) return false;
+          routeError.value = null;
+          tab.value = null;
+          dailyDate.value = null;
+          kbCurrent.value = null;
+          return true;
+        }
+
+        function commitResolvedRoute(resolution, pendingRoute, generation, options) {
+          if (generation !== routeGeneration) return false;
+          const resolved = resolution.outcome;
           if (options.history === 'push') pushRoute(resolved);
           else if (options.history === 'replace'
               || serializeRoute(resolved) !== serializeRoute(pendingRoute)) replaceRoute(resolved);
-          if (Object.hasOwn(transaction, 'status')) status.value = transaction.status;
-          if (resolved.page === 'day') dailyDate.value = transaction.dailyDate ?? resolved.query.date ?? null;
-          if (resolved.page === 'guide') {
-            kbCurrent.value = resolved.query.article;
-            kbFetchArticle(resolved.query.article);
-          }
+          resolution.publish();
           routeError.value = null;
           tab.value = resolved.page;
           setTabLoads(resolved.page);
@@ -4271,24 +4295,42 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           return true;
         }
 
+        function commitRouteDataError(resolution, pendingRoute, generation, options) {
+          if (generation !== routeGeneration) return false;
+          if (options.history === 'push') pushRoute(pendingRoute);
+          else if (options.history === 'replace') replaceRoute(pendingRoute);
+          dailyDate.value = null;
+          kbCurrent.value = null;
+          resolution.publish();
+          routeError.value = null;
+          tab.value = resolution.outcome.page;
+          if (options.afterCommit) options.afterCommit(resolution.outcome);
+          return true;
+        }
+
         async function applyPendingRoute(route, options = {}) {
           const generation = ++routeGeneration;
+          if (options.history === 'restore') makeAppliedRouteInert(generation);
           let pendingRoute = route;
-          const transaction = {};
           if (route.kind === 'LegacyRedirect') {
             pendingRoute = parseRoute(route.to);
             options = { ...options, history: 'replace' };
           }
           if (pendingRoute.kind !== 'PendingRoute') return commitInvalidRoute(pendingRoute, generation);
-          let resolved;
-          try { resolved = await routeResolvers.resolve(pendingRoute, transaction); }
-          catch { return false; }
+          const resolution = await routeResolvers.dispatch(pendingRoute);
           if (generation !== routeGeneration) return false;
-          if (resolved.kind === 'InvalidRoute') return commitInvalidRoute(resolved, generation);
-          return commitResolvedRoute(resolved, pendingRoute, generation, transaction,
+          if (resolution.outcome.kind === 'InvalidRoute') {
+            return commitInvalidRoute(resolution.outcome, generation);
+          }
+          if (resolution.outcome.kind === 'RouteDataError') {
+            return commitRouteDataError(resolution, pendingRoute, generation,
+              { history: options.history || 'restore', afterCommit: options.afterCommit });
+          }
+          return commitResolvedRoute(resolution, pendingRoute, generation,
             { history: options.history || 'restore', afterCommit: options.afterCommit });
         }
-        const stopRouteSubscription = subscribeRoutes((route) => applyPendingRoute(route));
+        const stopRouteSubscription = subscribeRoutes((route) =>
+          applyPendingRoute(route, { history: 'restore' }));
         function setTabLoads(t) {
           if (t === 'plan' && !pumpSettings.value) loadPumpSettings();
           if (t === 'diagnose') loadAudit();
@@ -5688,7 +5730,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           status, statusLabel, statusBadgeClass, fetching, fetchNow,
           pumpSettings, pumpSettingsError, formatStartTime,
           backtest, backtestError, loadingBacktest, loadBacktest,
-          dailyDate, dailyLatest,
+          dailyDate, dailyLatest, dailyRouteError,
           // #126 carb quick-log
           QL_PRESETS, QL_TIMES, qlOpen, qlGrams, qlWhen, qlCustomAt, qlLoggable,
           qlAnchorRef, qlPopoverStyle,

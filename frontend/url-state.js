@@ -27,6 +27,24 @@ const QUERY_ORDER = Object.freeze({
 function freeze(value) { return Object.freeze(value); }
 function invalid(address, reason) { return freeze({ kind: 'InvalidRoute', address, reason }); }
 function pending(page, query) { return freeze({ kind: 'PendingRoute', page, query: freeze(query) }); }
+function routeDataError(route, error) {
+  return freeze({
+    kind: 'RouteDataError', page: route.page, address: serializeRoute(route),
+    message: (error && error.message) || String(error),
+  });
+}
+function routeTransaction(outcome, publish = null, state) {
+  let published = false;
+  return freeze({
+    outcome,
+    publish() {
+      if (published) return false;
+      published = true;
+      if (publish && outcome.kind !== 'InvalidRoute') publish(state, outcome);
+      return true;
+    },
+  });
+}
 function decodeSearch(search, address) {
   try { return new URLSearchParams(search); } catch { return null; }
 }
@@ -93,9 +111,13 @@ export function parseRoute(address) {
   const browser = typeof window !== 'undefined';
   const source = address ?? (browser ? window.location.href : 'http://localhost/app/diagnose');
   try { url = new URL(source, browser ? window.location.origin : 'http://localhost'); } catch { return invalid(String(source), 'malformed-address'); }
-  const shown = url.pathname + url.search + url.hash;
+  const authorityStart = url.href.indexOf('//');
+  const pathStart = authorityStart < 0 ? -1 : url.href.indexOf('/', authorityStart + 2);
+  const shown = pathStart < 0
+    ? url.pathname + url.search + url.hash : url.href.slice(pathStart);
   if (url.pathname === '/') return freeze({ kind: 'LegacyRedirect', address: shown, to: '/app/diagnose' });
   if (!url.pathname.startsWith('/app/')) return invalid(shown, 'unknown-page');
+  if (shown.endsWith('?') || shown.endsWith('#')) return invalid(shown, 'trailing-separator');
   if (url.hash) return invalid(shown, 'fragment');
   const page = url.pathname.slice('/app/'.length);
   if (!PAGE_IDS.has(page) || url.pathname !== `/app/${page}`) return invalid(shown, 'unknown-page');
@@ -167,17 +189,42 @@ export function createRouteResolver() {
   const resolvers = new Map();
   return freeze({
     register(page, resolver) {
-      if (!PAGE_IDS.has(page) || typeof resolver !== 'function') throw new TypeError('invalid route resolver');
+      const consumer = resolver && typeof resolver.resolve === 'function'
+        && typeof resolver.publish === 'function' ? resolver : null;
+      if (!PAGE_IDS.has(page) || !consumer) throw new TypeError('invalid route resolver');
       if (resolvers.has(page)) throw new Error(`route resolver already registered for ${page}`);
-      resolvers.set(page, resolver);
-      return () => { if (resolvers.get(page) === resolver) resolvers.delete(page); };
+      resolvers.set(page, consumer);
+      return () => { if (resolvers.get(page) === consumer) resolvers.delete(page); };
     },
-    async resolve(route, context) {
-      if (route.kind !== 'PendingRoute') return route;
-      const resolver = resolvers.get(route.page);
-      if (!resolver) return resolveRoute(route);
-      const result = await resolver(route.query, context);
-      return resolveRoute(route, { [route.page]: () => result });
+    async dispatch(route) {
+      if (route.kind !== 'PendingRoute') return routeTransaction(route);
+      const consumer = resolvers.get(route.page);
+      if (!consumer) return routeTransaction(resolveRoute(route));
+      const transaction = freeze({
+        resolved(query, state) { return freeze({ kind: 'ResolvedPage', query, state }); },
+        invalid() { return freeze({ kind: 'InvalidMembership' }); },
+        dataError(error, state) { return freeze({ kind: 'PageDataError', error, state }); },
+      });
+      let staged;
+      try {
+        staged = await consumer.resolve(route.query, transaction);
+      } catch (error) {
+        staged = transaction.dataError(error);
+      }
+      if (!staged || typeof staged !== 'object') {
+        return routeTransaction(invalid(serializeRoute(route), 'resolver-contract'));
+      }
+      if (staged.kind === 'InvalidMembership') {
+        return routeTransaction(invalid(serializeRoute(route), 'membership'));
+      }
+      if (staged.kind === 'PageDataError') {
+        return routeTransaction(routeDataError(route, staged.error), consumer.publish, staged.state);
+      }
+      if (staged.kind !== 'ResolvedPage') {
+        return routeTransaction(invalid(serializeRoute(route), 'resolver-contract'));
+      }
+      const outcome = resolveRoute(route, { [route.page]: () => staged.query });
+      return routeTransaction(outcome, consumer.publish, staged.state);
     },
   });
 }

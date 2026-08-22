@@ -75,30 +75,38 @@ const ADVISORY = 'Advisory only — review with your clinician before changing p
 const TABS = ['diagnose', 'plan', 'verify', 'day', 'guide', 'settings'];
 const S2_ROUTE_SEQUENCE = ['diagnose', 'plan', 'verify', 'day', 'settings', 'guide'];
 const DIAGNOSE_ROUTE_FIXTURE_RESOLVER = `
-        routeResolvers.register('diagnose', async (query) => {
-          if (!query.view) return query;
-          const projection = await dataFetchDiagnoseEventComparison({
-            view: query.view,
-            factor: query.factor,
-            window: query.start_min == null ? null : {
-              start_min: Number(query.start_min), end_min: Number(query.end_min),
-            },
-            another: query.another === '1',
-            occurrenceId: query.occ,
-          });
-          const factor = query.factor || projection?.coordinates?.factor;
-          const options = projection?.coordinates?.factor_options || [];
-          if (!factor || !options.some((option) => option.key === factor)) return { invalid: true };
-          return { ...query, factor };
+        routeResolvers.register('diagnose', {
+          async resolve(query, transaction) {
+            if (!query.view) return transaction.resolved(query);
+            const projection = await dataFetchDiagnoseEventComparison({
+              view: query.view,
+              factor: query.factor,
+              window: query.start_min == null ? null : {
+                start_min: Number(query.start_min), end_min: Number(query.end_min),
+              },
+              another: query.another === '1',
+              occurrenceId: query.occ,
+            });
+            const factor = query.factor || projection?.coordinates?.factor;
+            const options = projection?.coordinates?.factor_options || [];
+            if (!factor || !options.some((option) => option.key === factor)) return transaction.invalid();
+            return transaction.resolved({ ...query, factor });
+          },
+          publish() {},
         });`;
 const VERIFY_ROUTE_FIXTURE_RESOLVER = `
-        routeResolvers.register('verify', async (query) => {
-          const roster = await dataFetchVerifyTrials();
-          const trials = roster?.trials || [];
-          const trial = query.trial
-            ? trials.find((candidate) => candidate.id === query.trial)
-            : trials.find((candidate) => candidate.state === 'maturing') || trials[0];
-          return trial ? { trial: trial.id } : {};
+        routeResolvers.register('verify', {
+          async resolve(query, transaction) {
+            const roster = await dataFetchVerifyTrials();
+            const trials = roster?.trials || [];
+            const trial = query.trial
+              ? trials.find((candidate) => candidate.id === query.trial)
+              : trials.find((candidate) => candidate.state === 'maturing') || trials[0];
+            return query.trial && !trial
+              ? transaction.invalid()
+              : transaction.resolved(trial ? { trial: trial.id } : {});
+          },
+          publish() {},
         });`;
 const VIEWPORTS = [
   { width: 1440, height: 900 },
@@ -794,6 +802,52 @@ export async function S2(browser) {
     await waitForCanonicalRoute(pendingDay, 'day', '/app/day?date=2026-07-15');
   } finally { await pendingDay.close(); }
 
+  let releaseRestoredDay;
+  let restoredDayStatusRequested;
+  let initialHistoryStatusFinished;
+  let historyStatusRequestCount = 0;
+  const restoredDayStatusStarted = new Promise((resolve) => { restoredDayStatusRequested = resolve; });
+  const initialHistoryStatusDone = new Promise((resolve) => { initialHistoryStatusFinished = resolve; });
+  const heldRestoredDayStatus = new Promise((resolve) => { releaseRestoredDay = resolve; });
+  const restoredHistory = await openApp(browser, {
+    statusRoute: async (route) => {
+      historyStatusRequestCount += 1;
+      if (historyStatusRequestCount === 1) {
+        await route.fulfill({ status: 401, body: 'unauthorized' });
+        initialHistoryStatusFinished();
+        return;
+      }
+      restoredDayStatusRequested();
+      await heldRestoredDayStatus;
+      return route.fulfill({ status: 401, body: 'unauthorized' });
+    },
+  });
+  try {
+    await initialHistoryStatusDone;
+    await chooseTab(restoredHistory, 'plan');
+    await restoredHistory.locator('.active-profile-ref').waitFor();
+    await restoredHistory.evaluate(() => history.pushState(null, '', '/app/day'));
+    await restoredHistory.goBack();
+    await waitForCanonicalRoute(restoredHistory, 'plan', '/app/plan');
+    const forward = restoredHistory.goForward();
+    await restoredDayStatusStarted;
+    assert.equal(await restoredHistory.evaluate(() => location.pathname + location.search + location.hash), '/app/day',
+      'Forward changes the browser address before restored Day resolution completes');
+    assert.equal(await restoredHistory.locator('[data-shell-tab][aria-current]').count(), 0,
+      'a restored pending route has no applied page selection');
+    assert.equal(await restoredHistory.locator('.active-profile-ref').isVisible(), false,
+      'restored Day cannot show the previously applied Plan under its address');
+    releaseRestoredDay();
+    await forward;
+    await waitForCanonicalRoute(restoredHistory, 'day', '/app/day');
+    await restoredHistory.locator('[data-route-data-error="day"]').waitFor();
+    assert.equal(await restoredHistory.locator('day-surface').count(), 0,
+      'a failed restored resolver completes as Day data error without named evidence');
+  } finally {
+    releaseRestoredDay();
+    await restoredHistory.close();
+  }
+
   const history = await openApp(browser, { initialPath: '/app/day?date=2026-07-14' });
   try {
     await waitForCanonicalRoute(history, 'day', '/app/day?date=2026-07-14');
@@ -890,6 +944,9 @@ export async function S2(browser) {
     await waitForCanonicalRoute(statusFailure, 'day', '/app/day?date=2026-07-15');
     assert.equal(await statusFailure.locator('[data-route-error="invalid-link"]').count(), 0,
       'a Day status transport/auth error stays a Day data error, never an invalid link');
+    await statusFailure.locator('[data-route-data-error="day"]').waitFor();
+    assert.equal(await statusFailure.locator('day-surface').count(), 0,
+      'a Day status transport/auth error applies no unvalidated named-day evidence');
   } finally { await statusFailure.close(); }
 
   const mobile = await openApp(browser, { viewport: { width: 390, height: 844 } });
@@ -1104,7 +1161,7 @@ export async function S10(browser) {
 }
 
 async function assertRetiredOccurrenceRoute(page) {
-  assert.equal(await page.evaluate(() => location.pathname + location.search), '/app/diagnose',
+  assert.equal(await page.evaluate(() => location.href.slice(location.origin.length)), '/app/diagnose',
     'the retired occurrence route must leave the exact canonical Diagnose address');
   const duplicates = await page.evaluate(() => ({
     dialogs: [...document.querySelectorAll('[role="dialog"]')]
@@ -1123,7 +1180,7 @@ async function openRetiredOccurrence(browser, options = {}) {
   assert.ok(lever, 'R1 requires a generated scenario lever');
   const page = await openApp(browser, {
     ...options,
-    initialPath: '/app/diagnose',
+    initialPath: process.env.COCKPIT_ENTRY_PATH || '/app/diagnose',
     diagnoseState: 'dense',
     findingsInput: {
       analysis: FINDINGS_PROJECTION.inputs.analysis,
@@ -1179,6 +1236,20 @@ export async function R1(browser) {
         return () => page.locator('#r1-retired-route-mutation').evaluate((node) => node.remove());
       });
 
+    await page.evaluate(() => {
+      history.pushState(null, '', '/app/diagnose?');
+      dispatchEvent(new PopStateEvent('popstate'));
+    });
+    await assertInvalidStop(page, '/app/diagnose?');
+    assert.equal(await page.evaluate(() => location.href.slice(location.origin.length)),
+      '/app/diagnose?', 'R1 preserves the exact malformed canonical address at its stop');
+    await page.evaluate(() => {
+      history.replaceState(null, '', '/app/diagnose');
+      dispatchEvent(new PopStateEvent('popstate'));
+    });
+    await waitForCanonicalRoute(page, 'diagnose', '/app/diagnose');
+    await assertRetiredOccurrenceRoute(page);
+
     const output = `cockpit-shell retirement R1: ${r1Sanction[1].trim()} · ${r1Sanction[2].trim()} · "${r1Sanction[3].trim()}"`;
     const captured = [];
     const originalLog = console.log;
@@ -1198,9 +1269,14 @@ export const COCKPIT_SHELL_STORIES = Object.freeze([
 
 test('cockpit shell behavior ledger replays every registered story', async () => {
   assert.ok(COCKPIT_SHELL_STORIES.length > 0, 'the cockpit shell registry must not be empty');
+  const requestedStory = process.env.COCKPIT_STORY;
+  const stories = requestedStory
+    ? COCKPIT_SHELL_STORIES.filter((story) => story.name === requestedStory)
+    : COCKPIT_SHELL_STORIES;
+  assert.ok(stories.length > 0, `the requested cockpit story ${requestedStory} must exist`);
   const browser = await launch();
-  for (const story of COCKPIT_SHELL_STORIES) await story(browser);
-  console.log(`cockpit-shell applicable stories: ${COCKPIT_SHELL_STORIES.length}`);
+  for (const story of stories) await story(browser);
+  console.log(`cockpit-shell applicable stories: ${stories.length}`);
 });
 
 /* #736 term 8 re-settled this. Log carbs used to sit on the user-claim ochre

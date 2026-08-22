@@ -57,6 +57,7 @@ from .analyzers.ic import BLOCK_WINDOW_DAYS
 # on. `window_membership` asks the same question for the same reason, so this is
 # one definition read twice, never a second copy of the mapping.
 from .analyzers.scenario.levers import outcome_kind
+from .event_comparison import EVENT_CHARTS
 from .safety import Status
 from .window_membership import DAY_MINUTES, WindowQuery, outcome_minute
 
@@ -397,6 +398,7 @@ class FindingsProjection:
         rows = []
         for lever, entry in by_lever.items():
             entry["appearances"].sort(key=lambda a: a["family"])
+            coordinate = EVENT_CHARTS.get(lever)
             evidence, verdict_counts, verdict_counts_by_family = _lever_evidence(
                 lever, entry["families"], in_window,
             )
@@ -423,6 +425,9 @@ class FindingsProjection:
                 # roster it scopes share one denominator.
                 verdict_counts=verdict_counts,
                 verdict_counts_by_family=verdict_counts_by_family,
+                event_chart=(dict(coordinate)
+                             if coordinate and coordinate["view"] in entry["families"]
+                             else None),
             ))
         return rows
 
@@ -598,7 +603,7 @@ def _row(**fields) -> dict:
         "support": None, "reason": None, "annotation": None, "members": None,
         "lever": None, "appearances": None, "episodes": None,
         "evidence": None, "verdict_counts": None, "verdict_counts_by_family": None,
-        "chips": None, "window_scope": None,
+        "chips": None, "window_scope": None, "event_chart": None,
     }
     row.update(fields)
     row["chips"] = _chips_for(row)

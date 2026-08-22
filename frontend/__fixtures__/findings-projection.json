@@ -7167,6 +7167,32 @@
    ],
    "window_days": 30
   },
+  "event_charts": {
+   "carb_undercount": {
+    "factor": "carb_undercount",
+    "view": "meals"
+   },
+   "correction_on_iob": {
+    "factor": "correction_on_iob",
+    "view": "lows"
+   },
+   "correction_stacking": {
+    "factor": "correction_stacking",
+    "view": "lows"
+   },
+   "late_bolus": {
+    "factor": "late_bolus",
+    "view": "meals"
+   },
+   "meal_over_delivery": {
+    "factor": "meal_over_delivery",
+    "view": "meals"
+   },
+   "over_treated_low": {
+    "factor": "over_treated_low",
+    "view": "lows"
+   }
+  },
   "exposures": {
    "exposures": {
     "correction_clusters": {
@@ -7712,6 +7738,7 @@
       "value": 6.0,
       "wide": false
      },
+     "event_chart": null,
      "evidence": null,
      "id": "ic:0",
      "kind": "setting",
@@ -7759,6 +7786,7 @@
       "value": 4.2857,
       "wide": false
      },
+     "event_chart": null,
      "evidence": null,
      "id": "ic:720",
      "kind": "setting",
@@ -7798,6 +7826,7 @@
      "direction": "raise",
      "episodes": null,
      "estimate": null,
+     "event_chart": null,
      "evidence": null,
      "id": "basal:30-90",
      "kind": "setting",
@@ -7876,6 +7905,7 @@
       "value": 0.998,
       "wide": false
      },
+     "event_chart": null,
      "evidence": null,
      "id": "basal:330-360",
      "kind": "setting",
@@ -7944,6 +7974,10 @@
      "direction": null,
      "episodes": 1,
      "estimate": null,
+     "event_chart": {
+      "factor": "over_treated_low",
+      "view": "lows"
+     },
      "evidence": [
       {
        "date": "2026-08-17",
@@ -8091,6 +8125,10 @@
      "direction": null,
      "episodes": 2,
      "estimate": null,
+     "event_chart": {
+      "factor": "carb_undercount",
+      "view": "meals"
+     },
      "evidence": [
       {
        "date": "2026-08-17",
@@ -8214,6 +8252,10 @@
      "direction": null,
      "episodes": 1,
      "estimate": null,
+     "event_chart": {
+      "factor": "correction_stacking",
+      "view": "lows"
+     },
      "evidence": [
       {
        "date": "2026-08-17",
@@ -8365,6 +8407,7 @@
       "value": 4.2857,
       "wide": false
      },
+     "event_chart": null,
      "evidence": null,
      "id": "ic:720",
      "kind": "setting",
@@ -8417,6 +8460,10 @@
      "direction": null,
      "episodes": 1,
      "estimate": null,
+     "event_chart": {
+      "factor": "over_treated_low",
+      "view": "lows"
+     },
      "evidence": [
       {
        "date": "2026-08-17",
@@ -8508,6 +8555,10 @@
      "direction": null,
      "episodes": 1,
      "estimate": null,
+     "event_chart": {
+      "factor": "correction_stacking",
+      "view": "lows"
+     },
      "evidence": [
       {
        "date": "2026-08-17",
@@ -8591,6 +8642,7 @@
       "value": 29.4,
       "wide": true
      },
+     "event_chart": null,
      "evidence": null,
      "id": "isf",
      "kind": "setting",
@@ -8624,6 +8676,7 @@
      "direction": null,
      "episodes": null,
      "estimate": null,
+     "event_chart": null,
      "evidence": null,
      "id": "basal:1170-1260",
      "kind": "setting",
@@ -8749,6 +8802,7 @@
       "value": 4.2857,
       "wide": false
      },
+     "event_chart": null,
      "evidence": null,
      "id": "ic:720",
      "kind": "setting",
@@ -8788,6 +8842,7 @@
      "direction": "raise",
      "episodes": null,
      "estimate": null,
+     "event_chart": null,
      "evidence": null,
      "id": "basal:30-90",
      "kind": "setting",
@@ -8866,6 +8921,7 @@
       "value": 0.998,
       "wide": false
      },
+     "event_chart": null,
      "evidence": null,
      "id": "basal:330-360",
      "kind": "setting",
@@ -8934,6 +8990,10 @@
      "direction": null,
      "episodes": 1,
      "estimate": null,
+     "event_chart": {
+      "factor": "over_treated_low",
+      "view": "lows"
+     },
      "evidence": [
       {
        "date": "2026-08-17",
@@ -9081,6 +9141,10 @@
      "direction": null,
      "episodes": 2,
      "estimate": null,
+     "event_chart": {
+      "factor": "carb_undercount",
+      "view": "meals"
+     },
      "evidence": [
       {
        "date": "2026-08-17",
@@ -9204,6 +9268,10 @@
      "direction": null,
      "episodes": 1,
      "estimate": null,
+     "event_chart": {
+      "factor": "correction_stacking",
+      "view": "lows"
+     },
      "evidence": [
       {
        "date": "2026-08-17",
@@ -9353,6 +9421,7 @@
       "value": 4.2857,
       "wide": false
      },
+     "event_chart": null,
      "evidence": null,
      "id": "ic:720",
      "kind": "setting",
@@ -9390,6 +9459,7 @@
      "direction": null,
      "episodes": null,
      "estimate": null,
+     "event_chart": null,
      "evidence": null,
      "id": "basal:750-840",
      "kind": "setting",
@@ -9481,6 +9551,7 @@
       "value": 29.4,
       "wide": true
      },
+     "event_chart": null,
      "evidence": null,
      "id": "isf",
      "kind": "setting",
@@ -9556,6 +9627,7 @@
       "value": 0.998,
       "wide": false
      },
+     "event_chart": null,
      "evidence": null,
      "id": "basal:330-360",
      "kind": "setting",
@@ -9617,6 +9689,7 @@
       "value": 1.261,
       "wide": false
      },
+     "event_chart": null,
      "evidence": null,
      "id": "basal:390-420",
      "kind": "setting",
@@ -9678,6 +9751,7 @@
       "value": 29.4,
       "wide": true
      },
+     "event_chart": null,
      "evidence": null,
      "id": "isf",
      "kind": "setting",
@@ -9753,6 +9827,7 @@
       "value": 4.2857,
       "wide": false
      },
+     "event_chart": null,
      "evidence": null,
      "id": "ic:720",
      "kind": "setting",
@@ -9792,6 +9867,7 @@
      "direction": "raise",
      "episodes": null,
      "estimate": null,
+     "event_chart": null,
      "evidence": null,
      "id": "basal:30-90",
      "kind": "setting",
@@ -9868,6 +9944,7 @@
       "value": 29.4,
       "wide": true
      },
+     "event_chart": null,
      "evidence": null,
      "id": "isf",
      "kind": "setting",
@@ -9941,6 +10018,7 @@
       "value": 29.4,
       "wide": true
      },
+     "event_chart": null,
      "evidence": null,
      "id": "isf",
      "kind": "setting",
@@ -10016,6 +10094,7 @@
       "value": 4.2857,
       "wide": false
      },
+     "event_chart": null,
      "evidence": null,
      "id": "ic:720",
      "kind": "setting",
@@ -10068,6 +10147,10 @@
      "direction": null,
      "episodes": 1,
      "estimate": null,
+     "event_chart": {
+      "factor": "over_treated_low",
+      "view": "lows"
+     },
      "evidence": [
       {
        "date": "2026-08-17",
@@ -10143,6 +10226,7 @@
       "value": 29.4,
       "wide": true
      },
+     "event_chart": null,
      "evidence": null,
      "id": "isf",
      "kind": "setting",

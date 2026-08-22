@@ -107,7 +107,7 @@ function row(fields) {
     support: null, reason: null, annotation: null, members: null,
     lever: null, appearances: null, episodes: null,
     evidence: null, verdict_counts: null, verdict_counts_by_family: null,
-    chips: null, window_scope: null,
+    chips: null, window_scope: null, event_chart: null,
     ...fields,
   };
 }
@@ -380,7 +380,7 @@ function patternPriorities(scenarios) {
   return priced;
 }
 
-function findingRows(exposures, scenarios, window) {
+function findingRows(exposures, scenarios, eventCharts, window) {
   const families = exposures.exposures || {};
   const anchors = episodeAnchors(families);
   const inWindow = new Map();
@@ -413,6 +413,7 @@ function findingRows(exposures, scenarios, window) {
   const rows = [];
   for (const [lever, entry] of byLever) {
     entry.appearances.sort((a, b) => (a.family < b.family ? -1 : a.family > b.family ? 1 : 0));
+    const coordinate = eventCharts[lever] || null;
     const { evidence, counts, countsByFamily } = leverEvidence(lever, entry.families, inWindow);
     rows.push(stampedRow({
       id: `finding:${lever}`,
@@ -431,6 +432,8 @@ function findingRows(exposures, scenarios, window) {
       evidence,
       verdict_counts: counts,
       verdict_counts_by_family: countsByFamily,
+      event_chart: coordinate && entry.families.includes(coordinate.view)
+        ? { ...coordinate } : null,
     }));
   }
   return rows;
@@ -469,13 +472,14 @@ export function projectFindings(inputs, bounds = null) {
   const analysis = inputs.analysis || {};
   const exposures = inputs.exposures || {};
   const scenarios = inputs.scenarios || {};
+  const eventCharts = inputs.event_charts || {};
   const query = windowQuery(bounds);
   let rows = [...basalRows(analysis, query.pieces), ...icRows(analysis, query.pieces),
     ...isfRows(analysis)];
   // the GLOBAL queue is asserting-only: a quiet parameter is never listed and never
   // named (term 38)
   if (!query.scoped) rows = rows.filter((r) => r.register === 'assert');
-  rows = [...rows, ...findingRows(exposures, scenarios, query.pieces)];
+  rows = [...rows, ...findingRows(exposures, scenarios, eventCharts, query.pieces)];
   rows.sort(compare);
   for (const row of rows) {
     if (row.priority == null) row.tier = 'noted';

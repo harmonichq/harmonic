@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <base href="/" />
   <title>Harmonic</title>
-  <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
   <script>
     (function () {
@@ -22,14 +23,14 @@
   <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
 
   <!-- #64 scenario screen styles (extracted from this file's <style> in #100). -->
-  <link rel="stylesheet" href="./scenario.css" />
+  <link rel="stylesheet" href="/scenario.css" />
   <!-- #634: cockpit shell, built to the Diagnose workstation lock. -->
-  <link rel="stylesheet" href="./shell.css" />
+  <link rel="stylesheet" href="/shell.css" />
   <!-- #636: locked Diagnose workstation surface mounted inside that shell. -->
-  <link rel="stylesheet" href="./diagnose-workstation.css" />
-  <link rel="stylesheet" href="./diagnose-event-comparison.css" />
+  <link rel="stylesheet" href="/diagnose-workstation.css" />
+  <link rel="stylesheet" href="/diagnose-event-comparison.css" />
   <!-- #660: locked Verify workstation surface, same shell. -->
-  <link rel="stylesheet" href="./verify-workstation.css" />
+  <link rel="stylesheet" href="/verify-workstation.css" />
 
   <style>
     :root {
@@ -1466,7 +1467,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           </template>
         </nav>
         <span class="cockpit-divider" data-zone="divider" aria-hidden="true"></span>
-        <a class="cockpit-day" data-zone="day" data-shell-tab="day" href="#day"
+        <a class="cockpit-day" data-zone="day" data-shell-tab="day" href="/app/day"
            :aria-current="tab === 'day' ? 'page' : null" @click.prevent="shellGo('day')">Day</a>
         <span class="cockpit-gap" data-zone="gap"></span>
         <div class="cockpit-scope" data-zone="scope">
@@ -1519,7 +1520,8 @@ html.dark .viz .tie:hover::before { opacity:.13; }
       <button class="cockpit-scrim" type="button" aria-label="Close navigation drawer"
               @click="drawerOpen = false" v-show="drawerOpen"></button>
 
-      <main class="cockpit-stage"><div class="main-content" @click="drawerOpen = false">
+      <main v-if="routeError" role="alert" data-route-error="invalid-link" class="cockpit-stage">Invalid link: {{ routeError.address }}. No selection was applied. <a href="/app/diagnose">Open Diagnose</a></main>
+      <main v-else class="cockpit-stage"><div class="main-content" @click="drawerOpen = false">
 
     <div v-if="glossaryOpen" class="modal-overlay" @click.self="glossaryOpen = false">
       <div ref="glossaryDialog" class="modal glossary"
@@ -2323,7 +2325,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
 
   <script type="module">
     import { createApp, ref, reactive, computed, onMounted, onUnmounted, watch, nextTick, provide, inject } from 'vue';
-    import { TABS, resolveTab } from './tab-routing.js';
+    import { TABS, parseRoute, resolveRoute, pushRoute, replaceRoute, subscribeRoutes } from '/url-state.js';
 
     /* =========================================================================
        #64 SCENARIO SCREEN — the pure chart logic (SCN_* consts + helpers, incl.
@@ -3769,57 +3771,19 @@ html.dark .viz .tie:hover::before { opacity:.13; }
       `,
     };
 
-    // URL hash is the source of truth for shareable view state (tab + daily
-    // date, #16/#19; modal state, #19 follow-up): #<tab>?date=YYYY-MM-DD&modal=...
-    // localStorage remains a fallback for theme + token only — those aren't
-    // shareable. The surviving modal-shaped params are:
-    //   modal=dataquality                                        (openDataQuality)
-    //   modal=occurrence&occt=<ISO ts>&occd=<detail text>        (goToMoment's
-    //     resulting highlight on Day — not a modal itself, but "Back" should
-    //     restore/dismiss it like one)
-    // Patterns / Investigate deep-links (#132): #patterns?mode=investigate&day=YYYY-MM-DD&ep=<id>
-    //   Also accepts the flat ?-less format emitted by Daily flag cards:
-    //   #tab=patterns&mode=investigate&day=YYYY-MM-DD&ep=<id>
-    function parseHash() {
-      const raw = location.hash.replace(/^#/, '');
-      if (!raw) return null;
-      const result = { tab: null, date: null, modal: null, window: null,
-                       scnMode: null, scnDay: null, scnEp: null, article: null };
-
-      // Detect flat format (#key=val&...) vs legacy format (#tab?key=val&...)
-      const [tabPart, queryPart] = raw.split('?');
-      let params;
-      if (!queryPart && tabPart.includes('=')) {
-        // Flat format: #tab=patterns&mode=investigate&day=...&ep=...
-        params = new URLSearchParams(tabPart);
-        result.tab = params.get('tab');
-      } else {
-        result.tab = tabPart || null;
-        params = queryPart ? new URLSearchParams(queryPart) : null;
-      }
-
-      if (params) {
-        result.date = params.get('date');
-        const win = params.get('window');
-        if (win) result.window = win; // '1' | '7' | '14' | '28' (days, anchor-ending)
-        result.scnMode = params.get('mode') || null;
-        result.scnDay = params.get('day') || null;
-        result.scnEp = params.get('ep') || null;
-        result.article = params.get('article') || null;   // #269: #guide?article=<slug>
-      }
-      return result;
-    }
-
+    /* Retired hash route parser (ADR 53 replaces this block). */
+    const initialRoute = parseRoute();
     const app = createApp({
       setup() {
         // #425: one shared gate for all heavy ResultCache-backed reads so cold
         // threads never run concurrently and GIL-thrash the single uvicorn worker.
         const enqueue = makeSerialGate();
 
-        const initialHash = parseHash();
+        const routeError = ref(initialRoute.kind === 'InvalidRoute' ? initialRoute : null);
+        if (initialRoute.kind === 'LegacyRedirect') replaceRoute(initialRoute);
+        let currentRoute = initialRoute.kind === 'LegacyRedirect' ? parseRoute() : initialRoute;
         // #132: if the initial URL is a patterns/investigate deep-link, stash the
-        // #246: the old Patterns/Investigate deep-link is retired with the tab; a stale
-        // `#patterns?mode=investigate` hash now just lands on Diagnose (resolveTab below).
+        // #246: the old Patterns/Investigate deep-link is retired with the tab.
         let pendingScnDeepLink = null;
 
         // #99: `dashboard` was renamed to `review` and the standalone `pump`
@@ -3829,7 +3793,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         // outcomes → verify (#245). #246 (ADR 0027) retires Recommendations + Patterns
         // into Diagnose, so `review`/`patterns` (and the legacy `dashboard`/`pump`) all
         // migrate to `diagnose`.
-        const tab = ref(resolveTab((initialHash && initialHash.tab) || localStorage.getItem('tab') || 'diagnose'));
+        const tab = ref(currentRoute.kind === 'PendingRoute' ? currentRoute.page : 'diagnose');
         const dark = ref(document.documentElement.classList.contains('dark'));
         // #248 / ADR 0024: the developer flag. Tier-2 reasoning (near-miss, outranked,
         // per-detector meaning, model steps) is always on; this gates only tier-3
@@ -3899,7 +3863,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         // The retired window model (#22/#35 presets, custom range, anchor+lookback
         // stack) is gone; nav bounds come from /status, never re-derived here.
         const dailyDate = ref(null);
-        const pendingDailyDate = ref((initialHash && initialHash.date) || null);
+        const pendingDailyDate = ref((currentRoute.kind === 'PendingRoute' && currentRoute.query.date) || null);
 
         // Local (NOT UTC) calendar-today — only a fallback for the pathological
         // "store has zero CGM" case; normal cold arrival uses latest_data_day.
@@ -4193,7 +4157,8 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         });
 
         function setTab(t) {
-          t = resolveTab(t);
+          if (!TABS.some((item) => item.id === t)) return;
+          pushRoute({ kind: 'ResolvedRoute', page: t, query: {} });
           tab.value = t;
           // #99: Plan reads the latest pump snapshot for its active-profile
           // reference + Confirmation-B on-pump detection; load it lazily.
@@ -4273,89 +4238,24 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         }
 
         watch(dark, () => { if (verifyView) verifyView.refresh(); });
-        // Push tab/date/modal -> URL hash. Guarded against re-entrancy from the
-        // hashchange listener below (applyingHash).
-        let applyingHash = false;
-        function currentModalParam() {
-          if (dataQualityModalOpen.value) return 'modal=dataquality';
-          if (dailyHighlight.value) {
-            const det = dailyHighlight.value.detector ? `&occdet=${encodeURIComponent(dailyHighlight.value.detector)}` : '';
-            return `modal=occurrence&occt=${encodeURIComponent(dailyHighlight.value.t)}&occd=${encodeURIComponent(dailyHighlight.value.detail)}${det}`;
-          }
-          return null;
-        }
-        function syncHashFromState() {
-          if (applyingHash) return;
-          const params = [];
-          // #248: the Day surface's selected date rides the hash — `#day?date=YYYY-MM-DD`
-          // deep-links to a day (and back/forward moves the day). Skip it until cold
-          // arrival resolves the day so we never write `date=null`.
-          if (tab.value === 'day') {
-            if (dailyDate.value) params.push(`date=${dailyDate.value}`);
-          }
-          // #269: the Guide-KB's open article rides the hash — `#guide?article=<slug>`
-          // deep-links to an article (and back/forward moves between articles).
-          if (tab.value === 'guide' && kbCurrent.value) params.push(`article=${kbCurrent.value}`);
-          // #246: the Patterns/Investigate sub-state hash retired with the tab (ADR 0027);
-          // Diagnose carries no shareable sub-state beyond the tab + modal params.
-          const modalParam = currentModalParam();
-          if (modalParam) params.push(modalParam);
-          const next = params.length ? `#${tab.value}?${params.join('&')}` : `#${tab.value}`;
-          if (location.hash !== next) history.pushState(null, '', next);
-        }
-        // The state->hash watch is registered *after* the scenario refs are
-        // declared (scnMode/scnPickDay/scnActiveInvestigateId, ~L3160) — its
-        // source array reads those ref objects, so registering it here would hit
-        // their temporal dead zone and abort setup() (#132 regression).
-
-        // Pull URL hash -> tab/date/modal, for back/forward navigation and direct links.
-        function reopenModalFromHash(modal) {
-          if (!modal) {
-            dataQualityModalOpen.value = false;
-            return;
-          }
-          if (modal.kind === 'dataquality') {
-            dataQualityModalOpen.value = true;
-            return;
-          }
-          if (modal.kind === 'occurrence') {
-            dataQualityModalOpen.value = false;
-            if (modal.t) dailyHighlight.value = { t: modal.t, detail: modal.detail || '', detector: modal.detector || null };
-          }
-        }
-
-        window.addEventListener('hashchange', () => {
-          const parsed = parseHash();
-          if (!parsed || !parsed.tab) return;
-          applyingHash = true;
-          try {
-            if (parsed.tab !== tab.value) setTab(parsed.tab);
-            // #248: the Day surface owns the day-picker — back/forward just moves the
-            // picked date (old #daily / #modelview hashes migrate to #day here too).
-            if (resolveTab(parsed.tab) === 'day' && parsed.date
-                && parsed.date !== (pendingDailyDate.value || dailyDate.value)) {
-              dailyHighlight.value = null;
-              pendingDailyDate.value = parsed.date;
-              resolveDailyDate();
-            }
-            // #269: back/forward between KB articles, and app -> #guide?article deep-links.
-            if (resolveTab(parsed.tab) === 'guide' && parsed.article && parsed.article !== kbCurrent.value
-                && KB_ARTICLES.some((a) => a.slug === parsed.article)) {
-              kbCurrent.value = parsed.article;
-              kbFetchArticle(parsed.article);
-            }
-            // #246: `#patterns` migrated to `#diagnose` in setTab above; the retired
-            // Investigate sub-state (mode/day/ep) no longer applies.
-            reopenModalFromHash(parsed.modal);
-          } finally {
-            nextTick(() => {
-              applyingHash = false;
-              // A stale hash changed tab state while the re-entrancy guard was
-              // active, so make the normalized route shareable once it lifts.
-              if (resolveTab(parsed.tab) !== parsed.tab) syncHashFromState();
-            });
-          }
+        // Restored entries pass through the same static parser before any page
+        // state changes.  Dynamic membership is resolved by the page adapters.
+        const stopRouteSubscription = subscribeRoutes((restored) => {
+          if (restored.kind !== 'PendingRoute') { routeError.value = restored; return; }
+          routeError.value = null;
+          tab.value = restored.page;
+          currentRoute = restored;
+          if (restored.page === 'day') { pendingDailyDate.value = restored.query.date || null; resolveDailyDate(); }
+          if (restored.page === 'guide') kbCurrent.value = restored.query.article || 'start-here';
+          setTabLoads(restored.page);
         });
+        function setTabLoads(t) {
+          if (t === 'plan' && !pumpSettings.value) loadPumpSettings();
+          if (t === 'day') resolveDailyDate();
+          if (t === 'diagnose') loadAudit();
+          if (t === 'guide') loadCatalog();
+          if (t === 'verify') loadVerify();
+        }
 
         function formatStartTime(startMin) {
           const h = Math.floor(startMin / 60).toString().padStart(2, '0');
@@ -4424,12 +4324,15 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         // The Day surface owns the selected day's model, timeline, and carb reads.
         // The parent only resolves an initial/deep-linked pump-local date from
         // /status and clamps it to the available CGM-day bounds.
-        function resolveDailyDate() {
+        function resolveDailyDate(canonicalize = true) {
           if (!hasToken.value || !status.value) return;
           const requested = pendingDailyDate.value || dailyDate.value
             || coldArrivalDay(dailyLatest.value, localTodayStr());
           dailyDate.value = clampDay(requested, dailyEarliest.value, dailyLatest.value);
           pendingDailyDate.value = null;
+          if (canonicalize && tab.value === 'day' && dailyDate.value) {
+            replaceRoute({ kind: 'ResolvedRoute', page: 'day', query: { date: dailyDate.value } });
+          }
         }
 
         watch(dailyLatest, (latest) => {
@@ -4440,7 +4343,8 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           if (!day) return;
           dailyHighlight.value = null;
           pendingDailyDate.value = day;
-          resolveDailyDate();
+          resolveDailyDate(false);
+          if (dailyDate.value) pushRoute({ kind: 'ResolvedRoute', page: 'day', query: { date: dailyDate.value } });
         }
 
         // --- Dashboard: recommendation cards ---------------------------------
@@ -4784,13 +4688,6 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         const scnActiveLevers = ref(new Set());
         let scnLoaded = false;
 
-        // state -> URL hash. Registered here (not next to syncHashFromState) so
-        // the scenario refs above are already initialized — the source array
-        // reads them, so an earlier registration would trip their TDZ (#132).
-        watch([tab, dailyDate, dataQualityModalOpen, dailyHighlight,
-               scnMode, scnPickDay, scnActiveInvestigateId],
-          syncHashFromState);
-
         async function loadScnWindow(days) {
           if (!hasToken.value) return;
           scnLoadingWindow.value = true;
@@ -4865,9 +4762,9 @@ html.dark .viz .tie:hover::before { opacity:.13; }
            the shell (sidebar / search / deep-link) and the authored how-tos
            (markdown fetched from /api/kb/<slug>). See ADR 0044. */
         const kbCurrent = ref(
-          initialHash && initialHash.tab === 'guide' && initialHash.article
-            && KB_ARTICLES.some((a) => a.slug === initialHash.article)
-            ? initialHash.article : 'start-here');
+          currentRoute.kind === 'PendingRoute' && currentRoute.page === 'guide' && currentRoute.query.article
+            && KB_ARTICLES.some((a) => a.slug === currentRoute.query.article)
+            ? currentRoute.query.article : 'start-here');
         const kbQuery = ref('');
         // Per-slug raw-markdown cache + per-slug error, both reactive so the body
         // and the full-text search index update as bodies land. Read by the ACTIVE
@@ -4983,7 +4880,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           if (!KB_ARTICLES.some((a) => a.slug === slug)) return;
           kbCurrent.value = slug;
           kbFetchArticle(slug);
-          syncHashFromState();   // pushState #guide?article=<slug> — back/forward work
+          pushRoute({ kind: 'ResolvedRoute', page: 'guide', query: { article: slug } });
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }
         // The article -> app-surface handoff: switch to the real tab via the router.
@@ -5550,6 +5447,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           // the nav bar (date-button + bounded arrows) reads dailyDate directly.
           pendingDailyDate.value = day;
           // #248: the "See full day →" deep-link lands on the merged Day surface.
+          pushRoute({ kind: 'ResolvedRoute', page: 'day', query: { date: day } });
           tab.value = 'day';
           resolveDailyDate();
         }
@@ -5578,7 +5476,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           if (tab.value === 'guide') loadCatalog();       // #269: initial #guide deep-link
           if (tab.value === 'verify') {
             loadVerify();
-          } else if (!(initialHash && initialHash.tab)) {
+          } else if (currentRoute.kind !== 'PendingRoute') {
             await loadVerify();
             if (verifyTrials.value.some((trial) => trial.state === 'maturing')
                 && tab.value === 'diagnose') tab.value = 'verify';
@@ -5592,16 +5490,6 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         }
 
         onMounted(() => {
-          // Data quality and the occurrence-highlight pseudo-modal don't depend
-          // on /analyze having resolved to be set, so apply those immediately.
-          if (initialHash && initialHash.modal) {
-            if (initialHash.modal.kind === 'dataquality' || initialHash.modal.kind === 'occurrence') {
-              applyingHash = true;
-              try { reopenModalFromHash(initialHash.modal); }
-              finally { nextTick(() => { applyingHash = false; }); }
-            }
-          }
-          syncHashFromState();
           loadAll();
           pqLoadPrompts();   // #128: seed the Review badge count on load
           window.addEventListener('resize', () => {
@@ -5618,6 +5506,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         });
 
         onUnmounted(() => {
+          stopRouteSubscription();
           window.removeEventListener('keydown', handleModalEscape);
         });
 
@@ -5757,7 +5646,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         watch(dark, () => { if (diagnoseView) diagnoseView.refresh(); });
 
         return {
-          tabsList: tabsWithBadges, tab, setTab, dark, toggleDark, devMode, toggleDev, toast,
+          tabsList: tabsWithBadges, tab, setTab, routeError, dark, toggleDark, devMode, toggleDev, toast,
           workflowTabs, cockpitScope, cockpitProfileFacts,
           shellGo, setDark, drawerOpen, themeMenuOpen,
           diagnoseRoot, diagnoseReady,

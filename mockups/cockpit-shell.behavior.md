@@ -14,8 +14,9 @@ S1 · The viewport stays fixed while each populated pane scrolls internally, and
   evidence: `STORY:cockpit-shell:S1` / exported `S1`; full matrix remains in the surrounding Cockpit browser gate
   status: replayed-pass on base
 
-S2 · The numbered Diagnose → Plan → Verify workflow, Day link, utility destinations, and URL hash all route through their visible public affordances.
-  handlers/invariants: `@click="shellGo(...)"`; native Day link; `tab-routing.js`
+S2 · The numbered Diagnose → Plan → Verify workflow, Day link, utility destinations, and canonical `/app/<page>` route all route through their visible public affordances.
+  amendment: Connor · 2026-08-21 · ADR 53, approved work order: paths identify pages and the URL adapter is the sole route-state authority.
+  handlers/invariants: `@click="shellGo(...)"`; native Day link; `url-state.js`
   source: `frontend/index.html` cockpit top bar, footer utilities, and `shellGo`
   evidence: `STORY:cockpit-shell:S2` / exported `S2`
   status: replayed-pass on base
@@ -74,7 +75,7 @@ S10 · Opening Theme and hovering the unchecked row paints a neutral 95% panel /
 
 ## Retired behavior
 
-R1 · The obsolete occurrence-list route stays retired while the Diagnose Inspector remains the sole populated occurrence-evidence path.
+R1 · The obsolete occurrence-list route stays retired while the Diagnose Inspector remains the sole populated occurrence-evidence path; invalid canonical links stop in the shell without applying a selection.
   sanction: Connor · 2026-08-18 · "the dead `occurrenceModal` hash machinery goes with them."
   handlers/invariants: a fixture-derived stale `modal=occurrences` URL canonicalizes to `#diagnose`; no accessible occurrences dialog or second roster appears; a public finding-row click populates the Inspector
   source: `frontend/index.html`; generated findings/exposures inputs in `frontend/__fixtures__/findings-projection.json`

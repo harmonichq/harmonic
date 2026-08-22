@@ -35,10 +35,13 @@ _GET_ROUTE = re.compile(r'''@app\.get\(\s*["']([^"']+)["']''')
 
 
 def _local_path(specifier: str, importer: Path) -> Optional[Path]:
-    """Return a local frontend path for a relative specifier, if it has one."""
-    if not specifier.startswith("."):
+    """Return a local frontend path for a relative or root-absolute specifier."""
+    if specifier.startswith("/"):
+        path = (_FRONTEND_DIR / specifier.lstrip("/")).resolve()
+    elif specifier.startswith("."):
+        path = (importer.parent / specifier).resolve()
+    else:
         return None
-    path = (importer.parent / specifier).resolve()
     try:
         path.relative_to(_FRONTEND_DIR)
     except ValueError:
@@ -94,7 +97,7 @@ class FrontendAssetRoutesTest(unittest.TestCase):
 
         # Sanity: the HTML and inline-module extractors both find known assets,
         # so a broken extraction cannot pass vacuously.
-        self.assertIn("/tab-routing.js", paths)
+        self.assertIn("/url-state.js", paths)
         self.assertIn("/scenario.css", paths)
 
         self.assertFalse(

@@ -42,8 +42,11 @@
   ok S42
   ok S43
   ok S44
+  ok S45
+  ok S46
+  ok S47
   ok D1
   ok D2
   ok D3
 
-app: 47 of 47 stories passed
+app: 50 of 50 stories passed

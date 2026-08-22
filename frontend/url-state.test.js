@@ -167,6 +167,7 @@ test('paired bounds include 0 and 1440 in distinct non-full-day intervals', () =
   for (const [label, startMin, endMin] of [
     ['inclusive zero start', '0', '60'],
     ['inclusive 1440 end', '1380', '1440'],
+    ['inclusive 1440 start', '1440', '60'],
   ]) {
     const address = `/app/diagnose?view=lows&start_min=${startMin}&end_min=${endMin}`;
     const query = { view: 'lows', start_min: startMin, end_min: endMin };

@@ -1736,6 +1736,11 @@ class DoseStampedIcHistoryTest(unittest.TestCase):
         self.assertIsNone(retired.programmed_now)
         self.assertEqual(retired.support, 3)
         self.assertEqual(
+            retired.annotation,
+            "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U "
+            "(CI 6–6). Past setting. No change suggested.",
+        )
+        self.assertEqual(
             {run.first_member_at for run in retired.runs},
             {event.t.isoformat() for event in valid},
         )
@@ -1948,6 +1953,9 @@ class DoseStampedIcHistoryTest(unittest.TestCase):
             [(0, 5.0), (360, 7.0), (720, 8.0)], now=aged_now)
         self.assertEqual([row.lifecycle for row in unavailable], ["unavailable"])
         self.assertIsNone(unavailable[0].programmed_now)
+        self.assertIsNone(unavailable[0].estimate)
+        self.assertIsNone(unavailable[0].support)
+        self.assertIsNone(unavailable[0].annotation)
         self.assertFalse(any(row.past_setting == 9.0 for row in unavailable))
 
     def test_many_identity_history_bounds_recognition_and_estimator_work(self):

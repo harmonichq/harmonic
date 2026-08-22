@@ -75,3 +75,16 @@ sub-order
   coordinator conflict over the OpenSpec record, and fixed Opus builders that
   bypassed cheapest-clear routing. The order and ADR were rewritten cleanly;
   none was waived or forwarded to the operator.
+- **Adversarial review rounds 2–3 (authoring defects):** reviewers reproduced
+  and blocked a backend-incompatible `0/1440` window, underspecified finding/
+  factor/occurrence identities, a parent-only verification reference, an
+  unavailable Full-review route, stale scratch evidence, base-worktree
+  permission conflict, mismatched invalid-link subjects, occupied-port handling,
+  and missing URL-to-capture linkage. Each became an explicit grammar,
+  ownership, routing, precondition, or manifest rule.
+- **Final cold pass:** the manufactured revise database was proven to contain no
+  Trial, so E7 now names the existing generated Verify payload and app-only
+  adapter instead. The final manifest requires 64 exact rows and binds every
+  image to its hash, URL, viewport, theme, side, and row-specific runtime
+  identities. Cold executor, rule-corpus warden, and ceremony skeptic all
+  countersigned with no remaining blocker.

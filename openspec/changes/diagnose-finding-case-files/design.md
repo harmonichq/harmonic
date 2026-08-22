@@ -147,12 +147,19 @@ is the fixed 30-day Diagnose calibration window. Its response is:
 every nonbehavioral row byte-for-byte. For a ready behavioral row the server starts
 with a deep copy, replaces only `appearances`, `episodes`, `evidence`,
 `verdict_counts`, and `verdict_counts_by_family` as shown below, and adds
-`case_header`; every other key and the authoritative row order remain byte-equal.
-A header is keyed by the closed
+`event_chart` and `case_header`; every other key and the authoritative row order
+remain byte-equal. `event_chart` is the server-owned, opaque coordinate
+`{view, factor}`: the browser validates its two non-empty string fields and uses
+the published value, but does not infer eligible Findings or maintain a family or
+factor allowlist. It is present on every ready behavioral rendered row and its
+`case_header`, so every inspectable family — including Highs — can open its
+server-selected event chart. A header is keyed by the closed
 `finding:<Lever.value>` identity and has `{finding_id, lever, title, family,
-summary: {claimed, denominator, noun}, verdict_counts: {fired, outranked,
-near_miss, no_data, clean}, inspectability: "ready"}`. A withheld entry has
-`{finding_id, code, message}` and its id is absent from `rendered_rows`.
+event_chart: {view, factor}, summary: {claimed, denominator, noun},
+verdict_counts: {fired, outranked, near_miss, no_data, clean},
+inspectability: "ready"}`. The row's `event_chart` and its header's
+`event_chart` are the same coordinate. A withheld entry has `{finding_id, code,
+message}` and its id is absent from `rendered_rows`.
 
 ```json
 {
@@ -167,7 +174,8 @@ near_miss, no_data, clean}, inspectability: "ready"}`. A withheld entry has
   "verdict_counts": {"fired": 6, "outranked": 4, "near_miss": 3, "no_data": 2, "clean": 53},
   "verdict_counts_by_family": {"meals": {"fired": 6, "outranked": 4, "near_miss": 3, "no_data": 2, "clean": 53}},
   "chips": ["lows", "meals"], "window_scope": "window",
-  "case_header": {"finding_id": "finding:meal_over_delivery", "lever": "meal_over_delivery", "title": "Meal over-delivery", "family": "meals", "summary": {"claimed": 5, "denominator": 68, "noun": "meals"}, "verdict_counts": {"fired": 6, "outranked": 4, "near_miss": 3, "no_data": 2, "clean": 53}, "inspectability": "ready"}
+  "event_chart": {"view": "meals", "factor": "meal_over_delivery"},
+  "case_header": {"finding_id": "finding:meal_over_delivery", "lever": "meal_over_delivery", "title": "Meal over-delivery", "family": "meals", "event_chart": {"view": "meals", "factor": "meal_over_delivery"}, "summary": {"claimed": 5, "denominator": 68, "noun": "meals"}, "verdict_counts": {"fired": 6, "outranked": 4, "near_miss": 3, "no_data": 2, "clean": 53}, "inspectability": "ready"}
 }
 ```
 

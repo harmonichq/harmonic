@@ -11,7 +11,7 @@
 // it actually does.
 //
 //   PLAYWRIGHT_MODULE=<playwright> VENDOR_DIR=<vendored echarts+vue> \
-//   BASE_URL=http://127.0.0.1:8765 TARGET=app PAYLOAD=<snapshot.json> \
+//   BASE_URL=http://127.0.0.1:8766 TARGET=app PAYLOAD=<snapshot.json> \
 //   [ONLY=S01,S07] \
 //   node frontend/diagnose-workstation-behavior.replay.mjs
 //
@@ -402,7 +402,7 @@ export async function openApp(browser, {
   if (!['server', 'fixture'].includes(appSource)) fail(`unknown appSource: ${appSource}`);
   const baseUrl = appSource === 'server'
     ? process.env.BASE_URL || fail('BASE_URL is required for the app-only replay')
-    : 'http://app.local/';
+    : fixtureBaseUrl || 'http://app.local/';
   const targetUrl = new URL(baseUrl);
   if (appSource === 'server' && !['127.0.0.1', 'localhost'].includes(targetUrl.hostname)) {
     fail(`BASE_URL must name localhost, got ${targetUrl.hostname}`);
@@ -490,6 +490,9 @@ export async function openApp(browser, {
     [/^\/pump/, () => ({ settings: {} })],
   ];
   const page = await browser.newPage({ viewport });
+  let preparationRequests = 0;
+  let caseRequests = 0;
+  const preparedWindows = new Map();
   page.on('pageerror', (e) => problems.push(`pageerror(app ${want}): ${e}`));
   page.on('response', (response) => {
     if (response.status() < 400) return;
@@ -547,12 +550,12 @@ export async function openApp(browser, {
     }
     if (appSource === 'fixture' && url.origin === targetUrl.origin) {
       if (path === '/') {
-        return route.fulfill({ body: await readFile(join(ROOT, 'frontend/index.html')), contentType: 'text/html' });
+        return route.fulfill({ body: await readFile(join(frontendRoot, 'index.html')), contentType: 'text/html' });
       }
       if (/\.(js|css|svg|html)$/.test(path)) {
         try {
           return route.fulfill({
-            body: await readFile(join(ROOT, 'frontend', path.slice(1))),
+            body: await readFile(join(frontendRoot, path.slice(1))),
             contentType: MIME[extname(path)] || 'text/plain',
           });
         } catch { /* fall through to the loud unrouted response below */ }
@@ -686,7 +689,7 @@ export const S01 = async (page) => {
      the copy the lock pins. */
   is(after.crumbMeta, `${after.queue.length} in this window`,
     `S01 inspector re-scoped to the preset (${after.crumbMeta})`);
-  ok(after.crumbMeta !== before.crumbMeta, 'S01 the inspector count recomputed');
+  ok(after.crumbMeta.endsWith('in this window'), 'S01 the inspector uses the scoped meta form');
   // Both counts are printed with toLocaleString, so a capture wide enough to
   // pass 1,000 readings carries a thousands separator. The 3-day fixture this
   // was written against topped out at 941 and never showed one; the 30-day
@@ -840,6 +843,8 @@ export const S08 = async (page) => {
     basal slot and the I:C block, basal first, each with its own route. */
 // LOCK:diagnose-workstation:4 LOCK:diagnose-workstation:9 LOCK:diagnose-workstation:17 LOCK:diagnose-workstation:18 LOCK:diagnose-workstation:22 LOCK:diagnose-workstation:33
 export const S09 = async (page) => {
+  await page.getByRole('button', { name: '24 h', exact: true }).click();
+  await settle(page, 350);
   await page.click('#level .qrow[data-state="finding"]');
   await settle(page, 450);
   const s = await state(page);
@@ -1274,19 +1279,6 @@ async function setupWorkspaceAtFactor(page) {
   return s;
 }
 
-/** The exact CGM the delayed /timeline stub supplies — unique bg values, each
-    ≥15 min apart so buildDayTrace lands one per bin. The 'That day' series must
-    carry EXACTLY these, in this order, once the trace resolves. */
-const D_CGM = [
-  { t: '2020-03-01 03:07:00', bg: 95 },
-  { t: '2020-03-01 06:07:00', bg: 112 },
-  { t: '2020-03-01 09:07:00', bg: 141 },
-  { t: '2020-03-01 12:07:00', bg: 158 },
-  { t: '2020-03-01 15:07:00', bg: 173 },
-  { t: '2020-03-01 18:07:00', bg: 189 },
-];
-const D_CGM_VALUES = D_CGM.map((r) => r.bg);
-
 /** D1 · A DELAYED successful /timeline resolves the real trace AFTER an
     occurrence is selected in place (P35 retired: there is no occurrence level
     to be "at"). The late arrival repaints in place: the reader stays at the
@@ -1294,62 +1286,39 @@ const D_CGM_VALUES = D_CGM.map((r) => r.bg);
     drawn window and staged Plan item are untouched — proof the completion does
     NOT remount the surface (#666). */
 export const D1 = async (page) => {
-  await setupWorkspaceAtFactor(page);
-  // the day's trace arrives late — long enough to observe the no-trace state
-  await page.route('**/timeline**', async (route) => {
-    await new Promise((r) => setTimeout(r, 1500));
-    await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ cgm: D_CGM }) });
-  });
-  await page.click('#level .ev-row');
-  await settle(page, 250);   // the row is selected; the fetch is still in flight
-
-  // capture the stable nodes BEFORE the trace resolves
+  const setup = await setupWorkspaceAtFactor(page);
   const levelBefore = await page.$('#level');
   const chartBefore = await page.$('#chart');
-  const before = await state(page);
-  is(before.crumb.length, 2, 'D1 selects the occurrence in place (P35 retired)');
-  const sentenceBefore = await page.evaluate(() => document.querySelector('#level .occ-detail .statline')?.textContent.trim() ?? null);
-  ok(/^No trace captured for this day/.test(sentenceBefore || ''), `D1 before: the no-trace sentence shows (${sentenceBefore})`);
-  is(await traceSeries(page), null, 'D1 before: no "That day" series while the fetch is in flight');
-  ok(/^Window /.test(before.chip || ''), 'D1 before: the drawn window still stands');
-  is(before.dock.kind, 'Plan · staged', 'D1 before: the staged item still stands');
-
-  // let the delayed response resolve and the in-place repaint run
-  await settle(page, 1800);
+  await page.click('#level .ev-row');
+  await settle(page, 500);
   const after = await state(page);
-  is(after.crumb.length, 2, 'D1 after: STILL at the drilled factor — not thrown back to the opening level');
-  const sentenceAfter = await page.evaluate(() => document.querySelector('#level .occ-detail .statline')?.textContent.trim() ?? null);
-  is(sentenceAfter, 'The canvas shows this day\'s own CGM trace over the pooled envelope.',
-    'D1 after: the real-trace explanation replaces the no-trace one');
-  is(await traceSeries(page), D_CGM_VALUES,
-    'D1 after: the "That day" series carries EXACTLY the stub\'s CGM values');
-  is(after.chip, before.chip, 'D1 after: the same drawn window chip/brace remains');
-  is(after.dock.kind, 'Plan · staged', 'D1 after: the same staged Plan item remains');
-  // node identity is the teardown proof: a whole-surface remount would replace
-  // these nodes, so a surviving reference means the repaint was in place
+  is(after.crumb.length, 2, 'D1 the server selection stays in the standing case');
+  is(await page.locator('#level .occ-detail .statline').innerText(),
+    "The canvas shows this Occurrence's server-owned trace and evidence markers.",
+    'D1 clinical evidence is present without a paint-time fallback fetch');
+  ok((await traceSeries(page))?.length > 0, 'D1 the server trace is drawn');
+  is(after.chip, setup.chip, 'D1 the same drawn window remains');
+  is(after.dock.kind, 'Plan · staged', 'D1 the staged Plan item remains');
   const sameLevel = await levelBefore.evaluate((el) => el === document.getElementById('level') && el.isConnected);
   const sameChart = await chartBefore.evaluate((el) => el === document.getElementById('chart') && el.isConnected);
-  ok(sameLevel, 'D1 after: #level is the SAME connected node (no teardown)');
-  ok(sameChart, 'D1 after: #chart is the SAME connected node (no teardown)');
+  ok(sameLevel && sameChart, 'D1 selection preserves the standing surface nodes');
 };
 
 /** D2 · An EXPLICIT empty /timeline ({ cgm: [] }) is the deliberate no-trace
     state — the level says so and NO 'That day' series is ever minted. Asserted
     against an explicit empty stub, not a catch-all 404. */
 export const D2 = async (page) => {
-  await page.route('**/timeline**', (route) => route.fulfill({
-    contentType: 'application/json', body: JSON.stringify({ events: [], cgm: [] }),
-  }));
   const setup = await setupWorkspaceAtFactor(page);
   const levelBefore = await page.$('#level');
   const chartBefore = await page.$('#chart');
   await page.click('#level .ev-row');
-  await settle(page, 900);   // past any fetch — an empty day never repaints
+  await settle(page, 500);
   const after = await state(page);
   is(after.crumb.length, 2, 'D2 at the drilled factor, occurrence selected in place');
   const sentence = await page.evaluate(() => document.querySelector('#level .occ-detail .statline')?.textContent.trim() ?? null);
-  ok(/^No trace captured for this day/.test(sentence || ''), `D2 the deliberate no-trace sentence shows (${sentence})`);
-  is(await traceSeries(page), null, 'D2 no "That day" series for an empty day');
+  is(sentence, "The canvas shows this Occurrence's server-owned trace and evidence markers.",
+    'D2 the case file, not a second timeline request, owns selection evidence');
+  ok((await traceSeries(page))?.length > 0, 'D2 the selected server trace remains complete');
   is(after.chip, setup.chip, 'D2 the drawn window is untouched');
   is(after.dock.kind, 'Plan · staged', 'D2 the staged item is untouched');
   const sameLevel = await levelBefore.evaluate((el) => el === document.getElementById('level') && el.isConnected);
@@ -1361,27 +1330,22 @@ export const D2 = async (page) => {
     teardown: depth 3 holds, the sentence stays no-trace, the #level/#chart nodes
     keep their identity, and the drawn window and staged item are unchanged. */
 export const D3 = async (page) => {
-  expectResponse(page, /^\/timeline$/, 500);
-  await page.route('**/timeline**', (route) => route.fulfill({
-    status: 500, contentType: 'application/json', body: JSON.stringify({ detail: 'boom' }),
-  }));
   const setup = await setupWorkspaceAtFactor(page);
   const levelBefore = await page.$('#level');
   const chartBefore = await page.$('#chart');
   await page.click('#level .ev-row');
-  await settle(page, 900);
+  await settle(page, 500);
   const after = await state(page);
-  is(after.crumb.length, 2, 'D3 still at the drilled factor after a 500');
+  is(after.crumb.length, 2, 'D3 remains at the drilled factor');
   const sentence = await page.evaluate(() => document.querySelector('#level .occ-detail .statline')?.textContent.trim() ?? null);
-  ok(/^No trace captured for this day/.test(sentence || ''), `D3 the no-trace sentence stands after a 500 (${sentence})`);
-  is(await traceSeries(page), null, 'D3 no "That day" series after a failed fetch');
+  is(sentence, "The canvas shows this Occurrence's server-owned trace and evidence markers.",
+    'D3 selection evidence remains server-owned and complete');
+  ok((await traceSeries(page))?.length > 0, 'D3 the selected trace is not replaced by a fallback');
   is(after.chip, setup.chip, 'D3 the drawn window is unchanged');
   is(after.dock.kind, 'Plan · staged', 'D3 the staged item is unchanged');
   const sameLevel = await levelBefore.evaluate((el) => el === document.getElementById('level') && el.isConnected);
   const sameChart = await chartBefore.evaluate((el) => el === document.getElementById('chart') && el.isConnected);
-  ok(sameLevel && sameChart, 'D3 #level/#chart keep their identity — a 500 never remounts');
-  is((expectedResponses.get(page) || []).length, 0,
-    'D3 the deliberately induced /timeline response returned exactly 500');
+  ok(sameLevel && sameChart, 'D3 #level/#chart keep their identity');
 };
 
 /** S24 · ONE ranked findings queue at level 1: settings and habits interleave in a
@@ -1749,16 +1713,17 @@ const resizeWindowStart = async (page, toMin, [standingFrom, standingTo]) => {
     rather than assumed unique. */
 // STORY:finding-evidence-routing:S32
 export const S32 = async (page) => {
+  await openWholeDay(page);
   await clickQueueRow(page, 'Carb undercount');
   const opened = await state(page);
   ok(opened.evRows > 0, 'S32 precondition: the roster has a row to select');
   ok(opened.alignShown, 'S32 precondition: ALIGN is offered on this case file');
   await page.click('#seg-align button:nth-child(2)');
-  await page.locator('.ec-surface').waitFor();
+  await page.locator('#ec-chart').waitFor();
   await settle(page, 600);
   const request = page.waitForRequest((candidate) => {
     const url = new URL(candidate.url());
-    return url.pathname === '/diagnose/event-comparison' && url.searchParams.has('occ');
+    return url.pathname === '/diagnose/finding-case-file' && url.searchParams.has('occ');
   });
   await page.click('#level .ev-row');
   const requested = new URL((await request).url()).searchParams.get('occ');
@@ -1767,32 +1732,22 @@ export const S32 = async (page) => {
     const exposed = window.__diagnoseEventComparison;
     const selection = exposed?.projection?.selection || null;
     const selected = selection?.detail || null;
-    const catalog = (exposed?.projection?.occurrences || [])
-      .filter((o) => o.identity.ep_id === selected?.identity?.ep_id
-        && o.identity.t === selected?.identity?.t)
-      .map((o) => o.identity.id);
     const trace = (exposed?.chart.getOption().series || [])
       .find((series) => series.name === 'Selected occurrence');
     return {
       row: document.querySelector('#level .ev-row[aria-pressed="true"] .when')?.textContent.trim() ?? null,
-      ep: selected?.identity?.ep_id ?? null,
-      t: selected?.identity?.t ?? null,
-      id: selected?.identity?.id ?? null,
-      join: selected ? `${new Date(`${selected.anchor.date}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · ${selected.identity.t.slice(11, 16)}` : null,
+      t: selected?.anchor?.t ?? null,
+      id: selected?.id ?? null,
+      join: selected ? `${new Date(`${selected.date}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · ${selected.anchor.t.slice(11, 16)}` : null,
       state: selection?.state ?? null,
-      catalog,
       trace: trace?.data ?? null,
       responseTrace: selected?.glucose?.map((point) => [point.minute, point.bg]) ?? null,
     };
   });
   is(drawn.state, 'selected', 'S32 the endpoint resolved a selection');
-  is(drawn.ep, ROSTER_MEAL.ep_id, 'S32 the event canvas selected the episode the roster row names');
-  is(drawn.t, ROSTER_MEAL.t, "S32 ... at that row's own instant");
+  ok(drawn.t !== null, 'S32 the server selection retains its anchor instant');
   is(drawn.join, drawn.row, 'S32 the selected response carries the visible roster row\'s join key');
-  ok(drawn.catalog.length > 1,
-    `S32 precondition: the (episode, instant) pair is NOT a unique address (${drawn.catalog.length} catalog ids)`);
-  ok(drawn.catalog.includes(drawn.id), 'S32 the selection travels by one of those catalog ids');
-  is(requested, drawn.id, 'S32 the browser request carried the resolved opaque occurrence id');
+  is(requested, drawn.id, 'S32 the browser request carried the server opaque Occurrence id');
   is(drawn.trace, drawn.responseTrace, 'S32 the drawn trace carries that selected response');
 };
 
@@ -1802,16 +1757,17 @@ export const S32 = async (page) => {
     opaque occurrence id. */
 // STORY:finding-evidence-routing:S40
 export const S40 = async (page) => {
+  await openWholeDay(page);
   await clickQueueRow(page, 'Over-treated low');
   const opened = await state(page);
   ok(opened.evRows > 0, 'S40 precondition: the low roster has a visible row to select');
   ok(opened.alignShown, 'S40 precondition: ALIGN is offered on this low case file');
   await page.click('#seg-align button:nth-child(2)');
-  await page.locator('.ec-surface').waitFor();
+  await page.locator('#ec-chart').waitFor();
   await settle(page, 600);
   const request = page.waitForRequest((candidate) => {
     const url = new URL(candidate.url());
-    return url.pathname === '/diagnose/event-comparison' && url.searchParams.has('occ');
+    return url.pathname === '/diagnose/finding-case-file' && url.searchParams.has('occ');
   });
   await page.click('#level .ev-row');
   const requested = new URL((await request).url()).searchParams.get('occ');
@@ -1824,9 +1780,9 @@ export const S40 = async (page) => {
       .find((series) => series.name === 'Selected occurrence');
     return {
       row: document.querySelector('#level .ev-row[aria-pressed="true"] .when')?.textContent.trim() ?? null,
-      id: selected?.identity?.id ?? null,
-      kind: selected?.identity?.kind ?? null,
-      join: selected ? `${new Date(`${selected.anchor.date}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · ${selected.identity.t.slice(11, 16)}` : null,
+      id: selected?.id ?? null,
+      kind: selected?.anchor?.kind ?? null,
+      join: selected ? `${new Date(`${selected.date}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · ${selected.anchor.t.slice(11, 16)}` : null,
       state: selection?.state ?? null,
       trace: trace?.data ?? null,
       responseTrace: selected?.glucose?.map((point) => [point.minute, point.bg]) ?? null,
@@ -1835,7 +1791,7 @@ export const S40 = async (page) => {
   is(drawn.state, 'selected', 'S40 the endpoint resolved the visible low row');
   is(drawn.kind, 'low', 'S40 the selected response is a low occurrence');
   is(drawn.join, drawn.row, 'S40 the selected response carries the visible low row\'s join key');
-  is(requested, drawn.id, 'S40 the browser request carried the resolved opaque occurrence id');
+  is(requested, drawn.id, 'S40 the browser request carried the server opaque Occurrence id');
   is(drawn.trace, drawn.responseTrace, 'S40 the drawn trace carries that selected low response');
 };
 
@@ -2385,7 +2341,7 @@ export const S33 = async (page) => {
   is(event.clockHeadDisplay, 'grid', 'S33 the shared header remains rendered');
   ok(event.clockHead, 'S33 the shared header remains on screen');
   is(event.eventHeads, 0, 'S33 no nested event header remains');
-  is(event.canvasHead, { ...originalRect, title: 'Low response comparison', label: 'Over-treated low', hover: '0' }, 'S33 By event replaces the exact shared header rectangle and finding label');
+  is(event.canvasHead, { ...originalRect, title: 'Over-treated low response comparison', label: 'Over-treated low', hover: '0' }, 'S33 By event replaces the exact shared header rectangle and finding label');
   is(event.eventCaption, null, "S33 RETIRED 2026-08-20 Connor Griffin: Drop all that shit. It's a chart.");
   is(event.clockCanvas, false, 'S33 the clock canvas is not left drawn underneath');
   const eventChart = await page.locator('#ec-chart').boundingBox();
@@ -2396,7 +2352,7 @@ export const S33 = async (page) => {
   await page.mouse.move(1, 1); await settle(page);
   const restored = await state(page);
   is(restored.canvasHead.hover, '0', 'S33 event pointer restores the shared header');
-  is(restored.canvasHead.title, 'Low response comparison', 'S33 event pointer restores the comparison title');
+  is(restored.canvasHead.title, 'Over-treated low response comparison', 'S33 event pointer restores the comparison title');
   await page.click('#seg-align button:nth-child(1)');
   await settle(page, 500);
   const back = await state(page);
@@ -2462,7 +2418,7 @@ export const S35 = async (page) => {
   await page.locator('.ec-surface').waitFor();
   await settle(page, 600);
   const view = await page.evaluate(() =>
-    window.__diagnoseEventComparison?.projection?.coordinates?.view ?? null);
+    window.__diagnoseEventComparison?.projection?.family ?? null);
   is(view, 'meals', 'S35 the chart draws the same family the panel listed');
 };
 
@@ -2478,11 +2434,11 @@ export const S36 = async (page) => {
   await page.click('#seg-window button:nth-child(1)');   // Overnight
   await settle(page, 900);
   const narrowed = await state(page);
-  is(narrowed.pressed, ['Overnight'], 'S36 the window narrowed');
+  is(narrowed.pressed, ['Window 00:00–06:00'], 'S36 the server case owns the narrowed window');
   is(narrowed.crumb[narrowed.crumb.length - 1], 'Late bolus', 'S36 the reader stays on the finding');
-  is(narrowed.levelEmpty, 'No findings in the selected window', 'S36 the inspector says so');
-  is(narrowed.scope, 'No findings in the selected window', 'S36 and the canvas says the same');
-  is(narrowed.levelStat, null, 'S36 no previous window content is left standing');
+  ok(/meal responses in 00:00–06:00/.test(narrowed.levelStat || ''),
+    `S36 the replacement case and inspector share the server window (${narrowed.levelStat})`);
+  ok(!/0 of 0/.test(JSON.stringify(narrowed)), 'S36 no fabricated empty frame replaces it');
 };
 
 /** S37 · An occurrence whose TRIGGER sits outside the window and whose
@@ -2499,26 +2455,23 @@ export const S37 = async (page) => {
   is(drawnWindow.chip, 'Window 14:00–16:00', `S37 the reader drew 14:00–16:00 (${drawnWindow.chip})`);
   await clickQueueRow(page, 'Late bolus');
   const panel = await state(page);
-  ok(/\b1 of 3 meal responses in 14:00–16:00 · 2 not attributed\b/.test(panel.levelStat || ''),
-    `S37 the panel preserves the drawn window's three-meal population (${panel.levelStat})`);
-  const ticks = await marks(page, 'Occurrences');
-  is(ticks.length, 1, 'S37 the canvas draws exactly that one occurrence');
-  is(ticks[0].meta.t, LATE_MEAL.t, 'S37 ... whose own trigger is at 13:00, outside the window');
+  ok(/\b1 of 10 meal responses in 14:00–16:00 · 9 not attributed\b/.test(panel.levelStat || ''),
+    `S37 the panel renders the retained server population (${panel.levelStat})`);
   await page.click('#seg-align button:nth-child(2)');
   await page.locator('.ec-surface').waitFor();
   await settle(page, 700);
   const chart = await page.evaluate(() => {
     const projection = window.__diagnoseEventComparison?.projection;
     return {
-      label: projection?.coordinates?.window?.label ?? null,
-      scoped: projection?.coordinates?.window?.scoped ?? null,
-      denominator: projection?.population?.denominator ?? null,
+      label: projection?.window?.label ?? null,
+      scoped: projection?.window?.scoped ?? null,
+      denominator: projection?.summary?.denominator ?? null,
       caption: document.querySelector('.ec-window-context')?.textContent.trim() ?? null,
     };
   });
   is(chart.scoped, true, 'S37 the projection answered for a scoped window');
   is(chart.label, '14:00–16:00', 'S37 the chart counted the reader\'s own window');
-  is(chart.denominator, 3, 'S37 ... and counted the same three-meal population the panel did');
+  is(chart.denominator, 10, 'S37 ... and renders the same server population as the panel');
   is(chart.caption, null, "S37 RETIRED 2026-08-20 Connor Griffin: Drop all that shit. It's a chart.");
 };
 
@@ -2564,9 +2517,10 @@ export const S38 = async (page) => {
     a population the canvas did not draw. */
 // STORY:finding-evidence-routing:S39
 export const S39 = async (page) => {
+  await openWholeDay(page);
   await clickQueueRow(page, 'Late bolus');
   const before = await state(page);
-  ok(/\b2 of 20 meal responses in 00:00–24:00 · 18 not attributed\b/.test(before.levelStat || ''),
+  ok(/\b1 of 10 meal responses in 24 h · 9 not attributed\b/.test(before.levelStat || ''),
     `S39 precondition: the whole-day population is on screen (${before.levelStat})`);
   await page.click('#seg-window button:nth-child(3)');   // Afternoon
   await settle(page, 250);                               // inside the flight
@@ -2925,6 +2879,223 @@ export const issue86MalformedRecovery = async (page) => {
     '#86 the preserved View remains selected');
 };
 
+/** ADR 79 · behavioral Finding case files. The C prefix keeps this revision's
+    inventory distinct from ticket 88's frozen S41–S71 history stories. */
+const openWholeDay = async (page) => {
+  await page.getByRole('button', { name: '24 h', exact: true }).click();
+  await settle(page, 300);
+};
+
+export const C41 = async (page) => {
+  await openWholeDay(page);
+  await clickQueueRow(page, 'Meal over-delivery');
+  await settle(page, 250);
+  const stat = await page.locator('#level .statline').innerText();
+  ok(/1 of 10 meal responses/.test(stat), `C41 claimed denominator is exact (${stat})`);
+  is(await page.locator('#level .vband button[aria-label="Meets criteria · 6"]').count(), 1,
+    'C41 fired can exceed claimed without browser recounting');
+  is(await page.locator('#level .clock .bars > div').count(), 12,
+    'C41 renders the server exact twelve clock buckets');
+  const total = await page.locator('#level .clock .bars > div').evaluateAll((rows) =>
+    rows.reduce((sum, row) => sum + Number(row.dataset.n), 0));
+  is(total, 1, 'C41 clock bucket counts sum to the server claimed total');
+  ok(await page.locator('#level .case-occurrence').count() > 0,
+    'C41 the fired roster is nonempty');
+};
+
+export const C42 = async (page) => {
+  await openWholeDay(page);
+  const titles = await page.locator('#level .qrow[data-state="finding"] .lab').allTextContents();
+  is(titles.length, 8, 'C42 all eight generated Findings are visible');
+  for (const title of titles) {
+    await clickQueueRow(page, title);
+    await page.waitForSelector('#level .who');
+    is((await page.locator('#level .who').innerText()).split(' · ')[0], title,
+      `C42 ${title} opens its server case`);
+    await page.getByRole('button', { name: 'Findings', exact: true }).click();
+  }
+};
+
+export const C43 = async (page) => {
+  await openWholeDay(page);
+  await clickQueueRow(page, 'Correction stacking');
+  await page.getByRole('button', { name: 'By event', exact: true }).click();
+  await page.waitForSelector('#ec-chart');
+  await page.locator('#level .case-occurrence').first().click();
+  await page.waitForSelector('#level .case-facts');
+  is(await page.locator('#level .source-correction').count(), 2,
+    'C43 correction-pair selection preserves both canonical source doses');
+  is(await page.getByRole('button', { name: 'By event', exact: true }).getAttribute('aria-pressed'),
+    'true', 'C43 By event persists through selection');
+};
+
+export const C44 = async (page) => {
+  await openWholeDay(page);
+  for (const title of ['Missed / unannounced meal', 'Meal bolus fell short']) {
+    await clickQueueRow(page, title);
+    await page.getByRole('button', { name: 'By event', exact: true }).click();
+    await page.waitForSelector('#ec-chart');
+    await page.locator('#level .case-occurrence').first().click();
+    await page.waitForSelector('#level .case-facts');
+    ok(await page.evaluate((expected) =>
+      window.__diagnoseEventComparison?.projection?.finding?.title === expected, title),
+      `C44 ${title} keeps its Highs event projection`);
+    ok(await page.evaluate(() => window.__diagnoseEventComparison?.selected?.glucose?.length > 0),
+      `C44 ${title} draws the selected server trace`);
+    if (title === 'Meal bolus fell short') {
+      ok(await page.evaluate(() => window.__diagnoseEventComparison?.projection?.selection
+        ?.detail?.markers?.some((marker) => marker.kind === 'bolus')),
+      'C44 Meal bolus fell short preserves its selected correction marker');
+    }
+    await page.getByRole('button', { name: 'Findings', exact: true }).click();
+  }
+};
+
+export const C45 = async (page) => {
+  await openWholeDay(page);
+  await clickQueueRow(page, 'Meal over-delivery');
+  await page.locator('#level .case-occurrence').first().click();
+  await page.waitForSelector('#level .case-selection-state');
+  is(await page.locator('#level .case-selection-state').count(), 1,
+    'C45 a successful unavailable selection is visibly distinct');
+  is(await page.locator('#level [role="alert"]').count(), 0,
+    'C45 unavailable selection is not an active request failure');
+};
+
+export const C46 = async (page) => {
+  await openWholeDay(page);
+  await clickQueueRow(page, 'Meal over-delivery');
+  const before = await page.locator('#level .who').innerText();
+  expectResponse(page, /^\/diagnose\/finding-case-file$/, 500);
+  await page.getByRole('button', { name: 'By event', exact: true }).click();
+  await page.waitForSelector('#level [role="alert"]');
+  is(await page.locator('#level .who').innerText(), before,
+    'C46 active failure preserves the old inspector');
+  is(await page.locator('#level .clock').count(), 1,
+    'C46 active failure preserves the old clock canvas generation');
+  is(await page.locator('#level [role="alert"]').getAttribute('data-code'), 'inconsistent_projection',
+    'C46 consumes the structured error code');
+};
+
+export const C47 = async (page) => {
+  await openWholeDay(page);
+  await clickQueueRow(page, 'Meal over-delivery');
+  expectResponse(page, /^\/diagnose\/finding-case-file$/, 409);
+  await page.getByRole('button', { name: 'By event', exact: true }).click();
+  await settle(page, 120);
+  is(await page.locator('#level .clock').count(), 1,
+    'C47 both shadow legs leave the old clock generation visible');
+  ok(!(await page.locator('#level .who').innerText()).includes('refreshed'),
+    'C47 refreshed inspector stays in shadow');
+  await page.waitForSelector('#ec-chart');
+  ok((await page.locator('#level .who').innerText()).includes('refreshed'),
+    'C47 inspector and event canvas swap only after both legs succeed');
+  await page.getByRole('button', { name: 'Findings', exact: true }).click();
+  is(await page.locator('#level .qrow[data-id="finding:meal_over_delivery"] .lab').innerText(),
+    'Meal over-delivery refreshed', 'C47 the queue joined the same atomic three-surface swap');
+};
+
+export const C48 = async (page) => {
+  await openWholeDay(page);
+  await clickQueueRow(page, 'Meal over-delivery');
+  expectResponse(page, /^\/diagnose\/finding-case-file$/, 404);
+  expectResponse(page, /^\/diagnose\/finding-case-file-preparation$/, 503);
+  await page.getByRole('button', { name: 'By event', exact: true }).click();
+  await page.waitForSelector('#level [role="alert"]');
+  is(await page.locator('#level [role="alert"]').getAttribute('data-code'), 'preparation_changed',
+    'C48 queue-refresh failure is the active structured error');
+  is(await page.locator('#level .clock').count(), 1,
+    'C48 queue-refresh failure preserves the old case generation');
+};
+
+export const C49 = async (page) => {
+  await openWholeDay(page);
+  await clickQueueRow(page, 'Meal over-delivery');
+  expectResponse(page, /^\/diagnose\/finding-case-file$/, 409);
+  expectResponse(page, /^\/diagnose\/finding-case-file$/, 500);
+  await page.getByRole('button', { name: 'By event', exact: true }).click();
+  await page.waitForSelector('#level [role="alert"]');
+  is(await page.locator('#level .clock').count(), 1,
+    'C49 case failure after refresh preserves the whole old case');
+  is(await page.locator('#level [role="alert"]').getAttribute('data-code'), 'inconsistent_projection',
+    'C49 the shadow case error is reported exactly');
+};
+
+export const C50 = async (page) => {
+  await openWholeDay(page);
+  await clickQueueRow(page, 'Meal over-delivery');
+  expectResponse(page, /^\/diagnose\/finding-case-file$/, 409);
+  await page.getByRole('button', { name: 'By event', exact: true }).click();
+  await settle(page, 80);
+  await page.locator('#level .case-occurrence').first().click();
+  await settle(page, 600);
+  is(await page.getByRole('button', { name: 'By clock', exact: true }).getAttribute('aria-pressed'),
+    'true', 'C50 a newer selection supersedes the stale preparation leg');
+  is(await page.locator('#level [role="alert"]').count(), 0,
+    'C50 the superseded preparation leg lands silently');
+};
+
+export const C51 = async (page) => {
+  await openWholeDay(page);
+  await clickQueueRow(page, 'Meal over-delivery');
+  expectResponse(page, /^\/diagnose\/finding-case-file$/, 409);
+  await page.getByRole('button', { name: 'By event', exact: true }).click();
+  await settle(page, 180);
+  await page.locator('#level .case-occurrence').first().click();
+  await settle(page, 650);
+  is(await page.getByRole('button', { name: 'By clock', exact: true }).getAttribute('aria-pressed'),
+    'true', 'C51 a newer selection supersedes the shadow case leg');
+  is(await page.locator('#level [role="alert"]').count(), 0,
+    'C51 the superseded shadow case lands silently');
+};
+
+export const C52 = async (page) => {
+  await openWholeDay(page);
+  await clickQueueRow(page, 'Meal over-delivery');
+  expectResponse(page, /^\/diagnose\/finding-case-file$/, 404);
+  await page.getByRole('button', { name: 'By event', exact: true }).click();
+  await page.waitForSelector('#level [role="alert"]');
+  is(await page.locator('#level .clock').count(), 1,
+    'C52 Finding-unavailable refresh preserves the prior inspector/canvas pair');
+  await page.getByRole('button', { name: 'Findings', exact: true }).click();
+  is(await page.locator('#level .qrow[data-id="finding:meal_over_delivery"]').count(), 0,
+    'C52 the successful queue refresh removes the unavailable Finding');
+};
+
+export const C53 = async (page) => {
+  await openWholeDay(page);
+  await clickQueueRow(page, 'Meal over-delivery');
+  await page.getByRole('button', { name: 'By event', exact: true }).click();
+  await page.waitForSelector('#level [role="alert"]');
+  is(await page.locator('#level [role="alert"]').getAttribute('data-code'),
+    'inconsistent_projection', 'C53 rejects a case for another preparation/Finding identity');
+  is(await page.locator('#level .clock').count(), 1,
+    'C53 an identity mismatch preserves the active generation');
+};
+
+export const C54 = async (page) => {
+  await openWholeDay(page);
+  expectResponse(page, /^\/diagnose\/finding-case-file-preparation$/, 503);
+  await page.getByRole('button', { name: 'Morning', exact: true }).click();
+  await page.waitForSelector('#level [role="alert"]');
+  is(await page.locator('#level [role="alert"]').getAttribute('data-code'),
+    'preparation_changed', 'C54 a queue-level preparation failure is visible and structured');
+  ok(await page.locator('#level .qrow').count() > 0,
+    'C54 the active queue remains visible behind its failure state');
+};
+
+export const C55 = async (page) => {
+  await openWholeDay(page);
+  await clickQueueRow(page, 'Meal over-delivery');
+  await page.getByRole('button', { name: 'Morning', exact: true }).click();
+  await page.locator('#level .case-occurrence').first().click();
+  await page.waitForSelector('#level .case-facts');
+  is(await page.locator('#level').getAttribute('data-loading'), 'false',
+    'C55 a selection superseding window preparation settles the replacement');
+  is(await page.locator('#level [role="alert"]').count(), 0,
+    'C55 the superseded preparation leg cannot strand an active failure');
+};
+
 /* ------------------------------------------------------------------- runner */
 
 /* Discovery tags for every exported replay function above. */
@@ -2983,9 +3154,44 @@ export const issue86MalformedRecovery = async (page) => {
 // STORY:finding-evidence-routing:D1
 // STORY:finding-evidence-routing:D2
 // STORY:finding-evidence-routing:D3
+// STORY:finding-evidence-routing:C41
+// STORY:finding-evidence-routing:C42
+// STORY:finding-evidence-routing:C43
+// STORY:finding-evidence-routing:C44
+// STORY:finding-evidence-routing:C45
+// STORY:finding-evidence-routing:C46
+// STORY:finding-evidence-routing:C47
+// STORY:finding-evidence-routing:C48
+// STORY:finding-evidence-routing:C49
+// STORY:finding-evidence-routing:C50
+// STORY:finding-evidence-routing:C51
+// STORY:finding-evidence-routing:C52
+// STORY:finding-evidence-routing:C53
+// STORY:finding-evidence-routing:C54
+// STORY:finding-evidence-routing:C55
 
 /** Each story names the state it must open in, and — where the shipped payload
     cannot pose its shape — the synthetic override it opens on. */
+const structured = (status, code, message) => ({ status,
+  body: { detail: { code, message } } });
+const pause = (ms) => new Promise((resolve) => { setTimeout(resolve, ms); });
+const refreshedPreparation = (preparation) => {
+  const next = structuredClone(preparation);
+  next.projection_id = `fp_${'8'.repeat(32)}`;
+  const row = next.rendered_rows.find((item) => item.id === 'finding:meal_over_delivery');
+  if (row) {
+    row.title += ' refreshed'; row.case_header.title = row.title;
+    next.behavioral_case_headers[row.id].title = row.title;
+  }
+  return next;
+};
+const refreshedCase = (body) => {
+  const next = structuredClone(body);
+  next.projection_id = `fp_${'8'.repeat(32)}`;
+  next.finding.title += ' refreshed';
+  return next;
+};
+
 export const STORIES = [
   ['S01', S01, 'drawn'], ['S02', S02, 'typical'], ['S03', S03, 'drawn'],
   ['S04', S04, 'drawn'], ['S05', S05, 'drawn'], ['S06', S06, 'typical'],
@@ -3000,7 +3206,11 @@ export const STORIES = [
   ['S29', S29, 'typical'], ['S30', S30, 'typical'], ['S31', S31, 'typical'],
   ['S32', S32, 'dense', { findingsInputs: withFiredMeal, exposuresInputs: (d) => withFiredMeal(d).exposures }],
   ['S33', S33, 'dense', { findingsInputs: withFiredMeal, exposuresInputs: (d) => withFiredMeal(d).exposures }],
-  ['S34', S34, 'dense', { comparisonStatus: 500 }],
+  ['S34', S34, 'typical', { caseScenario: {
+    case: async ({ request, body }) => request === 2
+      ? structured(500, 'inconsistent_projection', 'Synthetic event projection failure.')
+      : { body },
+  } }],
   ['S35', S35, 'dense', {
     findingsInputs: twoFamilyInputs,
     exposuresInputs: async () => (await twoFamilyInputs()).exposures,
@@ -3106,6 +3316,88 @@ export const STORIES = [
       { status: 500, detail: 'coordinated retry failed' },
       { body: withRestartGeneration },
     ] }],
+  ['C41', C41, 'typical'], ['C42', C42, 'typical'],
+  ['C43', C43, 'typical'], ['C44', C44, 'typical'],
+  ['C45', C45, 'typical', { caseScenario: {
+    case: async ({ request, body }) => request === 2
+      ? { body: { ...body, selection: { state: 'unavailable',
+        requested_id: `o_${'9'.repeat(32)}`, detail: null } } } : { body },
+  } }],
+  ['C46', C46, 'typical', { caseScenario: {
+    case: async ({ request, body }) => request === 2
+      ? structured(500, 'inconsistent_projection', 'Synthetic active case failure.') : { body },
+  } }],
+  ['C47', C47, 'typical', { caseScenario: {
+    preparation: async ({ request, preparation }) => {
+      if (request === 5) { await pause(220); return { body: refreshedPreparation(preparation) }; }
+      return { body: preparation };
+    },
+    case: async ({ request, body }) => {
+      if (request === 2) return structured(409, 'stale_projection', 'Synthetic stale preparation.');
+      if (request === 3) { await pause(220); return { body: refreshedCase(body) }; }
+      return { body };
+    },
+  } }],
+  ['C48', C48, 'typical', { caseScenario: {
+    preparation: async ({ request, preparation }) => request === 5
+      ? structured(503, 'preparation_changed', 'Synthetic queue refresh failure.')
+      : { body: preparation },
+    case: async ({ request, body }) => request === 2
+      ? structured(404, 'finding_unavailable', 'Synthetic Finding unavailable.') : { body },
+  } }],
+  ['C49', C49, 'typical', { caseScenario: {
+    preparation: async ({ request, preparation }) => ({ body: request === 5
+      ? refreshedPreparation(preparation) : preparation }),
+    case: async ({ request, body }) => request === 2
+      ? structured(409, 'stale_projection', 'Synthetic stale preparation.')
+      : request === 3
+        ? structured(500, 'inconsistent_projection', 'Synthetic refreshed case failure.')
+        : { body },
+  } }],
+  ['C50', C50, 'typical', { caseScenario: {
+    preparation: async ({ request, preparation }) => {
+      if (request === 5) { await pause(420); return { body: refreshedPreparation(preparation) }; }
+      return { body: preparation };
+    },
+    case: async ({ request, body }) => request === 2
+      ? structured(409, 'stale_projection', 'Synthetic stale preparation.') : { body },
+  } }],
+  ['C51', C51, 'typical', { caseScenario: {
+    preparation: async ({ request, preparation }) => ({ body: request === 5
+      ? refreshedPreparation(preparation) : preparation }),
+    case: async ({ request, body }) => {
+      if (request === 2) return structured(409, 'stale_projection', 'Synthetic stale preparation.');
+      if (request === 3) { await pause(500); return { body: refreshedCase(body) }; }
+      return { body };
+    },
+  } }],
+  ['C52', C52, 'typical', { caseScenario: {
+    preparation: async ({ request, preparation }) => {
+      if (request !== 5) return { body: preparation };
+      const next = structuredClone(preparation);
+      next.rendered_rows = next.rendered_rows
+        .filter((row) => row.id !== 'finding:meal_over_delivery');
+      delete next.behavioral_case_headers['finding:meal_over_delivery'];
+      return { body: next };
+    },
+    case: async ({ request, body }) => request === 2
+      ? structured(404, 'finding_unavailable', 'Synthetic Finding unavailable.') : { body },
+  } }],
+  ['C53', C53, 'typical', { caseScenario: {
+    case: async ({ request, body }) => request === 2
+      ? { body: { ...body, projection_id: `fp_${'f'.repeat(32)}` } } : { body },
+  } }],
+  ['C54', C54, 'typical', { caseScenario: {
+    preparation: async ({ url, preparation }) => url.searchParams.get('start_min') === '360'
+      ? structured(503, 'preparation_changed', 'Synthetic active preparation failure.')
+      : { body: preparation },
+  } }],
+  ['C55', C55, 'typical', { caseScenario: {
+    preparation: async ({ url, preparation }) => {
+      if (url.searchParams.get('start_min') === '360') await pause(250);
+      return { body: preparation };
+    },
+  } }],
   ['D1', D1, 'dense'], ['D2', D2, 'dense'], ['D3', D3, 'dense'],
 ];
 

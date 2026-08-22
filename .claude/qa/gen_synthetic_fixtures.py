@@ -24,13 +24,20 @@ import math
 import os
 import random
 import sys
+import time
+from copy import deepcopy
+from datetime import datetime, timedelta
 
 from ciq_autotune.explore_exposures import build_exposures as build_endpoint_exposures
 from ciq_autotune.explore_time_of_day import build_time_of_day
 from ciq_autotune.analyzers.scenario import build_scenarios
 from ciq_autotune.analyzers.isf import isf_asserts_move
-from ciq_autotune.analyzers.scenario.levers import Lever, title as lever_title
+from ciq_autotune.analyzers.scenario.levers import Exposure, Lever, exposure, title as lever_title
+from ciq_autotune.analyzers.scenario.opportunities import Opportunity
+from ciq_autotune.events import BasalEvent, BolusEvent, CarbEntry, CgmReading
+from ciq_autotune.finding_case_file import Member, PreparedCases, wrap
 from ciq_autotune.store import Store
+from ciq_autotune.window_membership import WindowQuery
 
 OUT = sys.argv[1] if len(sys.argv) > 1 else 'mockups/diagnose-workstation.synthetic'
 SEED = 620
@@ -381,6 +388,133 @@ def build_payload(scenarios, evidence, exposures, audit, ic, ic_asserting):
     }
 
 
+def build_case_file_capture():
+    """Serialize both ADR 79 endpoint bodies from one retained preparation."""
+    base = datetime(2020, 3, 1, 8)
+    verdicts = ('fired', 'fired', 'fired', 'fired', 'fired', 'fired',
+                'outranked', 'near_miss', 'no_data', 'clean')
+    families = {}
+    seq = 1000
+    for family in Exposure:
+        rows = []
+        for index in range(len(verdicts)):
+            anchor = base + timedelta(hours=index * 3 + list(Exposure).index(family),
+                                      days=index % 3)
+            if family is Exposure.MEALS:
+                dose = BolusEvent(t=anchor, insulin=4.0, carbs=40, seq_num=seq)
+                row = Opportunity(family, (seq,), anchor, 'meal', 130, members=(dose,))
+                seq += 1
+            elif family is Exposure.LOWS:
+                row = Opportunity(family,
+                    (anchor - timedelta(minutes=25), anchor + timedelta(minutes=15), anchor),
+                    anchor, 'low', 62)
+            elif family is Exposure.CORRECTION_CLUSTERS:
+                first = BolusEvent(t=anchor - timedelta(minutes=90), insulin=1.5, seq_num=seq)
+                second = BolusEvent(t=anchor, insulin=2.0, seq_num=seq + 1)
+                row = Opportunity(family, (seq, seq + 1), anchor, 'correction', 175,
+                                  members=(first, second))
+                seq += 2
+            else:
+                row = Opportunity(family,
+                    (anchor - timedelta(minutes=40), anchor + timedelta(minutes=15), anchor),
+                    anchor, 'high', 265, reach_start=anchor - timedelta(minutes=30))
+            rows.append(row)
+        families[family] = tuple(rows)
+
+    all_members, associations, recurrence = {}, {}, {}
+    rows = []
+    for priority, lever in enumerate(Lever, start=1):
+        opportunities = families[exposure(lever)]
+        members = tuple(Member(item,
+            item.anchor_t + (timedelta(minutes=180) if lever is Lever.OVER_TREATED_LOW else timedelta()),
+            verdict) for item, verdict in zip(opportunities, verdicts))
+        # Meal over-delivery deliberately proves claimed < fired.
+        claimed = frozenset({members[0].id})
+        all_members[lever] = members
+        associations[lever] = claimed
+        recurrence[lever] = (len(claimed), len(members))
+        rows.append({
+            'id': f'finding:{lever.value}', 'register': 'finding', 'kind': 'habit',
+            'title': lever_title(lever), 'priority': 100 - priority, 'tier': 'worth_a_look',
+            'parameter': None, 'label': None, 'span': None, 'direction': None,
+            'lean': None, 'current': None, 'recommended': None, 'estimate': None,
+            'support': None, 'reason': None, 'annotation': None, 'members': None,
+            'lever': lever.value, 'appearances': [], 'episodes': 1, 'evidence': [],
+            'verdict_counts': {}, 'verdict_counts_by_family': {},
+            'chips': ['corrections' if exposure(lever) is Exposure.CORRECTION_CLUSTERS
+                      else exposure(lever).value], 'window_scope': 'window',
+        })
+
+    opportunities = tuple(item for family in Exposure for item in families[family])
+    cgm = []
+    for item in opportunities:
+        for minute in range(-300, 301, 30):
+            cgm.append(CgmReading(item.anchor_t + timedelta(minutes=minute),
+                                  max(45, min(295, 125 + minute / 8)), 'EGV'))
+    bolus = tuple(sorted((dose for item in opportunities for dose in item.members),
+                         key=lambda dose: dose.seq_num))
+    basal = tuple(BasalEvent(item.anchor_t + timedelta(minutes=20), 'suspended',
+                             basal_rate=0, profile_basal_rate=0.9)
+                  for item in families[Exposure.LOWS])
+    carbs = tuple(CarbEntry(item.anchor_t + timedelta(minutes=10), 15, 'exact', 'low-prompt')
+                  for item in families[Exposure.LOWS])
+    findings = {
+        'schema': 'diagnose-findings-v1', 'window': WindowQuery.whole_day().to_dict(),
+        'findings_window': {'start': WINDOW['start'], 'end': WINDOW['end'], 'days': 30},
+        'rows': rows, 'counts': {'total': len(rows)},
+        'chip_counts': {'meals': 10, 'lows': 10, 'highs': 10, 'corrections': 10},
+        'uncaused_highs': {'count': 1, 'text': '1 high had no cause detected by the app'},
+    }
+    prepared = PreparedCases(
+        'fp_' + '7' * 32, 79, WindowQuery.whole_day(), findings, recurrence,
+        all_members, associations, {lever: () for lever in Lever}, frozenset(),
+        tuple(sorted(cgm, key=lambda row: row.t)), basal, bolus, carbs,
+        time.monotonic() + 60,
+    )
+    cases = {}
+    for lever in Lever:
+        finding_id = f'finding:{lever.value}'
+        cases[finding_id] = {
+            'clock': prepared.case(finding_id, 'clock', None),
+            'event': prepared.case(finding_id, 'event', None),
+            'selected_clock': {member.id: prepared.case(finding_id, 'clock', member.id)
+                               for member in all_members[lever]},
+            'selected_event': {member.id: prepared.case(finding_id, 'event', member.id)
+                               for member in all_members[lever]},
+            'unavailable_clock': prepared.case(finding_id, 'clock', 'o_' + '9' * 32),
+            'unavailable_event': prepared.case(finding_id, 'event', 'o_' + '9' * 32),
+        }
+    held_rows = [
+        {'id': 'basal:0-30', 'register': 'held', 'kind': 'setting', 'title': 'Basal 00:00',
+         'tier': 'noted', 'priority': None, 'parameter': 'basal_rate', 'reason': 'thin support',
+         'chips': ['lows'], 'window_scope': 'window'},
+        {'id': 'basal:210-240', 'register': 'held', 'kind': 'setting', 'title': 'Basal 03:30',
+         'tier': 'noted', 'priority': None, 'parameter': 'basal_rate', 'reason': 'thin support',
+         'chips': ['lows'], 'window_scope': 'window'},
+        {'id': 'ic:660', 'register': 'held', 'kind': 'setting', 'title': 'I:C Evening',
+         'tier': 'noted', 'priority': None, 'parameter': 'carb_ratio', 'reason': 'harm gate',
+         'chips': ['meals'], 'window_scope': 'window'},
+        {'id': 'isf', 'register': 'held', 'kind': 'setting', 'title': 'ISF',
+         'tier': 'noted', 'priority': None, 'parameter': 'isf', 'reason': 'insufficient evidence',
+         'chips': ['highs'], 'window_scope': 'whole_day'},
+    ]
+    overnight_findings = deepcopy(findings)
+    overnight_findings['window'] = WindowQuery.clock(0, 360).to_dict()
+    overnight_findings['rows'] = [*rows, *held_rows]
+    overnight = PreparedCases(
+        'fp_' + '8' * 32, 79, WindowQuery.clock(0, 360), overnight_findings, recurrence,
+        all_members, associations, {lever: () for lever in Lever}, frozenset(),
+        tuple(sorted(cgm, key=lambda row: row.t)), basal, bolus, carbs,
+        time.monotonic() + 60,
+    )
+    return {
+        '_generated_by': '.claude/qa/gen_synthetic_fixtures.py',
+        '_note': 'SYNTHETIC ADR 79 endpoint capture; fixed construction, no personal data.',
+        'preparation': wrap(prepared), 'cases': cases,
+        'scoped': {'0-360': {'preparation': wrap(overnight), 'cases': {}}},
+    }
+
+
 os.makedirs(OUT, exist_ok=True)
 day, manufactured_exposures, audit = build_day(), build_exposures(), build_audit()
 ic, ic_asserting = build_ic(False), build_ic(True)
@@ -408,6 +542,7 @@ files = {
     'ic-blocks-asserting.capture.json': ic_asserting,
     'payload.json': build_payload(scenarios, evidence, browser_exposures, audit, ic,
                                   ic_asserting),
+    'finding-case-files.json': build_case_file_capture(),
 }
 for name, body in files.items():
     with open(os.path.join(OUT, name), 'w') as f:

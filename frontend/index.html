@@ -2401,6 +2401,8 @@ html.dark .viz .tie:hover::before { opacity:.13; }
       fetchDiagnoseEventComparison as dataFetchDiagnoseEventComparison,
       fetchDiagnoseFindings as dataFetchDiagnoseFindings,
       fetchDiagnoseCarbRatioHistoryEvents as dataFetchDiagnoseCarbRatioHistoryEvents,
+      fetchDiagnoseFindingCasePreparation as dataFetchDiagnoseFindingCasePreparation,
+      fetchDiagnoseFindingCase as dataFetchDiagnoseFindingCase,
       fetchTimeline as dataFetchTimeline,
       fetchCarbs as dataFetchCarbs,
       createCarb as dataCreateCarb,
@@ -5635,6 +5637,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         // #735: the server-owned findings queue (ADR 730) and the single active
         // watched-change object the outcomes payload already resolves (ADR 0029).
         const diagnoseFindings = ref(null);
+        const diagnoseCasePreparation = ref(null);
         const diagnoseWatched = ref(null);
 
         // The navigator feed is per calendar month with a week of pad either side, so
@@ -5645,20 +5648,21 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           if (!hasToken.value || diagnoseLoaded) return;
           diagnoseLoaded = true;
           try {
-            const [a, s, e, x, f, o] = await Promise.all([
+            const [a, s, e, x, p, o] = await Promise.all([
               enqueue(() => dataFetchAnalysis({ window: 30, pool: true })),
               enqueue(() => dataFetchScenarios(30)),
               enqueue(() => dataFetchExploreTimeOfDay()),
               enqueue(() => dataFetchExploreExposures()),
               // the GLOBAL queue — the unscoped 24 h list the surface opens on
-              enqueue(() => dataFetchDiagnoseFindings(null)),
+              enqueue(() => dataFetchDiagnoseFindingCasePreparation(null)),
               // the dock's object; the trend payload is where the one-active
               // invariant is already resolved, so nothing is re-derived here
               enqueue(() => dataFetchOutcomesTrend(30)),
             ]);
             diagnoseAnalysis.value = a; diagnoseScenarios.value = s; diagnoseEvidence.value = e;
             diagnoseExposures.value = x;
-            diagnoseFindings.value = f;
+            diagnoseCasePreparation.value = p;
+            diagnoseFindings.value = { ...p.findings, rows: p.rendered_rows };
             diagnoseWatched.value = o?.watched_change || null;
             diagnoseReady.value = true;
             nextTick(diagnoseMount);
@@ -5716,7 +5720,8 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           if (!diagnoseRoot.value) return null;
           if (!diagnoseView) diagnoseView = createDiagnoseEventComparison({ root: diagnoseRoot.value,
             callbacks: { stage: diagnoseStage, isStaged: diagnoseIsStaged,
-              day: (occurrence) => goToMoment(occurrence.t, occurrence.text,
+              day: (occurrence) => goToMoment(occurrence.t || occurrence.anchor?.t,
+                occurrence.text || occurrence.anchor?.label,
                 occurrence.cause_lever, occurrence.cause_lever), retry: loadAudit,
               // Lock term 19: the occurrence level overlays that day's REAL trace
               // when one exists. The app does not ship 30 days of raw CGM, so the
@@ -5736,6 +5741,10 @@ html.dark .viz .tie:hover::before { opacity:.13; }
                 dataFetchDiagnoseFindings(window, selectedHistoryId)),
               loadHistoryEvents: (coordinates) => enqueue(() =>
                 dataFetchDiagnoseCarbRatioHistoryEvents(coordinates)),
+              loadPreparation: (window) => enqueue(() =>
+                dataFetchDiagnoseFindingCasePreparation(window)),
+              loadCase: (coordinates) => enqueue(() =>
+                dataFetchDiagnoseFindingCase(coordinates)),
               // the dock's outlined route control, term 49
               go: (to) => setTab(to),
             } });
@@ -5746,7 +5755,8 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           if (!view) return;
           view.setData({ analyze: diagnoseAnalysis.value, scenarios: diagnoseScenarios.value,
             evidence: diagnoseEvidence.value, exposures: diagnoseExposures.value,
-            findings: diagnoseFindings.value, watched: diagnoseWatched.value });
+            findings: diagnoseFindings.value, casePreparation: diagnoseCasePreparation.value,
+            watched: diagnoseWatched.value });
         }
 
         /** One day's timeline rows, in the shape the ported chart's buildDayTrace reads. */

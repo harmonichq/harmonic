@@ -73,6 +73,22 @@ const COHORTS = {
     color: '--ec-other',
     lineType: 'dashed',
   },
+  outranked: {
+    label: 'Claimed by another factor', short: 'Outranked',
+    note: 'Another factor owns this Occurrence', color: '--ec-other', lineType: 'dashed',
+  },
+  near_miss: {
+    label: 'Borderline', short: 'Borderline',
+    note: 'Narrowly outside the Finding', color: '--ec-near', lineType: 'dashed',
+  },
+  no_data: {
+    label: 'Not comparable', short: 'No data',
+    note: 'Support is unavailable', color: '--ec-other', lineType: 'dotted',
+  },
+  clean: {
+    label: 'Does not meet', short: 'Clean',
+    note: 'Comparable; Finding did not fire', color: '--ec-neutral', lineType: 'dotted',
+  },
 };
 
 const viewCopy = {
@@ -274,8 +290,7 @@ const rounded = (value) => value == null ? '—' : String(Math.round(value));
    into the workstation's own ALIGN instrument, and the rest have no reader
    left to drive them once View is gone) and no inspector pane. What remains
    is exactly the canvas, its legend and its hover readout. */
-function createHeaderMarkup(viewKey, coordinates) {
-  const copy = viewCopy[viewKey];
+function createHeaderMarkup(viewKey, coordinates, copy = viewCopy[viewKey]) {
   return `
     <div class="head-swap">
       <div class="head-line head-rest">
@@ -287,15 +302,14 @@ function createHeaderMarkup(viewKey, coordinates) {
     <span class="meta persist">${copy.context}</span>`;
 }
 
-function createSurfaceMarkup(viewKey, coordinates, headerHost) {
-  const copy = viewCopy[viewKey];
+function createSurfaceMarkup(viewKey, coordinates, headerHost, copy = viewCopy[viewKey]) {
   const body = `<div class="body ec-event-body">
     <div id="ec-chart" class="ec-chart" role="img" tabindex="0" aria-label="${copy.title}. Use left and right arrow keys to inspect five-minute points."></div>
     <div class="ec-chart-key" id="ec-chart-key" aria-label="Cohort legend"></div>
   </div>`;
   if (headerHost) return body;
   return `<main class="panes ec-panes"><section class="pane canvas-pane ec-canvas" aria-label="${copy.title}">
-    <header class="canvas-head" id="ec-canvas-head" data-hover="0">${createHeaderMarkup(viewKey, coordinates)}</header>${body}
+    <header class="canvas-head" id="ec-canvas-head" data-hover="0">${createHeaderMarkup(viewKey, coordinates, copy)}</header>${body}
   </section></main>`;
 }
 
@@ -404,18 +418,22 @@ function selectedSeries(surface, occurrence) {
   if (occurrence.markers.length && occurrence.glucose.length) {
     const readings = occurrence.glucose;
     series.push({
-      name: 'Rescue carbs',
+      name: 'Selected evidence markers',
       type: 'scatter',
       z: 10,
-      symbol: 'triangle',
       symbolSize: 11,
-      data: occurrence.markers.map((carbs) => {
+      data: occurrence.markers.map((marker) => {
         const nearest = readings.reduce((best, point) =>
-          Math.abs(point.minute - carbs.minute) < Math.abs(best.minute - carbs.minute) ? point : best,
+          Math.abs(point.minute - marker.minute) < Math.abs(best.minute - marker.minute) ? point : best,
         );
-        return [carbs.minute, nearest.bg, carbs.grams];
+        const style = marker.kind === 'rescue_carb'
+          ? { symbol: 'triangle', color: css(surface, '--ck-manual') }
+          : marker.kind === 'suspend'
+            ? { symbol: 'rect', color: css(surface, '--mk-danger') }
+            : { symbol: 'circle', color: css(surface, '--ec-focus') };
+        return { value: [marker.minute, nearest.bg], symbol: style.symbol,
+          itemStyle: { color: style.color, borderColor: css(surface, '--mk-surface'), borderWidth: 1 } };
       }),
-      itemStyle: { color: css(surface, '--ck-manual'), borderColor: css(surface, '--mk-surface'), borderWidth: 1 },
     });
   }
   return series;
@@ -473,11 +491,12 @@ function paintLegend(surface, cohortOrder, cohorts, aggregates, selected) {
   key.innerHTML = cohortOrder.map((cohort) => {
     const record = cohorts[cohort];
     const support = record.support[0].toUpperCase() + record.support.slice(1);
-    const selectedCohort = selected?.verdict.cohort === cohort;
+    const selectedCohort = selected?.verdict?.cohort === cohort;
     const detail = record.support === 'withheld' && record.usable_count === 0
       ? `${record.routed_count} events · no usable episodes to draw`
       : record.support === 'withheld'
-        ? `${record.routed_count} events · ${record.usable_count} ${record.usable_count === 1 ? 'episode' : 'episodes'} shown individually`
+        ? `${record.routed_count} events · aggregate withheld${record.episodes?.length
+          ? ` · ${record.usable_count} ${record.usable_count === 1 ? 'episode' : 'episodes'} shown individually` : ''}`
       : `${record.routed_count} events · ${pointStateSummary(aggregates[cohort])} points`;
     return `
       <span class="ec-key-item" data-cohort="${cohort}" data-support="${record.support}" data-selected-cohort="${selectedCohort}">
@@ -490,7 +509,7 @@ function paintLegend(surface, cohortOrder, cohorts, aggregates, selected) {
     key.insertAdjacentHTML('beforeend', `
       <span class="ec-key-item" data-cohort="selected">
         <i class="ec-key-mark" aria-hidden="true" style="color:var(--ec-focus)"></i>
-        <strong>Selected trace</strong><small>${fmtDate(selected.anchor.date)} · observed</small>
+        <strong>Selected trace</strong><small>${fmtDate(selected.date || selected.anchor.date)} · observed</small>
       </span>`);
   }
 }
@@ -511,12 +530,12 @@ function chartOption(surface, coordinates, copy, cohortOrder, cohorts, aggregate
   for (const cohort of cohortOrder) {
     for (const support of ['supported', 'limited']) {
       if (!aggregates[cohort].some((row) => row.support === support)) continue;
-      const selectedCohort = selected?.verdict.cohort;
+      const selectedCohort = selected?.verdict?.cohort;
       series.push(whiskerSeries(surface, cohort, aggregates[cohort], selectedCohort, support));
       series.push(lineSeries(surface, cohort, aggregates[cohort], selectedCohort, support));
     }
     if (cohorts[cohort].support === 'withheld') {
-      series.push(...episodeSeries(surface, cohort, cohorts[cohort].episodes, selected?.verdict.cohort));
+      series.push(...episodeSeries(surface, cohort, cohorts[cohort].episodes || [], selected?.verdict?.cohort));
     }
   }
   series.push(...selectedSeries(surface, selected));
@@ -559,11 +578,48 @@ function chartOption(surface, coordinates, copy, cohortOrder, cohorts, aggregate
   };
 }
 
+function eventSurfaceInput(payload) {
+  if (payload.schema !== 'diagnose-finding-case-file-v1') {
+    return { projection: payload, copy: viewCopy[payload.coordinates.view] };
+  }
+  const event = payload.projection;
+  if (event.alignment !== 'event') throw new Error('Finding case file is not event-aligned.');
+  const view = payload.family;
+  const coordinates = {
+    view,
+    factor: payload.finding.lever,
+    factor_options: [{ key: payload.finding.lever, label: payload.finding.title }],
+    anchor: event.anchor,
+    alignment_window_min: event.window_min,
+  };
+  const detail = payload.selection.state === 'selected' ? payload.selection.detail : null;
+  const selection = detail ? {
+    state: 'selected', requested_id: payload.selection.requested_id,
+    detail: { ...detail, anchor: { ...detail.anchor, date: detail.date },
+      verdict: { cohort: detail.verdict } },
+  } : payload.selection;
+  return {
+    projection: {
+      coordinates,
+      cohorts: event.cohorts.map((cohort) => ({ ...cohort, episodes: cohort.episodes || [] })),
+      selection,
+    },
+    copy: {
+      title: `${payload.finding.title} response comparison`,
+      axisAnchor: event.anchor.label,
+      occurrence: payload.summary.noun,
+      context: `${event.anchor.label} · ${axisLabel(event.window_min[0], event.anchor.label)} to ${axisLabel(event.window_min[1], event.anchor.label)}`,
+    },
+  };
+}
+
 /** Canvas-only render (P52): the chart, its legend and its hover readout —
     nothing else. Reused as-is by both this module's own `?view=meals`/`lows`
     read path and, once exported, the workstation's ALIGN "By event" mode
     (ADR 31 part 3) — one implementation of the projection's draw, never two. */
-export function renderEventSurface(surface, projection, { headerHost = null } = {}) {
+export function renderEventSurface(surface, payload, { headerHost = null } = {}) {
+  const normalized = eventSurfaceInput(payload);
+  const projection = normalized.projection;
   const { coordinates } = projection;
   const viewKey = coordinates.view;
   const cohortOrder = projection.cohorts.map(({ key }) => key);
@@ -571,14 +627,14 @@ export function renderEventSurface(surface, projection, { headerHost = null } = 
   const aggregates = Object.fromEntries(projection.cohorts.map((cohort) => [cohort.key, cohort.points]));
   const selected = projection.selection.state === 'selected'
     ? projection.selection.detail : null;
-  const copy = viewCopy[viewKey];
+  const copy = normalized.copy;
 
   const previousHeader = headerHost ? { html: headerHost.innerHTML, hover: headerHost.dataset.hover } : null;
   if (headerHost) {
-    headerHost.innerHTML = createHeaderMarkup(viewKey, coordinates);
+    headerHost.innerHTML = createHeaderMarkup(viewKey, coordinates, copy);
     headerHost.dataset.hover = '0';
   }
-  surface.innerHTML = createSurfaceMarkup(viewKey, coordinates, headerHost);
+  surface.innerHTML = createSurfaceMarkup(viewKey, coordinates, headerHost, copy);
   /* Comparison population is projection data, not an app-side `data-state`.
      Aside from duplicating server policy, a `dense` state on this `.dw` would
      collide with the workstation density selector and shift shared geometry. */
@@ -622,7 +678,7 @@ export function renderEventSurface(surface, projection, { headerHost = null } = 
     headerHost.innerHTML = previousHeader.html;
     headerHost.dataset.hover = previousHeader.hover;
   };
-  const rendered = { chart, observer, restoreHeader, projection, view: viewKey,
+  const rendered = { chart, observer, restoreHeader, projection: payload, view: viewKey,
     factor: coordinates.factor, selected, cohorts, aggregates };
   window.__diagnoseEventComparison = rendered;
   return rendered;

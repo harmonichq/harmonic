@@ -3,6 +3,8 @@
  * The generator derives `inputs.event_charts` from Python's canonical
  * event-comparison configuration. The fixture-only mirror consumes that object;
  * production browser code never carries a title or factor allowlist.
+ * ADR 79 separately requires every server-inspectable Finding, including Highs,
+ * to own both case-file projections without browser routing or joining.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -12,6 +14,7 @@ import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 
 const fixture = JSON.parse(readFileSync(
   fileURLToPath(new URL('./__fixtures__/findings-projection.json', import.meta.url)), 'utf8'));
+const source = readFileSync(new URL('./diagnose-workstation.js', import.meta.url), 'utf8');
 
 const CANONICAL_EVENT_CHARTS = {
   carb_undercount: { view: 'meals', factor: 'carb_undercount' },
@@ -57,4 +60,34 @@ test('#83 · compatibility without the canonical family publishes null', () => {
     event_charts: fixture.inputs.event_charts,
   }, null).rows[0];
   assert.equal(highOnly.event_chart, null);
+});
+
+test('ADR 79 · no title router or browser population join remains', () => {
+  for (const retired of ['ALIGN_FACTOR_BY_CAUSE', 'alignCoordinatesFor', 'publishedFor',
+    'scopedFor', 'occurrencesFor']) {
+    assert.ok(!source.includes(retired), `${retired} is retired by ADR 79`);
+  }
+  assert.doesNotMatch(source, /\.ep_id\s*===|\.t\s*===\s*.*\.t/,
+    'the browser does not join Exposure membership by episode/time');
+});
+
+test('ADR 79 · roster controls consume the published cohort count', () => {
+  const roster = source.match(/function renderCaseRoster[\s\S]*?function renderCaseSelection/);
+  assert.ok(roster, 'the server-owned case roster exists');
+  assert.match(roster[0], /caseFile\.verdict_counts\[verdict\]/,
+    'the roster reads the published cohort count');
+  assert.doesNotMatch(roster[0], /rows\.length/,
+    'the roster never recounts its server-owned cohort for display or pagination');
+});
+
+test('ADR 79 · every visible behavioral row requests its opaque case id', () => {
+  assert.match(source, /if \(row\.register === 'finding'\)[\s\S]*rowId: row\.id[\s\S]*requestCase\(frame, 'clock'\)/,
+    'the row identity, not its title, opens the server case');
+  assert.match(source, /renderEventSurface\(host, f\.caseFile/,
+    'Highs and correction clusters use the shared server event-projection path');
+});
+
+test('ADR 79 · event alignment never falls back to clock at paint time', () => {
+  assert.ok(!source.includes("open.align = 'clock'"), 'no event-to-clock fallback');
+  assert.ok(!source.includes('0 of 0'), 'no fabricated empty frame copy');
 });

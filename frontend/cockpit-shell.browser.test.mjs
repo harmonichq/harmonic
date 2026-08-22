@@ -62,6 +62,8 @@ const EVENT_COMPARISON = JSON.parse(await readFile(
   join(ROOT, 'mockups/diagnose-event-comparison.synthetic/capture.json'), 'utf8'));
 const FINDINGS_PROJECTION = JSON.parse(await readFile(
   join(FRONTEND, '__fixtures__/findings-projection.json'), 'utf8'));
+const FINDING_CASE_FILES = JSON.parse(await readFile(
+  join(ROOT, 'mockups/diagnose-workstation.synthetic/finding-case-files.json'), 'utf8'));
 const COCKPIT_LEDGER = await readFile(join(ROOT, 'mockups/cockpit-shell.behavior.md'), 'utf8');
 const REPLAY_SOURCE = await readFile(fileURLToPath(import.meta.url), 'utf8');
 const SHOTS = process.env.COCKPIT_SHOTS;
@@ -273,6 +275,23 @@ async function routeApp(page, options = {}) {
     if (url.pathname === '/pump-settings') return route.fulfill({ json: pumpSettings });
     if (url.pathname === '/credentials') return route.fulfill({ json: { configured: false } });
     if (url.pathname === '/explore/time-of-day') return route.fulfill({ json: timeOfDay });
+    if (url.pathname === '/diagnose/finding-case-file-preparation') {
+      return route.fulfill({ body: JSON.stringify(FINDING_CASE_FILES.preparation),
+        contentType: 'application/json' });
+    }
+    if (url.pathname === '/diagnose/finding-case-file') {
+      const finding = FINDING_CASE_FILES.cases[url.searchParams.get('finding_id')];
+      const alignment = url.searchParams.get('alignment') || 'clock';
+      const occurrence = url.searchParams.get('occ');
+      const body = !finding
+        ? { detail: { code: 'finding_unavailable', message: 'Finding unavailable.' } }
+        : occurrence
+          ? (finding[`selected_${alignment}`][occurrence]
+            || finding[`unavailable_${alignment}`])
+          : finding[alignment];
+      return route.fulfill({ status: finding ? 200 : 404, body: JSON.stringify(body),
+        contentType: 'application/json' });
+    }
     if (url.pathname === '/diagnose/event-comparison') {
       const project = options.eventProjection || ((requestUrl, capture) =>
         projectSyntheticCapture(capture, {

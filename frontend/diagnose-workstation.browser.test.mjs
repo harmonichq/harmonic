@@ -557,7 +557,9 @@ test('deselecting a Sift item leaves only rows matching the remaining choices', 
       await page.getByRole('menuitemcheckbox', { name: 'Highs 4', exact: true }).click();
       await settle(page, 350);
       assert.deepEqual(await page.locator('#level .qrow').evaluateAll((rows) => rows.map((row) => row.dataset.id)), [
-        'finding:correction_on_iob', 'finding:late_bolus',
+        'finding:carb_undercount', 'finding:late_bolus', 'finding:meal_over_delivery',
+        'finding:over_treated_low', 'finding:correction_stacking',
+        'finding:correction_on_iob',
       ], 'a deselected Highs chip hides high-only rows while preserving multi-chip matches');
       await page.close();
       assert.deepEqual(openerProblems().slice(before), [],
@@ -1009,7 +1011,7 @@ test('frontend contains no client-side verdict threshold or direction comparison
     'lane verdict mapping reads backend direction fields, never dose arithmetic');
   // LOCK:diagnose-workstation:29 — occurrence handoff retains claim date into Day.
   const index = await readFile(join(ROOT, 'frontend/index.html'), 'utf8');
-  assert.match(index, /day: \(occurrence\) => goToMoment\(occurrence\.t, occurrence\.text/);
+  assert.match(index, /day: \(occurrence\) => goToMoment\(occurrence\.t \|\| occurrence\.anchor\?\.t,[\s\S]*occurrence\.text \|\| occurrence\.anchor\?\.label/);
   assert.match(index, /import \{ createDiagnoseEventComparison \} from '\.\/diagnose-event-comparison\.js';/);
   assert.match(index, /diagnoseView = createDiagnoseEventComparison\(\{ root: diagnoseRoot\.value,/);
   assert.match(index, /diagnoseStageItemsFor\(item\.key, diagnoseAnalysis\.value\)/);

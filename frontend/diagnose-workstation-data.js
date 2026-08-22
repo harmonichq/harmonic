@@ -112,6 +112,7 @@ export function toCaptures(payload = {}, { loadDay = null, onDayLoaded = null, s
        so nothing here reshapes either: renaming a field is the first step towards
        composing one. */
     findings: payload.findings || null,
+    casePreparation: payload.casePreparation || null,
     watched: payload.watched || null,
     envelope: envelopeFromPooled(evidence.pooled),
     markers: markersFromPooled(evidence.pooled),

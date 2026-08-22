@@ -6,7 +6,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
-  EMPTY_LINE, EMPTY_SIFT_LINE, HELD_PREFIX, TAIL_NOTE, queueMeta, queueRows, uncausedNote,
+  EMPTY_LINE, EMPTY_SIFT_LINE, HELD_PREFIX, TAIL_NOTE, eventChartCoordinate,
+  queueMeta, queueRows, uncausedNote,
 } from './diagnose-findings-queue.js';
 
 const fixture = JSON.parse(readFileSync(
@@ -232,7 +233,7 @@ test('chips sift only on published membership and keep withheld reads reachable'
   const withheld = rows.filter((row) => row.register === 'held' || row.register === 'blind');
   assert.ok(withheld.length > 0);
   assert.ok(withheld.every((row) => !row.hidden && row.collapsed));
-  assert.equal(EMPTY_SIFT_LINE, 'No findings match the current chips.');
+  assert.equal(EMPTY_SIFT_LINE, 'No findings match the current filters.');
 });
 
 test('a sift computes its priced seam over only visible rows', () => {
@@ -247,6 +248,52 @@ test('a sift computes its priced seam over only visible rows', () => {
 
 test('a null selection is byte-identical to the unsifted queue', () => {
   assert.deepEqual(queueRows(W.global), queueRows(W.global, null));
+});
+
+test('#83 · Event charts intersects Sift using only published row facts', () => {
+  const eventRows = queueRows(W.global, new Set(['highs']), true);
+  const shown = eventRows.filter((row) => !row.hidden && !row.collapsed);
+
+  assert.ok(shown.length > 0, 'the fixture carries an eligible high Finding');
+  assert.ok(shown.every((row) => row.raw.chips.includes('highs')));
+  assert.ok(shown.every((row) => row.raw.event_chart !== null));
+  assert.deepEqual(
+    shown.map((row) => row.id),
+    W.global.rows
+      .filter((row) => row.chips.includes('highs') && row.event_chart !== null)
+      .map((row) => row.id),
+    'the filtered queue retains server order',
+  );
+});
+
+test('#83 · Event charts excludes settings, held reads, and incompatible Findings', () => {
+  const rows = queueRows(W.afternoon, null, true);
+  const shown = rows.filter((row) => !row.hidden && !row.collapsed);
+
+  assert.ok(shown.every((row) => row.flavor === 'habit'));
+  assert.ok(shown.every((row) => row.raw.event_chart !== null));
+  assert.ok(rows.filter((row) => row.raw.event_chart === null).every((row) => row.hidden));
+  assert.equal(rows.some((row) => row.collapsed), false,
+    'Event charts removes held and blind rows instead of offering disclosure');
+});
+
+test('#83 · malformed coordinates never make a row eligible', () => {
+  const source = W.global.rows.find((row) => row.event_chart !== null);
+  for (const event_chart of [{}, [], { view: 'meals' }, { view: 'unknown', factor: 'late_bolus' },
+    { view: 'meals', factor: '' }, { view: 'meals', factor: 'late_bolus', extra: true }]) {
+    const row = { ...source, event_chart };
+    assert.equal(eventChartCoordinate(row), null);
+    const [rendered] = queueRows({ rows: [row] }, null, true);
+    assert.equal(rendered.hidden, true);
+  }
+});
+
+test('#83 · metadata and empty copy describe the visible root filters', () => {
+  const eligible = W.global.rows.filter((row) => row.event_chart !== null).length;
+  assert.equal(queueMeta(W.global, null, true), `${eligible} findings · 30 days`);
+  assert.equal(queueMeta(W.global, new Set(['meals']), true), '1 finding · 30 days');
+  assert.equal(queueMeta(W.afternoon, new Set(['meals']), true), '30 days');
+  assert.equal(EMPTY_SIFT_LINE, 'No findings match the current filters.');
 });
 
 /* #63 — the unexplained-highs line. It is the server's finished sentence and the

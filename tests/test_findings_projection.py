@@ -26,6 +26,7 @@ from ciq_autotune.findings_projection import (
     WindowQuery,
     prepare_findings_projection,
 )
+from ciq_autotune.event_comparison import FACTOR_LABELS, VIEW_CONFIG
 from ciq_autotune.harm import HarmArm, HarmConfig, PrintedLow
 from ciq_autotune.safety import Status
 from ciq_autotune.ic_history import (
@@ -421,6 +422,81 @@ class ChipProjectionTest(unittest.TestCase):
                 self.assertEqual(row["chips"], [chip])
                 self.assertEqual(row["window_scope"],
                                  "whole_day" if parameter == "isf" else "window")
+
+
+class EventChartProjectionTest(unittest.TestCase):
+    def test_canonical_factors_publish_their_coordinates_when_the_family_is_present(self):
+        exposures = {}
+        expected = {}
+        for hour, (view, config) in enumerate(VIEW_CONFIG.items()):
+            occurrences = []
+            for offset, factor in enumerate(config["factors"]):
+                occurrences.append({
+                    "t": f"2026-08-17 {hour * 6 + offset:02d}:00:00",
+                    "date": "2026-08-17",
+                    "kind": view,
+                    "cause_lever": factor,
+                    "cause_title": FACTOR_LABELS[factor],
+                    "ep_id": factor,
+                    "verdicts": [],
+                })
+                expected[factor] = {"view": view, "factor": factor}
+            exposures[view] = {"occurrences": occurrences}
+
+        rows = FindingsProjection(
+            _analysis={"window_days": 30},
+            _exposures={"exposures": exposures},
+            _scenarios={"patterns": [], "low_confidence": []},
+        ).project(WindowQuery.whole_day())["rows"]
+
+        self.assertEqual(
+            {row["lever"]: row["event_chart"] for row in rows},
+            expected,
+        )
+
+    def test_ineligible_findings_and_settings_publish_explicit_null(self):
+        settings = [
+            row for row in gen.projection().project(WindowQuery.whole_day())["rows"]
+            if row["register"] != "finding"
+        ]
+        unsupported = FindingsProjection(
+            _analysis={"window_days": 30},
+            _exposures={"exposures": {"highs": {"occurrences": [{
+                "t": "2026-08-17 09:00:00",
+                "date": "2026-08-17",
+                "kind": "highs",
+                "cause_lever": "missed_meal",
+                "cause_title": "Missed / unannounced meal",
+                "ep_id": "missed-meal",
+                "verdicts": [],
+            }]}}},
+            _scenarios={"patterns": [], "low_confidence": []},
+        ).project(WindowQuery.whole_day())["rows"][0]
+
+        rows = [*settings, unsupported]
+        self.assertTrue(all("event_chart" in row for row in rows))
+        self.assertTrue(all(
+            row["event_chart"] is None
+            for row in rows
+        ))
+
+    def test_a_compatible_factor_without_its_event_family_publishes_null(self):
+        projection = FindingsProjection(
+            _analysis={"window_days": 30},
+            _exposures={"exposures": {"highs": {"occurrences": [{
+                "t": "2026-08-17 09:00:00",
+                "date": "2026-08-17",
+                "kind": "highs",
+                "cause_lever": "late_bolus",
+                "cause_title": "Late bolus",
+                "ep_id": "late-bolus-high-only",
+                "verdicts": [],
+            }]}}},
+            _scenarios={"patterns": [], "low_confidence": []},
+        )
+
+        row = projection.project(WindowQuery.whole_day())["rows"][0]
+        self.assertIsNone(row["event_chart"])
 
 
 class QueueOrderTest(unittest.TestCase):

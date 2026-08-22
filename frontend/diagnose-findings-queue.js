@@ -22,7 +22,7 @@
 /** Term 41 — the empty findings window is a result, not a void. */
 export const EMPTY_LINE = 'No pattern or setting asserts a direction in this window.';
 /** A sift can exclude assertions without making the window itself empty. */
-export const EMPTY_SIFT_LINE = 'No findings match the current chips.';
+export const EMPTY_SIFT_LINE = 'No findings match the current filters.';
 /** Term 42 — the sentence that lives inside the doubled gap, naming the tail. */
 export const TAIL_NOTE = 'Not recurring often enough to rank yet.';
 /** Term 14 — a held row's reason line; the suffix is the backend's own words. */
@@ -73,6 +73,18 @@ function num(value) {
   return text.endsWith('.') ? `${text}0` : text;
 }
 
+/** Validate the additive server coordinate as protocol data, without deciding
+ * which Finding kinds are eligible. Membership remains entirely server-owned. */
+export function eventChartCoordinate(row) {
+  const coordinate = row?.event_chart;
+  if (coordinate === null || typeof coordinate !== 'object' || Array.isArray(coordinate)) return null;
+  if (Object.keys(coordinate).length !== 2
+      || !Object.hasOwn(coordinate, 'view') || !Object.hasOwn(coordinate, 'factor')) return null;
+  if (!['meals', 'lows'].includes(coordinate.view)
+      || typeof coordinate.factor !== 'string' || coordinate.factor.length === 0) return null;
+  return coordinate;
+}
+
 /**
  * Term 45 — the queue's meta copy, and nothing else ever goes there.
  *
@@ -83,8 +95,9 @@ function num(value) {
  * restated either: the follow chip and the chart's own window label already print
  * the hours, and a third copy one line apart is noise.
  */
-export function queueMeta(projection) {
-  const rows = projection?.rows || [];
+export function queueMeta(projection, selected = null, eventChartsOnly = false) {
+  const rows = queueRows(projection, selected, eventChartsOnly)
+    .filter((row) => !row.hidden && !row.collapsed);
   const days = projection?.findings_window?.days;
   const dayWord = days === 1 ? 'day' : 'days';
   if (!rows.length) return `${days} ${dayWord}`;
@@ -149,7 +162,7 @@ function assertDetail(row) {
  * server's row facts to place existing markup; it does not classify or infer the
  * row's published tier.
  */
-export function queueRows(projection, selected = null) {
+export function queueRows(projection, selected = null, eventChartsOnly = false) {
   const rows = projection?.rows || [];
   const sifting = selected !== null;
   const filtered = rows.map((row) => {
@@ -158,8 +171,9 @@ export function queueRows(projection, selected = null) {
       || row.register === 'history';
     // Watching reads sit outside the chip system. They collapse during a sift,
     // but must remain reachable rather than disappearing with no account.
-    const hidden = chips.length > 0 && sifting && !chips.some((chip) => selected.has(chip));
-    const collapsed = watching && sifting;
+    const siftedOut = chips.length > 0 && sifting && !chips.some((chip) => selected.has(chip));
+    const hidden = siftedOut || (eventChartsOnly && eventChartCoordinate(row) === null);
+    const collapsed = !eventChartsOnly && watching && sifting;
     return { row, hidden, collapsed };
   });
   let pricedSeen = false;
@@ -260,16 +274,15 @@ function paintDetail(node, detail) {
  */
 export function renderFindingsQueue(host, projection, onDrill, view = null) {
   /* `view` is workstation-owned UX state:
-     { selected: Set<string>|null, collapsedExpanded: boolean,
+     { selected: Set<string>|null, eventChartsOnly: boolean, collapsedExpanded: boolean,
        onToggleCollapsed: () => void }. Null selection means no sift. */
   const selected = view?.selected ?? null;
-  const sifting = selected !== null;
-  const rows = queueRows(projection, selected);
-  /* Appended on EVERY exit below — empty queue and empty SIFT included: the sentence
-     is about the whole findings window, so a scope, or a chip selection, with nothing
-     in it still owes the reader the count rather than reading as though nothing went
-     unexplained. A sift narrows which findings show; it cannot change how many highs
-     the engine explained nothing about. */
+  const eventChartsOnly = view?.eventChartsOnly === true;
+  const filtering = selected !== null || eventChartsOnly;
+  const rows = queueRows(projection, selected, eventChartsOnly);
+  /* Appended on EVERY exit below — empty queue and empty filter result included:
+     the sentence is about the whole findings window, so root filters cannot change
+     how many highs the engine explained nothing about. */
   const note = uncausedNote(projection);
   const appendNote = () => {
     if (!note) return;
@@ -288,7 +301,7 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
   }
   const shown = rows.filter((row) => !row.hidden && !row.collapsed);
   const collapsed = rows.filter((row) => row.collapsed);
-  if (sifting && !shown.length) {
+  if (filtering && !shown.length) {
     const line = document.createElement('p');
     line.className = 'quiet-line sift-empty';
     line.textContent = EMPTY_SIFT_LINE;

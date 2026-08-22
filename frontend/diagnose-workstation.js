@@ -29,7 +29,9 @@ import {
 } from './diagnose-workstation-chart.js';
 import { toCaptures, isfVerdict } from './diagnose-workstation-data.js';
 // #735: level 1 is the server-owned findings queue, and the pane has a floor.
-import { renderFindingsQueue, queueMeta } from './diagnose-findings-queue.js';
+import {
+  eventChartCoordinate, renderFindingsQueue, queueMeta,
+} from './diagnose-findings-queue.js';
 import { watchDockView, paintWatchDock } from './watched-change-dock.js';
 /* ADR 31 part 3 (issue #41) — ALIGN's "By event" mode reuses the lens's own
    canvas-only render rather than a second implementation of the projection's
@@ -37,7 +39,7 @@ import { watchDockView, paintWatchDock } from './watched-change-dock.js';
    from this module too; the cycle is safe because neither side calls the
    other's import at module-evaluation time, only from inside functions run
    later, after both modules have finished loading. */
-import { renderEventSurface } from './diagnose-event-comparison.js';
+import { renderEventSurface, validEventProjection } from './diagnose-event-comparison.js';
 
 /* VERBATIM from the mock's shared harness chrome. The ported chartColors() calls it, and
    it must read the live stylesheet rather than any restated token (R3). */
@@ -64,10 +66,6 @@ const MARKUP = `
     <div class="instrument">
       <span class="cap">Window</span>
       <div class="seg" id="seg-window" role="group" aria-label="Clock window"></div>
-    </div>
-    <div class="instrument" id="chips-group">
-      <span class="cap">Sift</span>
-      <div class="seg" id="seg-chips" role="group" aria-label="Finding chips"></div>
     </div>
     <!-- ADR 31 part 3 (issue #41) — ALIGN, present only where the canvas is
          showing a factor's events. A switch over already-selected data: it
@@ -120,18 +118,22 @@ const MARKUP = `
       </div>
     </section>
 
-    <section class="pane inspector" aria-label="Inspector">
+    <section class="pane inspector" aria-labelledby="crumb-trail">
       <!-- TERM 47 — the header's staged status is DELETED, not restyled. It named
            only the Plan branch of a four-branch object, so it could read "nothing
            staged" while a Trial was being watched; the dock below is now the single
            reporter of that state. Supersedes term 13's inspector-meta clause and
            behaviour-ledger story S16's header assertion. -->
-      <header><h2>Inspector</h2></header>
-      <div class="body">
-        <div class="crumb">
-          <div class="trail" id="crumb-trail"></div>
-          <span class="meta" id="crumb-meta"></span>
+      <header class="crumb">
+        <h2 class="trail" id="crumb-trail"></h2>
+        <span class="meta" id="crumb-meta"></span>
+        <div class="filter-wrap" id="filter-wrap" hidden>
+          <button class="filter-trigger" id="filter-trigger" type="button"
+            aria-haspopup="menu" aria-expanded="false">Filter</button>
+          <div class="filter-menu" id="filter-menu" role="menu" aria-label="Findings filters" hidden></div>
         </div>
+      </header>
+      <div class="body">
         <div class="level" id="level" tabindex="-1"></div>
       </div>
       <!-- TERM 46 — the inspector's FLOOR. Pane furniture, mounted once with the
@@ -228,27 +230,6 @@ const WINDOWS = {
 };
 const winEdge = (m) => (m === 1440 ? '24:00' : hhmm(m));
 const winText = (w) => `${hhmm(w.range[0])}–${winEdge(w.range[1])}`;
-
-/* ADR 31 part 3 (issue #41) — which finding case files ALIGN can re-project.
-   The event-comparison lens's closed factor set (`diagnose-event-comparison.js`,
-   `factorKey`) is six of the eight levers title() names
-   (`ciq_autotune/analyzers/scenario/levers.py`); MISSED_MEAL and
-   MEAL_BOLUS_SHORT are the two outside it (both Exposure.HIGHS case files,
-   which the lens has no view for).
-   Keyed on the lever's TITLE, because that is the string a factor frame
-   already carries as `factor.cause` (`factorForFinding`/`cause_title`) — not a
-   second copy of the lever enum, just the same closed set's own titles read
-   back. A factor frame whose cause is not in this map has no event alignment;
-   ALIGN stays hidden and the canvas stays clock-only. */
-const ALIGN_FACTOR_BY_CAUSE = {
-  'Carb undercount': { view: 'meals', factor: 'carb_undercount' },
-  'Late bolus': { view: 'meals', factor: 'late_bolus' },
-  'Meal over-delivery': { view: 'meals', factor: 'meal_over_delivery' },
-  'Over-treated low': { view: 'lows', factor: 'over_treated_low' },
-  'Correction stacking': { view: 'lows', factor: 'correction_stacking' },
-  'Correction on active insulin': { view: 'lows', factor: 'correction_on_iob' },
-};
-const alignCoordinatesFor = (cause) => ALIGN_FACTOR_BY_CAUSE[cause] || null;
 
 /* ---- mock 1222-1242 — VERBATIM except the trailing `[state]` index:
        the app re-derives CFG per mount instead of once at load. ---- */
@@ -385,20 +366,6 @@ function renderAlign(alignKey, onAlign) {
 }
 
 const CHIP_LABELS = [['highs', 'Highs'], ['lows', 'Lows'], ['meals', 'Meals'], ['corrections', 'Corrections']];
-
-/** The chips only display server-published counts and retain workstation UX state. */
-function renderChips(chipCounts, selected, onSelect) {
-  const seg = el('seg-chips');
-  seg.innerHTML = '';
-  for (const [key, label] of CHIP_LABELS) {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.textContent = chipCounts == null ? label : `${label} ${chipCounts[key] ?? 0}`;
-    b.setAttribute('aria-pressed', String(selected === null || selected.has(key)));
-    b.addEventListener('click', () => onSelect(key));
-    seg.append(b);
-  }
-}
 
 /**
  * The follow chip: ONE slot in the control row that reports whatever non-preset
@@ -1121,6 +1088,10 @@ function boot(root, data, callbacks, signal) {
   let historyRequestGeneration = 0;
   // Null is the all-active resting state; a Set exists only while a chip is off.
   let selectedChips = null;
+  let eventChartsOnly = false;
+  let filterOpen = false;
+  let filterFocus = 0;
+  let queueScrollTop = 0;
   let collapsedFindingsExpanded = false;
   const watched = data.watched;
 
@@ -1227,7 +1198,7 @@ function boot(root, data, callbacks, signal) {
    * high the meal ran into — and framing on whichever held MORE put a list of
    * one kind beside a chart of the other, with evidence keys that cannot even
    * be joined. So where the lens can re-project this finding
-   * (`alignCoordinatesFor`), the family its event view names wins, and the
+   * (`row.event_chart`), the family its event view names wins, and the
    * panel lists the episodes the chart draws. A finding with no event view
    * keeps the older routing — the family holding the most occurrences of this
    * title — now read over the population the server published rather than over
@@ -1248,17 +1219,12 @@ function boot(root, data, callbacks, signal) {
         needsQual: new Set((row.evidence || []).map((e) => e.family)).size > 1,
       };
     };
-    const aligned = alignCoordinatesFor(row.title);
-    /* AN ALIGNED FINDING FRAMES ON ITS EVENT VIEW'S FAMILY EVEN WHEN THAT
-       FAMILY IS EMPTY IN THIS WINDOW. A lever claims evidence only in the
-       families it hit, so a published row can carry none in the family its
-       event view names — `Correction on active insulin` over 07:00–10:15 hits
-       only a correction cluster, and names `lows`. Returning nothing there left
-       a row the server published that did not move when it was clicked: no case
-       file, no message, no crumb. Framing on the empty family instead opens the
-       case file reading `0 of 0`, which is what the chart beside it draws.
-       Falling back to the family with the most episodes is NOT the repair — that
-       is exactly the panel/chart disagreement this rule retires. */
+    const aligned = eventChartCoordinate(row);
+    /* A coordinate exists only when the producer found this event view's
+       canonical family in the current row projection. That family therefore
+       frames the panel and the chart alike. A null coordinate is not compatible
+       evidence for an event chart in this window, so All findings keeps the
+       ordinary clock-case-file routing over the server-published population. */
     if (aligned) return pair(aligned.view);
     return Object.keys(exposures).map(pair).filter((f) => f && f.count)
       .sort((a, b) => b.count - a.count)[0] || null;
@@ -1613,7 +1579,10 @@ function boot(root, data, callbacks, signal) {
       const factor = factorForFinding(row);
       // rowId, not the row object itself: findings reload per window, so the
       // verdict band re-resolves the live row on every paint (see findingRowFor)
-      if (factor) push({ k: 'factor', factor, rowId: row.id });
+      if (factor) push({
+        k: 'factor', factor, rowId: row.id,
+        entryEventRequested: eventChartsOnly && eventChartCoordinate(row) !== null,
+      });
       return;
     }
     if (row.parameter === 'isf') { push({ k: 'isf', rowId: row.id }); return; }
@@ -1632,8 +1601,12 @@ function boot(root, data, callbacks, signal) {
      {k:'factors'} · {k:'factor', factor} · {k:'occ', occ} · {k:'slot', cell}. */
   const stack = [{ k: 'factors' }];
   const top = () => stack[stack.length - 1];
-  const push = (frame) => { dir = 'push'; stack.push(frame); shownRows = EVIDENCE_CAP; paint(); };
-  const popTo = (i) => { dir = 'pop'; stack.length = i + 1; paint(); };
+  const push = (frame) => {
+    if (top().k === 'factors') queueScrollTop = el('level').scrollTop;
+    filterOpen = false;
+    dir = 'push'; stack.push(frame); shownRows = EVIDENCE_CAP; paint();
+  };
+  const popTo = (i) => { filterOpen = false; dir = 'pop'; stack.length = i + 1; paint(); };
   /* The lane is a shortcut INTO the slot branch: from level 1 it pushes, from a
      slot frame it swaps in place, so clicking cells never deepens the stack. */
   function pickCell(cell, rowId = null) {
@@ -1896,7 +1869,7 @@ function boot(root, data, callbacks, signal) {
 
   /**
    * ALIGN (ADR 31 part 3). Present only on a finding case file whose factor
-   * the lens can re-project (`alignCoordinatesFor`); a switch over
+   * the live projection says the lens can re-project (`row.event_chart`); a switch over
    * already-selected data, so picking `By event` never moves the crumb, the
    * roster or the standing WINDOW — it re-projects the SAME occurrences the
    * factor frame is already scoped to. WINDOW keeps filtering by clock under
@@ -1907,7 +1880,8 @@ function boot(root, data, callbacks, signal) {
   function paintAlign() {
     const f = top();
     const history = f.k === 'history';
-    const mapped = f.k === 'factor' ? alignCoordinatesFor(f.factor.cause) : null;
+    const mapped = f.k === 'factor' && settled()
+      ? eventChartCoordinate(findingRowFor(f)) : null;
     el('align-group').hidden = !mapped && !history;
     if (!mapped && !history) {
       disposeAlign();
@@ -1989,12 +1963,16 @@ function boot(root, data, callbacks, signal) {
     const host = el('align-canvas');
     host.hidden = false;
     const generation = ++alignGeneration;
-    Promise.resolve(callbacks.loadProjection?.({
+    const requested = {
       view: mapped.view, factor: mapped.factor,
       window: currentWindow ? { start_min: currentWindow[0], end_min: currentWindow[1] } : null,
       another: false, occurrenceId,
-    })).then((projection) => {
+    };
+    Promise.resolve(callbacks.loadProjection?.(requested)).then((projection) => {
       if (generation !== alignGeneration || top() !== f) return;
+      if (!validEventProjection(projection, requested)) {
+        throw new Error('Diagnose event comparison data is unavailable.');
+      }
       alignMount?.observer?.disconnect();
       alignMount?.chart?.dispose();
       alignMount?.restoreHeader?.();
@@ -2066,6 +2044,128 @@ function boot(root, data, callbacks, signal) {
       (to) => callbacks.go?.(to));
   }
 
+  const filterActiveGroups = () => Number(selectedChips !== null) + Number(eventChartsOnly);
+
+  function toggleChip(key) {
+    const next = new Set(selectedChips || CHIP_LABELS.map(([name]) => name));
+    if (next.has(key)) next.delete(key); else next.add(key);
+    selectedChips = next.size === CHIP_LABELS.length ? null : next;
+    collapsedFindingsExpanded = false;
+  }
+
+  function closeFilter({ restoreFocus = false } = {}) {
+    filterOpen = false;
+    paintFilter();
+    if (restoreFocus) el('filter-trigger')?.focus();
+  }
+
+  /** Root-only ARIA menu. Sift and View compose browser-owned selection over
+      fields the findings projection already published; neither group requests
+      a new population or derives event eligibility. */
+  function paintFilter() {
+    const wrap = el('filter-wrap');
+    const trigger = el('filter-trigger');
+    const menu = el('filter-menu');
+    const atRoot = top().k === 'factors';
+    wrap.hidden = !atRoot;
+    if (!atRoot) {
+      filterOpen = false;
+      menu.hidden = true;
+      return;
+    }
+
+    const active = filterActiveGroups();
+    trigger.textContent = active ? `Filter ${active}` : 'Filter';
+    trigger.setAttribute('aria-label', active
+      ? `Filter, ${active} active ${active === 1 ? 'group' : 'groups'}`
+      : 'Filter, no active groups');
+    trigger.setAttribute('aria-expanded', String(filterOpen));
+    trigger.onclick = () => {
+      filterOpen = !filterOpen;
+      filterFocus = 0;
+      paintFilter();
+      if (filterOpen) requestAnimationFrame(() => menu.querySelector('[tabindex="0"]')?.focus());
+    };
+
+    menu.hidden = !filterOpen;
+    menu.innerHTML = '';
+    const items = [];
+    const addGroup = (name, choices) => {
+      const label = document.createElement('div');
+      label.className = 'filter-group-label';
+      label.id = `filter-${name.toLowerCase()}-label`;
+      label.setAttribute('role', 'presentation');
+      label.textContent = name;
+      menu.append(label);
+      const group = document.createElement('div');
+      group.className = 'filter-group';
+      group.setAttribute('role', 'group');
+      group.setAttribute('aria-labelledby', label.id);
+      menu.append(group);
+      for (const choice of choices) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.setAttribute('role', choice.role);
+        button.setAttribute('aria-checked', String(choice.checked));
+        button.setAttribute('aria-label', choice.count == null
+          ? choice.label : `${choice.label} ${choice.count}`);
+        const text = document.createElement('span');
+        text.textContent = choice.label;
+        button.append(text);
+        if (choice.count != null) {
+          const count = document.createElement('span');
+          count.className = 'filter-count';
+          count.textContent = ` ${choice.count}`;
+          button.append(count);
+        }
+        button.addEventListener('click', () => {
+          choice.activate();
+          filterFocus = items.indexOf(button);
+          paint();
+          requestAnimationFrame(() => el('filter-menu')?.querySelector('[tabindex="0"]')?.focus());
+        });
+        items.push(button);
+        group.append(button);
+      }
+    };
+
+    addGroup('Sift', CHIP_LABELS.map(([key, label]) => ({
+      label,
+      count: settled() ? findings?.chip_counts?.[key] ?? 0 : null,
+      role: 'menuitemcheckbox',
+      checked: selectedChips === null || selectedChips.has(key),
+      activate: () => toggleChip(key),
+    })));
+    addGroup('View', [
+      { label: 'All findings', role: 'menuitemradio', checked: !eventChartsOnly,
+        activate: () => { eventChartsOnly = false; collapsedFindingsExpanded = false; } },
+      { label: 'Event charts', role: 'menuitemradio', checked: eventChartsOnly,
+        activate: () => { eventChartsOnly = true; collapsedFindingsExpanded = false; } },
+    ]);
+    filterFocus = Math.max(0, Math.min(filterFocus, items.length - 1));
+    items.forEach((item, index) => item.tabIndex = index === filterFocus ? 0 : -1);
+    menu.onkeydown = (ev) => {
+      if (ev.key === 'Tab') {
+        setTimeout(() => closeFilter(), 0);
+        return;
+      }
+      let next = filterFocus;
+      if (ev.key === 'ArrowDown') next = (filterFocus + 1) % items.length;
+      else if (ev.key === 'ArrowUp') next = (filterFocus - 1 + items.length) % items.length;
+      else if (ev.key === 'Home') next = 0;
+      else if (ev.key === 'End') next = items.length - 1;
+      else if (ev.key === 'Enter' || ev.key === ' ') {
+        ev.preventDefault();
+        items[filterFocus].click();
+        return;
+      } else return;
+      ev.preventDefault();
+      filterFocus = next;
+      items.forEach((item, index) => item.tabIndex = index === filterFocus ? 0 : -1);
+      items[filterFocus].focus();
+    };
+  }
+
   /** Breadcrumb: every ancestor is a click, the leaf is plain text. */
   function crumbLabel(frame) {
     // D7/term 34 — the crumb root is the queue's own noun, at every depth
@@ -2135,7 +2235,7 @@ function boot(root, data, callbacks, signal) {
       || (f.k !== 'factors' && f.k !== 'factor' && !parameterRowFor(f))
       ? scopeLabel()
       : f.k === 'factors'
-      ? queueMeta(findings)
+      ? queueMeta(findings, selectedChips, eventChartsOnly)
       : f.k === 'history' ? `${f.row.support} meal run${f.row.support === 1 ? '' : 's'}`
       : f.k === 'factor'
         ? (settled()
@@ -2200,6 +2300,7 @@ function boot(root, data, callbacks, signal) {
          the copy that used to sit here would now write it twice. */
       renderFindingsQueue(host, findings, drillFinding, {
         selected: selectedChips,
+        eventChartsOnly,
         collapsedExpanded: collapsedFindingsExpanded,
         onToggleCollapsed: () => { collapsedFindingsExpanded = !collapsedFindingsExpanded; paint(); },
       });
@@ -2210,6 +2311,7 @@ function boot(root, data, callbacks, signal) {
         notice.textContent = retirementNotice;
         host.prepend(notice);
       }
+      host.scrollTop = queueScrollTop;
       return;
     }
     if (f.k === 'slot') {
@@ -2523,24 +2625,22 @@ function boot(root, data, callbacks, signal) {
        which is the two panes disagreeing without saying so. The frame keeps the
        reader; the canvas goes back to the clock and states what the panel does. */
     const open = top();
-    if (open.k === 'factor' && open.align === 'event'
-      && settled() && !scopedFor(open).familyN) open.align = 'clock';
+    const openCoordinate = open.k === 'factor' && settled()
+      ? eventChartCoordinate(findingRowFor(open)) : null;
+    if (open.k === 'factor' && !open.entryAlignResolved) {
+      open.align = open.entryEventRequested && openCoordinate ? 'event' : 'clock';
+      open.entryAlignResolved = true;
+    }
+    if (open.k === 'factor' && open.align === 'event' && !openCoordinate) open.align = 'clock';
     /* The mounted event surface owns both the visible canvas and the shared
        header until its replacement projection lands. Repainting the hidden
        clock canvas in between would write its header fields while the event
        markup is mounted. Navigation that ends event ownership releases it
        first, so the clock repaint starts with its own header restored. */
-    const ownsAlign = (open.k === 'factor' && open.align === 'event'
-      && alignCoordinatesFor(open.factor.cause))
+    const ownsAlign = (open.k === 'factor' && open.align === 'event' && openCoordinate)
       || (open.k === 'history' && open.align === 'event');
     if (alignMount && !ownsAlign) disposeAlign();
-    renderChips(settled() ? findings?.chip_counts : null, selectedChips, (key) => {
-      const next = new Set(selectedChips || CHIP_LABELS.map(([name]) => name));
-      if (next.has(key)) next.delete(key); else next.add(key);
-      selectedChips = next.size === CHIP_LABELS.length ? null : next;
-      collapsedFindingsExpanded = false;
-      paint();
-    });
+    paintFilter();
     paintCrumb();
     paintLevel();
     renderLane(lane, top().k === 'slot' ? top().cell : null, staged, pickCell);
@@ -2577,6 +2677,7 @@ function boot(root, data, callbacks, signal) {
     const f = top();
     if (ev.key === 'Backspace' && stack.length > 1) {
       ev.preventDefault();
+      filterOpen = false;
       dir = 'pop';
       stack.pop();
       paint();
@@ -2595,6 +2696,16 @@ function boot(root, data, callbacks, signal) {
 
   observeResize(el('chart'), () => chart);
   installDrag();
+  document.addEventListener('pointerdown', (ev) => {
+    if (filterOpen && !el('filter-wrap')?.contains(ev.target)) closeFilter();
+  }, { signal });
+  // Capture makes menu Escape win before the drawn-window Escape listener.
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key !== 'Escape' || !filterOpen) return;
+    ev.preventDefault();
+    ev.stopImmediatePropagation();
+    closeFilter({ restoreFocus: true });
+  }, { capture: true, signal });
   paint();
   // the brace can only be placed once the chart has its first measured width
   requestAnimationFrame(paintBrace);

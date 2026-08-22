@@ -910,7 +910,7 @@ async function openRetiredOccurrence(browser, options = {}) {
     },
     exposuresInput: FINDINGS_PROJECTION.inputs.exposures,
   });
-  await page.locator('[aria-label="Inspector"]').waitFor();
+  await page.locator('.inspector[aria-labelledby="crumb-trail"]').waitFor();
   const row = page.locator('#level .qrow[data-state="finding"]').first();
   try {
     await row.waitFor({ timeout: 5_000 });
@@ -926,7 +926,7 @@ async function openRetiredOccurrence(browser, options = {}) {
   await row.click();
   await page.locator('#level .ev-group .n').waitFor();
   assert.ok(await page.locator('#level .ev-row').count() > 0,
-    'the public finding row must populate occurrence rows in the Inspector');
+    'the public finding row must populate occurrence rows in Findings');
   await assertRetiredOccurrenceRoute(page);
   return page;
 }

@@ -114,9 +114,13 @@ invalid-link base is the currently observed `/app/` 404.
 | E7 | Verify with one selected manufactured-data Trial | D1, D2 | Verify route story and Back/Forward |
 | E8 | Exact `/app/diagnose?start_min=60&start_min=60&end_min=120` duplicated-key URL | D1, D2 | the identical URL is base 404 and revision atomic invalid-link stop; no page selection |
 
-Exact runtime-owned identifiers and the Day date are selected from the
-committed manufactured database and recorded with the evidence; they are not
-hand-invented. The matrix yields 64 base/revision/theme/viewport captures.
+Runtime-owned identifiers and the Day date come from committed manufactured
+sources and are recorded with the evidence; they are not hand-invented. E2 and
+E4–E6 use `mockups/revise-e2e.synthetic/harmonic.sqlite`. E7 uses
+`mockups/verify-660-story.synthetic/payload.json` through the shipped app-only
+browser adapter because the revise database deliberately contains no Trial-
+producing settings history. The matrix yields 64 base/revision/theme/viewport
+captures.
 Replays—not additional screenshots—prove repeated Back/Forward steps and
 held-response ordering.
 
@@ -163,6 +167,9 @@ Decision: harmonichq/harmonic#53, 2026-08-21.
   `synthetic_fixture_provenance` row names committed
   `scripts/gen_revise_e2e_db.py`, fixed seed 620, and states that it contains no
   real pump, patient, credential, or vendor data.
+- **Verify provenance:** E7's committed payload is manufactured by
+  `.claude/qa/gen_verify_payload.py --synthetic` through `review_trials`; its
+  drift is covered by `scripts/check_demo_fixtures.py`.
 
 Base and revision evidence run sequentially through the exact command above on
 its default port; no concurrent two-port variant is authorized. No normal

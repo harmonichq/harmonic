@@ -74,11 +74,12 @@ through the same parse/resolve/emit transaction. A drag or resize contributes no
 entry until the gesture commits. Restoring a route preserves P53's generation
 guard so an older projection response cannot overwrite the restored state.
 
-`/` and any browser document URL with a nonempty fragment are legacy entry
-forms. They discard query and fragment, replace the current entry with exact
-`/app/diagnose`, and show the default Diagnose queue. Other unknown paths retain
-their existing server 404 behavior; unknown `/app/` pages are served the SPA so
-the invalid-link stop is visible.
+`/`, with or without its old query/fragment state, is the legacy entry form. It
+discards query and fragment, replaces the current entry with exact
+`/app/diagnose`, and shows the default Diagnose queue. A fragment on an
+`/app/` URL is invalid under the table above. Other unknown paths retain their
+existing server 404 behavior; unknown `/app/` pages are served the SPA so the
+invalid-link stop is visible.
 
 ### Superseded behavior-ledger rulings
 
@@ -118,7 +119,7 @@ held-response ordering.
 **Consequences.**
 
 - The server returns the SPA for `/app/` paths. HTML changes its document-
-  relative `./…` stylesheet, module, favicon, and worker references to
+  relative `./…` stylesheet, module, and favicon references to
   root-absolute `/…` references (or establishes one equivalent document base)
   so a direct nested load requests the existing root asset endpoints.
 - Synthetic screenshot modes move out of product query parsing and into browser

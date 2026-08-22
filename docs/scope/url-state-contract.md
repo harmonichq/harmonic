@@ -57,7 +57,10 @@ sub-order
   inventory printed Cockpit S2/R1 and finding-evidence P53 at their current
   ledger paths.
 - **First-hour live probe:** after syncing the lockfile's declared extras, the
-  exact no-fetch manufactured-data server ran on an unused comparison port.
+  no-fetch manufactured-data server ran once with an explicit unused port
+  because the default port was occupied. That one-off probe is evidence only;
+  the execution order admits the repository's exact default-port command and
+  runs base/revision sequentially.
   `GET /` returned HTML 200, `GET /app/diagnose` returned JSON 404, and
   `GET /plan` returned JSON 200. In bundled Chromium,
   `/?view=lows#diagnose` retained all three independent URL components;

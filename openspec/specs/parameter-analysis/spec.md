@@ -10,10 +10,11 @@ inference: which stretches of history are admissible evidence, what the estimate
 and its interval mean, and whether an estimate has earned the right to move a
 deliverable schedule.
 
-It does not own the basal schedule, the caps/floors/verdicts the safety layer
-applies, or the reconstruction of insulin activity — it consumes the last of
-these as the bolus-and-basal activity curve every calculation here is measured
-against.
+It does not own the basal schedule, basal's caps, floors, or `Status`, or the
+reconstruction of insulin activity — it consumes the last of these as the
+bolus-and-basal activity curve every calculation here is measured against. It
+does own the analyzer-local ISF and I:C eligibility decisions that are stamped
+onto their result rows for every downstream consumer.
 
 ## Requirements
 
@@ -145,6 +146,31 @@ from it. The capped half-gap toward the robust per-night median survives only as
 an internal basis for pricing the lever's ranking — it is never rendered, never
 stageable, and never a schedule value. Harm evidence establishes that corrections
 are too aggressive; it does not identify a trustworthy replacement.
+
+### Requirement: One predicate decides whether an ISF row may stage
+
+`isf_asserts_move` is **the** ISF staging decision. The analyzer evaluates it
+after every harm adjustment and any final rounding, then stamps its boolean
+result onto the published segment. It is true only when the current programmed
+value exists, the final row names a direction, the final recommendation exists,
+and that recommendation differs from current. Direction, annotation, evidence,
+and the findings queue register remain independent outputs; no consumer may use
+one of them as a substitute staging gate.
+
+#### Scenario: ISF is measurable but no programmed value is available
+
+- **GIVEN** a fasting estimate with its interval and supporting-night evidence
+- **AND** no programmed ISF overlaps the fasting envelope
+- **WHEN** the analyzer publishes its segment
+- **THEN** it preserves the estimate and evidence, emits no recommendation, and
+  stamps `asserts_move = false`
+
+#### Scenario: The final recommendation equals current
+
+- **GIVEN** the evidence channel names a strengthen direction
+- **WHEN** the capped and rounded final recommendation equals the programmed ISF
+- **THEN** the segment preserves that direction and annotation but stamps
+  `asserts_move = false`, so it cannot enter Plan
 
 ### Requirement: I:C is measured from closed meal-run ledgers
 

@@ -7,11 +7,14 @@ the actual unmodified tree.
 """
 
 import importlib.util
+import json
 import pathlib
+import runpy
 import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 _REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
 _SCRIPT = _REPO_ROOT / "scripts" / "check_demo_fixtures.py"
@@ -221,6 +224,39 @@ class RealEndToEndTest(unittest.TestCase):
         )
         self.assertIn("verify-660-story", result.stdout)
         self.assertIn("diagnose-workstation", result.stdout)
+
+
+class DiagnoseGeneratorContractTest(unittest.TestCase):
+    def test_generated_isf_rows_call_the_backend_predicate_and_profile_has_segments(self):
+        generator = _REPO_ROOT / ".claude" / "qa" / "gen_synthetic_fixtures.py"
+        from ciq_autotune.analyzers.isf import isf_asserts_move as real_predicate
+
+        calls = []
+
+        def recording_predicate(current, direction, recommended):
+            calls.append((current, direction, recommended))
+            return real_predicate(current, direction, recommended)
+
+        with tempfile.TemporaryDirectory() as tmp, mock.patch(
+            "ciq_autotune.analyzers.isf.isf_asserts_move",
+            side_effect=recording_predicate,
+        ):
+            old_argv = sys.argv
+            sys.argv = [str(generator), tmp]
+            try:
+                runpy.run_path(str(generator), run_name="__main__")
+            finally:
+                sys.argv = old_argv
+
+            payload = json.loads((pathlib.Path(tmp) / "payload.json").read_text())
+            capture = json.loads((pathlib.Path(tmp) / "ic-blocks.capture.json").read_text())
+
+        self.assertEqual(calls.count((42.0, None, None)), 2)
+        for row in [*payload["analyze"]["isf"], *capture["isf"]]:
+            self.assertIs(row["asserts_move"], False)
+        segments = payload["pump_settings"]["profile"]["segments"]
+        self.assertEqual([row["start_min"] for row in segments], [0, 360, 780, 1200])
+        self.assertEqual([row["isf"] for row in segments], [42, 45, 38, 50])
 
 
 if __name__ == "__main__":

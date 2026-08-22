@@ -7117,7 +7117,7 @@
    "isf": [
     {
      "annotation": "fasting data agrees with the set factor",
-     "asserts_move": null,
+     "asserts_move": false,
      "block_id": null,
      "current": 36.0,
      "estimate": {
@@ -7766,6 +7766,7 @@
     {
      "annotation": "post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb",
      "appearances": null,
+     "asserts_move": null,
      "chips": [
       "highs"
      ],
@@ -7816,6 +7817,7 @@
     {
      "annotation": "a step up, limited to 20% above the set rate",
      "appearances": null,
+     "asserts_move": null,
      "chips": [
       "highs"
      ],
@@ -7889,6 +7891,7 @@
     {
      "annotation": "a step up, limited to 20% above the set rate",
      "appearances": null,
+     "asserts_move": null,
      "chips": [
       "highs"
      ],
@@ -7968,6 +7971,7 @@
        "noun": "lows"
       }
      ],
+     "asserts_move": null,
      "chips": [
       "highs"
      ],
@@ -8117,6 +8121,7 @@
        "noun": "meals"
       }
      ],
+     "asserts_move": null,
      "chips": [
       "highs",
       "meals"
@@ -8243,6 +8248,7 @@
        "noun": "lows"
       }
      ],
+     "asserts_move": null,
      "chips": [
       "lows",
       "corrections"
@@ -8395,6 +8401,7 @@
     {
      "annotation": "post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb",
      "appearances": null,
+     "asserts_move": null,
      "chips": [
       "highs"
      ],
@@ -8458,6 +8465,7 @@
        "noun": "lows"
       }
      ],
+     "asserts_move": null,
      "chips": [
       "highs"
      ],
@@ -8538,6 +8546,7 @@
     {
      "annotation": "not enough nights of steady data yet to point one way",
      "appearances": null,
+     "asserts_move": null,
      "chips": [],
      "current": null,
      "direction": null,
@@ -8624,6 +8633,7 @@
     {
      "annotation": "fasting data agrees with the set factor",
      "appearances": null,
+     "asserts_move": false,
      "chips": [],
      "current": 36.0,
      "direction": null,
@@ -8707,6 +8717,7 @@
     {
      "annotation": "post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb",
      "appearances": null,
+     "asserts_move": null,
      "chips": [
       "highs"
      ],
@@ -8757,6 +8768,7 @@
     {
      "annotation": "a step up, limited to 20% above the set rate",
      "appearances": null,
+     "asserts_move": null,
      "chips": [
       "highs"
      ],
@@ -8830,6 +8842,7 @@
     {
      "annotation": "a step up, limited to 20% above the set rate",
      "appearances": null,
+     "asserts_move": null,
      "chips": [
       "highs"
      ],
@@ -8909,6 +8922,7 @@
        "noun": "lows"
       }
      ],
+     "asserts_move": null,
      "chips": [
       "highs"
      ],
@@ -9058,6 +9072,7 @@
        "noun": "meals"
       }
      ],
+     "asserts_move": null,
      "chips": [
       "highs",
       "meals"
@@ -9184,6 +9199,7 @@
        "noun": "lows"
       }
      ],
+     "asserts_move": null,
      "chips": [
       "lows",
       "corrections"
@@ -9297,6 +9313,7 @@
     {
      "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (CI 6–6). Past setting. No change suggested.",
      "appearances": null,
+     "asserts_move": null,
      "chips": [],
      "current": null,
      "direction": null,
@@ -9384,6 +9401,7 @@
     {
      "annotation": "post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb",
      "appearances": null,
+     "asserts_move": null,
      "chips": [
       "highs"
      ],
@@ -9434,6 +9452,7 @@
     {
      "annotation": "a step up, limited to 20% above the set rate",
      "appearances": null,
+     "asserts_move": null,
      "chips": [
       "highs"
      ],
@@ -9507,6 +9526,7 @@
     {
      "annotation": "a step up, limited to 20% above the set rate",
      "appearances": null,
+     "asserts_move": null,
      "chips": [
       "highs"
      ],
@@ -9586,6 +9606,7 @@
        "noun": "lows"
       }
      ],
+     "asserts_move": null,
      "chips": [
       "highs"
      ],
@@ -9735,6 +9756,7 @@
        "noun": "meals"
       }
      ],
+     "asserts_move": null,
      "chips": [
       "highs",
       "meals"
@@ -9861,6 +9883,7 @@
        "noun": "lows"
       }
      ],
+     "asserts_move": null,
      "chips": [
       "lows",
       "corrections"
@@ -17061,7 +17084,7 @@
    "isf": [
     {
      "annotation": "fasting data agrees with the set factor",
-     "asserts_move": null,
+     "asserts_move": false,
      "block_id": null,
      "current": 36.0,
      "estimate": {
@@ -24287,7 +24310,7 @@
    "isf": [
     {
      "annotation": "fasting data agrees with the set factor",
-     "asserts_move": null,
+     "asserts_move": false,
      "block_id": null,
      "current": 36.0,
      "estimate": {
@@ -31513,7 +31536,7 @@
    "isf": [
     {
      "annotation": "fasting data agrees with the set factor",
-     "asserts_move": null,
+     "asserts_move": false,
      "block_id": null,
      "current": 36.0,
      "estimate": {
@@ -38739,7 +38762,7 @@
    "isf": [
     {
      "annotation": "fasting data agrees with the set factor",
-     "asserts_move": null,
+     "asserts_move": false,
      "block_id": null,
      "current": 36.0,
      "estimate": {
@@ -38876,6 +38899,7 @@
     {
      "annotation": "meals look slightly over-covered relative to programmed I:C",
      "appearances": null,
+     "asserts_move": null,
      "chips": [
       "lows"
      ],
@@ -38926,6 +38950,7 @@
     {
      "annotation": "post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb",
      "appearances": null,
+     "asserts_move": null,
      "chips": [
       "highs"
      ],
@@ -38976,6 +39001,7 @@
     {
      "annotation": "a step up, limited to 20% above the set rate",
      "appearances": null,
+     "asserts_move": null,
      "chips": [
       "highs"
      ],
@@ -39049,6 +39075,7 @@
     {
      "annotation": "a step up, limited to 20% above the set rate",
      "appearances": null,
+     "asserts_move": null,
      "chips": [
       "highs"
      ],
@@ -39128,6 +39155,7 @@
        "noun": "lows"
       }
      ],
+     "asserts_move": null,
      "chips": [
       "highs"
      ],
@@ -39277,6 +39305,7 @@
        "noun": "meals"
       }
      ],
+     "asserts_move": null,
      "chips": [
       "highs",
       "meals"
@@ -39403,6 +39432,7 @@
        "noun": "lows"
       }
      ],
+     "asserts_move": null,
      "chips": [
       "lows",
       "corrections"
@@ -39516,6 +39546,7 @@
     {
      "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (CI 6–6). Past setting. No change suggested.",
      "appearances": null,
+     "asserts_move": null,
      "chips": [],
      "current": null,
      "direction": null,
@@ -39601,6 +39632,7 @@
     {
      "annotation": "post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb",
      "appearances": null,
+     "asserts_move": null,
      "chips": [
       "highs"
      ],
@@ -39664,6 +39696,7 @@
        "noun": "lows"
       }
      ],
+     "asserts_move": null,
      "chips": [
       "highs"
      ],
@@ -39757,6 +39790,7 @@
        "noun": "lows"
       }
      ],
+     "asserts_move": null,
      "chips": [
       "lows",
       "corrections"
@@ -39838,6 +39872,7 @@
     {
      "annotation": "fasting data agrees with the set factor",
      "appearances": null,
+     "asserts_move": false,
      "chips": [],
      "current": 36.0,
      "direction": null,
@@ -39882,6 +39917,7 @@
     {
      "annotation": "no nights of steady data at this time yet",
      "appearances": null,
+     "asserts_move": null,
      "chips": [],
      "current": null,
      "direction": null,
@@ -40003,6 +40039,7 @@
     {
      "annotation": "post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb",
      "appearances": null,
+     "asserts_move": null,
      "chips": [
       "highs"
      ],
@@ -40053,6 +40090,7 @@
     {
      "annotation": "a step up, limited to 20% above the set rate",
      "appearances": null,
+     "asserts_move": null,
      "chips": [
       "highs"
      ],
@@ -40126,6 +40164,7 @@
     {
      "annotation": "a step up, limited to 20% above the set rate",
      "appearances": null,
+     "asserts_move": null,
      "chips": [
       "highs"
      ],
@@ -40205,6 +40244,7 @@
        "noun": "lows"
       }
      ],
+     "asserts_move": null,
      "chips": [
       "highs"
      ],
@@ -40354,6 +40394,7 @@
        "noun": "meals"
       }
      ],
+     "asserts_move": null,
      "chips": [
       "highs",
       "meals"
@@ -40480,6 +40521,7 @@
        "noun": "lows"
       }
      ],
+     "asserts_move": null,
      "chips": [
       "lows",
       "corrections"
@@ -40593,6 +40635,7 @@
     {
      "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (CI 6–6). Past setting. No change suggested.",
      "appearances": null,
+     "asserts_move": null,
      "chips": [],
      "current": null,
      "direction": null,
@@ -40676,6 +40719,7 @@
     {
      "annotation": "post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb",
      "appearances": null,
+     "asserts_move": null,
      "chips": [
       "highs"
      ],
@@ -40726,6 +40770,7 @@
     {
      "annotation": "not enough nights of steady data yet to point one way",
      "appearances": null,
+     "asserts_move": null,
      "chips": [],
      "current": null,
      "direction": null,
@@ -40812,6 +40857,7 @@
     {
      "annotation": "fasting data agrees with the set factor",
      "appearances": null,
+     "asserts_move": false,
      "chips": [],
      "current": 36.0,
      "direction": null,
@@ -40891,6 +40937,7 @@
     {
      "annotation": "a step up, limited to 20% above the set rate",
      "appearances": null,
+     "asserts_move": null,
      "chips": [
       "highs"
      ],
@@ -40957,6 +41004,7 @@
     {
      "annotation": "not enough nights of steady data yet to point one way",
      "appearances": null,
+     "asserts_move": null,
      "chips": [],
      "current": 1.0,
      "direction": null,
@@ -41021,6 +41069,7 @@
     {
      "annotation": "fasting data agrees with the set factor",
      "appearances": null,
+     "asserts_move": false,
      "chips": [],
      "current": 36.0,
      "direction": null,
@@ -41065,6 +41114,7 @@
     {
      "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (CI 6–6). Past setting. No change suggested.",
      "appearances": null,
+     "asserts_move": null,
      "chips": [],
      "current": null,
      "direction": null,
@@ -41148,6 +41198,7 @@
     {
      "annotation": "post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb",
      "appearances": null,
+     "asserts_move": null,
      "chips": [
       "highs"
      ],
@@ -41198,6 +41249,7 @@
     {
      "annotation": "a step up, limited to 20% above the set rate",
      "appearances": null,
+     "asserts_move": null,
      "chips": [
       "highs"
      ],
@@ -41271,6 +41323,7 @@
     {
      "annotation": "fasting data agrees with the set factor",
      "appearances": null,
+     "asserts_move": false,
      "chips": [],
      "current": 36.0,
      "direction": null,
@@ -41315,6 +41368,7 @@
     {
      "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (CI 6–6). Past setting. No change suggested.",
      "appearances": null,
+     "asserts_move": null,
      "chips": [],
      "current": null,
      "direction": null,
@@ -41398,6 +41452,7 @@
     {
      "annotation": "fasting data agrees with the set factor",
      "appearances": null,
+     "asserts_move": false,
      "chips": [],
      "current": 36.0,
      "direction": null,
@@ -41442,6 +41497,7 @@
     {
      "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (CI 6–6). Past setting. No change suggested.",
      "appearances": null,
+     "asserts_move": null,
      "chips": [],
      "current": null,
      "direction": null,
@@ -41525,6 +41581,7 @@
     {
      "annotation": "post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb",
      "appearances": null,
+     "asserts_move": null,
      "chips": [
       "highs"
      ],
@@ -41588,6 +41645,7 @@
        "noun": "lows"
       }
      ],
+     "asserts_move": null,
      "chips": [
       "highs"
      ],
@@ -41660,6 +41718,7 @@
     {
      "annotation": "fasting data agrees with the set factor",
      "appearances": null,
+     "asserts_move": false,
      "chips": [],
      "current": 36.0,
      "direction": null,

@@ -66,13 +66,12 @@ export const PLAN_PARAMS = [
 /**
  * Whether an ISF finding may be staged into the Plan at all (#468).
  *
- * Only a finding that names a new ISF is stageable. A harm-owned weaken is
- * deliberately **direction-only** — recurring correction-caused lows say which way
- * to move but do not size the move — so it carries no recommended value and must
- * never become a Plan chip or reach the deliverable schedule.
+ * The backend's final predicate is the only permission to stage. Exact true is
+ * intentional: false, null, missing, and malformed legacy values all fail closed,
+ * even when a direction or recommendation is present.
  */
 export function isStageableIsf(item) {
-  return !!item && item.recommended != null;
+  return !!item && item.asserts_move === true;
 }
 
 /** Minutes in a day, and the fixed width of a basal recommendation slot. */

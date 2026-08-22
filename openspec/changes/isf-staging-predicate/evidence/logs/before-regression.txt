@@ -1,0 +1,34 @@
+✖ a rounded false ISF verdict keeps evidence and empty Recommended geometry at every review render (9341.889625ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 9602.303584
+
+✖ failing tests:
+
+test at frontend/diagnose-workstation.browser.test.mjs:447:1
+✖ a rounded false ISF verdict keeps evidence and empty Recommended geometry at every review render (9341.889625ms)
+  AssertionError [ERR_ASSERTION]: 1440x900 light: queue register survives without an action number
+  + actual - expected
+  
+    {
+  +   nums: 1,
+  -   nums: 0,
+      state: 'assert',
+      tier: 'next_in_line'
+    }
+  
+      at TestContext.<anonymous> (file:///Users/connor/worktrees/harmonic/13-c2/frontend/diagnose-workstation.browser.test.mjs:482:16)
+      at async Test.run (node:internal/test_runner/test:1404:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: { state: 'assert', tier: 'next_in_line', nums: 1 },
+    expected: { state: 'assert', tier: 'next_in_line', nums: 0 },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

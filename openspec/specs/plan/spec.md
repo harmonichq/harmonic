@@ -12,7 +12,7 @@ A Plan may contain multiple segments only when they are all changes to the same 
 
 ### Requirement: Only recommendations with asserts_move true may be staged
 
-The analysis layer marks each tuning recommendation with an `asserts_move` predicate. Only recommendations with `asserts_move = true` may be staged into the Plan. The analysis layer, not the Plan UI, owns the decision about what holds and what stages — the Plan does not re-derive this gate.
+The analysis layer marks each tuning recommendation with an `asserts_move` predicate. Only recommendations with the exact boolean `asserts_move = true` may be staged into the Plan; a missing legacy field fails closed. The analysis layer, not the Plan UI, owns the decision about what holds and what stages — the Plan does not re-derive this gate from a recommendation, direction, interval, or evidence count.
 
 ### Requirement: A draft persists unsaved changes locally
 
@@ -36,4 +36,11 @@ After the user keys settings into their pump and a new data fetch arrives, Harmo
 
 ### Requirement: Direction-only ISF recommendations cannot be staged
 
-An ISF recommendation that carries only a direction (no `recommended` value) may not be staged into the Plan because the Plan requires a concrete value to program. A harm-owned ISF weakening is direction-only and remains advisory only, never reaching the Plan.
+An ISF recommendation that carries only a direction (no `recommended` value) may not be staged into the Plan because the Plan requires a concrete value to program. A harm-owned ISF weakening is direction-only and remains advisory only, never reaching the Plan. A row with no programmed value, a rounded recommendation equal to current, an explicit false verdict, or no verdict also cannot stage, even if it carries a stale-looking recommendation or an asserted direction.
+
+### Requirement: A stageable fasting ISF applies to every programmed ISF segment
+
+ISF analysis produces one fasting recommendation while the pump stores a segmented
+ISF schedule. When that analyzer row carries `asserts_move = true`,
+staging applies the unchanged capped recommendation to every currently programmed
+ISF segment. Plan does not recalculate, distribute, or otherwise alter the value.

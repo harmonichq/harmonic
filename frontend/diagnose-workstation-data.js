@@ -122,10 +122,10 @@ export function toCaptures(payload = {}, { loadDay = null, onDayLoaded = null, s
  * The two facts the ISF level reads off the analyzer, together because reading
  * one off the other is the bug they replace.
  *
- * `direction` is the analyzer's own verdict — the one ISF predicate, and the same
- * field the server's findings queue reads. A harm-owned weaken (#468) asserts a
- * direction while `recommended` stays null: the direction holds, nothing is
- * stageable, and the two must be answered separately. `nights` is the count the
+ * `direction` remains the analyzer's classification and the server queue's register
+ * source. `asserts_move` is the independent actionability verdict; exact true is
+ * the only permission, so false, null, missing, and malformed inputs fail closed
+ * without erasing direction. `nights` is the count the
  * estimate is clustered on (#177) — a detected rest window that produced no fit
  * supports nothing, so it is not counted.
  */
@@ -133,7 +133,7 @@ export function isfVerdict(row) {
   const evidence = row.evidence || {};
   return {
     direction: evidence.direction || null,
-    canStage: row.recommended != null,
+    canStage: row.asserts_move === true,
     nights: (evidence.night_fits || []).length,
   };
 }

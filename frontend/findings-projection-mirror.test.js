@@ -103,6 +103,16 @@ test('the mirror publishes outcome chips, chip counts, and correction-factor sco
   assert.deepEqual(afternoon.chip_counts, fixture.windows.afternoon.chip_counts);
 });
 
+test('the mirror transcribes an absent analyzer verdict as the server row null', () => {
+  const analysis = structuredClone(fixture.inputs.analysis);
+  const isf = analysis.isf[0];
+  delete isf.asserts_move;
+  const projected = projectFindings({ ...fixture.inputs, analysis }, WINDOWS.afternoon);
+  const row = projected.rows.find((candidate) => candidate.parameter === 'isf');
+  assert.equal(row.asserts_move, null);
+  assert.equal(Object.hasOwn(row, 'asserts_move'), true);
+});
+
 /* The deep-compare above would still pass if BOTH sides regressed the honest
  * unexplained-highs count to zero together, and a count frozen at zero is exactly the
  * silent-drift shape #63 exists to close. So name the value: the fixture's ep6 is a

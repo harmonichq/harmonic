@@ -102,6 +102,7 @@ function row(fields) {
   return {
     id: null, register: null, kind: null, title: null, priority: null, tier: null,
     parameter: null, label: null, span: null, direction: null,
+    asserts_move: null,
     lean: null, current: null, recommended: null, estimate: null,
     support: null, reason: null, annotation: null, members: null,
     lever: null, appearances: null, episodes: null,
@@ -275,6 +276,7 @@ function isfRows(analysis) {
       priority: direction != null ? leverPriority(analysis, 'isf') : null,
       span: null,
       direction,
+      asserts_move: entry.asserts_move ?? null,
       lean: null,
       current: entry.current ?? null,
       recommended: entry.recommended ?? null,

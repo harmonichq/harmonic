@@ -836,7 +836,7 @@ test('buildDeliverable allows multiple hand-edits in one family', () => {
 
 // --- #468: a direction-only ISF finding cannot be staged --------------------
 
-test('a direction-only ISF finding is not stageable (#468)', () => {
+test('only an exact true backend ISF verdict is stageable (#468)', () => {
   // Recurring correction-caused lows own the weaken direction but do not size a new
   // ISF, so the row carries no recommended value. It must never become a Plan chip.
   const directionOnly = {
@@ -846,6 +846,12 @@ test('a direction-only ISF finding is not stageable (#468)', () => {
   };
   assert.equal(isStageableIsf(directionOnly), false);
   assert.equal(isStageableIsf(null), false);
-  // A finding that does name a value is still stageable (the strengthen path).
-  assert.equal(isStageableIsf({ parameter: 'isf', current: 36, recommended: 30.2 }), true);
+  for (const verdict of [false, null, undefined, 'true', 1, {}, []]) {
+    assert.equal(isStageableIsf({
+      parameter: 'isf', current: 36, recommended: 30.2, asserts_move: verdict,
+    }), false, `verdict ${String(verdict)} fails closed`);
+  }
+  assert.equal(isStageableIsf({
+    parameter: 'isf', current: 36, recommended: 30.2, asserts_move: true,
+  }), true);
 });

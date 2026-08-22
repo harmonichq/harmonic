@@ -69,10 +69,32 @@ test('isfVerdict answers direction and stageability separately', () => {
   assert.equal(weaken.canStage, false);
   // A sized recommendation is the only thing that stages.
   assert.equal(isfVerdict({
-    recommended: 39.2, evidence: { direction: 'strengthen', night_fits: [] },
+    recommended: 39.2, asserts_move: true,
+    evidence: { direction: 'strengthen', night_fits: [] },
   }).canStage, true);
   // No direction is no direction, whatever the numbers look like.
   assert.equal(isfVerdict({ recommended: null, evidence: {} }).direction, null);
+});
+
+test('isfVerdict fails closed for false, missing, and malformed carried verdicts', () => {
+  for (const verdict of [false, null, undefined, 'true', 1, {}, []]) {
+    const row = {
+      recommended: 39.2, asserts_move: verdict,
+      evidence: { direction: 'strengthen', night_fits: [] },
+    };
+    if (verdict === undefined) delete row.asserts_move;
+    const got = isfVerdict(row);
+    assert.equal(got.direction, 'strengthen');
+    assert.equal(got.canStage, false, `verdict ${String(verdict)} fails closed`);
+  }
+});
+
+test('isfVerdict holds a rounded recommendation when the backend verdict is false', () => {
+  const got = isfVerdict({
+    current: 42, recommended: 42, asserts_move: false,
+    evidence: { direction: 'strengthen', night_fits: [{ date: '2026-08-01', isf: 31 }] },
+  });
+  assert.deepEqual(got, { direction: 'strengthen', canStage: false, nights: 1 });
 });
 
 test('isfVerdict counts the nights the estimate is clustered on, not detected windows', () => {

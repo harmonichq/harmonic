@@ -161,6 +161,36 @@ test('S42 · a sift collapses held, blind, and history into Watching', () => {
   assert.ok(watching.every((row) => !row.hidden));
 });
 
+test('ISF actionability requires the exact carried backend verdict', () => {
+  const base = {
+    ...W.low_block.rows.find((row) => row.parameter === 'isf'),
+    register: 'assert', direction: 'strengthen', priority: 73, tier: 'next_in_line',
+    recommended: 30.2,
+  };
+  for (const [label, verdict] of [
+    ['false', false], ['null', null], ['missing', undefined],
+    ['truthy string', 'true'], ['truthy number', 1], ['object', {}],
+  ]) {
+    const raw = { ...base };
+    if (label !== 'missing') raw.asserts_move = verdict;
+    else delete raw.asserts_move;
+    const [row] = queueRows({ ...W.low_block, rows: [raw] });
+    assert.equal(row.register, 'assert', `${label}: direction-derived register survives`);
+    assert.equal(row.tier, 'next_in_line', `${label}: server tier survives`);
+    assert.equal(row.stageable, false, `${label}: verdict is held closed`);
+    assert.deepEqual(row.detail, {
+      kind: 'support', parts: [{ count: '5', noun: 'fasting nights' }, '30 d run'],
+    }, `${label}: stale numeric action line is suppressed at the queue root`);
+  }
+
+  const [actionable] = queueRows({ ...W.low_block, rows: [{ ...base, asserts_move: true }] });
+  assert.equal(actionable.register, 'assert');
+  assert.equal(actionable.stageable, true);
+  assert.equal(actionable.detail.kind, 'nums');
+  assert.match(`${actionable.detail.now}${actionable.detail.then}`, /36\.0.*30\.2/,
+    'the exact-true row retains both action values without locking unit copy here');
+});
+
 test('term 16 · a merged span prints its OWN support denominator, never an invented average', () => {
   const merged = queueRows(W.global).find((r) => r.title === 'Basal 00:30 to 01:30 · raise');
   assert.equal(merged.raw.current, null, 'the server left the span\u2019s numbers on its members');

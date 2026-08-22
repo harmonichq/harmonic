@@ -43,6 +43,7 @@
     {
      "annotation": "post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb",
      "appearances": null,
+     "asserts_move": null,
      "chips": [
       "highs"
      ],
@@ -93,6 +94,7 @@
     {
      "annotation": "a step up, limited to 20% above the set rate",
      "appearances": null,
+     "asserts_move": null,
      "chips": [
       "highs"
      ],
@@ -166,6 +168,7 @@
     {
      "annotation": "a step up, limited to 20% above the set rate",
      "appearances": null,
+     "asserts_move": null,
      "chips": [
       "highs"
      ],
@@ -245,6 +248,7 @@
        "noun": "lows"
       }
      ],
+     "asserts_move": null,
      "chips": [
       "highs"
      ],
@@ -394,6 +398,7 @@
        "noun": "meals"
       }
      ],
+     "asserts_move": null,
      "chips": [
       "highs",
       "meals"
@@ -520,6 +525,7 @@
        "noun": "lows"
       }
      ],
+     "asserts_move": null,
      "chips": [
       "lows",
       "corrections"
@@ -633,6 +639,7 @@
     {
      "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (CI 6–6). Past setting. No change suggested.",
      "appearances": null,
+     "asserts_move": null,
      "chips": [],
      "current": null,
      "direction": null,

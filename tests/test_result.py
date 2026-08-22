@@ -161,6 +161,13 @@ class ResultSerializationTest(unittest.TestCase):
         self.assertIn("wide", slot0["estimate"])
         self.assertEqual(slot0["current"], 0.6)
 
+    def test_isf_segment_serializes_its_explicit_staging_verdict(self):
+        base = _minimal_result().isf[0]
+        for verdict in (False, True):
+            with self.subTest(asserts_move=verdict):
+                row = replace(base, asserts_move=verdict).to_dict()
+                self.assertIs(row["asserts_move"], verdict)
+
     def test_sections_present(self):
         d = _minimal_result().to_dict()
         for key in ("span", "epochs", "data_quality", "basal", "isf", "ic",

@@ -218,14 +218,12 @@ class SegmentEstimate:
     recommended: Optional[float]
     annotation: str
     evidence: Dict = field(default_factory=dict)
-    # #465: the one per-segment eligibility decision, mirroring `SlotEstimate.asserts_move`.
-    # Set by the I:C analyzer (`analyzers.ic.ic_asserts_move`); it gates ranking, the
-    # consolidated pump profile, and Plan staging alike, so an unsupported estimate stays
-    # visible but cannot move a deliverable schedule. `None` = no decision recorded (ISF
-    # rows, which never feed the consolidated profile, leave it untouched).
-    #
-    # #518: for `carb_ratio` this is now always False. A segment row is pump-lane
-    # display; the one live flag rides its owning :class:`IcBlock`.
+    # The analyzer-owned staging verdict. A live ISF row stamps the
+    # post-harm-gate decision from `analyzers.isf.isf_asserts_move`; direction remains
+    # separate evidence. For `carb_ratio` this is always False because segment rows are
+    # pump-lane display and the live eligibility verdict rides the owning `IcBlock`.
+    # `None` is reserved for legacy payloads and non-analyzer constructed rows that did
+    # not record a decision.
     asserts_move: Optional[bool] = None
     # The `IcBlock` that owns this segment (#518) — its `block_id`, i.e. the block's
     # own `start_min`. `None` for ISF rows and legacy payloads. The surface uses it to

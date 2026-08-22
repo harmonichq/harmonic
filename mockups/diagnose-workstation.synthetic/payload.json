@@ -1187,7 +1187,7 @@
   "isf": [
    {
     "annotation": "corrections keep overshooting into lows, so the correction factor eases weaker",
-    "asserts_move": null,
+    "asserts_move": false,
     "block_id": null,
     "current": 42.0,
     "estimate": {
@@ -7021,6 +7021,48 @@
   "window": {
    "end": "2020-03-03",
    "start": "2020-02-02"
+  }
+ },
+ "pump_settings": {
+  "configured": true,
+  "fetched_at": "2020-03-03 00:00:00",
+  "other_profile_count": 0,
+  "profile": {
+   "carb_entry": true,
+   "dia_hours": 5.0,
+   "idp": 1,
+   "max_bolus": 10.0,
+   "name": "Synthetic multi-segment",
+   "segments": [
+    {
+     "basal_rate": 0.8,
+     "carb_ratio": 5.6,
+     "isf": 42,
+     "start_min": 0,
+     "target_bg": 110
+    },
+    {
+     "basal_rate": 0.9,
+     "carb_ratio": 6.0,
+     "isf": 45,
+     "start_min": 360,
+     "target_bg": 110
+    },
+    {
+     "basal_rate": 0.75,
+     "carb_ratio": 5.2,
+     "isf": 38,
+     "start_min": 780,
+     "target_bg": 110
+    },
+    {
+     "basal_rate": 0.7,
+     "carb_ratio": 6.4,
+     "isf": 50,
+     "start_min": 1200,
+     "target_bg": 110
+    }
+   ]
   }
  },
  "scenarios": {

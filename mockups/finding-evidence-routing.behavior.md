@@ -1768,10 +1768,10 @@ unchanged.
 S34 now enters directly from Event charts: a failed event-comparison request
 still restores By clock, keeps the reader on the same Finding, and preserves the
 root View. S38 now starts from direct By-event entry, then changes to a window
-where the same live row remains but its canonical event family is absent. The
-case stays open, disposes the event canvas, returns By clock, and hides Align.
-Back shows the row absent from Event charts and still reachable under All
-findings; no stale frame coordinate or browser-side fallback manufactures an
+where the same live row remains but its separate Findings projection has no
+canonical event family. The retained case preparation keeps its server-owned
+ALIGN path and coherent event canvas, so Back keeps the row reachable in Event
+charts according to that preparation. No browser-side fallback manufactures an
 event chart.
 
 **Behavior added — five issue-scoped #86 probes (historically `S48` to `S52`
@@ -1786,8 +1786,9 @@ issue86DirectEntryRestoration · Event charts drill-in opens directly By event; 
       returning restores View, window, order, scroll and a closed Filter menu
 issue86PendingRoot · a pending root projection retains enabled Sift/View selections while
       withholding old rows, row counts and Sift counts
-issue86MalformedRecovery · a malformed event-comparison response is rejected before render and
-      restores By clock without losing the Finding, window or root View
+issue86MalformedRecovery · a malformed direct By-event response exposes an inconsistent-projection
+      error without rendering event or fallback clock evidence; it keeps the Finding, 24 h window,
+      requested By event state, and Event charts root View on return
 ```
 
 The generated findings fixture publishes the canonical factor-to-coordinate
@@ -1813,12 +1814,16 @@ The legacy standalone event-comparison route remains unchanged.
 
 The app replay adds these closed stories:
 
-- `C41` renders Meal over-delivery with `claimed < fired`, a nonempty roster,
-  and the server's exact twelve clock buckets.
+- `C41` renders the generated authoritative Meal over-delivery case with
+  `claimed < fired`, a nonempty roster, the server's exact twelve clock
+  buckets, and all five verdict bands summing to the published case denominator.
 - `C42` opens every visible behavioral row by its published Finding id.
 - `C43` selects a correction-pair Occurrence in By event and preserves both
   source corrections.
-- `C44` selects both Highs Findings in By event and keeps their server traces.
+- `C44` uses one story-scoped generated preparation pose for **Meal bolus fell
+  short**, then opens its server-owned High coordinate, enters By event, and
+  selects its authoritative trace and event markers without changing the
+  ordinary roster.
 - `C45` visibly distinguishes a successful unavailable selection from failure.
 - `C46` preserves the prior inspector and clock canvas on an active structured
   case error.

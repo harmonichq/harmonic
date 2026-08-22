@@ -279,13 +279,19 @@ test('#83 · Event charts excludes settings, held reads, and incompatible Findin
 
 test('#83 · malformed coordinates never make a row eligible', () => {
   const source = W.global.rows.find((row) => row.event_chart !== null);
-  for (const event_chart of [{}, [], { view: 'meals' }, { view: 'unknown', factor: 'late_bolus' },
+  for (const event_chart of [{}, [], { view: 'meals' }, { view: '', factor: 'late_bolus' },
     { view: 'meals', factor: '' }, { view: 'meals', factor: 'late_bolus', extra: true }]) {
     const row = { ...source, event_chart };
     assert.equal(eventChartCoordinate(row), null);
     const [rendered] = queueRows({ rows: [row] }, null, true);
     assert.equal(rendered.hidden, true);
   }
+});
+
+test('event-chart eligibility accepts a server-owned High coordinate', () => {
+  const row = { ...W.global.rows.find((item) => item.event_chart !== null),
+    event_chart: { view: 'highs', factor: 'meal_bolus_short' } };
+  assert.deepEqual(eventChartCoordinate(row), row.event_chart);
 });
 
 test('#83 · metadata and empty copy describe the visible root filters', () => {

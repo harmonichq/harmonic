@@ -80,7 +80,7 @@ export function eventChartCoordinate(row) {
   if (coordinate === null || typeof coordinate !== 'object' || Array.isArray(coordinate)) return null;
   if (Object.keys(coordinate).length !== 2
       || !Object.hasOwn(coordinate, 'view') || !Object.hasOwn(coordinate, 'factor')) return null;
-  if (!['meals', 'lows'].includes(coordinate.view)
+  if (typeof coordinate.view !== 'string' || coordinate.view.length === 0
       || typeof coordinate.factor !== 'string' || coordinate.factor.length === 0) return null;
   return coordinate;
 }

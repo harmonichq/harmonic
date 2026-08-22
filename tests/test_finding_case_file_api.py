@@ -413,7 +413,10 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
         for header in prepared["behavioral_case_headers"].values():
             self.assertEqual(set(header), {
                 "finding_id", "lever", "title", "family", "summary",
-                "verdict_counts", "inspectability",
+                "event_chart", "verdict_counts", "inspectability",
+            })
+            self.assertEqual(header["event_chart"], {
+                "view": header["family"], "factor": header["lever"],
             })
             self.assertEqual(set(header["summary"]), {"claimed", "denominator", "noun"})
             self.assertEqual(set(header["verdict_counts"]), {

@@ -619,6 +619,7 @@ export async function openApp(browser, {
           evidence: ready.evidence,
           verdict_counts: ready.verdict_counts,
           verdict_counts_by_family: ready.verdict_counts_by_family,
+          event_chart: ready.event_chart,
           case_header: ready.case_header }];
       });
       preparedBody.behavioral_case_headers = Object.fromEntries(
@@ -628,7 +629,7 @@ export async function openApp(browser, {
       );
       if (caseScenario?.preparation) {
         const response = await caseScenario.preparation({ request: preparationRequests,
-          url, preparation: preparedBody });
+          url, preparation: preparedBody, caseFiles });
         if ((response.status || 200) < 400 && response.body?.projection_id) {
           preparedWindows.set(response.body.projection_id, response.body.coordinates.window);
         }
@@ -1709,9 +1710,9 @@ const withLateConsequence = ({ analysis, exposures, scenarios }) => {
 };
 
 /** Move the three synthetic correction-on-IOB low anchors to Evening while
-    leaving its Morning correction-cluster anchor in place. Whole day therefore
-    publishes the canonical lows coordinate, while Morning retains the same row
-    through another family with `event_chart: null`. */
+    leaving its Morning correction-cluster anchor in place. The replacement
+    Findings projection therefore has no canonical event coordinate, while the
+    retained case preparation keeps its own server-owned event path. */
 const withEligibilityLoss = ({ analysis, exposures, scenarios }) => {
   const next = structuredClone(exposures);
   let hour = 19;
@@ -2465,10 +2466,22 @@ export const S34 = async (page) => {
   await clickQueueRow(page, 'Correction stacking');
   await page.waitForFunction(() => document.querySelector('#seg-align button[aria-pressed="true"]')?.textContent.trim() === 'By clock');
   await page.locator('#chart:not([hidden])').waitFor();
+  const byEventRequests = [];
+  const observeCaseRequest = (request) => {
+    const url = new URL(request.url());
+    if (url.pathname === '/diagnose/finding-case-file') {
+      byEventRequests.push(url.searchParams.get('alignment'));
+    }
+  };
+  page.on('request', observeCaseRequest);
   expectResponse(page, /^\/diagnose\/finding-case-file$/, 500);
   await page.getByRole('button', { name: 'By event', exact: true }).click();
   await settle(page, 900);
+  page.off('request', observeCaseRequest);
   const after = await state(page);
+  is(byEventRequests, ['event'], 'S34 failure makes one By-event request and no hidden clock retry');
+  is(await page.locator('#level [role="alert"]').innerText(),
+    'Synthetic event projection failure.', 'S34 names the failed event request');
   is(after.eventCanvas, false, 'S34 the failed event canvas is not left mounted');
   ok(after.clockCanvas, 'S34 the clock canvas is restored');
   ok(after.clockHead, 'S34 ... with its own header');
@@ -2561,9 +2574,9 @@ export const S37 = async (page) => {
 };
 
 
-/** S38 · When a replacement window retains the open Finding but removes its
-    canonical event family, the live row loses its coordinate: the case stays
-    open, returns By clock, and the filtered root excludes it. */
+/** S38 · When a replacement window retains the open Finding but its separate
+    Findings projection loses the canonical event family, the retained case
+    preparation continues to own its inspectable By-event path. */
 // STORY:finding-evidence-routing:S38
 export const S38 = async (page) => {
   await page.getByRole('button', { name: '24 h', exact: true }).click();
@@ -2580,20 +2593,16 @@ export const S38 = async (page) => {
   const narrowed = await state(page);
   is(narrowed.pressed, ['Morning'], 'S38 the replacement projection is Morning');
   is(narrowed.crumb[narrowed.crumb.length - 1], 'Correction on active insulin',
-    'S38 the live row remains open after losing event eligibility');
+    'S38 the retained Finding remains open after its separate projection changes');
   ok(narrowed.levelStat !== null, 'S38 the replacement projection still publishes the Finding');
-  is(narrowed.alignShown, false, 'S38 Align hides when the live row coordinate becomes null');
-  is(narrowed.clockCanvas, true, 'S38 the event canvas is disposed and By clock returns');
-  is(narrowed.eventCanvas, false, 'S38 no stale event evidence remains mounted');
+  is(narrowed.alignShown, true, 'S38 server-owned ALIGN remains available after the projection loses its coordinate');
+  is(narrowed.alignPressed, ['By event'], 'S38 the retained case stays on its server-owned By-event path');
+  is(narrowed.clockCanvas, false, 'S38 By clock does not replace the coherent retained event canvas');
+  is(narrowed.eventCanvas, true, 'S38 the coherent event canvas remains or reloads with the retained preparation');
   await page.keyboard.press('Backspace');
   const filtered = await state(page);
-  ok(!filtered.queue.some((row) => row.title === 'Correction on active insulin'),
-    'S38 Event charts excludes the retained row whose canonical family is absent');
-  await page.getByRole('button', { name: /Filter/ }).click();
-  await page.getByRole('menuitemradio', { name: 'All findings', exact: true }).click();
-  await page.keyboard.press('Escape');
   ok((await state(page)).queue.some((row) => row.title === 'Correction on active insulin'),
-    'S38 All findings keeps the compatible row reachable By clock');
+    'S38 Event charts keeps the inspectable row reachable through its retained preparation');
 };
 
 /** S39 · A window change ASKS the server for its rows, and until they land the
@@ -2944,26 +2953,45 @@ export const issue86PendingRoot = async (page) => {
     '#86 pending View selection is retained');
 };
 
-/** #86 probe — a 200 response that violates the event-comparison contract is
-    rejected exactly like a failed request: direct entry recovers By clock and
-    preserves the Finding, window, and root View. */
+/** #86 probe — a malformed direct By-event response leaves the requested
+    alignment in place, names the inconsistent projection, and never asks for
+    or renders a clock case. */
 export const issue86MalformedRecovery = async (page) => {
   await page.getByRole('button', { name: '24 h', exact: true }).click();
   await settle(page, 450);
   await page.getByRole('button', { name: /Filter/ }).click();
   await page.getByRole('menuitemradio', { name: 'Event charts', exact: true }).click();
   await page.keyboard.press('Escape');
+  const caseRequests = [];
+  const observeCaseRequest = (request) => {
+    const url = new URL(request.url());
+    if (url.pathname === '/diagnose/finding-case-file') {
+      caseRequests.push(url.searchParams.get('alignment'));
+    }
+  };
+  page.on('request', observeCaseRequest);
   await clickQueueRow(page, 'Late bolus');
-  await settle(page, 450);
+  await page.locator('#level [role="alert"]').waitFor();
+  page.off('request', observeCaseRequest);
   const recovered = await state(page);
   is(recovered.crumb[recovered.crumb.length - 1], 'Late bolus',
     '#86 malformed event data leaves the reader on the same Finding');
-  is(recovered.alignPressed, ['By clock'], '#86 malformed event data restores By clock');
-  is(recovered.clockCanvas, true, '#86 the pooled clock canvas returns');
+  is(recovered.alignPressed, ['By event'], '#86 malformed event data retains By event');
+  is(caseRequests, ['event'], '#86 malformed event data makes no hidden clock-case request');
+  is(await page.locator('#level [role="alert"]').getAttribute('data-code'), 'inconsistent_projection',
+    '#86 malformed event data exposes the structured inconsistent-projection error');
+  is(await page.locator('#level [role="alert"]').innerText(),
+    'The Finding case file did not match the requested coordinates.',
+    '#86 malformed event data names the inconsistent projection');
+  is(await page.locator('#level .clock').count(), 0,
+    '#86 malformed event data renders no fallback clock case');
   is(recovered.eventCanvas, false, '#86 malformed event evidence is never rendered');
   is(recovered.pressed, ['24 h'], '#86 the clock window is preserved');
   await page.keyboard.press('Backspace');
   const root = await state(page);
+  ok(root.queue.some((row) => row.title === 'Late bolus'),
+    '#86 return keeps the same Finding reachable in Event charts');
+  is(root.pressed, ['24 h'], '#86 return preserves the clock window');
   is(root.filter.trigger, 'Filter 1', '#86 the Event charts root View is preserved');
   is(root.filter.view.map((item) => item.checked), ['false', 'true'],
     '#86 the preserved View remains selected');
@@ -2978,12 +3006,21 @@ const openWholeDay = async (page) => {
 
 export const C41 = async (page) => {
   await openWholeDay(page);
-  await clickQueueRow(page, 'Over-treated low');
+  await clickQueueRow(page, 'Meal over-delivery');
   await settle(page, 250);
   const stat = await page.locator('#level .statline').innerText();
-  ok(/1 of 10 low episodes/.test(stat), `C41 claimed denominator is exact (${stat})`);
+  const denominator = Number(stat.match(/^\d+ of (\d+) meal responses/)?.[1]);
+  is(denominator, 10, `C41 claimed denominator is exact (${stat})`);
   is(await page.locator('#level .vband button[aria-label="Meets criteria · 6"]').count(), 1,
     'C41 fired can exceed claimed without browser recounting');
+  const visibleBands = await page.locator('#level .vband button[aria-label]').evaluateAll((buttons) =>
+    buttons.map((button) => Number(button.getAttribute('aria-label').match(/(\d+)$/)?.[1])));
+  const residue = await page.locator('#level .vband-foot').innerText();
+  const residueBands = [...residue.matchAll(/\d+/g)].map((match) => Number(match[0]));
+  is(visibleBands.length + residueBands.length, 5,
+    'C41 reads every published verdict band, including the two residue bands');
+  is([...visibleBands, ...residueBands].reduce((sum, count) => sum + count, 0), denominator,
+    'C41 all five server verdict bands reconcile to the case denominator');
   is(await page.locator('#level .clock .bars > div').count(), 12,
     'C41 renders the server exact twelve clock buckets');
   const total = await page.locator('#level .clock .bars > div').evaluateAll((rows) =>
@@ -3021,34 +3058,41 @@ export const C43 = async (page) => {
 
 export const C44 = async (page) => {
   await openWholeDay(page);
-  const titles = await page.locator('#level .qrow[data-state="finding"] .lab').allTextContents();
-  const highTitles = [];
-  for (const title of titles) {
-    await clickQueueRow(page, title);
-    await page.waitForSelector('#level .who');
-    const who = await page.locator('#level .who').innerText();
-    if (who.endsWith('· highs')) {
-      highTitles.push(title);
-      const opened = await state(page);
-      is(opened.alignShown, false, `C44 ${title} has no ALIGN control`);
-      is(opened.clockCanvas, true, `C44 ${title} remains on its clock projection`);
-      is(opened.eventCanvas, false, `C44 ${title} does not invent an event projection`);
-      const stat = await page.locator('#level .statline').innerText();
-      const claimed = stat.match(/^(\d+) of \d+ high episodes/);
-      ok(claimed, `C44 ${title} preserves its server High denominator (${stat})`);
-      is(await page.locator('#level .clock .bars > div').count(), 12,
-        `C44 ${title} preserves its server clock buckets`);
-      const total = await page.locator('#level .clock .bars > div').evaluateAll((rows) =>
-        rows.reduce((sum, row) => sum + Number(row.dataset.n), 0));
-      is(total, Number(claimed[1]), `C44 ${title} preserves its server claimed total`);
-      ok(await page.locator('#level .case-occurrence').count() > 0,
-        `C44 ${title} preserves its server occurrence evidence`);
-    }
-    await page.getByRole('button', { name: 'Findings', exact: true }).click();
+  await clickQueueRow(page, 'Meal bolus fell short');
+  await page.waitForSelector('#level .who');
+  is(await page.locator('#level .who').innerText(), 'Meal bolus fell short · highs',
+    'C44 opens the server-owned High case');
+  is(await page.getByRole('button', { name: 'By event', exact: true }).count(), 1,
+    'C44 exposes ALIGN from the server-owned High coordinate');
+  const stat = await page.locator('#level .statline').innerText();
+  ok(/^1 of 10 high episodes\b/.test(stat),
+    `C44 preserves the server High denominator and claimed count (${stat})`);
+  await page.getByRole('button', { name: 'By event', exact: true }).click();
+  await page.waitForSelector('#ec-chart');
+  is((await state(page)).eventCanvas, true,
+    'C44 renders Meal bolus fell short in By event without a client roster');
+  await page.locator('#level .case-occurrence').first().click();
+  await page.waitForSelector('#level .case-facts');
+  const evidence = await page.locator('#level .case-facts').innerText();
+  ok(/\d+ glucose readings/.test(evidence) && /\d+ event markers/.test(evidence),
+    'C44 selected High evidence retains its server trace and bolus marker evidence');
+};
+
+/* The ordinary generated projection withholds some case-file rows. A story may
+ * pose one generated production-shaped row without changing that roster policy. */
+const generatedFindingPose = (findingId) => ({ preparation, caseFiles }) => {
+  const sourceRow = caseFiles.preparation.findings.rows.find((row) => row.id === findingId);
+  const sourceRendered = caseFiles.preparation.rendered_rows.find((row) => row.id === findingId);
+  const sourceHeader = caseFiles.preparation.behavioral_case_headers[findingId];
+  if (!sourceRow || !sourceRendered || !sourceHeader) {
+    fail(`generated case-file fixture has no ${findingId} pose`);
   }
-  ok(highTitles.includes('Missed / unannounced meal'),
-    'C44 the current preparation publishes Missed / unannounced meal as a High case');
-  ok(highTitles.length > 0, 'C44 the current preparation publishes a visible High case');
+  const next = structuredClone(preparation);
+  next.findings.rows.push(structuredClone(sourceRow));
+  next.findings.counts = { ...next.findings.counts, total: next.findings.rows.length };
+  next.rendered_rows.push(structuredClone(sourceRendered));
+  next.behavioral_case_headers[findingId] = structuredClone(sourceHeader);
+  return { body: next };
 };
 
 export const C45 = async (page) => {
@@ -3422,11 +3466,15 @@ export const STORIES = [
       { status: 500, detail: 'coordinated retry failed' },
       { body: withRestartGeneration },
     ] }],
-  ['C41', C41, 'typical'], ['C42', C42, 'typical'],
+  ['C41', C41, 'typical', { caseScenario: {
+    preparation: generatedFindingPose('finding:meal_over_delivery'),
+  } }], ['C42', C42, 'typical'],
   ['C43', C43, 'typical', {
     findingsInputs: twoFamilyInputs,
     exposuresInputs: async () => (await twoFamilyInputs()).exposures,
-  }], ['C44', C44, 'typical'],
+  }], ['C44', C44, 'typical', { caseScenario: {
+    preparation: generatedFindingPose('finding:meal_bolus_short'),
+  } }],
   ['C45', C45, 'typical', { caseScenario: {
     case: async ({ request, url, body }) => request === 2
       ? { body: { ...body, selection: { state: 'unavailable',

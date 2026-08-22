@@ -89,16 +89,18 @@ test('ADR 79 · every visible behavioral row requests its opaque case id', () =>
     'Highs and correction clusters use the shared server event-projection path');
 });
 
-test('ADR 79 · case-file ALIGN follows the active row event coordinate', () => {
+test('ADR 79 · case-file ALIGN follows the active server event coordinate', () => {
   const alignment = source.match(/const caseAlignmentIn =[\s\S]*?;\n  const availableAlignment/);
   assert.ok(alignment, 'the case-file alignment predicate exists');
   assert.match(alignment[0], /const row = source\?\.rendered_rows\?\.find\(\(row\) => row\.id === frame\.rowId\);\s*return eventChartCoordinate\(row\);/,
-    'the active rendered row\'s canonical event coordinate controls ALIGN');
+    'the active rendered row\'s server coordinate controls ALIGN');
   assert.doesNotMatch(alignment[0], /case_header|alignments/,
     'retired case-header alignments do not control ALIGN');
 });
 
 test('ADR 79 · event alignment never falls back to clock at paint time', () => {
   assert.ok(!source.includes("open.align = 'clock'"), 'no event-to-clock fallback');
+  assert.doesNotMatch(source, /alignment === 'event' && !frame\.caseFile[\s\S]*requestCase\(frame, 'clock'/,
+    'an event request never silently retries as By clock');
   assert.ok(!source.includes('0 of 0'), 'no fabricated empty frame copy');
 });

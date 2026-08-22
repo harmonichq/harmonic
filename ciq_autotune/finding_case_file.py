@@ -319,6 +319,8 @@ def wrap(prepared):
             continue
         header = {"finding_id": finding_id, "lever": case["finding"]["lever"],
                   "title": case["finding"]["title"], "family": case["family"],
+                  "event_chart": {"view": case["family"],
+                                  "factor": case["finding"]["lever"]},
                   "summary": case["summary"], "verdict_counts": case["verdict_counts"],
                   "inspectability": "ready"}
         changed = deepcopy(row)
@@ -329,6 +331,7 @@ def wrap(prepared):
                         "episodes": case["summary"]["claimed"], "evidence": None,
                         "verdict_counts": case["verdict_counts"],
                         "verdict_counts_by_family": {case["family"]: case["verdict_counts"]},
+                        "event_chart": header["event_chart"],
                         "case_header": header})
         rendered.append(changed); headers[finding_id] = header
     return {"schema": PREPARATION_SCHEMA, "projection_id": prepared.projection_id,

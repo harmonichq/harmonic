@@ -397,27 +397,40 @@ def build_case_file_capture():
     seq = 1000
     for family in Exposure:
         rows = []
+        source_keys = set()
         for index in range(len(verdicts)):
+            # Keep the legacy fixed-seed schedule.  The three-day wrap makes
+            # indices 1 and 9 land on the same timestamp; within a family that
+            # timestamp contributes to the opaque source key for timestamped
+            # opportunities.  Advance only a repeated anchor, by the smallest
+            # stable amount, so every fixture source-key roster is a partition.
             anchor = base + timedelta(hours=index * 3 + list(Exposure).index(family),
                                       days=index % 3)
+            while True:
+                if family is Exposure.MEALS:
+                    dose = BolusEvent(t=anchor, insulin=4.0, carbs=40, seq_num=seq)
+                    row = Opportunity(family, (seq,), anchor, 'meal', 130, members=(dose,))
+                elif family is Exposure.LOWS:
+                    row = Opportunity(family,
+                        (anchor - timedelta(minutes=25), anchor + timedelta(minutes=15), anchor),
+                        anchor, 'low', 62)
+                elif family is Exposure.CORRECTION_CLUSTERS:
+                    first = BolusEvent(t=anchor - timedelta(minutes=90), insulin=1.5, seq_num=seq)
+                    second = BolusEvent(t=anchor, insulin=2.0, seq_num=seq + 1)
+                    row = Opportunity(family, (seq, seq + 1), anchor, 'correction', 175,
+                                      members=(first, second))
+                else:
+                    row = Opportunity(family,
+                        (anchor - timedelta(minutes=40), anchor + timedelta(minutes=15), anchor),
+                        anchor, 'high', 265, reach_start=anchor - timedelta(minutes=30))
+                if row.source_key not in source_keys:
+                    break
+                anchor += timedelta(minutes=1)
+            source_keys.add(row.source_key)
             if family is Exposure.MEALS:
-                dose = BolusEvent(t=anchor, insulin=4.0, carbs=40, seq_num=seq)
-                row = Opportunity(family, (seq,), anchor, 'meal', 130, members=(dose,))
                 seq += 1
-            elif family is Exposure.LOWS:
-                row = Opportunity(family,
-                    (anchor - timedelta(minutes=25), anchor + timedelta(minutes=15), anchor),
-                    anchor, 'low', 62)
             elif family is Exposure.CORRECTION_CLUSTERS:
-                first = BolusEvent(t=anchor - timedelta(minutes=90), insulin=1.5, seq_num=seq)
-                second = BolusEvent(t=anchor, insulin=2.0, seq_num=seq + 1)
-                row = Opportunity(family, (seq, seq + 1), anchor, 'correction', 175,
-                                  members=(first, second))
                 seq += 2
-            else:
-                row = Opportunity(family,
-                    (anchor - timedelta(minutes=40), anchor + timedelta(minutes=15), anchor),
-                    anchor, 'high', 265, reach_start=anchor - timedelta(minutes=30))
             rows.append(row)
         families[family] = tuple(rows)
 

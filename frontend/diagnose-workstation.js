@@ -32,6 +32,7 @@ import {
   assertMatchingFindingCasePreparation,
   inconsistentFindingProjection,
   sameFindingCaseWindow,
+  validFindingCaseFile,
 } from './finding-case-file-validation.js';
 // #735: level 1 is the server-owned findings queue, and the pane has a floor.
 import {
@@ -1354,76 +1355,6 @@ function boot(root, data, callbacks, signal) {
     requested === 'event'
       && (frame.eventDiscovery ? eventChartIn(source, frame) : caseAlignmentIn(source, frame))
       ? 'event' : 'clock';
-  const validCount = (value) => Number.isInteger(value) && value >= 0;
-  const validNumberOrNull = (value) => value === null || Number.isFinite(value);
-  const validAnchor = (anchor) => typeof anchor?.t === 'string'
-    && typeof anchor.kind === 'string' && typeof anchor.label === 'string'
-    && validNumberOrNull(anchor.bg);
-  const validCaseShape = (caseFile) => {
-    const verdicts = ['fired', 'outranked', 'near_miss', 'no_data', 'clean'];
-    const counts = caseFile?.verdict_counts;
-    const occurrences = caseFile?.occurrences;
-    const projection = caseFile?.projection;
-    const selection = caseFile?.selection;
-    if (!caseFile?.finding || typeof caseFile.finding.lever !== 'string'
-      || typeof caseFile.finding.title !== 'string' || typeof caseFile.family !== 'string'
-      || !validCount(caseFile?.summary?.claimed) || !validCount(caseFile?.summary?.denominator)
-      || caseFile.summary.claimed > caseFile.summary.denominator
-      || typeof caseFile.summary.noun !== 'string'
-      || !counts || !verdicts.every((key) => validCount(counts[key]))
-      || verdicts.reduce((sum, key) => sum + counts[key], 0) !== caseFile.summary.denominator
-      || !Array.isArray(occurrences) || occurrences.length !== caseFile.summary.denominator
-      || !occurrences.every((row) => /^o_[0-9a-f]{32}$/.test(row?.id || '')
-        && typeof row.date === 'string' && verdicts.includes(row.verdict)
-        && validAnchor(row.anchor))) return false;
-    if (projection?.alignment === 'clock') {
-      const clock = projection.clock;
-      if (projection.anchor !== null || projection.window_min !== null
-        || !Array.isArray(projection.cohorts) || projection.cohorts.length !== 0
-        || !validCount(clock?.total) || clock.total !== caseFile.summary.claimed
-        || !validCount(clock?.peak_bucket_index) || clock.peak_bucket_index >= 12
-        || !Array.isArray(clock?.buckets) || clock.buckets.length !== 12
-        || !clock.buckets.every((bucket) => validCount(bucket?.n)
-          && Number.isFinite(bucket.start_min) && Number.isFinite(bucket.end_min)
-          && Array.isArray(bucket.occurrence_ids)
-          && bucket.occurrence_ids.every((id) => typeof id === 'string'))
-        || clock.buckets.reduce((sum, bucket) => sum + bucket.n, 0) !== clock.total) return false;
-    } else if (projection?.alignment === 'event') {
-      if (typeof projection.anchor?.kind !== 'string'
-        || typeof projection.anchor?.label !== 'string'
-        || !Array.isArray(projection.window_min) || projection.window_min.length !== 2
-        || !projection.window_min.every(Number.isFinite)
-        || projection.clock !== null || !Array.isArray(projection.cohorts)
-        || !projection.cohorts.every((cohort) => typeof cohort?.key === 'string'
-          && validCount(cohort.routed_count) && validCount(cohort.usable_count)
-          && Array.isArray(cohort.occurrence_ids)
-          && cohort.occurrence_ids.every((id) => typeof id === 'string')
-          && Array.isArray(cohort.points) && cohort.points.every((point) =>
-            Number.isFinite(point?.minute) && validCount(point.n)
-            && typeof point.support === 'string' && validNumberOrNull(point.median)
-            && validNumberOrNull(point.p25) && validNumberOrNull(point.p75)))) return false;
-    } else return false;
-    if (!selection || !['none', 'selected', 'unavailable'].includes(selection.state)) return false;
-    if (selection.state === 'selected') {
-      const detail = selection.detail;
-      if (!detail || detail.id !== selection.requested_id
-        || typeof detail.date !== 'string' || !validAnchor(detail.anchor)
-        || !verdicts.includes(detail.verdict) || !Array.isArray(detail.glucose)
-        || !detail.glucose.every((point) => typeof point?.t === 'string'
-          && Number.isFinite(point.minute) && Number.isFinite(point.bg))
-        || !Array.isArray(detail.markers)
-        || !detail.markers.every((marker) => typeof marker?.kind === 'string'
-          && typeof marker.t === 'string' && Number.isFinite(marker.minute))
-        || !Array.isArray(detail.source_corrections)
-        || !detail.source_corrections.every((dose) => typeof dose?.t === 'string'
-          && Number.isFinite(dose.insulin))
-        || typeof detail.day_target?.date !== 'string'
-        || !occurrences.some((row) => row.id === detail.id && row.date === detail.date
-          && row.verdict === detail.verdict
-          && JSON.stringify(row.anchor) === JSON.stringify(detail.anchor))) return false;
-    } else if (selection.detail !== null) return false;
-    return true;
-  };
   const matchingCase = (caseFile, source, frame, alignment, occ) => {
     const selection = caseFile?.selection;
     const selectionMatches = occ
@@ -1434,7 +1365,7 @@ function boot(root, data, callbacks, signal) {
     const sourceWindow = source?.coordinates?.window;
     const requestedWindow = sourceWindow?.scoped
       ? { start_min: sourceWindow.start_min, end_min: sourceWindow.end_min } : null;
-    if (caseFile?.schema === 'diagnose-finding-case-file-v1' && validCaseShape(caseFile)
+    if (caseFile?.schema === 'diagnose-finding-case-file-v1' && validFindingCaseFile(caseFile)
       && caseFile?.projection_id === source.projection_id
       && caseFile?.finding?.id === frame.rowId
       && sameFindingCaseWindow(caseFile?.window, requestedWindow)
@@ -1539,12 +1470,6 @@ function boot(root, data, callbacks, signal) {
         }
         if (error?.status === 404 && error?.detail?.code === 'finding_unavailable') {
           refreshQueueAfterUnavailable(frame, generation, error);
-          return;
-        }
-        if (alignment === 'event' && !frame.caseFile) {
-          frame.loading = false;
-          frame.requestedAlignment = 'clock';
-          requestCase(frame, 'clock', occ, source);
           return;
         }
         frame.loading = false;

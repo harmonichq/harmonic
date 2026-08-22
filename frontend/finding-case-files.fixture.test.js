@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
+import { validFindingCaseFile } from '../frontend/finding-case-file-validation.js';
+
 const fixture = JSON.parse(readFileSync(new URL(
   '../mockups/diagnose-workstation.synthetic/finding-case-files.json', import.meta.url), 'utf8'));
 
@@ -13,6 +15,20 @@ test('ADR 79 fixture carries all four server families and five exact cohorts', (
     assert.deepEqual(entry.projection.cohorts.map((cohort) => cohort.key),
       ['fired', 'outranked', 'near_miss', 'no_data', 'clean']);
     assert.equal(entry.summary.denominator, entry.occurrences.length);
+  }
+});
+
+test('ADR 79 fixture serializes every generated case as one exact population partition', () => {
+  for (const [findingId, cases] of Object.entries(fixture.cases)) {
+    for (const [name, caseFile] of Object.entries(cases)) {
+      if (name.startsWith('selected_')) {
+        for (const selected of Object.values(caseFile)) {
+          assert.equal(validFindingCaseFile(selected), true, `${findingId} ${name}`);
+        }
+      } else {
+        assert.equal(validFindingCaseFile(caseFile), true, `${findingId} ${name}`);
+      }
+    }
   }
 });
 

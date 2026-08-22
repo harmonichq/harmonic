@@ -300,7 +300,7 @@ def test_named_field_wrapper_preserves_unknown_row_and_top_level_selection():
     }
     allowed_changes = {
         "appearances", "episodes", "evidence", "verdict_counts",
-        "verdict_counts_by_family", "case_header",
+        "verdict_counts_by_family", "event_chart", "case_header",
     }
     assert changed_fields <= allowed_changes
     assert allowed_changes - {"episodes"} <= changed_fields

@@ -11,27 +11,129 @@ export function inconsistentFindingProjection(message) {
   throw error;
 }
 
+const FINDING_VERDICTS = ['fired', 'outranked', 'near_miss', 'no_data', 'clean'];
+const OCCURRENCE_ID = /^o_[0-9a-f]{32}$/;
+
+const validCount = (value) => Number.isInteger(value) && value >= 0;
+const validNumberOrNull = (value) => value === null || Number.isFinite(value);
+const validAnchor = (anchor) => typeof anchor?.t === 'string'
+  && typeof anchor.kind === 'string' && typeof anchor.label === 'string'
+  && validNumberOrNull(anchor.bg);
+
+export function validFindingCaseFile(caseFile) {
+  const counts = caseFile?.verdict_counts;
+  const occurrences = caseFile?.occurrences;
+  const projection = caseFile?.projection;
+  const selection = caseFile?.selection;
+  if (!caseFile?.finding || typeof caseFile.finding.lever !== 'string'
+    || typeof caseFile.finding.title !== 'string' || typeof caseFile.family !== 'string'
+    || !validCount(caseFile?.summary?.claimed) || !validCount(caseFile?.summary?.denominator)
+    || caseFile.summary.claimed > caseFile.summary.denominator
+    || typeof caseFile.summary.noun !== 'string'
+    || !counts || !FINDING_VERDICTS.every((key) => validCount(counts[key]))
+    || FINDING_VERDICTS.reduce((sum, key) => sum + counts[key], 0)
+      !== caseFile.summary.denominator
+    || !Array.isArray(occurrences) || occurrences.length !== caseFile.summary.denominator
+    || !occurrences.every((row) => OCCURRENCE_ID.test(row?.id || '')
+      && typeof row.date === 'string' && FINDING_VERDICTS.includes(row.verdict)
+      && validAnchor(row.anchor))) return false;
+
+  const roster = new Map(occurrences.map((row) => [row.id, row]));
+  if (roster.size !== occurrences.length) return false;
+
+  if (projection?.alignment === 'clock') {
+    const clock = projection.clock;
+    if (projection.anchor !== null || projection.window_min !== null
+      || !Array.isArray(projection.cohorts) || projection.cohorts.length !== 0
+      || !validCount(clock?.total) || clock.total !== caseFile.summary.claimed
+      || !validCount(clock?.peak_bucket_index) || clock.peak_bucket_index >= 12
+      || !Array.isArray(clock?.buckets) || clock.buckets.length !== 12
+      || !clock.buckets.every((bucket) => validCount(bucket?.n)
+        && Number.isFinite(bucket.start_min) && Number.isFinite(bucket.end_min)
+        && Array.isArray(bucket.occurrence_ids)
+        && bucket.occurrence_ids.every((id) => typeof id === 'string'))
+      || clock.buckets.reduce((sum, bucket) => sum + bucket.n, 0) !== clock.total) return false;
+  } else if (projection?.alignment === 'event') {
+    const cohorts = projection.cohorts;
+    if (typeof projection.anchor?.kind !== 'string'
+      || typeof projection.anchor?.label !== 'string'
+      || !Array.isArray(projection.window_min) || projection.window_min.length !== 2
+      || !projection.window_min.every(Number.isFinite)
+      || projection.clock !== null || !Array.isArray(cohorts)
+      || cohorts.length !== FINDING_VERDICTS.length
+      || !cohorts.every((cohort, index) => cohort?.key === FINDING_VERDICTS[index]
+        && validCount(cohort.routed_count) && validCount(cohort.usable_count)
+        && cohort.usable_count <= cohort.routed_count
+        && Array.isArray(cohort.occurrence_ids)
+        && cohort.routed_count === cohort.occurrence_ids.length
+        && cohort.occurrence_ids.every((id) => OCCURRENCE_ID.test(id))
+        && Array.isArray(cohort.points) && cohort.points.every((point) =>
+          Number.isFinite(point?.minute) && validCount(point.n)
+          && typeof point.support === 'string' && validNumberOrNull(point.median)
+          && validNumberOrNull(point.p25) && validNumberOrNull(point.p75)))) return false;
+
+    const cohortIds = new Set();
+    for (const cohort of cohorts) {
+      if (cohort.routed_count !== counts[cohort.key]
+        || new Set(cohort.occurrence_ids).size !== cohort.occurrence_ids.length) return false;
+      for (const id of cohort.occurrence_ids) {
+        if (cohortIds.has(id) || roster.get(id)?.verdict !== cohort.key) return false;
+        cohortIds.add(id);
+      }
+    }
+    if (cohortIds.size !== caseFile.summary.denominator
+      || cohorts.reduce((sum, cohort) => sum + cohort.routed_count, 0)
+        !== caseFile.summary.denominator) return false;
+  } else return false;
+
+  if (!selection || !['none', 'selected', 'unavailable'].includes(selection.state)) return false;
+  if (selection.state === 'selected') {
+    const detail = selection.detail;
+    if (!detail || detail.id !== selection.requested_id
+      || typeof detail.date !== 'string' || !validAnchor(detail.anchor)
+      || !FINDING_VERDICTS.includes(detail.verdict) || !Array.isArray(detail.glucose)
+      || !detail.glucose.every((point) => typeof point?.t === 'string'
+        && Number.isFinite(point.minute) && Number.isFinite(point.bg))
+      || !Array.isArray(detail.markers)
+      || !detail.markers.every((marker) => typeof marker?.kind === 'string'
+        && typeof marker.t === 'string' && Number.isFinite(marker.minute))
+      || !Array.isArray(detail.source_corrections)
+      || !detail.source_corrections.every((dose) => typeof dose?.t === 'string'
+        && Number.isFinite(dose.insulin))
+      || typeof detail.day_target?.date !== 'string'
+      || !occurrences.some((row) => row.id === detail.id && row.date === detail.date
+        && row.verdict === detail.verdict
+        && JSON.stringify(row.anchor) === JSON.stringify(detail.anchor))) return false;
+  } else if (selection.detail !== null) return false;
+  return true;
+}
+
 export function assertMatchingFindingCasePreparation(next, requested) {
-  const verdicts = ['fired', 'outranked', 'near_miss', 'no_data', 'clean'];
-  const validCount = (value) => Number.isInteger(value) && value >= 0;
   const validSummary = (summary) => validCount(summary?.claimed)
     && validCount(summary.denominator) && summary.claimed <= summary.denominator
     && typeof summary.noun === 'string';
   const validCounts = (counts, denominator) => counts
-    && verdicts.every((key) => validCount(counts[key]))
-    && verdicts.reduce((sum, key) => sum + counts[key], 0) === denominator;
+    && FINDING_VERDICTS.every((key) => validCount(counts[key]))
+    && FINDING_VERDICTS.reduce((sum, key) => sum + counts[key], 0) === denominator;
+  const validEventChart = (eventChart) => eventChart !== null
+    && typeof eventChart === 'object' && !Array.isArray(eventChart)
+    && typeof eventChart.view === 'string' && eventChart.view.length > 0
+    && typeof eventChart.factor === 'string' && eventChart.factor.length > 0;
   const validHeader = (header, findingId) => header?.finding_id === findingId
     && header.inspectability === 'ready'
     && typeof header.lever === 'string' && typeof header.title === 'string'
     && typeof header.family === 'string' && validSummary(header.summary)
-    && validCounts(header.verdict_counts, header.summary.denominator);
+    && validCounts(header.verdict_counts, header.summary.denominator)
+    && validEventChart(header.event_chart);
   const sameHeader = (left, right) => left.finding_id === right.finding_id
     && left.inspectability === right.inspectability && left.lever === right.lever
     && left.title === right.title && left.family === right.family
     && left.summary.claimed === right.summary.claimed
     && left.summary.denominator === right.summary.denominator
     && left.summary.noun === right.summary.noun
-    && verdicts.every((key) => left.verdict_counts[key] === right.verdict_counts[key]);
+    && left.event_chart.view === right.event_chart.view
+    && left.event_chart.factor === right.event_chart.factor
+    && FINDING_VERDICTS.every((key) => left.verdict_counts[key] === right.verdict_counts[key]);
   const renderedRows = next?.rendered_rows;
   const headers = next?.behavioral_case_headers;
   const readyFindingRows = Array.isArray(renderedRows)
@@ -45,7 +147,9 @@ export function assertMatchingFindingCasePreparation(next, requested) {
       const header = row.case_header;
       const mapped = headers?.[row.id];
       return validHeader(header, row.id) && validHeader(mapped, row.id)
-        && sameHeader(header, mapped);
+        && sameHeader(header, mapped)
+        && row.event_chart?.view === header.event_chart.view
+        && row.event_chart?.factor === header.event_chart.factor;
   });
   if (next?.schema !== 'diagnose-finding-case-file-preparation-v1'
     || (next?.findings?.schema !== 'diagnose-findings-v1'

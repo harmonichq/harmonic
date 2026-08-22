@@ -74,6 +74,12 @@ test('the mirror reproduces every server-owned history selection disposition', (
     assert.deepEqual(projectFindings(inputs, bounds, selectedId), fixture.selection_cases[name],
       `selection ${name} diverges from the server projection`);
   }
+  const catalogHistory = fixture.inputs.analysis.ic_history.find(
+    (history) => history.id === selectedId);
+  const projectedHistory = fixture.selection_cases.present.rows.find(
+    (row) => row.id === selectedId);
+  assert.equal(projectedHistory.annotation, catalogHistory.annotation,
+    'history copy must pass through from the analyzer catalog verbatim');
 });
 
 test('the history-event mirror preserves exact run membership and selection', () => {

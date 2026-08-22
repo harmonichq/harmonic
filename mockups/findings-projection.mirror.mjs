@@ -435,18 +435,6 @@ function findingRows(exposures, scenarios, window) {
   return rows;
 }
 
-const numberText = (value) => String(Number(value));
-
-function historyCopy(history) {
-  const estimate = history.estimate;
-  const interval = estimate.lo != null && estimate.hi != null
-    ? ` (CI ${numberText(estimate.lo)}–${numberText(estimate.hi)})` : '';
-  const runNoun = history.support === 1 ? 'meal run' : 'meal runs';
-  return `When Carb ratio was ${numberText(history.past_setting)} g/U, `
-    + `${history.support} ${runNoun} measured ${numberText(estimate.value)} g/U`
-    + `${interval}. Past setting. No change suggested.`;
-}
-
 function historyRows(analysis, query) {
   const rows = [];
   for (const history of analysis.ic_history || []) {
@@ -462,7 +450,7 @@ function historyRows(analysis, query) {
       estimate: history.estimate, support: history.support,
       regime_end: history.regime_end ?? null,
       run_ids: (history.runs || []).map((run) => run.run_id),
-      annotation: historyCopy(history),
+      annotation: history.annotation ?? null,
     }));
   }
   return rows;

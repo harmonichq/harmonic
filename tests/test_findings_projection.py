@@ -55,7 +55,8 @@ def _row(rows, title):
 
 def _with_history(projection, *, lifecycle="active", start_min=420,
                   end_min=720, regime_end="2026-08-01T12:00:00", runs=None,
-                  past_setting=5.0):
+                  past_setting=5.0,
+                  annotation="Analyzer-owned history conclusion."):
     history = IcHistory(
         history_id=encode_history_id(
             HistoryIdentity(start_min, end_min, past_setting)),
@@ -65,6 +66,7 @@ def _with_history(projection, *, lifecycle="active", start_min=420,
         estimate=(None if lifecycle != "active" else
                   Estimate(value=4.6, lo=4.4, hi=4.8, n=3, method="clustered")),
         support=3 if lifecycle == "active" else None,
+        annotation=annotation if lifecycle == "active" else None,
         lifecycle=lifecycle, regime_end=regime_end, runs=list(runs or []),
     )
     analysis = dict(projection._analysis)
@@ -89,6 +91,7 @@ class HistoryRowsTest(unittest.TestCase):
                          (None, "noted", []))
         self.assertEqual((row["past_setting"], row["programmed_now"], row["support"]),
                          (5.0, 6.0, 3))
+        self.assertEqual(row["annotation"], history.annotation)
         for field in ("recommended", "direction", "lean"):
             self.assertIsNone(row[field])
 
@@ -558,6 +561,37 @@ class FindingsEndpointTest(unittest.TestCase):
                          (400, "invalid_history_id"))
         self.assertEqual((unknown.status_code, unknown.json()["detail"]["code"]),
                          (404, "history_not_found"))
+
+    def test_selected_history_present_and_out_of_scope_bodies_are_public(self):
+        import ciq_autotune.api as api_mod
+        from unittest.mock import patch
+
+        projection, history = _with_history(
+            gen.empty_projection(),
+            annotation="Exact analyzer-owned copy; do not rewrite this sentence.")
+        with patch.object(api_mod, "prepare_findings_projection",
+                          lambda *args, **kwargs: projection):
+            present = self.client.get("/diagnose/findings", params={
+                "selected_id": history.history_id,
+            })
+            out_of_scope = self.client.get("/diagnose/findings", params={
+                "start_min": 0, "end_min": 300,
+                "selected_id": history.history_id,
+            })
+
+        self.assertEqual(present.status_code, 200)
+        self.assertEqual(present.json()["selection"], {
+            "id": history.history_id, "disposition": "present", "message": None,
+        })
+        present_row = next(row for row in present.json()["rows"]
+                           if row["id"] == history.history_id)
+        self.assertEqual(present_row["annotation"], history.annotation)
+        self.assertEqual(out_of_scope.status_code, 200)
+        self.assertEqual(out_of_scope.json()["selection"], {
+            "id": history.history_id,
+            "disposition": "out_of_scope",
+            "message": "Past-setting evidence is outside the selected window.",
+        })
 
     def test_history_events_validate_generation_and_both_identity_codecs(self):
         generation = self.client.get("/diagnose/findings").json()[

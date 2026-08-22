@@ -2285,6 +2285,7 @@
   "analysis_generation": "findings-fixture-process:0",
   "catalog": [
    {
+    "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (CI 6\u20136). Past setting. No change suggested.",
     "block_end_min": 720,
     "block_start_min": 0,
     "estimate": {

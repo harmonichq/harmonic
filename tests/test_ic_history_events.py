@@ -40,7 +40,8 @@ class IcHistoryEventsTest(unittest.TestCase):
             history_id=history_id, block_start_min=420, block_end_min=720,
             label="Breakfast", past_setting=5.0, programmed_now=6.0,
             estimate=Estimate(value=4.6, lo=4.4, hi=4.8, n=1, method="clustered"),
-            support=1, lifecycle="active", regime_end="2026-08-02T00:00:00",
+            support=1, annotation="Analyzer-owned history conclusion.",
+            lifecycle="active", regime_end="2026-08-02T00:00:00",
             runs=[run],
         )
         findings = FindingsProjection(
@@ -65,6 +66,61 @@ class IcHistoryEventsTest(unittest.TestCase):
             {"minute": -10.0, "bg": 101}, {"minute": 0.0, "bg": 105},
             {"minute": 120.0, "bg": 142}, {"minute": 435.0, "bg": 111},
         ])
+
+    def test_selected_run_records_selection_without_filtering_exact_population(self):
+        meals = [datetime(2026, 8, 1, 9), datetime(2026, 8, 3, 9)]
+        runs = [
+            IcHistoryRunRecord(
+                run_id=encode_run_id(RunIdentity(meal)),
+                first_member_at=meal.isoformat(),
+                last_member_at=(meal + timedelta(minutes=index * 5)).isoformat(),
+                member_offsets_min=[0.0, float(index * 5)],
+                cgm_start_min=-5.0, cgm_end_min=15.0, outcome_min=10.0,
+            )
+            for index, meal in enumerate(meals, start=1)
+        ]
+        history_id = encode_history_id(HistoryIdentity(420, 720, 5.0))
+        history = IcHistory(
+            history_id=history_id, block_start_min=420, block_end_min=720,
+            label="Breakfast", past_setting=5.0, programmed_now=6.0,
+            estimate=Estimate(value=4.6, lo=4.4, hi=4.8, n=2, method="clustered"),
+            support=2, annotation="Analyzer-owned history conclusion.",
+            lifecycle="active", regime_end="2026-08-04T00:00:00", runs=runs,
+        )
+        findings = FindingsProjection(
+            {"window_days": 30, "ic_history": [history.to_dict()]},
+            {"exposures": {}}, {"patterns": [], "low_confidence": []})
+        readings = [
+            CgmReading(meal + timedelta(minutes=minute), bg, "synthetic")
+            for meal, base in zip(meals, (100, 120))
+            for minute, bg in ((-5, base), (0, base + 5), (15, base + 2))
+        ]
+        prepared = prepare_ic_history_events(_Store(readings), findings)
+
+        all_runs = prepared.project(
+            history_id, analysis_generation="fixture-process:0")
+        selected = prepared.project(
+            history_id, runs[1].run_id,
+            analysis_generation="fixture-process:0")
+
+        expected_ids = [run.run_id for run in runs]
+        expected_series = [
+            {
+                **run.to_dict(), "meal_at": run.first_member_at,
+                "points": [
+                    {"minute": -5.0, "bg": base},
+                    {"minute": 0.0, "bg": base + 5},
+                    {"minute": 15.0, "bg": base + 2},
+                ],
+            }
+            for run, base in zip(runs, (100, 120))
+        ]
+        self.assertEqual(all_runs["run_ids"], expected_ids)
+        self.assertEqual(all_runs["series"], expected_series)
+        self.assertIsNone(all_runs["selected_run_id"])
+        self.assertEqual(selected["selected_run_id"], runs[1].run_id)
+        self.assertEqual(selected["run_ids"], expected_ids)
+        self.assertEqual(selected["series"], expected_series)
 
 
 if __name__ == "__main__":

@@ -228,7 +228,7 @@ class FindingsProjection:
                 estimate=history["estimate"], support=history["support"],
                 regime_end=history.get("regime_end"),
                 run_ids=[run["run_id"] for run in history.get("runs") or []],
-                annotation=_history_copy(history),
+                annotation=history.get("annotation"),
             ))
         return rows
 
@@ -716,24 +716,6 @@ def _sort_key(row: dict):
         span.get("start_min", DAY_MINUTES),
         -history_recency,
         row["title"] or "",
-    )
-
-
-def _number(value: object) -> str:
-    return format(float(value), "g")
-
-
-def _history_copy(history: dict) -> str:
-    """The finished, non-actionable conclusion for one catalog measurement."""
-    estimate = history["estimate"]
-    interval = ""
-    if estimate.get("lo") is not None and estimate.get("hi") is not None:
-        interval = f" (CI {_number(estimate['lo'])}–{_number(estimate['hi'])})"
-    run_noun = "meal run" if history["support"] == 1 else "meal runs"
-    return (
-        f"When Carb ratio was {_number(history['past_setting'])} g/U, "
-        f"{history['support']} {run_noun} measured {_number(estimate['value'])} g/U"
-        f"{interval}. Past setting. No change suggested."
     )
 
 

@@ -80,7 +80,22 @@ checked before any of those validation or data responses.
 Neither endpoint changes `/diagnose/event-comparison`, and neither projection may
 infer schedule membership, lifecycle, support, or actionability. Selecting a run
 changes only the echoed selection; it does not filter `run_ids` or `series`.
+### Requirement: Finding case files are bound to one snapshot preparation.
 
+`GET /diagnose/finding-case-file-preparation` builds the active Findings queue and
+its case-file population inside one SQLite read snapshot. It returns an opaque,
+versioned `projection_id` beside server-rendered rows. `GET
+/diagnose/finding-case-file` requires that id, a stable Finding id, an alignment,
+ and an optional Occurrence coordinate; it projects only from the
+retained preparation rather than recomputing against a newer population.
+
+The preparation registry is bounded, expiring, lock-coupled, and single-flight.
+A data-version bump prevents an in-flight older preparation from becoming newly
+addressable. An expired or unknown well-formed id returns `409 stale_projection`;
+malformed coordinates return `400 invalid_request`; an unavailable Finding or
+Occurrence returns the contract's explicit unavailable state. These routes do not
+widen or replace `/diagnose/findings`, `/explore/exposures`, or the legacy event-
+comparison endpoint.
 ### Requirement: Every write path MUST invalidate the cache
 
 Invalidation is coarse and global: a single `bump` clears the whole map and advances

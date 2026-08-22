@@ -901,7 +901,6 @@ function paintLevel() {
          drilled verdict — the settled rule ("the meta counts what the table
          draws") applied to a roster that is now one verdict long. -->
     ${bandMarkup(active)}
-    <div class="lvl-cap fer-occ-cap">Occurrences<span class="meta">${cap.key} &nbsp;·&nbsp; ${group.count} of ${cap.denominator} in ${cap.window}</span></div>
     <!-- ROUND 9, FINDING 13 — THE RESIDUE SITS ABOVE THE EXPANDER, which is the
          amendment's own settled form ("residue is an unfilled dim line above the
          expander") and which round 8 inverted. As drawn there, the last thing
@@ -938,10 +937,13 @@ function paintLevel() {
      is its own cap. Nothing here decides a row's date format, its Δ sign or its
      tier word. */
   const host = el('occ-table');
-  renderEvidence(host, { cause: group.cause || '' }, group.occurrences,
+  renderEvidence(host, {
+    cause: group.cause || '', title: active.label || group.lead,
+    denominator: cap.denominator,
+  }, group.occurrences, group.lead,
     (occ) => select(highlighted === occ.id ? null : occ.id),
     () => { expanded = !expanded; paintLevel(); },
-    shownCount);
+    shownCount, group.occurrences.find((occ) => occ.id === highlighted));
 
   /* Two stamps the shipped painter has no reason to make, applied to the rows
      it painted rather than by editing it:

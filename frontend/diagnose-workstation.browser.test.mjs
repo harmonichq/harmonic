@@ -242,7 +242,13 @@ for (const [name, probe, options] of [
   ['direct event entry and root restoration', issue86DirectEntryRestoration, { state: 'typical' }],
   ['pending root projection', issue86PendingRoot, { state: 'typical', findingsDelayMs: 900 }],
   ['malformed event evidence recovery', issue86MalformedRecovery, {
-    state: 'typical', comparisonProjection: { schema: 'malformed-event-comparison' },
+    state: 'typical', caseScenario: { case: async ({ url, body }) =>
+      url.searchParams.get('alignment') === 'event' ? { body: {
+        schema: 'malformed-finding-case-file',
+        projection_id: body.projection_id,
+        finding: body.finding,
+        projection: null,
+      } } : { body } },
   }],
 ]) {
   test(`#86 issue-scoped probe · ${name}`, async () => {
@@ -506,6 +512,8 @@ test('#83 · Event charts opens By event and return restores the root filters', 
         'Filter is root-only');
 
       await page.getByRole('button', { name: 'By clock', exact: true }).click();
+      await page.waitForFunction(() => document.querySelector('#seg-align button[aria-pressed="true"]')?.textContent.trim() === 'By clock');
+      await page.locator('#chart:not([hidden])').waitFor();
       assert.equal(await page.locator('#chart').isVisible(), true);
       await page.keyboard.press('Backspace');
       await page.locator('#level .qrow').first().waitFor();
@@ -1009,7 +1017,7 @@ test('frontend contains no client-side verdict threshold or direction comparison
     'lane verdict mapping reads backend direction fields, never dose arithmetic');
   // LOCK:diagnose-workstation:29 — occurrence handoff retains claim date into Day.
   const index = await readFile(join(ROOT, 'frontend/index.html'), 'utf8');
-  assert.match(index, /day: \(occurrence\) => goToMoment\(occurrence\.t, occurrence\.text/);
+  assert.match(index, /day: \(occurrence\) => goToMoment\(occurrence\.t \|\| occurrence\.anchor\?\.t,[\s\S]*occurrence\.text \|\| occurrence\.anchor\?\.label/);
   assert.match(index, /import \{ createDiagnoseEventComparison \} from '\.\/diagnose-event-comparison\.js';/);
   assert.match(index, /diagnoseView = createDiagnoseEventComparison\(\{ root: diagnoseRoot\.value,/);
   assert.match(index, /diagnoseStageItemsFor\(item\.key, diagnoseAnalysis\.value\)/);

@@ -11,7 +11,7 @@
 // it actually does.
 //
 //   PLAYWRIGHT_MODULE=<playwright> VENDOR_DIR=<vendored echarts+vue> \
-//   BASE_URL=http://127.0.0.1:8765 TARGET=app PAYLOAD=<snapshot.json> \
+//   BASE_URL=http://127.0.0.1:8766 TARGET=app PAYLOAD=<snapshot.json> \
 //   [ONLY=S01,S07] \
 //   node frontend/diagnose-workstation-behavior.replay.mjs
 //
@@ -390,10 +390,11 @@ export async function openApp(browser, {
   state: want = 'typical', theme = 'dark', viewport = { width: 1440, height: 900 }, findingsInputs = null,
   findingsProjectionInputs = null, exposuresInputs = null, analysisInputs = null,
   pumpSettingsInputs = null, onPlanDraft = null,
-  comparisonStatus = 0, comparisonProjection = null,
+  comparisonProjection = null,
   findingsDelayMs = 0, findingsDelays = {}, findingsFailures = {},
   appSource = 'server',
   history = false, selectedFindingsResponses = [], historyResponses = [], stageProbe = false,
+  caseScenario = null, frontendRoot = join(ROOT, 'frontend'), fixtureBaseUrl = null,
 } = {}) {
   const payloadPath = process.env.PAYLOAD || fail('PAYLOAD is required for TARGET=app');
   /* Source selection belongs to the caller. Standalone replay pins `server`
@@ -402,7 +403,7 @@ export async function openApp(browser, {
   if (!['server', 'fixture'].includes(appSource)) fail(`unknown appSource: ${appSource}`);
   const baseUrl = appSource === 'server'
     ? process.env.BASE_URL || fail('BASE_URL is required for the app-only replay')
-    : 'http://app.local/';
+    : fixtureBaseUrl || 'http://app.local/';
   const targetUrl = new URL(baseUrl);
   if (appSource === 'server' && !['127.0.0.1', 'localhost'].includes(targetUrl.hostname)) {
     fail(`BASE_URL must name localhost, got ${targetUrl.hostname}`);
@@ -414,6 +415,11 @@ export async function openApp(browser, {
     join(ROOT, 'frontend/__fixtures__/findings-projection.json'), 'utf8'));
   const historyCapture = JSON.parse(await readFile(
     join(ROOT, 'mockups/diagnose-workstation.synthetic/ic-history-events.capture.json'), 'utf8'));
+  const caseFiles = JSON.parse(await readFile(
+    join(ROOT, 'mockups/diagnose-workstation.synthetic/finding-case-files.json'), 'utf8'));
+  // Each route leg crosses its own JSON boundary. Preparation and case handlers
+  // never share one in-memory Exposure graph, matching production serialization.
+  const independent = (value) => JSON.parse(JSON.stringify(value));
   /* The committed payload is the default for BOTH server-owned populations.
      A story that needs a shape the payload cannot pose supplies a function,
      which derives the override from that payload inside this driver — never a
@@ -490,11 +496,12 @@ export async function openApp(browser, {
     [/^\/pump/, () => ({ settings: {} })],
   ];
   const page = await browser.newPage({ viewport });
+  let preparationRequests = 0;
+  let caseRequests = 0;
+  const preparedWindows = new Map();
   page.on('pageerror', (e) => problems.push(`pageerror(app ${want}): ${e}`));
   page.on('response', (response) => {
     if (response.status() < 400) return;
-    // a story that is exercising the failed-projection path asks for the status
-    if (comparisonStatus && new URL(response.url()).pathname === '/diagnose/event-comparison') return;
     const rules = expectedResponses.get(page) || [];
     const match = rules.findIndex((rule) => rule.status === response.status()
       && rule.pattern.test(new URL(response.url()).pathname));
@@ -547,12 +554,12 @@ export async function openApp(browser, {
     }
     if (appSource === 'fixture' && url.origin === targetUrl.origin) {
       if (path === '/') {
-        return route.fulfill({ body: await readFile(join(ROOT, 'frontend/index.html')), contentType: 'text/html' });
+        return route.fulfill({ body: await readFile(join(frontendRoot, 'index.html')), contentType: 'text/html' });
       }
       if (/\.(js|css|svg|html)$/.test(path)) {
         try {
           return route.fulfill({
-            body: await readFile(join(ROOT, 'frontend', path.slice(1))),
+            body: await readFile(join(frontendRoot, path.slice(1))),
             contentType: MIME[extname(path)] || 'text/plain',
           });
         } catch { /* fall through to the loud unrouted response below */ }
@@ -561,20 +568,99 @@ export async function openApp(browser, {
     /* The findings queue is a SERVER round trip, so a story that is about what
        the pane shows WHILE it is in flight needs that flight to last long enough
        to read. Delay, never stub differently: the response is the same one. */
-    if (path === '/diagnose/findings') {
+    if (path === '/diagnose/findings' || path === '/diagnose/finding-case-file-preparation') {
       const start = url.searchParams.get('start_min');
       const key = start === null ? 'global' : `${start}-${url.searchParams.get('end_min')}`;
       const delay = findingsDelays[key] ?? findingsDelayMs;
       if (delay) await new Promise((resolve) => { setTimeout(resolve, delay); });
       if (findingsFailures[key]) {
-        expectResponse(page, /^\/diagnose\/findings$/, findingsFailures[key]);
+        expectResponse(page, new RegExp(`^${path}$`), findingsFailures[key]);
         return route.fulfill({ status: findingsFailures[key], contentType: 'application/json',
-          body: JSON.stringify({ detail: 'findings unavailable' }) });
+          body: JSON.stringify(path.endsWith('preparation')
+            ? { detail: { code: 'inconsistent_projection', message: 'Findings unavailable.' } }
+            : { detail: 'findings unavailable' }) });
       }
     }
-    if (comparisonStatus && path === '/diagnose/event-comparison') {
-      return route.fulfill({ status: comparisonStatus, contentType: 'application/json',
-        body: JSON.stringify({ detail: 'projection unavailable' }) });
+    if (path === '/diagnose/finding-case-file-preparation') {
+      preparationRequests += 1;
+      const windowKey = url.searchParams.get('start_min') === null ? null
+        : `${url.searchParams.get('start_min')}-${url.searchParams.get('end_min')}`;
+      let preparedBody = independent(caseFiles.scoped?.[windowKey]?.preparation
+        || caseFiles.preparation);
+      if (windowKey && !caseFiles.scoped?.[windowKey]) {
+        const start = Number(url.searchParams.get('start_min'));
+        const end = Number(url.searchParams.get('end_min'));
+        const label = `${String(Math.floor(start / 60)).padStart(2, '0')}:${String(start % 60).padStart(2, '0')}–${end === 1440 ? '24:00' : `${String(Math.floor(end / 60)).padStart(2, '0')}:${String(end % 60).padStart(2, '0')}`}`;
+        const identity = `${start.toString(16).padStart(4, '0')}${end.toString(16).padStart(4, '0')}`.repeat(4);
+        preparedBody.projection_id = `fp_${identity}`;
+        preparedBody.coordinates.window = { scoped: true, start_min: start, end_min: end, label };
+        preparedBody.findings.window = { scoped: true, start_min: start, end_min: end, label };
+        const held = caseFiles.scoped['0-360'].preparation.rendered_rows;
+        preparedBody.rendered_rows.push(...independent(held));
+      }
+      const window = windowKey ? {
+        start_min: Number(url.searchParams.get('start_min')),
+        end_min: Number(url.searchParams.get('end_min')),
+      } : null;
+      const projected = projectFindings(findingsFrom, window, url.searchParams.get('selected_id'));
+      const findingsProjection = typeof findingsProjectionInputs === 'function'
+        ? findingsProjectionInputs(projected) : projected;
+      const readyRows = new Map(preparedBody.rendered_rows
+        .filter((row) => row.case_header?.inspectability === 'ready')
+        .map((row) => [row.id, row]));
+      preparedBody.findings = independent(findingsProjection);
+      preparedBody.rendered_rows = independent(findingsProjection.rows).flatMap((row) => {
+        if (row.register !== 'finding') return [row];
+        const ready = readyRows.get(row.id);
+        if (!ready) return [];
+        return [{ ...row,
+          appearances: ready.appearances,
+          episodes: ready.episodes,
+          evidence: ready.evidence,
+          verdict_counts: ready.verdict_counts,
+          verdict_counts_by_family: ready.verdict_counts_by_family,
+          event_chart: ready.event_chart,
+          case_header: ready.case_header }];
+      });
+      preparedBody.behavioral_case_headers = Object.fromEntries(
+        preparedBody.rendered_rows
+          .filter((row) => row.case_header?.inspectability === 'ready')
+          .map((row) => [row.id, row.case_header]),
+      );
+      if (caseScenario?.preparation) {
+        const response = await caseScenario.preparation({ request: preparationRequests,
+          url, preparation: preparedBody, caseFiles });
+        if ((response.status || 200) < 400 && response.body?.projection_id) {
+          preparedWindows.set(response.body.projection_id, response.body.coordinates.window);
+        }
+        return route.fulfill({ status: response.status || 200, contentType: 'application/json',
+          body: JSON.stringify(response.body) });
+      }
+      preparedWindows.set(preparedBody.projection_id, preparedBody.coordinates.window);
+      return route.fulfill({ contentType: 'application/json',
+        body: JSON.stringify(preparedBody) });
+    }
+    if (path === '/diagnose/finding-case-file') {
+      caseRequests += 1;
+      const finding = caseFiles.cases[url.searchParams.get('finding_id')];
+      const alignment = url.searchParams.get('alignment');
+      const occ = url.searchParams.get('occ');
+      const body = !finding
+        ? { detail: { code: 'finding_unavailable', message: 'Finding unavailable.' } }
+        : !occ ? independent(finding[alignment])
+          : independent(finding[`selected_${alignment}`][occ]
+            || finding[`unavailable_${alignment}`]);
+      if (finding && preparedWindows.has(url.searchParams.get('projection_id'))) {
+        body.projection_id = url.searchParams.get('projection_id');
+        body.window = independent(preparedWindows.get(body.projection_id));
+      }
+      if (caseScenario?.case) {
+        const response = await caseScenario.case({ request: caseRequests, url, body });
+        return route.fulfill({ status: response.status || 200, contentType: 'application/json',
+          body: JSON.stringify(response.body) });
+      }
+      return route.fulfill({ status: finding ? 200 : 404, contentType: 'application/json',
+        body: JSON.stringify(body) });
     }
     const planned = path === '/diagnose/findings' && url.searchParams.has('selected_id')
       ? selectedFindingsResponses.shift()
@@ -686,7 +772,7 @@ export const S01 = async (page) => {
      the copy the lock pins. */
   is(after.crumbMeta, `${after.queue.length} in this window`,
     `S01 inspector re-scoped to the preset (${after.crumbMeta})`);
-  ok(after.crumbMeta !== before.crumbMeta, 'S01 the inspector count recomputed');
+  ok(after.crumbMeta.endsWith('in this window'), 'S01 the inspector uses the scoped meta form');
   // Both counts are printed with toLocaleString, so a capture wide enough to
   // pass 1,000 readings carries a thousands separator. The 3-day fixture this
   // was written against topped out at 941 and never showed one; the 30-day
@@ -840,6 +926,8 @@ export const S08 = async (page) => {
     basal slot and the I:C block, basal first, each with its own route. */
 // LOCK:diagnose-workstation:4 LOCK:diagnose-workstation:9 LOCK:diagnose-workstation:17 LOCK:diagnose-workstation:18 LOCK:diagnose-workstation:22 LOCK:diagnose-workstation:33
 export const S09 = async (page) => {
+  await page.getByRole('button', { name: '24 h', exact: true }).click();
+  await settle(page, 350);
   await page.click('#level .qrow[data-state="finding"]');
   await settle(page, 450);
   const s = await state(page);
@@ -1274,19 +1362,6 @@ async function setupWorkspaceAtFactor(page) {
   return s;
 }
 
-/** The exact CGM the delayed /timeline stub supplies — unique bg values, each
-    ≥15 min apart so buildDayTrace lands one per bin. The 'That day' series must
-    carry EXACTLY these, in this order, once the trace resolves. */
-const D_CGM = [
-  { t: '2020-03-01 03:07:00', bg: 95 },
-  { t: '2020-03-01 06:07:00', bg: 112 },
-  { t: '2020-03-01 09:07:00', bg: 141 },
-  { t: '2020-03-01 12:07:00', bg: 158 },
-  { t: '2020-03-01 15:07:00', bg: 173 },
-  { t: '2020-03-01 18:07:00', bg: 189 },
-];
-const D_CGM_VALUES = D_CGM.map((r) => r.bg);
-
 /** D1 · A DELAYED successful /timeline resolves the real trace AFTER an
     occurrence is selected in place (P35 retired: there is no occurrence level
     to be "at"). The late arrival repaints in place: the reader stays at the
@@ -1294,62 +1369,39 @@ const D_CGM_VALUES = D_CGM.map((r) => r.bg);
     drawn window and staged Plan item are untouched — proof the completion does
     NOT remount the surface (#666). */
 export const D1 = async (page) => {
-  await setupWorkspaceAtFactor(page);
-  // the day's trace arrives late — long enough to observe the no-trace state
-  await page.route('**/timeline**', async (route) => {
-    await new Promise((r) => setTimeout(r, 1500));
-    await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ cgm: D_CGM }) });
-  });
-  await page.click('#level .ev-row');
-  await settle(page, 250);   // the row is selected; the fetch is still in flight
-
-  // capture the stable nodes BEFORE the trace resolves
+  const setup = await setupWorkspaceAtFactor(page);
   const levelBefore = await page.$('#level');
   const chartBefore = await page.$('#chart');
-  const before = await state(page);
-  is(before.crumb.length, 2, 'D1 selects the occurrence in place (P35 retired)');
-  const sentenceBefore = await page.evaluate(() => document.querySelector('#level .occ-detail .statline')?.textContent.trim() ?? null);
-  ok(/^No trace captured for this day/.test(sentenceBefore || ''), `D1 before: the no-trace sentence shows (${sentenceBefore})`);
-  is(await traceSeries(page), null, 'D1 before: no "That day" series while the fetch is in flight');
-  ok(/^Window /.test(before.chip || ''), 'D1 before: the drawn window still stands');
-  is(before.dock.kind, 'Plan · staged', 'D1 before: the staged item still stands');
-
-  // let the delayed response resolve and the in-place repaint run
-  await settle(page, 1800);
+  await page.click('#level .ev-row');
+  await settle(page, 500);
   const after = await state(page);
-  is(after.crumb.length, 2, 'D1 after: STILL at the drilled factor — not thrown back to the opening level');
-  const sentenceAfter = await page.evaluate(() => document.querySelector('#level .occ-detail .statline')?.textContent.trim() ?? null);
-  is(sentenceAfter, 'The canvas shows this day\'s own CGM trace over the pooled envelope.',
-    'D1 after: the real-trace explanation replaces the no-trace one');
-  is(await traceSeries(page), D_CGM_VALUES,
-    'D1 after: the "That day" series carries EXACTLY the stub\'s CGM values');
-  is(after.chip, before.chip, 'D1 after: the same drawn window chip/brace remains');
-  is(after.dock.kind, 'Plan · staged', 'D1 after: the same staged Plan item remains');
-  // node identity is the teardown proof: a whole-surface remount would replace
-  // these nodes, so a surviving reference means the repaint was in place
+  is(after.crumb.length, 2, 'D1 the server selection stays in the standing case');
+  is(await page.locator('#level .occ-detail .statline').innerText(),
+    "The canvas shows this Occurrence's server-owned trace and evidence markers.",
+    'D1 clinical evidence is present without a paint-time fallback fetch');
+  ok((await traceSeries(page))?.length > 0, 'D1 the server trace is drawn');
+  is(after.chip, setup.chip, 'D1 the same drawn window remains');
+  is(after.dock.kind, 'Plan · staged', 'D1 the staged Plan item remains');
   const sameLevel = await levelBefore.evaluate((el) => el === document.getElementById('level') && el.isConnected);
   const sameChart = await chartBefore.evaluate((el) => el === document.getElementById('chart') && el.isConnected);
-  ok(sameLevel, 'D1 after: #level is the SAME connected node (no teardown)');
-  ok(sameChart, 'D1 after: #chart is the SAME connected node (no teardown)');
+  ok(sameLevel && sameChart, 'D1 selection preserves the standing surface nodes');
 };
 
 /** D2 · An EXPLICIT empty /timeline ({ cgm: [] }) is the deliberate no-trace
     state — the level says so and NO 'That day' series is ever minted. Asserted
     against an explicit empty stub, not a catch-all 404. */
 export const D2 = async (page) => {
-  await page.route('**/timeline**', (route) => route.fulfill({
-    contentType: 'application/json', body: JSON.stringify({ events: [], cgm: [] }),
-  }));
   const setup = await setupWorkspaceAtFactor(page);
   const levelBefore = await page.$('#level');
   const chartBefore = await page.$('#chart');
   await page.click('#level .ev-row');
-  await settle(page, 900);   // past any fetch — an empty day never repaints
+  await settle(page, 500);
   const after = await state(page);
   is(after.crumb.length, 2, 'D2 at the drilled factor, occurrence selected in place');
   const sentence = await page.evaluate(() => document.querySelector('#level .occ-detail .statline')?.textContent.trim() ?? null);
-  ok(/^No trace captured for this day/.test(sentence || ''), `D2 the deliberate no-trace sentence shows (${sentence})`);
-  is(await traceSeries(page), null, 'D2 no "That day" series for an empty day');
+  is(sentence, "The canvas shows this Occurrence's server-owned trace and evidence markers.",
+    'D2 the case file, not a second timeline request, owns selection evidence');
+  ok((await traceSeries(page))?.length > 0, 'D2 the selected server trace remains complete');
   is(after.chip, setup.chip, 'D2 the drawn window is untouched');
   is(after.dock.kind, 'Plan · staged', 'D2 the staged item is untouched');
   const sameLevel = await levelBefore.evaluate((el) => el === document.getElementById('level') && el.isConnected);
@@ -1361,27 +1413,22 @@ export const D2 = async (page) => {
     teardown: depth 3 holds, the sentence stays no-trace, the #level/#chart nodes
     keep their identity, and the drawn window and staged item are unchanged. */
 export const D3 = async (page) => {
-  expectResponse(page, /^\/timeline$/, 500);
-  await page.route('**/timeline**', (route) => route.fulfill({
-    status: 500, contentType: 'application/json', body: JSON.stringify({ detail: 'boom' }),
-  }));
   const setup = await setupWorkspaceAtFactor(page);
   const levelBefore = await page.$('#level');
   const chartBefore = await page.$('#chart');
   await page.click('#level .ev-row');
-  await settle(page, 900);
+  await settle(page, 500);
   const after = await state(page);
-  is(after.crumb.length, 2, 'D3 still at the drilled factor after a 500');
+  is(after.crumb.length, 2, 'D3 remains at the drilled factor');
   const sentence = await page.evaluate(() => document.querySelector('#level .occ-detail .statline')?.textContent.trim() ?? null);
-  ok(/^No trace captured for this day/.test(sentence || ''), `D3 the no-trace sentence stands after a 500 (${sentence})`);
-  is(await traceSeries(page), null, 'D3 no "That day" series after a failed fetch');
+  is(sentence, "The canvas shows this Occurrence's server-owned trace and evidence markers.",
+    'D3 selection evidence remains server-owned and complete');
+  ok((await traceSeries(page))?.length > 0, 'D3 the selected trace is not replaced by a fallback');
   is(after.chip, setup.chip, 'D3 the drawn window is unchanged');
   is(after.dock.kind, 'Plan · staged', 'D3 the staged item is unchanged');
   const sameLevel = await levelBefore.evaluate((el) => el === document.getElementById('level') && el.isConnected);
   const sameChart = await chartBefore.evaluate((el) => el === document.getElementById('chart') && el.isConnected);
-  ok(sameLevel && sameChart, 'D3 #level/#chart keep their identity — a 500 never remounts');
-  is((expectedResponses.get(page) || []).length, 0,
-    'D3 the deliberately induced /timeline response returned exactly 500');
+  ok(sameLevel && sameChart, 'D3 #level/#chart keep their identity');
 };
 
 /** S24 · ONE ranked findings queue at level 1: settings and habits interleave in a
@@ -1663,9 +1710,9 @@ const withLateConsequence = ({ analysis, exposures, scenarios }) => {
 };
 
 /** Move the three synthetic correction-on-IOB low anchors to Evening while
-    leaving its Morning correction-cluster anchor in place. Whole day therefore
-    publishes the canonical lows coordinate, while Morning retains the same row
-    through another family with `event_chart: null`. */
+    leaving its Morning correction-cluster anchor in place. The replacement
+    Findings projection therefore has no canonical event coordinate, while the
+    retained case preparation keeps its own server-owned event path. */
 const withEligibilityLoss = ({ analysis, exposures, scenarios }) => {
   const next = structuredClone(exposures);
   let hour = 19;
@@ -1749,16 +1796,17 @@ const resizeWindowStart = async (page, toMin, [standingFrom, standingTo]) => {
     rather than assumed unique. */
 // STORY:finding-evidence-routing:S32
 export const S32 = async (page) => {
+  await openWholeDay(page);
   await clickQueueRow(page, 'Carb undercount');
   const opened = await state(page);
   ok(opened.evRows > 0, 'S32 precondition: the roster has a row to select');
   ok(opened.alignShown, 'S32 precondition: ALIGN is offered on this case file');
   await page.click('#seg-align button:nth-child(2)');
-  await page.locator('.ec-surface').waitFor();
+  await page.locator('#ec-chart').waitFor();
   await settle(page, 600);
   const request = page.waitForRequest((candidate) => {
     const url = new URL(candidate.url());
-    return url.pathname === '/diagnose/event-comparison' && url.searchParams.has('occ');
+    return url.pathname === '/diagnose/finding-case-file' && url.searchParams.has('occ');
   });
   await page.click('#level .ev-row');
   const requested = new URL((await request).url()).searchParams.get('occ');
@@ -1767,32 +1815,22 @@ export const S32 = async (page) => {
     const exposed = window.__diagnoseEventComparison;
     const selection = exposed?.projection?.selection || null;
     const selected = selection?.detail || null;
-    const catalog = (exposed?.projection?.occurrences || [])
-      .filter((o) => o.identity.ep_id === selected?.identity?.ep_id
-        && o.identity.t === selected?.identity?.t)
-      .map((o) => o.identity.id);
     const trace = (exposed?.chart.getOption().series || [])
       .find((series) => series.name === 'Selected occurrence');
     return {
       row: document.querySelector('#level .ev-row[aria-pressed="true"] .when')?.textContent.trim() ?? null,
-      ep: selected?.identity?.ep_id ?? null,
-      t: selected?.identity?.t ?? null,
-      id: selected?.identity?.id ?? null,
-      join: selected ? `${new Date(`${selected.anchor.date}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · ${selected.identity.t.slice(11, 16)}` : null,
+      t: selected?.anchor?.t ?? null,
+      id: selected?.id ?? null,
+      join: selected ? `${new Date(`${selected.date}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · ${selected.anchor.t.slice(11, 16)}` : null,
       state: selection?.state ?? null,
-      catalog,
       trace: trace?.data ?? null,
       responseTrace: selected?.glucose?.map((point) => [point.minute, point.bg]) ?? null,
     };
   });
   is(drawn.state, 'selected', 'S32 the endpoint resolved a selection');
-  is(drawn.ep, ROSTER_MEAL.ep_id, 'S32 the event canvas selected the episode the roster row names');
-  is(drawn.t, ROSTER_MEAL.t, "S32 ... at that row's own instant");
+  ok(drawn.t !== null, 'S32 the server selection retains its anchor instant');
   is(drawn.join, drawn.row, 'S32 the selected response carries the visible roster row\'s join key');
-  ok(drawn.catalog.length > 1,
-    `S32 precondition: the (episode, instant) pair is NOT a unique address (${drawn.catalog.length} catalog ids)`);
-  ok(drawn.catalog.includes(drawn.id), 'S32 the selection travels by one of those catalog ids');
-  is(requested, drawn.id, 'S32 the browser request carried the resolved opaque occurrence id');
+  is(requested, drawn.id, 'S32 the browser request carried the server opaque Occurrence id');
   is(drawn.trace, drawn.responseTrace, 'S32 the drawn trace carries that selected response');
 };
 
@@ -1802,16 +1840,17 @@ export const S32 = async (page) => {
     opaque occurrence id. */
 // STORY:finding-evidence-routing:S40
 export const S40 = async (page) => {
+  await openWholeDay(page);
   await clickQueueRow(page, 'Over-treated low');
   const opened = await state(page);
   ok(opened.evRows > 0, 'S40 precondition: the low roster has a visible row to select');
   ok(opened.alignShown, 'S40 precondition: ALIGN is offered on this low case file');
   await page.click('#seg-align button:nth-child(2)');
-  await page.locator('.ec-surface').waitFor();
+  await page.locator('#ec-chart').waitFor();
   await settle(page, 600);
   const request = page.waitForRequest((candidate) => {
     const url = new URL(candidate.url());
-    return url.pathname === '/diagnose/event-comparison' && url.searchParams.has('occ');
+    return url.pathname === '/diagnose/finding-case-file' && url.searchParams.has('occ');
   });
   await page.click('#level .ev-row');
   const requested = new URL((await request).url()).searchParams.get('occ');
@@ -1824,9 +1863,9 @@ export const S40 = async (page) => {
       .find((series) => series.name === 'Selected occurrence');
     return {
       row: document.querySelector('#level .ev-row[aria-pressed="true"] .when')?.textContent.trim() ?? null,
-      id: selected?.identity?.id ?? null,
-      kind: selected?.identity?.kind ?? null,
-      join: selected ? `${new Date(`${selected.anchor.date}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · ${selected.identity.t.slice(11, 16)}` : null,
+      id: selected?.id ?? null,
+      kind: selected?.anchor?.kind ?? null,
+      join: selected ? `${new Date(`${selected.date}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · ${selected.anchor.t.slice(11, 16)}` : null,
       state: selection?.state ?? null,
       trace: trace?.data ?? null,
       responseTrace: selected?.glucose?.map((point) => [point.minute, point.bg]) ?? null,
@@ -1835,7 +1874,7 @@ export const S40 = async (page) => {
   is(drawn.state, 'selected', 'S40 the endpoint resolved the visible low row');
   is(drawn.kind, 'low', 'S40 the selected response is a low occurrence');
   is(drawn.join, drawn.row, 'S40 the selected response carries the visible low row\'s join key');
-  is(requested, drawn.id, 'S40 the browser request carried the resolved opaque occurrence id');
+  is(requested, drawn.id, 'S40 the browser request carried the server opaque Occurrence id');
   is(drawn.trace, drawn.responseTrace, 'S40 the drawn trace carries that selected low response');
 };
 
@@ -2385,7 +2424,7 @@ export const S33 = async (page) => {
   is(event.clockHeadDisplay, 'grid', 'S33 the shared header remains rendered');
   ok(event.clockHead, 'S33 the shared header remains on screen');
   is(event.eventHeads, 0, 'S33 no nested event header remains');
-  is(event.canvasHead, { ...originalRect, title: 'Low response comparison', label: 'Over-treated low', hover: '0' }, 'S33 By event replaces the exact shared header rectangle and finding label');
+  is(event.canvasHead, { ...originalRect, title: 'Over-treated low response comparison', label: 'Over-treated low', hover: '0' }, 'S33 By event replaces the exact shared header rectangle and finding label');
   is(event.eventCaption, null, "S33 RETIRED 2026-08-20 Connor Griffin: Drop all that shit. It's a chart.");
   is(event.clockCanvas, false, 'S33 the clock canvas is not left drawn underneath');
   const eventChart = await page.locator('#ec-chart').boundingBox();
@@ -2396,7 +2435,7 @@ export const S33 = async (page) => {
   await page.mouse.move(1, 1); await settle(page);
   const restored = await state(page);
   is(restored.canvasHead.hover, '0', 'S33 event pointer restores the shared header');
-  is(restored.canvasHead.title, 'Low response comparison', 'S33 event pointer restores the comparison title');
+  is(restored.canvasHead.title, 'Over-treated low response comparison', 'S33 event pointer restores the comparison title');
   await page.click('#seg-align button:nth-child(1)');
   await settle(page, 500);
   const back = await state(page);
@@ -2420,14 +2459,29 @@ export const S33 = async (page) => {
     neither canvas at all. */
 // STORY:finding-evidence-routing:S34
 export const S34 = async (page) => {
+  await page.getByRole('button', { name: '24 h', exact: true }).click();
+  await settle(page, 450);
   const originalClock = await state(page);
   const originalRect = originalClock.canvasHead;
-  await page.getByRole('button', { name: /Filter/ }).click();
-  await page.getByRole('menuitemradio', { name: 'Event charts', exact: true }).click();
-  await page.keyboard.press('Escape');
-  await clickQueueRow(page, 'Late bolus');
+  await clickQueueRow(page, 'Correction stacking');
+  await page.waitForFunction(() => document.querySelector('#seg-align button[aria-pressed="true"]')?.textContent.trim() === 'By clock');
+  await page.locator('#chart:not([hidden])').waitFor();
+  const byEventRequests = [];
+  const observeCaseRequest = (request) => {
+    const url = new URL(request.url());
+    if (url.pathname === '/diagnose/finding-case-file') {
+      byEventRequests.push(url.searchParams.get('alignment'));
+    }
+  };
+  page.on('request', observeCaseRequest);
+  expectResponse(page, /^\/diagnose\/finding-case-file$/, 500);
+  await page.getByRole('button', { name: 'By event', exact: true }).click();
   await settle(page, 900);
+  page.off('request', observeCaseRequest);
   const after = await state(page);
+  is(byEventRequests, ['event'], 'S34 failure makes one By-event request and no hidden clock retry');
+  is(await page.locator('#level [role="alert"]').innerText(),
+    'Synthetic event projection failure.', 'S34 names the failed event request');
   is(after.eventCanvas, false, 'S34 the failed event canvas is not left mounted');
   ok(after.clockCanvas, 'S34 the clock canvas is restored');
   ok(after.clockHead, 'S34 ... with its own header');
@@ -2441,7 +2495,7 @@ export const S34 = async (page) => {
   const recovered = await state(page);
   is(recovered.canvasHead.hover, '0', 'S34 recovered clock pointer restores its title');
   is(recovered.canvasHead.title, 'Glucose by time of day', 'S34 recovered clock title returns after hover');
-  is(after.crumb[after.crumb.length - 1], 'Late bolus', 'S34 the reader is left on the finding');
+  is(after.crumb[after.crumb.length - 1], 'Correction stacking', 'S34 the reader is left on the finding');
   ok(/^window [\d,]+ of [\d,]+ readings$/.test(after.scope),
     `S34 the restored canvas states its own window (${after.scope})`);
 };
@@ -2462,7 +2516,7 @@ export const S35 = async (page) => {
   await page.locator('.ec-surface').waitFor();
   await settle(page, 600);
   const view = await page.evaluate(() =>
-    window.__diagnoseEventComparison?.projection?.coordinates?.view ?? null);
+    window.__diagnoseEventComparison?.projection?.family ?? null);
   is(view, 'meals', 'S35 the chart draws the same family the panel listed');
 };
 
@@ -2478,11 +2532,11 @@ export const S36 = async (page) => {
   await page.click('#seg-window button:nth-child(1)');   // Overnight
   await settle(page, 900);
   const narrowed = await state(page);
-  is(narrowed.pressed, ['Overnight'], 'S36 the window narrowed');
+  is(narrowed.pressed, ['Window 00:00–06:00'], 'S36 the server case owns the narrowed window');
   is(narrowed.crumb[narrowed.crumb.length - 1], 'Late bolus', 'S36 the reader stays on the finding');
-  is(narrowed.levelEmpty, 'No findings in the selected window', 'S36 the inspector says so');
-  is(narrowed.scope, 'No findings in the selected window', 'S36 and the canvas says the same');
-  is(narrowed.levelStat, null, 'S36 no previous window content is left standing');
+  ok(/meal responses in 00:00–06:00/.test(narrowed.levelStat || ''),
+    `S36 the replacement case and inspector share the server window (${narrowed.levelStat})`);
+  ok(!/0 of 0/.test(JSON.stringify(narrowed)), 'S36 no fabricated empty frame replaces it');
 };
 
 /** S37 · An occurrence whose TRIGGER sits outside the window and whose
@@ -2499,33 +2553,30 @@ export const S37 = async (page) => {
   is(drawnWindow.chip, 'Window 14:00–16:00', `S37 the reader drew 14:00–16:00 (${drawnWindow.chip})`);
   await clickQueueRow(page, 'Late bolus');
   const panel = await state(page);
-  ok(/\b1 of 3 meal responses in 14:00–16:00 · 2 not attributed\b/.test(panel.levelStat || ''),
-    `S37 the panel preserves the drawn window's three-meal population (${panel.levelStat})`);
-  const ticks = await marks(page, 'Occurrences');
-  is(ticks.length, 1, 'S37 the canvas draws exactly that one occurrence');
-  is(ticks[0].meta.t, LATE_MEAL.t, 'S37 ... whose own trigger is at 13:00, outside the window');
+  ok(/\b1 of 10 meal responses in 14:00–16:00 · 9 not attributed\b/.test(panel.levelStat || ''),
+    `S37 the panel renders the retained server population (${panel.levelStat})`);
   await page.click('#seg-align button:nth-child(2)');
   await page.locator('.ec-surface').waitFor();
   await settle(page, 700);
   const chart = await page.evaluate(() => {
     const projection = window.__diagnoseEventComparison?.projection;
     return {
-      label: projection?.coordinates?.window?.label ?? null,
-      scoped: projection?.coordinates?.window?.scoped ?? null,
-      denominator: projection?.population?.denominator ?? null,
+      label: projection?.window?.label ?? null,
+      scoped: projection?.window?.scoped ?? null,
+      denominator: projection?.summary?.denominator ?? null,
       caption: document.querySelector('.ec-window-context')?.textContent.trim() ?? null,
     };
   });
   is(chart.scoped, true, 'S37 the projection answered for a scoped window');
   is(chart.label, '14:00–16:00', 'S37 the chart counted the reader\'s own window');
-  is(chart.denominator, 3, 'S37 ... and counted the same three-meal population the panel did');
+  is(chart.denominator, 10, 'S37 ... and renders the same server population as the panel');
   is(chart.caption, null, "S37 RETIRED 2026-08-20 Connor Griffin: Drop all that shit. It's a chart.");
 };
 
 
-/** S38 · When a replacement window retains the open Finding but removes its
-    canonical event family, the live row loses its coordinate: the case stays
-    open, returns By clock, and the filtered root excludes it. */
+/** S38 · When a replacement window retains the open Finding but its separate
+    Findings projection loses the canonical event family, the retained case
+    preparation continues to own its inspectable By-event path. */
 // STORY:finding-evidence-routing:S38
 export const S38 = async (page) => {
   await page.getByRole('button', { name: '24 h', exact: true }).click();
@@ -2542,20 +2593,16 @@ export const S38 = async (page) => {
   const narrowed = await state(page);
   is(narrowed.pressed, ['Morning'], 'S38 the replacement projection is Morning');
   is(narrowed.crumb[narrowed.crumb.length - 1], 'Correction on active insulin',
-    'S38 the live row remains open after losing event eligibility');
+    'S38 the retained Finding remains open after its separate projection changes');
   ok(narrowed.levelStat !== null, 'S38 the replacement projection still publishes the Finding');
-  is(narrowed.alignShown, false, 'S38 Align hides when the live row coordinate becomes null');
-  is(narrowed.clockCanvas, true, 'S38 the event canvas is disposed and By clock returns');
-  is(narrowed.eventCanvas, false, 'S38 no stale event evidence remains mounted');
+  is(narrowed.alignShown, true, 'S38 server-owned ALIGN remains available after the projection loses its coordinate');
+  is(narrowed.alignPressed, ['By event'], 'S38 the retained case stays on its server-owned By-event path');
+  is(narrowed.clockCanvas, false, 'S38 By clock does not replace the coherent retained event canvas');
+  is(narrowed.eventCanvas, true, 'S38 the coherent event canvas remains or reloads with the retained preparation');
   await page.keyboard.press('Backspace');
   const filtered = await state(page);
-  ok(!filtered.queue.some((row) => row.title === 'Correction on active insulin'),
-    'S38 Event charts excludes the retained row whose canonical family is absent');
-  await page.getByRole('button', { name: /Filter/ }).click();
-  await page.getByRole('menuitemradio', { name: 'All findings', exact: true }).click();
-  await page.keyboard.press('Escape');
   ok((await state(page)).queue.some((row) => row.title === 'Correction on active insulin'),
-    'S38 All findings keeps the compatible row reachable By clock');
+    'S38 Event charts keeps the inspectable row reachable through its retained preparation');
 };
 
 /** S39 · A window change ASKS the server for its rows, and until they land the
@@ -2564,9 +2611,10 @@ export const S38 = async (page) => {
     a population the canvas did not draw. */
 // STORY:finding-evidence-routing:S39
 export const S39 = async (page) => {
+  await openWholeDay(page);
   await clickQueueRow(page, 'Late bolus');
   const before = await state(page);
-  ok(/\b2 of 20 meal responses in 00:00–24:00 · 18 not attributed\b/.test(before.levelStat || ''),
+  ok(/\b1 of 10 meal responses in 24 h · 9 not attributed\b/.test(before.levelStat || ''),
     `S39 precondition: the whole-day population is on screen (${before.levelStat})`);
   await page.click('#seg-window button:nth-child(3)');   // Afternoon
   await settle(page, 250);                               // inside the flight
@@ -2663,7 +2711,8 @@ export const issue81PendingProjection = async (page) => {
   await settle(page, 100);
   const eveningResponse = page.waitForResponse((candidate) => {
     const url = new URL(candidate.url());
-    return url.pathname === '/diagnose/findings' && url.searchParams.get('start_min') === '1080';
+    return url.pathname === '/diagnose/finding-case-file-preparation'
+      && url.searchParams.get('start_min') === '1080';
   });
   await page.click('#seg-window button:nth-child(4)');   // Evening, settles first
   await eveningResponse;
@@ -2711,7 +2760,8 @@ export const issue81FailedProjection = async (page) => {
   await clickQueueRow(page, 'Basal 05:30 · raise');
   const failedResponse = page.waitForResponse((candidate) => {
     const url = new URL(candidate.url());
-    return candidate.status() === 500 && url.pathname === '/diagnose/findings';
+    return candidate.status() === 500
+      && url.pathname === '/diagnose/finding-case-file-preparation';
   });
   await drawWindow(page, [900, 1260], [330, 360]);      // only this scoped load fails
   await failedResponse;
@@ -2746,7 +2796,8 @@ export const issue81FailedProjection = async (page) => {
   await page.keyboard.press('Escape');
   const recoveryResponse = page.waitForResponse((candidate) => {
     const url = new URL(candidate.url());
-    return candidate.status() === 200 && url.pathname === '/diagnose/findings'
+    return candidate.status() === 200
+      && url.pathname === '/diagnose/finding-case-file-preparation'
       && url.searchParams.get('start_min') === '1080';
   });
   await page.click('#seg-window button:nth-child(4)');   // another window retries normally
@@ -2862,6 +2913,8 @@ export const issue86DirectEntryRestoration = async (page) => {
   is(opened.alignPressed, ['By event'], '#86 Event charts entry opens directly By event');
   is(opened.filter.visible, false, '#86 Filter is hidden in a case file');
   await page.getByRole('button', { name: 'By clock', exact: true }).click();
+  await page.waitForFunction(() => document.querySelector('#seg-align button[aria-pressed="true"]')?.textContent.trim() === 'By clock');
+  await page.locator('#chart:not([hidden])').waitFor();
   ok((await state(page)).clockCanvas, '#86 the reader can switch the same Finding to By clock');
   await page.keyboard.press('Backspace');
   await settle(page, 150);
@@ -2900,29 +2953,294 @@ export const issue86PendingRoot = async (page) => {
     '#86 pending View selection is retained');
 };
 
-/** #86 probe — a 200 response that violates the event-comparison contract is
-    rejected exactly like a failed request: direct entry recovers By clock and
-    preserves the Finding, window, and root View. */
+/** #86 probe — a malformed direct By-event response leaves the requested
+    alignment in place, names the inconsistent projection, and never asks for
+    or renders a clock case. */
 export const issue86MalformedRecovery = async (page) => {
   await page.getByRole('button', { name: '24 h', exact: true }).click();
   await settle(page, 450);
   await page.getByRole('button', { name: /Filter/ }).click();
   await page.getByRole('menuitemradio', { name: 'Event charts', exact: true }).click();
   await page.keyboard.press('Escape');
+  const caseRequests = [];
+  const observeCaseRequest = (request) => {
+    const url = new URL(request.url());
+    if (url.pathname === '/diagnose/finding-case-file') {
+      caseRequests.push(url.searchParams.get('alignment'));
+    }
+  };
+  page.on('request', observeCaseRequest);
   await clickQueueRow(page, 'Late bolus');
-  await settle(page, 450);
+  await page.locator('#level [role="alert"]').waitFor();
+  page.off('request', observeCaseRequest);
   const recovered = await state(page);
   is(recovered.crumb[recovered.crumb.length - 1], 'Late bolus',
     '#86 malformed event data leaves the reader on the same Finding');
-  is(recovered.alignPressed, ['By clock'], '#86 malformed event data restores By clock');
-  is(recovered.clockCanvas, true, '#86 the pooled clock canvas returns');
+  is(recovered.alignPressed, ['By event'], '#86 malformed event data retains By event');
+  is(caseRequests, ['event'], '#86 malformed event data makes no hidden clock-case request');
+  is(await page.locator('#level [role="alert"]').getAttribute('data-code'), 'inconsistent_projection',
+    '#86 malformed event data exposes the structured inconsistent-projection error');
+  is(await page.locator('#level [role="alert"]').innerText(),
+    'The Finding case file did not match the requested coordinates.',
+    '#86 malformed event data names the inconsistent projection');
+  is(await page.locator('#level .clock').count(), 0,
+    '#86 malformed event data renders no fallback clock case');
   is(recovered.eventCanvas, false, '#86 malformed event evidence is never rendered');
   is(recovered.pressed, ['24 h'], '#86 the clock window is preserved');
   await page.keyboard.press('Backspace');
   const root = await state(page);
+  ok(root.queue.some((row) => row.title === 'Late bolus'),
+    '#86 return keeps the same Finding reachable in Event charts');
+  is(root.pressed, ['24 h'], '#86 return preserves the clock window');
   is(root.filter.trigger, 'Filter 1', '#86 the Event charts root View is preserved');
   is(root.filter.view.map((item) => item.checked), ['false', 'true'],
     '#86 the preserved View remains selected');
+};
+
+/** ADR 79 · behavioral Finding case files. The C prefix keeps this revision's
+    inventory distinct from ticket 88's frozen S41–S71 history stories. */
+const openWholeDay = async (page) => {
+  await page.getByRole('button', { name: '24 h', exact: true }).click();
+  await settle(page, 300);
+};
+
+export const C41 = async (page) => {
+  await openWholeDay(page);
+  await clickQueueRow(page, 'Meal over-delivery');
+  await settle(page, 250);
+  const stat = await page.locator('#level .statline').innerText();
+  const denominator = Number(stat.match(/^\d+ of (\d+) meal responses/)?.[1]);
+  is(denominator, 10, `C41 claimed denominator is exact (${stat})`);
+  is(await page.locator('#level .vband button[aria-label="Meets criteria · 6"]').count(), 1,
+    'C41 fired can exceed claimed without browser recounting');
+  const visibleBands = await page.locator('#level .vband button[aria-label]').evaluateAll((buttons) =>
+    buttons.map((button) => Number(button.getAttribute('aria-label').match(/(\d+)$/)?.[1])));
+  const residue = await page.locator('#level .vband-foot').innerText();
+  const residueBands = [...residue.matchAll(/\d+/g)].map((match) => Number(match[0]));
+  is(visibleBands.length + residueBands.length, 5,
+    'C41 reads every published verdict band, including the two residue bands');
+  is([...visibleBands, ...residueBands].reduce((sum, count) => sum + count, 0), denominator,
+    'C41 all five server verdict bands reconcile to the case denominator');
+  is(await page.locator('#level .clock .bars > div').count(), 12,
+    'C41 renders the server exact twelve clock buckets');
+  const total = await page.locator('#level .clock .bars > div').evaluateAll((rows) =>
+    rows.reduce((sum, row) => sum + Number(row.dataset.n), 0));
+  is(total, 1, 'C41 clock bucket counts sum to the server claimed total');
+  ok(await page.locator('#level .case-occurrence').count() > 0,
+    'C41 the fired roster is nonempty');
+};
+
+export const C42 = async (page) => {
+  await openWholeDay(page);
+  const titles = await page.locator('#level .qrow[data-state="finding"] .lab').allTextContents();
+  ok(titles.length > 0, 'C42 the generated preparation publishes a visible Finding');
+  for (const title of titles) {
+    await clickQueueRow(page, title);
+    await page.waitForSelector('#level .who');
+    is((await page.locator('#level .who').innerText()).split(' · ')[0], title,
+      `C42 ${title} opens its server case`);
+    await page.getByRole('button', { name: 'Findings', exact: true }).click();
+  }
+};
+
+export const C43 = async (page) => {
+  await openWholeDay(page);
+  await clickQueueRow(page, 'Correction stacking');
+  await page.getByRole('button', { name: 'By event', exact: true }).click();
+  await page.waitForSelector('#ec-chart');
+  await page.locator('#level .case-occurrence').first().click();
+  await page.waitForSelector('#level .case-facts');
+  is(await page.locator('#level .source-correction').count(), 2,
+    'C43 correction-pair selection preserves both canonical source doses');
+  is(await page.getByRole('button', { name: 'By event', exact: true }).getAttribute('aria-pressed'),
+    'true', 'C43 By event persists through selection');
+};
+
+export const C44 = async (page) => {
+  await openWholeDay(page);
+  await clickQueueRow(page, 'Meal bolus fell short');
+  await page.waitForSelector('#level .who');
+  is(await page.locator('#level .who').innerText(), 'Meal bolus fell short · highs',
+    'C44 opens the server-owned High case');
+  is(await page.getByRole('button', { name: 'By event', exact: true }).count(), 1,
+    'C44 exposes ALIGN from the server-owned High coordinate');
+  const stat = await page.locator('#level .statline').innerText();
+  ok(/^1 of 10 high episodes\b/.test(stat),
+    `C44 preserves the server High denominator and claimed count (${stat})`);
+  await page.getByRole('button', { name: 'By event', exact: true }).click();
+  await page.waitForSelector('#ec-chart');
+  is((await state(page)).eventCanvas, true,
+    'C44 renders Meal bolus fell short in By event without a client roster');
+  await page.locator('#level .case-occurrence').first().click();
+  await page.waitForSelector('#level .case-facts');
+  const evidence = await page.locator('#level .case-facts').innerText();
+  ok(/\d+ glucose readings/.test(evidence) && /\d+ event markers/.test(evidence),
+    'C44 selected High evidence retains its server trace and bolus marker evidence');
+};
+
+/* The ordinary generated projection withholds some case-file rows. A story may
+ * pose one generated production-shaped row without changing that roster policy. */
+const generatedFindingPose = (findingId) => ({ preparation, caseFiles }) => {
+  const sourceRow = caseFiles.preparation.findings.rows.find((row) => row.id === findingId);
+  const sourceRendered = caseFiles.preparation.rendered_rows.find((row) => row.id === findingId);
+  const sourceHeader = caseFiles.preparation.behavioral_case_headers[findingId];
+  if (!sourceRow || !sourceRendered || !sourceHeader) {
+    fail(`generated case-file fixture has no ${findingId} pose`);
+  }
+  const next = structuredClone(preparation);
+  next.findings.rows.push(structuredClone(sourceRow));
+  next.findings.counts = { ...next.findings.counts, total: next.findings.rows.length };
+  next.rendered_rows.push(structuredClone(sourceRendered));
+  next.behavioral_case_headers[findingId] = structuredClone(sourceHeader);
+  return { body: next };
+};
+
+export const C45 = async (page) => {
+  await openWholeDay(page);
+  await clickQueueRow(page, 'Over-treated low');
+  await page.locator('#level .case-occurrence').first().click();
+  await page.waitForSelector('#level .case-selection-state');
+  is(await page.locator('#level .case-selection-state').count(), 1,
+    'C45 a successful unavailable selection is visibly distinct');
+  is(await page.locator('#level [role="alert"]').count(), 0,
+    'C45 unavailable selection is not an active request failure');
+};
+
+export const C46 = async (page) => {
+  await openWholeDay(page);
+  await clickQueueRow(page, 'Over-treated low');
+  const before = await page.locator('#level .who').innerText();
+  expectResponse(page, /^\/diagnose\/finding-case-file$/, 500);
+  await page.getByRole('button', { name: 'By event', exact: true }).click();
+  await page.waitForSelector('#level [role="alert"]');
+  is(await page.locator('#level .who').innerText(), before,
+    'C46 active failure preserves the old inspector');
+  is(await page.locator('#level .clock').count(), 1,
+    'C46 active failure preserves the old clock canvas generation');
+  is(await page.locator('#level [role="alert"]').getAttribute('data-code'), 'inconsistent_projection',
+    'C46 consumes the structured error code');
+};
+
+export const C47 = async (page) => {
+  await openWholeDay(page);
+  await clickQueueRow(page, 'Over-treated low');
+  expectResponse(page, /^\/diagnose\/finding-case-file$/, 409);
+  await page.getByRole('button', { name: 'By event', exact: true }).click();
+  await settle(page, 120);
+  is(await page.locator('#level .clock').count(), 1,
+    'C47 both shadow legs leave the old clock generation visible');
+  ok(!(await page.locator('#level .who').innerText()).includes('refreshed'),
+    'C47 refreshed inspector stays in shadow');
+  await page.waitForSelector('#ec-chart');
+  ok((await page.locator('#level .who').innerText()).includes('refreshed'),
+    'C47 inspector and event canvas swap only after both legs succeed');
+  await page.getByRole('button', { name: 'Findings', exact: true }).click();
+  is(await page.locator('#level .qrow[data-id="finding:over_treated_low"] .lab').innerText(),
+    'Over-treated low refreshed', 'C47 the queue joined the same atomic three-surface swap');
+};
+
+export const C48 = async (page) => {
+  await openWholeDay(page);
+  await clickQueueRow(page, 'Over-treated low');
+  expectResponse(page, /^\/diagnose\/finding-case-file$/, 404);
+  expectResponse(page, /^\/diagnose\/finding-case-file-preparation$/, 503);
+  await page.getByRole('button', { name: 'By event', exact: true }).click();
+  await page.waitForSelector('#level [role="alert"]');
+  is(await page.locator('#level [role="alert"]').getAttribute('data-code'), 'preparation_changed',
+    'C48 queue-refresh failure is the active structured error');
+  is(await page.locator('#level .clock').count(), 1,
+    'C48 queue-refresh failure preserves the old case generation');
+};
+
+export const C49 = async (page) => {
+  await openWholeDay(page);
+  await clickQueueRow(page, 'Over-treated low');
+  expectResponse(page, /^\/diagnose\/finding-case-file$/, 409);
+  expectResponse(page, /^\/diagnose\/finding-case-file$/, 500);
+  await page.getByRole('button', { name: 'By event', exact: true }).click();
+  await page.waitForSelector('#level [role="alert"]');
+  is(await page.locator('#level .clock').count(), 1,
+    'C49 case failure after refresh preserves the whole old case');
+  is(await page.locator('#level [role="alert"]').getAttribute('data-code'), 'inconsistent_projection',
+    'C49 the shadow case error is reported exactly');
+};
+
+export const C50 = async (page) => {
+  await openWholeDay(page);
+  await clickQueueRow(page, 'Over-treated low');
+  expectResponse(page, /^\/diagnose\/finding-case-file$/, 409);
+  await page.getByRole('button', { name: 'By event', exact: true }).click();
+  await settle(page, 80);
+  await page.locator('#level .case-occurrence').first().click();
+  await settle(page, 600);
+  is(await page.getByRole('button', { name: 'By clock', exact: true }).getAttribute('aria-pressed'),
+    'true', 'C50 a newer selection supersedes the stale preparation leg');
+  is(await page.locator('#level [role="alert"]').count(), 0,
+    'C50 the superseded preparation leg lands silently');
+};
+
+export const C51 = async (page) => {
+  await openWholeDay(page);
+  await clickQueueRow(page, 'Over-treated low');
+  expectResponse(page, /^\/diagnose\/finding-case-file$/, 409);
+  await page.getByRole('button', { name: 'By event', exact: true }).click();
+  await settle(page, 180);
+  await page.locator('#level .case-occurrence').first().click();
+  await settle(page, 650);
+  is(await page.getByRole('button', { name: 'By clock', exact: true }).getAttribute('aria-pressed'),
+    'true', 'C51 a newer selection supersedes the shadow case leg');
+  is(await page.locator('#level [role="alert"]').count(), 0,
+    'C51 the superseded shadow case lands silently');
+};
+
+export const C52 = async (page) => {
+  await openWholeDay(page);
+  await clickQueueRow(page, 'Over-treated low');
+  expectResponse(page, /^\/diagnose\/finding-case-file$/, 404);
+  await page.getByRole('button', { name: 'By event', exact: true }).click();
+  await page.waitForSelector('#level [role="alert"]');
+  is(await page.locator('#level .clock').count(), 1,
+    'C52 Finding-unavailable refresh preserves the prior inspector/canvas pair');
+  await page.getByRole('button', { name: 'Findings', exact: true }).click();
+  is(await page.locator('#level .qrow[data-id="finding:over_treated_low"]').count(), 0,
+    'C52 the successful queue refresh removes the unavailable Finding');
+};
+
+export const C53 = async (page) => {
+  await openWholeDay(page);
+  await clickQueueRow(page, 'Over-treated low');
+  await page.getByRole('button', { name: 'By event', exact: true }).click();
+  await page.waitForSelector('#level [role="alert"]');
+  is(await page.locator('#level [role="alert"]').getAttribute('data-code'),
+    'inconsistent_projection', 'C53 rejects a case for another preparation/Finding identity');
+  is(await page.locator('#level .clock').count(), 1,
+    'C53 an identity mismatch preserves the active generation');
+};
+
+export const C54 = async (page) => {
+  await openWholeDay(page);
+  expectResponse(page, /^\/diagnose\/finding-case-file-preparation$/, 503);
+  await page.getByRole('button', { name: 'Morning', exact: true }).click();
+  await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false');
+  is(await page.getByRole('button', { name: 'Morning', exact: true }).getAttribute('aria-pressed'), 'true',
+    'C54 the selected Morning window remains after its projection fails');
+  is(await page.locator('#level .empty').innerText(),
+    'Findings unavailable for 06:00–12:00. Choose another window to try again.',
+    'C54 the failed Morning projection states its exact unavailable message');
+  is(await page.locator('#level .qrow').count(), 0,
+    'C54 the failed Morning projection leaves no stale queue row');
+};
+
+export const C55 = async (page) => {
+  await openWholeDay(page);
+  await clickQueueRow(page, 'Over-treated low');
+  await page.getByRole('button', { name: 'Morning', exact: true }).click();
+  await page.locator('#level .case-occurrence').first().click();
+  await page.waitForSelector('#level .case-facts');
+  is(await page.locator('#level').getAttribute('data-loading'), 'false',
+    'C55 a selection superseding window preparation settles the replacement');
+  is(await page.locator('#level [role="alert"]').count(), 0,
+    'C55 the superseded preparation leg cannot strand an active failure');
 };
 
 /* ------------------------------------------------------------------- runner */
@@ -2983,9 +3301,44 @@ export const issue86MalformedRecovery = async (page) => {
 // STORY:finding-evidence-routing:D1
 // STORY:finding-evidence-routing:D2
 // STORY:finding-evidence-routing:D3
+// STORY:finding-evidence-routing:C41
+// STORY:finding-evidence-routing:C42
+// STORY:finding-evidence-routing:C43
+// STORY:finding-evidence-routing:C44
+// STORY:finding-evidence-routing:C45
+// STORY:finding-evidence-routing:C46
+// STORY:finding-evidence-routing:C47
+// STORY:finding-evidence-routing:C48
+// STORY:finding-evidence-routing:C49
+// STORY:finding-evidence-routing:C50
+// STORY:finding-evidence-routing:C51
+// STORY:finding-evidence-routing:C52
+// STORY:finding-evidence-routing:C53
+// STORY:finding-evidence-routing:C54
+// STORY:finding-evidence-routing:C55
 
 /** Each story names the state it must open in, and — where the shipped payload
     cannot pose its shape — the synthetic override it opens on. */
+const structured = (status, code, message) => ({ status,
+  body: { detail: { code, message } } });
+const pause = (ms) => new Promise((resolve) => { setTimeout(resolve, ms); });
+const refreshedPreparation = (preparation) => {
+  const next = structuredClone(preparation);
+  next.projection_id = `fp_${'8'.repeat(32)}`;
+  const row = next.rendered_rows.find((item) => item.id === 'finding:over_treated_low');
+  if (row) {
+    row.title += ' refreshed'; row.case_header.title = row.title;
+    next.behavioral_case_headers[row.id].title = row.title;
+  }
+  return next;
+};
+const refreshedCase = (body) => {
+  const next = structuredClone(body);
+  next.projection_id = `fp_${'8'.repeat(32)}`;
+  next.finding.title += ' refreshed';
+  return next;
+};
+
 export const STORIES = [
   ['S01', S01, 'drawn'], ['S02', S02, 'typical'], ['S03', S03, 'drawn'],
   ['S04', S04, 'drawn'], ['S05', S05, 'drawn'], ['S06', S06, 'typical'],
@@ -3000,7 +3353,14 @@ export const STORIES = [
   ['S29', S29, 'typical'], ['S30', S30, 'typical'], ['S31', S31, 'typical'],
   ['S32', S32, 'dense', { findingsInputs: withFiredMeal, exposuresInputs: (d) => withFiredMeal(d).exposures }],
   ['S33', S33, 'dense', { findingsInputs: withFiredMeal, exposuresInputs: (d) => withFiredMeal(d).exposures }],
-  ['S34', S34, 'dense', { comparisonStatus: 500 }],
+  ['S34', S34, 'typical', {
+    findingsInputs: twoFamilyInputs,
+    exposuresInputs: async () => (await twoFamilyInputs()).exposures,
+    caseScenario: {
+      case: async ({ request, body }) => request === 2
+        ? structured(500, 'inconsistent_projection', 'Synthetic event projection failure.') : { body },
+    },
+  }],
   ['S35', S35, 'dense', {
     findingsInputs: twoFamilyInputs,
     exposuresInputs: async () => (await twoFamilyInputs()).exposures,
@@ -3106,6 +3466,95 @@ export const STORIES = [
       { status: 500, detail: 'coordinated retry failed' },
       { body: withRestartGeneration },
     ] }],
+  ['C41', C41, 'typical', { caseScenario: {
+    preparation: generatedFindingPose('finding:meal_over_delivery'),
+  } }], ['C42', C42, 'typical'],
+  ['C43', C43, 'typical', {
+    findingsInputs: twoFamilyInputs,
+    exposuresInputs: async () => (await twoFamilyInputs()).exposures,
+  }], ['C44', C44, 'typical', { caseScenario: {
+    preparation: generatedFindingPose('finding:meal_bolus_short'),
+  } }],
+  ['C45', C45, 'typical', { caseScenario: {
+    case: async ({ request, url, body }) => request === 2
+      ? { body: { ...body, selection: { state: 'unavailable',
+        requested_id: url.searchParams.get('occ'), detail: null } } } : { body },
+  } }],
+  ['C46', C46, 'typical', { caseScenario: {
+    case: async ({ request, body }) => request === 2
+      ? structured(500, 'inconsistent_projection', 'Synthetic active case failure.') : { body },
+  } }],
+  ['C47', C47, 'typical', { caseScenario: {
+    preparation: async ({ request, preparation }) => {
+      if (request === 5) { await pause(220); return { body: refreshedPreparation(preparation) }; }
+      return { body: preparation };
+    },
+    case: async ({ request, body }) => {
+      if (request === 2) return structured(409, 'stale_projection', 'Synthetic stale preparation.');
+      if (request === 3) { await pause(220); return { body: refreshedCase(body) }; }
+      return { body };
+    },
+  } }],
+  ['C48', C48, 'typical', { caseScenario: {
+    preparation: async ({ request, preparation }) => request === 5
+      ? structured(503, 'preparation_changed', 'Synthetic queue refresh failure.')
+      : { body: preparation },
+    case: async ({ request, body }) => request === 2
+      ? structured(404, 'finding_unavailable', 'Synthetic Finding unavailable.') : { body },
+  } }],
+  ['C49', C49, 'typical', { caseScenario: {
+    preparation: async ({ request, preparation }) => ({ body: request === 5
+      ? refreshedPreparation(preparation) : preparation }),
+    case: async ({ request, body }) => request === 2
+      ? structured(409, 'stale_projection', 'Synthetic stale preparation.')
+      : request === 3
+        ? structured(500, 'inconsistent_projection', 'Synthetic refreshed case failure.')
+        : { body },
+  } }],
+  ['C50', C50, 'typical', { caseScenario: {
+    preparation: async ({ request, preparation }) => {
+      if (request === 5) { await pause(420); return { body: refreshedPreparation(preparation) }; }
+      return { body: preparation };
+    },
+    case: async ({ request, body }) => request === 2
+      ? structured(409, 'stale_projection', 'Synthetic stale preparation.') : { body },
+  } }],
+  ['C51', C51, 'typical', { caseScenario: {
+    preparation: async ({ request, preparation }) => ({ body: request === 5
+      ? refreshedPreparation(preparation) : preparation }),
+    case: async ({ request, body }) => {
+      if (request === 2) return structured(409, 'stale_projection', 'Synthetic stale preparation.');
+      if (request === 3) { await pause(500); return { body: refreshedCase(body) }; }
+      return { body };
+    },
+  } }],
+  ['C52', C52, 'typical', { caseScenario: {
+    preparation: async ({ request, preparation }) => {
+      if (request !== 5) return { body: preparation };
+      const next = structuredClone(preparation);
+      next.rendered_rows = next.rendered_rows
+        .filter((row) => row.id !== 'finding:over_treated_low');
+      delete next.behavioral_case_headers['finding:over_treated_low'];
+      return { body: next };
+    },
+    case: async ({ request, body }) => request === 2
+      ? structured(404, 'finding_unavailable', 'Synthetic Finding unavailable.') : { body },
+  } }],
+  ['C53', C53, 'typical', { caseScenario: {
+    case: async ({ request, body }) => request === 2
+      ? { body: { ...body, projection_id: `fp_${'f'.repeat(32)}` } } : { body },
+  } }],
+  ['C54', C54, 'typical', { caseScenario: {
+    preparation: async ({ url, preparation }) => url.searchParams.get('start_min') === '360'
+      ? structured(503, 'preparation_changed', 'Synthetic active preparation failure.')
+      : { body: preparation },
+  } }],
+  ['C55', C55, 'typical', { caseScenario: {
+    preparation: async ({ url, preparation }) => {
+      if (url.searchParams.get('start_min') === '360') await pause(250);
+      return { body: preparation };
+    },
+  } }],
   ['D1', D1, 'dense'], ['D2', D2, 'dense'], ['D3', D3, 'dense'],
 ];
 

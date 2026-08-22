@@ -201,6 +201,33 @@ class ModelViewPayloadTest(unittest.TestCase):
         self.assertEqual(m["carbs"], 20.0)
         self.assertEqual(m["insulin"], 2.0)
 
+    def test_equal_time_corrections_mark_only_the_classifier_selected_second_seq(self):
+        corrections = [
+            BolusEvent(t=datetime(2026, 6, 16, 14, 40), insulin=3, seq_num=12),
+            BolusEvent(t=datetime(2026, 6, 16, 14, 10), insulin=3, seq_num=10),
+            BolusEvent(t=datetime(2026, 6, 16, 14, 40), insulin=3, seq_num=11),
+        ]
+        cgm = (cgm_ramp(16, 14, 0, 160, -0.8, 60)
+               + cgm_ramp(16, 15, 5, 108, -1.2, 60))
+        day = assemble_model_view(
+            corrections, cgm, [], target=date(2026, 6, 16), isf=ISF,
+        )
+        matched = [
+            verdict for episode in day["episodes"] for anchor in episode["anchors"]
+            for verdict in anchor["verdicts"]
+            if verdict["classifier"] == "correction_stacking" and verdict["matched"]
+        ]
+        self.assertEqual(len(matched), 1)
+        fired_episode = next(
+            episode for episode in day["episodes"]
+            if episode["lever"] == "correction_stacking"
+        )
+        self.assertEqual(fired_episode["trigger_t"], "2026-06-16 14:40:00")
+        correction_anchors = [anchor for episode in day["episodes"]
+                              for anchor in episode["anchors"]
+                              if anchor["kind"] == "correction"]
+        self.assertEqual(sum(anchor["state"] == "fired" for anchor in correction_anchors), 1)
+
     def test_fired_episode_carries_steps(self):
         # #248 (ADR 0024): the Day surface's tier-2 "Model steps" reads ep["steps"],
         # the attributed step-through — present (non-empty) on a fired episode, each

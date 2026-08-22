@@ -10,6 +10,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 import ciq_autotune.event_comparison as event_comparison
+import ciq_autotune.findings_projection as findings_projection
 
 try:
     from fastapi.testclient import TestClient
@@ -25,6 +26,28 @@ from ciq_autotune.findings_projection import FindingsProjection
 from ciq_autotune.window_membership import WindowQuery
 from ciq_autotune.events import CarbEntry
 from ciq_autotune.store import Store
+
+
+def test_event_preparation_consumes_the_authoritative_diagnose_window():
+    observed = []
+    exposures = {"window": {}, "exposures": {}}
+
+    def build(store, *, window_days):
+        observed.append(("exposures", window_days))
+        return exposures
+
+    def capture(store, *, window_days, exposures_payload):
+        observed.append(("capture", window_days))
+        assert exposures_payload is exposures
+        return {"views": {"meals": {"occurrences": []},
+                          "lows": {"occurrences": []}}}
+
+    with (patch.object(findings_projection, "DIAGNOSE_SOURCE_WINDOW_DAYS", 17),
+          patch("ciq_autotune.explore_exposures.build_exposures", side_effect=build),
+          patch.object(event_comparison, "_build_catalog_capture", side_effect=capture)):
+        prepare_event_comparisons(object())
+
+    assert observed == [("exposures", 17), ("capture", 17)]
 
 
 def _families(meal):

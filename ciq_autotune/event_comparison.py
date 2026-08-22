@@ -27,8 +27,6 @@ from .window_membership import WindowQuery, outcome_minute
 
 FMT = "%Y-%m-%d %H:%M:%S"
 CONFIG = ScenarioConfig()
-_SOURCE_WINDOW_DAYS = 30
-
 VIEW_CONFIG = {
     "meals": {
         "anchor": "completed carb-bolus",
@@ -735,9 +733,19 @@ def _usable(occurrence: dict) -> bool:
     return any(_finite(point.get("bg")) for point in occurrence["trace"]["cgm"])
 
 
-def _cohort_projection(
-    cohort: str, occurrences: list[dict], config: dict,
+def project_cohort(
+    cohort: str,
+    occurrences: list[dict],
+    window: tuple[int, int] | list[int],
+    *,
+    include_withheld_episodes: bool = False,
 ) -> dict:
+    """Aggregate event-relative CGM with the settled finite-sample discipline.
+
+    Occurrences need only ``id`` and ``trace.cgm``. The legacy comparison opts in
+    to its thin-cohort episode fallback; Finding case files reuse the same support,
+    binning, and quantiles without importing that route's cohort taxonomy.
+    """
     usable = [occurrence for occurrence in occurrences if _usable(occurrence)]
     usable_count = len(usable)
     samples: dict[int, list[float]] = {}
@@ -755,7 +763,7 @@ def _cohort_projection(
         for minute, (_, _, bg) in chosen.items():
             samples.setdefault(minute, []).append(bg)
 
-    start, end = config["window"]
+    start, end = window
     points = []
     for minute in range(start, end + 1, 5):
         values = samples.get(minute, [])
@@ -777,10 +785,10 @@ def _cohort_projection(
         "occurrence_ids": [occurrence["id"] for occurrence in occurrences],
         "points": points,
     }
-    if projection["support"] == "withheld":
+    if include_withheld_episodes and projection["support"] == "withheld":
         projection[COHORT_EPISODES_FIELD] = [
             {
-                "identity": _identity(occurrence, config),
+                "identity": occurrence.get("identity", {"id": occurrence["id"]}),
                 "glucose": [
                     {"minute": _five_minute_bin(point["minute"]), "bg": point["bg"]}
                     for point in occurrence["trace"]["cgm"]
@@ -790,6 +798,19 @@ def _cohort_projection(
             for occurrence in usable
         ]
     return projection
+
+
+def _cohort_projection(
+    cohort: str, occurrences: list[dict], config: dict,
+) -> dict:
+    prepared = []
+    for occurrence in occurrences:
+        row = dict(occurrence)
+        row["identity"] = _identity(occurrence, config)
+        prepared.append(row)
+    return project_cohort(
+        cohort, prepared, config["window"], include_withheld_episodes=True,
+    )
 
 
 @dataclass(frozen=True)
@@ -901,10 +922,12 @@ class EventComparisonPreparation:
 def prepare_event_comparisons(store) -> EventComparisonPreparation:
     """Read one fixed window and keep all comparison policy behind ``project``."""
     from .explore_exposures import build_exposures
+    from . import findings_projection
 
-    exposures_payload = build_exposures(store, window_days=_SOURCE_WINDOW_DAYS)
+    window_days = findings_projection.DIAGNOSE_SOURCE_WINDOW_DAYS
+    exposures_payload = build_exposures(store, window_days=window_days)
     capture = _build_catalog_capture(
-        store, window_days=_SOURCE_WINDOW_DAYS, exposures_payload=exposures_payload,
+        store, window_days=window_days, exposures_payload=exposures_payload,
     )
     return EventComparisonPreparation(
         _exposures=exposures_payload,

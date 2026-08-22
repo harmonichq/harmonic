@@ -22,12 +22,18 @@
  * mock is a deviation and needs a re-settle against the surface's lock manifest.
  */
 import {
-  buildEnvelope, buildMealMarkers, renderCanvas, clockBuckets, observeResize,
+  buildEnvelope, buildMealMarkers, renderCanvas, observeResize,
   buildSlotLane, cellAtMinute, windowStats, hhmm, BIN_MINUTES, MIN_SUPPORTED_NIGHTS,
   snapWindow, minuteAtX, xAtMinute, plotBox, buildDayTrace,
   renderHistoryEvents, validateHistoryEvents,
 } from './diagnose-workstation-chart.js';
 import { toCaptures, isfVerdict } from './diagnose-workstation-data.js';
+import {
+  assertMatchingFindingCasePreparation,
+  inconsistentFindingProjection,
+  sameFindingCaseWindow,
+  validFindingCaseFile,
+} from './finding-case-file-validation.js';
 // #735: level 1 is the server-owned findings queue, and the pane has a floor.
 import {
   eventChartCoordinate, renderFindingsQueue, queueMeta,
@@ -316,13 +322,6 @@ const daysBetween = (a, b) =>
   Math.round((new Date(`${b}T00:00:00`) - new Date(`${a}T00:00:00`)) / 86400000) + 1;
 const u = (v) => (v == null ? '--' : v.toFixed(2));
 
-/* ------------------------------ evidence tiers ------------------------ */
-
-function tierOf(occ) {
-  const matched = (occ.verdicts || []).find((v) => v.matched);
-  return matched ? matched.evidence_tier : null;
-}
-
 /* ------------------------------ chrome -------------------------------- */
 
 function renderInstruments(winKey, capture, onPreset) {
@@ -502,66 +501,122 @@ function renderLaneKey(lane) {
 
 /* ------------------------------ inspector ----------------------------- */
 
-function renderClockInto(host, occurrences, clock) {
-  const max = Math.max(...clock.buckets.map((b) => b.n), 1);
+/** ADR 79's exact server-owned 12-bucket clock tree. */
+function renderCaseClock(host, clock) {
+  if (!clock) return;
+  const peak = clock.buckets[clock.peak_bucket_index];
+  const max = Math.max(...clock.buckets.map((bucket) => bucket.n), 1);
   const box = document.createElement('div');
   box.className = 'clock';
   box.innerHTML = `
     <div class="cap">When it lands
-      <em>peak ${hhmm(clock.peak.startMin)}–${hhmm(clock.peak.endMin)} · ${clock.peak.n} of ${clock.total}</em></div>
-    <div class="bars">${clock.buckets.map((b) => `
-      <div data-n="${b.n}" data-peak="${b === clock.peak && b.n > 0}"
-           title="${hhmm(b.startMin)}–${hhmm(b.endMin)} — ${b.n} of ${clock.total}">
-        ${b.n ? `<span class="n">${b.n}</span>` : ''}
-        <i style="height:${b.n ? Math.max(8, (b.n / max) * 100) : 2}%"></i>
+      <em>peak ${hhmm(peak.start_min)}–${hhmm(peak.end_min)} · ${peak.n} of ${clock.total}</em></div>
+    <div class="bars">${clock.buckets.map((bucket, index) => `
+      <div data-n="${bucket.n}" data-peak="${index === clock.peak_bucket_index && bucket.n > 0}"
+           title="${hhmm(bucket.start_min)}–${hhmm(bucket.end_min)} — ${bucket.n} of ${clock.total}">
+        ${bucket.n ? `<span class="n">${bucket.n}</span>` : ''}
+        <i style="height:${bucket.n ? Math.max(8, (bucket.n / max) * 100) : 2}%"></i>
       </div>`).join('')}</div>
-    <div class="axis">${clock.buckets.map((b) => `<span>${hhmm(b.startMin).slice(0, 2)}</span>`).join('')}</div>`;
+    <div class="axis">${clock.buckets.map((bucket) =>
+      `<span>${hhmm(bucket.start_min).slice(0, 2)}</span>`).join('')}</div>`;
   host.append(box);
 }
 
-/** Level 2 head: the stat line, the histogram, the slot coincidence link. */
-function renderFactorHead(host, factor, occurrences, familyN, scopeText, clock, lane, onViewSlot,
-  icBlocks, onViewSegment) {
+function renderCaseHead(host, caseFile, lane, onViewSlot, icBlocks, onViewSegment) {
+  const { finding, family, summary, projection } = caseFile;
   const box = document.createElement('div');
   box.className = 'inner';
-  // stat lines, not prose — and the not-attributed remainder survives as a number
   box.innerHTML = `
-    <div class="who">${factor.cause}${factor.needsQual ? ` <span class="qual">· ${FAMILY_SHORT[factor.family]}</span>` : ''}</div>
-    <div class="statline"><b>${occurrences.length}</b> of <b>${familyN}</b>
-      ${FAMILY_LABEL[factor.family]} in ${scopeText}
-      · <b>${familyN - occurrences.length}</b> not attributed</div>`;
+    <div class="who">${finding.title} <span class="qual">· ${FAMILY_SHORT[family]}</span></div>
+    <div class="statline"><b>${summary.claimed}</b> of <b>${summary.denominator}</b>
+      ${FAMILY_LABEL[family]} in ${caseFile.window.label || '24 h'}
+      · <b>${summary.denominator - summary.claimed}</b> not attributed</div>`;
+  const clock = projection.alignment === 'clock' ? projection.clock : null;
+  renderCaseClock(box, clock);
   if (clock) {
-    renderClockInto(box, occurrences, clock);
-    /* The factor's peak hour falls inside a real basal slot AND inside a real
-       I:C block — a clock coincidence the operator can follow, not an
-       engine-asserted attribution. BOTH print, on one line, basal first, each
-       with its own verdict and its own route (term 33). Collapsing to whichever
-       "looks stronger" would hide exactly the overlap the merged register
-       exists to show. */
-    const cell = cellAtMinute(lane, clock.peak.startMin);
-    const blk = icBlockAtMinute(icBlocks, clock.peak.startMin);
+    const peak = clock.buckets[clock.peak_bucket_index];
+    const cell = cellAtMinute(lane, peak.start_min);
+    const block = icBlockAtMinute(icBlocks, peak.start_min);
     const link = document.createElement('div');
     link.className = 'slotlink';
     link.innerHTML = `<span>Peak hour falls in the ${cell.label} basal slot
       (${VERDICT_KEY[cell.verdict]})</span>`;
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'linkbtn';
-    btn.textContent = 'View slot';
-    btn.addEventListener('click', () => onViewSlot(cell));
-    link.append(btn);
-    link.insertAdjacentHTML('beforeend',
-      `<span>and in the ${blk.label} I:C block, ${blk.span}
-        (${VERDICT_KEY[blk.verdict]})</span>`);
-    const segBtn = document.createElement('button');
-    segBtn.type = 'button';
-    segBtn.className = 'linkbtn';
-    segBtn.textContent = 'View segment';
-    segBtn.addEventListener('click', () => onViewSegment(blk));
-    link.append(segBtn);
+    const slot = document.createElement('button');
+    slot.type = 'button'; slot.className = 'linkbtn'; slot.textContent = 'View slot';
+    slot.addEventListener('click', () => onViewSlot(cell)); link.append(slot);
+    link.insertAdjacentHTML('beforeend', `<span>and in the ${block.label} I:C block,
+      ${block.span} (${VERDICT_KEY[block.verdict]})</span>`);
+    const segment = document.createElement('button');
+    segment.type = 'button'; segment.className = 'linkbtn'; segment.textContent = 'View segment';
+    segment.addEventListener('click', () => onViewSegment(block)); link.append(segment);
     box.append(link);
   }
   host.append(box);
+}
+
+function renderCaseRoster(host, caseFile, verdict, selectedId, onSelect, onMore, shownCount) {
+  const rows = caseFile.occurrences.filter((row) => row.verdict === verdict);
+  const publishedCount = caseFile.verdict_counts[verdict];
+  const label = VERDICT_BAND_KEY[verdict] || VERDICT_RESIDUE_KEY[verdict] || verdict;
+  host.insertAdjacentHTML('beforeend',
+    `<div class="lvl-cap">Occurrences<span class="meta">${publishedCount} of ${caseFile.summary.denominator}</span></div>`);
+  if (publishedCount === 0) {
+    host.insertAdjacentHTML('beforeend', '<div class="empty">No occurrences in this verdict.</div>');
+    return;
+  }
+  host.insertAdjacentHTML('beforeend', `<div class="ev-group"><b>${caseFile.finding.title}</b> — ${label}
+    <span class="n">· ${publishedCount} episode${publishedCount === 1 ? '' : 's'}</span></div>`);
+  for (const row of rows.slice(0, shownCount)) {
+    const button = document.createElement('button');
+    button.type = 'button'; button.className = 'ev-row case-occurrence';
+    button.dataset.occurrenceId = row.id;
+    button.setAttribute('aria-pressed', String(row.id === selectedId));
+    button.innerHTML = `<span class="when">${fmtDate(row.date)} · ${row.anchor.t.slice(11, 16)}</span>
+      <span class="only">${row.anchor.bg == null ? '—' : Math.round(row.anchor.bg)}
+        <span>· ${row.anchor.label}</span></span><span class="tier">${label}</span>`;
+    button.addEventListener('click', () => onSelect(row.id));
+    host.append(button);
+  }
+  if (publishedCount > EVIDENCE_CAP) {
+    const more = document.createElement('button'); more.type = 'button'; more.className = 'more';
+    more.textContent = shownCount > EVIDENCE_CAP ? `Show first ${EVIDENCE_CAP}`
+      : `${publishedCount - EVIDENCE_CAP} more`;
+    more.addEventListener('click', onMore); host.append(more);
+  }
+}
+
+function renderCaseSelection(host, caseFile, onDay) {
+  const { selection } = caseFile;
+  if (selection.state === 'unavailable') {
+    host.insertAdjacentHTML('beforeend',
+      '<div class="case-selection-state" role="status">That Occurrence is unavailable in this case file.</div>');
+    return;
+  }
+  if (selection.state !== 'selected') return;
+  const detail = selection.detail;
+  const rows = caseFile.occurrences.filter((row) => row.verdict === detail.verdict);
+  const at = rows.findIndex((row) => row.id === detail.id);
+  const verdictLabel = VERDICT_BAND_KEY[detail.verdict]
+    || VERDICT_RESIDUE_KEY[detail.verdict] || detail.verdict;
+  const box = document.createElement('div'); box.className = 'inner occ-detail';
+  box.innerHTML = `<div class="occ-head"><span class="when">${fmtDate(detail.date)} · ${detail.anchor.t.slice(11, 16)}</span>
+    <span class="tag">${verdictLabel}</span>${at >= 0 && rows.length > 1
+      ? `<span class="pos">${at + 1} of ${caseFile.verdict_counts[detail.verdict]}<i class="keyhint">← →</i></span>` : ''}</div>
+    <div class="occ-nums">${detail.anchor.bg == null ? '—' : Math.round(detail.anchor.bg)}
+      <span>at ${detail.anchor.label.toLowerCase()}</span></div>
+    <div class="statline">The canvas shows this Occurrence's server-owned trace and evidence markers.</div>`;
+  host.append(box);
+  const facts = document.createElement('div'); facts.className = 'ev-detail case-facts';
+  facts.innerHTML = `<div class="lab">Evidence facts</div>
+    <div class="vd"><span class="pip" aria-hidden="true"></span><div>${detail.glucose.length} glucose readings</div></div>
+    <div class="vd"><span class="pip" aria-hidden="true"></span><div>${detail.markers.length} event markers</div></div>
+    ${detail.source_corrections.map((dose) => `<div class="vd source-correction"><span class="pip" aria-hidden="true"></span>
+      <div>${dose.t.slice(11, 16)} · ${dose.insulin} U correction</div></div>`).join('')}`;
+  host.append(facts);
+  const foot = document.createElement('div'); foot.className = 'inner occ-foot';
+  const day = document.createElement('button'); day.type = 'button'; day.className = 'linkbtn';
+  day.textContent = `Open ${fmtDate(detail.date)} in Day`; day.addEventListener('click', () => onDay(detail));
+  foot.append(day); host.append(foot);
 }
 
 /**
@@ -873,86 +928,6 @@ function renderHistoryLevel(host, frame, onSelectRun, onRetry) {
    bars, no score numerals. Staging stays where term 13 puts it — at each item's own
    detail level, which every queue row drills into. */
 
-/** Plain-English name for a classifier id — no snake_case reaches the surface. */
-function classifierName(id) {
-  return id.replace(/_/g, ' ').replace(/\bic\b/i, 'I:C').replace(/\biob\b/i, 'insulin on board');
-}
-
-/**
- * Evidence as a table on a shared numeric spine (finding 1). The roster is
- * exactly ONE verdict's occurrences — the drilled band segment, or `fired`
- * (Meets criteria) at rest, per the mock's roster form — so `verdictLabel`
- * names that ONE published category once, as the group header, instead of
- * the row's own evidence-tier quality. Rows carry date/time, the glucose
- * figures, the swing and the (separate) evidence tier.
- *
- * RETIRED, 2026-08-19: the "Attributed here, but no classifier fired" counter
- * sub-group. It split the OLD cause-filtered population (every member of
- * which was, by construction, this row's own driver) from a leftover that
- * could never be populated at rest — dead at rest and, once select-in-place
- * (P35, ADR 31 part 5, owner ruling 2026-08-19) made the roster homogeneous by
- * verdict, no longer even a coherent split: near_miss/clean occurrences can
- * still carry a DIFFERENT classifier's match on the same anchor, which would
- * have silently routed a near-miss/clean row into a group labelled for
- * fired-but-uncredited leftovers. One flat list, captioned by the roster's own
- * verdict, replaces it; `tierOf` still labels each row's own evidence tier.
- */
-function renderEvidence(host, factor, occurrences, verdictLabel, onOpen, onMore, shownCount,
-  selected) {
-  if (!occurrences.length) {
-    // appended, never assigned: the factor head is already in this level
-    host.insertAdjacentHTML('beforeend',
-      '<div class="empty">No occurrences in this verdict.</div>');
-    return;
-  }
-  const groupPhrase = (factor.cause || '').trim();
-
-  /* Aligned numeric columns: entry → worst → Δ where the fixture holds BOTH
-     readings, and a stated "extreme only" cell where it holds one. Nothing is
-     inferred to fill a column — a missing reading stays missing. */
-  const rows = (list, limit) => list.slice(0, limit).map((o) => {
-    const worst = o.worst_bg != null ? Math.round(o.worst_bg) : null;
-    const entry = o.bg != null ? Math.round(o.bg) : null;
-    const both = entry != null && worst != null && entry !== worst;
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'ev-row';
-    // select-in-place (P35 retired): the emphasised row is a state of this
-    // same row, never a separate level
-    b.setAttribute('aria-pressed', String(o === selected));
-    b.title = o.text || '';
-    const nums = both
-      ? `<span class="entry">${entry}</span><span class="arrow" aria-hidden="true">→</span>
-         <span class="worst">${worst}</span>
-         <span class="delta">${worst - entry > 0 ? '+' : '−'}${Math.abs(worst - entry)}</span>`
-      : `<span class="only">${worst ?? entry ?? '—'} <span>· extreme only</span></span>`;
-    b.innerHTML = `<span class="when">${fmtDate(o.date)} · ${o.t.slice(11, 16)}</span>
-      ${nums}
-      <span class="tier">${tierOf(o) || 'unclassified'}</span>`;
-    b.addEventListener('click', () => onOpen(o));
-    return { node: b, occ: o };
-  });
-
-  // The hedge prints ONCE, as this group's header, whether five rows or fifty
-  // are showing — it is a property of the group, not of a row, so expanding
-  // must never restate it.
-  host.insertAdjacentHTML('beforeend',
-    `<div class="ev-group">${groupPhrase ? `<b>${groupPhrase}</b> — ` : ''}${verdictLabel}`
-    + ` <span class="n">· ${occurrences.length} episode${occurrences.length === 1 ? '' : 's'}</span></div>`);
-  for (const { node } of rows(occurrences, shownCount)) host.append(node);
-  // the cap is a real toggle: five rows, then "N more", then back to five
-  if (occurrences.length > EVIDENCE_CAP) {
-    const more = document.createElement('button');
-    more.type = 'button';
-    more.className = 'more';
-    more.textContent = shownCount > EVIDENCE_CAP
-      ? `Show first ${EVIDENCE_CAP}`
-      : `${occurrences.length - EVIDENCE_CAP} more`;
-    more.addEventListener('click', onMore);
-    host.append(more);
-  }
-}
-
 /**
  * The band's five anchor states, labelled the way ADR 41 maps them — the
  * frontend reads `verdict_counts` and names categories; it counts nothing.
@@ -1009,66 +984,6 @@ function renderVerdictBand(host, row, family, activeVerdict, onPick) {
   if (residue) host.insertAdjacentHTML('beforeend', `<div class="vband-foot">${residue}</div>`);
 }
 
-/**
- * Select-in-place (P35 retired): the emphasised roster row's own detail —
- * the full sentence, every classifier's read (matched and not), and the link
- * out to that day's context — mutating the standing screen under the roster
- * rather than owning a level of its own.
- */
-function renderOccurrenceDetail(host, occ, factor, hasTrace, at, total, onDay) {
-  const tier = tierOf(occ);
-  /* The matched classifier's detail is often the very sentence already printed
-     as the headline. Printing it again under "Classifier reads" told the reader
-     nothing and made the panel look padded, so an identical read collapses to
-     its name and tier — the fact that it matched is the information, the words
-     are already above. Non-matching reads always print in full: they are the
-     counter-evidence and are never a duplicate of anything. */
-  const headline = (occ.text || '').trim();
-  const nadir = occ.worst_bg != null ? Math.round(occ.worst_bg) : null;
-  const entry = occ.bg != null ? Math.round(occ.bg) : null;
-  const head = document.createElement('div');
-  head.className = 'inner occ-detail';
-  head.innerHTML = `
-    <div class="occ-head">
-      <span class="when">${fmtDate(occ.date)} · ${occ.t.slice(11, 16)}</span>
-      <span class="tag">${tier || 'unclassified'}</span>
-      ${at >= 0 && total > 1
-        ? `<span class="pos">${at + 1} of ${total}<i class="keyhint">← →</i></span>` : ''}
-    </div>
-    <div class="occ-nums">${entry != null ? `${entry}` : '—'}
-      <span>at entry</span> ${nadir != null && nadir !== entry ? `→ ${nadir} <span>nadir</span>` : ''}
-      ${entry != null && nadir != null && entry !== nadir
-        ? `<span>·</span> ${nadir - entry > 0 ? '+' : ''}${nadir - entry} <span>mg/dL</span>` : ''}</div>
-    <div class="statline">${hasTrace
-      ? 'The canvas shows this day\'s own CGM trace over the pooled envelope.'
-      : 'No trace captured for this day — the canvas shows the pooled envelope with '
-        + 'this entry point marked.'}</div>
-    <div class="occ-say">${occ.text || `No sentence recorded — this ${factor.cause.toLowerCase()} occurrence carries only its classifier reads.`}</div>`;
-  host.append(head);
-  const box = document.createElement('div');
-  box.className = 'ev-detail';
-  box.innerHTML = '<div class="lab" style="font-size:10.5px;color:var(--mk-muted)">Classifier reads</div>'
-    + (occ.verdicts || []).map((v) => {
-      const dupe = v.matched && headline && (v.detail || '').trim() === headline;
-      return `
-      <div class="vd" data-matched="${v.matched}">
-        <span class="pip" aria-hidden="true"></span>
-        <div><div class="lab">${classifierName(v.classifier)} — ${v.matched ? 'matched' : 'not matched'}${v.evidence_tier ? `, ${v.evidence_tier}` : ''}</div>
-          ${dupe ? '' : `<div>${v.detail}</div>`}</div>
-      </div>`;
-    }).join('');
-  host.append(box);
-  const foot = document.createElement('div');
-  foot.className = 'inner occ-foot';
-  const dayBtn = document.createElement('button');
-  dayBtn.type = 'button';
-  dayBtn.className = 'linkbtn';
-  dayBtn.textContent = `Open ${fmtDate(occ.date)} in Day`;
-  dayBtn.addEventListener('click', onDay);
-  foot.append(dayBtn);
-  host.append(foot);
-}
-
 /* -------------------------------- mount -------------------------------- */
 
 /* The mock's `main()` — same body, minus its four `loadCapture()` awaits. It
@@ -1078,12 +993,12 @@ function renderOccurrenceDetail(host, occ, factor, hasTrace, at, total, onDay) {
 function boot(root, data, callbacks, signal) {
   const { day, exposureCapture, audit, params, icMissing } = data;
   const { envelope: envelopeIn, markers: markersIn } = data;
-  /* #735 — the queue's rows and the dock's object, both server-owned. `findings`
-     opens on the GLOBAL projection; `callbacks.loadFindings(window)` fetches the
-     projection for a pressed preset or a drawn brace (term 37: both re-scope the
-     queue in place, identically). Nothing about membership, order or a denominator
-     is worked out here. */
+  /* #735 / ADR 79 — the queue's rows and the dock's object are server-owned.
+     `findings` opens on the preparation's GLOBAL projection; a pressed preset
+     or drawn brace requests a replacement preparation. Nothing about membership,
+     order or a denominator is worked out here. */
   let findings = data.findings;
+  let preparation = data.casePreparation;
   let retirementNotice = null;
   let historyRequestGeneration = 0;
   // Null is the all-active resting state; a Set exists only while a chip is off.
@@ -1117,7 +1032,6 @@ function boot(root, data, callbacks, signal) {
     : '';
   const icBlocks = buildIcBlocks(params.ic_blocks);
   const isf = params.isf[0];
-  const exposures = exposureCapture.exposures;
   // The capture's `dense` state asserts moves on four slots with n=1..7 and wide
   // intervals — it predates the support floor. Applying the floor there leaves
   // NOTHING stageable, so the lane binds to `trial`, the one state holding a slot
@@ -1135,7 +1049,7 @@ function boot(root, data, callbacks, signal) {
 
   renderInstruments(CFG.win, exposureCapture, (key) => {
     // a preset always clears the brace AND pins itself over any frame window
-    presetKey = key; drawn = null; explicitPreset = true; paint();
+    presetKey = key; drawn = null; explicitPreset = true; failedKey = null; paint();
   });
   /* PORT DEVIATION (#654), same reason as the scope readout above: the status
      strip is the app shell's footer, shared by every tab and already carrying
@@ -1159,97 +1073,10 @@ function boot(root, data, callbacks, signal) {
      one subject), so the string goes with it rather than being re-homed on a
      tooltip nobody would find. */
 
-  /* CAN the inspector re-scope to an arbitrary clock window? Only if every
-     family's `occurrences` array is COMPLETE — i.e. it holds all `n` exposures,
-     not just the attributed ones — because the denominator of "n of m" is the
-     count of that family's exposures inside the window. This capture is
-     complete on all four families, so it re-scopes. If a future capture ships
-     truncated occurrence lists the inspector does NOT half-scope: it holds full
-     range and says so on one line. */
-  const RESCOPABLE = Object.values(exposures).every((b) => b.occurrences.length === b.n);
-
-  /* WINDOW MEMBERSHIP IS THE SERVER'S (ADR 62 part 6). A finding row publishes
-     `evidence[]` over every in-window occurrence of every family its lever
-     claims — the queue's own outcome-anchored answer, which is why an episode
-     whose meal sits outside the window but whose consequence landed inside it
-     belongs to it. Joining on those keys IS that answer. The browser used to
-     keep an occurrence whose OWN clock minute fell in the window, a third rule
-     disagreeing with the endpoint and the queue; nothing here re-derives a
-     clock rule any more. */
-  const evidenceKey = (e) => `${e.family}\u0000${e.ep_id}\u0000${e.t}`;
-  const occurrenceKey = (family, o) => `${family}\u0000${o.ep_id}\u0000${o.t}`;
-
-  /** One family's published occurrences for a finding row, in capture order.
-      `ep_id` alone is not unique (two same-kind anchors in one episode share
-      it), so the join takes the family, the episode and the instant together —
-      the same three keys `verdictForOcc` looks a verdict up by. */
-  function publishedFor(row, family) {
-    if (!row || !exposures[family]) return [];
-    const allowed = new Set((row.evidence || [])
-      .filter((e) => e.family === family).map(evidenceKey));
-    return exposures[family].occurrences
-      .filter((o) => allowed.has(occurrenceKey(family, o)));
-  }
-
-  /**
-   * The (family, cause) pair a finding's case file frames on.
-   *
-   * ADR 62 part 7: a finding can hold episodes of two kinds — the meal, and the
-   * high the meal ran into — and framing on whichever held MORE put a list of
-   * one kind beside a chart of the other, with evidence keys that cannot even
-   * be joined. So where the lens can re-project this finding
-   * (`row.event_chart`), the family its event view names wins, and the
-   * panel lists the episodes the chart draws. A finding with no event view
-   * keeps the older routing — the family holding the most occurrences of this
-   * title — now read over the population the server published rather than over
-   * a browser-side clock filter.
-   */
-  function factorForFinding(row) {
-    const pair = (family) => {
-      if (!exposures[family]) return null;
-      const published = publishedFor(row, family);
-      return {
-        family,
-        cause: row.title,
-        count: published.filter((o) => o.cause_title === row.title).length,
-        familyN: published.length,
-        /* The family qualifier earns its place where this finding's own
-           episodes span more than one family: the reader is being shown one of
-           them, and which one is the fact the head has to carry. */
-        needsQual: new Set((row.evidence || []).map((e) => e.family)).size > 1,
-      };
-    };
-    const aligned = eventChartCoordinate(row);
-    /* A coordinate exists only when the producer found this event view's
-       canonical family in the current row projection. That family therefore
-       frames the panel and the chart alike. A null coordinate is not compatible
-       evidence for an event chart in this window, so All findings keeps the
-       ordinary clock-case-file routing over the server-published population. */
-    if (aligned) return pair(aligned.view);
-    return Object.keys(exposures).map(pair).filter((f) => f && f.count)
-      .sort((a, b) => b.count - a.count)[0] || null;
-  }
-
-  /** One FRAME's occurrences and denominator — the frame, not its factor,
-      because the population is the finding row's and the row is carried on the
-      frame. `occurrences` stays this factor's OWN attributed subset: the head
-      caption's "not attributed" remainder and the canvas plot both read off it
-      unchanged. `familyOccurrences` is the frame family's FULL published set,
-      unfiltered by cause, which is what the roster must draw from — every
-      published verdict this lever's classifier could have read, not only the
-      ones it drove. A frame whose row is not in the current window has no
-      published population at all, and says so rather than guessing one. */
-  function scopedFor(f) {
-    const row = findingRowFor(f);
-    if (!row) return { occurrences: [], familyOccurrences: [], familyN: 0 };
-    const published = publishedFor(row, f.factor.family);
-    return {
-      occurrences: published.filter((o) => o.cause_title === f.factor.cause).slice(0, CFG.occCap),
-      familyOccurrences: published.slice(0, CFG.occCap),
-      familyN: published.length,
-    };
-  }
-  const occurrencesFor = (f) => scopedFor(f).occurrences;
+  const findingsFromPreparation = (next) => ({
+    ...next.findings,
+    rows: next.rendered_rows,
+  });
 
   const staged = new Set();        // basal slots staged for Plan
   const icStaged = new Set();      // I:C blocks staged for Plan
@@ -1262,11 +1089,8 @@ function boot(root, data, callbacks, signal) {
   let chart = null;
   let shownRows = EVIDENCE_CAP;
   let dir = 'push';
-  /* ALIGN's mounted event-comparison canvas (ADR 31 part 3), and the request
-     generation that guards it against a stale response landing after the
-     reader has moved to a different frame or flipped back to `By clock`. */
+  /* ALIGN's mounted event-comparison canvas (ADR 31 part 3). */
   let alignMount = null;
-  let alignGeneration = 0;
   let presetKey = CFG.win;                          // what Esc restores
   let shownRange = null;                            // the window the canvas resolved to
   let braceGripTop = 48;                            // y of the grip band, set by paintBrace
@@ -1283,11 +1107,7 @@ function boot(root, data, callbacks, signal) {
      full-range case, reachable from the control row. Null only when the capture
      cannot supply an in-window denominator, and then nothing re-scopes at all —
      never half-scope. */
-  const scopeWindow = () => (RESCOPABLE ? (drawn || WINDOWS[presetKey].range) : null);
-  /* Counts and the canvas can be looking at different windows — the canvas
-     narrows to a factor's peak while the denominators stay on the scope that
-     peak was found in. That is legitimate, but it must never be silent, so
-     every count prints the window it was counted over. */
+  const scopeWindow = () => drawn || WINDOWS[presetKey].range;
   const scopeLabel = () => {
     const w = scopeWindow();
     return w ? `${hhmm(w[0])}–${winEdge(w[1])}` : 'full range';
@@ -1298,12 +1118,10 @@ function boot(root, data, callbacks, signal) {
      than on a factor the browser assembled for itself. The cap is the state
      table's own. */
   const bootFrames = (findings?.rows || [])
-    .filter((row) => row.register === 'finding')
-    .map((row) => {
-      const factor = factorForFinding(row);
-      return factor ? { k: 'factor', factor, rowId: row.id } : null;
-    })
-    .filter(Boolean)
+    .filter((row) => row.register === 'finding' && row.case_header?.inspectability === 'ready')
+    .map((row) => ({ k: 'factor', rowId: row.id, title: row.title,
+      caseFile: null, requestedAlignment: 'clock', selectedId: null,
+      bandVerdict: null, loading: false }))
     .slice(0, CFG.factorCap);
 
   /* ---- the findings window (terms 37 · 39 · 40) --------------------------
@@ -1320,17 +1138,18 @@ function boot(root, data, callbacks, signal) {
   const windowKey = (w) => (w ? `${w[0]}-${w[1]}` : 'global');
   /* IS THE WINDOW'S PUBLISHED POPULATION IN HAND? A window change ASKS the
      server for its rows, so between the press and the response every count on
-     screen is the PREVIOUS window's while `scopeLabel()` already prints the new
+     screen is the PREVIOUS window's while the instruments already print the new
      one. That pairing is a caption asserting a population nothing drew, so the
      counts are withheld until the answer lands rather than shown stale. */
-  let loadedKey = windowKey(findings?.window?.scoped
-    ? [findings.window.start_min, findings.window.end_min] : null);
+  let loadedKey = windowKey(preparation?.coordinates?.window?.scoped
+    ? [preparation.coordinates.window.start_min, preparation.coordinates.window.end_min] : null);
   let pendingKey = null;
   let failedKey = null;
   const currentFindingsKey = () => windowKey(findingsWindow());
+  const currentPreparationKey = () => windowKey(findingsWindow());
+  let preparationGeneration = 0;
   const settled = () => loadedKey === currentFindingsKey()
     && pendingKey === null && failedKey === null;
-
   const historyFrame = () => top()?.k === 'history' ? top() : null;
   const requestWindow = () => {
     const w = findingsWindow();
@@ -1346,7 +1165,7 @@ function boot(root, data, callbacks, signal) {
     if (nextFindings) findings = nextFindings;
     pendingKey = null;
     failedKey = null;
-    loadedKey = windowKey(findingsWindow());
+    loadedKey = currentFindingsKey();
     retirementNotice = message;
     stack.length = 1;
     dir = 'pop';
@@ -1376,13 +1195,12 @@ function boot(root, data, callbacks, signal) {
     return selection;
   }
 
-  /** A typed 410 is evidence to refresh selection, never authority to retire it. */
   async function refreshHistoryRetirement(frame, request) {
     try {
       const next = await callbacks.loadFindings?.(requestWindow(), frame.id);
       if (request !== historyRequestGeneration || top() !== frame) return;
       const selection = validateHistorySelection(next, frame);
-      if (selection.disposition !== 'aged_out' && selection.disposition !== 'unavailable') {
+      if (!['aged_out', 'unavailable'].includes(selection.disposition)) {
         throw new Error('Retired history did not have a matching findings disposition.');
       }
       historyRetired(frame, selection.message, next);
@@ -1395,18 +1213,12 @@ function boot(root, data, callbacks, signal) {
     }
   }
 
-  /**
-   * Coordinated recovery: findings first, then event evidence when that is the
-   * standing projection. The visible pair is not mutated until both responses
-   * validate. `attempt=0` permits one automatic retry; explicit Retry starts at
-   * one so it performs exactly one coordinated attempt.
-   */
   async function refreshHistoryPair(frame, {
     wantEvent = frame.align === 'event', selectedRunId = frame.selectedRunId,
     attempt = 0, request = ++historyRequestGeneration,
   } = {}) {
     if (top() !== frame) return;
-    const key = windowKey(findingsWindow());
+    const key = currentFindingsKey();
     pendingKey = key;
     frame.pending = true;
     frame.stale = false;
@@ -1415,7 +1227,7 @@ function boot(root, data, callbacks, signal) {
       const next = await callbacks.loadFindings?.(requestWindow(), frame.id);
       if (request !== historyRequestGeneration || top() !== frame) return;
       const selection = validateHistorySelection(next, frame);
-      if (selection.disposition === 'aged_out' || selection.disposition === 'unavailable') {
+      if (['aged_out', 'unavailable'].includes(selection.disposition)) {
         historyRetired(frame, selection.message, next);
         return;
       }
@@ -1424,9 +1236,7 @@ function boot(root, data, callbacks, signal) {
         loadedKey = key;
         pendingKey = null;
         failedKey = null;
-        frame.pending = false;
-        frame.stale = false;
-        frame.notice = selection.message;
+        Object.assign(frame, { pending: false, stale: false, notice: selection.message });
         paint();
         return;
       }
@@ -1456,15 +1266,12 @@ function boot(root, data, callbacks, signal) {
       loadedKey = key;
       pendingKey = null;
       failedKey = null;
-      frame.row = row;
-      frame.generation = next.analysis_generation;
-      frame.events = events;
-      frame.selectedRunId = selectedRunId || null;
-      frame.align = wantEvent ? 'event' : 'clock';
-      frame.canvasScope = historyCanvasScope();
-      frame.pending = false;
-      frame.stale = false;
-      frame.notice = null;
+      Object.assign(frame, {
+        row, generation: next.analysis_generation, events,
+        selectedRunId: selectedRunId || null,
+        align: wantEvent ? 'event' : 'clock',
+        canvasScope: historyCanvasScope(), pending: false, stale: false, notice: null,
+      });
       retirementNotice = null;
       paint();
     } catch (error) {
@@ -1486,7 +1293,7 @@ function boot(root, data, callbacks, signal) {
 
   async function requestHistoryEvents(frame, selectedRunId = null) {
     const request = ++historyRequestGeneration;
-    pendingKey = windowKey(findingsWindow());
+    pendingKey = currentFindingsKey();
     frame.pending = true;
     frame.stale = false;
     paint();
@@ -1503,11 +1310,9 @@ function boot(root, data, callbacks, signal) {
         selectedRunId,
       });
       pendingKey = null;
-      frame.events = events;
-      frame.selectedRunId = selectedRunId;
-      frame.align = 'event';
-      frame.pending = false;
-      frame.notice = null;
+      Object.assign(frame, {
+        events, selectedRunId, align: 'event', pending: false, notice: null,
+      });
       paint();
     } catch (error) {
       if (request !== historyRequestGeneration || top() !== frame) return;
@@ -1515,14 +1320,166 @@ function boot(root, data, callbacks, signal) {
         refreshHistoryRetirement(frame, request);
         return;
       }
-      refreshHistoryPair(frame, {
-        wantEvent: true, selectedRunId, attempt: 1, request,
-      });
+      refreshHistoryPair(frame, { wantEvent: true, selectedRunId, attempt: 1, request });
     }
   }
 
-  function ensureFindings() {
-    const key = currentFindingsKey();
+  let caseGeneration = 0;
+  let activeCaseError = null;
+  const caseErrorFrom = (error) => error?.detail && typeof error.detail === 'object'
+    ? error.detail : { code: 'request_failed',
+      message: error?.message || 'The Finding case file is unavailable.' };
+  const appendCaseError = (host) => {
+    if (!activeCaseError) return;
+    const alert = document.createElement('div'); alert.className = 'case-file-error';
+    alert.setAttribute('role', 'alert'); alert.dataset.code = activeCaseError.code;
+    alert.textContent = activeCaseError.message; host.append(alert);
+  };
+  const isCurrentCaseRequest = (generation, frame) => generation === caseGeneration
+    && top() === frame;
+  const caseCoordinates = (source, frame, alignment, occ = null) => ({
+    projection_id: source.projection_id,
+    finding_id: frame.rowId,
+    alignment,
+    ...(occ ? { occ } : {}),
+  });
+  const matchingPreparation = assertMatchingFindingCasePreparation;
+  const eventChartIn = (source, frame) => eventChartCoordinate(
+    source?.rendered_rows?.find((row) => row.id === frame.rowId),
+  );
+  const caseAlignmentIn = (source, frame) => {
+    const row = source?.rendered_rows?.find((row) => row.id === frame.rowId);
+    return eventChartCoordinate(row);
+  };
+  const availableAlignment = (source, frame, requested) =>
+    requested === 'event'
+      && (frame.eventDiscovery ? eventChartIn(source, frame) : caseAlignmentIn(source, frame))
+      ? 'event' : 'clock';
+  const matchingCase = (caseFile, source, frame, alignment, occ) => {
+    const selection = caseFile?.selection;
+    const selectionMatches = occ
+      ? ['selected', 'unavailable'].includes(selection?.state)
+        && selection?.requested_id === occ
+        && (selection.state !== 'selected' || selection.detail?.id === occ)
+      : selection?.state === 'none' && selection?.requested_id === null;
+    const sourceWindow = source?.coordinates?.window;
+    const requestedWindow = sourceWindow?.scoped
+      ? { start_min: sourceWindow.start_min, end_min: sourceWindow.end_min } : null;
+    if (caseFile?.schema === 'diagnose-finding-case-file-v1' && validFindingCaseFile(caseFile)
+      && caseFile?.projection_id === source.projection_id
+      && caseFile?.finding?.id === frame.rowId
+      && sameFindingCaseWindow(caseFile?.window, requestedWindow)
+      && caseFile?.projection?.alignment === alignment
+      && selectionMatches) return caseFile;
+    inconsistentFindingProjection(
+      'The Finding case file did not match the requested coordinates.',
+    );
+  };
+
+  function recoverCase(frame, alignment, occ, generation) {
+    const w = findingsWindow();
+    const requested = w ? { start_min: w[0], end_min: w[1] } : null;
+    Promise.resolve(callbacks.loadPreparation?.(requested))
+      .then((response) => {
+        if (!isCurrentCaseRequest(generation, frame)) return null;
+        const shadowPreparation = matchingPreparation(response, requested);
+        const shadowAlignment = availableAlignment(
+          shadowPreparation, frame, alignment,
+        );
+        return Promise.resolve(callbacks.loadCase?.(
+          caseCoordinates(shadowPreparation, frame, shadowAlignment, occ),
+        )).then((shadowCase) => ({ shadowPreparation,
+          shadowCase: matchingCase(
+            shadowCase, shadowPreparation, frame, shadowAlignment, occ,
+          ) }));
+      })
+      .then((shadow) => {
+        if (!shadow || !isCurrentCaseRequest(generation, frame)) return;
+        preparation = shadow.shadowPreparation;
+        findings = findingsFromPreparation(preparation);
+        loadedKey = windowKey(findingsWindow());
+        pendingKey = null;
+        frame.caseFile = shadow.shadowCase;
+        frame.requestedAlignment = shadow.shadowCase.projection.alignment;
+        frame.selectedId = shadow.shadowCase.selection.state === 'selected'
+          ? shadow.shadowCase.selection.requested_id : null;
+        frame.loading = false;
+        activeCaseError = null;
+        paint();
+      })
+      .catch((error) => {
+        if (!isCurrentCaseRequest(generation, frame)) return;
+        frame.loading = false;
+        pendingKey = null;
+        activeCaseError = caseErrorFrom(error);
+        paint();
+      });
+  }
+
+  function refreshQueueAfterUnavailable(frame, generation, originalError) {
+    const w = findingsWindow();
+    const requested = w ? { start_min: w[0], end_min: w[1] } : null;
+    Promise.resolve(callbacks.loadPreparation?.(requested))
+      .then((response) => {
+        if (!isCurrentCaseRequest(generation, frame)) return;
+        const next = matchingPreparation(response, requested);
+        preparation = next;
+        findings = findingsFromPreparation(next);
+        loadedKey = windowKey(findingsWindow());
+        frame.loading = false;
+        activeCaseError = caseErrorFrom(originalError);
+        paint();
+      })
+      .catch((error) => {
+        if (!isCurrentCaseRequest(generation, frame)) return;
+        frame.loading = false;
+        activeCaseError = caseErrorFrom(error);
+        paint();
+      });
+  }
+
+  function requestCase(frame, alignment, occ = null, source = preparation) {
+    if (pendingKey !== null) {
+      frame.pendingCaseRequest = { alignment, occ };
+      pendingKey = null;
+      failedKey = null;
+      ++caseGeneration;
+      paint();
+      return;
+    }
+    const generation = ++caseGeneration;
+    frame.loading = true;
+    activeCaseError = null;
+    paint();
+    Promise.resolve(callbacks.loadCase?.(caseCoordinates(source, frame, alignment, occ)))
+      .then((response) => {
+        if (!isCurrentCaseRequest(generation, frame)) return;
+        const next = matchingCase(response, source, frame, alignment, occ);
+        frame.loading = false;
+        frame.caseFile = next;
+        frame.requestedAlignment = next.projection.alignment;
+        frame.selectedId = next.selection.state === 'selected' ? next.selection.requested_id : null;
+        activeCaseError = null;
+        paint();
+      })
+      .catch((error) => {
+        if (!isCurrentCaseRequest(generation, frame)) return;
+        if (error?.status === 409 && error?.detail?.code === 'stale_projection') {
+          recoverCase(frame, alignment, occ, generation);
+          return;
+        }
+        if (error?.status === 404 && error?.detail?.code === 'finding_unavailable') {
+          refreshQueueAfterUnavailable(frame, generation, error);
+          return;
+        }
+        frame.loading = false;
+        activeCaseError = caseErrorFrom(error);
+        paint();
+      });
+  }
+
+  function ensurePreparation() {
+    const key = currentPreparationKey();
     const history = historyFrame();
     if (history) {
       if (history.pending || history.stale || key === loadedKey) return;
@@ -1531,30 +1488,67 @@ function boot(root, data, callbacks, signal) {
     }
     if (failedKey !== null && failedKey !== key) failedKey = null;
     if (key === loadedKey) {
-      // Returning to the projection already in hand abandons any other flight.
-      // Its eventual response must fail the request-key guard below rather than
-      // keep the known-loaded window looking unresolved or replace its rows.
       pendingKey = null;
       failedKey = null;
       return;
     }
     if (key === pendingKey || key === failedKey) return;
     pendingKey = key;
+    activeCaseError = null;
     const w = findingsWindow();
-    Promise.resolve(callbacks.loadFindings?.(w ? { start_min: w[0], end_min: w[1] } : null))
-      .then((next) => {
-        if (pendingKey !== key) return;      // the reader moved on; this is stale
+    const requested = w ? { start_min: w[0], end_min: w[1] } : null;
+    ++caseGeneration;
+    const generation = ++preparationGeneration;
+    const frame = top().k === 'factor' ? top() : null;
+    if (frame) frame.loading = true;
+    Promise.resolve(callbacks.loadPreparation?.(requested))
+      .then((response) => {
+        if (generation !== preparationGeneration || currentPreparationKey() !== key) return null;
+        const next = matchingPreparation(response, requested);
+        if (!frame) {
+          preparation = next;
+          findings = findingsFromPreparation(next);
+          pendingKey = null;
+          loadedKey = key;
+          failedKey = null;
+          paint();
+          return null;
+        }
+        const desired = frame.pendingCaseRequest;
+        const alignment = availableAlignment(
+          next, frame, desired?.alignment || frame.requestedAlignment || 'clock',
+        );
+        return Promise.resolve(callbacks.loadCase?.(caseCoordinates(
+          next, frame, alignment,
+          desired ? desired.occ : frame.selectedId,
+        ))).then((shadowCase) => {
+          const occ = desired ? desired.occ : frame.selectedId;
+          return { next, shadowCase: matchingCase(shadowCase, next, frame, alignment, occ) };
+        });
+      })
+      .then((shadow) => {
+        if (!shadow || generation !== preparationGeneration
+          || currentPreparationKey() !== key || top() !== frame) return;
+        preparation = shadow.next;
+        findings = findingsFromPreparation(shadow.next);
+        frame.caseFile = shadow.shadowCase;
+        frame.pendingCaseRequest = null;
+        frame.loading = false;
+        frame.selectedId = shadow.shadowCase.selection.state === 'selected'
+          ? shadow.shadowCase.selection.requested_id : null;
         pendingKey = null;
-        if (!next) { failedKey = key; paint(); return; }
-        findings = next;
         loadedKey = key;
         failedKey = null;
+        activeCaseError = null;
         paint();
       })
-      .catch(() => {
-        if (pendingKey !== key) return;
+      .catch((error) => {
+        if (generation !== preparationGeneration || currentPreparationKey() !== key) return;
         pendingKey = null;
         failedKey = key;
+        if (frame) frame.loading = false;
+        if (frame) frame.pendingCaseRequest = null;
+        activeCaseError = caseErrorFrom(error);
         paint();
       });
   }
@@ -1574,15 +1568,13 @@ function boot(root, data, callbacks, signal) {
       return;
     }
     if (row.register === 'finding') {
-      /* A re-projectable finding frames on its event view's family, so the panel
-         and the event canvas name the same published episodes. */
-      const factor = factorForFinding(row);
-      // rowId, not the row object itself: findings reload per window, so the
-      // verdict band re-resolves the live row on every paint (see findingRowFor)
-      if (factor) push({
-        k: 'factor', factor, rowId: row.id,
-        entryEventRequested: eventChartsOnly && eventChartCoordinate(row) !== null,
-      });
+      const entryAlignment = eventChartsOnly && eventChartCoordinate(row) ? 'event' : 'clock';
+      const frame = { k: 'factor', rowId: row.id, title: row.title,
+        caseFile: null, requestedAlignment: entryAlignment, selectedId: null,
+        bandVerdict: null, loading: false,
+        eventDiscovery: entryAlignment === 'event' };
+      push(frame);
+      requestCase(frame, entryAlignment);
       return;
     }
     if (row.parameter === 'isf') { push({ k: 'isf', rowId: row.id }); return; }
@@ -1606,7 +1598,23 @@ function boot(root, data, callbacks, signal) {
     filterOpen = false;
     dir = 'push'; stack.push(frame); shownRows = EVIDENCE_CAP; paint();
   };
-  const popTo = (i) => { filterOpen = false; dir = 'pop'; stack.length = i + 1; paint(); };
+  const popTo = (i) => {
+    ++caseGeneration;
+    ++historyRequestGeneration;
+    pendingKey = null;
+    filterOpen = false;
+    dir = 'pop'; stack.length = i + 1; paint();
+  };
+
+  function findingRowFor(frame) {
+    if (frame.k !== 'factor') return null;
+    return (findings?.rows || []).find((row) => row.id === frame.rowId) || null;
+  }
+
+  function parameterRowFor(frame) {
+    if (!frame.rowId) return true;
+    return (findings?.rows || []).find((row) => row.id === frame.rowId) || null;
+  }
   /* The lane is a shortcut INTO the slot branch: from level 1 it pushes, from a
      slot frame it swaps in place, so clicking cells never deepens the stack. */
   function pickCell(cell, rowId = null) {
@@ -1635,82 +1643,19 @@ function boot(root, data, callbacks, signal) {
      row in place, on the factor frame that is already standing: no push, no
      crumb change, and — per P21's retirement — no window move either. The
      canvas overlay (day trace + mark) and the arrow-stepping/`n of N` pair
-     (P24/P25, kept and re-homed) all read `f.selectedOcc` off the standing
-     frame instead of a frame of their own. */
+     (P24/P25, kept and re-homed) all read the standing frame's retained case
+     selection instead of a frame of their own. */
   function selectOcc(occ) {
     const f = top();
     if (f.k !== 'factor') return;
-    f.selectedOcc = occ;
-    paint();
-  }
-
-  /** The published finding row behind a factor frame, re-resolved from the
-      LIVE projection every paint (findings reload per window — a captured
-      reference would go stale). Keyed on the row's own id, carried onto the
-      frame by `drillFinding`, never guessed from a title. `verdict_counts`
-      and `evidence` are READ off it (ADR 31 part 6): nothing here counts,
-      classifies or re-derives membership. Every factor frame carries a rowId —
-      the boot presets open on a published finding too — so a null here means
-      the row LEFT the window under the reader's feet, never that the frame
-      never had one (ADR 62 part 9). */
-  function findingRowFor(f) {
-    if (!f.rowId) return null;
-    return (findings?.rows || []).find((r) => r.id === f.rowId) || null;
-  }
-
-  /** Parameter details opened from the queue retain the server row identity.
-      A settled projection either republishes that exact row or owns its absence;
-      slot and block times are never used as a second membership rule. */
-  function parameterRowFor(f) {
-    if (!f.rowId) return true;       // lane navigation is not projection-backed
-    return (findings?.rows || []).find((row) => row.id === f.rowId) || null;
-  }
-
-  /** One occurrence's published verdict, looked up by the id the projection
-      already carries (`ep_id` + family + `t`) — a lookup, never a
-      classification. `ep_id` alone is not unique: two same-kind anchors in one
-      episode (e.g. a low and its rebound high, both split_low_rebounds) share
-      an `ep_id`, so `.find()` on that alone silently takes the first and
-      misreports the second. `t` IS unique per occurrence and the projection
-      already publishes it, so joining on both closes the collision. */
-  function verdictForOcc(row, factor, occ) {
-    if (!row || !row.evidence) return null;
-    const hit = row.evidence.find((e) => (
-      e.family === factor.family && e.ep_id === occ.ep_id && e.t === occ.t
-    ));
-    return hit ? hit.verdict : null;
-  }
-
-  /** The roster the band's current drill scopes to (ADR 31 part 5 — the band
-      drills the ROSTER only; the canvas keeps plotting every occurrence).
-      Draws from the frame family's FULL occurrence set (finding 1 follow-up)
-      so a drill into Borderline/Does not meet has real members to find —
-      the old cause-filtered pool held only this lever's OWN attributed hits,
-      which read `fired` by construction, so every other segment was
-      structurally empty. Exactly one published verdict shows at a time: the
-      drilled segment, or `fired` at rest (the mock's roster form) — never
-      `outranked`/`no_data`, which have no band segment and print on the
-      band's own footer line instead. A frame whose row has left the current
-      window has no published roster at all, and the panel says so instead of
-      falling back to a browser-side filter (ADR 62 part 9). */
-  function rosterFor(f) {
-    const row = findingRowFor(f);
-    if (!row) return [];
-    const scoped = scopedFor(f);
-    const wanted = f.bandVerdict || 'fired';
-    return scoped.familyOccurrences.filter((o) => verdictForOcc(row, f.factor, o) === wanted);
+    requestCase(f, f.requestedAlignment || 'clock', occ.id || occ);
   }
 
   // opening depth per mock state — a payload publishing no re-projectable
   // finding simply opens at the queue rather than on an empty case file
   if ((CFG.level === 2 || CFG.level === 3) && bootFrames[0]) stack.push({ ...bootFrames[0] });
   if (CFG.level === 3) {
-    // select-in-place (P35 retired): the occurrence lives on the factor frame,
-    // never on a level of its own
-    const pool = occurrencesFor(top());
-    const occ = pool.find((o) => day.days[o.date] && tierOf(o))
-      || pool.find((o) => tierOf(o)) || pool[0];
-    if (occ) stack[stack.length - 1].selectedOcc = occ;
+    // The retained case response supplies the selection after the opening request.
   }
   if (CFG.level === 'slot') {
     // opens with a cell selected AND one staged, so the badge, the underline and
@@ -1742,7 +1687,27 @@ function boot(root, data, callbacks, signal) {
     let label = `${preset.label.toUpperCase()} ${winText(preset)}`;
     let note = '';   // the droppable count tail — shed first when space is tight
     braceless = false;
-    if (canvasDrawn) {
+    if (f.k === 'factor' && f.caseFile
+      && !(f.eventDiscovery && (drawn || explicitPreset))) {
+      const caseWindow = f.caseFile.window;
+      const clock = f.caseFile.projection.alignment === 'clock'
+        ? f.caseFile.projection.clock : null;
+      if (caseWindow.scoped) {
+        win = { label: 'Window', range: [caseWindow.start_min, caseWindow.end_min] };
+        label = `WINDOW ${winText(win)}`;
+        markWindowSegment(`Window ${winText(win)}`);
+      } else if (clock) {
+        const peak = clock.buckets[clock.peak_bucket_index];
+        win = { label: 'Factor peak', range: [peak.start_min, peak.end_min] };
+        label = `PEAK ${winText(win)}`;
+        note = `${peak.n} of ${clock.total}`;
+        markWindowSegment(`Factor peak ${winText(win)}`);
+      } else {
+        win = WINDOWS.all;
+        label = `${win.label.toUpperCase()} ${winText(win)}`;
+        pressPreset('all');
+      }
+    } else if (canvasDrawn) {
       /* USER SCOPE BEATS DERIVED SCOPE, ALWAYS. A drawn window is a persistent
          workspace: drilling a factor or opening an occurrence scopes WITHIN it
          and never moves the brace. Reported in the chip slot the peak chip
@@ -1756,15 +1721,6 @@ function boot(root, data, callbacks, signal) {
          same reason — pressing one at any level is a scope CHANGE by the user,
          never a release back to derived scope. */
       pressPreset(canvasPresetKey);
-    } else if (f.k === 'factor' && settled()) {
-      const occ = occurrencesFor(f);
-      const clock = occ.length ? clockBuckets(occ) : null;
-      if (clock) {
-        win = { label: 'Factor peak', range: [clock.peak.startMin, clock.peak.endMin] };
-        label = `PEAK ${winText(win)}`;
-        note = `${clock.peak.n} of ${clock.total}`;
-        markWindowSegment(`Factor peak ${winText(win)}`);
-      }
     } else if (f.k === 'slot') {
       win = { label: 'Slot', range: [f.cell.startMin, f.cell.endMin] };
       label = `SLOT ${f.cell.label}`;
@@ -1796,17 +1752,23 @@ function boot(root, data, callbacks, signal) {
        drilled inside an explicit workspace still shows its own dots, on the
        user's window rather than on a peak the canvas no longer jumps to. */
     let occurrences = [];
-    if (f.k === 'factor' && settled()) occurrences = occurrencesFor(f);
+    if (f.k === 'factor' && f.caseFile) occurrences = f.caseFile.occurrences.map((row) => ({
+      id: row.id, t: row.anchor.t, date: row.date, bg: row.anchor.bg,
+      worst_bg: row.anchor.bg, verdict: row.verdict,
+    }));
 
-    /* Selection puts that day's REAL trace over the pooled envelope when the
-       CGM capture holds the date. It is never synthesised: an uncaptured date
-       gets the envelope plus the marked entry point, and the panel says so.
-       This is select-in-place (P35 retired): the selected occurrence never
-       narrows the window (P21 retired) — it only adds the trace and the mark
-       on top of whatever window the factor frame already resolved above. */
-    const selectedOcc = f.k === 'factor' ? f.selectedOcc : null;
-    const traceDay = selectedOcc ? day.days[selectedOcc.date] : null;
-    const trace = traceDay ? buildDayTrace(traceDay) : null;
+    /* Selection puts the case file's exact trace over the pooled envelope.
+       This is select-in-place (P35 retired): the selected Occurrence never
+       narrows the window (P21 retired) — it only adds the server-owned trace
+       and mark on top of whatever window the factor frame resolved above. */
+    const detail = f.k === 'factor' && f.caseFile?.selection?.state === 'selected'
+      ? f.caseFile.selection.detail : null;
+    const selectedOcc = detail ? { id: detail.id, t: detail.anchor.t,
+      date: detail.date, bg: detail.anchor.bg, worst_bg: detail.anchor.bg } : null;
+    const trace = detail ? envelope.labels.map((label) => {
+      const point = detail.glucose.find((row) => row.t.slice(11, 16) === label);
+      return point?.bg ?? null;
+    }) : null;
     /* Whatever window the canvas landed on — preset, drawn, or frame-derived —
        is the one the brace draws and the one a handle grabs. One grammar. */
     shownRange = win.range.slice();
@@ -1846,7 +1808,7 @@ function boot(root, data, callbacks, signal) {
        so the canvas states that rather than printing a reading count under a
        panel that is listing nothing (ADR 62 part 9). */
     el('canvas-scope').textContent =
-      f.k === 'factor' && settled() && !findingRowFor(f)
+      f.k === 'factor' && settled() && !f.caseFile
         ? 'No findings in the selected window'
         : `window ${stats.readings.toLocaleString()} of ${envelope.readings.toLocaleString()} readings`;
     el('canvas-pool').textContent =
@@ -1855,7 +1817,6 @@ function boot(root, data, callbacks, signal) {
 
   /** Tear down whatever ALIGN mounted, and restore the clock canvas. */
   function disposeAlign() {
-    ++alignGeneration;
     alignMount?.observer?.disconnect();
     alignMount?.chart?.dispose();
     alignMount?.restoreHeader?.();
@@ -1867,30 +1828,26 @@ function boot(root, data, callbacks, signal) {
     el('lane-wrap').hidden = false;
   }
 
-  /**
-   * ALIGN (ADR 31 part 3). Present only on a finding case file whose factor
-   * the live projection says the lens can re-project (`row.event_chart`); a switch over
-   * already-selected data, so picking `By event` never moves the crumb, the
-   * roster or the standing WINDOW — it re-projects the SAME occurrences the
-   * factor frame is already scoped to. WINDOW keeps filtering by clock under
-   * either projection: the request carries the findings window, including a
-   * drawn brace. The whole-day window is omitted by the same normalization the
-   * findings queue uses.
-   */
+  /** ALIGN owns two explicit projections: behavioral case files and I:C history. */
   function paintAlign() {
     const f = top();
-    const history = f.k === 'history';
-    const mapped = f.k === 'factor' && settled()
-      ? eventChartCoordinate(findingRowFor(f)) : null;
-    el('align-group').hidden = !mapped && !history;
-    if (!mapped && !history) {
+    const isCase = f.k === 'factor';
+    const isHistory = f.k === 'history';
+    const liveRow = isCase && settled() ? findingRowFor(f) : null;
+    const mappedCase = liveRow && (f.eventDiscovery
+      ? eventChartCoordinate(liveRow)
+      : caseAlignmentIn(preparation, f) ? { caseFile: true } : null);
+    el('align-group').hidden = !mappedCase && !isHistory;
+    if (!mappedCase && !isHistory) {
       disposeAlign();
       return;
     }
-    const alignKey = f.align === 'event' ? 'event' : 'clock';
+    const alignKey = isHistory
+      ? f.align
+      : f.caseFile?.projection?.alignment || f.requestedAlignment || 'clock';
     renderAlign(alignKey, (key) => {
-      if (f.align === key && !(history && f.pending && key === 'clock')) return;
-      if (history) {
+      if (alignKey === key || f.loading || (isHistory && f.pending)) return;
+      if (isHistory) {
         if (key === 'clock') {
           ++historyRequestGeneration;
           pendingKey = null;
@@ -1903,15 +1860,13 @@ function boot(root, data, callbacks, signal) {
         }
         return;
       }
-      if (key === 'clock') disposeAlign();
-      f.align = key;
-      paint();
+      requestCase(f, key, f.selectedId);
     });
     if (alignKey === 'clock') {
       disposeAlign();
       return;
     }
-    if (history) {
+    if (isHistory) {
       if (!f.events) return;
       const mounted = alignMount?.frame === f
         && alignMount.analysisGeneration === f.generation
@@ -1949,47 +1904,20 @@ function boot(root, data, callbacks, signal) {
       };
       return;
     }
-    const currentWindow = findingsWindow();
-    const selected = f.selectedOcc;
-    const occurrenceId = selected ? alignMount?.projection?.occurrences.find((occurrence) => (
-      occurrence.identity.ep_id === selected.ep_id && occurrence.identity.t === selected.t
-    ))?.identity.id || null : null;
-    // Frame, window, and selection all determine the server-owned projection.
-    if (alignMount && alignMount.frame === f && alignMount.windowKey === windowKey(currentWindow)
-      && alignMount.occurrenceId === occurrenceId) return;
+    if (!f.caseFile || f.caseFile.projection.alignment !== 'event') return;
+    if (alignMount?.caseFile === f.caseFile) return;
     el('chart').hidden = true;
     el('brace').hidden = true;
     el('lane-wrap').hidden = true;
     const host = el('align-canvas');
     host.hidden = false;
-    const generation = ++alignGeneration;
-    const requested = {
-      view: mapped.view, factor: mapped.factor,
-      window: currentWindow ? { start_min: currentWindow[0], end_min: currentWindow[1] } : null,
-      another: false, occurrenceId,
+    alignMount?.observer?.disconnect();
+    alignMount?.chart?.dispose();
+    alignMount?.restoreHeader?.();
+    alignMount = {
+      ...renderEventSurface(host, f.caseFile, { headerHost: el('canvas-head') }),
+      frame: f, caseFile: f.caseFile,
     };
-    Promise.resolve(callbacks.loadProjection?.(requested)).then((projection) => {
-      if (generation !== alignGeneration || top() !== f) return;
-      if (!validEventProjection(projection, requested)) {
-        throw new Error('Diagnose event comparison data is unavailable.');
-      }
-      alignMount?.observer?.disconnect();
-      alignMount?.chart?.dispose();
-      alignMount?.restoreHeader?.();
-      alignMount = { ...renderEventSurface(host, projection, { headerHost: el('canvas-head') }), frame: f, windowKey: windowKey(currentWindow), occurrenceId };
-      // The roster has the shared episode-and-time key, while the endpoint owns
-      // its opaque catalog id. Once the just-loaded catalog supplies that id,
-      // re-project the selected occurrence through the public endpoint.
-      if (selected && !occurrenceId) paintAlign();
-    }).catch(() => {
-      // ALIGN is a re-projection, not a navigation: a failed fetch preserves
-      // the finding and selection while returning its canvas to By clock.
-      if (generation === alignGeneration) {
-        f.align = 'clock';
-        disposeAlign();
-        paint();
-      }
-    });
   }
 
   /* The badge counts STAGED PARAMETER ITEMS — a basal slot, an I:C block, the
@@ -2170,7 +2098,7 @@ function boot(root, data, callbacks, signal) {
   function crumbLabel(frame) {
     // D7/term 34 — the crumb root is the queue's own noun, at every depth
     if (frame.k === 'factors') return 'Findings';
-    if (frame.k === 'factor') return frame.factor.cause;
+    if (frame.k === 'factor') return frame.caseFile?.finding?.title || frame.title;
     if (frame.k === 'slot') return `${frame.cell.label} slot`;
     if (frame.k === 'block') return `${frame.cell.label} block`;
     if (frame.k === 'history') return frame.row.label;
@@ -2238,10 +2166,9 @@ function boot(root, data, callbacks, signal) {
       ? queueMeta(findings, selectedChips, eventChartsOnly)
       : f.k === 'history' ? `${f.row.support} meal run${f.row.support === 1 ? '' : 's'}`
       : f.k === 'factor'
-        ? (settled()
-          ? (() => { const sc = scopedFor(f); return `${sc.occurrences.length} of ${sc.familyN} · ${scopeLabel()}`; })()
-          // counting the new window: the old numbers are not this window's
-          : scopeLabel())
+        ? (f.caseFile
+          ? `${f.caseFile.summary.claimed} of ${f.caseFile.summary.denominator} · ${f.caseFile.window.label || '24 h'}`
+          : 'Opening case file…')
         /* #735 — this used to read `N staged`, which put the deleted header's exact
            words back on screen beside the dock's `Plan · staged` (term 47: two
            claims about one object). Every sibling level's meta names its OWN
@@ -2250,7 +2177,7 @@ function boot(root, data, callbacks, signal) {
           // every parameter's meta names its OWN denominator and run
           : f.k === 'block' ? `${f.cell.block.n_runs} meal runs · ${f.cell.block.n_meals} meals`
             : f.k === 'isf' ? `${isf.estimate.n.toLocaleString()} correction steps`
-              : (tierOf(f.occ) || 'unclassified');
+              : '';
   }
 
   /** Exactly one level renders into #level; the previous one is discarded. */
@@ -2311,6 +2238,7 @@ function boot(root, data, callbacks, signal) {
         notice.textContent = retirementNotice;
         host.prepend(notice);
       }
+      appendCaseError(host);
       host.scrollTop = queueScrollTop;
       return;
     }
@@ -2341,59 +2269,32 @@ function boot(root, data, callbacks, signal) {
       });
       return;
     }
-    // 'factor' is the only remaining frame kind: the finding case file.
-    /* The reader STAYS on the finding when the window stops holding its row —
-       the alternative was a browser-side fallback filter, which is the thing
-       ADR 62 part 6 retires. Both panes say the same words. */
-    if (!findingRowFor(f)) {
-      host.insertAdjacentHTML('beforeend',
-        '<div class="empty">No findings in the selected window</div>');
+    // 'factor' is the only remaining frame kind: render only the retained
+    // server-owned case. A pending replacement never clears the old one.
+    if (!f.caseFile) {
+      host.insertAdjacentHTML('beforeend', `<div class="empty">${f.loading
+        ? 'Opening case file…' : 'Case file unavailable.'}</div>`);
+      appendCaseError(host);
       return;
     }
-    const { occurrences, familyN } = scopedFor(f);
-    const clock = occurrences.length ? clockBuckets(occurrences) : null;
-    renderFactorHead(host, f.factor, occurrences, familyN, scopeLabel(), clock, lane, pickCell,
-      icBlocks, pickBlock);
-
-    /* THE VERDICT BAND (ADR 31 part 4, ADR 41). Its counts come straight off
-       the published finding row's `verdict_counts` — the frontend labels the
-       five anchor states, it never counts or classifies into them (ADR 31
-       part 6). Drilling a segment scopes the ROSTER only (ADR 31 part 5): the
-       canvas above keeps plotting every occurrence regardless of `bandVerdict`. */
-    const row = findingRowFor(f);
-    renderVerdictBand(host, row, f.factor.family, f.bandVerdict, (v) => {
-      f.bandVerdict = f.bandVerdict === v ? null : v;
-      // a selection that falls outside the newly scoped roster cannot stand
-      if (f.selectedOcc && f.bandVerdict
-        && verdictForOcc(row, f.factor, f.selectedOcc) !== f.bandVerdict) {
-        f.selectedOcc = null;
-      }
-      paint();
-    });
-
-    const scoped = rosterFor(f);
-    // the roster's own verdict — the drilled segment, or `fired` at rest — is
-    // ONE published category, named once as the group header (never derived,
-    // just looked up in the same band vocabulary renderVerdictBand uses).
-    const rosterVerdict = f.bandVerdict || 'fired';
-    const verdictLabel = VERDICT_BAND_KEY[rosterVerdict] || rosterVerdict;
-    // the numeric columns are captioned once, at the level — not per group
-    host.insertAdjacentHTML('beforeend',
-      `<div class="lvl-cap">Occurrences
-        <span class="meta">entry → worst · Δ &nbsp;·&nbsp; ${scoped.length} of ${familyN} in ${scopeLabel()}</span></div>`);
-    renderEvidence(host, f.factor, scoped, verdictLabel, selectOcc,
+    const caseFile = f.caseFile;
+    renderCaseHead(host, caseFile, lane, pickCell, icBlocks, pickBlock);
+    renderVerdictBand(host, { verdict_counts: caseFile.verdict_counts }, caseFile.family,
+      f.bandVerdict, (verdict) => {
+        f.bandVerdict = f.bandVerdict === verdict ? null : verdict;
+        const selectedVerdict = caseFile.selection.state === 'selected'
+          ? caseFile.selection.detail.verdict : null;
+        if (f.bandVerdict && selectedVerdict && selectedVerdict !== f.bandVerdict) {
+          requestCase(f, f.requestedAlignment, null);
+          return;
+        }
+        paint();
+      });
+    renderCaseRoster(host, caseFile, f.bandVerdict || 'fired', f.selectedId, selectOcc,
       () => { shownRows = shownRows > EVIDENCE_CAP ? EVIDENCE_CAP : Infinity; paint(); },
-      shownRows, f.selectedOcc);
-
-    /* SELECT-IN-PLACE (P35 retired): the selected row's detail mutates the
-       standing screen right here, under the roster it belongs to — never a
-       pushed level. P24/P25 (kept, re-homed) step it through `scoped`, the
-       roster the band's current drill actually shows. */
-    if (f.selectedOcc && scoped.includes(f.selectedOcc)) {
-      const at = scoped.indexOf(f.selectedOcc);
-      renderOccurrenceDetail(host, f.selectedOcc, f.factor, Boolean(day.days[f.selectedOcc.date]),
-        at, scoped.length, () => callbacks.day?.(f.selectedOcc));
-    }
+      shownRows);
+    renderCaseSelection(host, caseFile, (detail) => callbacks.day?.(detail));
+    appendCaseError(host);
   }
 
   // Esc and the chip's × both mean "restore the last preset" — which is an
@@ -2617,27 +2518,10 @@ function boot(root, data, callbacks, signal) {
   }
 
   function paint() {
-    ensureFindings();
-    /* A finding whose row left the window publishes no population, so there is
-       nothing for the lens to re-project, and neither does a frame whose event
-       view's family holds none of this window's evidence: the event canvas
-       would draw the window's own population beside a panel listing none of it,
-       which is the two panes disagreeing without saying so. The frame keeps the
-       reader; the canvas goes back to the clock and states what the panel does. */
+    ensurePreparation();
     const open = top();
-    const openCoordinate = open.k === 'factor' && settled()
-      ? eventChartCoordinate(findingRowFor(open)) : null;
-    if (open.k === 'factor' && !open.entryAlignResolved) {
-      open.align = open.entryEventRequested && openCoordinate ? 'event' : 'clock';
-      open.entryAlignResolved = true;
-    }
-    if (open.k === 'factor' && open.align === 'event' && !openCoordinate) open.align = 'clock';
-    /* The mounted event surface owns both the visible canvas and the shared
-       header until its replacement projection lands. Repainting the hidden
-       clock canvas in between would write its header fields while the event
-       markup is mounted. Navigation that ends event ownership releases it
-       first, so the clock repaint starts with its own header restored. */
-    const ownsAlign = (open.k === 'factor' && open.align === 'event' && openCoordinate)
+    const ownsAlign = (open.k === 'factor'
+      && open.caseFile?.projection?.alignment === 'event')
       || (open.k === 'history' && open.align === 'event');
     if (alignMount && !ownsAlign) disposeAlign();
     paintFilter();
@@ -2677,21 +2561,24 @@ function boot(root, data, callbacks, signal) {
     const f = top();
     if (ev.key === 'Backspace' && stack.length > 1) {
       ev.preventDefault();
+      ++caseGeneration;
+      ++historyRequestGeneration;
+      pendingKey = null;
       filterOpen = false;
       dir = 'pop';
       stack.pop();
       paint();
       return;
     }
-    if (f.k !== 'factor' || !f.selectedOcc
+    if (f.k !== 'factor' || !f.selectedId
       || (ev.key !== 'ArrowLeft' && ev.key !== 'ArrowRight')) return;
-    const siblings = rosterFor(f);   // the band's current drill, same list the roster shows
-    const at = siblings.indexOf(f.selectedOcc);
+    const siblings = f.caseFile.occurrences
+      .filter((row) => row.verdict === (f.bandVerdict || 'fired'));
+    const at = siblings.findIndex((row) => row.id === f.selectedId);
     const next = at + (ev.key === 'ArrowRight' ? 1 : -1);
     if (at < 0 || next < 0 || next >= siblings.length) return;
     ev.preventDefault();
-    f.selectedOcc = siblings[next];   // same frame, next reading — the panel and
-    paint();                          // the day trace both follow from the frame
+    requestCase(f, f.requestedAlignment, siblings[next].id);
   }, { signal });   // PORT: abortable
 
   observeResize(el('chart'), () => chart);
@@ -2699,14 +2586,15 @@ function boot(root, data, callbacks, signal) {
   document.addEventListener('pointerdown', (ev) => {
     if (filterOpen && !el('filter-wrap')?.contains(ev.target)) closeFilter();
   }, { signal });
-  // Capture makes menu Escape win before the drawn-window Escape listener.
   document.addEventListener('keydown', (ev) => {
     if (ev.key !== 'Escape' || !filterOpen) return;
     ev.preventDefault();
     ev.stopImmediatePropagation();
     closeFilter({ restoreFocus: true });
   }, { capture: true, signal });
-  paint();
+  const initialFrame = top();
+  if (initialFrame.k === 'factor') requestCase(initialFrame, 'clock');
+  else paint();
   // the brace can only be placed once the chart has its first measured width
   requestAnimationFrame(paintBrace);
   /* The mock reaches Day through a dead button; the app has a real Day surface,

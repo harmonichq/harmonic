@@ -273,6 +273,31 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
     if (selectedRunId) params.set('selected_run_id', selectedRunId);
     return api('/diagnose/carb-ratio-history/events?' + params.toString());
   }
+  /**
+   * GET /diagnose/finding-case-file-preparation — one retained server-owned
+   * Finding generation. The optional clock window is the preparation's only
+   * membership coordinate; history selection passes through to the wrapped queue.
+   */
+  function fetchDiagnoseFindingCasePreparation(window = null, selectedHistoryId = null) {
+    const params = new URLSearchParams();
+    if (window) {
+      params.set('start_min', window.start_min);
+      params.set('end_min', window.end_min);
+    }
+    if (selectedHistoryId) params.set('selected_id', selectedHistoryId);
+    const query = params.toString();
+    return api('/diagnose/finding-case-file-preparation' + (query ? '?' + query : ''));
+  }
+  /**
+   * GET /diagnose/finding-case-file — project one retained Finding population.
+   * All identifiers are opaque transport coordinates; the browser never parses
+   * or reconstructs them.
+   */
+  function fetchDiagnoseFindingCase({ projection_id, finding_id, alignment, occ } = {}) {
+    const params = new URLSearchParams({ projection_id, finding_id, alignment });
+    if (occ) params.set('occ', occ);
+    return api('/diagnose/finding-case-file?' + params.toString());
+  }
   function fetchAuditDismissals() { return api('/audit/dismissals'); }
   function dismissAuditItem(item_id, evidence_fingerprint) {
     return api('/audit/dismissals', { method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -439,6 +464,8 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
     fetchDiagnoseEventComparison,
     fetchDiagnoseFindings,
     fetchDiagnoseCarbRatioHistoryEvents,
+    fetchDiagnoseFindingCasePreparation,
+    fetchDiagnoseFindingCase,
     fetchAuditDismissals,
     dismissAuditItem,
     fetchTimeline,
@@ -484,6 +511,8 @@ export const fetchDiagnoseEventComparison = _defaults.fetchDiagnoseEventComparis
 export const fetchDiagnoseFindings = _defaults.fetchDiagnoseFindings;
 export const fetchDiagnoseCarbRatioHistoryEvents =
   _defaults.fetchDiagnoseCarbRatioHistoryEvents;
+export const fetchDiagnoseFindingCasePreparation = _defaults.fetchDiagnoseFindingCasePreparation;
+export const fetchDiagnoseFindingCase = _defaults.fetchDiagnoseFindingCase;
 export const fetchAuditDismissals = _defaults.fetchAuditDismissals;
 export const dismissAuditItem = _defaults.dismissAuditItem;
 export const fetchTimeline     = _defaults.fetchTimeline;

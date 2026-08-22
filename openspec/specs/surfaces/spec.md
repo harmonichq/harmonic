@@ -36,6 +36,24 @@ generation-mismatched, or superseded requests preserve the last coherent
 inspector/canvas pair; after one automatic coordinated retry, the surface marks it
 stale and offers one explicit Retry instead of clearing or mixing evidence.
 
+### Requirement: Diagnose renders Finding case files without browser-owned policy.
+
+Diagnose loads the server-owned case-file preparation and renders its exact rows.
+Opening any visible behavioral Finding, changing its clock window or alignment,
+or selecting an Occurrence sends the retained `projection_id` and opaque
+coordinates to the case-file endpoint. The Inspector renders the returned header,
+authoritative counts, full roster, 12-bucket clock, five event cohorts, selection,
+and selected trace without mapping titles to Exposure families, joining a second
+population, recounting cohorts, or falling back from event to clock alignment.
+
+An active failed request preserves the last internally consistent queue,
+Inspector, and canvas while showing the structured error. On `stale_projection`,
+the replacement preparation and replacement case are built in shadow state and
+all three surfaces swap only after both succeed. Responses superseded by newer
+coordinates are discarded by generation and projection/Finding identity. Initial
+load failure, queue-level refresh failure, case failure after refresh, and a valid
+unavailable selection remain distinct visible states.
+
 ### Requirement: Plan surface asks "what will I program into my pump?"
 
 The Plan surface holds a unified ≤16-segment pump-ready schedule built from the user's currently-active profile plus any accepted Diagnose recommendations and hand-edits. It shows the active profile as a reference, lists the accepted changes with provenance, and renders the editable deliverable. Plan reconciliation compares the deliverable to the latest detected pump profile to confirm it matches or flag keying errors. Users cannot stage changes directly on Plan; they stage from Diagnose and edit the deliverable here.

@@ -942,6 +942,11 @@ class ApiAuthTest(unittest.TestCase):
                             headers={"Authorization": "Bearer s3cret"})
         self.assertEqual(r.status_code, 200)
 
+    def test_finding_case_file_validation_js_is_public_javascript(self):
+        r = self.client.get("/finding-case-file-validation.js")
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r.headers["content-type"].startswith("text/javascript"))
+
     def test_fetch_requires_token_before_any_pull(self):
         # Wrong token must 401 before the route ever attempts a live fetch.
         self.assertEqual(self.client.post("/fetch").status_code, 401)

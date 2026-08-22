@@ -30,11 +30,17 @@ from typing import Optional
 
 from . import credentials
 from .analyze import analyze
+from .analyzers.scenario.levers import Lever
 from .config import resolve_runtime_configuration
 from .event_comparison import ComparisonQuery, prepare_event_comparisons
 from .explore_time_of_day import build_time_of_day
 from .events import CarbEntry, parse_t
+from . import findings_projection as findings_projection_module
 from .findings_projection import UnknownHistorySelection, prepare_findings_projection
+from .finding_case_file import (
+    prepare as prepare_finding_cases,
+    wrap as wrap_finding_cases,
+)
 from .ic_history import InvalidIcHistoryId, InvalidIcRunId
 from .ic_history_events import (
     HistoryAgedOut,
@@ -89,8 +95,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         import asyncio
         import contextlib
 
-        from fastapi import Body, Depends, FastAPI, Header, HTTPException
-        from fastapi.responses import FileResponse
+        from fastapi import Body, Depends, FastAPI, Header, HTTPException, Request
+        from fastapi.responses import FileResponse, JSONResponse
     except ImportError as e:  # pragma: no cover - depends on the optional extra
         raise RuntimeError(
             "The HTTP API needs the 'api' extra: `uv sync --extra api` "
@@ -98,6 +104,10 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         ) from e
 
     configuration = resolve_runtime_configuration(DEFAULT_DB, credentials.DEFAULT_KEY_PATH)
+    # ``from __future__ import annotations`` defers local FastAPI imports.  Publish
+    # Request for FastAPI's signature resolver so these raw-query routes cannot
+    # degrade into a default 422 validation error.
+    globals()["Request"] = Request
     db_path = db_path or configuration.db_path
     token = token if token is not None else configuration.api_token
     key_path = key_path or configuration.secret_key_path
@@ -128,6 +138,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     # keeps two-DB tests isolated. See ADR 0035.
     cache = ResultCache(incarnation=analysis_incarnation)
     app.state.result_cache = cache
+    app.state.finding_case_file_before_commit = None
 
     def event_comparison_preparation():
         """One fixed-window source/classifier preparation per cache version."""
@@ -153,6 +164,58 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 return findings, events
 
         return cache.stable_read(("findings-history-snapshot", window), compute)
+
+    def _case_error(status, code, message):
+        return JSONResponse(
+            status_code=status,
+            content={"detail": {"code": code, "message": message}},
+        )
+
+    def _case_params(request, case=False):
+        allowed = (
+            {"projection_id", "finding_id", "alignment", "occ"}
+            if case else {"start_min", "end_min", "selected_id"}
+        )
+        params = request.query_params
+        if any(key not in allowed or len(params.getlist(key)) != 1 for key in params):
+            raise ValueError("unknown or repeated query parameter")
+        if case:
+            pid = params.get("projection_id")
+            finding = params.get("finding_id")
+            alignment = params.get("alignment")
+            occ = params.get("occ")
+            valid_findings = {f"finding:{lever.value}" for lever in Lever}
+            if (not isinstance(pid, str) or not re.fullmatch(r"fp_[0-9a-f]{32}", pid)
+                    or finding not in valid_findings
+                    or alignment not in {"clock", "event"}
+                    or (occ is not None and not re.fullmatch(r"o_[0-9a-f]{32}", occ))):
+                raise ValueError("malformed case-file coordinate")
+            return pid, finding, alignment, occ
+        start, end = params.get("start_min"), params.get("end_min")
+        selected_id = params.get("selected_id")
+        if (start is None) != (end is None):
+            raise ValueError("a window needs both start_min and end_min, or neither")
+        if start is None:
+            return WindowQuery.whole_day(), selected_id
+        if not start.isdecimal() or not end.isdecimal():
+            raise ValueError("window coordinates must be decimal minutes")
+        return WindowQuery.clock(int(start), int(end)), selected_id
+
+    def _prepared_cases(query, selected_id):
+        key = ("finding-case-file", query.start_min, query.end_min, selected_id)
+        def build(version):
+            with Store.open_queryonly(db_path) as store:
+                return prepare_finding_cases(
+                    store, query=query, version=version, selected_id=selected_id,
+                    analysis_generation=cache.generation_for_version(version),
+                )
+        def before_commit():
+            hook = app.state.finding_case_file_before_commit
+            if hook is not None:
+                hook()
+        return cache.get_or_build_preparation(
+            key, build, before_commit=before_commit,
+        )
 
     def require_token(authorization: str = Header(default="")) -> None:
         if token and authorization != f"Bearer {token}":
@@ -202,6 +265,11 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     @app.get("/diagnose-workstation-data.js")
     def diagnose_workstation_data_js() -> FileResponse:
         return FileResponse(_FRONTEND_DIR / "diagnose-workstation-data.js",
+                            media_type="text/javascript")
+
+    @app.get("/finding-case-file-validation.js")
+    def finding_case_file_validation_js() -> FileResponse:
+        return FileResponse(_FRONTEND_DIR / "finding-case-file-validation.js",
                             media_type="text/javascript")
 
     @app.get("/diagnose-findings-queue.js")
@@ -507,13 +575,18 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         view: Optional[str] = None, factor: Optional[str] = None,
         start_min: Optional[int] = None, end_min: Optional[int] = None,
         block: Optional[str] = None, occ: Optional[str] = None, another: str = "0",
-        window: int = 30, _: None = Depends(require_token),
+        window: int = findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS,
+        _: None = Depends(require_token),
     ) -> dict:
         """Evidence-only Meals and Lows cohorts for the Diagnose lenses."""
-        if window != 30 or view not in {"meals", "lows"}:
+        if (window != findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS
+                or view not in {"meals", "lows"}):
             raise HTTPException(
                 status_code=400,
-                detail="event comparison requires meals or lows in its fixed 30-day window",
+                detail=(
+                    "event comparison requires meals or lows in its fixed "
+                    f"{findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS}-day window"
+                ),
             )
         if another not in {"0", "1"}:
             raise HTTPException(status_code=400, detail="another must be 0 or 1")
@@ -536,7 +609,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     @app.get("/diagnose/findings")
     def diagnose_findings_endpoint(
         start_min: Optional[int] = None, end_min: Optional[int] = None,
-        window: int = 30, selected_id: Optional[str] = None,
+        window: int = findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS,
+        selected_id: Optional[str] = None,
         _: None = Depends(require_token),
     ) -> dict:
         """The Diagnose findings queue for one clock window (#730).
@@ -630,6 +704,51 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 "code": "analysis_generation_mismatch",
                 "message": "Evidence changed. Refresh findings.",
             }) from error
+
+    @app.get("/diagnose/finding-case-file-preparation")
+    def finding_case_file_preparation(request: Request, _: None = Depends(require_token)):
+        try:
+            query, selected_id = _case_params(request)
+        except ValueError as error:
+            return _case_error(400, "invalid_request", str(error))
+        try:
+            prepared, reason = _prepared_cases(query, selected_id)
+            if reason == "capacity":
+                return _case_error(503, "preparation_capacity", "All preparations are leased.")
+            if reason == "changed":
+                return _case_error(503, "preparation_changed", "Data changed during preparation.")
+            return wrap_finding_cases(prepared)
+        except InvalidIcHistoryId as error:
+            return _case_error(400, "invalid_history_id", str(error))
+        except UnknownHistorySelection:
+            return _case_error(404, "history_not_found", "Past-setting evidence was not found.")
+        except Exception:
+            logger.exception("Finding case-file preparation was inconsistent")
+            return _case_error(500, "inconsistent_projection", "Case population is inconsistent.")
+
+    @app.get("/diagnose/finding-case-file")
+    def finding_case_file(request: Request, _: None = Depends(require_token)):
+        try:
+            projection_id, finding_id, alignment, occ = _case_params(request, True)
+        except ValueError as error:
+            return _case_error(400, "invalid_request", str(error))
+        prepared = cache.acquire_preparation(projection_id)
+        if prepared is None:
+            return _case_error(409, "stale_projection", "Preparation is unavailable.")
+        try:
+            result = prepared.case(finding_id, alignment, occ)
+            if result is None:
+                return _case_error(
+                    404, "finding_unavailable", "Finding has no inspectable member."
+                )
+            # JSONResponse renders ``body`` in its constructor, while the pin is held.
+            response = JSONResponse(result)
+            return response
+        except Exception:
+            logger.exception("Finding case-file projection was inconsistent")
+            return _case_error(500, "inconsistent_projection", "Case population is inconsistent.")
+        finally:
+            cache.release_preparation(prepared)
 
     @app.get("/audit/dismissals")
     def audit_dismissals_endpoint(_: None = Depends(require_token)) -> dict:

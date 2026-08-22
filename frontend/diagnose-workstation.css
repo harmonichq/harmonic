@@ -661,6 +661,11 @@ html.dark .dw {
   border-bottom: 1px solid color-mix(in srgb, var(--ck-hair) 60%, transparent);
 }
 .empty { padding: var(--ck-pad); color: var(--mk-muted); font-size: 11.5px; }
+.case-file-error {
+  margin: 10px var(--ck-pad); padding: 9px 10px;
+  border-left: 3px solid var(--mk-danger); background: var(--mk-danger-soft);
+  color: var(--mk-danger); font-size: 11.5px; line-height: 1.45;
+}
 
 /* ======================================================================
    #735 — the findings queue (terms 34–45) and the watched-change dock

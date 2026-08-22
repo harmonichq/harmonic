@@ -22,6 +22,24 @@ Both flavors compose Priority identically as `100 · √(impact · recurrence)`,
 
 Exposure is the denominator an episode counts against — "all meals," "all lows," "all correction pairs," "all highs" — paired to each lever by its nature (a meal lever like carb undercount exposes against meals; a low lever like over-treated low exposes against lows). A Pattern groups episodes by their attributed Lever and scores against that lever's exposure. Cause is an internal construct for attribution — the early driver logic that picks the one lever each episode will carry — but a Cause is never surfaced as something a user changes. The recommendation always flows from the attributed Lever, never from the internal cause reasoning.
 
+### Requirement: One canonical opportunity population owns every Finding case file.
+
+The layer builds identity-bearing opportunities for the four declared Exposure
+families: meals, sub-70 runs, adjacent correction pairs, and >250 runs. Exposure
+counts and Finding case files consume those same opportunity objects. Every
+attributed Lever instance must associate with one opportunity in its declared
+Exposure; a caused-low split associates its rebound High back to the source Low.
+If an attribution cannot be associated without inventing membership, that Finding
+is withheld rather than published as inspectable.
+
+A case-file population owns its denominator, attributed count, verdict counts,
+complete Occurrence roster, clock membership, selection, and event projection.
+Clock membership uses the Finding-relative outcome time, including the linked
+rebound time for a caused Low. Event alignment reprojects that exact roster into
+the five server-declared cohorts; it never substitutes the broader Explore feed.
+Correction-cluster and High projections use this same contract without changing
+classifier thresholds, support floors, or the legacy event-comparison contract.
+
 ### Requirement: The layer refuses to assert on insufficient evidence and surfaces why.
 
 No judgment fires without a verdict grounded in data — either observed (a hard fact from the feed, like a bolus of 10 U) or inferred (shape-derived and hedged, like "likely rescue carbs, but we didn't see them"). A classifier never returns "this might maybe be late" — it returns matched=false with the specific silence reason (insufficient data / no trigger / under threshold / upstream cause / prior high baseline / owned by prior bolus / horizon expired). When enough clean windows exist to measure a pattern's rate via Wilson bounds, the bounds are wide enough to name the uncertainty honestly; when data is too thin, the pattern collapses behind an expander so no single rate gets fabricated from noise.

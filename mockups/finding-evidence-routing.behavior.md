@@ -1768,10 +1768,10 @@ unchanged.
 S34 now enters directly from Event charts: a failed event-comparison request
 still restores By clock, keeps the reader on the same Finding, and preserves the
 root View. S38 now starts from direct By-event entry, then changes to a window
-where the same live row remains but its canonical event family is absent. The
-case stays open, disposes the event canvas, returns By clock, and hides Align.
-Back shows the row absent from Event charts and still reachable under All
-findings; no stale frame coordinate or browser-side fallback manufactures an
+where the same live row remains but its separate Findings projection has no
+canonical event family. The retained case preparation keeps its server-owned
+ALIGN path and coherent event canvas, so Back keeps the row reachable in Event
+charts according to that preparation. No browser-side fallback manufactures an
 event chart.
 
 **Behavior added — five issue-scoped #86 probes (historically `S48` to `S52`
@@ -1786,8 +1786,9 @@ issue86DirectEntryRestoration · Event charts drill-in opens directly By event; 
       returning restores View, window, order, scroll and a closed Filter menu
 issue86PendingRoot · a pending root projection retains enabled Sift/View selections while
       withholding old rows, row counts and Sift counts
-issue86MalformedRecovery · a malformed event-comparison response is rejected before render and
-      restores By clock without losing the Finding, window or root View
+issue86MalformedRecovery · a malformed direct By-event response exposes an inconsistent-projection
+      error without rendering event or fallback clock evidence; it keeps the Finding, 24 h window,
+      requested By event state, and Event charts root View on return
 ```
 
 The generated findings fixture publishes the canonical factor-to-coordinate
@@ -1804,3 +1805,45 @@ reported **21 passed, 0 failed**; the cockpit-shell suite reported **12 passed,
 legs passed. In the reconciled ledger the app replay remains ticket 10's frozen
 **74 stories**; the five discovery probes run from the browser suite under the
 issue-scoped names above and do not occupy or reinterpret S48–S52.
+## Revision — ADR 79: server-owned Finding case files
+
+The Finding drill now consumes one retained preparation and independently
+serialized case-file responses. The browser does not route a title to an
+Exposure, join membership, count a cohort, or fall back from event to clock.
+The legacy standalone event-comparison route remains unchanged.
+
+The app replay adds these closed stories:
+
+- `C41` renders the generated authoritative Meal over-delivery case with
+  `claimed < fired`, a nonempty roster, the server's exact twelve clock
+  buckets, and all five verdict bands summing to the published case denominator.
+- `C42` opens every visible behavioral row by its published Finding id.
+- `C43` selects a correction-pair Occurrence in By event and preserves both
+  source corrections.
+- `C44` uses one story-scoped generated preparation pose for **Meal bolus fell
+  short**, then opens its server-owned High coordinate, enters By event, and
+  selects its authoritative trace and event markers without changing the
+  ordinary roster.
+- `C45` visibly distinguishes a successful unavailable selection from failure.
+- `C46` preserves the prior inspector and clock canvas on an active structured
+  case error.
+- `C47` holds a stale replacement preparation and case in shadow, then swaps
+  queue, inspector, and event canvas atomically after both succeed.
+- `C48` preserves the old generation when the unavailable-Finding queue refresh
+  fails.
+- `C49` preserves the old generation when the refreshed shadow case fails.
+- `C50` and `C51` discard a superseded response during each shadow leg.
+- `C52` refreshes the queue after `finding_unavailable` while preserving the
+  previous inspector/canvas pair until the reader returns to the queue.
+- `C53` rejects a current-generation case whose preparation or Finding identity
+  does not match the active drill, preserving the old generation.
+- `C54` keeps a queue-level preparation failure visible through the structured
+  error envelope while preserving the old queue.
+- `C55` proves an Occurrence selection superseding an in-flight window
+  preparation restarts and settles the retained preparation/case handshake.
+
+The generator-owned capture contains canonical meal, Low, adjacent correction-
+pair, and High opportunity populations; near-low withholding, caused-low
+rebound outcome time, selected correction/High traces, and five exact Finding
+cohorts are serialized through the backend case-file module. Preparation and
+case handlers cross separate JSON boundaries from that retained capture.

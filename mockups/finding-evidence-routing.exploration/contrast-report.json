@@ -29,8 +29,8 @@
    "ceiling": null
   },
   "F7 .fer-tier noted · light": {
-   "ratio": 7.54,
-   "ink": "#4a534a",
+   "ratio": 7.37,
+   "ink": "#3d5848",
    "ground": "#faf8f4",
    "floor": 4.5,
    "ceiling": null
@@ -63,30 +63,9 @@
    "floor": 4.5,
    "ceiling": null
   },
-  "F7 .ev-row .arrow · light": {
-   "ratio": 5.54,
-   "ink": "#626561",
-   "ground": "#faf8f4",
-   "floor": 4.5,
-   "ceiling": null
-  },
   "F7 .ev-row .when · light": {
-   "ratio": 7.54,
-   "ink": "#4a534a",
-   "ground": "#faf8f4",
-   "floor": 4.5,
-   "ceiling": null
-  },
-  "F7 .ev-row .entry · light": {
-   "ratio": 6.66,
-   "ink": "#4d5c53",
-   "ground": "#faf8f4",
-   "floor": 4.5,
-   "ceiling": null
-  },
-  "F7 .ev-row .delta · light": {
-   "ratio": 7.54,
-   "ink": "#4a534a",
+   "ratio": 7.37,
+   "ink": "#3d5848",
    "ground": "#faf8f4",
    "floor": 4.5,
    "ceiling": null
@@ -99,8 +78,8 @@
    "ceiling": null
   },
   "F7 .ec-key-item small · light": {
-   "ratio": 7.54,
-   "ink": "#4a534a",
+   "ratio": 7.37,
+   "ink": "#3d5848",
    "ground": "#faf8f4",
    "floor": 4.5,
    "ceiling": null
@@ -148,8 +127,8 @@
    "ceiling": null
   },
   "F7 crumb root button · light": {
-   "ratio": 7.54,
-   "ink": "#4a534a",
+   "ratio": 7.37,
+   "ink": "#3d5848",
    "ground": "#faf8f4",
    "floor": 4.5,
    "ceiling": null
@@ -162,15 +141,15 @@
    "ceiling": null
   },
   "F7 .fer-sel .chev · light": {
-   "ratio": 7.54,
-   "ink": "#4a534a",
+   "ratio": 7.37,
+   "ink": "#3d5848",
    "ground": "#faf8f4",
    "floor": 4.5,
    "ceiling": null
   },
   "F7 .fer-head-key legend text · light": {
-   "ratio": 6.89,
-   "ink": "#4a534a",
+   "ratio": 6.73,
+   "ink": "#3d5848",
    "ground": "#f0eee8",
    "floor": 4.5,
    "ceiling": null
@@ -308,28 +287,7 @@
    "floor": 4.5,
    "ceiling": null
   },
-  "F7 .ev-row .arrow · dark": {
-   "ratio": 6.04,
-   "ink": "#a69f97",
-   "ground": "#262220",
-   "floor": 4.5,
-   "ceiling": null
-  },
   "F7 .ev-row .when · dark": {
-   "ratio": 5.47,
-   "ink": "#a3968a",
-   "ground": "#262220",
-   "floor": 4.5,
-   "ceiling": null
-  },
-  "F7 .ev-row .entry · dark": {
-   "ratio": 5.72,
-   "ink": "#a89a85",
-   "ground": "#262220",
-   "floor": 4.5,
-   "ceiling": null
-  },
-  "F7 .ev-row .delta · dark": {
    "ratio": 5.47,
    "ink": "#a3968a",
    "ground": "#262220",
@@ -497,7 +455,7 @@
    "h": 24
   },
   "F8 .fer-coincide .linkbtn · light 1280x800": {
-   "w": 180.5,
+   "w": 180.1,
    "h": 25
   },
   "F8 .more expander · light 1280x800": {
@@ -537,7 +495,7 @@
    "h": 24
   },
   "F8 .fer-coincide .linkbtn · light 1440x900": {
-   "w": 180.5,
+   "w": 180.1,
    "h": 25
   },
   "F8 .more expander · light 1440x900": {
@@ -577,7 +535,7 @@
    "h": 24
   },
   "F8 .fer-coincide .linkbtn · dark 1280x800": {
-   "w": 180.5,
+   "w": 180.1,
    "h": 25
   },
   "F8 .more expander · dark 1280x800": {
@@ -617,7 +575,7 @@
    "h": 24
   },
   "F8 .fer-coincide .linkbtn · dark 1440x900": {
-   "w": 180.5,
+   "w": 180.1,
    "h": 25
   },
   "F8 .more expander · dark 1440x900": {
@@ -655,7 +613,7 @@
  },
  "overflow": {
   "light 1280x800 · queue": {
-   "level": 0,
+   "level": 144,
    "pageY": 0,
    "pageX": 0
   },
@@ -910,7 +868,7 @@
    "pageX": 0
   },
   "light 1440x900 · queue": {
-   "level": 0,
+   "level": 50,
    "pageY": 0,
    "pageX": 0
   },
@@ -1165,7 +1123,7 @@
    "pageX": 0
   },
   "dark 1280x800 · queue": {
-   "level": 0,
+   "level": 144,
    "pageY": 0,
    "pageX": 0
   },
@@ -1420,7 +1378,7 @@
    "pageX": 0
   },
   "dark 1440x900 · queue": {
-   "level": 0,
+   "level": 50,
    "pageY": 0,
    "pageX": 0
   },

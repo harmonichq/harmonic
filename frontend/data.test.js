@@ -222,6 +222,20 @@ test('fetchDiagnoseEventComparison builds one coordinate-owned projection reques
     '/diagnose/event-comparison?view=lows&factor=correction_on_iob&start_min=1320&end_min=120&another=1&occ=lows-42');
 });
 
+test('fetchDiagnoseFindings omits selection when no history identity is supplied', async () => {
+  const { fetch, calls } = makeFakeFetch({ schema: 'diagnose-findings-v2' });
+  await makeDeps({ fetch }).fetchDiagnoseFindings();
+  assert.equal(calls[0].url, '/diagnose/findings');
+});
+
+test('fetchDiagnoseFindings carries an optional selected history identity', async () => {
+  const { fetch, calls } = makeFakeFetch({ schema: 'diagnose-findings-v2' });
+  await makeDeps({ fetch }).fetchDiagnoseFindings(
+    { start_min: 1320, end_min: 120 }, 'ich1_WzAsNzIwLCI2Il0');
+  assert.equal(calls[0].url,
+    '/diagnose/findings?start_min=1320&end_min=120&selected_id=ich1_WzAsNzIwLCI2Il0');
+});
+
 test('history events carries the findings generation and optional run selection', async () => {
   const { fetch, calls } = makeFakeFetch({
     schema: 'diagnose-carb-ratio-history-events-v1', series: [],

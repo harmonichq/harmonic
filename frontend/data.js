@@ -251,13 +251,15 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
    * merged spans, outcome anchoring, window-local denominators, order — is decided
    * server-side and rendered verbatim (lock term 40).
    * @param {{ start_min: number, end_min: number }|null} [window]
+   * @param {string|null} [selectedHistoryId]
    */
-  function fetchDiagnoseFindings(window = null) {
+  function fetchDiagnoseFindings(window = null, selectedHistoryId = null) {
     const params = new URLSearchParams();
     if (window) {
       params.set('start_min', window.start_min);
       params.set('end_min', window.end_min);
     }
+    if (selectedHistoryId) params.set('selected_id', selectedHistoryId);
     const query = params.toString();
     return api('/diagnose/findings' + (query ? '?' + query : ''));
   }

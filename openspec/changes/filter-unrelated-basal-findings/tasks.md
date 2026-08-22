@@ -8,4 +8,4 @@
 - [x] Run the complete fast gate and generated-artifact drift checks.
 - [x] Replay all 45 built-app stories against the revision.
 - [x] Inspect affected states in light and dark themes and attach evidence.
-- [ ] Complete Full-depth adversarial review and open the pull request.
+- [x] Complete Full-depth adversarial review and prepare the pull request.

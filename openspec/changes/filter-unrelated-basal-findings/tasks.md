@@ -12,4 +12,4 @@
 - [x] Replace the review-rejected counting copy with an explicit loading line.
 - [x] Add a built-app proof that one synthetic population scopes from six rows to two.
 - [x] Recapture aligned light/dark loading and populated-slice evidence.
-- [ ] Re-run verification and Full-depth review after the review-round changes.
+- [x] Re-run verification and Full-depth review after the review-round changes.

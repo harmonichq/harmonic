@@ -1902,6 +1902,11 @@ class DoseStampedIcHistoryTest(unittest.TestCase):
         self.assertEqual(blocks[0].n_runs, 8)
         self.assertTrue(blocks[0].asserts_move)
         self.assertEqual(catalog[0].support, 3)
+        self.assertEqual(
+            catalog[0].annotation,
+            "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U "
+            "(CI 6–6). Past setting. No change suggested.",
+        )
 
     def test_catalog_distinguishes_active_aged_out_unavailable_and_never_publishable(self):
         first = datetime(2025, 1, 1)
@@ -1932,6 +1937,7 @@ class DoseStampedIcHistoryTest(unittest.TestCase):
         self.assertEqual([row.lifecycle for row in aged], ["aged_out"])
         self.assertIsNone(aged[0].estimate)
         self.assertIsNone(aged[0].support)
+        self.assertIsNone(aged[0].annotation)
 
         split_snaps = [self._snapshot(first, [(0, 6.0), (720, 9.0)]),
                        self._snapshot(changed, [(0, 5.0), (720, 8.0)]),

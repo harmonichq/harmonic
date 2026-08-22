@@ -5,10 +5,10 @@
 2026-08-21 for issue #81; previously `a49b6db`).
 
 The app-only replay is
-`frontend/diagnose-workstation-behavior.replay.mjs`: **45 exported stories**
+`frontend/diagnose-workstation-behavior.replay.mjs`: **46 exported stories**
 (29 through 2026-08-19; five added by the excursion-chip sift, #61, at S27-S31;
 eight added by the #62 revision below, at S32-S39; one added by #64, S40; two
-added by #81, S41-S42), all
+added by #81, S41-S43), all
 opened through the real no-fetch server and tagged
 `STORY:finding-evidence-routing:<id>`. Static HTML, CSS and JavaScript come from
 that server; deterministic API reads come from
@@ -41,12 +41,18 @@ counts. A settled projection may restore only its own counts and rows. A
 projection-backed detail whose row is absent remains open and says exactly
 `No findings in the selected window`.
 
+**Amendment · 2026-08-21 · issue #81 review.** The pending line names the
+object being loaded: `Loading findings for HH:MM–HH:MM…`. S43 proves positive
+membership as well as exclusion from the same synthetic projection: the
+whole-day queue publishes six findings, then 04:30–06:00 publishes two. The
+loading line and settled queue share the inspector content spine.
+
 Freeze command (the server must already be running through the exact safe-start
 declaration in `AGENTS.md`):
 
 ```
 PLAYWRIGHT_MODULE=/private/tmp/ciq-playwright-714/node_modules/playwright \
-VENDOR_DIR=/private/tmp/ciq-vendor-714/out BASE_URL=http://127.0.0.1:28765 \
+VENDOR_DIR=/private/tmp/ciq-vendor-714/out BASE_URL=http://127.0.0.1:31781 \
 TARGET=app PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json \
 node frontend/diagnose-workstation-behavior.replay.mjs
 ```
@@ -396,15 +402,16 @@ P19 · The queue re-scopes with the window. The whole day is the unscoped global
       unresolved or failed it carries only `HH:MM–HH:MM`.
   source:   frontend/diagnose-workstation.js:1096-1121 (ensureFindings)
   mock:     one fixture, one window
-  evidence: probe/probe2 (app: pressing Evening → meta "5 in this window";
-            pressing 24 h → "5 findings · 30 days"; a drag → same re-scope)
+  evidence: replay S43 (app: 24 h → "6 findings · 30 days"; 04:30–06:00 →
+            "2 in this window", exactly `Basal 05:30 · raise` and `ISF`)
   verdict:  kept          lock term 60 (same deferral as P18)
 ```
 
 ```
 P19b · While a window's findings are in flight the level carries
        `data-loading="true"` and every depth renders only
-       `Counting HH:MM–HH:MM…`. A failed replacement carries
+       `Loading findings for HH:MM–HH:MM…`, aligned to the inspector content
+       spine. A failed replacement carries
        `data-loading="false"` and renders only
        `Findings unavailable for HH:MM–HH:MM. Choose another window to try again.`
        Both states retain count-free enabled SIFT controls and no row,
@@ -413,7 +420,7 @@ P19b · While a window's findings are in flight the level carries
        that depth and renders only `No findings in the selected window`.
   source:   frontend/diagnose-workstation.js (projection state and paintLevel)
   mock:     no async load
-  evidence: replay S39, S41, S42 (app, pass)
+  evidence: replay S39, S41, S42, S43 (app, pass)
   verdict:  amended       issue #81 · 2026-08-21
 ```
 

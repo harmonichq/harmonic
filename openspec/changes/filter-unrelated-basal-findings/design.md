@@ -26,7 +26,8 @@ A findings projection is renderable only when its loaded request key matches the
 current findings-window key. Pending and failed replacements are inspector-wide
 states evaluated before queue or detail rendering:
 
-- Pending renders `Counting HH:MM–HH:MM…` with `data-loading="true"`.
+- Pending renders `Loading findings for HH:MM–HH:MM…` with
+  `data-loading="true"`, on the inspector content spine.
 - Failed renders `Findings unavailable for HH:MM–HH:MM. Choose another window to try again.`
   with `data-loading="false"`.
 - Both keep SIFT enabled and preserve its pressed state, but withhold SIFT and
@@ -39,7 +40,7 @@ states evaluated before queue or detail rendering:
 
 The browser never compares slot or block times to decide membership. ADR 62's
 one-population and server-ownership decision remains unchanged. The frozen
-contract is `mockups/finding-evidence-routing.behavior.md`; S41 and S42 in
+contract is `mockups/finding-evidence-routing.behavior.md`; S41 through S43 in
 `frontend/diagnose-workstation-behavior.replay.mjs` are its vertical built-app
 evidence.
 
@@ -47,11 +48,12 @@ evidence.
 
 `AGENTS.md` declares the no-fetch entrypoint and the generated synthetic
 database. Issue 81 used that command with the user's authorized port-only change
-to `28765` because ports `8765` and `18765` were occupied:
+to `28765` for the first round and `31781` for the review revision because the
+declared port was occupied:
 
 ```sh
 uv run harmonic serve --no-fetch \
-  --db mockups/revise-e2e.synthetic/harmonic.sqlite --port 28765
+  --db mockups/revise-e2e.synthetic/harmonic.sqlite --port 31781
 ```
 
 No fetch path, credential source, real database, or personal health data was
@@ -59,18 +61,23 @@ used.
 
 ### Rendered evidence
 
-The paired 1440×900 synthetic evidence is committed under
-`docs/screenshots/issue-81/`. The `base-pending-queue-*` and
-`revision-pending-queue-*` images are the strict before/after pair: both use the
-same committed synthetic projection with its `05:30` basal row, and differ only
-in the revision withdrawing that population under 15:00–21:00. The detail
-images are complementary depth coverage, not a one-variable pair: the exact-base
-generated database exposes a `07:00` basal detail while the projection fixture
-exposes `05:30`. `revision-failed-*` shows the explicit unavailable state, and
-`revision-settled-{absence-detail,queue}-*` shows the absent `05:30` detail and
-the server-published `19:30 to 21:00` basal row. Queue and open-setting depths
-were inspected in both themes. No overlap, clipping, new visual language, or
-theme drift was observed.
+The 1440×900 synthetic evidence is committed under
+`docs/screenshots/issue-81/`. The primary functional pair is
+`revision-whole-day-findings-*` and `revision-sliced-findings-*`: the same
+committed synthetic projection renders six findings at 24 hours and exactly two
+at 04:30–06:00, retaining `Basal 05:30 · raise` and `ISF` while excluding the
+other four. This proves positive sliced membership, not only an empty state.
+
+`revision-pending-{queue,detail}-*` shows the explicit
+`Loading findings for 15:00–21:00…` line at both depths. The capture waits for
+the 90 ms level transition before measuring and rendering it; its text and the
+settled queue both begin on the inspector's content spine. The earlier
+`base-pending-*` images remain historical defect evidence rather than the
+primary functionality comparison. `revision-failed-*` shows the explicit
+unavailable state, and `revision-settled-{absence-detail,queue}-*` covers the
+settled absence and the server-published evening rows. Every affected state was
+inspected in light and dark themes. No overlap, clipping, new visual language,
+or theme drift was observed.
 
 ### Consequences
 

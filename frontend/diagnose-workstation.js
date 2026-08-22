@@ -1793,7 +1793,7 @@ function boot(root, data, callbacks, signal) {
     }
     if (!settled()) {
       host.insertAdjacentHTML('beforeend',
-        `<div class="empty">Counting ${scopeLabel()}…</div>`);
+        `<div class="empty">Loading findings for ${scopeLabel()}…</div>`);
       return;
     }
     if (f.k !== 'factors' && f.k !== 'factor' && !parameterRowFor(f)) {

@@ -10,7 +10,7 @@ belongs to another clock window can mislead advisory insulin-setting review.
 
 - Treat a findings projection as renderable only when its loaded request key
   matches the current clock window.
-- Show range-only counting and unavailable states at every inspector depth,
+- Show explicit range-only loading and unavailable states at every inspector depth,
   without rows, recommendations, support, staging controls, or counts from the
   previous projection.
 - Preserve the server-published row identity for parameter details so a settled
@@ -30,3 +30,5 @@ Plan staging behavior. Membership remains server-owned under ADR 62.
 The frozen behavior ledger is
 `mockups/finding-evidence-routing.behavior.md`. Its built-app replay adds S41
 for delayed, absent, and superseded projections and S42 for failure and recovery.
+S43 proves that the settled slice retains its own matching rows by reducing the
+same synthetic population from six whole-day findings to two in 04:30–06:00.

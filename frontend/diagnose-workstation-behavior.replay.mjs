@@ -57,6 +57,12 @@ export const state = (page) => page.evaluate(() => {
   const txt = (s) => q(s)?.textContent.trim() ?? null;
   const display = (node) => node ? getComputedStyle(node).display : null;
   const rendered = (node) => node ? display(node) !== 'none' && node.getClientRects().length > 0 : false;
+  const textLeft = (node) => {
+    if (!node) return null;
+    const range = document.createRange();
+    range.selectNodeContents(node);
+    return Math.round(range.getBoundingClientRect().left);
+  };
   return {
     chip: q('#seg-window [data-follow]')?.textContent.replace('×', '').trim() || null,
     pressed: [...document.querySelectorAll('#seg-window button')]
@@ -72,6 +78,7 @@ export const state = (page) => page.evaluate(() => {
     levelWho: q('#level .who')?.innerText.replace(/\s+/g, ' ').trim() ?? null,
     levelStat: q('#level .statline')?.innerText.replace(/\s+/g, ' ').trim() ?? null,
     levelEmpty: txt('#level .empty'),
+    levelEmptyLeft: textLeft(q('#level .empty')),
     levelLoading: q('#level')?.dataset.loading ?? null,
     bandKeys: [...document.querySelectorAll('#level .vband .key .lead')].map((n) => n.textContent.trim()),
     // ALIGN's two canvases: which one is mounted, and whose header is up
@@ -154,6 +161,10 @@ export const state = (page) => page.evaluate(() => {
       tier: n.dataset.tier ?? null,
       tagX: Math.round(n.querySelector('.tag')?.getBoundingClientRect().right ?? -1),
     })),
+    queueLeft: q('#level .qrow .lab')
+      ? Math.round(q('#level .qrow .lab').getBoundingClientRect().left) : null,
+    crumbLeft: q('#crumb-trail')
+      ? Math.round(q('#crumb-trail').getBoundingClientRect().left) : null,
     queueSeam: txt('#level .tailnote'),
     queueEmpty: txt('#level .quiet-line'),
     // term 44 — no hairline between queue rows, in any state
@@ -1456,6 +1467,20 @@ const drawWindow = async (page, [fromMin, toMin], [standingFrom, standingTo]) =>
   await settle(page, 500);
 };
 
+/** Resize the public clock brace's leading edge to an exact minute. */
+const resizeWindowStart = async (page, toMin, [standingFrom, standingTo]) => {
+  const b = await plot(page);
+  const before = await state(page);
+  const perMinute = (before.gripB - before.gripA) / (standingTo - standingFrom);
+  const y = b.y + b.h * 0.5;
+  await page.mouse.move(b.x + before.gripA, y);
+  await page.mouse.down();
+  await page.mouse.move(b.x + before.gripA + (toMin - standingFrom) * perMinute, y,
+    { steps: 8 });
+  await page.mouse.up();
+  await settle(page, 500);
+};
+
 /** S32 · #57 — selecting a roster occurrence under `By event` draws it. The
     roster carries the shared (episode, instant) key; the endpoint owns its own
     opaque catalog id and reuses that pair across several occurrences, so the
@@ -1758,7 +1783,8 @@ export const S39 = async (page) => {
   const during = await state(page);
   is(during.levelLoading, 'true', 'S39 the pane declares it is waiting on the server');
   is(during.levelStat, null, "S39 the previous window's counts are withdrawn");
-  is(during.levelEmpty, 'Counting 12:00–18:00…', 'S39 the pane names the window it is counting');
+  is(during.levelEmpty, 'Loading findings for 12:00–18:00…',
+    'S39 the pane names what is loading and its window');
   is(during.crumbMeta, '12:00–18:00', 'S39 the meta prints the window with no numbers under it');
   ok(!/\b2 of 20\b/.test(JSON.stringify(during)), 'S39 no stale count survives anywhere on the pane');
   await settle(page, 1400);
@@ -1786,7 +1812,10 @@ export const S41 = async (page) => {
   await drawWindow(page, [900, 1260], [330, 360]);      // 15:00–21:00, delayed
   const pending = await state(page);
   is(pending.levelLoading, 'true', 'S41 the replacement declares loading at setting depth');
-  is(pending.levelText, 'Counting 15:00–21:00…', 'S41 only the arriving range is rendered');
+  is(pending.levelText, 'Loading findings for 15:00–21:00…',
+    'S41 names what is loading and the arriving range');
+  is(pending.levelEmptyLeft, pending.crumbLeft,
+    'S41 the loading line lands on the inspector content spine');
   is(pending.crumbMeta, '15:00–21:00', 'S41 the crumb carries the arriving range without counts');
   is(pending.stage, null, 'S41 the previous staging control is withdrawn');
   is(pending.sift.map((button) => button.text), ['Highs', 'Lows', 'Meals', 'Corrections'],
@@ -1905,6 +1934,33 @@ export const S42 = async (page) => {
     'S42 recovery paints the later window\'s server rows');
 };
 
+/** S43 · #81 review — a settled slice keeps its own matching findings rather
+    than proving exclusion only through an empty state. The same server-owned
+    projection publishes six whole-day rows and two rows for 04:30–06:00. */
+// STORY:finding-evidence-routing:S43
+export const S43 = async (page) => {
+  await page.click('#seg-window button:nth-child(5)');   // 24 h
+  await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false');
+  await settle(page, 150);                              // the level's 90 ms swap has landed
+  const wholeDay = await state(page);
+  is(wholeDay.crumbMeta, '6 findings · 30 days', 'S43 whole day publishes all six findings');
+  is(wholeDay.queue.length, 6, 'S43 whole day renders all six server rows');
+
+  await page.click('#seg-window button:nth-child(1)');   // Overnight, 00:00–06:00
+  await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false');
+  await resizeWindowStart(page, 330, [0, 360]);          // minimum-width 04:30–06:00 slice
+  await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false');
+  const sliced = await state(page);
+  is(sliced.chip, 'Window 04:30–06:00', 'S43 the public brace lands on the intended slice');
+  is(sliced.crumbMeta, '2 in this window', 'S43 the slice publishes its smaller non-empty count');
+  is(sliced.queue.map((row) => row.title), ['Basal 05:30 · raise', 'ISF'],
+    'S43 the slice keeps exactly its two server-published findings');
+  ok(!sliced.queue.some((row) => row.title === 'Basal 00:30 to 01:30 · raise'),
+    'S43 the slice excludes an unrelated whole-day basal row');
+  is(sliced.queueLeft, wholeDay.queueLeft,
+    'S43 the sliced queue stays on the same inspector content spine');
+};
+
 /* ------------------------------------------------------------------- runner */
 
 /* Discovery tags for every exported replay function above. */
@@ -1950,6 +2006,7 @@ export const S42 = async (page) => {
 // STORY:finding-evidence-routing:S40
 // STORY:finding-evidence-routing:S41
 // STORY:finding-evidence-routing:S42
+// STORY:finding-evidence-routing:S43
 // STORY:finding-evidence-routing:D1
 // STORY:finding-evidence-routing:D2
 // STORY:finding-evidence-routing:D3
@@ -1992,6 +2049,7 @@ export const STORIES = [
     findingsInputs: twoFamilyInputs,
     findingsFailures: { '900-1260': 500 },
   }],
+  ['S43', S43, 'typical', { findingsInputs: twoFamilyInputs }],
   ['D1', D1, 'dense'], ['D2', D2, 'dense'], ['D3', D3, 'dense'],
 ];
 

@@ -7,7 +7,8 @@ So every row in the committed fixture comes out of
 :meth:`~ciq_autotune.findings_projection.FindingsProjection.project`, and the payload
 it projects from comes out of the real engines: basal verdicts through
 :func:`~ciq_autotune.safety.cap`, their sentences through
-``analyzers.basal._annotation_for``, the ISF read through ``analyzers.isf._recommend``,
+``analyzers.basal._annotation_for``, the ISF read through ``analyzers.isf._recommend``
+and ``analyzers.isf.isf_asserts_move``,
 the I:C blocks through ``analyze_ic_blocks`` + ``price_ic_blocks``, the priorities
 through ``build_tuning_levers`` and ``behavioral_priority``. Nothing here hand-sets
 ``asserts_move``, a status, a hold reason or a score — that is the exact trap
@@ -47,6 +48,7 @@ from ciq_autotune.analyzers.isf import (  # noqa: E402
     IsfChannels,
     IsfConfig,
     _recommend,
+    isf_asserts_move,
 )
 from ciq_autotune.analyzers.scenario.payload import (  # noqa: E402
     SCENARIO_SCHEMA_VERSION,
@@ -182,6 +184,7 @@ def isf_rows():
                               "covered_days": WINDOW_DAYS,
                               "priced_target": priced_target},
         },
+        asserts_move=isf_asserts_move(36.0, direction, recommended),
     )]
 
 

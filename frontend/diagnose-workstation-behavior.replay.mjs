@@ -246,6 +246,54 @@ const vendored = async (name) => {
   return readFile(join(dir, name));
 };
 
+/** Derived ISF analyzer shape shared by ledger and browser stories. The committed
+ * payload supplies every untouched field; stories replace only the serialized
+ * verdict facts they exercise. */
+export function withIsfVerdict(analysis, {
+  direction, recommended, assertsMove, annotation, omitVerdict = false,
+}) {
+  const seed = analysis.isf[0];
+  const row = {
+    ...seed,
+    recommended,
+    annotation,
+    evidence: { ...seed.evidence, direction },
+  };
+  if (!omitVerdict) row.asserts_move = assertsMove;
+  else delete row.asserts_move;
+  return {
+    ...analysis,
+    isf: [row],
+    tuning_levers: [
+      ...(analysis.tuning_levers || []).filter((lever) => lever.parameter !== 'isf'),
+      { parameter: 'isf', priority: 73 },
+    ],
+  };
+}
+
+/** Copy the committed generated profile so a staging story owns a narrow override
+ * without inventing pump segments in the driver. */
+export const derivedPumpSettings = (settings) => ({
+  ...settings,
+  profile: {
+    ...settings.profile,
+    segments: settings.profile.segments.map((segment) => ({ ...segment })),
+  },
+});
+
+/** Pose the legacy projection wire shape after running the same derived analysis
+ * through the faithful mirror. Current server rows always carry null; this removes
+ * only the one field whose historical absence the compatibility story exercises. */
+export const withoutIsfProjectionVerdict = (projection) => ({
+  ...projection,
+  rows: projection.rows.map((row) => {
+    if (row.parameter !== 'isf') return row;
+    const legacy = { ...row };
+    delete legacy.asserts_move;
+    return legacy;
+  }),
+});
+
 /** The sanctioner is the project's already-published author identity. Keeping
  * it single-sourced avoids adding a second owner-name occurrence to a shipping
  * source file while still printing the named sanction on every retired run. */
@@ -265,10 +313,14 @@ const projectAuthor = async () => {
  */
 export async function openApp(browser, {
   state: want = 'typical', theme = 'dark', viewport = { width: 1440, height: 900 }, findingsInputs = null,
-  exposuresInputs = null, comparisonStatus = 0, findingsDelayMs = 0,
+  findingsProjectionInputs = null, exposuresInputs = null, analysisInputs = null, pumpSettingsInputs = null,
+  onPlanDraft = null, comparisonStatus = 0, findingsDelayMs = 0,
   findingsDelays = {}, findingsFailures = {}, appSource = 'server',
 } = {}) {
   const payloadPath = process.env.PAYLOAD || fail('PAYLOAD is required for TARGET=app');
+  /* Source selection belongs to the caller. Standalone replay pins `server`
+     below; browser tests opt into `fixture` per call. Ambient process state
+     must never turn a built-app replay into an on-disk HTML run. */
   if (!['server', 'fixture'].includes(appSource)) fail(`unknown appSource: ${appSource}`);
   const baseUrl = appSource === 'server'
     ? process.env.BASE_URL || fail('BASE_URL is required for the app-only replay')
@@ -286,7 +338,11 @@ export async function openApp(browser, {
      hand-written fixture, and never anything but synthetic input. The two
      overrides are separate on purpose: the fidelity harness overrides only the
      findings queue and relies on every other endpoint staying as it was. */
-  const defaults = { analysis: payload.analyze, exposures: payload.exposures, scenarios: payload.scenarios };
+  const analysisFrom = typeof analysisInputs === 'function'
+    ? await analysisInputs(payload.analyze) : (analysisInputs || payload.analyze);
+  const pumpSettingsFrom = typeof pumpSettingsInputs === 'function'
+    ? await pumpSettingsInputs(payload.pump_settings) : (pumpSettingsInputs || null);
+  const defaults = { analysis: analysisFrom, exposures: payload.exposures, scenarios: payload.scenarios };
   const findingsFrom = typeof findingsInputs === 'function'
     ? await findingsInputs(defaults) : (findingsInputs || defaults);
   const exposuresFrom = typeof exposuresInputs === 'function'
@@ -308,12 +364,15 @@ export async function openApp(browser, {
        browser gates have no Python, so the stub answers from the fixture-only JS
        mirror, which `frontend/findings-projection-mirror.test.js` deep-compares
        against the real projection's own frozen output window for window. */
-    [/^\/diagnose\/findings/, (url) => projectFindings(
-      findingsFrom,
-      url.searchParams.get('start_min') === null ? null : {
+    [/^\/diagnose\/findings/, (url) => {
+      const projected = projectFindings(findingsFrom,
+        url.searchParams.get('start_min') === null ? null : {
         start_min: Number(url.searchParams.get('start_min')),
         end_min: Number(url.searchParams.get('end_min')),
-      })],
+        });
+      return typeof findingsProjectionInputs === 'function'
+        ? findingsProjectionInputs(projected) : projected;
+    }],
     [/^\/explore\/exposures/, () => exposuresFrom],
     [/^\/analyze/, () => findingsFrom.analysis],
     [/^\/scenarios/, () => findingsFrom.scenarios],
@@ -332,6 +391,7 @@ export async function openApp(browser, {
     [/^\/backtest/, () => ({ folds: [] })],
     [/^\/model/, () => ({ entries: [] })],
     [/^\/day/, () => ({ days: [] })],
+    [/^\/pump-settings$/, () => pumpSettingsFrom || ({ configured: false })],
     [/^\/pump/, () => ({ settings: {} })],
   ];
   const page = await browser.newPage({ viewport });
@@ -402,6 +462,13 @@ export async function openApp(browser, {
     if (comparisonStatus && path === '/diagnose/event-comparison') {
       return route.fulfill({ status: comparisonStatus, contentType: 'application/json',
         body: JSON.stringify({ detail: 'projection unavailable' }) });
+    }
+    if (path === '/plan' && route.request().method() === 'PUT') {
+      const draft = JSON.parse(route.request().postData() || '{}');
+      onPlanDraft?.(draft);
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify({
+        items: draft.items || [], updated_at: '2020-03-03 00:01:00',
+      }) });
     }
     for (const [pattern, body] of STUBS) {
       if (pattern.test(path)) return route.fulfill({ contentType: 'application/json', body: JSON.stringify(body(url)) });
@@ -1578,6 +1645,77 @@ export const S40 = async (page) => {
   is(drawn.trace, drawn.responseTrace, 'S40 the drawn trace carries that selected low response');
 };
 
+const TRUE_ISF_DRAFTS = [];
+
+/** S44 · A recommendation-bearing false ISF verdict keeps its
+    direction-derived register but exposes no queue action line or stage control. */
+// STORY:finding-evidence-routing:S44
+export const S44 = async (page) => {
+  const row = page.locator('#level .qrow[data-id="isf"]');
+  is(await row.getAttribute('data-state'), 'assert', 'S44 direction still owns the queue register');
+  is(await row.locator('.den.nums').count(), 0, 'S44 the queue has no numeric action line');
+  await row.click();
+  await settle(page, 450);
+  is((await state(page)).stage, null, 'S44 false offers no stage control');
+  is(await page.locator('#level .numrow').nth(2).locator('b').innerText(), '--',
+    'S44 Recommended keeps its reserved empty row');
+  ok(/corrections look stronger than needed/i.test(await page.locator('#level').innerText()),
+    'S44 direction-only weaken keeps its direction language');
+};
+
+/** S45 · A legacy ISF row with no verdict fails closed exactly like
+    explicit false while keeping its direction and refusal evidence. */
+// STORY:finding-evidence-routing:S45
+export const S45 = async (page) => {
+  const row = page.locator('#level .qrow[data-id="isf"]');
+  is(await row.getAttribute('data-state'), 'assert', 'S45 legacy direction still owns the register');
+  is(await row.locator('.den.nums').count(), 0, 'S45 legacy queue has no numeric action line');
+  await row.click();
+  await settle(page, 450);
+  is((await state(page)).stage, null, 'S45 missing verdict offers no stage control');
+  const text = await page.locator('#level').innerText();
+  ok(/Corrections keep overshooting into lows/.test(text), 'S45 analyzer evidence remains visible');
+  ok(/recent lows make a new number unsafe to suggest/i.test(text), 'S45 refusal language remains visible');
+};
+
+/** S46 · A strengthen step rounded back to the current Correction factor names that
+    no-op rather than borrowing weaken/recent-low refusal copy. */
+// STORY:finding-evidence-routing:S46
+export const S46 = async (page) => {
+  const row = page.locator('#level .qrow[data-id="isf"]');
+  is(await row.locator('.den.nums').count(), 0, 'S46 rounded no-op has no queue action line');
+  await row.click();
+  await settle(page, 450);
+  const text = await page.locator('#level').innerText();
+  is((await state(page)).stage, null, 'S46 rounded no-op offers no stage control');
+  ok(/conservative step rounds to the current Correction factor/.test(text),
+    'S46 names the rounding hold in sanctioned user language');
+  ok(!/programmed factor/i.test(text), 'S46 never exposes the retired user phrase');
+  ok(!/recent lows|stronger than needed/i.test(text), 'S46 never claims weaken or recent lows');
+};
+
+/** S47 · Exact true stages the capped ISF recommendation across
+    every segment of the generated profile, then reports the same Plan count. */
+// STORY:finding-evidence-routing:S47
+export const S47 = async (page) => {
+  TRUE_ISF_DRAFTS.length = 0;
+  const row = page.locator('#level .qrow[data-id="isf"]');
+  is(await row.locator('.den.nums').count(), 1, 'S47 exact true keeps the queue action line');
+  await row.click();
+  await settle(page, 450);
+  ok((await state(page)).stage?.startsWith('Stage change'), 'S47 exact true exposes the real stage control');
+  await page.locator('#level .stagebtn').click();
+  await page.waitForFunction(() => document.querySelector('#plan-badge')?.textContent.trim() === '4');
+  await settle(page, 100);
+  is(TRUE_ISF_DRAFTS, [{ items: [
+    { type: 'isf', key: 0, start_min: 0, label: '00:00', current: 42, recommended: 33.6, value: 33.6 },
+    { type: 'isf', key: 360, start_min: 360, label: '06:00', current: 45, recommended: 33.6, value: 33.6 },
+    { type: 'isf', key: 780, start_min: 780, label: '13:00', current: 38, recommended: 33.6, value: 33.6 },
+    { type: 'isf', key: 1200, start_min: 1200, label: '20:00', current: 50, recommended: 33.6, value: 33.6 },
+  ] }], 'S47 PUT /plan carries one unchanged capped value per generated segment');
+  is((await state(page)).badge, '4', 'S47 Plan badge matches the persisted fan-out');
+};
+
 /** S33 · #58 — while the event canvas is mounted, its own header is the only
     canvas header on screen. The clock canvas's header used to stay mounted
     underneath and print the clock window over an event-aligned chart. */
@@ -2007,6 +2145,10 @@ export const S43 = async (page) => {
 // STORY:finding-evidence-routing:S41
 // STORY:finding-evidence-routing:S42
 // STORY:finding-evidence-routing:S43
+// STORY:finding-evidence-routing:S44
+// STORY:finding-evidence-routing:S45
+// STORY:finding-evidence-routing:S46
+// STORY:finding-evidence-routing:S47
 // STORY:finding-evidence-routing:D1
 // STORY:finding-evidence-routing:D2
 // STORY:finding-evidence-routing:D3
@@ -2050,6 +2192,33 @@ export const STORIES = [
     findingsFailures: { '900-1260': 500 },
   }],
   ['S43', S43, 'typical', { findingsInputs: twoFamilyInputs }],
+  ['S44', S44, 'typical', {
+    analysisInputs: (analysis) => withIsfVerdict(analysis, {
+      direction: 'weaken', recommended: 47, assertsMove: false,
+      annotation: 'Corrections keep overshooting into lows, so the correction factor eases weaker.',
+    }),
+  }],
+  ['S45', S45, 'typical', {
+    analysisInputs: (analysis) => withIsfVerdict(analysis, {
+      direction: 'weaken', recommended: 47, omitVerdict: true,
+      annotation: 'Corrections keep overshooting into lows, so the correction factor eases weaker.',
+    }),
+    findingsProjectionInputs: withoutIsfProjectionVerdict,
+  }],
+  ['S46', S46, 'typical', {
+    analysisInputs: (analysis) => withIsfVerdict(analysis, {
+      direction: 'strengthen', recommended: 42, assertsMove: false,
+      annotation: 'The conservative strengthen step rounds to the current Correction factor.',
+    }),
+  }],
+  ['S47', S47, 'typical', {
+    analysisInputs: (analysis) => withIsfVerdict(analysis, {
+      direction: 'strengthen', recommended: 33.6, assertsMove: true,
+      annotation: 'A conservative recommendation, capped to one ≤20% step from current.',
+    }),
+    pumpSettingsInputs: derivedPumpSettings,
+    onPlanDraft: (draft) => TRUE_ISF_DRAFTS.push(draft),
+  }],
   ['D1', D1, 'dense'], ['D2', D2, 'dense'], ['D3', D3, 'dense'],
 ];
 
@@ -2065,7 +2234,7 @@ if (isMain) {
   const results = [];
   for (const [id, fn, want, options] of STORIES) {
     if (only && !only.has(id)) continue;
-    const page = await openApp(browser, { state: want, ...(options || {}) });
+    const page = await openApp(browser, { state: want, ...(options || {}), appSource: 'server' });
     try {
       const note = await fn(page);
       results.push([id, 'pass', note || '']);

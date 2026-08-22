@@ -63,7 +63,7 @@
  "isf": [
   {
    "annotation": "corrections keep overshooting into lows, so the correction factor eases weaker",
-   "asserts_move": null,
+   "asserts_move": false,
    "block_id": null,
    "current": 42.0,
    "estimate": {

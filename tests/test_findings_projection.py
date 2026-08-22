@@ -11,6 +11,7 @@ import importlib.util
 import pathlib
 import tempfile
 import unittest
+from datetime import datetime
 
 try:
     from fastapi.testclient import TestClient
@@ -18,12 +19,14 @@ try:
 except ImportError:  # pragma: no cover
     _HAS_FASTAPI = False
 
+from ciq_autotune.analyzers.isf import analyze_isf
 from ciq_autotune.analyzers.scenario.levers import Lever, outcome_kind
 from ciq_autotune.findings_projection import (
     FindingsProjection,
     WindowQuery,
     prepare_findings_projection,
 )
+from ciq_autotune.harm import HarmArm, HarmConfig, PrintedLow
 from ciq_autotune.safety import Status
 
 _GEN_PATH = (pathlib.Path(__file__).resolve().parents[1]
@@ -135,6 +138,7 @@ class GroundedWindowTest(unittest.TestCase):
         isf = _row(rows, "ISF")
         self.assertEqual(isf["register"], "held")
         self.assertIsNone(isf["direction"])
+        self.assertIs(isf["asserts_move"], False)
 
     def test_a_held_reason_is_the_analyzers_own_string(self):
         # Byte-identical, both flavors: the queue transcribes, it never rewords.
@@ -144,6 +148,33 @@ class GroundedWindowTest(unittest.TestCase):
         blind_slot = next(s for s in analysis["basal"] if s["slot"] == 39)
         self.assertEqual(_row(rows, "Basal 19:30 to 21:00")["reason"],
                          blind_slot["safety_status"])
+
+    def test_isf_register_and_rank_stay_direction_derived_when_staging_is_false(self):
+        lows = [PrintedLow(datetime(2026, 6, day, 3), 55.0, 1.2, HarmArm.ISF)
+                for day in (1, 2, 3, 4)]
+        segment = analyze_isf(
+            [], [], [], [(0, 40.0)], harm_config=HarmConfig(), harm_lows=lows,
+            window_days=30,
+        )[0]
+        self.assertEqual(segment.evidence["direction"], "weaken")
+        self.assertIs(segment.asserts_move, False)
+
+        projection = FindingsProjection(
+            _analysis={
+                "window_days": 30,
+                "isf": [segment.to_dict()],
+                "tuning_levers": [{"parameter": "isf", "priority": 73}],
+            },
+            _exposures={"exposures": {}},
+            _scenarios={"patterns": [], "low_confidence": []},
+        )
+        row = projection.project(WindowQuery.whole_day())["rows"][0]
+
+        self.assertEqual(row["register"], "assert")
+        self.assertEqual(row["direction"], "weaken")
+        self.assertEqual(row["priority"], 73)
+        self.assertEqual(row["tier"], "next_in_line")
+        self.assertIs(row["asserts_move"], False)
 
     def test_a_window_can_hold_nothing_at_all(self):
         empty = gen.empty_projection().project(WindowQuery.clock(*MORNING))

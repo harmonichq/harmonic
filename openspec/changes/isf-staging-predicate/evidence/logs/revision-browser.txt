@@ -1,0 +1,26 @@
+✔ an explicit fixture opener ignores a hostile ambient app-source override (1814.155666ms)
+✔ Diagnose scopes the readable user-claim palette in both themes (3322.287541ms)
+✔ populated Diagnose renders readable theme-specific ink and chart marks (3322.998583ms)
+✔ locked panel geometry matches across both required viewports and light/dark themes (6818.453375ms)
+✔ finding chips render each server-published count (2156.557792ms)
+✔ deselecting a chip leaves only rows matching the remaining chips (2563.048917ms)
+✔ the held and blind group collapses during a sift and expands again (2867.418625ms)
+✔ an all-hidden sift names the empty result while retaining the held group (2516.210542ms)
+✔ the correction-factor row visibly declares its whole-day scope (1628.422833ms)
+✔ a held I:C finding enters through the findings queue with no stage button (2110.782583ms)
+✔ ISF is not stageable without an exact true backend verdict (2160.846083ms)
+✔ a rounded false ISF verdict keeps evidence and empty Recommended geometry at every review render (8951.716417ms)
+✔ a recommendation-bearing legacy ISF row with a missing verdict fails closed without losing its direction (2183.90975ms)
+✔ an exact true capped ISF verdict stages one unchanged value per generated pump segment (2249.315542ms)
+✔ setError tears down a live render and replaces the mount with a plain failure message (561.312916ms)
+✔ a rejected first-load fetch shows the failure message, not an uncaught error (565.768ms)
+✔ frontend contains no client-side verdict threshold or direction comparison (6.968959ms)
+✔ #63 · the unexplained-highs sentence renders below the findings queue (1650.08325ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 47666.997834

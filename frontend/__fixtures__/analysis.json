@@ -7199,7 +7199,7 @@
  "isf": [
   {
    "annotation": "rescue-carb history doesn't cover this window",
-   "asserts_move": null,
+   "asserts_move": false,
    "block_id": null,
    "current": 40.0,
    "estimate": {

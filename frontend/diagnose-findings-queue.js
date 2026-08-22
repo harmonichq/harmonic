@@ -121,6 +121,13 @@ function supportPart(row) {
  * moves against another's.
  */
 function assertDetail(row) {
+  // ISF keeps its direction-derived queue register, but only the
+  // backend's exact permission verdict may expose an action number. Legacy,
+  // malformed, and explicitly held rows keep their evidence denominator here.
+  if (row.parameter === 'isf' && row.asserts_move !== true) {
+    const support = supportPart(row);
+    return support ? { kind: 'support', parts: support } : null;
+  }
   const unit = UNIT[row.parameter];
   if (row.current != null && row.recommended != null && unit) {
     return { kind: 'nums', now: `now ${num(row.current)} ${unit} → `, then: `${num(row.recommended)} ${unit}` };
@@ -173,9 +180,11 @@ export function queueRows(projection, selected = null) {
       seam,
       hidden,
       collapsed,
-      /* Term 38: a held or blind row drills to its detail but offers no stage
-         affordance. The predicate is the server's register, never a floor of ours. */
-      stageable: row.register === 'assert',
+      /* ISF carries an independent backend staging verdict. Its
+         direction-derived register and rank remain untouched when that verdict
+         holds the row; exact true alone exposes the stage affordance. */
+      stageable: row.register === 'assert'
+        && (row.parameter !== 'isf' || row.asserts_move === true),
       detail: detailFor(row),
       raw: row,
     };

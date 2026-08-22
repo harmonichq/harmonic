@@ -5,10 +5,10 @@
 2026-08-21 for issue #81; previously `a49b6db`).
 
 The app-only replay is
-`frontend/diagnose-workstation-behavior.replay.mjs`: **46 exported stories**
+`frontend/diagnose-workstation-behavior.replay.mjs`: **50 exported stories**
 (29 through 2026-08-19; five added by the excursion-chip sift, #61, at S27-S31;
 eight added by the #62 revision below, at S32-S39; one added by #64, S40; three
-added by #81, S41-S43), all
+added by #81, S41-S43; four added by issue #13 below, at S44-S47), all
 opened through the real no-fetch server and tagged
 `STORY:finding-evidence-routing:<id>`. Static HTML, CSS and JavaScript come from
 that server; deterministic API reads come from
@@ -73,7 +73,7 @@ and no retirement lacks its sanction, so the contract carries forward unchanged
 at the new base.
 
 The 55 P-rows below are retained as the legacy predecessor inventory and the
-operator's completed rulings. The executable current contract is S01–S31 and
+operator's completed rulings. The executable current contract is S01–S47 and
 D1–D3. The base-tip re-inventory found no new handlers since the predecessor
 pass: the intervening source delta only changed the queue to consume the
 server-published ranking tier and adjusted the corresponding `noted` styling.
@@ -1343,3 +1343,57 @@ deliberately non-unique meal join-pair precondition.
 
 **Result.** The app-only replay enumerates **43 of 43 stories**, including S40;
 an `ONLY` selection that names no stories still fails closed.
+
+## Revision — 2026-08-21, base `21df720` (issue #13: ISF staging verdict)
+
+`/ui-craft` revise lane. The base contract replayed **43 of 43 stories** before
+editing against the declared manufactured database
+`mockups/revise-e2e.synthetic/harmonic.sqlite`. Port 8765 belonged to another
+process and was left untouched; this lane verified isolated port 18765 was free,
+started the same `harmonic serve --no-fetch` command there, and passed that
+explicit `BASE_URL` to the replay.
+
+**Behavior changed.** ISF direction still decides the queue
+register, tier and rank. It no longer grants actionability. The serialized
+`asserts_move` verdict is independent permission: exact `true` alone may show a
+numeric queue action, expose a detail-level stage control, or fan out into Plan.
+False, null, missing and malformed values fail closed. Held rows keep the shared
+Current / Estimate / Recommended geometry, their estimate, interval, support,
+annotation, direction, register and refusal evidence; Recommended reserves its
+row without printing a number.
+
+**Behavior added — four stories, `S44` to `S47`:**
+
+```
+S44 · a recommendation-bearing explicit false verdict stays in the direction-
+      derived assert register, but the queue prints no action number and detail
+      offers no stage control
+S45 · a recommendation-bearing legacy row with no verdict fails closed while
+      retaining weaken direction and the recent-low refusal evidence
+S46 · a strengthen recommendation rounded back to the current Correction
+      factor names that rounding hold and never claims weaken or recent lows
+S47 · exact true keeps the capped action number; the real stage affordance PUTs
+      one unchanged capped value for each of the committed generated profile's
+      four segments, and the Plan badge reports the same count
+```
+
+All four derive the ISF analysis from the committed synthetic
+Diagnose payload. The same derived analysis answers `/analyze` and feeds the
+findings projection. Only S47 injects `/pump-settings`, by copying the generated
+multi-segment profile from that payload; its `PUT /plan` body, not the badge
+alone, proves the fan-out.
+
+**Result.** The app-only replay reports **50 of 50 stories passed**. The Diagnose
+workstation browser suite reports **18 passed, 0 failed**, and the cockpit-shell
+suite reports **12 passed, 0 failed, 2 pre-existing evidence-only skips**. The
+same rounded-false DOM regression run against detached base worktree `21df720`
+fails on the retired recommendation-presence gate after writing all four base
+renders: its queue keeps `state=assert` and `tier=next_in_line` but prints one
+numeric action line. The revision writes no such line and passes the same bytes.
+
+Paired local build-side evidence, not committed, is under
+`/private/tmp/harmonic-13-c2-evidence/{base,revision}/isf-verdict/`: 1280×800
+and 1440×900, light and dark. Each render is the drilled rounded-false state;
+the base shows a numeric Recommended value plus Stage change, while the revision
+keeps the Recommended row empty, preserves the evidence, names the rounding
+hold, and shows no stage control.

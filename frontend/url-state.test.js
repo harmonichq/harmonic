@@ -153,13 +153,27 @@ test('paired bounds reject every incomplete or non-canonical interval', () => {
     ['missing start', 'end_min=120'],
     ['leading-zero start', 'start_min=060&end_min=120'],
     ['leading-zero end', 'start_min=60&end_min=0120'],
-    ['greater than 1440', 'start_min=1441&end_min=120'],
+    ['start greater than 1440', 'start_min=1441&end_min=120'],
+    ['end greater than 1440', 'start_min=120&end_min=1441'],
     ['equal bounds', 'start_min=120&end_min=120'],
     ['full-day 0/1440', 'start_min=0&end_min=1440'],
     ['full-day 1440/0', 'start_min=1440&end_min=0'],
   ]) {
     const address = `/app/diagnose?view=lows&${suffix}`;
     assertInvalid(label, address, 'bounds');
+  }
+});
+test('paired bounds include 0 and 1440 in distinct non-full-day intervals', () => {
+  for (const [label, startMin, endMin] of [
+    ['inclusive zero start', '0', '60'],
+    ['inclusive 1440 end', '1380', '1440'],
+  ]) {
+    const address = `/app/diagnose?view=lows&start_min=${startMin}&end_min=${endMin}`;
+    const query = { view: 'lows', start_min: startMin, end_min: endMin };
+    const pending = parse(address);
+    assert.deepEqual(pending, { kind: 'PendingRoute', page: 'diagnose', query }, label);
+    assertResolved(label, resolveRoute(pending, { diagnose: (candidate) => candidate }),
+      'diagnose', address, query);
   }
 });
 test('workstation pairing, tokens, projection, and occurrence grammar fail closed', () => {
@@ -170,6 +184,8 @@ test('workstation pairing, tokens, projection, and occurrence grammar fail close
     ['bounds without finding/factor', 'start_min=60&end_min=120', 'workstation-pair'],
     ['projection without finding/factor', 'projection=event', 'workstation-pair'],
     ['occurrence without finding/factor', `occ=${WORKSTATION_OCC}`, 'workstation-pair'],
+    ['finding has canonically encoded invalid syntax', 'finding=bad%7Eid&factor=ic.day', 'finding'],
+    ['finding exceeds 160 characters', `finding=${'a'.repeat(161)}&factor=ic.day`, 'finding'],
     ['factor missing lever', 'finding=f1&factor=ic', 'finding'],
     ['factor has uppercase family', 'finding=f1&factor=IC.day', 'finding'],
     ['factor has uppercase lever', 'finding=f1&factor=ic.Day', 'finding'],

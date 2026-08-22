@@ -154,23 +154,23 @@ authorized-synthetic mockups/diagnose-workstation.synthetic/settings-audit.captu
 # which prints the full delta first. Never edit it by hand: the digest is
 # checked at parse time and a hand edit fails the config closed.
 # BEGIN dose-ratio baseline
-dose-ratio-baseline 136 39422a8136e07717b83efb7e701c13cbfa2b9e49437e072e407acd2780d81d37
+dose-ratio-baseline 154 a16a3bae08f5602455bb481c90958d8de2d27915617c78c26450408a06f5e8c1
 dose-ratio-ack CONTEXT.md:441 | 0.2 U
 dose-ratio-ack CONTEXT.md:65 | 1 U : 36 mg/dL
 dose-ratio-ack CONTEXT.md:87 | 0.5 U
-dose-ratio-ack DESIGN.md:147 | 1 U : 36 mg/dL
-dose-ratio-ack DESIGN.md:165 | 1.23 U
-dose-ratio-ack DESIGN.md:167 | 1.23 U
+dose-ratio-ack DESIGN.md:152 | 1 U : 36 mg/dL
+dose-ratio-ack DESIGN.md:170 | 1.23 U
+dose-ratio-ack DESIGN.md:172 | 1.23 U
 dose-ratio-ack ciq_autotune/analyzers/classifiers/evidence.py:6 | 10 U
-dose-ratio-ack ciq_autotune/analyzers/ic.py:164 | 0.5 U
-dose-ratio-ack ciq_autotune/analyzers/ic.py:175 | 0.0 U
-dose-ratio-ack ciq_autotune/analyzers/ic.py:338 | 1U
+dose-ratio-ack ciq_autotune/analyzers/ic.py:182 | 0.5 U
+dose-ratio-ack ciq_autotune/analyzers/ic.py:193 | 0.0 U
+dose-ratio-ack ciq_autotune/analyzers/ic.py:356 | 1U
 dose-ratio-ack ciq_autotune/analyzers/scenario/narrate.py:30 | 1 U
 dose-ratio-ack ciq_autotune/analyzers/scenario/payload.py:72 | 6U
-dose-ratio-ack ciq_autotune/analyzers/scenario_config.py:252 | 0.23 U
-dose-ratio-ack ciq_autotune/analyzers/scenario_config.py:253 | 3.6 U
-dose-ratio-ack ciq_autotune/analyzers/scenario_config.py:258 | 20 U
-dose-ratio-ack ciq_autotune/analyzers/scenario_config.py:261 | 0.7 U
+dose-ratio-ack ciq_autotune/analyzers/scenario_config.py:282 | 0.23 U
+dose-ratio-ack ciq_autotune/analyzers/scenario_config.py:283 | 3.6 U
+dose-ratio-ack ciq_autotune/analyzers/scenario_config.py:288 | 20 U
+dose-ratio-ack ciq_autotune/analyzers/scenario_config.py:291 | 0.7 U
 dose-ratio-ack ciq_autotune/analyzers/tuning_priority.py:16 | 3.6 U
 dose-ratio-ack ciq_autotune/analyzers/tuning_priority.py:201 | 100 U
 dose-ratio-ack ciq_autotune/harm.py:70 | 0.1 U
@@ -178,15 +178,33 @@ dose-ratio-ack ciq_autotune/insulin.py:220 | 0.1 U
 dose-ratio-ack ciq_autotune/pattern_sweep.py:1042 | 1 U
 dose-ratio-ack ciq_autotune/tandemsource_map.py:207 | 65.535 U
 dose-ratio-ack docs/kb/start-here.md:12 | 4.5 U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:151 | 6.4 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:229 | 6.6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:24787 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:307 | 6.8 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:32013 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:385 | 7 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:39239 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:40084 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:41173 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:41652 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:41906 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:42035 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:463 | 7.2 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:6 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:73 | 6.2 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:7594 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:9851 | 6 g/U
 dose-ratio-ack frontend/kb.test.js:186 | 0.5 U
 dose-ratio-ack frontend/kb.test.js:206 | 0.5 U
-dose-ratio-ack frontend/plan.js:666 | 0.001 U
-dose-ratio-ack frontend/plan.js:668 | 0.1 g/U
+dose-ratio-ack frontend/plan.js:665 | 0.001 U
+dose-ratio-ack frontend/plan.js:667 | 0.1 g/U
+dose-ratio-ack mockups/diagnose-workstation.synthetic/ic-history-events.capture.json:2288 | 6 g/U
 dose-ratio-ack openspec/specs/behavioral-layer/spec.md:19 | 0.3 U
 dose-ratio-ack openspec/specs/behavioral-layer/spec.md:27 | 10 U
-dose-ratio-ack openspec/specs/safety/spec.md:26 | 0.1 U
-dose-ratio-ack openspec/specs/safety/spec.md:27 | 3.0 U
-dose-ratio-ack openspec/specs/safety/spec.md:64 | 0.05 U
+dose-ratio-ack openspec/specs/safety/spec.md:28 | 0.1 U
+dose-ratio-ack openspec/specs/safety/spec.md:29 | 3.0 U
+dose-ratio-ack openspec/specs/safety/spec.md:66 | 0.05 U
 dose-ratio-ack scripts/gen_chart_builder_fixtures.py:163 | 0.04 U
 dose-ratio-ack tests/test_analyzer_basal.py:109 | 0.9 U
 dose-ratio-ack tests/test_analyzer_basal.py:901 | 0.30 U
@@ -194,44 +212,44 @@ dose-ratio-ack tests/test_analyzer_basal.py:902 | 0.80 U
 dose-ratio-ack tests/test_analyzer_basal.py:905 | 0.30 U
 dose-ratio-ack tests/test_analyzer_coverage.py:437 | 0.6 U
 dose-ratio-ack tests/test_analyzer_coverage.py:752 | 6 g/U
-dose-ratio-ack tests/test_analyzer_ic.py:1006 | 82 g/U
-dose-ratio-ack tests/test_analyzer_ic.py:1092 | 10U
-dose-ratio-ack tests/test_analyzer_ic.py:1179 | 10U
-dose-ratio-ack tests/test_analyzer_ic.py:1180 | 11U
-dose-ratio-ack tests/test_analyzer_ic.py:1318 | 2U
-dose-ratio-ack tests/test_analyzer_ic.py:1464 | 2U
-dose-ratio-ack tests/test_analyzer_ic.py:1490 | 1U
-dose-ratio-ack tests/test_analyzer_ic.py:1501 | 3U
-dose-ratio-ack tests/test_analyzer_ic.py:1503 | 12U
-dose-ratio-ack tests/test_analyzer_ic.py:1527 | 0.6U
-dose-ratio-ack tests/test_analyzer_ic.py:1528 | 1U
-dose-ratio-ack tests/test_analyzer_ic.py:1529 | 0.6U
-dose-ratio-ack tests/test_analyzer_ic.py:1563 | 1.5U
-dose-ratio-ack tests/test_analyzer_ic.py:1571 | 6U
-dose-ratio-ack tests/test_analyzer_ic.py:20 | 6 g/U
-dose-ratio-ack tests/test_analyzer_ic.py:281 | 0.40 U
-dose-ratio-ack tests/test_analyzer_ic.py:410 | 10U
-dose-ratio-ack tests/test_analyzer_ic.py:449 | 5U
-dose-ratio-ack tests/test_analyzer_ic.py:458 | 1U
-dose-ratio-ack tests/test_analyzer_ic.py:468 | 4U
-dose-ratio-ack tests/test_analyzer_ic.py:469 | 3.5U
-dose-ratio-ack tests/test_analyzer_ic.py:501 | 2U
-dose-ratio-ack tests/test_analyzer_ic.py:545 | 1U
-dose-ratio-ack tests/test_analyzer_ic.py:556 | 1.0U
-dose-ratio-ack tests/test_analyzer_ic.py:570 | 1.0U
-dose-ratio-ack tests/test_analyzer_ic.py:582 | 2U
-dose-ratio-ack tests/test_analyzer_ic.py:585 | 2U
-dose-ratio-ack tests/test_analyzer_ic.py:669 | 1U
-dose-ratio-ack tests/test_analyzer_ic.py:670 | 1.5U
-dose-ratio-ack tests/test_analyzer_ic.py:683 | 1U
-dose-ratio-ack tests/test_analyzer_ic.py:710 | 4U
-dose-ratio-ack tests/test_analyzer_ic.py:716 | 1.0U
-dose-ratio-ack tests/test_analyzer_ic.py:736 | 1U
-dose-ratio-ack tests/test_analyzer_ic.py:751 | 1.0U
-dose-ratio-ack tests/test_analyzer_ic.py:765 | 1.8U
-dose-ratio-ack tests/test_analyzer_ic.py:767 | 1.0U
-dose-ratio-ack tests/test_analyzer_ic.py:818 | 2.8U
-dose-ratio-ack tests/test_analyzer_ic.py:990 | 10U
+dose-ratio-ack tests/test_analyzer_ic.py:1019 | 10U
+dose-ratio-ack tests/test_analyzer_ic.py:1035 | 82 g/U
+dose-ratio-ack tests/test_analyzer_ic.py:1121 | 10U
+dose-ratio-ack tests/test_analyzer_ic.py:1208 | 10U
+dose-ratio-ack tests/test_analyzer_ic.py:1209 | 11U
+dose-ratio-ack tests/test_analyzer_ic.py:1347 | 2U
+dose-ratio-ack tests/test_analyzer_ic.py:1493 | 2U
+dose-ratio-ack tests/test_analyzer_ic.py:1519 | 1U
+dose-ratio-ack tests/test_analyzer_ic.py:1530 | 3U
+dose-ratio-ack tests/test_analyzer_ic.py:1532 | 12U
+dose-ratio-ack tests/test_analyzer_ic.py:1556 | 0.6U
+dose-ratio-ack tests/test_analyzer_ic.py:1557 | 1U
+dose-ratio-ack tests/test_analyzer_ic.py:1558 | 0.6U
+dose-ratio-ack tests/test_analyzer_ic.py:1592 | 1.5U
+dose-ratio-ack tests/test_analyzer_ic.py:1600 | 6U
+dose-ratio-ack tests/test_analyzer_ic.py:27 | 6 g/U
+dose-ratio-ack tests/test_analyzer_ic.py:310 | 0.40 U
+dose-ratio-ack tests/test_analyzer_ic.py:439 | 10U
+dose-ratio-ack tests/test_analyzer_ic.py:478 | 5U
+dose-ratio-ack tests/test_analyzer_ic.py:487 | 1U
+dose-ratio-ack tests/test_analyzer_ic.py:497 | 4U
+dose-ratio-ack tests/test_analyzer_ic.py:498 | 3.5U
+dose-ratio-ack tests/test_analyzer_ic.py:530 | 2U
+dose-ratio-ack tests/test_analyzer_ic.py:574 | 1U
+dose-ratio-ack tests/test_analyzer_ic.py:585 | 1.0U
+dose-ratio-ack tests/test_analyzer_ic.py:599 | 1.0U
+dose-ratio-ack tests/test_analyzer_ic.py:611 | 2U
+dose-ratio-ack tests/test_analyzer_ic.py:614 | 2U
+dose-ratio-ack tests/test_analyzer_ic.py:698 | 1U
+dose-ratio-ack tests/test_analyzer_ic.py:699 | 1.5U
+dose-ratio-ack tests/test_analyzer_ic.py:712 | 1U
+dose-ratio-ack tests/test_analyzer_ic.py:739 | 4U
+dose-ratio-ack tests/test_analyzer_ic.py:745 | 1.0U
+dose-ratio-ack tests/test_analyzer_ic.py:765 | 1U
+dose-ratio-ack tests/test_analyzer_ic.py:780 | 1.0U
+dose-ratio-ack tests/test_analyzer_ic.py:794 | 1.8U
+dose-ratio-ack tests/test_analyzer_ic.py:796 | 1.0U
+dose-ratio-ack tests/test_analyzer_ic.py:847 | 2.8U
 dose-ratio-ack tests/test_classifier_correction_on_iob.py:11 | 1 U
 dose-ratio-ack tests/test_classifier_correction_on_iob.py:116 | 0.5 U
 dose-ratio-ack tests/test_classifier_correction_on_iob.py:14 | 0.5 U

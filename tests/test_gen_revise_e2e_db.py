@@ -10,6 +10,7 @@ import tempfile
 import unittest
 
 from ciq_autotune.findings_projection import WindowQuery, prepare_findings_projection
+from ciq_autotune.ic_history_events import prepare_ic_history_events
 from ciq_autotune.store import Store
 
 
@@ -34,26 +35,37 @@ class ReviseE2EDatabaseGeneratorTest(unittest.TestCase):
             self.assertFalse(output.with_name(output.name + "-shm").exists())
             with Store.open_readonly(str(output)) as store:
                 self.assertEqual(
-                    store.cgm_day_bounds(), ("2020-02-03", "2020-03-03")
+                    store.cgm_day_bounds(), ("2020-02-03", "2020-05-12")
                 )
                 self.assertEqual(
                     store.counts(),
                     {
-                        "basal_events": 8640,
-                        "bolus_events": 180,
-                        "cgm_readings": 8640,
+                        "basal_events": 28800,
+                        "bolus_events": 600,
+                        "cgm_readings": 28800,
                         "iob_events": 0,
                         "pump_events": 0,
-                        "profile_settings": 1,
+                        "profile_settings": 2,
                     },
                 )
-                self.assertEqual(len(store.settings_snapshots()), 1)
+                self.assertEqual(len(store.settings_snapshots()), 2)
                 self.assertIsNone(store.get_credentials())
                 projection = prepare_findings_projection(store, window_days=30)
                 self.assertGreaterEqual(
                     projection.project(WindowQuery.whole_day())["counts"]["finding"],
                     1,
                 )
+                findings = projection.project(
+                    WindowQuery.whole_day(), analysis_generation="fixture:0")
+                self.assertGreaterEqual(findings["counts"]["history"], 1)
+                history = next(row for row in findings["rows"]
+                               if row["register"] == "history")
+                evidence = prepare_ic_history_events(store, projection).project(
+                    history["id"], analysis_generation="fixture:0")
+                self.assertTrue(any(
+                    len(series["member_offsets_min"]) > 1
+                    for series in evidence["series"]
+                ))
 
             with sqlite3.connect(output) as conn:
                 row = conn.execute(

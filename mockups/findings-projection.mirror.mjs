@@ -23,7 +23,7 @@
  * with the server would let the browser legs certify a queue the app never renders.
  */
 
-const SCHEMA = 'diagnose-findings-v1';
+const SCHEMA = 'diagnose-findings-v2';
 const DAY_MINUTES = 1440;
 const SLOT_MINUTES = 30;
 
@@ -39,7 +39,7 @@ const FAMILY_NOUN = {
 const KIND_FOR_FAMILY = {
   lows: 'low', meals: 'meal', highs: 'high', correction_clusters: 'correction',
 };
-const REGISTER_RANK = { assert: 0, finding: 0, held: 1, blind: 2 };
+const REGISTER_RANK = { assert: 0, finding: 0, held: 1, blind: 2, history: 3 };
 // ADR 0019 §2's closed five-state anchor taxonomy (ADR 41's verdict band vocabulary).
 const VERDICT_CATEGORIES = ['fired', 'outranked', 'near_miss', 'no_data', 'clean'];
 // levers._OUTCOME_KIND — the anchor kind each lever's CONSEQUENCE lands on
@@ -107,13 +107,15 @@ function row(fields) {
     support: null, reason: null, annotation: null, members: null,
     lever: null, appearances: null, episodes: null,
     evidence: null, verdict_counts: null, verdict_counts_by_family: null,
-    chips: null, window_scope: null, event_chart: null,
+    chips: null, window_scope: null,
+    past_setting: null, programmed_now: null, regime_end: null, run_ids: null,
+    event_chart: null,
     ...fields,
   };
 }
 
 function chipsFor(row) {
-  if (row.register === 'held' || row.register === 'blind') return [];
+  if (row.register === 'held' || row.register === 'blind' || row.register === 'history') return [];
   if (row.register === 'assert') return [...SETTINGS_CHIPS[row.parameter][row.direction]];
 
   const chips = [];
@@ -439,6 +441,48 @@ function findingRows(exposures, scenarios, eventCharts, window) {
   return rows;
 }
 
+function historyRows(analysis, query) {
+  const rows = [];
+  for (const history of analysis.ic_history || []) {
+    if (history.lifecycle !== 'active') continue;
+    if (query.scoped
+        && !overlaps(segments(history.block_start_min, history.block_end_min), query.pieces)) continue;
+    rows.push(stampedRow({
+      id: history.id, register: 'history', kind: 'setting', parameter: 'carb_ratio',
+      title: `Carb ratio ${history.label}. Past setting.`, label: history.label,
+      span: { start_min: history.block_start_min, end_min: history.block_end_min,
+        label: spanLabel(history.block_start_min, history.block_end_min) },
+      past_setting: history.past_setting, programmed_now: history.programmed_now,
+      estimate: history.estimate, support: history.support,
+      regime_end: history.regime_end ?? null,
+      run_ids: (history.runs || []).map((run) => run.run_id),
+      annotation: history.annotation ?? null,
+    }));
+  }
+  return rows;
+}
+
+function selection(analysis, query, selectedId) {
+  if (selectedId == null) return null;
+  const history = (analysis.ic_history || []).find((row) => row.id === selectedId);
+  if (!history) throw new Error('unknown history identity in fixture mirror');
+  let disposition;
+  let message = null;
+  if (history.lifecycle === 'active') {
+    const inScope = !query.scoped
+      || overlaps(segments(history.block_start_min, history.block_end_min), query.pieces);
+    disposition = inScope ? 'present' : 'out_of_scope';
+    if (!inScope) message = 'Past-setting evidence is outside the selected window.';
+  } else if (history.lifecycle === 'aged_out') {
+    disposition = 'aged_out';
+    message = 'Past-setting evidence aged out of the 90-day window.';
+  } else {
+    disposition = 'unavailable';
+    message = 'Past-setting evidence no longer maps to one current program block.';
+  }
+  return { id: selectedId, disposition, message };
+}
+
 /** The queue's one order: priced rows by priority desc, then unpriced rows by count
     desc, then the demoted held and blind registers in clock order. */
 function sortKey(r) {
@@ -449,6 +493,7 @@ function sortKey(r) {
     -(r.priority || 0),
     -(r.episodes || 0),
     span.start_min ?? DAY_MINUTES,
+    r.register === 'history' && r.regime_end ? -Date.parse(r.regime_end) : 0,
     r.title || '',
   ];
 }
@@ -468,7 +513,7 @@ const compare = (a, b) => {
  * @param {{analysis: object, exposures: object, scenarios: object}} inputs
  * @param {{start_min: number, end_min: number}|null} bounds
  */
-export function projectFindings(inputs, bounds = null) {
+export function projectFindings(inputs, bounds = null, selectedId = null) {
   const analysis = inputs.analysis || {};
   const exposures = inputs.exposures || {};
   const scenarios = inputs.scenarios || {};
@@ -479,14 +524,15 @@ export function projectFindings(inputs, bounds = null) {
   // the GLOBAL queue is asserting-only: a quiet parameter is never listed and never
   // named (term 38)
   if (!query.scoped) rows = rows.filter((r) => r.register === 'assert');
-  rows = [...rows, ...findingRows(exposures, scenarios, eventCharts, query.pieces)];
+  rows = [...rows, ...findingRows(exposures, scenarios, eventCharts, query.pieces),
+    ...historyRows(analysis, query)];
   rows.sort(compare);
   for (const row of rows) {
     if (row.priority == null) row.tier = 'noted';
     else if (row.register === 'assert') row.tier = 'next_in_line';
     else row.tier = 'worth_a_look';
   }
-  const counts = { assert: 0, held: 0, blind: 0, finding: 0 };
+  const counts = { assert: 0, held: 0, blind: 0, finding: 0, history: 0 };
   const chip_counts = { highs: 0, lows: 0, meals: 0, corrections: 0 };
   for (const r of rows) {
     counts[r.register] += 1;
@@ -500,11 +546,43 @@ export function projectFindings(inputs, bounds = null) {
   const uncaused = exposures.exposures?.highs?.uncaused || 0;
   return {
     schema: SCHEMA,
+    analysis_generation: inputs.analysis_generation || 'standalone:0',
     window: query.dict,
     findings_window: { days: analysis.window_days ?? null, ...(exposures.window || {}) },
     rows,
+    selection: selection(analysis, query, selectedId),
     counts,
     chip_counts,
     uncaused_highs: { count: uncaused, text: uncaused ? uncausedHighsCopy(uncaused) : null },
+  };
+}
+
+/** Fixture-only mirror of IcHistoryEventProjection over frozen synthetic inputs. */
+export function projectIcHistoryEvents(inputs, historyId, selectedRunId = null) {
+  const history = (inputs.catalog || []).find((row) => row.id === historyId);
+  if (!history || history.lifecycle !== 'active') {
+    throw new Error('history event fixture identity is not active');
+  }
+  const runIds = (history.runs || []).map((run) => run.run_id);
+  if (selectedRunId != null && !runIds.includes(selectedRunId)) {
+    throw new Error('history event fixture run is not a member');
+  }
+  const readings = (inputs.readings || []).map((row) => ({ ...row, at: new Date(row.t) }));
+  const series = (history.runs || []).map((run) => {
+    const mealAt = new Date(run.first_member_at);
+    const lower = new Date(mealAt.getTime() + run.cgm_start_min * 60000);
+    const upper = new Date(mealAt.getTime() + run.cgm_end_min * 60000);
+    const points = readings.filter((row) => lower <= row.at && row.at <= upper)
+      .map((row) => ({ minute: (row.at - mealAt) / 60000, bg: row.bg }));
+    return { ...run, meal_at: run.first_member_at, points };
+  });
+  return {
+    schema: 'diagnose-carb-ratio-history-events-v1',
+    analysis_generation: inputs.analysis_generation,
+    history_id: historyId,
+    window_days: 90,
+    run_ids: runIds,
+    selected_run_id: selectedRunId,
+    series,
   };
 }

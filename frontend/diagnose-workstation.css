@@ -732,6 +732,8 @@ html.dark .dw {
 .dw .qrow .tag .gly { margin-right: 3px; letter-spacing: 0; font-size: 1.1em; }
 .dw .qrow .tag.setting { color: var(--primary); }
 .dw .qrow .tag.habit { color: var(--mk-secondary); }
+.dw .qrow .tag.watching { color: var(--mk-muted); }
+.dw .qrow[data-state="history"] { --tag-col: 76px; }
 .dw .qrow .go { grid-column: 3; grid-row: 1; color: var(--ck-accent); font-size: 12px; }
 .dw .qrow .den {
   grid-column: 1 / -1; grid-row: 2; font-size: var(--ck-data); color: var(--mk-muted); line-height: 1.45;
@@ -767,6 +769,7 @@ html.dark .dw {
    the Setting/Habit read survives the demotion */
 .dw .qrow[data-tier="noted"] .tag.setting { color: color-mix(in srgb, var(--primary) 72%, transparent); }
 .dw .qrow[data-tier="noted"] .tag.habit { color: color-mix(in srgb, var(--mk-secondary) 72%, transparent); }
+.dw .qrow[data-tier="noted"] .tag.watching { color: var(--mk-muted); }
 
 /* ONE DEMOTED REGISTER for the whole queue. A row is demoted for exactly three
    reasons — it is HELD (no direction asserted), BLIND (no clean evidence to
@@ -778,6 +781,7 @@ html.dark .dw {
    holding and a basal span holding read identically. */
 .dw .qrow[data-state="held"] .lab,
 .dw .qrow[data-state="blind"] .lab,
+.dw .qrow[data-state="history"] .lab,
 .dw .qrow[data-tier="noted"] .lab {
   font-weight: 500; font-size: var(--ck-body);
 }
@@ -824,6 +828,84 @@ html.dark .dw {
    just takes it back (WebKit did exactly that). */
 .crumb .meta[data-queue] {
   font-family: Inter, system-ui, sans-serif; font-variant-numeric: tabular-nums;
+}
+
+/* ADR 22 — history reads as a case file, never as a change panel. */
+.history-case { max-width: 68ch; }
+.history-conclusion {
+  margin: 0 0 10px; color: var(--mk-text); font-size: var(--ck-emph);
+  font-weight: 700;
+}
+.history-case .slot-head { margin-bottom: 9px; }
+.history-evidence { padding-block: 2px 7px; }
+.history-current {
+  margin-top: 7px; color: var(--mk-muted); font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}
+.history-current b { color: var(--mk-secondary); font-weight: 550; }
+.history-notice, .history-pending, .history-retirement {
+  color: var(--mk-secondary); font-size: 11.5px; line-height: 1.45;
+}
+.history-notice, .history-pending { margin: 11px 0 0; }
+.history-retirement { margin: 0; padding: 10px var(--ck-pad); }
+.history-stale {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin-top: 11px; color: var(--mk-secondary); font-size: 11.5px;
+}
+.history-retry { flex: 0 0 auto; min-height: 32px; }
+.history-runs-cap { margin-top: 16px; }
+.history-runs { display: grid; gap: 4px; margin-top: 5px; }
+.history-run {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px;
+  align-items: center; min-height: 44px; padding: 6px 8px;
+  border: 1px solid transparent; border-radius: 4px;
+  background: transparent; color: var(--mk-text); text-align: left; cursor: pointer;
+}
+.history-run:hover { background: var(--mk-surface-2); }
+.history-run:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: 1px; }
+.history-run[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--ck-accent) 50%, var(--mk-line));
+  background: var(--ck-sel);
+}
+.history-run small { color: var(--mk-muted); font-size: var(--ck-micro); }
+.history-canvas-notice {
+  position: absolute; z-index: 9; inset-inline: var(--ck-grid-left) 28px; bottom: 12px;
+  margin: 0; padding: 6px 8px; border: 1px solid var(--mk-line); border-radius: 4px;
+  background: color-mix(in srgb, var(--mk-surface) 94%, transparent);
+  color: var(--mk-secondary); font-size: 11.5px;
+}
+#align-canvas[data-history-id] { min-width: 0; }
+
+@media (max-width: 760px) {
+  .dw { grid-template-rows: auto minmax(0, 1fr); }
+  .instruments {
+    display: flex; min-height: 44px; overflow-x: auto; overflow-y: hidden;
+    padding-inline: 8px; gap: 12px;
+  }
+  .instruments > .instrument:first-child { padding-left: 0; }
+  #align-group { padding-left: 0; }
+  .instrument { flex: 0 0 auto; }
+  .seg button { min-width: 44px; min-height: 44px; padding-inline: 8px; }
+  .panes {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(250px, 42%) minmax(0, 1fr);
+  }
+  :is(.dw, .vw) .panes > .pane + .pane {
+    border-left: 0; border-top: 1px solid var(--wk-rule);
+  }
+  .history-case {
+    --ck-micro: 14px; --ck-data: 14px; --ck-emph: 15px; --ck-body: 14px;
+    max-width: none; font-size: 14px;
+  }
+  .history-case :is(.verdict, .qual, .history-current, .history-notice,
+    .history-pending, .history-stale), .dw .history-retirement { font-size: 14px; }
+  .dw .qcollapse { min-height: 44px; }
+  .history-run {
+    grid-template-columns: minmax(0, 1fr); gap: 2px; font-size: 14px;
+  }
+  .history-run small, .history-canvas-notice { font-size: 14px; }
+  .history-retry { min-height: 44px; }
+  .history-canvas-notice { inset-inline: 12px; }
 }
 
 /* ---- terms 46–49 · the watched-change dock ---------------------------

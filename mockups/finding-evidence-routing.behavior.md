@@ -1,15 +1,18 @@
 # Behaviour ledger — finding → evidence routing (Diagnose + Verify)
 
-**★ FROZEN — shipped-surface behavior contract.** Base:
-`origin/main` = `02d400ed6b62c79a8eb8d8283c0c7c83c95421de` (re-frozen
-2026-08-21 for issue #83; previously `5055f49`).
+**★ FROZEN — 2026-08-21 · operator-approved shipped-surface behavior
+contract.** Shipped visual predecessor: `b321d858cc8f33ad50f200319b0a00a70c99542c`.
+The earlier `a49b6db` freeze remains historical provenance and is reconciled
+below; it is not the current base record. Concurrent upstream re-freezes for
+issues #81, #13 and #83 (merged by #86) are retained below as provenance and
+regression obligations; they do not renumber or reinterpret ticket 10's frozen
+S41-S71.
 
 The app-only replay is
-`frontend/diagnose-workstation-behavior.replay.mjs`: **55 exported stories**
+`frontend/diagnose-workstation-behavior.replay.mjs`: **74 executable entries**
 (29 through 2026-08-19; five added by the excursion-chip sift, #61, at S27-S31;
 eight added by the #62 revision below, at S32-S39; one added by #64, S40; three
-added by #81, S41-S43; four added by issue #13 below, at S44-S47; five added
-by issue #83, at S48-S52), all
+diagnostic entries D1-D3; and ticket 10's 31 frozen history stories S41-S71), all
 opened through the real no-fetch server and tagged
 `STORY:finding-evidence-routing:<id>`. Static HTML, CSS and JavaScript come from
 that server; deterministic API reads come from
@@ -56,23 +59,35 @@ The source and rendered-surface inventory found no unrepresented behavior:
 the handlers, frames, SIFT controls, queue, parameter details, and window
 replacement path all remain covered by S01–S40 and D1–D3. The observed ledger
 delta is the issue reported by the user: “fix this bug, unrelated basal slots
-showing up in sliced views.” S41 and S42 add the delayed, superseded, failed, and
-recovery states below; every unrelated story is preserved.
+showing up in sliced views.” Issue #81 added delayed, superseded, failed, and
+recovery probes under concurrent S41–S43 labels; those labels are historical
+only after reconciliation with ticket 10.
 
 **Decision · 2026-08-21 · issue #81.** An unresolved or failed replacement
-window retains no prior projection content at any inspector depth. Its range is
-the only crumb metadata; SIFT keeps its enabled and pressed states but withholds
-counts. A settled projection may restore only its own counts and rows. A
-projection-backed detail whose row is absent remains open and says exactly
-`No findings in the selected window`.
+window retains no prior projection content in the queue, finding detail, or
+current-setting parameter detail. Its range is the only crumb metadata; SIFT
+keeps its enabled and pressed states but withholds counts. A settled projection
+may restore only its own counts and rows. A projection-backed detail whose row
+is absent remains open and says exactly `No findings in the selected window`.
+Selected I:C history is the explicit exception governed by frozen S59 and S70:
+while its replacement is pending or failed, it preserves the last coherent
+case/canvas pair and never exposes a mixed pair or staging action.
 
 **Amendment · 2026-08-21 · issue #81 review.** The pending line names the
-object being loaded: `Loading findings for HH:MM–HH:MM…`. S43 proves positive
-membership as well as exclusion from the same synthetic projection: the
-whole-day queue publishes six findings, then 04:30–06:00 publishes two. The
-loading line and settled queue share the inspector content spine.
+object being loaded: `Loading findings for HH:MM–HH:MM…`. The issue-scoped
+sliced-projection probe proves positive membership as well as exclusion from
+the reconciled synthetic projection: the whole-day queue publishes seven
+findings, then 04:30–06:00 publishes three, including the server-published
+Morning history row in both scopes. The loading line and settled queue share
+the inspector content spine.
 
-Freeze command (the server must already be running through the exact safe-start
+The three executable #81 regression probes remain in
+`frontend/diagnose-workstation-behavior.replay.mjs` under issue-scoped names and
+run from `frontend/diagnose-workstation.browser.test.mjs`. Their concurrent
+S41-S43 labels are historical only; ticket 10's already-frozen S41-S43 meanings
+remain the current story identities.
+
+Replay command (the server must already be running through the exact safe-start
 declaration in `AGENTS.md`):
 
 ```
@@ -98,7 +113,7 @@ and no retirement lacks its sanction, so the contract carries forward unchanged
 at the new base.
 
 The 55 P-rows below are retained as the legacy predecessor inventory and the
-operator's completed rulings. The executable current contract is S01–S47 and
+operator's completed rulings. The executable current contract is S01–S71 and
 D1–D3. The base-tip re-inventory found no new handlers since the predecessor
 pass: the intervening source delta only changed the queue to consume the
 server-published ranking tier and adjusted the corresponding `noted` styling.
@@ -427,25 +442,31 @@ P19 · The queue re-scopes with the window. The whole day is the unscoped global
       unresolved or failed it carries only `HH:MM–HH:MM`.
   source:   frontend/diagnose-workstation.js:1096-1121 (ensureFindings)
   mock:     one fixture, one window
-  evidence: replay S43 (app: 24 h → "6 findings · 30 days"; 04:30–06:00 →
-            "2 in this window", exactly `Basal 05:30 · raise` and `ISF`)
+  evidence: issue81SlicedProjection browser probe (app: 24 h →
+            "7 findings · 30 days"; 04:30–06:00 → "3 in this window", exactly
+            `Basal 05:30 · raise`, `ISF`, and
+            `Carb ratio Morning. Past setting.`)
   verdict:  kept          lock term 60 (same deferral as P18)
 ```
 
 ```
 P19b · While a window's findings are in flight the level carries
-       `data-loading="true"` and every depth renders only
+       `data-loading="true"` and each ordinary projection-backed depth renders
+       only
        `Loading findings for HH:MM–HH:MM…`, aligned to the inspector content
        spine. A failed replacement carries
        `data-loading="false"` and renders only
        `Findings unavailable for HH:MM–HH:MM. Choose another window to try again.`
        Both states retain count-free enabled root Filter controls and no row,
        recommendation, support count, staging control, or prior-projection
-       content. A settled projection-backed detail whose row is absent stays at
+       content. Selected I:C history is governed separately by frozen S59 and
+       S70, which preserve its last coherent case/canvas pair without allowing
+       staging. A settled projection-backed detail whose row is absent stays at
        that depth and renders only `No findings in the selected window`.
   source:   frontend/diagnose-workstation.js (projection state and paintLevel)
   mock:     no async load
-  evidence: replay S39, S41, S42, S43 (app, pass)
+  evidence: replay S39 plus issue81PendingProjection,
+            issue81FailedProjection, and issue81SlicedProjection browser probes
   verdict:  amended       issue #81 · 2026-08-21
 ```
 
@@ -1369,6 +1390,304 @@ deliberately non-unique meal join-pair precondition.
 **Result.** The app-only replay enumerates **43 of 43 stories**, including S40;
 an `ONLY` selection that names no stories still fails closed.
 
+## Frozen amendment — 2026-08-21, issue #10: non-actionable history
+
+**Operator-approved and frozen on 2026-08-21.** This section records the
+pre-design inventory requested for sub-order 3. No design or production source
+changed during the freeze phase.
+
+### Safe-start and predecessor reconciliation
+
+The shipped predecessor is `b321d858cc8f33ad50f200319b0a00a70c99542c`.
+The swept branch contains later sub-order 1 and 2 server/data work, but no shipped
+Diagnose UI change after that SHA. The app was opened only with the `AGENTS.md`
+no-fetch entrypoint and its named generated database:
+
+```
+uv run harmonic serve --no-fetch \
+  --db mockups/revise-e2e.synthetic/harmonic.sqlite --port 8777
+```
+
+`--port 8777` is the bind-only equivalent used because unrelated checkouts
+already occupied 8765 and 8766. The data source is still the generated synthetic
+SQLite file from `scripts/gen_revise_e2e_db.py`; no live pull or personal data was
+read. Static assets and deterministic API responses in the replay came from the
+same app opener and committed synthetic payload named in this ledger's header.
+
+The stale `a49b6db` header predated the amendments already recorded below. A
+source diff from `a49b6db` to `b321d85` finds the known retired standalone-lens
+controls and the known additions for ALIGN, verdict selection, findings chips,
+and Watching-collapse interaction. Those behaviors are already owned by the
+permanent retirements and S27-S40. Re-inventory found no unrecorded surviving
+handler, observer, chart handler, keyboard path, hover/focus behavior, or
+cross-view invariant. The app-only replay then ran the complete current backbone:
+
+```
+app: 43 of 43 stories passed
+```
+
+S17 and S26 printed their permanent retirement sanctions. No predecessor story
+is changed or retired by issue #10.
+
+### Intended state inventory
+
+The new data contracts are committed generated artifacts, not hand-written
+health data:
+
+- `diagnose-findings-v2` publishes one active Morning history row in the global,
+  Overnight, Morning, and quiet/overlapping window captures; it publishes no
+  history row in non-overlapping captures. The row carries `register=history`,
+  `tier=noted`, canonical opaque identity, server order, exact annotation,
+  past/programmed values, estimate, support, regime end, and exact run ids.
+- Selected findings publish `present`, `out_of_scope`, `aged_out`, or
+  `unavailable` disposition and finished server copy. Only `present` is also a
+  queue member; `out_of_scope` deliberately keeps the open case file.
+- `diagnose-carb-ratio-history-events-v1` publishes the same
+  `analysis_generation`, selected history id, complete ordered `run_ids`, an
+  optional selected member id, and all series. The synthetic active item has
+  three meal runs; each run contains two meals, which is the multi-meal shape.
+- The endpoint rejects missing/malformed identity or generation, unknown history,
+  malformed or nonmember run, both distinct retirement outcomes, and generation
+  mismatch through typed transport errors. A process restart changes the
+  generation even when the synthetic database bytes do not change.
+
+The intended rendered states, in parent-order, are: global queue; overlapping
+clock queue; sift-collapsed Watching; history case file under By clock; By event;
+member selected without population change; multi-meal member; thin non-null
+estimate; out-of-scope hold; aged-out return; unavailable return; ordinary failed
+request; malformed history; unknown history; malformed run; nonmember run;
+`history_aged_out` 410; `history_unavailable` 410; generation-mismatch 409 and its
+one coordinated retry; terminal visible-stale stop; explicit Retry; process-
+restart mismatch; and superseded findings/event responses. Light and dark at
+1440x900, 1024x768, and 390x844 are the final visual evidence matrix; keyboard,
+focus, accessible names, reduced motion, and non-color-only state are required at
+each applicable state.
+
+### Proposed stories and expected pre-change failures
+
+Every entry below is a **FROZEN STORY**. Its `pre-change failure` is the reason
+the story must fail against the unchanged `b321d85` surface before implementation.
+The replay function keeps the same id and gains
+`STORY:finding-evidence-routing:<id>` during implementation.
+
+```
+S41 · The global queue renders every server-published history row after held and
+      blind rows, under the Watching register, preserving server order.
+  pre-change failure: queueRows has no history placement or Watching treatment;
+                      detailFor falls through to held/blind reason copy.
+
+S42 · During an excursion-chip sift, held, blind, and history rows collapse into
+      one reachable Watching control whose count includes all three registers;
+      expanding it restores those same rows without changing the sift.
+  pre-change failure: only held/blind collapse and the control literally counts
+                      and names `held or blind` reads.
+
+S43 · A history queue row prints the past-setting detail and support supplied by
+      the server, omits `programmed_now`, and exposes no stage affordance.
+  pre-change failure: history has no detail formatter; its finished annotation is
+                      incorrectly prefixed as a held reason.
+
+S44 · Clicking a history row opens its canonical history case file by opaque id;
+      neither the queue row nor any case-file state can call the stage/Plan path.
+  pre-change failure: drillFinding treats every carb-ratio setting id as a current
+                      I:C block id, finds no block, and opens nothing.
+
+S45 · The history case file leads with the exact conclusion `Past setting. No
+      change suggested.` and shows the current programmed value exactly once,
+      afterward and visually quieter; no other current-value copy is rendered.
+  pre-change failure: no history case-file renderer or conclusion-first hierarchy
+                      exists.
+
+S46 · The same active history id is reachable globally and under every overlapping
+      clock scope; changing scope preserves the selected id and re-renders only
+      server-returned membership.
+  pre-change failure: the current reload has no selected_id and cannot preserve a
+                      history selection across a findings-window request.
+
+S47 · A findings response with selection disposition `out_of_scope` keeps the
+      complete prior history case file open and shows the server message; the queue
+      may omit the row, but neither inspector nor canvas is cleared or substituted.
+  pre-change failure: the current selection model resolves only live queue rows and
+                      has no disposition path.
+
+S48 · By clock and the case file are one coherent projection of one selected
+      history id and one `analysis_generation`; the queue supplies both facts and
+      the browser derives neither identity nor lifecycle.
+  pre-change failure: the workstation stores neither selected history identity nor
+                      analysis generation.
+
+S49 · Switching the selected history item to By event requests
+      `diagnose-carb-ratio-history-events-v1` with that exact id and generation,
+      then swaps inspector and canvas together only after the complete response
+      validates.
+  pre-change failure: ALIGN supports only finding factors and calls the unrelated
+                      behavioral event-comparison route.
+
+S50 · Switching By event back to By clock preserves the selected history id,
+      generation, window, and case-file hierarchy; it does not reclassify or stage
+      the item.
+  pre-change failure: no history projection state exists.
+
+S51 · Selecting a published member run sends its opaque run id, draws that member,
+      and leaves the complete ordered `run_ids` population and case-file totals
+      byte-for-byte unchanged.
+  pre-change failure: no history member roster or selected-run request exists.
+
+S52 · A run containing multiple meals renders every server-published meal offset
+      as members of that one run; selecting it does not split the run or invent
+      meal identities.
+  pre-change failure: no history event renderer consumes member_offsets_min.
+
+S53 · A thin but non-null server estimate remains visible as non-actionable history,
+      with its wide interval and support; it has no stage path.
+  pre-change failure: no history formatter can show this accepted-failure state.
+
+S54 · The browser never removes history from an estimate null check, ratio test, id
+      syntax, support threshold, age calculation, or direction calculation; a row
+      disappears only when the findings response omits it and supplies the selected
+      item's server disposition.
+  pre-change failure: the only carb-ratio drill path guesses current-block identity
+                      from the id prefix, and no server-disposition path exists.
+
+S55 · A findings response with `aged_out` returns inspector and canvas atomically to
+      the queue and renders exactly `Past-setting evidence aged out of the 90-day
+      window.` as the retirement notice.
+  pre-change failure: no selected-history findings response is requested or handled.
+
+S56 · A findings response with `unavailable` returns inspector and canvas atomically
+      to the queue and renders exactly `Past-setting evidence no longer maps to one
+      current program block.` as a distinct retirement notice.
+  pre-change failure: no selected-history findings response is requested or handled.
+
+S57 · A `history_aged_out` 410 from the event endpoint performs the same atomic queue
+      return and exact aged-out notice, with no automatic retry.
+  pre-change failure: the endpoint is never called and typed retirement is unhandled.
+
+S58 · A `history_unavailable` 410 from the event endpoint performs the same atomic
+      queue return and exact unavailable notice, with no automatic retry.
+  pre-change failure: the endpoint is never called and typed retirement is unhandled.
+
+S59 · A failed findings or history-event request preserves the last complete
+      inspector/canvas pair and starts at most one coordinated recovery attempt;
+      loading UI never clears one half or mixes it with the pending response.
+  pre-change failure: ensureFindings silently drops failures and history events have
+                      no recovery coordinator.
+
+S60 · On the first `analysis_generation_mismatch` 409, one coordinated retry first
+      refreshes findings with the selected id, then requests the selected history
+      events with that returned generation, and swaps the complete pair atomically.
+  pre-change failure: no generation is stored, compared, or retried.
+
+S61 · If the coordinated retry fails, mismatches, or is superseded, the last complete
+      pair remains visible beside a terminal stale notice and an explicit Retry
+      control; no automatic loop continues.
+  pre-change failure: there is no bounded retry count, stale notice, or Retry control.
+
+S62 · Explicit Retry starts exactly one new coordinated attempt from the visible
+      selected id and current clock scope, preserves the old pair while pending, and
+      clears the stale notice only after a coherent replacement commits.
+  pre-change failure: no explicit recovery affordance exists.
+
+S63 · A malformed selected history id response preserves the last coherent pair,
+      runs the one coordinated recovery attempt, then stops visibly stale if the
+      server still rejects it; the browser does not decode or repair the id.
+  pre-change failure: no typed invalid_history_id recovery exists.
+
+S64 · An unknown selected history id response follows the same bounded preservation
+      path for history_not_found; it never guesses a replacement row.
+  pre-change failure: no typed history_not_found recovery exists.
+
+S65 · A malformed selected run id preserves the complete prior pair and follows the
+      bounded recovery path; it does not clear selection or decode the id locally.
+  pre-change failure: no typed invalid_history_run_id recovery exists.
+
+S66 · A nonmember selected run preserves the complete prior pair and follows the
+      bounded recovery path for history_run_not_found; population membership is
+      never recomputed in the browser.
+  pre-change failure: no run-membership or typed nonmember handling exists.
+
+S67 · A process-restart generation mismatch follows S60-S62 even when database bytes
+      and history id are unchanged; the browser treats the server generation as
+      opaque process state.
+  pre-change failure: the current workstation has no generation concept.
+
+S68 · A superseded findings response cannot update the queue, selected disposition,
+      case file, generation, or either canvas after a newer request owns the view.
+  pre-change failure: window requests have a key guard, but it does not cover selected
+                      identity, generation, disposition, or coordinated recovery.
+
+S69 · A superseded all-runs or selected-run event response cannot update either half
+      of the pair; the newest selected item/run request alone may commit.
+  pre-change failure: no history-event request-generation seam exists.
+
+S70 · At every settled and pending point, rendered inspector and canvas expose the
+      same selected history id, selected run id, and analysis generation; a mismatch
+      is rejected before paint and leaves the prior pair intact.
+  pre-change failure: no paired history state or pre-paint schema/generation check
+                      exists.
+
+S71 · Neither queue clicks, ALIGN switches, member selection, recovery, nor explicit
+      Retry adds a Plan item, navigates to Plan, or invokes the staging callback.
+  pre-change failure: history cannot open, so its full interaction surface has no
+                      executable non-actionability assertion.
+```
+
+### Paired shared-state predecessor matrix
+
+This is the required inspector/canvas matrix. `prior pair` always means both
+halves from the last fully validated response; preservation never means keeping
+one half while painting the other.
+
+| State / transition | Queue | Inspector | Canvas | Commit rule | Predecessor reading |
+|---|---|---|---|---|---|
+| Global history | active row after held/blind | history case after click | By clock | one selected id + findings generation | row misformatted; click is inert |
+| Overlapping clock scope | same server member | same case | scoped By clock | selected_id sent with scope | no history selection |
+| Sift | history counted under collapsed Watching | unchanged if already open | unchanged | sift changes visibility only | only held/blind collapse |
+| By event | unchanged | same case hierarchy | all published runs | event response id + generation must match | unsupported |
+| Selected member | unchanged population | same totals + selected member | selected member emphasized | selected_run_id must be in returned run_ids | unsupported |
+| Multi-meal member | unchanged population | one run, all meals | one run with all offsets | server run identity is indivisible | unsupported |
+| Out of scope | selected row absent | prior case + server message | prior complete canvas | findings disposition holds pair | unsupported |
+| Findings/event pending | prior queue/pair | prior inspector | prior canvas | no half commits early | findings queue alone can lag; no pair |
+| First ordinary/typed failure | prior queue/pair | prior inspector | prior canvas | one coordinated retry allowed | findings failure is silent |
+| First 409 / restart | prior queue/pair | prior inspector | prior canvas | findings refresh, then events; one generation | unsupported |
+| Terminal retry failure | prior queue/pair | prior inspector + stale notice/Retry | prior canvas | automatic loop stops | unsupported |
+| Explicit Retry | prior queue/pair while pending | prior inspector while pending | prior canvas while pending | coherent success replaces both | unsupported |
+| Aged out | queue + exact server notice | removed atomically | clock canvas restored atomically | disposition or typed 410 is terminal | unsupported |
+| Unavailable | queue + distinct server notice | removed atomically | clock canvas restored atomically | disposition or typed 410 is terminal | unsupported |
+| Superseded findings/events | newest request state only | prior or newest complete inspector | matching prior or newest canvas | stale completion is ignored whole | window-only guard, no paired guard |
+
+### Frozen visual and interaction evidence matrix
+
+After implementation, each row below is captured in light and dark at 1440x900,
+1024x768, and 390x844. Recovery rows additionally capture pending and terminal
+states. The final issue-10 evidence directory records an explicit pass/fail verdict
+for history-first hierarchy, exactly one quieter current-program line,
+non-actionability, information density, keyboard/focus accessibility, both themes,
+all viewports, and coherent recovery.
+
+| Parent-order state | Required visual/interaction assertion |
+|---|---|
+| Global queue | history is reachable, quiet, after held/blind, and has no current value or action cue |
+| Overlapping clock scope | same identity opens without roster/population invention |
+| Sift-collapsed Watching | count, label, expansion, focus order, and retained sift are clear |
+| By clock case file | conclusion first; evidence second; current context once and quieter |
+| By event, all runs | same case file and generation; dense multi-run chart remains legible |
+| By event, selected multi-meal run | selection is visible without population/count movement |
+| Thin non-null estimate | uncertainty remains legible and cannot resemble a recommendation |
+| Out of scope | held case and complete canvas remain understandable beside server copy |
+| Aged out / unavailable | distinct notices; atomic return has no orphaned inspector or canvas |
+| First recovery | prior pair stays complete; pending state does not imply fresh evidence |
+| Terminal stale | stale notice and Retry are visible, keyboard reachable, and non-looping |
+| Explicit Retry | focus and prior evidence remain stable until coherent success |
+| Superseded response | no flash, mixed generation, count jump, or selection jump |
+
+### QUESTION round
+
+No open behavior QUESTION remains. The work order and the two generated server
+contracts settle actionability, membership, lifecycle, identity, generation,
+retry bound, retirement copy, and atomicity. The operator approved S41-S71 and
+the two matrices above on 2026-08-21; implementation may not change them silently.
+
 ## Revision — 2026-08-21, base `21df720` (issue #13: ISF staging verdict)
 
 `/ui-craft` revise lane. The base contract replayed **43 of 43 stories** before
@@ -1387,7 +1706,10 @@ Current / Estimate / Recommended geometry, their estimate, interval, support,
 annotation, direction, register and refusal evidence; Recommended reserves its
 row without printing a number.
 
-**Behavior added — four stories, `S44` to `S47`:**
+**Concurrent upstream proof cases.** Before this merge these were numbered
+S44-S47 on the issue #13 lane. Those labels collide with ticket 10's frozen
+history identities and are historical only here; the behaviors remain enforced
+by the queue unit tests and the four browser tests named for the backend verdict.
 
 ```
 S44 · a recommendation-bearing explicit false verdict stays in the direction-
@@ -1408,7 +1730,7 @@ findings projection. Only S47 injects `/pump-settings`, by copying the generated
 multi-segment profile from that payload; its `PUT /plan` body, not the badge
 alone, proves the fan-out.
 
-**Result.** The app-only replay reports **50 of 50 stories passed**. The Diagnose
+**Historical lane result.** The app-only replay reported **50 of 50 stories passed**. The Diagnose
 workstation browser suite reports **18 passed, 0 failed**, and the cockpit-shell
 suite reports **12 passed, 0 failed, 2 pre-existing evidence-only skips**. The
 same rounded-false DOM regression run against detached base worktree `21df720`
@@ -1437,8 +1759,11 @@ alternative Views `All findings` and `Event charts`; the latter retains only
 rows carrying a non-null server-published `event_chart` coordinate. S27–S30 now
 exercise Sift through that menu, preserve the existing held/blind disclosure
 under All findings, and name a zero result `No findings match the current
-filters.` S41 and S42 retain the selection while a replacement projection is
-pending or failed and assert count withdrawal where Filter is visible.
+filters.` The issue-scoped pending and failed projection probes retain the
+selection while a replacement projection is pending or failed and assert count
+withdrawal where Filter is visible. Their upstream S41/S42 labels were
+concurrent branch labels only; ticket 10's frozen S41/S42 meanings are
+unchanged.
 
 S34 now enters directly from Event charts: a failed event-comparison request
 still restores By clock, keeps the reader on the same Finding, and preserves the
@@ -1449,18 +1774,19 @@ Back shows the row absent from Event charts and still reachable under All
 findings; no stale frame coordinate or browser-side fallback manufactures an
 event chart.
 
-**Behavior added — five stories, `S48` to `S52`:**
+**Behavior added — five issue-scoped #86 probes (historically `S48` to `S52`
+on the upstream branch):**
 
 ```
-S48 · the 30px Findings pane header owns the navigable trail, metadata and
+issue86HeaderFilter · the 30px Findings pane header owns the navigable trail, metadata and
       root-only ARIA Filter menu; roving focus wraps and Escape restores Filter
-S49 · Event charts intersects Sift, retains server order, excludes settings and
+issue86FilteredRoot · Event charts intersects Sift, retains server order, excludes settings and
       held reads, and settled zero metadata retains only the findings duration
-S50 · Event charts drill-in opens directly By event; switching to By clock and
+issue86DirectEntryRestoration · Event charts drill-in opens directly By event; switching to By clock and
       returning restores View, window, order, scroll and a closed Filter menu
-S51 · a pending root projection retains enabled Sift/View selections while
+issue86PendingRoot · a pending root projection retains enabled Sift/View selections while
       withholding old rows, row counts and Sift counts
-S52 · a malformed event-comparison response is rejected before render and
+issue86MalformedRecovery · a malformed event-comparison response is rejected before render and
       restores By clock without losing the Finding, window or root View
 ```
 
@@ -1469,8 +1795,12 @@ input from `ciq_autotune/event_comparison.py`; the fixture-only JavaScript
 mirror consumes it and remains byte-equal to the Python projection. No title or
 client allowlist decides queue eligibility or case-file routing.
 
-**Result.** The focused changed/new replay reports **11 of 11 stories passed**
-(S27–S30, S34, S38, S48–S52), and the complete revision replay reports **55 of
-55 stories passed**. The Diagnose workstation browser suite reports **21
-passed, 0 failed**; the cockpit-shell suite reports **12 passed, 0 failed, 2
-pre-existing evidence-only skips**. All nine declared browser-gate legs pass.
+**Historical upstream result.** Before this merge, the focused changed/new
+replay reported **11 of 11 stories passed** (S27–S30, S34, S38 and the five
+then-numbered S48–S52 probes), and the upstream complete revision replay
+reported **55 of 55 stories passed**. The Diagnose workstation browser suite
+reported **21 passed, 0 failed**; the cockpit-shell suite reported **12 passed,
+0 failed, 2 pre-existing evidence-only skips**. All nine declared browser-gate
+legs passed. In the reconciled ledger the app replay remains ticket 10's frozen
+**74 stories**; the five discovery probes run from the browser suite under the
+issue-scoped names above and do not occupy or reinterpret S48–S52.

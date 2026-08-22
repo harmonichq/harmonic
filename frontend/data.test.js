@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import { makeDeps } from './data.js';
+import { ApiTransportError, makeDeps } from './data.js';
 
 const here = (path) => fileURLToPath(new URL(path, import.meta.url));
 
@@ -222,6 +222,32 @@ test('fetchDiagnoseEventComparison builds one coordinate-owned projection reques
     '/diagnose/event-comparison?view=lows&factor=correction_on_iob&start_min=1320&end_min=120&another=1&occ=lows-42');
 });
 
+test('fetchDiagnoseFindings omits selection when no history identity is supplied', async () => {
+  const { fetch, calls } = makeFakeFetch({ schema: 'diagnose-findings-v2' });
+  await makeDeps({ fetch }).fetchDiagnoseFindings();
+  assert.equal(calls[0].url, '/diagnose/findings');
+});
+
+test('fetchDiagnoseFindings carries an optional selected history identity', async () => {
+  const { fetch, calls } = makeFakeFetch({ schema: 'diagnose-findings-v2' });
+  await makeDeps({ fetch }).fetchDiagnoseFindings(
+    { start_min: 1320, end_min: 120 }, 'ich1_WzAsNzIwLCI2Il0');
+  assert.equal(calls[0].url,
+    '/diagnose/findings?start_min=1320&end_min=120&selected_id=ich1_WzAsNzIwLCI2Il0');
+});
+
+test('history events carries the findings generation and optional run selection', async () => {
+  const { fetch, calls } = makeFakeFetch({
+    schema: 'diagnose-carb-ratio-history-events-v1', series: [],
+  });
+  await makeDeps({ fetch }).fetchDiagnoseCarbRatioHistoryEvents({
+    historyId: 'ich1_history', analysisGeneration: 'process:4',
+    selectedRunId: 'icr1_run',
+  });
+  assert.equal(calls[0].url,
+    '/diagnose/carb-ratio-history/events?history_id=ich1_history&analysis_generation=process%3A4&selected_run_id=icr1_run');
+});
+
 test('event comparison accepts v3, drawing withheld episodes and supported aggregates', async () => {
   const projection = JSON.parse(readFileSync(
     here('./__fixtures__/event-comparison-mirror.json'), 'utf8')).windows.outcome_not_anchor;
@@ -403,6 +429,25 @@ test('non-2xx response surfaces the unwrapped detail error', async () => {
     () => fetchStatus(),
     (err) => {
       assert.equal(err.message, 'server error detail');
+      return true;
+    },
+  );
+});
+
+test('structured non-2xx detail preserves status and code on a typed error', async () => {
+  const detail = { code: 'analysis_generation_mismatch',
+    message: 'Evidence changed. Refresh findings.' };
+  const fakeFetch = async () => ({
+    ok: false, status: 409, statusText: 'Conflict', json: async () => ({ detail }),
+  });
+  await assert.rejects(
+    () => makeDeps({ fetch: fakeFetch }).fetchStatus(),
+    (error) => {
+      assert.ok(error instanceof ApiTransportError);
+      assert.equal(error.status, 409);
+      assert.equal(error.code, 'analysis_generation_mismatch');
+      assert.deepEqual(error.detail, detail);
+      assert.equal(error.message, detail.message);
       return true;
     },
   );

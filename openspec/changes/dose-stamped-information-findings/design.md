@@ -166,3 +166,87 @@ app changes.
 
 Decision: harmonichq/harmonic#22, 2026-08-20. Operator direction: historical
 measurement; current settings subordinate.
+
+## ADR 10 — Historical I:C block membership is proof-only
+
+**Ruling.** A retired I:C measurement may publish only when append-only settings
+snapshots prove the schedule that was in force for the whole closed meal run.
+Dose stamps prove the ratio delivered; they do not prove historical block
+boundaries. The analyzer therefore reduces snapshots into forward-only intervals
+of one active profile and one I:C schedule, cuts an interval on either a profile
+switch or schedule change, and admits a run only when every member lies in one
+block of one interval and every member's canonical dose stamp equals that block's
+value.
+
+Runs before the first snapshot, runs ending on or after the next detected change,
+runs spanning a historical block boundary, missing or mixed dose stamps, and
+stamps that disagree with the proven schedule are unsupported and absent from the
+catalog. The newest schedule is never applied retrospectively. History identity is
+the proven circular block span plus its past programmed ratio; run identity is the
+first member bolus at whole-second pump time.
+
+The catalog is append-only in identity but current in lifecycle. An ever-publishable
+identity is `active` while its fixed 90-day estimate is non-null and its historical
+span overlaps exactly one current programmed I:C value. It is `aged_out` when the
+estimate becomes null. It is `unavailable` when the historical proof remains valid
+but the span overlaps zero or multiple current programmed values, because a singular
+`programmed_now` would be false. Unsupported evidence never acquires an identity and
+cannot be repaired by a consumer.
+
+**Consequences.** Only currently programmed I:C blocks may pass
+`ic_asserts_move`; retired regimes are measurement-only even above the support
+floor. Projections copy the analyzer catalog and lifecycle rather than recreating
+schedule proof, current-value mapping, age, or actionability. The rejected
+alternative is any fallback to the latest profile, inferred pre-snapshot boundary,
+or consumer-side reassignment.
+
+Decision: harmonichq/harmonic#10, 2026-08-21.
+
+## ADR 10 — History evidence aligns to the whole meal run
+
+**Ruling.** Historical event evidence uses the same closed meal run that backed the
+measurement; a chained run is never split into visually convenient single meals.
+The run is anchored at its first member bolus, carries every member as an offset
+from that origin, begins its CGM display at the analyzer-owned pre-run bound, and
+ends only after the analyzer-owned outcome bound following the last member. The
+event projection reads those exact bounds and the exact catalog membership. It
+does not rebuild runs or shorten their evidence to the selected member.
+
+Selecting a run changes only `selected_run_id`. The complete `run_ids` population
+and every series remain unchanged, so selection is emphasis rather than filtering.
+For a multi-meal run, every member marker and the final outcome stay together in
+both the visual and assistive representation.
+
+**Consequences.** The event endpoint and canvas can answer which whole response
+supported a retired ratio without implying that one member was independently
+isolated. A canonical run outside the selected history membership is a 404, not a
+request to infer membership. The behavioral `/diagnose/event-comparison` remains
+its separate fixed-window projection and is unchanged.
+
+Decision: harmonichq/harmonic#10, 2026-08-21.
+
+## ADR 10 — History projections share a restart-safe generation
+
+**Ruling.** Findings and historical event evidence are one coherent read. The
+server prepares both from one stable cache snapshot and stamps both schemas with
+the same opaque `analysis_generation`, composed from a collision-resistant
+per-process incarnation and the cache's monotonic data version. A cache bump that
+crosses preparation causes a bounded stable-read retry; bytes crossed by a bump are
+never labelled with the newer generation. A process restart therefore cannot reuse
+the prior token even when the database bytes and cache version are otherwise equal.
+
+The event endpoint requires the generation obtained from findings. A missing token
+is a 400; a token that no longer matches is a structured 409 with
+`analysis_generation_mismatch`. A selected history identity's `aged_out` and
+`unavailable` outcomes remain distinct structured 410 responses, but the browser
+accepts retirement only after a selected findings refresh returns the matching
+server-owned disposition.
+
+**Consequences.** The browser commits an inspector/canvas pair only when generation,
+history identity, and optional run identity all agree. Failed, superseded, or mixed
+responses preserve the prior coherent pair. One automatic coordinated
+findings-then-events retry is allowed; a second failure stops, marks the preserved
+evidence stale, and exposes one explicit Retry. No response order, decoded ID, or
+missing row may be used to manufacture coherence or retirement.
+
+Decision: harmonichq/harmonic#10, 2026-08-21.

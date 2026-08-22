@@ -2,8 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  BIN_MINUTES, buildMealMarkers, buildSlotLane, slotAssertsMove, snapWindow, windowStats,
+  BIN_MINUTES, buildMealMarkers, buildSlotLane, slotAssertsMove, snapWindow,
+  renderHistoryEvents, validateHistoryEvents, windowStats,
 } from './diagnose-workstation-chart.js';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
+const historyCapture = JSON.parse(readFileSync(fileURLToPath(new URL(
+  '../mockups/diagnose-workstation.synthetic/ic-history-events.capture.json', import.meta.url,
+)), 'utf8'));
 
 test('buildSlotLane reads the backend verdict fields', () => {
   const lane = buildSlotLane([
@@ -65,4 +72,106 @@ test('windowStats reads a snapped hand-built envelope window', () => {
   assert.deepEqual(windowStats(envelope, window), {
     a: 1, b: 6, median: 118, lowest: 105, lowestIndex: 1, spread: 20, readings: 27,
   });
+});
+
+test('S49/S70 · history event validation accepts one exact id and generation', () => {
+  const projection = historyCapture.cases.all_runs;
+  assert.equal(validateHistoryEvents(projection, {
+    historyId: projection.history_id,
+    analysisGeneration: projection.analysis_generation,
+    selectedRunId: null,
+  }), projection);
+});
+
+test('S51/S52 · selected member remains one run with every published meal offset', () => {
+  const projection = historyCapture.cases.selected_run;
+  const accepted = validateHistoryEvents(projection, {
+    historyId: projection.history_id,
+    analysisGeneration: projection.analysis_generation,
+    selectedRunId: projection.selected_run_id,
+  });
+  assert.deepEqual(accepted.run_ids, historyCapture.cases.all_runs.run_ids);
+  assert.deepEqual(
+    accepted.series.find((run) => run.run_id === accepted.selected_run_id).member_offsets_min,
+    [0, 120],
+  );
+});
+
+test('history event chart exposes the server population to assistive technology', () => {
+  const accepted = validateHistoryEvents(historyCapture.cases.all_runs, {
+    historyId: historyCapture.cases.all_runs.history_id,
+    analysisGeneration: historyCapture.cases.all_runs.analysis_generation,
+  });
+  const attrs = new Map();
+  const element = {
+    dataset: {},
+    setAttribute(name, value) { attrs.set(name, value); },
+  };
+  const chart = { setOption() {} };
+  renderHistoryEvents(element, {
+    getInstanceByDom() { return chart; },
+  }, accepted, {
+    primary: '#000', meal: '#111', rail: '#fff', muted: '#222', line: '#333', grid: '#444',
+  });
+  assert.equal(attrs.get('role'), 'img');
+  assert.equal(attrs.get('aria-label'),
+    `Past-setting glucose evidence for ${historyCapture.cases.all_runs.series.length} meal runs.`);
+});
+
+test('S52 · every meal offset gets a marker even between CGM point minutes', () => {
+  const projection = structuredClone(historyCapture.cases.selected_run);
+  const run = projection.series[0];
+  run.member_offsets_min = [123];
+  run.points = [{ minute: 120, bg: 140 }, { minute: 125, bg: 145 }];
+  let option = null;
+  renderHistoryEvents({ dataset: {}, setAttribute() {} }, {
+    getInstanceByDom() { return { setOption(next) { option = next; } }; },
+  }, projection, {
+    primary: '#000', meal: '#111', rail: '#fff', muted: '#222', line: '#333', grid: '#444',
+  });
+  assert.deepEqual(option.series.at(-1).data
+    .filter((marker) => marker.runId === run.run_id).map((marker) => marker.value), [[123, 145]]);
+  run.points = [];
+  renderHistoryEvents({ dataset: {}, setAttribute() {} }, {
+    getInstanceByDom() { return { setOption(next) { option = next; } }; },
+  }, projection, {
+    primary: '#000', meal: '#111', rail: '#fff', muted: '#222', line: '#333', grid: '#444',
+  });
+  assert.deepEqual(option.series.at(-1).data
+    .filter((marker) => marker.runId === run.run_id).map((marker) => marker.value), [[123, 44]]);
+});
+
+test('S69/S70 · mismatched history pairs are rejected before paint', () => {
+  const projection = historyCapture.cases.all_runs;
+  for (const expected of [
+    { historyId: 'different', analysisGeneration: projection.analysis_generation },
+    { historyId: projection.history_id, analysisGeneration: 'different' },
+  ]) {
+    assert.throws(() => validateHistoryEvents(projection, expected), /coherent history evidence/);
+  }
+  assert.throws(() => validateHistoryEvents({ ...projection, schema: 'unknown' }, {
+    historyId: projection.history_id, analysisGeneration: projection.analysis_generation,
+  }), /coherent history evidence/);
+  const nonmember = { ...projection, selected_run_id: 'opaque-run-not-in-population' };
+  assert.throws(() => validateHistoryEvents(nonmember, {
+    historyId: projection.history_id,
+    analysisGeneration: projection.analysis_generation,
+    selectedRunId: nonmember.selected_run_id,
+  }), /coherent history evidence/);
+  const duplicate = structuredClone(projection);
+  duplicate.run_ids[1] = duplicate.run_ids[0];
+  duplicate.series[1].run_id = duplicate.run_ids[0];
+  assert.throws(() => validateHistoryEvents(duplicate, {
+    historyId: projection.history_id,
+    analysisGeneration: projection.analysis_generation,
+  }), /coherent history evidence/);
+  const malformed = structuredClone(projection);
+  malformed.run_ids = [null];
+  malformed.series = [{
+    run_id: null, first_member_at: null, points: [{}], member_offsets_min: [null],
+  }];
+  assert.throws(() => validateHistoryEvents(malformed, {
+    historyId: projection.history_id,
+    analysisGeneration: projection.analysis_generation,
+  }), /coherent history evidence/);
 });

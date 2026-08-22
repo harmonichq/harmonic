@@ -70,7 +70,11 @@ import { extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   derivedPumpSettings, openApp, openerProblems, state, withIsfVerdict,
-  withoutIsfProjectionVerdict,
+  withoutIsfProjectionVerdict, twoFamilyInputs,
+  densityHistoryInputs,
+  issue81PendingProjection, issue81FailedProjection, issue81SlicedProjection,
+  issue86HeaderFilter, issue86FilteredRoot, issue86DirectEntryRestoration,
+  issue86PendingRoot, issue86MalformedRecovery,
 } from './diagnose-workstation-behavior.replay.mjs';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 
@@ -143,6 +147,49 @@ async function shot(page, family, state_, viewport, theme) {
 
 const VIEWPORTS = [{ width: 1440, height: 900 }, { width: 1280, height: 800 }];
 
+test('seven generated history reads remain ordered, reachable, laid out, and non-stageable', async () => {
+  const browser = await runner.browser();
+  const inputs = await densityHistoryInputs();
+  const expected = projectFindings(inputs).rows
+    .filter((row) => row.register === 'history').map((row) => row.id);
+  assert.equal(expected.length, 7, 'the generator publishes seven simultaneous history rows');
+
+  const page = await openApp(browser, {
+    state: 'dense', viewport: { width: 390, height: 844 }, theme: 'light',
+    history: true, findingsInputs: inputs, appSource: 'fixture', stageProbe: true,
+  });
+  try {
+    const historyRows = page.locator('#level .qrow[data-state="history"]');
+    assert.deepEqual(await historyRows.evaluateAll((rows) => rows.map((row) => row.dataset.id)), expected,
+      'the Watching history rows keep the server projection order');
+    assert.equal(await historyRows.locator('.stagebtn').count(), 0,
+      'no dense history row exposes staging');
+
+    await page.getByRole('button', { name: /Filter/ }).click();
+    await page.getByRole('menuitemcheckbox', { name: /^Highs / }).click();
+    await page.keyboard.press('Escape');
+    const collapse = page.locator('#level .qcollapse');
+    assert.match(await collapse.innerText(), /^Watching · \d+ reads$/,
+      'the sift owns one reachable Watching disclosure');
+    assert.equal(await historyRows.count(), 0, 'history rows collapse during the sift');
+    await collapse.click();
+    assert.deepEqual(await historyRows.evaluateAll((rows) => rows.map((row) => row.dataset.id)), expected,
+      'expanding Watching restores all seven rows in order');
+
+    await historyRows.nth(3).click();
+    const rendered = await state(page);
+    assert.equal(rendered.history.conclusion, 'Past setting. No change suggested.',
+      'the dense row opens the normal history inspector hierarchy');
+    assert.equal(rendered.history.currentCopies, 1,
+      'the dense inspector keeps one quieter current-program line');
+    assert.equal(rendered.history.stageCount, 0, 'the dense inspector remains non-stageable');
+    assert.ok(rendered.hScroll <= 0 && rendered.vScroll <= 0,
+      `the narrow dense inspector stays inside its pane (${rendered.hScroll}, ${rendered.vScroll})`);
+  } finally {
+    await page.close();
+  }
+});
+
 test('an explicit fixture opener ignores a hostile ambient app-source override', async () => {
   const browser = await runner.browser();
   const previous = process.env.DIAGNOSE_APP_SOURCE;
@@ -157,6 +204,60 @@ test('an explicit fixture opener ignores a hostile ambient app-source override',
     else process.env.DIAGNOSE_APP_SOURCE = previous;
   }
 });
+
+for (const [name, probe, options] of [
+  ['pending and superseded projections replace the whole inspector',
+    issue81PendingProjection, {
+      findingsInputs: twoFamilyInputs,
+      findingsDelayMs: 900,
+      findingsDelays: { '900-1260': 900, '720-1080': 1200, '1080-1440': 100 },
+    }],
+  ['a failed replacement projection stays failed until the window changes',
+    issue81FailedProjection, {
+      findingsInputs: twoFamilyInputs,
+      findingsFailures: { '900-1260': 500 },
+    }],
+  ['a settled slice renders only its server-published findings',
+    issue81SlicedProjection, { findingsInputs: twoFamilyInputs }],
+]) {
+  test(`#81 · ${name}`, async () => {
+    const browser = await runner.browser();
+    const before = openerProblems().length;
+    const page = await openApp(browser, {
+      state: 'typical', appSource: 'fixture', ...options,
+    });
+    try {
+      await probe(page);
+      assert.deepEqual(openerProblems().slice(before), [],
+        `no opener problems while proving #81: ${name}`);
+    } finally {
+      await page.close();
+    }
+  });
+}
+
+for (const [name, probe, options] of [
+  ['header and Filter ownership', issue86HeaderFilter, { state: 'drawn' }],
+  ['Event charts and Sift intersection', issue86FilteredRoot, { state: 'typical' }],
+  ['direct event entry and root restoration', issue86DirectEntryRestoration, { state: 'typical' }],
+  ['pending root projection', issue86PendingRoot, { state: 'typical', findingsDelayMs: 900 }],
+  ['malformed event evidence recovery', issue86MalformedRecovery, {
+    state: 'typical', comparisonProjection: { schema: 'malformed-event-comparison' },
+  }],
+]) {
+  test(`#86 issue-scoped probe · ${name}`, async () => {
+    const browser = await runner.browser();
+    const before = openerProblems().length;
+    const page = await openApp(browser, { appSource: 'fixture', ...options });
+    try {
+      await probe(page);
+      assert.deepEqual(openerProblems().slice(before), [],
+        `no opener problems while proving #86: ${name}`);
+    } finally {
+      await page.close();
+    }
+  });
+}
 
 function contrastRatio(foreground, background) {
   const rgb = (color) => color.match(/\d+/g).map(Number).slice(0, 3);
@@ -464,7 +565,7 @@ test('deselecting a Sift item leaves only rows matching the remaining choices', 
     } finally { /* browser stays open; closed once in after() */ }
   });
 
-test('the held and blind group collapses during a sift and expands again', async () => {
+test('the Watching group collapses during a sift and expands again', async () => {
     const browser = await runner.browser();
     try {
       const before = openerProblems().length;
@@ -476,7 +577,7 @@ test('the held and blind group collapses during a sift and expands again', async
       await page.keyboard.press('Escape');
       await settle(page, 350);
       const toggle = page.locator('#level .qcollapse');
-      assert.equal(await toggle.innerText(), '4 held or blind reads');
+      assert.equal(await toggle.innerText(), 'Watching · 4 reads');
       assert.equal(await toggle.getAttribute('aria-expanded'), 'false');
       assert.equal(await page.locator('#level .qrow').count(), 0,
         'collapsed held rows are not painted as ordinary queue rows');
@@ -504,8 +605,8 @@ test('an all-hidden sift names the empty result while retaining the held group',
       await settle(page, 350);
       assert.equal(await page.locator('#level .quiet-line.sift-empty').innerText(),
         'No findings match the current filters.');
-      assert.equal(await page.locator('#level .qcollapse').innerText(), '4 held or blind reads',
-        'the collapsed held group remains reachable below the empty-sift line');
+      assert.equal(await page.locator('#level .qcollapse').innerText(), 'Watching · 4 reads',
+        'the collapsed Watching group remains reachable below the empty-sift line');
       await page.close();
       assert.deepEqual(openerProblems().slice(before), [],
         'no opener problems while rendering the all-hidden sift state');

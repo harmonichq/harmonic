@@ -14,6 +14,28 @@ The frontend is a single `frontend/index.html` file containing inlined Vue 3 and
 
 Diagnose reads the current analysis result and presents a server-ranked queue of tuning findings (Audit). Each finding carries the evidence and severity behind it. The queue register is server-owned and direction-derived, so a direction-only ISF finding may remain in the asserted register even though it cannot stage. A staging control and actionable Recommended number appear only when the exact backend `asserts_move` verdict is true; a false or missing verdict fails closed. Findings in the held or still-collecting registers stay visible in a separate "Watching" section below. Diagnose also hosts an Explore mode for inspecting glucose, insulin, and behavioral evidence without generating advice.
 
+### Requirement: Diagnose presents retired I:C regimes as non-actionable Watching evidence
+
+An active retired I:C regime appears after held and blind rows in the server's
+Watching order. Its queue row identifies a past setting and never shows today's
+programmed value. Its case file leads with the analyzer's finished historical
+conclusion, then the past setting, measured value, interval, and meal-run support,
+followed by exactly one quieter current-program line. `By clock` and `By event`
+remain projections of that one selected identity; event selection emphasizes one
+whole meal run without changing its published population.
+
+History has no recommendation row, stage control, Priority, chip, Plan entry, or
+navigation path to Plan. The surface reads server-owned identity, membership,
+lifecycle, selection disposition, annotation, and action fields and derives none of
+them from ratios, nulls, support, or ID syntax.
+
+When the server reports `out_of_scope`, the selected case stays open with the
+server's message. `aged_out` and `unavailable` return the case atomically to the
+queue only after findings confirms the matching disposition. Failed,
+generation-mismatched, or superseded requests preserve the last coherent
+inspector/canvas pair; after one automatic coordinated retry, the surface marks it
+stale and offers one explicit Retry instead of clearing or mixing evidence.
+
 ### Requirement: Plan surface asks "what will I program into my pump?"
 
 The Plan surface holds a unified ≤16-segment pump-ready schedule built from the user's currently-active profile plus any accepted Diagnose recommendations and hand-edits. It shows the active profile as a reference, lists the accepted changes with provenance, and renders the editable deliverable. Plan reconciliation compares the deliverable to the latest detected pump profile to confirm it matches or flag keying errors. Users cannot stage changes directly on Plan; they stage from Diagnose and edit the deliverable here.

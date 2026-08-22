@@ -15,7 +15,7 @@ const fixture = JSON.parse(readFileSync(
 const W = fixture.windows;
 
 test('term 45 · the meta has three forms and no others', () => {
-  assert.equal(queueMeta(W.global), '6 findings · 30 days');
+  assert.equal(queueMeta(W.global), '7 findings · 30 days');
   assert.equal(queueMeta(W.afternoon), '5 in this window');
   assert.equal(queueMeta(fixture.no_data.global), '30 days');
   // never sort language, never the window range restated — the chip owns the hours
@@ -49,7 +49,7 @@ test('term 41 · a scoped EMPTY window says only how much history it looked at',
 test('term 34 · settings and habits interleave in one list, ordered by the server', () => {
   const rows = queueRows(W.global);
   assert.deepEqual(rows.map((r) => r.flavor),
-    ['setting', 'setting', 'setting', 'habit', 'habit', 'habit']);
+    ['setting', 'setting', 'setting', 'habit', 'habit', 'habit', 'watching']);
   // the order is the projection's, untouched
   assert.deepEqual(rows.map((r) => r.title), W.global.rows.map((r) => r.title));
 });
@@ -137,10 +137,29 @@ test('term 14 · a blind span carries the analyzer\u2019s own reason, verbatim',
   assert.equal(blind.stageable, false);
 });
 
-test('term 38 · the global queue is asserting-only, so every setting row stages', () => {
-  const settings = queueRows(W.global).filter((r) => r.flavor === 'setting');
+test('term 38 · every asserting setting row stages', () => {
+  const settings = queueRows(W.global).filter((r) => r.register === 'assert');
   assert.ok(settings.length > 0);
   assert.ok(settings.every((r) => r.register === 'assert' && r.stageable));
+});
+
+test('S41/S43 · history stays in server order as Watching with past evidence only', () => {
+  const rows = queueRows(W.global);
+  const history = rows.find((row) => row.register === 'history');
+  assert.equal(rows.at(-1), history, 'server placed history last and the browser preserved it');
+  assert.equal(history.flavor, 'watching');
+  assert.equal(history.stageable, false);
+  assert.deepEqual(history.detail, {
+    kind: 'history', past: 'past 6.0 g/U', support: '3 meal runs',
+  });
+  assert.doesNotMatch(JSON.stringify(history.detail), /programmed|now|5\.0/);
+});
+
+test('S42 · a sift collapses held, blind, and history into Watching', () => {
+  const rows = queueRows(W.morning, new Set(['highs']));
+  const watching = rows.filter((row) => row.collapsed);
+  assert.deepEqual(watching.map((row) => row.register), ['held', 'held', 'history']);
+  assert.ok(watching.every((row) => !row.hidden));
 });
 
 test('ISF actionability requires the exact carried backend verdict', () => {

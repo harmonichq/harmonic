@@ -182,6 +182,23 @@ able to move anything.
   straddle the programmed value with a non-empty on-regime pool, and the capped
   recommendation names a real move off the current setting
 
+### Requirement: Historical I:C measurements can never become dosing advice
+
+The supported-runs floor governs only the currently programmed I:C block. A retired
+regime may remain visible with a point estimate, interval, and support above or below
+that floor, but it carries no recommendation, direction, lean, priority, assertion,
+consolidated-profile contribution, staging affordance, or Plan entry. Its lifecycle
+and finished annotation are analyzer-owned facts; a consumer may not reinterpret a
+non-null estimate, a narrow interval, or ample support as permission to act.
+
+#### Scenario: Retired evidence clears the current assertion floor
+
+- **GIVEN** a retired I:C regime with at least eight proved closed meal runs and a
+  narrow interval excluding today's programmed value
+- **WHEN** analysis, ranking, delivery, and staging consumers read it
+- **THEN** it remains a historical measurement only, contributes no current move,
+  and says no change is suggested
+
 ### Requirement: A held estimate keeps its number and its band visible
 
 A verdict that withholds a direction never blanks the measurement. The capped

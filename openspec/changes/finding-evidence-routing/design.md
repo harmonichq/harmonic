@@ -218,6 +218,14 @@ instance of that claim is corrected in this change.
 
 Decision: harmonichq/harmonic#41, 2026-08-19.
 
+### Amendment — 2026-08-21: the level-one staging-entry style retires
+
+The scoping fix above remains the historical repair for the evidence-row defect,
+but its `button.entry` owner no longer exists. ADR 39 records that the unified
+findings queue retired the three per-parameter level-one entry rows, staging
+survives at each item's detail level, and the unreachable selector family is
+deleted rather than reserved for an uncontracted future surface.
+
 ## ADR 42 — Queue tiers name no cross-parameter headline
 
 **Decision.** Every priced row whose `register` is `assert` receives the same

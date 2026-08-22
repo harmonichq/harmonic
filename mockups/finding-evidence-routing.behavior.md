@@ -1,9 +1,9 @@
 # Behaviour ledger — finding → evidence routing (Diagnose + Verify)
 
-**UNFROZEN / CANDIDATE — operator freeze required before design or
-implementation.** Shipped visual predecessor: `b321d858cc8f33ad50f200319b0a00a70c99542c`
-(2026-08-21 pre-design sweep). The earlier `a49b6db` freeze remains historical
-provenance and is reconciled below; it is not the current base record.
+**★ FROZEN — 2026-08-21 · operator-approved shipped-surface behavior
+contract.** Shipped visual predecessor: `b321d858cc8f33ad50f200319b0a00a70c99542c`.
+The earlier `a49b6db` freeze remains historical provenance and is reconciled
+below; it is not the current base record.
 
 The app-only replay is
 `frontend/diagnose-workstation-behavior.replay.mjs`: **43 exported stories**
@@ -1305,12 +1305,11 @@ deliberately non-unique meal join-pair precondition.
 **Result.** The app-only replay enumerates **43 of 43 stories**, including S40;
 an `ONLY` selection that names no stories still fails closed.
 
-## Pre-design candidate — 2026-08-21, issue #10: non-actionable history
+## Frozen amendment — 2026-08-21, issue #10: non-actionable history
 
-**This section is CANDIDATE, not frozen.** It records the pre-design inventory
-requested for sub-order 3. No proposed story below is an implementation contract
-until the operator approves this ledger and a later commit stamps the dated
-`★ FROZEN` header. No design or production source changed during this phase.
+**Operator-approved and frozen on 2026-08-21.** This section records the
+pre-design inventory requested for sub-order 3. No design or production source
+changed during the freeze phase.
 
 ### Safe-start and predecessor reconciliation
 
@@ -1381,10 +1380,10 @@ each applicable state.
 
 ### Proposed stories and expected pre-change failures
 
-Every entry below is a **CANDIDATE STORY**. Its `pre-change failure` is the reason
+Every entry below is a **FROZEN STORY**. Its `pre-change failure` is the reason
 the story must fail against the unchanged `b321d85` surface before implementation.
-The eventual replay function keeps the same id and gains
-`STORY:finding-evidence-routing:<id>` only after the ledger freezes.
+The replay function keeps the same id and gains
+`STORY:finding-evidence-routing:<id>` during implementation.
 
 ```
 S41 · The global queue renders every server-published history row after held and
@@ -1572,7 +1571,7 @@ one half while painting the other.
 | Unavailable | queue + distinct server notice | removed atomically | clock canvas restored atomically | disposition or typed 410 is terminal | unsupported |
 | Superseded findings/events | newest request state only | prior or newest complete inspector | matching prior or newest canvas | stale completion is ignored whole | window-only guard, no paired guard |
 
-### Candidate visual and interaction evidence matrix
+### Frozen visual and interaction evidence matrix
 
 After implementation, each row below is captured in light and dark at 1440x900,
 1024x768, and 390x844. Recovery rows additionally capture pending and terminal
@@ -1601,7 +1600,5 @@ all viewports, and coherent recovery.
 
 No open behavior QUESTION remains. The work order and the two generated server
 contracts settle actionability, membership, lifecycle, identity, generation,
-retry bound, retirement copy, and atomicity. Operator approval of this candidate
-ledger is still required before the dated freeze commit; approval freezes S41-S71
-and the two matrices above without authorizing any silent behavior change during
-implementation.
+retry bound, retirement copy, and atomicity. The operator approved S41-S71 and
+the two matrices above on 2026-08-21; implementation may not change them silently.

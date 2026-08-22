@@ -22,6 +22,6 @@ evidence, but Recommended is empty and there is no action number or stage contro
 
 Raw output:
 
-- [historical regression](logs/before-regression.log)
-- [revision browser suite](logs/revision-browser.log)
-- [revision app replay under a hostile ambient source override](logs/revision-replay.log)
+- [historical regression](logs/before-regression.txt)
+- [revision browser suite](logs/revision-browser.txt)
+- [revision app replay under a hostile ambient source override](logs/revision-replay.txt)

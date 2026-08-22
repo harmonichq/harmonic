@@ -48,6 +48,15 @@ VIEW_CONFIG = {
     },
 }
 
+# Queue discovery reads the same canonical factor membership as the comparison
+# projection. This derived index is exported for projection and fixture producers;
+# no consumer maintains another factor allowlist.
+EVENT_CHARTS = {
+    factor: {"view": view, "factor": factor}
+    for view, config in VIEW_CONFIG.items()
+    for factor in config["factors"]
+}
+
 FACTOR_LABELS = {
     "carb_undercount": "Carb undercount",
     "late_bolus": "Late bolus",

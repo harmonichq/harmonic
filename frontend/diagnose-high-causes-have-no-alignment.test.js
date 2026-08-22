@@ -1,54 +1,60 @@
-/* A high-only cause must offer no event-comparison alignment view (#63).
+/* Event-chart eligibility is a public findings-projection fact (#83).
  *
- * The comparison lens has a Meals view and a Lows view and no Highs view, so
- * `ALIGN_FACTOR_BY_CAUSE` in `diagnose-workstation.js` is a title-keyed ALLOWLIST and
- * a cause is excluded by being absent from it. Absence is a silent contract: nothing
- * fails when a new cause is added, the app just tries to open a case file for an
- * Exposure that has no view. `Missed / unannounced meal` has sat outside that map
- * since it shipped, and #63's `Meal bolus fell short` joins it.
- *
- * So the rule is pinned STRUCTURALLY rather than one title at a time: no lever whose
- * Exposure is HIGHS may key that map. The Python side
- * (`tests/test_meal_bolus_short_attribution.py`) pins which levers those are, so
- * adding a third high-anchored lever fails there and lands here.
- *
- * Read as source text on purpose — `alignCoordinatesFor` is module-private and
- * exporting it to test it would widen the surface to make the test easy, which is
- * how the thing under test stops being the thing that ships.
- * (`diagnose-evidence-row-box.test.js` reads the same file the same way.)
+ * The generator derives `inputs.event_charts` from Python's canonical
+ * event-comparison configuration. The fixture-only mirror consumes that object;
+ * production browser code never carries a title or factor allowlist.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 
-const source = readFileSync(new URL('./diagnose-workstation.js', import.meta.url), 'utf8');
+const fixture = JSON.parse(readFileSync(
+  fileURLToPath(new URL('./__fixtures__/findings-projection.json', import.meta.url)), 'utf8'));
 
-/** The `ALIGN_FACTOR_BY_CAUSE = { ... }` literal, as written. */
-function allowlistBlock() {
-  const start = source.indexOf('const ALIGN_FACTOR_BY_CAUSE = {');
-  assert.notEqual(start, -1, 'diagnose-workstation.js no longer declares ALIGN_FACTOR_BY_CAUSE');
-  const end = source.indexOf('};', start);
-  assert.notEqual(end, -1, 'ALIGN_FACTOR_BY_CAUSE literal is unterminated');
-  return source.slice(start, end);
-}
+const CANONICAL_EVENT_CHARTS = {
+  carb_undercount: { view: 'meals', factor: 'carb_undercount' },
+  late_bolus: { view: 'meals', factor: 'late_bolus' },
+  meal_over_delivery: { view: 'meals', factor: 'meal_over_delivery' },
+  over_treated_low: { view: 'lows', factor: 'over_treated_low' },
+  correction_on_iob: { view: 'lows', factor: 'correction_on_iob' },
+  correction_stacking: { view: 'lows', factor: 'correction_stacking' },
+};
 
-// levers._META — every lever whose Exposure is HIGHS, by title.
-const HIGH_EXPOSURE_TITLES = ['Missed / unannounced meal', 'Meal bolus fell short'];
-
-test('#63 · no high-anchored cause keys the alignment allowlist', () => {
-  const block = allowlistBlock();
-  for (const title of HIGH_EXPOSURE_TITLES) {
-    assert.ok(!block.includes(title),
-      `"${title}" is a HIGHS cause and the lens has no Highs view`);
-  }
+test('#83 · the generated contract publishes the canonical six coordinates', () => {
+  assert.deepEqual(fixture.inputs.event_charts, CANONICAL_EVENT_CHARTS);
 });
 
-test('#63 · the allowlist still offers the meals and lows views it owns', () => {
-  // A guard that passes because the map emptied out would prove nothing.
-  const block = allowlistBlock();
-  for (const title of ['Carb undercount', 'Over-treated low']) {
-    assert.ok(block.includes(title), `"${title}" lost its alignment view`);
-  }
-  assert.ok(!source.includes('export const alignCoordinatesFor'),
-    'alignCoordinatesFor must stay module-private');
+test('#83 · settings and unsupported Findings publish explicit null', () => {
+  const settings = fixture.windows.global.rows.filter((row) => row.register !== 'finding');
+  assert.ok(settings.length > 0, 'the generated contract exercises settings rows');
+  assert.ok(settings.every((row) => Object.hasOwn(row, 'event_chart')));
+  assert.ok(settings.every((row) => row.event_chart === null));
+
+  const unsupported = projectFindings({
+    analysis: { window_days: 30, basal: [], isf: [], ic_blocks: [] },
+    exposures: { exposures: { highs: { occurrences: [{
+      t: '2026-08-17 09:00:00', date: '2026-08-17', kind: 'high',
+      cause_lever: 'missed_meal', cause_title: 'Missed / unannounced meal',
+      ep_id: 'missed-meal', verdicts: [],
+    }] } } },
+    scenarios: { patterns: [], low_confidence: [] },
+    event_charts: fixture.inputs.event_charts,
+  }, null).rows[0];
+  assert.equal(unsupported.event_chart, null);
+});
+
+test('#83 · compatibility without the canonical family publishes null', () => {
+  const highOnly = projectFindings({
+    analysis: { window_days: 30, basal: [], isf: [], ic_blocks: [] },
+    exposures: { exposures: { highs: { occurrences: [{
+      t: '2026-08-17 09:00:00', date: '2026-08-17', kind: 'high',
+      cause_lever: 'late_bolus', cause_title: 'Late bolus',
+      ep_id: 'late-bolus-high-only', verdicts: [],
+    }] } } },
+    scenarios: { patterns: [], low_confidence: [] },
+    event_charts: fixture.inputs.event_charts,
+  }, null).rows[0];
+  assert.equal(highOnly.event_chart, null);
 });

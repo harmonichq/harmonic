@@ -32,6 +32,8 @@ import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 const require = createRequire(import.meta.url);
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const MIME = { '.js': 'text/javascript', '.css': 'text/css', '.html': 'text/html', '.json': 'application/json', '.svg': 'image/svg+xml' };
+const FINDINGS_PROJECTION = JSON.parse(await readFile(
+  join(ROOT, 'frontend/__fixtures__/findings-projection.json'), 'utf8'));
 
 /* ---------------------------------------------------------------- assertions */
 
@@ -145,11 +147,26 @@ export const state = (page) => page.evaluate(() => {
     more: txt('#level .more'),
     stage: q('#level .stagebtn')?.innerText.replace(/\s+/g, ' ').trim() ?? null,
     stageStaged: q('#level .stagebtn')?.dataset.staged ?? null,
-    sift: [...document.querySelectorAll('#seg-chips button')].map((button) => ({
-      text: button.textContent.trim(),
-      pressed: button.getAttribute('aria-pressed'),
-      disabled: button.disabled,
-    })),
+    filter: (() => {
+      const wrap = q('#filter-wrap');
+      const menu = q('#filter-menu');
+      return {
+        visible: rendered(wrap),
+        open: rendered(menu),
+        trigger: txt('#filter-trigger'),
+        sift: [...document.querySelectorAll('#filter-menu [role="menuitemcheckbox"]')]
+          .map((button) => ({
+            text: button.getAttribute('aria-label'),
+            checked: button.getAttribute('aria-checked'),
+            disabled: button.disabled,
+          })),
+        view: [...document.querySelectorAll('#filter-menu [role="menuitemradio"]')]
+          .map((button) => ({
+            text: button.getAttribute('aria-label'),
+            checked: button.getAttribute('aria-checked'),
+          })),
+      };
+    })(),
     slotLink: q('#level .slotlink')?.innerText.replace(/\s+/g, ' ').trim() ?? null,
     linkBtns: [...document.querySelectorAll('#level .slotlink .linkbtn')].map((b) => b.textContent.trim()),
     // #735 — level 1 is the findings queue (terms 34-45), not a factor grid over
@@ -163,6 +180,7 @@ export const state = (page) => page.evaluate(() => {
     })),
     queueLeft: q('#level .qrow .lab')
       ? Math.round(q('#level .qrow .lab').getBoundingClientRect().left) : null,
+    levelScroll: q('#level')?.scrollTop ?? null,
     crumbLeft: q('#crumb-trail')
       ? Math.round(q('#crumb-trail').getBoundingClientRect().left) : null,
     queueSeam: txt('#level .tailnote'),
@@ -314,7 +332,7 @@ const projectAuthor = async () => {
 export async function openApp(browser, {
   state: want = 'typical', theme = 'dark', viewport = { width: 1440, height: 900 }, findingsInputs = null,
   findingsProjectionInputs = null, exposuresInputs = null, analysisInputs = null, pumpSettingsInputs = null,
-  onPlanDraft = null, comparisonStatus = 0, findingsDelayMs = 0,
+  onPlanDraft = null, comparisonStatus = 0, comparisonProjection = null, findingsDelayMs = 0,
   findingsDelays = {}, findingsFailures = {}, appSource = 'server',
 } = {}) {
   const payloadPath = process.env.PAYLOAD || fail('PAYLOAD is required for TARGET=app');
@@ -342,9 +360,18 @@ export async function openApp(browser, {
     ? await analysisInputs(payload.analyze) : (analysisInputs || payload.analyze);
   const pumpSettingsFrom = typeof pumpSettingsInputs === 'function'
     ? await pumpSettingsInputs(payload.pump_settings) : (pumpSettingsInputs || null);
-  const defaults = { analysis: analysisFrom, exposures: payload.exposures, scenarios: payload.scenarios };
-  const findingsFrom = typeof findingsInputs === 'function'
+  const defaults = {
+    analysis: analysisFrom,
+    exposures: payload.exposures,
+    scenarios: payload.scenarios,
+    event_charts: FINDINGS_PROJECTION.inputs.event_charts,
+  };
+  const findingsCandidate = typeof findingsInputs === 'function'
     ? await findingsInputs(defaults) : (findingsInputs || defaults);
+  const findingsFrom = {
+    ...findingsCandidate,
+    event_charts: findingsCandidate.event_charts || defaults.event_charts,
+  };
   const exposuresFrom = typeof exposuresInputs === 'function'
     ? await exposuresInputs(defaults) : (exposuresInputs || payload.exposures);
   const STUBS = [
@@ -462,6 +489,10 @@ export async function openApp(browser, {
     if (comparisonStatus && path === '/diagnose/event-comparison') {
       return route.fulfill({ status: comparisonStatus, contentType: 'application/json',
         body: JSON.stringify({ detail: 'projection unavailable' }) });
+    }
+    if (comparisonProjection !== null && path === '/diagnose/event-comparison') {
+      return route.fulfill({ contentType: 'application/json',
+        body: JSON.stringify(comparisonProjection) });
     }
     if (path === '/plan' && route.request().method() === 'PUT') {
       const draft = JSON.parse(route.request().postData() || '{}');
@@ -1380,26 +1411,28 @@ export const S26 = async (page) => {
   return `RETIRED — ${sanction}`;
 };
 
-/** S27 · The findings chips render the four server-published global counts. */
+/** S27 · Filter's Sift group renders the four server-published global counts. */
 // STORY:finding-evidence-routing:S27
 export const S27 = async (page) => {
   await page.getByRole('button', { name: '24 h', exact: true }).click();
   await settle(page, 450);
-  const chips = await page.locator('#seg-chips button').allTextContents();
-  is(chips, ['Highs 4', 'Lows 1', 'Meals 1', 'Corrections 1'],
-    'S27 the four chips spell the server-published global counts');
+  await page.getByRole('button', { name: /Filter/ }).click();
+  const sift = await page.getByRole('menuitemcheckbox').allTextContents();
+  is(sift, ['Highs 4', 'Lows 1', 'Meals 1', 'Corrections 1'],
+    'S27 the four Sift items spell the server-published global counts');
 };
 
-/** S28 · Removing a chip hides only rows that carry no remaining selected chip. */
+/** S28 · Removing a Sift choice hides only rows with no remaining membership. */
 // STORY:finding-evidence-routing:S28
 export const S28 = async (page) => {
   await page.getByRole('button', { name: '24 h', exact: true }).click();
   await settle(page, 450);
-  await page.getByRole('button', { name: 'Highs 4', exact: true }).click();
+  await page.getByRole('button', { name: /Filter/ }).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Highs 4', exact: true }).click();
   await settle(page, 350);
   const ids = await page.locator('#level .qrow').evaluateAll((rows) => rows.map((row) => row.dataset.id));
   is(ids, ['finding:correction_on_iob', 'finding:late_bolus'],
-    'S28 a deselected Highs chip hides high-only rows while preserving multi-chip matches');
+    'S28 a deselected Highs choice hides high-only rows while preserving multi-Sift matches');
 };
 
 /** S29 · A sift collapses the held/blind group, which can expand in place. */
@@ -1407,7 +1440,9 @@ export const S28 = async (page) => {
 export const S29 = async (page) => {
   await page.getByRole('button', { name: 'Overnight', exact: true }).click();
   await settle(page, 450);
-  await page.getByRole('button', { name: /^Highs / }).click();
+  await page.getByRole('button', { name: /Filter/ }).click();
+  await page.getByRole('menuitemcheckbox', { name: /^Highs / }).click();
+  await page.keyboard.press('Escape');
   await settle(page, 350);
   const toggle = page.locator('#level .qcollapse');
   is(await toggle.innerText(), '4 held or blind reads', 'S29 the sift collapses held/blind reads');
@@ -1427,10 +1462,11 @@ export const S29 = async (page) => {
 export const S30 = async (page) => {
   await page.getByRole('button', { name: 'Overnight', exact: true }).click();
   await settle(page, 450);
-  await page.getByRole('button', { name: /^Highs / }).click();
+  await page.getByRole('button', { name: /Filter/ }).click();
+  await page.getByRole('menuitemcheckbox', { name: /^Highs / }).click();
   await settle(page, 350);
   is(await page.locator('#level .quiet-line.sift-empty').innerText(),
-    'No findings match the current chips.', 'S30 the all-hidden sift names itself');
+    'No findings match the current filters.', 'S30 the all-hidden filter result names itself');
   is(await page.locator('#level .qcollapse').innerText(), '4 held or blind reads',
     'S30 the collapsed held group remains reachable below the empty-sift line');
 };
@@ -1494,6 +1530,21 @@ const withLateConsequence = ({ analysis, exposures, scenarios }) => {
     cause_title: null, state: 'clean', verdicts: [],
   }];
   highs.n = highs.occurrences.length;
+  return { analysis, exposures: next, scenarios };
+};
+
+/** Move the three synthetic correction-on-IOB low anchors to Evening while
+    leaving its Morning correction-cluster anchor in place. Whole day therefore
+    publishes the canonical lows coordinate, while Morning retains the same row
+    through another family with `event_chart: null`. */
+const withEligibilityLoss = ({ analysis, exposures, scenarios }) => {
+  const next = structuredClone(exposures);
+  let hour = 19;
+  for (const occurrence of next.exposures.lows.occurrences) {
+    if (occurrence.cause_lever !== 'correction_on_iob') continue;
+    occurrence.t = `${occurrence.t.slice(0, 11)}${String(hour).padStart(2, '0')}:00:00`;
+    hour += 1;
+  }
   return { analysis, exposures: next, scenarios };
 };
 
@@ -1776,10 +1827,12 @@ export const S33 = async (page) => {
     neither canvas at all. */
 // STORY:finding-evidence-routing:S34
 export const S34 = async (page) => {
-  await clickQueueRow(page, 'Late bolus');
   const originalClock = await state(page);
   const originalRect = originalClock.canvasHead;
-  await page.click('#seg-align button:nth-child(2)');
+  await page.getByRole('button', { name: /Filter/ }).click();
+  await page.getByRole('menuitemradio', { name: 'Event charts', exact: true }).click();
+  await page.keyboard.press('Escape');
+  await clickQueueRow(page, 'Late bolus');
   await settle(page, 900);
   const after = await state(page);
   is(after.eventCanvas, false, 'S34 the failed event canvas is not left mounted');
@@ -1877,33 +1930,39 @@ export const S37 = async (page) => {
 };
 
 
-/** S38 · A published finding whose event-view family holds NONE of this
-    window's evidence still opens, framed on that family. A lever claims
-    evidence only in the families it hit, so `Correction on active insulin` over
-    07:00-10:15 carries one correction cluster and no low, while its event view
-    names `lows`. Framing on nothing left a row the server published that did
-    not move when it was clicked: no case file, no message, no crumb. Framing on
-    the family holding more episodes instead is NOT the repair — that is the
-    panel/chart disagreement this rule exists to retire. */
+/** S38 · When a replacement window retains the open Finding but removes its
+    canonical event family, the live row loses its coordinate: the case stays
+    open, returns By clock, and the filtered root excludes it. */
 // STORY:finding-evidence-routing:S38
 export const S38 = async (page) => {
-  const opening = await state(page);
-  is(opening.pressed, ['Overnight'], 'S38 precondition: opens on the Overnight preset');
-  await drawWindow(page, [420, 615], [0, 360]);
-  const drawn = await state(page);
-  is(drawn.chip, 'Window 07:00–10:15', `S38 the reader drew 07:00–10:15 (${drawn.chip})`);
-  ok(drawn.queue.some((row) => row.title === 'Correction on active insulin'),
-    'S38 precondition: the server published this row for this window');
+  await page.getByRole('button', { name: '24 h', exact: true }).click();
+  await settle(page, 450);
+  await page.getByRole('button', { name: /Filter/ }).click();
+  await page.getByRole('menuitemradio', { name: 'Event charts', exact: true }).click();
+  await page.keyboard.press('Escape');
   await clickQueueRow(page, 'Correction on active insulin');
-  const opened = await state(page);
-  is(opened.crumb[opened.crumb.length - 1], 'Correction on active insulin',
-    'S38 the published row opens rather than swallowing the click');
-  ok(/\b0 of 0 low episodes in 07:00–10:15\b/.test(opened.levelStat || ''),
-    `S38 it frames on the family its event view names, empty and saying so (${opened.levelStat})`);
-  ok(!/correction cluster/i.test(opened.levelStat || ''),
-    `S38 ... not on the family that happens to hold this window's evidence (${opened.levelStat})`);
-  is(opened.bandKeys, [],
-    'S38 no verdict split is drawn for a family the server published no split for');
+  await page.waitForFunction(() => document.querySelector('#seg-align button[aria-pressed="true"]')?.textContent.trim() === 'By event');
+  await page.locator('#align-canvas:not([hidden])').waitFor();
+  is((await state(page)).alignPressed, ['By event'], 'S38 precondition: direct entry owns the event canvas');
+  await page.getByRole('button', { name: 'Morning', exact: true }).click();
+  await settle(page, 900);
+  const narrowed = await state(page);
+  is(narrowed.pressed, ['Morning'], 'S38 the replacement projection is Morning');
+  is(narrowed.crumb[narrowed.crumb.length - 1], 'Correction on active insulin',
+    'S38 the live row remains open after losing event eligibility');
+  ok(narrowed.levelStat !== null, 'S38 the replacement projection still publishes the Finding');
+  is(narrowed.alignShown, false, 'S38 Align hides when the live row coordinate becomes null');
+  is(narrowed.clockCanvas, true, 'S38 the event canvas is disposed and By clock returns');
+  is(narrowed.eventCanvas, false, 'S38 no stale event evidence remains mounted');
+  await page.keyboard.press('Backspace');
+  const filtered = await state(page);
+  ok(!filtered.queue.some((row) => row.title === 'Correction on active insulin'),
+    'S38 Event charts excludes the retained row whose canonical family is absent');
+  await page.getByRole('button', { name: /Filter/ }).click();
+  await page.getByRole('menuitemradio', { name: 'All findings', exact: true }).click();
+  await page.keyboard.press('Escape');
+  ok((await state(page)).queue.some((row) => row.title === 'Correction on active insulin'),
+    'S38 All findings keeps the compatible row reachable By clock');
 };
 
 /** S39 · A window change ASKS the server for its rows, and until they land the
@@ -1940,8 +1999,10 @@ export const S39 = async (page) => {
 export const S41 = async (page) => {
   await page.click('#seg-window button:nth-child(1)');   // Overnight, contains 05:30
   await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false');
-  await page.click('#seg-chips button:nth-child(2)');    // retain one explicit SIFT state
-  const siftPressed = (await state(page)).sift.map((button) => button.pressed);
+  await page.getByRole('button', { name: /Filter/ }).click();
+  await page.getByRole('menuitemcheckbox', { name: /^Lows / }).click();
+  const siftChecked = (await state(page)).filter.sift.map((button) => button.checked);
+  await page.keyboard.press('Escape');
   await clickQueueRow(page, 'Basal 05:30 · raise');
   const opened = await state(page);
   ok(opened.levelText.includes('Recommended'), 'S41 precondition: the morning basal detail is open');
@@ -1956,11 +2017,10 @@ export const S41 = async (page) => {
     'S41 the loading line lands on the inspector content spine');
   is(pending.crumbMeta, '15:00–21:00', 'S41 the crumb carries the arriving range without counts');
   is(pending.stage, null, 'S41 the previous staging control is withdrawn');
-  is(pending.sift.map((button) => button.text), ['Highs', 'Lows', 'Meals', 'Corrections'],
-    'S41 SIFT labels carry no previous projection counts while loading');
-  is(pending.sift.map((button) => button.pressed), siftPressed,
-    'S41 SIFT pressed state survives the replacement');
-  ok(pending.sift.every((button) => !button.disabled), 'S41 SIFT controls remain enabled');
+  is(pending.filter.visible, false, 'S41 Filter stays hidden at setting depth');
+  is(pending.filter.sift.map((button) => button.checked), siftChecked,
+    'S41 retained Sift selection survives the replacement');
+  ok(pending.filter.sift.every((button) => !button.disabled), 'S41 retained Sift controls remain enabled');
 
   await settle(page, 900);
   const absent = await state(page);
@@ -1970,9 +2030,11 @@ export const S41 = async (page) => {
   is(absent.crumbMeta, '15:00–21:00', 'S41 settled absence keeps the selected range in the crumb');
   is(absent.stage, null, 'S41 settled absence has no staging control');
 
-  await page.click('#seg-chips button:nth-child(2)');    // restore the full queue
   await page.click('#crumb-trail button');               // Findings
   await settle(page, 250);
+  await page.getByRole('button', { name: /Filter/ }).click();
+  await page.getByRole('menuitemcheckbox', { name: /^Lows / }).click();
+  await page.keyboard.press('Escape');
   const queue = await state(page);
   ok(queue.queue.some((row) => row.title === 'Basal 19:30 to 21:00'),
     'S41 the settled queue contains the server-published evening basal row');
@@ -2025,8 +2087,10 @@ export const S41 = async (page) => {
 export const S42 = async (page) => {
   await page.click('#seg-window button:nth-child(1)');   // first scoped load succeeds
   await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false');
-  await page.click('#seg-chips button:nth-child(2)');    // retain one explicit SIFT state
-  const siftPressed = (await state(page)).sift.map((button) => button.pressed);
+  await page.getByRole('button', { name: /Filter/ }).click();
+  await page.getByRole('menuitemcheckbox', { name: /^Lows / }).click();
+  const siftChecked = (await state(page)).filter.sift.map((button) => button.checked);
+  await page.keyboard.press('Escape');
   await clickQueueRow(page, 'Basal 05:30 · raise');
   const failedResponse = page.waitForResponse((candidate) => {
     const url = new URL(candidate.url());
@@ -2042,11 +2106,10 @@ export const S42 = async (page) => {
     'S42 setting depth renders the exact unavailable state');
   is(detail.crumbMeta, '15:00–21:00', 'S42 failed setting depth keeps only the selected range');
   is(detail.stage, null, 'S42 failed setting depth has no prior staging control');
-  is(detail.sift.map((button) => button.text), ['Highs', 'Lows', 'Meals', 'Corrections'],
-    'S42 failed SIFT labels carry no prior projection counts');
-  is(detail.sift.map((button) => button.pressed), siftPressed,
-    'S42 failed SIFT pressed state survives the replacement');
-  ok(detail.sift.every((button) => !button.disabled), 'S42 failed SIFT controls remain enabled');
+  is(detail.filter.visible, false, 'S42 Filter stays hidden at setting depth');
+  is(detail.filter.sift.map((button) => button.checked), siftChecked,
+    'S42 failed retained Sift selection survives the replacement');
+  ok(detail.filter.sift.every((button) => !button.disabled), 'S42 retained Sift controls remain enabled');
 
   await page.click('#crumb-trail button');               // Findings
   await settle(page, 100);
@@ -2055,8 +2118,15 @@ export const S42 = async (page) => {
     'Findings unavailable for 15:00–21:00. Choose another window to try again.',
     'S42 queue depth renders the same unavailable state');
   is(queue.queue, [], 'S42 queue depth exposes no previous rows');
+  is(queue.filter.visible, true, 'S42 Filter returns at queue depth');
+  is(queue.filter.sift.map((button) => button.text), ['Highs', 'Lows', 'Meals', 'Corrections'],
+    'S42 failed root Sift labels carry no prior projection counts');
+  is(queue.filter.sift.map((button) => button.checked), siftChecked,
+    'S42 root restores the failed selection');
 
-  await page.click('#seg-chips button:nth-child(2)');    // restore the full queue
+  await page.getByRole('button', { name: /Filter/ }).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Lows', exact: true }).click();
+  await page.keyboard.press('Escape');
   const recoveryResponse = page.waitForResponse((candidate) => {
     const url = new URL(candidate.url());
     return candidate.status() === 200 && url.pathname === '/diagnose/findings'
@@ -2097,6 +2167,149 @@ export const S43 = async (page) => {
     'S43 the slice excludes an unrelated whole-day basal row');
   is(sliced.queueLeft, wholeDay.queueLeft,
     'S43 the sliced queue stays on the same inspector content spine');
+};
+
+/** S48 · #83 — one 30px Findings header owns the visible trail, metadata and
+    root-only Filter menu; the retired Inspector label and second crumb row are
+    absent. The menu uses roving focus and Escape restores its trigger. */
+// STORY:finding-evidence-routing:S48
+export const S48 = async (page) => {
+  const head = await page.evaluate(() => ({
+    paneName: document.querySelector('.inspector')?.getAttribute('aria-labelledby'),
+    trail: document.getElementById('crumb-trail')?.textContent.trim(),
+    height: Math.round(document.querySelector('.inspector > header')?.getBoundingClientRect().height || 0),
+    inspectorText: [...document.querySelectorAll('.inspector h2')]
+      .some((node) => node.textContent.trim() === 'Inspector'),
+  }));
+  is(head, { paneName: 'crumb-trail', trail: 'Findings', height: 30, inspectorText: false },
+    'S48 one Findings header owns the pane name and 30px seam');
+  const trigger = page.getByRole('button', { name: /Filter/ });
+  await trigger.click();
+  await page.waitForFunction(() => document.activeElement?.getAttribute('aria-label')?.startsWith('Highs '));
+  const roles = await page.locator('#filter-menu [role^="menuitem"]').evaluateAll((items) =>
+    items.map((item) => item.getAttribute('role')));
+  is(roles, ['menuitemcheckbox', 'menuitemcheckbox', 'menuitemcheckbox', 'menuitemcheckbox',
+    'menuitemradio', 'menuitemradio'], 'S48 the menu exposes four Sift checks and two View radios');
+  await page.keyboard.press('ArrowUp');
+  is(await page.evaluate(() => document.activeElement?.textContent.trim()), 'Event charts',
+    'S48 roving focus wraps from Highs to Event charts');
+  await page.keyboard.press('Escape');
+  is(await page.evaluate(() => document.activeElement?.id), 'filter-trigger',
+    'S48 Escape closes and restores focus to Filter');
+};
+
+/** S49 · #83 — Event charts intersects Sift over published row fields only,
+    preserves server order, and a settled zero result names all root filters. */
+// STORY:finding-evidence-routing:S49
+export const S49 = async (page) => {
+  await page.getByRole('button', { name: '24 h', exact: true }).click();
+  await settle(page, 450);
+  const all = await state(page);
+  await page.getByRole('button', { name: /Filter/ }).click();
+  await page.getByRole('menuitemradio', { name: 'Event charts', exact: true }).click();
+  const event = await state(page);
+  ok(event.queue.length > 0, 'S49 the synthetic projection carries event-chart Findings');
+  ok(event.queue.every((row) => /Habit$/.test(row.tag || '')),
+    'S49 Event charts contains no settings or held reads');
+  const positions = event.queue.map((row) => all.queue.findIndex((candidate) => candidate.title === row.title));
+  ok(positions.every((position, index) => index === 0 || position > positions[index - 1]),
+    'S49 Event charts retains server order');
+  for (const label of ['Highs', 'Lows', 'Meals', 'Corrections']) {
+    await page.getByRole('menuitemcheckbox', { name: new RegExp(`^${label} `) }).click();
+  }
+  const empty = await state(page);
+  is(empty.queue, [], 'S49 View and empty Sift intersect to no rows');
+  is(empty.queueEmpty, 'No findings match the current filters.',
+    'S49 the settled zero result names the current filters');
+  is(empty.crumbMeta, '30 days', 'S49 zero-result metadata retains duration and no count');
+  is(empty.filter.trigger, 'Filter 2', 'S49 the trigger reports both non-default groups');
+};
+
+/** S50 · #83 — Event charts entry seeds By event from the live row coordinate;
+    switching to clock and returning restores queue state and scroll. */
+// STORY:finding-evidence-routing:S50
+export const S50 = async (page) => {
+  await page.getByRole('button', { name: '24 h', exact: true }).click();
+  await settle(page, 450);
+  await page.getByRole('button', { name: /Filter/ }).click();
+  await page.getByRole('menuitemradio', { name: 'Event charts', exact: true }).click();
+  await page.keyboard.press('Escape');
+  const root = await state(page);
+  const scroll = await page.evaluate(() => {
+    const level = document.getElementById('level');
+    level.scrollTop = Math.min(24, Math.max(0, level.scrollHeight - level.clientHeight));
+    return level.scrollTop;
+  });
+  await page.locator('#level .qrow').first().click();
+  await page.waitForFunction(() => document.querySelector('#seg-align button[aria-pressed="true"]')?.textContent.trim() === 'By event');
+  await page.locator('#align-canvas:not([hidden])').waitFor();
+  const opened = await state(page);
+  is(opened.alignPressed, ['By event'], 'S50 Event charts entry opens directly By event');
+  is(opened.filter.visible, false, 'S50 Filter is hidden in a case file');
+  await page.getByRole('button', { name: 'By clock', exact: true }).click();
+  ok((await state(page)).clockCanvas, 'S50 the reader can switch the same Finding to By clock');
+  await page.keyboard.press('Backspace');
+  await settle(page, 150);
+  const returned = await state(page);
+  is(returned.queue.map((row) => row.title), root.queue.map((row) => row.title),
+    'S50 return restores the filtered server order');
+  is(returned.pressed, ['24 h'], 'S50 return preserves the clock window');
+  is(returned.filter.trigger, 'Filter 1', 'S50 return preserves Event charts selection');
+  is(returned.filter.open, false, 'S50 return keeps the menu closed');
+  is(returned.filter.view.map((item) => item.checked), ['false', 'true'],
+    'S50 Event charts remains the selected View');
+  is(returned.levelScroll, scroll, 'S50 return restores queue scroll position');
+};
+
+/** S51 · #83 — while a root projection is pending, Filter selections remain
+    enabled and checked but old row and chip counts are withheld. */
+// STORY:finding-evidence-routing:S51
+export const S51 = async (page) => {
+  await page.getByRole('button', { name: /Filter/ }).click();
+  await page.getByRole('menuitemcheckbox', { name: /^Lows / }).click();
+  await page.getByRole('menuitemradio', { name: 'Event charts', exact: true }).click();
+  const checked = (await state(page)).filter.sift.map((item) => item.checked);
+  await page.keyboard.press('Escape');
+  await page.click('#seg-window button:nth-child(3)');
+  await settle(page, 250);
+  const pending = await state(page);
+  is(pending.levelLoading, 'true', 'S51 the root projection declares loading');
+  is(pending.queue, [], 'S51 no old rows remain under the arriving window');
+  is(pending.crumbMeta, '12:00–18:00', 'S51 root metadata carries no stale count');
+  is(pending.filter.trigger, 'Filter 2', 'S51 both non-default groups remain selected');
+  is(pending.filter.sift.map((item) => item.text), ['Highs', 'Lows', 'Meals', 'Corrections'],
+    'S51 pending Sift labels carry no old projection counts');
+  is(pending.filter.sift.map((item) => item.checked), checked,
+    'S51 pending Sift selection is retained');
+  ok(pending.filter.sift.every((item) => !item.disabled), 'S51 pending controls stay enabled');
+  is(pending.filter.view.map((item) => item.checked), ['false', 'true'],
+    'S51 pending View selection is retained');
+};
+
+/** S52 · #83 — a 200 response that violates the event-comparison contract is
+    rejected exactly like a failed request: direct entry recovers By clock and
+    preserves the Finding, window, and root View. */
+// STORY:finding-evidence-routing:S52
+export const S52 = async (page) => {
+  await page.getByRole('button', { name: '24 h', exact: true }).click();
+  await settle(page, 450);
+  await page.getByRole('button', { name: /Filter/ }).click();
+  await page.getByRole('menuitemradio', { name: 'Event charts', exact: true }).click();
+  await page.keyboard.press('Escape');
+  await clickQueueRow(page, 'Late bolus');
+  await settle(page, 450);
+  const recovered = await state(page);
+  is(recovered.crumb[recovered.crumb.length - 1], 'Late bolus',
+    'S52 malformed event data leaves the reader on the same Finding');
+  is(recovered.alignPressed, ['By clock'], 'S52 malformed event data restores By clock');
+  is(recovered.clockCanvas, true, 'S52 the pooled clock canvas returns');
+  is(recovered.eventCanvas, false, 'S52 malformed event evidence is never rendered');
+  is(recovered.pressed, ['24 h'], 'S52 the clock window is preserved');
+  await page.keyboard.press('Backspace');
+  const root = await state(page);
+  is(root.filter.trigger, 'Filter 1', 'S52 the Event charts root View is preserved');
+  is(root.filter.view.map((item) => item.checked), ['false', 'true'],
+    'S52 the preserved View remains selected');
 };
 
 /* ------------------------------------------------------------------- runner */
@@ -2149,6 +2362,11 @@ export const S43 = async (page) => {
 // STORY:finding-evidence-routing:S45
 // STORY:finding-evidence-routing:S46
 // STORY:finding-evidence-routing:S47
+// STORY:finding-evidence-routing:S48
+// STORY:finding-evidence-routing:S49
+// STORY:finding-evidence-routing:S50
+// STORY:finding-evidence-routing:S51
+// STORY:finding-evidence-routing:S52
 // STORY:finding-evidence-routing:D1
 // STORY:finding-evidence-routing:D2
 // STORY:finding-evidence-routing:D3
@@ -2179,7 +2397,10 @@ export const STORIES = [
     findingsInputs: withLateConsequence,
     exposuresInputs: (d) => withLateConsequence(d).exposures,
   }],
-  ['S38', S38, 'typical'],
+  ['S38', S38, 'typical', {
+    findingsInputs: withEligibilityLoss,
+    exposuresInputs: (d) => withEligibilityLoss(d).exposures,
+  }],
   ['S39', S39, 'dense', { findingsDelayMs: 900 }],
   ['S40', S40, 'typical'],
   ['S41', S41, 'typical', {
@@ -2219,6 +2440,11 @@ export const STORIES = [
     pumpSettingsInputs: derivedPumpSettings,
     onPlanDraft: (draft) => TRUE_ISF_DRAFTS.push(draft),
   }],
+  ['S48', S48, 'drawn'],
+  ['S49', S49, 'typical'],
+  ['S50', S50, 'typical'],
+  ['S51', S51, 'typical', { findingsDelayMs: 900 }],
+  ['S52', S52, 'typical', { comparisonProjection: { schema: 'malformed-event-comparison' } }],
   ['D1', D1, 'dense'], ['D2', D2, 'dense'], ['D3', D3, 'dense'],
 ];
 

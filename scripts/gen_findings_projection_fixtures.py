@@ -62,6 +62,7 @@ from ciq_autotune.analyzers.tuning_priority import (  # noqa: E402
     price_ic_blocks,
 )
 from ciq_autotune.events import BolusEvent  # noqa: E402
+from ciq_autotune.event_comparison import EVENT_CHARTS  # noqa: E402
 from ciq_autotune.findings_projection import FindingsProjection, WindowQuery  # noqa: E402
 from ciq_autotune.model import _slot_label  # noqa: E402
 from ciq_autotune.result import (  # noqa: E402
@@ -474,6 +475,9 @@ def payload() -> dict:
             "analysis": prepared._analysis,
             "exposures": prepared._exposures,
             "scenarios": prepared._scenarios,
+            # Derived from event_comparison.VIEW_CONFIG. The fixture-only mirror
+            # consumes this object instead of transcribing queue eligibility.
+            "event_charts": EVENT_CHARTS,
         },
         "windows": {
             name: prepared.project(

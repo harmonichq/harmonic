@@ -232,6 +232,30 @@ function validProjection(value, requestedView) {
     && JSON.stringify(summary.verdict) === JSON.stringify(selection.detail.verdict);
 }
 
+/** Validate a projection against the coordinates that requested it. The closed
+ * factor lists above validate the event-response protocol; queue eligibility
+ * remains the findings server's nullable `event_chart` decision. */
+export function validEventProjection(value, requested) {
+  if (!isRecord(requested) || !validProjection(value, requested.view)) return false;
+  const coordinates = value.coordinates;
+  if (typeof requested.factor === 'string' && coordinates.factor !== requested.factor) return false;
+  if (typeof requested.another === 'boolean' && coordinates.another !== requested.another) return false;
+  const windowMatches = requested.window === null
+    ? coordinates.window.scoped === false
+    : isRecord(requested.window)
+    && Number.isInteger(requested.window.start_min)
+    && Number.isInteger(requested.window.end_min)
+    && coordinates.window.scoped === true
+    && coordinates.window.start_min === requested.window.start_min
+    && coordinates.window.end_min === requested.window.end_min;
+  if (!windowMatches) return false;
+  if (typeof requested.occurrenceId === 'string') {
+    return ['selected', 'unavailable'].includes(value.selection.state)
+      && value.selection.requested_id === requested.occurrenceId;
+  }
+  return value.selection.state === 'none';
+}
+
 const setUrl = (changes) => {
   activeInstance?.applyChanges(changes);
 };

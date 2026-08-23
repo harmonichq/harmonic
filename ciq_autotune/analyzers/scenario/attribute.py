@@ -186,7 +186,7 @@ def _over_treated_step(
 
 @dataclass(frozen=True)
 class OverTreatedReboundJudgment:
-    """One guarded rebound scan and its complete over-treated-low judgment.
+    """The guarded rebound result and its complete over-treated-low judgment.
 
     ``rebound`` preserves the scan facts that existing attribution and split callers
     need. ``rebound_bar`` and ``near_floor`` make the applied boundary facts available
@@ -207,7 +207,7 @@ def over_treated_rebound_judgment(
     *,
     scenario_config: ScenarioConfig = ScenarioConfig(),
 ) -> OverTreatedReboundJudgment:
-    """Judge one low from one guarded rebound scan (#104/#112/#400).
+    """Judge one eligible low from its guarded rebound result (#104/#112/#400).
 
     Applies the existing tiered firing bar and its 20 mg/dL near floor. Classification
     remains shape-only: residual bolus IOB does **not** move either boundary.

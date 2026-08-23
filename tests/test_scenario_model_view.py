@@ -20,7 +20,7 @@ import unittest
 from datetime import date, datetime, timedelta
 
 from ciq_autotune.analyzers.classifiers.evidence import EvidenceTier, SilenceReason
-from ciq_autotune.analyzers.scenario import Lever, assemble
+from ciq_autotune.analyzers.scenario import Lever, LowPromptAnswer, assemble
 from ciq_autotune.analyzers.scenario.anchors import Anchor, AnchorKind
 from ciq_autotune.analyzers.scenario.model_view import (
     AnchorVerdict,
@@ -161,6 +161,35 @@ class OverTreatedLowModelViewTest(unittest.TestCase):
                 self.assertEqual(verdict["matched"], matched)
                 self.assertEqual(verdict["silence_reason"],
                                  silence_reason.value if silence_reason else None)
+
+    def test_refuted_and_split_off_lows_suppress_over_treated_low(self):
+        t = datetime(2026, 6, 22, 12, 0)
+        cgm = [
+            CgmReading(t=t, bg=55.0, type="EGV"),
+            CgmReading(t=t + timedelta(minutes=5), bg=165.0, type="EGV"),
+        ]
+        cases = (
+            (
+                "refuted",
+                Anchor(t=t, kind=AnchorKind.LOW, bg=55.0),
+                (LowPromptAnswer(anchor_t=t, answer="no"),),
+            ),
+            (
+                "split off",
+                Anchor(t=t, kind=AnchorKind.LOW, bg=55.0,
+                       over_treatment_split_off=True),
+                (),
+            ),
+        )
+        for label, anchor, low_answers in cases:
+            with self.subTest(label=label):
+                verdicts = _low_verdicts(
+                    anchor, cgm, [], [],
+                    scenario_config=ScenarioConfig(), low_answers=low_answers,
+                )
+                self.assertNotIn(
+                    "over_treated_low", {verdict.classifier for verdict in verdicts}
+                )
 
 
 class ModelViewPayloadTest(unittest.TestCase):

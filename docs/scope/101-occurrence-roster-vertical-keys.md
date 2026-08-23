@@ -100,3 +100,45 @@ added:
   (Connor, 2026-08-19), so changing which keys step is a ruling, not an agent call.
   Recommended: additive — ArrowUp/ArrowDown step, ArrowLeft/ArrowRight keep working,
   keyhint becomes `↑ ↓`. Owner: Connor.
+
+## Plan-review instrumentation
+
+**Round 1** (one cold Opus reviewer, ordinary-stakes tier → one panel). Blockers: 3,
+all tagged `authoring` — present since the aborted run's draft, none `injected` by a
+fix round. Notes: 3. No rewrite-clean signal.
+
+- B1 `authoring` — the draft demanded a `filterOpen` guard for a state that cannot
+  occur. Enforced by `push()` 1598-1601, `popTo()` 1603-1609 and `paintFilter`
+  1995-2005, all clearing `filterOpen`, against a roster handler requiring
+  `k === 'factor'`. Reached independently by triage before the reviewer reported;
+  both agreed. Fixed: guard forbidden, invariant named in the order.
+- B2 `authoring` — the focus-retention recipe could not be implemented as written.
+  `requestCase` paints twice (sync at 1453-1456, async at 1462-1469), so a one-shot
+  `requestAnimationFrame` focuses a button the second paint discards; and
+  `selectOcc(occ)` at 1650-1654 takes an occurrence, not an event, so the
+  `ev.detail` origin test would have forced an unauthorized signature change on
+  `renderCaseRoster`'s `onSelect`. Fixed: render-path intent flag consumed after
+  2295-2298, device-origin discrimination dropped entirely.
+- B3 `authoring` — a "Done when" clause asserted filter-menu behaviour that passes
+  identically whether the guard exists, is absent, or is inverted. Fixed: deleted.
+- N1 — the `#ec-chart` citation pointed at a declaration (line 1094) rather than the
+  mount. Fixed: `ownsAlign` 2525-2527 plus the mount at 1908-1921, with the
+  alignment reachability condition and the `withFiredMeal` replay route.
+- N2 — ledger row P27 cites `installSegKeys` at
+  `frontend/diagnose-event-comparison.js:337-350`; `git grep installSegKeys` returns
+  only that ledger line. Recorded in the order as observed and out of scope for #101.
+- N3 — base renders had no capture point and would be unobtainable after the keyhint
+  changes. Fixed: new step 0 captures them first, and orders the ui-craft revise §2
+  source-and-live re-inventory the triage base capture did not cover.
+
+**Verified corrections to the aborted run's draft, beyond the review:**
+`STORIES.length` is 89 (executed) while the ledger header claims 74 — the header's
+enumeration is stale, not merely its total. Port 8765 is held on this machine by an
+unrelated stale server (PID 37842, a different database), so the order names an
+explicit free port and a PID check. The Playwright install named in the first brief
+is 1.55.0 with a partial Chromium and fails to launch; 1.61.1 is the pinned version.
+`uv sync --frozen --extra api --extra sync` is required before the server will start.
+
+**Base capture:** `app: 89 of 89 stories passed`, 0 failures, at base `38a5a5d`,
+through the declared no-fetch server on an explicit free port against the seed-620
+synthetic database.

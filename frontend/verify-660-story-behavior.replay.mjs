@@ -115,9 +115,9 @@ export async function openApp(browser, { state = 'complete', theme = 'light' } =
     problems.push(`unstubbed ${route.request().method()} ${path} (app ${state})`);
     return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ detail: 'not stubbed' }) });
   });
-  // The app carries the ported `?state=` hook, so the harness drives it
+  // The app carries the ported hash-route `?state=` hook, so the harness drives it
   // directly and asserts the state it actually rendered.
-  await page.goto(`http://app.local/?state=${state}#verify`);
+  await page.goto(`http://app.local/#/verify?state=${encodeURIComponent(state)}`);
   await page.waitForSelector('.vw .trial-line .subject', { timeout: 15000 });
   await settle(page, 900);
   const $ = scoped(page, '.vw ');
@@ -125,7 +125,7 @@ export async function openApp(browser, { state = 'complete', theme = 'light' } =
   return { page, $, close: () => page.close() };
 }
 
-/** State addressability, loud on both sides: a `?state=` the surface silently
+/** State addressability, loud on both sides: a hash-route `?state=` the surface silently
     ignores renders a plausible screen and hides the drift (the `?mode=` bug
     the Diagnose comparator shipped with). */
 async function assertState($, want, where) {

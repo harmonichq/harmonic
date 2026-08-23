@@ -1466,7 +1466,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           </template>
         </nav>
         <span class="cockpit-divider" data-zone="divider" aria-hidden="true"></span>
-        <a class="cockpit-day" data-zone="day" data-shell-tab="day" href="#day"
+        <a class="cockpit-day" data-zone="day" data-shell-tab="day" href="#/day"
            :aria-current="tab === 'day' ? 'page' : null" @click.prevent="shellGo('day')">Day</a>
         <span class="cockpit-gap" data-zone="gap"></span>
         <div class="cockpit-scope" data-zone="scope">
@@ -4269,6 +4269,10 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           // #269: the Guide-KB's open article rides the hash — `#guide?article=<slug>`
           // deep-links to an article (and back/forward moves between articles).
           if (tab.value === 'guide' && kbCurrent.value) route.article = kbCurrent.value;
+          if (tab.value === 'verify') {
+            const current = parseRoute(location);
+            if (current.page === 'verify') Object.assign(route, current);
+          }
           if (tab.value === 'diagnose') {
             const current = parseRoute(location);
             if (current.page === 'diagnose') Object.assign(route, current);

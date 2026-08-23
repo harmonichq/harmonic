@@ -30,6 +30,7 @@ export function resolveTab(tab) {
 function routeState(page, params) {
   if (page === 'day') return { date: params.get('date') || null };
   if (page === 'guide') return { article: params.get('article') || null };
+  if (page === 'verify') return { state: params.get('state') || null };
   if (page === 'diagnose') {
     return Object.fromEntries(DIAGNOSE_KEYS.map((key) => [key, params.get(key) || null]));
   }
@@ -58,7 +59,7 @@ export function parseRoute({ hash = '', search = '' } = {}) {
 export function serializeRoute(route, extra = []) {
   const page = resolveTab(route.page);
   const params = new URLSearchParams();
-  const keys = page === 'day' ? ['date'] : page === 'guide' ? ['article']
+  const keys = page === 'day' ? ['date'] : page === 'guide' ? ['article'] : page === 'verify' ? ['state']
     : page === 'diagnose' ? DIAGNOSE_KEYS : [];
   for (const key of keys) {
     if (route[key]) params.set(key, route[key]);

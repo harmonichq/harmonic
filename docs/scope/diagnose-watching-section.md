@@ -137,3 +137,37 @@ the predicate's unit test with a hand-built row, not by this fixture.
   guard scripts (verified); Expectation and Done-when now say three and name
   them. Also self-corrected two of my own citations (the `.qcollapse` block is
   lines 350-358, its `readWord` string 354-355). Injected: 0.
+
+- Round 3 (cold panel B, this session, axes 3-5 — interface shape, scope, cost):
+  **6 blocking**, 1 note, all `authoring`. All six reproduced against the repo
+  before any fix. The order was REWRITTEN CLEAN rather than patched.
+  (1) The head carried no ARIA role inside a `role="list"`, so it would be
+  dropped from the reading order — and `diagnose-findings-queue.js`'s `flavor`
+  ternary tags a HELD row **Setting**, so a non-visual reader got no separation
+  at all. Head now takes `role="listitem"`; S72 and Done-when assert it.
+  (2) Base evidence was owed but no base server existed. Now a second worktree
+  at the base SHA on port 8766, per `ui-craft/reference/revise.md` §1.
+  (3) Evidence named only 1440×900; `diagnose-workstation.css:884` opens
+  `@media (max-width: 760px)` and `:907` gives `.qcollapse` a 44px min-height.
+  Added the 760 viewport and the sift + `Event charts` state.
+  (4) `watchingHead` was a shallow seam — placement in the pure function, the
+  reader-visible COUNT in the DOM-only painter, unreachable by the fast gate.
+  `queueRows` now emits `watchingCount` too, and `WATCH` is hoisted to module
+  scope so the membership fact has one implementation. This supersedes round
+  2's note (2), which moved the count within the painter instead.
+  (5) Verification omitted `mockups/finding-evidence-routing.exploration/build.mjs
+  --check` (`.github/workflows/ci.yml:139-140`), which imports `queueRows`
+  (`build.mjs:66`), `renderFindingsQueue` (`surface.js:72`) and links
+  `diagnose-workstation.css` (`index.html:229`) — both edited files. Added to
+  Verification with a Boundaries ruling.
+  (6) Step 7's ledger delta was owed an inventory no step commissioned;
+  `revise.md` §2 requires four obligations and the order discharged only the
+  replay. Step 1d now commissions the source-and-live re-inventory.
+  Note (7): the `Signed-off-by:` Boundaries line was imported from another
+  repo — `grep -rni signed-off-by .github scripts githooks AGENTS.md README.md`
+  returns nothing. Dropped.
+  Reconciliation: round 2's note (1) and round 3's objection (2) collided on how
+  to prove S72 red. Resolved better than either — `replay.mjs:405-409` shows the
+  replay is a pure client keyed on `BASE_URL`, so the BRANCH's replay file runs
+  against the BASE server and S72 goes red with no revert of anything.
+  Injected: 0.

@@ -28,7 +28,10 @@ from ciq_autotune.analyzers.classifiers.context_gate import CIQ_SUSPEND_TYPE
 from ciq_autotune.analyzers.classifiers.correction_on_iob import (
     classify_correction_on_iob,
 )
-from ciq_autotune.analyzers.classifiers.evidence import EvidenceTier
+from ciq_autotune.analyzers.classifiers.evidence import (
+    EvidenceTier,
+    SilenceReason,
+)
 from ciq_autotune.analyzers.classifiers.missed_meal import (
     DIGESTION_LOOKBACK_MIN,
     classify_missed_meal,
@@ -51,6 +54,7 @@ from ciq_autotune.analyzers.scenario.attribute import (
     _high_lever,
     attribute,
     match_low_answer,
+    over_treated_rebound_judgment,
 )
 from ciq_autotune.analyzers.scenario.payload import Step, event_ref, window_ref
 from ciq_autotune.analyzers.scenario.engine import (
@@ -781,6 +785,48 @@ class PatternScoringAndPayloadTest(unittest.TestCase):
         any_ep = next(iter(report.episodes.values()))
         self.assertIn("cgm", any_ep.window)
         self.assertIn("start", any_ep.window)
+
+
+class OverTreatedLowJudgmentTest(unittest.TestCase):
+    """The complete rebound judgment keeps every guarded-scan outcome (#90)."""
+
+    def _rebound(self, peak):
+        t0 = datetime(2026, 6, 17, 11, 30)
+        return (
+            [
+                CgmReading(t=t0, bg=55.0, type="EGV"),
+                CgmReading(t=t0 + timedelta(minutes=5), bg=peak, type="EGV"),
+            ],
+            t0,
+        )
+
+    def test_complete_judgment_covers_fired_near_clean_and_insufficient(self):
+        cases = (
+            ("fired", 165.0, True, EvidenceTier.INFERRED, None),
+            ("near", 155.0, False, EvidenceTier.OBSERVED,
+             SilenceReason.UNDER_THRESHOLD),
+            ("clean", 135.0, False, EvidenceTier.OBSERVED,
+             SilenceReason.NO_TRIGGER),
+        )
+        for label, peak, matched, tier, silence_reason in cases:
+            with self.subTest(label=label):
+                cgm, nadir_t = self._rebound(peak)
+                judgment = over_treated_rebound_judgment(cgm, nadir_t, 55.0, [])
+                self.assertEqual(judgment.rebound.peak, peak)
+                self.assertEqual(judgment.rebound_bar, 160.0)
+                self.assertEqual(judgment.near_floor, 140.0)
+                self.assertEqual(judgment.verdict.matched, matched)
+                self.assertEqual(judgment.verdict.evidence_tier, tier)
+                self.assertEqual(judgment.verdict.silence_reason, silence_reason)
+
+        nadir_t = datetime(2026, 6, 18, 11, 30)
+        judgment = over_treated_rebound_judgment(
+            [CgmReading(t=nadir_t, bg=55.0, type="EGV")], nadir_t, 55.0, []
+        )
+        self.assertIsNone(judgment.rebound.peak)
+        self.assertFalse(judgment.verdict.matched)
+        self.assertEqual(judgment.verdict.evidence_tier, EvidenceTier.NOT_IN_DATA)
+        self.assertEqual(judgment.verdict.silence_reason, SilenceReason.INSUFFICIENT_DATA)
 
 
 class OverTreatedLowTest(unittest.TestCase):

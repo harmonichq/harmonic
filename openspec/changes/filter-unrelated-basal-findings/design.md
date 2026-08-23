@@ -23,8 +23,9 @@ report: “fix this bug, unrelated basal slots showing up in sliced views.”
 ### Decision
 
 A findings projection is renderable only when its loaded request key matches the
-current findings-window key. Pending and failed replacements are inspector-wide
-states evaluated before queue or detail rendering:
+current findings-window key. Pending and failed replacements are evaluated
+before ordinary queue, finding-detail, or current-setting parameter-detail
+rendering:
 
 - Pending renders `Loading findings for HH:MM–HH:MM…` with
   `data-loading="true"`, on the inspector content spine.
@@ -38,11 +39,18 @@ states evaluated before queue or detail rendering:
 - Late responses keep the existing request-key guard. A failed key suppresses an
   immediate retry loop and clears when a different window is selected.
 
+Selected I:C history is the explicit exception introduced by ticket 10 and
+governed by frozen stories S59 and S70. During a pending or failed replacement,
+that history depth preserves its last coherent case/canvas pair; it never mixes
+generations and never exposes staging from history.
+
 The browser never compares slot or block times to decide membership. ADR 62's
 one-population and server-ownership decision remains unchanged. The frozen
-contract is `mockups/finding-evidence-routing.behavior.md`; S41 through S43 in
-`frontend/diagnose-workstation-behavior.replay.mjs` are its vertical built-app
-evidence.
+contract is `mockups/finding-evidence-routing.behavior.md`; the
+`issue81PendingProjection`, `issue81FailedProjection`, and
+`issue81SlicedProjection` browser probes are its vertical built-app evidence.
+Their original concurrent S41–S43 labels are historical and do not replace
+ticket 10's frozen story identities.
 
 ### Safe-start provenance
 
@@ -62,11 +70,13 @@ used.
 ### Rendered evidence
 
 The 1440×900 synthetic evidence is committed under
-`docs/screenshots/issue-81/`. The primary functional pair is
-`revision-whole-day-findings-*` and `revision-sliced-findings-*`: the same
-committed synthetic projection renders six findings at 24 hours and exactly two
-at 04:30–06:00, retaining `Basal 05:30 · raise` and `ISF` while excluding the
-other four. This proves positive sliced membership, not only an empty state.
+`docs/screenshots/issue-81/`. The primary historical #81 functional pair is
+`revision-whole-day-findings-*` and `revision-sliced-findings-*`: before ticket
+10 added the history row, that projection rendered six findings at 24 hours and
+exactly two at 04:30–06:00, retaining `Basal 05:30 · raise` and `ISF` while
+excluding the other four. The reconciled executable probe renders seven and
+three respectively, adding `Carb ratio Morning. Past setting.` to both scopes.
+Both prove positive sliced membership, not only an empty state.
 
 `revision-pending-{queue,detail}-*` shows the explicit
 `Loading findings for 15:00–21:00…` line at both depths. The capture waits for
@@ -81,7 +91,8 @@ or theme drift was observed.
 
 ### Consequences
 
-The inspector may temporarily show less information, but it never attributes a
-prior population to a new window. A failed request is explicit and recoverable
-through another window selection. Whole-day findings and all server membership
-rules are unchanged.
+The ordinary projection-backed inspector frames may temporarily show less
+information, but they never attribute a prior population to a new window. A
+failed request is explicit and recoverable through another window selection.
+Selected history instead keeps its explicitly stale, coherent pair under S59
+and S70. Whole-day findings and all server membership rules are unchanged.

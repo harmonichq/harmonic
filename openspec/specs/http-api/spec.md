@@ -55,6 +55,47 @@ it ran still returns its own freshly computed value to its caller but MUST NOT b
 stored — discard-on-store means "do not poison the cache," never "drop the
 response."
 
+### Requirement: Historical findings and event evidence share one restart-safe generation
+
+`GET /diagnose/findings` and
+`GET /diagnose/carb-ratio-history/events` are projections of one cached historical
+snapshot: the analyzer-owned findings catalog and the exact event series prepared
+from that catalog. Both schemas carry the same opaque `analysis_generation`, formed
+from a collision-resistant per-app incarnation plus the cache's monotonic data
+version. The stable read returns the token and prepared value only when no cache bump
+crossed the computation; it retries a bounded number of times and fails with a
+structured 409 rather than attaching a new token to crossed bytes. A restarted app
+always has a different incarnation even when it opens unchanged database bytes.
+
+The findings endpoint accepts an optional canonical `selected_id` and returns its
+selection disposition in the same snapshot as the rows. The history-events endpoint
+requires `history_id` and the findings generation, accepts an optional member
+`selected_run_id`, and returns the complete analyzer-published 90-day roster and
+series without recomputing membership. Missing or malformed inputs are structured
+400 responses; canonical identities or runs absent from the catalog membership are
+404; a stale generation is `analysis_generation_mismatch` at 409; and `aged_out`
+versus `unavailable` are distinct structured 410 outcomes. Bearer authentication is
+checked before any of those validation or data responses.
+
+Neither endpoint changes `/diagnose/event-comparison`, and neither projection may
+infer schedule membership, lifecycle, support, or actionability. Selecting a run
+changes only the echoed selection; it does not filter `run_ids` or `series`.
+### Requirement: Finding case files are bound to one snapshot preparation.
+
+`GET /diagnose/finding-case-file-preparation` builds the active Findings queue and
+its case-file population inside one SQLite read snapshot. It returns an opaque,
+versioned `projection_id` beside server-rendered rows. `GET
+/diagnose/finding-case-file` requires that id, a stable Finding id, an alignment,
+ and an optional Occurrence coordinate; it projects only from the
+retained preparation rather than recomputing against a newer population.
+
+The preparation registry is bounded, expiring, lock-coupled, and single-flight.
+A data-version bump prevents an in-flight older preparation from becoming newly
+addressable. An expired or unknown well-formed id returns `409 stale_projection`;
+malformed coordinates return `400 invalid_request`; an unavailable Finding or
+Occurrence returns the contract's explicit unavailable state. These routes do not
+widen or replace `/diagnose/findings`, `/explore/exposures`, or the legacy event-
+comparison endpoint.
 ### Requirement: Every write path MUST invalidate the cache
 
 Invalidation is coarse and global: a single `bump` clears the whole map and advances

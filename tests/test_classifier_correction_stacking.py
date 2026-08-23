@@ -44,9 +44,10 @@ def cgm_ramp(day, start_h, start_min, start_bg, slope_per_min, minutes):
     ]
 
 
-def correction(day, hh, mm, dose=3.0):
+def correction(day, hh, mm, dose=3.0, seq_num=None):
     """A user correction bolus (no carbs, above the 1U user floor)."""
-    return BolusEvent(t=datetime(2026, 6, day, hh, mm, 0), insulin=dose, carbs=None)
+    return BolusEvent(t=datetime(2026, 6, day, hh, mm, 0), insulin=dose, carbs=None,
+                      seq_num=seq_num)
 
 
 def suspend_run(day, hh, mm, rows=6, cadence=5):
@@ -89,6 +90,18 @@ class RunawayChaseVsOverStackTest(unittest.TestCase):
         self.assertIsNotNone(v.nadir_bg)
         self.assertLessEqual(v.nadir_bg, 70.0)             # a real low followed
         self.assertAlmostEqual(v.gap_min, 30.0, delta=0.1)
+
+    def test_three_corrections_choose_the_last_canonical_equal_time_pair(self):
+        fall = cgm_ramp(15, 14, 0, 160, -0.8, 60)
+        crash = cgm_ramp(15, 15, 5, 108, -1.2, 60)
+        corrections = [
+            correction(15, 14, 40, seq_num=12),
+            correction(15, 14, 10, seq_num=10),
+            correction(15, 14, 40, seq_num=11),
+        ]
+        verdict = classify_correction_stacking(corrections, fall + crash)
+        self.assertTrue(verdict.matched)
+        self.assertEqual((verdict.previous_seq_num, verdict.second_seq_num), (11, 12))
 
 
 class NoHarmTest(unittest.TestCase):

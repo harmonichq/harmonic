@@ -566,6 +566,20 @@ class Store:
         conn = sqlite3.connect(f"file:{path}?mode=ro&immutable=1", uri=True)
         return cls(conn, readonly=True)
 
+    @classmethod
+    def open_queryonly(cls, path: str) -> "Store":
+        """Open the live database for a read transaction without schema writes.
+
+        Unlike :meth:`open_readonly`, this connection does not claim the file is
+        immutable: it observes the live WAL while ``serve``'s fetch loop may write.
+        URI read-only mode and ``query_only`` prevent DDL or data mutation, while
+        the transaction chosen by the caller fixes one coherent SQLite snapshot.
+        """
+        conn = sqlite3.connect(f"file:{path}?mode=ro", uri=True, timeout=30.0)
+        conn.execute("PRAGMA busy_timeout = 30000")
+        conn.execute("PRAGMA query_only = ON")
+        return cls(conn, readonly=True)
+
     def close(self) -> None:
         self.conn.close()
 

@@ -373,6 +373,117 @@ export function observeResize(el, getChart) {
   return observer;
 }
 
+/**
+ * Accept a history-event response only when both halves of the requested pair
+ * name the same opaque history identity, analysis generation, and run selection.
+ * This is coherence validation, not lifecycle or membership policy: every fact
+ * compared here is a server-published field from the request/response contract.
+ */
+export function validateHistoryEvents(projection, {
+  historyId, analysisGeneration, selectedRunId = null,
+} = {}) {
+  const coherent = projection?.schema === 'diagnose-carb-ratio-history-events-v1'
+    && projection.history_id === historyId
+    && projection.analysis_generation === analysisGeneration
+    && (projection.selected_run_id ?? null) === (selectedRunId ?? null)
+    && Array.isArray(projection.run_ids)
+    && Array.isArray(projection.series)
+    && projection.series.length === projection.run_ids.length
+    && new Set(projection.run_ids).size === projection.run_ids.length
+    && projection.run_ids.every((runId) => typeof runId === 'string' && runId.length > 0)
+    && (selectedRunId == null || projection.run_ids.includes(selectedRunId))
+    && projection.series.every((run, index) => run?.run_id === projection.run_ids[index]
+      && typeof run.first_member_at === 'string' && Number.isFinite(Date.parse(run.first_member_at))
+      && Array.isArray(run.points) && run.points.every((point) => Number.isFinite(point?.minute)
+        && Number.isFinite(point?.bg))
+      && Array.isArray(run.member_offsets_min)
+      && run.member_offsets_min.every(Number.isFinite));
+  if (!coherent) throw new Error('Server did not return one coherent history evidence pair.');
+  return projection;
+}
+
+const historyRunLabel = (run) => new Date(run.first_member_at).toLocaleDateString(
+  'en-US', { month: 'short', day: 'numeric' },
+);
+const HISTORY_MEAL_RAIL_BG = 44;
+
+/** Purpose-built event projection for one retired I:C item. */
+export function renderHistoryEvents(el, echarts, projection, colors) {
+  const selected = projection.selected_run_id;
+  el.dataset.historyId = projection.history_id;
+  el.dataset.analysisGeneration = projection.analysis_generation;
+  el.dataset.selectedRunId = selected || '';
+  el.setAttribute('role', 'img');
+  el.setAttribute('aria-label', `Past-setting glucose evidence for ${projection.series.length} meal runs.`);
+  const chart = echarts.getInstanceByDom(el) || echarts.init(el, null, { renderer: 'canvas' });
+  const lines = projection.series.map((run) => {
+    const active = !selected || run.run_id === selected;
+    return {
+      name: historyRunLabel(run), type: 'line', symbol: 'none', animation: false,
+      data: run.points.map((point) => [point.minute, point.bg]),
+      lineStyle: {
+        color: colors.primary, width: selected && active ? 2.4 : 1.25,
+        opacity: active ? 0.88 : 0.2,
+      },
+      itemStyle: { color: colors.primary },
+      emphasis: { disabled: true },
+    };
+  });
+  const meals = projection.series.flatMap((run) => run.member_offsets_min.map((minute, index) => {
+    const nearest = run.points.filter((point) => point.bg != null).reduce((best, point) => (
+      !best || Math.abs(point.minute - minute) < Math.abs(best.minute - minute) ? point : best
+    ), null);
+    return {
+      // A run may have no CGM points. The marker still belongs to the server's
+      // published meal membership, so place it on a quiet plot-floor rail
+      // rather than dropping it or inventing a glucose reading.
+      value: [minute, nearest?.bg ?? HISTORY_MEAL_RAIL_BG],
+      runId: run.run_id,
+      mealNumber: index + 1,
+      itemStyle: {
+        color: colors.meal,
+        opacity: !selected || run.run_id === selected ? 1 : 0.2,
+        borderColor: colors.rail,
+        borderWidth: 1,
+      },
+    };
+  }));
+  chart.setOption({
+    backgroundColor: 'transparent', animation: false,
+    textStyle: { fontFamily: 'Inter, system-ui, sans-serif', color: colors.muted },
+    grid: { left: 52, right: 28, top: 30, bottom: 42 },
+    legend: {
+      show: true, top: 0, right: 28, selectedMode: false,
+      textStyle: { color: colors.muted, fontSize: 10 },
+      // The inspector is the complete member roster. Repeating every run here
+      // turns a dense population into several rows of redundant chrome and
+      // starves the plot, especially on the narrow layout.
+      data: [{ name: 'Meals', icon: 'diamond' }],
+    },
+    tooltip: {
+      trigger: 'axis',
+      valueFormatter: (value) => `${Math.round(value)} mg/dL`,
+    },
+    xAxis: {
+      type: 'value', min: 'dataMin', max: 'dataMax',
+      name: 'minutes from first meal', nameLocation: 'middle', nameGap: 28,
+      axisLine: { lineStyle: { color: colors.line } },
+      axisLabel: { color: colors.muted, fontSize: 10 },
+      splitLine: { lineStyle: { color: colors.grid } },
+    },
+    yAxis: {
+      type: 'value', min: 40, max: 300, name: 'mg/dL',
+      axisLabel: { color: colors.muted, fontSize: 10 },
+      splitLine: { lineStyle: { color: colors.grid } },
+    },
+    series: [...lines, {
+      name: 'Meals', type: 'scatter', symbol: 'diamond', symbolSize: 8,
+      data: meals, animation: false, emphasis: { disabled: true }, tooltip: { show: false }, z: 8,
+    }],
+  }, true);
+  return chart;
+}
+
 function bandPair(name, base, span, stack, color, z) {
   return [
     {

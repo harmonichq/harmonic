@@ -19,16 +19,13 @@ from .analyzers.classifiers import (
     classify_late_bolus,
 )
 from .analyzers.scenario.engine import _effective_isf
-from .analyzers.scenario.attribute import _next_meal_bolus_t
+from .analyzers.scenario.attribute import over_treated_rebound_judgment
 from .analyzers.scenario.meal_suspend import classify_meal_owned_suspend
-from .analyzers.scenario.segment import guarded_rebound
 from .analyzers.scenario_config import ScenarioConfig
 from .window_membership import WindowQuery, outcome_minute
 
 FMT = "%Y-%m-%d %H:%M:%S"
 CONFIG = ScenarioConfig()
-_SOURCE_WINDOW_DAYS = 30
-
 VIEW_CONFIG = {
     "meals": {
         "anchor": "completed carb-bolus",
@@ -46,6 +43,15 @@ VIEW_CONFIG = {
         "factors": ["over_treated_low", "correction_on_iob", "correction_stacking"],
         "default_factor": "over_treated_low",
     },
+}
+
+# Queue discovery reads the same canonical factor membership as the comparison
+# projection. This derived index is exported for projection and fixture producers;
+# no consumer maintains another factor allowlist.
+EVENT_CHARTS = {
+    factor: {"view": view, "factor": factor}
+    for view, config in VIEW_CONFIG.items()
+    for factor in config["factors"]
 }
 
 FACTOR_LABELS = {
@@ -172,26 +178,26 @@ def _meal_over_delivery_near(meal, bolus, cgm, basal) -> dict | None:
     }
 
 
-def _over_treated_low_near(anchor, nadir, cgm, bolus) -> tuple[dict | None, object]:
-    rebound = guarded_rebound(
-        cgm,
-        anchor,
-        stop_at=_next_meal_bolus_t(bolus, anchor, scenario_config=CONFIG),
-        scenario_config=CONFIG,
+def _over_treated_low_route(anchor, nadir, cgm, bolus) -> tuple[dict | None, bool]:
+    """Project the shared rebound judgment into this view's near/neutral routing.
+
+    Event comparison retains its own cohort precedence, but it never re-decides
+    whether a rebound fired, was near, calm, or unjudgeable.
+    """
+    judgment = over_treated_rebound_judgment(
+        cgm, anchor, nadir, bolus, scenario_config=CONFIG,
     )
-    bar = 180 if nadir is not None and nadir > 70 else 160
-    floor = bar - 20
-    near = None
-    if rebound.peak is not None and floor <= rebound.peak < bar:
-        near = {
+    reason = _reason(judgment.verdict)
+    if reason == "under_threshold":
+        return {
             "boundary": {
                 "nadir_mgdl": nadir,
-                "guarded_rebound_peak_mgdl": rebound.peak,
-                "live_bar_mgdl": bar,
+                "guarded_rebound_peak_mgdl": judgment.rebound.peak,
+                "live_bar_mgdl": judgment.rebound_bar,
             },
-            "provenance": "ADR 676 guarded-rebound projection",
-        }
-    return near, rebound
+            "provenance": "shared guarded-rebound judgment",
+        }, False
+    return None, reason == "no_trigger"
 
 
 def _correction_on_iob_near(anchor, nadir, cgm, bolus, basal) -> dict | None:
@@ -356,7 +362,9 @@ def _route_low(
     anchor = _dt(occurrence["t"])
     nadir = occurrence.get("bg")
     near = {}
-    rebound_near, rebound = _over_treated_low_near(anchor, nadir, cgm, bolus)
+    rebound_near, rebound_neutral = _over_treated_low_route(
+        anchor, nadir, cgm, bolus
+    )
     coi_near = _correction_on_iob_near(anchor, nadir, cgm, bolus, basal)
     stacking_near, stacking_verdict = _correction_stacking_read(
         episode_corrections, bolus, cgm, basal
@@ -381,9 +389,7 @@ def _route_low(
         )
     )
     stacking_judged = stacking_verdict is None or stack_reason == "no_trigger"
-    bar = 180 if nadir is not None and nadir > 70 else 160
-    rebound_judged = rebound.peak is not None and rebound.peak < bar - 20
-    neutral = correction_judged and stacking_judged and rebound_judged
+    neutral = correction_judged and stacking_judged and rebound_neutral
     return _route(factor, matches, near, neutral=neutral)
 
 
@@ -726,9 +732,19 @@ def _usable(occurrence: dict) -> bool:
     return any(_finite(point.get("bg")) for point in occurrence["trace"]["cgm"])
 
 
-def _cohort_projection(
-    cohort: str, occurrences: list[dict], config: dict,
+def project_cohort(
+    cohort: str,
+    occurrences: list[dict],
+    window: tuple[int, int] | list[int],
+    *,
+    include_withheld_episodes: bool = False,
 ) -> dict:
+    """Aggregate event-relative CGM with the settled finite-sample discipline.
+
+    Occurrences need only ``id`` and ``trace.cgm``. The legacy comparison opts in
+    to its thin-cohort episode fallback; Finding case files reuse the same support,
+    binning, and quantiles without importing that route's cohort taxonomy.
+    """
     usable = [occurrence for occurrence in occurrences if _usable(occurrence)]
     usable_count = len(usable)
     samples: dict[int, list[float]] = {}
@@ -746,7 +762,7 @@ def _cohort_projection(
         for minute, (_, _, bg) in chosen.items():
             samples.setdefault(minute, []).append(bg)
 
-    start, end = config["window"]
+    start, end = window
     points = []
     for minute in range(start, end + 1, 5):
         values = samples.get(minute, [])
@@ -768,10 +784,10 @@ def _cohort_projection(
         "occurrence_ids": [occurrence["id"] for occurrence in occurrences],
         "points": points,
     }
-    if projection["support"] == "withheld":
+    if include_withheld_episodes and projection["support"] == "withheld":
         projection[COHORT_EPISODES_FIELD] = [
             {
-                "identity": _identity(occurrence, config),
+                "identity": occurrence.get("identity", {"id": occurrence["id"]}),
                 "glucose": [
                     {"minute": _five_minute_bin(point["minute"]), "bg": point["bg"]}
                     for point in occurrence["trace"]["cgm"]
@@ -781,6 +797,19 @@ def _cohort_projection(
             for occurrence in usable
         ]
     return projection
+
+
+def _cohort_projection(
+    cohort: str, occurrences: list[dict], config: dict,
+) -> dict:
+    prepared = []
+    for occurrence in occurrences:
+        row = dict(occurrence)
+        row["identity"] = _identity(occurrence, config)
+        prepared.append(row)
+    return project_cohort(
+        cohort, prepared, config["window"], include_withheld_episodes=True,
+    )
 
 
 @dataclass(frozen=True)
@@ -892,10 +921,12 @@ class EventComparisonPreparation:
 def prepare_event_comparisons(store) -> EventComparisonPreparation:
     """Read one fixed window and keep all comparison policy behind ``project``."""
     from .explore_exposures import build_exposures
+    from . import findings_projection
 
-    exposures_payload = build_exposures(store, window_days=_SOURCE_WINDOW_DAYS)
+    window_days = findings_projection.DIAGNOSE_SOURCE_WINDOW_DAYS
+    exposures_payload = build_exposures(store, window_days=window_days)
     capture = _build_catalog_capture(
-        store, window_days=_SOURCE_WINDOW_DAYS, exposures_payload=exposures_payload,
+        store, window_days=window_days, exposures_payload=exposures_payload,
     )
     return EventComparisonPreparation(
         _exposures=exposures_payload,

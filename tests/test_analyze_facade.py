@@ -6,12 +6,14 @@ AnalysisResult is well-formed, setting-epoch metadata-aware, and JSON-serializab
 
 import json
 import random
+import tempfile
 import unittest
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
 from ciq_autotune.analyze import analyze
 from ciq_autotune.events import CarbEntry
+from ciq_autotune.findings_projection import FindingsProjection, WindowQuery
 from ciq_autotune.model import ModelConfig
 from ciq_autotune.result import SCHEMA_VERSION, SegmentEstimate
 from ciq_autotune.settings import parse_pump_settings
@@ -60,6 +62,7 @@ class AnalyzeFacadeTest(unittest.TestCase):
     def test_result_is_versioned_and_json_serializable(self):
         d = self.result.to_dict()
         self.assertEqual(d["schema_version"], SCHEMA_VERSION)
+        self.assertIn("ic_history", d)
         json.dumps(d)  # must not raise
 
     def test_carb_entry_excludes_basal_minutes_through_the_facade(self):
@@ -381,6 +384,94 @@ def _bolus_raw(t, isf=None, carbs=None, carb_ratio=None):
         "description": "Bolus", "completion": "Completed", "insulin": 5.0,
         "carbs": carbs, "isf": isf, "carb_ratio": carb_ratio,
     }
+
+
+class IcHistoryFacadeTest(unittest.TestCase):
+    def test_fresh_analysis_rebuilds_the_same_retired_catalog_from_store_history(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = f"{directory}/harmonic.sqlite"
+            store = Store.open(path)
+            first = datetime(2026, 1, 1)
+            changed = datetime(2026, 1, 10)
+            store.upsert_settings_snapshot(
+                first.strftime("%Y-%m-%d %H:%M:%S"),
+                parse_pump_settings(_raw_settings(cr_mu=6000)),
+            )
+            store.upsert_bolus([_bolus_raw(first + timedelta(hours=1))])
+            for day in (1, 2, 3):
+                row = _bolus_raw(first + timedelta(days=day, hours=9),
+                                 carbs=60, carb_ratio=6.0)
+                row["insulin"] = 10.0
+                store.upsert_bolus([row])
+            store.upsert_settings_snapshot(
+                changed.strftime("%Y-%m-%d %H:%M:%S"),
+                parse_pump_settings(_raw_settings(cr_mu=5000)),
+            )
+
+            first_result = analyze(store, now=datetime(2026, 1, 15), harm_config=None)
+            store.close()
+            reopened = Store.open(path)
+            second_result = analyze(reopened, now=datetime(2026, 1, 15), harm_config=None)
+            reopened.close()
+
+        self.assertEqual(len(first_result.ic_history), 1)
+        self.assertEqual(first_result.ic_history[0].lifecycle, "active")
+        self.assertEqual(first_result.ic_history[0].past_setting, 6.0)
+        self.assertEqual(first_result.ic_history[0].programmed_now, 5.0)
+        self.assertEqual(first_result.ic_history[0].support, 3)
+        self.assertEqual(first_result.ic_history[0].history_id,
+                         second_result.ic_history[0].history_id)
+
+    def test_invalid_current_block_withholds_history_from_the_findings_queue(self):
+        store = Store.open(":memory:")
+        first = datetime(2026, 1, 1)
+        changed = datetime(2026, 1, 10)
+        store.upsert_settings_snapshot(
+            first.strftime("%Y-%m-%d %H:%M:%S"),
+            parse_pump_settings(_raw_settings(cr_mu=6000)),
+        )
+        store.upsert_bolus([_bolus_raw(first + timedelta(hours=1))])
+        for day in (1, 2, 3):
+            row = _bolus_raw(first + timedelta(days=day, hours=9),
+                             carbs=60, carb_ratio=6.0)
+            row["insulin"] = 10.0
+            store.upsert_bolus([row])
+        current = _raw_settings(cr_mu=5000)
+        current["profiles"]["profile"][0]["tDependentSegs"] = [
+            {"startTime": start, "basalRate": 600, "isf": 30,
+             "carbRatio": ratio, "targetBg": 110}
+            for start, ratio in ((0, 5000), (360, 0), (720, 5000))
+        ]
+        store.upsert_settings_snapshot(
+            changed.strftime("%Y-%m-%d %H:%M:%S"),
+            parse_pump_settings(current),
+        )
+
+        try:
+            result = analyze(store, now=datetime(2026, 1, 15), harm_config=None)
+        finally:
+            store.close()
+
+        self.assertEqual(len(result.ic_history), 1)
+        history = result.ic_history[0]
+        self.assertEqual(history.lifecycle, "unavailable")
+        self.assertIsNone(history.programmed_now)
+        self.assertFalse(any(block.asserts_move for block in result.ic_blocks))
+
+        projection = FindingsProjection(
+            result.to_dict(),
+            {"window": {}, "exposures": {}},
+            {"patterns": [], "low_confidence": []},
+        )
+        public = projection.project(WindowQuery.whole_day(), history.history_id)
+        self.assertEqual(public["counts"]["history"], 0)
+        self.assertEqual(public["selection"], {
+            "id": history.history_id,
+            "disposition": "unavailable",
+            "message": (
+                "Past-setting evidence no longer maps to one current program block."
+            ),
+        })
 
 
 class DoseSettingEpochReconciliationTest(unittest.TestCase):

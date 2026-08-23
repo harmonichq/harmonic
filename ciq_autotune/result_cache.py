@@ -27,13 +27,17 @@ Stdlib only, imported by nothing in core — it stays out of the ``api`` extra's
 
 from __future__ import annotations
 
+import secrets
 import threading
+import time
 from collections import OrderedDict
 from typing import Callable, Hashable, TypeVar
 
 T = TypeVar("T")
 
 DEFAULT_CAP = 256
+PREPARATION_CAP = 64
+PREPARATION_LEASE_SECONDS = 60
 
 
 class ResultCache:
@@ -44,8 +48,12 @@ class ResultCache:
     everything and advances ``version``.
     """
 
-    def __init__(self, cap: int = DEFAULT_CAP) -> None:
+    class GenerationChanged(RuntimeError):
+        """Every allowed stable-read attempt crossed an invalidation."""
+
+    def __init__(self, cap: int = DEFAULT_CAP, *, incarnation: str | None = None) -> None:
         self._cap = cap
+        self._incarnation = incarnation or secrets.token_urlsafe(18)
         self._lock = threading.Lock()
         self._map: "OrderedDict[Hashable, object]" = OrderedDict()
         self._version = 0
@@ -53,6 +61,8 @@ class ResultCache:
         # key compute once instead of racing — the second waits, then hits the cache
         # the first filled. Guarded by ``_lock``; entries are dropped after compute.
         self._flights: "dict[Hashable, threading.Lock]" = {}
+        self._preparations: "OrderedDict[Hashable, object]" = OrderedDict()
+        self._preparation_flights: "dict[Hashable, threading.Lock]" = {}
 
     @property
     def version(self) -> int:
@@ -60,11 +70,100 @@ class ResultCache:
         with self._lock:
             return self._version
 
+    @property
+    def generation(self) -> str:
+        """Opaque identity for this process incarnation and data version."""
+        with self._lock:
+            return f"{self._incarnation}:{self._version}"
+
+    def generation_for_version(self, version: int) -> str:
+        """Opaque identity for a version captured by a guarded cache operation."""
+        return f"{self._incarnation}:{version}"
+
     def bump(self) -> None:
         """Invalidate: clear the map and advance ``version``. Called after any write."""
         with self._lock:
             self._map.clear()
+            self._preparations.clear()
             self._version += 1
+
+    def _commit_preparation(self, key, value, version, *, cap):
+        """Commit under ``_lock``; version, capacity, and registration are one step."""
+        if version != self._version:
+            return None, "changed"
+        if key in self._preparations:
+            current = self._preparations[key]
+            current.lease_until = time.monotonic() + PREPARATION_LEASE_SECONDS
+            self._preparations.move_to_end(key)
+            return current, None
+        if len(self._preparations) >= cap:
+            evictable = next((
+                candidate for candidate, prepared in self._preparations.items()
+                if prepared.lease_until <= time.monotonic() and prepared.pins == 0
+            ), None)
+            if evictable is None:
+                return None, "capacity"
+            self._preparations.pop(evictable)
+        self._preparations[key] = value
+        return value, None
+
+    def get_or_build_preparation(self, key, build, *, cap=PREPARATION_CAP, attempts=2,
+                                 before_commit=None):
+        """Return one retained preparation for ``key`` or its ADR 79 failure code.
+
+        ``build(version)`` runs outside the synchronization boundary. Identical
+        coordinates share a per-key flight; the final version check, lease/capacity
+        decision, and registration happen under the same lock as :meth:`bump`.
+        """
+        with self._lock:
+            current = self._preparations.get(key)
+            if current is not None:
+                current.lease_until = time.monotonic() + PREPARATION_LEASE_SECONDS
+                self._preparations.move_to_end(key)
+                return current, None
+            flight = self._preparation_flights.get(key)
+            if flight is None:
+                flight = self._preparation_flights[key] = threading.Lock()
+
+        with flight:
+            try:
+                for _ in range(attempts):
+                    with self._lock:
+                        current = self._preparations.get(key)
+                        if current is not None:
+                            current.lease_until = (
+                                time.monotonic() + PREPARATION_LEASE_SECONDS
+                            )
+                            self._preparations.move_to_end(key)
+                            return current, None
+                        version = self._version
+                    value = build(version)
+                    if before_commit is not None:
+                        before_commit()
+                    with self._lock:
+                        retained, reason = self._commit_preparation(
+                            key, value, version, cap=cap,
+                        )
+                    if reason != "changed":
+                        return retained, reason
+                return None, "changed"
+            finally:
+                with self._lock:
+                    if self._preparation_flights.get(key) is flight:
+                        self._preparation_flights.pop(key, None)
+
+    def acquire_preparation(self, projection_id):
+        with self._lock:
+            for key, value in self._preparations.items():
+                if getattr(value, "projection_id", None) == projection_id:
+                    self._preparations.move_to_end(key)
+                    value.pins += 1
+                    return value
+            return None
+
+    def release_preparation(self, value):
+        with self._lock:
+            value.pins -= 1
 
     def get_or_compute(self, key: Hashable, compute: Callable[[], T]) -> T:
         """Return ``key``'s cached value, or compute + store it.
@@ -113,3 +212,25 @@ class ResultCache:
                 with self._lock:
                     self._flights.pop(key, None)
         return value
+
+    def stable_read(
+        self, key: Hashable, compute: Callable[[], T], *, attempts: int = 3,
+    ) -> tuple[str, T]:
+        """Return one generation and value only when no invalidation crossed it.
+
+        A write may land while a heavy read is outside the lock.  In that case
+        :meth:`get_or_compute` correctly declines to cache the stale value, and this
+        interface additionally declines to label those bytes with the newer
+        generation.  It retries from the cleared cache, then fails explicitly if a
+        busy writer crosses every bounded attempt.
+        """
+        if attempts < 1:
+            raise ValueError("attempts must be at least 1")
+        for _ in range(attempts):
+            with self._lock:
+                snapshot = self._version
+            value = self.get_or_compute(key, compute)
+            with self._lock:
+                if self._version == snapshot:
+                    return f"{self._incarnation}:{snapshot}", value
+        raise self.GenerationChanged("result cache changed during stable read")

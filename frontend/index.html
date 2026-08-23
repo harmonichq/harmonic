@@ -2410,6 +2410,9 @@ html.dark .viz .tie:hover::before { opacity:.13; }
       fetchExploreExposures as dataFetchExploreExposures,
       fetchDiagnoseEventComparison as dataFetchDiagnoseEventComparison,
       fetchDiagnoseFindings as dataFetchDiagnoseFindings,
+      fetchDiagnoseCarbRatioHistoryEvents as dataFetchDiagnoseCarbRatioHistoryEvents,
+      fetchDiagnoseFindingCasePreparation as dataFetchDiagnoseFindingCasePreparation,
+      fetchDiagnoseFindingCase as dataFetchDiagnoseFindingCase,
       fetchTimeline as dataFetchTimeline,
       fetchCarbs as dataFetchCarbs,
       createCarb as dataCreateCarb,
@@ -5580,12 +5583,14 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         // #735: the server-owned findings queue (ADR 730) and the single active
         // watched-change object the outcomes payload already resolves (ADR 0029).
         const diagnoseFindings = ref(null);
+        const diagnoseCasePreparation = ref(null);
         const diagnoseWatched = ref(null);
 
         // The navigator feed is per calendar month with a week of pad either side, so
         // one month usually covers the 30-day window. When it does not reach far
         // enough back, the previous month is pulled in too; both are server-cached,
         // and no new endpoint is introduced for the strip.
+<<<<<<< HEAD
         async function loadDiagnoseRoute(window) {
           const [analyze, scenarios, evidence, exposures, findings, outcomes] = await Promise.all([
             enqueue(() => dataFetchAnalysis({ window: 30, pool: true })),
@@ -5599,6 +5604,45 @@ html.dark .viz .tie:hover::before { opacity:.13; }
             analyze, scenarios, evidence, exposures, findings,
             watched: outcomes?.watched_change || null,
           };
+=======
+        async function loadAudit() {
+          if (!hasToken.value || diagnoseLoaded) return;
+          diagnoseLoaded = true;
+          try {
+            const [a, s, e, x, p, o] = await Promise.all([
+              enqueue(() => dataFetchAnalysis({ window: 30, pool: true })),
+              enqueue(() => dataFetchScenarios(30)),
+              enqueue(() => dataFetchExploreTimeOfDay()),
+              enqueue(() => dataFetchExploreExposures()),
+              // the GLOBAL queue — the unscoped 24 h list the surface opens on
+              enqueue(() => dataFetchDiagnoseFindingCasePreparation(null)),
+              // the dock's object; the trend payload is where the one-active
+              // invariant is already resolved, so nothing is re-derived here
+              enqueue(() => dataFetchOutcomesTrend(30)),
+            ]);
+            diagnoseAnalysis.value = a; diagnoseScenarios.value = s; diagnoseEvidence.value = e;
+            diagnoseExposures.value = x;
+            diagnoseCasePreparation.value = p;
+            diagnoseFindings.value = { ...p.findings, rows: p.rendered_rows };
+            diagnoseWatched.value = o?.watched_change || null;
+            diagnoseReady.value = true;
+            nextTick(diagnoseMount);
+          } catch (e) {
+            diagnoseLoaded = false;
+            if (diagnoseView) diagnoseView.setError(e.message);
+            else {
+              diagnoseReady.value = true;
+              await nextTick();
+              // #654 hotfix: this used to call diagnoseMount(), which also
+              // feeds setData the refs' current values — on a first-load
+              // failure those are still all null (the assignments above
+              // never ran), and setData on a null-shaped payload crashed
+              // inside boot() before setError got a turn. Mount without
+              // feeding it.
+              diagnoseEnsureView()?.setError(e.message);
+            }
+          }
+>>>>>>> origin/main
         }
 
         // Stage → Plan: the same pure lever mapping Diagnose used (#432/#428) —
@@ -5637,12 +5681,18 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           if (!diagnoseView) diagnoseView = createDiagnoseEventComparison({ root: diagnoseRoot.value,
             browserAdapter: window.__harmonicBrowserAdapter || null,
             callbacks: { stage: diagnoseStage, isStaged: diagnoseIsStaged,
+<<<<<<< HEAD
               route: (query) => applyPendingRoute(
                 { kind: 'PendingRoute', page: 'diagnose', query },
                 { history: 'push' },
               ),
               day: (occurrence) => goToMoment(occurrence.t, occurrence.text,
                 occurrence.cause_lever, occurrence.cause_lever), retry: retryDiagnoseRoute,
+=======
+              day: (occurrence) => goToMoment(occurrence.t || occurrence.anchor?.t,
+                occurrence.text || occurrence.anchor?.label,
+                occurrence.cause_lever, occurrence.cause_lever), retry: loadAudit,
+>>>>>>> origin/main
               // Lock term 19: the occurrence level overlays that day's REAL trace
               // when one exists. The app does not ship 30 days of raw CGM, so the
               // one day in view is fetched; a miss keeps the "no trace captured"
@@ -5657,14 +5707,31 @@ html.dark .viz .tie:hover::before { opacity:.13; }
               // #735: a pressed preset and a drawn brace both ask the server for
               // that window's rows (lock terms 37/40) — the frontend re-scopes
               // nothing itself.
-              loadFindings: (window) => enqueue(() => dataFetchDiagnoseFindings(window)),
+              loadFindings: (window, selectedHistoryId) => enqueue(() =>
+                dataFetchDiagnoseFindings(window, selectedHistoryId)),
+              loadHistoryEvents: (coordinates) => enqueue(() =>
+                dataFetchDiagnoseCarbRatioHistoryEvents(coordinates)),
+              loadPreparation: (window) => enqueue(() =>
+                dataFetchDiagnoseFindingCasePreparation(window)),
+              loadCase: (coordinates) => enqueue(() =>
+                dataFetchDiagnoseFindingCase(coordinates)),
               // the dock's outlined route control, term 49
               go: (to) => setTab(to),
             } });
           return diagnoseView;
         }
+<<<<<<< HEAD
         function retryDiagnoseRoute() {
           return applyPendingRoute(parseRoute(), { history: 'restore' });
+=======
+        function diagnoseMount() {
+          const view = diagnoseEnsureView();
+          if (!view) return;
+          view.setData({ analyze: diagnoseAnalysis.value, scenarios: diagnoseScenarios.value,
+            evidence: diagnoseEvidence.value, exposures: diagnoseExposures.value,
+            findings: diagnoseFindings.value, casePreparation: diagnoseCasePreparation.value,
+            watched: diagnoseWatched.value });
+>>>>>>> origin/main
         }
 
         routeResolvers.register('diagnose', createDiagnoseRouteConsumer({

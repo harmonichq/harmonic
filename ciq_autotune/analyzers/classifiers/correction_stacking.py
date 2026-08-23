@@ -82,6 +82,8 @@ class CorrectionStackingVerdict(Verdict):
     nadir_bg: Optional[float] = None
     nadir_t: Optional[datetime] = None
     gate: Optional[GateResult] = None
+    previous_seq_num: Optional[int] = None
+    second_seq_num: Optional[int] = None
 
 
 def _is_user_correction(
@@ -118,7 +120,7 @@ def _user_corrections(
     """User correction boluses (see :func:`_is_user_correction`), sorted by time."""
     return sorted(
         (b for b in boluses if _is_user_correction(b, scenario_config=scenario_config)),
-        key=lambda b: b.t,
+        key=lambda b: (b.t, b.seq_num),
     )
 
 
@@ -149,6 +151,7 @@ def classify_correction_stacking(
     basal_events: Sequence[BasalEvent] = (),
     *,
     scenario_config: ScenarioConfig = ScenarioConfig(),
+    iob_boluses: Optional[Sequence[BolusEvent]] = None,
 ) -> CorrectionStackingVerdict:
     """Was this cluster of corrections a genuine over-stack, or a rational runaway chase?
 
@@ -238,6 +241,8 @@ def classify_correction_stacking(
             # the context gate's recent low/suspend (ADR 0009); a high is not that.
             silence_reason=SilenceReason.NO_TRIGGER,
             stack_t=stack.t,
+            previous_seq_num=prev.seq_num,
+            second_seq_num=stack.seq_num,
             gap_min=gap_min,
             pre_stack_slope=slope,
             bg_at_stack=bg_at_stack,
@@ -255,6 +260,8 @@ def classify_correction_stacking(
             evidence_tier=EvidenceTier.INFERRED,
             silence_reason=SilenceReason.UPSTREAM_CAUSE,
             stack_t=stack.t,
+            previous_seq_num=prev.seq_num,
+            second_seq_num=stack.seq_num,
             gap_min=gap_min,
             pre_stack_slope=slope,
             bg_at_stack=bg_at_stack,
@@ -264,7 +271,8 @@ def classify_correction_stacking(
     # 4. IOB-aware, outcome-gated harm. Reconstruct bolus IOB from *all* prior
     # boluses so the first correction (and any meal) counts toward what was on
     # board when the stacking dose landed.
-    iob = BolusIob(list(corrections), iob_peak_min, iob_dia_min)
+    iob = BolusIob(list(iob_boluses if iob_boluses is not None else corrections),
+                   iob_peak_min, iob_dia_min)
     iob_at_stack = iob.at(stack.t)
 
     nadir_bg, nadir_t = _first_low_after(
@@ -293,6 +301,8 @@ def classify_correction_stacking(
             ) + (override_enrichment(stack, scenario_config=scenario_config) or ""),
             evidence_tier=EvidenceTier.INFERRED,
             stack_t=stack.t,
+            previous_seq_num=prev.seq_num,
+            second_seq_num=stack.seq_num,
             gap_min=gap_min,
             iob_at_stack=iob_at_stack,
             pre_stack_slope=slope,
@@ -321,6 +331,8 @@ def classify_correction_stacking(
         evidence_tier=EvidenceTier.OBSERVED,
         silence_reason=silence,
         stack_t=stack.t,
+        previous_seq_num=prev.seq_num,
+        second_seq_num=stack.seq_num,
         gap_min=gap_min,
         iob_at_stack=iob_at_stack,
         pre_stack_slope=slope,

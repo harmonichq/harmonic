@@ -47,12 +47,11 @@ from ...uncertainty import Confidence
 from ..scenario_config import ScenarioConfig
 from .anchors import (
     AnchorKind,
-    _is_meal,
-    _is_user_correction,
     collect_anchors,
 )
 from .attribute import LowPromptAnswer, attribute, split_caused_over_treatments
 from .levers import Exposure, Lever, exposure, recommendation
+from . import opportunities
 from .narrate import narrate
 from .preempted import compute_preempted_lows
 from .payload import (
@@ -102,30 +101,10 @@ def _exposure_counts(
       the old correction-stacking detector scored against).
     * highs — >250 CGM runs (peak anchors).
     """
-    # LOWS is the honest "lows you had" denominator, so it counts only sub-70 runs —
-    # even though the engine's anchor threshold is now the wider NEAR_LOW_MGDL (75) so
-    # near-low over-treated lows can be attributed (#112). A dip to 71–75 is a near-low,
-    # not "a low you had": counting it here would inflate n and demote the pattern's
-    # rate. Re-anchor at gate_low_mgdl for the count so LOWS is byte-identical to the
-    # pre-#112 behavior; highs / meals / corrections are unaffected by the low line.
-    anchors = collect_anchors(
-        bolus, cgm, basal,
-        scenario_config=scenario_config, low_mgdl=scenario_config.gate_low_mgdl,
+    families = opportunities.build_opportunities(
+        bolus, cgm, basal, scenario_config=scenario_config,
     )
-    lows = sum(1 for a in anchors if a.kind is AnchorKind.LOW)
-    highs = sum(1 for a in anchors if a.kind is AnchorKind.HIGH)
-    meals = sum(1 for b in bolus if _is_meal(b, scenario_config=scenario_config))
-    corr = sorted(
-        (b for b in bolus if _is_user_correction(b, scenario_config=scenario_config)),
-        key=lambda b: b.t,
-    )
-    correction_pairs = max(0, len(corr) - 1)
-    return {
-        Exposure.MEALS: meals,
-        Exposure.LOWS: lows,
-        Exposure.HIGHS: highs,
-        Exposure.CORRECTION_CLUSTERS: correction_pairs,
-    }
+    return {family: len(items) for family, items in families.items()}
 
 
 def tally_attributions(

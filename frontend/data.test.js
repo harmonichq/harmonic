@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import { makeDeps } from './data.js';
+import { ApiTransportError, makeDeps } from './data.js';
 
 const here = (path) => fileURLToPath(new URL(path, import.meta.url));
 
@@ -222,6 +222,77 @@ test('fetchDiagnoseEventComparison builds one coordinate-owned projection reques
     '/diagnose/event-comparison?view=lows&factor=correction_on_iob&start_min=1320&end_min=120&another=1&occ=lows-42');
 });
 
+test('fetchDiagnoseFindings omits selection when no history identity is supplied', async () => {
+  const { fetch, calls } = makeFakeFetch({ schema: 'diagnose-findings-v2' });
+  await makeDeps({ fetch }).fetchDiagnoseFindings();
+  assert.equal(calls[0].url, '/diagnose/findings');
+});
+
+test('fetchDiagnoseFindings carries an optional selected history identity', async () => {
+  const { fetch, calls } = makeFakeFetch({ schema: 'diagnose-findings-v2' });
+  await makeDeps({ fetch }).fetchDiagnoseFindings(
+    { start_min: 1320, end_min: 120 }, 'ich1_WzAsNzIwLCI2Il0');
+  assert.equal(calls[0].url,
+    '/diagnose/findings?start_min=1320&end_min=120&selected_id=ich1_WzAsNzIwLCI2Il0');
+});
+
+test('history events carries the findings generation and optional run selection', async () => {
+  const { fetch, calls } = makeFakeFetch({
+    schema: 'diagnose-carb-ratio-history-events-v1', series: [],
+  });
+  await makeDeps({ fetch }).fetchDiagnoseCarbRatioHistoryEvents({
+    historyId: 'ich1_history', analysisGeneration: 'process:4',
+    selectedRunId: 'icr1_run',
+  });
+  assert.equal(calls[0].url,
+    '/diagnose/carb-ratio-history/events?history_id=ich1_history&analysis_generation=process%3A4&selected_run_id=icr1_run');
+});
+
+test('Finding case-file preparation forwards the server-owned window and history selection', async () => {
+  const { fetch, calls } = makeFakeFetch({ schema: 'diagnose-finding-case-file-preparation-v1' });
+  const api = makeDeps({ fetch });
+  await api.fetchDiagnoseFindingCasePreparation(
+    { start_min: 1320, end_min: 120 }, 'ich1_WzAsNzIwLCI2Il0');
+  await api.fetchDiagnoseFindingCasePreparation(null);
+  assert.equal(calls[0].url,
+    '/diagnose/finding-case-file-preparation?start_min=1320&end_min=120&selected_id=ich1_WzAsNzIwLCI2Il0');
+  assert.equal(calls[1].url, '/diagnose/finding-case-file-preparation');
+});
+
+test('Finding case-file request sends the opaque preparation and Occurrence coordinates exactly', async () => {
+  const { fetch, calls } = makeFakeFetch({ schema: 'diagnose-finding-case-file-v1' });
+  await makeDeps({ fetch }).fetchDiagnoseFindingCase({
+    projection_id: 'fp_0123456789abcdef0123456789abcdef',
+    finding_id: 'finding:correction_stacking',
+    alignment: 'event',
+    occ: 'o_fedcba9876543210fedcba9876543210',
+  });
+  assert.equal(calls[0].url,
+    '/diagnose/finding-case-file?projection_id=fp_0123456789abcdef0123456789abcdef'
+    + '&finding_id=finding%3Acorrection_stacking&alignment=event'
+    + '&occ=o_fedcba9876543210fedcba9876543210');
+});
+
+test('Finding case-file errors retain the exact structured server envelope', async () => {
+  const fetch = async () => ({
+    ok: false, status: 409, statusText: 'Conflict',
+    json: async () => ({ detail: { code: 'stale_projection', message: 'Preparation is unavailable.' } }),
+  });
+  await assert.rejects(
+    () => makeDeps({ fetch }).fetchDiagnoseFindingCase({
+      projection_id: 'fp_0123456789abcdef0123456789abcdef',
+      finding_id: 'finding:late_bolus', alignment: 'clock',
+    }),
+    (error) => {
+      assert.equal(error.status, 409);
+      assert.deepEqual(error.detail,
+        { code: 'stale_projection', message: 'Preparation is unavailable.' });
+      assert.equal(error.message, 'Preparation is unavailable.');
+      return true;
+    },
+  );
+});
+
 test('event comparison accepts v3, drawing withheld episodes and supported aggregates', async () => {
   const projection = JSON.parse(readFileSync(
     here('./__fixtures__/event-comparison-mirror.json'), 'utf8')).windows.outcome_not_anchor;
@@ -388,6 +459,25 @@ test('non-2xx response surfaces the unwrapped detail error', async () => {
     () => fetchStatus(),
     (err) => {
       assert.equal(err.message, 'server error detail');
+      return true;
+    },
+  );
+});
+
+test('structured non-2xx detail preserves status and code on a typed error', async () => {
+  const detail = { code: 'analysis_generation_mismatch',
+    message: 'Evidence changed. Refresh findings.' };
+  const fakeFetch = async () => ({
+    ok: false, status: 409, statusText: 'Conflict', json: async () => ({ detail }),
+  });
+  await assert.rejects(
+    () => makeDeps({ fetch: fakeFetch }).fetchStatus(),
+    (error) => {
+      assert.ok(error instanceof ApiTransportError);
+      assert.equal(error.status, 409);
+      assert.equal(error.code, 'analysis_generation_mismatch');
+      assert.deepEqual(error.detail, detail);
+      assert.equal(error.message, detail.message);
       return true;
     },
   );

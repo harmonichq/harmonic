@@ -224,6 +224,56 @@ contamination. Such runs still count toward the block's coverage, which is how a
 block where every meal chains into a neighbour is honestly reported as
 unmeasurable on its own rather than as merely short of data.
 
+### Requirement: Retired I:C history requires proved schedule membership
+
+A retired I:C regime is measurable only from closed meal runs whose entire
+membership is proved against the append-only settings snapshots in force at the
+time. A dose stamp proves the ratio delivered but not the block that owned it, so
+the analyzer admits a historical run only when it starts after the first applicable
+snapshot, ends before the next active-profile or schedule change, every member lies
+inside one historical block, and every member carries the same canonical stamped
+ratio as that block. No latest-schedule fallback, pre-snapshot inference, or
+cross-boundary reassignment is permitted.
+
+An ever-publishable history identity consists of its proved circular block span and
+past ratio. It remains in the analyzer-owned catalog as `active` while a non-null
+90-day estimate exists and the span maps to exactly one current programmed value;
+it becomes `aged_out` when that estimate is null, and `unavailable` when the proof
+remains valid but zero or multiple current programmed values overlap the historical
+span. Only `active` history is projected as visible measurement evidence. No
+history lifecycle can assert a current move.
+
+#### Scenario: A run crosses a detected schedule change
+
+- **GIVEN** a closed meal run whose first member precedes an I:C schedule change
+- **AND** whose outcome or another member lands at or after that change
+- **WHEN** historical membership is proved
+- **THEN** the run belongs to no historical regime, even when every dose stamp has
+  the same numeric ratio
+
+#### Scenario: One historical span now overlaps two current values
+
+- **GIVEN** an ever-publishable retired regime with a non-null 90-day estimate
+- **WHEN** its proved span overlaps more than one value in the current I:C schedule
+- **THEN** its lifecycle is `unavailable`, `programmed_now` is withheld, and no
+  projection may choose one of those values for display
+
+### Requirement: Historical event evidence preserves the whole meal run
+
+The event evidence for a retired regime copies the analyzer-published run roster.
+Each run is anchored at its first member bolus, carries every later member as a
+minute offset, begins at its analyzer-owned pre-run CGM bound, and continues through
+the analyzer-owned outcome bound after its last member. A multi-meal run is one
+indivisible observation: selecting it may emphasize the run but never filters its
+members, changes the roster, or shortens the series.
+
+#### Scenario: A historical run contains several meal boluses
+
+- **GIVEN** one published history run with multiple chained members
+- **WHEN** the event evidence is projected and that run is selected
+- **THEN** every member marker, the complete CGM bounds, and the final outcome remain
+  present, while the full history population is unchanged
+
 ### Requirement: One predicate decides whether a block's ratio may move anything
 
 `ic_asserts_move` is **the** I:C eligibility decision. Every condition lives

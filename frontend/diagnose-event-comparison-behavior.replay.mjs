@@ -65,8 +65,13 @@ export async function openApp(browser, options = {}) {
   const capture = options.invalidComparison ? {} : options.capture ?? JSON.parse(
     await readFile(process.env.CAPTURE || SYNTHETIC, 'utf8'));
   const payload = JSON.parse(await readFile(BASE_PAYLOAD, 'utf8'));
+<<<<<<< HEAD
   let comparisonRequests = 0;
   page.comparisonRequestCount = () => comparisonRequests;
+=======
+  const caseFiles = JSON.parse(await readFile(
+    join(ROOT, 'mockups/diagnose-workstation.synthetic/finding-case-files.json'), 'utf8'));
+>>>>>>> origin/main
   const stubs = [
     [/^\/diagnose\/event-comparison/, (url) => options.invalidComparison ? {} : projectSyntheticCapture(capture, {
       view: url.searchParams.get('view') || 'meals',
@@ -82,6 +87,15 @@ export async function openApp(browser, options = {}) {
       state: options.state || 'dense',
     })],
     [/^\/analyze/, () => payload.analyze],
+    [/^\/diagnose\/finding-case-file-preparation/, () =>
+      JSON.parse(JSON.stringify(caseFiles.preparation))],
+    [/^\/diagnose\/finding-case-file$/, (url) => {
+      const finding = caseFiles.cases[url.searchParams.get('finding_id')];
+      const alignment = url.searchParams.get('alignment');
+      const occ = url.searchParams.get('occ');
+      return JSON.parse(JSON.stringify(!occ ? finding[alignment]
+        : finding[`selected_${alignment}`][occ] || finding[`unavailable_${alignment}`]));
+    }],
     /* #735: the app's Diagnose loader now also asks for the server-owned findings
        queue (ADR 730). It is not this surface's subject, but a rejected fetch there
        takes the whole loader into `setError` and this surface never mounts — so it

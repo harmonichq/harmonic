@@ -20,17 +20,19 @@
  },
  "queue": {
   "projection": {
+   "analysis_generation": "findings-fixture-process:0",
    "chip_counts": {
     "corrections": 1,
     "highs": 5,
-    "lows": 1,
+    "lows": 2,
     "meals": 1
    },
    "counts": {
     "assert": 3,
     "blind": 0,
-    "finding": 3,
-    "held": 0
+    "finding": 4,
+    "held": 0,
+    "history": 1
    },
    "findings_window": {
     "days": 30,
@@ -57,6 +59,7 @@
       "value": 4.2857,
       "wide": false
      },
+     "event_chart": null,
      "evidence": null,
      "id": "ic:720",
      "kind": "setting",
@@ -65,10 +68,14 @@
      "lever": null,
      "members": null,
      "parameter": "carb_ratio",
+     "past_setting": null,
      "priority": 66,
+     "programmed_now": null,
      "reason": null,
      "recommended": 5,
+     "regime_end": null,
      "register": "assert",
+     "run_ids": null,
      "span": {
       "end_min": 1440,
       "label": "12:00 to 24:00",
@@ -96,6 +103,7 @@
      "direction": "raise",
      "episodes": null,
      "estimate": null,
+     "event_chart": null,
      "evidence": null,
      "id": "basal:30-90",
      "kind": "setting",
@@ -135,10 +143,14 @@
       }
      ],
      "parameter": "basal_rate",
+     "past_setting": null,
      "priority": 39,
+     "programmed_now": null,
      "reason": null,
      "recommended": null,
+     "regime_end": null,
      "register": "assert",
+     "run_ids": null,
      "span": {
       "end_min": 90,
       "label": "00:30 to 01:30",
@@ -174,6 +186,7 @@
       "value": 0.998,
       "wide": false
      },
+     "event_chart": null,
      "evidence": null,
      "id": "basal:330-360",
      "kind": "setting",
@@ -198,10 +211,14 @@
       }
      ],
      "parameter": "basal_rate",
+     "past_setting": null,
      "priority": 39,
+     "programmed_now": null,
      "reason": null,
      "recommended": 0.96,
+     "regime_end": null,
      "register": "assert",
+     "run_ids": null,
      "span": {
       "end_min": 360,
       "label": "05:30",
@@ -222,14 +239,8 @@
      "annotation": null,
      "appearances": [
       {
-       "family": "highs",
-       "m": 4,
-       "n": 1,
-       "noun": "highs"
-      },
-      {
        "family": "lows",
-       "m": 6,
+       "m": 5,
        "n": 1,
        "noun": "lows"
       }
@@ -242,86 +253,50 @@
      "direction": null,
      "episodes": 1,
      "estimate": null,
+     "event_chart": {
+      "factor": "over_treated_low",
+      "view": "lows"
+     },
      "evidence": [
       {
-       "date": "2026-08-17",
-       "ep_id": "ep1",
-       "family": "highs",
-       "kind": "high",
-       "t": "2026-08-17 14:35:00",
+       "date": "2026-08-13",
+       "ep_id": "2026-08-13-ep0",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-13 13:55:00",
        "verdict": "fired"
       },
       {
-       "date": "2026-08-17",
-       "ep_id": "ep2",
-       "family": "highs",
-       "kind": "high",
-       "t": "2026-08-17 09:05:00",
-       "verdict": "outranked"
-      },
-      {
-       "date": "2026-08-17",
-       "ep_id": "ep6",
-       "family": "highs",
-       "kind": "high",
-       "t": "2026-08-17 21:40:00",
-       "verdict": "no_data"
-      },
-      {
-       "date": "2026-08-17",
-       "ep_id": "ep11",
-       "family": "highs",
-       "kind": "high",
-       "t": "2026-08-17 10:15:00",
-       "verdict": "fired"
-      },
-      {
-       "date": "2026-08-17",
-       "ep_id": "ep1",
+       "date": "2026-08-14",
+       "ep_id": "2026-08-14-ep1",
        "family": "lows",
        "kind": "low",
-       "t": "2026-08-17 13:00:00",
-       "verdict": "fired"
-      },
-      {
-       "date": "2026-08-17",
-       "ep_id": "ep3",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-17 16:20:00",
-       "verdict": "outranked"
-      },
-      {
-       "date": "2026-08-17",
-       "ep_id": "ep4",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-17 02:40:00",
-       "verdict": "no_data"
-      },
-      {
-       "date": "2026-08-17",
-       "ep_id": "ep5",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-17 12:10:00",
-       "verdict": "no_data"
-      },
-      {
-       "date": "2026-08-17",
-       "ep_id": "ep9",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-17 05:15:00",
+       "t": "2026-08-14 12:10:00",
        "verdict": "near_miss"
       },
       {
-       "date": "2026-08-17",
-       "ep_id": "ep10",
+       "date": "2026-08-15",
+       "ep_id": "2026-08-15-ep2",
        "family": "lows",
        "kind": "low",
-       "t": "2026-08-17 08:45:00",
+       "t": "2026-08-15 12:10:00",
+       "verdict": "clean"
+      },
+      {
+       "date": "2026-08-15",
+       "ep_id": "2026-08-15-ep3",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-15 16:10:00",
        "verdict": "no_data"
+      },
+      {
+       "date": "2026-08-16",
+       "ep_id": "2026-08-17-ep4",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-16 22:00:00",
+       "verdict": "outranked"
       }
      ],
      "id": "finding:over_treated_low",
@@ -331,34 +306,31 @@
      "lever": "over_treated_low",
      "members": null,
      "parameter": null,
+     "past_setting": null,
      "priority": 28,
+     "programmed_now": null,
      "reason": null,
      "recommended": null,
+     "regime_end": null,
      "register": "finding",
+     "run_ids": null,
      "span": null,
      "support": null,
      "tier": "worth_a_look",
      "title": "Over-treated low",
      "verdict_counts": {
-      "clean": 0,
-      "fired": 3,
+      "clean": 1,
+      "fired": 1,
       "near_miss": 1,
-      "no_data": 4,
-      "outranked": 2
+      "no_data": 1,
+      "outranked": 1
      },
      "verdict_counts_by_family": {
-      "highs": {
-       "clean": 0,
-       "fired": 2,
-       "near_miss": 0,
-       "no_data": 1,
-       "outranked": 1
-      },
       "lows": {
-       "clean": 0,
+       "clean": 1,
        "fired": 1,
        "near_miss": 1,
-       "no_data": 3,
+       "no_data": 1,
        "outranked": 1
       }
      },
@@ -389,14 +361,18 @@
      "direction": null,
      "episodes": 2,
      "estimate": null,
+     "event_chart": {
+      "factor": "carb_undercount",
+      "view": "meals"
+     },
      "evidence": [
       {
-       "date": "2026-08-17",
-       "ep_id": "ep1",
+       "date": "2026-08-13",
+       "ep_id": "2026-08-13-ep0",
        "family": "highs",
        "kind": "high",
-       "t": "2026-08-17 14:35:00",
-       "verdict": "outranked"
+       "t": "2026-08-13 14:35:00",
+       "verdict": "no_data"
       },
       {
        "date": "2026-08-17",
@@ -454,10 +430,14 @@
      "lever": "carb_undercount",
      "members": null,
      "parameter": null,
+     "past_setting": null,
      "priority": 21,
+     "programmed_now": null,
      "reason": null,
      "recommended": null,
+     "regime_end": null,
      "register": "finding",
+     "run_ids": null,
      "span": null,
      "support": null,
      "tier": "worth_a_look",
@@ -466,16 +446,16 @@
       "clean": 1,
       "fired": 3,
       "near_miss": 1,
-      "no_data": 1,
-      "outranked": 1
+      "no_data": 2,
+      "outranked": 0
      },
      "verdict_counts_by_family": {
       "highs": {
        "clean": 0,
        "fired": 2,
        "near_miss": 0,
-       "no_data": 1,
-       "outranked": 1
+       "no_data": 2,
+       "outranked": 0
       },
       "meals": {
        "clean": 1,
@@ -491,16 +471,111 @@
      "annotation": null,
      "appearances": [
       {
+       "family": "lows",
+       "m": 5,
+       "n": 1,
+       "noun": "lows"
+      }
+     ],
+     "asserts_move": null,
+     "chips": [
+      "lows"
+     ],
+     "current": null,
+     "direction": null,
+     "episodes": 1,
+     "estimate": null,
+     "event_chart": {
+      "factor": "correction_on_iob",
+      "view": "lows"
+     },
+     "evidence": [
+      {
+       "date": "2026-08-13",
+       "ep_id": "2026-08-13-ep0",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-13 13:55:00",
+       "verdict": "outranked"
+      },
+      {
+       "date": "2026-08-14",
+       "ep_id": "2026-08-14-ep1",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-14 12:10:00",
+       "verdict": "clean"
+      },
+      {
+       "date": "2026-08-15",
+       "ep_id": "2026-08-15-ep2",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-15 12:10:00",
+       "verdict": "clean"
+      },
+      {
+       "date": "2026-08-15",
+       "ep_id": "2026-08-15-ep3",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-15 16:10:00",
+       "verdict": "clean"
+      },
+      {
+       "date": "2026-08-16",
+       "ep_id": "2026-08-17-ep4",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-16 22:00:00",
+       "verdict": "fired"
+      }
+     ],
+     "id": "finding:correction_on_iob",
+     "kind": "habit",
+     "label": null,
+     "lean": null,
+     "lever": "correction_on_iob",
+     "members": null,
+     "parameter": null,
+     "past_setting": null,
+     "priority": null,
+     "programmed_now": null,
+     "reason": null,
+     "recommended": null,
+     "regime_end": null,
+     "register": "finding",
+     "run_ids": null,
+     "span": null,
+     "support": null,
+     "tier": "noted",
+     "title": "Correction on active insulin",
+     "verdict_counts": {
+      "clean": 3,
+      "fired": 1,
+      "near_miss": 0,
+      "no_data": 0,
+      "outranked": 1
+     },
+     "verdict_counts_by_family": {
+      "lows": {
+       "clean": 3,
+       "fired": 1,
+       "near_miss": 0,
+       "no_data": 0,
+       "outranked": 1
+      }
+     },
+     "window_scope": "window"
+    },
+    {
+     "annotation": null,
+     "appearances": [
+      {
        "family": "correction_clusters",
        "m": 1,
        "n": 1,
        "noun": "correction clusters"
-      },
-      {
-       "family": "lows",
-       "m": 6,
-       "n": 1,
-       "noun": "lows"
       }
      ],
      "asserts_move": null,
@@ -512,6 +587,7 @@
      "direction": null,
      "episodes": 1,
      "estimate": null,
+     "event_chart": null,
      "evidence": [
       {
        "date": "2026-08-17",
@@ -520,54 +596,6 @@
        "kind": "correction",
        "t": "2026-08-17 15:10:00",
        "verdict": "fired"
-      },
-      {
-       "date": "2026-08-17",
-       "ep_id": "ep1",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-17 13:00:00",
-       "verdict": "outranked"
-      },
-      {
-       "date": "2026-08-17",
-       "ep_id": "ep3",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-17 16:20:00",
-       "verdict": "fired"
-      },
-      {
-       "date": "2026-08-17",
-       "ep_id": "ep4",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-17 02:40:00",
-       "verdict": "no_data"
-      },
-      {
-       "date": "2026-08-17",
-       "ep_id": "ep5",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-17 12:10:00",
-       "verdict": "no_data"
-      },
-      {
-       "date": "2026-08-17",
-       "ep_id": "ep9",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-17 05:15:00",
-       "verdict": "no_data"
-      },
-      {
-       "date": "2026-08-17",
-       "ep_id": "ep10",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-17 08:45:00",
-       "verdict": "no_data"
       }
      ],
      "id": "finding:correction_stacking",
@@ -577,20 +605,24 @@
      "lever": "correction_stacking",
      "members": null,
      "parameter": null,
+     "past_setting": null,
      "priority": null,
+     "programmed_now": null,
      "reason": null,
      "recommended": null,
+     "regime_end": null,
      "register": "finding",
+     "run_ids": null,
      "span": null,
      "support": null,
      "tier": "noted",
      "title": "Correction stacking",
      "verdict_counts": {
       "clean": 0,
-      "fired": 2,
+      "fired": 1,
       "near_miss": 0,
-      "no_data": 4,
-      "outranked": 1
+      "no_data": 0,
+      "outranked": 0
      },
      "verdict_counts_by_family": {
       "correction_clusters": {
@@ -599,19 +631,63 @@
        "near_miss": 0,
        "no_data": 0,
        "outranked": 0
-      },
-      "lows": {
-       "clean": 0,
-       "fired": 1,
-       "near_miss": 0,
-       "no_data": 4,
-       "outranked": 1
       }
      },
      "window_scope": "window"
+    },
+    {
+     "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (CI 6–6). Past setting. No change suggested.",
+     "appearances": null,
+     "asserts_move": null,
+     "chips": [],
+     "current": null,
+     "direction": null,
+     "episodes": null,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 6,
+      "lo": 6,
+      "method": "bootstrap-pooled-ratio-clustered",
+      "n": 3,
+      "value": 6,
+      "wide": false
+     },
+     "event_chart": null,
+     "evidence": null,
+     "id": "ich1_WzAsNzIwLCI2Il0",
+     "kind": "setting",
+     "label": "Morning",
+     "lean": null,
+     "lever": null,
+     "members": null,
+     "parameter": "carb_ratio",
+     "past_setting": 6,
+     "priority": null,
+     "programmed_now": 5,
+     "reason": null,
+     "recommended": null,
+     "regime_end": "2026-07-01T00:00:00",
+     "register": "history",
+     "run_ids": [
+      "icr1_WyIyMDI2LTA1LTI2VDA5OjAwOjAwIl0",
+      "icr1_WyIyMDI2LTA1LTMwVDA5OjAwOjAwIl0",
+      "icr1_WyIyMDI2LTA2LTAzVDA5OjAwOjAwIl0"
+     ],
+     "span": {
+      "end_min": 720,
+      "label": "00:00 to 12:00",
+      "start_min": 0
+     },
+     "support": {},
+     "tier": "noted",
+     "title": "Carb ratio Morning. Past setting.",
+     "verdict_counts": null,
+     "verdict_counts_by_family": null,
+     "window_scope": "window"
     }
    ],
-   "schema": "diagnose-findings-v1",
+   "schema": "diagnose-findings-v2",
+   "selection": null,
    "uncaused_highs": {
     "count": 1,
     "text": "1 high had no cause detected by the app"
@@ -624,7 +700,7 @@
    }
   },
   "root": "Findings",
-  "meta": "6 findings · 30 days",
+  "meta": "8 findings · 30 days",
   "tiers": {
    "ic:720": {
     "tier": "next_in_line",
@@ -634,7 +710,7 @@
     "tier": "worth_a_look",
     "word": "Worth a look"
    },
-   "finding:correction_stacking": {
+   "finding:correction_on_iob": {
     "tier": "noted",
     "word": "noted"
    }
@@ -3452,11 +3528,7 @@
     "flavorGlyph": "◈",
     "appearances": [
      {
-      "count": "1 of 4",
-      "noun": "highs"
-     },
-     {
-      "count": "1 of 6",
+      "count": "1 of 5",
       "noun": "lows"
      }
     ]

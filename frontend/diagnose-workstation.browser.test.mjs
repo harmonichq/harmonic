@@ -70,12 +70,19 @@ import { extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   derivedPumpSettings, openApp, openerProblems, state, withIsfVerdict,
-  withoutIsfProjectionVerdict,
+  withoutIsfProjectionVerdict, twoFamilyInputs,
+  densityHistoryInputs,
+  issue81PendingProjection, issue81FailedProjection, issue81SlicedProjection,
+  issue86HeaderFilter, issue86FilteredRoot, issue86DirectEntryRestoration,
+  issue86PendingRoot, issue86MalformedRecovery,
 } from './diagnose-workstation-behavior.replay.mjs';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 import { projectSyntheticCapture } from '../mockups/diagnose-event-comparison.synthetic/project.mjs';
 
 const require = createRequire(import.meta.url);
+const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
+const FINDINGS_PROJECTION = JSON.parse(await readFile(
+  join(ROOT, 'frontend/__fixtures__/findings-projection.json'), 'utf8'));
 // #672: fail closed. A missing prerequisite must exit nonzero, never `skip` —
 // a skipped run exits 0, and a green step that exercised zero browser
 // assertions is the silent-skip failure mode the mock-to-app port process
@@ -118,7 +125,6 @@ if (missing.length) {
 // #554: shared single-Chromium-per-command lifecycle, now launched only once
 // the fail-closed checks above have confirmed a usable chromium is available.
 const { createBrowserRunner } = require('./browser-runner.js');
-const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const SHOTS = process.env.DIAGNOSE_SCREENSHOT_DIR;
 const MIME = { '.js': 'text/javascript', '.css': 'text/css', '.html': 'text/html', '.json': 'application/json' };
 
@@ -142,6 +148,49 @@ async function shot(page, family, state_, viewport, theme) {
 
 const VIEWPORTS = [{ width: 1440, height: 900 }, { width: 1280, height: 800 }];
 
+test('seven generated history reads remain ordered, reachable, laid out, and non-stageable', async () => {
+  const browser = await runner.browser();
+  const inputs = await densityHistoryInputs();
+  const expected = projectFindings(inputs).rows
+    .filter((row) => row.register === 'history').map((row) => row.id);
+  assert.equal(expected.length, 7, 'the generator publishes seven simultaneous history rows');
+
+  const page = await openApp(browser, {
+    state: 'dense', viewport: { width: 390, height: 844 }, theme: 'light',
+    history: true, findingsInputs: inputs, appSource: 'fixture', stageProbe: true,
+  });
+  try {
+    const historyRows = page.locator('#level .qrow[data-state="history"]');
+    assert.deepEqual(await historyRows.evaluateAll((rows) => rows.map((row) => row.dataset.id)), expected,
+      'the Watching history rows keep the server projection order');
+    assert.equal(await historyRows.locator('.stagebtn').count(), 0,
+      'no dense history row exposes staging');
+
+    await page.getByRole('button', { name: /Filter/ }).click();
+    await page.getByRole('menuitemcheckbox', { name: /^Highs / }).click();
+    await page.keyboard.press('Escape');
+    const collapse = page.locator('#level .qcollapse');
+    assert.match(await collapse.innerText(), /^Watching · \d+ reads$/,
+      'the sift owns one reachable Watching disclosure');
+    assert.equal(await historyRows.count(), 0, 'history rows collapse during the sift');
+    await collapse.click();
+    assert.deepEqual(await historyRows.evaluateAll((rows) => rows.map((row) => row.dataset.id)), expected,
+      'expanding Watching restores all seven rows in order');
+
+    await historyRows.nth(3).click();
+    const rendered = await state(page);
+    assert.equal(rendered.history.conclusion, 'Past setting. No change suggested.',
+      'the dense row opens the normal history inspector hierarchy');
+    assert.equal(rendered.history.currentCopies, 1,
+      'the dense inspector keeps one quieter current-program line');
+    assert.equal(rendered.history.stageCount, 0, 'the dense inspector remains non-stageable');
+    assert.ok(rendered.hScroll <= 0 && rendered.vScroll <= 0,
+      `the narrow dense inspector stays inside its pane (${rendered.hScroll}, ${rendered.vScroll})`);
+  } finally {
+    await page.close();
+  }
+});
+
 test('an explicit fixture opener ignores a hostile ambient app-source override', async () => {
   const browser = await runner.browser();
   const previous = process.env.DIAGNOSE_APP_SOURCE;
@@ -157,6 +206,7 @@ test('an explicit fixture opener ignores a hostile ambient app-source override',
   }
 });
 
+<<<<<<< HEAD
 test('event projection accepts reordered selected copies but rejects semantic mismatches', async () => {
   const capture = JSON.parse(await readFile(
     join(ROOT, 'mockups/diagnose-event-comparison.synthetic/capture.json'), 'utf8'));
@@ -202,6 +252,67 @@ test('event projection accepts reordered selected copies but rejects semantic mi
     assert.deepEqual(accepted, { compatible: true, wrongValue: false, wrongOrder: false });
   } finally { await page.close(); }
 });
+=======
+for (const [name, probe, options] of [
+  ['pending and superseded projections replace the whole inspector',
+    issue81PendingProjection, {
+      findingsInputs: twoFamilyInputs,
+      findingsDelayMs: 900,
+      findingsDelays: { '900-1260': 900, '720-1080': 1200, '1080-1440': 100 },
+    }],
+  ['a failed replacement projection stays failed until the window changes',
+    issue81FailedProjection, {
+      findingsInputs: twoFamilyInputs,
+      findingsFailures: { '900-1260': 500 },
+    }],
+  ['a settled slice renders only its server-published findings',
+    issue81SlicedProjection, { findingsInputs: twoFamilyInputs }],
+]) {
+  test(`#81 · ${name}`, async () => {
+    const browser = await runner.browser();
+    const before = openerProblems().length;
+    const page = await openApp(browser, {
+      state: 'typical', appSource: 'fixture', ...options,
+    });
+    try {
+      await probe(page);
+      assert.deepEqual(openerProblems().slice(before), [],
+        `no opener problems while proving #81: ${name}`);
+    } finally {
+      await page.close();
+    }
+  });
+}
+
+for (const [name, probe, options] of [
+  ['header and Filter ownership', issue86HeaderFilter, { state: 'drawn' }],
+  ['Event charts and Sift intersection', issue86FilteredRoot, { state: 'typical' }],
+  ['direct event entry and root restoration', issue86DirectEntryRestoration, { state: 'typical' }],
+  ['pending root projection', issue86PendingRoot, { state: 'typical', findingsDelayMs: 900 }],
+  ['malformed event evidence recovery', issue86MalformedRecovery, {
+    state: 'typical', caseScenario: { case: async ({ url, body }) =>
+      url.searchParams.get('alignment') === 'event' ? { body: {
+        schema: 'malformed-finding-case-file',
+        projection_id: body.projection_id,
+        finding: body.finding,
+        projection: null,
+      } } : { body } },
+  }],
+]) {
+  test(`#86 issue-scoped probe · ${name}`, async () => {
+    const browser = await runner.browser();
+    const before = openerProblems().length;
+    const page = await openApp(browser, { appSource: 'fixture', ...options });
+    try {
+      await probe(page);
+      assert.deepEqual(openerProblems().slice(before), [],
+        `no opener problems while proving #86: ${name}`);
+    } finally {
+      await page.close();
+    }
+  });
+}
+>>>>>>> origin/main
 
 function contrastRatio(foreground, background) {
   const rgb = (color) => color.match(/\d+/g).map(Number).slice(0, 3);
@@ -351,30 +462,156 @@ test('locked panel geometry matches across both required viewports and light/dar
     } finally { /* browser stays open; closed once in after() */ }
   });
 
-test('finding chips render each server-published count', async () => {
+test('the Filter menu renders each server-published Sift count', async () => {
     const browser = await runner.browser();
     try {
       const before = openerProblems().length;
       const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
       await page.getByRole('button', { name: '24 h', exact: true }).click();
       await settle(page, 450);
-      assert.deepEqual(await page.locator('#seg-chips button').allTextContents(), [
+      await page.getByRole('button', { name: /Filter/ }).click();
+      assert.deepEqual(await page.getByRole('menuitemcheckbox').allTextContents(), [
         'Highs 4', 'Lows 1', 'Meals 1', 'Corrections 1',
-      ], 'the four chips spell the server-published global counts');
+      ], 'the four Sift items spell the server-published global counts');
       await page.close();
       assert.deepEqual(openerProblems().slice(before), [],
         'no opener problems while rendering server-published chip counts');
     } finally { /* browser stays open; closed once in after() */ }
   });
 
-test('deselecting a chip leaves only rows matching the remaining chips', async () => {
+test('#83 · Filter is a roving ARIA menu and Escape wins over the drawn window', async () => {
+    const browser = await runner.browser();
+    try {
+      const before = openerProblems().length;
+      const page = await openApp(browser, { state: 'drawn', appSource: 'fixture' });
+      const trigger = page.getByRole('button', { name: /Filter/ });
+      const drawnBefore = await page.locator('#seg-window [data-follow]').innerText();
+      await trigger.click();
+      await page.waitForFunction(() => document.activeElement?.getAttribute('aria-label')?.startsWith('Highs '));
+      assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('aria-label')?.startsWith('Highs ')), true);
+      await page.keyboard.press('ArrowUp');
+      assert.equal(await page.evaluate(() => document.activeElement?.textContent.trim()), 'Event charts');
+      await page.keyboard.press('Home');
+      assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('aria-label')?.startsWith('Highs ')), true);
+      await page.keyboard.press('End');
+      assert.equal(await page.evaluate(() => document.activeElement?.textContent.trim()), 'Event charts');
+      await page.keyboard.press('ArrowDown');
+      assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('aria-label')?.startsWith('Highs ')), true);
+      await page.keyboard.press(' ');
+      assert.equal(await page.getByRole('menu').isVisible(), true,
+        'Space changes a Sift choice without closing the menu');
+      assert.equal(await trigger.innerText(), 'Filter 1');
+      await page.waitForFunction(() => document.activeElement?.getAttribute('aria-label')?.startsWith('Highs '));
+      await page.keyboard.press('End');
+      await page.keyboard.press('Enter');
+      assert.equal(await page.getByRole('menu').isVisible(), true,
+        'Enter changes View without closing the menu');
+      assert.equal(await trigger.innerText(), 'Filter 2');
+      await page.keyboard.press('Escape');
+      assert.equal(await page.getByRole('menu').isVisible(), false);
+      assert.equal(await page.evaluate(() => document.activeElement?.id), 'filter-trigger');
+      assert.equal(await page.locator('#seg-window [data-follow]').innerText(), drawnBefore,
+        'menu Escape does not clear the drawn window');
+
+      await trigger.click();
+      await page.waitForFunction(() => document.activeElement?.getAttribute('aria-label')?.startsWith('Highs '));
+      await page.keyboard.press('Tab');
+      await page.waitForFunction(() => document.getElementById('filter-menu')?.hidden === true);
+      assert.notEqual(await page.evaluate(() => document.activeElement?.id), 'filter-trigger',
+        'Tab continues in document order instead of trapping focus');
+
+      await trigger.focus();
+      await trigger.click();
+      await page.waitForFunction(() => document.activeElement?.getAttribute('aria-label')?.startsWith('Highs '));
+      await trigger.click();
+      assert.equal(await page.getByRole('menu').isVisible(), false,
+        'the trigger toggles the menu closed');
+      assert.equal(await page.evaluate(() => document.activeElement?.id), 'filter-trigger',
+        'trigger closure retains trigger focus');
+      await trigger.click();
+      await page.waitForFunction(() => document.activeElement?.getAttribute('aria-label')?.startsWith('Highs '));
+      await page.locator('#canvas-head').click();
+      assert.equal(await page.getByRole('menu').isVisible(), false,
+        'clicking outside closes without changing selections');
+      await page.close();
+      assert.deepEqual(openerProblems().slice(before), [],
+        'no opener problems while exercising Filter keyboard semantics');
+    } finally { /* browser stays open; closed once in after() */ }
+  });
+
+test('#83 · Event charts opens By event and return restores the root filters', async () => {
     const browser = await runner.browser();
     try {
       const before = openerProblems().length;
       const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
       await page.getByRole('button', { name: '24 h', exact: true }).click();
       await settle(page, 450);
-      await page.getByRole('button', { name: 'Highs 4', exact: true }).click();
+      const trigger = page.getByRole('button', { name: /Filter/ });
+      await trigger.click();
+      await page.getByRole('menuitemradio', { name: 'Event charts', exact: true }).click();
+      assert.equal(await trigger.innerText(), 'Filter 1');
+      assert.ok(await page.locator('#level .qrow').count() > 0);
+      assert.equal(await page.locator('#level .qrow .tag.setting').count(), 0,
+        'Event charts renders only server-eligible behavioral Findings');
+      await page.keyboard.press('Escape');
+      await page.locator('#level .qrow').first().click();
+      await page.waitForFunction(() => document.querySelector('#seg-align button[aria-pressed="true"]')?.textContent.trim() === 'By event');
+      await page.locator('#align-canvas:not([hidden])').waitFor();
+      assert.equal(await page.locator('#filter-wrap').isHidden(), true,
+        'Filter is root-only');
+
+      await page.getByRole('button', { name: 'By clock', exact: true }).click();
+      await page.waitForFunction(() => document.querySelector('#seg-align button[aria-pressed="true"]')?.textContent.trim() === 'By clock');
+      await page.locator('#chart:not([hidden])').waitFor();
+      assert.equal(await page.locator('#chart').isVisible(), true);
+      await page.keyboard.press('Backspace');
+      await page.locator('#level .qrow').first().waitFor();
+      assert.equal(await trigger.innerText(), 'Filter 1');
+      await trigger.click();
+      assert.equal(await page.getByRole('menuitemradio', { name: 'Event charts' }).getAttribute('aria-checked'), 'true');
+      assert.equal(await page.getByRole('menuitemcheckbox', { name: /^Highs / }).getAttribute('aria-checked'), 'true');
+      await page.close();
+      assert.deepEqual(openerProblems().slice(before), [],
+        'no opener problems through Event charts entry, switching, and return');
+    } finally { /* browser stays open; closed once in after() */ }
+  });
+
+test('#83 · Filter and every menu item stay reachable at 390×844', async () => {
+    const browser = await runner.browser();
+    try {
+      const before = openerProblems().length;
+      const page = await openApp(browser, {
+        state: 'typical', appSource: 'fixture', viewport: { width: 390, height: 844 },
+      });
+      const trigger = page.getByRole('button', { name: /Filter/ });
+      await trigger.waitFor();
+      await trigger.click();
+      const boxes = await page.locator('#filter-trigger, #filter-menu [role^="menuitem"]').evaluateAll(
+        (nodes) => nodes.map((node) => {
+          const rect = node.getBoundingClientRect();
+          return { label: node.getAttribute('aria-label') || node.textContent.trim(),
+            left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
+        }),
+      );
+      for (const box of boxes) {
+        assert.ok(box.left >= 0 && box.right <= 390, `${box.label} stays inside the viewport horizontally`);
+        assert.ok(box.top >= 0 && box.bottom <= 844, `${box.label} stays inside the viewport vertically`);
+      }
+      await page.close();
+      assert.deepEqual(openerProblems().slice(before), [],
+        'no opener problems at the narrow Filter viewport');
+    } finally { /* browser stays open; closed once in after() */ }
+  });
+
+test('deselecting a Sift item leaves only rows matching the remaining choices', async () => {
+    const browser = await runner.browser();
+    try {
+      const before = openerProblems().length;
+      const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
+      await page.getByRole('button', { name: '24 h', exact: true }).click();
+      await settle(page, 450);
+      await page.getByRole('button', { name: /Filter/ }).click();
+      await page.getByRole('menuitemcheckbox', { name: 'Highs 4', exact: true }).click();
       await settle(page, 350);
       assert.deepEqual(await page.locator('#level .qrow').evaluateAll((rows) => rows.map((row) => row.dataset.id)), [
         'finding:correction_on_iob', 'finding:late_bolus',
@@ -385,17 +622,19 @@ test('deselecting a chip leaves only rows matching the remaining chips', async (
     } finally { /* browser stays open; closed once in after() */ }
   });
 
-test('the held and blind group collapses during a sift and expands again', async () => {
+test('the Watching group collapses during a sift and expands again', async () => {
     const browser = await runner.browser();
     try {
       const before = openerProblems().length;
       const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
       await page.getByRole('button', { name: 'Overnight', exact: true }).click();
       await settle(page, 450);
-      await page.getByRole('button', { name: /^Highs / }).click();
+      await page.getByRole('button', { name: /Filter/ }).click();
+      await page.getByRole('menuitemcheckbox', { name: /^Highs / }).click();
+      await page.keyboard.press('Escape');
       await settle(page, 350);
       const toggle = page.locator('#level .qcollapse');
-      assert.equal(await toggle.innerText(), '4 held or blind reads');
+      assert.equal(await toggle.innerText(), 'Watching · 4 reads');
       assert.equal(await toggle.getAttribute('aria-expanded'), 'false');
       assert.equal(await page.locator('#level .qrow').count(), 0,
         'collapsed held rows are not painted as ordinary queue rows');
@@ -418,12 +657,13 @@ test('an all-hidden sift names the empty result while retaining the held group',
       const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
       await page.getByRole('button', { name: 'Overnight', exact: true }).click();
       await settle(page, 450);
-      await page.getByRole('button', { name: /^Highs / }).click();
+      await page.getByRole('button', { name: /Filter/ }).click();
+      await page.getByRole('menuitemcheckbox', { name: /^Highs / }).click();
       await settle(page, 350);
       assert.equal(await page.locator('#level .quiet-line.sift-empty').innerText(),
-        'No findings match the current chips.');
-      assert.equal(await page.locator('#level .qcollapse').innerText(), '4 held or blind reads',
-        'the collapsed held group remains reachable below the empty-sift line');
+        'No findings match the current filters.');
+      assert.equal(await page.locator('#level .qcollapse').innerText(), 'Watching · 4 reads',
+        'the collapsed Watching group remains reachable below the empty-sift line');
       await page.close();
       assert.deepEqual(openerProblems().slice(before), [],
         'no opener problems while rendering the all-hidden sift state');
@@ -644,7 +884,12 @@ test('setError tears down a live render and replaces the mount with a plain fail
        gates' route stubs use, so this test still exercises a LIVE render — which is
        the whole point of it: `setError`'s teardown branch is vacuous otherwise. */
     const payload = { ...raw, findings: projectFindings(
-      { analysis: raw.analyze, exposures: raw.exposures, scenarios: raw.scenarios }, null) };
+      {
+        analysis: raw.analyze,
+        exposures: raw.exposures,
+        scenarios: raw.scenarios,
+        event_charts: FINDINGS_PROJECTION.inputs.event_charts,
+      }, null) };
     const browser = await runner.browser();
     const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
     try {
@@ -821,9 +1066,14 @@ test('frontend contains no client-side verdict threshold or direction comparison
     'lane verdict mapping reads backend direction fields, never dose arithmetic');
   // LOCK:diagnose-workstation:29 — occurrence handoff retains claim date into Day.
   const index = await readFile(join(ROOT, 'frontend/index.html'), 'utf8');
+<<<<<<< HEAD
   assert.match(index, /day: \(occurrence\) => goToMoment\(occurrence\.t, occurrence\.text/);
   assert.match(index,
     /import \{\s*createDiagnoseEventComparison, validProjection as validDiagnoseProjection,\s*\} from '\.\/diagnose-event-comparison\.js';/);
+=======
+  assert.match(index, /day: \(occurrence\) => goToMoment\(occurrence\.t \|\| occurrence\.anchor\?\.t,[\s\S]*occurrence\.text \|\| occurrence\.anchor\?\.label/);
+  assert.match(index, /import \{ createDiagnoseEventComparison \} from '\.\/diagnose-event-comparison\.js';/);
+>>>>>>> origin/main
   assert.match(index, /diagnoseView = createDiagnoseEventComparison\(\{ root: diagnoseRoot\.value,/);
   assert.match(index, /diagnoseStageItemsFor\(item\.key, diagnoseAnalysis\.value\)/);
   assert.match(index, /keepOnlyPlanFamily\(planItemFamily\(items\[0\]\)\)/);

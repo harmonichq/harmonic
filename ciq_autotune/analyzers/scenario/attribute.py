@@ -49,7 +49,7 @@ from ..classifiers import (
     classify_meal_bolus_short,
     classify_missed_meal,
 )
-from ..classifiers.evidence import EvidenceTier
+from ..classifiers.evidence import EvidenceTier, SilenceReason
 from ..scenario_config import ScenarioConfig
 from .anchors import Anchor, AnchorKind
 from .levers import Lever
@@ -184,6 +184,82 @@ def _over_treated_step(
     )
 
 
+@dataclass(frozen=True)
+class OverTreatedReboundJudgment:
+    """The guarded rebound result and its complete over-treated-low judgment.
+
+    ``rebound`` preserves the scan facts that existing attribution and split callers
+    need. ``rebound_bar`` and ``near_floor`` make the applied boundary facts available
+    to projections, while ``verdict`` carries the classifier-shaped outcome.
+    """
+
+    rebound: GuardedRebound
+    rebound_bar: float
+    near_floor: float
+    verdict: Verdict
+
+
+def over_treated_rebound_judgment(
+    cgm: Sequence[CgmReading],
+    nadir_t: datetime,
+    nadir_bg: Optional[float],
+    bolus: Sequence[BolusEvent],
+    *,
+    scenario_config: ScenarioConfig = ScenarioConfig(),
+) -> OverTreatedReboundJudgment:
+    """Judge one eligible low from its guarded rebound result (#104/#112/#400).
+
+    Applies the existing tiered firing bar and its 20 mg/dL near floor. Classification
+    remains shape-only: residual bolus IOB does **not** move either boundary.
+    """
+    rebound = guarded_rebound(
+        cgm, nadir_t,
+        stop_at=_next_meal_bolus_t(bolus, nadir_t, scenario_config=scenario_config),
+        scenario_config=scenario_config,
+    )
+    rebound_bar = (
+        scenario_config.segment_range_high_mgdl
+        if (nadir_bg is not None and nadir_bg > scenario_config.gate_low_mgdl)
+        else scenario_config.segment_rebound_high_mgdl
+    )
+    near_floor = rebound_bar - 20.0
+    if rebound.peak is None:
+        verdict = Verdict(
+            matched=False,
+            detail="no CGM rebound reading was available to judge this low",
+            evidence_tier=EvidenceTier.NOT_IN_DATA,
+            silence_reason=SilenceReason.INSUFFICIENT_DATA,
+        )
+    elif rebound.peak >= rebound_bar:
+        verdict = Verdict(
+            matched=True,
+            detail=_over_treated_text(nadir_bg, rebound.peak),
+            evidence_tier=EvidenceTier.INFERRED,
+        )
+    elif rebound.peak >= near_floor:
+        verdict = Verdict(
+            matched=False,
+            detail=(f"BG rebounded to {rebound.peak:.0f} mg/dL, below the "
+                    f"{rebound_bar:.0f} mg/dL over-treated-low bar"),
+            evidence_tier=EvidenceTier.OBSERVED,
+            silence_reason=SilenceReason.UNDER_THRESHOLD,
+        )
+    else:
+        verdict = Verdict(
+            matched=False,
+            detail=(f"BG rebounded only to {rebound.peak:.0f} mg/dL, below the "
+                    f"{near_floor:.0f} mg/dL near floor"),
+            evidence_tier=EvidenceTier.OBSERVED,
+            silence_reason=SilenceReason.NO_TRIGGER,
+        )
+    return OverTreatedReboundJudgment(
+        rebound=rebound,
+        rebound_bar=rebound_bar,
+        near_floor=near_floor,
+        verdict=verdict,
+    )
+
+
 def over_treated_rebound(
     cgm: Sequence[CgmReading],
     nadir_t: datetime,
@@ -192,32 +268,11 @@ def over_treated_rebound(
     *,
     scenario_config: ScenarioConfig = ScenarioConfig(),
 ) -> Optional[GuardedRebound]:
-    """The guarded rebound iff this low was over-treated, else ``None`` (#104/#112/#400).
-
-    The single decision point for "did this low rebound past the over-treated bar?",
-    shared by the over-treated-low label (:func:`_low_lever`) and the #155 split gate
-    (:func:`split_caused_over_treatments`) so the anchor and the label read the *same*
-    guarded scan and can never disagree (the #149 no-divergence invariant). Applies the
-    tiered rebound bar (#112 — ADR-0005 ≥160 for a sub-70 nadir, ≥180 for a near-low).
-    Classification is by the observed low→rebound shape alone: residual bolus IOB does
-    **not** move the bar (#400 / ADR 400 removed the unsupported ``IOB × (ISF/I:C)``
-    credit — it was labelled mg/dL but was dimensionally neither mg/dL nor grams).
-    Returns the :class:`GuardedRebound` (peak / peak_t / terminal) when the peak clears
-    the bar, else ``None``.
-    """
-    rebound = guarded_rebound(
-        cgm, nadir_t,
-        stop_at=_next_meal_bolus_t(bolus, nadir_t, scenario_config=scenario_config),
-        scenario_config=scenario_config,
+    """Return a fired guarded rebound for existing attribution and split callers."""
+    judgment = over_treated_rebound_judgment(
+        cgm, nadir_t, nadir_bg, bolus, scenario_config=scenario_config,
     )
-    if rebound.peak is None:
-        return None
-    rebound_bar = (
-        scenario_config.segment_range_high_mgdl
-        if (nadir_bg is not None and nadir_bg > scenario_config.gate_low_mgdl)
-        else scenario_config.segment_rebound_high_mgdl
-    )
-    return rebound if rebound.peak >= rebound_bar else None
+    return judgment.rebound if judgment.verdict.matched else None
 
 
 def _next_meal_bolus_t(
@@ -285,6 +340,8 @@ class Attribution:
     steps: List[Step]
     silence: Optional[Verdict] = None
     rebound_end: Optional[datetime] = None
+    correction_pair: Optional[tuple[int, int]] = None
+    driver_anchor: Optional[Anchor] = None
 
 
 # Each ``_*_lever`` helper returns ``(lever_result, silence)``: the ``(lever, step)``
@@ -433,7 +490,12 @@ def _correction_lever(
         return None, None
     cs = classify_correction_stacking(corrections, cgm, basal, scenario_config=scenario_config)
     if cs.matched and cs.stack_t is not None:
-        return (Lever.CORRECTION_STACKING, _step(cs.stack_t, cs), cs.stack_t), None
+        return (
+            Lever.CORRECTION_STACKING,
+            _step(cs.stack_t, cs),
+            cs.stack_t,
+            (cs.previous_seq_num, cs.second_seq_num),
+        ), None
     return None, cs
 
 
@@ -565,10 +627,11 @@ def attribute(
     Returns an :class:`Attribution`; ``lever is None`` means the episode resolved
     with no actionable behavior and must not surface.
     """
-    driver: Optional[tuple] = None       # (lever, trigger_kind, trigger_t, driver_step)
+    driver: Optional[tuple] = None       # (lever, trigger_kind, trigger_t, driver_step, anchor)
     # The guarded rebound scan's terminal for the winning driver, when it is an
     # over-treated low — threaded up so the engine scores the whole excursion (#124).
     rebound_end: Optional[datetime] = None
+    correction_pair: Optional[tuple[int, int]] = None
     consequences: List[Step] = []
     # When nothing fires, the episode still owes a reason. Retain the first anchor's
     # most-specific non-firing verdict (anchors are in time order, mirroring the
@@ -631,6 +694,7 @@ def attribute(
             if correction_result is not None:
                 correction_used = True
                 result = (correction_result[0], correction_result[1])
+                correction_pair = correction_result[3]
             else:
                 sil = correction_silence
 
@@ -640,7 +704,17 @@ def attribute(
             continue
         lever, step = result
         if driver is None:
-            driver = (lever, a.kind, trig_t, step)
+            driver_anchor = a
+            if lever is Lever.CORRECTION_STACKING and correction_pair is not None:
+                driver_anchor = next(
+                    (candidate for candidate in episode.anchors
+                     if candidate.kind is AnchorKind.CORRECTION
+                     and candidate.bolus is not None
+                     and candidate.bolus.seq_num == correction_pair[1]),
+                    a,
+                )
+                trig_t = driver_anchor.t
+            driver = (lever, driver_anchor.kind, trig_t, step, driver_anchor)
             rebound_end = this_rebound_end
         else:
             # A later actionable behavior: narrate as a consequence, don't re-flag.
@@ -651,7 +725,7 @@ def attribute(
             lever=None, trigger="", trigger_t=episode.start, steps=[], silence=silence
         )
 
-    lever, kind, trigger_t, driver_step = driver
+    lever, kind, trigger_t, driver_step, driver_anchor = driver
     steps = [driver_step] + consequences
     return Attribution(
         lever=lever,
@@ -659,6 +733,8 @@ def attribute(
         trigger_t=trigger_t,
         steps=steps,
         rebound_end=rebound_end,
+        correction_pair=(correction_pair if lever is Lever.CORRECTION_STACKING else None),
+        driver_anchor=driver_anchor,
     )
 
 

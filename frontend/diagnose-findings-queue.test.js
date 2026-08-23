@@ -6,7 +6,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
-  EMPTY_LINE, EMPTY_SIFT_LINE, HELD_PREFIX, TAIL_NOTE, queueMeta, queueRows, uncausedNote,
+  EMPTY_LINE, EMPTY_SIFT_LINE, HELD_PREFIX, TAIL_NOTE, eventChartCoordinate,
+  queueMeta, queueRows, uncausedNote,
 } from './diagnose-findings-queue.js';
 
 const fixture = JSON.parse(readFileSync(
@@ -14,7 +15,7 @@ const fixture = JSON.parse(readFileSync(
 const W = fixture.windows;
 
 test('term 45 · the meta has three forms and no others', () => {
-  assert.equal(queueMeta(W.global), '6 findings · 30 days');
+  assert.equal(queueMeta(W.global), '8 findings · 30 days');
   assert.equal(queueMeta(W.afternoon), '5 in this window');
   assert.equal(queueMeta(fixture.no_data.global), '30 days');
   // never sort language, never the window range restated — the chip owns the hours
@@ -48,7 +49,7 @@ test('term 41 · a scoped EMPTY window says only how much history it looked at',
 test('term 34 · settings and habits interleave in one list, ordered by the server', () => {
   const rows = queueRows(W.global);
   assert.deepEqual(rows.map((r) => r.flavor),
-    ['setting', 'setting', 'setting', 'habit', 'habit', 'habit']);
+    ['setting', 'setting', 'setting', 'habit', 'habit', 'habit', 'habit', 'watching']);
   // the order is the projection's, untouched
   assert.deepEqual(rows.map((r) => r.title), W.global.rows.map((r) => r.title));
 });
@@ -60,16 +61,16 @@ test('term 36 · a row is flavored by the server register, glyph and word togeth
 });
 
 test('term 35 · a finding keeps EVERY family appearance, never a merged total', () => {
-  const overTreated = queueRows(W.global).find((r) => r.title === 'Over-treated low');
-  assert.deepEqual(overTreated.detail,
-    { kind: 'appearances', parts: [{ count: '1 of 4', noun: 'highs' }, { count: '1 of 6', noun: 'lows' }] });
+  const carbUndercount = queueRows(W.global).find((r) => r.title === 'Carb undercount');
+  assert.deepEqual(carbUndercount.detail,
+    { kind: 'appearances', parts: [{ count: '2 of 4', noun: 'highs' }, { count: '1 of 3', noun: 'meals' }] });
 });
 
 test('term 42 · the seam opens once, before the first UNPRICED ranked row', () => {
   const rows = queueRows(W.global);
   const seams = rows.filter((r) => r.seam);
   assert.equal(seams.length, 1);
-  assert.equal(seams[0].title, 'Correction stacking');
+  assert.equal(seams[0].title, 'Correction on active insulin');
   assert.equal(seams[0].raw.priority, null);
   // every row above it is priced; the seam is the boundary, not a heading
   const at = rows.indexOf(seams[0]);
@@ -81,13 +82,13 @@ test('term 42 · fixture windows never caption a held or blind row as the tail',
   // These are the fixture's server-owned queue positions. A held/blind row is
   // demoted, but it is not the unpriced ranked row the tail sentence describes.
   const expected = {
-    global: ['Correction stacking'],
+    global: ['Correction on active insulin'],
     afternoon: ['Correction stacking'],
     low_block: [],
     morning: [],
-    overnight: [],
+    overnight: ['Correction on active insulin'],
     quiet: [],
-    rebound: [],
+    rebound: ['Correction stacking'],
   };
   for (const [window, titles] of Object.entries(expected)) {
     assert.deepEqual(queueRows(W[window]).filter((row) => row.seam).map((row) => row.title),
@@ -136,10 +137,29 @@ test('term 14 · a blind span carries the analyzer\u2019s own reason, verbatim',
   assert.equal(blind.stageable, false);
 });
 
-test('term 38 · the global queue is asserting-only, so every setting row stages', () => {
-  const settings = queueRows(W.global).filter((r) => r.flavor === 'setting');
+test('term 38 · every asserting setting row stages', () => {
+  const settings = queueRows(W.global).filter((r) => r.register === 'assert');
   assert.ok(settings.length > 0);
   assert.ok(settings.every((r) => r.register === 'assert' && r.stageable));
+});
+
+test('S41/S43 · history stays in server order as Watching with past evidence only', () => {
+  const rows = queueRows(W.global);
+  const history = rows.find((row) => row.register === 'history');
+  assert.equal(rows.at(-1), history, 'server placed history last and the browser preserved it');
+  assert.equal(history.flavor, 'watching');
+  assert.equal(history.stageable, false);
+  assert.deepEqual(history.detail, {
+    kind: 'history', past: 'past 6.0 g/U', support: '3 meal runs',
+  });
+  assert.doesNotMatch(JSON.stringify(history.detail), /programmed|now|5\.0/);
+});
+
+test('S42 · a sift collapses held, blind, and history into Watching', () => {
+  const rows = queueRows(W.morning, new Set(['highs']));
+  const watching = rows.filter((row) => row.collapsed);
+  assert.deepEqual(watching.map((row) => row.register), ['held', 'held', 'history']);
+  assert.ok(watching.every((row) => !row.hidden));
 });
 
 test('ISF actionability requires the exact carried backend verdict', () => {
@@ -213,7 +233,7 @@ test('chips sift only on published membership and keep withheld reads reachable'
   const withheld = rows.filter((row) => row.register === 'held' || row.register === 'blind');
   assert.ok(withheld.length > 0);
   assert.ok(withheld.every((row) => !row.hidden && row.collapsed));
-  assert.equal(EMPTY_SIFT_LINE, 'No findings match the current chips.');
+  assert.equal(EMPTY_SIFT_LINE, 'No findings match the current filters.');
 });
 
 test('a sift computes its priced seam over only visible rows', () => {
@@ -228,6 +248,58 @@ test('a sift computes its priced seam over only visible rows', () => {
 
 test('a null selection is byte-identical to the unsifted queue', () => {
   assert.deepEqual(queueRows(W.global), queueRows(W.global, null));
+});
+
+test('#83 · Event charts intersects Sift using only published row facts', () => {
+  const eventRows = queueRows(W.global, new Set(['highs']), true);
+  const shown = eventRows.filter((row) => !row.hidden && !row.collapsed);
+
+  assert.ok(shown.length > 0, 'the fixture carries an eligible high Finding');
+  assert.ok(shown.every((row) => row.raw.chips.includes('highs')));
+  assert.ok(shown.every((row) => row.raw.event_chart !== null));
+  assert.deepEqual(
+    shown.map((row) => row.id),
+    W.global.rows
+      .filter((row) => row.chips.includes('highs') && row.event_chart !== null)
+      .map((row) => row.id),
+    'the filtered queue retains server order',
+  );
+});
+
+test('#83 · Event charts excludes settings, held reads, and incompatible Findings', () => {
+  const rows = queueRows(W.afternoon, null, true);
+  const shown = rows.filter((row) => !row.hidden && !row.collapsed);
+
+  assert.ok(shown.every((row) => row.flavor === 'habit'));
+  assert.ok(shown.every((row) => row.raw.event_chart !== null));
+  assert.ok(rows.filter((row) => row.raw.event_chart === null).every((row) => row.hidden));
+  assert.equal(rows.some((row) => row.collapsed), false,
+    'Event charts removes held and blind rows instead of offering disclosure');
+});
+
+test('#83 · malformed coordinates never make a row eligible', () => {
+  const source = W.global.rows.find((row) => row.event_chart !== null);
+  for (const event_chart of [{}, [], { view: 'meals' }, { view: '', factor: 'late_bolus' },
+    { view: 'meals', factor: '' }, { view: 'meals', factor: 'late_bolus', extra: true }]) {
+    const row = { ...source, event_chart };
+    assert.equal(eventChartCoordinate(row), null);
+    const [rendered] = queueRows({ rows: [row] }, null, true);
+    assert.equal(rendered.hidden, true);
+  }
+});
+
+test('event-chart eligibility accepts a server-owned High coordinate', () => {
+  const row = { ...W.global.rows.find((item) => item.event_chart !== null),
+    event_chart: { view: 'highs', factor: 'meal_bolus_short' } };
+  assert.deepEqual(eventChartCoordinate(row), row.event_chart);
+});
+
+test('#83 · metadata and empty copy describe the visible root filters', () => {
+  const eligible = W.global.rows.filter((row) => row.event_chart !== null).length;
+  assert.equal(queueMeta(W.global, null, true), `${eligible} findings · 30 days`);
+  assert.equal(queueMeta(W.global, new Set(['meals']), true), '1 finding · 30 days');
+  assert.equal(queueMeta(W.afternoon, new Set(['meals']), true), '30 days');
+  assert.equal(EMPTY_SIFT_LINE, 'No findings match the current filters.');
 });
 
 /* #63 — the unexplained-highs line. It is the server's finished sentence and the

@@ -163,6 +163,19 @@ class CheckSetTest(unittest.TestCase):
         self.assertIn("b.json", message)
         self.assertIn("extra", message.lower())
 
+    def test_exact_file_owned_by_an_independent_generator_is_excluded(self):
+        committed = self._committed_dir()
+        (committed / "a.json").write_text('{"x": 1}\n')
+        (committed / "independent.json").write_text('{"owned": "elsewhere"}\n')
+        gen = self.repo_root / "gen.py"
+        _write_fake_generator(gen, {"a.json": '{"x": 1}\n'})
+        entry = _entry("demo", gen, "mockups/demo.synthetic")
+        entry["externally_generated"] = ["independent.json"]
+
+        ok, message = check_demo_fixtures.check_set(entry, repo_root=self.repo_root)
+
+        self.assertTrue(ok, message)
+
 
 class MainTest(unittest.TestCase):
     def test_main_returns_nonzero_when_any_entry_fails(self):

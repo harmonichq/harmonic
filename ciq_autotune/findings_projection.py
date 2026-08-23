@@ -6,7 +6,7 @@ place, and *that scoping is decided here*, not in the browser: the caller sends 
 window and receives the window's rows, already classified, merged, anchored, counted
 and ordered. The frontend renders them verbatim and composes nothing (term 40).
 
-Four registers, assigned by one mechanical rule and stamped on every row as
+Five registers, assigned by one mechanical rule and stamped on every row as
 ``register``:
 
 * ``assert`` — a parameter whose backend evidence asserts a direction
@@ -20,9 +20,12 @@ Four registers, assigned by one mechanical rule and stamped on every row as
 * ``blind`` — a basal span with zero clean days, with the analyzer's own reason.
 * ``finding`` — one row per behavioral finding NAME (term 35), carrying each family
   appearance's own window-local ``n of m`` denominators.
+* ``history`` — an analyzer-published active past-setting measurement. It is
+  non-actionable and carries the catalog's lifecycle, identity, support, and runs.
 
-Under an explicit window all four registers can appear; the GLOBAL (24 h) queue is
-asserting-only — a quiet parameter is never listed (term 38).
+Under an explicit window all five registers can appear; the GLOBAL (24 h) queue
+contains asserting current parameters plus active history — a quiet current
+parameter is never listed (term 38).
 
 **Window membership is OUTCOME-anchored** (term 39 / ledger D34). A finding sits in
 the window where its *consequence* landed, never where its trigger crossed a
@@ -50,17 +53,24 @@ same public interface the API serves.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Dict, List, Optional, Sequence, Tuple
 
 from .analyzers.ic import BLOCK_WINDOW_DAYS
+from .ic_history import decode_history_id
 # `_chips_for` (#61) asks each lever what kind of anchor its consequence lands
 # on. `window_membership` asks the same question for the same reason, so this is
 # one definition read twice, never a second copy of the mapping.
 from .analyzers.scenario.levers import outcome_kind
+from .event_comparison import EVENT_CHARTS
 from .safety import Status
 from .window_membership import DAY_MINUTES, WindowQuery, outcome_minute
 
-SCHEMA = "diagnose-findings-v1"
+SCHEMA = "diagnose-findings-v2"
+
+
+class UnknownHistorySelection(KeyError):
+    """A canonical selection absent from the analyzer-published catalog."""
 
 _SLOT_MINUTES = 30
 
@@ -97,11 +107,12 @@ _FAMILY_NOUN = {
 
 # Register order in the queue: asserting and counted rows share the ranked head,
 # held and blind follow in the demoted register (term 38).
-_REGISTER_RANK = {"assert": 0, "finding": 0, "held": 1, "blind": 2}
+_REGISTER_RANK = {"assert": 0, "finding": 0, "held": 1, "blind": 2, "history": 3}
 
 # ADR 0019 §2's closed five-state anchor taxonomy, the verdict band's own vocabulary
 # (ADR 41). The frontend only labels these; it never derives membership or counts.
-_VERDICT_CATEGORIES = ("fired", "outranked", "near_miss", "no_data", "clean")
+FINDING_VERDICTS = ("fired", "outranked", "near_miss", "no_data", "clean")
+DIAGNOSE_SOURCE_WINDOW_DAYS = 30
 
 
 def _hhmm(minute: int) -> str:
@@ -131,12 +142,21 @@ class FindingsProjection:
     _exposures: dict
     _scenarios: dict
 
-    def project(self, query: WindowQuery) -> dict:
+    @property
+    def history_catalog(self) -> Tuple[dict, ...]:
+        """The analyzer-published history catalog this snapshot projects."""
+        return tuple(self._analysis.get("ic_history") or [])
+
+    def project(
+        self, query: WindowQuery, selected_id: Optional[str] = None, *,
+        analysis_generation: str = "standalone:0",
+    ) -> dict:
         rows = self._parameter_rows(query, scoped=query.scoped)
         rows += self._finding_rows(query)
+        rows += self._history_rows(query)
         rows.sort(key=_sort_key)
         _assign_tiers(rows)
-        counts = {name: 0 for name in ("assert", "held", "blind", "finding")}
+        counts = {name: 0 for name in ("assert", "held", "blind", "finding", "history")}
         chip_counts = {name: 0 for name in ("highs", "lows", "meals", "corrections")}
         for row in rows:
             counts[row["register"]] += 1
@@ -144,18 +164,76 @@ class FindingsProjection:
                 chip_counts[chip] += 1
         return {
             "schema": SCHEMA,
+            "analysis_generation": analysis_generation,
             "window": query.to_dict(),
             "findings_window": {
                 "days": self._analysis.get("window_days"),
                 **(self._exposures.get("window") or {}),
             },
             "rows": rows,
+            "selection": self._selection(query, selected_id),
             # Keyed by the register name each row carries, so a count and a row can
             # never be read as two different vocabularies.
             "counts": counts,
             "chip_counts": chip_counts,
             "uncaused_highs": self._uncaused_highs(),
         }
+
+    def _selection(self, query: WindowQuery, selected_id: Optional[str]) -> Optional[dict]:
+        if selected_id is None:
+            return None
+        decode_history_id(selected_id)
+        history = next(
+            (row for row in self._analysis.get("ic_history") or []
+             if row.get("id") == selected_id),
+            None,
+        )
+        if history is None:
+            raise UnknownHistorySelection(selected_id)
+        lifecycle = history["lifecycle"]
+        messages = {
+            "aged_out": "Past-setting evidence aged out of the 90-day window.",
+            "unavailable": (
+                "Past-setting evidence no longer maps to one current program block."
+            ),
+        }
+        if lifecycle == "active":
+            in_scope = (not query.scoped or query.overlaps(
+                history["block_start_min"], history["block_end_min"]))
+            disposition = "present" if in_scope else "out_of_scope"
+            message = (None if in_scope else
+                       "Past-setting evidence is outside the selected window.")
+        else:
+            disposition = lifecycle
+            message = messages[lifecycle]
+        return {"id": selected_id, "disposition": disposition, "message": message}
+
+    def _history_rows(self, query: WindowQuery) -> List[dict]:
+        """Active analyzer-published past-setting measurements in this clock scope."""
+        rows = []
+        for history in self._analysis.get("ic_history") or []:
+            if history.get("lifecycle") != "active":
+                continue
+            start_min = history["block_start_min"]
+            end_min = history["block_end_min"]
+            if query.scoped and not query.overlaps(start_min, end_min):
+                continue
+            label = history["label"]
+            rows.append(_row(
+                id=history["id"], register="history", kind="setting",
+                parameter="carb_ratio",
+                title=f"Carb ratio {label}. Past setting.",
+                label=label,
+                span={"start_min": start_min, "end_min": end_min,
+                      "label": _span_label(start_min, end_min)},
+                past_setting=history["past_setting"],
+                programmed_now=history["programmed_now"],
+                estimate=history["estimate"], support=history["support"],
+                regime_end=history.get("regime_end"),
+                run_ids=[run["run_id"] for run in history.get("runs") or []],
+                annotation=history.get("annotation"),
+            ))
+        return rows
 
     def _uncaused_highs(self) -> dict:
         """The whole-window count of highs the engine explained nothing about, and the
@@ -397,6 +475,7 @@ class FindingsProjection:
         rows = []
         for lever, entry in by_lever.items():
             entry["appearances"].sort(key=lambda a: a["family"])
+            coordinate = EVENT_CHARTS.get(lever)
             evidence, verdict_counts, verdict_counts_by_family = _lever_evidence(
                 lever, entry["families"], in_window,
             )
@@ -423,6 +502,9 @@ class FindingsProjection:
                 # roster it scopes share one denominator.
                 verdict_counts=verdict_counts,
                 verdict_counts_by_family=verdict_counts_by_family,
+                event_chart=(dict(coordinate)
+                             if coordinate and coordinate["view"] in entry["families"]
+                             else None),
             ))
         return rows
 
@@ -493,14 +575,14 @@ def _lever_evidence(
     share one denominator, which only the family it is currently framing on can
     give it.
     """
-    counts = {category: 0 for category in _VERDICT_CATEGORIES}
+    counts = {category: 0 for category in FINDING_VERDICTS}
     counts_by_family: Dict[str, Dict[str, int]] = {}
     evidence = []
     # Sorted, not first-seen: the family a lever hits first is an accident of the
     # exposures dict's own key order, and `appearances` already sorts alphabetically
     # for the same reason (a stable answer independent of that order).
     for family in sorted(set(families)):
-        family_counts = {category: 0 for category in _VERDICT_CATEGORIES}
+        family_counts = {category: 0 for category in FINDING_VERDICTS}
         for occurrence in in_window.get(family, []):
             category = _occurrence_verdict(occurrence, lever)
             counts[category] += 1
@@ -568,7 +650,7 @@ _SETTINGS_CHIPS = {
 
 def _chips_for(row: dict) -> List[str]:
     """The filter chips a serialized queue row belongs under."""
-    if row["register"] in ("held", "blind"):
+    if row["register"] in ("held", "blind", "history"):
         return []
     if row["register"] == "assert":
         return list(_SETTINGS_CHIPS[(row["parameter"], row["direction"])])
@@ -599,6 +681,8 @@ def _row(**fields) -> dict:
         "lever": None, "appearances": None, "episodes": None,
         "evidence": None, "verdict_counts": None, "verdict_counts_by_family": None,
         "chips": None, "window_scope": None,
+        "past_setting": None, "programmed_now": None, "regime_end": None,
+        "run_ids": None, "event_chart": None,
     }
     row.update(fields)
     row["chips"] = _chips_for(row)
@@ -628,12 +712,19 @@ def _sort_key(row: dict):
     22 / 38). Every tie falls through to a stable, data-derived key so two runs of
     the same window always return the same list."""
     span = row.get("span") or {}
+    history_recency = 0.0
+    if row["register"] == "history" and row.get("regime_end"):
+        try:
+            history_recency = datetime.fromisoformat(row["regime_end"]).timestamp()
+        except ValueError:
+            pass
     return (
         _REGISTER_RANK[row["register"]],
         0 if row["priority"] is not None else 1,
         -(row["priority"] or 0),
         -(row["episodes"] or 0),
         span.get("start_min", DAY_MINUTES),
+        -history_recency,
         row["title"] or "",
     )
 
@@ -651,7 +742,9 @@ def _pattern_priorities(scenarios: dict) -> Dict[str, int]:
     return priced
 
 
-def prepare_findings_projection(store, *, window_days: int = 30) -> FindingsProjection:
+def prepare_findings_projection(
+    store, *, window_days: int = DIAGNOSE_SOURCE_WINDOW_DAYS,
+) -> FindingsProjection:
     """Read one findings window from ``store`` and keep all queue policy behind
     :meth:`FindingsProjection.project`.
 

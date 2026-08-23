@@ -69,6 +69,10 @@ ENTRIES = [
             "python3 .claude/qa/gen_synthetic_fixtures.py "
             "mockups/diagnose-workstation.synthetic"
         ),
+        # Owned and byte-checked by scripts/gen_ic_history_event_fixtures.py.
+        # Excluding this exact file keeps the legacy demo generator from becoming
+        # a second writer while preserving closed-set checking for every other file.
+        "externally_generated": ["ic-history-events.capture.json"],
     },
 ]
 
@@ -137,8 +141,12 @@ def check_set(entry: dict, repo_root: pathlib.Path = REPO_ROOT) -> tuple[bool, s
                 f"'no differences'\n  regenerate with: {entry['regen_cmd']}"
             )
 
+        externally_generated = {
+            pathlib.Path(path) for path in entry.get("externally_generated", [])
+        }
         committed_files = sorted(
             p.relative_to(committed_dir) for p in committed_dir.rglob("*") if p.is_file()
+            and p.relative_to(committed_dir) not in externally_generated
         ) if committed_dir.is_dir() else []
 
         missing = sorted(str(p) for p in set(committed_files) - set(generated_files))

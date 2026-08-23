@@ -16,6 +16,17 @@
    index.html — the app owns staleness; only the transport belongs here.
    ========================================================================= */
 
+export class ApiTransportError extends Error {
+  constructor(status, detail, fallback) {
+    const structured = detail && typeof detail === 'object' ? detail : null;
+    super(structured?.message || detail || fallback);
+    this.name = 'ApiTransportError';
+    this.status = status;
+    this.code = structured?.code || null;
+    this.detail = detail ?? null;
+  }
+}
+
 /**
  * Build a bound API namespace whose transport can be replaced.
  *
@@ -44,9 +55,9 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
     if (token) headers['Authorization'] = 'Bearer ' + token;
     const res = await _fetch(url, Object.assign({}, opts, { headers }));
     if (!res.ok) {
-      let d = res.statusText;
-      try { d = (await res.json()).detail || d; } catch (e) {}
-      throw new Error(d);
+      let detail = null;
+      try { detail = (await res.json()).detail ?? null; } catch (e) {}
+      throw new ApiTransportError(res.status, detail, res.statusText);
     }
     return res;
   }
@@ -240,15 +251,52 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
    * merged spans, outcome anchoring, window-local denominators, order — is decided
    * server-side and rendered verbatim (lock term 40).
    * @param {{ start_min: number, end_min: number }|null} [window]
+   * @param {string|null} [selectedHistoryId]
    */
-  function fetchDiagnoseFindings(window = null) {
+  function fetchDiagnoseFindings(window = null, selectedHistoryId = null) {
     const params = new URLSearchParams();
     if (window) {
       params.set('start_min', window.start_min);
       params.set('end_min', window.end_min);
     }
+    if (selectedHistoryId) params.set('selected_id', selectedHistoryId);
     const query = params.toString();
     return api('/diagnose/findings' + (query ? '?' + query : ''));
+  }
+  /** Exact active analyzer-run evidence for one retired I:C history item. */
+  function fetchDiagnoseCarbRatioHistoryEvents({
+    historyId, analysisGeneration, selectedRunId,
+  } = {}) {
+    const params = new URLSearchParams();
+    if (historyId) params.set('history_id', historyId);
+    if (analysisGeneration) params.set('analysis_generation', analysisGeneration);
+    if (selectedRunId) params.set('selected_run_id', selectedRunId);
+    return api('/diagnose/carb-ratio-history/events?' + params.toString());
+  }
+  /**
+   * GET /diagnose/finding-case-file-preparation — one retained server-owned
+   * Finding generation. The optional clock window is the preparation's only
+   * membership coordinate; history selection passes through to the wrapped queue.
+   */
+  function fetchDiagnoseFindingCasePreparation(window = null, selectedHistoryId = null) {
+    const params = new URLSearchParams();
+    if (window) {
+      params.set('start_min', window.start_min);
+      params.set('end_min', window.end_min);
+    }
+    if (selectedHistoryId) params.set('selected_id', selectedHistoryId);
+    const query = params.toString();
+    return api('/diagnose/finding-case-file-preparation' + (query ? '?' + query : ''));
+  }
+  /**
+   * GET /diagnose/finding-case-file — project one retained Finding population.
+   * All identifiers are opaque transport coordinates; the browser never parses
+   * or reconstructs them.
+   */
+  function fetchDiagnoseFindingCase({ projection_id, finding_id, alignment, occ } = {}) {
+    const params = new URLSearchParams({ projection_id, finding_id, alignment });
+    if (occ) params.set('occ', occ);
+    return api('/diagnose/finding-case-file?' + params.toString());
   }
   function fetchAuditDismissals() { return api('/audit/dismissals'); }
   function dismissAuditItem(item_id, evidence_fingerprint) {
@@ -415,6 +463,9 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
     fetchExploreExposures,
     fetchDiagnoseEventComparison,
     fetchDiagnoseFindings,
+    fetchDiagnoseCarbRatioHistoryEvents,
+    fetchDiagnoseFindingCasePreparation,
+    fetchDiagnoseFindingCase,
     fetchAuditDismissals,
     dismissAuditItem,
     fetchTimeline,
@@ -458,6 +509,10 @@ export const fetchExploreTimeOfDay = _defaults.fetchExploreTimeOfDay;
 export const fetchExploreExposures = _defaults.fetchExploreExposures;
 export const fetchDiagnoseEventComparison = _defaults.fetchDiagnoseEventComparison;
 export const fetchDiagnoseFindings = _defaults.fetchDiagnoseFindings;
+export const fetchDiagnoseCarbRatioHistoryEvents =
+  _defaults.fetchDiagnoseCarbRatioHistoryEvents;
+export const fetchDiagnoseFindingCasePreparation = _defaults.fetchDiagnoseFindingCasePreparation;
+export const fetchDiagnoseFindingCase = _defaults.fetchDiagnoseFindingCase;
 export const fetchAuditDismissals = _defaults.fetchAuditDismissals;
 export const dismissAuditItem = _defaults.dismissAuditItem;
 export const fetchTimeline     = _defaults.fetchTimeline;

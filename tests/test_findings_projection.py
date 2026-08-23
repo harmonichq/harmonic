@@ -11,7 +11,7 @@ import importlib.util
 import pathlib
 import tempfile
 import unittest
-from datetime import datetime
+from datetime import datetime, timedelta
 
 try:
     from fastapi.testclient import TestClient
@@ -26,8 +26,14 @@ from ciq_autotune.findings_projection import (
     WindowQuery,
     prepare_findings_projection,
 )
+from ciq_autotune.event_comparison import FACTOR_LABELS, VIEW_CONFIG
 from ciq_autotune.harm import HarmArm, HarmConfig, PrintedLow
 from ciq_autotune.safety import Status
+from ciq_autotune.ic_history import (
+    HistoryIdentity, RunIdentity, encode_history_id, encode_run_id,
+)
+from ciq_autotune.result import IcHistory, IcHistoryRunRecord
+from ciq_autotune.uncertainty import Estimate
 
 _GEN_PATH = (pathlib.Path(__file__).resolve().parents[1]
              / "scripts" / "gen_findings_projection_fixtures.py")
@@ -48,6 +54,102 @@ def _titles(rows, register):
 
 def _row(rows, title):
     return next(row for row in rows if row["title"] == title)
+
+
+def _with_history(projection, *, lifecycle="active", start_min=420,
+                  end_min=720, regime_end="2026-08-01T12:00:00", runs=None,
+                  past_setting=5.0,
+                  annotation="Analyzer-owned history conclusion."):
+    history = IcHistory(
+        history_id=encode_history_id(
+            HistoryIdentity(start_min, end_min, past_setting)),
+        block_start_min=start_min, block_end_min=end_min, label="Breakfast",
+        past_setting=past_setting,
+        programmed_now=None if lifecycle == "unavailable" else 6.0,
+        estimate=(None if lifecycle != "active" else
+                  Estimate(value=4.6, lo=4.4, hi=4.8, n=3, method="clustered")),
+        support=3 if lifecycle == "active" else None,
+        annotation=annotation if lifecycle == "active" else None,
+        lifecycle=lifecycle, regime_end=regime_end, runs=list(runs or []),
+    )
+    analysis = dict(projection._analysis)
+    analysis["ic_history"] = [*(analysis.get("ic_history") or []), history.to_dict()]
+    return FindingsProjection(analysis, projection._exposures, projection._scenarios), history
+
+
+class HistoryRowsTest(unittest.TestCase):
+    def test_active_history_is_a_non_actionable_noted_row_in_v2(self):
+        projection, history = _with_history(gen.empty_projection())
+
+        result = projection.project(
+            WindowQuery.whole_day(), analysis_generation="fixture-process:0")
+        row = next(row for row in result["rows"] if row["id"] == history.history_id)
+
+        self.assertEqual(result["schema"], "diagnose-findings-v2")
+        self.assertEqual(result["analysis_generation"], "fixture-process:0")
+        self.assertEqual(result["counts"]["history"], 1)
+        self.assertEqual((row["register"], row["kind"], row["parameter"]),
+                         ("history", "setting", "carb_ratio"))
+        self.assertEqual((row["priority"], row["tier"], row["chips"]),
+                         (None, "noted", []))
+        self.assertEqual((row["past_setting"], row["programmed_now"], row["support"]),
+                         (5.0, 6.0, 3))
+        self.assertEqual(row["annotation"], history.annotation)
+        for field in ("recommended", "direction", "lean"):
+            self.assertIsNone(row[field])
+
+    def test_selection_dispositions_come_from_the_catalog_lifecycle(self):
+        active, active_row = _with_history(gen.empty_projection())
+        aged, aged_row = _with_history(active, lifecycle="aged_out", start_min=720,
+                                       end_min=900)
+        unavailable, unavailable_row = _with_history(
+            aged, lifecycle="unavailable", start_min=900, end_min=1080)
+
+        self.assertIsNone(unavailable.project(WindowQuery.whole_day())["selection"])
+        cases = (
+            (active_row.history_id, WindowQuery.whole_day(), "present", None),
+            (active_row.history_id, WindowQuery.clock(0, 300), "out_of_scope",
+             "Past-setting evidence is outside the selected window."),
+            (aged_row.history_id, WindowQuery.whole_day(), "aged_out",
+             "Past-setting evidence aged out of the 90-day window."),
+            (unavailable_row.history_id, WindowQuery.whole_day(), "unavailable",
+             "Past-setting evidence no longer maps to one current program block."),
+        )
+        for selected_id, query, disposition, message in cases:
+            with self.subTest(disposition=disposition):
+                self.assertEqual(
+                    unavailable.project(query, selected_id)["selection"],
+                    {"id": selected_id, "disposition": disposition,
+                     "message": message},
+                )
+
+    def test_history_scope_and_order_are_server_owned(self):
+        projection, older = _with_history(
+            gen.empty_projection(), regime_end="2026-07-01T12:00:00",
+            past_setting=5.0)
+        projection, newer = _with_history(
+            projection, regime_end="2026-08-01T12:00:00", past_setting=5.5)
+        projection, later_block = _with_history(
+            projection, start_min=900, end_min=1080,
+            regime_end="2026-08-10T12:00:00", past_setting=6.5)
+
+        global_history = [row for row in projection.project(
+            WindowQuery.whole_day())["rows"] if row["register"] == "history"]
+        scoped_history = [row for row in projection.project(
+            WindowQuery.clock(400, 500))["rows"] if row["register"] == "history"]
+
+        self.assertEqual([row["id"] for row in global_history],
+                         [newer.history_id, older.history_id, later_block.history_id])
+        self.assertEqual([row["id"] for row in scoped_history],
+                         [newer.history_id, older.history_id])
+
+        mixed = gen.projection().project(WindowQuery.clock(270, 480))["rows"]
+        history_at = next(i for i, row in enumerate(mixed)
+                          if row["register"] == "history")
+        demoted = [i for i, row in enumerate(mixed)
+                   if row["register"] in ("held", "blind")]
+        self.assertTrue(demoted)
+        self.assertGreater(history_at, max(demoted))
 
 
 class OutcomeAnchoredMembershipTest(unittest.TestCase):
@@ -92,9 +194,10 @@ class OutcomeAnchoredMembershipTest(unittest.TestCase):
         self.assertIn("Over-treated low", _titles(rows, "finding"))
 
     def test_the_rebound_is_where_the_high_anchor_sits_not_the_low(self):
+        fired = self._lows_occurrence()
         rebound = next(o for o in self.exposures["highs"]["occurrences"]
-                       if o["cause_lever"] == Lever.OVER_TREATED_LOW.value)
-        self.assertEqual(rebound["ep_id"], self._lows_occurrence()["ep_id"])
+                       if o["ep_id"] == fired["ep_id"])
+        self.assertEqual(rebound["ep_id"], fired["ep_id"])
         minute = int(rebound["t"][11:13]) * 60 + int(rebound["t"][14:16])
         self.assertTrue(REBOUND[0] <= minute < REBOUND[1])
 
@@ -180,7 +283,8 @@ class GroundedWindowTest(unittest.TestCase):
         empty = gen.empty_projection().project(WindowQuery.clock(*MORNING))
         self.assertEqual(empty["rows"], [])
         self.assertEqual(empty["counts"],
-                         {"assert": 0, "held": 0, "blind": 0, "finding": 0})
+                         {"assert": 0, "held": 0, "blind": 0, "finding": 0,
+                          "history": 0})
         self.assertEqual(empty["chip_counts"],
                          {"highs": 0, "lows": 0, "meals": 0, "corrections": 0})
 
@@ -321,6 +425,81 @@ class ChipProjectionTest(unittest.TestCase):
                                  "whole_day" if parameter == "isf" else "window")
 
 
+class EventChartProjectionTest(unittest.TestCase):
+    def test_canonical_factors_publish_their_coordinates_when_the_family_is_present(self):
+        exposures = {}
+        expected = {}
+        for hour, (view, config) in enumerate(VIEW_CONFIG.items()):
+            occurrences = []
+            for offset, factor in enumerate(config["factors"]):
+                occurrences.append({
+                    "t": f"2026-08-17 {hour * 6 + offset:02d}:00:00",
+                    "date": "2026-08-17",
+                    "kind": view,
+                    "cause_lever": factor,
+                    "cause_title": FACTOR_LABELS[factor],
+                    "ep_id": factor,
+                    "verdicts": [],
+                })
+                expected[factor] = {"view": view, "factor": factor}
+            exposures[view] = {"occurrences": occurrences}
+
+        rows = FindingsProjection(
+            _analysis={"window_days": 30},
+            _exposures={"exposures": exposures},
+            _scenarios={"patterns": [], "low_confidence": []},
+        ).project(WindowQuery.whole_day())["rows"]
+
+        self.assertEqual(
+            {row["lever"]: row["event_chart"] for row in rows},
+            expected,
+        )
+
+    def test_ineligible_findings_and_settings_publish_explicit_null(self):
+        settings = [
+            row for row in gen.projection().project(WindowQuery.whole_day())["rows"]
+            if row["register"] != "finding"
+        ]
+        unsupported = FindingsProjection(
+            _analysis={"window_days": 30},
+            _exposures={"exposures": {"highs": {"occurrences": [{
+                "t": "2026-08-17 09:00:00",
+                "date": "2026-08-17",
+                "kind": "highs",
+                "cause_lever": "missed_meal",
+                "cause_title": "Missed / unannounced meal",
+                "ep_id": "missed-meal",
+                "verdicts": [],
+            }]}}},
+            _scenarios={"patterns": [], "low_confidence": []},
+        ).project(WindowQuery.whole_day())["rows"][0]
+
+        rows = [*settings, unsupported]
+        self.assertTrue(all("event_chart" in row for row in rows))
+        self.assertTrue(all(
+            row["event_chart"] is None
+            for row in rows
+        ))
+
+    def test_a_compatible_factor_without_its_event_family_publishes_null(self):
+        projection = FindingsProjection(
+            _analysis={"window_days": 30},
+            _exposures={"exposures": {"highs": {"occurrences": [{
+                "t": "2026-08-17 09:00:00",
+                "date": "2026-08-17",
+                "kind": "highs",
+                "cause_lever": "late_bolus",
+                "cause_title": "Late bolus",
+                "ep_id": "late-bolus-high-only",
+                "verdicts": [],
+            }]}}},
+            _scenarios={"patterns": [], "low_confidence": []},
+        )
+
+        row = projection.project(WindowQuery.whole_day())["rows"][0]
+        self.assertIsNone(row["event_chart"])
+
+
 class QueueOrderTest(unittest.TestCase):
     def setUp(self):
         self.projection = gen.projection()
@@ -328,7 +507,8 @@ class QueueOrderTest(unittest.TestCase):
 
     def test_the_global_queue_is_asserting_only(self):
         self.assertEqual(
-            {row["register"] for row in self.global_rows}, {"assert", "finding"})
+            {row["register"] for row in self.global_rows},
+            {"assert", "finding", "history"})
         quiet = [row for row in self.global_rows if row["register"] in ("held", "blind")]
         self.assertEqual(quiet, [])
 
@@ -338,7 +518,7 @@ class QueueOrderTest(unittest.TestCase):
         self.assertEqual(priced, sorted(priced, reverse=True))
         tail = self.global_rows[len(priced):]
         self.assertTrue(all(row["priority"] is None for row in tail))
-        counts = [row["episodes"] for row in tail]
+        counts = [row["episodes"] or 0 for row in tail]
         self.assertEqual(counts, sorted(counts, reverse=True))
 
     def test_the_sorted_queue_publishes_its_three_closed_ranking_tiers(self):
@@ -355,7 +535,7 @@ class QueueOrderTest(unittest.TestCase):
         self.assertEqual(
             [row["tier"] for row in self.global_rows],
             ["next_in_line", "next_in_line", "next_in_line",
-             "worth_a_look", "worth_a_look", "noted"],
+             "worth_a_look", "worth_a_look", "noted", "noted", "noted"],
         )
         self.assertEqual(
             {row["tier"] for row in rows if row["register"] == "assert"},
@@ -425,7 +605,8 @@ class FindingsEndpointTest(unittest.TestCase):
         self.tmp = tempfile.NamedTemporaryFile(suffix=".db")
         _seed(self.tmp.name)
         self.client = TestClient(create_app(db_path=self.tmp.name, token=None,
-                                            enable_fetch_loop=False))
+                                            enable_fetch_loop=False,
+                                            analysis_incarnation="findings-http"))
 
     def tearDown(self):
         self.tmp.close()
@@ -434,7 +615,8 @@ class FindingsEndpointTest(unittest.TestCase):
         r = self.client.get("/diagnose/findings")
         self.assertEqual(r.status_code, 200)
         body = r.json()
-        self.assertEqual(body["schema"], "diagnose-findings-v1")
+        self.assertEqual(body["schema"], "diagnose-findings-v2")
+        self.assertEqual(body["analysis_generation"], "findings-http:0")
         self.assertFalse(body["window"]["scoped"])
 
     def test_a_clock_window_scopes_it(self):
@@ -451,6 +633,31 @@ class FindingsEndpointTest(unittest.TestCase):
         r = self.client.get("/diagnose/findings",
                             params={"start_min": 600, "end_min": 600})
         self.assertEqual(r.status_code, 400)
+
+    def test_the_route_default_reads_the_canonical_source_window(self):
+        import ciq_autotune.api as api_mod
+        from unittest.mock import patch
+
+        real = api_mod.prepare_findings_projection
+        windows = []
+
+        def capture(*args, **kwargs):
+            windows.append(kwargs["window_days"])
+            return real(*args, **kwargs)
+
+        with patch.object(
+            api_mod.findings_projection_module,
+            "DIAGNOSE_SOURCE_WINDOW_DAYS",
+            17,
+        ), patch.object(api_mod, "prepare_findings_projection", capture):
+            client = TestClient(api_mod.create_app(
+                db_path=self.tmp.name, token=None, enable_fetch_loop=False,
+            ))
+            response = client.get("/diagnose/findings")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(windows, [17])
+        self.assertEqual(response.json()["findings_window"]["days"], 17)
 
     def test_it_answers_from_the_cache_and_a_write_invalidates_it(self):
         import ciq_autotune.api as api_mod
@@ -475,6 +682,229 @@ class FindingsEndpointTest(unittest.TestCase):
 
             self.client.get("/diagnose/findings")                       # bumped
             self.assertEqual(len(calls), 2)
+
+    def test_selected_history_codec_and_catalog_errors_are_public(self):
+        malformed = self.client.get(
+            "/diagnose/findings", params={"selected_id": "ich1_not-canonical"})
+        unknown = self.client.get("/diagnose/findings", params={
+            "selected_id": encode_history_id(HistoryIdentity(420, 720, 7.0))})
+
+        self.assertEqual((malformed.status_code, malformed.json()["detail"]["code"]),
+                         (400, "invalid_history_id"))
+        self.assertEqual((unknown.status_code, unknown.json()["detail"]["code"]),
+                         (404, "history_not_found"))
+
+    def test_selected_history_present_and_out_of_scope_bodies_are_public(self):
+        import ciq_autotune.api as api_mod
+        from unittest.mock import patch
+
+        projection, history = _with_history(
+            gen.empty_projection(),
+            annotation="Exact analyzer-owned copy; do not rewrite this sentence.")
+        with patch.object(api_mod, "prepare_findings_projection",
+                          lambda *args, **kwargs: projection):
+            present = self.client.get("/diagnose/findings", params={
+                "selected_id": history.history_id,
+            })
+            out_of_scope = self.client.get("/diagnose/findings", params={
+                "start_min": 0, "end_min": 300,
+                "selected_id": history.history_id,
+            })
+
+        self.assertEqual(present.status_code, 200)
+        self.assertEqual(present.json()["selection"], {
+            "id": history.history_id, "disposition": "present", "message": None,
+        })
+        present_row = next(row for row in present.json()["rows"]
+                           if row["id"] == history.history_id)
+        self.assertEqual(present_row["annotation"], history.annotation)
+        self.assertEqual(out_of_scope.status_code, 200)
+        self.assertEqual(out_of_scope.json()["selection"], {
+            "id": history.history_id,
+            "disposition": "out_of_scope",
+            "message": "Past-setting evidence is outside the selected window.",
+        })
+
+    def test_history_events_validate_generation_and_both_identity_codecs(self):
+        generation = self.client.get("/diagnose/findings").json()[
+            "analysis_generation"]
+        unknown_id = encode_history_id(HistoryIdentity(420, 720, 7.0))
+
+        missing_generation = self.client.get(
+            "/diagnose/carb-ratio-history/events", params={"history_id": unknown_id})
+        malformed_run = self.client.get(
+            "/diagnose/carb-ratio-history/events", params={
+                "history_id": unknown_id,
+                "analysis_generation": generation,
+                "selected_run_id": "icr1_not-canonical",
+            })
+        unknown = self.client.get(
+            "/diagnose/carb-ratio-history/events", params={
+                "history_id": unknown_id,
+                "analysis_generation": generation,
+            })
+
+        self.assertEqual(
+            (missing_generation.status_code,
+             missing_generation.json()["detail"]["code"]),
+            (400, "analysis_generation_required"))
+        self.assertEqual(
+            (malformed_run.status_code, malformed_run.json()["detail"]["code"]),
+            (400, "invalid_history_run_id"))
+        self.assertEqual(
+            (unknown.status_code, unknown.json()["detail"]["code"]),
+            (404, "history_not_found"))
+
+    def test_active_history_events_share_generation_and_exact_membership(self):
+        import ciq_autotune.api as api_mod
+        from unittest.mock import patch
+
+        meal = datetime(2026, 6, 3, 0, 10)
+        run = IcHistoryRunRecord(
+            run_id=encode_run_id(RunIdentity(meal)),
+            first_member_at=meal.isoformat(), last_member_at=meal.isoformat(),
+            member_offsets_min=[0.0], cgm_start_min=-10.0,
+            cgm_end_min=20.0, outcome_min=15.0,
+        )
+        projection, history = _with_history(gen.empty_projection(), runs=[run])
+        with patch.object(api_mod, "prepare_findings_projection",
+                          lambda *args, **kwargs: projection):
+            findings = self.client.get(
+                "/diagnose/findings", params={"selected_id": history.history_id}).json()
+            response = self.client.get(
+                "/diagnose/carb-ratio-history/events", params={
+                    "history_id": history.history_id,
+                    "analysis_generation": findings["analysis_generation"],
+                    "selected_run_id": run.run_id,
+                })
+
+        self.assertEqual(response.status_code, 200, response.text)
+        body = response.json()
+        self.assertEqual(body["analysis_generation"], findings["analysis_generation"])
+        self.assertEqual(body["run_ids"], [run.run_id])
+        self.assertEqual(body["selected_run_id"], run.run_id)
+        self.assertEqual(body["series"][0]["run_id"], run.run_id)
+
+    def test_history_events_reject_generation_change_and_nonmember(self):
+        import ciq_autotune.api as api_mod
+        from unittest.mock import patch
+
+        meal = datetime(2026, 6, 3, 0, 10)
+        run = IcHistoryRunRecord(
+            run_id=encode_run_id(RunIdentity(meal)),
+            first_member_at=meal.isoformat(), last_member_at=meal.isoformat(),
+            member_offsets_min=[0.0], cgm_start_min=-10.0,
+            cgm_end_min=20.0, outcome_min=15.0,
+        )
+        projection, history = _with_history(gen.empty_projection(), runs=[run])
+        with patch.object(api_mod, "prepare_findings_projection",
+                          lambda *args, **kwargs: projection):
+            generation = self.client.get("/diagnose/findings").json()["analysis_generation"]
+            nonmember = self.client.get(
+                "/diagnose/carb-ratio-history/events", params={
+                    "history_id": history.history_id,
+                    "analysis_generation": generation,
+                    "selected_run_id": encode_run_id(
+                        RunIdentity(meal + timedelta(days=1))),
+                })
+            self.client.post("/carbs", json={
+                "t": "2026-06-03 10:05:00", "grams": 8, "certainty": "exact"})
+            stale = self.client.get(
+                "/diagnose/carb-ratio-history/events", params={
+                    "history_id": history.history_id,
+                    "analysis_generation": generation,
+                })
+
+        self.assertEqual((nonmember.status_code, nonmember.json()["detail"]["code"]),
+                         (404, "history_run_not_found"))
+        self.assertEqual(stale.status_code, 409)
+        self.assertEqual(stale.json()["detail"], {
+            "code": "analysis_generation_mismatch",
+            "message": "Evidence changed. Refresh findings.",
+        })
+
+    def test_history_events_publish_distinct_retirement_outcomes(self):
+        import ciq_autotune.api as api_mod
+        from ciq_autotune.api import create_app
+        from unittest.mock import patch
+
+        cases = (
+            ("aged_out", "history_aged_out",
+             "Past-setting evidence aged out of the 90-day window."),
+            ("unavailable", "history_unavailable",
+             "Past-setting evidence no longer maps to one current program block."),
+        )
+        for lifecycle, code, message in cases:
+            with self.subTest(lifecycle=lifecycle):
+                projection, history = _with_history(
+                    gen.empty_projection(), lifecycle=lifecycle)
+                client = TestClient(create_app(
+                    db_path=self.tmp.name, token=None, enable_fetch_loop=False,
+                    analysis_incarnation=f"retirement-{lifecycle}"))
+                with patch.object(api_mod, "prepare_findings_projection",
+                                  lambda *args, **kwargs: projection):
+                    generation = client.get("/diagnose/findings", params={
+                        "selected_id": history.history_id}).json()["analysis_generation"]
+                    response = client.get(
+                        "/diagnose/carb-ratio-history/events", params={
+                            "history_id": history.history_id,
+                            "analysis_generation": generation,
+                        })
+                self.assertEqual(response.status_code, 410)
+                self.assertEqual(response.json()["detail"],
+                                 {"code": code, "message": message})
+
+    def test_behavioral_event_comparison_contract_is_unchanged(self):
+        response = self.client.get(
+            "/diagnose/event-comparison", params={"view": "meals"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["schema"], "diagnose-event-comparison-v3")
+        self.assertNotIn("analysis_generation", response.json())
+
+    def test_process_restart_rejects_a_prior_generation(self):
+        from ciq_autotune.api import create_app
+
+        first = TestClient(create_app(
+            db_path=self.tmp.name, token=None, enable_fetch_loop=False,
+            analysis_incarnation="before-restart"))
+        restarted = TestClient(create_app(
+            db_path=self.tmp.name, token=None, enable_fetch_loop=False,
+            analysis_incarnation="after-restart"))
+        old_generation = first.get("/diagnose/findings").json()["analysis_generation"]
+        response = restarted.get(
+            "/diagnose/carb-ratio-history/events", params={
+                "history_id": encode_history_id(HistoryIdentity(420, 720, 7.0)),
+                "analysis_generation": old_generation,
+            })
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.json()["detail"]["code"],
+                         "analysis_generation_mismatch")
+
+    def test_bump_during_preparation_retries_before_labeling_the_response(self):
+        import ciq_autotune.api as api_mod
+        from ciq_autotune.api import create_app
+        from unittest.mock import patch
+
+        app = create_app(
+            db_path=self.tmp.name, token=None, enable_fetch_loop=False,
+            analysis_incarnation="crossed-read")
+        client = TestClient(app)
+        real = api_mod.prepare_findings_projection
+        calls = []
+
+        def crossed(*args, **kwargs):
+            calls.append(1)
+            result = real(*args, **kwargs)
+            if len(calls) == 1:
+                app.state.result_cache.bump()
+            return result
+
+        with patch.object(api_mod, "prepare_findings_projection", crossed):
+            response = client.get("/diagnose/findings")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["analysis_generation"], "crossed-read:1")
+        self.assertEqual(len(calls), 2)
 
 
 class FindingEvidenceBlockTest(unittest.TestCase):
@@ -516,23 +946,19 @@ class FindingEvidenceBlockTest(unittest.TestCase):
         total_n = sum(a["n"] for a in self.row["appearances"])
         self.assertGreaterEqual(self.row["verdict_counts"]["fired"], total_n)
 
-    def test_a_lever_that_matched_but_did_not_drive_still_reads_fired(self):
-        # The distinguishing case (finding 2): this lever's own classifier
-        # matched on an anchor another lever actually drove. The owner ruling
-        # (ADR 41) — "the server has rule fired" — makes this row-relative `fired`
-        # (Meets criteria), never `outranked`, even though the episode's
-        # attribution credited someone else.
-        matched_but_not_driver = [
-            o for family in self.exposures.values() for o in family["occurrences"]
-            if o.get("cause_lever") not in (None, "over_treated_low")
-            and any(v["classifier"] == "over_treated_low" and v["matched"]
-                    for v in o["verdicts"])
-        ]
-        self.assertTrue(matched_but_not_driver)
-        for occ in matched_but_not_driver:
-            entry = next(e for e in self.row["evidence"] if e["ep_id"] == occ["ep_id"]
-                         and e["t"] == occ["t"])
-            self.assertEqual(entry["verdict"], "fired")
+    def test_a_shared_calm_judgment_is_outranked_by_the_competing_lever(self):
+        occurrence = next(
+            o for o in self.exposures["lows"]["occurrences"]
+            if o["cause_lever"] == "correction_on_iob"
+        )
+        self.assertEqual(occurrence["cause_lever"], "correction_on_iob")
+        own = next(v for v in occurrence["verdicts"]
+                   if v["classifier"] == "over_treated_low")
+        self.assertFalse(own["matched"])
+        self.assertEqual(own["silence_reason"], "no_trigger")
+        entry = next(e for e in self.row["evidence"]
+                     if e["ep_id"] == occurrence["ep_id"] and e["t"] == occurrence["t"])
+        self.assertEqual(entry["verdict"], "outranked")
 
     def test_an_occurrence_another_lever_actually_fired_is_outranked_here_not_fired(self):
         # An anchor that IS an episode's own driver reads "fired" at the anchor
@@ -561,37 +987,18 @@ class FindingEvidenceBlockTest(unittest.TestCase):
             self.assertEqual(entry["verdict"], "fired")
 
     def test_all_five_verdict_categories_are_exercised_somewhere_nonzero(self):
-        # Finding 3: the synthetic population must exercise every row-relative
-        # category, not just fired/outranked/clean. `over_treated_low` is
-        # inline attribution logic (model_view._low_verdicts) — it never
-        # emits an explicit non-match verdict, so its row can never itself
-        # read `clean` (finding 2 follow-up); `carb_undercount` DOES always
-        # emit an explicit matched/not-matched verdict (`_meal_verdicts`), so
-        # its row is where a genuine `clean` is exercised.
-        counts = _row(self.rows, "Carb undercount")["verdict_counts"]
+        # The public Over-treated-low row gets every row-relative state from
+        # analyzer-produced judgments, including a calm classifier read.
+        counts = self.row["verdict_counts"]
         for category in ("fired", "outranked", "near_miss", "no_data", "clean"):
             self.assertGreater(counts[category], 0, category)
 
-    def test_no_verdict_entry_at_all_reads_no_data_never_clean(self):
-        # Finding 2 follow-up: an occurrence this lever's classifier never
-        # evaluated (no entry in `verdicts[]`) is not evidence of a calm
-        # read — `clean` would assert a criterion failed that nothing ever
-        # judged. `over_treated_low` is inline logic that never emits an
-        # explicit non-match, so EVERY one of its non-driving, unattributed
-        # occurrences must read `no_data`, never `clean`.
-        no_verdict_entry = [
-            o for o in self.exposures["lows"]["occurrences"] + self.exposures["highs"]["occurrences"]
-            if o.get("cause_lever") is None
-            and not any(v["classifier"] == "over_treated_low" for v in o["verdicts"])
-        ]
-        self.assertTrue(no_verdict_entry)
-        for occ in no_verdict_entry:
-            entry = next(e for e in self.row["evidence"] if e["ep_id"] == occ["ep_id"]
-                         and e["t"] == occ["t"])
-            self.assertEqual(entry["verdict"], "no_data")
-        self.assertEqual(self.row["verdict_counts"]["clean"], 0,
-                          "over_treated_low's row can never read clean: its classifier "
-                          "never emits an explicit non-match verdict")
+    def test_all_verdict_counts_reconcile_to_the_evidence_roster(self):
+        counts = self.row["verdict_counts"]
+        self.assertEqual(sum(counts.values()), len(self.row["evidence"]))
+        self.assertEqual(
+            {entry["verdict"] for entry in self.row["evidence"]}, set(counts),
+        )
 
     def test_an_explicit_calm_verdict_reads_clean(self):
         # The mirror image of the above: a lever whose classifier DOES emit
@@ -611,7 +1018,7 @@ class FindingEvidenceBlockTest(unittest.TestCase):
         # Finding 1: the band and the roster it scopes must agree on "N of M"
         # for the SAME family, not the row's cross-family total.
         by_family = self.row["verdict_counts_by_family"]
-        self.assertEqual(set(by_family), {"lows", "highs"})
+        self.assertEqual(set(by_family), {"lows"})
         for family, counts in by_family.items():
             family_m = sum(1 for e in self.row["evidence"] if e["family"] == family)
             self.assertEqual(sum(counts.values()), family_m)
@@ -620,13 +1027,24 @@ class FindingEvidenceBlockTest(unittest.TestCase):
                   for category in total}
         self.assertEqual(summed, total)
 
-    def test_two_occurrences_sharing_an_ep_id_are_disambiguated_by_t(self):
-        # Finding 4: `ep1` anchors twice (the low and its rebound high) and the
-        # evidence rows must carry distinct clock keys so a `(family, ep_id)`
-        # join can never silently collapse them onto one verdict.
-        ep1_rows = [e for e in self.row["evidence"] if e["ep_id"] == "ep1"]
-        self.assertEqual(len(ep1_rows), 2)
-        self.assertEqual(len({e["t"] for e in ep1_rows}), 2)
+    def test_linked_rebound_does_not_inject_a_second_low_verdict(self):
+        fired = next(o for o in self.exposures["lows"]["occurrences"]
+                     if o["cause_lever"] == "over_treated_low")
+        fired_rows = [e for e in self.row["evidence"] if e["ep_id"] == fired["ep_id"]]
+        self.assertEqual(len(fired_rows), 1)
+        self.assertEqual(fired_rows[0]["family"], "lows")
+
+    def test_cross_family_episode_pair_is_emitted_by_the_real_producer(self):
+        cgm, bolus = gen._over_treated_fixture_events()
+        produced = gen.build_exposures(gen._ScenarioFixtureStore(cgm, bolus))["exposures"]
+        fired = next(o for o in self.exposures["lows"]["occurrences"]
+                     if o["cause_lever"] == "over_treated_low")
+        rebound = next(o for o in self.exposures["highs"]["occurrences"]
+                       if o["ep_id"] == fired["ep_id"])
+
+        self.assertIn(fired, produced["lows"]["occurrences"])
+        self.assertIn(rebound, produced["highs"]["occurrences"])
+        self.assertEqual(rebound["ep_id"], fired["ep_id"])
 
 
 if __name__ == "__main__":

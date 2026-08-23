@@ -118,6 +118,11 @@ shared integration branch **after** both.
 Story counts are therefore measured on the integration branch at execution time, never
 carried over from #95's order.
 
+Measured for orientation: the full replay leg at `7cddfe9` (this branch's own branch
+point, before either sibling) reports `app: 89 of 89 stories passed`, exit 0. The
+integration base should therefore measure 90 and this ticket should take it to 91 —
+predictions, not inputs.
+
 ### Risk contract
 
 - **Must prevent:** moving the `.panes` pane boundary or the inspector's width;

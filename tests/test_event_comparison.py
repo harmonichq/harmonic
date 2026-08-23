@@ -131,6 +131,7 @@ class EventComparisonTest(unittest.TestCase):
         ))
         cgm, bolus = generator["_over_treated_fixture_events"]()
         store = generator["_ScenarioFixtureStore"](cgm, bolus)
+        states = generator["_real_over_treated_low_occurrences"]()
 
         payload = prepare_event_comparisons(store).project(
             ComparisonQuery.lows(another=True)
@@ -150,10 +151,34 @@ class EventComparisonTest(unittest.TestCase):
             [cohort["key"] for cohort in payload["cohorts"]],
             ["fired", "near_rule", "neutral", "another_factor"],
         )
+        episode_by_occurrence_id = {
+            occurrence["identity"]["id"]: occurrence["identity"]["ep_id"]
+            for occurrence in payload["occurrences"]
+        }
+        cohort_episodes = {
+            cohort["key"]: [
+                episode_by_occurrence_id[occurrence_id]
+                for occurrence_id in cohort["occurrence_ids"]
+            ]
+            for cohort in payload["cohorts"]
+        }
+        self.assertEqual(cohort_episodes, {
+            "fired": [states["fired"]["ep_id"]],
+            "near_rule": [states["near_miss"]["ep_id"]],
+            "neutral": [states["clean"]["ep_id"]],
+            "another_factor": [states["outranked"]["ep_id"]],
+        })
+        visible_episodes = {
+            episode_id
+            for episode_ids in cohort_episodes.values()
+            for episode_id in episode_ids
+        }
+        self.assertNotIn(states["no_data"]["ep_id"], visible_episodes)
         competing = next(
             occurrence for occurrence in payload["occurrences"]
-            if occurrence["verdict"]["cohort"] == "another_factor"
+            if occurrence["identity"]["ep_id"] == states["outranked"]["ep_id"]
         )
+        self.assertEqual(competing["verdict"]["cohort"], "another_factor")
         self.assertEqual(competing["verdict"]["other_factors"], [{
             "key": "correction_on_iob",
             "label": "Correction on active insulin",

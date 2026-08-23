@@ -81,3 +81,13 @@ Disposition: copied into the work order.
 ## Spawned tasks
 
 - none
+
+## Plan-review ledger
+
+- Round 1 (cold pass, 2026-08-23): 2 blockers, both `authoring`. (1) the Node test
+  in step 7 was not reachable: the painters are unexported and `data.test.js`'s fake
+  Node discards `innerHTML`; fixed by naming the harness extension or accessor
+  export. (3) the support audit pins `0 events · no usable episodes to draw`; fixed
+  by adding that string to the keep-list and licensing audit story updates. Note
+  (2): `another_factor` exists only via `project.mjs` `{ another: true }`; fixed in
+  step 7. Reproduced all three before forwarding. 0 `injected`.

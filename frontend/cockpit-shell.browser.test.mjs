@@ -10,6 +10,11 @@ import { mkdir, readFile } from 'node:fs/promises';
 import { extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { timeOfDay } from '../mockups/explore-investigation.fixture.js';
+// ADR 94: the shipped router owns the closed page set and the canonical address
+// form, so this suite proves the lifecycle against that owner instead of
+// restating its grammar — a restatement would be the third page registry ADR 94
+// forbids, and would drift the moment a page gained state.
+import { TABS as ROUTER_TABS, parseRoute, serializeRoute } from './tab-routing.js';
 import { projectSyntheticCapture } from '../mockups/diagnose-event-comparison.synthetic/project.mjs';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 
@@ -75,6 +80,11 @@ const CDN = new Map([
 ]);
 const ADVISORY = 'Advisory only — review with your clinician before changing pump settings.';
 const TABS = ['diagnose', 'plan', 'verify', 'day', 'guide', 'settings'];
+// Each page's own rendered root, verified in the browser to be visible on that
+// page and hidden on every other one: the panes are `v-show`, so a pane that has
+// been visited stays in the DOM and only visibility distinguishes the selected
+// page. Waiting on these (Playwright's default `visible` state) is what proves a
+// direct load "keeps that page selected" beyond the address bar.
 const TAB_READINESS = Object.freeze({
   diagnose: '.dw',
   plan: '.active-profile-ref',
@@ -83,6 +93,29 @@ const TAB_READINESS = Object.freeze({
   guide: '.kb',
   settings: '.token-row',
 });
+// The cockpit marks its selected destination only where it has one. The three
+// workflow steps carry aria-current="step" and the Day link carries
+// aria-current="page"; Guide and Settings are footer utilities with no selected
+// state at cockpit widths — their aria-current lives on the drawer buttons,
+// which are `display: none` above 760px. A bare [aria-current] would also match
+// the Diagnose breadcrumb's own `.here`, so each marker is qualified to the
+// chrome affordance that owns it.
+const TAB_SELECTED_NAV = Object.freeze({
+  diagnose: '.cockpit-flow [data-shell-tab="diagnose"][aria-current="step"]',
+  plan: '.cockpit-flow [data-shell-tab="plan"][aria-current="step"]',
+  verify: '.cockpit-flow [data-shell-tab="verify"][aria-current="step"]',
+  day: '.cockpit-day[aria-current="page"]',
+  guide: null,
+  settings: null,
+});
+// The lifecycle proof below must cover every page the router admits, so the
+// suite's own list is pinned to the router's closed set rather than trusted.
+assert.deepEqual([...TABS].sort(), ROUTER_TABS.map((tab) => tab.id).sort(),
+  'the routing lifecycle proof must cover exactly the router-owned page set');
+assert.deepEqual(Object.keys(TAB_READINESS).sort(), [...TABS].sort(),
+  'every covered page needs a rendered-root readiness signal');
+assert.deepEqual(Object.keys(TAB_SELECTED_NAV).sort(), [...TABS].sort(),
+  'every covered page needs a declared selected-nav marker, null where the chrome has none');
 const VIEWPORTS = [
   { width: 1440, height: 900 },
   { width: 1280, height: 800 },
@@ -384,6 +417,7 @@ async function routeApp(page, options = {}) {
     if (url.pathname === '/api/scenarios') return route.fulfill({ json: scenarios });
     if (url.pathname === '/api/audit/dismissals') return route.fulfill({ json: { dismissals: {} } });
     if (url.pathname === '/api/outcomes/trend') return route.fulfill({ json: {} });
+    if (url.pathname === '/api/catalog') return route.fulfill({ json: options.catalog || {} });
     if (url.pathname === '/api/plan' && route.request().method() === 'PUT') {
       return route.fulfill({ json: { items: route.request().postDataJSON().items } });
     }
@@ -450,8 +484,31 @@ async function chooseTab(page, id) {
 
 async function waitForTabReady(page, id) {
   await page.waitForFunction((tab) => location.pathname === `/${tab}`, id);
-  await page.locator(`[data-shell-tab="${id}"][aria-current]:visible`).first().waitFor();
+  if (TAB_SELECTED_NAV[id]) await page.locator(TAB_SELECTED_NAV[id]).first().waitFor();
   await page.locator(TAB_READINESS[id]).first().waitFor();
+}
+
+// ADR 94's canonical address for a page: the clean path is the whole identity,
+// no fragment survives, and the query carries that page's own round-tripping
+// state and nothing else. Day and Guide resolve a default (a date, an article)
+// on arrival and publish it here, which is the bookmarkable page-local state
+// #53 guaranteed and #94 moved out of the fragment — so the path is pinned
+// exactly while the query is held to what the shipped router serializes for the
+// route this very address parses to. A regression to a fragment, to another
+// page, or to a foreign or stale query key fails one of the three clauses.
+function assertCanonicalAddress(address, id, label) {
+  const url = new URL(address, 'http://ciq.local');
+  assert.equal(url.hash, '', `${label}: no fragment state survives`);
+  assert.equal(url.pathname, `/${id}`, `${label}: the clean page path is the address`);
+  const route = parseRoute({ pathname: url.pathname, search: url.search, hash: '' });
+  assert.equal(route.page, id, `${label}: the address selects ${id}`);
+  // The parsed route names the page's own keys, so a foreign one is caught
+  // without asking the serializer — which would answer for both sides at once.
+  const own = new Set(Object.keys(route).filter((key) => key !== 'page'));
+  assert.deepEqual([...url.searchParams.keys()].filter((key) => !own.has(key)), [],
+    `${label}: no state outside ${id}'s own page-local keys rides in the query`);
+  assert.equal(serializeRoute(route), `${url.pathname}${url.search}`,
+    `${label}: the query is exactly what the router serializes for this route`);
 }
 
 async function proveRedOnce(term, check, mutate) {
@@ -726,15 +783,17 @@ test('clean page paths own direct load, refresh, history, migration, and local a
         && !url.pathname.startsWith('/assets/')) misplacedAssets.push(url.pathname);
   });
   try {
+    const address = () => direct.evaluate(() =>
+      location.pathname + location.search + location.hash);
     for (const id of TABS) {
       await direct.goto(`http://ciq.local/${id}`);
       await waitForTabReady(direct, id);
-      assert.equal(await direct.evaluate(() => location.pathname + location.search), `/${id}`,
-        `${id} direct load keeps its clean address`);
+      const loaded = await address();
+      assertCanonicalAddress(loaded, id, `${id} direct load`);
       await direct.reload();
       await waitForTabReady(direct, id);
-      assert.equal(await direct.evaluate(() => location.pathname + location.search), `/${id}`,
-        `${id} refresh keeps its clean address`);
+      assert.equal(await address(), loaded,
+        `${id} refresh restores the same canonical address it was loaded from`);
     }
     await direct.goto('http://ciq.local/');
     await direct.waitForFunction(() => location.pathname === '/diagnose');
@@ -756,7 +815,7 @@ test('clean page paths own direct load, refresh, history, migration, and local a
     await chooseTab(historyPage, 'verify');
     await historyPage.goBack();
     await historyPage.waitForFunction(() => location.pathname === '/plan');
-    assert.equal(await historyPage.locator('[data-shell-tab="plan"][aria-current]').first().isVisible(), true,
+    assert.equal(await historyPage.locator(TAB_SELECTED_NAV['plan']).first().isVisible(), true,
       'Back restores Plan selection');
     await historyPage.goBack();
     await historyPage.waitForFunction(() => location.pathname + location.search === '/diagnose?view=glucose&mode=dense');
@@ -765,7 +824,7 @@ test('clean page paths own direct load, refresh, history, migration, and local a
     await historyPage.waitForFunction(() => location.pathname === '/plan');
     await historyPage.goForward();
     await historyPage.waitForFunction(() => location.pathname === '/verify');
-    assert.equal(await historyPage.locator('[data-shell-tab="verify"][aria-current]').first().isVisible(), true,
+    assert.equal(await historyPage.locator(TAB_SELECTED_NAV['verify']).first().isVisible(), true,
       'Forward restores Verify selection');
   } finally { await historyPage.close(); }
 

@@ -194,9 +194,10 @@ class OutcomeAnchoredMembershipTest(unittest.TestCase):
         self.assertIn("Over-treated low", _titles(rows, "finding"))
 
     def test_the_rebound_is_where_the_high_anchor_sits_not_the_low(self):
+        fired = self._lows_occurrence()
         rebound = next(o for o in self.exposures["highs"]["occurrences"]
-                       if o["cause_lever"] == Lever.OVER_TREATED_LOW.value)
-        self.assertEqual(rebound["ep_id"], self._lows_occurrence()["ep_id"])
+                       if o["ep_id"] == fired["ep_id"])
+        self.assertEqual(rebound["ep_id"], fired["ep_id"])
         minute = int(rebound["t"][11:13]) * 60 + int(rebound["t"][14:16])
         self.assertTrue(REBOUND[0] <= minute < REBOUND[1])
 
@@ -534,7 +535,7 @@ class QueueOrderTest(unittest.TestCase):
         self.assertEqual(
             [row["tier"] for row in self.global_rows],
             ["next_in_line", "next_in_line", "next_in_line",
-             "worth_a_look", "worth_a_look", "noted", "noted"],
+             "worth_a_look", "worth_a_look", "noted", "noted", "noted"],
         )
         self.assertEqual(
             {row["tier"] for row in rows if row["register"] == "assert"},
@@ -945,23 +946,19 @@ class FindingEvidenceBlockTest(unittest.TestCase):
         total_n = sum(a["n"] for a in self.row["appearances"])
         self.assertGreaterEqual(self.row["verdict_counts"]["fired"], total_n)
 
-    def test_a_lever_that_matched_but_did_not_drive_still_reads_fired(self):
-        # The distinguishing case (finding 2): this lever's own classifier
-        # matched on an anchor another lever actually drove. The owner ruling
-        # (ADR 41) — "the server has rule fired" — makes this row-relative `fired`
-        # (Meets criteria), never `outranked`, even though the episode's
-        # attribution credited someone else.
-        matched_but_not_driver = [
-            o for family in self.exposures.values() for o in family["occurrences"]
-            if o.get("cause_lever") not in (None, "over_treated_low")
-            and any(v["classifier"] == "over_treated_low" and v["matched"]
-                    for v in o["verdicts"])
-        ]
-        self.assertTrue(matched_but_not_driver)
-        for occ in matched_but_not_driver:
-            entry = next(e for e in self.row["evidence"] if e["ep_id"] == occ["ep_id"]
-                         and e["t"] == occ["t"])
-            self.assertEqual(entry["verdict"], "fired")
+    def test_a_shared_calm_judgment_is_outranked_by_the_competing_lever(self):
+        occurrence = next(
+            o for o in self.exposures["lows"]["occurrences"]
+            if o["cause_lever"] == "correction_on_iob"
+        )
+        self.assertEqual(occurrence["cause_lever"], "correction_on_iob")
+        own = next(v for v in occurrence["verdicts"]
+                   if v["classifier"] == "over_treated_low")
+        self.assertFalse(own["matched"])
+        self.assertEqual(own["silence_reason"], "no_trigger")
+        entry = next(e for e in self.row["evidence"]
+                     if e["ep_id"] == occurrence["ep_id"] and e["t"] == occurrence["t"])
+        self.assertEqual(entry["verdict"], "outranked")
 
     def test_an_occurrence_another_lever_actually_fired_is_outranked_here_not_fired(self):
         # An anchor that IS an episode's own driver reads "fired" at the anchor
@@ -990,37 +987,18 @@ class FindingEvidenceBlockTest(unittest.TestCase):
             self.assertEqual(entry["verdict"], "fired")
 
     def test_all_five_verdict_categories_are_exercised_somewhere_nonzero(self):
-        # Finding 3: the synthetic population must exercise every row-relative
-        # category, not just fired/outranked/clean. `over_treated_low` is
-        # inline attribution logic (model_view._low_verdicts) — it never
-        # emits an explicit non-match verdict, so its row can never itself
-        # read `clean` (finding 2 follow-up); `carb_undercount` DOES always
-        # emit an explicit matched/not-matched verdict (`_meal_verdicts`), so
-        # its row is where a genuine `clean` is exercised.
-        counts = _row(self.rows, "Carb undercount")["verdict_counts"]
+        # The public Over-treated-low row gets every row-relative state from
+        # analyzer-produced judgments, including a calm classifier read.
+        counts = self.row["verdict_counts"]
         for category in ("fired", "outranked", "near_miss", "no_data", "clean"):
             self.assertGreater(counts[category], 0, category)
 
-    def test_no_verdict_entry_at_all_reads_no_data_never_clean(self):
-        # Finding 2 follow-up: an occurrence this lever's classifier never
-        # evaluated (no entry in `verdicts[]`) is not evidence of a calm
-        # read — `clean` would assert a criterion failed that nothing ever
-        # judged. `over_treated_low` is inline logic that never emits an
-        # explicit non-match, so EVERY one of its non-driving, unattributed
-        # occurrences must read `no_data`, never `clean`.
-        no_verdict_entry = [
-            o for o in self.exposures["lows"]["occurrences"] + self.exposures["highs"]["occurrences"]
-            if o.get("cause_lever") is None
-            and not any(v["classifier"] == "over_treated_low" for v in o["verdicts"])
-        ]
-        self.assertTrue(no_verdict_entry)
-        for occ in no_verdict_entry:
-            entry = next(e for e in self.row["evidence"] if e["ep_id"] == occ["ep_id"]
-                         and e["t"] == occ["t"])
-            self.assertEqual(entry["verdict"], "no_data")
-        self.assertEqual(self.row["verdict_counts"]["clean"], 0,
-                          "over_treated_low's row can never read clean: its classifier "
-                          "never emits an explicit non-match verdict")
+    def test_all_verdict_counts_reconcile_to_the_evidence_roster(self):
+        counts = self.row["verdict_counts"]
+        self.assertEqual(sum(counts.values()), len(self.row["evidence"]))
+        self.assertEqual(
+            {entry["verdict"] for entry in self.row["evidence"]}, set(counts),
+        )
 
     def test_an_explicit_calm_verdict_reads_clean(self):
         # The mirror image of the above: a lever whose classifier DOES emit
@@ -1040,7 +1018,7 @@ class FindingEvidenceBlockTest(unittest.TestCase):
         # Finding 1: the band and the roster it scopes must agree on "N of M"
         # for the SAME family, not the row's cross-family total.
         by_family = self.row["verdict_counts_by_family"]
-        self.assertEqual(set(by_family), {"lows", "highs"})
+        self.assertEqual(set(by_family), {"lows"})
         for family, counts in by_family.items():
             family_m = sum(1 for e in self.row["evidence"] if e["family"] == family)
             self.assertEqual(sum(counts.values()), family_m)
@@ -1049,13 +1027,24 @@ class FindingEvidenceBlockTest(unittest.TestCase):
                   for category in total}
         self.assertEqual(summed, total)
 
-    def test_two_occurrences_sharing_an_ep_id_are_disambiguated_by_t(self):
-        # Finding 4: `ep1` anchors twice (the low and its rebound high) and the
-        # evidence rows must carry distinct clock keys so a `(family, ep_id)`
-        # join can never silently collapse them onto one verdict.
-        ep1_rows = [e for e in self.row["evidence"] if e["ep_id"] == "ep1"]
-        self.assertEqual(len(ep1_rows), 2)
-        self.assertEqual(len({e["t"] for e in ep1_rows}), 2)
+    def test_linked_rebound_does_not_inject_a_second_low_verdict(self):
+        fired = next(o for o in self.exposures["lows"]["occurrences"]
+                     if o["cause_lever"] == "over_treated_low")
+        fired_rows = [e for e in self.row["evidence"] if e["ep_id"] == fired["ep_id"]]
+        self.assertEqual(len(fired_rows), 1)
+        self.assertEqual(fired_rows[0]["family"], "lows")
+
+    def test_cross_family_episode_pair_is_emitted_by_the_real_producer(self):
+        cgm, bolus = gen._over_treated_fixture_events()
+        produced = gen.build_exposures(gen._ScenarioFixtureStore(cgm, bolus))["exposures"]
+        fired = next(o for o in self.exposures["lows"]["occurrences"]
+                     if o["cause_lever"] == "over_treated_low")
+        rebound = next(o for o in self.exposures["highs"]["occurrences"]
+                       if o["ep_id"] == fired["ep_id"])
+
+        self.assertIn(fired, produced["lows"]["occurrences"])
+        self.assertIn(rebound, produced["highs"]["occurrences"])
+        self.assertEqual(rebound["ep_id"], fired["ep_id"])
 
 
 if __name__ == "__main__":

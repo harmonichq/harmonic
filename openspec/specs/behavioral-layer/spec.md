@@ -40,6 +40,17 @@ the five server-declared cohorts; it never substitutes the broader Explore feed.
 Correction-cluster and High projections use this same contract without changing
 classifier thresholds, support floors, or the legacy event-comparison contract.
 
+For an eligible Low, one projection-facing rebound judgment owns the guarded
+scan, tiered firing bar, and 20 mg/dL near floor used by both Findings and Event
+comparison. A fired rebound is matched; a rebound inside the near band is under
+threshold; an observed rebound below the near floor is no trigger; and an absent
+guarded peak is insufficient data. Findings maps that judgment row-relatively to
+fired, near miss, clean or no data, with a competing attributed Lever producing
+outranked. Event comparison consumes the same judgment under its own cross-factor
+precedence, yielding fired, near rule, neutral, another factor or excluded. The
+five Finding counts and five comparison counts each reconcile to their owning
+population denominator.
+
 ### Requirement: The layer refuses to assert on insufficient evidence and surfaces why.
 
 No judgment fires without a verdict grounded in data — either observed (a hard fact from the feed, like a bolus of 10 U) or inferred (shape-derived and hedged, like "likely rescue carbs, but we didn't see them"). A classifier never returns "this might maybe be late" — it returns matched=false with the specific silence reason (insufficient data / no trigger / under threshold / upstream cause / prior high baseline / owned by prior bolus / horizon expired). When enough clean windows exist to measure a pattern's rate via Wilson bounds, the bounds are wide enough to name the uncertainty honestly; when data is too thin, the pattern collapses behind an expander so no single rate gets fabricated from noise.

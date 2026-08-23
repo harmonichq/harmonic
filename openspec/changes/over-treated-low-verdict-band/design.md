@@ -56,3 +56,13 @@ one judgment.
   and rendered vocabulary do not change.
 - Browser replay remains proof that the shipped surface consumes the five-state
   response; Python endpoint tests prove the server classification.
+
+**Shipped evidence.** The analyzer-produced synthetic population reaches all
+five Findings states and all five Event-comparison cohorts through their public
+producers. The focused projection and case-file suite passes 103 tests; the
+browser suite passes 30/30 checks; the Findings replay passes 89/89 stories;
+the Event-comparison replay passes 13/13 stories; and the support audit passes
+seven renders. The generated Finding population necessarily adds its real
+`correction_on_iob` competitor as an eighth whole-day Finding, so the frozen
+queue assertion and behavior ledger move from seven to eight while the scoped
+04:30–06:00 roster stays unchanged.

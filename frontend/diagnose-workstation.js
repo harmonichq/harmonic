@@ -702,7 +702,7 @@ function renderSlotLevel(host, cell, staged, windowDays, onStage) {
   const thin = e.n < MIN_SUPPORTED_NIGHTS || e.wide;
   renderParamLevel(host, {
     head: `${hhmm(cell.startMin)}–${hhmm(cell.endMin)}`,
-    verdict: canStage ? s.safety_status : 'insufficient evidence',
+    verdict: canStage ? s.safety_status : VERDICT_KEY[cell.verdict],
     unit: 'U/hr',
     current: s.current,
     estimate: e,

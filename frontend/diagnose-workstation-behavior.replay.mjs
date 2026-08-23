@@ -2407,6 +2407,48 @@ export const S72 = async (page) => {
   is(await page.locator('#seg-align button').count(), 0, 'S72 initial ALIGN has no choices');
 };
 
+const withNoDataBasal = (analysis) => {
+  const next = structuredClone(analysis);
+  Object.assign(next.basal[0], {
+    safety_status: 'no data', days: 0, recommended: null, asserts_move: false,
+    direction: null,
+    estimate: { value: null, lo: null, hi: null, n: 0, wide: false },
+    annotation: 'no nights of steady data at this time yet',
+  });
+  return next;
+};
+
+/** S73 · A non-asserting basal case file names the same verdict as its lane tile. */
+// STORY:finding-evidence-routing:S73
+export const S73 = async (page) => {
+  const openVerdict = async (verdict) => {
+    const cell = await page.evaluate((want) => {
+      const buttons = [...document.querySelectorAll('#lane button')];
+      const index = buttons.findIndex((button) => button.dataset.verdict === want);
+      return index < 0 ? null : { index, ariaLabel: buttons[index].getAttribute('aria-label') };
+    }, verdict);
+    ok(cell, `S73 precondition: the lane holds a ${verdict} slot`);
+    await page.click(`#lane button:nth-child(${cell.index + 1})`);
+    await settle(page, 450);
+    return {
+      ariaLabel: cell.ariaLabel,
+      head: await page.locator('#level .slot-head .verdict').textContent(),
+    };
+  };
+
+  const noData = await openVerdict('nodata');
+  is(noData.head?.trim(), 'no nights of steady data', 'S73 no-data head names its own verdict');
+  ok(noData.head?.trim() !== 'insufficient evidence', 'S73 no-data head is not the thin-data verdict');
+  ok(noData.ariaLabel.endsWith(noData.head.trim()), 'S73 no-data tile name ends with its head');
+
+  const hold = await openVerdict('hold');
+  is(hold.head?.trim(), 'holds at current', 'S73 hold head names its own verdict');
+  ok(hold.ariaLabel.endsWith(hold.head.trim()), 'S73 hold tile name ends with its head');
+
+  const insufficient = await openVerdict('insufficient');
+  is(insufficient.head?.trim(), 'insufficient evidence', 'S73 thin-data head remains unchanged');
+};
+
 /** S33 · #58 — while the event canvas is mounted, its own header is the only
     canvas header on screen. The clock canvas's header used to stay mounted
     underneath and print the clock window over an event-aligned chart. */
@@ -3475,6 +3517,7 @@ export const STORIES = [
       { body: withRestartGeneration },
     ] }],
   ['S72', S72, 'typical'],
+  ['S73', S73, 'typical', { analysisInputs: withNoDataBasal }],
   ['C41', C41, 'typical', { caseScenario: {
     preparation: generatedFindingPose('finding:meal_over_delivery'),
   } }], ['C42', C42, 'typical'],

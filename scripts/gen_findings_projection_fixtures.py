@@ -61,8 +61,9 @@ from ciq_autotune.analyzers.tuning_priority import (  # noqa: E402
     build_tuning_levers,
     price_ic_blocks,
 )
-from ciq_autotune.events import BolusEvent  # noqa: E402
+from ciq_autotune.events import BolusEvent, CgmReading  # noqa: E402
 from ciq_autotune.event_comparison import EVENT_CHARTS  # noqa: E402
+from ciq_autotune.explore_exposures import build_exposures  # noqa: E402
 from ciq_autotune.findings_projection import FindingsProjection, WindowQuery  # noqa: E402
 from ciq_autotune.model import _slot_label  # noqa: E402
 from ciq_autotune.result import (  # noqa: E402
@@ -344,6 +345,124 @@ def _occurrence(ep_id, kind, at, *, lever=None, worst_bg=None, bg=None, text="",
     }
 
 
+class _ScenarioFixtureStore:
+    """The real exposure producer's narrow, typed store interface."""
+
+    def __init__(self, cgm, bolus):
+        self._cgm = cgm
+        self._bolus = bolus
+
+    def cgm_readings(self):
+        return self._cgm
+
+    def bolus_events(self):
+        return self._bolus
+
+    def basal_events(self):
+        return []
+
+    def carb_entries(self):
+        return []
+
+    def prompt_responses(self):
+        return []
+
+    def settings_snapshots(self):
+        return []
+
+
+def _rebound_trace(day, hour, minute, *, nadir, rebound, tail=True):
+    """The real low-anchor shape used by the public HTTP regression helpers."""
+    start = datetime.combine(day, datetime.min.time()).replace(hour=hour, minute=minute)
+
+    def segment(offset, bg, slope, duration):
+        return [CgmReading(start + timedelta(minutes=offset + step), bg + slope * step)
+                for step in range(0, duration + 1, 5)]
+
+    rows = (segment(0, 100, 0, 20)
+            + segment(20, 100, -(100 - nadir) / 20, 20)
+            + segment(40, nadir, (rebound - nadir) / 40, 40))
+    return rows + (segment(80, rebound, -1.5, 60) if tail else [])
+
+
+def _low_without_rebound(day, hour, minute, *, nadir):
+    start = datetime.combine(day, datetime.min.time()).replace(hour=hour, minute=minute)
+    return ([CgmReading(start + timedelta(minutes=step), 100)
+             for step in range(0, 21, 5)]
+            + [CgmReading(start + timedelta(minutes=20 + step),
+                          100 - (100 - nadir) / 20 * step)
+               for step in range(0, 21, 5)])
+
+
+def _ramp(day, hour, minute, start_bg, slope, duration):
+    start = datetime.combine(day, datetime.min.time()).replace(hour=hour, minute=minute)
+    return [CgmReading(start + timedelta(minutes=offset), start_bg + slope * offset)
+            for offset in range(0, duration + 1, 5)]
+
+
+def _over_treated_fixture_events():
+    """Invent the typed event population for the public five-state regression."""
+    cgm = []
+    bolus = []
+    fired_day, near_day, calm_day, competing_day = (
+        DAY - timedelta(days=4), DAY - timedelta(days=3),
+        DAY - timedelta(days=2), DAY - timedelta(days=1),
+    )
+    cgm.extend(_rebound_trace(fired_day, 11, 30, nadir=48, rebound=189))
+    cgm.extend(_rebound_trace(near_day, 11, 30, nadir=60, rebound=150, tail=False))
+    cgm.extend(_rebound_trace(calm_day, 11, 30, nadir=60, rebound=130, tail=False))
+    cgm.extend(_low_without_rebound(calm_day, 15, 30, nadir=60))
+
+    cgm.extend(_ramp(competing_day, 18, 40, 120, 0, 20))
+    cgm.extend(_ramp(competing_day, 19, 0, 120, 1.75, 40))
+    cgm.extend(_ramp(competing_day, 19, 40, 190, -1.0, 140))
+    cgm.extend([
+        CgmReading(datetime.combine(competing_day, datetime.min.time()).replace(hour=22, minute=5), 100),
+        CgmReading(datetime.combine(competing_day, datetime.min.time()).replace(hour=22, minute=10), 130),
+    ])
+    bolus.extend([
+        BolusEvent(datetime.combine(competing_day, datetime.min.time()).replace(hour=19),
+                   completion="Completed", insulin=6.0, carbs=40.0, carb_ratio=10.0,
+                   seq_num=910),
+        BolusEvent(datetime.combine(competing_day, datetime.min.time()).replace(hour=20),
+                   completion="Completed", insulin=4.0, seq_num=911),
+    ])
+    return cgm, bolus
+
+
+def _real_over_treated_low_occurrences():
+    """Five public states through typed events → scenario → model view → exposures.
+
+    This is deliberately not an exposure-schema helper. Every own verdict, silence
+    reason, and competing cause comes from :func:`build_exposures`, the production
+    producer that follows the scenario/model-view pipeline.
+    """
+    cgm, bolus = _over_treated_fixture_events()
+
+    produced = build_exposures(_ScenarioFixtureStore(cgm, bolus))
+    lows = produced["exposures"]["lows"]["occurrences"]
+
+    def own(item):
+        return next(v for v in item["verdicts"]
+                    if v["classifier"] == "over_treated_low")
+
+    selected = {
+        "fired": next(item for item in lows if own(item)["matched"]),
+        "near_miss": next(item for item in lows
+                          if own(item)["silence_reason"] == "under_threshold"),
+        "clean": next(item for item in lows
+                      if own(item)["silence_reason"] == "no_trigger"
+                      and item["cause_lever"] is None),
+        "no_data": next(item for item in lows
+                        if own(item)["silence_reason"] == "insufficient_data"
+                        and item["cause_lever"] is None),
+        "outranked": next(item for item in lows
+                          if own(item)["silence_reason"] == "no_trigger"
+                          and item["cause_lever"] == Lever.CORRECTION_ON_IOB.value),
+    }
+    return selected
+
+
 def exposures():
     """Four families of anchors, including the trigger/outcome split D34 names.
 
@@ -352,54 +471,28 @@ def exposures():
     the projection is being frozen on, so both anchors are here, unmoved — the feed
     stores what it saw and the projection decides which one a window reads.
     """
+    over_treated = _real_over_treated_low_occurrences()
+    fired = over_treated["fired"]
+    rebound = dict(fired, t=f"{DAY.isoformat()} 14:35:00", date=DAY.isoformat(),
+                   bg=189.0, worst_bg=189.0, kind="high", label="High")
     families = {
         "lows": [
-            _occurrence("ep1", "low", "13:00", lever=Lever.OVER_TREATED_LOW,
-                        bg=49.0, worst_bg=256.0,
-                        text="Treated a low at 13:00 and it rebounded to 256."),
-            _occurrence("ep3", "low", "16:20", lever=Lever.CORRECTION_STACKING,
-                        bg=61.0, worst_bg=61.0,
-                        text="Corrections stacked and carried glucose to 61."),
-            _occurrence("ep4", "low", "02:40", bg=66.0, worst_bg=66.0),
-            _occurrence("ep5", "low", "12:10", bg=68.0, worst_bg=68.0),
-            # Finding 3: exercise the row-relative categories `over_treated_low`'s
-            # own row never otherwise touches — a loud near-miss and a too-sparse
-            # read, both for a lever that did NOT drive this occurrence's episode.
-            _occurrence("ep9", "low", "05:15",
-                        bg=71.0, worst_bg=71.0,
-                        verdicts=[_verdict(
-                            "over_treated_low", matched=False,
-                            detail="Rebound stayed under the over-treatment threshold.",
-                            silence_reason=SilenceReason.UNDER_THRESHOLD)]),
-            _occurrence("ep10", "low", "08:45",
-                        bg=73.0, worst_bg=73.0,
-                        verdicts=[_verdict(
-                            "over_treated_low", matched=False,
-                            detail="Too few readings after the low to judge a rebound.",
-                            silence_reason=SilenceReason.INSUFFICIENT_DATA)]),
+            over_treated["fired"], over_treated["near_miss"],
+            over_treated["clean"], over_treated["no_data"],
+            over_treated["outranked"],
         ],
         "highs": [
-            _occurrence("ep1", "high", "14:35", lever=Lever.OVER_TREATED_LOW,
-                        bg=256.0, worst_bg=256.0,
-                        text="Treated a low at 13:00 and it rebounded to 256."),
+            rebound,
             _occurrence("ep2", "high", "09:05", lever=Lever.CARB_UNDERCOUNT,
                         bg=243.0, worst_bg=243.0,
                         text="Bolused 45 g at 07:10 and glucose still ran to 243."),
             _occurrence("ep6", "high", "21:40", bg=201.0, worst_bg=201.0),
-            # Finding 3 (test file) follow-up: the distinguishing case for the
-            # row-relative rule — `over_treated_low`'s own classifier matched
-            # on this anchor too, but `carb_undercount` was the episode's
-            # actual, EARLIER driver. `over_treated_low`'s row must still read
-            # this occurrence `fired` (owner ruling, ADR 41), never `outranked`.
             _occurrence("ep11", "high", "10:15", lever=Lever.CARB_UNDERCOUNT,
                         bg=210.0, worst_bg=245.0,
                         text="A late meal bolus at 10:15 still ran high.",
                         verdicts=[
                             _verdict("carb_undercount", matched=True,
                                      detail="A late meal bolus at 10:15 still ran high."),
-                            _verdict("over_treated_low", matched=True,
-                                     detail="The same anchor also cleared the "
-                                            "over-treatment threshold."),
                         ]),
         ],
         "meals": [
@@ -481,11 +574,12 @@ def scenarios():
     ``correction_stacking`` has occurrences but no Pattern, which is what an unpriced
     row is: it can be counted but not ranked, and the queue's tail order is its count.
     """
+    fired = _real_over_treated_low_occurrences()["fired"]
     patterns = [
         Pattern(lever=Lever.OVER_TREATED_LOW,
                 confidence=Confidence(n=43, k=8, effect=0.62), rank=1,
                 recommendation=recommendation(Lever.OVER_TREATED_LOW),
-                hero_episode="ep1", occurrences=["ep1"]),
+                hero_episode=fired["ep_id"], occurrences=[fired["ep_id"]]),
         Pattern(lever=Lever.CARB_UNDERCOUNT,
                 confidence=Confidence(n=60, k=9, effect=0.44), rank=2,
                 recommendation=recommendation(Lever.CARB_UNDERCOUNT),

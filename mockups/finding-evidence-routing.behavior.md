@@ -443,11 +443,19 @@ P19 · The queue re-scopes with the window. The whole day is the unscoped global
   source:   frontend/diagnose-workstation.js:1096-1121 (ensureFindings)
   mock:     one fixture, one window
   evidence: issue81SlicedProjection browser probe (app: 24 h →
-            "7 findings · 30 days"; 04:30–06:00 → "3 in this window", exactly
+            "8 findings · 30 days"; 04:30–06:00 → "3 in this window", exactly
             `Basal 05:30 · raise`, `ISF`, and
-            `Carb ratio Morning. Past setting.`)
-  verdict:  kept          lock term 60 (same deferral as P18)
+            `Carb ratio Morning. Past setting.`). Before: the frozen seven-row
+            assertion failed with actual eight. After: the eight-row assertion
+            passed; the scoped roster remained three exact rows.
+  verdict:  amended       issue #90 · 2026-08-22; lock term 60 otherwise kept
 ```
+
+**Revision amendment — 2026-08-22 · issue #90.** The analyzer-backed
+Over-treated-low fixture now includes a real competing `Correction on active
+insulin` Finding. That additional global row changes the 24-hour queue count
+from seven to eight; it does not change the scoped 04:30–06:00 roster, request
+keys, loading behavior, ordering rules, or interaction contract.
 
 ```
 P19b · While a window's findings are in flight the level carries

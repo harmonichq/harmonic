@@ -2,6 +2,7 @@
 from datetime import datetime, timedelta
 import os
 from pathlib import Path
+from runpy import run_path
 import shutil
 import tempfile
 import threading
@@ -388,6 +389,96 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
 
     def assert_window_tree(self, window):
         self.assertEqual(set(window), {"scoped", "start_min", "end_min", "label"})
+
+    def test_five_real_over_treated_low_states_reconcile_through_all_public_routes(self):
+        """One invented typed population reaches Findings and the canonical case file.
+
+        The generator's helper is the exact scenario/model-view/exposure input used by
+        the committed Findings fixture.  This route test deliberately seeds those
+        CGM/bolus rows into SQLite, rather than substituting a prepared projection.
+        """
+        generator = run_path(str(
+            Path(__file__).resolve().parents[1]
+            / "scripts" / "gen_findings_projection_fixtures.py"
+        ))
+        cgm, bolus = generator["_over_treated_fixture_events"]()
+        self.assertEqual(
+            generator["_real_over_treated_low_occurrences"]()["outranked"]["cause_lever"],
+            "correction_on_iob",
+        )
+        bolus_rows = [
+            (row.seq_num, row.t, row.insulin, row.carbs,
+             {"carb_ratio": row.carb_ratio} if row.carb_ratio is not None else {})
+            for row in bolus
+        ]
+        expected = {"fired", "near_miss", "clean", "outranked", "no_data"}
+
+        with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
+            _seed_events(database.name, [(row.t, row.bg) for row in cgm], bolus_rows)
+            with TestClient(create_app(
+                    db_path=database.name, token=None, enable_fetch_loop=False)) as client:
+                findings_response = client.get("/diagnose/findings")
+                self.assertEqual(findings_response.status_code, 200)
+                finding = next(
+                    row for row in findings_response.json()["rows"]
+                    if row.get("lever") == "over_treated_low"
+                )
+                self.assertEqual(set(finding["verdict_counts"]), expected)
+                self.assertTrue(all(finding["verdict_counts"][state] for state in expected))
+                self.assertEqual(sum(finding["verdict_counts"].values()),
+                                 len(finding["evidence"]))
+
+                preparation_response = client.get("/diagnose/finding-case-file-preparation")
+                self.assertEqual(preparation_response.status_code, 200)
+                preparation = preparation_response.json()
+                prepared_finding = next(
+                    row for row in preparation["findings"]["rows"]
+                    if row.get("lever") == "over_treated_low"
+                )
+                self.assertEqual(prepared_finding["evidence"], finding["evidence"])
+                self.assertEqual(prepared_finding["verdict_counts"], finding["verdict_counts"])
+
+                case_response = client.get("/diagnose/finding-case-file", params={
+                    "projection_id": preparation["projection_id"],
+                    "finding_id": "finding:over_treated_low", "alignment": "event",
+                })
+                self.assertEqual(case_response.status_code, 200)
+                case = case_response.json()
+                self.assertEqual(set(case["verdict_counts"]), expected)
+                self.assertTrue(all(case["verdict_counts"][state] for state in expected))
+                self.assertEqual(sum(case["verdict_counts"].values()),
+                                 len(case["occurrences"]))
+                self.assertEqual(case["summary"]["denominator"], len(case["occurrences"]))
+                cohort_ids = {
+                    occurrence_id
+                    for cohort in case["projection"]["cohorts"]
+                    for occurrence_id in cohort["occurrence_ids"]
+                }
+                self.assertEqual(cohort_ids, {row["id"] for row in case["occurrences"]})
+                self.assertEqual(
+                    {
+                        cohort["key"]: set(cohort["occurrence_ids"])
+                        for cohort in case["projection"]["cohorts"]
+                    },
+                    {
+                        state: {row["id"] for row in case["occurrences"]
+                                if row["verdict"] == state}
+                        for state in expected
+                    },
+                )
+
+                selected_id = next(row["id"] for row in case["occurrences"]
+                                   if row["verdict"] == "outranked")
+                selected_response = client.get("/diagnose/finding-case-file", params={
+                    "projection_id": preparation["projection_id"],
+                    "finding_id": "finding:over_treated_low", "alignment": "event",
+                    "occ": selected_id,
+                })
+                self.assertEqual(selected_response.status_code, 200)
+                self.assertEqual(selected_response.json()["selection"], {
+                    "state": "selected", "requested_id": selected_id,
+                    "detail": selected_response.json()["selection"]["detail"],
+                })
 
     def assert_preparation_tree(self, prepared):
         self.assertEqual(set(prepared), {

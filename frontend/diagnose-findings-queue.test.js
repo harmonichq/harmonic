@@ -15,7 +15,7 @@ const fixture = JSON.parse(readFileSync(
 const W = fixture.windows;
 
 test('term 45 · the meta has three forms and no others', () => {
-  assert.equal(queueMeta(W.global), '7 findings · 30 days');
+  assert.equal(queueMeta(W.global), '8 findings · 30 days');
   assert.equal(queueMeta(W.afternoon), '5 in this window');
   assert.equal(queueMeta(fixture.no_data.global), '30 days');
   // never sort language, never the window range restated — the chip owns the hours
@@ -49,7 +49,7 @@ test('term 41 · a scoped EMPTY window says only how much history it looked at',
 test('term 34 · settings and habits interleave in one list, ordered by the server', () => {
   const rows = queueRows(W.global);
   assert.deepEqual(rows.map((r) => r.flavor),
-    ['setting', 'setting', 'setting', 'habit', 'habit', 'habit', 'watching']);
+    ['setting', 'setting', 'setting', 'habit', 'habit', 'habit', 'habit', 'watching']);
   // the order is the projection's, untouched
   assert.deepEqual(rows.map((r) => r.title), W.global.rows.map((r) => r.title));
 });
@@ -63,14 +63,14 @@ test('term 36 · a row is flavored by the server register, glyph and word togeth
 test('term 35 · a finding keeps EVERY family appearance, never a merged total', () => {
   const overTreated = queueRows(W.global).find((r) => r.title === 'Over-treated low');
   assert.deepEqual(overTreated.detail,
-    { kind: 'appearances', parts: [{ count: '1 of 4', noun: 'highs' }, { count: '1 of 6', noun: 'lows' }] });
+    { kind: 'appearances', parts: [{ count: '1 of 4', noun: 'highs' }, { count: '1 of 5', noun: 'lows' }] });
 });
 
 test('term 42 · the seam opens once, before the first UNPRICED ranked row', () => {
   const rows = queueRows(W.global);
   const seams = rows.filter((r) => r.seam);
   assert.equal(seams.length, 1);
-  assert.equal(seams[0].title, 'Correction stacking');
+  assert.equal(seams[0].title, 'Correction on active insulin');
   assert.equal(seams[0].raw.priority, null);
   // every row above it is priced; the seam is the boundary, not a heading
   const at = rows.indexOf(seams[0]);
@@ -82,13 +82,13 @@ test('term 42 · fixture windows never caption a held or blind row as the tail',
   // These are the fixture's server-owned queue positions. A held/blind row is
   // demoted, but it is not the unpriced ranked row the tail sentence describes.
   const expected = {
-    global: ['Correction stacking'],
+    global: ['Correction on active insulin'],
     afternoon: ['Correction stacking'],
     low_block: [],
     morning: [],
-    overnight: [],
+    overnight: ['Correction on active insulin'],
     quiet: [],
-    rebound: [],
+    rebound: ['Correction stacking'],
   };
   for (const [window, titles] of Object.entries(expected)) {
     assert.deepEqual(queueRows(W[window]).filter((row) => row.seam).map((row) => row.title),

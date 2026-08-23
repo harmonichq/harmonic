@@ -123,6 +123,71 @@ class EventComparisonTest(unittest.TestCase):
         with self.assertRaisesRegex(AssertionError, "missing outcome minute"):
             event_comparison._validate_capture(capture)
 
+    def test_low_crosswalk_keeps_comparison_precedence_over_row_relative_findings(self):
+        """Typed events reach the public five-cohort projection with its precedence."""
+        generator = run_path(str(
+            Path(__file__).resolve().parents[1]
+            / "scripts" / "gen_findings_projection_fixtures.py"
+        ))
+        cgm, bolus = generator["_over_treated_fixture_events"]()
+        store = generator["_ScenarioFixtureStore"](cgm, bolus)
+        states = generator["_real_over_treated_low_occurrences"]()
+
+        payload = prepare_event_comparisons(store).project(
+            ComparisonQuery.lows(another=True)
+        )
+
+        self.assertEqual(payload["population"], {
+            "denominator": 5,
+            "counts": {
+                "fired": 1,
+                "near_rule": 1,
+                "neutral": 1,
+                "another_factor": 1,
+                "excluded": 1,
+            },
+        })
+        self.assertEqual(
+            [cohort["key"] for cohort in payload["cohorts"]],
+            ["fired", "near_rule", "neutral", "another_factor"],
+        )
+        episode_by_occurrence_id = {
+            occurrence["identity"]["id"]: occurrence["identity"]["ep_id"]
+            for occurrence in payload["occurrences"]
+        }
+        cohort_episodes = {
+            cohort["key"]: [
+                episode_by_occurrence_id[occurrence_id]
+                for occurrence_id in cohort["occurrence_ids"]
+            ]
+            for cohort in payload["cohorts"]
+        }
+        self.assertEqual(cohort_episodes, {
+            "fired": [states["fired"]["ep_id"]],
+            "near_rule": [states["near_miss"]["ep_id"]],
+            "neutral": [states["clean"]["ep_id"]],
+            "another_factor": [states["outranked"]["ep_id"]],
+        })
+        visible_episodes = {
+            episode_id
+            for episode_ids in cohort_episodes.values()
+            for episode_id in episode_ids
+        }
+        self.assertNotIn(states["no_data"]["ep_id"], visible_episodes)
+        competing = next(
+            occurrence for occurrence in payload["occurrences"]
+            if occurrence["identity"]["ep_id"] == states["outranked"]["ep_id"]
+        )
+        self.assertEqual(competing["verdict"]["cohort"], "another_factor")
+        self.assertEqual(competing["verdict"]["other_factors"], [{
+            "key": "correction_on_iob",
+            "label": "Correction on active insulin",
+        }])
+        self.assertEqual(
+            sum(payload["population"]["counts"].values()),
+            payload["population"]["denominator"],
+        )
+
     def test_preparation_projects_one_closed_meal_coordinate(self):
         occurrence = {
             "t": "2026-08-01 12:00:00", "date": "2026-08-01", "bg": 150,
@@ -552,10 +617,15 @@ class EventComparisonTest(unittest.TestCase):
         }
         payload = _families_many([meal])
         payload["exposures"]["lows"]["occurrences"] = [occurrence]
-        no_rebound = SimpleNamespace(peak=100)
+        calm_rebound = SimpleNamespace(
+            rebound=SimpleNamespace(peak=100), rebound_bar=160,
+            near_floor=140,
+            verdict=SimpleNamespace(matched=False, silence_reason="no_trigger"),
+        )
         with (
             patch("ciq_autotune.explore_exposures.build_exposures", return_value=payload),
-            patch("ciq_autotune.event_comparison.guarded_rebound", return_value=no_rebound),
+            patch("ciq_autotune.event_comparison.over_treated_rebound_judgment",
+                  return_value=calm_rebound),
             patch("ciq_autotune.event_comparison.classify_correction_on_iob",
                   return_value=SimpleNamespace(matched=False)),
         ):

@@ -408,7 +408,7 @@ def _over_treated_fixture_events():
         DAY - timedelta(days=4), DAY - timedelta(days=3),
         DAY - timedelta(days=2), DAY - timedelta(days=1),
     )
-    cgm.extend(_rebound_trace(fired_day, 11, 30, nadir=48, rebound=189))
+    cgm.extend(_rebound_trace(fired_day, 13, 15, nadir=48, rebound=260))
     cgm.extend(_rebound_trace(near_day, 11, 30, nadir=60, rebound=150, tail=False))
     cgm.extend(_rebound_trace(calm_day, 11, 30, nadir=60, rebound=130, tail=False))
     cgm.extend(_low_without_rebound(calm_day, 15, 30, nadir=60))
@@ -446,8 +446,11 @@ def _real_over_treated_low_occurrences():
         return next(v for v in item["verdicts"]
                     if v["classifier"] == "over_treated_low")
 
+    fired = next(item for item in lows if own(item)["matched"])
     selected = {
-        "fired": next(item for item in lows if own(item)["matched"]),
+        "fired": fired,
+        "rebound": next(item for item in produced["exposures"]["highs"]["occurrences"]
+                        if item["ep_id"] == fired["ep_id"]),
         "near_miss": next(item for item in lows
                           if own(item)["silence_reason"] == "under_threshold"),
         "clean": next(item for item in lows
@@ -466,15 +469,11 @@ def _real_over_treated_low_occurrences():
 def exposures():
     """Four families of anchors, including the trigger/outcome split D34 names.
 
-    Episode ``ep1`` is the grounded over-treated low: the lows family anchors it at the
-    low itself (13:00) and the highs family at the rebound (14:35). Anchoring is what
-    the projection is being frozen on, so both anchors are here, unmoved — the feed
-    stores what it saw and the projection decides which one a window reads.
+    The grounded over-treated Low and its rebound High are one producer-built Episode.
+    Anchoring is what the projection is being frozen on, so the feed stores both
+    occurrences unchanged and the projection decides which one a window reads.
     """
     over_treated = _real_over_treated_low_occurrences()
-    fired = over_treated["fired"]
-    rebound = dict(fired, t=f"{DAY.isoformat()} 14:35:00", date=DAY.isoformat(),
-                   bg=189.0, worst_bg=189.0, kind="high", label="High")
     families = {
         "lows": [
             over_treated["fired"], over_treated["near_miss"],
@@ -482,7 +481,7 @@ def exposures():
             over_treated["outranked"],
         ],
         "highs": [
-            rebound,
+            over_treated["rebound"],
             _occurrence("ep2", "high", "09:05", lever=Lever.CARB_UNDERCOUNT,
                         bg=243.0, worst_bg=243.0,
                         text="Bolused 45 g at 07:10 and glucose still ran to 243."),

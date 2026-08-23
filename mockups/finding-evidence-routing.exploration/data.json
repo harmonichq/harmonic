@@ -239,12 +239,6 @@
      "annotation": null,
      "appearances": [
       {
-       "family": "highs",
-       "m": 4,
-       "n": 1,
-       "noun": "highs"
-      },
-      {
        "family": "lows",
        "m": 5,
        "n": 1,
@@ -265,43 +259,11 @@
      },
      "evidence": [
       {
-       "date": "2026-08-17",
-       "ep_id": "2026-08-13-ep0",
-       "family": "highs",
-       "kind": "high",
-       "t": "2026-08-17 14:35:00",
-       "verdict": "fired"
-      },
-      {
-       "date": "2026-08-17",
-       "ep_id": "ep2",
-       "family": "highs",
-       "kind": "high",
-       "t": "2026-08-17 09:05:00",
-       "verdict": "outranked"
-      },
-      {
-       "date": "2026-08-17",
-       "ep_id": "ep6",
-       "family": "highs",
-       "kind": "high",
-       "t": "2026-08-17 21:40:00",
-       "verdict": "no_data"
-      },
-      {
-       "date": "2026-08-17",
-       "ep_id": "ep11",
-       "family": "highs",
-       "kind": "high",
-       "t": "2026-08-17 10:15:00",
-       "verdict": "outranked"
-      },
-      {
        "date": "2026-08-13",
        "ep_id": "2026-08-13-ep0",
        "family": "lows",
        "kind": "low",
-       "t": "2026-08-13 12:10:00",
+       "t": "2026-08-13 13:55:00",
        "verdict": "fired"
       },
       {
@@ -358,19 +320,12 @@
      "title": "Over-treated low",
      "verdict_counts": {
       "clean": 1,
-      "fired": 2,
+      "fired": 1,
       "near_miss": 1,
-      "no_data": 2,
-      "outranked": 3
+      "no_data": 1,
+      "outranked": 1
      },
      "verdict_counts_by_family": {
-      "highs": {
-       "clean": 0,
-       "fired": 1,
-       "near_miss": 0,
-       "no_data": 1,
-       "outranked": 2
-      },
       "lows": {
        "clean": 1,
        "fired": 1,
@@ -412,12 +367,12 @@
      },
      "evidence": [
       {
-       "date": "2026-08-17",
+       "date": "2026-08-13",
        "ep_id": "2026-08-13-ep0",
        "family": "highs",
        "kind": "high",
-       "t": "2026-08-17 14:35:00",
-       "verdict": "outranked"
+       "t": "2026-08-13 14:35:00",
+       "verdict": "no_data"
       },
       {
        "date": "2026-08-17",
@@ -491,16 +446,16 @@
       "clean": 1,
       "fired": 3,
       "near_miss": 1,
-      "no_data": 1,
-      "outranked": 1
+      "no_data": 2,
+      "outranked": 0
      },
      "verdict_counts_by_family": {
       "highs": {
        "clean": 0,
        "fired": 2,
        "near_miss": 0,
-       "no_data": 1,
-       "outranked": 1
+       "no_data": 2,
+       "outranked": 0
       },
       "meals": {
        "clean": 1,
@@ -540,7 +495,7 @@
        "ep_id": "2026-08-13-ep0",
        "family": "lows",
        "kind": "low",
-       "t": "2026-08-13 12:10:00",
+       "t": "2026-08-13 13:55:00",
        "verdict": "outranked"
       },
       {
@@ -3572,10 +3527,6 @@
     "flavorWord": "Habit",
     "flavorGlyph": "◈",
     "appearances": [
-     {
-      "count": "1 of 4",
-      "noun": "highs"
-     },
      {
       "count": "1 of 5",
       "noun": "lows"

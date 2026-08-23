@@ -194,9 +194,10 @@ class OutcomeAnchoredMembershipTest(unittest.TestCase):
         self.assertIn("Over-treated low", _titles(rows, "finding"))
 
     def test_the_rebound_is_where_the_high_anchor_sits_not_the_low(self):
+        fired = self._lows_occurrence()
         rebound = next(o for o in self.exposures["highs"]["occurrences"]
-                       if o["cause_lever"] == Lever.OVER_TREATED_LOW.value)
-        self.assertEqual(rebound["ep_id"], self._lows_occurrence()["ep_id"])
+                       if o["ep_id"] == fired["ep_id"])
+        self.assertEqual(rebound["ep_id"], fired["ep_id"])
         minute = int(rebound["t"][11:13]) * 60 + int(rebound["t"][14:16])
         self.assertTrue(REBOUND[0] <= minute < REBOUND[1])
 
@@ -1017,7 +1018,7 @@ class FindingEvidenceBlockTest(unittest.TestCase):
         # Finding 1: the band and the roster it scopes must agree on "N of M"
         # for the SAME family, not the row's cross-family total.
         by_family = self.row["verdict_counts_by_family"]
-        self.assertEqual(set(by_family), {"lows", "highs"})
+        self.assertEqual(set(by_family), {"lows"})
         for family, counts in by_family.items():
             family_m = sum(1 for e in self.row["evidence"] if e["family"] == family)
             self.assertEqual(sum(counts.values()), family_m)
@@ -1026,15 +1027,24 @@ class FindingEvidenceBlockTest(unittest.TestCase):
                   for category in total}
         self.assertEqual(summed, total)
 
-    def test_two_occurrences_sharing_an_ep_id_are_disambiguated_by_t(self):
-        # Finding 4: the fired low anchors twice (the low and its rebound high) and the
-        # evidence rows must carry distinct clock keys so a `(family, ep_id)`
-        # join can never silently collapse them onto one verdict.
+    def test_linked_rebound_does_not_inject_a_second_low_verdict(self):
         fired = next(o for o in self.exposures["lows"]["occurrences"]
                      if o["cause_lever"] == "over_treated_low")
         fired_rows = [e for e in self.row["evidence"] if e["ep_id"] == fired["ep_id"]]
-        self.assertEqual(len(fired_rows), 2)
-        self.assertEqual(len({e["t"] for e in fired_rows}), 2)
+        self.assertEqual(len(fired_rows), 1)
+        self.assertEqual(fired_rows[0]["family"], "lows")
+
+    def test_cross_family_episode_pair_is_emitted_by_the_real_producer(self):
+        cgm, bolus = gen._over_treated_fixture_events()
+        produced = gen.build_exposures(gen._ScenarioFixtureStore(cgm, bolus))["exposures"]
+        fired = next(o for o in self.exposures["lows"]["occurrences"]
+                     if o["cause_lever"] == "over_treated_low")
+        rebound = next(o for o in self.exposures["highs"]["occurrences"]
+                       if o["ep_id"] == fired["ep_id"])
+
+        self.assertIn(fired, produced["lows"]["occurrences"])
+        self.assertIn(rebound, produced["highs"]["occurrences"])
+        self.assertEqual(rebound["ep_id"], fired["ep_id"])
 
 
 if __name__ == "__main__":

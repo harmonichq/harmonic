@@ -70,3 +70,30 @@ tickets: #100 (drill-in focus), #96 (Align focus), #101 (roster Up/Down + focus)
 ## Spawned tasks
 
 None. No follow-up tickets filed from this triage.
+
+## Plan-review rounds
+
+Instrumented per the triage procedure. Every blocker is tagged `authoring`
+(present since the draft) or `injected` (introduced by a prior fix round).
+
+* **Round 1 — cold panel, one reviewer.** 4 blocking, 2 notes, all `authoring`.
+  1. The probe's second precondition passed on the unfixed base (it matched any
+     Arrow key in the window, including the pre-#101 Left/Right handler), so the
+     premise gate had no discriminating power; the order and the probe header
+     both misreported the base run. Reproduced by re-running the probe.
+  2. A red with the WRONG row focused — the loading-paint trap #101's own order
+     documents — fell through to "fix the story, do not touch product code",
+     which would launder a live defect into a green ticket.
+  3. PATH B named #101's `paintLevel`-tail restore as the consumer, but #100's
+     order forbids focusing from `paintLevel` and puts the consumer at the end of
+     `paint()`. The two orders conflict, so the tip is the only authority, and
+     the prescribed edit was probably already present — leaving PATH B with no
+     authorized action.
+  4. The Done-when `git diff` allowlist excluded the two `docs/scope/` files this
+     branch already carries, so the gate could not be met.
+  Notes: `settle` is a sleep, not a state wait, so a slow response yields the
+  same `BODY` as the defect; and the pointer-versus-keyboard framing contradicts
+  the order's own finding that the two are one code path.
+  All six accepted. The order was rewritten clean rather than patched, and the
+  probe was rewritten to classify PRE-#101 / POST-#101 off an anchor #101 commits
+  to keeping.

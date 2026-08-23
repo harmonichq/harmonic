@@ -139,6 +139,20 @@ silently ran zero assertions is the exact failure mode that design guards
 against, and `frontend/browser-gates-fail-closed.test.js` is a
 dependency-free regression test for it.
 
+**A sandboxed agent cannot launch Chromium — escalate, do not diagnose.** Under
+a seatbelt sandbox (Codex `workspace-write`, and anything else built on
+`sandbox-exec`), every browser leg above dies at launch with
+`bootstrap_check_in org.chromium.Chromium.MachPortRendezvousServer.<pid>:
+Permission denied (1100)`, surfacing as `browserType.launch: Target page,
+context or browser has been closed`. That is the sandbox refusing Chromium's
+Mach service registration, not a defect in the suite, the driver or the change
+under test — the `ThermalStateObserverMac` and `DnsConfig` lines above it are
+cosmetic and appear on passing runs too. Re-run the same command with escalated
+permissions; it passes. There is no narrower fix: `--no-sandbox` and
+`--single-process` are Chromium's own sandbox, not the outer one, and the
+seatbelt profile exposes only disk roots and network. Never report a browser
+gate as failing, and never edit code to chase one, from a sandboxed run.
+
 ## The data boundary
 
 Harmonic is built and tested against **synthetic fixtures**. Where a change

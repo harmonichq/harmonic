@@ -190,4 +190,75 @@ Disposition: `inline`
 
 ## Plan review
 
-- Recorded below once the panel returns.
+Two cold panels, both blocking on first return, both fixed and re-verified. Every
+objection was reproduced against the repo before it was acted on; one reviewer claim
+was refuted by measurement and is recorded as refuted rather than folded in.
+
+**Panel 1 — 5 objections (4 blocking), all reproduced, all fixed.**
+
+1. *(authoring)* The causal story was wrong. `923722e` (#68) added the `auto` track
+   **together with** an `id="chips-group"` Sift instrument that occupied it; `cd756b2`
+   (#86, 2026-08-21) removed Sift and left the track. #86 is the regression commit.
+   `railLead` is dead but was never what the track was for. The draft would have
+   written a fabricated history into the shipping stylesheet and the frozen ledger.
+2. *(authoring)* Wrong charter clause — dead code, not "no seam before the second
+   caller" (the track had a real caller for one day).
+3. *(authoring)* The `#96` presence sentinel `verdict:  retired` already matches five
+   times on the base, so it could never detect #96's absence. Replaced with
+   `## ADR 96` in `openspec/changes/finding-evidence-routing/design.md`, which is
+   absent on base.
+4. *(authoring)* The new story was pinned `'drawn'` while copying S40's drive, and S40
+   is registered `'typical'` (`replay.mjs:3378`). No `'drawn'` story uses that drive.
+5. *(authoring, note)* The pinned assertion referenced an undefined `opened` and
+   collected an unused `tracks` property.
+
+**Panel 2 — 5 objections (4 blocking), all reproduced, all fixed.**
+
+1. *(authoring)* Acceptance and instructions pinned absolute line numbers that #95, #96
+   and the order's own step 3 all shift — including one acceptance line (`line 134`)
+   that step 3 makes unsatisfiable. The order now declares every line number a
+   `7cddfe9` coordinate to be re-located by heading, selector or entry id.
+2. *(authoring)* `Done when` did not cover step 3's comment, step 6's eight required
+   ledger contents, or step 9's OpenSpec directory — a build could satisfy every bullet
+   and still omit the durable-knowledge half. Three acceptance bullets added.
+3. *(authoring)* The inventory told the executor to "confirm it still holds" for
+   behavior.md:1379-1385, which is **stale**: it describes `.instruments` as a 430px
+   grid overlaying the preset row, which is pre-`f0ce009` geometry. `f0ce009` (#88,
+   2026-08-22) introduced the `@media (max-width: 760px)` flex block — verified with
+   `git log --oneline -S'max-width: 760px'` (returns only `f0ce009`) and
+   `git show f0ce009^:... | grep '@media'` (only the reduced-motion query). Triage
+   measured `#align-group` at left 576.8 at 390 wide — scrolled out of frame,
+   overlaying nothing. Now marked do-not-touch, do-not-confirm.
+4. *(authoring)* `railLead` is an uncalled but documented public seam that prepends a
+   third instrument into this row, and nothing named it. Its **minimum** fix is taken:
+   the invariant names it as the one code path that changes this row's child count
+   without editing the stylesheet.
+5. *(authoring, note)* The standing rule was satisfiable while still breaking — insert
+   an instrument before ALIGN and append a track after `var(--side, 430px)`. Folded
+   into the invariant.
+
+**Refuted, recorded rather than applied.** Panel 2 proposed `#align-group
+{ grid-column: -2 / -1 }` on top of the two-track list as a structurally stronger fix
+that would survive a revived `railLead`. Measured live, it buys nothing. With a third
+instrument prepended exactly as `diagnose-workstation.js:2689` does:
+
+    1440w  2-track + pin + revived lead   alignLeft 1010, inspectorLeft 1010, rows "66px 27px"
+    1440w  2-track + revived lead, NO pin alignLeft 1010, inspectorLeft 1010, rows "66px 27px"
+    390w   both variants                  identical to each other
+
+ALIGN's left is byte-equal to the inspector pane with or without the pin, at both
+widths. What a third instrument actually breaks is the row height — `grid-template-rows`
+goes from `41px` to `66px 27px`, i.e. the rail wraps — and the pin does not prevent that
+either. The claim that the pin makes the regression "structurally impossible" is
+refuted; the invariant sentence is the honest mitigation. Open decisions option 2 was
+rewritten to say so.
+
+**Coordinator direction, applied.** The standing rule was rephrased from a one-sided
+"anything added must widen the track list" into a two-sided invariant, because the
+one-sided form would not have fired on #86 — the commit it exists to prevent. The order
+also now states plainly that the comment is a hint and S73 is the enforcement, evidenced
+by #86 having edited this very stylesheet (+42 lines of `.filter-*` rules) in the commit
+that orphaned the track.
+
+**Injected blockers: zero across both rounds.** Every objection in panel 2 was present
+in the draft panel 1 reviewed, not introduced by panel 1's fixes.

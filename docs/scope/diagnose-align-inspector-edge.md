@@ -17,23 +17,36 @@ ALIGN's position for this ticket.
   dataSource:'manufactured'})`) returned `{"mode":"revise","reason":"safe manufactured
   data source declared"}`. `inline`
 
-- **The ticket's stated cause is right about the mechanism and wrong about the
-  motive.** `923722e` (#68) did widen `.instruments` from
-  `minmax(0, 1fr) var(--side, 430px)` to `minmax(0, 1fr) auto var(--side, 430px)`
-  (verified by `git log -L 133,135:frontend/diagnose-workstation.css`). But
-  `railLead`'s only call site — in `frontend/diagnose-event-comparison.js` — was
-  **deleted by `1d06530` (#41/#55)**, which is an ancestor of `923722e`. So when #68
-  added the `auto` track, `railLead` already had zero callers, and still has zero
-  today (`grep -rn railLead` returns only the parameter, its comment, its two-line
-  body in `frontend/diagnose-workstation.js:2688-2690`, and the S71 staging-seam
-  string in the replay). The `auto` track has never carried anything on any shipped
-  path. #68's own scope ledger (`docs/scope/diagnose-excursion-filter.md`) records no
-  rationale for the track at all. `inline`
+- **The ticket's stated cause is WRONG, and the first draft of this ledger repeated
+  it.** Corrected by the plan-review panel and re-verified in git. The issue blames
+  `923722e` (#68) for adding an `auto` track "for an optional `railLead`". What
+  actually happened:
 
-- **The `auto` track is a speculative seam under the charter** ("build the seam when
-  the second caller is real, not before"). Removing it restores the two-column form
-  the ruling, the ledger amendment, the CSS comment at
-  `frontend/diagnose-workstation.css:120-131`, and `verify-workstation.css:101` all
+  - `923722e` (#68, 2026-08-20) added the `auto` track **and, in the same commit, a
+    third instrument to occupy it**: a global "Sift" chip group, `id="chips-group"`.
+    `git show 923722e:frontend/diagnose-workstation.js | sed -n '61,79p'` shows
+    WINDOW, then `chips-group`, then `align-group`. Three instruments, three tracks —
+    ALIGN was the third child and sat in the `var(--side, 430px)` track, at the
+    inspector's x. **#68 kept the ruling, it did not break it.**
+  - `cd756b2` (#86, 2026-08-21) **removed** the Sift instrument and left the
+    three-track list behind. `git log --oneline -S'chips-group' --
+    frontend/diagnose-workstation.js` returns exactly `cd756b2` and `923722e`;
+    `git show cd756b2 -- frontend/diagnose-workstation.css` touches no `.instruments`
+    rule. No `chips-group` or `seg-chips` survives in the stylesheet or the module
+    today — #86 cleaned everything except the track.
+  - So **`cd756b2` (#86, 2026-08-21) is the regression commit**, and the drift window
+    is two days, not months.
+
+  `railLead` is a red herring. It is genuinely dead — its only call site was deleted
+  by `1d06530` (#41/#55), an ancestor of `923722e` — but it is not what the middle
+  track was for. Do not write the `railLead` story into the stylesheet or the ledger.
+  `inline`
+
+- **The `auto` track is dead code**, and that is the charter clause that licenses
+  removing it. It is **not** a speculative seam under "build the seam when the second
+  caller is real, not before" — it had a real, shipped caller for one day. Removing it
+  restores the two-column form the ruling, the ledger amendment, the CSS comment at
+  `frontend/diagnose-workstation.css:113-131`, and `verify-workstation.css:101` all
   already describe. `inline`
 
 - **Mechanism: restore the two-track list.** Carried to the order's *Open decisions*
@@ -59,6 +72,10 @@ ALIGN is **right-aligned against** the inspector edge instead of starting at it.
 I:C history entry (`state: 'typical', history: true`, row "Carb ratio Morning. Past
 setting.") measures identically. The ticket reports left 657; the measured value is
 655.8 — record the measured one.
+
+Between #68 and #86 the same three-track list held ALIGN in the third (`--side`)
+track, so the ruling held structurally throughout that window; the defect appears only
+once the third instrument is gone.
 
 **With the two-track list restored** (`minmax(0, 1fr) var(--side, 430px)`), same
 states and viewports:
@@ -88,6 +105,21 @@ the track list is inert there. Measured `#align-group` left is unchanged by the 
 **With ALIGN hidden** (root frame) the fix changes tracks from
 `790.078px 59.9219px 430px` to `850px 430px` at 1280 and leaves the pane lefts at
 `[0, 850]`.
+
+### The pinned assertion, spiked
+
+Executed during triage against the running app at the replay's own defaults
+(1440x900, dark), under the exact drive and registry state the order pins
+(`state: 'typical'`, `openWholeDay` then `clickQueueRow('Over-treated low')` — the S40
+drive; S40 is itself registered `'typical'` at `replay.mjs:3378`):
+
+    BASE : alignShown=true geometry={"alignLeft":816,"inspectorLeft":1010}
+           -> throws: S73 ALIGN starts at the inspector edge (ALIGN 816, inspector 1010): expected 1010, got 816
+    FIXED: alignShown=true geometry={"alignLeft":1010,"inspectorLeft":1010}
+           -> PASS
+
+An earlier spike used `state: 'drawn'` with a direct row click; the panel objected that
+this pinned a combination nothing had measured, and it was re-run as above.
 
 ### Why no gate caught this
 

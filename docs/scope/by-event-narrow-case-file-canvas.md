@@ -157,6 +157,48 @@ The frozen ledger records `frontend/diagnose-workstation.browser.test.mjs` at
 - `node mockups/diagnose-event-comparison-support-audit.mjs` → **`PASS 7 issue
   #694 support renders against app`**
 
+### Plan-review instrumentation
+
+Two cold panels, no persona panel (ordinary plan: one CSS rule, one regression,
+with code review as a downstream backstop).
+
+- **Panel 1 — 11 blockers, all `authoring`, 0 `injected`.** Two independent cold
+  reviewers converged on the same core defect: the first draft's root-cause
+  narrative pointed at the wrong element. It claimed the narrow `.ec-surface`
+  rules did not reach the case-file mount; in fact they do (`#align-canvas`
+  carries class `ec-surface`), and what defeats them is
+  `#align-canvas { min-height: 0 }` at `frontend/diagnose-workstation.css:287`
+  winning on specificity, with `.ec-event-body`
+  (`frontend/diagnose-event-comparison.css:56`) as the element that actually
+  clips. A second reviewer independently found that the draft's proposed
+  `:not(:has(.ec-canvas))` selector would also match the retired-I:C history
+  canvas, which mounts ECharts directly on the same host
+  (`frontend/diagnose-workstation.js:1894` →
+  `frontend/diagnose-workstation-chart.js:411-419`) — a `height: auto` there
+  collapses a live chart. Also found: an acceptance criterion that passes in the
+  broken state, an unsatisfiable `git diff --stat` criterion, a five-vs-four
+  miscount of the fast gate, and a verification set covering three of the nine
+  browser legs the risk contract owes. The order was rewritten clean rather than
+  patched.
+- **Panel 2 — 1 blocker, 1 note, both `authoring`, 0 `injected`.** A fresh cold
+  reviewer verified the rewritten order in a live browser across widths 320 to
+  900, both themes, all four fixture case files, and with a Selected-trace
+  legend item appended; confirmed a CSS-only fix suffices (the ResizeObserver at
+  `frontend/diagnose-event-comparison.js:679` observes `#ec-chart`, whose box the
+  fix does not change) and that hover readout, keyboard traversal and scrolling
+  all survive the container becoming a scrollport. Its blocker: the order told
+  the implementer to correct a "stale" figure at
+  `mockups/finding-evidence-routing.behavior.md:1335`, which is not a live
+  baseline but a dated measurement inside `## Revision — 2026-08-20, base
+  8cc3c99`; editing it would falsify history in a ★ FROZEN record. Its note: the
+  header count at `:12-14` has genuinely drifted, but its own provenance
+  breakdown sums to 77 rather than 74 or 89, so reconciling it in place is
+  archaeology this ticket does not own. Both discharged by making the ledger
+  edit append-only.
+
+Injected blockers stayed at zero across both rounds, so the rewrite-clean signal
+never fired a second time.
+
 ## Open questions
 
 - None blocking. The fix shape was settled by measurement rather than

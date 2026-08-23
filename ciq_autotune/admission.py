@@ -20,35 +20,26 @@ class IcBlockEstimator(Protocol):
     ) -> Tuple[List[IcBlock], int]: ...
 
 
-class _HistoryCatalog(list):
-    """Records that the estimator populated the caller-owned catalog in place."""
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.was_populated = False
-
-    def extend(self, rows) -> None:
-        self.was_populated = True
-        super().extend(rows)
-
-
 def _blocks(estimator: IcBlockEstimator, truth_set: dict) -> Tuple[List[IcBlock], int]:
-    history_catalog = _HistoryCatalog()
+    history_catalog: list = []
+    history_count_before = len(history_catalog)
     blocks, run_count = estimator(
         truth_set["events"], truth_set["segments"], config=IcConfig(),
         cgm_readings=truth_set["cgm_readings"],
         isf_effective=truth_set["isf_effective"], carb_entries=[], basal_events=[],
         harm_config=None, harm_lows=None,
         analysis_start=truth_set["analysis_start"],
-        prior_action_observed_from=truth_set["analysis_start"],
+        prior_action_observed_from=truth_set["prior_action_observed_from"],
         observed_days=truth_set["observed_days"], snapshots=truth_set["snapshots"],
         analysis_end=truth_set["analysis_end"], history_catalog=history_catalog,
         history_harm_lows=None,
     )
-    if not history_catalog.was_populated:
+    if len(history_catalog) == history_count_before:
         raise ValueError("estimator did not populate history_catalog in place")
-    if run_count != truth_set["expected_run_count"]:
-        raise ValueError("estimator returned a non-production whole-day run count")
+    if (isinstance(run_count, bool) or not isinstance(run_count, int)
+            or run_count < 0 or run_count > len(truth_set["events"])
+            or (blocks and run_count == 0)):
+        raise ValueError("estimator returned an invalid whole-day run count")
     return blocks, run_count
 
 

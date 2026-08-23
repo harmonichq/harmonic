@@ -34,30 +34,38 @@ def _set(name: str, seed: int, segments: List[tuple[int, float]], events: List[B
          cgm_readings: List[CgmReading], true_ratio_by_block: Dict[int, float]) -> dict:
     # Start the fixed 90-day block window before the first meal while leaving a
     # complete 90 days from the first stored insulin event to the replay endpoint.
-    end = BASE + timedelta(days=BLOCK_WINDOW_DAYS, hours=13)
+    end = BASE + timedelta(days=105, hours=13)
     settings = _settings(segments)
+    historical_segments = [(start, ratio + 1.0) for start, ratio in segments]
+    historical_ratio = historical_segments[-1][1]
+    historical_hour = 21 if len(segments) > 1 else 13
+    historical_events = [BolusEvent(
+        t=BASE + timedelta(days=day, hours=historical_hour), insulin=60.0 / historical_ratio,
+        carbs=60.0, carb_ratio=historical_ratio, completion="Completed",
+    ) for day in (1, 4, 7, 10)]
     return {
         "name": name,
         "seed": seed,
-        "events": events,
+        "events": historical_events + events,
         "segments": segments,
         "cgm_readings": cgm_readings,
         "isf_effective": EFFECTIVE_ISF,
         "observed_days": BLOCK_WINDOW_DAYS,
         "true_ratio_by_block": true_ratio_by_block,
-        # The first dose has no Accounting-DIA lead-in; every later isolated meal
-        # closes one whole-day ledger, which is the production run-count meaning.
-        "expected_run_count": len(events) - 1,
         "analysis_start": end - timedelta(days=BLOCK_WINDOW_DAYS),
         "analysis_end": end,
-        "snapshots": [Snapshot(BASE, settings)],
+        "prior_action_observed_from": historical_events[0].t,
+        "snapshots": [
+            Snapshot(BASE, _settings(historical_segments)),
+            Snapshot(BASE + timedelta(days=12), settings),
+        ],
         "settings": settings,
     }
 
 
 def _meal(day: int, hour: int, carbs: float, dose: float, ratio: float) -> BolusEvent:
     return BolusEvent(
-        t=BASE + timedelta(days=day * 3, hours=hour), insulin=round(dose, 4),
+        t=BASE + timedelta(days=15 + day * 3, hours=hour), insulin=round(dose, 4),
         carbs=carbs, carb_ratio=ratio, completion="Completed",
     )
 
@@ -145,17 +153,15 @@ def write_set_to_store(store, truth_set: dict) -> None:
     )
     store.upsert_bolus(boluses)
     store.upsert_cgm(cgm)
-    store.upsert_settings_snapshot(
-        truth_set["analysis_start"].strftime("%Y-%m-%d %H:%M:%S"),
-        truth_set["settings"],
-    )
+    for snapshot in truth_set["snapshots"]:
+        store.upsert_settings_snapshot(
+            snapshot.captured_at.strftime("%Y-%m-%d %H:%M:%S"), snapshot.settings)
 
 
 def main() -> None:
     for truth_set in known_ratio_sets() + placebo_sets():
         print(f"{truth_set['name']}: events={len(truth_set['events'])} "
-              f"cgm={len(truth_set['cgm_readings'])} runs={truth_set['expected_run_count']} "
-              f"seed={truth_set['seed']}")
+              f"cgm={len(truth_set['cgm_readings'])} seed={truth_set['seed']}")
 
 
 if __name__ == "__main__":

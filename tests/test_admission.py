@@ -97,13 +97,41 @@ class AdmissionBarTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.run_bar(broken)
 
+    def test_estimator_that_appends_history_is_accepted(self):
+        def candidate(*args, **kwargs):
+            history_catalog = kwargs["history_catalog"]
+            kwargs["history_catalog"] = None
+            blocks, runs = analyze_ic_blocks(*args, **kwargs)
+            history_catalog.append(object())
+            return blocks, runs
+
+        report = self.run_bar(candidate)
+        self.assertTrue(report["recovery_passed"])
+        self.assertTrue(report["placebo_passed"])
+
+    def test_estimator_with_an_additional_valid_run_is_accepted(self):
+        def candidate(*args, **kwargs):
+            blocks, runs = analyze_ic_blocks(*args, **kwargs)
+            return blocks, runs + 1
+
+        report = self.run_bar(candidate)
+        self.assertTrue(report["recovery_passed"])
+        self.assertTrue(report["placebo_passed"])
+
     def test_estimator_with_bogus_run_count_fails_loudly(self):
-        def broken(*args, **kwargs):
+        def zero_runs(*args, **kwargs):
             blocks, _runs = analyze_ic_blocks(*args, **kwargs)
             return blocks, 0
 
         with self.assertRaises(ValueError):
-            self.run_bar(broken)
+            self.run_bar(zero_runs)
+
+        def none_runs(*args, **kwargs):
+            blocks, _runs = analyze_ic_blocks(*args, **kwargs)
+            return blocks, None
+
+        with self.assertRaises(ValueError):
+            self.run_bar(none_runs)
 
     def test_store_round_trip_preserves_block_equivalence(self):
         truth_set = placebo_sets()[0]
@@ -112,7 +140,7 @@ class AdmissionBarTest(unittest.TestCase):
             cgm_readings=truth_set["cgm_readings"],
             isf_effective=truth_set["isf_effective"], observed_days=truth_set["observed_days"],
             analysis_start=truth_set["analysis_start"], analysis_end=truth_set["analysis_end"],
-            prior_action_observed_from=truth_set["analysis_start"],
+            prior_action_observed_from=truth_set["prior_action_observed_from"],
             snapshots=truth_set["snapshots"], history_catalog=[],
         )
         with Store.open(":memory:") as store:

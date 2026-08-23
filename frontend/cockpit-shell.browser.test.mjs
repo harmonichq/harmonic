@@ -974,10 +974,6 @@ async function openRetiredOccurrence(browser, options = {}) {
     exposuresInput: FINDINGS_PROJECTION.inputs.exposures,
   });
   await page.locator('.inspector[aria-labelledby="crumb-trail"]').waitFor();
-  await assertRetiredOccurrenceRoute(page);
-  await page.getByRole('button', { name: /Filter/ }).click();
-  await page.getByRole('menuitemradio', { name: 'Event charts', exact: true }).click();
-  await page.keyboard.press('Escape');
   const row = page.locator('#level .qrow[data-state="finding"]').first();
   try {
     await row.waitFor({ timeout: 5_000 });

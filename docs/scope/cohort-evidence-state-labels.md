@@ -1,52 +1,96 @@
 # Scope ledger — Cohort evidence-state labels (#99)
 
-Routed from `/ticket triage 99` to interview mode: the facts are grounded, the open
-point is a product decision about how the By-event chart explains its own cohort
-evidence states. Triage ran as a worker with no interviewee; the frontier questions
-below carry recommendations and the work order builds on the recommended defaults
-until Connor rules otherwise.
+Routed from `/ticket triage 99`. Triage ran as a worker with no interviewee: the
+frontier questions below carry recommendations, and the work order builds on the
+recommended defaults until Connor rules otherwise. Every fact recorded here was
+re-verified against this worktree in the triage run of 2026-08-23; an earlier
+aborted run's ledger was discarded and re-derived rather than trusted.
 
 ## Decisions
 
-- Grounded, not a decision: `CONTEXT.md` already defines **Comparison support** as
-  `Supported` / `Limited` / `Withheld`, the presentation authority of a cohort or a
-  five-minute point by how many distinct usable Occurrences contribute, independent
-  of classifier outcome and Evidence tier. The chart never surfaces that definition.
-  `inline`
-- Grounded, not a decision: the chart's only support copy is
-  `frontend/diagnose-event-comparison.js` — `paintLegend` prints `<cohort label>
-  <Support>` plus `N events · K supported · M limited · J withheld points` (or
-  `aggregate withheld · n episodes shown individually`), `paintReadout` prints
-  `Limited · n3` / `Episodes shown individually`, and `cohortReadout` is the
-  screen-reader text. `COHORTS[].note` ("Comparable; no factor matched") exists but
-  nothing renders it. Reproduced by reading the source against the #93 F1 story;
-  the committed capture `mockups/diagnose-event-comparison.synthetic/capture.json`
-  carries all three states (`fired` has supported, limited and withheld points;
-  `near_rule` is Limited; `another_factor` is Withheld). `inline`
-- Grounded, not a decision: the behaviour replay
-  `frontend/diagnose-event-comparison-behavior.replay.mjs` pins the legend
-  `data-support` / `data-selected-cohort` attributes, `/Supported|Limited|Withheld/`
-  in `#ec-readout`, the valid-bin count in the readout, and that a Withheld cohort
-  exposes no aggregate series. The fix keeps those tokens and attributes. `inline`
-- Grounded, not a decision: ADR 62 amendment (Connor, 2026-08-20) retired the
-  by-event rendered caption: "Drop all that shit. It's a chart." A new standing
-  explanatory sentence beside the chart (the #93 feature vote) would re-litigate
-  that ruling; rewording the labels already on the legend, lower key and hover
-  readout does not. `inline`
-- Assumed default pending Q1: the fix is labels-in-place. Each legend key item and
-  readout value gains a short reading of its support state, drawn from one closed
-  copy table keyed by `supported` / `limited` / `withheld` (cohort-level and
-  point-level wording), and the aria description states the relationship between a
-  cohort's aggregate state and its points. No new caption, panel, or interaction.
-  `-> ADR` (recorded in the change's design.md when the order executes)
-- Assumed default pending Q2: the wording. Supported reads as usable for the
-  comparison; Limited reads as usable with caution because few episodes contribute;
-  Withheld reads as not comparable as a line, only as individual episodes (or, at
-  zero usable episodes, as nothing to draw). Point-level counts read as how much of
-  the line is at each state. `inline`
-- Mine, recorded not asked: the CONTEXT.md Comparison support entry is the source
-  of the wording, and the executing agent extends that entry with the three
-  readings so the glossary and the chart say one thing. `inline`
+- Grounded, not a decision: `CONTEXT.md:275` defines **Comparison support** as the
+  presentation authority of an event-aligned cohort or five-minute point, based on
+  how many distinct usable Occurrences contribute — `Supported`, `Limited`,
+  `Withheld`, independent of classifier outcome and Evidence tier. The chart never
+  surfaces that definition. `inline`
+- Grounded, not a decision: the two things the reader sees side by side are two
+  different axes. The bold word is the **cohort**
+  (`COHORTS[].label`: `Rule matched`, `Claimed by another factor`, `Not comparable`,
+  …, `frontend/diagnose-event-comparison.js:52-95`) — which events are in the line.
+  The small word beside it is the **support state** — whether the line may be read
+  at all. Issue #99 and #93 F1 report exactly this adjacency as unreadable. `inline`
+- Grounded, not a decision: all the chart's support copy lives in
+  `frontend/diagnose-event-comparison.js`. `paintLegend` (493-520) prints
+  `<cohort label><Support>` plus a detail line; `paintReadout` (462-482) prints
+  `Limited · n3` or `Episodes shown individually`; `cohortReadout` (453-460) is the
+  screen-reader text; `COHORTS[].note` exists and nothing renders it. `inline`
+- **Grounded defect, found live in the committed fixture**: `paintReadout`'s
+  `withheld` branch prints `Episodes shown individually` for any five-minute point
+  whose support is `withheld`, including points inside a **Supported** cohort that
+  draws an aggregate line and no episodes at all. Executed against
+  `mockups/diagnose-event-comparison.synthetic/capture.json` through
+  `project.mjs`, the `zero-fired` state's `neutral` cohort is `Supported` with
+  `66 supported · 6 limited · 1 withheld points`, and hovering that withheld point
+  states a cohort-level fact about a point. This is the concrete mechanism behind
+  #93 F1's "the aggregate state and point-level state remain visually adjacent
+  without a plain-language relationship". `inline`
+- Grounded, not a decision: the gate pins any reword must survive, each reproduced
+  by executing it:
+  `mockups/diagnose-event-comparison-support-audit.mjs:141` pins
+  `/0 events · no usable episodes to draw/` on the legend item text;
+  `frontend/diagnose-event-comparison-behavior.replay.mjs:313,315` pin
+  `/Supported|Limited|Withheld/` and `/n\d+/` on `#ec-readout`; `:449` pins
+  `/n2\b/` on the first `.ec-rd-value`; `:237` asserts the `neutral` cohort's
+  `strong` text does not read as `normal|correct behavior|behaved correctly`;
+  `:405` pins `.ec-key-item[data-cohort][data-support][data-selected-cohort]`.
+  A spike applied the proposed copy to the real projection for the `dense`,
+  `sparse` and `zero-fired` states with and without `another`, and all five pins
+  still hold. `inline`
+- Grounded, not a decision: ADR 62's 2026-08-20 amendment
+  (`openspec/changes/by-event-window-membership/design.md:143-152`) retired the
+  rendered by-event caption — "Drop all that shit. It's a chart." — and DESIGN.md
+  rule 5 says charts explain themselves through on-chart legend chips, not caption
+  sentences. Both rule out the #93 feature vote's standing explanatory sentence;
+  neither touches rewording labels already on the chip and the readout. `inline`
+- Grounded, not a decision: the closed document inventory for this behavior. The
+  strings `aggregate withheld`, `shown individually`, `Comparison support` and
+  `ec-support-label` occur in exactly `CONTEXT.md`, this ledger,
+  `frontend/diagnose-event-comparison.css`, `frontend/diagnose-event-comparison.js`
+  and three files under `mockups/finding-evidence-routing.exploration/`. No
+  `docs/kb/` page, `openspec/specs/` capability, README, PRODUCT.md or DESIGN.md
+  mentions the support states. The exploration's copies are a retracted-lock
+  historical design record; its `pointStateSummary` is transcribed but never
+  called, and `build.mjs --check` compares its own regenerated artifacts, reading
+  the shipped module only for `const VIEWS`. A reword therefore does not trip that
+  drift check and must not edit the exploration. `inline`
+- Grounded, not a decision: the surface is shipped, so this is a UI Craft
+  **revise**. `route.mjs --embodiment shipped --runnability runnable --declaration
+  complete --data-source manufactured` resolves to `revise`. The safe-start
+  declaration is AGENTS.md's sole offline command,
+  `uv run harmonic serve --no-fetch --db mockups/revise-e2e.synthetic/harmonic.sqlite`,
+  whose database is generated by `scripts/gen_revise_e2e_db.py`; the replay's own
+  manufactured source is `mockups/diagnose-event-comparison.synthetic/capture.json`
+  through `project.mjs`. The frozen behavior ledger is
+  `mockups/finding-evidence-routing.behavior.md` (it registers the lens replay's
+  stories, `S13` at line 1310) and the replay is
+  `frontend/diagnose-event-comparison-behavior.replay.mjs` (13 stories). `inline`
+- Decision, mine: the fix is labels-in-place. The support word in each legend chip
+  gains a short reading of what the reader may conclude, the hover readout gains
+  the point-level reading, and the withheld-point copy stops making a cohort-level
+  claim. No caption, no new panel, no new interaction. `-> ADR` (recorded in the
+  change's `design.md`).
+- Decision, mine: the wording, drawn from one closed copy table keyed by support
+  state. Cohort level — `Supported · enough events to compare`,
+  `Limited · few events, compare with care`,
+  `Withheld · not enough events to draw a line`. Point level —
+  `Supported · n7 · enough events at this minute`,
+  `Limited · n3 · few events at this minute`,
+  `Withheld · too few events at this minute`. `-> ADR`
+- Decision, mine: `CONTEXT.md`'s Comparison support entry gains the same three
+  readings, so the glossary and the chart say one thing.
+- Recorded, not asked: the existing detail line prints `1 events · aggregate
+  withheld` for a one-event cohort. Real, adjacent, and not this ticket; it wants
+  its own issue.
 
 ### Risk contract
 
@@ -61,22 +105,27 @@ Disposition: copied into the work order.
 - **Must recover:** nothing automatically.
 - **Accepted failure:** none new; the chart renders exactly as today except for the
   wording of its own labels.
-- **Unsupported:** the #93 feature vote (a hover-position interpretation sentence);
+- **Unsupported:** the #93 feature vote's hover-position interpretation sentence;
   any change to cohort membership, support thresholds, or the projection payload.
-- **Evidence owed:** a Node test through `paintLegend` / `paintReadout` output (or
-  the module's public render entry) asserting each support state's reading appears
-  for the committed capture; the behaviour replay still green; the support audit
-  still green.
+- **Evidence owed:** the 13-story lens replay and the 7-case support audit green
+  against the built app; the changed withheld-point story amended in the frozen
+  behavior ledger with its old assertion proven to fail first; before/after renders
+  of the affected states in light and dark.
 
 ## Open questions
 
-- **Q1. Fix shape.** A. reword the legend, lower key and hover readout in place
-  (recommended: honours the 2026-08-20 caption ruling and fixes the F1 gap where
-  the reader looks). B. add the #93 feature-vote sentence beside the chart (a new
-  rendered caption; collides with ADR 62 amendment and needs Connor to reopen it).
-  C. both (B's cost plus A).
-- **Q2. Wording.** Owner's call on the three readings; the defaults above stand
-  until replaced.
+- **Q1. Fix shape.** A. reword the chip and readout in place (recommended: honours
+  the 2026-08-20 caption ruling and DESIGN.md rule 5, and fixes the gap where the
+  reader is already looking). B. add the #93 feature-vote sentence beside the
+  chart (a new rendered caption; collides with ADR 62's amendment and needs Connor
+  to reopen it). C. both.
+- **Q2. Wording.** Owner's call on the six readings above; the defaults stand until
+  replaced.
+- **Q3. The point tally.** The chip's detail line still prints
+  `76 supported · 7 limited · 2 withheld points`, which the design exploration's
+  round 9 judged three engine facts printed at data weight (DESIGN.md rules 2 and
+  5). Dropping it is a retirement of shipped behavior and needs a named, dated,
+  quoted sanction, so the default keeps it.
 
 ## Spawned tasks
 
@@ -84,13 +133,4 @@ Disposition: copied into the work order.
 
 ## Plan-review ledger
 
-- Round 1 (cold pass, 2026-08-23): 2 blockers, both `authoring`. (1) the Node test
-  in step 7 was not reachable: the painters are unexported and `data.test.js`'s fake
-  Node discards `innerHTML`; fixed by naming the harness extension or accessor
-  export. (3) the support audit pins `0 events · no usable episodes to draw`; fixed
-  by adding that string to the keep-list and licensing audit story updates. Note
-  (2): `another_factor` exists only via `project.mjs` `{ another: true }`; fixed in
-  step 7. Reproduced all three before forwarding. 0 `injected`.
-- Round 1 delta re-check (same reviewer): COUNTERSIGN. Two notes folded into step 7:
-  no selection under the fake-Node path (insertAdjacentHTML absent), and the hover
-  reading under the accessor path rests on screenshots. 0 blockers, 0 `injected`.
+- (rounds recorded below as they run)

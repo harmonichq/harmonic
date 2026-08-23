@@ -17,7 +17,7 @@ export const TABS = [
 
 const DEFAULT_TAB = 'diagnose';
 const TAB_IDS = new Set(TABS.map((tab) => tab.id));
-const DIAGNOSE_KEYS = ['view', 'factor', 'start_min', 'end_min', 'another', 'occ'];
+const DIAGNOSE_KEYS = ['view', 'factor', 'start_min', 'end_min', 'another', 'occ', 'mode'];
 
 export function resolveTab(tab) {
   const migrated = (tab === 'dashboard' || tab === 'pump' || tab === 'review' || tab === 'patterns') ? 'diagnose'

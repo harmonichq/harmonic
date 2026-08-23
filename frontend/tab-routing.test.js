@@ -26,6 +26,16 @@ test('six page routes round-trip through the canonical hash form', () => {
   }
 });
 
+test('Diagnose mode round-trips and migrates from the split query', () => {
+  const canonical = parseRoute({ hash: '#/diagnose?mode=drawn', search: '' });
+  assert.equal(canonical.mode, 'drawn');
+  assert.equal(serializeRoute(canonical), '#/diagnose?mode=drawn');
+
+  const migrated = parseRoute({ hash: '#diagnose', search: '?mode=drawn' });
+  assert.equal(migrated.mode, 'drawn');
+  assert.equal(serializeRoute(migrated), '#/diagnose?mode=drawn');
+});
+
 test('Day date and Guide article restore from their page route and leave with the page', () => {
   const day = parseRoute({ hash: '#/day?date=2026-08-22', search: '' });
   const guide = parseRoute({ hash: '#/guide?article=reading-day', search: '' });
@@ -46,7 +56,7 @@ test('P53 coordinates move from the split query into the Diagnose hash and resto
   const route = parseRoute({ hash: '#diagnose', search: '?view=lows&factor=correction_stacking&start_min=0&end_min=120&another=1&occ=low-7' });
   assert.deepEqual(route, {
     page: 'diagnose', view: 'lows', factor: 'correction_stacking', start_min: '0',
-    end_min: '120', another: '1', occ: 'low-7',
+    end_min: '120', another: '1', occ: 'low-7', mode: null,
   });
   assert.equal(serializeRoute(route), '#/diagnose?view=lows&factor=correction_stacking&start_min=0&end_min=120&another=1&occ=low-7');
 
@@ -75,7 +85,7 @@ test('P53 coordinates move from the split query into the Diagnose hash and resto
   listeners.get('popstate')();
   listeners.get('hashchange')();
   unsubscribe();
-  assert.deepEqual(seen, [{ page: 'diagnose', view: 'meals', factor: null, start_min: null, end_min: null, another: null, occ: null }]);
+  assert.deepEqual(seen, [{ page: 'diagnose', view: 'meals', factor: null, start_min: null, end_min: null, another: null, occ: null, mode: null }]);
 });
 
 test('P53 restoration re-requests and an older projection response stays rejected', async () => {

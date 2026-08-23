@@ -419,7 +419,8 @@ async function openApp(browser, options = {}) {
   const initialHash = options.initialHash || `#${options.tab || 'diagnose'}`;
   const query = new URLSearchParams({ view: options.eventView || 'glucose' });
   if (options.state) query.set('mode', options.state);
-  await page.goto(`http://ciq.local/?${query}${initialHash}`);
+  const search = options.initialSearch ?? `?${query}`;
+  await page.goto(`http://ciq.local/${search}${initialHash}`);
   await page.locator('.cockpit-shell').waitFor();
   if (['meals', 'lows'].includes(options.eventView)) {
     await page.locator(options.expectEventError ? '.ec-error' : '.ec-surface').waitFor();
@@ -963,7 +964,8 @@ async function openRetiredOccurrence(browser, options = {}) {
   const page = await openApp(browser, {
     ...options,
     state: 'dense',
-    initialHash: `#/diagnose?modal=occurrences&detector=${encodeURIComponent(lever)}`,
+    initialSearch: '',
+    initialHash: `#diagnose?modal=occurrences&detector=${encodeURIComponent(lever)}`,
     findingsInput: {
       analysis: FINDINGS_PROJECTION.inputs.analysis,
       exposures: FINDINGS_PROJECTION.inputs.exposures,
@@ -972,6 +974,10 @@ async function openRetiredOccurrence(browser, options = {}) {
     exposuresInput: FINDINGS_PROJECTION.inputs.exposures,
   });
   await page.locator('.inspector[aria-labelledby="crumb-trail"]').waitFor();
+  await assertRetiredOccurrenceRoute(page);
+  await page.getByRole('button', { name: /Filter/ }).click();
+  await page.getByRole('menuitemradio', { name: 'Event charts', exact: true }).click();
+  await page.keyboard.press('Escape');
   const row = page.locator('#level .qrow[data-state="finding"]').first();
   try {
     await row.waitFor({ timeout: 5_000 });
@@ -979,15 +985,14 @@ async function openRetiredOccurrence(browser, options = {}) {
     const level = await page.locator('#level').innerText();
     const states = await page.locator('#level .qrow').evaluateAll((nodes) =>
       nodes.map((node) => `${node.dataset.state}:${node.dataset.id}`));
-    throw new Error(`R1 did not render a fixture-backed finding row; states=${states.join(',')}; level=${level}`, {
+    throw new Error(`R1 did not render a fixture-backed Findings row; states=${states.join(',')}; level=${level}`, {
       cause: error,
     });
   }
-  await assertRetiredOccurrenceRoute(page);
   await row.click();
   await page.locator('#level .ev-group .n').waitFor();
   assert.ok(await page.locator('#level .ev-row').count() > 0,
-    'the public finding row must populate occurrence rows in Findings');
+    'the public Findings row must populate occurrence rows in the Inspector');
   await assertRetiredOccurrenceRoute(page);
   return page;
 }
@@ -1000,7 +1005,7 @@ export async function R1(browser) {
     await proveRedOnce('R1 canonical hash',
       () => assertRetiredOccurrenceRoute(page), async () => {
         await page.evaluate(() => history.replaceState(null, '',
-          '#/diagnose?modal=occurrences&detector=mutation'));
+          '#diagnose?modal=occurrences&detector=mutation'));
         return () => page.evaluate(() => history.replaceState(null, '', '#/diagnose'));
       });
     await proveRedOnce('R1 duplicate occurrence route',

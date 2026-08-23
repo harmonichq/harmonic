@@ -13,13 +13,16 @@ different history events.
   `#/diagnose?view=lows&factor=late_bolus`.
 - The pages remain `day`, `diagnose`, `verify`, `plan`, `settings`, and `guide`.
 - One Vue-free routing interface parses, serializes, and applies the page and
-  its existing shareable state. Existing shell state stays in the fragment;
-  P53's `view`, `factor`, `start_min`, `end_min`, `another`, and `occ` move from
-  `location.search` into the Diagnose fragment query.
+  its existing shareable state. The shell scope is the page plus its currently
+  round-tripped Day `date` and Guide `article` state. P53's `view`, `factor`,
+  `start_min`, `end_min`, `another`, and `occ` move from `location.search` into
+  the Diagnose fragment query.
 - Existing no-slash hashes and the old split form may be normalized at the
   routing boundary. This is a small migration, not a general compatibility
   layer.
 - No additional UI state becomes bookmarkable.
+- The shell's emitted-but-unparsed `modal`, `occt`, `occd`, and `occdet` keys
+  remain unrestorable; fixing that existing behavior is out of scope.
 
 Everything else stays as shipped: page behavior, request behavior, P53's
 back/forward re-request and stale-response guard, server and API routes, UI,
@@ -39,9 +42,10 @@ minimum P53 wording correction.
   not be irreversibly lost, and verification must not report silent success.
   This change introduces no data mutation, patient-data access, credential
   access, or server launch.
-- **Evidence owed:** parse, serialize, normalization, and history behavior
-  through the routing interface, plus preservation of P53's re-request and
-  stale-response behavior.
+- **Evidence owed:** parse, serialize, normalization, and history behavior for
+  the page, Day `date`, Guide `article`, and P53 keys through the routing
+  interface, plus preservation of P53's re-request and stale-response behavior.
+  No modal/highlight round trip is claimed.
 
 ## Impact
 

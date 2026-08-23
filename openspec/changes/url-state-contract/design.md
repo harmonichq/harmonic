@@ -10,11 +10,11 @@
 #/diagnose?view=lows&factor=late_bolus
 ```
 
-The fragment query carries only state that is already intended to be
-shareable. Shell-owned state already in the hash remains there. P53's existing
-`view`, `factor`, `start_min`, `end_min`, `another`, and `occ` coordinates move
-from `location.search` into the Diagnose hash route. No other UI state becomes
-bookmarkable.
+The hash route carries only state that already round-trips: the selected page,
+Day `date`, Guide `article`, and P53's existing `view`, `factor`,
+`start_min`, `end_min`, `another`, and `occ` coordinates. The P53 coordinates
+move from `location.search` into the Diagnose hash route. No other UI state
+becomes bookmarkable.
 
 **Context.** The shell currently parses and writes page state after `#`, while
 the event-comparison reader independently parses and writes P53 coordinates in
@@ -41,10 +41,10 @@ The old split form may move the recognized P53 keys from `location.search` into
 the Diagnose fragment query. Normalization uses replacement rather than adding
 a navigation step. No broader legacy-URL promise is made.
 
-Back and Forward reapply one parsed route. A restored P53 route still
-re-requests its projection, and its existing generation check still prevents
-an older response from replacing the restored state. Existing choices about
-when an interaction pushes or replaces history remain unchanged.
+Back and Forward reapply one parsed route for this in-scope state. A restored
+P53 route still re-requests its projection, and its existing generation check
+still prevents an older response from replacing the restored state. Existing
+choices about when an interaction pushes or replaces history remain unchanged.
 
 ### Supersession
 
@@ -67,6 +67,9 @@ responses to be dropped by generation.
   layout do not change.
 - There is no invalid-link UI, new bookmarkable state, screenshot obligation,
   identity-resolution transaction, or new provenance harness.
+- The shell currently emits `modal`, `occt`, `occd`, and `occdet` but does not
+  parse them. Their unrestorable behavior remains unchanged and earns no
+  round-trip acceptance in issue 53.
 - Evidence is limited to route-interface behavior and the relevant existing
   shell/P53 browser checks.
 

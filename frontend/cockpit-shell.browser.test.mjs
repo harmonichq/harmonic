@@ -944,8 +944,8 @@ export async function S10(browser) {
 }
 
 async function assertRetiredOccurrenceRoute(page) {
-  assert.equal(await page.evaluate(() => location.hash), '#/diagnose',
-    'the stale occurrence-list URL must canonicalize to #/diagnose');
+  assert.equal(await page.evaluate(() => location.hash), '#/diagnose?mode=dense',
+    'the stale occurrence-list URL must canonicalize to #/diagnose?mode=dense');
   const duplicates = await page.evaluate(() => ({
     dialogs: [...document.querySelectorAll('[role="dialog"]')]
       .filter((node) => /occurrences/i.test(
@@ -964,7 +964,7 @@ async function openRetiredOccurrence(browser, options = {}) {
   const page = await openApp(browser, {
     ...options,
     state: 'dense',
-    initialSearch: '',
+    initialSearch: '?mode=dense',
     initialHash: `#diagnose?modal=occurrences&detector=${encodeURIComponent(lever)}`,
     findingsInput: {
       analysis: FINDINGS_PROJECTION.inputs.analysis,
@@ -1005,8 +1005,8 @@ export async function R1(browser) {
     await proveRedOnce('R1 canonical hash',
       () => assertRetiredOccurrenceRoute(page), async () => {
         await page.evaluate(() => history.replaceState(null, '',
-          '#diagnose?modal=occurrences&detector=mutation'));
-        return () => page.evaluate(() => history.replaceState(null, '', '#/diagnose'));
+          '#diagnose?mode=dense&modal=occurrences&detector=mutation'));
+        return () => page.evaluate(() => history.replaceState(null, '', '#/diagnose?mode=dense'));
       });
     await proveRedOnce('R1 duplicate occurrence route',
       () => assertRetiredOccurrenceRoute(page), async () => {

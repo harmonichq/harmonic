@@ -13,8 +13,10 @@ The frontend is a single `frontend/index.html` file containing inlined Vue 3 and
 Canonical browser addressing is `/<page>?<existing-page-state>`. The route query
 carries only the selected page and the already-shareable Day `date`, Guide
 `article`, and Diagnose `view`, `factor`, `start_min`, `end_min`, `another`, and
-`occ` coordinates. A saved `#/<page>?...` link migrates once by replacement;
-programmatic interfaces live below `/api` and local assets below `/assets`.
+`occ` coordinates. A fragment carries no route: the retired `#/<page>?...`
+grammar is unsupported, so a saved hash link opens the default page rather than
+the page it names. Programmatic interfaces live below `/api` and local assets
+below `/assets`.
 
 ### Requirement: Diagnose surface asks "what tuning moves are available now?"
 

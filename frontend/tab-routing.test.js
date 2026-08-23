@@ -33,10 +33,14 @@ test('the parse reports whether the address named a page, so a bare arrival can 
   for (const page of ['day', 'diagnose', 'verify', 'plan', 'settings', 'guide']) {
     assert.equal(parseRoute({ pathname: `/${page}`, search: '' }).pageNamed, true);
   }
-  // The retired canonical hash names a page on the arrival that migrates it, and
-  // the narrow split form names Diagnose, exactly as they did before #94.
-  assert.equal(parseRoute({ pathname: '/', hash: '#/verify', search: '' }).pageNamed, true);
-  assert.equal(parseRoute({ pathname: '/', hash: '', search: '?view=lows' }).pageNamed, true);
+  // A query carrying Diagnose's own state names Diagnose even from `/`, so an
+  // address that already says where it is is never promoted away from it.
+  assert.equal(parseRoute({ pathname: '/', search: '?view=lows' }).pageNamed, true);
+  // #94: the retired `#/<page>?...` grammar is not read, so a saved hash link
+  // names nothing — it is the bare `/` it literally is, and is treated as one.
+  const stale = parseRoute({ pathname: '/', hash: '#/verify', search: '' });
+  assert.equal(stale.pageNamed, false, 'a fragment names no page');
+  assert.equal(stale.page, 'diagnose', 'a saved hash link lands on the default page');
 
   const bare = parseRoute({ pathname: '/', hash: '', search: '' });
   assert.equal(bare.pageNamed, false, 'a bare arrival names no page');
@@ -44,26 +48,28 @@ test('the parse reports whether the address named a page, so a bare arrival can 
   assert.equal(serializeRoute(bare), '/diagnose', 'and still canonicalizes in place');
 });
 
-test('Diagnose mode round-trips and migrates from the split query', () => {
-  const canonical = parseRoute({ hash: '#/diagnose?mode=drawn', search: '' });
+test('Diagnose mode round-trips from its page route and from a bare query', () => {
+  const canonical = parseRoute({ pathname: '/diagnose', search: '?mode=drawn' });
   assert.equal(canonical.mode, 'drawn');
   assert.equal(serializeRoute(canonical), '/diagnose?mode=drawn');
 
-  const migrated = parseRoute({ hash: '#diagnose', search: '?mode=drawn' });
-  assert.equal(migrated.mode, 'drawn');
-  assert.equal(serializeRoute(migrated), '/diagnose?mode=drawn');
+  // Diagnose state on a bare `/` still resolves to Diagnose and serializes to
+  // its page route; only the page is implied, never the values.
+  const implied = parseRoute({ pathname: '/', search: '?mode=drawn' });
+  assert.equal(implied.mode, 'drawn');
+  assert.equal(serializeRoute(implied), '/diagnose?mode=drawn');
 });
 
 test('Day date and Guide article restore from their page route and leave with the page', () => {
-  const day = parseRoute({ hash: '#/day?date=2026-08-22', search: '' });
-  const guide = parseRoute({ hash: '#/guide?article=reading-day', search: '' });
+  const day = parseRoute({ pathname: '/day', search: '?date=2026-08-22' });
+  const guide = parseRoute({ pathname: '/guide', search: '?article=reading-day' });
   assert.equal(day.date, '2026-08-22');
   assert.equal(guide.article, 'reading-day');
   assert.equal(serializeRoute({ ...day, page: 'diagnose' }), '/diagnose');
   assert.equal(serializeRoute({ ...guide, page: 'diagnose' }), '/diagnose');
 
   const writes = [];
-  const location = { pathname: '/', hash: '#/diagnose', search: '' };
+  const location = { pathname: '/diagnose', hash: '', search: '' };
   const history = { pushState: (_state, _title, address) => writes.push(address) };
   writeRoute(day, { location, history });
   writeRoute(guide, { location, history });
@@ -71,22 +77,20 @@ test('Day date and Guide article restore from their page route and leave with th
 });
 
 test('P53 coordinates move from the split query into the Diagnose route and restore once', () => {
-  const route = parseRoute({ hash: '#diagnose', search: '?view=lows&factor=correction_stacking&start_min=0&end_min=120&another=1&occ=low-7' });
+  const route = parseRoute({ pathname: '/', search: '?view=lows&factor=correction_stacking&start_min=0&end_min=120&another=1&occ=low-7' });
   assert.deepEqual(route, {
     page: 'diagnose', pageNamed: true, view: 'lows', factor: 'correction_stacking',
     start_min: '0', end_min: '120', another: '1', occ: 'low-7', mode: null,
   });
   assert.equal(serializeRoute(route), '/diagnose?view=lows&factor=correction_stacking&start_min=0&end_min=120&another=1&occ=low-7');
 
-  const mixed = parseRoute({
-    hash: '#/diagnose?modal=dataquality&factor=carb_undercount',
-    search: '?view=lows&factor=late_bolus',
-  });
-  assert.equal(mixed.view, 'lows');
-  assert.equal(mixed.factor, 'carb_undercount');
+  // The parsed route replaces the address in place with its canonical form, and
+  // a stale fragment does not survive that replacement — #94 retired the
+  // `#/<page>?...` grammar outright, so no fragment may linger in the address.
+  const carried = parseRoute({ pathname: '/diagnose', search: '?view=lows&factor=carb_undercount' });
   const replacements = [];
-  writeRoute(mixed, {
-    location: { pathname: '/', hash: '#/diagnose?modal=dataquality&factor=carb_undercount', search: '?view=lows&factor=late_bolus' },
+  writeRoute(carried, {
+    location: { pathname: '/diagnose', hash: '#/diagnose?factor=late_bolus', search: '?view=lows&factor=carb_undercount' },
     history: { replaceState: (_state, _title, address) => replacements.push(address) },
     replace: true,
   });

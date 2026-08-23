@@ -18,8 +18,8 @@ Plan-draft API.
 - Every reachable local JavaScript, stylesheet, and image served by Harmonic lives
   under `/assets`; test and support files outside the app's reachable graph remain
   unserved.
-- Existing canonical hash links normalize once into their clean equivalent so
-  saved links continue to open.
+- The retired `#/<page>?...` grammar is unsupported outright: a fragment carries
+  no route, is never migrated, and a saved hash link opens the default page.
 - One Vue-free routing interface still owns browser parse, serialize, navigation,
   canonicalization, and Back/Forward restoration.
 - Existing API payloads, methods, authorization, page behavior, and page-local
@@ -30,13 +30,13 @@ paths keep the server's clear 404 behavior.
 
 ## Risk contract
 
-- **Must prevent:** API or frontend-asset routes being shadowed; saved hash links
-  stranding the user; Back/Forward or a stale Diagnose response silently showing
-  state different from the address; secret exposure, irreversible loss of
-  authoritative data, or silent incorrect success.
-- **Must recover:** a supported direct page load or refresh serves the SPA; an
-  existing canonical hash link is normalized to the clean equivalent without
-  adding a history step.
+- **Must prevent:** API or frontend-asset routes being shadowed; a fragment being
+  routed on or left in the address; Back/Forward or a stale Diagnose response
+  silently showing state different from the address; secret exposure,
+  irreversible loss of authoritative data, or silent incorrect success.
+- **Must recover:** a supported direct page load or refresh serves the SPA; a bare
+  arrival canonicalizes in place to the default page without adding a history
+  step, dropping any stale fragment it carried.
 - **Accepted failure:** an unsupported path receives the server's existing clear
   404 and requires manual navigation to a supported page.
 - **Unsupported:** new bookmarkable UI state, new page-state value validation,

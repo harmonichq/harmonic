@@ -3788,12 +3788,13 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         // threads never run concurrently and GIL-thrash the single uvicorn worker.
         const enqueue = makeSerialGate();
 
-        const initialHash = parseRoute(location);
-        if (location.hash.startsWith('#/') || location.hash.startsWith('#diagnose')) {
-          writeRoute(initialHash, { replace: true });
-        } else if (location.pathname === '/') {
-          writeRoute(initialHash, { replace: true });
-        }
+        // #94: the address is the pathname and query; a fragment routes nothing.
+        // A bare `/` canonicalizes in place to the default page, which also
+        // drops any stale fragment a saved link still carries — that link is
+        // not migrated to the page it used to name, because the retired
+        // `#/<page>?...` grammar is no longer supported at all.
+        const initialRoute = parseRoute(location);
+        if (location.pathname === '/') writeRoute(initialRoute, { replace: true });
         // #132: if the initial URL is a patterns/investigate deep-link, stash the
         // #246: the old Patterns/Investigate deep-link is retired with the tab; a stale
         // `#patterns?mode=investigate` hash now just lands on Diagnose (resolveTab below).
@@ -3810,7 +3811,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         // rules that `/` normalizes in place to the default page, so restoring a
         // different pane here would leave the address naming one page while the
         // shell showed another. Nothing has written `tab` for some time either.
-        const tab = ref(initialHash.page);
+        const tab = ref(initialRoute.page);
         const dark = ref(document.documentElement.classList.contains('dark'));
         // #248 / ADR 0024: the developer flag. Tier-2 reasoning (near-miss, outranked,
         // per-detector meaning, model steps) is always on; this gates only tier-3
@@ -3880,7 +3881,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         // The retired window model (#22/#35 presets, custom range, anchor+lookback
         // stack) is gone; nav bounds come from /api/status, never re-derived here.
         const dailyDate = ref(null);
-        const pendingDailyDate = ref((initialHash && initialHash.date) || null);
+        const pendingDailyDate = ref((initialRoute && initialRoute.date) || null);
 
         // Local (NOT UTC) calendar-today — only a fallback for the pathological
         // "store has zero CGM" case; normal cold arrival uses latest_data_day.
@@ -4330,8 +4331,9 @@ html.dark .viz .tie:hover::before { opacity:.13; }
               kbCurrent.value = parsed.article;
               kbFetchArticle(parsed.article);
             }
-            // #246: `#patterns` migrated to `#diagnose` in setTab above; the retired
-            // Investigate sub-state (mode/day/ep) no longer applies.
+            // #246: the legacy `patterns` id migrates to `diagnose` in setTab
+            // above; the retired Investigate sub-state (mode/day/ep) no longer
+            // applies.
             reopenModalFromHash(parsed.modal);
           } finally {
             nextTick(() => {
@@ -4851,9 +4853,9 @@ html.dark .viz .tie:hover::before { opacity:.13; }
            the shell (sidebar / search / deep-link) and the authored how-tos
            (markdown fetched from /api/kb/<slug>). See ADR 0044. */
         const kbCurrent = ref(
-          initialHash && initialHash.page === 'guide' && initialHash.article
-            && KB_ARTICLES.some((a) => a.slug === initialHash.article)
-            ? initialHash.article : 'start-here');
+          initialRoute && initialRoute.page === 'guide' && initialRoute.article
+            && KB_ARTICLES.some((a) => a.slug === initialRoute.article)
+            ? initialRoute.article : 'start-here');
         const kbQuery = ref('');
         // Per-slug raw-markdown cache + per-slug error, both reactive so the body
         // and the full-text search index update as bodies land. Read by the ACTIVE
@@ -5564,7 +5566,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           if (tab.value === 'guide') loadCatalog();       // #269: initial /guide deep-link
           if (tab.value === 'verify') {
             loadVerify();
-          } else if (!initialHash.pageNamed) {
+          } else if (!initialRoute.pageNamed) {
             await loadVerify();
             if (verifyTrials.value.some((trial) => trial.state === 'maturing')
                 && tab.value === 'diagnose') tab.value = 'verify';
@@ -5580,10 +5582,10 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         onMounted(() => {
           // Data quality and the occurrence-highlight pseudo-modal don't depend
           // on /api/analyze having resolved to be set, so apply those immediately.
-          if (initialHash && initialHash.modal) {
-            if (initialHash.modal.kind === 'dataquality' || initialHash.modal.kind === 'occurrence') {
+          if (initialRoute && initialRoute.modal) {
+            if (initialRoute.modal.kind === 'dataquality' || initialRoute.modal.kind === 'occurrence') {
               applyingHash = true;
-              try { reopenModalFromHash(initialHash.modal); }
+              try { reopenModalFromHash(initialRoute.modal); }
               finally { nextTick(() => { applyingHash = false; }); }
             }
           }

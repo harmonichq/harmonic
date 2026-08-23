@@ -46,7 +46,7 @@ const paramsFromRoute = (route = parseRoute(location)) => {
   return new URLSearchParams(ROUTE_KEYS.flatMap((key) => route[key] === null ? [] : [[key, route[key]]]));
 };
 /* Glucose leads and is the fallback: it is the recommendation surface, so a
-   bare #diagnose opens there. Meals and Lows are evidence lenses you choose. */
+   bare /diagnose opens there. Meals and Lows are evidence lenses you choose. */
 const VIEWS = ['glucose', 'meals', 'lows'];
 
 const COHORTS = {

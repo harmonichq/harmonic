@@ -770,7 +770,7 @@ test('top bar and footer expose the locked destination inventory and neutral pro
 // a maturing Trial promotes the arrival to Verify. That choice hangs on the
 // difference between "named no page" and "the router resolved the default",
 // which the clean grammar can no longer express as a null page.
-test('a bare arrival is promoted to a maturing Trial, and a named page is not', async () => {
+test('a bare or hash arrival is promoted to a maturing Trial, and a named page is not', async () => {
   const browser = await launch();
   const promoted = await browser.newPage({ viewport: VIEWPORTS[1] });
   await routeApp(promoted);
@@ -781,6 +781,20 @@ test('a bare arrival is promoted to a maturing Trial, and a named page is not', 
     assert.equal(await promoted.evaluate(() => location.pathname), '/verify',
       'the promoted arrival addresses Verify');
   } finally { await promoted.close(); }
+
+  // #94 retired the `#/<page>?...` grammar, so a saved hash link names nothing:
+  // it is a bare arrival, and it promotes like one. The fragment names Plan and
+  // the wearer still lands on Verify — the hash is not honoured, not migrated,
+  // and not treated as an asked-for page.
+  const stale = await browser.newPage({ viewport: VIEWPORTS[1] });
+  await routeApp(stale);
+  await stale.addInitScript(() => localStorage.setItem('ciq_token', 'fixture-token'));
+  try {
+    await stale.goto('http://ciq.local/#/plan');
+    await stale.locator('.vw').waitFor();
+    assert.equal(await stale.evaluate(() => location.pathname + location.hash), '/verify',
+      'a saved hash link is a bare arrival: promoted, and no fragment survives');
+  } finally { await stale.close(); }
 
   // The same roster must not move a wearer who named a page: the promotion is
   // the shell answering an unasked question, never overriding an asked one.
@@ -796,7 +810,7 @@ test('a bare arrival is promoted to a maturing Trial, and a named page is not', 
   } finally { await named.close(); }
 });
 
-test('clean page paths own direct load, refresh, history, migration, and local assets', async () => {
+test('clean page paths own direct load, refresh, history, canonicalization, and local assets', async () => {
   const browser = await launch();
   const direct = await browser.newPage({ viewport: VIEWPORTS[1] });
   const loadedAssets = new Set();
@@ -862,9 +876,16 @@ test('clean page paths own direct load, refresh, history, migration, and local a
       'Forward restores Verify selection');
   } finally { await historyPage.close(); }
 
-  const migration = await browser.newPage({ viewport: VIEWPORTS[1] });
-  await routeApp(migration);
-  await migration.addInitScript(() => {
+  // ADR 94 retired the `#/<page>?...` grammar outright — a fragment is not read,
+  // not migrated and not honoured — so there is no migration left to prove. What
+  // survives is the canonicalization itself: a bare arrival becomes its page
+  // address in place, with no history entry, and is not rewritten again on
+  // refresh. R1 covers a stale fragment reaching the built app and being dropped
+  // rather than routed. The roster carries no maturing Trial, so nothing
+  // promotes this arrival off Diagnose while it is being measured.
+  const canonical = await browser.newPage({ viewport: VIEWPORTS[1] });
+  await routeApp(canonical, { verifyTrials: [complete] });
+  await canonical.addInitScript(() => {
     localStorage.setItem('ciq_token', 'fixture-token');
     window.__routeWrites = { pushes: [], replaces: [] };
     for (const [method, key] of [['pushState', 'pushes'], ['replaceState', 'replaces']]) {
@@ -876,23 +897,19 @@ test('clean page paths own direct load, refresh, history, migration, and local a
     }
   });
   try {
-    await migration.goto('http://ciq.local/?view=glucose#/diagnose?mode=dense');
-    await migration.waitForFunction(() => location.pathname + location.search === '/diagnose?view=glucose&mode=dense');
-    await migration.locator('.dw').waitFor();
-    assert.deepEqual(await migration.evaluate(() => window.__routeWrites), {
+    await canonical.goto('http://ciq.local/?view=glucose&mode=dense');
+    await canonical.waitForFunction(() => location.pathname + location.search === '/diagnose?view=glucose&mode=dense');
+    await canonical.locator('.dw').waitFor();
+    assert.deepEqual(await canonical.evaluate(() => window.__routeWrites), {
       pushes: [], replaces: ['/diagnose?view=glucose&mode=dense'],
-    }, 'a supported canonical hash migrates with exactly one replacement');
-    assert.equal(await migration.evaluate(() => location.hash), '', 'migration leaves no hash state');
-    await migration.reload();
-    await migration.locator('.dw').waitFor();
-    assert.deepEqual(await migration.evaluate(() => window.__routeWrites), { pushes: [], replaces: [] },
-      'refreshing the clean result does not migrate it again');
-  } finally { await migration.close(); }
+    }, 'a bare arrival canonicalizes with exactly one replacement and no history entry');
+    assert.equal(await canonical.evaluate(() => location.hash), '', 'no fragment survives the arrival');
+    await canonical.reload();
+    await canonical.locator('.dw').waitFor();
+    assert.deepEqual(await canonical.evaluate(() => window.__routeWrites), { pushes: [], replaces: [] },
+      'the canonical address is not rewritten again on refresh');
+  } finally { await canonical.close(); }
 });
-
-function locationHash(hash) {
-  return hash.split('?')[0];
-}
 
 function contrastRatio(foreground, background) {
   const parse = (color) => {

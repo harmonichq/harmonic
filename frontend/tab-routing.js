@@ -1,5 +1,5 @@
 // Path-tab routing stays Vue-free so both initial load and popstate use the
-// same migration and the fallback can be covered without a browser.
+// same parse and the fallback can be covered without a browser.
 export const TABS = [
   // #248 (ADR 0027): Daily report + Model view merged into one Day surface.
   // #246 (ADR 0027): Diagnose fused Recommendations + Patterns into one queue;
@@ -37,29 +37,22 @@ function routeState(page, params) {
   return {};
 }
 
-// The one hash-routing seam owns the page plus only the page-local state that
+// The one routing seam owns the page plus only the page-local state that
 // already round-trips. It deliberately transports values without validating
 // them; each existing page retains its own defaults and value handling.
-export function parseRoute({ pathname = '/', hash = '', search = '' } = {}) {
-  const raw = hash.replace(/^#/, '');
-  const [legacyPath = '', legacyQuery = ''] = raw.split('?');
-  const splitParams = new URLSearchParams(search.replace(/^\?/, ''));
-  const legacy = legacyPath.startsWith('/') || legacyPath === 'diagnose';
-  const path = legacy ? legacyPath : pathname;
-  const page = path === '/' ? DEFAULT_TAB : resolveTab(path.replace(/^\//, ''));
-  // #94: every address now resolves to a page, so "which page is this" stopped
-  // being the same question as "did the wearer name one". A bare `/` names
-  // none, and the shell may then choose for them — the maturing-Trial
-  // promotion. Reported as a flag beside the resolved page rather than as a
-  // null page, so no caller has to keep a second copy of the default.
-  const pageNamed = legacy || pathname !== '/'
-    || DIAGNOSE_KEYS.some((key) => splitParams.has(key));
-  const params = new URLSearchParams(legacy ? legacyQuery : search);
-  if (page === 'diagnose') {
-    for (const key of DIAGNOSE_KEYS) {
-      if (!params.has(key) && splitParams.has(key)) params.set(key, splitParams.get(key));
-    }
-  }
+//
+// #94: the address is the pathname and the ordinary query. A fragment carries
+// no route — the retired `#/<page>?...` grammar is not read, not migrated and
+// not honoured, so a saved hash link arrives as the bare `/` it literally is.
+export function parseRoute({ pathname = '/', search = '' } = {}) {
+  const params = new URLSearchParams(search);
+  const page = pathname === '/' ? DEFAULT_TAB : resolveTab(pathname.replace(/^\//, ''));
+  // Every address resolves to a page, so "which page is this" is not the same
+  // question as "did the wearer name one". A bare `/` names none, and the shell
+  // may then choose for them — the maturing-Trial promotion. A query carrying
+  // Diagnose's own state names Diagnose even from `/`, so an address that
+  // already says where it is is never promoted away from it.
+  const pageNamed = pathname !== '/' || DIAGNOSE_KEYS.some((key) => params.has(key));
   return { page, pageNamed, ...routeState(page, params) };
 }
 
@@ -79,6 +72,9 @@ export function serializeRoute(route, extra = []) {
 export function writeRoute(route, { location = window.location, history = window.history,
   replace = false, extra = [] } = {}) {
   const address = serializeRoute(route, extra);
+  // The comparison spans the fragment even though nothing routes on it: an
+  // address that still carries one differs from its canonical form, so the
+  // in-place write is what drops a stale fragment rather than leaving it.
   if (`${location.pathname}${location.search}${location.hash}` !== address) {
     history[replace ? 'replaceState' : 'pushState'](null, '', address);
   }

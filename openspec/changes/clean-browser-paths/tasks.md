@@ -10,8 +10,8 @@
       mirror with exact set equality, and bind reachable local assets to served
       `/assets` file routes with exact set equality plus HTTP reachability checks.
 - [x] Replace hash-router expectations with clean path/query expectations while
-      preserving migration, Back/Forward, request regeneration, and stale-response
-      rejection coverage.
+      preserving Back/Forward, request regeneration, and stale-response rejection
+      coverage. Hash addresses are unsupported, so no migration is asserted.
 
 ## 2. Separate the server namespaces
 
@@ -25,9 +25,9 @@
 
 ## 3. Move browser routing and transport
 
-- [x] Make the Vue-free router parse and serialize clean pathname/query state,
-      narrowly migrate the existing canonical hash grammar, and restore solely
-      through the clean History API path after migration.
+- [x] Make the Vue-free router parse and serialize clean pathname/query state from
+      the pathname and query alone, read no fragment, and restore solely through
+      the clean History API path.
 - [x] Move the browser transport's endpoint paths beneath `/api` and all local HTML
       asset references beneath `/assets`.
 - [x] Move CI and container health probes to `/api/health`; move container and

@@ -177,6 +177,85 @@ deletion's whole risk is over-deletion.
 
 Disposition: copied unchanged into the work order posted on #104.
 
+## Spike — both items executed in this worktree and reverted
+
+Run at base `7cddfe9`. Every number below was measured, not estimated. The tree was
+restored with `git checkout -- .` afterwards.
+
+**Environment.** A fresh worktree fails one backend test with
+`ModuleNotFoundError: No module named 'uvicorn'`
+(`tests/test_cli.py::DbResolutionTest::test_serve_passes_resolved_path_to_app_factory`).
+That is the venv, not the code: `uv sync --frozen --extra api --extra sync` clears
+it. Baselines after the sync are **pytest 1965 passed / 1 skipped** and
+**node --test 433 pass / 0 fail**.
+
+**Item 1 — the deletion.** Removing `frontend/index.html:4508-4726` (the whole
+`#57 Basal` block through its `watch`), the theme-toggle re-render at `:4119`, the
+two resize lines at `:5586-5587`, the three setup-return lines at `:5790-5792`, and
+narrowing the import at `:2354-2355` to `buildLanesOption` / `fmt` / `direction` /
+`LANE_SPAN`; plus `frontend/chart-builders.js:535-763` (`ribbonYMax`,
+`buildRibbonOption`, `buildEvidenceStripOption`) and `:68-79` (`basalTier` with its
+comment), leaving that file at 523 lines; plus the two imports and two tests in
+`frontend/chart-builders.test.js`. Result: **431 pass / 0 fail** — the 433 baseline
+minus exactly the two deleted tests, with nothing else broken.
+
+The dead stylesheet set was derived mechanically, not by eye: with every `<style>`
+block stripped from `frontend/index.html`, none of these 43 class names occurs in
+any markup or JavaScript under `frontend/`, and the remaining four (`tag-change`,
+`tag-confirmed`, `tag-insufficient`, `tag-nodata`) occur exactly once each, in the
+`TIER_TAG` table at `:4574-4579` that the deletion removes:
+
+```
+ribbon-card ribbon-chart ribbon-legend evidence-strip-chart basal-lede
+sw-prog sw-solid sw-hatch sw-hollow sw-gap tier-toggle
+diff-block diff-block-body diff-block-head diff-block-tag diff-block-title
+diff-caret diff-range diff-cell diff-fold diff-n diff-note diff-rate diff-row
+diff-time diff-gutter g-add g-context g-del g-nodata g-unver
+r-add r-del r-unver hunk-actions hunk-detail hunk-head hunk-why
+unver-why range-legend basal-block-row basal-block-actions basal-block-member
+tag-change tag-confirmed tag-insufficient tag-nodata
+```
+
+Deleting every rule whose selector draws only on that closed set removes **59
+rules**. The `#57` stylesheet region (`:349-568`) contains many other dead
+selectors belonging to other retired features (`daily-*`, `fd-*`,
+`finding-callout*`, `flag-*`, `glossary*`); they are deliberately left alone.
+
+`node mockups/finding-evidence-routing.exploration/build.mjs --check` then fails
+with `stale artifact: … app-base.extracted.css`, exactly as D6 predicts. Rebuilding
+clears it, changes that artifact by **59 deletions and nothing else**, and leaves
+`data.json` and `evidence-table.extracted.js` byte-identical.
+
+Four stale comments survive the deletion and must be corrected in the same change:
+`frontend/chart-builders.js:10` and `:17`, and `frontend/index.html:2348` and
+`:2350` (line numbers before deletion), all of which still describe
+`renderRibbonChart`/`renderEvidenceStrips`/`chartColors`/`ribbonYMax`.
+
+**Item 2 — the noun.** Three literal edits — `ciq_autotune/findings_projection.py`
+(`"noun": "clean nights"`), `mockups/findings-projection.mirror.mjs:214`
+(`noun: 'clean nights'`) and `frontend/diagnose-findings-queue.test.js:199` — then
+`uv run python scripts/gen_findings_projection_fixtures.py`. The regenerated
+fixture's diff is **exactly 16 noun lines changed and nothing else**; its `--check`
+then reports `findings-projection fixtures current`; `node --test` returns to
+**433 pass / 0 fail**; and pytest stays at 1965 passed / 1 skipped.
+
+The exploration's `--check` stays green across that change without any edit,
+confirming D5.
+
+**A trap found by executing it.** Removing the now-dead `STEADY_NOUN` map naively —
+dropping the `support` re-assignment from `voiceProjection`'s returned row — makes
+`data.json` stale, because the spread moves `support` to a different key position
+and `JSON.stringify` preserves insertion order. The removal must keep the object's
+shape, retaining `support: row.support ? { ...row.support, noun } : row.support`
+and only dropping the `respelled` lookup. Done that way the artifact stays
+byte-identical and `--check` stays green.
+
+**Guards.** `check_adr_numbers` reports 26 ADRs in 19 design.md files;
+`check_owned_identifiers` 30 rules passed; `check_public_allowlist` 334 cleared /
+507 excluded; `check_public_links` 302 shipping documents, all resolving;
+`scan_public_tree` 334 scanned, 18 stamped, 5 pinned, 160 acknowledged dose-ratio,
+0 findings. Unchanged by either item.
+
 ## Open questions
 
 - Whether the Cockpit shell's frozen ledger owes a permanent retirement record and

@@ -88,7 +88,8 @@ carried over on trust from the ticket text or the behavior ledger.
   met by the shipped `role="group"` + `aria-pressed` toggle-button pattern once
   focus survives activation. Converting to roving would take the group from two
   tab stops to one, a change to a frozen behavior contract that wants its own
-  ruling. Default assumed; see open question 2. inline
+  ruling. **Ruled by Connor Griffin, 2026-08-23: Align stays two ordinary Tab
+  stops.** No longer a default. inline
 
 - **Surface lifecycle is `revise`.** `mockups/INDEX.md` carries the surface
   "Finding → evidence routing (Diagnose + Verify)" as `shipped`. UI Craft's
@@ -114,9 +115,15 @@ carried over on trust from the ticket text or the behavior ledger.
   ancestor of it. No `role="group"` segmented control survives in
   `diagnose-event-comparison.js` at all. The 2026-08-21 re-freeze for #83
   carried P27 forward unchanged, because it looked for behavior with no story,
-  not for a story with no behavior. Under UI Craft's revise rules this is an
-  unsanctioned retirement, which only a named person can rule. An agent must not
-  sanction it. → issue (open question 1)
+  not for a story with no behavior. Under UI Craft's revise rules this was an
+  unsanctioned retirement, which only a named person could rule.
+  **Ruled by Connor Griffin, 2026-08-23: P27 is RETIRED in this ticket**, carrying
+  the sanction line `sanction: Connor Griffin · 2026-08-23 · "#55 removed
+  installSegKeys; the shipped Align control is two ordinary Tab stops"`. Roving is
+  not restored; a separate issue is the owner's to open if they want it back, and
+  this ticket does not file one. The retirement's loud absence assertion
+  (ArrowRight/ArrowLeft move neither focus nor `aria-pressed`) lives in the new
+  browser story. → issue (#96 work order, steps 5 and 7)
 
 - **The `#lane` group's 48 tab stops stay as shipped.** Ledger P27's own note
   records the mock's one-tab-stop lane as a mock addition the app does not have,
@@ -172,25 +179,46 @@ Disposition: inline
 
 ## Open questions
 
-Both are for a named person. Neither blocks drafting the work order; question 1
-blocks the revise sweep's completion, not the code change.
+None outstanding. Both questions this ledger raised were ruled by the owner on
+2026-08-23 and are folded into the decisions above:
 
-1. **P27 ruling.** The frozen ledger asserts roving Arrow/Home/End focus on
-   segmented instrument groups via `installSegKeys`, which #55 deleted without a
-   sanction. UI Craft's revise rules say a ledger story no longer present on the
-   base is an unsanctioned retirement, and that no design conversation starts
-   until a named person rules it with a date and quoted reason. Options: record
-   a dated retirement sanction for P27; restore roving focus so P27 becomes true
-   again; or amend P27 to describe only what still ships. Recommended: sanction
-   the retirement now and, if roving is still wanted, file it as its own ticket
-   — restoring it inside #96 would widen a focus-management bug fix into a
-   keyboard-model change on a frozen surface.
+1. **P27 ruling — RESOLVED.** Retire P27 in this ticket with a dated sanction
+   quoting the owner. Roving is not restored, and no follow-up issue is filed here.
+2. **Roving focus inside Align — RESOLVED.** Align stays two ordinary Tab stops.
 
-2. **Roving focus inside Align.** Should the Align group become one tab stop
-   with Arrow/Home/End between the two choices (the ARIA toggle-group
-   convention), or stay two ordinary tab stops? Defaulted to staying two, since
-   the ticket's expectation is met either way and the change would alter the
-   surface's tab-stop count. Coupled to question 1.
+A third question surfaced during review and was ruled at the same time:
+
+3. **#96 / #100 overlap — RESOLVED.** #100 ("opening a finding leaves keyboard focus
+   on the document body") stays a separate ticket and #96 lands first. If the
+   reconciliation helper written here is reusable, the pull request says so and #100
+   claims it.
+
+## Review instrumentation
+
+Cold panels, all model-opus, against the drafted order. Blockers tagged `authoring`
+(present since the first draft) or `injected` (introduced by a prior fix round), per
+the triage rubric.
+
+| Round | Blockers | authoring | injected | Notes |
+|---|---|---|---|---|
+| 1 — two cold reviewers (grounding; repo rules) | 7 | 7 | 0 | 4 |
+| 2 — cold delta check | 2 | 0 | 2 | 2 |
+| 3 — cold delta check after the owner rulings | see final report | | | |
+
+The P27 retirement added in round 3 is tagged `authoring`: the divergence was found
+during triage grounding and was present in the first draft as an unresolved record;
+the owner's ruling changed its disposition, not its discovery.
+
+Round 2's two blockers were both `injected` — holes opened by round 1's own fixes
+(an outward focus ring clipped by `.seg { overflow: hidden }`, and a "reach it by
+real Tab" mandate with no terminating route from a mouse-drilled detail). That is
+the pattern the rubric warns about, and it is why the ring is now pinned to the
+inward offset and the Tab route is spelled out rather than left to the implementer.
+
+The single most expensive `authoring` defect was a false census: the first draft
+claimed Align never renders under `state: 'typical'`, which the repo's own green
+test at `frontend/diagnose-workstation.browser.test.mjs:493` contradicts. It came
+from sweeping only the default filter. It is corrected above.
 
 ## Spawned tasks
 

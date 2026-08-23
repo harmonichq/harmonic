@@ -178,3 +178,67 @@ and scope precision, not defects, and the one genuinely open item is a human rul
 (the key set), which the hard-cap rule routes to the operator rather than to another
 panel. No `injected` blockers across either round, so the rewrite-clean signal never
 fired.
+
+## Owner ruling — 2026-08-23, and the rewrite it forced
+
+**Connor Griffin, 2026-08-23: option 2.** ArrowUp/ArrowDown step the Occurrences
+roster; ArrowLeft/ArrowRight STOP stepping it. Reason, quoted verbatim into the
+ledger sanction: "the roster is drawn vertically; one key model per list."
+This supersedes the additive recommendation carried in `Open questions` above; that
+question is now closed and is not to be reopened. `inline`
+
+The order was rewritten clean rather than patched, per the triage rule that
+accumulated rounds are rewritten rather than amended. What the flip changed:
+
+- **This is now a RETIREMENT, not an addition.** Withdrawing left/right stepping
+  pulls in ui-craft revise §4's retirement obligations: a named, dated, quoted
+  sanction; a permanent RETIRED entry; and an absence assertion that prints the
+  sanction on every run. The repo already has the idiom — `projectAuthor()`
+  (replay 372-380) reads the sanctioner from `pyproject.toml` so the owner's name is
+  not added a second time to a shipping source file, and S17 (1120-1128) is the
+  worked example. The order names both rather than letting the agent invent one.
+- **S12 is retired in place, not deleted.** It keeps its id and table entry and
+  becomes the absence assertion. Because left/right still step on base, a correctly
+  written absence assertion must FAIL on base — that is the red-first proof, and the
+  order says so explicitly, since an S12 that still passes on base is the signature
+  of a fake assertion.
+- **Story set shrank.** The additive draft's S73 ("horizontal model retained") is
+  dropped as meaningless under the new model. Renumbered: S72 vertical stepping,
+  S73 focus. Two new stories, not three, so the expectation is the measured base 89
+  + 2 = 91. `inline`
+- **The chart's pre-existing double-fire ends, intentionally.** Left/right inside
+  `#ec-chart` today move the chart cursor AND step the roster, because that handler
+  `preventDefault`s without `stopPropagation`. Once the roster handler stops
+  accepting those keys, they move only the chart cursor. This needs no edit to
+  `frontend/diagnose-event-comparison.js` and is covered by the P24 retirement
+  sanction rather than a separate ruling. Under the additive model this had been a
+  hazard to guard against; under the replacement model it is the intended outcome.
+  `inline`
+- **Blast radius confirmed closed.** `grep -n "ArrowLeft\|ArrowRight\|ArrowUp\|ArrowDown"`
+  over the replay returns exactly four hits: 1006, 1009, 1015 (all inside S12) and
+  2861. So S12 is the only story exercising the withdrawn keys. `inline`
+- **A regression canary was identified.** Line 2861 is an `#86` probe that opens the
+  Filter menu at the queue root and presses ArrowUp expecting roving focus to wrap.
+  It sits at `k === 'factors'`, so the roster handler cannot fire — which is live
+  corroboration of the no-filter-guard argument. If it ever goes red, the frame-kind
+  separation has broken and the guard becomes earned. It is now an acceptance
+  criterion. `inline`
+- **Verification gained the public-tree leg**, as CI runs it
+  (`build_public_tree.py` → `check_public_links.py` → `scan_public_tree.py`, plus the
+  exploration `build.mjs --check`), because this change edits a shipping source
+  comment. With it, a new boundary: never name a non-shipping path
+  (`docs/scope/*`, `mockups/*.behavior.md`) in a comment inside a shipping
+  `frontend/` file. The mechanism is verified, not stylistic — `check_public_links.py`
+  reads path-shaped tokens in the COMMENTS of shipping source files and fails when
+  one names a tracked file the public tree excludes. Step 2 rewrites the KEYBOARD
+  comment, which is exactly where that slip would happen. `inline`
+- **Routing:** `Open as: terra / high` — implementation routes to Terra first.
+
+### Risk contract — amendment
+
+`Evidence owed` is restated for the replacement model: replay stories for ↑/↓
+stepping, end-stop, focus retention after Enter and after a step, the keyhint text,
+and — new — an absence assertion proving ←/→ no longer step, printing the retirement
+sanction on every run. The `Must prevent` entry "silent incorrect success" now has a
+sharper instance: an absence assertion that passes on base, which would mean the
+withdrawn behaviour was never actually tested.

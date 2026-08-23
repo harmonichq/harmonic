@@ -2812,15 +2812,15 @@ export const issue81FailedProjection = async (page) => {
 
 /** S43 · #81 review — a settled slice keeps its own matching findings rather
     than proving exclusion only through an empty state. The same server-owned
-    projection now publishes seven whole-day rows and three rows for 04:30–06:00,
+    projection now publishes eight whole-day rows and three rows for 04:30–06:00,
     including ticket 10's server-published Morning history row in both scopes. */
 export const issue81SlicedProjection = async (page) => {
   await page.click('#seg-window button:nth-child(5)');   // 24 h
   await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false');
   await settle(page, 150);                              // the level's 90 ms swap has landed
   const wholeDay = await state(page);
-  is(wholeDay.crumbMeta, '7 findings · 30 days', 'S43 whole day publishes all seven findings');
-  is(wholeDay.queue.length, 7, 'S43 whole day renders all seven server rows');
+  is(wholeDay.crumbMeta, '8 findings · 30 days', 'S43 whole day publishes all eight findings');
+  is(wholeDay.queue.length, 8, 'S43 whole day renders all eight server rows');
 
   await page.click('#seg-window button:nth-child(1)');   // Overnight, 00:00–06:00
   await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false');

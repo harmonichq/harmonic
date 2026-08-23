@@ -123,6 +123,38 @@ class EventComparisonTest(unittest.TestCase):
         with self.assertRaisesRegex(AssertionError, "missing outcome minute"):
             event_comparison._validate_capture(capture)
 
+    def test_low_crosswalk_keeps_comparison_precedence_over_row_relative_findings(self):
+        """The shared judgment decides shape; this surface decides cohort precedence."""
+        occurrence = {
+            "t": "2026-08-01 12:00:00", "bg": 62,
+            "verdicts": [{
+                "classifier": "correction_on_iob", "matched": False,
+                "silence_reason": "no_trigger",
+            }],
+        }
+
+        def route(*, matches=(), matched=False, reason="no_trigger"):
+            judgment = SimpleNamespace(
+                rebound=SimpleNamespace(peak=170), rebound_bar=160,
+                near_floor=140,
+                verdict=SimpleNamespace(matched=matched, silence_reason=reason),
+            )
+            with patch("ciq_autotune.event_comparison.over_treated_rebound_judgment",
+                       return_value=judgment):
+                return event_comparison._route_low(
+                    occurrence, "over_treated_low", set(matches), [], [], [], [],
+                )["cohort"]
+
+        # Findings reads a row's own classifier verdict. Event comparison first
+        # reserves an episode already claimed by another factor, then uses its
+        # comparability cohorts for the remaining shared judgment states.
+        self.assertEqual(route(matches={"over_treated_low"}, matched=True), "fired")
+        self.assertEqual(route(reason="under_threshold"), "near_rule")
+        self.assertEqual(route(), "neutral")
+        self.assertEqual(route(reason="insufficient_data"), "excluded")
+        self.assertEqual(route(matches={"correction_on_iob"}, reason="under_threshold"),
+                         "another_factor")
+
     def test_preparation_projects_one_closed_meal_coordinate(self):
         occurrence = {
             "t": "2026-08-01 12:00:00", "date": "2026-08-01", "bg": 150,
@@ -552,10 +584,15 @@ class EventComparisonTest(unittest.TestCase):
         }
         payload = _families_many([meal])
         payload["exposures"]["lows"]["occurrences"] = [occurrence]
-        no_rebound = SimpleNamespace(peak=100)
+        calm_rebound = SimpleNamespace(
+            rebound=SimpleNamespace(peak=100), rebound_bar=160,
+            near_floor=140,
+            verdict=SimpleNamespace(matched=False, silence_reason="no_trigger"),
+        )
         with (
             patch("ciq_autotune.explore_exposures.build_exposures", return_value=payload),
-            patch("ciq_autotune.event_comparison.guarded_rebound", return_value=no_rebound),
+            patch("ciq_autotune.event_comparison.over_treated_rebound_judgment",
+                  return_value=calm_rebound),
             patch("ciq_autotune.event_comparison.classify_correction_on_iob",
                   return_value=SimpleNamespace(matched=False)),
         ):

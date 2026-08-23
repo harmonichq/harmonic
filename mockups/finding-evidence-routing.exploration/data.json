@@ -24,13 +24,13 @@
    "chip_counts": {
     "corrections": 1,
     "highs": 5,
-    "lows": 1,
+    "lows": 2,
     "meals": 1
    },
    "counts": {
     "assert": 3,
     "blind": 0,
-    "finding": 3,
+    "finding": 4,
     "held": 0,
     "history": 1
    },
@@ -246,7 +246,7 @@
       },
       {
        "family": "lows",
-       "m": 6,
+       "m": 5,
        "n": 1,
        "noun": "lows"
       }
@@ -266,7 +266,7 @@
      "evidence": [
       {
        "date": "2026-08-17",
-       "ep_id": "ep1",
+       "ep_id": "2026-08-13-ep0",
        "family": "highs",
        "kind": "high",
        "t": "2026-08-17 14:35:00",
@@ -294,55 +294,47 @@
        "family": "highs",
        "kind": "high",
        "t": "2026-08-17 10:15:00",
-       "verdict": "fired"
-      },
-      {
-       "date": "2026-08-17",
-       "ep_id": "ep1",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-17 13:00:00",
-       "verdict": "fired"
-      },
-      {
-       "date": "2026-08-17",
-       "ep_id": "ep3",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-17 16:20:00",
        "verdict": "outranked"
       },
       {
-       "date": "2026-08-17",
-       "ep_id": "ep4",
+       "date": "2026-08-13",
+       "ep_id": "2026-08-13-ep0",
        "family": "lows",
        "kind": "low",
-       "t": "2026-08-17 02:40:00",
-       "verdict": "no_data"
+       "t": "2026-08-13 12:10:00",
+       "verdict": "fired"
       },
       {
-       "date": "2026-08-17",
-       "ep_id": "ep5",
+       "date": "2026-08-14",
+       "ep_id": "2026-08-14-ep1",
        "family": "lows",
        "kind": "low",
-       "t": "2026-08-17 12:10:00",
-       "verdict": "no_data"
-      },
-      {
-       "date": "2026-08-17",
-       "ep_id": "ep9",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-17 05:15:00",
+       "t": "2026-08-14 12:10:00",
        "verdict": "near_miss"
       },
       {
-       "date": "2026-08-17",
-       "ep_id": "ep10",
+       "date": "2026-08-15",
+       "ep_id": "2026-08-15-ep2",
        "family": "lows",
        "kind": "low",
-       "t": "2026-08-17 08:45:00",
+       "t": "2026-08-15 12:10:00",
+       "verdict": "clean"
+      },
+      {
+       "date": "2026-08-15",
+       "ep_id": "2026-08-15-ep3",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-15 16:10:00",
        "verdict": "no_data"
+      },
+      {
+       "date": "2026-08-16",
+       "ep_id": "2026-08-17-ep4",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-16 22:00:00",
+       "verdict": "outranked"
       }
      ],
      "id": "finding:over_treated_low",
@@ -365,25 +357,25 @@
      "tier": "worth_a_look",
      "title": "Over-treated low",
      "verdict_counts": {
-      "clean": 0,
-      "fired": 3,
+      "clean": 1,
+      "fired": 2,
       "near_miss": 1,
-      "no_data": 4,
-      "outranked": 2
+      "no_data": 2,
+      "outranked": 3
      },
      "verdict_counts_by_family": {
       "highs": {
        "clean": 0,
-       "fired": 2,
+       "fired": 1,
        "near_miss": 0,
        "no_data": 1,
-       "outranked": 1
+       "outranked": 2
       },
       "lows": {
-       "clean": 0,
+       "clean": 1,
        "fired": 1,
        "near_miss": 1,
-       "no_data": 3,
+       "no_data": 1,
        "outranked": 1
       }
      },
@@ -421,7 +413,7 @@
      "evidence": [
       {
        "date": "2026-08-17",
-       "ep_id": "ep1",
+       "ep_id": "2026-08-13-ep0",
        "family": "highs",
        "kind": "high",
        "t": "2026-08-17 14:35:00",
@@ -524,16 +516,111 @@
      "annotation": null,
      "appearances": [
       {
+       "family": "lows",
+       "m": 5,
+       "n": 1,
+       "noun": "lows"
+      }
+     ],
+     "asserts_move": null,
+     "chips": [
+      "lows"
+     ],
+     "current": null,
+     "direction": null,
+     "episodes": 1,
+     "estimate": null,
+     "event_chart": {
+      "factor": "correction_on_iob",
+      "view": "lows"
+     },
+     "evidence": [
+      {
+       "date": "2026-08-13",
+       "ep_id": "2026-08-13-ep0",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-13 12:10:00",
+       "verdict": "outranked"
+      },
+      {
+       "date": "2026-08-14",
+       "ep_id": "2026-08-14-ep1",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-14 12:10:00",
+       "verdict": "clean"
+      },
+      {
+       "date": "2026-08-15",
+       "ep_id": "2026-08-15-ep2",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-15 12:10:00",
+       "verdict": "clean"
+      },
+      {
+       "date": "2026-08-15",
+       "ep_id": "2026-08-15-ep3",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-15 16:10:00",
+       "verdict": "clean"
+      },
+      {
+       "date": "2026-08-16",
+       "ep_id": "2026-08-17-ep4",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-16 22:00:00",
+       "verdict": "fired"
+      }
+     ],
+     "id": "finding:correction_on_iob",
+     "kind": "habit",
+     "label": null,
+     "lean": null,
+     "lever": "correction_on_iob",
+     "members": null,
+     "parameter": null,
+     "past_setting": null,
+     "priority": null,
+     "programmed_now": null,
+     "reason": null,
+     "recommended": null,
+     "regime_end": null,
+     "register": "finding",
+     "run_ids": null,
+     "span": null,
+     "support": null,
+     "tier": "noted",
+     "title": "Correction on active insulin",
+     "verdict_counts": {
+      "clean": 3,
+      "fired": 1,
+      "near_miss": 0,
+      "no_data": 0,
+      "outranked": 1
+     },
+     "verdict_counts_by_family": {
+      "lows": {
+       "clean": 3,
+       "fired": 1,
+       "near_miss": 0,
+       "no_data": 0,
+       "outranked": 1
+      }
+     },
+     "window_scope": "window"
+    },
+    {
+     "annotation": null,
+     "appearances": [
+      {
        "family": "correction_clusters",
        "m": 1,
        "n": 1,
        "noun": "correction clusters"
-      },
-      {
-       "family": "lows",
-       "m": 6,
-       "n": 1,
-       "noun": "lows"
       }
      ],
      "asserts_move": null,
@@ -545,10 +632,7 @@
      "direction": null,
      "episodes": 1,
      "estimate": null,
-     "event_chart": {
-      "factor": "correction_stacking",
-      "view": "lows"
-     },
+     "event_chart": null,
      "evidence": [
       {
        "date": "2026-08-17",
@@ -557,54 +641,6 @@
        "kind": "correction",
        "t": "2026-08-17 15:10:00",
        "verdict": "fired"
-      },
-      {
-       "date": "2026-08-17",
-       "ep_id": "ep1",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-17 13:00:00",
-       "verdict": "outranked"
-      },
-      {
-       "date": "2026-08-17",
-       "ep_id": "ep3",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-17 16:20:00",
-       "verdict": "fired"
-      },
-      {
-       "date": "2026-08-17",
-       "ep_id": "ep4",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-17 02:40:00",
-       "verdict": "no_data"
-      },
-      {
-       "date": "2026-08-17",
-       "ep_id": "ep5",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-17 12:10:00",
-       "verdict": "no_data"
-      },
-      {
-       "date": "2026-08-17",
-       "ep_id": "ep9",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-17 05:15:00",
-       "verdict": "no_data"
-      },
-      {
-       "date": "2026-08-17",
-       "ep_id": "ep10",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-17 08:45:00",
-       "verdict": "no_data"
       }
      ],
      "id": "finding:correction_stacking",
@@ -628,10 +664,10 @@
      "title": "Correction stacking",
      "verdict_counts": {
       "clean": 0,
-      "fired": 2,
+      "fired": 1,
       "near_miss": 0,
-      "no_data": 4,
-      "outranked": 1
+      "no_data": 0,
+      "outranked": 0
      },
      "verdict_counts_by_family": {
       "correction_clusters": {
@@ -640,13 +676,6 @@
        "near_miss": 0,
        "no_data": 0,
        "outranked": 0
-      },
-      "lows": {
-       "clean": 0,
-       "fired": 1,
-       "near_miss": 0,
-       "no_data": 4,
-       "outranked": 1
       }
      },
      "window_scope": "window"
@@ -716,7 +745,7 @@
    }
   },
   "root": "Findings",
-  "meta": "7 findings · 30 days",
+  "meta": "8 findings · 30 days",
   "tiers": {
    "ic:720": {
     "tier": "next_in_line",
@@ -726,7 +755,7 @@
     "tier": "worth_a_look",
     "word": "Worth a look"
    },
-   "finding:correction_stacking": {
+   "finding:correction_on_iob": {
     "tier": "noted",
     "word": "noted"
    }
@@ -3548,7 +3577,7 @@
       "noun": "highs"
      },
      {
-      "count": "1 of 6",
+      "count": "1 of 5",
       "noun": "lows"
      }
     ]

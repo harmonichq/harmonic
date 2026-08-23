@@ -169,4 +169,65 @@ of steady data", "insufficient evidence" and "holds at current".
 
 ## Review rounds
 
-Recorded by the mandatory plan-review panel; see the work order's own record.
+### Panel 1 — two cold reviewers, no context from the drafting session
+
+One reviewer took grounding; one took acceptance, interface shape, scope and cost.
+
+Blockers found: 4 (all `authoring` — present since the draft; 0 `injected`).
+
+1. The lead `Done when` grep was unachievable. `VERDICT_KEY.insufficient`
+   (`frontend/diagnose-workstation.js:224`) legitimately keeps the literal
+   "insufficient evidence" — it is the very copy the corrected head reads for a
+   thin slot — so "returns nothing" could only be satisfied by editing a value
+   the order's own Boundaries forbid touching. Found independently by the author
+   and by the acceptance reviewer. Fixed: the criterion now greps for the
+   defective expression itself and states that the `VERDICT_KEY` entry survives.
+2. A `Done when` bullet claimed head and tile agree "for all four states",
+   which the order deliberately does not build: the asserting branch still prints
+   the raw `safety_status`, so a `capped (raise)` slot's head reads engine jargon
+   while its tile reads "suggests a raise" — the same exposure the order cites to
+   reject Option C. Step 6 also captures only three states, so no render could
+   evidence the fourth. Fixed: bullet deleted; its honest halves were already
+   covered by the bullets above it.
+3. The header told the agent to base on an integration branch that does not
+   exist (verified: `git branch -r` shows only `origin/main` and
+   `origin/codex/93-diagnose-cold-qa`; #102's branch is unpushed), while step 1
+   told it to work in the existing worktree and stop if #102 is absent — two
+   mutually exclusive instructions about its own base. Fixed: the arrangement is
+   now stated as an operator PRECONDITION, the agent is forbidden from rebasing
+   or merging it itself, and its only action on a failed check is to stop.
+4. The tile-equality assertion was specified against a string that is not equal
+   to the head: the accessible name is `<label> basal slot, <verdict wording>`
+   (`frontend/diagnose-workstation.js:487`), so the head equals only its trailing
+   clause. Fixed in both step 8 and `Done when`.
+
+The grounding reviewer independently raised objections 1 and 3 (same defects, sharper
+wording, both adopted) and added three more:
+
+5. `STORIES` (`frontend/diagnose-workstation-behavior.replay.mjs:3348-3385`) is a
+   registry of `['S<id>', fn, '<state>', { <openApp options> }]` tuples, and a story
+   function absent from it runs ZERO times while the replay still reports every
+   registered story passing. The order asked for a new story without saying to
+   register it, so the pin could have been silently inert and step 11's count would
+   not have moved. Verified by reading the table. Fixed: step 8 now requires the
+   registration and puts the posed state in the fourth tuple slot, as S32-S38 do.
+6. Head-versus-tile equality is false by construction: the head prints the
+   `VERDICT_KEY` value alone (`:657`) while the tile's accessible name is
+   `<label> basal slot, <value>` (`:487`). An equality assertion would fail against
+   CORRECT code. Fixed: `ariaLabel.endsWith(headText)` in both step 8 and `Done when`.
+7. The base was not merely unnamed, it was unbuilt: #102's branch carries only its
+   scope ledger and no integration branch exists on the remote. The batch plan settled
+   by the owner lands #95 → #102 → #97 → #100 → #96 → #101 into
+   `codex/diagnose-cold-qa-batch` sequentially. Fixed: the order now gates on #102
+   having MERGED into that branch, makes step 1 rebase onto its tip and STOP if the
+   predecessor grep returns nothing, and every "changes are already present" phrasing
+   is gone.
+
+Argued and upheld, not changed: the widening to the `hold` state (Option A cannot
+meet the admitted risk contract, which names a head disagreeing with its own tile
+as a must-prevent outcome, and Option B is the smaller diff); the asserting-head
+exclusion (that branch prints a terse truth, not a falsehood, and is listed
+`Unsupported`); the replay-story pin (the revise contract requires the old replay
+to fail before the new one passes, which a browser-suite-only pin cannot give);
+and the ADR (#103 settles a reusable rule, unlike #102, and ADR 25 settled the
+identical split for the correction factor).

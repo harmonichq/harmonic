@@ -37,12 +37,14 @@
   the point estimate is within 0.1 g/u of it. Why: 0.1 is the engine's display step;
   no point tolerance lets a wide-but-covering candidate through (Connor, 2026-08-23,
   Q3). `→ issue` (#109 work order)
-- Placebo construction (spiked, docs/scope/spikes/109-admission-bar-spike.py): meals
+- Placebo construction (spiked at triage, now shipped in
+  `scripts/gen_estimator_truth.py` and recorded in
+  `openspec/changes/estimator-admission-bars/design.md`): meals
   dosed exactly at programmed with zero-mean, dose-independent CGM outcome noise at
   realistic ISF (~50 mg/dL/u). Dose jitter and low-ISF noise both fake a finding —
   the convex carbs/(dose+burden) pooling turns zero-mean noise into downward bias
   (measured: jittered doses asserted at 5.45 vs programmed 5.6). `inline`
-- Recovery recipe (same spike): dosing carbs/R_true against a different programmed
+- Recovery recipe (same origin, same shipped generator): dosing carbs/R_true against a different programmed
   value recovers R_true within 0.1 with the CI covering it. `inline`
 - Defaults accepted: generator is a committed script whose functions tests import
   (no committed fixture bytes, no new CI drift step); replay harness is a standalone

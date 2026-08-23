@@ -6,8 +6,8 @@
  *
  * What is NOT verbatim, and why:
  *   - the chart module is imported from its ported path;
- *   - `_shell.js` is mock-harness chrome. `resolveColors` is copied from it
- *     below because the ported code calls it; `applyTheme` and
+ *   - `_shell.js` is mock-harness chrome. `resolveColors` and `queryState` are
+ *     copied from it below because the ported code calls them; `applyTheme` and
  *     `renderMockBar` are dropped (the app owns its theme, and the mock bar is
  *     excluded from the contract by the behaviour ledger, story S22's note);
  *   - `loadCapture()` is replaced by injected data. The mock fetches four
@@ -39,9 +39,6 @@ import {
   eventChartCoordinate, renderFindingsQueue, queueMeta,
 } from './diagnose-findings-queue.js';
 import { watchDockView, paintWatchDock } from './watched-change-dock.js';
-import {
-  diagnoseAlignmentCoordinates, encodeDiagnoseOccurrence,
-} from './workstation-route-consumers.js';
 /* ADR 31 part 3 (issue #41) — ALIGN's "By event" mode reuses the lens's own
    canvas-only render rather than a second implementation of the projection's
    draw. `diagnose-event-comparison.js` imports `createDiagnoseWorkstation`
@@ -57,6 +54,13 @@ export function resolveColors() {
   const names = ['primary', 'primary-600', 'primary-soft', 'surface', 'surface-2',
     'text', 'muted', 'line', 'ok', 'ok-soft', 'warn', 'warn-soft', 'danger', 'danger-soft'];
   return Object.fromEntries(names.map((name) => [name, styles.getPropertyValue(`--mk-${name}`).trim()]));
+}
+
+/* VERBATIM from the mock's shared harness chrome. `?mode=` is the mock's state parameter;
+   `?state=` is silently ignored there, and the port keeps the same name so one
+   URL drives both sides. */
+export function queryState(fallback, param = 'mode') {
+  return new URLSearchParams(window.location.search).get(param) || fallback;
 }
 
 /* The surface's markup — VERBATIM from the mock's body, lines 1025-1094 (the
@@ -147,8 +151,8 @@ const MARKUP = `
   </main>
 `;
 
-/* Browser fixtures select a manufactured state through the explicit adapter.
-   Product URLs contain only the canonical Diagnose grammar. */
+/* The mock reads its state once, at module load, straight off the URL. The app
+   re-derives both on every mount so `?mode=` can change without a reload. */
 let state = 'typical';
 let CFG = null;
 
@@ -986,7 +990,7 @@ function renderVerdictBand(host, row, family, activeVerdict, onPick) {
    receives the already-adapted captures instead, and returns a teardown so the
    surface can be re-mounted (the mock never re-mounts; it reloads the page).
    `signal` aborts the document/window listeners the ported code registers. */
-function boot(root, data, callbacks, signal, route = {}) {
+function boot(root, data, callbacks, signal) {
   const { day, exposureCapture, audit, params, icMissing } = data;
   const { envelope: envelopeIn, markers: markersIn } = data;
   /* #735 / ADR 79 — the queue's rows and the dock's object are server-owned.
@@ -1045,12 +1049,7 @@ function boot(root, data, callbacks, signal, route = {}) {
 
   renderInstruments(CFG.win, exposureCapture, (key) => {
     // a preset always clears the brace AND pins itself over any frame window
-<<<<<<< HEAD
-    presetKey = key; drawn = null; explicitPreset = true;
-    if (top().k === 'factor') commitRoute(); else paint();
-=======
     presetKey = key; drawn = null; explicitPreset = true; failedKey = null; paint();
->>>>>>> origin/main
   });
   /* PORT DEVIATION (#654), same reason as the scope readout above: the status
      strip is the app shell's footer, shared by every tab and already carrying
@@ -1074,126 +1073,14 @@ function boot(root, data, callbacks, signal, route = {}) {
      one subject), so the string goes with it rather than being re-homed on a
      tooltip nobody would find. */
 
-<<<<<<< HEAD
-  /* CAN the inspector re-scope to an arbitrary clock window? Only if every
-     family's `occurrences` array is COMPLETE — i.e. it holds all `n` exposures,
-     not just the attributed ones — because the denominator of "n of m" is the
-     count of that family's exposures inside the window. This capture is
-     complete on all four families, so it re-scopes. If a future capture ships
-     truncated occurrence lists the inspector does NOT half-scope: it holds full
-     range and says so on one line. */
-  const RESCOPABLE = Object.values(exposures).every((b) => b.occurrences.length === b.n);
-
-  /* WINDOW MEMBERSHIP IS THE SERVER'S (ADR 62 part 6). A finding row publishes
-     `evidence[]` over every in-window occurrence of every family its lever
-     claims — the queue's own outcome-anchored answer, which is why an episode
-     whose meal sits outside the window but whose consequence landed inside it
-     belongs to it. Joining on those keys IS that answer. The browser used to
-     keep an occurrence whose OWN clock minute fell in the window, a third rule
-     disagreeing with the endpoint and the queue; nothing here re-derives a
-     clock rule any more. */
-  const evidenceKey = (e) => `${e.family}\u0000${e.ep_id}\u0000${e.t}`;
-  const occurrenceKey = (family, o) => `${family}\u0000${o.ep_id}\u0000${o.t}`;
-
-  /** One family's published occurrences for a finding row, in capture order.
-      `ep_id` alone is not unique (two same-kind anchors in one episode share
-      it), so the join takes the family, the episode and the instant together —
-      the same three keys `verdictForOcc` looks a verdict up by. */
-  function publishedFor(row, family) {
-    if (!row || !exposures[family]) return [];
-    const allowed = new Set((row.evidence || [])
-      .filter((e) => e.family === family).map(evidenceKey));
-    return exposures[family].occurrences
-      .filter((o) => allowed.has(occurrenceKey(family, o)));
-  }
-
-  /**
-   * The (family, cause) pair a finding's case file frames on.
-   *
-   * ADR 62 part 7: a finding can hold episodes of two kinds — the meal, and the
-   * high the meal ran into — and framing on whichever held MORE put a list of
-   * one kind beside a chart of the other, with evidence keys that cannot even
-   * be joined. So where the lens can re-project this finding
-   * (`alignCoordinatesFor`), the family its event view names wins, and the
-   * panel lists the episodes the chart draws. A finding with no event view
-   * keeps the older routing — the family holding the most occurrences of this
-   * title — now read over the population the server published rather than over
-   * a browser-side clock filter.
-   */
-  function factorInFamily(row, family) {
-    if (!exposures[family]) return null;
-    const published = publishedFor(row, family);
-    return {
-      family,
-      lever: row.lever,
-      cause: row.title,
-      count: published.filter((o) => o.cause_title === row.title).length,
-      familyN: published.length,
-      /* The family qualifier earns its place where this finding's own
-         episodes span more than one family: the reader is being shown one of
-         them, and which one is the fact the head has to carry. */
-      needsQual: new Set((row.evidence || []).map((e) => e.family)).size > 1,
-    };
-  }
-
-  function factorForFinding(row) {
-    const aligned = diagnoseAlignmentCoordinates(row.lever);
-    /* AN ALIGNED FINDING FRAMES ON ITS EVENT VIEW'S FAMILY EVEN WHEN THAT
-       FAMILY IS EMPTY IN THIS WINDOW. A lever claims evidence only in the
-       families it hit, so a published row can carry none in the family its
-       event view names — `Correction on active insulin` over 07:00–10:15 hits
-       only a correction cluster, and names `lows`. Returning nothing there left
-       a row the server published that did not move when it was clicked: no case
-       file, no message, no crumb. Framing on the empty family instead opens the
-       case file reading `0 of 0`, which is what the chart beside it draws.
-       Falling back to the family with the most episodes is NOT the repair — that
-       is exactly the panel/chart disagreement this rule retires. */
-    if (aligned) return factorInFamily(row, aligned.view);
-    return Object.keys(exposures).map((family) => factorInFamily(row, family))
-      .filter((f) => f && f.count)
-      .sort((a, b) => b.count - a.count)[0] || null;
-  }
-
-  /** One FRAME's occurrences and denominator — the frame, not its factor,
-      because the population is the finding row's and the row is carried on the
-      frame. `occurrences` stays this factor's OWN attributed subset: the head
-      caption's "not attributed" remainder and the canvas plot both read off it
-      unchanged. `familyOccurrences` is the frame family's FULL published set,
-      unfiltered by cause, which is what the roster must draw from — every
-      published verdict this lever's classifier could have read, not only the
-      ones it drove. A frame whose row is not in the current window has no
-      published population at all, and says so rather than guessing one. */
-  function scopedFor(f) {
-    const row = findingRowFor(f);
-    if (!row) return { occurrences: [], familyOccurrences: [], familyN: 0 };
-    const published = publishedFor(row, f.factor.family);
-    return {
-      occurrences: published.filter((o) => o.cause_title === f.factor.cause).slice(0, CFG.occCap),
-      familyOccurrences: published.slice(0, CFG.occCap),
-      familyN: published.length,
-    };
-  }
-  const occurrencesFor = (f) => scopedFor(f).occurrences;
-=======
   const findingsFromPreparation = (next) => ({
     ...next.findings,
     rows: next.rendered_rows,
   });
->>>>>>> origin/main
 
   const staged = new Set();        // basal slots staged for Plan
   const icStaged = new Set();      // I:C blocks staged for Plan
-  for (const cell of lane.cells) {
-    if (callbacks.isStaged?.({ family: 'basal', key: cell.slot.__planKey })) {
-      staged.add(cell.i);
-    }
-  }
-  for (const cell of icBlocks) {
-    if (callbacks.isStaged?.({ family: 'ic', key: cell.block.__planKey })) {
-      icStaged.add(cell.id);
-    }
-  }
-  let isfStaged = Boolean(callbacks.isStaged?.({ family: 'isf', raw: isf }));
+  let isfStaged = false;           // the ISF value, staged for Plan
   /* A block selection marks a window SEGMENT, never a two-handle brace (term
      32): the dashed edges and their grips are suppressed and the edges stop
      being hit-testable, so a data boundary can never be dragged into a user
@@ -1204,11 +1091,6 @@ function boot(root, data, callbacks, signal, route = {}) {
   let dir = 'push';
   /* ALIGN's mounted event-comparison canvas (ADR 31 part 3). */
   let alignMount = null;
-<<<<<<< HEAD
-  let alignGeneration = 0;
-  let initialComparison = route.comparison || null;
-=======
->>>>>>> origin/main
   let presetKey = CFG.win;                          // what Esc restores
   let shownRange = null;                            // the window the canvas resolved to
   let braceGripTop = 48;                            // y of the grip band, set by paintBrace
@@ -1219,20 +1101,6 @@ function boot(root, data, callbacks, signal, route = {}) {
      they clear together and reassert together. */
   let explicitPreset = false;
   let drawn = CFG.drawn ? CFG.drawn.slice() : null; // the custom window, or none
-  if (route.selection?.window) {
-    const restored = route.selection.window;
-    const preset = Object.entries(WINDOWS).find(([, spec]) => (
-      spec.range[0] === restored[0] && spec.range[1] === restored[1]
-    ));
-    if (preset) {
-      presetKey = preset[0];
-      explicitPreset = true;
-      drawn = null;
-    } else {
-      drawn = restored.slice();
-      explicitPreset = false;
-    }
-  }
   /* ONE scope, for the canvas and the inspector alike: whatever window is in
      force — a drawn one, else the pressed preset. A preset and a drawn window
      are the same kind of act, so they re-scope the same things; 24 h is the
@@ -1700,20 +1568,6 @@ function boot(root, data, callbacks, signal, route = {}) {
       return;
     }
     if (row.register === 'finding') {
-<<<<<<< HEAD
-      /* A re-projectable finding frames on its event view's family, so the panel
-         and the event canvas name the same published episodes. */
-      const factor = factorForFinding(row);
-      // rowId, not the row object itself: findings reload per window, so the
-      // verdict band re-resolves the live row on every paint (see findingRowFor)
-      if (factor) {
-        const routeFamily = (row.evidence || []).some((evidence) => evidence.family === factor.family)
-          ? factor.family : row.evidence?.[0]?.family;
-        if (!routeFamily) return;
-        push({ k: 'factor', factor, routeFamily, rowId: row.id }, false);
-        commitRoute();
-      }
-=======
       const entryAlignment = eventChartsOnly && eventChartCoordinate(row) ? 'event' : 'clock';
       const frame = { k: 'factor', rowId: row.id, title: row.title,
         caseFile: null, requestedAlignment: entryAlignment, selectedId: null,
@@ -1721,7 +1575,6 @@ function boot(root, data, callbacks, signal, route = {}) {
         eventDiscovery: entryAlignment === 'event' };
       push(frame);
       requestCase(frame, entryAlignment);
->>>>>>> origin/main
       return;
     }
     if (row.parameter === 'isf') { push({ k: 'isf', rowId: row.id }); return; }
@@ -1740,43 +1593,6 @@ function boot(root, data, callbacks, signal, route = {}) {
      {k:'factors'} · {k:'factor', factor} · {k:'occ', occ} · {k:'slot', cell}. */
   const stack = [{ k: 'factors' }];
   const top = () => stack[stack.length - 1];
-<<<<<<< HEAD
-  const push = (frame, paintNow = true) => {
-    dir = 'push'; stack.push(frame); shownRows = EVIDENCE_CAP;
-    if (paintNow) paint();
-  };
-  const popTo = (i) => {
-    const leavingRoute = top().k === 'factor';
-    dir = 'pop'; stack.length = i + 1;
-    if (leavingRoute) callbacks.route?.({}); else paint();
-  };
-
-  function completeRouteQuery() {
-    const frame = top();
-    if (frame.k !== 'factor') return {};
-    const routeFamily = frame.selectedOcc
-      ? frame.factor.family : (frame.routeFamily || frame.factor.family);
-    const query = {
-      finding: frame.rowId,
-      factor: `${routeFamily}.${frame.factor.lever}`,
-    };
-    if (drawn || explicitPreset) {
-      const routeWindow = findingsWindow();
-      if (routeWindow) {
-        query.start_min = String(routeWindow[0]);
-        query.end_min = String(routeWindow[1]);
-      }
-    }
-    if (frame.align === 'event') query.projection = 'event';
-    if (frame.selectedOcc) {
-      query.occ = encodeDiagnoseOccurrence(routeFamily, frame.selectedOcc);
-    }
-    return query;
-  }
-
-  function commitRoute() {
-    if (top().k === 'factor') callbacks.route?.(completeRouteQuery());
-=======
   const push = (frame) => {
     if (top().k === 'factors') queueScrollTop = el('level').scrollTop;
     filterOpen = false;
@@ -1798,7 +1614,6 @@ function boot(root, data, callbacks, signal, route = {}) {
   function parameterRowFor(frame) {
     if (!frame.rowId) return true;
     return (findings?.rows || []).find((row) => row.id === frame.rowId) || null;
->>>>>>> origin/main
   }
   /* The lane is a shortcut INTO the slot branch: from level 1 it pushes, from a
      slot frame it swaps in place, so clicking cells never deepens the stack. */
@@ -1833,105 +1648,6 @@ function boot(root, data, callbacks, signal, route = {}) {
   function selectOcc(occ) {
     const f = top();
     if (f.k !== 'factor') return;
-<<<<<<< HEAD
-    f.selectedOcc = occ;
-    commitRoute();
-  }
-
-  /** The published finding row behind a factor frame, re-resolved from the
-      LIVE projection every paint (findings reload per window — a captured
-      reference would go stale). Keyed on the row's own id, carried onto the
-      frame by `drillFinding`, never guessed from a title. `verdict_counts`
-      and `evidence` are READ off it (ADR 31 part 6): nothing here counts,
-      classifies or re-derives membership. Every factor frame carries a rowId —
-      the boot presets open on a published finding too — so a null here means
-      the row LEFT the window under the reader's feet, never that the frame
-      never had one (ADR 62 part 9). */
-  function findingRowFor(f) {
-    if (!f.rowId) return null;
-    return (findings?.rows || []).find((r) => r.id === f.rowId) || null;
-  }
-
-  /** Parameter details opened from the queue retain the server row identity.
-      A settled projection either republishes that exact row or owns its absence;
-      slot and block times are never used as a second membership rule. */
-  function parameterRowFor(f) {
-    if (!f.rowId) return true;       // lane navigation is not projection-backed
-    return (findings?.rows || []).find((row) => row.id === f.rowId) || null;
-  }
-
-  /** One occurrence's published verdict, looked up by the id the projection
-      already carries (`ep_id` + family + `t`) — a lookup, never a
-      classification. `ep_id` alone is not unique: two same-kind anchors in one
-      episode (e.g. a low and its rebound high, both split_low_rebounds) share
-      an `ep_id`, so `.find()` on that alone silently takes the first and
-      misreports the second. `t` IS unique per occurrence and the projection
-      already publishes it, so joining on both closes the collision. */
-  function verdictForOcc(row, factor, occ) {
-    if (!row || !row.evidence) return null;
-    const hit = row.evidence.find((e) => (
-      e.family === factor.family && e.ep_id === occ.ep_id && e.t === occ.t
-    ));
-    return hit ? hit.verdict : null;
-  }
-
-  /** The roster the band's current drill scopes to (ADR 31 part 5 — the band
-      drills the ROSTER only; the canvas keeps plotting every occurrence).
-      Draws from the frame family's FULL occurrence set (finding 1 follow-up)
-      so a drill into Borderline/Does not meet has real members to find —
-      the old cause-filtered pool held only this lever's OWN attributed hits,
-      which read `fired` by construction, so every other segment was
-      structurally empty. Exactly one published verdict shows at a time: the
-      drilled segment, or `fired` at rest (the mock's roster form) — never
-      `outranked`/`no_data`, which have no band segment and print on the
-      band's own footer line instead. A frame whose row has left the current
-      window has no published roster at all, and the panel says so instead of
-      falling back to a browser-side filter (ADR 62 part 9). */
-  function rosterFor(f) {
-    const row = findingRowFor(f);
-    if (!row) return [];
-    const scoped = scopedFor(f);
-    const wanted = f.bandVerdict || 'fired';
-    return scoped.familyOccurrences.filter((o) => verdictForOcc(row, f.factor, o) === wanted);
-  }
-
-  if (route.selection) {
-    const row = (findings?.rows || []).find((candidate) => candidate.id === route.selection.finding);
-    const factor = row ? factorInFamily(row, route.selection.family) : null;
-    if (row && factor) {
-      const frame = {
-        k: 'factor', factor, rowId: row.id,
-        routeFamily: route.selection.routeFamily,
-        align: route.selection.projection,
-      };
-      if (route.selection.occurrence) {
-        frame.selectedOcc = route.selection.occurrence;
-        frame.bandVerdict = verdictForOcc(row, factor, route.selection.occurrence);
-      }
-      stack.push(frame);
-    }
-  } else {
-    // opening depth per browser-fixture state — a payload publishing no
-    // re-projectable finding simply opens at the queue.
-    if ((CFG.level === 2 || CFG.level === 3) && bootFrames[0]) stack.push({ ...bootFrames[0] });
-    if (CFG.level === 3) {
-      const pool = occurrencesFor(top());
-      const occ = pool.find((o) => day.days[o.date] && tierOf(o))
-        || pool.find((o) => tierOf(o)) || pool[0];
-      if (occ) stack[stack.length - 1].selectedOcc = occ;
-    }
-    if (CFG.level === 'slot') {
-      const cell = lane.cells.find((c) => c.verdict === 'up') || lane.cells[0];
-      if (cell.asserts) staged.add(cell.i);
-      stack.push({ k: 'slot', cell });
-    }
-    if (CFG.level === 'block' && !icMissing) {
-      const cell = icBlocks.find((c) => c.asserts) || icBlocks[0];
-      if (CFG.stageOpen && cell.asserts) icStaged.add(cell.id);
-      stack.push({ k: 'block', cell });
-    }
-    if (CFG.level === 'isf') stack.push({ k: 'isf' });
-=======
     requestCase(f, f.requestedAlignment || 'clock', occ.id || occ);
   }
 
@@ -1940,8 +1656,25 @@ function boot(root, data, callbacks, signal, route = {}) {
   if ((CFG.level === 2 || CFG.level === 3) && bootFrames[0]) stack.push({ ...bootFrames[0] });
   if (CFG.level === 3) {
     // The retained case response supplies the selection after the opening request.
->>>>>>> origin/main
   }
+  if (CFG.level === 'slot') {
+    // opens with a cell selected AND one staged, so the badge, the underline and
+    // the Undo affordance are all visible at rest
+    const cell = lane.cells.find((c) => c.verdict === 'up') || lane.cells[0];
+    if (cell.asserts) staged.add(cell.i);
+    stack.push({ k: 'slot', cell });
+  }
+  /* If the asserting capture is missing, this state opens at LEVEL 1 instead of
+     on a block — that is where the missing-capture line prints, and a state
+     that silently showed a held block would misreport what it is. */
+  if (CFG.level === 'block' && !icMissing) {
+    // prefer a block that asserts, so the asserting state opens on it; the held
+    // capture has none and opens on its first block instead
+    const cell = icBlocks.find((c) => c.asserts) || icBlocks[0];
+    if (CFG.stageOpen && cell.asserts) icStaged.add(cell.id);
+    stack.push({ k: 'block', cell });
+  }
+  if (CFG.level === 'isf') stack.push({ k: 'isf' });
 
   function paintChart() {
     const f = top();
@@ -2098,11 +1831,6 @@ function boot(root, data, callbacks, signal, route = {}) {
   /** ALIGN owns two explicit projections: behavioral case files and I:C history. */
   function paintAlign() {
     const f = top();
-<<<<<<< HEAD
-    const mapped = f.k === 'factor' ? diagnoseAlignmentCoordinates(f.factor.lever) : null;
-    el('align-group').hidden = !mapped;
-    if (!mapped) {
-=======
     const isCase = f.k === 'factor';
     const isHistory = f.k === 'history';
     const liveRow = isCase && settled() ? findingRowFor(f) : null;
@@ -2111,7 +1839,6 @@ function boot(root, data, callbacks, signal, route = {}) {
       : caseAlignmentIn(preparation, f) ? { caseFile: true } : null);
     el('align-group').hidden = !mappedCase && !isHistory;
     if (!mappedCase && !isHistory) {
->>>>>>> origin/main
       disposeAlign();
       return;
     }
@@ -2119,11 +1846,6 @@ function boot(root, data, callbacks, signal, route = {}) {
       ? f.align
       : f.caseFile?.projection?.alignment || f.requestedAlignment || 'clock';
     renderAlign(alignKey, (key) => {
-<<<<<<< HEAD
-      if (f.align === key) return;
-      f.align = key;
-      commitRoute();
-=======
       if (alignKey === key || f.loading || (isHistory && f.pending)) return;
       if (isHistory) {
         if (key === 'clock') {
@@ -2139,23 +1861,11 @@ function boot(root, data, callbacks, signal, route = {}) {
         return;
       }
       requestCase(f, key, f.selectedId);
->>>>>>> origin/main
     });
     if (alignKey === 'clock') {
       disposeAlign();
       return;
     }
-<<<<<<< HEAD
-    const window = findingsWindow();
-    const selected = f.selectedOcc;
-    const knownProjection = alignMount?.projection || initialComparison;
-    const occurrenceId = selected ? knownProjection?.occurrences.find((occurrence) => (
-      occurrence.identity.ep_id === selected.ep_id && occurrence.identity.t === selected.t
-    ))?.identity.id || null : null;
-    // Frame, window, and selection all determine the server-owned projection.
-    if (alignMount && alignMount.frame === f && alignMount.windowKey === windowKey(window)
-      && alignMount.occurrenceId === occurrenceId) return;
-=======
     if (isHistory) {
       if (!f.events) return;
       const mounted = alignMount?.frame === f
@@ -2196,47 +1906,11 @@ function boot(root, data, callbacks, signal, route = {}) {
     }
     if (!f.caseFile || f.caseFile.projection.alignment !== 'event') return;
     if (alignMount?.caseFile === f.caseFile) return;
->>>>>>> origin/main
     el('chart').hidden = true;
     el('brace').hidden = true;
     el('lane-wrap').hidden = true;
     const host = el('align-canvas');
     host.hidden = false;
-<<<<<<< HEAD
-    if (initialComparison) {
-      const projection = initialComparison;
-      initialComparison = null;
-      alignMount = {
-        ...renderEventSurface(host, projection, { headerHost: el('canvas-head') }),
-        frame: f, windowKey: windowKey(window), occurrenceId,
-      };
-      return;
-    }
-    const generation = ++alignGeneration;
-    Promise.resolve(callbacks.loadProjection?.({
-      view: mapped.view, factor: mapped.factor,
-      window: window ? { start_min: window[0], end_min: window[1] } : null,
-      another: false, occurrenceId,
-    })).then((projection) => {
-      if (generation !== alignGeneration || top() !== f) return;
-      alignMount?.observer?.disconnect();
-      alignMount?.chart?.dispose();
-      alignMount?.restoreHeader?.();
-      alignMount = { ...renderEventSurface(host, projection, { headerHost: el('canvas-head') }), frame: f, windowKey: windowKey(window), occurrenceId };
-      // The roster has the shared episode-and-time key, while the endpoint owns
-      // its opaque catalog id. Once the just-loaded catalog supplies that id,
-      // re-project the selected occurrence through the public endpoint.
-      if (selected && !occurrenceId) paintAlign();
-    }).catch(() => {
-      // ALIGN is a re-projection, not a navigation: a failed fetch preserves
-      // the finding and selection while returning its canvas to By clock.
-      if (generation === alignGeneration) {
-        f.align = 'clock';
-        disposeAlign();
-        paint();
-      }
-    });
-=======
     alignMount?.observer?.disconnect();
     alignMount?.chart?.dispose();
     alignMount?.restoreHeader?.();
@@ -2244,7 +1918,6 @@ function boot(root, data, callbacks, signal, route = {}) {
       ...renderEventSurface(host, f.caseFile, { headerHost: el('canvas-head') }),
       frame: f, caseFile: f.caseFile,
     };
->>>>>>> origin/main
   }
 
   /* The badge counts STAGED PARAMETER ITEMS — a basal slot, an I:C block, the
@@ -2626,10 +2299,7 @@ function boot(root, data, callbacks, signal, route = {}) {
 
   // Esc and the chip's × both mean "restore the last preset" — which is an
   // explicit choice in its own right, so it outranks the frame's window too
-  function clearDrawn() {
-    drawn = null; explicitPreset = true;
-    if (top().k === 'factor') commitRoute(); else paint();
-  }
+  function clearDrawn() { drawn = null; explicitPreset = true; paint(); }
 
   /** A lane click is a physical scope choice, so it REPLACES the workspace.
       This is the only navigation that clears one — drilling never does. */
@@ -2692,7 +2362,6 @@ function boot(root, data, callbacks, signal, route = {}) {
     const chartEl = el('chart');
     let mode = null; let anchor = 0; let width = 0; let grabOffset = 0;
     let moved = false; let pressMinute = 0;
-    let priorWindow = null;
     let rafId = 0;
 
     /* LIVE SHADING. Two moving dashed edges with nothing between them gave no
@@ -2777,17 +2446,7 @@ function boot(root, data, callbacks, signal, route = {}) {
       // and nothing to undo — leave the panel exactly as the press found it
       if (!dragged) return;
       paintLive(null);
-      // A factor's committed window is route state: the winning shell publish
-      // performs the full paint. Queue/parameter windows remain local because
-      // the canonical Diagnose grammar has no window-only form.
-      if (top().k === 'factor') {
-        const query = completeRouteQuery();
-        drawn = priorWindow.drawn;
-        presetKey = priorWindow.presetKey;
-        explicitPreset = priorWindow.explicitPreset;
-        paint();
-        callbacks.route?.(query);
-      } else paint();
+      paint();   // commit: the window now renders in the full brace treatment
     }
     /* Is this press inside the shown window's interior? Hit-tested rather than
        overlaid: an interior <div> would swallow the chart's own hover tooltip
@@ -2836,11 +2495,6 @@ function boot(root, data, callbacks, signal, route = {}) {
       ev.preventDefault();
       mode = kind;
       moved = false;
-      priorWindow = {
-        drawn: drawn ? drawn.slice() : null,
-        presetKey,
-        explicitPreset,
-      };
       pressMinute = minuteAt(ev);
       document.addEventListener('mousemove', move);
       document.addEventListener('mouseup', end);
@@ -2864,24 +2518,6 @@ function boot(root, data, callbacks, signal, route = {}) {
   }
 
   function paint() {
-<<<<<<< HEAD
-    ensureFindings();
-    const open = top();
-    /* The mounted event surface owns both the visible canvas and the shared
-       header until its replacement projection lands. Repainting the hidden
-       clock canvas in between would write its header fields while the event
-       markup is mounted. Navigation that ends event ownership releases it
-       first, so the clock repaint starts with its own header restored. */
-    if (alignMount && (open.k !== 'factor' || open.align !== 'event'
-      || !diagnoseAlignmentCoordinates(open.factor.lever))) disposeAlign();
-    renderChips(settled() ? findings?.chip_counts : null, selectedChips, (key) => {
-      const next = new Set(selectedChips || CHIP_LABELS.map(([name]) => name));
-      if (next.has(key)) next.delete(key); else next.add(key);
-      selectedChips = next.size === CHIP_LABELS.length ? null : next;
-      collapsedFindingsExpanded = false;
-      paint();
-    });
-=======
     ensurePreparation();
     const open = top();
     const ownsAlign = (open.k === 'factor'
@@ -2889,7 +2525,6 @@ function boot(root, data, callbacks, signal, route = {}) {
       || (open.k === 'history' && open.align === 'event');
     if (alignMount && !ownsAlign) disposeAlign();
     paintFilter();
->>>>>>> origin/main
     paintCrumb();
     paintLevel();
     renderLane(lane, top().k === 'slot' ? top().cell : null, staged, pickCell);
@@ -2932,7 +2567,7 @@ function boot(root, data, callbacks, signal, route = {}) {
       filterOpen = false;
       dir = 'pop';
       stack.pop();
-      if (f.k === 'factor') callbacks.route?.({}); else paint();
+      paint();
       return;
     }
     if (f.k !== 'factor' || !f.selectedId
@@ -2943,12 +2578,7 @@ function boot(root, data, callbacks, signal, route = {}) {
     const next = at + (ev.key === 'ArrowRight' ? 1 : -1);
     if (at < 0 || next < 0 || next >= siblings.length) return;
     ev.preventDefault();
-<<<<<<< HEAD
-    f.selectedOcc = siblings[next];   // same frame, next reading — the panel and
-    commitRoute();
-=======
     requestCase(f, f.requestedAlignment, siblings[next].id);
->>>>>>> origin/main
   }, { signal });   // PORT: abortable
 
   observeResize(el('chart'), () => chart);
@@ -2998,11 +2628,8 @@ function boot(root, data, callbacks, signal, route = {}) {
    lens control Meals and Lows do, in the same optical row. `render()` rewrites
    the whole root, and the surface calls it on its own state changes, so the
    lead has to be re-injected here rather than once by the caller. */
-export function createDiagnoseWorkstation({
-  root, callbacks = {}, railLead = null, browserAdapter = null,
-}) {
+export function createDiagnoseWorkstation({ root, callbacks = {}, railLead = null }) {
   let payload = null;
-  let routeState = {};
   let captures = null;
   let teardown = null;
   let repaintDay = null;
@@ -3025,7 +2652,7 @@ export function createDiagnoseWorkstation({
     repaintDay = null;
     if (aborter) { aborter.abort(); aborter = null; }
     if (!payload) return;
-    state = browserAdapter?.diagnoseState || 'typical';
+    state = queryState('typical');
     if (!Object.prototype.hasOwnProperty.call(CFG_BY_STATE, state)) state = 'typical';
     CFG = CFG_BY_STATE[state];
     captures = toCaptures(payload, { ...callbacks, state });
@@ -3061,22 +2688,31 @@ export function createDiagnoseWorkstation({
       railLead.install(root.querySelector('.instruments'));
     }
     aborter = new AbortController();
-    const booted = boot(root, captures, callbacks, aborter.signal, routeState);
+    const booted = boot(root, captures, callbacks, aborter.signal);
     teardown = booted.destroy;
     repaintDay = booted.repaintDay;
   }
 
+  /* State addressability. The mock is driven by `?mode=`; so is the build, and
+     the parameter is written into the URL so a reload keeps the state (behaviour
+     stories S22 and S23 both reload). */
+  function gotoState(next) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('mode', next);
+    window.history.replaceState({}, '', url);
+    render();
+    return root.dataset.state;
+  }
+  window.__dwGotoState = gotoState;
+
   return {
-    setData(nextPayload, nextRoute = {}) {
-      payload = nextPayload;
-      routeState = nextRoute;
-      render();
-    },
+    setData(nextPayload) { payload = nextPayload; render(); },
     setError(message) { showError(message); },
     refresh() { render(); },
     /* A day's real trace resolved: repaint in place off the live boot instance,
        preserving navigation state. No-op if the surface is unmounted or in its
        error state (#666). */
     repaintDay() { repaintDay?.(); },
+    gotoState,
   };
 }

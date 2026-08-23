@@ -48,7 +48,7 @@ export function toCaptures(roster = {}, details = {}) {
 }
 
 /**
- * The Trial the surface opens on: an explicitly requested fixture state when
+ * The Trial the surface opens on: the state the URL asked for when that state is
  * present, else the maturing one (the live Trial), else the most recent.
  *
  * Exported for the openers, which assert that the rendered state equals the

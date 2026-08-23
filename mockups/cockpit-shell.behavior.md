@@ -2,7 +2,7 @@
 
 ★ FROZEN 2026-08-21 · base b075c715a497b55e684f966cf046dc9179f428ab · generator n/a · window n/a · fixtures diagnose-workstation payload: 80bc31c8b528, event-comparison capture: d72cabec05bf, explore fixture module: 2331cbe8efad, findings mirror: 4fee56325999, generated findings projection: 6cee39026000 · predecessor shipped app at base · retired 1
 
-The exact transported bytes are `mockups/diagnose-workstation.synthetic/payload.json`, `mockups/diagnose-event-comparison.synthetic/capture.json`, `mockups/explore-investigation.fixture.js`, `mockups/findings-projection.mirror.mjs`, and `frontend/__fixtures__/findings-projection.json` at the pinned base SHA. They are manufactured/synthetic inputs served by the app-only opener in `frontend/cockpit-shell.browser.test.mjs`; no live server, fetch, personal database, credential, or network response participates. Source inventory covered the shell markup and Vue handlers in `frontend/index.html`, the interaction selectors in `frontend/shell.css` and `frontend/theme.css`, the imported `url-state.js` adapter, and the fixture projections imported by the opener.
+The exact transported bytes are `mockups/diagnose-workstation.synthetic/payload.json`, `mockups/diagnose-event-comparison.synthetic/capture.json`, `mockups/explore-investigation.fixture.js`, `mockups/findings-projection.mirror.mjs`, and `frontend/__fixtures__/findings-projection.json` at the pinned base SHA. They are manufactured/synthetic inputs served by the app-only opener in `frontend/cockpit-shell.browser.test.mjs`; no live server, fetch, personal database, credential, or network response participates. Source inventory covered the shell markup and Vue handlers in `frontend/index.html`, the interaction selectors in `frontend/shell.css` and `frontend/theme.css`, the imported tab-routing helper, and the fixture projections imported by the opener.
 
 No QUESTION remains open. Every active story and permanent retirement below is exported, tagged, and registered in `COCKPIT_SHELL_STORIES`; the replay prints its nonzero applicable count and every retirement sanction, and the opener aborts unknown or missing requests.
 
@@ -14,13 +14,11 @@ S1 · The viewport stays fixed while each populated pane scrolls internally, and
   evidence: `STORY:cockpit-shell:S1` / exported `S1`; full matrix remains in the surrounding Cockpit browser gate
   status: replayed-pass on base
 
-S2 · The numbered Diagnose → Plan → Verify workflow, Day link, utility destinations, and canonical `/app/<page>` route all route through their visible public affordances; a clicked pending destination leaves the applied page and URL untouched, a restored pending destination immediately makes the prior selection and evidence inert, transport failure publishes the target page's data-error state without named evidence, repeated Back/Forward restores a nondefault Day and Guide article byte-for-byte, and the mobile drawer completes and closes its route.
-  amendment: Connor · 2026-08-21 · ADR 53, approved work order: paths identify pages and the URL adapter is the sole route-state authority.
-  handlers/invariants: `@click="shellGo(...)"`; native Day link; mobile drawer; `url-state.js`
+S2 · The numbered Diagnose → Plan → Verify workflow, Day link, utility destinations, and URL hash all route through their visible public affordances.
+  handlers/invariants: `@click="shellGo(...)"`; native Day link; `tab-routing.js`
   source: `frontend/index.html` cockpit top bar, footer utilities, and `shellGo`
   evidence: `STORY:cockpit-shell:S2` / exported `S2`
-  old-fail/new-pass: base emits hash destinations and serves the duplicate-key address as a 404; earlier revisions wrote `/app/day` before a held click resolved, retained Plan evidence after Forward had restored `/app/day`, and treated `/status` failure as valid Day membership; the completed revision keeps clicked state paired, makes restored state inert, publishes Day's data error without a named date, repeats `/app/day?date=2026-07-14` and `/app/guide?article=reading-day` byte-for-byte through Back/Forward, and renders restored invalid membership with no current page.
-  status: amended 2026-08-21 · replayed-pass on revision
+  status: replayed-pass on base
 
 S3 · Theme opens a radio menu; choosing Dark updates the rendered theme, checked state, persisted choice, and closes the menu.
   handlers/invariants: Theme `@click`; menu-row `@click="setDark(...)"`; `toggleDark` and `setDark`
@@ -76,11 +74,11 @@ S10 · Opening Theme and hovering the unchecked row paints a neutral 95% panel /
 
 ## Retired behavior
 
-R1 · The obsolete occurrence-list route stays retired while the Diagnose Inspector remains the sole populated occurrence-evidence path; malformed canonical addresses stop in the shell without applying a selection.
+R1 · The obsolete occurrence-list route stays retired while the Diagnose Inspector remains the sole populated occurrence-evidence path.
   sanction: Connor · 2026-08-18 · "the dead `occurrenceModal` hash machinery goes with them."
-  handlers/invariants: exact `/app/diagnose` remains the sole Inspector route; no accessible occurrences dialog or second roster appears; a public finding-row click populates the Inspector; restored `/app/diagnose?` stops as the exact malformed address with no applied selection
+  handlers/invariants: a fixture-derived stale `modal=occurrences` URL canonicalizes to `#diagnose`; no accessible occurrences dialog or second roster appears; a public finding-row click populates the Inspector
   source: `frontend/index.html`; generated findings/exposures inputs in `frontend/__fixtures__/findings-projection.json`
-  evidence: `STORY:cockpit-shell:R1` / exported `R1`; source-adjacent `RETIRED:Connor:2026-08-18`; full-address, malformed-entry, and duplicate-route assertions
+  evidence: `STORY:cockpit-shell:R1` / exported `R1`; source-adjacent `RETIRED:Connor:2026-08-18`; independent canonical-hash and duplicate-route mutations
   status: retired 2026-08-21 · replayed-pass on revision
 
 ## Inventory completeness

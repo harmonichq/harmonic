@@ -37,7 +37,14 @@
  * the browser contract.
  */
 import { createDiagnoseWorkstation } from './diagnose-workstation.js';
+import { parseRoute, subscribeRoute, writeRoute } from './tab-routing.js';
 
+let params = new URLSearchParams();
+let activeInstance = null;
+const ROUTE_KEYS = ['view', 'factor', 'start_min', 'end_min', 'another', 'occ'];
+const paramsFromRoute = (route = parseRoute(location)) => {
+  return new URLSearchParams(ROUTE_KEYS.flatMap((key) => route[key] === null ? [] : [[key, route[key]]]));
+};
 /* Glucose leads and is the fallback: it is the recommendation surface, so a
    bare #diagnose opens there. Meals and Lows are evidence lenses you choose. */
 const VIEWS = ['glucose', 'meals', 'lows'];
@@ -120,19 +127,6 @@ const factorKey = (value) => [
   'carb_undercount', 'late_bolus', 'meal_over_delivery',
   'over_treated_low', 'correction_on_iob', 'correction_stacking',
 ].includes(value);
-const sameValue = (left, right) => {
-  if (Object.is(left, right)) return true;
-  if (Array.isArray(left) || Array.isArray(right)) {
-    return Array.isArray(left) && Array.isArray(right)
-      && left.length === right.length
-      && left.every((value, index) => sameValue(value, right[index]));
-  }
-  if (left === null || right === null
-      || typeof left !== 'object' || typeof right !== 'object') return false;
-  const keys = Object.keys(left);
-  return keys.length === Object.keys(right).length
-    && keys.every((key) => Object.hasOwn(right, key) && sameValue(left[key], right[key]));
-};
 const validWindow = (value) => hasExactKeys(value, ['scoped', 'start_min', 'end_min', 'label'])
   && typeof value.scoped === 'boolean'
   && (value.scoped
@@ -172,7 +166,7 @@ function validOccurrence(value, view, selected = false) {
       && finiteNumber(fact.value) && typeof fact.unit === 'string');
 }
 
-export function validProjection(value, requestedView) {
+function validProjection(value, requestedView) {
   if (!hasExactKeys(value, ['schema', 'coordinates', 'population', 'cohorts', 'occurrences', 'selection'])
       || value.schema !== 'diagnose-event-comparison-v3') return false;
   const { coordinates, population, cohorts, occurrences, selection } = value;
@@ -254,13 +248,11 @@ export function validProjection(value, requestedView) {
       || (coordinates.view === 'meals' && selection.detail.markers.length !== 0)
       || !hasExactKeys(selection.detail.day_target, ['date']) || !isoDate(selection.detail.day_target.date)) return false;
   const summary = occurrenceById.get(selection.requested_id);
-  return sameValue(summary.identity, selection.detail.identity)
-    && sameValue(summary.anchor, selection.detail.anchor)
-    && sameValue(summary.verdict, selection.detail.verdict);
+  return JSON.stringify(summary.identity) === JSON.stringify(selection.detail.identity)
+    && JSON.stringify(summary.anchor) === JSON.stringify(selection.detail.anchor)
+    && JSON.stringify(summary.verdict) === JSON.stringify(selection.detail.verdict);
 }
 
-<<<<<<< HEAD
-=======
 /** Validate a projection against the coordinates that requested it. The closed
  * factor lists above validate the event-response protocol; queue eligibility
  * remains the findings server's nullable `event_chart` decision. */
@@ -289,7 +281,6 @@ const setUrl = (changes) => {
   activeInstance?.applyChanges(changes);
 };
 
->>>>>>> origin/main
 const css = (element, name) =>
   getComputedStyle(element).getPropertyValue(name).trim();
 
@@ -699,11 +690,16 @@ export function renderEventSurface(surface, payload, { headerHost = null } = {})
 }
 
 /** Port of the locked comparison mock mounted around the shipped Glucose view. */
-export function createDiagnoseEventComparison({
-  root, callbacks = {}, browserAdapter = null,
-}) {
-  let routeState = null;
+export function createDiagnoseEventComparison({ root, callbacks = {} }) {
+  let payload = null;
+  let projection = null;
   let current = null;
+  let requestedGeneration = 0;
+  const unsubscribeRoute = subscribeRoute((route) => {
+    if (route.page !== 'diagnose') return;
+    params = paramsFromRoute(route);
+    requestProjection();
+  });
 
   const dispose = () => {
     current?.observer?.disconnect();
@@ -711,24 +707,37 @@ export function createDiagnoseEventComparison({
     current = null;
   };
 
+  const requestedCoordinates = () => {
+    const view = params.get('view');
+    if (view !== 'meals' && view !== 'lows') return null;
+    const start = params.get('start_min');
+    const end = params.get('end_min');
+    const window = start === null && end === null ? null : {
+      start_min: Number(start), end_min: Number(end),
+    };
+    return {
+      view,
+      factor: params.get('factor') || undefined,
+      window,
+      another: params.get('another') === '1',
+      occurrenceId: params.get('occ') || undefined,
+    };
+  };
+
   const render = () => {
-    if (!routeState) return;
+    if (!payload) return;
     dispose();
     root.replaceChildren();
-    const viewKey = routeState.kind === 'comparison' ? routeState.query.view : 'glucose';
+    const requested = params.get('view');
+    const viewKey = VIEWS.includes(requested) ? requested : 'glucose';
     root.dataset.eventView = viewKey;
 
     if (viewKey === 'glucose') {
       const glucoseRoot = document.createElement('div');
       glucoseRoot.className = 'ec-glucose';
       root.append(glucoseRoot);
-      const glucose = createDiagnoseWorkstation({
-        root: glucoseRoot, callbacks, browserAdapter,
-      });
-      glucose.setData(routeState.payload, {
-        selection: routeState.selection,
-        comparison: routeState.comparison,
-      });
+      const glucose = createDiagnoseWorkstation({ root: glucoseRoot, callbacks });
+      glucose.setData(payload);
       current = {
         refresh: () => glucose.refresh(),
         // #666: forward the narrow day-completion repaint so a resolved trace
@@ -739,27 +748,45 @@ export function createDiagnoseEventComparison({
       return;
     }
 
-    if (!validProjection(routeState.projection, viewKey)) {
+    if (!validProjection(projection, viewKey)) {
       throw new Error('Diagnose event comparison data is unavailable.');
     }
     const surface = document.createElement('section');
     surface.className = 'dw ec-surface';
     root.append(surface);
-    current = renderEventSurface(surface, routeState.projection);
+    current = renderEventSurface(surface, projection);
+  };
+
+  const requestProjection = () => {
+    const generation = ++requestedGeneration;
+    const coordinates = requestedCoordinates();
+    if (!coordinates) {
+      projection = null;
+      try { render(); }
+      catch (error) { instance.setError(error.message); }
+      return;
+    }
+    if (typeof callbacks.loadProjection !== 'function') {
+      instance.setError('Diagnose event comparison data is unavailable.');
+      return;
+    }
+    callbacks.loadProjection(coordinates).then((next) => {
+      if (generation !== requestedGeneration) return;
+      projection = next;
+      root.classList.remove('ec-error');
+      try { render(); }
+      catch (error) { instance.setError(error.message); }
+    }).catch((error) => {
+      if (generation === requestedGeneration) instance.setError(error.message);
+    });
   };
 
   const instance = {
     setData(next) {
-      routeState = { kind: 'workstation', payload: next, selection: null };
+      payload = next;
+      params = paramsFromRoute();
       root.classList.remove('ec-error');
-      try { render(); }
-      catch (error) { instance.setError(error.message); }
-    },
-    setRoute(next) {
-      routeState = next;
-      root.classList.remove('ec-error');
-      try { render(); }
-      catch (error) { instance.setError(error.message); }
+      requestProjection();
     },
     setError(message) {
       dispose();
@@ -768,14 +795,24 @@ export function createDiagnoseEventComparison({
     },
     refresh() {
       if (current?.refresh) current.refresh();
-      else if (routeState?.projection) render();
+      else if (projection) render();
     },
     // #666: only the glucose (workstation) view nests a repaintable surface; on
     // any other view a resolved day-load has nothing to repaint.
     repaintDay() { current?.repaintDay?.(); },
+    applyChanges(changes) {
+      for (const [key, value] of Object.entries(changes)) {
+        if (value == null || value === '') params.delete(key);
+        else params.set(key, value);
+      }
+      writeRoute({ page: 'diagnose', ...Object.fromEntries(params) });
+      requestProjection();
+    },
     destroy() {
+      unsubscribeRoute();
       dispose();
     },
   };
+  activeInstance = instance;
   return instance;
 }

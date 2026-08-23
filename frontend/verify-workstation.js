@@ -24,6 +24,16 @@ const UNIT = { basal_rate: 'U/h', carb_ratio: 'g/U', isf: 'mg/dL/U', target_bg: 
  * map the rest of the surface already uses. */
 const PARAM_LONG = { basal_rate: 'Basal', carb_ratio: 'Carb ratio', isf: 'ISF', target_bg: 'Target BG' };
 
+/* PORT: the mock is a page and reads `?state=`; the app is one tab, so the same
+ * parameter selects which Trial opens. Both openers assert the rendered state
+ * equals the requested one (the port process's state-addressability rule). */
+export function queryState(fallback, param = 'state') {
+  try {
+    const value = new URLSearchParams(location.search).get(param);
+    return value === 'complete' || value === 'maturing' ? value : fallback;
+  } catch { return fallback; }
+}
+
 const fmtDay = s => new Date(s.slice(0, 10) + 'T12:00:00')
   .toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
@@ -113,7 +123,6 @@ export function createVerifyWorkstation({ root, callbacks = {} }) {
   let cap = null;         // the adapter's capture-shaped payload
   let sel = null;         // the selected Trial's detail
   let heroChart = null;
-  let routeTrial = null;
 
   function trialLabel(t) {
     if (t.parameter === 'profile') return 'Profile · all settings';
@@ -287,14 +296,7 @@ export function createVerifyWorkstation({ root, callbacks = {} }) {
     for (const t of others) {
       const b = document.createElement('button');
       b.innerHTML = trialLabel(t) + ' <span class="st">· ' + stWord(t) + '</span>';
-      b.addEventListener('click', () => {
-        if (callbacks.select) callbacks.select(t.id);
-        else {
-          sel = cap.details[t.id].selected;
-          renderTrialLine();
-          render();
-        }
-      });
+      b.addEventListener('click', () => { sel = cap.details[t.id].selected; renderTrialLine(); render(); });
       pop.append(b);
     }
     const more = line.querySelector('.trial-more');
@@ -322,15 +324,14 @@ export function createVerifyWorkstation({ root, callbacks = {} }) {
 
   return {
     /** Paint the surface from the adapter's capture-shaped payload. */
-    setData(payload, selectedTrial = null) {
+    setData(payload) {
       cap = payload;
-      routeTrial = selectedTrial;
       const trials = (cap.roster && cap.roster.trials) || [];
       if (!trials.length) {
         showMessage('No Trial is in view. A setting change starts one.');
         return;
       }
-      const opening = trials.find((trial) => trial.id === routeTrial) || initialTrial(trials);
+      const opening = initialTrial(trials, queryState(null));
       const detail = cap.details[opening.id];
       if (!detail) {
         showMessage("Couldn't load Verify: the selected Trial has no evidence yet");

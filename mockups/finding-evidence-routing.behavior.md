@@ -8,16 +8,8 @@ issues #81, #13 and #83 (merged by #86) are retained below as provenance and
 regression obligations; they do not renumber or reinterpret ticket 10's frozen
 S41-S71.
 
-<<<<<<< HEAD
-The app-only replay set is
-`frontend/diagnose-workstation-behavior.replay.mjs`,
-`frontend/diagnose-event-comparison-behavior.replay.mjs`, and
-`frontend/verify-660-story-behavior.replay.mjs`. The workstation replay has
-**52 exported stories**
-=======
 The app-only replay is
 `frontend/diagnose-workstation-behavior.replay.mjs`: **74 executable entries**
->>>>>>> origin/main
 (29 through 2026-08-19; five added by the excursion-chip sift, #61, at S27-S31;
 eight added by the #62 revision below, at S32-S39; one added by #64, S40; three
 diagnostic entries D1-D3; and ticket 10's 31 frozen history stories S41-S71), all
@@ -926,32 +918,17 @@ P52 · The lens's inspector pane and its three selects — `#ec-factor`,
 ```
 
 ```
-P53 · URL state and popstate: view / factor / window / another / occ live in the
-      query string, popstate re-requests the projection, and a stale response is
+P53 · URL state: view / factor / window / another / occ live in the Diagnose
+      hash-route query, route restoration re-requests the projection, and a stale response is
       dropped by generation counter.
       AMENDED #62, 2026-08-20 — the six-hour anchor-time `block` coordinate is
       retired and the reader's own clock window (`start_min`/`end_min`, both or
       neither) takes its place. The contract this term governs — coordinates in
-      the query string, popstate re-requests, stale responses dropped — is
+      the Diagnose hash-route query, restoration re-requests, stale responses dropped — is
       unchanged; only the time coordinate's name and shape moved.
-      AMENDED #53, 2026-08-21 — the shared shell route resolver now owns URL
-      parsing, History writes and popstate. The lens registers one consumer,
-      re-requests the complete P53 projection during resolution, validates the
-      response, and stages it invisibly. Only the winning shell commit publishes
-      that projection and canonical URL. A superseded response is still dropped
-      by the shell generation, including across Back/Forward. No page-global
-      URLSearchParams, History writer or popstate listener remains here.
-      AMENDED #53 FULL REVIEW, 2026-08-22 — a successful response answers the
-      complete requested coordinate set: view, factor, exact scoped/whole-day
-      window and another-factor inclusion. A named occurrence resolves only
-      when `selection.state` is `selected` and its detail matches the occurrence
-      summary inside that response. An echoed unavailable id is not a selection.
-  source:   frontend/workstation-route-consumers.js (`resolveComparison`);
-            frontend/index.html (Diagnose route registration / shell commit);
-            frontend/diagnose-event-comparison.js (`setRoute`)
+  source:   frontend/diagnose-event-comparison.js:706-711, 790-820
   mock:     the mock is one page with no URL state
-  evidence: replay R04 (canonical `/app/diagnose?view=lows&factor=…` Back/Forward;
-            endpoint request count 1 on arrival, 2 after first Back, 3 after second)
+  evidence: probe3 (app: #/diagnose?view=lows)
   verdict:  kept          lock term 19 (one URL-state contract, build-time
                           evidence — "the hash/query-string split retires")
 ```
@@ -1123,14 +1100,10 @@ request now carries the reader's own findings window, a drawn brace included, an
 membership inside it is the queue's own outcome-anchored rule. See the revision
 section at the foot of this ledger.
 ALIGN is a switch over already-selected data (ADR 31 part 3's own form): it
-does not push a crumb level, and picking it never moves the roster, the WINDOW
-brace, or the crumb. **AMENDED #53, 2026-08-21:** a committed `By clock` /
-`By event` switch now publishes the complete Diagnose case-file route once.
-The old “never writes the URL” sentence is retired because a copied or restored
-address must reproduce the same projection. Intermediate brace/resize movement
-still writes nothing; only the committed gesture publishes once.
+never writes the URL, it does not push a crumb level, and picking it never
+moves the roster, the WINDOW brace, or the crumb.
 
-The lens's own `?view=meals`/`lows` route (unreachable by any control once
+The lens's own `#/diagnose?view=meals`/`lows` route (unreachable by any control once
 View is deleted) is kept as a harmless read path per P53 — it renders the same
 canvas-only surface directly, with no rail of its own, rather than being
 restructured.
@@ -1158,7 +1131,7 @@ unless noted:
   fail-closed path on a missing comparison — reached without a click.
 - **S3 — amended.** The meal-identity and no-match-copy assertions survive on
   the canvas and legend, which are not retired; the factor coordinate is now
-  set by opening a second page with `?factor=late_bolus` (P53's read path)
+  set by opening a second page with `#/diagnose?factor=late_bolus` (P53's read path)
   instead of driving `#ec-factor`, and its title-context span (`.ec-title-context`,
   the canvas-only surface's remaining factor readout) is checked in place of
   the retired inspector title. The factor-re-render and occurrence-retention
@@ -1780,87 +1753,6 @@ the base shows a numeric Recommended value plus Stage change, while the revision
 keeps the Recommended row empty, preserves the evidence, names the rounding
 hold, and shows no stage control.
 
-<<<<<<< HEAD
-## Revision — 2026-08-21, base `52f6abd` (issue #53: URL-state consumers)
-
-The exact chunk-1 base replayed green before these edits: Diagnose workstation
-50/50, direct event comparison 13/13, and Verify 8/8. The three app-only
-openers were re-inventoried first. Browser-fixture state now enters only through
-the explicit adapter; product addresses contain only the canonical grammar.
-
-**P53 and ALIGN.** The shared route transaction owns parse, resolve, History
-and generation. Diagnose restores finding, factor, paired window, projection
-and occurrence as one staged case file; Verify resolves an explicit Trial only
-against a successful roster and resolves omission through `initialTrial`.
-Staged state remains invisible until the winning shell commit. Committed
-selection gestures push once; omission canonicalizes by replacement; leaving
-Diagnose clears its keys. A data transport/auth failure remains the page's data
-error. Every successful findings projection must answer its requested scoped or
-whole-day window; every event projection must answer its requested view, factor,
-window and another-factor coordinate. A named event occurrence additionally
-requires a genuinely selected, internally matching detail. A successful
-roster/projection that fails any of those bindings is the exact invalid-link
-stop with no selection. These trust-boundary probes live at the public consumer
-interface in `frontend/workstation-route-consumers.test.js`.
-
-**Added route stories:**
-
-```
-R01 · a copied Diagnose URL restores finding, factor, paired window, By event,
-      and the selected occurrence atomically
-R02 · Verify omission replaces with initialTrial; sibling selection pushes
-      once; Back/Forward restores the same Trial evidence
-R03 · an unknown runtime identity after successful data resolution shows the
-      exact invalid-link stop and applies no Diagnose selection
-R04 · initial arrival and each Back re-request the complete P53 evidence (the
-      observed endpoint count advances 1 → 2 → 3); Forward can win while the
-      first restoration is held, and that older projection cannot repaint the
-      newer page
-```
-
-They are tagged in the app-only replays as
-`STORY:finding-evidence-routing:R01` through `R04`. Against an exact
-`52f6abd` export, R01 stopped at `Invalid link` instead of mounting the copied
-case file; R02 timed out waiting for the selected Trial; R03 failed because the
-base invalid stop happened without successful Diagnose data resolution; and R04
-timed out waiting for the direct comparison. These are the intended missing
-consumer contracts, not fixture or infrastructure failures.
-
-S34 is amended with P53: a failed committed `By event` route shows the existing
-Diagnose data-error surface, so old clock evidence cannot remain visible under
-an event-projection address. Its exact-base assertion failed with `base restored
-clock evidence instead of the required route data error`, the intended retired
-behavior.
-
-S36 is amended with runtime membership: after a successful narrowed projection
-no longer contains the URL's finding, the exact invalid-link stop replaces the
-surface. Its exact-base assertion failed with `base kept the absent finding
-visible instead of the required invalid membership stop`.
-
-S39 is amended with atomic publication: while a routed factor-window response
-is pending, the old complete URL and its old evidence remain together; the new
-window and URL appear only at the winning commit. The exact base failed because
-it applied the new window's inline loading state before any shared route commit.
-
-**Verify stories added to this umbrella ledger.** These eight shipped stories
-already existed in `frontend/verify-660-story-behavior.replay.mjs`; issue #53
-re-tags them here so the app-only surface has one discoverable contract.
-
-```
-V01 · the Trial popover toggles and aria-expanded follows it
-V02 · sibling selection re-renders the strip, chart family and inspector,
-      closes the popover, and publishes one canonical route
-V03 · an outside click dismisses the Trial popover
-V04 · Escape dismisses the Trial popover
-V05 · chart hover swaps the pane header to the live time/before/trial/delta readout
-V06 · leaving the chart restores the resting pane header
-V07 · at ≤900px the panes stack and the content column remains scrollable
-V08 · maturing withholds Keep/Revert; complete exposes both under readiness
-```
-
-The replay tags are `STORY:finding-evidence-routing:V01` through `V08`; no
-Verify `LOCK:` tag remains.
-=======
 ## Revision — 2026-08-21, base `02d400e` (issue #83: event-chart discovery)
 
 `/ui-craft revise` lane. Before product changes, all **50 of 50** standing
@@ -1963,4 +1855,3 @@ pair, and High opportunity populations; near-low withholding, caused-low
 rebound outcome time, selected correction/High traces, and five exact Finding
 cohorts are serialized through the backend case-file module. Preparation and
 case handlers cross separate JSON boundaries from that retained capture.
->>>>>>> origin/main

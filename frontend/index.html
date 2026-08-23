@@ -3,9 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <base href="/" />
   <title>Harmonic</title>
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
 
   <script>
     (function () {
@@ -23,14 +22,14 @@
   <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
 
   <!-- #64 scenario screen styles (extracted from this file's <style> in #100). -->
-  <link rel="stylesheet" href="/scenario.css" />
+  <link rel="stylesheet" href="./scenario.css" />
   <!-- #634: cockpit shell, built to the Diagnose workstation lock. -->
-  <link rel="stylesheet" href="/shell.css" />
+  <link rel="stylesheet" href="./shell.css" />
   <!-- #636: locked Diagnose workstation surface mounted inside that shell. -->
-  <link rel="stylesheet" href="/diagnose-workstation.css" />
-  <link rel="stylesheet" href="/diagnose-event-comparison.css" />
+  <link rel="stylesheet" href="./diagnose-workstation.css" />
+  <link rel="stylesheet" href="./diagnose-event-comparison.css" />
   <!-- #660: locked Verify workstation surface, same shell. -->
-  <link rel="stylesheet" href="/verify-workstation.css" />
+  <link rel="stylesheet" href="./verify-workstation.css" />
 
   <style>
     :root {
@@ -1467,7 +1466,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           </template>
         </nav>
         <span class="cockpit-divider" data-zone="divider" aria-hidden="true"></span>
-        <a class="cockpit-day" data-zone="day" data-shell-tab="day" href="/app/day"
+        <a class="cockpit-day" data-zone="day" data-shell-tab="day" href="#day"
            :aria-current="tab === 'day' ? 'page' : null" @click.prevent="shellGo('day')">Day</a>
         <span class="cockpit-gap" data-zone="gap"></span>
         <div class="cockpit-scope" data-zone="scope">
@@ -1520,8 +1519,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
       <button class="cockpit-scrim" type="button" aria-label="Close navigation drawer"
               @click="drawerOpen = false" v-show="drawerOpen"></button>
 
-      <main v-if="routeError" role="alert" data-route-error="invalid-link" class="cockpit-stage">Invalid link: {{ routeError.address }}. No selection was applied. <a href="/app/diagnose">Open Diagnose</a></main>
-      <main v-else class="cockpit-stage"><div class="main-content" @click="drawerOpen = false">
+      <main class="cockpit-stage"><div class="main-content" @click="drawerOpen = false">
 
     <div v-if="glossaryOpen" class="modal-overlay" @click.self="glossaryOpen = false">
       <div ref="glossaryDialog" class="modal glossary"
@@ -1699,14 +1697,9 @@ html.dark .viz .tie:hover::before { opacity:.13; }
          Model view's reasoning folds in as tier-2 inline disclosure (ADR 0024). Both
          are self-contained components; the parent supplies the selected date. -->
     <div v-show="tab === 'day'">
-      <day-navigator v-if="!dailyRouteError" :date="dailyDate" @pick="navJumpTo"></day-navigator>
+      <day-navigator :date="dailyDate" @pick="navJumpTo"></day-navigator>
       <day-surface v-if="dailyDate" :key="dailyDate" :date="dailyDate" :dev="devMode"
                    :highlight="dailyHighlight"></day-surface>
-      <div v-else-if="dailyRouteError" class="placeholder" role="alert" data-route-data-error="day">
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 7v6M12 17h.01"/></svg>
-        <h2>Day is unavailable</h2>
-        <p>{{ dailyRouteError }}</p>
-      </div>
       <div v-else class="placeholder">
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16"/></svg>
         <h2>Day</h2>
@@ -1972,7 +1965,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
          the archived Guide-KB-companion mock): a left sidebar mirroring the app's
          tab map + a two-column article pane — teaching copy beside an embedded
          miniature of the surface it teaches, with an "Open your … surface"
-         handoff that switches pages via the canonical route adapter. Two content
+         handoff that switches tabs via the real hash router. Two content
          streams (ADR 0044): the 4 authored "reading the app" how-tos are
          markdown from /api/kb/<slug> (rendered by kb.js `renderMarkdown`); the
          "engine concepts" (pipeline / worked example / silence / tiers / lever
@@ -2019,7 +2012,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         <main class="article">
           <p class="crumbs">
             <b>Guide</b> / {{ kbCategoryLabel(kbArticle.category) }}
-            <span class="hash">/app/guide?article={{ kbArticle.slug }}</span>
+            <span class="hash">#guide?article={{ kbArticle.slug }}</span>
           </p>
           <h1 class="art-title">{{ kbArticle.title }}</h1>
           <p class="art-kicker">{{ kbKicker(kbArticle) }}</p>
@@ -2330,10 +2323,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
 
   <script type="module">
     import { createApp, ref, reactive, computed, onMounted, onUnmounted, watch, nextTick, provide, inject } from 'vue';
-    import {
-      TABS, createRouteResolver, parseRoute, serializeRoute,
-      pushRoute, replaceRoute, subscribeRoutes,
-    } from '/url-state.js';
+    import { TABS, parseRoute, resolveTab, subscribeRoute, writeRoute } from './tab-routing.js';
 
     /* =========================================================================
        #64 SCENARIO SCREEN — the pure chart logic (SCN_* consts + helpers, incl.
@@ -2368,7 +2358,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
     // #136: pure date/bounds helpers for the Daily Report day-picker nav
     // (arrow bounds, cold arrival, empty-day nudge, labels). Vue-free + node-tested.
     import {
-      dayBounds,
+      dayBounds, clampDay, coldArrivalDay,
     } from './daily-nav.js';
 
     // #152: pure per-day model-view logic + detector/silence-reason reference
@@ -2478,16 +2468,11 @@ html.dark .viz .tie:hover::before { opacity:.13; }
     } from './diagnose-workspaces.js';
     // #654: the Diagnose surface is the locked mock's own module, ported. The
     // #636 surface it replaces predates the behaviour contract.
-    import {
-      createDiagnoseEventComparison, validProjection as validDiagnoseProjection,
-    } from './diagnose-event-comparison.js';
+    import { createDiagnoseEventComparison } from './diagnose-event-comparison.js';
 
     // #660: the ported Verify workstation (locked mock + frozen ledger).
     import { createVerifyWorkstation } from './verify-workstation.js';
     import { toCaptures as verifyToCaptures } from './verify-workstation-data.js';
-    import {
-      createDiagnoseRouteConsumer, createVerifyRouteConsumer,
-    } from './workstation-route-consumers.js';
     // The only helper the retired workbench leaves behind: Revert's prior-setting
     // draft is the server's, and staging it is the same intent it always was.
     import { planRevertIntent as verifyPlanRevertIntent } from './verify-trial.js';
@@ -3787,25 +3772,37 @@ html.dark .viz .tie:hover::before { opacity:.13; }
       `,
     };
 
-    /* ADR 53's canonical route entry. */
-    const initialRoute = parseRoute();
+    // URL hash is the source of truth for shareable view state (tab + daily
+    // date, #16/#19; modal state, #19 follow-up): #<tab>?date=YYYY-MM-DD&modal=...
+    // localStorage remains a fallback for theme + token only — those aren't
+    // shareable. The surviving modal-shaped params are:
+    //   modal=dataquality                                        (openDataQuality)
+    //   modal=occurrence&occt=<ISO ts>&occd=<detail text>        (goToMoment's
+    //     resulting highlight on Day — not a modal itself, but "Back" should
+    //     restore/dismiss it like one)
+    // Patterns / Investigate deep-links (#132): #patterns?mode=investigate&day=YYYY-MM-DD&ep=<id>
+    //   Also accepts the flat ?-less format emitted by Daily flag cards:
+    //   #tab=patterns&mode=investigate&day=YYYY-MM-DD&ep=<id>
     const app = createApp({
       setup() {
         // #425: one shared gate for all heavy ResultCache-backed reads so cold
         // threads never run concurrently and GIL-thrash the single uvicorn worker.
         const enqueue = makeSerialGate();
 
-        const routeError = ref(initialRoute.kind === 'InvalidRoute' ? initialRoute : null);
-        // Only the latest parse/resolve transaction may choose a pane or
-        // canonicalize history.  Day resolution awaits /status; a newer click
-        // or restored entry must win while that request is in flight.
-        let routeGeneration = 0;
-        // #246: the old Patterns/Investigate deep-link is retired with the tab.
+        const initialHash = parseRoute(location);
+        // #132: if the initial URL is a patterns/investigate deep-link, stash the
+        // #246: the old Patterns/Investigate deep-link is retired with the tab; a stale
+        // `#patterns?mode=investigate` hash now just lands on Diagnose (resolveTab below).
         let pendingScnDeepLink = null;
 
-        // A pending address is deliberately not page state. The shell resolves
-        // it below before a pane is allowed to mount.
-        const tab = ref(null);
+        // #99: `dashboard` was renamed to `review` and the standalone `pump`
+        // tab folded into Plan; migrate any stale hash / localStorage value.
+        // Old tab ids kept working in shared hashes/localStorage: dashboard/pump →
+        // review (legacy), daily/modelview → day (#248 merge, ADR 0027), and
+        // outcomes → verify (#245). #246 (ADR 0027) retires Recommendations + Patterns
+        // into Diagnose, so `review`/`patterns` (and the legacy `dashboard`/`pump`) all
+        // migrate to `diagnose`.
+        const tab = ref(resolveTab((initialHash && initialHash.page) || localStorage.getItem('tab') || 'diagnose'));
         const dark = ref(document.documentElement.classList.contains('dark'));
         // #248 / ADR 0024: the developer flag. Tier-2 reasoning (near-miss, outranked,
         // per-detector meaning, model steps) is always on; this gates only tier-3
@@ -3865,18 +3862,25 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         const backtestError = ref(null);
         const loadingBacktest = ref(false);
 
-        // #136: Day shows exactly one pump-local day, driven by the day-picker
+        // #136: Daily shows exactly one pump-local day, driven by the day-picker
         // nav (arrows + date-button + Latest). dailyDate starts null on a cold
         // open — status resolves it to the latest pump-local day WITH data
-        // rather than "today",
-        // killing the old UTC-tomorrow bug. Keep a canonical date pending until
-        // those bounds arrive: mounting the keyed Day surface before that
+        // (coldArrivalDay, from /status.latest_data_day) rather than "today",
+        // killing the old UTC-tomorrow bug. Keep a deep-link/hash date pending
+        // until those bounds arrive: mounting the keyed Day surface before that
         // clamp would load the out-of-range day and then load its replacement.
         // The retired window model (#22/#35 presets, custom range, anchor+lookback
         // stack) is gone; nav bounds come from /status, never re-derived here.
         const dailyDate = ref(null);
-        const dailyRouteError = ref(null);
+        const pendingDailyDate = ref((initialHash && initialHash.date) || null);
 
+        // Local (NOT UTC) calendar-today — only a fallback for the pathological
+        // "store has zero CGM" case; normal cold arrival uses latest_data_day.
+        function localTodayStr() {
+          const d = new Date();
+          const pad = (x) => String(x).padStart(2, '0');
+          return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+        }
         // Earliest / latest pump-local day WITH data, from /status (#137). These
         // bound the arrows and the date-picker; null until /status resolves.
         const dailyEarliest = computed(() => (status.value && status.value.earliest_data_day) || null);
@@ -4130,7 +4134,8 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         watch(drawerOpen, (open) => document.body.classList.toggle('drawer-open', open));
         const themeMenuOpen = ref(false);
         function shellGo(t) {
-          setTab(t, () => { drawerOpen.value = false; });
+          setTab(t);
+          drawerOpen.value = false;
         }
 
         // TABS remains the destination inventory; shell geometry only selects
@@ -4160,48 +4165,21 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           return `Pump profile · ISF ${range('isf')} mg/dL/U · I:C ${range('carb_ratio')} g/U`;
         });
 
-        const routeResolvers = createRouteResolver();
-        routeResolvers.register('day', {
-          async resolve(query, transaction) {
-            const routeStatus = status.value || await dataFetchStatus();
-            const explicit = query.date;
-            const earliest = routeStatus?.earliest_data_day, latest = routeStatus?.latest_data_day;
-            if (explicit && (!earliest || !latest || explicit < earliest || explicit > latest)) {
-              return transaction.invalid();
-            }
-            const date = explicit || latest || null;
-            return transaction.resolved(date ? { date } : {}, { status: routeStatus, date });
-          },
-          publish(state, outcome) {
-            if (outcome.kind === 'RouteDataError') {
-              status.value = null;
-              dailyDate.value = null;
-              dailyRouteError.value = outcome.message;
-              return;
-            }
-            status.value = state.status;
-            dailyDate.value = state.date;
-            dailyRouteError.value = null;
-          },
-        });
-        routeResolvers.register('guide', {
-          resolve(query, transaction) {
-            const article = query.article || 'start-here';
-            return KB_ARTICLES.some((entry) => entry.slug === article)
-              ? transaction.resolved({ article }, { article }) : transaction.invalid();
-          },
-          publish(state) {
-            kbCurrent.value = state.article;
-            kbFetchArticle(state.article);
-          },
-        });
-
-        function setTab(t, afterCommit) {
-          if (!TABS.some((item) => item.id === t)) return Promise.resolve(false);
-          return applyPendingRoute(
-            { kind: 'PendingRoute', page: t, query: {} },
-            { history: 'push', afterCommit },
-          );
+        function setTab(t) {
+          t = resolveTab(t);
+          tab.value = t;
+          // #99: Plan reads the latest pump snapshot for its active-profile
+          // reference + Confirmation-B on-pump detection; load it lazily.
+          if (t === 'plan' && !pumpSettings.value) loadPumpSettings();
+          // #248 Day surface (ADR 0027): status resolves dailyDate; the keyed
+          // DaySurface then owns the selected day's model, timeline, and carb reads.
+          if (t === 'day') resolveDailyDate();
+          // #246 Diagnose (ADR 0027): the ranked lever queue binds live /analyze(pooled)
+          // + /scenarios + /backtest. Load them lazily on first open; the ECharts inside
+          if (t === 'diagnose') loadAudit();
+          // #157: lazy-load the Guide / About catalog the first time it opens.
+          if (t === 'guide') loadCatalog();
+          if (t === 'verify') loadVerify();
         }
 
         // #660 Verify: the ported workstation renders the whole screen from the
@@ -4214,20 +4192,39 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         const verifyError = ref(null);
         const verifyTrials = ref([]);
         let verifyView = null;
+        let verifyLoading = false;
 
         function verifyEnsureView() {
           if (!verifyRoot.value) return null;
           if (!verifyView) verifyView = createVerifyWorkstation({
             root: verifyRoot.value,
-            callbacks: { keep: verifyKeep, revert: verifyRevert, select: verifySelect },
+            callbacks: { keep: verifyKeep, revert: verifyRevert },
           });
           return verifyView;
         }
-        function verifySelect(trial) {
-          return applyPendingRoute(
-            { kind: 'PendingRoute', page: 'verify', query: { trial } },
-            { history: 'push' },
-          );
+        async function loadVerify() {
+          if (!hasToken.value || verifyLoading || verifyTrials.value.length) return;
+          verifyLoading = true;
+          verifyError.value = null;
+          try {
+            const roster = await enqueue(() => dataFetchVerifyTrials());
+            const details = {};
+            for (const trial of roster.trials || []) {
+              try {
+                details[trial.id] = await enqueue(
+                  () => dataFetchVerifyTrials({ selected: trial.id }));
+              } catch { /* a Trial whose evidence failed is still nameable */ }
+            }
+            verifyTrials.value = roster.trials || [];
+            verifyReady.value = true;
+            await nextTick();
+            verifyEnsureView()?.setData(verifyToCaptures(roster, details));
+          } catch (e) {
+            verifyError.value = (e && e.message) || String(e);
+            verifyReady.value = true;
+            await nextTick();
+            verifyEnsureView()?.setError(verifyError.value);
+          } finally { verifyLoading = false; }
         }
         // Lock term 16, and the frozen ledger's Q1 ruling: Keep acknowledges for
         // this session and records nothing; Revert opens Plan with the prior
@@ -4248,100 +4245,91 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           } catch (e) { verifyError.value = (e && e.message) || String(e); }
         }
 
-        routeResolvers.register('verify', createVerifyRouteConsumer({
-          loadRoster: () => enqueue(() => dataFetchVerifyTrials()),
-          loadTrial: (trial) => enqueue(() => dataFetchVerifyTrials({ selected: trial })),
-          publish(state, outcome) {
-            verifyReady.value = true;
-            if (outcome.kind === 'RouteDataError') {
-              verifyTrials.value = [];
-              verifyError.value = outcome.message;
-              nextTick(() => verifyEnsureView()?.setError(outcome.message));
-              return;
-            }
-            verifyTrials.value = state.roster.trials || [];
-            verifyError.value = null;
-            nextTick(() => verifyEnsureView()?.setData(
-              verifyToCaptures(state.roster, state.details), state.trial));
-          },
-        }));
-
         watch(dark, () => { if (verifyView) verifyView.refresh(); });
-        // One synchronous commit owns history, route data, page selection, and
-        // page loads. Vue cannot paint an intermediate state from inside it.
-        function commitInvalidRoute(route, generation) {
-          if (generation !== routeGeneration) return false;
-          routeError.value = route;
-          tab.value = null;
-          dailyDate.value = null;
-          dailyRouteError.value = null;
-          kbCurrent.value = null;
-          return true;
-        }
-
-        function makeAppliedRouteInert(generation) {
-          if (generation !== routeGeneration) return false;
-          routeError.value = null;
-          tab.value = null;
-          dailyDate.value = null;
-          kbCurrent.value = null;
-          return true;
-        }
-
-        function commitResolvedRoute(resolution, pendingRoute, generation, options) {
-          if (generation !== routeGeneration) return false;
-          const resolved = resolution.outcome;
-          if (options.history === 'push') pushRoute(resolved);
-          else if (options.history === 'replace'
-              || serializeRoute(resolved) !== serializeRoute(pendingRoute)) replaceRoute(resolved);
-          resolution.publish();
-          routeError.value = null;
-          tab.value = resolved.page;
-          setTabLoads(resolved.page);
-          if (options.afterCommit) options.afterCommit(resolved);
-          return true;
-        }
-
-        function commitRouteDataError(resolution, pendingRoute, generation, options) {
-          if (generation !== routeGeneration) return false;
-          if (options.history === 'push') pushRoute(pendingRoute);
-          else if (options.history === 'replace') replaceRoute(pendingRoute);
-          dailyDate.value = null;
-          kbCurrent.value = null;
-          resolution.publish();
-          routeError.value = null;
-          tab.value = resolution.outcome.page;
-          if (options.afterCommit) options.afterCommit(resolution.outcome);
-          return true;
-        }
-
-        async function applyPendingRoute(route, options = {}) {
-          const generation = ++routeGeneration;
-          if (options.history === 'restore') makeAppliedRouteInert(generation);
-          let pendingRoute = route;
-          if (route.kind === 'LegacyRedirect') {
-            pendingRoute = parseRoute(route.to);
-            options = { ...options, history: 'replace' };
+        // Push tab/date/modal -> URL hash. Guarded against re-entrancy from the
+        // hashchange listener below (applyingHash).
+        let applyingHash = false;
+        function currentModalParam() {
+          if (dataQualityModalOpen.value) return 'modal=dataquality';
+          if (dailyHighlight.value) {
+            const det = dailyHighlight.value.detector ? `&occdet=${encodeURIComponent(dailyHighlight.value.detector)}` : '';
+            return `modal=occurrence&occt=${encodeURIComponent(dailyHighlight.value.t)}&occd=${encodeURIComponent(dailyHighlight.value.detail)}${det}`;
           }
-          if (pendingRoute.kind !== 'PendingRoute') return commitInvalidRoute(pendingRoute, generation);
-          const resolution = await routeResolvers.dispatch(pendingRoute);
-          if (generation !== routeGeneration) return false;
-          if (resolution.outcome.kind === 'InvalidRoute') {
-            return commitInvalidRoute(resolution.outcome, generation);
-          }
-          if (resolution.outcome.kind === 'RouteDataError') {
-            return commitRouteDataError(resolution, pendingRoute, generation,
-              { history: options.history || 'restore', afterCommit: options.afterCommit });
-          }
-          return commitResolvedRoute(resolution, pendingRoute, generation,
-            { history: options.history || 'restore', afterCommit: options.afterCommit });
+          return null;
         }
-        const stopRouteSubscription = subscribeRoutes((route) =>
-          applyPendingRoute(route, { history: 'restore' }));
-        function setTabLoads(t) {
-          if (t === 'plan' && !pumpSettings.value) loadPumpSettings();
-          if (t === 'guide') loadCatalog();
+        function syncHashFromState() {
+          if (applyingHash) return;
+          const route = { page: tab.value };
+          // #248: the Day surface's selected date rides the hash — `#day?date=YYYY-MM-DD`
+          // deep-links to a day (and back/forward moves the day). Skip it until cold
+          // arrival resolves the day so we never write `date=null`.
+          if (tab.value === 'day') {
+            if (dailyDate.value) route.date = dailyDate.value;
+          }
+          // #269: the Guide-KB's open article rides the hash — `#guide?article=<slug>`
+          // deep-links to an article (and back/forward moves between articles).
+          if (tab.value === 'guide' && kbCurrent.value) route.article = kbCurrent.value;
+          if (tab.value === 'diagnose') {
+            const current = parseRoute(location);
+            if (current.page === 'diagnose') Object.assign(route, current);
+          }
+          // #246: the Patterns/Investigate sub-state hash retired with the tab (ADR 0027);
+          // Diagnose carries no shareable sub-state beyond the tab + modal params.
+          const modalParam = currentModalParam();
+          const extra = modalParam ? [...new URLSearchParams(modalParam)] : [];
+          writeRoute(route, { extra, replace: !location.hash.startsWith('#/') || location.search !== '' });
         }
+        // The state->hash watch is registered *after* the scenario refs are
+        // declared (scnMode/scnPickDay/scnActiveInvestigateId, ~L3160) — its
+        // source array reads those ref objects, so registering it here would hit
+        // their temporal dead zone and abort setup() (#132 regression).
+
+        // Pull URL hash -> tab/date/modal, for back/forward navigation and direct links.
+        function reopenModalFromHash(modal) {
+          if (!modal) {
+            dataQualityModalOpen.value = false;
+            return;
+          }
+          if (modal.kind === 'dataquality') {
+            dataQualityModalOpen.value = true;
+            return;
+          }
+          if (modal.kind === 'occurrence') {
+            dataQualityModalOpen.value = false;
+            if (modal.t) dailyHighlight.value = { t: modal.t, detail: modal.detail || '', detector: modal.detector || null };
+          }
+        }
+
+        subscribeRoute((parsed) => {
+          applyingHash = true;
+          try {
+            if (parsed.page !== tab.value) setTab(parsed.page);
+            // #248: the Day surface owns the day-picker — back/forward just moves the
+            // picked date (old #daily / #modelview hashes migrate to #day here too).
+            if (resolveTab(parsed.page) === 'day' && parsed.date
+                && parsed.date !== (pendingDailyDate.value || dailyDate.value)) {
+              dailyHighlight.value = null;
+              pendingDailyDate.value = parsed.date;
+              resolveDailyDate();
+            }
+            // #269: back/forward between KB articles, and app -> #guide?article deep-links.
+            if (resolveTab(parsed.page) === 'guide' && parsed.article && parsed.article !== kbCurrent.value
+                && KB_ARTICLES.some((a) => a.slug === parsed.article)) {
+              kbCurrent.value = parsed.article;
+              kbFetchArticle(parsed.article);
+            }
+            // #246: `#patterns` migrated to `#diagnose` in setTab above; the retired
+            // Investigate sub-state (mode/day/ep) no longer applies.
+            reopenModalFromHash(parsed.modal);
+          } finally {
+            nextTick(() => {
+              applyingHash = false;
+              // A stale hash changed tab state while the re-entrancy guard was
+              // active, so make the normalized route shareable once it lifts.
+              if (resolveTab(parsed.page) !== parsed.page) syncHashFromState();
+            });
+          }
+        });
 
         function formatStartTime(startMin) {
           const h = Math.floor(startMin / 60).toString().padStart(2, '0');
@@ -4372,16 +4360,9 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           } catch (e) { flash('Save failed: ' + e.message, 'err'); }
         }
 
-        async function loadStatus(generation = routeGeneration) {
-          try {
-            const nextStatus = await dataFetchStatus();
-            if (generation !== routeGeneration) return false;
-            status.value = nextStatus;
-            return true;
-          } catch (e) {
-            if (generation === routeGeneration) status.value = null;
-            return false;
-          }
+        async function loadStatus() {
+          try { status.value = await dataFetchStatus(); }
+          catch (e) { status.value = null; }
         }
         async function fetchNow() {
           fetching.value = true;
@@ -4414,12 +4395,26 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           loadAnalysis();
         }
 
+        // The Day surface owns the selected day's model, timeline, and carb reads.
+        // The parent only resolves an initial/deep-linked pump-local date from
+        // /status and clamps it to the available CGM-day bounds.
+        function resolveDailyDate() {
+          if (!hasToken.value || !status.value) return;
+          const requested = pendingDailyDate.value || dailyDate.value
+            || coldArrivalDay(dailyLatest.value, localTodayStr());
+          dailyDate.value = clampDay(requested, dailyEarliest.value, dailyLatest.value);
+          pendingDailyDate.value = null;
+        }
+
+        watch(dailyLatest, (latest) => {
+          if (latest && tab.value === 'day') resolveDailyDate();
+        });
+
         function navJumpTo(day) {
           if (!day) return;
-          applyPendingRoute(
-            { kind: 'PendingRoute', page: 'day', query: { date: day } },
-            { history: 'push', afterCommit: () => { dailyHighlight.value = null; } },
-          );
+          dailyHighlight.value = null;
+          pendingDailyDate.value = day;
+          resolveDailyDate();
         }
 
         // --- Dashboard: recommendation cards ---------------------------------
@@ -4763,6 +4758,13 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         const scnActiveLevers = ref(new Set());
         let scnLoaded = false;
 
+        // state -> URL hash. Registered here (not next to syncHashFromState) so
+        // the scenario refs above are already initialized — the source array
+        // reads them, so an earlier registration would trip their TDZ (#132).
+        watch([tab, dailyDate, dataQualityModalOpen, dailyHighlight,
+               scnMode, scnPickDay, scnActiveInvestigateId],
+          syncHashFromState);
+
         async function loadScnWindow(days) {
           if (!hasToken.value) return;
           scnLoadingWindow.value = true;
@@ -4836,7 +4838,10 @@ html.dark .viz .tie:hover::before { opacity:.13; }
            articles reuse `catalog` + the guide.js helpers above; these refs drive
            the shell (sidebar / search / deep-link) and the authored how-tos
            (markdown fetched from /api/kb/<slug>). See ADR 0044. */
-        const kbCurrent = ref(null);
+        const kbCurrent = ref(
+          initialHash && initialHash.page === 'guide' && initialHash.article
+            && KB_ARTICLES.some((a) => a.slug === initialHash.article)
+            ? initialHash.article : 'start-here');
         const kbQuery = ref('');
         // Per-slug raw-markdown cache + per-slug error, both reactive so the body
         // and the full-text search index update as bodies land. Read by the ACTIVE
@@ -4950,14 +4955,14 @@ html.dark .viz .tie:hover::before { opacity:.13; }
 
         function kbGo(slug) {
           if (!KB_ARTICLES.some((a) => a.slug === slug)) return;
-          applyPendingRoute(
-            { kind: 'PendingRoute', page: 'guide', query: { article: slug } },
-            { history: 'push', afterCommit: () => window.scrollTo({ top: 0, behavior: 'smooth' }) },
-          );
+          kbCurrent.value = slug;
+          kbFetchArticle(slug);
+          syncHashFromState();   // pushState #guide?article=<slug> — back/forward work
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         }
         // The article -> app-surface handoff: switch to the real tab via the router.
         function kbHandoff(surface) {
-          if (surface) setTab(surface);
+          if (surface) setTab(surface);   // the [tab] watch syncs the hash
         }
         // Clicks inside rendered copy: in-KB xlinks + app-surface handoffs.
         function kbBodyClick(e) {
@@ -5504,6 +5509,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         }
         function closeDataQuality() {
           dataQualityModalOpen.value = false;
+          history.back();
         }
 
         // Shared drill-down: jump to Day at the day containing `t`, highlighted
@@ -5513,15 +5519,13 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           // #272: `lever` (optional) pre-selects the Day Lever filter + rings this moment
           // on arrival — the restored Occurrence→Day deep-link contract (ADR 0037).
           // Other evidence callers pass none and land unfiltered.
+          dailyHighlight.value = { t, detail, detector, lever: lever || null };
           // #136: Daily is one day — the deep-link just picks the arrived-at day;
           // the nav bar (date-button + bounded arrows) reads dailyDate directly.
+          pendingDailyDate.value = day;
           // #248: the "See full day →" deep-link lands on the merged Day surface.
-          applyPendingRoute(
-            { kind: 'PendingRoute', page: 'day', query: { date: day } },
-            { history: 'push', afterCommit: () => {
-              dailyHighlight.value = { t, detail, detector, lever: lever || null };
-            } },
-          );
+          tab.value = 'day';
+          resolveDailyDate();
         }
         // #119: expose the Daily deep-link to the scenario Episode panel so a
         // "See full day →" affordance can jump from an Episode to the full-day
@@ -5541,7 +5545,18 @@ html.dark .viz .tie:hover::before { opacity:.13; }
             enqueue(() => loadBacktest()),
             enqueue(() => loadAnalysis()),
           ]);
-          if (tab.value === 'guide') loadCatalog();       // #269: initial Guide deep-link
+          // #248: /status resolves the cold-arrival date; the keyed Day surface
+          // mounts afterward and performs the visible day's reads once.
+          if (tab.value === 'day') resolveDailyDate();
+          if (tab.value === 'diagnose') loadAudit();   // #495
+          if (tab.value === 'guide') loadCatalog();       // #269: initial #guide deep-link
+          if (tab.value === 'verify') {
+            loadVerify();
+          } else if (!(initialHash && initialHash.page)) {
+            await loadVerify();
+            if (verifyTrials.value.some((trial) => trial.state === 'maturing')
+                && tab.value === 'diagnose') tab.value = 'verify';
+          }
         }
 
         function handleModalEscape(e) {
@@ -5551,7 +5566,17 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         }
 
         onMounted(() => {
-          applyPendingRoute(initialRoute).then(loadAll);
+          // Data quality and the occurrence-highlight pseudo-modal don't depend
+          // on /analyze having resolved to be set, so apply those immediately.
+          if (initialHash && initialHash.modal) {
+            if (initialHash.modal.kind === 'dataquality' || initialHash.modal.kind === 'occurrence') {
+              applyingHash = true;
+              try { reopenModalFromHash(initialHash.modal); }
+              finally { nextTick(() => { applyingHash = false; }); }
+            }
+          }
+          syncHashFromState();
+          loadAll();
           pqLoadPrompts();   // #128: seed the Review badge count on load
           window.addEventListener('resize', () => {
             if (ribbonChart) ribbonChart.resize();
@@ -5567,7 +5592,6 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         });
 
         onUnmounted(() => {
-          stopRouteSubscription();
           window.removeEventListener('keydown', handleModalEscape);
         });
 
@@ -5576,6 +5600,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         const diagnoseRoot = ref(null);
         const diagnoseReady = ref(false);
         const diagnoseExposures = ref(null);   // #654: /explore/exposures
+        let diagnoseLoaded = false;
         let diagnoseView = null;
         const diagnoseAnalysis = ref(null);
         const diagnoseScenarios = ref(null);
@@ -5590,21 +5615,6 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         // one month usually covers the 30-day window. When it does not reach far
         // enough back, the previous month is pulled in too; both are server-cached,
         // and no new endpoint is introduced for the strip.
-<<<<<<< HEAD
-        async function loadDiagnoseRoute(window) {
-          const [analyze, scenarios, evidence, exposures, findings, outcomes] = await Promise.all([
-            enqueue(() => dataFetchAnalysis({ window: 30, pool: true })),
-            enqueue(() => dataFetchScenarios(30)),
-            enqueue(() => dataFetchExploreTimeOfDay()),
-            enqueue(() => dataFetchExploreExposures()),
-            enqueue(() => dataFetchDiagnoseFindings(window)),
-            enqueue(() => dataFetchOutcomesTrend(30)),
-          ]);
-          return {
-            analyze, scenarios, evidence, exposures, findings,
-            watched: outcomes?.watched_change || null,
-          };
-=======
         async function loadAudit() {
           if (!hasToken.value || diagnoseLoaded) return;
           diagnoseLoaded = true;
@@ -5642,7 +5652,6 @@ html.dark .viz .tie:hover::before { opacity:.13; }
               diagnoseEnsureView()?.setError(e.message);
             }
           }
->>>>>>> origin/main
         }
 
         // Stage → Plan: the same pure lever mapping Diagnose used (#432/#428) —
@@ -5673,26 +5682,18 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           const items = diagnoseStageItemsFor(item.key, diagnoseAnalysis.value);
           return items.length > 0 && items.every((it) => planItems.has(planKeyOf(it)));
         }
-        // Mounting stays separable from publishing route data: transport/auth
-        // failure commits the existing error surface without exposing staged
-        // evidence from a losing or incomplete route transaction.
+        // #654 hotfix: mounting (creating the component) is separable from
+        // feeding it (setData) — loadAudit's catch needs a view to call
+        // setError on when the first load itself failed, and has no analyze
+        // data to feed at that point. diagnoseMount() below still does both
+        // for the success path, unchanged.
         function diagnoseEnsureView() {
           if (!diagnoseRoot.value) return null;
           if (!diagnoseView) diagnoseView = createDiagnoseEventComparison({ root: diagnoseRoot.value,
-            browserAdapter: window.__harmonicBrowserAdapter || null,
             callbacks: { stage: diagnoseStage, isStaged: diagnoseIsStaged,
-<<<<<<< HEAD
-              route: (query) => applyPendingRoute(
-                { kind: 'PendingRoute', page: 'diagnose', query },
-                { history: 'push' },
-              ),
-              day: (occurrence) => goToMoment(occurrence.t, occurrence.text,
-                occurrence.cause_lever, occurrence.cause_lever), retry: retryDiagnoseRoute,
-=======
               day: (occurrence) => goToMoment(occurrence.t || occurrence.anchor?.t,
                 occurrence.text || occurrence.anchor?.label,
                 occurrence.cause_lever, occurrence.cause_lever), retry: loadAudit,
->>>>>>> origin/main
               // Lock term 19: the occurrence level overlays that day's REAL trace
               // when one exists. The app does not ship 30 days of raw CGM, so the
               // one day in view is fetched; a miss keeps the "no trace captured"
@@ -5720,10 +5721,6 @@ html.dark .viz .tie:hover::before { opacity:.13; }
             } });
           return diagnoseView;
         }
-<<<<<<< HEAD
-        function retryDiagnoseRoute() {
-          return applyPendingRoute(parseRoute(), { history: 'restore' });
-=======
         function diagnoseMount() {
           const view = diagnoseEnsureView();
           if (!view) return;
@@ -5731,36 +5728,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
             evidence: diagnoseEvidence.value, exposures: diagnoseExposures.value,
             findings: diagnoseFindings.value, casePreparation: diagnoseCasePreparation.value,
             watched: diagnoseWatched.value });
->>>>>>> origin/main
         }
-
-        routeResolvers.register('diagnose', createDiagnoseRouteConsumer({
-          loadWorkstation: loadDiagnoseRoute,
-          async loadComparison(coordinates) {
-            const projection = await enqueue(
-              () => dataFetchDiagnoseEventComparison(coordinates));
-            if (!validDiagnoseProjection(projection, coordinates.view)) {
-              throw new Error('Diagnose event comparison data is unavailable.');
-            }
-            return projection;
-          },
-          publish(state, outcome) {
-            diagnoseReady.value = true;
-            if (outcome.kind === 'RouteDataError') {
-              nextTick(() => diagnoseEnsureView()?.setError(outcome.message));
-              return;
-            }
-            if (state.kind === 'workstation') {
-              diagnoseAnalysis.value = state.payload.analyze;
-              diagnoseScenarios.value = state.payload.scenarios;
-              diagnoseEvidence.value = state.payload.evidence;
-              diagnoseExposures.value = state.payload.exposures;
-              diagnoseFindings.value = state.payload.findings;
-              diagnoseWatched.value = state.payload.watched;
-            }
-            nextTick(() => diagnoseEnsureView()?.setRoute(state));
-          },
-        }));
 
         /** One day's timeline rows, in the shape the ported chart's buildDayTrace reads. */
         async function diagnoseLoadDay(date) {
@@ -5774,7 +5742,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         watch(dark, () => { if (diagnoseView) diagnoseView.refresh(); });
 
         return {
-          tabsList: tabsWithBadges, tab, setTab, routeError, dark, toggleDark, devMode, toggleDev, toast,
+          tabsList: tabsWithBadges, tab, setTab, dark, toggleDark, devMode, toggleDev, toast,
           workflowTabs, cockpitScope, cockpitProfileFacts,
           shellGo, setDark, drawerOpen, themeMenuOpen,
           diagnoseRoot, diagnoseReady,
@@ -5798,7 +5766,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           status, statusLabel, statusBadgeClass, fetching, fetchNow,
           pumpSettings, pumpSettingsError, formatStartTime,
           backtest, backtestError, loadingBacktest, loadBacktest,
-          dailyDate, dailyLatest, dailyRouteError,
+          dailyDate, dailyLatest,
           // #126 carb quick-log
           QL_PRESETS, QL_TIMES, qlOpen, qlGrams, qlWhen, qlCustomAt, qlLoggable,
           qlAnchorRef, qlPopoverStyle,

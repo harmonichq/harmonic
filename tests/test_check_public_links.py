@@ -189,11 +189,11 @@ class TestModuleImports(_Tree):
         the same build dependency an .mjs file's are."""
         self.write("frontend/index.html",
                    "<script type='module'>\n"
-                   "import { TABS } from './url-state.js';\n"
+                   "import { TABS } from './tab-routing.js';\n"
                    "</script>\n")
         failures = self.check({"frontend/index.html"})
         self.assertEqual(len(failures), 1, failures)
-        self.assertIn("url-state.js", failures[0])
+        self.assertIn("tab-routing.js", failures[0])
 
     def test_an_ordinary_string_is_not_a_specifier(self) -> None:
         """A relative URL passed to fetch is a runtime route, not a module."""

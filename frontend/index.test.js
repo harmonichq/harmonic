@@ -45,7 +45,7 @@ test('Verify mounts the ported workstation and none of the retired workbench (#6
   assert.match(verify, /Verify needs an API token/, "the token gate matches Diagnose's");
   assert.doesNotMatch(verify, /vt-intro|vt-workspace|vt-decision|vt-proof|vfy-split/,
     'the retired Decision + Proof workbench is gone');
-  assert.match(page, /<link rel="stylesheet" href="\/verify-workstation\.css" \/>/,
+  assert.match(page, /<link rel="stylesheet" href="\.\/verify-workstation\.css" \/>/,
     'the ported surface loads its own stylesheet');
 });
 
@@ -57,7 +57,7 @@ test('Guide sidebar intro does not claim the preview unconditionally sits beside
 });
 
 test('the page declares its own app icon', () => {
-  assert.match(page, /<link rel="icon" type="image\/svg\+xml" href="\/favicon\.svg" \/>/,
+  assert.match(page, /<link rel="icon" type="image\/svg\+xml" href="\.\/favicon\.svg" \/>/,
     'the head links the SVG app mark so the browser tab is not a blank page icon');
 });
 

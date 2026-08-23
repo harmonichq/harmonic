@@ -218,18 +218,6 @@ class ApiTest(unittest.TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.headers["content-type"], "text/html; charset=utf-8")
 
-    def test_app_paths_serve_the_spa_without_shadowing_plan_json(self):
-        self.assertEqual(self.client.get("/app/day").status_code, 200)
-        self.assertEqual(self.client.get("/app/not-a-page").status_code, 200)
-        plan = self.client.get("/plan")
-        self.assertEqual(plan.status_code, 200)
-        self.assertTrue(plan.headers["content-type"].startswith("application/json"))
-
-    def test_serves_url_state_module_as_javascript(self):
-        r = self.client.get("/url-state.js")
-        self.assertEqual(r.status_code, 200)
-        self.assertTrue(r.headers["content-type"].startswith("text/javascript"))
-
     def test_serves_scenario_chart_js_as_javascript(self):
         # #100: sibling ESM asset must load with a JS MIME type or the module
         # graph fails in the browser.

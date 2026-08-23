@@ -5,15 +5,26 @@ from __future__ import annotations
 from copy import deepcopy
 from dataclasses import replace
 from datetime import timedelta
+from io import StringIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
+from unittest.mock import patch
 
 from ciq_autotune.analyzers.ic import analyze_ic_blocks
 from ciq_autotune.replay import ReplayWindow, WindowRefused, run_replay
 from ciq_autotune.settings import Snapshot
 from ciq_autotune.store import Store
 from scripts.gen_estimator_truth import known_ratio_sets, write_set_to_store
+
+
+def prints_analysis_data(*args, **kwargs):
+    print(args[0])
+    return analyze_ic_blocks(*args, **kwargs)
+
+
+def raises_with_analysis_data(*_args, **_kwargs):
+    raise RuntimeError("meal 60g at BG 110 with ratio 5.6")
 
 
 def _settings_changed(settings, *, ratio=None, isf=None):
@@ -28,7 +39,9 @@ def _settings_changed(settings, *, ratio=None, isf=None):
 
 class StableEraReplayTest(unittest.TestCase):
     def _truth(self):
-        return deepcopy(known_ratio_sets()[0])
+        truth = deepcopy(known_ratio_sets()[0])
+        truth["snapshots"].append(Snapshot(truth["analysis_end"], truth["settings"]))
+        return truth
 
     def _replay(self, truth, estimator=analyze_ic_blocks):
         with TemporaryDirectory() as directory:
@@ -61,6 +74,19 @@ class StableEraReplayTest(unittest.TestCase):
         with self.assertRaisesRegex(WindowRefused, "carb-ratio schedule changed"):
             self._replay(truth)
 
+    def test_first_snapshot_mid_window_without_a_baseline_is_refused(self):
+        truth = self._truth()
+        truth["snapshots"] = [Snapshot(
+            truth["analysis_start"] + timedelta(days=30), truth["settings"])]
+        with self.assertRaisesRegex(WindowRefused, "settings snapshot coverage"):
+            self._replay(truth)
+
+    def test_no_snapshots_is_refused(self):
+        truth = self._truth()
+        truth["snapshots"] = []
+        with self.assertRaisesRegex(WindowRefused, "settings snapshot coverage"):
+            self._replay(truth)
+
     def test_reverted_post_window_isf_change_is_refused(self):
         truth = self._truth()
         changed_at = truth["analysis_end"] + timedelta(days=1)
@@ -91,3 +117,33 @@ class StableEraReplayTest(unittest.TestCase):
         report = self._replay(self._truth(), always_finding)
         self.assertEqual(report.candidate_verdict, "fail")
         self.assertIsNone(report.candidate_first_convergence)
+
+    def test_candidate_output_is_suppressed(self):
+        output = StringIO()
+        with patch("sys.stdout", output):
+            self._replay(self._truth(), prints_analysis_data)
+        self.assertNotIn("BolusEvent", output.getvalue())
+
+    def test_candidate_run_reports_incumbent_self_agreement(self):
+        report = self._replay(self._truth(), prints_analysis_data)
+        self.assertEqual(report.agreement_verdict, "pass")
+
+    def test_cli_sanitizes_candidate_exception(self):
+        from scripts import replay_stable_era
+
+        truth = self._truth()
+        with TemporaryDirectory() as directory:
+            path = Path(directory) / "synthetic.sqlite"
+            store = Store.open(str(path))
+            write_set_to_store(store, truth)
+            store.close()
+            stderr = StringIO()
+            with patch("sys.argv", [
+                "replay_stable_era.py", str(path), "--block", "0",
+                "--window-start", truth["analysis_start"].isoformat(),
+                "--window-end", truth["analysis_end"].isoformat(),
+                "--candidate", "tests.test_replay:raises_with_analysis_data",
+            ]), patch("sys.stderr", stderr):
+                self.assertEqual(replay_stable_era.main(), 1)
+        self.assertIn("RuntimeError", stderr.getvalue())
+        self.assertNotIn("60g", stderr.getvalue())

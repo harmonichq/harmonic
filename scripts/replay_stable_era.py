@@ -38,8 +38,9 @@ def main() -> int:
     parser.add_argument("--step-days", type=int, default=7)
     parser.add_argument("--candidate", type=_candidate, default=analyze_ic_blocks)
     args = parser.parse_args()
-    store = Store.open_readonly(args.snapshot)
+    store = None
     try:
+        store = Store.open_readonly(args.snapshot)
         report = run_replay(
             store, args.candidate, block_id=args.block_id,
             window=ReplayWindow(args.window_start, args.window_end),
@@ -48,8 +49,12 @@ def main() -> int:
     except WindowRefused as exc:
         print(str(exc), file=sys.stderr)
         return 2
+    except Exception as exc:
+        print(f"replay failed: {type(exc).__name__}", file=sys.stderr)
+        return 1
     finally:
-        store.close()
+        if store is not None:
+            store.close()
     print(report.render())
     return 0
 

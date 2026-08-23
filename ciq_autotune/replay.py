@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from contextlib import redirect_stderr, redirect_stdout
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from io import StringIO
 from typing import Optional
 
 from .analyze import analyze
@@ -74,10 +76,16 @@ def _schedule(snapshot, parameter: str) -> tuple:
     return tuple(snapshot.settings.active_schedule(parameter))
 
 
-def _tail_schedule_changed(store: Store, window: ReplayWindow, parameter: str) -> bool:
+def _covered_snapshots(store: Store, window: ReplayWindow):
     snapshots = store.settings_snapshots()
-    if not snapshots:
-        return False
+    if (not snapshots or not any(snapshot.captured_at <= window.start
+                                 for snapshot in snapshots)
+            or snapshots[-1].captured_at < window.end):
+        raise WindowRefused("settings snapshot coverage does not cover replay window")
+    return snapshots
+
+
+def _tail_schedule_changed(snapshots, window: ReplayWindow, parameter: str) -> bool:
     before = [snapshot for snapshot in snapshots if snapshot.captured_at < window.start]
     tail = [snapshot for snapshot in snapshots if snapshot.captured_at >= window.start]
     # The latest pre-window capture is the schedule in force at the window boundary.
@@ -91,9 +99,10 @@ def _tail_schedule_changed(store: Store, window: ReplayWindow, parameter: str) -
 
 def qualify_window(store: Store, block: IcBlock, window: ReplayWindow) -> None:
     """Refuse a window where later settings can leak into replayed endpoints."""
-    if _tail_schedule_changed(store, window, "carb_ratio"):
+    snapshots = _covered_snapshots(store, window)
+    if _tail_schedule_changed(snapshots, window, "carb_ratio"):
         raise WindowRefused("carb-ratio schedule changed in replay window tail")
-    if _tail_schedule_changed(store, window, "isf"):
+    if _tail_schedule_changed(snapshots, window, "isf"):
         raise WindowRefused("ISF schedule changed in replay window tail")
     eligibility = (block.evidence or {}).get("eligibility") or {}
     if not eligibility.get("runs_floor_met"):
@@ -140,12 +149,20 @@ def _cutoffs(window: ReplayWindow, step_days: int) -> list[datetime]:
 
 
 def _first_convergence(store: Store, estimator, block_id: int, cutoffs: list[datetime],
-                       incumbent: IcBlock) -> Optional[datetime]:
+                       incumbent: IcBlock, *, suppress_output: bool = False) -> Optional[datetime]:
     for cutoff in cutoffs:
-        block = _block_at(analyze(store, now=cutoff, ic_estimator=estimator), block_id)
+        block = _block_at(
+            _analyze_at(store, cutoff, estimator, suppress_output=suppress_output), block_id)
         if _converges(block, incumbent):
             return cutoff
     return None
+
+
+def _analyze_at(store: Store, cutoff: datetime, estimator, *, suppress_output: bool):
+    if not suppress_output:
+        return analyze(store, now=cutoff, ic_estimator=estimator)
+    with redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+        return analyze(store, now=cutoff, ic_estimator=estimator)
 
 
 def run_replay(
@@ -157,6 +174,7 @@ def run_replay(
     step_days: int = 7,
 ) -> ReplayReport:
     """Replay an estimator through ``analyze`` and judge it against the incumbent."""
+    _covered_snapshots(store, window)
     incumbent_result = analyze(store, now=window.end, ic_estimator=analyze_ic_blocks)
     incumbent = _block_at(incumbent_result, block_id)
     if incumbent is None:
@@ -164,11 +182,12 @@ def run_replay(
     qualify_window(store, incumbent, window)
 
     cutoffs = _cutoffs(window, step_days)
-    candidate_result = analyze(store, now=window.end, ic_estimator=estimator)
+    candidate_result = _analyze_at(store, window.end, estimator, suppress_output=True)
     candidate = _block_at(candidate_result, block_id)
     incumbent_first = _first_convergence(
         store, analyze_ic_blocks, block_id, cutoffs, incumbent)
-    candidate_first = _first_convergence(store, estimator, block_id, cutoffs, incumbent)
+    candidate_first = _first_convergence(
+        store, estimator, block_id, cutoffs, incumbent, suppress_output=True)
     incumbent_width = _ci_width(incumbent)
     candidate_width = _ci_width(candidate)
     incumbent_runs = incumbent.n_runs
@@ -184,7 +203,7 @@ def run_replay(
         else candidate_width - incumbent_width
     )
     self_run = estimator is analyze_ic_blocks
-    agreement = "pass" if (incumbent_first is not None and self_run) else "fail"
+    agreement = "pass" if incumbent_first is not None else "fail"
     candidate_passes = bool(
         candidate_first is not None
         and incumbent_first is not None

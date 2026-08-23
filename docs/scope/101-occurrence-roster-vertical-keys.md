@@ -142,3 +142,39 @@ is 1.55.0 with a partial Chromium and fails to launch; 1.61.1 is the pinned vers
 **Base capture:** `app: 89 of 89 stories passed`, 0 failures, at base `38a5a5d`,
 through the declared no-fetch server on an explicit free port against the seed-620
 synthetic database.
+
+**Round 2** (same cold reviewer, delta re-check). Blockers claimed: 3. Two of them
+were `injected`-shaped in appearance but resolved without a code change:
+
+- R2-B1 REFUTED, not forwarded. The reviewer statically parsed the replay's story
+  table as 74 entries and called the base capture unreproducible. Executed instead:
+  `node -e "import('./frontend/diagnose-workstation-behavior.replay.mjs')
+  .then(m=>console.log(m.STORIES.length))"` prints **89**, the last entry is `D3`,
+  and the live replay printed `app: 89 of 89 stories passed`. Two independent live
+  measurements against one static parse; the order's numbers stand. Per the triage
+  rule that an objection failing reproduction is recorded as refuted and never
+  forwarded, no change was made on this point.
+- R2-B2 ACCEPTED, `authoring` — steps 5 and 7 still said "the two guards" after the
+  guard demand had been cut from step 2, so the ledger row and the ADR were the two
+  places still told to describe a guard the order forbids. Fixed in both.
+- R2-B3 ACCEPTED, `authoring` and the round's best catch — the chart guard as drafted
+  bailed out on ALL keys at `#ec-chart`. Because that handler `preventDefault`s
+  without `stopPropagation`, ArrowLeft/ArrowRight there today move the chart cursor
+  AND step the roster; an all-keys guard would have silently deleted that shipped
+  behaviour with no ledger row recording it. Fixed: the guard is scoped to
+  ArrowUp/ArrowDown, keeping the change strictly additive, and the acceptance
+  criterion now pins Left/Right in the chart to its base behaviour.
+- Notes accepted: the `:focus-visible` citation pointed at `.dw button.qrow`
+  (line 718), not `.ev-row`, which has no author rule at all; and Safe start now
+  names `--port` as the single permitted addition, since `revise` §0 makes an
+  ambiguous declaration a stop.
+- Reviewer items 4, 5-partial and 8 were stale reads of a superseded copy — step 0,
+  the rAF prohibition and the P27 line were already present. Verified by grep, not
+  argued.
+
+**Termination.** Ordinary-stakes plan: one panel plus a same-reviewer delta re-check,
+which is what ran. Stopping at two panels. Remaining round-2 findings were wording
+and scope precision, not defects, and the one genuinely open item is a human ruling
+(the key set), which the hard-cap rule routes to the operator rather than to another
+panel. No `injected` blockers across either round, so the rewrite-clean signal never
+fired.

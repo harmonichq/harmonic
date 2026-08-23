@@ -118,6 +118,23 @@ class FrontendAssetRoutesTest(unittest.TestCase):
             f"{', '.join(missing)}; extra {', '.join(extra)}.",
         )
 
+    def test_inline_modules_are_assets_absolute_and_rest_window_stays_private(self):
+        inline_specifiers = {
+            specifier
+            for block in _INLINE_MODULE.findall(_FRONTEND_INDEX.read_text())
+            for specifier in _module_specifiers(block)
+        }
+        self.assertTrue(inline_specifiers, "index.html must contain a module graph")
+        self.assertTrue(
+            all(specifier.startswith("/assets/") or not specifier.startswith(".")
+                for specifier in inline_specifiers),
+            "index.html inline-module local specifiers must be /assets-absolute",
+        )
+        assets = _local_assets()
+        served = _served_paths()
+        self.assertNotIn(_FRONTEND_DIR / "rest-window.js", assets)
+        self.assertNotIn("/assets/rest-window.js", served)
+
 
 if __name__ == "__main__":
     unittest.main()

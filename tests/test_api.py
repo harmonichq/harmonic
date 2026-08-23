@@ -226,7 +226,7 @@ class ApiTest(unittest.TestCase):
         self.assertTrue(r.headers["content-type"].startswith("text/javascript"))
 
     def test_every_index_module_import_is_served_as_javascript(self):
-        # #332: index.html imports each ``./*.js`` sibling as an ES module. If any
+        # #332: index.html imports each ``/assets/*.js`` module as an ES module. If any
         # one has no serving route the browser gets a 404 (application/json), blocks
         # the module, and the WHOLE SPA fails to mount (raw ``{{ }}`` mustaches).
         # The per-file tests above miss new modules; this derives the list from the
@@ -235,10 +235,10 @@ class ApiTest(unittest.TestCase):
         from pathlib import Path
         index = (Path(__file__).resolve().parent.parent
                  / "frontend" / "index.html").read_text()
-        modules = sorted(set(_re.findall(r"""["']\./([a-z0-9-]+\.js)["']""", index)))
+        modules = sorted(set(_re.findall(r"""["']/assets/([a-z0-9-]+\.js)["']""", index)))
         self.assertIn("day-hero-chart.js", modules)  # guards the regex itself
         for mod in modules:
-            r = self.client.get("/" + mod)
+            r = self.client.get("/assets/" + mod)
             self.assertEqual(r.status_code, 200, f"{mod} import has no serving route")
             self.assertTrue(r.headers["content-type"].startswith("text/javascript"),
                             f"{mod} not served as JavaScript")
@@ -298,13 +298,6 @@ class ApiTest(unittest.TestCase):
         # #157: the Guide tab's pure render helpers are a sibling ESM asset;
         # without this route the import 404s and the whole SPA fails to mount.
         r = self.client.get("/assets/guide.js")
-        self.assertEqual(r.status_code, 200)
-        self.assertTrue(r.headers["content-type"].startswith("text/javascript"))
-
-    def test_serves_rest_window_js_as_javascript(self):
-        # #202: the rest-window display helpers are a sibling ESM asset;
-        # without this route the import 404s and the whole SPA fails to mount.
-        r = self.client.get("/assets/rest-window.js")
         self.assertEqual(r.status_code, 200)
         self.assertTrue(r.headers["content-type"].startswith("text/javascript"))
 

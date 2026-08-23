@@ -242,3 +242,67 @@ and — new — an absence assertion proving ←/→ no longer step, printing th
 sanction on every run. The `Must prevent` entry "silent incorrect success" now has a
 sharper instance: an absence assertion that passes on base, which would mean the
 withdrawn behaviour was never actually tested.
+
+## Plan-review round 3 — cold delta pass on the rewritten order
+
+One fresh cold Opus reviewer, no context from rounds 1-2. Verdict: **not
+countersigned**, three blockers. All three reproduced against the repo before any
+fix, all three fixed. None was a re-litigation of the ruling.
+
+- **R3-B1 `authoring`, and the sharpest finding of the whole triage.** The
+  focus-retention prescription was consumed by the wrong paint. The case-file branch
+  of `paintLevel` is guarded only by `if (!f.caseFile)` (2276), under a comment that
+  states the rule outright — "render only the retained server-owned case. A pending
+  replacement never clears the old one" (2274-2275). `requestCase`'s synchronous
+  paint sets `frame.loading = true` (1453) and touches neither `frame.caseFile` nor
+  `frame.selectedId`, both reassigned only in the `.then()` (1459-1461). So the
+  loading paint DOES draw the roster, with the OLD selection, and a "focus the
+  selected row then clear the flag" rule fires there, focuses the row being stepped
+  away from, clears itself, and lets the real paint drop focus to `BODY`. The order
+  had warned about exactly this trap one layer up, for `requestAnimationFrame`, and
+  then walked into it. Fixed: the flag carries the target occurrence id, and focus
+  is applied and cleared only when `!f.loading && f.selectedId === <that id>`.
+  `f.loading` is set at 1453 and cleared at 1460, so it separates the two paints.
+- **R3-B2 `authoring`.** The chart guard was the only new complexity in the change
+  and nothing would have failed if it were absent, inverted, or later deleted — its
+  sole acceptance was a manual bullet. Worse, the story count left no room for a
+  test: an implementer who wrote one would land on 92 against an order demanding 91.
+  Fixed: S74 is now a required story using the `withFiredMeal` options object S32/S33
+  already carry, with its own red-first proof (write it, watch it fail against a
+  build that has the new stepping but not the guard, then add the guard).
+- **R3-B3 `authoring`.** The ledger-header instruction would have produced a header
+  contradicting its own list. Executed composition: `STORIES` is 71 S-stories
+  (S01-S71, no gaps) + 15 compatibility entries (C41-C55) + 3 diagnostics (D1-D3)
+  = 89. The existing itemisation is wrong twice — it claims 74 S-entries against 71
+  actual and omits C41-C55 entirely — so "append a clause for the new stories" would
+  have shipped a self-contradicting frozen record inside the very revision meant to
+  re-freeze it. Fixed: the order now carries the verified composition, so no hunting
+  is required.
+- Notes accepted: S12's absence assertion must assert after EACH press, since on base
+  the prescribed Right-then-Left pair walks 1 → 2 → 1 and would pass if asserted only
+  at the end; "THREE assertions must fail" was corrected to four; P26's block cites
+  `frontend/diagnose-event-comparison.js:674-691` while the handler is at 661-676,
+  now recorded on the same observed-and-out-of-scope line as P27; and the
+  beyond-the-cap case was described wrongly as "leave focus where it is" when focus
+  is in fact lost to `BODY`, since the repaint destroys the buttons.
+- Reviewer cleared, with evidence: the `check_public_links.py` mechanism matches the
+  boundary's description; the retirement idiom genuinely discharges revise §4 (the
+  runner prints a story's return value on every run, replay 3588/3593); the keyhint
+  is a single shipping occurrence; and S72-S74 are free ids, with the C and D series
+  separate.
+
+### Deviation from the relayed instruction — flagged, not silently taken
+
+The instruction said "measured base count + 2 new stories (was +3)", i.e. 91. Adding
+S74 makes it +3 = 92. The "+2" was arithmetic that followed from dropping the old
+S73 ("horizontal model retained"), which the replacement model made meaningless; it
+was not part of the owner's ruling, and S74 covers something the earlier draft never
+had a story for at all. Under the risk contract's `Evidence owed`, a guard with no
+assertion is exactly the gap that clause exists to close. Recorded here rather than
+absorbed quietly, so the count can be overruled if the reading is wrong.
+
+**Termination.** Three panels — the hard cap. The blockers arriving at the cap were
+concrete, reproducible defects with verified fixes, not unsettled decisions, so they
+were fixed rather than routed to the operator. The fixes themselves have NOT been
+re-verified by a fresh cold pass; that is the one piece of assurance this triage does
+not have, and `/ticket start`'s own review at the stamped depth is the backstop.

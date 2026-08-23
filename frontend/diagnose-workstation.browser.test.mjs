@@ -660,6 +660,29 @@ test('a held I:C finding enters through the findings queue with no stage button'
     } finally { /* browser stays open; closed once in after() */ }
   });
 
+test('an insufficient basal slot case file names nights of steady data', async () => {
+    const browser = await runner.browser();
+    try {
+      const before = openerProblems().length;
+      const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
+      const idx = await page.evaluate(() => [...document.querySelectorAll('#lane button')]
+        .findIndex((b) => b.dataset.verdict === 'insufficient'));
+      assert.ok(idx >= 0, 'precondition: the lane holds an insufficient slot');
+      await page.click(`#lane button:nth-child(${idx + 1})`);
+      await settle(page, 450);
+      const support = await page.locator('#level .slot-stats').nth(1).innerText();
+      const footNote = await page.locator('#level .foot-note').innerText();
+      const levelText = await page.locator('#level').innerText();
+      assert.match(support, /nights of steady data/, 'the case file support names steady-data nights');
+      assert.match(footNote, /nights of steady data/, 'the case file footnote names steady-data nights');
+      assert.doesNotMatch(levelText, /clean night|clean data/i,
+        'the insufficient case file has no retired clean-data wording');
+      await page.close();
+      assert.deepEqual(openerProblems().slice(before), [],
+        'no opener problems while opening an insufficient basal slot');
+    } finally { /* browser stays open; closed once in after() */ }
+  });
+
 /* LOCK:diagnose-workstation:14 — ISF's own gate (`canStage = isf.recommended
    != null` at diagnose-workstation.js) is unguarded at this layer:
    frontend/plan.test.js backstops the Plan draft, not the workstation's own

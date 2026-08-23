@@ -179,7 +179,96 @@ Notes, all adopted:
 9. Three cites were off by a few lines: `popTo` is `:1603`, the history `id:` is
    `:1565`, the factor `rowId:` is `:1574`. Renumbered.
 
-The order was rewritten clean rather than patched. Both reviewers independently
+**Round 2 — 3 blocking, 4 notes. 4 `authoring`, 3 `injected`.** One fresh cold
+reviewer plus both round-1 reviewers re-checking their deltas. Injected blockers
+appearing at all is why the order was rewritten clean again rather than patched.
+
+Blocking:
+
+1. `injected` + `authoring`. Step 7 filed a new `P55` row into §D and edited §3's
+   counts. Both are wrong: the P rows are a section-contiguous predecessor
+   inventory (§D is P23–P27 ending at `:593`; §E opens P28 at `:598`), so a P55
+   appended to §D lands mid-document and out of order, and §3's range would then
+   describe a non-contiguous document. Every post-freeze change to this ledger
+   has instead added S stories under a dated revision section (five precedents,
+   `:1268`, `:1388`, `:1699`, `:1756`, `:1816`) and left the P inventory alone —
+   and this change adds no event-listener site, so it owes no P row. The §3 edit
+   was itself introduced by round 1's fix. Now: dated revision section, S72, the
+   `:12` header count only, §2 and §3 untouched.
+2. `authoring`. The pending-focus value had no stated encoding, and two distinct
+   states are both falsy-row-id. A slot pushed from the basal lane at level 1
+   carries `rowId: null` (`renderLane(…, pickCell)` at `:2532` → `pickCell(cell,
+   rowId = null)` at `:1622`) and no `id`, so `stack[1].rowId ?? stack[1].id` is
+   nullish; an agent implementing "one value, falsy means nothing pending" leaves
+   that reader on `<body>` — the exact defect being fixed. Now three named
+   states, with nullish explicitly meaning the level state.
+3. `authoring`. Assertion 6b named `finding:carb_undercount` without pinning the
+   fixture that contains it. A row absent from the queue yields a selector
+   timeout, not the `BODY` red the order asks to be recorded, and the two look
+   nothing alike in a log. Now both pop assertions run against
+   `openApp(browser, { history: true, appSource: 'fixture' })`, and the order
+   requires asserting the row is present before pressing a key.
+
+Notes, all adopted:
+
+4. `authoring`. `historyRetired()` at `:1165-1175` does
+   `stack.length = 1; dir = 'pop'; paint()` — a fourth stack transition,
+   system-driven rather than reader-driven. Unnamed, it made the order's
+   "exactly three entry points" claim checkably false and left an auditing agent
+   free to hang focus off an async retirement. Now named as a must-not.
+5. `authoring`. A Done-when clause about pops landing on an intermediate level
+   had no assertion behind it and could not signal done. The behaviour stays
+   specified in Do step 4 and in the accepted-failure list; the clause is out of
+   Done-when.
+6. `injected`. Round 1's `#seg-window` park target had no lever to make the async
+   repaint land after the park. `findingsDelayMs` is the existing one, already
+   used at `:212` and `:243` of the same test file.
+7. `injected`. Four CI commands the change can trip were missing from
+   Verification (the public-tree trio and the exploration `--check`), plus a
+   boundary against naming `docs/scope/*` or `mockups/*.behavior.md` in a
+   shipping `frontend/` comment. Cites corrected: `pickCell` is `:1622`, the
+   ledger counts are `:12`, `:954`, `:958`.
+
+Both round-1 reviewers confirmed on re-check that `stack[1]` is correct on every
+pop path including a depth-3 Backspace, and that `#seg-window` is a sound park
+target.
+
+**Round 3 (the three-panel cap) — 1 blocking, 2 notes, all 3 `injected`.** A
+fresh cold reviewer with no prior context.
+
+Blocking:
+
+1. Round 2's own fix landed broken. It pinned 6b and 6c to
+   `openApp(browser, { history: true, appSource: 'fixture' })`, but `openApp`
+   defaults `state: 'typical'` (replay `:390`), and `typical` pins
+   `win: 'overnight'` (`:246`) whose range is `[0, 360]` (`:233`), so
+   `findingsWindow()` (`:1135-1138`) window-scopes the queue and no
+   `finding:`-register row survives — 6b had no subject. `history: true` swaps
+   only the findings inputs, not the window. Reproduced directly. Fixed by
+   pinning `state: 'dense'`, the one state with `win: 'all'` (`:253`), whose
+   `[0, 1440]` makes `findingsWindow()` return `null` — the global projection,
+   which carries both `finding:carb_undercount` and `ich1_WzAsNzIwLCI2Il0` — and
+   which opens at `level: 1`.
+
+Notes, both adopted:
+
+2. The `:12` header edit read literally would widen ticket 10's range to
+   `S41-S72`, folding a #100 story into ticket 10's authorship and falsifying its
+   "31", in a ledger the order elsewhere forbids rewriting. Now gives the literal
+   replacement clause.
+3. The public-tree trio added in round 2 took an undefined `<dir>`, and
+   `build_public_tree.py` copies into its target without clearing it — aiming it
+   at a worktree path pollutes rather than errors. Now `D=$(mktemp -d)`.
+
+**Injected-blocker trend: 0 → 3 → 3.** That is the rewrite-clean signal firing,
+and it is why rounds 1 and 2 were each answered by rewriting the order rather
+than patching it. At the cap the three remaining items were plain fact errors
+with exact fixes, each reproduced against the repo before it was applied, so they
+were applied surgically rather than by a fourth round. No unsettled *decision*
+was blocking at the cap — the two genuinely open decisions are below, and go to
+the operator.
+
+Both reviewers independently
 confirmed the mechanism itself — a single read-and-clear consumer at the end of
 `paint()` — is correct: `push` has five call sites and `popTo` one, all
 navigations; boot appends to `stack` directly (`:1658-1679`) and bypasses

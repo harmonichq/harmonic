@@ -127,4 +127,36 @@ this ledger remains committed.
 
 ## Review rounds
 
-(filled during /plan-review)
+### Panel 1 — two cold reviewers, no context from the drafting session
+
+Blockers found: 6 (all `authoring` — present since the draft; 0 `injected`).
+
+1. The scratch-payload recipe for the no-data render named one field, so the
+   "empty state" screenshot would have shown three nights of steady data, a CI
+   band and the spans-current hedge — a state the engine cannot produce.
+   Reproduced against `renderParamLevel` and `ciq_autotune/analyzers/basal.py:487`.
+   Fixed: the order now names the whole field set.
+2. The ticket's second reproduction — the no-data case file — had no acceptance
+   criterion. Fixed: a `Done when` bullet quotes the exact strings, and the
+   pre-existing "insufficient evidence" head (line 705) is declared out of scope.
+3. No step replayed the frozen ledger against the built revision, though the
+   ledger entry and `Done when` both cited its result. Fixed: new step 9.
+4. The revise contract's re-inventory-and-diff pass was dropped from both the
+   freeze step and the ledger entry. Fixed: step 3b, carried into step 10.
+5. `mockups/INDEX.md` was never amended, though every prior revision of this
+   surface appended its own clause to the row. Fixed: step 12.
+6. The frontend-test expectation was self-contradictory (it credited the browser
+   suite with adding tests to a glob that cannot discover it). Fixed, and 433
+   pass / 0 fail re-measured on the untouched tree.
+
+Refuted, not forwarded: the claim that the browser suite has no basal-slot
+navigation (story S16 reads `#level .slot-say` at
+`frontend/diagnose-workstation.browser.test.mjs:688`); and the claim that
+`renderRibbonChart` is never called (it is, at `frontend/index.html:4119` and
+`:4724` — what makes the block inert is that nothing binds `ribbonEl` in the
+template). Both were corrected in the order rather than adopted.
+
+Notes taken but not blocking: the retired phrasing also sits at
+`frontend/index.html:4467`, `:4578`, `:4646` and `:4647` in that same
+unreferenced block; the Boundaries list now names them so the follow-up is a
+deletion question rather than a copy question.

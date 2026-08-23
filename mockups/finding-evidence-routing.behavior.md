@@ -918,17 +918,17 @@ P52 · The lens's inspector pane and its three selects — `#ec-factor`,
 ```
 
 ```
-P53 · URL state and popstate: view / factor / window / another / occ live in the
-      query string, popstate re-requests the projection, and a stale response is
+P53 · URL state: view / factor / window / another / occ live in the Diagnose
+      hash-route query, route restoration re-requests the projection, and a stale response is
       dropped by generation counter.
       AMENDED #62, 2026-08-20 — the six-hour anchor-time `block` coordinate is
       retired and the reader's own clock window (`start_min`/`end_min`, both or
       neither) takes its place. The contract this term governs — coordinates in
-      the query string, popstate re-requests, stale responses dropped — is
+      the Diagnose hash-route query, restoration re-requests, stale responses dropped — is
       unchanged; only the time coordinate's name and shape moved.
   source:   frontend/diagnose-event-comparison.js:706-711, 790-820
   mock:     the mock is one page with no URL state
-  evidence: probe3 (app: /?state=dense&theme=light&view=lows#diagnose)
+  evidence: probe3 (app: #/diagnose?view=lows)
   verdict:  kept          lock term 19 (one URL-state contract, build-time
                           evidence — "the hash/query-string split retires")
 ```
@@ -1103,7 +1103,7 @@ ALIGN is a switch over already-selected data (ADR 31 part 3's own form): it
 never writes the URL, it does not push a crumb level, and picking it never
 moves the roster, the WINDOW brace, or the crumb.
 
-The lens's own `?view=meals`/`lows` route (unreachable by any control once
+The lens's own `#/diagnose?view=meals`/`lows` route (unreachable by any control once
 View is deleted) is kept as a harmless read path per P53 — it renders the same
 canvas-only surface directly, with no rail of its own, rather than being
 restructured.
@@ -1131,7 +1131,7 @@ unless noted:
   fail-closed path on a missing comparison — reached without a click.
 - **S3 — amended.** The meal-identity and no-match-copy assertions survive on
   the canvas and legend, which are not retired; the factor coordinate is now
-  set by opening a second page with `?factor=late_bolus` (P53's read path)
+  set by opening a second page with `#/diagnose?factor=late_bolus` (P53's read path)
   instead of driving `#ec-factor`, and its title-context span (`.ec-title-context`,
   the canvas-only surface's remaining factor readout) is checked in place of
   the retired inspector title. The factor-re-render and occurrence-retention

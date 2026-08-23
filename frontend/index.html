@@ -1466,7 +1466,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           </template>
         </nav>
         <span class="cockpit-divider" data-zone="divider" aria-hidden="true"></span>
-        <a class="cockpit-day" data-zone="day" data-shell-tab="day" href="#day"
+        <a class="cockpit-day" data-zone="day" data-shell-tab="day" href="#/day"
            :aria-current="tab === 'day' ? 'page' : null" @click.prevent="shellGo('day')">Day</a>
         <span class="cockpit-gap" data-zone="gap"></span>
         <div class="cockpit-scope" data-zone="scope">
@@ -2323,7 +2323,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
 
   <script type="module">
     import { createApp, ref, reactive, computed, onMounted, onUnmounted, watch, nextTick, provide, inject } from 'vue';
-    import { TABS, resolveTab } from './tab-routing.js';
+    import { TABS, parseRoute, resolveTab, subscribeRoute, writeRoute } from './tab-routing.js';
 
     /* =========================================================================
        #64 SCENARIO SCREEN — the pure chart logic (SCN_* consts + helpers, incl.
@@ -3783,43 +3783,13 @@ html.dark .viz .tie:hover::before { opacity:.13; }
     // Patterns / Investigate deep-links (#132): #patterns?mode=investigate&day=YYYY-MM-DD&ep=<id>
     //   Also accepts the flat ?-less format emitted by Daily flag cards:
     //   #tab=patterns&mode=investigate&day=YYYY-MM-DD&ep=<id>
-    function parseHash() {
-      const raw = location.hash.replace(/^#/, '');
-      if (!raw) return null;
-      const result = { tab: null, date: null, modal: null, window: null,
-                       scnMode: null, scnDay: null, scnEp: null, article: null };
-
-      // Detect flat format (#key=val&...) vs legacy format (#tab?key=val&...)
-      const [tabPart, queryPart] = raw.split('?');
-      let params;
-      if (!queryPart && tabPart.includes('=')) {
-        // Flat format: #tab=patterns&mode=investigate&day=...&ep=...
-        params = new URLSearchParams(tabPart);
-        result.tab = params.get('tab');
-      } else {
-        result.tab = tabPart || null;
-        params = queryPart ? new URLSearchParams(queryPart) : null;
-      }
-
-      if (params) {
-        result.date = params.get('date');
-        const win = params.get('window');
-        if (win) result.window = win; // '1' | '7' | '14' | '28' (days, anchor-ending)
-        result.scnMode = params.get('mode') || null;
-        result.scnDay = params.get('day') || null;
-        result.scnEp = params.get('ep') || null;
-        result.article = params.get('article') || null;   // #269: #guide?article=<slug>
-      }
-      return result;
-    }
-
     const app = createApp({
       setup() {
         // #425: one shared gate for all heavy ResultCache-backed reads so cold
         // threads never run concurrently and GIL-thrash the single uvicorn worker.
         const enqueue = makeSerialGate();
 
-        const initialHash = parseHash();
+        const initialHash = parseRoute(location);
         // #132: if the initial URL is a patterns/investigate deep-link, stash the
         // #246: the old Patterns/Investigate deep-link is retired with the tab; a stale
         // `#patterns?mode=investigate` hash now just lands on Diagnose (resolveTab below).
@@ -3832,7 +3802,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         // outcomes → verify (#245). #246 (ADR 0027) retires Recommendations + Patterns
         // into Diagnose, so `review`/`patterns` (and the legacy `dashboard`/`pump`) all
         // migrate to `diagnose`.
-        const tab = ref(resolveTab((initialHash && initialHash.tab) || localStorage.getItem('tab') || 'diagnose'));
+        const tab = ref(resolveTab((initialHash && initialHash.page) || localStorage.getItem('tab') || 'diagnose'));
         const dark = ref(document.documentElement.classList.contains('dark'));
         // #248 / ADR 0024: the developer flag. Tier-2 reasoning (near-miss, outranked,
         // per-detector meaning, model steps) is always on; this gates only tier-3
@@ -4289,22 +4259,29 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         }
         function syncHashFromState() {
           if (applyingHash) return;
-          const params = [];
+          const route = { page: tab.value };
           // #248: the Day surface's selected date rides the hash — `#day?date=YYYY-MM-DD`
           // deep-links to a day (and back/forward moves the day). Skip it until cold
           // arrival resolves the day so we never write `date=null`.
           if (tab.value === 'day') {
-            if (dailyDate.value) params.push(`date=${dailyDate.value}`);
+            if (dailyDate.value) route.date = dailyDate.value;
           }
           // #269: the Guide-KB's open article rides the hash — `#guide?article=<slug>`
           // deep-links to an article (and back/forward moves between articles).
-          if (tab.value === 'guide' && kbCurrent.value) params.push(`article=${kbCurrent.value}`);
+          if (tab.value === 'guide' && kbCurrent.value) route.article = kbCurrent.value;
+          if (tab.value === 'verify') {
+            const current = parseRoute(location);
+            if (current.page === 'verify') Object.assign(route, current);
+          }
+          if (tab.value === 'diagnose') {
+            const current = parseRoute(location);
+            if (current.page === 'diagnose') Object.assign(route, current);
+          }
           // #246: the Patterns/Investigate sub-state hash retired with the tab (ADR 0027);
           // Diagnose carries no shareable sub-state beyond the tab + modal params.
           const modalParam = currentModalParam();
-          if (modalParam) params.push(modalParam);
-          const next = params.length ? `#${tab.value}?${params.join('&')}` : `#${tab.value}`;
-          if (location.hash !== next) history.pushState(null, '', next);
+          const extra = modalParam ? [...new URLSearchParams(modalParam)] : [];
+          writeRoute(route, { extra, replace: !location.hash.startsWith('#/') || location.search !== '' });
         }
         // The state->hash watch is registered *after* the scenario refs are
         // declared (scnMode/scnPickDay/scnActiveInvestigateId, ~L3160) — its
@@ -4327,22 +4304,20 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           }
         }
 
-        window.addEventListener('hashchange', () => {
-          const parsed = parseHash();
-          if (!parsed || !parsed.tab) return;
+        subscribeRoute((parsed) => {
           applyingHash = true;
           try {
-            if (parsed.tab !== tab.value) setTab(parsed.tab);
+            if (parsed.page !== tab.value) setTab(parsed.page);
             // #248: the Day surface owns the day-picker — back/forward just moves the
             // picked date (old #daily / #modelview hashes migrate to #day here too).
-            if (resolveTab(parsed.tab) === 'day' && parsed.date
+            if (resolveTab(parsed.page) === 'day' && parsed.date
                 && parsed.date !== (pendingDailyDate.value || dailyDate.value)) {
               dailyHighlight.value = null;
               pendingDailyDate.value = parsed.date;
               resolveDailyDate();
             }
             // #269: back/forward between KB articles, and app -> #guide?article deep-links.
-            if (resolveTab(parsed.tab) === 'guide' && parsed.article && parsed.article !== kbCurrent.value
+            if (resolveTab(parsed.page) === 'guide' && parsed.article && parsed.article !== kbCurrent.value
                 && KB_ARTICLES.some((a) => a.slug === parsed.article)) {
               kbCurrent.value = parsed.article;
               kbFetchArticle(parsed.article);
@@ -4355,7 +4330,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
               applyingHash = false;
               // A stale hash changed tab state while the re-entrancy guard was
               // active, so make the normalized route shareable once it lifts.
-              if (resolveTab(parsed.tab) !== parsed.tab) syncHashFromState();
+              if (resolveTab(parsed.page) !== parsed.page) syncHashFromState();
             });
           }
         });
@@ -4868,7 +4843,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
            the shell (sidebar / search / deep-link) and the authored how-tos
            (markdown fetched from /api/kb/<slug>). See ADR 0044. */
         const kbCurrent = ref(
-          initialHash && initialHash.tab === 'guide' && initialHash.article
+          initialHash && initialHash.page === 'guide' && initialHash.article
             && KB_ARTICLES.some((a) => a.slug === initialHash.article)
             ? initialHash.article : 'start-here');
         const kbQuery = ref('');
@@ -5581,7 +5556,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           if (tab.value === 'guide') loadCatalog();       // #269: initial #guide deep-link
           if (tab.value === 'verify') {
             loadVerify();
-          } else if (!(initialHash && initialHash.tab)) {
+          } else if (!(initialHash && initialHash.page)) {
             await loadVerify();
             if (verifyTrials.value.some((trial) => trial.state === 'maturing')
                 && tab.value === 'diagnose') tab.value = 'verify';

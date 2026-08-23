@@ -24,12 +24,13 @@ const UNIT = { basal_rate: 'U/h', carb_ratio: 'g/U', isf: 'mg/dL/U', target_bg: 
  * map the rest of the surface already uses. */
 const PARAM_LONG = { basal_rate: 'Basal', carb_ratio: 'Carb ratio', isf: 'ISF', target_bg: 'Target BG' };
 
-/* PORT: the mock is a page and reads `?state=`; the app is one tab, so the same
- * parameter selects which Trial opens. Both openers assert the rendered state
- * equals the requested one (the port process's state-addressability rule). */
+/* PORT: the mock is a page and reads `?state=`; the app carries it in Verify's
+ * hash-route query, and the same parameter selects which Trial opens. Both
+ * openers assert the rendered state equals the requested one (the port
+ * process's state-addressability rule). */
 export function queryState(fallback, param = 'state') {
   try {
-    const value = new URLSearchParams(location.search).get(param);
+    const value = new URLSearchParams(location.hash.split('?')[1] || '').get(param);
     return value === 'complete' || value === 'maturing' ? value : fallback;
   } catch { return fallback; }
 }

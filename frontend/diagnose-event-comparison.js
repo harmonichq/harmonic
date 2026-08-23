@@ -22,7 +22,7 @@
  * a `By clock` / `By event` switch present only where the canvas is showing a
  * factor's events. The lens itself is canvas-only now (P52): no inspector,
  * no selects, no `Clear trace`. What remains here is the canvas and whatever
- * feeds it, reused by both this module's own `?view=meals`/`lows` read path
+ * feeds it, reused by both this module's own `#/diagnose?view=meals`/`lows` read path
  * (P53 keeps it, unreachable by any control) and the workstation's ALIGN
  * "By event" mode.
  *
@@ -37,9 +37,14 @@
  * the browser contract.
  */
 import { createDiagnoseWorkstation } from './diagnose-workstation.js';
+import { parseRoute, subscribeRoute, writeRoute } from './tab-routing.js';
 
 let params = new URLSearchParams();
 let activeInstance = null;
+const ROUTE_KEYS = ['view', 'factor', 'start_min', 'end_min', 'another', 'occ'];
+const paramsFromRoute = (route = parseRoute(location)) => {
+  return new URLSearchParams(ROUTE_KEYS.flatMap((key) => route[key] === null ? [] : [[key, route[key]]]));
+};
 /* Glucose leads and is the fallback: it is the recommendation surface, so a
    bare #diagnose opens there. Meals and Lows are evidence lenses you choose. */
 const VIEWS = ['glucose', 'meals', 'lows'];
@@ -614,7 +619,7 @@ function eventSurfaceInput(payload) {
 }
 
 /** Canvas-only render (P52): the chart, its legend and its hover readout —
-    nothing else. Reused as-is by both this module's own `?view=meals`/`lows`
+    nothing else. Reused as-is by both this module's own `#/diagnose?view=meals`/`lows`
     read path and, once exported, the workstation's ALIGN "By event" mode
     (ADR 31 part 3) — one implementation of the projection's draw, never two. */
 export function renderEventSurface(surface, payload, { headerHost = null } = {}) {
@@ -690,11 +695,11 @@ export function createDiagnoseEventComparison({ root, callbacks = {} }) {
   let projection = null;
   let current = null;
   let requestedGeneration = 0;
-  const onPopState = () => {
-    params = new URLSearchParams(location.search);
+  const unsubscribeRoute = subscribeRoute((route) => {
+    if (route.page !== 'diagnose') return;
+    params = paramsFromRoute(route);
     requestProjection();
-  };
-  window.addEventListener('popstate', onPopState);
+  });
 
   const dispose = () => {
     current?.observer?.disconnect();
@@ -779,7 +784,7 @@ export function createDiagnoseEventComparison({ root, callbacks = {} }) {
   const instance = {
     setData(next) {
       payload = next;
-      params = new URLSearchParams(location.search);
+      params = paramsFromRoute();
       root.classList.remove('ec-error');
       requestProjection();
     },
@@ -800,11 +805,11 @@ export function createDiagnoseEventComparison({ root, callbacks = {} }) {
         if (value == null || value === '') params.delete(key);
         else params.set(key, value);
       }
-      history.pushState(null, '', `${location.pathname}?${params.toString()}${location.hash}`);
+      writeRoute({ page: 'diagnose', ...Object.fromEntries(params) });
       requestProjection();
     },
     destroy() {
-      window.removeEventListener('popstate', onPopState);
+      unsubscribeRoute();
       dispose();
     },
   };

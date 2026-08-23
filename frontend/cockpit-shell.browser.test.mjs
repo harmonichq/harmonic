@@ -435,7 +435,7 @@ async function openApp(browser, options = {}) {
 async function chooseTab(page, id) {
   const trigger = page.locator(`[data-shell-tab="${id}"]:visible`).first();
   await trigger.click();
-  await page.waitForFunction((tab) => location.hash.startsWith(`#${tab}`), id);
+  await page.waitForFunction((tab) => location.hash.startsWith(`#/${tab}`), id);
 }
 
 async function proveRedOnce(term, check, mutate) {
@@ -522,7 +522,7 @@ async function assertDestinationInventory(page) {
   const day = page.locator('.cockpit-day');
   assert.equal(await day.innerText(), 'Day');
   assert.equal(await day.evaluate((node) => node.tagName), 'A', 'Day keeps native link semantics');
-  assert.equal(await day.getAttribute('href'), '#day');
+  assert.equal(await day.getAttribute('href'), '#/day');
   assert.equal(await day.locator('.cockpit-step-number').count(), 0, 'Day is never numbered');
   const dayStyle = await day.evaluate((node) => {
     const style = getComputedStyle(node);
@@ -662,7 +662,7 @@ test('top bar and footer expose the locked destination inventory and neutral pro
 
     for (const id of TABS) {
       await chooseTab(page, id);
-      assert.equal(locationHash(await page.evaluate(() => location.hash)), id);
+      assert.equal(locationHash(await page.evaluate(() => location.hash)), `#/${id}`);
     }
     await page.locator('.cockpit-glossary').click();
     assert.equal(await page.locator('.glossary[role="dialog"]').isVisible(), true);
@@ -693,7 +693,7 @@ test('top bar and footer expose the locked destination inventory and neutral pro
 });
 
 function locationHash(hash) {
-  return hash.slice(1).split('?')[0];
+  return hash.split('?')[0];
 }
 
 function contrastRatio(foreground, background) {
@@ -736,7 +736,7 @@ export async function S2(browser) {
     await assertDestinationInventory(page);
     for (const id of TABS) {
       await chooseTab(page, id);
-      assert.equal(locationHash(await page.evaluate(() => location.hash)), id);
+      assert.equal(locationHash(await page.evaluate(() => location.hash)), `#/${id}`);
     }
   } finally { await page.close(); }
 }
@@ -943,8 +943,8 @@ export async function S10(browser) {
 }
 
 async function assertRetiredOccurrenceRoute(page) {
-  assert.equal(await page.evaluate(() => location.hash), '#diagnose',
-    'the stale occurrence-list URL must canonicalize to #diagnose');
+  assert.equal(await page.evaluate(() => location.hash), '#/diagnose?view=glucose&mode=dense',
+    'the stale occurrence-list URL must canonicalize to #/diagnose?view=glucose&mode=dense');
   const duplicates = await page.evaluate(() => ({
     dialogs: [...document.querySelectorAll('[role="dialog"]')]
       .filter((node) => /occurrences/i.test(
@@ -1001,7 +1001,8 @@ export async function R1(browser) {
       () => assertRetiredOccurrenceRoute(page), async () => {
         await page.evaluate(() => history.replaceState(null, '',
           '#diagnose?modal=occurrences&detector=mutation'));
-        return () => page.evaluate(() => history.replaceState(null, '', '#diagnose'));
+        return () => page.evaluate(() => history.replaceState(null, '',
+          '#/diagnose?view=glucose&mode=dense'));
       });
     await proveRedOnce('R1 duplicate occurrence route',
       () => assertRetiredOccurrenceRoute(page), async () => {

@@ -10,6 +10,11 @@ Harmonic is a single-page app with no build step and no login — the HTML shell
 
 The frontend is a single `frontend/index.html` file containing inlined Vue 3 and ECharts, loaded without a build step or login screen. The SPA shell loads on every origin, then makes bearer-token-gated API calls to load data. The three CDN dependencies (Vue esm-browser, ECharts) are vendored in browser tests; live requests use the unpkg / jsdelivr CDN.
 
+Canonical browser addressing is `#/<page>?<existing-page-state>`. The hash route
+carries only the selected page and the already-shareable Day `date`, Guide
+`article`, and Diagnose `view`, `factor`, `start_min`, `end_min`, `another`, and
+`occ` coordinates; server and API paths remain unchanged.
+
 ### Requirement: Diagnose surface asks "what tuning moves are available now?"
 
 Diagnose reads the current analysis result and presents a server-ranked queue of tuning findings (Audit). Each finding carries the evidence and severity behind it. The queue register is server-owned and direction-derived, so a direction-only ISF finding may remain in the asserted register even though it cannot stage. A staging control and actionable Recommended number appear only when the exact backend `asserts_move` verdict is true; a false or missing verdict fails closed. Findings in the held or still-collecting registers stay visible in a separate "Watching" section below. Diagnose also hosts an Explore mode for inspecting glucose, insulin, and behavioral evidence without generating advice.

@@ -8,7 +8,7 @@ aborted run's ledger was discarded and re-derived rather than trusted.
 
 ## Decisions
 
-- Grounded, not a decision: `CONTEXT.md:275` defines **Comparison support** as the
+- Grounded, not a decision: `CONTEXT.md:277` defines **Comparison support** as the
   presentation authority of an event-aligned cohort or five-minute point, based on
   how many distinct usable Occurrences contribute — `Supported`, `Limited`,
   `Withheld`, independent of classifier outcome and Evidence tier. The chart never
@@ -79,13 +79,21 @@ aborted run's ledger was discarded and re-derived rather than trusted.
   the point-level reading, and the withheld-point copy stops making a cohort-level
   claim. No caption, no new panel, no new interaction. `-> ADR` (recorded in the
   change's `design.md`).
-- Decision, mine: the wording, drawn from one closed copy table keyed by support
-  state. Cohort level — `Supported · enough events to compare`,
-  `Limited · few events, compare with care`,
-  `Withheld · not enough events to draw a line`. Point level —
-  `Supported · n7 · enough events at this minute`,
-  `Limited · n3 · few events at this minute`,
-  `Withheld · too few events at this minute`. `-> ADR`
+- Decision, mine, revised after plan-review round 1: the readings go on the chart
+  key's wrapping `<small>` detail line, not on the docked readout and not in the
+  8.5px support badge. The docked readout is a single clipped line
+  (`.canvas-head .head-live` is `white-space: nowrap; overflow: hidden`,
+  `frontend/diagnose-workstation.css:236-239`, host at
+  `frontend/diagnose-event-comparison.js:305`), so per-point readings appended
+  there would be invisible at narrow widths with no gate able to see it. The
+  closed copy table is therefore cohort-level only — `enough events to compare`,
+  `few events, compare with care`, `not enough events to draw a line` — and the
+  readout changes by exactly one string, `Episodes shown individually` to
+  `Withheld · too few events here` (27 characters to 30). `-> ADR`
+- Decision, mine: `cohortReadout` carries the same conflation as `paintReadout` —
+  both branch on the point's support and then state a cohort-level fact — so the
+  spoken text is fixed in the same change, branching on the cohort's support as
+  well as the point's. `-> ADR`
 - Decision, mine: `CONTEXT.md`'s Comparison support entry gains the same three
   readings, so the glossary and the chart say one thing.
 - Recorded, not asked: the existing detail line prints `1 events · aggregate
@@ -133,4 +141,16 @@ Disposition: copied into the work order.
 
 ## Plan-review ledger
 
-- (rounds recorded below as they run)
+- Round 1 (two cold reviewers, 2026-08-23): 12 blockers and 1 note, all
+  `authoring`, 0 `injected`. Every factual claim was reproduced before it reached
+  a fix round. The load-bearing ones: the docked readout is a single
+  `nowrap; overflow: hidden` line, so appending per-point readings there would be
+  invisible and no gate could see it; the frozen ledger carries no story for this
+  lens's readout, so "amend the story that covers the docked readout" named a
+  workstation-owned section; nothing anywhere pins `Episodes shown individually`,
+  so the draft's demand to prove an old assertion fails was unsatisfiable; the two
+  lens gates are fixture-stubbed through `page.route('**/*')` to
+  `http://app.local/` and never contact the declared server, so the draft's
+  provenance claim was false; the fast gate was mis-enumerated; the glossary entry
+  is at `CONTEXT.md:277`, not 275. The order was rewritten clean rather than
+  patched, and the readings were moved off the readout onto the chart key.

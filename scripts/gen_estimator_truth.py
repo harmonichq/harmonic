@@ -45,6 +45,9 @@ def _set(name: str, seed: int, segments: List[tuple[int, float]], events: List[B
         "isf_effective": EFFECTIVE_ISF,
         "observed_days": BLOCK_WINDOW_DAYS,
         "true_ratio_by_block": true_ratio_by_block,
+        # The first dose has no Accounting-DIA lead-in; every later isolated meal
+        # closes one whole-day ledger, which is the production run-count meaning.
+        "expected_run_count": len(events) - 1,
         "analysis_start": end - timedelta(days=BLOCK_WINDOW_DAYS),
         "analysis_end": end,
         "snapshots": [Snapshot(BASE, settings)],
@@ -151,7 +154,8 @@ def write_set_to_store(store, truth_set: dict) -> None:
 def main() -> None:
     for truth_set in known_ratio_sets() + placebo_sets():
         print(f"{truth_set['name']}: events={len(truth_set['events'])} "
-              f"cgm={len(truth_set['cgm_readings'])} seed={truth_set['seed']}")
+              f"cgm={len(truth_set['cgm_readings'])} runs={truth_set['expected_run_count']} "
+              f"seed={truth_set['seed']}")
 
 
 if __name__ == "__main__":

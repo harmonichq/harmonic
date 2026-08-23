@@ -20,9 +20,21 @@ class IcBlockEstimator(Protocol):
     ) -> Tuple[List[IcBlock], int]: ...
 
 
+class _HistoryCatalog(list):
+    """Records that the estimator populated the caller-owned catalog in place."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.was_populated = False
+
+    def extend(self, rows) -> None:
+        self.was_populated = True
+        super().extend(rows)
+
+
 def _blocks(estimator: IcBlockEstimator, truth_set: dict) -> Tuple[List[IcBlock], int]:
-    history_catalog: list = []
-    return estimator(
+    history_catalog = _HistoryCatalog()
+    blocks, run_count = estimator(
         truth_set["events"], truth_set["segments"], config=IcConfig(),
         cgm_readings=truth_set["cgm_readings"],
         isf_effective=truth_set["isf_effective"], carb_entries=[], basal_events=[],
@@ -33,6 +45,11 @@ def _blocks(estimator: IcBlockEstimator, truth_set: dict) -> Tuple[List[IcBlock]
         analysis_end=truth_set["analysis_end"], history_catalog=history_catalog,
         history_harm_lows=None,
     )
+    if not history_catalog.was_populated:
+        raise ValueError("estimator did not populate history_catalog in place")
+    if run_count != truth_set["expected_run_count"]:
+        raise ValueError("estimator returned a non-production whole-day run count")
+    return blocks, run_count
 
 
 def _engine_evidence(block: IcBlock) -> dict:
@@ -67,42 +84,43 @@ def _known_verdict(truth_set: dict, blocks: List[IcBlock], run_count: int) -> di
 
 def _placebo_verdict(truth_set: dict, blocks: List[IcBlock], run_count: int) -> dict:
     rows = []
-    clean = True
     vacuous = not blocks
+    finding_seen = False
     for block in blocks:
         evidence = _engine_evidence(block)
         numeric_supported = block.state == "numeric" and evidence["runs_floor_met"]
-        finding = numeric_supported and (
-            evidence["band_excludes_programmed"] or block.asserts_move)
+        finding = evidence["band_excludes_programmed"] or block.asserts_move
         vacuous = vacuous or not numeric_supported
-        clean = clean and not finding
+        finding_seen = finding_seen or finding
         rows.append({"block_id": block.block_id, "verdict": "finding" if finding else
                      ("vacuous" if not numeric_supported else "clean"),
                      "evidence": evidence})
-    verdict = "vacuous" if vacuous else ("clean" if clean else "finding")
+    verdict = "finding" if finding_seen else ("vacuous" if vacuous else "clean")
     return {"name": truth_set["name"], "kind": "placebo", "gated": True,
             "run_count": run_count, "block_count": len(blocks),
             "verdict": verdict, "blocks": rows}
 
 
-def run_synthetic_bar(estimator: IcBlockEstimator) -> dict:
+def run_synthetic_bar(
+    estimator: IcBlockEstimator, *, known_sets: List[dict], placebo_sets: List[dict],
+) -> dict:
     """Run the recovery and non-vacuous placebo contracts against ``estimator``."""
-    from scripts.gen_estimator_truth import known_ratio_sets, placebo_sets
-
     known = []
-    for truth_set in known_ratio_sets():
+    for truth_set in known_sets:
         blocks, run_count = _blocks(estimator, truth_set)
         known.append(_known_verdict(truth_set, blocks, run_count))
     placebo = []
-    for truth_set in placebo_sets():
+    for truth_set in placebo_sets:
         blocks, run_count = _blocks(estimator, truth_set)
         placebo.append(_placebo_verdict(truth_set, blocks, run_count))
     gated_known = [row for row in known if row["gated"]]
     return {
         "known": known,
         "placebo": placebo,
-        "recovery_passed": all(row["verdict"] == "recovered" for row in gated_known),
-        "placebo_passed": all(row["verdict"] == "clean" for row in placebo),
+        "recovery_passed": bool(gated_known) and all(
+            row["verdict"] == "recovered" for row in gated_known),
+        "placebo_passed": bool(placebo) and all(
+            row["verdict"] == "clean" for row in placebo),
         "counts": {"known": len(known), "gated_known": len(gated_known),
                    "placebo": len(placebo)},
     }

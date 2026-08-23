@@ -11,8 +11,15 @@ from scripts.gen_estimator_truth import known_ratio_sets, placebo_sets, write_se
 
 
 class AdmissionBarTest(unittest.TestCase):
+    def run_bar(self, estimator, *, known=None, placebo=None):
+        return run_synthetic_bar(
+            estimator,
+            known_sets=known_ratio_sets() if known is None else known,
+            placebo_sets=placebo_sets() if placebo is None else placebo,
+        )
+
     def test_incumbent_recovers_gated_truths_and_cleanly_passes_placebos(self):
-        report = run_synthetic_bar(analyze_ic_blocks)
+        report = self.run_bar(analyze_ic_blocks)
         self.assertTrue(report["recovery_passed"])
         self.assertTrue(report["placebo_passed"])
         for row in report["placebo"]:
@@ -28,7 +35,7 @@ class AdmissionBarTest(unittest.TestCase):
                 **block.evidence["eligibility"], "band_excludes_programmed": True,
             }}, asserts_move=True) for block in blocks], runs
 
-        report = run_synthetic_bar(broken)
+        report = self.run_bar(broken)
         self.assertFalse(report["placebo_passed"])
         self.assertTrue(all(row["verdict"] == "finding" for row in report["placebo"]))
 
@@ -37,9 +44,66 @@ class AdmissionBarTest(unittest.TestCase):
             blocks, runs = analyze_ic_blocks(*args, **kwargs)
             return [replace(block, state="collecting") for block in blocks], runs
 
-        report = run_synthetic_bar(collecting)
+        report = self.run_bar(collecting)
         self.assertFalse(report["placebo_passed"])
         self.assertTrue(all(row["verdict"] == "vacuous" for row in report["placebo"]))
+
+    def test_stamped_band_is_a_finding_below_the_runs_floor(self):
+        def broken(*args, **kwargs):
+            blocks, runs = analyze_ic_blocks(*args, **kwargs)
+            return [replace(block, evidence={**block.evidence, "eligibility": {
+                **block.evidence["eligibility"], "runs_floor_met": False,
+                "band_excludes_programmed": True,
+            }}) for block in blocks], runs
+
+        report = self.run_bar(broken, placebo=[placebo_sets()[0]])
+        self.assertEqual("finding", report["placebo"][0]["verdict"])
+
+    def test_asserting_non_numeric_block_is_a_placebo_finding(self):
+        def broken(*args, **kwargs):
+            blocks, runs = analyze_ic_blocks(*args, **kwargs)
+            return [replace(block, state="collecting", asserts_move=True) for block in blocks], runs
+
+        report = self.run_bar(broken, placebo=[placebo_sets()[0]])
+        self.assertEqual("finding", report["placebo"][0]["verdict"])
+
+    def test_finding_outranks_a_non_scoreable_block(self):
+        def broken(*args, **kwargs):
+            blocks, runs = analyze_ic_blocks(*args, **kwargs)
+            finding = replace(blocks[0], evidence={**blocks[0].evidence, "eligibility": {
+                **blocks[0].evidence["eligibility"], "band_excludes_programmed": True,
+            }})
+            vacuous = replace(blocks[0], state="collecting", asserts_move=False,
+                              evidence={**blocks[0].evidence, "eligibility": {
+                                  **blocks[0].evidence["eligibility"],
+                                  "runs_floor_met": False,
+                                  "band_excludes_programmed": False,
+                              }})
+            return [finding, vacuous], runs
+
+        report = self.run_bar(broken, placebo=[placebo_sets()[0]])
+        self.assertEqual("finding", report["placebo"][0]["verdict"])
+
+    def test_empty_inventories_fail_the_bar(self):
+        report = self.run_bar(analyze_ic_blocks, known=[], placebo=[])
+        self.assertFalse(report["recovery_passed"])
+        self.assertFalse(report["placebo_passed"])
+
+    def test_estimator_that_skips_history_population_fails_loudly(self):
+        def broken(*args, **kwargs):
+            kwargs["history_catalog"] = None
+            return analyze_ic_blocks(*args, **kwargs)
+
+        with self.assertRaises(ValueError):
+            self.run_bar(broken)
+
+    def test_estimator_with_bogus_run_count_fails_loudly(self):
+        def broken(*args, **kwargs):
+            blocks, _runs = analyze_ic_blocks(*args, **kwargs)
+            return blocks, 0
+
+        with self.assertRaises(ValueError):
+            self.run_bar(broken)
 
     def test_store_round_trip_preserves_block_equivalence(self):
         truth_set = placebo_sets()[0]

@@ -25,13 +25,32 @@
 - Why: medical-adjacent advisory output, public CI logs. Disposition: copy into the
   #109 work order at admission.
 
+- Real-snapshot calibration replay runs inside this ticket, read-only on a snapshot
+  copy; the PR reports pass/fail verdict only, no numbers. Why: the calibration
+  acceptance is only meaningful on the one real floor-passing window (Connor,
+  2026-08-23, Q1). `→ issue` (#109 work order)
+- Placebo "no finding" is strict: any numeric block whose measured band excludes its
+  programmed ratio disqualifies, information-only included. Why: the spanning-chain
+  candidate died on confident placebo findings, not staged moves (Connor, 2026-08-23,
+  Q2). `→ issue` (#109 work order)
+- "Within the engine's tolerance" pins to: the block's CI covers the true ratio AND
+  the point estimate is within 0.1 g/u of it. Why: 0.1 is the engine's display step;
+  no point tolerance lets a wide-but-covering candidate through (Connor, 2026-08-23,
+  Q3). `→ issue` (#109 work order)
+- Placebo construction (spiked, docs/scope/spikes/109-admission-bar-spike.py): meals
+  dosed exactly at programmed with zero-mean, dose-independent CGM outcome noise at
+  realistic ISF (~50 mg/dL/u). Dose jitter and low-ISF noise both fake a finding —
+  the convex carbs/(dose+burden) pooling turns zero-mean noise into downward bias
+  (measured: jittered doses asserted at 5.45 vs programmed 5.6). `inline`
+- Recovery recipe (same spike): dosing carbs/R_true against a different programmed
+  value recovers R_true within 0.1 with the CI covering it. `inline`
+- Defaults accepted: generator is a committed script whose functions tests import
+  (no committed fixture bytes, no new CI drift step); replay harness is a standalone
+  stdlib script under scripts/. `inline`
+
 ## Open questions
 
-- Q1: is the real-snapshot calibration replay run inside this ticket, or post-merge
-  by the operator?
-- Q2: placebo "no finding" — strict (no band-excludes-programmed numeric block at
-  all) or asserts-only?
-- Q3: what does "recovers known ratios within the engine's tolerance" pin to?
+- (none)
 
 ## Spawned tasks
 

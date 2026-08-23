@@ -229,7 +229,7 @@ async function shippedEvidenceTable() {
 /** VERBATIM — diagnose-workstation.js `VERDICT_KEY`. */
 const VERDICT_KEY = {
   up: 'suggests a raise', down: 'suggests a lower', hold: 'holds at current',
-  insufficient: 'insufficient evidence', nodata: 'no clean data',
+  insufficient: 'insufficient evidence', nodata: 'no nights of steady data',
 };
 
 /** VERBATIM — diagnose-workstation.js `buildIcLane` (module-private there). */

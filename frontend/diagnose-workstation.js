@@ -221,7 +221,7 @@ const FAMILY_SHORT = {
 
 const VERDICT_KEY = {
   up: 'suggests a raise', down: 'suggests a lower', hold: 'holds at current',
-  insufficient: 'insufficient evidence', nodata: 'no clean data',
+  insufficient: 'insufficient evidence', nodata: 'no nights of steady data',
 };
 // short forms for the single-line lane key
 const VERDICT_SHORT = {
@@ -712,14 +712,14 @@ function renderSlotLevel(host, cell, staged, windowDays, onStage) {
       : 'no direction asserted, so nothing is recommended',
     currentNoun: 'rate',
     moveWord: /raise/i.test(s.safety_status || '') ? 'raise' : 'move',
-    support: `${e.n} clean night${e.n === 1 ? '' : 's'} <span>·</span> ${windowDays} d basal run`,
+    support: `${e.n} night${e.n === 1 ? '' : 's'} of steady data <span>·</span> ${windowDays} d basal run`,
     sentence: canStage
       ? (s.annotation || '').replace(/,?\s*capped to one ≤?20% step from current/i, '')
       : s.annotation,
     canStage,
     isStaged: staged.has(cell.i),
     footNote: thin
-      ? `${e.n} clean night${e.n === 1 ? '' : 's'} — below the ${MIN_SUPPORTED_NIGHTS}-night `
+      ? `${e.n} night${e.n === 1 ? '' : 's'} of steady data — below the ${MIN_SUPPORTED_NIGHTS}-night `
         + `support floor${e.wide ? ' and the interval is wide' : ''}; no direction asserted, `
         + 'nothing to stage.'
       : 'No direction asserted here, so there is nothing to stage; the number and its interval '
@@ -2175,7 +2175,7 @@ function boot(root, data, callbacks, signal) {
            words back on screen beside the dock's `Plan · staged` (term 47: two
            claims about one object). Every sibling level's meta names its OWN
            denominator and run (term 16); this one now does too. */
-        : f.k === 'slot' ? `${f.cell.slot.days} clean nights · ${auditState.analysis.window_days} d basal run`
+        : f.k === 'slot' ? `${f.cell.slot.days} nights of steady data · ${auditState.analysis.window_days} d basal run`
           // every parameter's meta names its OWN denominator and run
           : f.k === 'block' ? `${f.cell.block.n_runs} meal runs · ${f.cell.block.n_meals} meals`
             : f.k === 'isf' ? `${isf.estimate.n.toLocaleString()} correction steps`

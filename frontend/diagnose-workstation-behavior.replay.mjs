@@ -28,9 +28,14 @@ import { extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { projectSyntheticCapture } from '../mockups/diagnose-event-comparison.synthetic/project.mjs';
 import { projectFindings, projectIcHistoryEvents } from '../mockups/findings-projection.mirror.mjs';
+// ADR 94: a router-owned page path IS the SPA document. Reload stories re-request
+// the address the app canonicalized to (`/diagnose?...`), so the page set has to
+// come from the router that owns it rather than a second list here.
+import { TABS as ROUTER_TABS } from './tab-routing.js';
 
 const require = createRequire(import.meta.url);
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
+const PAGE_PATHS = new Set(ROUTER_TABS.map((tab) => `/${tab.id}`));
 const MIME = { '.js': 'text/javascript', '.css': 'text/css', '.html': 'text/html', '.json': 'application/json', '.svg': 'image/svg+xml' };
 const FINDINGS_PROJECTION = JSON.parse(await readFile(
   join(ROOT, 'frontend/__fixtures__/findings-projection.json'), 'utf8'));
@@ -533,7 +538,7 @@ export async function openApp(browser, {
     if (url.href.includes('echarts')) return route.fulfill({ body: await vendored('echarts.min.js'), contentType: 'text/javascript' });
     if (url.href.includes('vue')) return route.fulfill({ body: await vendored('vue.esm-browser.js'), contentType: 'text/javascript' });
     if (appSource === 'server' && url.origin === targetUrl.origin
-        && (path === '/' || /\.(js|css|svg|html)$/.test(path))) {
+        && (path === '/' || PAGE_PATHS.has(path) || /\.(js|css|svg|html)$/.test(path))) {
       if (stageProbe && path === '/assets/diagnose-workstation.js') {
         const source = await readFile(join(ROOT, 'frontend/diagnose-workstation.js'), 'utf8');
         const seam = 'export function createDiagnoseWorkstation({ root, callbacks = {}, railLead = null }) {';
@@ -554,7 +559,7 @@ export async function openApp(browser, {
       return route.continue();
     }
     if (appSource === 'fixture' && url.origin === targetUrl.origin) {
-      if (path === '/') {
+      if (path === '/' || PAGE_PATHS.has(path)) {
         return route.fulfill({ body: await readFile(join(frontendRoot, 'index.html')), contentType: 'text/html' });
       }
       if (/\.(js|css|svg|html)$/.test(path)) {

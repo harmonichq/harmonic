@@ -28,3 +28,7 @@ Disposition: `inline`
 ## Spawned tasks
 
 - None.
+
+## Plan review
+
+- Round 1 (cold pass, sonnet): 0 blocking, 2 notes, both `authoring` and both reproduced: the mobile block is `@media (max-width: 760px)` not 768px (css:884); the #59 exemplar has no `## ADR` heading, so the order now names HEADING_RE explicitly. Order amended; verdict: countersigned.

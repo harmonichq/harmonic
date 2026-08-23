@@ -39,6 +39,6 @@
 
 - [x] Update current README, baseline OpenSpec specs, and live behavior ledgers;
       leave historical scope and change records intact under ADR 94's supersession.
-- [ ] Run the complete fast gate and the existing browser gates that exercise direct
+- [x] Run the complete fast gate and the existing browser gates that exercise direct
       app navigation, route restoration, API interception, and asset loading.
 - [x] Materialize the public tree, check its links, and run its contamination scan.

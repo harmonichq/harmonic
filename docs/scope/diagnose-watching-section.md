@@ -4,8 +4,11 @@ Ticket: harmonichq/harmonic#97.
 
 ## Decisions
 
-- **The un-sifted queue renders one visible `Watching` section boundary before
-  the first held, blind, or history row, with those rows expanded beneath it;
+- **The queue renders one visible `Watching` section boundary before
+  the first SHOWN held, blind, or history row, with those rows expanded beneath it
+  (absent exactly when no watching row is shown, e.g. a sift whose collapse
+  control owns the group; present under sift + Event charts when a watching row
+  with a chart coordinate is shown);
   the sift-time collapse toggle is unchanged.** `inline`
 
   Why: `CONTEXT.md` (Audit, Watching) and `openspec/specs/surfaces/spec.md:20`
@@ -64,3 +67,10 @@ Disposition: `inline` — applies ADR 22 and the surfaces spec; no new decision.
 
 ## Plan-review rounds
 
+- Round 1 (cold panel): 2 blocking + 2 notes, all `authoring`. (1) "no head during a sift"
+  was false under sift + Event charts (`diagnose-findings-queue.js:176`,
+  `diagnose-workstation.js:2230`); rule restated as "head before the first SHOWN
+  watching row". (2) fast-gate queue test has no DOM; DOM assertions moved to the
+  browser test/replay. Notes: #83's record lives in `event-chart-discovery/design.md`
+  and ledger `## Revision —` headings; STORIES array needs S72 appended (72 of 72).
+  Injected: 0.

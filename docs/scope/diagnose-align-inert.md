@@ -129,4 +129,45 @@ Disposition: `inline`
 
 ## Plan review
 
-- Pending; recorded below once the panel returns.
+Three cold panels, all `opus`, all objections reproduced against the repo before
+they reached a fix round. Blocker tags: `authoring` = present since the draft,
+`injected` = introduced by a prior fix round.
+
+- **Round 1** — 0 blocking on the fix itself, 2 blocking on the order's evidence
+  and re-freeze instructions, 2 notes. All 4 `authoring`, all 4 reproduced.
+  (i) Step 8's evidence route could not produce a "before" half: `captureEvidence`
+  fires only after a story body succeeds (replay:3587) and the new story is red on
+  base, and it labels files by story id alone so base and head overwrite each
+  other; the cited exemplar is a flat `-base-`/`-revision-` layout, not the
+  `issue-95/` one the order invented. (ii) The order demanded a measured base-commit
+  standing count that no step told the executor to measure, inviting a registry
+  count to be written into a frozen ledger as if it were a run. Notes: an
+  underspecified in-place ledger edit, and one missing browser-gate leg.
+
+- **Author-found, between rounds** — `injected` by round 1's own fix. The
+  replacement route (`scripts/screenshots.local.mjs`) always installs a serve hook,
+  and `installServeRoot` ends in `route.abort()` for unmatched http requests
+  (screenshots.mjs:225-248), so it cannot be aimed at a live server at all.
+
+- **Round 2** (fresh cold pass) — 2 blocking, 2 notes, all reproduced.
+  (i) `injected`: the `serveRoot` + `fetchStubFiles` repair was also broken —
+  `payload.json` carries no findings projection, `/diagnose/findings` is computed
+  per request by `projectFindings` (replay:466-478), and the surface fails closed
+  with `showError('Diagnose is unavailable.')` (diagnose-workstation.js:2678), so
+  the capture would have screenshotted the error state. Resolved by removing the
+  prescribed mechanism entirely: the order now names the required output and
+  records the hazards. (ii) `authoring`: the red-run criterion said "with only the
+  story applied", which excludes the reader change — and without it the story
+  passes green on base, proving nothing. Notes: the 390x844 evidence claim was
+  unmeetable for reasons the fix does not control, and the story would have
+  shipped without the `STORY:finding-evidence-routing:<id>` tag the ledger header
+  requires of every entry.
+
+- **Round 3** (fresh cold delta check) — 0 blocking, 2 notes, both `authoring` and
+  both reproduced and fixed: the order claimed the #83 re-freeze recorded which
+  driver captured its renders (it records no driver), and step 7's contents list
+  omitted the red run that the new step 6 produces. Verdict: **countersigned**.
+
+Injected blockers did not climb across rounds (1 in round 2, 0 in round 3), so the
+rewrite-clean signal never fired; the evidence step was rewritten rather than
+patched once it had failed twice.

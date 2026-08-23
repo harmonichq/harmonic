@@ -93,3 +93,33 @@ decision.
   executable entries" prose is itself stale, and no gate asserts a count. The new
   story is S72; no "N of N" total is authored anywhere that must be updated.
   Injected: 0.
+
+## Spiked placement predicate — executed output
+
+The head is a per-row boolean computed inside `queueRows`, exactly as the
+existing `seam` field is, so it is node-testable with no DOM:
+
+```js
+const WATCH = new Set(['held', 'blind', 'history']);
+// after the existing hidden/collapsed pass, before the return map:
+//   shown && WATCH.has(row.register) && !watchingOpened  →  watchingHead: true
+```
+
+Run against the committed `frontend/__fixtures__/findings-projection.json`
+(2026-08-23), `queueRows(projection, selected, eventChartsOnly)`:
+
+| window | plain | sift(`highs`) | Event charts |
+|---|---|---|---|
+| afternoon | 1 head, before `held` | 0 (toggle owns it) | 0 |
+| global | 1 head, before `history` | 0 (toggle) | 0 |
+| low_block | 1 head, before `held` | 0 (toggle) | 0 |
+| morning | 1 head, before `held` | 0 (toggle) | 0 |
+| overnight | 1 head, before `held` | 0 (toggle) | 0 |
+| quiet | 1 head, before `held` (first element — every row is Watching) | 0 (toggle) | 0 |
+| rebound | 1 head, before `held` | 0 (toggle) | 0 |
+
+Note: every `Event charts` column is 0 because no watching row in this fixture
+carries an `event_chart` coordinate — not because the predicate excludes that
+mode. The predicate keys on "first SHOWN watching row", so a watching row with a
+coordinate WOULD take a head under `eventChartsOnly`. That path is asserted by
+the predicate's unit test with a hand-built row, not by this fixture.

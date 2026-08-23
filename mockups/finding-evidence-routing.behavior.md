@@ -1253,6 +1253,8 @@ legacy P-row inventory remains untouched.
 
 ## Revision amendment — 2026-08-19 (ALIGN's fixed position; the canvas header truncates at 1024px)
 
+SUPERSEDED in part by #95, 2026-08-23; kept as the record of why it stood
+
 Two deviations from the ported mock in `frontend/diagnose-workstation.css`, both direct rulings from Connor Griffin, 2026-08-19 (not filed through this ledger's replay/probe evidence process — layout-only CSS, asserted by real-browser geometry instead, below):
 
 **ALIGN's position.** Connor: "I want this to maintain a consistent position on the screen … visually aligned nicely with something, probably directly above the inspector." The ported `.instruments` was a flex row (mock 393-939, verbatim), so `#align-group`'s x-position slid with whatever content preceded it. `.instruments` now mirrors `.panes`' ACTUAL rendered geometry — `.panes`' own mock-ported padding/gap is itself zeroed by `theme.css`'s `:is(.dw, .vw) .panes { gap: 0; padding: 0; }` (the docked-workspace pane rule, term 1) — so `.instruments` takes the identical `grid-template-columns: minmax(0, 1fr) var(--side, 430px)` with zero gap/padding, reserving a second column that starts at the exact same x as the inspector pane whether or not `#align-group` is hidden.
@@ -1849,6 +1851,42 @@ The app replay adds these closed stories:
   error envelope while preserving the old queue.
 - `C55` proves an Occurrence selection superseding an in-flight window
   preparation restarts and settles the retained preparation/case handshake.
+
+## Revision — 2026-08-23, base 22660ad (issue #95: empty ALIGN group leaks through [hidden])
+
+Before product changes, `app: 89 of 89 stories passed` against exact base
+`22660ad64fe2ebca7e62e8ff304b9de438150954` through the declared no-fetch
+server and generated synthetic database.
+
+**Behavior added.**
+
+```
+S72 · initial Diagnose renders no ALIGN affordance and its empty segment has no buttons
+```
+
+`alignShown` now reads computed display and layout presence, not the DOM
+`hidden` property alone. The prior property reading remained false-for-visible
+while the author-origin instrument display rule painted the hidden group, so it
+could not detect this defect.
+
+Red proof with the rendered reader and S72 applied but the CSS reset removed:
+
+```
+FAIL S72 — S72 ALIGN does not render on the initial frame: expected false, got true
+
+app: 0 of 1 stories passed
+```
+
+The 2026-08-19 ALIGN-position amendment measured
+`#align-group.getBoundingClientRect().left === 1010 === panes[1]...left` while
+the group was hidden. A hidden group now has no box, so that reading is no
+longer obtainable. The reserved-column observation instead rests on the
+container track list and `.panes > .pane` lefts `[0, 850]` at 1280 wide,
+unchanged before and after this fix. Whether ALIGN still sits where that
+amendment describes is a separate older question and is not answered here.
+
+Paired root evidence: `openspec/changes/diagnose-align-hidden-render/evidence/base/`
+and `openspec/changes/diagnose-align-hidden-render/evidence/revision/`.
 
 The generator-owned capture contains canonical meal, Low, adjacent correction-
 pair, and High opportunity populations; near-low withholding, caused-low

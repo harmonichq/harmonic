@@ -96,7 +96,7 @@ export const state = (page) => page.evaluate(() => {
     levelLoading: q('#level')?.dataset.loading ?? null,
     bandKeys: [...document.querySelectorAll('#level .vband .key .lead')].map((n) => n.textContent.trim()),
     // ALIGN's two canvases: which one is mounted, and whose header is up
-    alignShown: q('#align-group') ? !q('#align-group').hidden : null,
+    alignShown: q('#align-group') ? rendered(q('#align-group')) : null,
     alignPressed: [...document.querySelectorAll('#seg-align button')]
       .filter((b) => b.getAttribute('aria-pressed') === 'true')
       .map((b) => b.textContent.trim()),
@@ -2399,6 +2399,14 @@ export const S71 = async (page) => {
   await assertHistorySafety(page, draftWrites, 'explicit Retry');
 };
 
+/** S72 · The initial Diagnose frame offers no inert ALIGN control. */
+// STORY:finding-evidence-routing:S72
+export const S72 = async (page) => {
+  const initial = await state(page);
+  is(initial.alignShown, false, 'S72 ALIGN does not render on the initial frame');
+  is(await page.locator('#seg-align button').count(), 0, 'S72 initial ALIGN has no choices');
+};
+
 /** S33 · #58 — while the event canvas is mounted, its own header is the only
     canvas header on screen. The clock canvas's header used to stay mounted
     underneath and print the clock window over an event-aligned chart. */
@@ -3466,6 +3474,7 @@ export const STORIES = [
       { status: 500, detail: 'coordinated retry failed' },
       { body: withRestartGeneration },
     ] }],
+  ['S72', S72, 'typical'],
   ['C41', C41, 'typical', { caseScenario: {
     preparation: generatedFindingPose('finding:meal_over_delivery'),
   } }], ['C42', C42, 'typical'],

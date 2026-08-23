@@ -164,6 +164,9 @@ Disposition: copied into the work order.
   public-tree leg (`.github/workflows/ci.yml:100-104`) to verification and a
   boundary forbidding a pointer from a shipping `frontend/` file into
   `docs/scope/` or `mockups/`, which `scripts/check_public_links.py` fails on.
-  Reviewer A's delta re-check had not returned when triage closed; the order is
-  countersigned on reviewer B's clean delta pass only, which is recorded here
-  rather than claimed as a full countersign.
+  Reviewer A's delta re-check returned the same single `injected` blocker and
+  nothing else, verifying independently the 95-character longest detail line,
+  every gate pin, step 7d's absolute claim about nothing pinning the old strings,
+  the ledger targets, step 4's signature, and every citation. Both reviewers
+  converged on one injected blocker, already fixed before either reported.
+  **COUNTERSIGNED** on two clean delta passes, at 2 rounds of the 3-panel cap.

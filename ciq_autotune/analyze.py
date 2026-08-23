@@ -119,6 +119,7 @@ def analyze(
     carb_entries: Optional[List[CarbEntry]] = None,
     harm_config: Optional[HarmConfig] = HarmConfig(),
     prompt_responses: Optional[List[dict]] = None,
+    ic_estimator=analyze_ic_blocks,
 ) -> AnalysisResult:
     """Run the whole model over ``store`` and return one AnalysisResult.
 
@@ -436,7 +437,7 @@ def analyze(
         int((now - (insulin_history_start or now)).total_seconds() // 86400),
     )
     ic_history = []
-    ic_blocks, ic_runs = analyze_ic_blocks(
+    ic_blocks, ic_runs = ic_estimator(
         [event for event in bolus if event.t <= now],
         settings.active_schedule(snaps, "carb_ratio"),
         config=IcConfig(),

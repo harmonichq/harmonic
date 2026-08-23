@@ -73,7 +73,7 @@ def timeline(
 
     ``start``/``end`` are treated as local wall-clock instants, same as every
     other read path in :mod:`~ciq_autotune.store` — any tz offset on an
-    incoming aware ``datetime`` (e.g. from the ``/timeline`` API, whose query
+    incoming aware ``datetime`` (e.g. from the ``/api/timeline`` API, whose query
     params FastAPI parses as offset-aware-capable) is dropped, not converted,
     matching :func:`~ciq_autotune.store.normalize_time`.
 
@@ -85,7 +85,7 @@ def timeline(
     one store — :func:`~ciq_autotune.analyzers.scenario.engine.build_scenarios`
     rebuilds a per-episode timeline 20+ times — computes these once and passes
     them in, saving one full-history CGM read per call (#426). Both default to
-    ``None`` → computed in-line here, so the standalone ``/timeline`` path is
+    ``None`` → computed in-line here, so the standalone ``/api/timeline`` path is
     unchanged. The false-low records are still clamped to ``[start, end)`` per
     call below; only the *record derivation* is hoisted.
     """

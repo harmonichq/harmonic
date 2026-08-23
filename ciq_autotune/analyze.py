@@ -191,7 +191,7 @@ def analyze(
     # path read has these readings removed entirely (reading invalidation). Computed
     # once here off the full CGM so the anchor's whole excursion resolves, then applied
     # at each read boundary below. The Day chart still draws them (greyed) — that
-    # display path (/timeline) keeps the readings and only surfaces the span.
+    # display path (/api/timeline) keeps the readings and only surfaces the span.
     fl_spans = false_low_spans(cgm, prompt_rows)
 
     times = [e.t for e in basal] + [r.t for r in cgm]
@@ -457,7 +457,7 @@ def analyze(
 
     # Behavioral aggregate-detector output was removed with the scenario-engine
     # cut-over (#70): the episode-level scenario payload (see
-    # :mod:`~ciq_autotune.analyzers.scenario`, served at ``/scenarios``) replaces it.
+    # :mod:`~ciq_autotune.analyzers.scenario`, served at ``/api/scenarios``) replaces it.
     # The one behavioral-shaped signal that is *not* an ex-detector — the I:C
     # carb-counting Finding — is the I:C analyzer's own output and stays here.
     findings = list(ic_findings)
@@ -474,7 +474,7 @@ def analyze(
 
     # The unified per-flavor tuning Lever priorities (ADR 0032): basal / ISF / I:C each
     # roll up into one Lever scored in insulin currency, on the same 0–100 axis the
-    # /scenarios behavioral Levers carry, so the Diagnose queue interleaves them.
+    # /api/scenarios behavioral Levers carry, so the Diagnose queue interleaves them.
     scenario_config = ScenarioConfig()
     # One robust user-level insulin baseline (#446), computed once over the window's total
     # delivered insulin (basal + bolus) and shared by all three levers, so the currency is

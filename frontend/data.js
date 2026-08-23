@@ -68,13 +68,13 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
 
   // --- credentials -------------------------------------------------------
 
-  /** GET /credentials */
+  /** GET /api/credentials */
   function fetchCredentials() {
     return api('/api/credentials');
   }
 
   /**
-   * POST /credentials
+   * POST /api/credentials
    * @param {{ email: string, password: string, region?: string }} form
    */
   function saveCredentials(form) {
@@ -87,19 +87,19 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
 
   // --- status / fetch-now -------------------------------------------------
 
-  /** GET /status */
+  /** GET /api/status */
   function fetchStatus() {
     return api('/api/status');
   }
 
-  /** POST /fetch */
+  /** POST /api/fetch */
   function fetchNow() {
     return api('/api/fetch', { method: 'POST' });
   }
 
   // --- pump settings ------------------------------------------------------
 
-  /** GET /pump-settings */
+  /** GET /api/pump-settings */
   function fetchPumpSettings() {
     return api('/api/pump-settings');
   }
@@ -107,7 +107,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
   // --- backtest -----------------------------------------------------------
 
   /**
-   * GET /backtest
+   * GET /api/backtest
    * @param {{ holdoutDays?: number }} [opts]
    */
   function fetchBacktest({ holdoutDays = 2 } = {}) {
@@ -117,7 +117,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
   // --- analysis -----------------------------------------------------------
 
   /**
-   * GET /analyze
+   * GET /api/analyze
    * @param {{ window?: number, ignoreChanges?: boolean, pool?: boolean }} [opts]
    *   `pool` (#85 / #246) pools a changed basal slot's agreeing pre-edit nights
    *   back into its estimate — the mode the Diagnose queue ranks levers in (ADR 0032).
@@ -134,7 +134,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
   // --- scenarios ----------------------------------------------------------
 
   /**
-   * GET /scenarios?window=N
+   * GET /api/scenarios?window=N
    * @param {number} window - look-back window in days
    */
   function fetchScenarios(window) {
@@ -166,7 +166,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
   // --- per-day model-view (#152 / ADR 0019) -------------------------------
 
   /**
-   * GET /model-view?date=YYYY-MM-DD — the per-day introspection feed: every
+   * GET /api/model-view?date=YYYY-MM-DD — the per-day introspection feed: every
    * anchor the engine saw that day, each with all its classifier verdicts +
    * state (fired/outranked/near-miss/clean/no-data). The Daily-tab model-view
    * panel binds this.
@@ -180,7 +180,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
   // --- Day navigator (#248 / ADR 0031) ------------------------------------
 
   /**
-   * GET /day-navigator[?month=YYYY-MM] — the Day surface navigator feed: per-day
+   * GET /api/day-navigator[?month=YYYY-MM] — the Day surface navigator feed: per-day
    * glycemic severity (lows / highs / TIR) + a downsampled glucose sparkline curve
    * for every day in the calendar month (± a week of pad). `month` omitted defaults
    * to the month of the latest day with data.
@@ -193,7 +193,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
   // --- outcomes trend (#131) ----------------------------------------------
 
   /**
-   * GET /outcomes/trend?window=N — the behavioral + glycemic scorecard across
+   * GET /api/outcomes/trend?window=N — the behavioral + glycemic scorecard across
    * rolling `window`-day windows (oldest→newest, index-aligned series per
    * behavior/metric). The Outcomes tab binds this.
    * @param {number} window - window width in days (14 default)
@@ -205,7 +205,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
   // --- Verify Trial roster (#587) ----------------------------------------
 
   /**
-   * GET /verify/trials?selected=derived-id — the bounded server-derived Trial
+   * GET /api/verify/trials?selected=derived-id — the bounded server-derived Trial
    * roster.  An optional selected id returns only that Trial's aligned detail.
    * The Trial's maturing window is a backend fact — no window knob exists here.
    * @param {{ selected?: string }} [opts]
@@ -217,14 +217,14 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
     return api('/api/verify/trials' + (qs ? '?' + qs : ''));
   }
 
-  /** GET /explore/time-of-day — fixed server-owned 30-day aggregate. */
+  /** GET /api/explore/time-of-day — fixed server-owned 30-day aggregate. */
   function fetchExploreTimeOfDay() { return api('/api/explore/time-of-day'); }
-  /** GET /explore/exposures — every exposure in the window with each
+  /** GET /api/explore/exposures — every exposure in the window with each
    *  classifier's verdict; the Diagnose inspector's own feed (#654). */
   function fetchExploreExposures() { return api('/api/explore/exposures'); }
 
   /**
-   * GET /diagnose/event-comparison — one bounded, server-projected Meals or
+   * GET /api/diagnose/event-comparison — one bounded, server-projected Meals or
    * Lows comparison. Coordinates are interaction state, never browser policy.
    * @param {{ view: 'meals'|'lows', factor?: string,
    *            window?: {start_min: number, end_min: number}|null,
@@ -245,7 +245,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
     return api('/api/diagnose/event-comparison' + (query ? '?' + query : ''));
   }
   /**
-   * GET /diagnose/findings — the Diagnose findings queue for one clock window
+   * GET /api/diagnose/findings — the Diagnose findings queue for one clock window
    * (#730, ADR 730). Omit the window for the global (24 h) queue; send both bounds
    * for a pressed preset or a drawn brace. Everything the queue shows — register,
    * merged spans, outcome anchoring, window-local denominators, order — is decided
@@ -274,7 +274,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
     return api('/api/diagnose/carb-ratio-history/events?' + params.toString());
   }
   /**
-   * GET /diagnose/finding-case-file-preparation — one retained server-owned
+   * GET /api/diagnose/finding-case-file-preparation — one retained server-owned
    * Finding generation. The optional clock window is the preparation's only
    * membership coordinate; history selection passes through to the wrapped queue.
    */
@@ -289,7 +289,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
     return api('/api/diagnose/finding-case-file-preparation' + (query ? '?' + query : ''));
   }
   /**
-   * GET /diagnose/finding-case-file — project one retained Finding population.
+   * GET /api/diagnose/finding-case-file — project one retained Finding population.
    * All identifiers are opaque transport coordinates; the browser never parses
    * or reconstructs them.
    */
@@ -307,7 +307,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
   // --- timeline -----------------------------------------------------------
 
   /**
-   * GET /timeline?start=...&end=...
+   * GET /api/timeline?start=...&end=...
    * @param {{ start: string, end: string }} range - ISO wall-clock strings
    * @param {RequestInit} [opts]
    */
@@ -322,7 +322,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
   // --- carb log (#126) ----------------------------------------------------
 
   /**
-   * GET /carbs[?start=&end=] — the user-entered carb_entries (#125 shape),
+   * GET /api/carbs[?start=&end=] — the user-entered carb_entries (#125 shape),
    * id-bearing so the caller can edit/delete by id.
    * @param {{ start?: string, end?: string }} [range] - ISO wall-clock strings
    * @param {RequestInit} [opts]
@@ -336,7 +336,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
   }
 
   /**
-   * POST /carbs — create one carb entry.
+   * POST /api/carbs — create one carb entry.
    * @param {{ t: string, grams: ?number, certainty: string, source?: string, note?: ?string }} entry
    */
   function createCarb(entry) {
@@ -349,13 +349,13 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
 
   // --- carb-log prompt queue (#128) --------------------------------------
 
-  /** GET /prompts — the live review queue (List[Prompt], oldest-first). */
+  /** GET /api/prompts — the live review queue (List[Prompt], oldest-first). */
   function fetchPrompts() {
     return api('/api/prompts');
   }
 
   /**
-   * POST /prompts/answer — answer one prompt.
+   * POST /api/prompts/answer — answer one prompt.
    * When answer === 'carbs' the server creates the carb entry (pinned to the
    * anchor, tagged rise-prompt / low-prompt) AND the response row atomically.
    * @param {{ detector: string, anchor_t: string, answer: string,
@@ -370,7 +370,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
   }
 
   /**
-   * DELETE /prompts/answer — clear a prompt's answer so it resurrects.
+   * DELETE /api/prompts/answer — clear a prompt's answer so it resurrects.
    * @param {{ detector: string, anchor_t: string }} body
    */
   function clearPrompt(body) {
@@ -384,16 +384,16 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
   // --- Focus: the pinned watched behavioral lever (#244) ------------------
 
   /**
-   * GET /focus — every Focus ever pinned (active + closed, newest first) plus
+   * GET /api/focus — every Focus ever pinned (active + closed, newest first) plus
    * the pinnable-lever universe. Verify uses this to resolve the active Focus's
-   * id (the `/outcomes/trend` FocusView carries no id) so Retire can target it.
+   * id (the `/api/outcomes/trend` FocusView carries no id) so Retire can target it.
    */
   function fetchFocuses() {
     return api('/api/focus');
   }
 
   /**
-   * POST /focus/{id}/resolve — unpin (retire) the active Focus by id.
+   * POST /api/focus/{id}/resolve — unpin (retire) the active Focus by id.
    * @param {number} id
    */
   function resolveFocus(id) {
@@ -401,7 +401,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
   }
 
   /**
-   * POST /focus — pin a behavioral lever as the active Focus (#246 Diagnose's
+   * POST /api/focus — pin a behavioral lever as the active Focus (#246 Diagnose's
    * "Pin as Focus → Verify" disposition). Rejected (409) while a Trial is live or
    * another Focus is active, (400) for a non-pinnable tuning lever — the caller
    * surfaces the message. Returns the pinned Focus row (with its id, for undo).
@@ -417,13 +417,13 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
 
   // --- plan ---------------------------------------------------------------
 
-  /** GET /plan */
+  /** GET /api/plan */
   function loadPlan() {
     return api('/api/plan');
   }
 
   /**
-   * PUT /plan
+   * PUT /api/plan
    * @param {{ items: Array }} draft
    */
   function savePlanDraft(draft) {
@@ -434,12 +434,12 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
     });
   }
 
-  /** GET /plan/history */
+  /** GET /api/plan/history */
   function loadPlanHistory() {
     return api('/api/plan/history');
   }
 
-  /** POST /plan/apply */
+  /** POST /api/plan/apply */
   function applyPlan() {
     return api('/api/plan/apply', { method: 'POST' });
   }

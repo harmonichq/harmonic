@@ -67,8 +67,9 @@ export async function openApp(browser, options = {}) {
   const payload = JSON.parse(await readFile(BASE_PAYLOAD, 'utf8'));
   const caseFiles = JSON.parse(await readFile(
     join(ROOT, 'mockups/diagnose-workstation.synthetic/finding-case-files.json'), 'utf8'));
+  const apiPattern = (path) => new RegExp(`^/api${path}`);
   const stubs = [
-    [/^\/diagnose\/event-comparison/, (url) => options.invalidComparison ? {} : projectSyntheticCapture(capture, {
+    [apiPattern('/diagnose/event-comparison'), (url) => options.invalidComparison ? {} : projectSyntheticCapture(capture, {
       view: url.searchParams.get('view') || 'meals',
       factor: url.searchParams.get('factor') || undefined,
       window: url.searchParams.get('start_min') === null ? null : {
@@ -81,10 +82,10 @@ export async function openApp(browser, options = {}) {
       // server-stamped populations. This is not a browser request parameter.
       state: options.state || 'dense',
     })],
-    [/^\/api\/analyze/, () => payload.analyze],
-    [/^\/diagnose\/finding-case-file-preparation/, () =>
+    [apiPattern('/analyze'), () => payload.analyze],
+    [apiPattern('/diagnose/finding-case-file-preparation'), () =>
       JSON.parse(JSON.stringify(caseFiles.preparation))],
-    [/^\/diagnose\/finding-case-file$/, (url) => {
+    [apiPattern('/diagnose/finding-case-file$'), (url) => {
       const finding = caseFiles.cases[url.searchParams.get('finding_id')];
       const alignment = url.searchParams.get('alignment');
       const occ = url.searchParams.get('occ');
@@ -95,30 +96,30 @@ export async function openApp(browser, options = {}) {
        queue (ADR 730). It is not this surface's subject, but a rejected fetch there
        takes the whole loader into `setError` and this surface never mounts — so it
        is answered from the same fixture-only mirror the workstation gates use. */
-    [/^\/diagnose\/findings/, (url) => projectFindings(
+    [apiPattern('/diagnose/findings'), (url) => projectFindings(
       { analysis: payload.analyze, exposures: payload.exposures, scenarios: payload.scenarios },
       url.searchParams.get('start_min') === null ? null : {
         start_min: Number(url.searchParams.get('start_min')),
         end_min: Number(url.searchParams.get('end_min')),
       })],
-    [/^\/api\/scenarios/, () => payload.scenarios],
-    [/^\/explore\/time/, () => payload.evidence],
-    [/^\/explore\/exposures/, () => payload.exposures],
-    [/^\/api\/status/, () => ({ ok: true, last_fetch: payload.analyze.generated_at, counts: {} })],
-    [/^\/plan\/history/, () => ({ history: [] })],
-    [/^\/api\/plan/, () => ({ items: [], updated_at: null })],
-    [/^\/verify\/trials/, () => ({ trials: [] })],
-    [/^\/api\/catalog/, () => ({ articles: [] })],
-    [/^\/api\/carbs/, () => ({ entries: [] })],
-    [/^\/api\/prompts/, () => ({ prompts: [] })],
-    [/^\/api\/credentials/, () => ({ configured: true })],
-    [/^\/audit\/dismissals/, () => ({ dismissed: [] })],
-    [/^\/api\/outcomes/, () => ({ points: [] })],
-    [/^\/api\/timeline/, () => ({ events: [] })],
-    [/^\/api\/backtest/, () => ({ folds: [] })],
-    [/^\/model/, () => ({ entries: [] })],
-    [/^\/day/, () => ({ days: [] })],
-    [/^\/pump/, () => ({ settings: {} })],
+    [apiPattern('/scenarios'), () => payload.scenarios],
+    [apiPattern('/explore/time'), () => payload.evidence],
+    [apiPattern('/explore/exposures'), () => payload.exposures],
+    [apiPattern('/status'), () => ({ ok: true, last_fetch: payload.analyze.generated_at, counts: {} })],
+    [apiPattern('/plan/history'), () => ({ history: [] })],
+    [apiPattern('/plan'), () => ({ items: [], updated_at: null })],
+    [apiPattern('/verify/trials'), () => ({ trials: [] })],
+    [apiPattern('/catalog'), () => ({ articles: [] })],
+    [apiPattern('/carbs'), () => ({ entries: [] })],
+    [apiPattern('/prompts'), () => ({ prompts: [] })],
+    [apiPattern('/credentials'), () => ({ configured: true })],
+    [apiPattern('/audit/dismissals'), () => ({ dismissed: [] })],
+    [apiPattern('/outcomes'), () => ({ points: [] })],
+    [apiPattern('/timeline'), () => ({ events: [] })],
+    [apiPattern('/backtest'), () => ({ folds: [] })],
+    [apiPattern('/model'), () => ({ entries: [] })],
+    [apiPattern('/day'), () => ({ days: [] })],
+    [apiPattern('/pump'), () => ({ settings: {} })],
   ];
   page.on('pageerror', (error) => problems.push(`pageerror(app): ${error}`));
   await page.addInitScript(([theme]) => {

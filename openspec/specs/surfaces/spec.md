@@ -10,10 +10,11 @@ Harmonic is a single-page app with no build step and no login — the HTML shell
 
 The frontend is a single `frontend/index.html` file containing inlined Vue 3 and ECharts, loaded without a build step or login screen. The SPA shell loads on every origin, then makes bearer-token-gated API calls to load data. The three CDN dependencies (Vue esm-browser, ECharts) are vendored in browser tests; live requests use the unpkg / jsdelivr CDN.
 
-Canonical browser addressing is `#/<page>?<existing-page-state>`. The hash route
+Canonical browser addressing is `/<page>?<existing-page-state>`. The route query
 carries only the selected page and the already-shareable Day `date`, Guide
 `article`, and Diagnose `view`, `factor`, `start_min`, `end_min`, `another`, and
-`occ` coordinates; server and API paths remain unchanged.
+`occ` coordinates. A saved `#/<page>?...` link migrates once by replacement;
+programmatic interfaces live below `/api` and local assets below `/assets`.
 
 ### Requirement: Diagnose surface asks "what tuning moves are available now?"
 
@@ -73,7 +74,7 @@ Verify tracks active Trials (detected setting changes) and pinned Focuses (behav
 
 ### Requirement: Surfaces render server-owned projections; they do not re-derive analysis verdicts
 
-Each surface renders data calculated by the backend and carried in the `/analyze` or specialized endpoints (`/day-navigator`, `/verify-trial-list`, etc.). A surface never recalculates the engine's own verdicts — asserts_move, priority, recurrence, harm gates, silence reasons, localized outcome triage — even if tempted to re-check them for UI purposes. The backend is the single source of truth for all analysis. This boundary has been repeatedly load-bearing: frontend re-derivations of backend gates have diverged and silently invalidated the app's behavior.
+Each surface renders data calculated by the backend and carried in `/api/analyze` or specialized endpoints (`/api/day-navigator`, `/api/verify/trials`, etc.). A surface never recalculates the engine's own verdicts — asserts_move, priority, recurrence, harm gates, silence reasons, localized outcome triage — even if tempted to re-check them for UI purposes. The backend is the single source of truth for all analysis. This boundary has been repeatedly load-bearing: frontend re-derivations of backend gates have diverged and silently invalidated the app's behavior.
 
 ### Requirement: All four surfaces are available from the cockpit shell tab bar
 

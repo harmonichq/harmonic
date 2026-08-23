@@ -27,7 +27,7 @@ FETCH_WINDOW_DAYS = 120
 def run_fetch_once(db_path: str, *, key_path: str = DEFAULT_KEY_PATH,
                     days: int = FETCH_WINDOW_DAYS) -> Optional[dict]:
     """One fetch attempt, recording its outcome regardless of success or
-    failure so ``/status`` always reflects the last attempt.
+    failure so ``/api/status`` always reflects the last attempt.
 
     Returns the written summary on a successful fetch (the truthy signal the loop
     uses to invalidate a running server's result cache, #267); returns ``None`` on

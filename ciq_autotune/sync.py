@@ -43,7 +43,7 @@ class PartialFetchError(Exception):
     Carries the counts upserted before the failure (:attr:`written`) and how far
     the run got (:attr:`windows_completed` / :attr:`windows_total`). Upserts are
     idempotent, so the completed windows are left in place and a re-pull is safe
-    — this only signals that ``/status`` should report partial progress, not that
+    — this only signals that ``/api/status`` should report partial progress, not that
     the store is inconsistent. Raised only when at least one window completed; a
     failure on the very first window is an ordinary error (nothing to preserve).
     """

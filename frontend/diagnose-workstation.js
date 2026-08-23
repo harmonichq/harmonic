@@ -2655,7 +2655,7 @@ export function createDiagnoseWorkstation({ root, callbacks = {}, railLead = nul
     if (!Object.prototype.hasOwnProperty.call(CFG_BY_STATE, state)) state = 'typical';
     CFG = CFG_BY_STATE[state];
     captures = toCaptures(payload, { ...callbacks, state });
-    /* PORT DEVIATION (#654): a real /analyze response always carries exactly
+    /* PORT DEVIATION (#654): a real /api/analyze response always carries exactly
        one ISF row, so an empty one here means this payload never had real
        analyze data — a caller across the app's own HTTP boundary fed
        `setData` something malformed or absent (the reachable case: the

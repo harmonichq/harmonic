@@ -118,7 +118,7 @@ of them data endpoints — the Diagnose findings queue, event comparisons,
 scenarios, the Plan draft and its history, Verify trials, outcomes and their
 trend, the carb log, prompts, focus, the timeline, backtests, the model view and
 more — and the rest the static files the UI loads. The complete list is
-browsable at `/docs` (FastAPI's Swagger UI) once `serve` is running.
+browsable at `/api/docs` (FastAPI's Swagger UI) once `serve` is running.
 
 `fetch` is idempotent: re-pulling an overlapping window merges rather than
 duplicates, so you can run it repeatedly. Windows longer than 31 days are split
@@ -160,7 +160,7 @@ it is unset (fail-fast beats a silent "data won't update").
   file. On first run they seed the encrypted credentials table; after that,
   editing them has no effect (credentials resolve DB-first).
 - Or leave them unset and POST to `/api/credentials` once the server is up. The
-  fetch loop records an error to `/status` and keeps serving until credentials
+  fetch loop records an error to `/api/status` and keeps serving until credentials
   exist — no restart needed.
 
 **The API is open unless you set a token.** `HARMONIC_API_TOKEN` gates all three

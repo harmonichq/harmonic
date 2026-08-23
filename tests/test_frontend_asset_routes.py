@@ -8,9 +8,17 @@ assets index.html names directly.
 """
 
 import re
+import tempfile
 import unittest
 from pathlib import Path
 from typing import Optional
+
+try:
+    from fastapi.testclient import TestClient
+    from ciq_autotune.api import create_app
+    _HAS_FASTAPI = True
+except ImportError:  # pragma: no cover
+    _HAS_FASTAPI = False
 
 
 _FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
@@ -134,6 +142,63 @@ class FrontendAssetRoutesTest(unittest.TestCase):
         served = _served_paths()
         self.assertNotIn(_FRONTEND_DIR / "rest-window.js", assets)
         self.assertNotIn("/assets/rest-window.js", served)
+
+    @unittest.skipUnless(_HAS_FASTAPI, "api extra not installed")
+    def test_every_page_asset_and_generated_interface_answers_over_http(self):
+        match = _SPA_PAGES.search(_API.read_text())
+        self.assertIsNotNone(match)
+        pages = set(re.findall(r'"([a-z]+)"', match.group(1)))
+        content_types = {
+            ".js": "text/javascript",
+            ".css": "text/css",
+            ".svg": "image/svg+xml",
+        }
+        with tempfile.NamedTemporaryFile(suffix=".db") as db:
+            client = TestClient(create_app(
+                db_path=db.name, token=None, enable_fetch_loop=False))
+            for path in ["/", *(f"/{page}" for page in sorted(pages))]:
+                response = client.get(path)
+                self.assertEqual(response.status_code, 200, path)
+                self.assertTrue(response.headers["content-type"].startswith("text/html"), path)
+
+            for asset in sorted(_local_assets()):
+                path = "/assets/" + asset.relative_to(_FRONTEND_DIR).as_posix()
+                response = client.get(path)
+                self.assertEqual(response.status_code, 200, path)
+                self.assertEqual(response.content, asset.read_bytes(), path)
+                self.assertTrue(response.headers["content-type"].startswith(
+                    content_types[asset.suffix]), path)
+
+            page_paths = {"/", *(f"/{page}" for page in pages)}
+            asset_paths = {
+                "/assets/" + asset.relative_to(_FRONTEND_DIR).as_posix()
+                for asset in _local_assets()
+            }
+            non_api_paths = {
+                route.path for route in client.app.routes
+                if not route.path.startswith("/api/")
+            }
+            self.assertEqual(non_api_paths, page_paths | asset_paths)
+
+            generated = {
+                "/api/openapi.json": "application/json",
+                "/api/docs": "text/html",
+                "/api/docs/oauth2-redirect": "text/html",
+                "/api/redoc": "text/html",
+            }
+            for path, content_type in generated.items():
+                response = client.get(path)
+                self.assertEqual(response.status_code, 200, path)
+                self.assertTrue(response.headers["content-type"].startswith(content_type), path)
+
+            self.assertTrue(client.get("/plan").headers["content-type"].startswith("text/html"))
+            self.assertTrue(client.get("/api/plan").headers["content-type"].startswith("application/json"))
+            for path in [
+                "/docs", "/docs/oauth2-redirect", "/redoc", "/openapi.json",
+                "/analyze", "/scenario.css", "/assets/no-such.js", "/api/no-such",
+                "/not-a-page",
+            ]:
+                self.assertEqual(client.get(path).status_code, 404, path)
 
 
 if __name__ == "__main__":

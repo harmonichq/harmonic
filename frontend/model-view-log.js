@@ -1,5 +1,5 @@
 // model-view-log.js — logic for the #152 per-day model-view "event log" (variant A, r2).
-// Pure/liftable: flatten→sort→humanize the /model-view payload into log rows, build the
+// Pure/liftable: flatten→sort→humanize the /api/model-view payload into log rows, build the
 // contextual daily chart option, and hold the detector reference (definitions + current
 // criteria). No Vue here; the HTML wires it into a small Vue app.
 

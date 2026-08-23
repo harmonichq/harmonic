@@ -696,7 +696,7 @@ def build_scenarios(
     ``isf`` from the ISF analyzer + latest settings snapshot (each meal carries its
     historical Dose-stamped I:C), and
     builds each episode's step-through ``window`` from the same
-    :func:`~ciq_autotune.timeline.timeline` payload the ``/timeline`` endpoint
+    :func:`~ciq_autotune.timeline.timeline` payload the ``/api/timeline`` endpoint
     serves.
     """
     from ...timeline import timeline as build_timeline

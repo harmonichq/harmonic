@@ -8,7 +8,7 @@
  * Re-syncing means re-slicing the mock, not hand-editing this file.
  *
  * The data the mock read from ./verify-trials.capture.json now arrives from
- * /verify/trials through verify-workstation-data.js, which reshapes the API
+ * /api/verify/trials through verify-workstation-data.js, which reshapes the API
  * payload into the exact object the slices below index. That adapter is the
  * only new logic the port allows.
  */

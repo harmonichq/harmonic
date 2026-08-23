@@ -167,7 +167,7 @@ function detail(trial) {
   };
 }
 
-/** 48 half-hour bins around `mid`, the shape `/verify/trials` publishes. */
+/** 48 half-hour bins around `mid`, the shape `/api/verify/trials` publishes. */
 function envelope(mid) {
   return Array.from({ length: 48 }, (_, i) => ({
     t: `${String(Math.floor(i / 2)).padStart(2, '0')}:${i % 2 ? '30' : '00'}`,
@@ -664,7 +664,7 @@ test('top bar and footer expose the locked destination inventory and neutral pro
 
     for (const id of TABS) {
       await chooseTab(page, id);
-      assert.equal(await page.evaluate(() => location.pathname), `/`);
+      assert.equal(await page.evaluate(() => location.pathname), `/${id}`);
     }
     await page.locator('.cockpit-glossary').click();
     assert.equal(await page.locator('.glossary[role="dialog"]').isVisible(), true);
@@ -692,6 +692,95 @@ test('top bar and footer expose the locked destination inventory and neutral pro
     await page.locator('.pq-drawer').waitFor();
     assert.equal(await page.locator('.pq-drawer').isVisible(), true);
   } finally { await page.close(); }
+});
+
+test('clean page paths own direct load, refresh, history, migration, and local assets', async () => {
+  const browser = await launch();
+  const direct = await browser.newPage({ viewport: VIEWPORTS[1] });
+  const loadedAssets = new Set();
+  const misplacedAssets = [];
+  await routeApp(direct);
+  await direct.addInitScript(() => localStorage.setItem('ciq_token', 'fixture-token'));
+  direct.on('response', (response) => {
+    const url = new URL(response.url());
+    if (url.origin === 'http://ciq.local' && url.pathname.startsWith('/assets/')
+        && response.status() === 200) loadedAssets.add(url.pathname);
+  });
+  direct.on('request', (request) => {
+    const url = new URL(request.url());
+    if (url.origin === 'http://ciq.local' && /\.(?:js|css|svg)$/.test(url.pathname)
+        && !url.pathname.startsWith('/assets/')) misplacedAssets.push(url.pathname);
+  });
+  try {
+    for (const id of TABS) {
+      await direct.goto(`http://ciq.local/${id}`);
+      await direct.locator(`[v-show="tab === '${id}'"]`).waitFor();
+      assert.equal(await direct.evaluate(() => location.pathname + location.search), `/${id}`,
+        `${id} direct load keeps its clean address`);
+      await direct.reload();
+      await direct.locator(`[v-show="tab === '${id}'"]`).waitFor();
+      assert.equal(await direct.evaluate(() => location.pathname + location.search), `/${id}`,
+        `${id} refresh keeps its clean address`);
+    }
+    await direct.goto('http://ciq.local/');
+    await direct.waitForFunction(() => location.pathname === '/diagnose');
+    assert.equal(await direct.evaluate(() => location.pathname + location.search + location.hash),
+      '/diagnose', 'bare / canonicalizes in place to /diagnose');
+    assert.deepEqual(misplacedAssets, [], 'the built app requests no local asset outside /assets');
+    for (const path of ['/assets/tab-routing.js', '/assets/data.js', '/assets/shell.css']) {
+      assert.ok(loadedAssets.has(path), `${path} loaded successfully through the built app`);
+    }
+  } finally { await direct.close(); }
+
+  const historyPage = await browser.newPage({ viewport: VIEWPORTS[1] });
+  await routeApp(historyPage);
+  await historyPage.addInitScript(() => localStorage.setItem('ciq_token', 'fixture-token'));
+  try {
+    await historyPage.goto('http://ciq.local/diagnose?view=glucose&mode=dense');
+    await historyPage.locator('.dw').waitFor();
+    await chooseTab(historyPage, 'plan');
+    await chooseTab(historyPage, 'verify');
+    await historyPage.goBack();
+    await historyPage.waitForFunction(() => location.pathname === '/plan');
+    assert.equal(await historyPage.locator('[data-shell-tab="plan"][aria-current]').first().isVisible(), true,
+      'Back restores Plan selection');
+    await historyPage.goBack();
+    await historyPage.waitForFunction(() => location.pathname + location.search === '/diagnose?view=glucose&mode=dense');
+    await historyPage.locator('.dw').waitFor();
+    await historyPage.goForward();
+    await historyPage.waitForFunction(() => location.pathname === '/plan');
+    await historyPage.goForward();
+    await historyPage.waitForFunction(() => location.pathname === '/verify');
+    assert.equal(await historyPage.locator('[data-shell-tab="verify"][aria-current]').first().isVisible(), true,
+      'Forward restores Verify selection');
+  } finally { await historyPage.close(); }
+
+  const migration = await browser.newPage({ viewport: VIEWPORTS[1] });
+  await routeApp(migration);
+  await migration.addInitScript(() => {
+    localStorage.setItem('ciq_token', 'fixture-token');
+    window.__routeWrites = { pushes: [], replaces: [] };
+    for (const [method, key] of [['pushState', 'pushes'], ['replaceState', 'replaces']]) {
+      const original = history[method];
+      history[method] = function (...args) {
+        window.__routeWrites[key].push(String(args[2]));
+        return original.apply(this, args);
+      };
+    }
+  });
+  try {
+    await migration.goto('http://ciq.local/?view=glucose#/diagnose?mode=dense');
+    await migration.waitForFunction(() => location.pathname + location.search === '/diagnose?view=glucose&mode=dense');
+    await migration.locator('.dw').waitFor();
+    assert.deepEqual(await migration.evaluate(() => window.__routeWrites), {
+      pushes: [], replaces: ['/diagnose?view=glucose&mode=dense'],
+    }, 'a supported canonical hash migrates with exactly one replacement');
+    assert.equal(await migration.evaluate(() => location.hash), '', 'migration leaves no hash state');
+    await migration.reload();
+    await migration.locator('.dw').waitFor();
+    assert.deepEqual(await migration.evaluate(() => window.__routeWrites), { pushes: [], replaces: [] },
+      'refreshing the clean result does not migrate it again');
+  } finally { await migration.close(); }
 });
 
 function locationHash(hash) {
@@ -738,7 +827,7 @@ export async function S2(browser) {
     await assertDestinationInventory(page);
     for (const id of TABS) {
       await chooseTab(page, id);
-      assert.equal(await page.evaluate(() => location.pathname), `/`);
+      assert.equal(await page.evaluate(() => location.pathname), `/${id}`);
     }
   } finally { await page.close(); }
 }

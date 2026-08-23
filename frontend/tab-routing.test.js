@@ -52,7 +52,7 @@ test('Day date and Guide article restore from their page route and leave with th
   assert.deepEqual(writes, ['/day?date=2026-08-22', '/guide?article=reading-day']);
 });
 
-test('P53 coordinates move from the split query into the Diagnose hash and restore once', () => {
+test('P53 coordinates move from the split query into the Diagnose route and restore once', () => {
   const route = parseRoute({ hash: '#diagnose', search: '?view=lows&factor=correction_stacking&start_min=0&end_min=120&another=1&occ=low-7' });
   assert.deepEqual(route, {
     page: 'diagnose', view: 'lows', factor: 'correction_stacking', start_min: '0',

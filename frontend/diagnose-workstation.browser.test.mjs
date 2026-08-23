@@ -857,7 +857,7 @@ test('setError tears down a live render and replaces the mount with a plain fail
               + '<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script></head>'
               + '<body><div id="wrap"><div class="mount"></div></div>'
               + '<script type="module">import {createDiagnoseWorkstation} from '
-              + `'/frontend/diagnose-workstation.js';`
+              + `'/assets/diagnose-workstation.js';`
               + `window.__view = createDiagnoseWorkstation({ root: document.querySelector('.mount'), callbacks: {} });`
               + `window.__ready = true;</script></body></html>`,
             contentType: 'text/html',
@@ -867,8 +867,8 @@ test('setError tears down a live render and replaces the mount with a plain fail
           if (!VENDOR) return route.continue();
           return route.fulfill({ body: await readFile(join(VENDOR, 'echarts.min.js')), contentType: 'text/javascript' });
         }
-        if (url.pathname.startsWith('/frontend/')) {
-          const path = join(ROOT, url.pathname.replace(/^\/assets\//, ''));
+        if (url.pathname.startsWith('/assets/')) {
+          const path = join(ROOT, 'frontend', url.pathname.replace(/^\/assets\//, ''));
           try { return route.fulfill({ body: await readFile(path), contentType: MIME[extname(path)] || 'text/javascript' }); }
           catch { return route.fulfill({ status: 404, body: 'missing' }); }
         }
@@ -909,25 +909,26 @@ test('a rejected first-load fetch shows the failure message, not an uncaught err
     const payload = JSON.parse(await readFile(payloadPath, 'utf8'));
     const comparison = JSON.parse(await readFile(
       join(ROOT, 'mockups/diagnose-event-comparison.synthetic/capture.json'), 'utf8'));
+    const apiPattern = (path) => new RegExp(`^/api${path}`);
     const STUBS = [
-      [/^\/diagnose\/event-comparison/, () => ({ comparison, exposures: payload.exposures })],
-      [/^\/api\/scenarios/, () => payload.scenarios],
-      [/^\/explore\/time/, () => payload.evidence],
-      [/^\/api\/status/, () => ({ ok: true, last_fetch: payload.analyze.generated_at, counts: payload.analyze.data_quality?.counts || {} })],
-      [/^\/plan\/history/, () => ({ history: [] })],
-      [/^\/api\/plan/, () => ({ items: [], updated_at: null })],
-      [/^\/verify\/trials/, () => ({ trials: [] })],
-      [/^\/api\/catalog/, () => ({ articles: [] })],
-      [/^\/api\/carbs/, () => ({ entries: [] })],
-      [/^\/api\/prompts/, () => ({ prompts: [] })],
-      [/^\/api\/credentials/, () => ({ configured: true })],
-      [/^\/audit\/dismissals/, () => ({ dismissed: [] })],
-      [/^\/api\/outcomes/, () => ({ points: [] })],
-      [/^\/api\/timeline/, () => ({ events: [] })],
-      [/^\/api\/backtest/, () => ({ folds: [] })],
-      [/^\/model/, () => ({ entries: [] })],
-      [/^\/day/, () => ({ days: [] })],
-      [/^\/pump/, () => ({ settings: {} })],
+      [apiPattern('/diagnose/event-comparison'), () => ({ comparison, exposures: payload.exposures })],
+      [apiPattern('/scenarios'), () => payload.scenarios],
+      [apiPattern('/explore/time'), () => payload.evidence],
+      [apiPattern('/status'), () => ({ ok: true, last_fetch: payload.analyze.generated_at, counts: payload.analyze.data_quality?.counts || {} })],
+      [apiPattern('/plan/history'), () => ({ history: [] })],
+      [apiPattern('/plan'), () => ({ items: [], updated_at: null })],
+      [apiPattern('/verify/trials'), () => ({ trials: [] })],
+      [apiPattern('/catalog'), () => ({ articles: [] })],
+      [apiPattern('/carbs'), () => ({ entries: [] })],
+      [apiPattern('/prompts'), () => ({ prompts: [] })],
+      [apiPattern('/credentials'), () => ({ configured: true })],
+      [apiPattern('/audit/dismissals'), () => ({ dismissed: [] })],
+      [apiPattern('/outcomes'), () => ({ points: [] })],
+      [apiPattern('/timeline'), () => ({ events: [] })],
+      [apiPattern('/backtest'), () => ({ folds: [] })],
+      [apiPattern('/model'), () => ({ entries: [] })],
+      [apiPattern('/day'), () => ({ days: [] })],
+      [apiPattern('/pump'), () => ({ settings: {} })],
     ];
     const browser = await runner.browser();
     const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
@@ -1018,7 +1019,7 @@ test('frontend contains no client-side verdict threshold or direction comparison
   // LOCK:diagnose-workstation:29 — occurrence handoff retains claim date into Day.
   const index = await readFile(join(ROOT, 'frontend/index.html'), 'utf8');
   assert.match(index, /day: \(occurrence\) => goToMoment\(occurrence\.t \|\| occurrence\.anchor\?\.t,[\s\S]*occurrence\.text \|\| occurrence\.anchor\?\.label/);
-  assert.match(index, /import \{ createDiagnoseEventComparison \} from '\.\/diagnose-event-comparison\.js';/);
+  assert.match(index, /import \{ createDiagnoseEventComparison \} from '\/assets\/diagnose-event-comparison\.js';/);
   assert.match(index, /diagnoseView = createDiagnoseEventComparison\(\{ root: diagnoseRoot\.value,/);
   assert.match(index, /diagnoseStageItemsFor\(item\.key, diagnoseAnalysis\.value\)/);
   assert.match(index, /keepOnlyPlanFamily\(planItemFamily\(items\[0\]\)\)/);

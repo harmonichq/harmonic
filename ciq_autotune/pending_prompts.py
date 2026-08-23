@@ -26,7 +26,7 @@ The route handler and the tests cross this seam with plain data — a list of
 repo's pure-analyzer convention (``analyzers`` in, plain payload out). Stdlib
 only; no ``api``/``sync`` extras.
 
-The ``GET /prompts`` contract is ``List[Prompt]`` (:meth:`Prompt.to_dict`); the
+The ``GET /api/prompts`` contract is ``List[Prompt]`` (:meth:`Prompt.to_dict`); the
 LOCKED #128 ribbon UI binds it directly.
 """
 
@@ -390,7 +390,7 @@ def build_pending_prompts(
     cap: int = DISPLAY_CAP,
     answered_grace_hours: int = ANSWERED_GRACE_HOURS,
 ) -> List[Prompt]:
-    """Store-facing wrapper the ``GET /prompts`` route calls (mirrors ``build_scenarios``).
+    """Store-facing wrapper the ``GET /api/prompts`` route calls (mirrors ``build_scenarios``).
 
     Reads the last ``window_days`` of bolus / CGM / basal from ``store``, derives the
     candidates, and matches them against ``store.prompt_responses()``. ``now`` defaults

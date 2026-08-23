@@ -573,7 +573,7 @@ def build_tuning_levers(
     scenario_config: ScenarioConfig = ScenarioConfig(),
     robust_daily_insulin_u: Optional[float] = None,
 ) -> List[TuningLever]:
-    """All present tuning Levers (basal, ISF, I:C) as one list for the /analyze payload.
+    """All present tuning Levers (basal, ISF, I:C) as one list for the /api/analyze payload.
 
     ``ic_blocks`` are the **priced** carb-ratio blocks (:func:`price_ic_blocks`) — each
     already carries its own 90-day carb denominator and its own emitted priority, so no

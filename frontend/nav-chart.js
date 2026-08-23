@@ -4,7 +4,7 @@
 // tiles (sparkGeom). Tint = glycemic severity (navSeverity — lows win the tie). Lifted from
 // the LOCKED mockups (archived, #248/ADR 0031);
 // the mock's synth-day seed + capture-file curve extraction are dropped — in the app the
-// navigator is driven by real per-day stats + curves from GET /day-navigator (day_navigator.py).
+// navigator is driven by real per-day stats + curves from GET /api/day-navigator (day_navigator.py).
 // No Vue, no DOM — pure over its arguments (see CLAUDE.md "Frontend tests").
 
 /* ================= severity encoding (glycemic, glyph-paired; ADR 0031) =================

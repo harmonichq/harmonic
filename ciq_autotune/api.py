@@ -1,12 +1,12 @@
 """FastAPI HTTP surface (the ``api`` extra) — S1.
 
 A thin renderer over the same :class:`~ciq_autotune.result.AnalysisResult` the CLI
-prints (ROADMAP §5): ``GET /analyze`` returns its JSON, ``POST /fetch`` triggers a
+prints (ROADMAP §5): ``GET /api/analyze`` returns its JSON, ``POST /api/fetch`` triggers a
 live pull. The result schema *is* the contract a frontend builds on, so the API
 adds no analysis of its own.
 
-It also serves the frontend SPA (``frontend/index.html``) at ``/``, alongside
-these API routes, on the same port — there is no separate frontend server and
+It also serves the frontend SPA (``frontend/index.html``) at ``/`` and its explicit
+page paths, alongside the ``/api`` routes on the same port — there is no separate frontend server and
 no login screen (#10): the SPA shell itself loads unauthenticated, then makes
 bearer-token-gated API calls.
 
@@ -132,6 +132,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                   summary="Local, advisory tuning for Tandem pumps using Control-IQ® technology.",
                   openapi_url="/api/openapi.json", docs_url="/api/docs",
                   redoc_url="/api/redoc",
+                  swagger_ui_oauth2_redirect_url="/api/docs/oauth2-redirect",
                   lifespan=lifespan)
     app.state.configuration = configuration
 
@@ -225,7 +226,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             raise HTTPException(status_code=401, detail="missing or invalid bearer token")
 
     @app.get("/")
-    def index() -> FileResponse:
+    def index():
         return FileResponse(_FRONTEND_INDEX)
 
     for _page in SPA_PAGES:
@@ -239,183 +240,183 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     _FRONTEND_DIR = _FRONTEND_INDEX.parent
 
     @app.get("/assets/tab-routing.js")
-    def tab_routing_js() -> FileResponse:
+    def tab_routing_js():
         return FileResponse(_FRONTEND_DIR / "tab-routing.js",
                             media_type="text/javascript")
 
     @app.get("/assets/scenario-chart.js")
-    def scenario_chart_js() -> FileResponse:
+    def scenario_chart_js():
         return FileResponse(_FRONTEND_DIR / "scenario-chart.js",
                             media_type="text/javascript")
 
     @app.get("/assets/chart-builders.js")
-    def chart_builders_js() -> FileResponse:
+    def chart_builders_js():
         return FileResponse(_FRONTEND_DIR / "chart-builders.js",
                             media_type="text/javascript")
 
     @app.get("/assets/diagnose-workspaces.js")
-    def diagnose_workspaces_js() -> FileResponse:
+    def diagnose_workspaces_js():
         return FileResponse(_FRONTEND_DIR / "diagnose-workspaces.js",
                             media_type="text/javascript")
 
     @app.get("/assets/diagnose-workstation-chart.js")
-    def diagnose_workstation_chart_js() -> FileResponse:
+    def diagnose_workstation_chart_js():
         return FileResponse(_FRONTEND_DIR / "diagnose-workstation-chart.js",
                             media_type="text/javascript")
 
     @app.get("/assets/diagnose-workstation.js")
-    def diagnose_workstation_js() -> FileResponse:
+    def diagnose_workstation_js():
         return FileResponse(_FRONTEND_DIR / "diagnose-workstation.js",
                             media_type="text/javascript")
 
     @app.get("/assets/diagnose-workstation-data.js")
-    def diagnose_workstation_data_js() -> FileResponse:
+    def diagnose_workstation_data_js():
         return FileResponse(_FRONTEND_DIR / "diagnose-workstation-data.js",
                             media_type="text/javascript")
 
     @app.get("/assets/finding-case-file-validation.js")
-    def finding_case_file_validation_js() -> FileResponse:
+    def finding_case_file_validation_js():
         return FileResponse(_FRONTEND_DIR / "finding-case-file-validation.js",
                             media_type="text/javascript")
 
     @app.get("/assets/diagnose-findings-queue.js")
-    def diagnose_findings_queue_js() -> FileResponse:  # #735: the inspector's level 1
+    def diagnose_findings_queue_js():  # #735: the inspector's level 1
         return FileResponse(_FRONTEND_DIR / "diagnose-findings-queue.js",
                             media_type="text/javascript")
 
     @app.get("/assets/watched-change-dock.js")
-    def watched_change_dock_js() -> FileResponse:  # #735: the inspector's floor
+    def watched_change_dock_js():  # #735: the inspector's floor
         return FileResponse(_FRONTEND_DIR / "watched-change-dock.js",
                             media_type="text/javascript")
 
     @app.get("/assets/diagnose-event-comparison.js")
-    def diagnose_event_comparison_js() -> FileResponse:
+    def diagnose_event_comparison_js():
         return FileResponse(_FRONTEND_DIR / "diagnose-event-comparison.js",
                             media_type="text/javascript")
 
     @app.get("/assets/diagnose-event-comparison.css")
-    def diagnose_event_comparison_css() -> FileResponse:
+    def diagnose_event_comparison_css():
         return FileResponse(_FRONTEND_DIR / "diagnose-event-comparison.css",
                             media_type="text/css")
 
     @app.get("/assets/data.js")
-    def data_js() -> FileResponse:
+    def data_js():
         return FileResponse(_FRONTEND_DIR / "data.js",
                             media_type="text/javascript")
 
     @app.get("/assets/plan.js")
-    def plan_js() -> FileResponse:
+    def plan_js():
         return FileResponse(_FRONTEND_DIR / "plan.js",
                             media_type="text/javascript")
 
     @app.get("/assets/settling.js")
-    def settling_js() -> FileResponse:
+    def settling_js():
         return FileResponse(_FRONTEND_DIR / "settling.js",
                             media_type="text/javascript")
 
     @app.get("/assets/carb-log.js")
-    def carb_log_js() -> FileResponse:
+    def carb_log_js():
         return FileResponse(_FRONTEND_DIR / "carb-log.js",
                             media_type="text/javascript")
 
     @app.get("/assets/prompt-queue.js")
-    def prompt_queue_js() -> FileResponse:
+    def prompt_queue_js():
         return FileResponse(_FRONTEND_DIR / "prompt-queue.js",
                             media_type="text/javascript")
 
     @app.get("/assets/verify-workstation.js")
-    def verify_workstation_js() -> FileResponse:
+    def verify_workstation_js():
         return FileResponse(_FRONTEND_DIR / "verify-workstation.js",
                             media_type="text/javascript")
 
     @app.get("/assets/verify-workstation-chart.js")
-    def verify_workstation_chart_js() -> FileResponse:
+    def verify_workstation_chart_js():
         return FileResponse(_FRONTEND_DIR / "verify-workstation-chart.js",
                             media_type="text/javascript")
 
     @app.get("/assets/verify-workstation-data.js")
-    def verify_workstation_data_js() -> FileResponse:
+    def verify_workstation_data_js():
         return FileResponse(_FRONTEND_DIR / "verify-workstation-data.js",
                             media_type="text/javascript")
 
     @app.get("/assets/verify-trial.js")
-    def verify_trial_js() -> FileResponse:
+    def verify_trial_js():
         return FileResponse(_FRONTEND_DIR / "verify-trial.js",
                             media_type="text/javascript")
 
     @app.get("/assets/daily-nav.js")
-    def daily_nav_js() -> FileResponse:
+    def daily_nav_js():
         return FileResponse(_FRONTEND_DIR / "daily-nav.js",
                             media_type="text/javascript")
 
     @app.get("/assets/guide.js")
-    def guide_js() -> FileResponse:
+    def guide_js():
         return FileResponse(_FRONTEND_DIR / "guide.js",
                             media_type="text/javascript")
 
     @app.get("/assets/kb.js")
-    def kb_js() -> FileResponse:  # #269: Guide-KB shell + markdown render (vue-free)
+    def kb_js():  # #269: Guide-KB shell + markdown render (vue-free)
         return FileResponse(_FRONTEND_DIR / "kb.js",
                             media_type="text/javascript")
 
     @app.get("/assets/model-view-log.js")
-    def model_view_log_js() -> FileResponse:
+    def model_view_log_js():
         return FileResponse(_FRONTEND_DIR / "model-view-log.js",
                             media_type="text/javascript")
 
     @app.get("/assets/serial-gate.js")
-    def serial_gate_js() -> FileResponse:
+    def serial_gate_js():
         return FileResponse(_FRONTEND_DIR / "serial-gate.js",
                             media_type="text/javascript")
 
     @app.get("/assets/day-chart.js")
-    def day_chart_js() -> FileResponse:
+    def day_chart_js():
         return FileResponse(_FRONTEND_DIR / "day-chart.js",
                             media_type="text/javascript")
 
     @app.get("/assets/day-hero-chart.js")
-    def day_hero_chart_js() -> FileResponse:  # #332: mobile glucose-hero Day chart
+    def day_hero_chart_js():  # #332: mobile glucose-hero Day chart
         return FileResponse(_FRONTEND_DIR / "day-hero-chart.js",
                             media_type="text/javascript")
 
     @app.get("/assets/day-dose-focus.js")
-    def day_dose_focus_js() -> FileResponse:  # #385: Day-chart insulin-lane dose-focus core
+    def day_dose_focus_js():  # #385: Day-chart insulin-lane dose-focus core
         return FileResponse(_FRONTEND_DIR / "day-dose-focus.js",
                             media_type="text/javascript")
 
     @app.get("/assets/nav-chart.js")
-    def nav_chart_js() -> FileResponse:
+    def nav_chart_js():
         return FileResponse(_FRONTEND_DIR / "nav-chart.js",
                             media_type="text/javascript")
 
     @app.get("/assets/scenario.css")
-    def scenario_css() -> FileResponse:
+    def scenario_css():
         return FileResponse(_FRONTEND_DIR / "scenario.css",
                             media_type="text/css")
 
     @app.get("/assets/shell.css")
-    def shell_css() -> FileResponse:
+    def shell_css():
         return FileResponse(_FRONTEND_DIR / "shell.css",
                             media_type="text/css")
 
     @app.get("/assets/diagnose-workstation.css")
-    def diagnose_workstation_css() -> FileResponse:
+    def diagnose_workstation_css():
         return FileResponse(_FRONTEND_DIR / "diagnose-workstation.css",
                             media_type="text/css")
 
     @app.get("/assets/verify-workstation.css")
-    def verify_workstation_css() -> FileResponse:
+    def verify_workstation_css():
         return FileResponse(_FRONTEND_DIR / "verify-workstation.css",
                             media_type="text/css")
 
     @app.get("/assets/theme.css")
-    def theme_css() -> FileResponse:
+    def theme_css():
         """The Harmonic theme's role rules (#736) — served last, loaded last."""
         return FileResponse(_FRONTEND_DIR / "theme.css",
                             media_type="text/css")
 
     @app.get("/assets/favicon.svg")
-    def favicon_svg() -> FileResponse:
+    def favicon_svg():
         return FileResponse(_FRONTEND_DIR / "favicon.svg",
                             media_type="image/svg+xml")
 
@@ -462,7 +463,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         ``date`` (YYYY-MM-DD) and, for each, every classifier's verdict + its state
         (fired / outranked / near-miss / clean / no-data) — the debug/introspection
         feed that surfaces buried near-misses the coaching path collapses. A separate
-        per-day GET, not a flag on ``/scenarios`` (different question, different shape)."""
+        per-day GET, not a flag on ``/api/scenarios`` (different question, different shape)."""
         from .analyzers.scenario import build_model_view
         try:
             target = datetime.strptime(date, "%Y-%m-%d").date()
@@ -521,7 +522,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         ``window``-day windows (oldest→newest, index-aligned), each behavior and metric
         emitting a series so the frontend can show movement. Behaviors use the fixed
         current-profile ISF and each meal's Dose-stamped I:C across all windows. A third
-        versioned result, standalone like ``/outcomes`` — not a field on the
+        versioned result, standalone like ``/api/outcomes`` — not a field on the
         AnalysisResult."""
         from .outcomes_trend import summarize_trend
 
@@ -982,7 +983,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         with Store.open(db_path) as store:
             new_id = store.upsert_carb_entry(entry)
             result = store.get_carb_entry(new_id)
-        cache.bump()  # carb entries feed /analyze's fasting-ISF exclusion (#267)
+        cache.bump()  # carb entries feed /api/analyze's fasting-ISF exclusion (#267)
         return result
 
     @app.patch("/api/carbs/{entry_id}")

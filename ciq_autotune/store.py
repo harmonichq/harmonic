@@ -412,7 +412,7 @@ CREATE TABLE IF NOT EXISTS plan_history (
 -- pin must persist. The row stores only the minimum: which lever, when it was
 -- pinned, and its lifecycle status. Target metric, adherence, and outcome are all
 -- DERIVED from the lever id at read time (off the per-lever clean-rate series
--- /outcomes/trend already computes), never frozen here. The partial unique index
+-- /api/outcomes/trend already computes), never frozen here. The partial unique index
 -- enforces the one-active invariant: at most one 'active' Focus at a time.
 CREATE TABLE IF NOT EXISTS focus (
     id        INTEGER PRIMARY KEY,

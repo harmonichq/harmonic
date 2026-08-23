@@ -1,7 +1,7 @@
 // Browser-level lifecycle coverage for the keyed Day surface. This deliberately
 // uses the real Vue app and browser fetches rather than evaluating index.html or
 // calling component hooks: the surface must not mount until /api/status has clamped
-// a cold hash date to the available pump-data bounds.
+// a cold route date to the available pump-data bounds.
 import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
@@ -127,7 +127,7 @@ test('rapid back-navigation cancels the days stepped through, not just the one l
   });
   page.on('requestfailed', (req) => {
     const path = new URL(req.url()).pathname;
-    if (/^\/(timeline|model-view|carbs)$/.test(path)
+    if (/^\/api\/(timeline|model-view|carbs)$/.test(path)
         && /ERR_ABORTED/.test(req.failure()?.errorText || '')) {
       aborted.push(path);
     }

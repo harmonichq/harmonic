@@ -1,4 +1,4 @@
-/* Verify workstation adapter — the seam between /verify/trials and the ported
+/* Verify workstation adapter — the seam between /api/verify/trials and the ported
  * surface (#660).
  *
  * The locked mock read one capture file whose per-Trial breakdowns hung off
@@ -15,7 +15,7 @@
  * Reshape the roster plus one detail response per Trial into the capture-shaped
  * object `createVerifyWorkstation` reads.
  *
- * `details` maps a Trial id to its `/verify/trials?selected=<id>` response (the
+ * `details` maps a Trial id to its `/api/verify/trials?selected=<id>` response (the
  * whole envelope or just its `selected` half — both are accepted, because the
  * caller that already unwrapped one should not have to re-wrap it). A Trial the
  * roster lists but whose detail failed to load is simply absent from the maps:

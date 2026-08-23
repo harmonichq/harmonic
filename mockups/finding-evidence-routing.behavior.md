@@ -919,16 +919,16 @@ P52 · The lens's inspector pane and its three selects — `#ec-factor`,
 
 ```
 P53 · URL state: view / factor / window / another / occ live in the Diagnose
-      hash-route query, route restoration re-requests the projection, and a stale response is
+      route query, route restoration re-requests the projection, and a stale response is
       dropped by generation counter.
       AMENDED #62, 2026-08-20 — the six-hour anchor-time `block` coordinate is
       retired and the reader's own clock window (`start_min`/`end_min`, both or
       neither) takes its place. The contract this term governs — coordinates in
-      the Diagnose hash-route query, restoration re-requests, stale responses dropped — is
+      the Diagnose route query, restoration re-requests, stale responses dropped — is
       unchanged; only the time coordinate's name and shape moved.
   source:   frontend/diagnose-event-comparison.js:706-711, 790-820
   mock:     the mock is one page with no URL state
-  evidence: probe3 (app: #/diagnose?view=lows)
+  evidence: probe3 (app: /diagnose?view=lows)
   verdict:  kept          lock term 19 (one URL-state contract, build-time
                           evidence — "the hash/query-string split retires")
 ```
@@ -1103,7 +1103,7 @@ ALIGN is a switch over already-selected data (ADR 31 part 3's own form): it
 never writes the URL, it does not push a crumb level, and picking it never
 moves the roster, the WINDOW brace, or the crumb.
 
-The lens's own `#/diagnose?view=meals`/`lows` route (unreachable by any control once
+The lens's own `/diagnose?view=meals`/`lows` route (unreachable by any control once
 View is deleted) is kept as a harmless read path per P53 — it renders the same
 canvas-only surface directly, with no rail of its own, rather than being
 restructured.
@@ -1131,7 +1131,7 @@ unless noted:
   fail-closed path on a missing comparison — reached without a click.
 - **S3 — amended.** The meal-identity and no-match-copy assertions survive on
   the canvas and legend, which are not retired; the factor coordinate is now
-  set by opening a second page with `#/diagnose?factor=late_bolus` (P53's read path)
+  set by opening a second page with `/diagnose?factor=late_bolus` (P53's read path)
   instead of driving `#ec-factor`, and its title-context span (`.ec-title-context`,
   the canvas-only surface's remaining factor readout) is checked in place of
   the retired inspector title. The factor-re-render and occurrence-retention
@@ -1389,7 +1389,7 @@ chart." S33, S34, S37 and S13 print this sanction when their absence assertion r
 
 **Behavior added** — `S40` opens the visible `Over-treated low` finding, moves
 to `By event`, and selects a visible low roster row. It observes the browser's
-actual `/diagnose/event-comparison` request and asserts that its `occ` value is
+actual `/api/diagnose/event-comparison` request and asserts that its `occ` value is
 the resolved opaque identity id. Separately, the selected response and the
 drawn `Selected occurrence` trace carry the row's published episode-and-time
 join key. S32 receives the same request observation while retaining its
@@ -1427,7 +1427,7 @@ source diff from `a49b6db` to `b321d85` finds the known retired standalone-lens
 controls and the known additions for ALIGN, verdict selection, findings chips,
 and Watching-collapse interaction. Those behaviors are already owned by the
 permanent retirements and S27-S40. Re-inventory found no unrecorded surviving
-handler, observer, chart handler, keyboard path, hover/api/focus behavior, or
+handler, observer, chart handler, keyboard path, hover/focus behavior, or
 cross-view invariant. The app-only replay then ran the complete current backbone:
 
 ```
@@ -1670,7 +1670,7 @@ After implementation, each row below is captured in light and dark at 1440x900,
 1024x768, and 390x844. Recovery rows additionally capture pending and terminal
 states. The final issue-10 evidence directory records an explicit pass/fail verdict
 for history-first hierarchy, exactly one quieter current-program line,
-non-actionability, information density, keyboard/api/focus accessibility, both themes,
+non-actionability, information density, keyboard/focus accessibility, both themes,
 all viewports, and coherent recovery.
 
 | Parent-order state | Required visual/interaction assertion |
@@ -1733,9 +1733,9 @@ S47 · exact true keeps the capped action number; the real stage affordance PUTs
 ```
 
 All four derive the ISF analysis from the committed synthetic
-Diagnose payload. The same derived analysis answers `/analyze` and feeds the
-findings projection. Only S47 injects `/pump-settings`, by copying the generated
-multi-segment profile from that payload; its `PUT /plan` body, not the badge
+Diagnose payload. The same derived analysis answers `/api/analyze` and feeds the
+findings projection. Only S47 injects `/api/pump-settings`, by copying the generated
+multi-segment profile from that payload; its `PUT /api/plan` body, not the badge
 alone, proves the fan-out.
 
 **Historical lane result.** The app-only replay reported **50 of 50 stories passed**. The Diagnose

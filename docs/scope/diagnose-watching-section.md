@@ -2,46 +2,67 @@
 
 Ticket: harmonichq/harmonic#97.
 
+## Owner override — 2026-08-23
+
+**ConnorGriffin, 2026-08-23T19:00:53Z**, in a comment on harmonichq/harmonic#97,
+overrode this ledger's original headline decision (a visible `Watching` section
+head) and widened scope. The risk contract, the placement grounding and the
+verification list below are KEPT; the headline decision is replaced by the three
+decisions that follow. The superseded decision is not re-argued.
+
 ## Decisions
 
-- **The queue renders one visible `Watching` section head before the first SHOWN
-  held, blind, or history row, with those rows following beneath it — absent
-  exactly when no watching row is shown. The sift-time collapse toggle is
-  unchanged.** `inline`
+- **`held`, `blind` and `history` rows collapse behind the existing
+  `Watching · N reads` toggle ALWAYS, not only during a sift.** `inline`
+  `frontend/diagnose-findings-queue.js:176` is
+  `const collapsed = !eventChartsOnly && watching && sifting;` — drop `&& sifting`.
+  The `eventChartsOnly` exception stays. Toggle markup, copy and expand state
+  (`view.collapsedExpanded`, wired at `diagnose-workstation.js:2233-2234`, state at
+  `:1012`) are unchanged. There is NO visible section head.
 
-  Why: `CONTEXT.md` (**Audit**, **Watching**) and
-  `openspec/specs/surfaces/spec.md` ("Findings in the held or still-collecting
-  registers stay visible in a separate 'Watching' section below") already require
-  held, still-collecting, and historical reads to sit in a separate Watching
-  section beneath the action-ready queue. Verified in
-  `frontend/diagnose-findings-queue.js:176` — `collapsed = !eventChartsOnly &&
-  watching && sifting` — the grouping exists ONLY during a sift; un-sifted, those
-  rows paint as ordinary `.qrow` peers. A collapsed-by-default section would hide
-  what the spec says stays visible, so it is rejected. The section covers all
-  three Watching registers, not history alone, because `CONTEXT.md` defines the
-  term over all three.
+- **The `uncaused_highs` footer is removed from the frontend only.** `inline`
+  `uncausedNote` (`diagnose-findings-queue.js:45-47`), the `appendNote` painter
+  (`:286-292`), `.uncaused-note` CSS (`diagnose-workstation.css:805`) and the tests
+  at `diagnose-findings-queue.test.js:311-331` (plus the import at `:10`) go. The
+  backend `uncaused_highs` field stays: fixtures freeze it and churning generators
+  is out of scope. No replay story or ledger entry asserts the footer — verified by
+  grep over `diagnose-workstation-behavior.replay.mjs`,
+  `finding-evidence-routing.behavior.md` and `diagnose-workstation.browser.test.mjs`.
 
-- **The head reuses the surface's own existing Watching copy: `Watching · N
-  reads` (`read` when N is 1).** `inline` Not invented — it is byte-for-byte the
-  string the shipped `.qcollapse` toggle already prints
-  (`diagnose-findings-queue.js:352-355`). The head is static text, not a control:
-  the un-sifted section does not collapse.
+- **`openspec/specs/surfaces/spec.md:20` is amended**; the retired-I:C Requirement at
+  `:22-25` is re-read and adjusted only if it asserts visibility.
 
-- **Frontend-only.** `inline` The server already orders registers
-  `assert/finding < held < blind < history`
-  (`ciq_autotune/findings_projection.py:110` `_REGISTER_RANK`) and publishes
-  `counts.history` (`:159`). No projection, mirror, or fixture change is required.
+### Measured consequences the override implies but did not name
 
-- **Under `Event charts` only (`eventChartsOnly`), a watching row with a chart
-  coordinate is SHOWN while `collapsed` is forced false
-  (`diagnose-findings-queue.js:176`). The head therefore fires there too.**
-  `inline` The rule is "before the first SHOWN watching row", not "when not
-  sifting" — that distinction is what makes it correct under sift + Event charts.
+- **Every window's queue meta changes.** `queueMeta` counts rows that are
+  `!hidden && !collapsed` (`diagnose-findings-queue.js:100-101`), so collapsing
+  Watching always removes them from the count. Executed against the committed
+  fixture: afternoon `5 in this window`→`3`, global `8 findings · 30 days`→`7`,
+  low_block `3`→`1`, morning `4`→`1`, overnight `5`→`3`, rebound `4`→`3`, and
+  **quiet `2 in this window`→`30 days`** — the term-41 EMPTY form, because every
+  row in that window is a Watching read. The existing assertions at
+  `diagnose-findings-queue.test.js:18-20` pin the old values and will fail.
+  Decision: let the meta follow its existing rule unchanged (it counts what the
+  reader can see) and restate the test expectations. Flagged to the human.
 
-- **Ledger stories S41, S42, S29 stay true and are not amended; one new story
-  freezes the un-sifted section.** `inline` Those stories read `#level .qrow`
-  order, tag text, `data-state`, and tag right-edge alignment, none of which a
-  head element between rows changes.
+- **The change breaks frozen stories that read Watching rows un-sifted.** The
+  shared helper `openHistoryCase` (`replay.mjs:741`) does
+  `row.waitFor({ state: 'visible' })` on `#level .qrow[data-state="history"]`
+  before clicking, and is called 25 times, so every history story routed through it
+  fails once rows collapse. Direct readers at `:1919` (S43), `:1929` (S44), `:2043`
+  and `:2357` fail the same way, as does
+  `diagnose-workstation.browser.test.mjs:162-166`. `:1914` (S42) survives — it
+  already expands first. Decision: amend the shared helper to expand the toggle,
+  amend the four direct readers and the browser test, and record the amendment
+  under the ledger's frozen header per `ui-craft/reference/revise.md` §"Behavior
+  changes · Changed".
+
+- **Standing replay count measured, not assumed: 89 entries** (S01-S71, C41-C55,
+  D1-D3); highest S id is S71, so the new story is **S72**.
+
+- **Branch state measured:** `git rev-list --left-right --count origin/main...HEAD`
+  reports `0	6` — zero behind `origin/main`, six ahead (all scope-ledger commits).
+  No rebase needed.
 
 ### Risk contract
 

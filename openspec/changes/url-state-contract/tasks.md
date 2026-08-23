@@ -30,10 +30,14 @@
       normalization, route transitions, and Back/Forward restoration of the
       page, Day `date`, Guide `article`, and P53 keys through the routing
       interface.
-- [ ] Run the focused route tests and the existing relevant Cockpit and
-      Diagnose event-comparison browser routing checks. No screenshot matrix,
-      server launch, new fixture, credential/data-boundary harness, or mandatory
-      all-nine-browser run is owed by this change.
+- [x] Run focused route tests, the full dependency-free frontend suite, and the
+      five-command locked verification (`uv run python -m pytest`,
+      `node --test 'frontend/**/*.test.js'`,
+      `python3 scripts/check_adr_numbers.py`,
+      `python3 scripts/check_owned_identifiers.py`, and
+      `python3 scripts/check_public_allowlist.py`). No browser or server launch,
+      screenshot matrix, new fixture, or credential/data-boundary harness is
+      owed by this change.
 - [x] Run `git diff --check` and `python3 scripts/check_adr_numbers.py` after
-      the focused route and relevant browser checks.
-- [ ] Request Targeted review. Surface lifecycle: none.
+      the focused and locked verification.
+- [x] Request Targeted review. Surface lifecycle: none.

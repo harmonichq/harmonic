@@ -97,3 +97,21 @@ Instrumented per the triage procedure. Every blocker is tagged `authoring`
   All six accepted. The order was rewritten clean rather than patched, and the
   probe was rewritten to classify PRE-#101 / POST-#101 off an anchor #101 commits
   to keeping.
+
+* **Round 2 — same reviewer, delta re-check.** 1 blocking (`injected` — introduced
+  by round 1's own fix), 3 notes.
+  1. `injected`. Tightening the probe left step 0 gating only on #101's KEYS
+     (the stepping handler), while both branches of the order's PATH B
+     presuppose an existing focus consumer and flag. A tip with Up/Down stepping
+     and no roster restore passed the gate and stranded the agent with no
+     authorized action. Fixed by promoting the restore check to a second gate
+     (`roster focus restore: PRESENT`), with the `.focus(` site list demoted to
+     an informational locator.
+  Notes, all applied: the Expectation's PATH B definition now includes the
+  wrong-row red; the S73 claim is stated precisely (S73 proves the restore for an
+  arrow step and for the first row, not for a row chosen directly in the roster);
+  and the probe's classifier now strips comments and tests the POST shape first,
+  so a comment quoting the withdrawn Left/Right model cannot make a fixed tip
+  read as unfixed.
+  Two panels used; the cap for this triage was two. No blocking objections
+  outstanding.

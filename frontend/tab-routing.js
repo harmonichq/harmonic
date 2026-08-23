@@ -47,13 +47,20 @@ export function parseRoute({ pathname = '/', hash = '', search = '' } = {}) {
   const legacy = legacyPath.startsWith('/') || legacyPath === 'diagnose';
   const path = legacy ? legacyPath : pathname;
   const page = path === '/' ? DEFAULT_TAB : resolveTab(path.replace(/^\//, ''));
+  // #94: every address now resolves to a page, so "which page is this" stopped
+  // being the same question as "did the wearer name one". A bare `/` names
+  // none, and the shell may then choose for them — the maturing-Trial
+  // promotion. Reported as a flag beside the resolved page rather than as a
+  // null page, so no caller has to keep a second copy of the default.
+  const pageNamed = legacy || pathname !== '/'
+    || DIAGNOSE_KEYS.some((key) => splitParams.has(key));
   const params = new URLSearchParams(legacy ? legacyQuery : search);
   if (page === 'diagnose') {
     for (const key of DIAGNOSE_KEYS) {
       if (!params.has(key) && splitParams.has(key)) params.set(key, splitParams.get(key));
     }
   }
-  return { page, ...routeState(page, params) };
+  return { page, pageNamed, ...routeState(page, params) };
 }
 
 export function serializeRoute(route, extra = []) {

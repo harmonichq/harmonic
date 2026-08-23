@@ -44,3 +44,32 @@ server/API paths unchanged. It supersedes route literals in older decisions only
 as addresses; their behavioral and data-contract rulings remain in force.
 
 Decision: harmonichq/harmonic#94, 2026-08-23.
+
+## ADR 94 — A bare arrival names no page, and the shell answers for it
+
+**Ruling.** The browser router reports whether an address *named* a page,
+separately from which page it resolves to. Every address under the clean
+grammar resolves to a page — a bare `/` resolves to the default — so the parsed
+route carries `pageNamed` beside `page`. A page path, the retired canonical
+hash on the arrival that migrates it, and the narrow Diagnose split form all
+name a page; a bare `/` does not.
+
+This preserves a behavior the hash grammar expressed as a null page: on an
+arrival that names nothing, the shell may choose a destination for the wearer.
+The one such choice is the maturing-Trial promotion — a bare arrival whose
+roster holds a maturing Trial lands on Verify instead of the default. An
+arrival that names a page is never promoted away from. Reporting the fact as a
+flag beside a resolved page, rather than as a null page, keeps the default in
+one place: no caller re-derives it, and no second page registry appears.
+
+The remembered-tab fallback that sat behind the same null page is retired. ADR
+94 rules that `/` normalizes in place to the default page, so restoring a
+remembered pane would leave the address naming one page while the shell showed
+another — the divergence this change exists to remove. Nothing in the app had
+written that value for some time; only a retired version's leftover could still
+have fired it.
+
+`serializeRoute` is unchanged: a bare `/` still canonicalizes in place to
+`/diagnose`, and the promotion afterwards moves the address with the page.
+
+Decision: harmonichq/harmonic#94, 2026-08-23.

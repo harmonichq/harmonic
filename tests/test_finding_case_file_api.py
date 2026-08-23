@@ -393,7 +393,7 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
     def test_five_real_over_treated_low_states_reconcile_through_all_public_routes(self):
         """One invented typed population reaches Findings and the canonical case file.
 
-        The generator's helper is the exact scenario/api/model-view/exposure input used by
+        The generator's helper is the exact scenario/model-view/exposure input used by
         the committed Findings fixture.  This route test deliberately seeds those
         CGM/bolus rows into SQLite, rather than substituting a prepared projection.
         """

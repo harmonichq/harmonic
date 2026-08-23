@@ -3800,13 +3800,17 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         let pendingScnDeepLink = null;
 
         // #99: `dashboard` was renamed to `review` and the standalone `pump`
-        // tab folded into Plan; migrate any stale hash / localStorage value.
-        // Old tab ids kept working in shared hashes/localStorage: dashboard/pump →
-        // review (legacy), daily/modelview → day (#248 merge, ADR 0027), and
-        // outcomes → verify (#245). #246 (ADR 0027) retires Recommendations + Patterns
-        // into Diagnose, so `review`/`patterns` (and the legacy `dashboard`/`pump`) all
-        // migrate to `diagnose`.
-        const tab = ref(resolveTab((initialHash && initialHash.page) || localStorage.getItem('tab') || 'diagnose'));
+        // tab folded into Plan; a stale id in a shared link still migrates:
+        // dashboard/pump → review (legacy), daily/modelview → day (#248 merge,
+        // ADR 0027), and outcomes → verify (#245). #246 (ADR 0027) retires
+        // Recommendations + Patterns into Diagnose, so `review`/`patterns` (and
+        // the legacy `dashboard`/`pump`) all migrate to `diagnose`. parseRoute
+        // resolves all of that, so the address alone decides the landing page.
+        // #94: the remembered-tab fallback is gone with the hash grammar. ADR 94
+        // rules that `/` normalizes in place to the default page, so restoring a
+        // different pane here would leave the address naming one page while the
+        // shell showed another. Nothing has written `tab` for some time either.
+        const tab = ref(initialHash.page);
         const dark = ref(document.documentElement.classList.contains('dark'));
         // #248 / ADR 0024: the developer flag. Tier-2 reasoning (near-miss, outranked,
         // per-detector meaning, model steps) is always on; this gates only tier-3
@@ -5560,7 +5564,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           if (tab.value === 'guide') loadCatalog();       // #269: initial /guide deep-link
           if (tab.value === 'verify') {
             loadVerify();
-          } else if (!(initialHash && initialHash.page)) {
+          } else if (!initialHash.pageNamed) {
             await loadVerify();
             if (verifyTrials.value.some((trial) => trial.state === 'maturing')
                 && tab.value === 'diagnose') tab.value = 'verify';

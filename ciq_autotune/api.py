@@ -225,6 +225,15 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         if token and authorization != f"Bearer {token}":
             raise HTTPException(status_code=401, detail="missing or invalid bearer token")
 
+    # #94: these file routes carry no `-> FileResponse` return annotation, and
+    # must not regain one. ``FileResponse`` is imported inside this function
+    # because it belongs to the optional ``api`` extra, so the name does not
+    # exist in the module globals FastAPI resolves return annotations against —
+    # the annotation stays an unresolved ForwardRef and building the schema
+    # raises PydanticUserError. That went unnoticed while nothing fetched the
+    # generated schema; ADR 94 publishes it at ``/api/openapi.json``, and
+    # ``tests/test_frontend_asset_routes.py`` fails the moment it stops
+    # answering.
     @app.get("/")
     def index():
         return FileResponse(_FRONTEND_INDEX)

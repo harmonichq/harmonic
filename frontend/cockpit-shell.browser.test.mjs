@@ -290,7 +290,7 @@ const scenarios = {
 };
 
 async function routeApp(page, options = {}) {
-  const { promptCount = 0, planDraftItems = [] } = options;
+  const { promptCount = 0, planDraftItems = [], verifyTrials = [maturing, complete] } = options;
   const findingsInput = options.findingsInput || { analysis: analyze, scenarios };
   await page.route('**/*', async (route) => {
     const requestUrl = route.request().url();
@@ -301,7 +301,7 @@ async function routeApp(page, options = {}) {
     const url = new URL(requestUrl);
     if (url.pathname === '/api/verify/trials') {
       const selected = url.searchParams.get('selected');
-      const trials = [maturing, complete];
+      const trials = verifyTrials;
       return route.fulfill({ json: {
         trials, selected: selected ? detail(trials.find((trial) => trial.id === selected)) : null,
       } });
@@ -401,7 +401,7 @@ async function routeApp(page, options = {}) {
     // #735: level 1 IS the findings queue, and the workstation fails closed without
     // it — an unserved projection renders "Diagnose is unavailable.", which is an
     // empty body for every scenario that lands on the default Diagnose tab. Project
-    // it from this suite's own analyze/api/scenarios fixtures through the same
+    // it from this suite's own analyze/scenarios fixtures through the same
     // fixture-only mirror the other browser legs route through.
     if (url.pathname === '/api/diagnose/findings') {
       const scoped = url.searchParams.get('start_min') === null ? null : {
@@ -504,7 +504,8 @@ function assertCanonicalAddress(address, id, label) {
   assert.equal(route.page, id, `${label}: the address selects ${id}`);
   // The parsed route names the page's own keys, so a foreign one is caught
   // without asking the serializer — which would answer for both sides at once.
-  const own = new Set(Object.keys(route).filter((key) => key !== 'page'));
+  const own = new Set(Object.keys(route)
+    .filter((key) => key !== 'page' && key !== 'pageNamed'));
   assert.deepEqual([...url.searchParams.keys()].filter((key) => !own.has(key)), [],
     `${label}: no state outside ${id}'s own page-local keys rides in the query`);
   assert.equal(serializeRoute(route), `${url.pathname}${url.search}`,
@@ -765,12 +766,45 @@ test('top bar and footer expose the locked destination inventory and neutral pro
   } finally { await page.close(); }
 });
 
+// A bare `/` arrival names no page, so the shell may choose one for the wearer:
+// a maturing Trial promotes the arrival to Verify. That choice hangs on the
+// difference between "named no page" and "the router resolved the default",
+// which the clean grammar can no longer express as a null page.
+test('a bare arrival is promoted to a maturing Trial, and a named page is not', async () => {
+  const browser = await launch();
+  const promoted = await browser.newPage({ viewport: VIEWPORTS[1] });
+  await routeApp(promoted);
+  await promoted.addInitScript(() => localStorage.setItem('ciq_token', 'fixture-token'));
+  try {
+    await promoted.goto('http://ciq.local/');
+    await promoted.locator('.vw').waitFor();
+    assert.equal(await promoted.evaluate(() => location.pathname), '/verify',
+      'the promoted arrival addresses Verify');
+  } finally { await promoted.close(); }
+
+  // The same roster must not move a wearer who named a page: the promotion is
+  // the shell answering an unasked question, never overriding an asked one.
+  const named = await browser.newPage({ viewport: VIEWPORTS[1] });
+  await routeApp(named);
+  await named.addInitScript(() => localStorage.setItem('ciq_token', 'fixture-token'));
+  try {
+    await named.goto('http://ciq.local/diagnose');
+    await waitForTabReady(named, 'diagnose');
+    await named.waitForTimeout(1500);
+    assert.equal(await named.evaluate(() => location.pathname), '/diagnose',
+      'a named page is never promoted away from');
+  } finally { await named.close(); }
+});
+
 test('clean page paths own direct load, refresh, history, migration, and local assets', async () => {
   const browser = await launch();
   const direct = await browser.newPage({ viewport: VIEWPORTS[1] });
   const loadedAssets = new Set();
   const misplacedAssets = [];
-  await routeApp(direct);
+  // A roster with no maturing Trial, so this page proves canonicalization and
+  // nothing else: a maturing Trial legitimately promotes a bare `/` arrival to
+  // Verify, which is a different behavior with its own proof below.
+  await routeApp(direct, { verifyTrials: [complete] });
   await direct.addInitScript(() => localStorage.setItem('ciq_token', 'fixture-token'));
   direct.on('response', (response) => {
     const url = new URL(response.url());

@@ -26,6 +26,24 @@ test('six page routes round-trip through clean paths', () => {
   }
 });
 
+test('the parse reports whether the address named a page, so a bare arrival can be chosen for', () => {
+  // #94: the clean grammar has no "no page" address — a bare `/` resolves to the
+  // default — so the parse reports which happened rather than encoding "named
+  // nothing" as a null page the callers would each have to default again.
+  for (const page of ['day', 'diagnose', 'verify', 'plan', 'settings', 'guide']) {
+    assert.equal(parseRoute({ pathname: `/${page}`, search: '' }).pageNamed, true);
+  }
+  // The retired canonical hash names a page on the arrival that migrates it, and
+  // the narrow split form names Diagnose, exactly as they did before #94.
+  assert.equal(parseRoute({ pathname: '/', hash: '#/verify', search: '' }).pageNamed, true);
+  assert.equal(parseRoute({ pathname: '/', hash: '', search: '?view=lows' }).pageNamed, true);
+
+  const bare = parseRoute({ pathname: '/', hash: '', search: '' });
+  assert.equal(bare.pageNamed, false, 'a bare arrival names no page');
+  assert.equal(bare.page, 'diagnose', 'and is still resolved to the default for routing');
+  assert.equal(serializeRoute(bare), '/diagnose', 'and still canonicalizes in place');
+});
+
 test('Diagnose mode round-trips and migrates from the split query', () => {
   const canonical = parseRoute({ hash: '#/diagnose?mode=drawn', search: '' });
   assert.equal(canonical.mode, 'drawn');
@@ -55,8 +73,8 @@ test('Day date and Guide article restore from their page route and leave with th
 test('P53 coordinates move from the split query into the Diagnose route and restore once', () => {
   const route = parseRoute({ hash: '#diagnose', search: '?view=lows&factor=correction_stacking&start_min=0&end_min=120&another=1&occ=low-7' });
   assert.deepEqual(route, {
-    page: 'diagnose', view: 'lows', factor: 'correction_stacking', start_min: '0',
-    end_min: '120', another: '1', occ: 'low-7', mode: null,
+    page: 'diagnose', pageNamed: true, view: 'lows', factor: 'correction_stacking',
+    start_min: '0', end_min: '120', another: '1', occ: 'low-7', mode: null,
   });
   assert.equal(serializeRoute(route), '/diagnose?view=lows&factor=correction_stacking&start_min=0&end_min=120&another=1&occ=low-7');
 
@@ -84,7 +102,7 @@ test('P53 coordinates move from the split query into the Diagnose route and rest
   const unsubscribe = subscribeRoute((next) => seen.push(next), browser);
   listeners.get('popstate')();
   unsubscribe();
-  assert.deepEqual(seen, [{ page: 'diagnose', view: 'meals', factor: null, start_min: null, end_min: null, another: null, occ: null, mode: null }]);
+  assert.deepEqual(seen, [{ page: 'diagnose', pageNamed: true, view: 'meals', factor: null, start_min: null, end_min: null, another: null, occ: null, mode: null }]);
 });
 
 test('P53 restoration re-requests and an older projection response stays rejected', async () => {

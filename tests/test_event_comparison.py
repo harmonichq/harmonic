@@ -124,36 +124,44 @@ class EventComparisonTest(unittest.TestCase):
             event_comparison._validate_capture(capture)
 
     def test_low_crosswalk_keeps_comparison_precedence_over_row_relative_findings(self):
-        """The shared judgment decides shape; this surface decides cohort precedence."""
-        occurrence = {
-            "t": "2026-08-01 12:00:00", "bg": 62,
-            "verdicts": [{
-                "classifier": "correction_on_iob", "matched": False,
-                "silence_reason": "no_trigger",
-            }],
-        }
+        """Typed events reach the public five-cohort projection with its precedence."""
+        generator = run_path(str(
+            Path(__file__).resolve().parents[1]
+            / "scripts" / "gen_findings_projection_fixtures.py"
+        ))
+        cgm, bolus = generator["_over_treated_fixture_events"]()
+        store = generator["_ScenarioFixtureStore"](cgm, bolus)
 
-        def route(*, matches=(), matched=False, reason="no_trigger"):
-            judgment = SimpleNamespace(
-                rebound=SimpleNamespace(peak=170), rebound_bar=160,
-                near_floor=140,
-                verdict=SimpleNamespace(matched=matched, silence_reason=reason),
-            )
-            with patch("ciq_autotune.event_comparison.over_treated_rebound_judgment",
-                       return_value=judgment):
-                return event_comparison._route_low(
-                    occurrence, "over_treated_low", set(matches), [], [], [], [],
-                )["cohort"]
+        payload = prepare_event_comparisons(store).project(
+            ComparisonQuery.lows(another=True)
+        )
 
-        # Findings reads a row's own classifier verdict. Event comparison first
-        # reserves an episode already claimed by another factor, then uses its
-        # comparability cohorts for the remaining shared judgment states.
-        self.assertEqual(route(matches={"over_treated_low"}, matched=True), "fired")
-        self.assertEqual(route(reason="under_threshold"), "near_rule")
-        self.assertEqual(route(), "neutral")
-        self.assertEqual(route(reason="insufficient_data"), "excluded")
-        self.assertEqual(route(matches={"correction_on_iob"}, reason="under_threshold"),
-                         "another_factor")
+        self.assertEqual(payload["population"], {
+            "denominator": 5,
+            "counts": {
+                "fired": 1,
+                "near_rule": 1,
+                "neutral": 1,
+                "another_factor": 1,
+                "excluded": 1,
+            },
+        })
+        self.assertEqual(
+            [cohort["key"] for cohort in payload["cohorts"]],
+            ["fired", "near_rule", "neutral", "another_factor"],
+        )
+        competing = next(
+            occurrence for occurrence in payload["occurrences"]
+            if occurrence["verdict"]["cohort"] == "another_factor"
+        )
+        self.assertEqual(competing["verdict"]["other_factors"], [{
+            "key": "correction_on_iob",
+            "label": "Correction on active insulin",
+        }])
+        self.assertEqual(
+            sum(payload["population"]["counts"].values()),
+            payload["population"]["denominator"],
+        )
 
     def test_preparation_projects_one_closed_meal_coordinate(self):
         occurrence = {

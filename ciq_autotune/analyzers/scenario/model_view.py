@@ -61,7 +61,7 @@ from .attribute import (
     _over_treated_text,
     attribute,
     match_low_answer,
-    over_treated_rebound,
+    over_treated_rebound_judgment,
     split_caused_over_treatments,
 )
 from .levers import Lever
@@ -198,11 +198,10 @@ def _low_verdicts(
 ) -> List[AnchorVerdict]:
     """Every low-anchor read: over-treated-low and correction-on-IOB.
 
-    Mirrors :func:`~.attribute._low_lever`. Over-treated-low is inline attribution logic
-    rather than a classifier, so it is synthesized from the shared
-    :func:`~.attribute.over_treated_rebound` scan and emitted only when it fires (it is
-    never a near-miss). A refuted low ('no' answer) or a crash already split into its own
-    high-moment (#155) suppresses it, exactly as the lever does.
+    Mirrors :func:`~.attribute._low_lever`. Over-treated-low is inline attribution logic,
+    so the complete judgment comes from its shared guarded scan. A refuted low ('no'
+    answer) or a crash already split into its own high-moment (#155) suppresses it,
+    exactly as the lever does.
     """
     out: List[AnchorVerdict] = []
 
@@ -210,17 +209,10 @@ def _low_verdicts(
     answer = match_low_answer(low_answers, anchor.t)
     refuted = answer is not None and answer.answer == "no"
     if not anchor.over_treatment_split_off and not refuted:
-        rebound = over_treated_rebound(
+        judgment = over_treated_rebound_judgment(
             cgm, anchor.t, nadir, bolus, scenario_config=scenario_config,
         )
-        if rebound is not None:
-            out.append(AnchorVerdict(
-                classifier="over_treated_low",
-                matched=True,
-                detail=_over_treated_text(nadir, rebound.peak),
-                evidence_tier=EvidenceTier.INFERRED,
-                silence_reason=None,
-            ))
+        out.append(_mv("over_treated_low", judgment.verdict))
 
     out.append(_mv("correction_on_iob",
                    classify_correction_on_iob(

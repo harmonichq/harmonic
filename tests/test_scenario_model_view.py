@@ -20,13 +20,16 @@ import unittest
 from datetime import date, datetime, timedelta
 
 from ciq_autotune.analyzers.classifiers.evidence import EvidenceTier, SilenceReason
-from ciq_autotune.analyzers.scenario import Lever, assemble
+from ciq_autotune.analyzers.scenario import Lever, LowPromptAnswer, assemble
+from ciq_autotune.analyzers.scenario.anchors import Anchor, AnchorKind
 from ciq_autotune.analyzers.scenario.model_view import (
     AnchorVerdict,
     _anchor_state,
+    _low_verdicts,
     assemble_model_view,
 )
-from ciq_autotune.events import BolusEvent
+from ciq_autotune.analyzers.scenario_config import ScenarioConfig
+from ciq_autotune.events import BolusEvent, CgmReading
 
 from tests.test_scenario_engine import ISF, cgm_flat, cgm_ramp, corr, meal, suspend_run
 
@@ -74,6 +77,119 @@ class AnchorStateTest(unittest.TestCase):
             _anchor_state(False, [_v(False, SilenceReason.INSUFFICIENT_DATA),
                                   _v(False, SilenceReason.UNDER_THRESHOLD)]), "near_miss"
         )
+
+
+class OverTreatedLowModelViewTest(unittest.TestCase):
+    """The low view retains the complete shared rebound judgment (#90)."""
+
+    def _low_rebound(self, peak):
+        t0 = datetime(2026, 6, 20, 12, 0)
+
+        def ramp(offset, start_bg, end_bg, minutes):
+            return [
+                CgmReading(
+                    t=t0 + timedelta(minutes=offset + step),
+                    bg=start_bg + (end_bg - start_bg) * step / minutes,
+                    type="EGV",
+                )
+                for step in range(0, minutes + 1, 5)
+            ]
+
+        return (
+            ramp(0, 100.0, 100.0, 20)
+            + ramp(20, 100.0, 55.0, 20)
+            + ramp(40, 55.0, peak, 40)
+            + ramp(80, peak, peak - 90.0, 60)
+        )
+
+    def _over_treated_verdict(self, peak):
+        t = datetime(2026, 6, 20, 12, 0)
+        anchor = Anchor(t=t, kind=AnchorKind.LOW, bg=55.0)
+        cgm = [
+            CgmReading(t=t, bg=55.0, type="EGV"),
+            CgmReading(t=t + timedelta(minutes=5), bg=peak, type="EGV"),
+        ]
+        verdicts = _low_verdicts(
+            anchor, cgm, [], [], scenario_config=ScenarioConfig(), low_answers=()
+        )
+        return next(v for v in verdicts if v.classifier == "over_treated_low")
+
+    def test_low_view_publishes_matched_and_silent_rebound_judgments(self):
+        cases = (
+            ("matched", 165.0, True, EvidenceTier.INFERRED, None),
+            ("under threshold", 155.0, False, EvidenceTier.OBSERVED,
+             SilenceReason.UNDER_THRESHOLD),
+            ("no trigger", 135.0, False, EvidenceTier.OBSERVED,
+             SilenceReason.NO_TRIGGER),
+        )
+        for label, peak, matched, tier, silence_reason in cases:
+            with self.subTest(label=label):
+                verdict = self._over_treated_verdict(peak)
+                self.assertEqual(verdict.matched, matched)
+                self.assertEqual(verdict.evidence_tier, tier)
+                self.assertEqual(verdict.silence_reason, silence_reason)
+
+        t = datetime(2026, 6, 21, 12, 0)
+        verdict = next(v for v in _low_verdicts(
+            Anchor(t=t, kind=AnchorKind.LOW, bg=55.0),
+            [CgmReading(t=t, bg=55.0, type="EGV")], [], [],
+            scenario_config=ScenarioConfig(), low_answers=(),
+        ) if v.classifier == "over_treated_low")
+        self.assertFalse(verdict.matched)
+        self.assertEqual(verdict.evidence_tier, EvidenceTier.NOT_IN_DATA)
+        self.assertEqual(verdict.silence_reason, SilenceReason.INSUFFICIENT_DATA)
+
+    def test_published_model_view_keeps_matched_and_silent_low_judgments(self):
+        for peak, matched, silence_reason in (
+            (165.0, True, None),
+            (155.0, False, SilenceReason.UNDER_THRESHOLD),
+        ):
+            with self.subTest(peak=peak):
+                payload = assemble_model_view(
+                    [], self._low_rebound(peak), [], target=date(2026, 6, 20)
+                )
+                low = next(
+                    anchor
+                    for episode in payload["episodes"]
+                    for anchor in episode["anchors"]
+                    if anchor["kind"] == "low" and anchor["t"] == "2026-06-20 12:40:00"
+                )
+                verdict = next(
+                    verdict for verdict in low["verdicts"]
+                    if verdict["classifier"] == "over_treated_low"
+                )
+                self.assertEqual(verdict["matched"], matched)
+                self.assertEqual(verdict["silence_reason"],
+                                 silence_reason.value if silence_reason else None)
+
+    def test_refuted_and_split_off_lows_suppress_over_treated_low(self):
+        t = datetime(2026, 6, 22, 12, 0)
+        cgm = [
+            CgmReading(t=t, bg=55.0, type="EGV"),
+            CgmReading(t=t + timedelta(minutes=5), bg=165.0, type="EGV"),
+        ]
+        cases = (
+            (
+                "refuted",
+                Anchor(t=t, kind=AnchorKind.LOW, bg=55.0),
+                (LowPromptAnswer(anchor_t=t, answer="no"),),
+            ),
+            (
+                "split off",
+                Anchor(t=t, kind=AnchorKind.LOW, bg=55.0,
+                       over_treatment_split_off=True),
+                (),
+            ),
+        )
+        for label, anchor, low_answers in cases:
+            with self.subTest(label=label):
+                verdicts = _low_verdicts(
+                    anchor, cgm, [], [],
+                    scenario_config=ScenarioConfig(), low_answers=low_answers,
+                )
+                self.assertNotIn(
+                    "over_treated_low", {verdict.classifier for verdict in verdicts}
+                )
 
 
 class ModelViewPayloadTest(unittest.TestCase):

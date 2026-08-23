@@ -5,9 +5,11 @@
 - Backtest ships in-app, runs continuously on the user's live DB, and gates whether a
   block asserts a move; it can only withhold, never create, a recommendation. Why:
   Connor's settled design, session 2026-08-18. `→ issue` (rewrite of #12)
+  *Superseded 2026-08-23, see Outcome.*
 - It is the evidence-based successor to the eight-run floor; `_MIN_SUPPORTED_BLOCK_RUNS = 8`
   becomes the fallback for unscored blocks. Why: floor is a proxy, backtest is direct
   evidence. `→ issue`
+  *Superseded 2026-08-23, see Outcome.*
 - Computed on a schedule and cached, never per-request; write paths bump the cache. Why:
   matches the hourly fetch loop shape. `inline`
 - Breakfast/morning is unmeasurable alone, permanently (meals chain into lunch; 2 runs sit
@@ -98,12 +100,31 @@
   switching is why on-regime pools starve — the same dose-stamp filter the backtest's
   honesty rule uses.
 
+## Outcome (2026-08-23)
+
+- The held-out backtest gate is rejected. Recorded as ADR 21 in
+  `openspec/changes/ic-dose-stamped-anchor/design.md` — no retrospective backtest gates or
+  relaxes I:C assertion, and the eight-run floor stays a mandatory condition of
+  `ic_asserts_move` rather than a fallback.
+- The prototype scored nothing: 0 of 32 challenger cells were scoreable at both the 14-day
+  and 7-day horizons (no estimator candidate 14, candidate equal to programmed 8, incomplete
+  horizon 6, candidate never dosed 4). The prespecified stop condition (fewer than 10
+  scoreable cells) fired.
+- The two Decisions bullets above marked *Superseded 2026-08-23* — the in-app continuous
+  gate, and the backtest as evidence-based successor to the eight-run floor — are superseded
+  by this Outcome. They stay in the list as history, not as live design.
+- Evidence for a new ratio is prospective only: program a ratio, hold it, let closed runs
+  accrue under it (the Trial path). Candidate estimators move to #23 and need a separately
+  settled evidence path.
+- Answered — the two open questions carried from 2026-08-18 close here. Held-out prediction:
+  the ledger was never shown to beat the incumbent or programmed-as-is, because nothing was
+  scoreable. Counterfactual method: match-only was the method used, and it scored nothing;
+  analytic rescaling stays out of bounds.
+- The binding constraint is holding one ratio steady. Ratio churn starves every pool, so no
+  scoring rule recovers evidence the history does not contain.
+
 ## Open questions
 
-- Does the ledger beat the incumbent estimator and programmed-as-is on held-out history?
-  (the prototype's question)
-- Honest counterfactual scoring method for non-programmed candidates (match-only vs
-  analytic rescale) — prototype will surface this.
 - Connor's call, clinician conversation: whether a separate breakfast ratio is worth
   carrying at all. Unrouted.
 - Whether meal-attributed lows become their own thread (separate from #12). Unanswered.

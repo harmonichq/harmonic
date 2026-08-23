@@ -91,3 +91,6 @@ Disposition: copied into the work order.
   by adding that string to the keep-list and licensing audit story updates. Note
   (2): `another_factor` exists only via `project.mjs` `{ another: true }`; fixed in
   step 7. Reproduced all three before forwarding. 0 `injected`.
+- Round 1 delta re-check (same reviewer): COUNTERSIGN. Two notes folded into step 7:
+  no selection under the fake-Node path (insertAdjacentHTML absent), and the hover
+  reading under the accessor path rests on screenshots. 0 blockers, 0 `injected`.

@@ -156,6 +156,65 @@ navigation (story S16 reads `#level .slot-say` at
 `:4724` — what makes the block inert is that nothing binds `ribbonEl` in the
 template). Both were corrected in the order rather than adopted.
 
+### Panel 1, delta re-check
+
+Blockers found: 3 (all `injected` — introduced by the fixes to round 1, in the
+one step round 1 rewrote). The grounding reviewer returned no new blockers.
+
+1. The corrected scratch-payload field set still omitted `annotation`, and the
+   case file prints the slot's own annotation as its sentence
+   (`frontend/diagnose-workstation.js:716-718`), so the no-data render would
+   have carried whatever annotation the copied slot had. Fixed.
+2. The replacement citation for the browser-suite idiom was wrong: S16 is a
+   replay story (`frontend/diagnose-workstation-behavior.replay.mjs:1089`), and
+   the browser suite's `.slot-say` read at line 688 belongs to its ISF test. The
+   suite has no basal-lane story at all — `#lane` and `dataset.verdict` appear in
+   it only in comments at lines 10 and 640. Fixed.
+3. Navigating by the replay's `View slot` link-button does not constrain the
+   slot's verdict, and only 6 of the payload's 48 slots are insufficient, so the
+   new assertion would usually have landed on a `no change` slot where the
+   strings under test never render. Fixed: the verdict-keyed lane selector from
+   `replay.mjs:1090`, keyed to `insufficient`.
+
+Also applied from that round: the three materialised-public-tree legs added to
+the verification command (run on the clean tree here: 334 copied / 507 excluded,
+every link resolves, 0 findings); a boundary against naming `docs/scope/*` or
+`mockups/*.behavior.md` from a shipping `frontend/` comment, which
+`check_public_links.py` would fail; step 3b bounded to the basal lane and case
+file rather than the whole 74-entry surface; and a note that
+`frontend/prompt-queue.js:81` exports a different, live `buildRibbonOption`.
+
+### Panel 1, second delta re-check — closed
+
+Blockers found: 2, both `injected` and both inside the verification leg the
+previous round added.
+
+1. `build_public_tree.py "$PUB" | tail -n 1` takes its exit status from `tail`,
+   so a failed tree build would have read as success and the link and scan legs
+   would have run against a partial tree. Fixed to CI's own form — redirect to a
+   manifest file, then `tail` it.
+2. The expectation said the copied count would rise. It cannot:
+   `scripts/public_allowlist.txt` clears only `openspec/specs/** {.md}` and exact
+   paths under `mockups/` (verified by grep), so the change folder, its evidence
+   renders, the behaviour ledger and `mockups/INDEX.md` all land on the excluded
+   side, and the files this change edits are already among the 334. Fixed to
+   "334 copied / 507 excluded, unchanged".
+
+Both fixes were then executed here in the corrected form: 334 copied / 507
+excluded, every link resolves, 0 findings, exit 0. One non-blocking polish
+applied with them (the lane selector now uses the replay's interpolated
+template-literal form, `replay.mjs:1092`).
+
+Review closed after one panel and two delta re-checks. The last two fixes were
+reproduced against the repo and executed rather than sent for a third cold pass;
+the round produced no finding outside the leg it had just added, which is the
+stop signal.
+
+Injected blockers did not climb across rounds in a way that signals a rewrite:
+round 1's six were all authoring defects, round 2's three were all confined to
+the single step round 1 rewrote, and the second reviewer's independent pass on
+the same deltas returned none.
+
 Notes taken but not blocking: the retired phrasing also sits at
 `frontend/index.html:4467`, `:4578`, `:4646` and `:4647` in that same
 unreferenced block; the Boundaries list now names them so the follow-up is a

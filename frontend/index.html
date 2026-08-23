@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Harmonic</title>
-  <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
 
   <script>
     (function () {
@@ -22,14 +22,14 @@
   <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
 
   <!-- #64 scenario screen styles (extracted from this file's <style> in #100). -->
-  <link rel="stylesheet" href="./scenario.css" />
+  <link rel="stylesheet" href="/assets/scenario.css" />
   <!-- #634: cockpit shell, built to the Diagnose workstation lock. -->
-  <link rel="stylesheet" href="./shell.css" />
+  <link rel="stylesheet" href="/assets/shell.css" />
   <!-- #636: locked Diagnose workstation surface mounted inside that shell. -->
-  <link rel="stylesheet" href="./diagnose-workstation.css" />
-  <link rel="stylesheet" href="./diagnose-event-comparison.css" />
+  <link rel="stylesheet" href="/assets/diagnose-workstation.css" />
+  <link rel="stylesheet" href="/assets/diagnose-event-comparison.css" />
   <!-- #660: locked Verify workstation surface, same shell. -->
-  <link rel="stylesheet" href="./verify-workstation.css" />
+  <link rel="stylesheet" href="/assets/verify-workstation.css" />
 
   <style>
     :root {
@@ -1423,7 +1423,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
        surface rule collide at equal specificity and the later file has to win:
        scoping the docked shell to a surface is exactly what left Verify
        rendering as two floating cards (the archived Harmonic-theme lock, #736). -->
-  <link rel="stylesheet" href="./theme.css" />
+  <link rel="stylesheet" href="/assets/theme.css" />
 </head>
 <body>
   <svg width="0" height="0" aria-hidden="true" style="position:absolute">
@@ -1466,7 +1466,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           </template>
         </nav>
         <span class="cockpit-divider" data-zone="divider" aria-hidden="true"></span>
-        <a class="cockpit-day" data-zone="day" data-shell-tab="day" href="#/day"
+        <a class="cockpit-day" data-zone="day" data-shell-tab="day" href="/day"
            :aria-current="tab === 'day' ? 'page' : null" @click.prevent="shellGo('day')">Day</a>
         <span class="cockpit-gap" data-zone="gap"></span>
         <div class="cockpit-scope" data-zone="scope">
@@ -2323,7 +2323,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
 
   <script type="module">
     import { createApp, ref, reactive, computed, onMounted, onUnmounted, watch, nextTick, provide, inject } from 'vue';
-    import { TABS, parseRoute, resolveTab, subscribeRoute, writeRoute } from './tab-routing.js';
+    import { TABS, parseRoute, resolveTab, subscribeRoute, writeRoute } from '/assets/tab-routing.js';
 
     /* =========================================================================
        #64 SCENARIO SCREEN — the pure chart logic (SCN_* consts + helpers, incl.
@@ -2341,7 +2341,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
       scnFmtClock, SCN_EVIDENCE_TIER, scnBuildEpisodeOption, scnCitedEventsForStep,
       scnRateLine, scnFmtWhen, scnFmtTimeOnly, scnFmtDayShort,
       scnPreemptedSummary,
-    } from './scenario-chart.js';
+    } from '/assets/scenario-chart.js';
 
     // #101: the pure chart-option builders live in their own vue-free module so
     // their returned option JSON is node-testable. The shared pure helpers
@@ -2353,30 +2353,30 @@ html.dark .viz .tie:hover::before { opacity:.13; }
     import {
       buildLanesOption, buildRibbonOption, buildEvidenceStripOption,
       fmt, direction, basalTier, ribbonYMax, LANE_SPAN,
-    } from './chart-builders.js';
+    } from '/assets/chart-builders.js';
 
     // #136: pure date/bounds helpers for the Daily Report day-picker nav
     // (arrow bounds, cold arrival, empty-day nudge, labels). Vue-free + node-tested.
     import {
       dayBounds, clampDay, coldArrivalDay,
-    } from './daily-nav.js';
+    } from '/assets/daily-nav.js';
 
     // #152: pure per-day model-view logic + detector/silence-reason reference
     // data (flatten→sort→humanize the /model-view payload into log rows, the
     // contextual chart option, cross-link glue). Vue-free + node-tested; the
     // ModelView component below wires it into the DOM.
-    import * as MV from './model-view-log.js';
+    import * as MV from '/assets/model-view-log.js';
     // #248 Day surface (ADR 0027): pure render/logic cores for the merged Day tab —
     // DC = the chart + Episode-Log reasoning core; NAV = the severity navigator.
-    import * as DC from './day-chart.js';
+    import * as DC from '/assets/day-chart.js';
     // #332: the MOBILE Day chart render core — the glucose-hero + folded accordion
     // reshape. Desktop keeps DC + buildLanesOption; DH is the phone-only path.
-    import * as DH from './day-hero-chart.js';
-    import * as NAV from './nav-chart.js';
+    import * as DH from '/assets/day-hero-chart.js';
+    import * as NAV from '/assets/nav-chart.js';
     // #385: the Day-chart insulin-lane dose-focus core — the event model, the
     // chronological reveal copy, PIXEL-proximity grouping, and the preview/pin
     // state machine. Vue-free + node-tested; the overlay/capsule DOM below wires it.
-    import * as DF from './day-dose-focus.js';
+    import * as DF from '/assets/day-dose-focus.js';
 
     // #102: consolidated data-access module — one named export per operation,
     // injectable fetch seam for tests.  No fetch() or endpoint path literals
@@ -2410,7 +2410,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
       savePlanDraft as dataSavePlanDraft,
       loadPlanHistory as dataLoadPlanHistory,
       applyPlan as dataApplyPlan,
-    } from './data.js';
+    } from '/assets/data.js';
 
     // #99: pure Plan-deliverable logic (consolidation, provenance, hand-edit
     // merge, Confirmation-B on-pump detection) lives in a vue-free module.
@@ -2429,17 +2429,17 @@ html.dark .viz .tie:hover::before { opacity:.13; }
       planParamFamily,
       reconcileDeliverable as planReconcileDeliverable,
       PLAN_FAMILY_LABEL,
-    } from './plan.js';
+    } from '/assets/plan.js';
 
     // #95: pure per-parameter settling helpers (vue-free, node-tested).
-    import { settlingByParam as buildSettlingByParam, settlingCountdown } from './settling.js';
+    import { settlingByParam as buildSettlingByParam, settlingCountdown } from '/assets/settling.js';
 
     // #126: pure carb quick-log capture helpers (vue-free, node-tested). The
     // header popover is a thin shell over these — time math + payload shaping.
     import {
       QUICKLOG_PRESETS, QUICKLOG_TIMES, buildCarbPayload, isLoggable, carbToast,
       msToDatetimeLocal,
-    } from './carb-log.js';
+    } from '/assets/carb-log.js';
 
     // #128: pure carb-log prompt-queue logic (vue-free, node-tested). The ribbon
     // chart builders are aliased (buildRibbonOption already names the daily-chart
@@ -2453,7 +2453,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
       prettyAnchor as pqPrettyAnchor,
       sortOldestFirst as pqSortOldestFirst,
       windowDays as pqWindowDaysOf,
-    } from './prompt-queue.js';
+    } from '/assets/prompt-queue.js';
     import {
       fetchPrompts as dataFetchPrompts,
       answerPrompt as dataAnswerPrompt,
@@ -2465,17 +2465,17 @@ html.dark .viz .tie:hover::before { opacity:.13; }
     import {
       auditIdForPlanItem as diagnoseAuditIdForPlanItem,
       stageItemsFor as diagnoseStageItemsFor,
-    } from './diagnose-workspaces.js';
+    } from '/assets/diagnose-workspaces.js';
     // #654: the Diagnose surface is the locked mock's own module, ported. The
     // #636 surface it replaces predates the behaviour contract.
-    import { createDiagnoseEventComparison } from './diagnose-event-comparison.js';
+    import { createDiagnoseEventComparison } from '/assets/diagnose-event-comparison.js';
 
     // #660: the ported Verify workstation (locked mock + frozen ledger).
-    import { createVerifyWorkstation } from './verify-workstation.js';
-    import { toCaptures as verifyToCaptures } from './verify-workstation-data.js';
+    import { createVerifyWorkstation } from '/assets/verify-workstation.js';
+    import { toCaptures as verifyToCaptures } from '/assets/verify-workstation-data.js';
     // The only helper the retired workbench leaves behind: Revert's prior-setting
     // draft is the server's, and staging it is the same intent it always was.
-    import { planRevertIntent as verifyPlanRevertIntent } from './verify-trial.js';
+    import { planRevertIntent as verifyPlanRevertIntent } from '/assets/verify-trial.js';
 
     // #157: pure Guide-tab render helpers (vue-free, node-tested). The catalog
     // payload (/api/catalog) drives both the worked example and the lever /
@@ -2483,7 +2483,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
     import {
       guideGroups, guideTierLabel, guideLeverTitles, guideMd, guideDefFor,
       guideWorkedRows, guideRowClass, guideSpark,
-    } from './guide.js';
+    } from '/assets/guide.js';
 
     // #269: pure Guide-KB shell logic (vue-free, node-tested) — the article
     // corpus, markdown render for the authored how-tos, sidebar nav/search, and
@@ -2496,11 +2496,11 @@ html.dark .viz .tie:hover::before { opacity:.13; }
       categoryLabel as kbCategoryLabel, surfaceLabel as kbSurfaceLabel, kicker as kbKicker,
       pct as kbPct, rankMiniQueue as kbRankMiniQueue, silenceByTier as kbSilenceByTier,
       buildDayPreviewOption as kbBuildDayPreviewOption,
-    } from './kb.js';
+    } from '/assets/kb.js';
 
     // #425: serial gate — funnels the heavy ResultCache-backed reads through a
     // single-concurrency promise chain so cold-cache threads don't GIL-thrash.
-    import { makeSerialGate } from './serial-gate.js';
+    import { makeSerialGate } from '/assets/serial-gate.js';
 
     function scnColors() {
       const v = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
@@ -3790,6 +3790,11 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         const enqueue = makeSerialGate();
 
         const initialHash = parseRoute(location);
+        if (location.hash.startsWith('#/') || location.hash.startsWith('#diagnose')) {
+          writeRoute(initialHash, { replace: true });
+        } else if (location.pathname === '/') {
+          writeRoute(initialHash, { replace: true });
+        }
         // #132: if the initial URL is a patterns/investigate deep-link, stash the
         // #246: the old Patterns/Investigate deep-link is retired with the tab; a stale
         // `#patterns?mode=investigate` hash now just lands on Diagnose (resolveTab below).
@@ -4246,8 +4251,8 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         }
 
         watch(dark, () => { if (verifyView) verifyView.refresh(); });
-        // Push tab/date/modal -> URL hash. Guarded against re-entrancy from the
-        // hashchange listener below (applyingHash).
+        // Push tab/date/modal -> URL path/query. Guarded against re-entrancy from
+        // the popstate listener below (applyingHash).
         let applyingHash = false;
         function currentModalParam() {
           if (dataQualityModalOpen.value) return 'modal=dataquality';
@@ -4281,7 +4286,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           // Diagnose carries no shareable sub-state beyond the tab + modal params.
           const modalParam = currentModalParam();
           const extra = modalParam ? [...new URLSearchParams(modalParam)] : [];
-          writeRoute(route, { extra, replace: !location.hash.startsWith('#/') || location.search !== '' });
+          writeRoute(route, { extra });
         }
         // The state->hash watch is registered *after* the scenario refs are
         // declared (scnMode/scnPickDay/scnActiveInvestigateId, ~L3160) — its

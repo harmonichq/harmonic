@@ -8,7 +8,7 @@ const favicon = readFileSync(new URL('./favicon.svg', import.meta.url), 'utf8');
 
 test('Diagnose mounts the merged workstation surface (#636)', () => {
   assert.match(page, /ref="diagnoseRoot"/, 'one Diagnose root owns the merged instrument');
-  assert.match(page, /from '\.\/diagnose-workspaces\.js'/, 'the workstation renderer is mounted');
+  assert.match(page, /from '\/assets\/diagnose-workspaces\.js'/, 'the workstation renderer is mounted');
   assert.doesNotMatch(page, /from '\.\/settings-audit|ref="saRoot"|\bsaView\b/, 'the retired ledger/morph surface has no runtime composition');
   assert.match(page, /dataFetchExploreTimeOfDay/, 'the canvas uses its server-owned aggregate adapter');
 });
@@ -45,7 +45,7 @@ test('Verify mounts the ported workstation and none of the retired workbench (#6
   assert.match(verify, /Verify needs an API token/, "the token gate matches Diagnose's");
   assert.doesNotMatch(verify, /vt-intro|vt-workspace|vt-decision|vt-proof|vfy-split/,
     'the retired Decision + Proof workbench is gone');
-  assert.match(page, /<link rel="stylesheet" href="\.\/verify-workstation\.css" \/>/,
+  assert.match(page, /<link rel="stylesheet" href="\/assets\/verify-workstation\.css" \/>/,
     'the ported surface loads its own stylesheet');
 });
 
@@ -57,7 +57,7 @@ test('Guide sidebar intro does not claim the preview unconditionally sits beside
 });
 
 test('the page declares its own app icon', () => {
-  assert.match(page, /<link rel="icon" type="image\/svg\+xml" href="\.\/favicon\.svg" \/>/,
+  assert.match(page, /<link rel="icon" type="image\/svg\+xml" href="\/assets\/favicon\.svg" \/>/,
     'the head links the SVG app mark so the browser tab is not a blank page icon');
 });
 

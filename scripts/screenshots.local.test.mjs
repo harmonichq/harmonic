@@ -91,7 +91,7 @@ export const chromium = {
         theme: 'dark',
         out,
         storage: { boot: 'ready' },
-        fetchStubFiles: { '/analyze': { file: join(fixture, 'payload.json'), key: 'analyze' } },
+        fetchStubFiles: { '/api/analyze': { file: join(fixture, 'payload.json'), key: 'analyze' } },
       }],
     }));
 

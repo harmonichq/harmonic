@@ -324,7 +324,7 @@ class ApiRendererTest(unittest.TestCase):
         self.tmp.close()
 
     def test_outcomes_endpoint_returns_versioned_summary(self):
-        r = self.client.get("/outcomes", params={"window": 14})
+        r = self.client.get("/api/outcomes", params={"window": 14})
         self.assertEqual(r.status_code, 200)
         body = r.json()
         self.assertEqual(body["schema_version"], SCHEMA_VERSION)
@@ -337,7 +337,7 @@ class ApiRendererTest(unittest.TestCase):
         self.assertIsNotNone(body["metrics"]["tir"])
 
     def test_outcomes_window_param_flows_through(self):
-        r = self.client.get("/outcomes", params={"window": 30})
+        r = self.client.get("/api/outcomes", params={"window": 30})
         self.assertEqual(r.json()["window_days"], 30)
 
 

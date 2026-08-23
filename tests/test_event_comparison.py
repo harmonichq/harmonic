@@ -997,25 +997,25 @@ class EventComparisonRouteTest(unittest.TestCase):
             client = TestClient(
                 create_app(db_path=db.name, token=None, enable_fetch_loop=False)
             )
-            missing = client.get("/diagnose/event-comparison")
-            good = client.get("/diagnose/event-comparison?view=meals")
+            missing = client.get("/api/diagnose/event-comparison")
+            good = client.get("/api/diagnose/event-comparison?view=meals")
             incompatible = client.get(
-                "/diagnose/event-comparison?view=lows&factor=late_bolus"
+                "/api/diagnose/event-comparison?view=lows&factor=late_bolus"
             )
-            bad = client.get("/diagnose/event-comparison?window=14")
-            low = client.get("/diagnose/event-comparison?view=lows&another=1"
+            bad = client.get("/api/diagnose/event-comparison?window=14")
+            low = client.get("/api/diagnose/event-comparison?view=lows&another=1"
                              "&occ=stale-catalog-id")
             bad_block = client.get(
-                "/diagnose/event-comparison?view=meals&block=midday"
+                "/api/diagnose/event-comparison?view=meals&block=midday"
             )
             retired_block = client.get(
-                "/diagnose/event-comparison?view=meals&block=evening"
+                "/api/diagnose/event-comparison?view=meals&block=evening"
             )
             bad_another = client.get(
-                "/diagnose/event-comparison?view=meals&another=true"
+                "/api/diagnose/event-comparison?view=meals&another=true"
             )
             empty_factor = client.get(
-                "/diagnose/event-comparison?view=meals&factor="
+                "/api/diagnose/event-comparison?view=meals&factor="
             )
 
         self.assertEqual(missing.status_code, 400)

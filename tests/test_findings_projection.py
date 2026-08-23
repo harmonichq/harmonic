@@ -612,7 +612,7 @@ class FindingsEndpointTest(unittest.TestCase):
         self.tmp.close()
 
     def test_the_global_queue_answers_without_a_window(self):
-        r = self.client.get("/diagnose/findings")
+        r = self.client.get("/api/diagnose/findings")
         self.assertEqual(r.status_code, 200)
         body = r.json()
         self.assertEqual(body["schema"], "diagnose-findings-v2")
@@ -620,17 +620,17 @@ class FindingsEndpointTest(unittest.TestCase):
         self.assertFalse(body["window"]["scoped"])
 
     def test_a_clock_window_scopes_it(self):
-        r = self.client.get("/diagnose/findings",
+        r = self.client.get("/api/diagnose/findings",
                             params={"start_min": 270, "end_min": 480})
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.json()["window"]["label"], "04:30–08:00")
 
     def test_half_a_window_is_a_bad_request(self):
-        r = self.client.get("/diagnose/findings", params={"start_min": 270})
+        r = self.client.get("/api/diagnose/findings", params={"start_min": 270})
         self.assertEqual(r.status_code, 400)
 
     def test_a_zero_width_window_is_a_bad_request(self):
-        r = self.client.get("/diagnose/findings",
+        r = self.client.get("/api/diagnose/findings",
                             params={"start_min": 600, "end_min": 600})
         self.assertEqual(r.status_code, 400)
 
@@ -653,7 +653,7 @@ class FindingsEndpointTest(unittest.TestCase):
             client = TestClient(api_mod.create_app(
                 db_path=self.tmp.name, token=None, enable_fetch_loop=False,
             ))
-            response = client.get("/diagnose/findings")
+            response = client.get("/api/diagnose/findings")
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(windows, [17])
@@ -671,22 +671,22 @@ class FindingsEndpointTest(unittest.TestCase):
             return real(*args, **kwargs)
 
         with patch.object(api_mod, "prepare_findings_projection", counting):
-            self.client.get("/diagnose/findings")                       # miss
-            self.client.get("/diagnose/findings",
+            self.client.get("/api/diagnose/findings")                       # miss
+            self.client.get("/api/diagnose/findings",
                             params={"start_min": 270, "end_min": 480})  # same read
             self.assertEqual(len(calls), 1)
 
-            r = self.client.post("/carbs", json={
+            r = self.client.post("/api/carbs", json={
                 "t": "2026-06-03 10:05:00", "grams": 8, "certainty": "exact"})
             self.assertEqual(r.status_code, 200)
 
-            self.client.get("/diagnose/findings")                       # bumped
+            self.client.get("/api/diagnose/findings")                       # bumped
             self.assertEqual(len(calls), 2)
 
     def test_selected_history_codec_and_catalog_errors_are_public(self):
         malformed = self.client.get(
-            "/diagnose/findings", params={"selected_id": "ich1_not-canonical"})
-        unknown = self.client.get("/diagnose/findings", params={
+            "/api/diagnose/findings", params={"selected_id": "ich1_not-canonical"})
+        unknown = self.client.get("/api/diagnose/findings", params={
             "selected_id": encode_history_id(HistoryIdentity(420, 720, 7.0))})
 
         self.assertEqual((malformed.status_code, malformed.json()["detail"]["code"]),
@@ -703,10 +703,10 @@ class FindingsEndpointTest(unittest.TestCase):
             annotation="Exact analyzer-owned copy; do not rewrite this sentence.")
         with patch.object(api_mod, "prepare_findings_projection",
                           lambda *args, **kwargs: projection):
-            present = self.client.get("/diagnose/findings", params={
+            present = self.client.get("/api/diagnose/findings", params={
                 "selected_id": history.history_id,
             })
-            out_of_scope = self.client.get("/diagnose/findings", params={
+            out_of_scope = self.client.get("/api/diagnose/findings", params={
                 "start_min": 0, "end_min": 300,
                 "selected_id": history.history_id,
             })
@@ -726,20 +726,20 @@ class FindingsEndpointTest(unittest.TestCase):
         })
 
     def test_history_events_validate_generation_and_both_identity_codecs(self):
-        generation = self.client.get("/diagnose/findings").json()[
+        generation = self.client.get("/api/diagnose/findings").json()[
             "analysis_generation"]
         unknown_id = encode_history_id(HistoryIdentity(420, 720, 7.0))
 
         missing_generation = self.client.get(
-            "/diagnose/carb-ratio-history/events", params={"history_id": unknown_id})
+            "/api/diagnose/carb-ratio-history/events", params={"history_id": unknown_id})
         malformed_run = self.client.get(
-            "/diagnose/carb-ratio-history/events", params={
+            "/api/diagnose/carb-ratio-history/events", params={
                 "history_id": unknown_id,
                 "analysis_generation": generation,
                 "selected_run_id": "icr1_not-canonical",
             })
         unknown = self.client.get(
-            "/diagnose/carb-ratio-history/events", params={
+            "/api/diagnose/carb-ratio-history/events", params={
                 "history_id": unknown_id,
                 "analysis_generation": generation,
             })
@@ -770,9 +770,9 @@ class FindingsEndpointTest(unittest.TestCase):
         with patch.object(api_mod, "prepare_findings_projection",
                           lambda *args, **kwargs: projection):
             findings = self.client.get(
-                "/diagnose/findings", params={"selected_id": history.history_id}).json()
+                "/api/diagnose/findings", params={"selected_id": history.history_id}).json()
             response = self.client.get(
-                "/diagnose/carb-ratio-history/events", params={
+                "/api/diagnose/carb-ratio-history/events", params={
                     "history_id": history.history_id,
                     "analysis_generation": findings["analysis_generation"],
                     "selected_run_id": run.run_id,
@@ -799,18 +799,18 @@ class FindingsEndpointTest(unittest.TestCase):
         projection, history = _with_history(gen.empty_projection(), runs=[run])
         with patch.object(api_mod, "prepare_findings_projection",
                           lambda *args, **kwargs: projection):
-            generation = self.client.get("/diagnose/findings").json()["analysis_generation"]
+            generation = self.client.get("/api/diagnose/findings").json()["analysis_generation"]
             nonmember = self.client.get(
-                "/diagnose/carb-ratio-history/events", params={
+                "/api/diagnose/carb-ratio-history/events", params={
                     "history_id": history.history_id,
                     "analysis_generation": generation,
                     "selected_run_id": encode_run_id(
                         RunIdentity(meal + timedelta(days=1))),
                 })
-            self.client.post("/carbs", json={
+            self.client.post("/api/carbs", json={
                 "t": "2026-06-03 10:05:00", "grams": 8, "certainty": "exact"})
             stale = self.client.get(
-                "/diagnose/carb-ratio-history/events", params={
+                "/api/diagnose/carb-ratio-history/events", params={
                     "history_id": history.history_id,
                     "analysis_generation": generation,
                 })
@@ -843,10 +843,10 @@ class FindingsEndpointTest(unittest.TestCase):
                     analysis_incarnation=f"retirement-{lifecycle}"))
                 with patch.object(api_mod, "prepare_findings_projection",
                                   lambda *args, **kwargs: projection):
-                    generation = client.get("/diagnose/findings", params={
+                    generation = client.get("/api/diagnose/findings", params={
                         "selected_id": history.history_id}).json()["analysis_generation"]
                     response = client.get(
-                        "/diagnose/carb-ratio-history/events", params={
+                        "/api/diagnose/carb-ratio-history/events", params={
                             "history_id": history.history_id,
                             "analysis_generation": generation,
                         })
@@ -856,7 +856,7 @@ class FindingsEndpointTest(unittest.TestCase):
 
     def test_behavioral_event_comparison_contract_is_unchanged(self):
         response = self.client.get(
-            "/diagnose/event-comparison", params={"view": "meals"})
+            "/api/diagnose/event-comparison", params={"view": "meals"})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["schema"], "diagnose-event-comparison-v3")
         self.assertNotIn("analysis_generation", response.json())
@@ -870,9 +870,9 @@ class FindingsEndpointTest(unittest.TestCase):
         restarted = TestClient(create_app(
             db_path=self.tmp.name, token=None, enable_fetch_loop=False,
             analysis_incarnation="after-restart"))
-        old_generation = first.get("/diagnose/findings").json()["analysis_generation"]
+        old_generation = first.get("/api/diagnose/findings").json()["analysis_generation"]
         response = restarted.get(
-            "/diagnose/carb-ratio-history/events", params={
+            "/api/diagnose/carb-ratio-history/events", params={
                 "history_id": encode_history_id(HistoryIdentity(420, 720, 7.0)),
                 "analysis_generation": old_generation,
             })
@@ -900,7 +900,7 @@ class FindingsEndpointTest(unittest.TestCase):
             return result
 
         with patch.object(api_mod, "prepare_findings_projection", crossed):
-            response = client.get("/diagnose/findings")
+            response = client.get("/api/diagnose/findings")
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["analysis_generation"], "crossed-read:1")

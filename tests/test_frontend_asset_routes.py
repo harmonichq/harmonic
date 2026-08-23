@@ -16,6 +16,7 @@ from typing import Optional
 _FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
 _FRONTEND_INDEX = _FRONTEND_DIR / "index.html"
 _API = _FRONTEND_DIR.parent / "ciq_autotune" / "api.py"
+_TAB_ROUTING = _FRONTEND_DIR / "tab-routing.js"
 
 # Local <script src=...> and <link href=...> references from index.html. The
 # value is resolved below so nested frontend paths work too.
@@ -32,13 +33,18 @@ _MODULE_SPECIFIER = re.compile(
     r'''\b(?:import\s+(?:[\w*${},\s]+?\s+from\s+)?|export\s+(?:[\w*${},\s]+?\s+from\s+))["']([^"']+)["']'''
 )
 _GET_ROUTE = re.compile(r'''@app\.get\(\s*["']([^"']+)["']''')
+_PAGE_ID = re.compile(r"\{ id: '([a-z]+)'")
+_SPA_PAGES = re.compile(r"SPA_PAGES = \(([^)]*)\)")
 
 
 def _local_path(specifier: str, importer: Path) -> Optional[Path]:
     """Return a local frontend path for a relative specifier, if it has one."""
-    if not specifier.startswith("."):
+    if specifier.startswith("/assets/"):
+        path = (_FRONTEND_DIR / specifier.removeprefix("/assets/")).resolve()
+    elif specifier.startswith("."):
+        path = (importer.parent / specifier).resolve()
+    else:
         return None
-    path = (importer.parent / specifier).resolve()
     try:
         path.relative_to(_FRONTEND_DIR)
     except ValueError:
@@ -87,21 +93,29 @@ def _served_paths() -> set[str]:
 
 
 class FrontendAssetRoutesTest(unittest.TestCase):
+    def test_server_page_mirror_equals_browser_router_pages(self):
+        browser_pages = set(_PAGE_ID.findall(_TAB_ROUTING.read_text()))
+        match = _SPA_PAGES.search(_API.read_text())
+        self.assertIsNotNone(match, "api.py must carry the explicit SPA page mirror")
+        server_pages = set(re.findall(r'"([a-z]+)"', match.group(1)))
+        self.assertEqual(server_pages, browser_pages)
+
     def test_every_reachable_local_asset_has_a_route(self):
         assets = _local_assets()
-        paths = {"/" + asset.relative_to(_FRONTEND_DIR).as_posix() for asset in assets}
-        missing = sorted(paths - _served_paths())
+        paths = {"/assets/" + asset.relative_to(_FRONTEND_DIR).as_posix() for asset in assets}
+        served = {path for path in _served_paths() if path.startswith("/assets/")}
+        missing = sorted(paths - served)
+        extra = sorted(served - paths)
 
         # Sanity: the HTML and inline-module extractors both find known assets,
         # so a broken extraction cannot pass vacuously.
-        self.assertIn("/tab-routing.js", paths)
-        self.assertIn("/scenario.css", paths)
+        self.assertIn("/assets/tab-routing.js", paths)
+        self.assertIn("/assets/scenario.css", paths)
 
         self.assertFalse(
-            missing,
-            "Frontend asset route missing for "
-            f"{', '.join(missing)}. Add an explicit @app.get route in "
-            "ciq_autotune/api.py returning FileResponse(_FRONTEND_DIR / <file>).",
+            missing or extra,
+            "Frontend asset routes must equal the reachable graph; missing "
+            f"{', '.join(missing)}; extra {', '.join(extra)}.",
         )
 
 

@@ -18,22 +18,22 @@ test('resolveTab preserves current and legacy routes, then falls back to Diagnos
   assert.equal(resolveTab('doesnotexist'), 'diagnose');
 });
 
-test('six page routes round-trip through the canonical hash form', () => {
+test('six page routes round-trip through clean paths', () => {
   for (const page of ['day', 'diagnose', 'verify', 'plan', 'settings', 'guide']) {
-    const route = parseRoute({ hash: `#/${page}`, search: '' });
+    const route = parseRoute({ pathname: `/${page}`, search: '' });
     assert.equal(route.page, page);
-    assert.equal(serializeRoute(route), `#/${page}`);
+    assert.equal(serializeRoute(route), `/${page}`);
   }
 });
 
 test('Diagnose mode round-trips and migrates from the split query', () => {
   const canonical = parseRoute({ hash: '#/diagnose?mode=drawn', search: '' });
   assert.equal(canonical.mode, 'drawn');
-  assert.equal(serializeRoute(canonical), '#/diagnose?mode=drawn');
+  assert.equal(serializeRoute(canonical), '/diagnose?mode=drawn');
 
   const migrated = parseRoute({ hash: '#diagnose', search: '?mode=drawn' });
   assert.equal(migrated.mode, 'drawn');
-  assert.equal(serializeRoute(migrated), '#/diagnose?mode=drawn');
+  assert.equal(serializeRoute(migrated), '/diagnose?mode=drawn');
 });
 
 test('Day date and Guide article restore from their page route and leave with the page', () => {
@@ -41,15 +41,15 @@ test('Day date and Guide article restore from their page route and leave with th
   const guide = parseRoute({ hash: '#/guide?article=reading-day', search: '' });
   assert.equal(day.date, '2026-08-22');
   assert.equal(guide.article, 'reading-day');
-  assert.equal(serializeRoute({ ...day, page: 'diagnose' }), '#/diagnose');
-  assert.equal(serializeRoute({ ...guide, page: 'diagnose' }), '#/diagnose');
+  assert.equal(serializeRoute({ ...day, page: 'diagnose' }), '/diagnose');
+  assert.equal(serializeRoute({ ...guide, page: 'diagnose' }), '/diagnose');
 
   const writes = [];
   const location = { pathname: '/', hash: '#/diagnose', search: '' };
   const history = { pushState: (_state, _title, address) => writes.push(address) };
   writeRoute(day, { location, history });
   writeRoute(guide, { location, history });
-  assert.deepEqual(writes, ['/#/day?date=2026-08-22', '/#/guide?article=reading-day']);
+  assert.deepEqual(writes, ['/day?date=2026-08-22', '/guide?article=reading-day']);
 });
 
 test('P53 coordinates move from the split query into the Diagnose hash and restore once', () => {
@@ -58,7 +58,7 @@ test('P53 coordinates move from the split query into the Diagnose hash and resto
     page: 'diagnose', view: 'lows', factor: 'correction_stacking', start_min: '0',
     end_min: '120', another: '1', occ: 'low-7', mode: null,
   });
-  assert.equal(serializeRoute(route), '#/diagnose?view=lows&factor=correction_stacking&start_min=0&end_min=120&another=1&occ=low-7');
+  assert.equal(serializeRoute(route), '/diagnose?view=lows&factor=correction_stacking&start_min=0&end_min=120&another=1&occ=low-7');
 
   const mixed = parseRoute({
     hash: '#/diagnose?modal=dataquality&factor=carb_undercount',
@@ -72,18 +72,17 @@ test('P53 coordinates move from the split query into the Diagnose hash and resto
     history: { replaceState: (_state, _title, address) => replacements.push(address) },
     replace: true,
   });
-  assert.deepEqual(replacements, ['/#/diagnose?view=lows&factor=carb_undercount']);
+  assert.deepEqual(replacements, ['/diagnose?view=lows&factor=carb_undercount']);
 
   const listeners = new Map();
   const browser = {
-    location: { hash: '#/diagnose?view=meals', search: '', pathname: '/' },
+    location: { hash: '', search: '?view=meals', pathname: '/diagnose' },
     addEventListener(type, listener) { listeners.set(type, listener); },
     removeEventListener() {},
   };
   const seen = [];
   const unsubscribe = subscribeRoute((next) => seen.push(next), browser);
   listeners.get('popstate')();
-  listeners.get('hashchange')();
   unsubscribe();
   assert.deepEqual(seen, [{ page: 'diagnose', view: 'meals', factor: null, start_min: null, end_min: null, another: null, occ: null, mode: null }]);
 });
@@ -91,7 +90,7 @@ test('P53 coordinates move from the split query into the Diagnose hash and resto
 test('P53 restoration re-requests and an older projection response stays rejected', async () => {
   const original = { window: globalThis.window, location: globalThis.location, history: globalThis.history };
   const listeners = new Map();
-  globalThis.location = { pathname: '/', hash: '#/diagnose?view=meals&factor=late_bolus', search: '' };
+  globalThis.location = { pathname: '/diagnose', hash: '', search: '?view=meals&factor=late_bolus' };
   globalThis.history = { pushState() {} };
   globalThis.window = { location, history, addEventListener(type, listener) { listeners.set(type, listener); }, removeEventListener() {} };
   const requests = [];

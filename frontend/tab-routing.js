@@ -1,4 +1,4 @@
-// Hash-tab routing stays Vue-free so both initial load and hashchange use the
+// Path-tab routing stays Vue-free so both initial load and popstate use the
 // same migration and the fallback can be covered without a browser.
 export const TABS = [
   // #248 (ADR 0027): Daily report + Model view merged into one Day surface.
@@ -40,14 +40,14 @@ function routeState(page, params) {
 // The one hash-routing seam owns the page plus only the page-local state that
 // already round-trips. It deliberately transports values without validating
 // them; each existing page retains its own defaults and value handling.
-export function parseRoute({ hash = '', search = '' } = {}) {
+export function parseRoute({ pathname = '/', hash = '', search = '' } = {}) {
   const raw = hash.replace(/^#/, '');
-  const [path = '', query = ''] = raw.split('?');
+  const [legacyPath = '', legacyQuery = ''] = raw.split('?');
   const splitParams = new URLSearchParams(search.replace(/^\?/, ''));
-  const page = path ? resolveTab(path.replace(/^\//, ''))
-    : DIAGNOSE_KEYS.some((key) => splitParams.has(key)) ? 'diagnose' : null;
-  if (!page) return { page: null };
-  const params = new URLSearchParams(query);
+  const legacy = legacyPath.startsWith('/') || legacyPath === 'diagnose';
+  const path = legacy ? legacyPath : pathname;
+  const page = path === '/' ? DEFAULT_TAB : resolveTab(path.replace(/^\//, ''));
+  const params = new URLSearchParams(legacy ? legacyQuery : search);
   if (page === 'diagnose') {
     for (const key of DIAGNOSE_KEYS) {
       if (!params.has(key) && splitParams.has(key)) params.set(key, splitParams.get(key));
@@ -66,31 +66,28 @@ export function serializeRoute(route, extra = []) {
   }
   for (const [key, value] of extra) params.set(key, value);
   const query = params.toString();
-  return `#/${page}${query ? `?${query}` : ''}`;
+  return `/${page}${query ? `?${query}` : ''}`;
 }
 
 export function writeRoute(route, { location = window.location, history = window.history,
   replace = false, extra = [] } = {}) {
-  const hash = serializeRoute(route, extra);
-  const address = `${location.pathname}${hash}`;
+  const address = serializeRoute(route, extra);
   if (`${location.pathname}${location.search}${location.hash}` !== address) {
     history[replace ? 'replaceState' : 'pushState'](null, '', address);
   }
-  return hash;
+  return address;
 }
 
 export function subscribeRoute(listener, browser = window) {
   let previous = null;
   const notify = () => {
-    const address = `${browser.location.search}${browser.location.hash}`;
+    const address = `${browser.location.pathname}${browser.location.search}${browser.location.hash}`;
     if (address === previous) return;
     previous = address;
     listener(parseRoute(browser.location));
   };
-  browser.addEventListener('hashchange', notify);
   browser.addEventListener('popstate', notify);
   return () => {
-    browser.removeEventListener('hashchange', notify);
     browser.removeEventListener('popstate', notify);
   };
 }

@@ -802,7 +802,7 @@ test('an exact true capped ISF verdict stages one unchanged value per generated 
       await page.locator('#level .stagebtn').click();
       await page.waitForFunction(() => document.querySelector('#plan-badge')?.textContent.trim() === '4');
       await page.waitForTimeout(100);
-      assert.equal(drafts.length, 1, 'the real stage affordance issues one PUT /plan');
+      assert.equal(drafts.length, 1, 'the real stage affordance issues one PUT /api/plan');
       assert.deepEqual(drafts[0].items, [
         { type: 'isf', key: 0, start_min: 0, label: '00:00', current: 42, recommended: 33.6, value: 33.6 },
         { type: 'isf', key: 360, start_min: 360, label: '06:00', current: 45, recommended: 33.6, value: 33.6 },
@@ -868,7 +868,7 @@ test('setError tears down a live render and replaces the mount with a plain fail
           return route.fulfill({ body: await readFile(join(VENDOR, 'echarts.min.js')), contentType: 'text/javascript' });
         }
         if (url.pathname.startsWith('/frontend/')) {
-          const path = join(ROOT, url.pathname.slice(1));
+          const path = join(ROOT, url.pathname.replace(/^\/assets\//, ''));
           try { return route.fulfill({ body: await readFile(path), contentType: MIME[extname(path)] || 'text/javascript' }); }
           catch { return route.fulfill({ status: 404, body: 'missing' }); }
         }
@@ -902,7 +902,7 @@ test('setError tears down a live render and replaces the mount with a plain fail
    page after its first load already succeeded, and this failure has to be
    live for that very load. Its stub table mirrors openApp's
    (diagnose-workstation-behavior.replay.mjs) so the app boots exactly as it
-   does for every other test, except /analyze is made to fail. */
+   does for every other test, except /api/analyze is made to fail. */
 test('a rejected first-load fetch shows the failure message, not an uncaught error', async () => {
     const payloadPath = process.env.PAYLOAD;
     assert.ok(payloadPath, 'PAYLOAD is required (backs the endpoints that do not fail)');
@@ -911,20 +911,20 @@ test('a rejected first-load fetch shows the failure message, not an uncaught err
       join(ROOT, 'mockups/diagnose-event-comparison.synthetic/capture.json'), 'utf8'));
     const STUBS = [
       [/^\/diagnose\/event-comparison/, () => ({ comparison, exposures: payload.exposures })],
-      [/^\/scenarios/, () => payload.scenarios],
+      [/^\/api\/scenarios/, () => payload.scenarios],
       [/^\/explore\/time/, () => payload.evidence],
-      [/^\/status/, () => ({ ok: true, last_fetch: payload.analyze.generated_at, counts: payload.analyze.data_quality?.counts || {} })],
+      [/^\/api\/status/, () => ({ ok: true, last_fetch: payload.analyze.generated_at, counts: payload.analyze.data_quality?.counts || {} })],
       [/^\/plan\/history/, () => ({ history: [] })],
-      [/^\/plan/, () => ({ items: [], updated_at: null })],
+      [/^\/api\/plan/, () => ({ items: [], updated_at: null })],
       [/^\/verify\/trials/, () => ({ trials: [] })],
       [/^\/api\/catalog/, () => ({ articles: [] })],
-      [/^\/carbs/, () => ({ entries: [] })],
-      [/^\/prompts/, () => ({ prompts: [] })],
-      [/^\/credentials/, () => ({ configured: true })],
+      [/^\/api\/carbs/, () => ({ entries: [] })],
+      [/^\/api\/prompts/, () => ({ prompts: [] })],
+      [/^\/api\/credentials/, () => ({ configured: true })],
       [/^\/audit\/dismissals/, () => ({ dismissed: [] })],
-      [/^\/outcomes/, () => ({ points: [] })],
-      [/^\/timeline/, () => ({ events: [] })],
-      [/^\/backtest/, () => ({ folds: [] })],
+      [/^\/api\/outcomes/, () => ({ points: [] })],
+      [/^\/api\/timeline/, () => ({ events: [] })],
+      [/^\/api\/backtest/, () => ({ folds: [] })],
       [/^\/model/, () => ({ entries: [] })],
       [/^\/day/, () => ({ days: [] })],
       [/^\/pump/, () => ({ settings: {} })],
@@ -947,12 +947,12 @@ test('a rejected first-load fetch shows the failure message, not an uncaught err
         if (url.href.includes('vue')) return route.fulfill({ body: await readFile(join(VENDOR, 'vue.esm-browser.js')), contentType: 'text/javascript' });
         if (path === '/') return route.fulfill({ body: await readFile(join(ROOT, 'frontend/index.html')), contentType: 'text/html' });
         if (/\.(js|css|svg|html)$/.test(path)) {
-          try { return route.fulfill({ body: await readFile(join(ROOT, 'frontend', path.slice(1))), contentType: MIME[extname(path)] || 'text/plain' }); } catch { /* fall through */ }
+          try { return route.fulfill({ body: await readFile(join(ROOT, 'frontend', path.replace(/^\/assets\//, ''))), contentType: MIME[extname(path)] || 'text/plain' }); } catch { /* fall through */ }
         }
         // The one deliberately broken endpoint: loadAudit's Promise.all
         // rejects on this, taking the real catch path a live fetch failure
         // (a timeout, a 5xx, a dropped connection) would.
-        if (/^\/analyze/.test(path)) {
+        if (/^\/api\/analyze/.test(path)) {
           return route.fulfill({ status: 500, contentType: 'application/json',
             body: JSON.stringify({ detail: 'synthetic failure for the #654 hotfix regression test' }) });
         }

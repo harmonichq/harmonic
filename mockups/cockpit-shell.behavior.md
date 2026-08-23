@@ -39,7 +39,7 @@ S5 · Glossary and Carb questions remain reachable from the footer and open thei
   status: replayed-pass on base
 
 S6 · Desktop chrome keeps reachable pointer targets, three type ranks, and exactly the desk/bar/control material vocabulary.
-  handlers/invariants: hover/focus target geometry; across-theme material and typography invariants
+  handlers/invariants: hover/api/focus target geometry; across-theme material and typography invariants
   source: `frontend/shell.css`; `frontend/theme.css`
   evidence: `STORY:cockpit-shell:S6` / exported `S6`; deliberate mutation block in the same gate
   status: replayed-pass on base

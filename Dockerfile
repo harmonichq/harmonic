@@ -72,9 +72,9 @@ USER app
 EXPOSE 8765
 VOLUME ["/app/tconnect-data"]
 
-# Ungated /health (api.py) — no token, no credentials needed.
+# Ungated /api/health (api.py) — no token, no credentials needed.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8765/health').status==200 else 1)"
+    CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8765/api/health').status==200 else 1)"
 
 # The entrypoint validates TIMEZONE_NAME; the app resolves HARMONIC_NO_FETCH (or
 # its deprecated CIQ_NO_FETCH fallback). CMD supplies

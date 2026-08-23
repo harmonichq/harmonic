@@ -61,6 +61,7 @@ DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8765
 
 _FRONTEND_INDEX = Path(__file__).resolve().parent.parent / "frontend" / "index.html"
+SPA_PAGES = ("day", "diagnose", "verify", "plan", "settings", "guide")
 
 # #269 Guide-KB: the authored how-tos live as markdown here, served raw by
 # ``/api/kb/{slug}``. ``slug`` is restricted to this charset so a request can
@@ -129,6 +130,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
 
     app = FastAPI(title="Harmonic", version="0.1.0",
                   summary="Local, advisory tuning for Tandem pumps using Control-IQ® technology.",
+                  openapi_url="/api/openapi.json", docs_url="/api/docs",
+                  redoc_url="/api/redoc",
                   lifespan=lifespan)
     app.state.configuration = configuration
 
@@ -225,6 +228,9 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     def index() -> FileResponse:
         return FileResponse(_FRONTEND_INDEX)
 
+    for _page in SPA_PAGES:
+        app.add_api_route(f"/{_page}", index, methods=["GET"])
+
     # Serve the frontend's sibling ES-module / stylesheet assets (#100). These
     # are explicit per-file routes (not a StaticFiles mount) so they can never
     # shadow an API route or the ``/`` index. No token, same as ``index``.
@@ -232,197 +238,192 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     # browser rejects the .js MIME type.
     _FRONTEND_DIR = _FRONTEND_INDEX.parent
 
-    @app.get("/tab-routing.js")
+    @app.get("/assets/tab-routing.js")
     def tab_routing_js() -> FileResponse:
         return FileResponse(_FRONTEND_DIR / "tab-routing.js",
                             media_type="text/javascript")
 
-    @app.get("/scenario-chart.js")
+    @app.get("/assets/scenario-chart.js")
     def scenario_chart_js() -> FileResponse:
         return FileResponse(_FRONTEND_DIR / "scenario-chart.js",
                             media_type="text/javascript")
 
-    @app.get("/chart-builders.js")
+    @app.get("/assets/chart-builders.js")
     def chart_builders_js() -> FileResponse:
         return FileResponse(_FRONTEND_DIR / "chart-builders.js",
                             media_type="text/javascript")
 
-    @app.get("/diagnose-workspaces.js")
+    @app.get("/assets/diagnose-workspaces.js")
     def diagnose_workspaces_js() -> FileResponse:
         return FileResponse(_FRONTEND_DIR / "diagnose-workspaces.js",
                             media_type="text/javascript")
 
-    @app.get("/diagnose-workstation-chart.js")
+    @app.get("/assets/diagnose-workstation-chart.js")
     def diagnose_workstation_chart_js() -> FileResponse:
         return FileResponse(_FRONTEND_DIR / "diagnose-workstation-chart.js",
                             media_type="text/javascript")
 
-    @app.get("/diagnose-workstation.js")
+    @app.get("/assets/diagnose-workstation.js")
     def diagnose_workstation_js() -> FileResponse:
         return FileResponse(_FRONTEND_DIR / "diagnose-workstation.js",
                             media_type="text/javascript")
 
-    @app.get("/diagnose-workstation-data.js")
+    @app.get("/assets/diagnose-workstation-data.js")
     def diagnose_workstation_data_js() -> FileResponse:
         return FileResponse(_FRONTEND_DIR / "diagnose-workstation-data.js",
                             media_type="text/javascript")
 
-    @app.get("/finding-case-file-validation.js")
+    @app.get("/assets/finding-case-file-validation.js")
     def finding_case_file_validation_js() -> FileResponse:
         return FileResponse(_FRONTEND_DIR / "finding-case-file-validation.js",
                             media_type="text/javascript")
 
-    @app.get("/diagnose-findings-queue.js")
+    @app.get("/assets/diagnose-findings-queue.js")
     def diagnose_findings_queue_js() -> FileResponse:  # #735: the inspector's level 1
         return FileResponse(_FRONTEND_DIR / "diagnose-findings-queue.js",
                             media_type="text/javascript")
 
-    @app.get("/watched-change-dock.js")
+    @app.get("/assets/watched-change-dock.js")
     def watched_change_dock_js() -> FileResponse:  # #735: the inspector's floor
         return FileResponse(_FRONTEND_DIR / "watched-change-dock.js",
                             media_type="text/javascript")
 
-    @app.get("/diagnose-event-comparison.js")
+    @app.get("/assets/diagnose-event-comparison.js")
     def diagnose_event_comparison_js() -> FileResponse:
         return FileResponse(_FRONTEND_DIR / "diagnose-event-comparison.js",
                             media_type="text/javascript")
 
-    @app.get("/diagnose-event-comparison.css")
+    @app.get("/assets/diagnose-event-comparison.css")
     def diagnose_event_comparison_css() -> FileResponse:
         return FileResponse(_FRONTEND_DIR / "diagnose-event-comparison.css",
                             media_type="text/css")
 
-    @app.get("/data.js")
+    @app.get("/assets/data.js")
     def data_js() -> FileResponse:
         return FileResponse(_FRONTEND_DIR / "data.js",
                             media_type="text/javascript")
 
-    @app.get("/plan.js")
+    @app.get("/assets/plan.js")
     def plan_js() -> FileResponse:
         return FileResponse(_FRONTEND_DIR / "plan.js",
                             media_type="text/javascript")
 
-    @app.get("/settling.js")
+    @app.get("/assets/settling.js")
     def settling_js() -> FileResponse:
         return FileResponse(_FRONTEND_DIR / "settling.js",
                             media_type="text/javascript")
 
-    @app.get("/carb-log.js")
+    @app.get("/assets/carb-log.js")
     def carb_log_js() -> FileResponse:
         return FileResponse(_FRONTEND_DIR / "carb-log.js",
                             media_type="text/javascript")
 
-    @app.get("/prompt-queue.js")
+    @app.get("/assets/prompt-queue.js")
     def prompt_queue_js() -> FileResponse:
         return FileResponse(_FRONTEND_DIR / "prompt-queue.js",
                             media_type="text/javascript")
 
-    @app.get("/verify-workstation.js")
+    @app.get("/assets/verify-workstation.js")
     def verify_workstation_js() -> FileResponse:
         return FileResponse(_FRONTEND_DIR / "verify-workstation.js",
                             media_type="text/javascript")
 
-    @app.get("/verify-workstation-chart.js")
+    @app.get("/assets/verify-workstation-chart.js")
     def verify_workstation_chart_js() -> FileResponse:
         return FileResponse(_FRONTEND_DIR / "verify-workstation-chart.js",
                             media_type="text/javascript")
 
-    @app.get("/verify-workstation-data.js")
+    @app.get("/assets/verify-workstation-data.js")
     def verify_workstation_data_js() -> FileResponse:
         return FileResponse(_FRONTEND_DIR / "verify-workstation-data.js",
                             media_type="text/javascript")
 
-    @app.get("/verify-trial.js")
+    @app.get("/assets/verify-trial.js")
     def verify_trial_js() -> FileResponse:
         return FileResponse(_FRONTEND_DIR / "verify-trial.js",
                             media_type="text/javascript")
 
-    @app.get("/daily-nav.js")
+    @app.get("/assets/daily-nav.js")
     def daily_nav_js() -> FileResponse:
         return FileResponse(_FRONTEND_DIR / "daily-nav.js",
                             media_type="text/javascript")
 
-    @app.get("/guide.js")
+    @app.get("/assets/guide.js")
     def guide_js() -> FileResponse:
         return FileResponse(_FRONTEND_DIR / "guide.js",
                             media_type="text/javascript")
 
-    @app.get("/kb.js")
+    @app.get("/assets/kb.js")
     def kb_js() -> FileResponse:  # #269: Guide-KB shell + markdown render (vue-free)
         return FileResponse(_FRONTEND_DIR / "kb.js",
                             media_type="text/javascript")
 
-    @app.get("/model-view-log.js")
+    @app.get("/assets/model-view-log.js")
     def model_view_log_js() -> FileResponse:
         return FileResponse(_FRONTEND_DIR / "model-view-log.js",
                             media_type="text/javascript")
 
-    @app.get("/rest-window.js")
-    def rest_window_js() -> FileResponse:
-        return FileResponse(_FRONTEND_DIR / "rest-window.js",
-                            media_type="text/javascript")
-
-    @app.get("/serial-gate.js")
+    @app.get("/assets/serial-gate.js")
     def serial_gate_js() -> FileResponse:
         return FileResponse(_FRONTEND_DIR / "serial-gate.js",
                             media_type="text/javascript")
 
-    @app.get("/day-chart.js")
+    @app.get("/assets/day-chart.js")
     def day_chart_js() -> FileResponse:
         return FileResponse(_FRONTEND_DIR / "day-chart.js",
                             media_type="text/javascript")
 
-    @app.get("/day-hero-chart.js")
+    @app.get("/assets/day-hero-chart.js")
     def day_hero_chart_js() -> FileResponse:  # #332: mobile glucose-hero Day chart
         return FileResponse(_FRONTEND_DIR / "day-hero-chart.js",
                             media_type="text/javascript")
 
-    @app.get("/day-dose-focus.js")
+    @app.get("/assets/day-dose-focus.js")
     def day_dose_focus_js() -> FileResponse:  # #385: Day-chart insulin-lane dose-focus core
         return FileResponse(_FRONTEND_DIR / "day-dose-focus.js",
                             media_type="text/javascript")
 
-    @app.get("/nav-chart.js")
+    @app.get("/assets/nav-chart.js")
     def nav_chart_js() -> FileResponse:
         return FileResponse(_FRONTEND_DIR / "nav-chart.js",
                             media_type="text/javascript")
 
-    @app.get("/scenario.css")
+    @app.get("/assets/scenario.css")
     def scenario_css() -> FileResponse:
         return FileResponse(_FRONTEND_DIR / "scenario.css",
                             media_type="text/css")
 
-    @app.get("/shell.css")
+    @app.get("/assets/shell.css")
     def shell_css() -> FileResponse:
         return FileResponse(_FRONTEND_DIR / "shell.css",
                             media_type="text/css")
 
-    @app.get("/diagnose-workstation.css")
+    @app.get("/assets/diagnose-workstation.css")
     def diagnose_workstation_css() -> FileResponse:
         return FileResponse(_FRONTEND_DIR / "diagnose-workstation.css",
                             media_type="text/css")
 
-    @app.get("/verify-workstation.css")
+    @app.get("/assets/verify-workstation.css")
     def verify_workstation_css() -> FileResponse:
         return FileResponse(_FRONTEND_DIR / "verify-workstation.css",
                             media_type="text/css")
 
-    @app.get("/theme.css")
+    @app.get("/assets/theme.css")
     def theme_css() -> FileResponse:
         """The Harmonic theme's role rules (#736) — served last, loaded last."""
         return FileResponse(_FRONTEND_DIR / "theme.css",
                             media_type="text/css")
 
-    @app.get("/favicon.svg")
+    @app.get("/assets/favicon.svg")
     def favicon_svg() -> FileResponse:
         return FileResponse(_FRONTEND_DIR / "favicon.svg",
                             media_type="image/svg+xml")
 
-    @app.get("/health")
+    @app.get("/api/health")
     def health() -> dict:
         return {"status": "ok", "schema_version": SCHEMA_VERSION}
 
-    @app.get("/analyze")
+    @app.get("/api/analyze")
     def analyze_endpoint(window: int = 30, ignore_changes: bool = False,
                          pool: bool = False,
                          _: None = Depends(require_token)) -> dict:
@@ -441,7 +442,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
 
         return cache.get_or_compute(("analyze", window, ignore_changes, pool), compute)
 
-    @app.get("/scenarios")
+    @app.get("/api/scenarios")
     def scenarios_endpoint(window: int = 30, _: None = Depends(require_token)) -> dict:
         """The ranked, episode-level scenario payload (#70): patterns faced by a
         hero episode, each scored with #58 Confidence, plus the referenced episodes
@@ -455,7 +456,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
 
         return cache.get_or_compute(("scenarios", window), compute)
 
-    @app.get("/model-view")
+    @app.get("/api/model-view")
     def model_view_endpoint(date: str, _: None = Depends(require_token)) -> dict:
         """The per-day model-view (#152 / ADR 0019): every anchor the engine saw on
         ``date`` (YYYY-MM-DD) and, for each, every classifier's verdict + its state
@@ -474,7 +475,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
 
         return cache.get_or_compute(("model-view", date), compute)
 
-    @app.get("/day-navigator")
+    @app.get("/api/day-navigator")
     def day_navigator_endpoint(month: Optional[str] = None,
                                _: None = Depends(require_token)) -> dict:
         """The Day surface's navigator feed (#248 / ADR 0030): per-day glycemic
@@ -500,7 +501,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         # cache, so a default-month resolution can never go stale within a version.
         return cache.get_or_compute(("day-navigator", month), compute)
 
-    @app.get("/outcomes")
+    @app.get("/api/outcomes")
     def outcomes_endpoint(window: int = 14, _: None = Depends(require_token)) -> dict:
         """The outcome summary (#113): the 2019 consensus / AGP glycemic panel plus
         the derived per-exposure clean rates (ADR 0007), over one flat user-selected
@@ -514,7 +515,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
 
         return cache.get_or_compute(("outcomes", window), compute)
 
-    @app.get("/outcomes/trend")
+    @app.get("/api/outcomes/trend")
     def outcomes_trend_endpoint(window: int = 14, _: None = Depends(require_token)) -> dict:
         """The Outcomes trend (#131): a behavioral + glycemic scorecard across rolling
         ``window``-day windows (oldest→newest, index-aligned), each behavior and metric
@@ -530,7 +531,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
 
         return cache.get_or_compute(("outcomes-trend", window), compute)
 
-    @app.get("/verify/trials")
+    @app.get("/api/verify/trials")
     def verify_trials_endpoint(selected: Optional[str] = None,
                                _: None = Depends(require_token)) -> dict:
         """The bounded, side-effect-free Trial roster for Verify (ADR 579).
@@ -556,7 +557,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         except KeyError:
             raise HTTPException(status_code=404, detail="unknown or expired Trial")
 
-    @app.get("/explore/time-of-day")
+    @app.get("/api/explore/time-of-day")
     def explore_time_of_day_endpoint(_: None = Depends(require_token)) -> dict:
         """The fixed 30-day, time-of-day evidence feed for Explore (#578)."""
         def compute() -> dict:
@@ -565,12 +566,12 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
 
         return cache.get_or_compute(("explore-time-of-day",), compute)
 
-    @app.get("/explore/exposures")
+    @app.get("/api/explore/exposures")
     def explore_exposures_endpoint(_: None = Depends(require_token)) -> dict:
         """The recent anchor-level exposure feed for Diagnose (#654)."""
         return event_comparison_preparation().exposure_payload
 
-    @app.get("/diagnose/event-comparison")
+    @app.get("/api/diagnose/event-comparison")
     def diagnose_event_comparison_endpoint(
         view: Optional[str] = None, factor: Optional[str] = None,
         start_min: Optional[int] = None, end_min: Optional[int] = None,
@@ -606,7 +607,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         except ValueError as error:
             raise HTTPException(status_code=400, detail=str(error)) from error
 
-    @app.get("/diagnose/findings")
+    @app.get("/api/diagnose/findings")
     def diagnose_findings_endpoint(
         start_min: Optional[int] = None, end_min: Optional[int] = None,
         window: int = findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS,
@@ -648,7 +649,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 "message": "Evidence changed. Refresh findings.",
             }) from error
 
-    @app.get("/diagnose/carb-ratio-history/events")
+    @app.get("/api/diagnose/carb-ratio-history/events")
     def diagnose_ic_history_events_endpoint(
         history_id: Optional[str] = None,
         analysis_generation: Optional[str] = None,
@@ -705,7 +706,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 "message": "Evidence changed. Refresh findings.",
             }) from error
 
-    @app.get("/diagnose/finding-case-file-preparation")
+    @app.get("/api/diagnose/finding-case-file-preparation")
     def finding_case_file_preparation(request: Request, _: None = Depends(require_token)):
         try:
             query, selected_id = _case_params(request)
@@ -726,7 +727,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             logger.exception("Finding case-file preparation was inconsistent")
             return _case_error(500, "inconsistent_projection", "Case population is inconsistent.")
 
-    @app.get("/diagnose/finding-case-file")
+    @app.get("/api/diagnose/finding-case-file")
     def finding_case_file(request: Request, _: None = Depends(require_token)):
         try:
             projection_id, finding_id, alignment, occ = _case_params(request, True)
@@ -750,12 +751,12 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         finally:
             cache.release_preparation(prepared)
 
-    @app.get("/audit/dismissals")
+    @app.get("/api/audit/dismissals")
     def audit_dismissals_endpoint(_: None = Depends(require_token)) -> dict:
         with Store.open(db_path) as store:
             return {"dismissals": store.audit_dismissals()}
 
-    @app.post("/audit/dismissals")
+    @app.post("/api/audit/dismissals")
     def dismiss_audit_item_endpoint(payload: dict = Body(...),
                                     _: None = Depends(require_token)) -> dict:
         item_id = payload.get("item_id")
@@ -775,7 +776,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         cache.bump()  # dismissal changes the Audit read (#586)
         return {"item_id": item_id, "evidence_fingerprint": fingerprint}
 
-    @app.get("/pattern-sweep")
+    @app.get("/api/pattern-sweep")
     def pattern_sweep_endpoint(_: None = Depends(require_token)) -> dict:
         """The pattern-sweep payload (#378): every generated candidate cell priced
         through one gate, the tracked-candidate set, and the ready-for-review queue.
@@ -812,13 +813,13 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         cache.bump()  # a sign-off changes the ready-for-review queue (#267)
         return {"cell_id": cell_id, "era_start": era_str, "decision": decision}
 
-    @app.post("/pattern-sweep/approve")
+    @app.post("/api/pattern-sweep/approve")
     def approve_pattern_endpoint(payload: dict = Body(...),
                                  _: None = Depends(require_token)) -> dict:
         """Sign off a cleared cell so it may ship as a card. Scoped to the current era."""
         return _record_pattern_decision(payload, "approved")
 
-    @app.post("/pattern-sweep/dismiss")
+    @app.post("/api/pattern-sweep/dismiss")
     def dismiss_pattern_endpoint(payload: dict = Body(...),
                                  _: None = Depends(require_token)) -> dict:
         """Dismiss a cleared cell so it never ships this era."""
@@ -852,7 +853,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         return PlainTextResponse(path.read_text(encoding="utf-8"),
                                  media_type="text/markdown")
 
-    @app.post("/fetch")
+    @app.post("/api/fetch")
     def fetch_endpoint(days: int = 120, _: None = Depends(require_token)) -> dict:
         from . import sync as sync_mod
         end = date.today()
@@ -866,7 +867,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         cache.bump()  # a manual fetch is an out-of-loop write path (#267)
         return {"pulled": written, "window": {"start": str(start), "end": str(end)}}
 
-    @app.get("/credentials")
+    @app.get("/api/credentials")
     def get_credentials_endpoint(_: None = Depends(require_token)) -> dict:
         with Store.open(db_path) as store:
             creds = credentials.load_credentials(store, key_path=key_path)
@@ -874,7 +875,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             return {"configured": False, "email": None, "region": None}
         return {"configured": True, "email": creds.email, "region": creds.region}
 
-    @app.post("/credentials")
+    @app.post("/api/credentials")
     def set_credentials_endpoint(
         email: str = Body(...), password: str = Body(...), region: str = Body("US"),
         _: None = Depends(require_token),
@@ -884,7 +885,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         cache.bump()  # (#267)
         return {"configured": True}
 
-    @app.get("/status")
+    @app.get("/api/status")
     def status_endpoint(_: None = Depends(require_token)) -> dict:
         with Store.open(db_path) as store:
             status = store.fetch_status()
@@ -893,7 +894,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                           "last_error": None, "last_written": None}
         return {**base, "earliest_data_day": earliest_day, "latest_data_day": latest_day}
 
-    @app.get("/pump-settings")
+    @app.get("/api/pump-settings")
     def pump_settings_endpoint(_: None = Depends(require_token)) -> dict:
         with Store.open(db_path) as store:
             snaps = store.settings_snapshots()
@@ -929,7 +930,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             "other_profile_count": len(settings.profiles) - 1,
         }
 
-    @app.get("/timeline")
+    @app.get("/api/timeline")
     def timeline_endpoint(start: datetime, end: datetime,
                           _: None = Depends(require_token)) -> dict:
         from .timeline import timeline as build_timeline
@@ -964,7 +965,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         except (KeyError, TypeError, ValueError) as e:
             raise HTTPException(status_code=400, detail=f"invalid carb entry: {e}")
 
-    @app.get("/carbs")
+    @app.get("/api/carbs")
     def list_carbs_endpoint(start: Optional[datetime] = None,
                             end: Optional[datetime] = None,
                             _: None = Depends(require_token)) -> dict:
@@ -974,7 +975,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         with Store.open(db_path) as store:
             return {"carb_entries": store.list_carb_entries(s, e)}
 
-    @app.post("/carbs")
+    @app.post("/api/carbs")
     def create_carb_endpoint(payload: dict = Body(...),
                              _: None = Depends(require_token)) -> dict:
         entry = _carb_entry_from_payload(payload)
@@ -984,7 +985,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         cache.bump()  # carb entries feed /analyze's fasting-ISF exclusion (#267)
         return result
 
-    @app.patch("/carbs/{entry_id}")
+    @app.patch("/api/carbs/{entry_id}")
     def update_carb_endpoint(entry_id: int, payload: dict = Body(...),
                              _: None = Depends(require_token)) -> dict:
         with Store.open(db_path) as store:
@@ -999,7 +1000,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         cache.bump()  # (#267)
         return result
 
-    @app.delete("/carbs/{entry_id}")
+    @app.delete("/api/carbs/{entry_id}")
     def delete_carb_endpoint(entry_id: int,
                              _: None = Depends(require_token)) -> dict:
         # Deleting a prompt-sourced entry cascades its prompt_responses row away
@@ -1025,14 +1026,14 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     # answer (no carb entry), so it rides the same non-``carbs`` write path below.
     _PROMPT_ANSWERS = ("carbs", "no", "not-sure", "false-low")
 
-    @app.get("/prompts")
+    @app.get("/api/prompts")
     def list_prompts_endpoint(_: None = Depends(require_token)) -> list:
         from .pending_prompts import build_pending_prompts
         with Store.open(db_path) as store:
             prompts = build_pending_prompts(store)
         return [p.to_dict() for p in prompts]
 
-    @app.post("/prompts/answer")
+    @app.post("/api/prompts/answer")
     def answer_prompt_endpoint(payload: dict = Body(...),
                                _: None = Depends(require_token)) -> dict:
         from .pending_prompts import SOURCE_BY_DETECTOR
@@ -1070,7 +1071,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         cache.bump()  # an answered prompt changes the carb-exclusion set (#267)
         return result
 
-    @app.delete("/prompts/answer")
+    @app.delete("/api/prompts/answer")
     def clear_prompt_endpoint(payload: dict = Body(...),
                               _: None = Depends(require_token)) -> dict:
         """Clear a prompt's answer so it resurrects (delete-resurrects, #128).
@@ -1090,7 +1091,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         cache.bump()  # (#267)
         return {"cleared": n}
 
-    @app.get("/report")
+    @app.get("/api/report")
     def report_endpoint(window: int = 30, ignore_changes: bool = False,
                         _: None = Depends(require_token)) -> dict:
         from .render import render_text
@@ -1101,7 +1102,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                              prompt_responses=store.prompt_responses())
         return {"text": render_text(result)}
 
-    @app.get("/backtest")
+    @app.get("/api/backtest")
     def backtest_endpoint(holdout_days: int = 2,
                           _: None = Depends(require_token)) -> dict:
         """Run the held-out backtest and return a JSON-serialisable result.
@@ -1135,13 +1136,13 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
 
         return cache.get_or_compute(("backtest", holdout_days), compute)
 
-    @app.get("/plan")
+    @app.get("/api/plan")
     def get_plan_endpoint(_: None = Depends(require_token)) -> dict:
         with Store.open(db_path) as store:
             draft = store.get_plan_draft()
         return draft or {"items": [], "updated_at": None}
 
-    @app.put("/plan")
+    @app.put("/api/plan")
     def put_plan_endpoint(items: list = Body(..., embed=True),
                           _: None = Depends(require_token)) -> dict:
         updated_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -1154,7 +1155,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         # any analysis computation — clearing heavy results here is pure waste (#427).
         return {"items": items, "updated_at": updated_at}
 
-    @app.post("/plan/apply")
+    @app.post("/api/plan/apply")
     def apply_plan_endpoint(_: None = Depends(require_token)) -> dict:
         applied_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with Store.open(db_path) as store:
@@ -1169,14 +1170,14 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         cache.bump()  # (#267)
         return result
 
-    @app.get("/plan/history")
+    @app.get("/api/plan/history")
     def plan_history_endpoint(_: None = Depends(require_token)) -> dict:
         with Store.open(db_path) as store:
             return {"history": store.plan_history()}
 
     # --- Focus: pin / unpin / list a watched behavioral lever (#244) ----------
 
-    @app.get("/focus")
+    @app.get("/api/focus")
     def list_focus_endpoint(_: None = Depends(require_token)) -> dict:
         """Every Focus ever pinned (active + closed), newest first, plus the pinnable
         universe so the client can offer only behavioral-flavored levers (ADR 0029)."""
@@ -1185,7 +1186,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             return {"focuses": store.list_focuses(),
                     "pinnable": sorted(pinnable_levers())}
 
-    @app.post("/focus")
+    @app.post("/api/focus")
     def pin_focus_endpoint(lever: str = Body(..., embed=True),
                            _: None = Depends(require_token)) -> dict:
         """Pin a behavioral lever as the active Focus.
@@ -1213,7 +1214,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         cache.bump()  # (#267)
         return result
 
-    @app.post("/focus/{focus_id}/resolve")
+    @app.post("/api/focus/{focus_id}/resolve")
     def resolve_focus_endpoint(focus_id: int,
                                _: None = Depends(require_token)) -> dict:
         """Unpin (resolve) an active Focus. 404 if there is no active Focus by that id."""

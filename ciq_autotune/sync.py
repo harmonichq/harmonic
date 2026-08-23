@@ -151,7 +151,7 @@ def pull_from_tconnect(store: Store, *, start, end, region=None,
         raise RuntimeError(
             "t:connect credentials are not configured. Create a .env with "
             "TCONNECT_EMAIL and TCONNECT_PASSWORD (see .env.example), or "
-            "store credentials via the API's /credentials endpoint."
+            "store credentials via the API's /api/credentials endpoint."
         )
 
     # Keep JWTs/tokens out of tconnectsync's on-disk pickle: the Fernet store is

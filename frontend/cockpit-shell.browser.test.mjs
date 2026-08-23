@@ -258,25 +258,25 @@ async function routeApp(page, options = {}) {
     });
     if (requestUrl.includes('fonts.googleapis.com') || requestUrl.includes('fonts.gstatic.com')) return route.abort();
     const url = new URL(requestUrl);
-    if (url.pathname === '/verify/trials') {
+    if (url.pathname === '/api/verify/trials') {
       const selected = url.searchParams.get('selected');
       const trials = [maturing, complete];
       return route.fulfill({ json: {
         trials, selected: selected ? detail(trials.find((trial) => trial.id === selected)) : null,
       } });
     }
-    if (url.pathname === '/prompts') {
+    if (url.pathname === '/api/prompts') {
       return route.fulfill({ json: Array.from({ length: promptCount }, (_, index) => ({
         anchor_t: `2026-07-1${index}T08:00:00`, kind: 'rise', answer: null,
       })) });
     }
-    if (url.pathname === '/status') return route.fulfill({
+    if (url.pathname === '/api/status') return route.fulfill({
       json: { earliest_data_day: '2026-05-01', latest_data_day: '2026-07-15' },
     });
-    if (url.pathname === '/pump-settings') return route.fulfill({ json: pumpSettings });
-    if (url.pathname === '/credentials') return route.fulfill({ json: { configured: false } });
-    if (url.pathname === '/explore/time-of-day') return route.fulfill({ json: timeOfDay });
-    if (url.pathname === '/diagnose/finding-case-file-preparation') {
+    if (url.pathname === '/api/pump-settings') return route.fulfill({ json: pumpSettings });
+    if (url.pathname === '/api/credentials') return route.fulfill({ json: { configured: false } });
+    if (url.pathname === '/api/explore/time-of-day') return route.fulfill({ json: timeOfDay });
+    if (url.pathname === '/api/diagnose/finding-case-file-preparation') {
       const windowKey = url.searchParams.get('start_min') === null ? null
         : `${url.searchParams.get('start_min')}-${url.searchParams.get('end_min')}`;
       const preparedBody = structuredClone(FINDING_CASE_FILES.scoped?.[windowKey]?.preparation
@@ -321,7 +321,7 @@ async function routeApp(page, options = {}) {
       return route.fulfill({ body: JSON.stringify(preparedBody),
         contentType: 'application/json' });
     }
-    if (url.pathname === '/diagnose/finding-case-file') {
+    if (url.pathname === '/api/diagnose/finding-case-file') {
       const finding = FINDING_CASE_FILES.cases[url.searchParams.get('finding_id')];
       const alignment = url.searchParams.get('alignment') || 'clock';
       const occurrence = url.searchParams.get('occ');
@@ -334,7 +334,7 @@ async function routeApp(page, options = {}) {
       return route.fulfill({ status: finding ? 200 : 404, body: JSON.stringify(body),
         contentType: 'application/json' });
     }
-    if (url.pathname === '/diagnose/event-comparison') {
+    if (url.pathname === '/api/diagnose/event-comparison') {
       const project = options.eventProjection || ((requestUrl, capture) =>
         projectSyntheticCapture(capture, {
           view: ['meals', 'lows'].includes(requestUrl.searchParams.get('view'))
@@ -356,13 +356,13 @@ async function routeApp(page, options = {}) {
       catch { return route.abort('failed'); }
       return route.fulfill({ json: projected });
     }
-    if (url.pathname === '/analyze') return route.fulfill({ json: analyze });
+    if (url.pathname === '/api/analyze') return route.fulfill({ json: analyze });
     // #735: level 1 IS the findings queue, and the workstation fails closed without
     // it — an unserved projection renders "Diagnose is unavailable.", which is an
     // empty body for every scenario that lands on the default Diagnose tab. Project
-    // it from this suite's own analyze/scenarios fixtures through the same
+    // it from this suite's own analyze/api/scenarios fixtures through the same
     // fixture-only mirror the other browser legs route through.
-    if (url.pathname === '/diagnose/findings') {
+    if (url.pathname === '/api/diagnose/findings') {
       const scoped = url.searchParams.get('start_min') === null ? null : {
         start_min: Number(url.searchParams.get('start_min')),
         end_min: Number(url.searchParams.get('end_min')),
@@ -370,23 +370,24 @@ async function routeApp(page, options = {}) {
       return route.fulfill({ json: projectFindings(findingsInput, scoped,
         url.searchParams.get('selected_id')) });
     }
-    if (url.pathname === '/explore/exposures') {
+    if (url.pathname === '/api/explore/exposures') {
       return route.fulfill({ json: options.exposuresInput || {} });
     }
-    if (url.pathname === '/scenarios') return route.fulfill({ json: scenarios });
-    if (url.pathname === '/audit/dismissals') return route.fulfill({ json: { dismissals: {} } });
-    if (url.pathname === '/outcomes/trend') return route.fulfill({ json: {} });
-    if (url.pathname === '/plan' && route.request().method() === 'PUT') {
+    if (url.pathname === '/api/scenarios') return route.fulfill({ json: scenarios });
+    if (url.pathname === '/api/audit/dismissals') return route.fulfill({ json: { dismissals: {} } });
+    if (url.pathname === '/api/outcomes/trend') return route.fulfill({ json: {} });
+    if (url.pathname === '/api/plan' && route.request().method() === 'PUT') {
       return route.fulfill({ json: { items: route.request().postDataJSON().items } });
     }
-    if (url.pathname === '/plan') return route.fulfill({ json: { items: planDraftItems } });
-    if (url.pathname === '/plan/history' || url.pathname === '/focus') {
+    if (url.pathname === '/api/plan') return route.fulfill({ json: { items: planDraftItems } });
+    if (url.pathname === '/api/plan/history' || url.pathname === '/api/focus') {
       return route.fulfill({ json: { history: [], focuses: [] } });
     }
     if (url.pathname === '/favicon.ico') return route.fulfill({ status: 204, body: '' });
-    const file = url.pathname === '/' ? join(FRONTEND, 'index.html')
-      : url.pathname.startsWith('/mockups/') ? join(ROOT, url.pathname.slice(1))
-      : join(FRONTEND, url.pathname.slice(1));
+    const file = ['/', '/day', '/diagnose', '/verify', '/plan', '/settings', '/guide'].includes(url.pathname)
+      ? join(FRONTEND, 'index.html')
+      : url.pathname.startsWith('/mockups/') ? join(ROOT, url.pathname.replace(/^\/assets\//, ''))
+      : join(FRONTEND, url.pathname.replace(/^\/assets\//, ''));
     try {
       return route.fulfill({
         body: await readFile(file), contentType: MIME[extname(file)] || 'application/octet-stream',
@@ -416,10 +417,11 @@ async function openApp(browser, options = {}) {
     localStorage.setItem('tab', tab);
     localStorage.setItem('theme', theme);
   }, { tab: options.tab || 'diagnose', theme: options.theme || 'light' });
-  const initialHash = options.initialHash || `#${options.tab || 'diagnose'}`;
+  const initialHash = options.initialHash || '';
   const query = new URLSearchParams({ view: options.eventView || 'glucose' });
   if (options.state) query.set('mode', options.state);
-  await page.goto(`http://ciq.local/?${query}${initialHash}`);
+  const pagePath = `/${options.tab || 'diagnose'}?${query}`;
+  await page.goto(initialHash ? `http://ciq.local/?${query}${initialHash}` : `http://ciq.local${pagePath}`);
   await page.locator('.cockpit-shell').waitFor();
   if (['meals', 'lows'].includes(options.eventView)) {
     await page.locator(options.expectEventError ? '.ec-error' : '.ec-surface').waitFor();
@@ -435,7 +437,7 @@ async function openApp(browser, options = {}) {
 async function chooseTab(page, id) {
   const trigger = page.locator(`[data-shell-tab="${id}"]:visible`).first();
   await trigger.click();
-  await page.waitForFunction((tab) => location.hash.startsWith(`#/${tab}`), id);
+  await page.waitForFunction((tab) => location.pathname === `/${tab}`, id);
 }
 
 async function proveRedOnce(term, check, mutate) {
@@ -522,7 +524,7 @@ async function assertDestinationInventory(page) {
   const day = page.locator('.cockpit-day');
   assert.equal(await day.innerText(), 'Day');
   assert.equal(await day.evaluate((node) => node.tagName), 'A', 'Day keeps native link semantics');
-  assert.equal(await day.getAttribute('href'), '#/day');
+  assert.equal(await day.getAttribute('href'), '/day');
   assert.equal(await day.locator('.cockpit-step-number').count(), 0, 'Day is never numbered');
   const dayStyle = await day.evaluate((node) => {
     const style = getComputedStyle(node);
@@ -662,7 +664,7 @@ test('top bar and footer expose the locked destination inventory and neutral pro
 
     for (const id of TABS) {
       await chooseTab(page, id);
-      assert.equal(locationHash(await page.evaluate(() => location.hash)), `#/${id}`);
+      assert.equal(await page.evaluate(() => location.pathname), `/`);
     }
     await page.locator('.cockpit-glossary').click();
     assert.equal(await page.locator('.glossary[role="dialog"]').isVisible(), true);
@@ -736,7 +738,7 @@ export async function S2(browser) {
     await assertDestinationInventory(page);
     for (const id of TABS) {
       await chooseTab(page, id);
-      assert.equal(locationHash(await page.evaluate(() => location.hash)), `#/${id}`);
+      assert.equal(await page.evaluate(() => location.pathname), `/`);
     }
   } finally { await page.close(); }
 }
@@ -943,8 +945,8 @@ export async function S10(browser) {
 }
 
 async function assertRetiredOccurrenceRoute(page) {
-  assert.equal(await page.evaluate(() => location.hash), '#/diagnose?view=glucose&mode=dense',
-    'the stale occurrence-list URL must canonicalize to #/diagnose?view=glucose&mode=dense');
+  assert.equal(await page.evaluate(() => location.pathname + location.search), '/diagnose?view=glucose&mode=dense',
+    'the stale occurrence-list URL must canonicalize to /diagnose?view=glucose&mode=dense');
   const duplicates = await page.evaluate(() => ({
     dialogs: [...document.querySelectorAll('[role="dialog"]')]
       .filter((node) => /occurrences/i.test(

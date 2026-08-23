@@ -112,11 +112,11 @@ class BlockIcAdmissionTest(unittest.TestCase):
         self.tmp.close()
 
     def _roster(self):
-        return self.client.get("/verify/trials", params={"window": 14}).json()
+        return self.client.get("/api/verify/trials", params={"window": 14}).json()
 
     def _detail(self, trial_id):
         return self.client.get(
-            "/verify/trials", params={"window": 14, "selected": trial_id},
+            "/api/verify/trials", params={"window": 14, "selected": trial_id},
         ).json()["selected"]
 
     def test_duplicate_and_switch_admits_one_block_trial(self):
@@ -417,9 +417,9 @@ class RevertDraftStaysValidTest(unittest.TestCase):
         # The unannotated single-row Revert draft _prior_plan_route emits (#581 keeps
         # it valid and unannotated) round-trips through save → apply → history.
         draft = {"items": [{"type": "ic", "start_min": 720, "value": 5.0}]}
-        save = self.client.put("/plan", json=draft)
+        save = self.client.put("/api/plan", json=draft)
         self.assertEqual(save.status_code, 200)
-        apply = self.client.post("/plan/apply")
+        apply = self.client.post("/api/plan/apply")
         self.assertEqual(apply.status_code, 200)
         with Store.open(self.tmp.name) as store:
             history = store.plan_history()

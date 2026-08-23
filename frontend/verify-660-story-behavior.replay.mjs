@@ -75,20 +75,20 @@ export async function openApp(browser, { state = 'complete', theme = 'light' } =
       if (!id) return payload.roster;
       return payload.details[id] || fail(`payload has no detail for ${id}`);
     }],
-    [/^\/status/, () => ({ ok: true, last_fetch: null, counts: {} })],
+    [/^\/api\/status/, () => ({ ok: true, last_fetch: null, counts: {} })],
     [/^\/plan\/history/, () => ({ history: [] })],
-    [/^\/plan/, () => ({ items: [], updated_at: null })],
-    [/^\/analyze/, () => payload.analyze || { slots: [] }],
-    [/^\/scenarios/, () => ({ scenarios: [] })],
+    [/^\/api\/plan/, () => ({ items: [], updated_at: null })],
+    [/^\/api\/analyze/, () => payload.analyze || { slots: [] }],
+    [/^\/api\/scenarios/, () => ({ scenarios: [] })],
     [/^\/explore\//, () => ({})],
     [/^\/api\/catalog/, () => ({ articles: [] })],
-    [/^\/carbs/, () => ({ entries: [] })],
-    [/^\/prompts/, () => ({ prompts: [] })],
-    [/^\/credentials/, () => ({ configured: true })],
+    [/^\/api\/carbs/, () => ({ entries: [] })],
+    [/^\/api\/prompts/, () => ({ prompts: [] })],
+    [/^\/api\/credentials/, () => ({ configured: true })],
     [/^\/audit\/dismissals/, () => ({ dismissed: [] })],
-    [/^\/outcomes/, () => ({ points: [] })],
-    [/^\/timeline/, () => ({ events: [] })],
-    [/^\/backtest/, () => ({ folds: [] })],
+    [/^\/api\/outcomes/, () => ({ points: [] })],
+    [/^\/api\/timeline/, () => ({ events: [] })],
+    [/^\/api\/backtest/, () => ({ folds: [] })],
     [/^\/model/, () => ({ entries: [] })],
     [/^\/day/, () => ({ days: [] })],
     [/^\/pump/, () => ({ settings: {} })],
@@ -105,9 +105,9 @@ export async function openApp(browser, { state = 'complete', theme = 'light' } =
     if (url.hostname.startsWith('fonts.')) return route.fulfill({ status: 204 });
     if (url.href.includes('echarts')) return route.fulfill({ body: await vendored('echarts.min.js'), contentType: 'text/javascript' });
     if (url.href.includes('vue')) return route.fulfill({ body: await vendored('vue.esm-browser.js'), contentType: 'text/javascript' });
-    if (path === '/') return route.fulfill({ body: await readFile(join(ROOT, 'frontend/index.html')), contentType: 'text/html' });
+    if (path === '/' || path === '/verify') return route.fulfill({ body: await readFile(join(ROOT, 'frontend/index.html')), contentType: 'text/html' });
     if (/\.(js|css|svg|html)$/.test(path)) {
-      try { return route.fulfill({ body: await readFile(join(ROOT, 'frontend', path.slice(1))), contentType: MIME[extname(path)] || 'text/plain' }); } catch { /* fall through to the stubs */ }
+      try { return route.fulfill({ body: await readFile(join(ROOT, 'frontend', path.replace(/^\/assets\//, ''))), contentType: MIME[extname(path)] || 'text/plain' }); } catch { /* fall through to the stubs */ }
     }
     for (const [pattern, body] of STUBS) {
       if (pattern.test(path)) return route.fulfill({ contentType: 'application/json', body: JSON.stringify(body(url)) });
@@ -117,7 +117,7 @@ export async function openApp(browser, { state = 'complete', theme = 'light' } =
   });
   // The app carries the ported hash-route `?state=` hook, so the harness drives it
   // directly and asserts the state it actually rendered.
-  await page.goto(`http://app.local/#/verify?state=${encodeURIComponent(state)}`);
+  await page.goto(`http://app.local/verify?state=${encodeURIComponent(state)}`);
   await page.waitForSelector('.vw .trial-line .subject', { timeout: 15000 });
   await settle(page, 900);
   const $ = scoped(page, '.vw ');

@@ -53,7 +53,7 @@ services:
       # HARMONIC_NO_FETCH: 1
 
       # One-time credential seed. On first run these seed the encrypted
-      # credentials table; after that, change credentials via POST /credentials
+      # credentials table; after that, change credentials via POST /api/credentials
       # (editing these has no further effect). You can omit them entirely and
       # set credentials through the API instead.
       # TCONNECT_EMAIL: you@example.com

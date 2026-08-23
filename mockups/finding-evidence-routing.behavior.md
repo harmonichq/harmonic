@@ -434,7 +434,7 @@ P18 · A preset press pins that window, clears any drawn one, and re-scopes the
 ```
 P19 · The queue re-scopes with the window. The whole day is the unscoped global
       queue; anything narrower is an explicit window the SERVER answers
-      (`/diagnose/findings?start_min=…`), keyed on the request so an unchanged
+      (`/api/diagnose/findings?start_min=…`), keyed on the request so an unchanged
       window costs no fetch and a response arriving after the reader moved on is
       dropped. A projection is renderable only when its loaded request key
       matches the current findings-window key. The crumb meta reads "N in this
@@ -1427,7 +1427,7 @@ source diff from `a49b6db` to `b321d85` finds the known retired standalone-lens
 controls and the known additions for ALIGN, verdict selection, findings chips,
 and Watching-collapse interaction. Those behaviors are already owned by the
 permanent retirements and S27-S40. Re-inventory found no unrecorded surviving
-handler, observer, chart handler, keyboard path, hover/focus behavior, or
+handler, observer, chart handler, keyboard path, hover/api/focus behavior, or
 cross-view invariant. The app-only replay then ran the complete current backbone:
 
 ```
@@ -1670,7 +1670,7 @@ After implementation, each row below is captured in light and dark at 1440x900,
 1024x768, and 390x844. Recovery rows additionally capture pending and terminal
 states. The final issue-10 evidence directory records an explicit pass/fail verdict
 for history-first hierarchy, exactly one quieter current-program line,
-non-actionability, information density, keyboard/focus accessibility, both themes,
+non-actionability, information density, keyboard/api/focus accessibility, both themes,
 all viewports, and coherent recovery.
 
 | Parent-order state | Required visual/interaction assertion |

@@ -70,7 +70,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
 
   /** GET /credentials */
   function fetchCredentials() {
-    return api('/credentials');
+    return api('/api/credentials');
   }
 
   /**
@@ -78,7 +78,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
    * @param {{ email: string, password: string, region?: string }} form
    */
   function saveCredentials(form) {
-    return api('/credentials', {
+    return api('/api/credentials', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form),
@@ -89,19 +89,19 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
 
   /** GET /status */
   function fetchStatus() {
-    return api('/status');
+    return api('/api/status');
   }
 
   /** POST /fetch */
   function fetchNow() {
-    return api('/fetch', { method: 'POST' });
+    return api('/api/fetch', { method: 'POST' });
   }
 
   // --- pump settings ------------------------------------------------------
 
   /** GET /pump-settings */
   function fetchPumpSettings() {
-    return api('/pump-settings');
+    return api('/api/pump-settings');
   }
 
   // --- backtest -----------------------------------------------------------
@@ -111,7 +111,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
    * @param {{ holdoutDays?: number }} [opts]
    */
   function fetchBacktest({ holdoutDays = 2 } = {}) {
-    return api('/backtest' + (holdoutDays !== 2 ? '?holdout_days=' + holdoutDays : ''));
+    return api('/api/backtest' + (holdoutDays !== 2 ? '?holdout_days=' + holdoutDays : ''));
   }
 
   // --- analysis -----------------------------------------------------------
@@ -128,7 +128,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
     if (ignoreChanges) params.set('ignore_changes', '1');
     if (pool) params.set('pool', '1');
     const qs = params.toString();
-    return api('/analyze' + (qs ? '?' + qs : ''));
+    return api('/api/analyze' + (qs ? '?' + qs : ''));
   }
 
   // --- scenarios ----------------------------------------------------------
@@ -138,7 +138,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
    * @param {number} window - look-back window in days
    */
   function fetchScenarios(window) {
-    return api('/scenarios?window=' + encodeURIComponent(window));
+    return api('/api/scenarios?window=' + encodeURIComponent(window));
   }
 
   // --- guide / about catalog (#157) ---------------------------------------
@@ -174,7 +174,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
    * @param {RequestInit} [opts]
    */
   function fetchModelView(date, opts) {
-    return api('/model-view?date=' + encodeURIComponent(date), opts);
+    return api('/api/model-view?date=' + encodeURIComponent(date), opts);
   }
 
   // --- Day navigator (#248 / ADR 0031) ------------------------------------
@@ -187,7 +187,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
    * @param {string} [month] - a 'YYYY-MM' calendar month
    */
   function fetchDayNavigator(month) {
-    return api('/day-navigator' + (month ? '?month=' + encodeURIComponent(month) : ''));
+    return api('/api/day-navigator' + (month ? '?month=' + encodeURIComponent(month) : ''));
   }
 
   // --- outcomes trend (#131) ----------------------------------------------
@@ -199,7 +199,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
    * @param {number} window - window width in days (14 default)
    */
   function fetchOutcomesTrend(window) {
-    return api('/outcomes/trend' + (window != null ? '?window=' + encodeURIComponent(window) : ''));
+    return api('/api/outcomes/trend' + (window != null ? '?window=' + encodeURIComponent(window) : ''));
   }
 
   // --- Verify Trial roster (#587) ----------------------------------------
@@ -214,14 +214,14 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
     const params = new URLSearchParams();
     if (selected) params.set('selected', selected);
     const qs = params.toString();
-    return api('/verify/trials' + (qs ? '?' + qs : ''));
+    return api('/api/verify/trials' + (qs ? '?' + qs : ''));
   }
 
   /** GET /explore/time-of-day — fixed server-owned 30-day aggregate. */
-  function fetchExploreTimeOfDay() { return api('/explore/time-of-day'); }
+  function fetchExploreTimeOfDay() { return api('/api/explore/time-of-day'); }
   /** GET /explore/exposures — every exposure in the window with each
    *  classifier's verdict; the Diagnose inspector's own feed (#654). */
-  function fetchExploreExposures() { return api('/explore/exposures'); }
+  function fetchExploreExposures() { return api('/api/explore/exposures'); }
 
   /**
    * GET /diagnose/event-comparison — one bounded, server-projected Meals or
@@ -242,7 +242,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
     if (another) params.set('another', '1');
     if (occurrenceId) params.set('occ', occurrenceId);
     const query = params.toString();
-    return api('/diagnose/event-comparison' + (query ? '?' + query : ''));
+    return api('/api/diagnose/event-comparison' + (query ? '?' + query : ''));
   }
   /**
    * GET /diagnose/findings — the Diagnose findings queue for one clock window
@@ -261,7 +261,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
     }
     if (selectedHistoryId) params.set('selected_id', selectedHistoryId);
     const query = params.toString();
-    return api('/diagnose/findings' + (query ? '?' + query : ''));
+    return api('/api/diagnose/findings' + (query ? '?' + query : ''));
   }
   /** Exact active analyzer-run evidence for one retired I:C history item. */
   function fetchDiagnoseCarbRatioHistoryEvents({
@@ -271,7 +271,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
     if (historyId) params.set('history_id', historyId);
     if (analysisGeneration) params.set('analysis_generation', analysisGeneration);
     if (selectedRunId) params.set('selected_run_id', selectedRunId);
-    return api('/diagnose/carb-ratio-history/events?' + params.toString());
+    return api('/api/diagnose/carb-ratio-history/events?' + params.toString());
   }
   /**
    * GET /diagnose/finding-case-file-preparation — one retained server-owned
@@ -286,7 +286,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
     }
     if (selectedHistoryId) params.set('selected_id', selectedHistoryId);
     const query = params.toString();
-    return api('/diagnose/finding-case-file-preparation' + (query ? '?' + query : ''));
+    return api('/api/diagnose/finding-case-file-preparation' + (query ? '?' + query : ''));
   }
   /**
    * GET /diagnose/finding-case-file — project one retained Finding population.
@@ -296,11 +296,11 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
   function fetchDiagnoseFindingCase({ projection_id, finding_id, alignment, occ } = {}) {
     const params = new URLSearchParams({ projection_id, finding_id, alignment });
     if (occ) params.set('occ', occ);
-    return api('/diagnose/finding-case-file?' + params.toString());
+    return api('/api/diagnose/finding-case-file?' + params.toString());
   }
-  function fetchAuditDismissals() { return api('/audit/dismissals'); }
+  function fetchAuditDismissals() { return api('/api/audit/dismissals'); }
   function dismissAuditItem(item_id, evidence_fingerprint) {
-    return api('/audit/dismissals', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    return api('/api/audit/dismissals', { method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ item_id, evidence_fingerprint }) });
   }
 
@@ -313,7 +313,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
    */
   function fetchTimeline({ start, end }, opts) {
     return api(
-      '/timeline?start=' + encodeURIComponent(start) +
+      '/api/timeline?start=' + encodeURIComponent(start) +
       '&end=' + encodeURIComponent(end),
       opts,
     );
@@ -332,7 +332,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
     if (start) params.set('start', start);
     if (end) params.set('end', end);
     const qs = params.toString();
-    return api('/carbs' + (qs ? '?' + qs : ''), opts);
+    return api('/api/carbs' + (qs ? '?' + qs : ''), opts);
   }
 
   /**
@@ -340,7 +340,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
    * @param {{ t: string, grams: ?number, certainty: string, source?: string, note?: ?string }} entry
    */
   function createCarb(entry) {
-    return api('/carbs', {
+    return api('/api/carbs', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(entry),
@@ -351,7 +351,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
 
   /** GET /prompts — the live review queue (List[Prompt], oldest-first). */
   function fetchPrompts() {
-    return api('/prompts');
+    return api('/api/prompts');
   }
 
   /**
@@ -362,7 +362,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
    *           entry?: { grams: ?number, certainty: string, note?: ?string } }} body
    */
   function answerPrompt(body) {
-    return api('/prompts/answer', {
+    return api('/api/prompts/answer', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -374,7 +374,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
    * @param {{ detector: string, anchor_t: string }} body
    */
   function clearPrompt(body) {
-    return api('/prompts/answer', {
+    return api('/api/prompts/answer', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -389,7 +389,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
    * id (the `/outcomes/trend` FocusView carries no id) so Retire can target it.
    */
   function fetchFocuses() {
-    return api('/focus');
+    return api('/api/focus');
   }
 
   /**
@@ -397,7 +397,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
    * @param {number} id
    */
   function resolveFocus(id) {
-    return api('/focus/' + encodeURIComponent(id) + '/resolve', { method: 'POST' });
+    return api('/api/focus/' + encodeURIComponent(id) + '/resolve', { method: 'POST' });
   }
 
   /**
@@ -408,7 +408,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
    * @param {string} lever
    */
   function pinFocus(lever) {
-    return api('/focus', {
+    return api('/api/focus', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ lever }),
@@ -419,7 +419,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
 
   /** GET /plan */
   function loadPlan() {
-    return api('/plan');
+    return api('/api/plan');
   }
 
   /**
@@ -427,7 +427,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
    * @param {{ items: Array }} draft
    */
   function savePlanDraft(draft) {
-    return api('/plan', {
+    return api('/api/plan', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(draft),
@@ -436,12 +436,12 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
 
   /** GET /plan/history */
   function loadPlanHistory() {
-    return api('/plan/history');
+    return api('/api/plan/history');
   }
 
   /** POST /plan/apply */
   function applyPlan() {
-    return api('/plan/apply', { method: 'POST' });
+    return api('/api/plan/apply', { method: 'POST' });
   }
 
   return {

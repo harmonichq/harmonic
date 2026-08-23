@@ -1,6 +1,6 @@
 // Browser-level lifecycle coverage for the keyed Day surface. This deliberately
 // uses the real Vue app and browser fetches rather than evaluating index.html or
-// calling component hooks: the surface must not mount until /status has clamped
+// calling component hooks: the surface must not mount until /api/status has clamped
 // a cold hash date to the available pump-data bounds.
 import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -31,39 +31,40 @@ function fixtureServer(days = [], { readDelay = 0 } = {}) {
       res.end(JSON.stringify(body));
     }, delay);
 
-    if (url.pathname === '/status') {
+    if (url.pathname === '/api/status') {
       // Keep status pending long enough to reproduce the cold-hash race.
       json({ earliest_data_day: '2026-07-05', latest_data_day: '2026-07-13' }, 100);
       return;
     }
-    if (url.pathname === '/timeline') {
+    if (url.pathname === '/api/timeline') {
       timelineRequests.push(url.searchParams.get('start'));
       // readDelay keeps the per-day reads in flight long enough that stepping
       // to the next day has to CANCEL them (the #387 flood-abort path).
       json({ cgm: [], boluses: [], basal: [], pump_events: [], sleep_windows: [] }, readDelay);
       return;
     }
-    if (url.pathname === '/model-view') {
+    if (url.pathname === '/api/model-view') {
       json({ episodes: [], window: { cgm: [] } }, readDelay);
       return;
     }
-    if (url.pathname === '/carbs') { json([], readDelay); return; }
-    if (url.pathname === '/prompts') { json([]); return; }
-    if (url.pathname === '/day-navigator') { json({ days }); return; }
-    if (url.pathname === '/credentials' || url.pathname === '/pump-settings') {
+    if (url.pathname === '/api/carbs') { json([], readDelay); return; }
+    if (url.pathname === '/api/prompts') { json([]); return; }
+    if (url.pathname === '/api/day-navigator') { json({ days }); return; }
+    if (url.pathname === '/api/credentials' || url.pathname === '/api/pump-settings') {
       json({ configured: false });
       return;
     }
-    if (url.pathname === '/plan') { json({ items: [] }); return; }
-    if (url.pathname === '/plan/history') { json({ history: [] }); return; }
-    if (url.pathname === '/backtest') { json({}); return; }
-    if (url.pathname === '/analyze') {
+    if (url.pathname === '/api/plan') { json({ items: [] }); return; }
+    if (url.pathname === '/api/plan/history') { json({ history: [] }); return; }
+    if (url.pathname === '/api/backtest') { json({}); return; }
+    if (url.pathname === '/api/analyze') {
       json({ basal: [], isf: [], ic: [], behavioral: [], epochs: [], settling: {} });
       return;
     }
     if (url.pathname === '/favicon.ico') { res.writeHead(204); res.end(); return; }
 
-    const file = url.pathname === '/' ? 'index.html' : url.pathname.slice(1);
+    const file = url.pathname === '/' || url.pathname === '/day'
+      ? 'index.html' : url.pathname.replace(/^\/assets\//, '');
     try {
       const body = await readFile(join(FRONTEND, file));
       res.writeHead(200, { 'content-type': MIME[extname(file)] || 'application/octet-stream' });
@@ -90,7 +91,7 @@ test('a cold Day hash mounts only the status-clamped day and fetches its timelin
   await page.addInitScript(() => localStorage.setItem('ciq_token', 'fixture-token'));
 
   try {
-    await page.goto(`http://127.0.0.1:${port}/#day?date=2026-07-19`);
+    await page.goto(`http://127.0.0.1:${port}/day?date=2026-07-19`);
     await page.waitForSelector('.ds-root');
     await page.waitForTimeout(150);
 
@@ -134,7 +135,7 @@ test('rapid back-navigation cancels the days stepped through, not just the one l
   await page.addInitScript(() => localStorage.setItem('ciq_token', 'fixture-token'));
 
   try {
-    await page.goto(`http://127.0.0.1:${port}/#day?date=2026-07-13`);
+    await page.goto(`http://127.0.0.1:${port}/day?date=2026-07-13`);
     await page.waitForSelector('.ds-root');
     const prev = page.locator('.dn-daynav button[title="Previous day with data"]');
     await prev.waitFor();
@@ -176,7 +177,7 @@ test('Day navigator names mixed excursions in both tile summaries', async () => 
   await page.addInitScript(() => localStorage.setItem('ciq_token', 'fixture-token'));
 
   try {
-    await page.goto(`http://127.0.0.1:${port}/#day?date=2026-07-13`);
+    await page.goto(`http://127.0.0.1:${port}/day?date=2026-07-13`);
     const calmTile = page.locator('.dn-col[aria-label="Sun Jul 12 — on target, 75% TIR"]');
     await calmTile.waitFor();
     assert.equal((await calmTile.getAttribute('aria-label')).match(/% TIR/g).length, 1);

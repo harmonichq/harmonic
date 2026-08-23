@@ -475,21 +475,21 @@ export async function openApp(browser, {
         ? findingsProjectionInputs(projected) : projected;
     }],
     [/^\/explore\/exposures/, () => exposuresFrom],
-    [/^\/analyze/, () => findingsFrom.analysis],
-    [/^\/scenarios/, () => findingsFrom.scenarios],
+    [/^\/api\/analyze/, () => findingsFrom.analysis],
+    [/^\/api\/scenarios/, () => findingsFrom.scenarios],
     [/^\/explore\/time/, () => payload.evidence],
-    [/^\/status/, () => ({ ok: true, last_fetch: payload.analyze.generated_at, counts: payload.analyze.data_quality?.counts || {} })],
+    [/^\/api\/status/, () => ({ ok: true, last_fetch: payload.analyze.generated_at, counts: payload.analyze.data_quality?.counts || {} })],
     [/^\/plan\/history/, () => ({ history: [] })],
-    [/^\/plan/, () => ({ items: [], updated_at: null })],
+    [/^\/api\/plan/, () => ({ items: [], updated_at: null })],
     [/^\/verify\/trials/, () => ({ trials: [] })],
     [/^\/api\/catalog/, () => ({ articles: [] })],
-    [/^\/carbs/, () => ({ entries: [] })],
-    [/^\/prompts/, () => ({ prompts: [] })],
-    [/^\/credentials/, () => ({ configured: true })],
+    [/^\/api\/carbs/, () => ({ entries: [] })],
+    [/^\/api\/prompts/, () => ({ prompts: [] })],
+    [/^\/api\/credentials/, () => ({ configured: true })],
     [/^\/audit\/dismissals/, () => ({ dismissed: [] })],
-    [/^\/outcomes/, () => ({ points: [] })],
-    [/^\/timeline/, () => ({ events: [] })],
-    [/^\/backtest/, () => ({ folds: [] })],
+    [/^\/api\/outcomes/, () => ({ points: [] })],
+    [/^\/api\/timeline/, () => ({ events: [] })],
+    [/^\/api\/backtest/, () => ({ folds: [] })],
     [/^\/model/, () => ({ entries: [] })],
     [/^\/day/, () => ({ days: [] })],
     [/^\/pump-settings$/, () => pumpSettingsFrom || ({ configured: false })],
@@ -533,7 +533,7 @@ export async function openApp(browser, {
     if (url.href.includes('vue')) return route.fulfill({ body: await vendored('vue.esm-browser.js'), contentType: 'text/javascript' });
     if (appSource === 'server' && url.origin === targetUrl.origin
         && (path === '/' || /\.(js|css|svg|html)$/.test(path))) {
-      if (stageProbe && path === '/diagnose-workstation.js') {
+      if (stageProbe && path === '/assets/diagnose-workstation.js') {
         const source = await readFile(join(ROOT, 'frontend/diagnose-workstation.js'), 'utf8');
         const seam = 'export function createDiagnoseWorkstation({ root, callbacks = {}, railLead = null }) {';
         if (source.split(seam).length !== 2) fail('S71 staging seam must occur exactly once');
@@ -559,7 +559,7 @@ export async function openApp(browser, {
       if (/\.(js|css|svg|html)$/.test(path)) {
         try {
           return route.fulfill({
-            body: await readFile(join(frontendRoot, path.slice(1))),
+            body: await readFile(join(frontendRoot, path.replace(/^\/assets\//, ''))),
             contentType: MIME[extname(path)] || 'text/plain',
           });
         } catch { /* fall through to the loud unrouted response below */ }
@@ -568,7 +568,7 @@ export async function openApp(browser, {
     /* The findings queue is a SERVER round trip, so a story that is about what
        the pane shows WHILE it is in flight needs that flight to last long enough
        to read. Delay, never stub differently: the response is the same one. */
-    if (path === '/diagnose/findings' || path === '/diagnose/finding-case-file-preparation') {
+    if (path === '/api/diagnose/findings' || path === '/api/diagnose/finding-case-file-preparation') {
       const start = url.searchParams.get('start_min');
       const key = start === null ? 'global' : `${start}-${url.searchParams.get('end_min')}`;
       const delay = findingsDelays[key] ?? findingsDelayMs;
@@ -581,7 +581,7 @@ export async function openApp(browser, {
             : { detail: 'findings unavailable' }) });
       }
     }
-    if (path === '/diagnose/finding-case-file-preparation') {
+    if (path === '/api/diagnose/finding-case-file-preparation') {
       preparationRequests += 1;
       const windowKey = url.searchParams.get('start_min') === null ? null
         : `${url.searchParams.get('start_min')}-${url.searchParams.get('end_min')}`;
@@ -640,7 +640,7 @@ export async function openApp(browser, {
       return route.fulfill({ contentType: 'application/json',
         body: JSON.stringify(preparedBody) });
     }
-    if (path === '/diagnose/finding-case-file') {
+    if (path === '/api/diagnose/finding-case-file') {
       caseRequests += 1;
       const finding = caseFiles.cases[url.searchParams.get('finding_id')];
       const alignment = url.searchParams.get('alignment');
@@ -662,9 +662,9 @@ export async function openApp(browser, {
       return route.fulfill({ status: finding ? 200 : 404, contentType: 'application/json',
         body: JSON.stringify(body) });
     }
-    const planned = path === '/diagnose/findings' && url.searchParams.has('selected_id')
+    const planned = path === '/api/diagnose/findings' && url.searchParams.has('selected_id')
       ? selectedFindingsResponses.shift()
-      : path === '/diagnose/carb-ratio-history/events' ? historyResponses.shift() : null;
+      : path === '/api/diagnose/carb-ratio-history/events' ? historyResponses.shift() : null;
     if (planned) {
       if (planned.delayMs) await new Promise((resolve) => { setTimeout(resolve, planned.delayMs); });
       const status = planned.status || 200;
@@ -672,7 +672,7 @@ export async function openApp(browser, {
         return route.fulfill({ status, contentType: 'application/json',
           body: JSON.stringify({ detail: planned.detail }) });
       }
-      const generated = path === '/diagnose/findings'
+      const generated = path === '/api/diagnose/findings'
         ? projectFindings(findingsFrom,
           url.searchParams.get('start_min') === null ? null : {
             start_min: Number(url.searchParams.get('start_min')),
@@ -684,17 +684,17 @@ export async function openApp(browser, {
         : planned.body || generated;
       return route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
     }
-    if (path === '/diagnose/carb-ratio-history/events') {
+    if (path === '/api/diagnose/carb-ratio-history/events') {
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify(
         projectIcHistoryEvents(historyCapture.inputs, url.searchParams.get('history_id'),
           url.searchParams.get('selected_run_id')),
       ) });
     }
-    if (comparisonProjection !== null && path === '/diagnose/event-comparison') {
+    if (comparisonProjection !== null && path === '/api/diagnose/event-comparison') {
       return route.fulfill({ contentType: 'application/json',
         body: JSON.stringify(comparisonProjection) });
     }
-    if (path === '/plan' && route.request().method() === 'PUT') {
+    if (path === '/api/plan' && route.request().method() === 'PUT') {
       const draft = JSON.parse(route.request().postData() || '{}');
       onPlanDraft?.(draft);
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify({
@@ -1362,7 +1362,7 @@ async function setupWorkspaceAtFactor(page) {
   return s;
 }
 
-/** D1 · A DELAYED successful /timeline resolves the real trace AFTER an
+/** D1 · A DELAYED successful /api/timeline resolves the real trace AFTER an
     occurrence is selected in place (P35 retired: there is no occurrence level
     to be "at"). The late arrival repaints in place: the reader stays at the
     same drilled factor, the #level/#chart nodes keep their identity, and the
@@ -1387,7 +1387,7 @@ export const D1 = async (page) => {
   ok(sameLevel && sameChart, 'D1 selection preserves the standing surface nodes');
 };
 
-/** D2 · An EXPLICIT empty /timeline ({ cgm: [] }) is the deliberate no-trace
+/** D2 · An EXPLICIT empty /api/timeline ({ cgm: [] }) is the deliberate no-trace
     state — the level says so and NO 'That day' series is ever minted. Asserted
     against an explicit empty stub, not a catch-all 404. */
 export const D2 = async (page) => {
@@ -1409,7 +1409,7 @@ export const D2 = async (page) => {
   ok(sameLevel && sameChart, 'D2 #level/#chart keep their identity — an empty day never remounts');
 };
 
-/** D3 · A /timeline that 500s settles into the no-trace state without any
+/** D3 · A /api/timeline that 500s settles into the no-trace state without any
     teardown: depth 3 holds, the sentence stays no-trace, the #level/#chart nodes
     keep their identity, and the drawn window and staged item are unchanged. */
 export const D3 = async (page) => {
@@ -1806,7 +1806,7 @@ export const S32 = async (page) => {
   await settle(page, 600);
   const request = page.waitForRequest((candidate) => {
     const url = new URL(candidate.url());
-    return url.pathname === '/diagnose/finding-case-file' && url.searchParams.has('occ');
+    return url.pathname === '/api/diagnose/finding-case-file' && url.searchParams.has('occ');
   });
   await page.click('#level .ev-row');
   const requested = new URL((await request).url()).searchParams.get('occ');
@@ -1850,7 +1850,7 @@ export const S40 = async (page) => {
   await settle(page, 600);
   const request = page.waitForRequest((candidate) => {
     const url = new URL(candidate.url());
-    return url.pathname === '/diagnose/finding-case-file' && url.searchParams.has('occ');
+    return url.pathname === '/api/diagnose/finding-case-file' && url.searchParams.has('occ');
   });
   await page.click('#level .ev-row');
   const requested = new URL((await request).url()).searchParams.get('occ');
@@ -1981,7 +1981,7 @@ export const S48 = async (page) => {
 export const S49 = async (page) => {
   const requests = [];
   page.on('request', (request) => {
-    if (new URL(request.url()).pathname === '/diagnose/carb-ratio-history/events') requests.push(new URL(request.url()));
+    if (new URL(request.url()).pathname === '/api/diagnose/carb-ratio-history/events') requests.push(new URL(request.url()));
   });
   await openHistoryEvents(page);
   const s = await state(page);
@@ -2087,8 +2087,8 @@ export const S57 = async (page) => {
   const calls = { findings: 0, events: 0 };
   page.on('request', (request) => {
     const url = new URL(request.url());
-    if (url.pathname === '/diagnose/findings' && url.searchParams.has('selected_id')) calls.findings += 1;
-    if (url.pathname === '/diagnose/carb-ratio-history/events') calls.events += 1;
+    if (url.pathname === '/api/diagnose/findings' && url.searchParams.has('selected_id')) calls.findings += 1;
+    if (url.pathname === '/api/diagnose/carb-ratio-history/events') calls.events += 1;
   });
   await openHistoryCase(page);
   expectResponse(page, /\/diagnose\/carb-ratio-history\/events/, 410);
@@ -2102,8 +2102,8 @@ export const S58 = async (page) => {
   const calls = { findings: 0, events: 0 };
   page.on('request', (request) => {
     const url = new URL(request.url());
-    if (url.pathname === '/diagnose/findings' && url.searchParams.has('selected_id')) calls.findings += 1;
-    if (url.pathname === '/diagnose/carb-ratio-history/events') calls.events += 1;
+    if (url.pathname === '/api/diagnose/findings' && url.searchParams.has('selected_id')) calls.findings += 1;
+    if (url.pathname === '/api/diagnose/carb-ratio-history/events') calls.events += 1;
   });
   await openHistoryCase(page);
   expectResponse(page, /\/diagnose\/carb-ratio-history\/events/, 410);
@@ -2140,8 +2140,8 @@ export const S60 = async (page) => {
   expectResponse(page, /\/diagnose\/carb-ratio-history\/events/, 409);
   await page.getByRole('button', { name: 'By event', exact: true }).click();
   await settle(page, 900);
-  ok(calls.slice(-2)[0] === '/diagnose/findings'
-    && calls.slice(-2)[1] === '/diagnose/carb-ratio-history/events', 'S60 retry is findings then events');
+  ok(calls.slice(-2)[0] === '/api/diagnose/findings'
+    && calls.slice(-2)[1] === '/api/diagnose/carb-ratio-history/events', 'S60 retry is findings then events');
   const s = await state(page);
   is(s.history.canvasGeneration, s.history.generation, 'S60 coherent replacement generation commits');
 };
@@ -2232,7 +2232,7 @@ export const S67 = async (page) => {
   const eventRequests = [];
   page.on('request', (request) => {
     const url = new URL(request.url());
-    if (url.pathname === '/diagnose/carb-ratio-history/events') {
+    if (url.pathname === '/api/diagnose/carb-ratio-history/events') {
       eventRequests.push({
         historyId: url.searchParams.get('history_id'),
         generation: url.searchParams.get('analysis_generation'),
@@ -2240,7 +2240,7 @@ export const S67 = async (page) => {
     }
   });
   const firstResponse = page.waitForResponse((response) =>
-    new URL(response.url()).pathname === '/diagnose/carb-ratio-history/events' && response.status() === 200);
+    new URL(response.url()).pathname === '/api/diagnose/carb-ratio-history/events' && response.status() === 200);
   await openHistoryEvents(page);
   const firstPayload = await (await firstResponse).json();
   const before = await state(page);
@@ -2248,7 +2248,7 @@ export const S67 = async (page) => {
   await page.getByRole('button', { name: 'By clock', exact: true }).click();
   expectResponse(page, /\/diagnose\/carb-ratio-history\/events/, 409);
   const restartedResponse = page.waitForResponse((response) =>
-    new URL(response.url()).pathname === '/diagnose/carb-ratio-history/events' && response.status() === 200);
+    new URL(response.url()).pathname === '/api/diagnose/carb-ratio-history/events' && response.status() === 200);
   await page.getByRole('button', { name: 'By event', exact: true }).click();
   const restartedPayload = await (await restartedResponse).json();
   await settle(page, 700);
@@ -2350,7 +2350,7 @@ export const S71 = async (page) => {
   let draftWrites = 0;
   page.on('request', (request) => {
     const url = new URL(request.url());
-    if (url.pathname === '/plan' && request.method() !== 'GET') draftWrites += 1;
+    if (url.pathname === '/api/plan' && request.method() !== 'GET') draftWrites += 1;
   });
 
   await assertHistorySafety(page, draftWrites, 'before interaction');
@@ -2469,7 +2469,7 @@ export const S34 = async (page) => {
   const byEventRequests = [];
   const observeCaseRequest = (request) => {
     const url = new URL(request.url());
-    if (url.pathname === '/diagnose/finding-case-file') {
+    if (url.pathname === '/api/diagnose/finding-case-file') {
       byEventRequests.push(url.searchParams.get('alignment'));
     }
   };
@@ -2711,7 +2711,7 @@ export const issue81PendingProjection = async (page) => {
   await settle(page, 100);
   const eveningResponse = page.waitForResponse((candidate) => {
     const url = new URL(candidate.url());
-    return url.pathname === '/diagnose/finding-case-file-preparation'
+    return url.pathname === '/api/diagnose/finding-case-file-preparation'
       && url.searchParams.get('start_min') === '1080';
   });
   await page.click('#seg-window button:nth-child(4)');   // Evening, settles first
@@ -2761,7 +2761,7 @@ export const issue81FailedProjection = async (page) => {
   const failedResponse = page.waitForResponse((candidate) => {
     const url = new URL(candidate.url());
     return candidate.status() === 500
-      && url.pathname === '/diagnose/finding-case-file-preparation';
+      && url.pathname === '/api/diagnose/finding-case-file-preparation';
   });
   await drawWindow(page, [900, 1260], [330, 360]);      // only this scoped load fails
   await failedResponse;
@@ -2797,7 +2797,7 @@ export const issue81FailedProjection = async (page) => {
   const recoveryResponse = page.waitForResponse((candidate) => {
     const url = new URL(candidate.url());
     return candidate.status() === 200
-      && url.pathname === '/diagnose/finding-case-file-preparation'
+      && url.pathname === '/api/diagnose/finding-case-file-preparation'
       && url.searchParams.get('start_min') === '1080';
   });
   await page.click('#seg-window button:nth-child(4)');   // another window retries normally
@@ -2965,7 +2965,7 @@ export const issue86MalformedRecovery = async (page) => {
   const caseRequests = [];
   const observeCaseRequest = (request) => {
     const url = new URL(request.url());
-    if (url.pathname === '/diagnose/finding-case-file') {
+    if (url.pathname === '/api/diagnose/finding-case-file') {
       caseRequests.push(url.searchParams.get('alignment'));
     }
   };

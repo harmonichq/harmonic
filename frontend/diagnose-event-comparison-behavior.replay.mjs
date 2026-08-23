@@ -81,7 +81,7 @@ export async function openApp(browser, options = {}) {
       // server-stamped populations. This is not a browser request parameter.
       state: options.state || 'dense',
     })],
-    [/^\/analyze/, () => payload.analyze],
+    [/^\/api\/analyze/, () => payload.analyze],
     [/^\/diagnose\/finding-case-file-preparation/, () =>
       JSON.parse(JSON.stringify(caseFiles.preparation))],
     [/^\/diagnose\/finding-case-file$/, (url) => {
@@ -101,21 +101,21 @@ export async function openApp(browser, options = {}) {
         start_min: Number(url.searchParams.get('start_min')),
         end_min: Number(url.searchParams.get('end_min')),
       })],
-    [/^\/scenarios/, () => payload.scenarios],
+    [/^\/api\/scenarios/, () => payload.scenarios],
     [/^\/explore\/time/, () => payload.evidence],
     [/^\/explore\/exposures/, () => payload.exposures],
-    [/^\/status/, () => ({ ok: true, last_fetch: payload.analyze.generated_at, counts: {} })],
+    [/^\/api\/status/, () => ({ ok: true, last_fetch: payload.analyze.generated_at, counts: {} })],
     [/^\/plan\/history/, () => ({ history: [] })],
-    [/^\/plan/, () => ({ items: [], updated_at: null })],
+    [/^\/api\/plan/, () => ({ items: [], updated_at: null })],
     [/^\/verify\/trials/, () => ({ trials: [] })],
     [/^\/api\/catalog/, () => ({ articles: [] })],
-    [/^\/carbs/, () => ({ entries: [] })],
-    [/^\/prompts/, () => ({ prompts: [] })],
-    [/^\/credentials/, () => ({ configured: true })],
+    [/^\/api\/carbs/, () => ({ entries: [] })],
+    [/^\/api\/prompts/, () => ({ prompts: [] })],
+    [/^\/api\/credentials/, () => ({ configured: true })],
     [/^\/audit\/dismissals/, () => ({ dismissed: [] })],
-    [/^\/outcomes/, () => ({ points: [] })],
-    [/^\/timeline/, () => ({ events: [] })],
-    [/^\/backtest/, () => ({ folds: [] })],
+    [/^\/api\/outcomes/, () => ({ points: [] })],
+    [/^\/api\/timeline/, () => ({ events: [] })],
+    [/^\/api\/backtest/, () => ({ folds: [] })],
     [/^\/model/, () => ({ entries: [] })],
     [/^\/day/, () => ({ days: [] })],
     [/^\/pump/, () => ({ settings: {} })],
@@ -136,13 +136,13 @@ export async function openApp(browser, options = {}) {
     if (url.href.includes('vue')) {
       return route.fulfill({ body: await vendored('vue.esm-browser.js'), contentType: 'text/javascript' });
     }
-    if (path === '/') {
+    if (path === '/' || path === '/diagnose') {
       return route.fulfill({ body: await readFile(join(ROOT, 'frontend/index.html')), contentType: 'text/html' });
     }
     if (/\.(js|css|svg|html)$/.test(path)) {
       try {
         return route.fulfill({
-          body: await readFile(join(ROOT, 'frontend', path.slice(1))),
+          body: await readFile(join(ROOT, 'frontend', path.replace(/^\/assets\//, ''))),
           contentType: MIME[extname(path)] || 'text/plain',
         });
       } catch { /* named API stubs below */ }

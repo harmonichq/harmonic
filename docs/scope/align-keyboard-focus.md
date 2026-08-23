@@ -12,13 +12,21 @@ carried over on trust from the ticket text or the behavior ledger.
 
 ## Decisions
 
-- **Align is only reachable on two paths, and neither is the default fixture
-  state.** Sweeping every root row at each opener state: `state: 'typical'`
-  shows `#align-group` hidden at root and in all four finding details, so the
-  group does not exist there at all. The two live paths are the case-file branch
-  (`state: 'drawn'`, root row "Over-treated low") and the I:C history branch
-  (`state: 'typical', history: true`, root row "Carb ratio Morning. Past
-  setting."). Any probe or story for this ticket must use one of those. inline
+- **Align has three live entry paths and two callback branches.** Sweeping every
+  root row at each opener state under the DEFAULT filter, `state: 'typical'` shows
+  `#align-group` hidden at root and in all four finding details — which is what an
+  earlier revision of this ledger wrongly generalised to "Align never renders under
+  `typical`". It does: the repo's own green test
+  `frontend/diagnose-workstation.browser.test.mjs:493` opens `state: 'typical'`,
+  presses Filter → Event charts, drills the first row, and waits on
+  `#seg-align button[aria-pressed="true"]` reading "By event". The three entry paths
+  are therefore the case-file branch (`state: 'drawn'`, root row "Over-treated low"),
+  the #83 event-discovery entry (`state: 'typical'` + Filter → Event charts), and the
+  I:C history branch (`state: 'typical', history: true`, root row "Carb ratio
+  Morning. Past setting."). `paintAlign` branches on `isHistory`
+  (`frontend/diagnose-workstation.js:1840-1841`), so the first two share one callback
+  arm (`requestCase`) and only the history path is distinct. Two callback branches
+  need covering, not three entry paths. inline
 
 - **The reported symptom is not the defect.** Both Align choices are ordinary
   tab stops (`tabIndex 0`), are reachable by Tab, and under real keyboard focus
@@ -58,12 +66,18 @@ carried over on trust from the ticket text or the behavior ledger.
   is the fallback if in-place reconciliation fights the paint path; it is
   strictly more machinery for the same outcome. inline
 
-- **Add `.seg button:focus-visible` to `frontend/diagnose-workstation.css`,
+- **Add `#seg-align button:focus-visible` to `frontend/diagnose-workstation.css`,
   labelled as consistency, not as the fix.** The stylesheet declares its own
   accent ring for every sibling control (`.dw button.qrow:focus-visible` line
   718, `.history-run:focus-visible` line 870, `.filter-menu button:focus-visible`
-  line 432) but declares none for `.seg button`, which is why the measured ring
-  is the browser's and not the app's. The ticket's expectation names "shows a
+  line 432) but declares none for either segmented group, which is why the measured
+  ring is the browser's and not the app's. The selector is scoped to `#seg-align`
+  deliberately: `.seg` is also the class on `#seg-window`
+  (`frontend/diagnose-workstation.js:76` and `:84`), and this ticket does not change
+  the WINDOW group. A ring reached by programmatic `.focus()` does not match
+  `:focus-visible` at all — measured `outline: none` after a mouse click versus
+  `outline: auto 1px rgb(153, 200, 255)` when reached by real Tab — so any evidence
+  for this rule must arrive at the button by Tab. The ticket's expectation names "shows a
   focused choice", so this lands here; it is not what was broken. inline
 
 - **No roving Arrow/Home/End inside Align in this ticket.** Measured: ArrowRight
@@ -141,8 +155,13 @@ carried over on trust from the ticket text or the behavior ledger.
   other choice from the keyboard, and asserts both that the pressed choice
   changed and that focus is still on the activated button — proved to fail
   against the base for the right reason before it passes; the same assertion on
-  the I:C history branch; every frozen ledger story green against the built
-  revision, with its story count reported.
+  the I:C history branch; an assertion that one keypress fires the alignment
+  callback exactly once, counting `/diagnose/` requests with the idiom the replay
+  already uses at `frontend/diagnose-workstation-behavior.replay.mjs:2151`, since
+  "a handler stacked per paint" is a named must-prevent and construction alone is
+  not evidence; the app's own focus ring proved with the button reached by real
+  Tab, never by programmatic `.focus()`; every frozen ledger story green against
+  the built revision, with its story count reported and unchanged.
 
 Why: an advisory tool whose stated audience arrives tired or stressed, an
 explicit accessibility label on the ticket, and a fix bounded to one control in

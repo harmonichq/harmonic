@@ -6,10 +6,11 @@
  *
  * What is NOT verbatim, and why:
  *   - the chart module is imported from its ported path;
- *   - `_shell.js` is mock-harness chrome. `resolveColors` and `queryState` are
- *     copied from it below because the ported code calls them; `applyTheme` and
- *     `renderMockBar` are dropped (the app owns its theme, and the mock bar is
- *     excluded from the contract by the behaviour ledger, story S22's note);
+ *   - `_shell.js` is mock-harness chrome. `resolveColors` is copied from it and
+ *     `queryState` is adapted to the app's hash route because the ported code
+ *     calls them; `applyTheme` and `renderMockBar` are dropped (the app owns its
+ *     theme, and the mock bar is excluded from the contract by the behaviour
+ *     ledger, story S22's note);
  *   - `loadCapture()` is replaced by injected data. The mock fetches four
  *     capture files; the app's adapter (./diagnose-workstation-data.js) builds
  *     the same four shapes from the API payload;
@@ -56,11 +57,12 @@ export function resolveColors() {
   return Object.fromEntries(names.map((name) => [name, styles.getPropertyValue(`--mk-${name}`).trim()]));
 }
 
-/* VERBATIM from the mock's shared harness chrome. `?mode=` is the mock's state parameter;
-   `?state=` is silently ignored there, and the port keeps the same name so one
-   URL drives both sides. */
+/* PORT: the mock reads `?mode=` from the split query; the app carries it in
+   Diagnose's canonical hash-route query, with the split form retained for the
+   mock and legacy URLs. */
 export function queryState(fallback, param = 'mode') {
-  return new URLSearchParams(window.location.search).get(param) || fallback;
+  const hashValue = new URLSearchParams(window.location.hash.split('?')[1] || '').get(param);
+  return hashValue || new URLSearchParams(window.location.search).get(param) || fallback;
 }
 
 /* The surface's markup — VERBATIM from the mock's body, lines 1025-1094 (the

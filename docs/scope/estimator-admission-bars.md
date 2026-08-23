@@ -60,7 +60,8 @@
 - Round 2 (same reviewer, delta pass): 3 blockers, all tagged `injected` by round-1
   fixes (grep clause outlawed the pins' own CI comparisons; endpoint-only
   precondition missed reverted reprogramming; round-trip asserted values with no
-  public surface). Fixed with the reviewer's wording; countersign pending.
+  public surface). Fixed with the reviewer's wording.
+- Round 3 (same reviewer, delta pass): clean — countersigned 2026-08-23.
 
 ## Spawned tasks
 

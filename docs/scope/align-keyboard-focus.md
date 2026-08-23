@@ -70,7 +70,9 @@ carried over on trust from the ticket text or the behavior ledger.
   labelled as consistency, not as the fix.** The stylesheet declares its own
   accent ring for every sibling control (`.dw button.qrow:focus-visible` line
   718, `.history-run:focus-visible` line 870, `.filter-menu button:focus-visible`
-  line 432) but declares none for either segmented group, which is why the measured
+  line 432 — of which only the first is a safe model here, because `.seg` sets
+  `overflow: hidden` at line 145-149 and clips the outward `outline-offset: 1px`
+  the `.history-run` rule uses; pin the inward `outline-offset: -2px` form) but declares none for either segmented group, which is why the measured
   ring is the browser's and not the app's. The selector is scoped to `#seg-align`
   deliberately: `.seg` is also the class on `#seg-window`
   (`frontend/diagnose-workstation.js:76` and `:84`), and this ticket does not change

@@ -1,8 +1,8 @@
 # Issue 93 QA campaign
 
-This directory consolidates five independent Diagnose-only cold QA passes. It
-is an index and provenance record; the accepted bug inventory is in
-[`BUGS.md`](BUGS.md).
+This directory consolidates five independent Diagnose-only cold QA passes and
+a targeted 24-hour re-audit. It is an index and provenance record; the accepted
+bug inventory is in [`BUGS.md`](BUGS.md).
 
 ## Scope and evidence boundary
 
@@ -22,17 +22,18 @@ discarded, and the temporary copy was restored before the affected reruns.
 
 | Reviewer lane | Ledger | Result |
 | --- | --- | --- |
-| Findings queue | [`findings-queue.md`](findings-queue.md) | 1 accepted bug; 2 hypotheses not reproduced |
+| Findings queue | [`findings-queue.md`](findings-queue.md) | 1 accepted bug; 1 hypothesis not reproduced; 1 result superseded by re-audit |
 | Graphs and alignment | [`graphs-align.md`](graphs-align.md) | 2 accepted bugs |
-| Keyboard and assistive interaction | [`keyboard.md`](keyboard.md) | 2 accepted bugs; 1 inconclusive hypothesis |
+| Keyboard and assistive interaction | [`keyboard.md`](keyboard.md) | 2 accepted bugs; 1 result superseded by re-audit |
 | Drill-down and trace | [`drilldown-trace.md`](drilldown-trace.md) | 1 accepted bug |
 | App-snob cold pass | [`app-snob.md`](app-snob.md) | No accepted bugs; 1 route candidate discarded |
+| 24-hour history and occurrence re-audit | [`24h-reaudit.md`](24h-reaudit.md) | 2 accepted bugs; supersedes 2 earlier hypothesis results |
 
 ## Campaign totals
 
-- Accepted reproduced bugs: **6** (all P2; no P0 or P1 reports).
-- Tested hypotheses not reproduced: **3**.
-- Inconclusive hypotheses: **1**.
+- Accepted reproduced bugs: **8** (all P2; no P0 or P1 reports).
+- Tested hypotheses not reproduced: **2**.
+- Inconclusive hypotheses: **0**.
 - Discarded harness or route artifacts: **2**.
 
 ## YOLO votes

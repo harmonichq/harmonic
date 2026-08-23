@@ -30,6 +30,18 @@ or child issues are proposed here.
 - **Reproducibility:** Reproduced twice across separate detail sessions and in both traversal directions.
 - **Severity rationale:** P2 because the detail remains reachable, but keyboard users cannot operate a visible chart-alignment target.
 
+## Diagnose Findings queue — Watching/history
+
+### P2 — Historical Carb-ratio rows appear as peers in the current queue
+
+- **Fingerprint:** `diagnose-findings-current-queue-mixes-past-carb-ratio-history`
+- **Source:** [`24h-reaudit.md`](24h-reaudit.md#24h-93-01--historical-carb-ratio-rows-are-peers-in-the-current-findings-queue)
+- **Interaction path:** Select the `24 h` window, inspect the ordinary Findings queue without selecting a history mode, open one historical Carb-ratio row, return to Findings, and open a second historical Carb-ratio row.
+- **Observed:** Historical Carb-ratio entries appear as ordinary selectable queue rows beside current setting and habit findings. The individual rows disclose Watching/Past-setting status, but no separate historical-results boundary precedes them.
+- **Expected:** Retired Carb-ratio evidence is unmistakably separate from the active findings being reviewed for the current setting context.
+- **Reproducibility:** Reproduced with two separately rendered historical Carb-ratio case files in the explicitly selected 24-hour queue.
+- **Severity rationale:** P2 because the decision-review queue materially risks mixing retired setting evidence into the reading of active findings, although the individual rows disclose their historical status.
+
 ## Diagnose event case file — By-event response comparison
 
 ### P2 — Narrow By-event chart labels and lines overlap or clip
@@ -64,6 +76,18 @@ or child issues are proposed here.
 - **Reproducibility:** Reproduced twice in separate browser sessions.
 - **Severity rationale:** P2 because the visual transition succeeds, but keyboard users lose a reliable starting point in the newly displayed evidence.
 
+## Diagnose finding case file — Occurrences keyboard navigation
+
+### P2 — A vertical occurrence roster advances with Left/Right instead of Up/Down
+
+- **Fingerprint:** `diagnose-occurrence-roster-left-right-overrides-vertical-traversal`
+- **Source:** [`24h-reaudit.md`](24h-reaudit.md#24h-93-02--selected-occurrence-navigation-uses-leftright-despite-a-vertical-occurrence-roster)
+- **Interaction path:** Select the `24 h` window, open a multi-row high-pattern case file, focus and open the first occurrence, then try ArrowDown and ArrowRight; repeat in a separate multi-row meal-pattern case file.
+- **Observed:** ArrowDown leaves the selected occurrence unchanged, while ArrowRight advances to the next vertically displayed occurrence. The same direction model occurs in both case-file varieties.
+- **Expected:** Keyboard traversal follows the occurrence roster's visible vertical order, or otherwise presents a clearly discoverable navigation model consistent with the rendered list.
+- **Reproducibility:** Reproduced in two populated multi-row case files after explicitly selecting the 24-hour window.
+- **Severity rationale:** P2 because keyboard readers can open the roster but cannot traverse its visible order using the expected spatial keys.
+
 ## Diagnose basal-slot case file — evidence copy
 
 ### P2 — Retired “clean nights” wording remains in the drill-down
@@ -79,12 +103,9 @@ or child issues are proposed here.
 ## Tested hypotheses not reproduced
 
 - **Meal-bolus filtering:** The finding appeared only in eligible windows, disappeared in an ineligible overnight window, and returned when the eligible window was restored; event charts did not retain a stale copy. Source: [`findings-queue.md`](findings-queue.md#2-meal-bolus-fell-short-and-active-eventclock-window-filtering).
-- **Historical Carb ratio presentation:** Past Carb ratio entries were explicitly marked as past in Watching/history and in opened detail, with no misleading current recommendation reproduced. Source: [`findings-queue.md`](findings-queue.md#3-past-carb-ratio-recommendations-in-the-current-findings-viewer).
 - **Direct Diagnose link initialization:** A settled fresh context reached the populated workstation through both direct-link and in-app navigation; the earlier short-wait failure was discarded as a route/cold-load artifact. Source: [`app-snob.md`](app-snob.md#discarded-route-candidate).
 
-## Inconclusive hypotheses
-
-- **Trace-list spatial key requirement:** The focused occurrence row had no adjacent occurrence row, so the run provided no evidence that Left/Right was required and did not establish whether Up/Down should move between rows. Source: [`keyboard.md`](keyboard.md#operator-hypothesis-check--trace-list-key-direction).
+The targeted 24-hour re-audit supersedes the original historical Carb-ratio and single-row occurrence-list conclusions. Both are accepted above as reproduced P2 bugs. Source: [`24h-reaudit.md`](24h-reaudit.md).
 
 ## Discarded non-product observations
 

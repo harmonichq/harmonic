@@ -226,12 +226,17 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             raise HTTPException(status_code=401, detail="missing or invalid bearer token")
 
     # #94: these file routes carry no `-> FileResponse` return annotation, and
-    # must not regain one. ``FileResponse`` is imported inside this function
-    # because it belongs to the optional ``api`` extra, so the name does not
-    # exist in the module globals FastAPI resolves return annotations against —
-    # the annotation stays an unresolved ForwardRef and building the schema
-    # raises PydanticUserError. That went unnoticed while nothing fetched the
-    # generated schema; ADR 94 publishes it at ``/api/openapi.json``, and
+    # must not regain one. Two facts combine: this module's
+    # ``from __future__ import annotations`` makes every annotation a string, and
+    # ``FileResponse`` is imported inside this function (it belongs to the
+    # optional ``api`` extra), so the name is absent from the module globals
+    # FastAPI resolves those strings against. The annotation stays an unresolved
+    # ForwardRef and building the schema raises PydanticUserError. Neither fact
+    # alone does it, and the resolver can be fed by hand — ``globals()["Request"]``
+    # above is that escape hatch — so this is a standing choice, not a language
+    # rule: omitting the annotation is simply cheaper than publishing a name per
+    # file route. That went unnoticed while nothing fetched the generated schema;
+    # ADR 94 publishes it at ``/api/openapi.json``, and
     # ``tests/test_frontend_asset_routes.py`` fails the moment it stops
     # answering.
     @app.get("/")

@@ -50,6 +50,20 @@ test('P53 coordinates move from the split query into the Diagnose hash and resto
   });
   assert.equal(serializeRoute(route), '#/diagnose?view=lows&factor=correction_stacking&start_min=0&end_min=120&another=1&occ=low-7');
 
+  const mixed = parseRoute({
+    hash: '#/diagnose?modal=dataquality&factor=carb_undercount',
+    search: '?view=lows&factor=late_bolus',
+  });
+  assert.equal(mixed.view, 'lows');
+  assert.equal(mixed.factor, 'carb_undercount');
+  const replacements = [];
+  writeRoute(mixed, {
+    location: { pathname: '/', hash: '#/diagnose?modal=dataquality&factor=carb_undercount', search: '?view=lows&factor=late_bolus' },
+    history: { replaceState: (_state, _title, address) => replacements.push(address) },
+    replace: true,
+  });
+  assert.deepEqual(replacements, ['/#/diagnose?view=lows&factor=carb_undercount']);
+
   const listeners = new Map();
   const browser = {
     location: { hash: '#/diagnose?view=meals', search: '', pathname: '/' },
@@ -72,17 +86,25 @@ test('P53 restoration re-requests and an older projection response stays rejecte
   globalThis.window = { location, history, addEventListener(type, listener) { listeners.set(type, listener); }, removeEventListener() {} };
   const requests = [];
   let resolveOld;
+  let rejectNew;
   const root = { classList: { remove() {} }, replaceChildren() {} };
   const view = createDiagnoseEventComparison({ root, callbacks: { loadProjection(coordinates) {
     requests.push(coordinates);
-    return new Promise((resolve) => { if (requests.length === 1) resolveOld = resolve; });
+    return new Promise((resolve, reject) => {
+      if (requests.length === 1) resolveOld = resolve;
+      else rejectNew = reject;
+    });
   } } });
   view.setData({});
   view.applyChanges({ factor: 'carb_undercount' });
+  rejectNew(new Error('newest response'));
+  await new Promise(setImmediate);
+  assert.equal(root.textContent, 'newest response');
   resolveOld({});
-  await Promise.resolve();
+  await new Promise(setImmediate);
   assert.equal(requests.length, 2);
   assert.equal(requests[1].factor, 'carb_undercount');
+  assert.equal(root.textContent, 'newest response');
   view.destroy();
   Object.assign(globalThis, original);
 });

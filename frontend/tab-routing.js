@@ -47,9 +47,9 @@ export function parseRoute({ hash = '', search = '' } = {}) {
     : DIAGNOSE_KEYS.some((key) => splitParams.has(key)) ? 'diagnose' : null;
   if (!page) return { page: null };
   const params = new URLSearchParams(query);
-  if (page === 'diagnose' && !query) {
+  if (page === 'diagnose') {
     for (const key of DIAGNOSE_KEYS) {
-      if (splitParams.has(key)) params.set(key, splitParams.get(key));
+      if (!params.has(key) && splitParams.has(key)) params.set(key, splitParams.get(key));
     }
   }
   return { page, ...routeState(page, params) };

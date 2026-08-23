@@ -154,3 +154,16 @@ Disposition: copied into the work order.
   provenance claim was false; the fast gate was mis-enumerated; the glossary entry
   is at `CONTEXT.md:277`, not 275. The order was rewritten clean rather than
   patched, and the readings were moved off the readout onto the chart key.
+- Round 2 (delta re-check, 2026-08-23): reviewer B confirmed all eight of its round-1
+  objections fixed and found **1 `injected`** blocker — the rewrite's own sentence
+  "the workstation replay and every screenshot DO use the declared safe-start
+  server" is false, because the support audit shares the replay's fixture-stubbed
+  `openApp` (`mockups/diagnose-event-comparison-support-audit.mjs:24`) and contacts
+  no server. Reproduced, then fixed: the order now states that the workstation
+  replay leg alone uses the declared server. The same round added the materialised
+  public-tree leg (`.github/workflows/ci.yml:100-104`) to verification and a
+  boundary forbidding a pointer from a shipping `frontend/` file into
+  `docs/scope/` or `mockups/`, which `scripts/check_public_links.py` fails on.
+  Reviewer A's delta re-check had not returned when triage closed; the order is
+  countersigned on reviewer B's clean delta pass only, which is recorded here
+  rather than claimed as a full countersign.

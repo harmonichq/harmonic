@@ -132,6 +132,59 @@ Classification: code. UI Craft lifecycle: revise. Review depth: Targeted.
 - **Why:** advisory tool, one user at a time, no data written by this change.
 - **Disposition:** copied into the work order.
 
+## Plan-review rounds
+
+Two cold reviewers, no stake in the draft, one panel. Every objection was
+reproduced against the repo before it was acted on; none was refuted.
+
+**Round 1 — 6 blocking, 3 notes, all tagged `authoring` (present since the
+draft), 0 `injected`.**
+
+Blocking:
+
+1. The no-steal assertion parked focus on `#filter-trigger`, which
+   `paintFilter` sets `hidden` whenever `top().k !== 'factors'` (`:1995-2003`,
+   markup `:138`) with no CSS override of `[hidden]` for `.filter-wrap` — so it
+   is `display: none` in exactly the state the assertion needs and can never
+   hold focus. Park target moved to a `#seg-window` preset button, and the test
+   must now assert the park itself succeeded first.
+2. The Expectation demanded all four new assertions be red on the base, but
+   nothing in the file moves focus today, so the no-steal guard is green on the
+   base. Demanding red on it could only ever produce a spurious red. Split into
+   red-first (6a–6c) and green-before-green-after (6d).
+3. "for all five frame kinds" was not observable through the gate the order
+   builds: the synthetic payload's `rendered_rows` is 8 rows, all
+   `register: "finding"`. Cut from Done-when, moved to the ADR as rationale.
+4. The behaviour ledger counts itself — header `:12` "74 executable entries",
+   §3 `:955-960` "P01–P54" and "54 rows" — and adding P55/S72 without updating
+   those leaves an operator-approved contract arithmetically false.
+5. The S72 marker was pinned to S13's form, which sits in a legacy bulk block at
+   replay `:3261`; the live convention is S71's at `:2348-2349`, immediately
+   above the export.
+6. Step 8 said "an OpenSpec change folder … following the existing folders'
+   shape", but `scripts/check_adr_numbers.py` reads only the
+   `## ADR <issue> — <title>` heading under `openspec/changes/**/design.md`, and
+   `openspec/changes/finding-evidence-routing/` already exists for this exact
+   surface (design.md only, ADRs 31/42/41). Now names that exact path and
+   forbids proposal.md/tasks.md as unenforced busywork.
+
+Notes, all adopted:
+
+7. The `?? frame.id` history branch the order calls load-bearing was asserted by
+   nothing — both pop assertions drove `finding` rows. 6c now drives the history
+   row `ich1_WzAsNzIwLCI2Il0`.
+8. A multi-level pop read `top()`, but a slot reached from the case head carries
+   no row id (`onViewSlot(cell)` at `:548`, `pickCell` rowId default null at
+   `:1628`). Now reads `stack[1]` captured before truncation.
+9. Three cites were off by a few lines: `popTo` is `:1603`, the history `id:` is
+   `:1565`, the factor `rowId:` is `:1574`. Renumbered.
+
+The order was rewritten clean rather than patched. Both reviewers independently
+confirmed the mechanism itself — a single read-and-clear consumer at the end of
+`paint()` — is correct: `push` has five call sites and `popTo` one, all
+navigations; boot appends to `stack` directly (`:1658-1679`) and bypasses
+`push()`, so a page load cannot grab focus.
+
 ## Open questions
 
 - Operator: container-first (recommended) or first-control-after-settle as the

@@ -2,31 +2,31 @@
 
 ## 1. Replace the rejected path-routing direction
 
-- [ ] Reduce issue 53's frontend routing implementation to one Vue-free hash
+- [x] Reduce issue 53's frontend routing implementation to one Vue-free hash
       routing interface for `#/<page>?<existing-page-state>`.
-- [ ] Keep the six existing page IDs and current page defaults. Preserve the
+- [x] Keep the six existing page IDs and current page defaults. Preserve the
       existing server and API route behavior; remove issue-53 dependencies on
       `/app/...` entry paths, runtime identity resolution, and invalid-link UI.
-- [ ] Normalize the existing no-slash hash and old split form only where needed
+- [x] Normalize the existing no-slash hash and old split form only where needed
       to reach the canonical hash route.
 
 ## 2. Put existing URL state behind the route
 
-- [ ] Route the existing page plus the currently round-tripped Day `date` and
+- [x] Route the existing page plus the currently round-tripped Day `date` and
       Guide `article` state through the interface without adding bookmarkable
       state.
-- [ ] Move P53's existing `view`, `factor`, `start_min`, `end_min`, `another`,
+- [x] Move P53's existing `view`, `factor`, `start_min`, `end_min`, `another`,
       and `occ` keys from `location.search` into the Diagnose fragment query.
-- [ ] Preserve current request behavior, back/forward re-request behavior, and
+- [x] Preserve current request behavior, back/forward re-request behavior, and
       the P53 generation guard against stale responses.
-- [ ] Leave `modal`, `occt`, `occd`, and `occdet` restoration unchanged; do not
+- [x] Leave `modal`, `occt`, `occd`, and `occdet` restoration unchanged; do not
       add round-trip acceptance for those emitted-but-unparsed keys.
-- [ ] Amend only the URL-location wording in P53 and any directly contradictory
+- [x] Amend only the URL-location wording in P53 and any directly contradictory
       routing check or comment.
 
 ## 3. Verify proportionally
 
-- [ ] Add focused Vue-free tests for parsing, serialization, limited
+- [x] Add focused Vue-free tests for parsing, serialization, limited
       normalization, route transitions, and Back/Forward restoration of the
       page, Day `date`, Guide `article`, and P53 keys through the routing
       interface.
@@ -34,6 +34,6 @@
       Diagnose event-comparison browser routing checks. No screenshot matrix,
       server launch, new fixture, credential/data-boundary harness, or mandatory
       all-nine-browser run is owed by this change.
-- [ ] Run `git diff --check` and `python3 scripts/check_adr_numbers.py` after
+- [x] Run `git diff --check` and `python3 scripts/check_adr_numbers.py` after
       the focused route and relevant browser checks.
 - [ ] Request Targeted review. Surface lifecycle: none.

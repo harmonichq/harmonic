@@ -77,10 +77,15 @@ decisions that follow. The superseded decision is not re-argued.
   all (nothing to separate).
 - **Unsupported:** changing the sift-collapse behavior, the case file, the canvas,
   or the server projection.
-- **Evidence owed:** a browser-level assertion (replay story) that an un-sifted
-  projection containing held/blind/history rows paints exactly one Watching head
-  immediately before the first watching row and none when no watching row is
-  shown; the full frozen replay green; fast gate green.
+- **Evidence owed:** ~~a browser-level assertion that an un-sifted projection paints
+  exactly one Watching head~~ — SUPERSEDED by the 2026-08-23 owner override, which
+  deleted the section head. Replaced by: a replay story (S72) asserting that the
+  un-sifted queue paints the `Watching · N reads` toggle, zero watching rows before
+  it is clicked and at least one after, and no `.uncaused-note` anywhere; a node case
+  pinning `collapsed: true` for held/blind/history at `selected = null`; the full
+  frozen replay green; fast gate green. The "Open questions" item on head visual
+  weight is moot and withdrawn; the spiked placement-predicate table below is retained
+  as the record of a superseded design, not as an obligation.
 
 Why: Diagnose influences advisory insulin-dosing decisions; retired evidence
 mistaken for a current finding is a misread with dosing consequences.
@@ -191,4 +196,38 @@ the predicate's unit test with a hand-built row, not by this fixture.
   to prove S72 red. Resolved better than either — `replay.mjs:405-409` shows the
   replay is a pure client keyed on `BASE_URL`, so the BRANCH's replay file runs
   against the BASE server and S72 goes red with no revert of anything.
+  Injected: 0.
+
+- Round 4 (cold delta panel, post-override rewrite): **5 blocking**, 2 notes, all
+  `authoring`. All five reproduced before any fix; one reviewer claim REFUTED.
+  (1) "No browser test asserts the footer" was FALSE —
+  `diagnose-workstation.browser.test.mjs:1032-1060` reads `#level .uncaused-note` at
+  `:1043` and `:1049`. Removing the footer is therefore a RETIREMENT under
+  `ui-craft/reference/revise.md`; order now carries step 3a (absence assertion +
+  sanction) and a permanent RETIRED ledger entry.
+  (2) Step 10's "no sanction line is owed" contradicted step 1d's halt rule. Resolved
+  by a single pre-ruled carve-out naming the footer.
+  (3) The broken-story census was INCOMPLETE. It audited only `data-state=` locators
+  and missed the `state()` helper (`replay.mjs:186`) which hands stories a `queue`
+  array off `#level .qrow`. Newly named: S18 (`:1141-1148`), S24 (`:1484-1487`),
+  S41 (`:1880-1889`), `issue81SlicedProjection` (`:2817`, run from the browser test
+  at `:221`). All four verified to read Watching rows un-sifted.
+  (4) S72 had no `captureEvidence` call, so step 9's AFTER renders would have written
+  zero files — `captureEvidence` fires only where a story calls it. One line added.
+  (5) The all-Watching window is a NEW undesigned state: neither empty guard fires
+  (`:294` needs `!rows.length`, `:281` needs `filtering`), so `windows.quiet` would
+  paint an empty list under a bare toggle while the meta reads `30 days`. Step 6a now
+  rules on it.
+  Note (6): four citations were off, one destructively — `:311-331` cuts through two
+  test bodies and leaves the file unparseable. Corrected to the three `#63` tests at
+  `:310-334`, with the fourth at `:336-344` explicitly preserved. Also corrected
+  `openHistoryCase` to `:740`, and the call count to 18 direct + 7 via
+  `openHistoryEvents`.
+  Note (7): the risk contract's "Evidence owed" still demanded the deleted head —
+  superseded above.
+  REFUTED: the reviewer placed `ONLY` at `replay.mjs:3569`; `grep -n process.env.ONLY`
+  returns `3568`. The order's original citation stands and was not changed.
+  Also verified independently of the panel: the node tests at
+  `diagnose-findings-queue.test.js:146` and `:158` SURVIVE (`:146` never inspects
+  `collapsed`; `:158` sifts first).
   Injected: 0.

@@ -138,6 +138,7 @@ html.dark .dw {
 .instruments > .instrument:first-child { padding-left: 14px; }
 #align-group { padding-left: var(--ck-pad); }
 .instrument { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.instrument[hidden] { display: none; }
 .instrument > .cap {
   font-size: var(--ck-micro); text-transform: uppercase; letter-spacing: var(--ck-track);
   color: var(--mk-muted); font-weight: 650; white-space: nowrap;

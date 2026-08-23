@@ -143,6 +143,31 @@ carried over on trust from the ticket text or the behavior ledger.
   `openspec/specs/` say nothing about it. The only contract document this change
   must amend is the frozen behavior ledger. inline
 
+- **P27 is retired in the P48 form, and its sanction needs a scan exemption.** The
+  ledger uses two retirement forms: flip the entry's own `verdict:` line inline and
+  add an amendment (P48 at :863, P44 at :815, P21 at :683, P52 at :914), or leave the
+  frozen entry untouched and carry the retirement only in the amendment (P49 at
+  :918-927; the 2026-08-20 window-membership retirement at :1370). Take the P48 form,
+  so a later reader cannot mistake P27's 2026-08-19 `kept` ruling for the live one.
+  The sanction quotes the owner by name, and
+  `frontend/diagnose-workstation.browser.test.mjs` ships in the public tree, so the
+  bare word "Connor" trips `scripts/scan_public_tree.py`'s rule-5 `owner-name` check
+  (verified: a clean scan becomes `rule5-owner-name`, exit 1). The precedent is exact
+  — `scripts/public_scan_config.txt:95` already exempts
+  `frontend/cockpit-shell.browser.test.mjs` for a retirement sanction under #52 — so
+  add the matching line for #96 rather than deriving the name from `pyproject.toml`
+  as the replay does at `frontend/diagnose-workstation-behavior.replay.mjs:372-378`,
+  which would need a currently-private helper exported. inline
+
+- **The P27 absence assertion must be scoped to `#seg-align`, with the
+  no-occurrence-selected precondition asserted.** `frontend/diagnose-workstation.js:2561-2583`
+  is a document-level keydown handler that steps occurrences on ArrowLeft/ArrowRight
+  whenever the top frame is a factor frame carrying `selectedId`, no matter what holds
+  focus. Measured on the drawn path with an evidence row selected: ArrowRight moved
+  both `document.activeElement` (to BODY) and an `.ev-row` `aria-pressed`. That is
+  P24, kept, not roving. An unscoped "no `aria-pressed` moves" assertion would fail on
+  it. inline
+
 ### Risk contract
 
 - **Must prevent:** an Align activation changing anything it does not change
@@ -203,11 +228,26 @@ the triage rubric.
 |---|---|---|---|---|
 | 1 — two cold reviewers (grounding; repo rules) | 7 | 7 | 0 | 4 |
 | 2 — cold delta check | 2 | 0 | 2 | 2 |
-| 3 — cold delta check after the owner rulings | see final report | | | |
+| 3 — cold delta check after the owner rulings | 4 | 2 | 2 | 2 |
 
 The P27 retirement added in round 3 is tagged `authoring`: the divergence was found
 during triage grounding and was present in the first draft as an unresolved record;
 the owner's ruling changed its disposition, not its discovery.
+
+Round 3's four blockers split evenly. Two `authoring`: the sanction line trips the
+public-tree scan's `owner-name` rule in a shipping `frontend/` file (verified — a
+clean scan goes to `rule5-owner-name`, exit 1), and an unscoped "arrow keys do
+nothing" claim is false whenever an occurrence is selected, because
+`frontend/diagnose-workstation.js:2561-2583` installs a document-level ArrowLeft/
+ArrowRight handler that steps occurrences regardless of focus (P24, a kept
+behavior). Two `injected` by round 2's own fixes: `document.body.focus()` + one Tab
+lands 31 stops short of Align, and putting the sanction only in a failure message
+means it never prints on a passing run — the opposite of the ledger's
+"prints this sanction on every run" contract.
+
+Injected blockers did not climb (0 → 2 → 2) and round 3's authoring findings were
+both empirical rather than editorial, so the order was corrected rather than
+rewritten clean.
 
 Round 2's two blockers were both `injected` — holes opened by round 1's own fixes
 (an outward focus ring clipped by `.seg { overflow: hidden }`, and a "reach it by

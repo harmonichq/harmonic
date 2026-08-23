@@ -12,7 +12,7 @@ import unittest
 from unittest.mock import patch
 
 from ciq_autotune.analyzers.ic import analyze_ic_blocks
-from ciq_autotune.replay import ReplayWindow, WindowRefused, run_replay
+from ciq_autotune.replay import ReplayReport, ReplayWindow, WindowRefused, run_replay
 from ciq_autotune.settings import Snapshot
 from ciq_autotune.store import Store
 from scripts.gen_estimator_truth import known_ratio_sets, write_set_to_store
@@ -117,6 +117,61 @@ class StableEraReplayTest(unittest.TestCase):
         report = self._replay(self._truth(), always_finding)
         self.assertEqual(report.candidate_verdict, "fail")
         self.assertIsNone(report.candidate_first_convergence)
+
+    def test_candidate_that_leaves_convergence_for_a_wrong_final_answer_fails(self):
+        truth = self._truth()
+
+        def unstable(*args, **kwargs):
+            blocks, run_count = analyze_ic_blocks(*args, **kwargs)
+            if kwargs["analysis_end"] == truth["analysis_end"]:
+                return [replace(
+                    block,
+                    estimate=replace(block.estimate, value=999.0, lo=999.0, hi=999.0),
+                    n_meals=block.n_meals + 1,
+                ) for block in blocks], run_count
+            return blocks, run_count
+
+        report = self._replay(truth, unstable)
+        self.assertIsNotNone(report.candidate_first_convergence)
+        self.assertEqual("fail", report.candidate_verdict)
+
+    def test_replay_convergence_consumes_the_shared_recovery_pin(self):
+        with patch("ciq_autotune.replay.recovers_target", return_value=False):
+            report = self._replay(self._truth())
+        self.assertEqual("fail", report.candidate_verdict)
+
+    def test_replay_rejects_a_candidate_that_discards_history_catalog(self):
+        def broken(*args, **kwargs):
+            kwargs["history_catalog"] = None
+            blocks, run_count = analyze_ic_blocks(*args, **kwargs)
+            return [replace(block, n_meals=block.n_meals + 1) for block in blocks], run_count
+
+        with self.assertRaisesRegex(ValueError, "history_catalog"):
+            self._replay(self._truth(), broken)
+
+    def test_default_report_representation_is_sanitized(self):
+        report = ReplayReport(
+            block_id=0,
+            cutoffs=3,
+            incumbent_first_convergence=self._truth()["analysis_start"],
+            candidate_first_convergence=self._truth()["analysis_end"],
+            incumbent_final_ci_width=9.87654,
+            candidate_final_ci_width=8.76543,
+            incumbent_final_runs=8,
+            candidate_final_runs=9,
+            incumbent_final_meals=8,
+            candidate_final_meals=9,
+            convergence_days_delta=7,
+            ci_width_delta=-1.11111,
+            meal_count_delta=1,
+            agreement_verdict="pass",
+            candidate_verdict="pass",
+        )
+        for output in (str(report), repr(report)):
+            self.assertNotIn("9.87654", output)
+            self.assertNotIn("8.76543", output)
+            self.assertNotIn(self._truth()["analysis_start"].date().isoformat(), output)
+            self.assertNotIn(self._truth()["analysis_end"].date().isoformat(), output)
 
     def test_candidate_output_is_suppressed(self):
         output = StringIO()

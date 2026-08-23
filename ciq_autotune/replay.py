@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from io import StringIO
 from typing import Optional
 
+from .admission import call_ic_block_estimator, recovers_target
 from .analyze import analyze
 from .analyzers.ic import analyze_ic_blocks
 from .result import IcBlock
@@ -67,6 +68,12 @@ class ReplayReport:
         ]
         return "\n".join(lines)
 
+    def __str__(self) -> str:
+        return self.render()
+
+    def __repr__(self) -> str:
+        return self.render()
+
 
 def _render_count(value: Optional[float]) -> str:
     return "unavailable" if value is None else str(value)
@@ -116,16 +123,7 @@ def _block_at(result, block_id: int) -> Optional[IcBlock]:
 def _converges(block: Optional[IcBlock], incumbent: IcBlock) -> bool:
     if block is None or block.state != "numeric":
         return False
-    estimate = block.estimate
-    target = incumbent.estimate.value
-    return bool(
-        target is not None
-        and estimate.value is not None
-        and estimate.lo is not None
-        and estimate.hi is not None
-        and estimate.lo <= target <= estimate.hi
-        and abs(estimate.value - target) <= 0.1
-    )
+    return recovers_target(block, incumbent.estimate.value)
 
 
 def _ci_width(block: Optional[IcBlock]) -> Optional[float]:
@@ -165,6 +163,13 @@ def _analyze_at(store: Store, cutoff: datetime, estimator, *, suppress_output: b
         return analyze(store, now=cutoff, ic_estimator=estimator)
 
 
+def _contract_estimator(estimator):
+    def validated(bolus_events, ic_segments, **kwargs):
+        return call_ic_block_estimator(estimator, bolus_events, ic_segments, **kwargs)
+
+    return validated
+
+
 def run_replay(
     store: Store,
     estimator=analyze_ic_blocks,
@@ -182,12 +187,14 @@ def run_replay(
     qualify_window(store, incumbent, window)
 
     cutoffs = _cutoffs(window, step_days)
-    candidate_result = _analyze_at(store, window.end, estimator, suppress_output=True)
+    candidate_estimator = _contract_estimator(estimator)
+    candidate_result = _analyze_at(
+        store, window.end, candidate_estimator, suppress_output=True)
     candidate = _block_at(candidate_result, block_id)
     incumbent_first = _first_convergence(
         store, analyze_ic_blocks, block_id, cutoffs, incumbent)
     candidate_first = _first_convergence(
-        store, estimator, block_id, cutoffs, incumbent, suppress_output=True)
+        store, candidate_estimator, block_id, cutoffs, incumbent, suppress_output=True)
     incumbent_width = _ci_width(incumbent)
     candidate_width = _ci_width(candidate)
     incumbent_runs = incumbent.n_runs
@@ -208,6 +215,7 @@ def run_replay(
         candidate_first is not None
         and incumbent_first is not None
         and candidate_first <= incumbent_first
+        and _converges(candidate, incumbent)
         and candidate_width is not None
         and incumbent_width is not None
         and candidate_width <= incumbent_width

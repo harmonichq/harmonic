@@ -20,27 +20,46 @@ class IcBlockEstimator(Protocol):
     ) -> Tuple[List[IcBlock], int]: ...
 
 
-def _blocks(estimator: IcBlockEstimator, truth_set: dict) -> Tuple[List[IcBlock], int]:
-    history_catalog: list = []
+def call_ic_block_estimator(
+    estimator: IcBlockEstimator, bolus_events, ic_segments, **kwargs,
+) -> Tuple[List[IcBlock], int]:
+    """Call an estimator while enforcing the production output contract."""
+    history_catalog = kwargs.get("history_catalog")
+    if history_catalog is None:
+        raise ValueError("estimator requires a caller-owned history_catalog")
     history_count_before = len(history_catalog)
-    blocks, run_count = estimator(
-        truth_set["events"], truth_set["segments"], config=IcConfig(),
+    blocks, run_count = estimator(bolus_events, ic_segments, **kwargs)
+    if len(history_catalog) == history_count_before:
+        raise ValueError("estimator did not populate history_catalog in place")
+    if (isinstance(run_count, bool) or not isinstance(run_count, int)
+            or run_count < 0 or run_count > len(bolus_events)
+            or (blocks and run_count == 0)):
+        raise ValueError("estimator returned an invalid whole-day run count")
+    return blocks, run_count
+
+
+def _blocks(estimator: IcBlockEstimator, truth_set: dict) -> Tuple[List[IcBlock], int]:
+    return call_ic_block_estimator(
+        estimator, truth_set["events"], truth_set["segments"], config=IcConfig(),
         cgm_readings=truth_set["cgm_readings"],
         isf_effective=truth_set["isf_effective"], carb_entries=[], basal_events=[],
         harm_config=None, harm_lows=None,
         analysis_start=truth_set["analysis_start"],
         prior_action_observed_from=truth_set["prior_action_observed_from"],
         observed_days=truth_set["observed_days"], snapshots=truth_set["snapshots"],
-        analysis_end=truth_set["analysis_end"], history_catalog=history_catalog,
+        analysis_end=truth_set["analysis_end"], history_catalog=[],
         history_harm_lows=None,
     )
-    if len(history_catalog) == history_count_before:
-        raise ValueError("estimator did not populate history_catalog in place")
-    if (isinstance(run_count, bool) or not isinstance(run_count, int)
-            or run_count < 0 or run_count > len(truth_set["events"])
-            or (blocks and run_count == 0)):
-        raise ValueError("estimator returned an invalid whole-day run count")
-    return blocks, run_count
+
+
+def recovers_target(block: IcBlock, target: float | None) -> bool:
+    """Whether an estimate's interval and point value recover ``target``."""
+    estimate = block.estimate
+    return bool(
+        target is not None and estimate.value is not None and estimate.lo is not None
+        and estimate.hi is not None and estimate.lo <= target <= estimate.hi
+        and abs(estimate.value - target) <= 0.1
+    )
 
 
 def _engine_evidence(block: IcBlock) -> dict:
@@ -59,12 +78,7 @@ def _known_verdict(truth_set: dict, blocks: List[IcBlock], run_count: int) -> di
     for block in blocks:
         truth = truth_set["true_ratio_by_block"].get(block.block_id)
         evidence = _engine_evidence(block)
-        estimate = block.estimate
-        one_recovered = bool(
-            truth is not None and estimate.value is not None and estimate.lo is not None
-            and estimate.hi is not None and estimate.lo <= truth <= estimate.hi
-            and abs(estimate.value - truth) <= 0.1
-        )
+        one_recovered = recovers_target(block, truth)
         recovered = recovered and one_recovered
         rows.append({"block_id": block.block_id, "true_ratio": truth,
                      "recovered": one_recovered, "evidence": evidence})

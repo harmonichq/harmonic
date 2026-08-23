@@ -123,3 +123,17 @@ carries an `event_chart` coordinate — not because the predicate excludes that
 mode. The predicate keys on "first SHOWN watching row", so a watching row with a
 coordinate WOULD take a head under `eventChartsOnly`. That path is asserted by
 the predicate's unit test with a hand-built row, not by this fixture.
+
+- Round 2 (cold panel A, this session, axes 1-2 — grounding and acceptance):
+  **0 blocking**, 3 notes, all `authoring`. All reproduced before applying.
+  (1) "S72 demonstrably fails against the base tip" was unsatisfiable — S72 does
+  not exist on base. Replaced with the `ONLY=S72` procedure (runner reads it at
+  `frontend/diagnose-workstation-behavior.replay.mjs:3568`, verified), reverting
+  only the two product files and expecting `app: 0 of 1 stories passed`.
+  (2) The head's count re-filtered `rows` when `renderFindingsQueue` already
+  computes `shown` at `frontend/diagnose-findings-queue.js:302` (verified);
+  order now derives from `shown`, so the render has one definition of "shown".
+  (3) "all four guards" named no real set — `AGENTS.md:49-51` declares three
+  guard scripts (verified); Expectation and Done-when now say three and name
+  them. Also self-corrected two of my own citations (the `.qcollapse` block is
+  lines 350-358, its `readWord` string 354-355). Injected: 0.

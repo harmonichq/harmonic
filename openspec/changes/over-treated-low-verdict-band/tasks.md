@@ -31,7 +31,7 @@
 - [x] Replay and re-inventory the frozen Finding-evidence behavior contract
       against the declared no-fetch synthetic app, amending it only for a real
       shipped-surface behavior change.
-- [ ] Run the complete merged-branch fast gate, all declared drift checks, the
+- [x] Run the complete merged-branch fast gate, all declared drift checks, the
       affected browser suite, both Diagnose replays, and the Event-comparison
       support audit with nonzero coverage.
 - [x] Fold the settled requirement into

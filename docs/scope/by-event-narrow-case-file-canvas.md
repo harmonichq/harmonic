@@ -127,6 +127,36 @@ which is the defect itself, and the fix is judged directly against it.
 Disposition: `inline` for the CSS and the regression; `→ ADR` for the
 narrow-viewport containment contract.
 
+### The spiked assertion
+
+The acceptance predicate was written and executed during triage rather than
+prosed, against the case-file mount at 390x844:
+
+```js
+const box = (s) => document.querySelector(s).getBoundingClientRect();
+const c = box('#ec-chart'), k = box('#ec-chart-key');
+const overlapW = Math.max(0, Math.min(c.right, k.right) - Math.max(c.left, k.left));
+const overlapH = Math.max(0, Math.min(c.bottom, k.bottom) - Math.max(c.top, k.top));
+// must be 0
+const collision = overlapW * overlapH;
+```
+
+Measured: **69810** (390 x 179) on the unmodified stylesheet, **0** with the
+grow-and-scroll rule injected. It therefore fails first, and for the right
+reason.
+
+### Verification baselines, measured live this session
+
+The frozen ledger records `frontend/diagnose-workstation.browser.test.mjs` at
+"13 pass"; that record is stale. Run on this branch at `9ae8172`:
+
+- `node --test frontend/diagnose-workstation.browser.test.mjs` → **30 pass, 0
+  fail**
+- `node frontend/diagnose-event-comparison-behavior.replay.mjs` → **`13/13
+  stories passed against app`**
+- `node mockups/diagnose-event-comparison-support-audit.mjs` → **`PASS 7 issue
+  #694 support renders against app`**
+
 ## Open questions
 
 - None blocking. The fix shape was settled by measurement rather than

@@ -52,6 +52,16 @@
 
 - (none)
 
+## Review instrumentation (#109 order)
+
+- Round 1 (cold Opus panel): 5 blockers + 5 notes, all tagged `authoring` (missing
+  real snapshot; analyze() settings leak; store round-trip contract gap; vacuous
+  placebo pass; unspiked gated sets).
+- Round 2 (same reviewer, delta pass): 3 blockers, all tagged `injected` by round-1
+  fixes (grep clause outlawed the pins' own CI comparisons; endpoint-only
+  precondition missed reverted reprogramming; round-trip asserted values with no
+  public surface). Fixed with the reviewer's wording; countersign pending.
+
 ## Spawned tasks
 
 - (none)

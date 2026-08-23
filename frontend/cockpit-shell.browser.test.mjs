@@ -75,6 +75,14 @@ const CDN = new Map([
 ]);
 const ADVISORY = 'Advisory only — review with your clinician before changing pump settings.';
 const TABS = ['diagnose', 'plan', 'verify', 'day', 'guide', 'settings'];
+const TAB_READINESS = Object.freeze({
+  diagnose: '.dw',
+  plan: '.active-profile-ref',
+  verify: '.vw',
+  day: '.ds-root',
+  guide: '.kb',
+  settings: '.token-row',
+});
 const VIEWPORTS = [
   { width: 1440, height: 900 },
   { width: 1280, height: 800 },
@@ -437,7 +445,13 @@ async function openApp(browser, options = {}) {
 async function chooseTab(page, id) {
   const trigger = page.locator(`[data-shell-tab="${id}"]:visible`).first();
   await trigger.click();
+  await waitForTabReady(page, id);
+}
+
+async function waitForTabReady(page, id) {
   await page.waitForFunction((tab) => location.pathname === `/${tab}`, id);
+  await page.locator(`[data-shell-tab="${id}"][aria-current]:visible`).first().waitFor();
+  await page.locator(TAB_READINESS[id]).first().waitFor();
 }
 
 async function proveRedOnce(term, check, mutate) {
@@ -714,11 +728,11 @@ test('clean page paths own direct load, refresh, history, migration, and local a
   try {
     for (const id of TABS) {
       await direct.goto(`http://ciq.local/${id}`);
-      await direct.locator(`[v-show="tab === '${id}'"]`).waitFor();
+      await waitForTabReady(direct, id);
       assert.equal(await direct.evaluate(() => location.pathname + location.search), `/${id}`,
         `${id} direct load keeps its clean address`);
       await direct.reload();
-      await direct.locator(`[v-show="tab === '${id}'"]`).waitFor();
+      await waitForTabReady(direct, id);
       assert.equal(await direct.evaluate(() => location.pathname + location.search), `/${id}`,
         `${id} refresh keeps its clean address`);
     }
@@ -1088,12 +1102,12 @@ async function openRetiredOccurrence(browser, options = {}) {
 export async function R1(browser) {
   const page = await openRetiredOccurrence(browser);
   try {
-    await proveRedOnce('R1 canonical hash',
+    await proveRedOnce('R1 canonical route',
       () => assertRetiredOccurrenceRoute(page), async () => {
         await page.evaluate(() => history.replaceState(null, '',
-          '#diagnose?modal=occurrences&detector=mutation'));
+          '/diagnose?modal=occurrences&detector=mutation'));
         return () => page.evaluate(() => history.replaceState(null, '',
-          '#/diagnose?view=glucose&mode=dense'));
+          '/diagnose?view=glucose&mode=dense'));
       });
     await proveRedOnce('R1 duplicate occurrence route',
       () => assertRetiredOccurrenceRoute(page), async () => {

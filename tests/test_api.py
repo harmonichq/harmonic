@@ -1511,8 +1511,9 @@ class CachePreWarmTest(unittest.TestCase):
 
     def test_one_failing_shape_is_contained_and_the_rest_still_warm(self):
         # The witness must be a shape the warm pass reaches *after* the failing one,
-        # or containment isn't what's being proved. Backtest warms second, scenarios
-        # last, so a blown-up backtest leaves three later shapes to observe.
+        # or containment isn't what's being proved. Backtest warms second, the
+        # finding-case preparation last, so a blown-up backtest leaves later
+        # shapes to observe.
         import ciq_autotune.backtest as backtest_mod
 
         def boom(*args, **kwargs):

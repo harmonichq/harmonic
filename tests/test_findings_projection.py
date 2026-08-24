@@ -609,6 +609,8 @@ class FindingsEndpointTest(unittest.TestCase):
                                             analysis_incarnation="findings-http"))
 
     def tearDown(self):
+        from ciq_autotune.derived_artifacts import sidecar_path
+        pathlib.Path(sidecar_path(self.tmp.name)).unlink(missing_ok=True)
         self.tmp.close()
 
     def test_the_global_queue_answers_without_a_window(self):
@@ -836,6 +838,10 @@ class FindingsEndpointTest(unittest.TestCase):
         )
         for lifecycle, code, message in cases:
             with self.subTest(lifecycle=lifecycle):
+                # Each mocked projection is an artificial source state. Real
+                # stores advance their durable revision between states.
+                from ciq_autotune.derived_artifacts import sidecar_path
+                pathlib.Path(sidecar_path(self.tmp.name)).unlink(missing_ok=True)
                 projection, history = _with_history(
                     gen.empty_projection(), lifecycle=lifecycle)
                 client = TestClient(create_app(
@@ -904,7 +910,7 @@ class FindingsEndpointTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["analysis_generation"], "crossed-read:1")
-        self.assertEqual(len(calls), 2)
+        self.assertEqual(len(calls), 1)
 
 
 class FindingEvidenceBlockTest(unittest.TestCase):

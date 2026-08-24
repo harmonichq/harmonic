@@ -446,6 +446,15 @@ CREATE TABLE IF NOT EXISTS audit_dismissals (
     evidence_fingerprint TEXT NOT NULL,
     dismissed_at TEXT NOT NULL
 );
+
+-- Monotonic generation for durable derivations.  It advances in the same
+-- transaction as every Store-owned committed mutation, so a sidecar artifact
+-- can never claim a primary-store snapshot it did not read.
+CREATE TABLE IF NOT EXISTS input_data_revision (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    revision INTEGER NOT NULL
+);
+INSERT OR IGNORE INTO input_data_revision (id, revision) VALUES (1, 0);
 """
 
 # Additive columns introduced after the first release, applied to pre-existing
@@ -492,44 +501,34 @@ class Store:
 
     def _migrate(self) -> None:
         """Add post-release columns to a database created by an earlier schema."""
-        for table, column, coltype in _ADDED_COLUMNS:
-            existing = {r["name"] for r in
-                        self.conn.execute(f"PRAGMA table_info({table})")}
-            if column not in existing:
-                with self.conn:
-                    self.conn.execute(
-                        f"ALTER TABLE {table} ADD COLUMN {column} {coltype}")
-        self._rekey_seq_num_tables()
+        additions = [(table, column, coltype) for table, column, coltype in _ADDED_COLUMNS
+                     if column not in {r["name"] for r in
+                                       self.conn.execute(f"PRAGMA table_info({table})")}]
+        stale = self._stale_seq_num_tables()
+        if not additions and not stale:
+            return
+        statements = ["BEGIN"]
+        statements.extend(
+            f"ALTER TABLE {table} ADD COLUMN {column} {coltype}"
+            for table, column, coltype in additions)
+        statements.extend(f"DROP TABLE {table}" for table in stale)
+        if stale:
+            statements.append(_SCHEMA)
+        statements.extend((
+            "UPDATE input_data_revision SET revision = revision + 1 WHERE id = 1",
+            "COMMIT",
+        ))
+        self.conn.executescript(";\n".join(statements) + ";")
 
     # The pump-feed tables re-keyed on the pump's stable ``seq_num`` — basal by
     # #194, the rest by #198. Each is a re-fetchable cache keyed on its own event
     # identity; see :meth:`_rekey_seq_num_tables`.
     _SEQ_NUM_TABLES = ("basal_events", "bolus_events", "iob_events", "pump_events")
 
-    def _rekey_seq_num_tables(self) -> None:
-        """Re-key the pump-feed tables on the pump's ``seq_num``, wiping legacy rows.
-
-        Pre-re-key rows were keyed on a derived tuple (e.g. ``(t, delivery_type)``,
-        ``(t, description, insulin)``) and carry no ``seq_num``. They cannot be
-        back-filled with one (the sequence number only rides on a live pull), and a
-        store doubled by a bad re-pull — basal timestamp jitter (#194) or a
-        wrong-timezone fetch that stored the whole history +7 h (#198) — can't be
-        de-conflated in place. So any such table is dropped and rebuilt empty from
-        the current schema. These are re-fetchable caches (Tandem Source is the
-        source of truth); the next full ``fetch`` repopulates them cleanly and
-        idempotently, keyed on ``seq_num`` so even a mislabeled re-pull merges
-        instead of doubling. Only the manual carb log is irreplaceable, and it
-        lives in its own tables — untouched. No-op once every table carries
-        ``seq_num``, so this fires at most once per store."""
-        stale = [t for t in self._SEQ_NUM_TABLES
-                 if "seq_num" not in {r["name"] for r in
-                                      self.conn.execute(f"PRAGMA table_info({t})")}]
-        if not stale:
-            return
-        with self.conn:
-            for table in stale:
-                self.conn.execute(f"DROP TABLE {table}")
-            self.conn.executescript(_SCHEMA)
+    def _stale_seq_num_tables(self) -> list[str]:
+        return [t for t in self._SEQ_NUM_TABLES
+                if "seq_num" not in {r["name"] for r in
+                                     self.conn.execute(f"PRAGMA table_info({t})")}]
 
     @classmethod
     def open(cls, path: str) -> "Store":
@@ -605,7 +604,19 @@ class Store:
         )
         with self.conn:
             self.conn.executemany(sql, rows)
+            self._advance_revision()
         return len(rows)
+
+    def _advance_revision(self) -> None:
+        """Advance the durable derivation key inside the caller's transaction."""
+        self.conn.execute(
+            "UPDATE input_data_revision SET revision = revision + 1 WHERE id = 1")
+
+    def input_data_revision(self) -> int:
+        """The committed Store generation used to key durable derivations."""
+        row = self.conn.execute(
+            "SELECT revision FROM input_data_revision WHERE id = 1").fetchone()
+        return int(row["revision"])
 
     def upsert_basal(self, raw: Iterable[dict]) -> int:
         cols = ["seq_num", "t", "delivery_type", "duration_mins", "basal_rate",
@@ -873,6 +884,7 @@ class Store:
                     "VALUES (?, ?, ?, ?, ?, ?)",
                     (t, entry.grams, entry.certainty, entry.source, entry.note, created),
                 )
+                self._advance_revision()
                 return int(cur.lastrowid)
             self.conn.execute(
                 "INSERT INTO carb_entries (id, t, grams, certainty, source, note, created_at) "
@@ -881,6 +893,7 @@ class Store:
                 "certainty=excluded.certainty, source=excluded.source, note=excluded.note",
                 (id, t, entry.grams, entry.certainty, entry.source, entry.note, created),
             )
+            self._advance_revision()
             return id
 
     def carb_entries(self, start=None, end=None) -> List[CarbEntry]:
@@ -916,6 +929,8 @@ class Store:
         the sourcing prompt resurrects. Returns the number of entries deleted (0/1)."""
         with self.conn:
             cur = self.conn.execute("DELETE FROM carb_entries WHERE id = ?", (id,))
+            if cur.rowcount:
+                self._advance_revision()
         return cur.rowcount
 
     def record_prompt_response(self, *, detector: str, anchor_t: datetime, answer: str,
@@ -931,6 +946,7 @@ class Store:
                 (detector, format_t(anchor_t), answer, carb_entry_id,
                  format_t(answered_at or datetime.now())),
             )
+            self._advance_revision()
         return int(cur.lastrowid)
 
     def prompt_responses(self) -> List[dict]:
@@ -962,6 +978,7 @@ class Store:
                 "VALUES (?, ?, ?, ?, ?)",
                 (detector, format_t(anchor_t), answer, carb_id, answered),
             )
+            self._advance_revision()
         return carb_id, int(resp.lastrowid)
 
     def clear_prompt_response(self, *, detector: str, anchor_t: datetime,
@@ -993,6 +1010,8 @@ class Store:
                 else:
                     self.conn.execute(
                         "DELETE FROM prompt_responses WHERE id = ?", (r["id"],))
+            if rows:
+                self._advance_revision()
         return len(rows)
 
     def set_credentials(self, *, email: str, password_encrypted: bytes,
@@ -1006,6 +1025,7 @@ class Store:
                 "updated_at=excluded.updated_at",
                 (email, password_encrypted, region, updated_at),
             )
+            self._advance_revision()
 
     def get_credentials(self) -> Optional[sqlite3.Row]:
         return self.conn.execute("SELECT * FROM credentials WHERE id = 1").fetchone()
@@ -1032,6 +1052,7 @@ class Store:
                 (attempted_at, attempted_at if ok else None, None if ok else error,
                  written_json, ok, ok),
             )
+            self._advance_revision()
 
     def fetch_status(self) -> Optional[dict]:
         row = self.conn.execute("SELECT * FROM fetch_status WHERE id = 1").fetchone()
@@ -1074,6 +1095,7 @@ class Store:
                 (applied_at, json.dumps(draft["items"])),
             )
             self.conn.execute("DELETE FROM plan_draft WHERE id = 1")
+            self._advance_revision()
         return {"applied_at": applied_at, "items": draft["items"]}
 
     def plan_history(self) -> List[dict]:
@@ -1101,6 +1123,7 @@ class Store:
                 )
             except sqlite3.IntegrityError:
                 raise FocusAlreadyActive("a Focus is already active")
+            self._advance_revision()
             return {"id": cur.lastrowid, "lever": lever,
                     "pinned_at": pinned_at, "status": "active"}
 
@@ -1124,6 +1147,8 @@ class Store:
                 "UPDATE focus SET status = ? WHERE id = ? AND status = 'active'",
                 (status, focus_id),
             )
+            if cur.rowcount:
+                self._advance_revision()
         return cur.rowcount > 0
 
     def list_focuses(self) -> List[dict]:
@@ -1156,6 +1181,7 @@ class Store:
                 "decision=excluded.decision, decided_at=excluded.decided_at",
                 (cell_id, era_start, decision, when),
             )
+            self._advance_revision()
 
     def pattern_reviews(self, era_start: Optional[str] = None) -> dict:
         """Human decisions as ``{cell_id: {'decision', 'decided_at', 'era_start'}}``.
@@ -1189,6 +1215,7 @@ class Store:
                 "dismissed_at=excluded.dismissed_at",
                 (item_id, evidence_fingerprint, dismissed_at or format_t(datetime.now())),
             )
+            self._advance_revision()
 
     def audit_dismissals(self) -> dict:
         rows = self.conn.execute("SELECT * FROM audit_dismissals").fetchall()

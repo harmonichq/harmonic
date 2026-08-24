@@ -6,7 +6,9 @@ itself (that is covered by the analyzer/facade tests).
 """
 
 import contextlib
+import json
 import os
+import sqlite3
 from concurrent.futures import ThreadPoolExecutor
 import tempfile
 import threading
@@ -29,6 +31,7 @@ except ImportError:  # pragma: no cover
     _HAS_TCONNECTSYNC = False
 
 from ciq_autotune.result import SCHEMA_VERSION
+from ciq_autotune.derived_artifacts import _canonical, _digest, sidecar_path, source_fingerprint
 from ciq_autotune.settings import parse_pump_settings
 from ciq_autotune.store import Store
 
@@ -630,6 +633,78 @@ class ApiTest(unittest.TestCase):
         r = self.client.put("/api/plan", json={"items": items})
         self.assertEqual(r.status_code, 400)
         self.assertEqual(self.client.get("/api/plan").json()["items"], [])
+
+
+@unittest.skipUnless(_HAS_FASTAPI, "api extra not installed")
+class DurableArtifactApiTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.NamedTemporaryFile(suffix=".db")
+        _seed(self.tmp.name)
+
+    def tearDown(self):
+        for suffix in ("", "-wal", "-shm"):
+            try:
+                os.unlink(sidecar_path(self.tmp.name) + suffix)
+            except FileNotFoundError:
+                pass
+        self.tmp.close()
+
+    def test_restart_warms_event_comparison_without_rebuilding(self):
+        from ciq_autotune.api import create_app
+        first = TestClient(create_app(db_path=self.tmp.name, token=None, enable_fetch_loop=False))
+        initial = first.get("/api/explore/exposures")
+        self.assertEqual(initial.status_code, 200)
+        import ciq_autotune.api as api_mod
+        real = api_mod.prepare_event_comparisons
+        calls = []
+        with patch.object(api_mod, "prepare_event_comparisons",
+                          side_effect=lambda *args, **kwargs: calls.append(1) or real(*args, **kwargs)):
+            second = TestClient(create_app(db_path=self.tmp.name, token=None, enable_fetch_loop=False))
+            restored = second.get("/api/explore/exposures")
+            self.assertEqual(restored.status_code, 200)
+        self.assertEqual(calls, [])
+        self.assertEqual(restored.json(), initial.json())
+
+    def test_valid_json_wrong_event_comparison_shape_recomputes_and_serves(self):
+        from ciq_autotune.api import create_app
+        first = TestClient(create_app(db_path=self.tmp.name, token=None, enable_fetch_loop=False))
+        self.assertEqual(first.get("/api/explore/exposures").status_code, 200)
+        routes = {
+            factor: {"cohort": "fired", "other_factors": [{}]}
+            for factor in ("over_treated_low", "correction_on_iob", "correction_stacking")
+        }
+        payload = json.dumps({
+            "exposures": {"window": {"start": "2026-05-01", "end": "2026-06-01"}},
+            "catalog": {
+                "meals": [],
+                "lows": [{
+                    "id": "bad", "ep_id": "bad-episode", "anchor_t": "2026-06-01 00:00:00",
+                    "date": "2026-06-01", "outcome_min": 0,
+                    "routes": routes, "trace": {"cgm": [{}]},
+                }],
+            },
+        }, separators=(",", ":"))
+        marker = _canonical(("event-comparison-v1", 1, source_fingerprint()))
+        with Store.open_queryonly(self.tmp.name) as store:
+            revision = store.input_data_revision()
+        with sqlite3.connect(sidecar_path(self.tmp.name)) as sidecar:
+            sidecar.execute("UPDATE artifacts SET payload=?, digest=? WHERE revision=? AND coordinates=? AND marker=?",
+                            (payload, _digest(payload), revision,
+                             _canonical(("event-comparison-preparation",)), marker))
+        import ciq_autotune.api as api_mod
+        real = api_mod.prepare_event_comparisons
+        calls = []
+        with patch.object(api_mod, "prepare_event_comparisons",
+                          side_effect=lambda *args, **kwargs: calls.append(1) or real(*args, **kwargs)):
+            second = TestClient(create_app(db_path=self.tmp.name, token=None, enable_fetch_loop=False))
+            response = second.get("/api/diagnose/event-comparison", params={"view": "lows"})
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(calls, [1])
+        with sqlite3.connect(sidecar_path(self.tmp.name)) as sidecar:
+            self.assertNotEqual(sidecar.execute(
+                "SELECT payload FROM artifacts WHERE revision=? AND coordinates=? AND marker=?",
+                (revision, _canonical(("event-comparison-preparation",)), marker),
+            ).fetchone()[0], payload)
 
 
 @unittest.skipUnless(_HAS_FASTAPI, "api extra not installed")
@@ -1492,10 +1567,12 @@ class CachePreWarmTest(unittest.TestCase):
             self._get_landing_set()          # cold: every shape computed once
             self.assertEqual(counts["scenarios"], 2)
             self.app.state.invalidate_and_warm()
-            # New data landed, so the pre-fetch results were dropped and rebuilt.
-            self.assertEqual(counts["scenarios"], 4)
+            # A cache-only invalidation has no new Store revision, so the fixed
+            # scenarios endpoint reuses its verified durable artifact. The warm
+            # finding-case preparation still has its own scenario build.
+            self.assertEqual(counts["scenarios"], 3)
             self._get_landing_set()
-            self.assertEqual(counts["scenarios"], 4)
+            self.assertEqual(counts["scenarios"], 3)
 
     def test_drill_downs_and_other_windows_stay_lazy(self):
         with self._counting_builders() as counts:

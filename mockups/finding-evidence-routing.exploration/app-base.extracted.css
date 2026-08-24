@@ -317,14 +317,40 @@
     .basal-table-actions { display: flex; gap: 6px; justify-content: flex-end; }
     .basal-table-actions .ghost.small { min-width: 116px; text-align: center; justify-content: center; }
     .basal-table-actions .btn-primary.small { min-width: 116px; text-align: center; justify-content: center; }
+
+    /* ---- #57 Basal: Profile Diff + coverage Ribbon (replaces the 48-row table) ---- */
+    /* trust tiers: add=suggested change, ok=confirmed on target, warn=insufficient, muted=no data */
+
+    /* coverage ribbon */
+    .ribbon-legend .sw { width: 16px; height: 9px; border-radius: 2px; display: inline-block; }
+
+    /* tier filter row */
+    .tier-toggle .sw { width: 12px; height: 12px; border-radius: 3px; flex: none; }
+    .tier-toggle .cnt { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--muted); background: var(--surface-2); border-radius: 999px; padding: 0 6px; font-size: .72rem; }
+    .tier-toggle.active { color: var(--text); border-color: var(--primary); background: var(--primary-100); }
+    .tier-toggle.off { opacity: .4; }
+
     /* the diff surface */
     .diff { border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; background: var(--surface); }
+    .diff-block.collapsed .diff-caret { transform: rotate(-90deg); }
+    .diff-block-tag .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+    .diff-block.collapsed .diff-block-body { display: none; }
+
+    /* one diff line per slot */
+
+    /* the change hunk (the star) */
     .staged { font-size: .82rem; font-weight: 700; display: inline-flex; align-items: center; gap: 7px; }
     .staged.acc { color: var(--on-target); }
     .staged.rej { color: var(--accent); }
     .staged button { background: none; border: none; color: var(--muted); font-family: inherit; font-size: .76rem; text-decoration: underline; cursor: pointer; }
     .btn-reject { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
     .btn-reject:hover { background: var(--accent-100); }
+
+    /* evidence strip plot (error-bar-on-estimate) */
+    .evidence-strip { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-2); padding: 12px 12px 8px; margin: 12px 0; }
+    .evidence-strip .head { font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
+    .evidence-strip .foot { font-size: .74rem; color: var(--muted); margin: 6px 2px 0; line-height: 1.5; }
+
     .modal-overlay { position: fixed; inset: 0; background: rgba(10,14,16,.5); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 20px; }
     .modal { background: var(--surface); border-radius: var(--radius); box-shadow: var(--wk-elevation); max-width: 640px; width: 100%; padding: 0 22px 22px; max-height: 85vh; overflow: auto; }
     .modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; gap: 12px; position: sticky; top: 0; background: var(--surface); z-index: 1; padding-top: 22px; }
@@ -399,6 +425,17 @@
     /* #134: the daily-lanes chart is four stacked lanes on a shared clock, so
        it needs more vertical room than the old single panel. */
     .daily-chart-wrap { height: 482px; overflow: hidden; }
+    .range-legend .sw { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+    /* "logged carbs (you)" — a plain amber ring, not a gram-labeled pill, so it
+       can't be mistaken for a plotted manual-carb bubble when the legend wraps
+       on a narrow viewport (#141). */
+    .range-legend .sw.logged { background: var(--manual-carb-soft); border: 1.5px solid var(--manual-carb); }
+    .range-legend .sw.diamond { border-radius: 2px; transform: rotate(45deg); }
+    .range-legend .sw.pin { border-radius: 50% 50% 50% 0; }
+    .range-legend .sw.line { width: 14px; height: 0; background: none !important; border-radius: 0; }
+    .range-legend .sw.hatch { background: repeating-linear-gradient(45deg, var(--muted) 0 1.5px, transparent 1.5px 5px); opacity: .5; }
+    .range-legend .sw.band { width: 16px; height: 10px; border-radius: 2px; opacity: .5; }
+    .range-legend .sw.badge-lg { width: 14px; height: 14px; border-radius: 50%; background: var(--accent); color: var(--on-primary); font-size: .58rem; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; }
 
     /* #134 engine-flag footnotes: numbered flag list + on-demand detail card,
        lifted from the locked mockup (daily-flags-hybrid). Number ↔ chart badge

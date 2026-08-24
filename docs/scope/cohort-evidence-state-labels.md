@@ -229,3 +229,39 @@ named, dated owner sanction that question asked for.
   the ledger targets, step 4's signature, and every citation. Both reviewers
   converged on one injected blocker, already fixed before either reported.
   **COUNTERSIGNED** on two clean delta passes, at 2 rounds of the 3-panel cap.
+
+### Plan-review, 2026-08-24 (the cut)
+
+Two cold reviewers, two rounds each, against the rewritten order.
+
+- Round 1: **7 blockers, all `authoring`, 0 `injected`.** Both reviewers independently
+  found the two that mattered: `mockups/diagnose-event-comparison-support-audit.mjs`
+  asserts `/Supported|Limited|Withheld/` on EVERY legend item in ALL SEVEN cases, and
+  that is satisfied today only by the badge the cut deletes — so the draft's "one gate
+  assertion changes" was wrong by two. And the draft's two new audit assertions were
+  anchored on `got.legend[].text`, which is the whole row including the cohort label,
+  so they could never match and the red-then-green evidence was unproducible.
+  Reviewer B alone found the acceptance criterion false: `paintLegend` composes
+  ` · selected cohort` onto the detail, so the closed table is eight rendered shapes,
+  not four — fixed in the spike rather than by rewording. B also found the chart's
+  standing `aria.description` (js:558) says "thin cohorts show individual episodes",
+  which the new vocabulary inverts: a thin cohort still draws an aggregate, and a
+  withheld one shows the episodes. The order was rewritten clean, not patched.
+- Round 2 (delta re-check): **4 blockers, all `injected` by the rewrite.** Both
+  reviewers converged on the same two: the rewrite told the implementer to invent the
+  replacement `aria.description` sentence with no closed table and no gate, and the
+  restored public-tree leg used an unassigned `$T` (reviewer B ran it: with `$T` empty
+  the tree-materialiser aims at the working tree and dies on `SameFileError`). A alone
+  caught that the replacement legend assertion had been weakened from the guarantee the
+  audit's own header claims — membership in three words rather than EQUALITY against
+  the server's value, at the exact moment `data-support` became the legend's only
+  carrier of state. B alone derived the fixture coordinate the draft left unnamed: the
+  single withheld point is the alignment window's LAST minute in both dense cases
+  (meals -60..300 withheld at 300; lows -300..120 at 120), so the audit reaches it with
+  one `End` press rather than a hunt for a step count. Three of the four are fixed;
+  the fourth is a wording decision and goes to the owner.
+
+Injected blockers went 0 -> 4 across the two rounds, which is the rewrite-clean signal
+firing. Rather than mint a third draft, the one remaining blocker is being taken to the
+owner as the decision it is: the replacement sentence for the chart's spoken
+description. Everything else in the order is settled and verified.

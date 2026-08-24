@@ -16,8 +16,8 @@ generated history-event projection. No fetch path or real health data is involve
 
 ## Rendered evidence
 
-The paired dark-theme review renders remain external evidence under
-`/private/tmp/ticket132-evidence/`:
+The paired dark-theme review renders are committed under this change's
+`evidence/` directory:
 
 - `base-1440x900.png` and `revision-1440x900.png`
 - `base-1024x900.png` and `revision-1024x900.png`

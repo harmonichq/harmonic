@@ -212,3 +212,47 @@ never fired a second time.
 
 - None. The legend copy finding (#93 F1) and the WINDOW-preset reachability
   observation are pre-existing and separately tracked.
+
+## Outcome — 2026-08-24: closed, folded into the evidence-canvas lock (#135)
+
+**Retracts this ledger's classification, not its measurements.** The decisions
+above classified #98 as a bounded UI change on a shipped surface and settled
+grow-and-scroll as the fix shape. A mockup round with the owner on 2026-08-24
+overturned that. Everything measured above still holds; what it was taken to
+mean does not.
+
+The round rendered three candidate layouts live at 390x844 against the
+committed synthetic fixtures, on the case-file mount, and measured each:
+
+| candidate | chart | cohort key | collision | findings queue |
+|---|---|---|---|---|
+| scroll only (this ledger's recommendation) | 390px | wholly below the fold | 0 | 291px |
+| hybrid, chart floor 200px | 200px | 2 of 5 rows peek above the fold | 0 | 291px |
+| grow the pane to 62% | 300px | 4 of 5 rows | 0 | 146px |
+
+All three clear the acceptance predicate — collision area 0, no horizontal
+overflow at 390px, every `.ec-key-item` reachable. **None of them produces a
+readable response comparison**, which is what the ticket actually asked for.
+
+**Why containment was the wrong frame.** With the overlap gone and the chart at
+its full 390px, the plot still spends most of its height empty — the y-axis
+spans 40-300 while every cohort sits between 100 and 160 — and the cohorts
+render as sparse dashes rather than comparable traces. Fixing where the key
+sits cannot fix that. The ledger reached the containment diagnosis honestly (it
+is a real defect, and it is the reported symptom) but stopped at the symptom the
+CSS could reach, and read a passing geometry assertion as a satisfied ticket. The
+predicate was measurable; readability was not, and only the render showed it.
+
+**Disposition.** #98 closed as not planned. Narrow-viewport behaviour is already
+inside #135's deliverable ("a locked /ui-craft visual spec covering slot layout,
+promote/demote interaction, Explore entry/exit, and narrow-viewport behavior"),
+so this is an input to that lock rather than a ticket of its own. The lock has to
+settle y-range, trace form and cohort-key density together with slot layout —
+splitting them across two rounds would decide one composition twice.
+
+**What survives for #135:** the reproduction path, the collision predicate and
+its 69810 -> 0 measurement, the three priced layouts above, and the root cause
+(the narrow-width height path in `frontend/diagnose-event-comparison.css` is
+written against `.ec-panes` / `.ec-canvas`, which the case-file mount never
+creates). The retractions recorded earlier in this file — the legend-layout
+diagnosis and the target-band relocation — stay retracted.

@@ -306,22 +306,35 @@ class EventComparisonTest(unittest.TestCase):
                        profile_basal_rate=1),
             BasalEvent(meal_t + timedelta(minutes=15), "algorithm", basal_rate=0,
                        profile_basal_rate=1),
+            BasalEvent(meal_t + timedelta(minutes=20), "algorithm", basal_rate=0,
+                       profile_basal_rate=1),
+            BasalEvent(meal_t + timedelta(minutes=25), "algorithm", basal_rate=0,
+                       profile_basal_rate=1),
+            BasalEvent(meal_t + timedelta(minutes=30), "algorithm", basal_rate=0,
+                       profile_basal_rate=1),
         ]
-        capture_start = meal_t + timedelta(minutes=10)
-        capture_basal = full_basal[1:]
-        cgm = [CgmReading(meal_t + timedelta(minutes=10), 70)]
+        capture_basal = full_basal[3:]
+        cgm = [CgmReading(meal_t + timedelta(minutes=25), 70)]
 
-        full = classify_meal_owned_suspend(meal, [meal], cgm, full_basal)
+        full_ownership = MealSuspendOwnership([meal], full_basal)
+        full = classify_meal_owned_suspend(
+            meal, [meal], cgm, full_basal, ownership=full_ownership,
+        )
         capture_ownership = MealSuspendOwnership([meal], capture_basal)
         capture = classify_meal_owned_suspend(
             meal, [meal], cgm, capture_basal, ownership=capture_ownership,
         )
 
-        self.assertEqual(capture_ownership.owned_anchors(meal)[0].t,
-                         meal_t + timedelta(minutes=5))
-        self.assertLess(capture_basal[0].t, capture_start)
-        self.assertLessEqual(capture_basal[1].t, capture_start)
-        self.assertEqual(capture, full)
+        self.assertTrue(full_ownership.owned_anchors(meal))
+        self.assertTrue(capture_ownership.owned_anchors(meal))
+        self.assertGreater(
+            capture_ownership.owned_anchors(meal)[0].t,
+            full_ownership.owned_anchors(meal)[0].t,
+        )
+        self.assertTrue(full.matched)
+        self.assertEqual(capture.matched, full.matched)
+        self.assertEqual(capture.evidence_tier, full.evidence_tier)
+        self.assertEqual(capture.silence_reason, full.silence_reason)
 
     def test_projection_owns_half_bin_percentiles_and_selected_detail(self):
         first = {

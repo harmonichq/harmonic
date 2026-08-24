@@ -41,6 +41,35 @@ a Trial on a carb-ratio change should accept as "ready to judge".
   visualization together). Operator note, 2026-08-24: out of scope here, taken as a
   separate effort. Disposition: → issue.
 
+- **An expired window states how far the block got.** Operator decision (Q7),
+  2026-08-24: name the progress reached and that the change is no longer watched.
+  Why: on a quiet block this is the normal ending, and a bare disappearance reads
+  as a defect. Disposition: → ADR.
+- **An uncomputable count reports not ready, with a reason.** Operator decision
+  (Q8), 2026-08-24. Why: reporting ready without evidence is the failure this
+  ticket exists to close. Disposition: → ADR.
+
+### Risk contract
+
+- **Must prevent:** reporting a carb-ratio change ready to judge while the block's
+  evidence bar is unmet; any widening of what the app may recommend. Both are the
+  silent-incorrect-success default, and this ticket exists because the first one
+  was observed live.
+- **Must recover:** nothing automatically.
+- **Accepted failure:** a block that never reaches the bar inside the window
+  expires with no verdict, stating the progress it reached (Q7). A quiet block is
+  expected to do this routinely.
+- **Unsupported:** eras with no stamped regime identity (before settings history
+  begins) yield no trial evidence; parameters other than carb ratio keep their day
+  count (Q6).
+- **Evidence owed:** the readiness verdict is read from the engine's stamped
+  eligibility rather than re-derived; tests through the public interface at counts
+  below, at, and above the bar; the dock and the Verify roster report the same
+  verdict for the same change; an absent or uncomputable count reports not ready.
+
+Why: advisory dosing guidance, one operator, and a live observed case of ready
+appearing without evidence. Disposition: → ADR, copied into the work order.
+
 ## Grounding (read-only snapshot, 2026-08-24)
 
 Measured through the shipped path (`analyze` with the fuzzy estimator, the

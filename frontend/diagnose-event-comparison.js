@@ -456,9 +456,10 @@ function axisLabel(value, anchor) {
 
 function cohortReadout(cohort, row, record) {
   if (row?.support === 'withheld') {
+    if (record.support !== 'withheld') return `${COHORTS[cohort].label} no value at this point`;
     return record.usable_count
-      ? `${COHORTS[cohort].label} episodes shown individually, n${record.usable_count}`
-      : `${COHORTS[cohort].label} has no usable episodes to draw`;
+      ? `${COHORTS[cohort].label} too few events to average`
+      : `${COHORTS[cohort].label} nothing to draw`;
   }
   return `${COHORTS[cohort].label} median ${rounded(row?.median)} milligrams per deciliter`;
 }
@@ -477,7 +478,7 @@ function paintReadout(surface, headerHost, minute, aggregates, cohorts, cohortOr
     const row = aggregates[cohort].find((item) => item.minute === snapped);
     const support = row?.support || 'withheld';
     const value = support === 'withheld' ? '—' : rounded(row?.median);
-    const summary = support === 'withheld' ? 'Episodes shown individually' : `${support[0].toUpperCase()}${support.slice(1)} · n${row?.n ?? 0}`;
+    const summary = support === 'withheld' ? 'Withheld' : `${support[0].toUpperCase()}${support.slice(1)} · n${row?.n ?? 0}`;
     pieces.push(`<span class="ec-rd-value" data-support="${support}">${COHORTS[cohort].short} <b>${value}</b><em>${summary}</em></span>`);
   }
   host.innerHTML = pieces.join('');
@@ -485,32 +486,24 @@ function paintReadout(surface, headerHost, minute, aggregates, cohorts, cohortOr
   head.dataset.hover = '1';
 }
 
-function pointStateSummary(rows) {
-  const counts = { supported: 0, limited: 0, withheld: 0 };
-  for (const row of rows) counts[row.support] += 1;
-  return Object.entries(counts)
-    .filter(([, count]) => count > 0)
-    .map(([support, count]) => `${count} ${support}`)
-    .join(' · ');
-}
-
-function paintLegend(surface, cohortOrder, cohorts, aggregates, selected) {
+function paintLegend(surface, cohortOrder, cohorts, selected) {
   const key = surface.querySelector('#ec-chart-key');
   key.dataset.hasSelection = String(Boolean(selected));
   key.innerHTML = cohortOrder.map((cohort) => {
     const record = cohorts[cohort];
-    const support = record.support[0].toUpperCase() + record.support.slice(1);
     const selectedCohort = selected?.verdict?.cohort === cohort;
-    const detail = record.support === 'withheld' && record.usable_count === 0
-      ? `${record.routed_count} events · no usable episodes to draw`
-      : record.support === 'withheld'
-        ? `${record.routed_count} events · aggregate withheld${record.episodes?.length
-          ? ` · ${record.usable_count} ${record.usable_count === 1 ? 'episode' : 'episodes'} shown individually` : ''}`
-      : `${record.routed_count} events · ${pointStateSummary(aggregates[cohort])} points`;
+    const events = `${record.routed_count} ${record.routed_count === 1 ? 'event' : 'events'}`;
+    const detail = record.support === 'supported'
+      ? events
+      : record.support === 'limited'
+        ? `${events} · thin`
+        : record.usable_count === 0
+          ? `${events} · nothing to draw`
+          : `${events} · too few to average`;
     return `
       <span class="ec-key-item" data-cohort="${cohort}" data-support="${record.support}" data-selected-cohort="${selectedCohort}">
         <i class="ec-key-mark" aria-hidden="true"></i>
-        <strong>${COHORTS[cohort].label}<em class="ec-support-label">${support}</em></strong>
+        <strong>${COHORTS[cohort].label}</strong>
         <small>${detail}${selectedCohort ? ' · selected cohort' : ''}</small>
       </span>`;
   }).join('');
@@ -555,7 +548,7 @@ function chartOption(surface, coordinates, copy, cohortOrder, cohorts, aggregate
     aria: {
       enabled: true,
       decal: { show: false },
-      description: `${copy.title}. Aggregate lines compare supported cohorts; thin cohorts show individual episodes. Sparse whiskers show the 25th to 75th percentile.`,
+      description: `${copy.title}.`,
     },
     grid: { left: 52, right: 22, top: 24, bottom: 42, containLabel: false },
     tooltip: { trigger: 'axis', showContent: false, axisPointer: { type: 'cross', label: { show: false } } },
@@ -647,7 +640,7 @@ export function renderEventSurface(surface, payload, { headerHost = null } = {})
   /* Comparison population is projection data, not an app-side `data-state`.
      Aside from duplicating server policy, a `dense` state on this `.dw` would
      collide with the workstation density selector and shift shared geometry. */
-  paintLegend(surface, cohortOrder, cohorts, aggregates, selected);
+  paintLegend(surface, cohortOrder, cohorts, selected);
 
   const chartElement = surface.querySelector('#ec-chart');
   const chart = window.echarts.init(chartElement, null, { renderer: 'canvas' });

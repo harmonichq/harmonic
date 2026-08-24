@@ -117,13 +117,6 @@
   font-weight: 600;
 }
 
-.ec-support-label {
-  margin-left: 6px;
-  color: var(--mk-muted);
-  font: 550 8.5px/1 var(--ck-mono);
-  font-style: normal;
-}
-
 .ec-key-item small {
   grid-column: 2;
   font: 500 var(--ck-micro)/1 var(--ck-mono);

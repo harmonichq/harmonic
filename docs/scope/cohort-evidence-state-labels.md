@@ -1,0 +1,267 @@
+# Scope ledger — Cohort evidence-state labels (#99)
+
+Routed from `/ticket triage 99`. Triage ran as a worker with no interviewee: the
+frontier questions below carry recommendations, and the work order builds on the
+recommended defaults until Connor rules otherwise. Every fact recorded here was
+re-verified against this worktree in the triage run of 2026-08-23; an earlier
+aborted run's ledger was discarded and re-derived rather than trusted.
+
+## Decisions
+
+- Grounded, not a decision: `CONTEXT.md:277` defines **Comparison support** as the
+  presentation authority of an event-aligned cohort or five-minute point, based on
+  how many distinct usable Occurrences contribute — `Supported`, `Limited`,
+  `Withheld`, independent of classifier outcome and Evidence tier. The chart never
+  surfaces that definition. `inline`
+- Grounded, not a decision: the two things the reader sees side by side are two
+  different axes. The bold word is the **cohort**
+  (`COHORTS[].label`: `Rule matched`, `Claimed by another factor`, `Not comparable`,
+  …, `frontend/diagnose-event-comparison.js:52-95`) — which events are in the line.
+  The small word beside it is the **support state** — whether the line may be read
+  at all. Issue #99 and #93 F1 report exactly this adjacency as unreadable. `inline`
+- Grounded, not a decision: all the chart's support copy lives in
+  `frontend/diagnose-event-comparison.js`. `paintLegend` (493-520) prints
+  `<cohort label><Support>` plus a detail line; `paintReadout` (462-482) prints
+  `Limited · n3` or `Episodes shown individually`; `cohortReadout` (453-460) is the
+  screen-reader text; `COHORTS[].note` exists and nothing renders it. `inline`
+- **Grounded defect, found live in the committed fixture**: `paintReadout`'s
+  `withheld` branch prints `Episodes shown individually` for any five-minute point
+  whose support is `withheld`, including points inside a **Supported** cohort that
+  draws an aggregate line and no episodes at all. Executed against
+  `mockups/diagnose-event-comparison.synthetic/capture.json` through
+  `project.mjs`, the `zero-fired` state's `neutral` cohort is `Supported` with
+  `66 supported · 6 limited · 1 withheld points`, and hovering that withheld point
+  states a cohort-level fact about a point. This is the concrete mechanism behind
+  #93 F1's "the aggregate state and point-level state remain visually adjacent
+  without a plain-language relationship". `inline`
+- Grounded, not a decision: the gate pins any reword must survive, each reproduced
+  by executing it:
+  `mockups/diagnose-event-comparison-support-audit.mjs:141` pins
+  `/0 events · no usable episodes to draw/` on the legend item text;
+  `frontend/diagnose-event-comparison-behavior.replay.mjs:313,315` pin
+  `/Supported|Limited|Withheld/` and `/n\d+/` on `#ec-readout`; `:449` pins
+  `/n2\b/` on the first `.ec-rd-value`; `:237` asserts the `neutral` cohort's
+  `strong` text does not read as `normal|correct behavior|behaved correctly`;
+  `:405` pins `.ec-key-item[data-cohort][data-support][data-selected-cohort]`.
+  A spike applied the proposed copy to the real projection for the `dense`,
+  `sparse` and `zero-fired` states with and without `another`, and all five pins
+  still hold. `inline`
+- Grounded, not a decision: ADR 62's 2026-08-20 amendment
+  (`openspec/changes/by-event-window-membership/design.md:143-152`) retired the
+  rendered by-event caption — "Drop all that shit. It's a chart." — and DESIGN.md
+  rule 5 says charts explain themselves through on-chart legend chips, not caption
+  sentences. Both rule out the #93 feature vote's standing explanatory sentence;
+  neither touches rewording labels already on the chip and the readout. `inline`
+- Grounded, not a decision: the closed document inventory for this behavior. The
+  strings `aggregate withheld`, `shown individually`, `Comparison support` and
+  `ec-support-label` occur in exactly `CONTEXT.md`, this ledger,
+  `frontend/diagnose-event-comparison.css`, `frontend/diagnose-event-comparison.js`
+  and three files under `mockups/finding-evidence-routing.exploration/`. No
+  `docs/kb/` page, `openspec/specs/` capability, README, PRODUCT.md or DESIGN.md
+  mentions the support states. The exploration's copies are a retracted-lock
+  historical design record; its `pointStateSummary` is transcribed but never
+  called, and `build.mjs --check` compares its own regenerated artifacts, reading
+  the shipped module only for `const VIEWS`. A reword therefore does not trip that
+  drift check and must not edit the exploration. `inline`
+- Grounded, not a decision: the surface is shipped, so this is a UI Craft
+  **revise**. `route.mjs --embodiment shipped --runnability runnable --declaration
+  complete --data-source manufactured` resolves to `revise`. The safe-start
+  declaration is AGENTS.md's sole offline command,
+  `uv run harmonic serve --no-fetch --db mockups/revise-e2e.synthetic/harmonic.sqlite`,
+  whose database is generated by `scripts/gen_revise_e2e_db.py`; the replay's own
+  manufactured source is `mockups/diagnose-event-comparison.synthetic/capture.json`
+  through `project.mjs`. The frozen behavior ledger is
+  `mockups/finding-evidence-routing.behavior.md` (it registers the lens replay's
+  stories, `S13` at line 1310) and the replay is
+  `frontend/diagnose-event-comparison-behavior.replay.mjs` (13 stories). `inline`
+### Superseded on 2026-08-24 by the owner's mockup round
+
+The three decisions immediately below were drafted by a triage run with no
+interviewee, and every one of them ADDED words to the legend. Shown the rendered
+result, Connor rejected the direction outright: a chart legend the reader has to
+read four sentences of is a worse legend, whatever the sentences say. They are kept
+here because the plan-review ledger at the foot of this file is a record of rounds
+run against them, not against what replaced them.
+
+**What replaced them, and is now the decision of record:** the legend gets SHORTER.
+The support badge and the three-number point tally both go, because the key mark
+already carries support — solid for supported, thin-with-a-dot for limited, crossed
+for withheld. What remains is a count, plus a short qualifier on exactly the rows a
+reader must not read straight. Silence means the line is readable.
+
+The copy table is closed at four shapes, and it is executed rather than prosed:
+`docs/scope/99-legend-copy.spike.mjs` computes them over the real projection for all
+twelve fixture combinations and asserts nothing else is reachable.
+
+    supported                  `7 events`
+    limited                    `4 events · thin`
+    withheld, episodes drawn   `1 event · too few to average`
+    withheld, nothing drawn    `0 events · nothing to draw`
+
+The readout's false string goes the same way rather than being reworded at length:
+`Episodes shown individually` becomes `Withheld`, which is the only cohort-level
+claim a point-level state can honestly make. The spoken text branches on the
+cohort's support as well as the point's, per the spike's `proposedSpoken`.
+
+Two things fall out of the cut for free: the `1 events` plural (recorded below as
+adjacent and out of scope) dies with the string that carried it, and Q3's question
+about the point tally is answered — the tally goes, sanctioned by the owner on
+2026-08-24 in the mockup round.
+
+### Re-grounded on 2026-08-24
+
+The branch was 216 commits behind `origin/main` and was rebased onto it before any
+of the above was decided; main had since reworked this module's route strings and
+`validProjection`. Every citation in this ledger was re-executed against the rebased
+tree. The facts hold; the line numbers moved: `paintReadout` 462 -> 466,
+`paintLegend` 493 -> 497, `cohortReadout` 453 -> 457, the clipped `.head-live` rule
+236-239 -> 244-247, the support-audit pin 141 -> 142, the two `#ec-readout` replay
+pins 313,315 -> 314,316. `CONTEXT.md:277` is unchanged. One pointer no longer
+resolves: `mockups/finding-evidence-routing.behavior.md` no longer carries `S13` at
+line 1310.
+
+The defect itself reproduces on the rebased tree: in `meals`/`dense`, the `neutral`
+cohort is `Supported` with 66 supported, 6 limited and 1 withheld points, draws an
+aggregate line and no episodes, and hovering its one withheld point still says
+`Episodes shown individually`.
+
+### Decisions superseded above, kept for the review record
+
+- Decision, mine: the fix is labels-in-place. The support word in each legend chip
+  gains a short reading of what the reader may conclude, the hover readout gains
+  the point-level reading, and the withheld-point copy stops making a cohort-level
+  claim. No caption, no new panel, no new interaction. `-> ADR` (recorded in the
+  change's `design.md`).
+- Decision, mine, revised after plan-review round 1: the readings go on the chart
+  key's wrapping `<small>` detail line, not on the docked readout and not in the
+  8.5px support badge. The docked readout is a single clipped line
+  (`.canvas-head .head-live` is `white-space: nowrap; overflow: hidden`,
+  `frontend/diagnose-workstation.css:236-239`, host at
+  `frontend/diagnose-event-comparison.js:305`), so per-point readings appended
+  there would be invisible at narrow widths with no gate able to see it. The
+  closed copy table is therefore cohort-level only — `enough events to compare`,
+  `few events, compare with care`, `not enough events to draw a line` — and the
+  readout changes by exactly one string, `Episodes shown individually` to
+  `Withheld · too few events here` (27 characters to 30). `-> ADR`
+- Decision, mine: `cohortReadout` carries the same conflation as `paintReadout` —
+  both branch on the point's support and then state a cohort-level fact — so the
+  spoken text is fixed in the same change, branching on the cohort's support as
+  well as the point's. `-> ADR`
+- Decision, mine: `CONTEXT.md`'s Comparison support entry gains the same three
+  readings, so the glossary and the chart say one thing.
+- Recorded, not asked: the existing detail line prints `1 events · aggregate
+  withheld` for a one-event cohort. Real, adjacent, and not this ticket; it wants
+  its own issue. **Resolved incidentally by the 2026-08-24 cut** — the string that
+  carried the plural is gone.
+
+### Risk contract
+
+Why: the lens is evidence-only and never enters Priority, Plan or a settings
+action, so the exposure is a reader misjudging evidence, not a mis-issued dose.
+Disposition: copied into the work order.
+
+- **Must prevent:** a label that calls a Limited or Withheld line usable without
+  qualification; any change to which support state a cohort or point receives (the
+  server owns support facts); a Withheld cohort gaining an aggregate line; the
+  retired window-membership caption returning under another name.
+- **Must recover:** nothing automatically.
+- **Accepted failure:** none new; the chart renders exactly as today except for the
+  wording of its own labels.
+- **Unsupported:** the #93 feature vote's hover-position interpretation sentence;
+  any change to cohort membership, support thresholds, or the projection payload.
+- **Evidence owed:** the 13-story lens replay and the 7-case support audit green
+  against the built app; the changed withheld-point story amended in the frozen
+  behavior ledger with its old assertion proven to fail first; before/after renders
+  of the affected states in light and dark.
+
+## Open questions
+
+All three are **settled** by the owner's mockup round of 2026-08-24 and are kept
+for the record. Q1 resolved to A (reword in place, no caption). Q2's wording is the
+closed four-shape table above. Q3 resolved to dropping the point tally, which is the
+named, dated owner sanction that question asked for.
+
+- **Q1. Fix shape.** A. reword the chip and readout in place (recommended: honours
+  the 2026-08-20 caption ruling and DESIGN.md rule 5, and fixes the gap where the
+  reader is already looking). B. add the #93 feature-vote sentence beside the
+  chart (a new rendered caption; collides with ADR 62's amendment and needs Connor
+  to reopen it). C. both.
+- **Q2. Wording.** Owner's call on the six readings above; the defaults stand until
+  replaced.
+- **Q3. The point tally.** The chip's detail line still prints
+  `76 supported · 7 limited · 2 withheld points`, which the design exploration's
+  round 9 judged three engine facts printed at data weight (DESIGN.md rules 2 and
+  5). Dropping it is a retirement of shipped behavior and needs a named, dated,
+  quoted sanction, so the default keeps it.
+
+## Spawned tasks
+
+- none
+
+## Plan-review ledger
+
+- Round 1 (two cold reviewers, 2026-08-23): 12 blockers and 1 note, all
+  `authoring`, 0 `injected`. Every factual claim was reproduced before it reached
+  a fix round. The load-bearing ones: the docked readout is a single
+  `nowrap; overflow: hidden` line, so appending per-point readings there would be
+  invisible and no gate could see it; the frozen ledger carries no story for this
+  lens's readout, so "amend the story that covers the docked readout" named a
+  workstation-owned section; nothing anywhere pins `Episodes shown individually`,
+  so the draft's demand to prove an old assertion fails was unsatisfiable; the two
+  lens gates are fixture-stubbed through `page.route('**/*')` to
+  `http://app.local/` and never contact the declared server, so the draft's
+  provenance claim was false; the fast gate was mis-enumerated; the glossary entry
+  is at `CONTEXT.md:277`, not 275. The order was rewritten clean rather than
+  patched, and the readings were moved off the readout onto the chart key.
+- Round 2 (delta re-check, 2026-08-23): reviewer B confirmed all eight of its round-1
+  objections fixed and found **1 `injected`** blocker — the rewrite's own sentence
+  "the workstation replay and every screenshot DO use the declared safe-start
+  server" is false, because the support audit shares the replay's fixture-stubbed
+  `openApp` (`mockups/diagnose-event-comparison-support-audit.mjs:24`) and contacts
+  no server. Reproduced, then fixed: the order now states that the workstation
+  replay leg alone uses the declared server. The same round added the materialised
+  public-tree leg (`.github/workflows/ci.yml:100-104`) to verification and a
+  boundary forbidding a pointer from a shipping `frontend/` file into
+  `docs/scope/` or `mockups/`, which `scripts/check_public_links.py` fails on.
+  Reviewer A's delta re-check returned the same single `injected` blocker and
+  nothing else, verifying independently the 95-character longest detail line,
+  every gate pin, step 7d's absolute claim about nothing pinning the old strings,
+  the ledger targets, step 4's signature, and every citation. Both reviewers
+  converged on one injected blocker, already fixed before either reported.
+  **COUNTERSIGNED** on two clean delta passes, at 2 rounds of the 3-panel cap.
+
+### Plan-review, 2026-08-24 (the cut)
+
+Two cold reviewers, two rounds each, against the rewritten order.
+
+- Round 1: **7 blockers, all `authoring`, 0 `injected`.** Both reviewers independently
+  found the two that mattered: `mockups/diagnose-event-comparison-support-audit.mjs`
+  asserts `/Supported|Limited|Withheld/` on EVERY legend item in ALL SEVEN cases, and
+  that is satisfied today only by the badge the cut deletes — so the draft's "one gate
+  assertion changes" was wrong by two. And the draft's two new audit assertions were
+  anchored on `got.legend[].text`, which is the whole row including the cohort label,
+  so they could never match and the red-then-green evidence was unproducible.
+  Reviewer B alone found the acceptance criterion false: `paintLegend` composes
+  ` · selected cohort` onto the detail, so the closed table is eight rendered shapes,
+  not four — fixed in the spike rather than by rewording. B also found the chart's
+  standing `aria.description` (js:558) says "thin cohorts show individual episodes",
+  which the new vocabulary inverts: a thin cohort still draws an aggregate, and a
+  withheld one shows the episodes. The order was rewritten clean, not patched.
+- Round 2 (delta re-check): **4 blockers, all `injected` by the rewrite.** Both
+  reviewers converged on the same two: the rewrite told the implementer to invent the
+  replacement `aria.description` sentence with no closed table and no gate, and the
+  restored public-tree leg used an unassigned `$T` (reviewer B ran it: with `$T` empty
+  the tree-materialiser aims at the working tree and dies on `SameFileError`). A alone
+  caught that the replacement legend assertion had been weakened from the guarantee the
+  audit's own header claims — membership in three words rather than EQUALITY against
+  the server's value, at the exact moment `data-support` became the legend's only
+  carrier of state. B alone derived the fixture coordinate the draft left unnamed: the
+  single withheld point is the alignment window's LAST minute in both dense cases
+  (meals -60..300 withheld at 300; lows -300..120 at 120), so the audit reaches it with
+  one `End` press rather than a hunt for a step count. Three of the four are fixed;
+  the fourth is a wording decision and goes to the owner.
+
+Injected blockers went 0 -> 4 across the two rounds, which is the rewrite-clean signal
+firing. Rather than mint a third draft, the one remaining blocker is being taken to the
+owner as the decision it is: the replacement sentence for the chart's spoken
+description. Everything else in the order is settled and verified.

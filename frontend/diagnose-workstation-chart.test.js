@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {
   BIN_MINUTES, buildMealMarkers, buildSlotLane, slotAssertsMove, snapWindow,
   renderCanvas, renderHistoryEvents, validateHistoryEvents, windowStats, windowSupport,
-  commitSlide, commitWindow, minuteAtX, windowSpans, xAtMinute,
+  commitSlide, commitWindow, minuteAtX, windowSpans, xAtMinute, windowSpanText,
 } from './diagnose-workstation-chart.js';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -73,6 +73,40 @@ test('windowStats reads a snapped hand-built envelope window', () => {
   assert.deepEqual(windowStats(envelope, window), {
     a: 1, b: 6, median: 118, lowest: 105, lowestIndex: 1, spread: 20, readings: 27,
   });
+});
+
+test('#130 · a zero-extent window answers with an empty sample, never a throw', () => {
+  const envelope = {
+    p25: Array.from({ length: 96 }, () => 100), p50: Array.from({ length: 96 }, () => 120),
+    p75: Array.from({ length: 96 }, () => 140), raw: Array.from({ length: 96 }, () => 3),
+    counts: Array.from({ length: 96 }, () => 12),
+  };
+  /* paintChart calls windowStats BEFORE renderCanvas on the same range, so a
+     throw here fires before renderCanvas's own hardening can answer. All three
+     of these degenerate ranges must give one empty-sample answer, the same
+     shape windowSupport already gives them. */
+  for (const range of [[0, 0], [360, 360], [1440, 1440]]) {
+    assert.deepEqual(windowStats(envelope, range), {
+      a: 0, b: 0, median: null, lowest: null, lowestIndex: -1, spread: null, readings: 0,
+    }, `${range} reads as an empty sample`);
+    assert.deepEqual(windowSupport(envelope, range), { thinnest: 0, supported: false });
+  }
+});
+
+test('#130 · a window that ends on the day boundary names that instant 24:00', () => {
+  /* The circular commit stores an end-of-day endpoint as 0, so the boundary has
+     to be read off the pair, not off the endpoint alone. The preset grammar is
+     the reference: Evening is 18:00–24:00, never 18:00–00:00. */
+  assert.deepEqual(commitSlide(1260, 180), [1260, 0], 'a slide to the day end commits end 0');
+  assert.equal(windowSpanText(commitSlide(1260, 180)), '21:00–24:00');
+  assert.equal(windowSpanText([1080, 1440]), '18:00–24:00', 'the preset form still reads 24:00');
+  assert.equal(windowSpanText([1260, 0]), '21:00–24:00');
+
+  // a genuinely wrapped window keeps its own end, and 00:00 survives where it means 00:00
+  assert.equal(windowSpanText([1380, 60]), '23:00–01:00');
+  assert.equal(windowSpanText(commitSlide(1380, 120)), '23:00–01:00');
+  assert.equal(windowSpanText([0, 360]), '00:00–06:00', 'a day-start window still starts 00:00');
+  assert.equal(windowSpanText([0, 1440]), '00:00–24:00');
 });
 
 test('unrolled display windows snap, preserve their anchor, and commit circularly', () => {

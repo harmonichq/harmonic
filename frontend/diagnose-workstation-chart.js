@@ -48,6 +48,16 @@ export const hhmm = (mins) => {
   return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 };
 
+/**
+ * Name a committed circular window, start to end. A window that ENDS on the day
+ * boundary names that instant 24:00, matching the preset grammar
+ * ("Evening 18:00–24:00") — and the circular commit stores that end as 0, so 0
+ * IS the boundary whenever the window has any extent before it. A genuinely
+ * wrapped window is untouched: 23:00–01:00 ends at 60, not at 0.
+ */
+export const windowSpanText = ([startMin, endMin]) => `${hhmm(startMin)}–${
+  endMin === 1440 || (endMin === 0 && startMin !== 0) ? '24:00' : hhmm(endMin)}`;
+
 function percentile(sorted, q) {
   if (!sorted.length) return null;
   const pos = (sorted.length - 1) * q;
@@ -111,7 +121,12 @@ export function buildEnvelope(days, { pool = 45 } = {}) {
  */
 export function windowStats(envelope, [startMin, endMin]) {
   const spans = windowBinSpans([startMin, endMin]);
-  const [[a, b]] = spans;
+  /* A zero-extent window has no spans at all. windowSupport answers that with
+     an empty sample and renderCanvas defaults the same destructure, so answer
+     it here too rather than throwing underneath both of them — paintChart calls
+     this BEFORE renderCanvas on the same range, so a throw here would fire
+     before the hardening downstream could help. */
+  const [[a, b] = [0, 0]] = spans;
   const take = (arr) => spans.flatMap(([lo, hi]) => arr.slice(lo, hi + 1).map((value, index) => [lo + index, value]))
     .filter(([, value]) => value != null);
   const avg = (xs) => (xs.length ? Math.round(xs.reduce((s, x) => s + x, 0) / xs.length) : null);

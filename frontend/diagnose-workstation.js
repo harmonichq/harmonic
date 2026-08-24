@@ -24,7 +24,8 @@
  */
 import {
   buildEnvelope, buildMealMarkers, renderCanvas, observeResize,
-  buildSlotLane, cellAtMinute, windowStats, hhmm, BIN_MINUTES, MIN_SUPPORTED_NIGHTS,
+  buildSlotLane, cellAtMinute, windowStats, hhmm, windowSpanText,
+  BIN_MINUTES, MIN_SUPPORTED_NIGHTS,
   snapMinute, snapWindow, commitWindow, commitSlide, minuteAtX, xAtMinute, plotBox, windowSpans,
   buildDayTrace,
   renderHistoryEvents, validateHistoryEvents,
@@ -234,8 +235,7 @@ const WINDOWS = {
   evening: { label: 'Evening', range: [1080, 1440] },
   all: { label: '24 h', range: [0, 1440] },
 };
-const winEdge = (m) => (m === 1440 ? '24:00' : hhmm(m));
-const winText = (w) => `${hhmm(w.range[0])}–${winEdge(w.range[1])}`;
+const winText = (w) => windowSpanText(w.range);
 
 /* ---- mock 1222-1242 — VERBATIM except the trailing `[state]` index:
        the app re-derives CFG per mount instead of once at load. ---- */
@@ -1117,7 +1117,7 @@ function boot(root, data, callbacks, signal) {
   const scopeWindow = () => drawn || WINDOWS[presetKey].range;
   const scopeLabel = () => {
     const w = scopeWindow();
-    return w ? `${hhmm(w[0])}–${winEdge(w[1])}` : 'full range';
+    return w ? windowSpanText(w) : 'full range';
   };
   /* The opening depth of a mock state, as FRAMES. A factor frame is (factor,
      rowId) together — the row is where its population comes from — so the boot
@@ -1730,7 +1730,7 @@ function boot(root, data, callbacks, signal) {
          already occupies. */
       win = { label: 'Window', range: canvasDrawn };
       label = `WINDOW ${winText(win)}`;
-      markWindowSegment(`Window ${hhmm(canvasDrawn[0])}–${hhmm(canvasDrawn[1])}`,
+      markWindowSegment(`Window ${windowSpanText(canvasDrawn)}`,
         retainedHistoryScope ? null : clearDrawn);
     } else if (explicitPreset || retainedHistoryScope) {
       /* A pressed preset is a workspace too, and it outranks the frame for the
@@ -2462,7 +2462,7 @@ function boot(root, data, callbacks, signal) {
         : mode === 'draw' ? (m >= anchor ? 'b' : 'a')
           : mode);
       markWindowSegment(drawn
-        ? `Window ${hhmm(drawn[0])}–${hhmm(drawn[1])}` : 'Whole day', clearDrawn);
+        ? `Window ${windowSpanText(drawn)}` : 'Whole day', clearDrawn);
     }
 
     function liveRepaint() {

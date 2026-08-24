@@ -362,7 +362,16 @@ P57 · A slide can cross 24:00 in either direction. It preserves the circular
       window length, keeps both edges live, and remains grabbable on either
       stretch after release.
   source:   installDrag edgeAt / overInterior, frontend/diagnose-workstation.js
-  evidence: replay S86, S87
+  evidence: the crossing, the preserved length and the live edges — replay S86,
+            S87. Grabbable on either stretch after release — the cursor loop in
+            frontend/diagnose-workstation.browser.test.mjs, test "#130 · a
+            wrapped draw leaves two endpoint edges and dims only the outside
+            basal slots", which reads the chart's own cursor at 23:00 and 01:00
+            (both `grab`, either side of midnight) and at 22:00 (`col-resize`);
+            it fails pre-ticket because the old linear `overInterior` returns
+            false on both stretches of a wrapped window. The two replay stories
+            commit the slide and check the chip; neither re-grabs the committed
+            window, so they do not carry that clause.
   verdict:  added         operator-ruled: PENDING - #130
 ```
 

@@ -2603,6 +2603,26 @@ export const S80 = async (page) => {
   is(await selected(), selectedId, 'S80 chart ArrowDown leaves the pressed row unchanged');
 };
 
+/** S81 · Choosing a rendered Occurrence keeps the reader's place on that row. */
+// STORY:finding-evidence-routing:S81
+export const S81 = async (page) => {
+  await page.click('#level .qrow[data-state="finding"]');
+  await settle(page, 450);
+  const rows = page.locator('#level .case-occurrence');
+  ok(await rows.count() >= 2, 'S81 precondition: the case file renders at least two Occurrences');
+  const occurrenceId = await rows.nth(1).getAttribute('data-occurrence-id');
+  await rows.nth(1).click();
+  await settle(page, 450);
+  await page.waitForSelector(`#level .case-occurrence[data-occurrence-id="${occurrenceId}"][aria-pressed="true"]`);
+  const active = await page.evaluate(() => ({
+    occurrenceId: document.activeElement?.dataset?.occurrenceId,
+    tagName: document.activeElement?.tagName,
+  }));
+  is(active.occurrenceId, occurrenceId,
+    `S81 direct selection restores focus to the chosen Occurrence (${active.tagName})`);
+  is((await state(page)).crumb.length, 2, 'S81 direct selection keeps the case-file crumb depth');
+};
+
 /** S33 · #58 — while the event canvas is mounted, its own header is the only
     canvas header on screen. The clock canvas's header used to stay mounted
     underneath and print the clock window over an event-aligned chart. */
@@ -3701,6 +3721,7 @@ export const STORIES = [
   ['S77', S77, 'typical'],
   ['S78', S78, 'dense'], ['S79', S79, 'dense'],
   ['S80', S80, 'dense', { findingsInputs: withFiredMeal, exposuresInputs: (d) => withFiredMeal(d).exposures }],
+  ['S81', S81, 'dense'],
   ['C41', C41, 'typical', { caseScenario: {
     preparation: generatedFindingPose('finding:meal_over_delivery'),
   } }], ['C42', C42, 'typical'],

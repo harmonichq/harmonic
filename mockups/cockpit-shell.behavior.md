@@ -72,6 +72,12 @@ S10 · Opening Theme and hovering the unchecked row paints a neutral 95% panel /
   old-fail/new-pass: the amended hover relationship would fail on the base because hover equaled `--ck-accent-soft`; it passes after the ADR 49 CSS revision; deliberate signal-well-restoration mutations fail in both themes
   status: amended 2026-08-21 · replayed-pass on revision
 
+S11 · When a rendered fixed Diagnose shape carries backend input-data age, the cockpit keeps the rendered result visible and shows `Showing results from data through <covers_to>.`; a fresh replacement clears that shape's age without clearing its rendered data.
+  handlers/invariants: backend `input_data_age`; per-shape age record; oldest rendered stale horizon; persistent non-color-only status text
+  source: `frontend/index.html`; `frontend/diagnose-data-age.js`; fixture-only API responses in `frontend/cockpit-shell.browser.test.mjs`
+  evidence: `STORY:cockpit-shell:S11` / exported `S11`; desktop light/dark screenshot hook when `COCKPIT_SHOTS` is set
+  status: replayed-pass on revision
+
 ## Retired behavior
 
 R1 · The obsolete occurrence-list route stays retired while the Diagnose Inspector remains the sole populated occurrence-evidence path.
@@ -83,4 +89,4 @@ R1 · The obsolete occurrence-list route stays retired while the Diagnose Inspec
 
 ## Inventory completeness
 
-All shell navigation, Theme, quick Carb log entry, Carb questions, Glossary, drawer, hover, focus, checked/current state, viewport, cross-tab, cross-theme, count, material, type-rank, and responsive invariants map to S1–S10. The retired occurrence-list route maps permanently to R1. The browser gate's Diagnose/Verify seam and event-comparison assertions remain independent carried regressions; they do not register cockpit-shell handlers and are not relabeled as shell stories.
+All shell navigation, Theme, quick Carb log entry, Carb questions, Glossary, drawer, hover, focus, checked/current state, viewport, cross-tab, cross-theme, count, material, type-rank, responsive invariants, and stale fixed-result banner map to S1–S11. The retired occurrence-list route maps permanently to R1. The browser gate's Diagnose/Verify seam and event-comparison assertions remain independent carried regressions; they do not register cockpit-shell handlers and are not relabeled as shell stories.

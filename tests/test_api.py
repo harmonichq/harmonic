@@ -6,7 +6,9 @@ itself (that is covered by the analyzer/facade tests).
 """
 
 import contextlib
+import json
 import os
+import sqlite3
 from concurrent.futures import ThreadPoolExecutor
 import tempfile
 import threading
@@ -29,6 +31,13 @@ except ImportError:  # pragma: no cover
     _HAS_TCONNECTSYNC = False
 
 from ciq_autotune.result import SCHEMA_VERSION
+from ciq_autotune.derived_artifacts import (
+    DERIVED_ARTIFACT_STORE_SCHEMA_VERSION,
+    _canonical,
+    _digest,
+    sidecar_path,
+    source_fingerprint,
+)
 from ciq_autotune.settings import parse_pump_settings
 from ciq_autotune.store import Store
 
@@ -630,6 +639,290 @@ class ApiTest(unittest.TestCase):
         r = self.client.put("/api/plan", json={"items": items})
         self.assertEqual(r.status_code, 400)
         self.assertEqual(self.client.get("/api/plan").json()["items"], [])
+
+
+@unittest.skipUnless(_HAS_FASTAPI, "api extra not installed")
+class DurableArtifactApiTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.NamedTemporaryFile(suffix=".db")
+        _seed(self.tmp.name)
+
+    def tearDown(self):
+        for suffix in ("", "-wal", "-shm"):
+            try:
+                os.unlink(sidecar_path(self.tmp.name) + suffix)
+            except FileNotFoundError:
+                pass
+        self.tmp.close()
+
+    def test_restart_warms_event_comparison_without_rebuilding(self):
+        from ciq_autotune.api import create_app
+        first = TestClient(create_app(db_path=self.tmp.name, token=None, enable_fetch_loop=False))
+        initial = first.get("/api/explore/exposures")
+        self.assertEqual(initial.status_code, 200)
+        import ciq_autotune.api as api_mod
+        real = api_mod.prepare_event_comparisons
+        calls = []
+        with patch.object(api_mod, "prepare_event_comparisons",
+                          side_effect=lambda *args, **kwargs: calls.append(1) or real(*args, **kwargs)):
+            second = TestClient(create_app(db_path=self.tmp.name, token=None, enable_fetch_loop=False))
+            restored = second.get("/api/explore/exposures")
+            self.assertEqual(restored.status_code, 200)
+        self.assertEqual(calls, [])
+        self.assertEqual(restored.json(), initial.json())
+
+    def test_same_fixed_key_serves_labeled_prior_only_while_recomputing(self):
+        """A public fixed route keeps its exact predecessor visible during a rebuild."""
+        from ciq_autotune.api import create_app
+        import ciq_autotune.api as api_mod
+        app = create_app(db_path=self.tmp.name, token=None, enable_fetch_loop=False)
+        client = TestClient(app)
+        first = client.get("/api/explore/time-of-day")
+        self.assertEqual(first.status_code, 200)
+        with sqlite3.connect(sidecar_path(self.tmp.name)) as sidecar:
+            prior_revision, prior_covers_to = sidecar.execute(
+                "SELECT revision,covers_to FROM artifacts").fetchone()
+        with Store.open(self.tmp.name) as store:
+            store.upsert_cgm([{"EventDateTime": "2026-07-16 00:00:00", "Readings (CGM / BGM)": 110}])
+        app.state.result_cache.bump()
+        entered, release = threading.Event(), threading.Event()
+        real = api_mod.build_time_of_day
+        def blocked(store):
+            entered.set()
+            self.assertTrue(release.wait(3))
+            return real(store)
+        with patch.object(api_mod, "build_time_of_day", side_effect=blocked):
+            with ThreadPoolExecutor(max_workers=1) as pool:
+                future = pool.submit(client.get, "/api/explore/time-of-day")
+                self.assertTrue(entered.wait(3))
+                stale = client.get("/api/explore/time-of-day")
+                self.assertEqual(stale.status_code, 200)
+                self.assertEqual(stale.json()["input_data_age"], {
+                    "revision": prior_revision,
+                    "covers_to": prior_covers_to,
+                    "newest_covers_to": "2026-07-16 00:00:00",
+                })
+                release.set()
+                self.assertEqual(future.result(timeout=3).status_code, 200)
+        fresh = client.get("/api/explore/time-of-day")
+        self.assertNotIn("input_data_age", fresh.json())
+
+    def test_fetch_after_revision_check_recomputes_before_unlabeled_publish(self):
+        """The cache publication lock closes the final revision-check race."""
+        from ciq_autotune.api import create_app
+        import ciq_autotune.api as api_mod
+        app = create_app(db_path=self.tmp.name, token=None, enable_fetch_loop=False)
+        client = TestClient(app)
+        real_get = app.state.result_cache.get_or_compute
+        real_build = api_mod.build_time_of_day
+        builds = []
+        crossed = False
+
+        def counting_build(store):
+            builds.append(store.input_data_revision())
+            return real_build(store)
+
+        def crossed_get(key, build, **kwargs):
+            def cross_after_revision_check():
+                nonlocal crossed
+                result = build()
+                if not crossed:
+                    crossed = True
+                    with Store.open(self.tmp.name) as writer:
+                        writer.upsert_cgm([{
+                            "EventDateTime": "2026-07-16 00:00:00",
+                            "Readings (CGM / BGM)": 110,
+                        }])
+                    app.state.result_cache.bump()
+                return result
+            return real_get(key, cross_after_revision_check, **kwargs)
+
+        with patch.object(api_mod, "build_time_of_day", side_effect=counting_build), \
+             patch.object(app.state.result_cache, "get_or_compute", side_effect=crossed_get):
+            response = client.get("/api/explore/time-of-day")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("input_data_age", response.json())
+        self.assertEqual(len(builds), 2)
+        self.assertEqual(builds[1], builds[0] + 1)
+
+    def test_findings_maps_exhausted_artifact_retries_to_generation_409(self):
+        from ciq_autotune.api import create_app
+        import ciq_autotune.derived_artifacts as artifacts
+        app = create_app(db_path=self.tmp.name, token=None, enable_fetch_loop=False)
+        client = TestClient(app, raise_server_exceptions=False)
+
+        with patch.object(artifacts, "_load_or_compute_once",
+                          return_value=artifacts._REVISION_CHANGED):
+            response = client.get("/api/diagnose/findings")
+
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.json()["detail"]["code"],
+                         "analysis_generation_mismatch")
+
+    def test_fixed_registry_is_acquired_before_entering_result_cache(self):
+        """A reader arriving before the cache flight exists still stale-serves."""
+        from ciq_autotune.api import create_app
+        app = create_app(db_path=self.tmp.name, token=None, enable_fetch_loop=False)
+        client = TestClient(app)
+        self.assertEqual(client.get("/api/explore/time-of-day").status_code, 200)
+        with Store.open(self.tmp.name) as store:
+            store.upsert_cgm([{"EventDateTime": "2026-07-16 00:00:00",
+                               "Readings (CGM / BGM)": 110}])
+        app.state.result_cache.bump()
+        entered, release = threading.Event(), threading.Event()
+        real_get = app.state.result_cache.get_or_compute
+        calls = 0
+        calls_lock = threading.Lock()
+
+        def paused_get(key, build, **kwargs):
+            nonlocal calls
+            with calls_lock:
+                calls += 1
+                call = calls
+            if call != 1:
+                raise AssertionError("a same-key observer entered ResultCache")
+            entered.set()
+            self.assertTrue(release.wait(3))
+            return real_get(key, build, **kwargs)
+
+        with patch.object(app.state.result_cache, "get_or_compute", side_effect=paused_get):
+            with ThreadPoolExecutor(max_workers=1) as pool:
+                future = pool.submit(client.get, "/api/explore/time-of-day")
+                self.assertTrue(entered.wait(3))
+                try:
+                    stale = client.get("/api/explore/time-of-day")
+                    self.assertEqual(stale.status_code, 200)
+                    self.assertIn("input_data_age", stale.json())
+                    self.assertEqual(calls, 1)
+                finally:
+                    release.set()
+                self.assertEqual(future.result(timeout=3).status_code, 200)
+
+    def test_stale_age_omits_unknown_newest_horizon(self):
+        """The public age envelope has no nullable optional field."""
+        from ciq_autotune.api import create_app
+        import ciq_autotune.api as api_mod
+        app = create_app(db_path=self.tmp.name, token=None, enable_fetch_loop=False)
+        client = TestClient(app)
+        self.assertEqual(client.get("/api/explore/time-of-day").status_code, 200)
+        with sqlite3.connect(sidecar_path(self.tmp.name)) as sidecar:
+            prior_revision, prior_covers_to = sidecar.execute(
+                "SELECT revision,covers_to FROM artifacts").fetchone()
+        with sqlite3.connect(self.tmp.name) as primary:
+            primary.execute("DELETE FROM cgm_readings")
+            primary.execute("DELETE FROM basal_events")
+            primary.execute(
+                "UPDATE input_data_revision SET revision = revision + 1 WHERE id = 1")
+        app.state.result_cache.bump()
+        entered, release = threading.Event(), threading.Event()
+        real = api_mod.build_time_of_day
+
+        def blocked(store):
+            entered.set()
+            self.assertTrue(release.wait(3))
+            return real(store)
+
+        with patch.object(api_mod, "build_time_of_day", side_effect=blocked):
+            with ThreadPoolExecutor(max_workers=1) as pool:
+                future = pool.submit(client.get, "/api/explore/time-of-day")
+                self.assertTrue(entered.wait(3))
+                try:
+                    stale = client.get("/api/explore/time-of-day")
+                    self.assertEqual(stale.status_code, 200)
+                    self.assertEqual(stale.json()["input_data_age"], {
+                        "revision": prior_revision,
+                        "covers_to": prior_covers_to,
+                    })
+                finally:
+                    release.set()
+                self.assertEqual(future.result(timeout=3).status_code, 200)
+
+    def test_fixed_registry_does_not_stale_serve_a_hot_cache_hit(self):
+        """A registered caller is not a recompute until its builder starts."""
+        from ciq_autotune.api import create_app
+        app = create_app(db_path=self.tmp.name, token=None, enable_fetch_loop=False)
+        client = TestClient(app)
+        self.assertEqual(client.get("/api/explore/time-of-day").status_code, 200)
+        with Store.open(self.tmp.name) as store:
+            store.upsert_cgm([{"EventDateTime": "2026-07-16 00:00:00",
+                               "Readings (CGM / BGM)": 110}])
+        app.state.result_cache.bump()
+        current = client.get("/api/explore/time-of-day")
+        self.assertEqual(current.status_code, 200)
+        self.assertNotIn("input_data_age", current.json())
+        entered, release = threading.Event(), threading.Event()
+        real_get = app.state.result_cache.get_or_compute
+        calls = 0
+        calls_lock = threading.Lock()
+
+        def paused_get(key, build, **kwargs):
+            nonlocal calls
+            with calls_lock:
+                calls += 1
+                call = calls
+            if call == 1:
+                entered.set()
+                self.assertTrue(release.wait(3))
+            return real_get(key, build, **kwargs)
+
+        with patch.object(app.state.result_cache, "get_or_compute", side_effect=paused_get):
+            with ThreadPoolExecutor(max_workers=1) as pool:
+                future = pool.submit(client.get, "/api/explore/time-of-day")
+                self.assertTrue(entered.wait(3))
+                observed = client.get("/api/explore/time-of-day")
+                self.assertEqual(observed.status_code, 200)
+                self.assertEqual(observed.json(), current.json())
+                self.assertNotIn("input_data_age", observed.json())
+                release.set()
+                self.assertEqual(future.result(timeout=3).json(), current.json())
+
+    def test_valid_json_wrong_event_comparison_shape_recomputes_and_serves(self):
+        from ciq_autotune.api import create_app
+        first = TestClient(create_app(db_path=self.tmp.name, token=None, enable_fetch_loop=False))
+        self.assertEqual(first.get("/api/explore/exposures").status_code, 200)
+        routes = {
+            factor: {"cohort": "fired", "other_factors": [{}]}
+            for factor in ("over_treated_low", "correction_on_iob", "correction_stacking")
+        }
+        payload = json.dumps({
+            "exposures": {"window": {"start": "2026-05-01", "end": "2026-06-01"}},
+            "catalog": {
+                "meals": [],
+                "lows": [{
+                    "id": "bad", "ep_id": "bad-episode", "anchor_t": "2026-06-01 00:00:00",
+                    "date": "2026-06-01", "outcome_min": 0,
+                    "routes": routes, "trace": {"cgm": [{}]},
+                }],
+            },
+        }, separators=(",", ":"))
+        marker = _canonical(("event-comparison-v1",
+                             DERIVED_ARTIFACT_STORE_SCHEMA_VERSION,
+                             source_fingerprint()))
+        with Store.open_queryonly(self.tmp.name) as store:
+            revision = store.input_data_revision()
+        with sqlite3.connect(sidecar_path(self.tmp.name)) as sidecar:
+            covers_to = sidecar.execute(
+                "SELECT covers_to FROM artifacts WHERE revision=? AND coordinates=? AND marker=?",
+                (revision, _canonical(("event-comparison-preparation",)), marker),
+            ).fetchone()[0]
+            sidecar.execute("UPDATE artifacts SET payload=?, digest=? WHERE revision=? AND coordinates=? AND marker=?",
+                            (payload, _digest(payload, covers_to), revision,
+                             _canonical(("event-comparison-preparation",)), marker))
+        import ciq_autotune.api as api_mod
+        real = api_mod.prepare_event_comparisons
+        calls = []
+        with patch.object(api_mod, "prepare_event_comparisons",
+                          side_effect=lambda *args, **kwargs: calls.append(1) or real(*args, **kwargs)):
+            second = TestClient(create_app(db_path=self.tmp.name, token=None, enable_fetch_loop=False))
+            response = second.get("/api/diagnose/event-comparison", params={"view": "lows"})
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(calls, [1])
+        with sqlite3.connect(sidecar_path(self.tmp.name)) as sidecar:
+            self.assertNotEqual(sidecar.execute(
+                "SELECT payload FROM artifacts WHERE revision=? AND coordinates=? AND marker=?",
+                (revision, _canonical(("event-comparison-preparation",)), marker),
+            ).fetchone()[0], payload)
 
 
 @unittest.skipUnless(_HAS_FASTAPI, "api extra not installed")
@@ -1348,8 +1641,10 @@ class CachePreWarmTest(unittest.TestCase):
         ("backtest", "ciq_autotune.backtest", "backtest"),
         ("outcomes-trend", "ciq_autotune.outcomes_trend", "summarize_trend"),
         ("scenarios", "ciq_autotune.analyzers.scenario", "build_scenarios"),
+        ("exposures", "ciq_autotune.explore_exposures", "build_exposures"),
         ("explore-time-of-day", "ciq_autotune.api", "build_time_of_day"),
         ("event-comparison-source-catalog", "ciq_autotune.api", "prepare_event_comparisons"),
+        ("finding-case-file", "ciq_autotune.api", "prepare_finding_cases"),
     )
 
     def setUp(self):
@@ -1386,27 +1681,45 @@ class CachePreWarmTest(unittest.TestCase):
         for path, params in (
             ("/api/analyze", {"window": 30, "ignore_changes": False, "pool": False}),
             ("/api/backtest", {"holdout_days": 2}),
-            ("/api/outcomes/trend", {"window": 14}),
+            ("/api/outcomes/trend", {"window": 30}),
             ("/api/analyze", {"window": 30, "ignore_changes": False, "pool": True}),
             ("/api/scenarios", {"window": 30}),
             ("/api/explore/time-of-day", {}),
             ("/api/explore/exposures", {}),
-            ("/api/diagnose/event-comparison", {"view": "meals"}),
+            ("/api/diagnose/findings", {}),
+            ("/api/diagnose/finding-case-file-preparation", {}),
         ):
             r = self.client.get(path, params=params)
             self.assertEqual(r.status_code, 200, path)
+
+    def _warmed_keys(self):
+        cache = self.app.state.result_cache
+        with cache._lock:
+            return tuple(cache._map) + tuple(cache._preparations)
 
     def test_warm_pass_leaves_the_landing_set_answering_without_recompute(self):
         with self._counting_builders() as counts:
             self.app.state.invalidate_and_warm()
             after_warm = dict(counts)
             # Exactly the landing shapes and nothing else — both /api/analyze modes
-            # included, one build apiece for the rest. The exposure population
-            # and every comparison projection share one preparation.
+            # included. Findings consumers share the canonical pooled analysis,
+            # scenario report, and exposure feed.
             self.assertEqual(after_warm, {"analyze": 2, "backtest": 1,
                                           "outcomes-trend": 1, "scenarios": 1,
+                                          "exposures": 1,
                                           "explore-time-of-day": 1,
-                                          "event-comparison-source-catalog": 1})
+                                          "event-comparison-source-catalog": 1,
+                                          "finding-case-file": 1})
+            self.assertEqual(self._warmed_keys(), (
+                ("analyze", 30, False, False),
+                ("backtest", 2),
+                ("outcomes-trend", 30),
+                ("explore-time-of-day",),
+                ("analyze", 30, False, True),
+                ("scenarios", 30),
+                ("event-comparison-preparation",),
+                ("finding-case-file", None, None, None),
+            ))
             # ...and the visitor's own requests all hit it.
             self._get_landing_set()
             self.assertEqual(counts, after_warm)
@@ -1473,12 +1786,19 @@ class CachePreWarmTest(unittest.TestCase):
     def test_warm_pass_invalidates_first_so_it_never_serves_pre_fetch_results(self):
         with self._counting_builders() as counts:
             self._get_landing_set()          # cold: every shape computed once
-            self.assertEqual(counts["scenarios"], 1)
+            self.assertEqual(counts, {"analyze": 2, "backtest": 1,
+                                      "outcomes-trend": 1, "scenarios": 1,
+                                      "exposures": 1,
+                                      "explore-time-of-day": 1,
+                                      "event-comparison-source-catalog": 1,
+                                      "finding-case-file": 1})
             self.app.state.invalidate_and_warm()
-            # New data landed, so the pre-fetch results were dropped and rebuilt.
-            self.assertEqual(counts["scenarios"], 2)
+            # A cache-only invalidation has no new Store revision, so the fixed
+            # scenarios endpoint reuses its verified durable artifact, including
+            # the findings consumers' shared canonical report.
+            self.assertEqual(counts["scenarios"], 1)
             self._get_landing_set()
-            self.assertEqual(counts["scenarios"], 2)
+            self.assertEqual(counts["scenarios"], 1)
 
     def test_drill_downs_and_other_windows_stay_lazy(self):
         with self._counting_builders() as counts:
@@ -1494,8 +1814,9 @@ class CachePreWarmTest(unittest.TestCase):
 
     def test_one_failing_shape_is_contained_and_the_rest_still_warm(self):
         # The witness must be a shape the warm pass reaches *after* the failing one,
-        # or containment isn't what's being proved. Backtest warms second, scenarios
-        # last, so a blown-up backtest leaves three later shapes to observe.
+        # or containment isn't what's being proved. Backtest warms second, the
+        # finding-case preparation last, so a blown-up backtest leaves later
+        # shapes to observe.
         import ciq_autotune.backtest as backtest_mod
 
         def boom(*args, **kwargs):
@@ -1507,7 +1828,7 @@ class CachePreWarmTest(unittest.TestCase):
             self.assertEqual(counts["backtest"], 0)   # it never completed a build
             # ...and every shape the pass reaches after it still warmed: outcomes-trend
             # (third), analyze pooled (fourth — the second of analyze's two builds, the
-            # first having already run before backtest), scenarios (last).
+            # first having already run before backtest), and scenarios.
             self.assertEqual(counts["outcomes-trend"], 1)
             self.assertEqual(counts["analyze"], 2)
             self.assertEqual(counts["scenarios"], 1)

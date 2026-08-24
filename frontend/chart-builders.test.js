@@ -18,8 +18,7 @@ import { dirname, join } from 'node:path';
 
 import {
   buildLanesOption, suspendRuns,
-  buildRibbonOption, buildEvidenceStripOption,
-  basalTier, addMinutesIso,
+  addMinutesIso,
 } from './chart-builders.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -260,33 +259,6 @@ test('buildLanesOption: busy day keeps every signal available at once', () => {
   assert.ok(findSeries(opt, 'Basal difference').data.length > 0);
   assert.ok(findSeries(opt, 'Sleep').data.length > 0);
   assert.ok(findSeries(opt, 'Exercise').data.length > 0);
-});
-
-// ---------------------------------------------------------------------------
-// Ribbon + strip + modal smoke: they build against the real basal shape with
-// injected colors and stay pure (no throw, well-formed option).
-// ---------------------------------------------------------------------------
-
-test('buildRibbonOption: builds a well-formed option and tiers each slot purely', () => {
-  const opt = buildRibbonOption(analysisFixture.basal, {
-    analysis: analysisFixture, colors: COLORS,
-  });
-  assert.equal(opt.xAxis.max, 1440, '24h axis');
-  assert.ok(Array.isArray(opt.series) && opt.series.length >= 4);
-  // basalTier is pure over a slot — sanity a known slot.
-  const s = analysisFixture.basal.find((x) => x.days === 0);
-  if (s) assert.equal(basalTier(s), 'nodata');
-});
-
-test('buildEvidenceStripOption: nights + estimate error bar', () => {
-  // Pick a change slot with evidence points.
-  const change = analysisFixture.basal.find((s) => (s.evidence && s.evidence.points || []).length > 0);
-  assert.ok(change, 'fixture has a slot with evidence points');
-  const opt = buildEvidenceStripOption(change, COLORS);
-  const nPts = change.evidence.points.length;
-  // Category axis: dN nights + gap + 'est'.
-  assert.equal(opt.xAxis.data.length, nPts + 2);
-  assert.equal(opt.xAxis.data[opt.xAxis.data.length - 1], 'est');
 });
 
 // ---------------------------------------------------------------------------

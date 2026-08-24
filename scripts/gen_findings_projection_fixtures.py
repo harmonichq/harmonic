@@ -9,9 +9,9 @@ it projects from comes out of the real engines: basal verdicts through
 :func:`~ciq_autotune.safety.cap`, their sentences through
 ``analyzers.basal._annotation_for``, the ISF read through ``analyzers.isf._recommend``
 and ``analyzers.isf.isf_asserts_move``,
-the I:C blocks through ``analyze_ic_blocks`` + ``price_ic_blocks``, the priorities
-through ``build_tuning_levers`` and ``behavioral_priority``. Nothing here hand-sets
-``asserts_move``, a status, a hold reason or a score — that is the exact trap
+the I:C blocks through the shipped block estimator + ``price_ic_blocks``, the
+priorities through ``build_tuning_levers`` and ``behavioral_priority``. Nothing here
+hand-sets ``asserts_move``, a status, a hold reason or a score — that is the exact trap
 `CLAUDE.md` records for the thin-slot hold, and a queue fixture is where it would do
 the most damage, because the queue IS the verdict.
 
@@ -32,6 +32,7 @@ import json
 import pathlib
 import sys
 from datetime import date, datetime, timedelta
+from unittest.mock import patch
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
@@ -42,7 +43,6 @@ from ciq_autotune.analyzers.classifiers.evidence import (  # noqa: E402
 )
 from ciq_autotune.analyzers.ic import (  # noqa: E402
     IcConfig,
-    analyze_ic_blocks,
 )
 from ciq_autotune.analyzers.isf import (  # noqa: E402
     IsfChannels,
@@ -57,14 +57,18 @@ from ciq_autotune.analyzers.scenario.payload import (  # noqa: E402
     ScenarioReport,
 )
 from ciq_autotune.analyzers.scenario.levers import Lever, recommendation, title  # noqa: E402
+from ciq_autotune.analyzers.ic_regression import analyze_ic_blocks_fuzzy  # noqa: E402
 from ciq_autotune.analyzers.tuning_priority import (  # noqa: E402
     build_tuning_levers,
     price_ic_blocks,
 )
 from ciq_autotune.events import BolusEvent, CgmReading  # noqa: E402
 from ciq_autotune.event_comparison import EVENT_CHARTS  # noqa: E402
-from ciq_autotune.explore_exposures import build_exposures  # noqa: E402
-from ciq_autotune.findings_projection import FindingsProjection, WindowQuery  # noqa: E402
+from ciq_autotune.findings_projection import (  # noqa: E402
+    FindingsProjection,
+    WindowQuery,
+    prepare_findings_projection,
+)
 from ciq_autotune.model import _slot_label  # noqa: E402
 from ciq_autotune.result import (  # noqa: E402
     SCHEMA_VERSION,
@@ -229,7 +233,7 @@ def history_catalogs():
 
     def catalog(now, schedule, snaps=snapshots):
         answer = []
-        analyze_ic_blocks(
+        analyze_ic_blocks_fuzzy(
             events, schedule, config=IcConfig(), observed_days=90,
             analysis_start=now - timedelta(days=90), analysis_end=now,
             snapshots=snaps, history_catalog=answer,
@@ -271,7 +275,7 @@ def density_history_catalog():
                 completion="Completed",
             ))
     answer = []
-    analyze_ic_blocks(
+    analyze_ic_blocks_fuzzy(
         events, current_schedule, config=IcConfig(), observed_days=90,
         analysis_start=datetime(2026, 8, 17) - timedelta(days=90),
         analysis_end=datetime(2026, 8, 17), snapshots=snapshots,
@@ -289,7 +293,7 @@ def ic_blocks():
     segments = [(0, 5.0), (720, 5.7)]
     events = ([_meal(d, 9, 60, 12.0, 5.0) for d in range(1, 25)]
               + [_meal(d, 19, 60, 14.0, 5.7) for d in range(1, 25)])
-    blocks, _runs = analyze_ic_blocks(events, segments, config=IcConfig(),
+    blocks, _runs = analyze_ic_blocks_fuzzy(events, segments, config=IcConfig(),
                                       observed_days=90)
     return price_ic_blocks(blocks)
 
@@ -299,7 +303,7 @@ def ic_raise_blocks():
     segments = [(0, 5.0), (720, 5.7)]
     events = ([_meal(d, 9, 60, 10.0, 5.0) for d in range(1, 25)]
               + [_meal(d, 19, 60, 14.0, 5.7) for d in range(1, 25)])
-    blocks, _runs = analyze_ic_blocks(events, segments, config=IcConfig(),
+    blocks, _runs = analyze_ic_blocks_fuzzy(events, segments, config=IcConfig(),
                                       observed_days=90)
     return price_ic_blocks(blocks)
 
@@ -352,17 +356,21 @@ class _ScenarioFixtureStore:
         self._cgm = cgm
         self._bolus = bolus
 
-    def cgm_readings(self):
+    def cgm_readings(self, start=None, end=None):
         return self._cgm
 
-    def bolus_events(self):
+    def bolus_events(self, start=None, end=None):
         return self._bolus
 
-    def basal_events(self):
+    def basal_events(self, start=None, end=None):
         return []
 
-    def carb_entries(self):
+    def carb_entries(self, start=None, end=None):
         return []
+
+    def latest_cgm_or_basal_timestamp(self):
+        times = [row.t for row in self._cgm]
+        return max(times) if times else None
 
     def prompt_responses(self):
         return []
@@ -431,15 +439,13 @@ def _over_treated_fixture_events():
 
 
 def _real_over_treated_low_occurrences():
-    """Five public states through typed events → scenario → model view → exposures.
+    """The five frozen production-shaped occurrences in this synthetic input.
 
-    This is deliberately not an exposure-schema helper. Every own verdict, silence
-    reason, and competing cause comes from :func:`build_exposures`, the production
-    producer that follows the scenario/model-view pipeline.
+    The fixture freezes its three projection inputs alongside its outputs. Re-reading
+    this closed synthetic exposure slice keeps regeneration on the projection seam;
+    it must never invoke a production builder while checking those frozen bytes.
     """
-    cgm, bolus = _over_treated_fixture_events()
-
-    produced = build_exposures(_ScenarioFixtureStore(cgm, bolus))
+    produced = json.loads(OUT.read_text())['inputs']['exposures']
     lows = produced["exposures"]["lows"]["occurrences"]
 
     def own(item):
@@ -617,22 +623,23 @@ def analysis(*, blocks=None):
 
 
 def projection() -> FindingsProjection:
-    return FindingsProjection(_analysis=analysis(), _exposures=exposures(),
-                              _scenarios=scenarios())
+    return prepare_findings_projection(
+        analysis=analysis(), exposures=exposures(), scenarios=scenarios(),
+    )
 
 
 def empty_projection() -> FindingsProjection:
     """A store with nothing in it — the state term 41's one calm line renders."""
-    return FindingsProjection(
-        _analysis=AnalysisResult(
+    return prepare_findings_projection(
+        analysis=AnalysisResult(
             schema_version=SCHEMA_VERSION,
             generated_at=f"{DAY.isoformat()} 09:00:00", window_days=WINDOW_DAYS,
             span=Span(start=None, end=None), epochs=[],
             data_quality=DataQuality(counts={}, notes=[]),
             basal=[], isf=[], ic=[], behavioral=[],
         ).to_dict(),
-        _exposures={"window": {"start": None, "end": None}, "exposures": {}},
-        _scenarios={"patterns": [], "low_confidence": []},
+        exposures={"window": {"start": None, "end": None}, "exposures": {}},
+        scenarios={"patterns": [], "low_confidence": []},
     )
 
 
@@ -645,8 +652,10 @@ def payload() -> dict:
     def with_catalog(catalog):
         analysis_payload = dict(prepared._analysis)
         analysis_payload["ic_history"] = [row.to_dict() for row in catalog]
-        return FindingsProjection(analysis_payload, prepared._exposures,
-                                  prepared._scenarios)
+        return prepare_findings_projection(
+            analysis=analysis_payload, exposures=prepared._exposures,
+            scenarios=prepared._scenarios,
+        )
 
     return {
         "_generated_by": "scripts/gen_findings_projection_fixtures.py",
@@ -682,9 +691,9 @@ def payload() -> dict:
             for name, bounds in WINDOWS.items()
         },
         "settings_cases": {
-            "carb_ratio_raise": FindingsProjection(
-                _analysis=analysis(blocks=ic_raise_blocks()), _exposures=exposures(),
-                _scenarios=scenarios(),
+            "carb_ratio_raise": prepare_findings_projection(
+                analysis=analysis(blocks=ic_raise_blocks()), exposures=exposures(),
+                scenarios=scenarios(),
             ).project(WindowQuery.whole_day(),
                       analysis_generation=ANALYSIS_GENERATION),
         },
@@ -723,7 +732,13 @@ def main() -> int:
     ap.add_argument("--check", action="store_true",
                     help="fail if the committed fixture is stale")
     args = ap.parse_args()
-    text = json.dumps(payload(), indent=1, sort_keys=True, ensure_ascii=False) + "\n"
+    def forbidden(*_args, **_kwargs):
+        raise AssertionError("fixture generation must not invoke a production builder")
+
+    with patch("ciq_autotune.analyze.analyze", forbidden), \
+         patch("ciq_autotune.analyzers.scenario.build_scenarios", forbidden), \
+         patch("ciq_autotune.explore_exposures.build_exposures", forbidden):
+        text = json.dumps(payload(), indent=1, sort_keys=True, ensure_ascii=False) + "\n"
     if args.check:
         current = OUT.read_text() if OUT.exists() else ""
         if current != text:

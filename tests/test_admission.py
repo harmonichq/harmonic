@@ -145,7 +145,10 @@ class AdmissionBarTest(unittest.TestCase):
         )
         with Store.open(":memory:") as store:
             write_set_to_store(store, truth_set)
-            stored = analyze(store, now=truth_set["analysis_end"]).ic_blocks
+            # Pin the incumbent explicitly: `analyze` ships the fuzzy estimator
+            # (ADR 117), and this test is about the store round trip, not the default.
+            stored = analyze(store, now=truth_set["analysis_end"],
+                             ic_estimator=analyze_ic_blocks).ic_blocks
         self.assertEqual(len(direct), len(stored))
         for expected, actual in zip(direct, stored):
             self.assertEqual(expected.state, actual.state)

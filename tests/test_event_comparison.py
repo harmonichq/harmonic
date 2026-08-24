@@ -24,7 +24,11 @@ from ciq_autotune.event_comparison import (
 )
 from ciq_autotune.findings_projection import FindingsProjection
 from ciq_autotune.window_membership import WindowQuery
-from ciq_autotune.events import CarbEntry
+from ciq_autotune.events import BasalEvent, BolusEvent, CarbEntry, CgmReading
+from ciq_autotune.analyzers.scenario.meal_suspend import (
+    MealSuspendOwnership,
+    classify_meal_owned_suspend,
+)
 from ciq_autotune.store import Store
 
 
@@ -91,22 +95,194 @@ class _Store:
     def __init__(self, bolus):
         self._bolus = bolus
 
-    def basal_events(self):
+    def basal_events(self, start=None, end=None):
         return []
 
-    def bolus_events(self):
+    def bolus_events(self, start=None, end=None):
         return self._bolus
 
-    def carb_entries(self):
+    def carb_entries(self, start=None, end=None):
         return []
 
-    def cgm_readings(self):
+    def cgm_readings(self, start=None, end=None):
+        return []
+
+    def latest_cgm_or_basal_timestamp(self):
+        return None
+
+    def settings_snapshots(self):
+        return []
+
+
+class _CatalogStore:
+    """Records the typed catalog interface without a compatibility path."""
+
+    def __init__(self, *, now, cgm, bolus, basal, rescue):
+        self.now = now
+        self._cgm = cgm
+        self._bolus = bolus
+        self._basal = basal
+        self._rescue = rescue
+        self.requests = []
+
+    def latest_cgm_or_basal_timestamp(self):
+        self.requests.append(("latest",))
+        return self.now
+
+    def _read(self, name, rows, *, start=None, end=None):
+        self.requests.append((name, start, end))
+        return [row for row in rows if (start is None or row.t >= start)
+                and (end is None or row.t < end)]
+
+    def cgm_readings(self, *, start=None, end=None):
+        return self._read("cgm", self._cgm, start=start, end=end)
+
+    def bolus_events(self, *, start=None, end=None):
+        return self._read("bolus", self._bolus, start=start, end=end)
+
+    def basal_events(self, *, start=None, end=None):
+        return self._read("basal", self._basal, start=start, end=end)
+
+    def carb_entries(self, *, start=None, end=None):
+        return self._read("rescue", self._rescue, start=start, end=end)
+
+    def settings_snapshots(self):
         return []
 
 
 class EventComparisonTest(unittest.TestCase):
     def test_only_preparation_exposes_the_comparison_projection_interface(self):
         self.assertFalse(hasattr(event_comparison, "build_event_comparison"))
+
+    def test_preparation_keeps_source_boundary_suspend_verdict_equal_to_full_history(self):
+        now = datetime(2026, 8, 2)
+        source_start = now - timedelta(days=1)
+        catalog_start = source_start - timedelta(
+            minutes=event_comparison.EVENT_COMPARISON_CATALOG_LEAD_IN_MIN
+        )
+        meal_anchor = source_start + timedelta(minutes=10)
+        meal = {
+            "t": meal_anchor.strftime(event_comparison.FMT), "date": "2026-08-01",
+            "bg": 150, "worst_bg": 220, "label": "Meal", "ep_id": "meal-1",
+            "cause_lever": None, "verdicts": [{
+                "classifier": "meal_over_delivery", "matched": False,
+                "silence_reason": "no_trigger",
+            }],
+        }
+        payload = {
+            "window": {"start": "2026-08-01", "end": "2026-08-02"},
+            "exposures": {
+                "meals": {"occurrences": [meal]},
+                "lows": {"occurrences": []},
+                "highs": {"occurrences": []},
+                "correction_clusters": {"occurrences": []},
+            },
+        }
+        pre_boundary_suspend = BasalEvent(
+            t=source_start - timedelta(minutes=5), delivery_type="suspend",
+            basal_rate=0, profile_basal_rate=0.8,
+        )
+        suspend_rows = [pre_boundary_suspend] + [
+            BasalEvent(
+                t=meal_anchor + timedelta(minutes=5 * index),
+                delivery_type="suspend", basal_rate=0, profile_basal_rate=0.8,
+            )
+            for index in range(12)
+        ]
+        store = _CatalogStore(
+            now=now,
+            cgm=[
+                CgmReading(
+                    t=meal_anchor + timedelta(minutes=5 * index),
+                    bg=110 - 1.4 * 5 * index, type="EGV",
+                )
+                for index in range(13)
+            ] + [CgmReading(t=now, bg=110, type="EGV")],
+            bolus=[BolusEvent(
+                t=meal_anchor, completion="Completed", insulin=3.0, carbs=30.0,
+                carb_ratio=None, bg=None, seq_num=1,
+            )],
+            basal=suspend_rows,
+            rescue=[],
+        )
+        full_history = event_comparison.classify_meal_owned_suspend(
+            store._bolus[0], store._bolus, store._cgm, store._basal,
+            scenario_config=event_comparison.CONFIG,
+        )
+        without_pre_boundary = event_comparison.classify_meal_owned_suspend(
+            store._bolus[0], store._bolus, store._cgm, store._basal[1:],
+            scenario_config=event_comparison.CONFIG,
+        )
+
+        with (
+            patch.object(findings_projection, "DIAGNOSE_SOURCE_WINDOW_DAYS", 1),
+            patch("ciq_autotune.explore_exposures.build_exposures", return_value=payload),
+        ):
+            bounded = prepare_event_comparisons(store).project(ComparisonQuery.meals())
+
+        self.assertEqual(
+            store.requests,
+            [("latest",)] + [
+                (name, catalog_start, None)
+                for name in ("cgm", "bolus", "basal", "rescue")
+            ],
+        )
+        self.assertFalse(full_history.matched)
+        self.assertTrue(without_pre_boundary.matched)
+        self.assertEqual(
+            bounded["occurrences"][0]["verdict"]["cohort"], "neutral",
+        )
+
+    def test_catalog_bound_ignores_old_rescue_carbs_and_projects_in_window_rescue(self):
+        now = datetime(2026, 8, 2)
+        source_start = now - timedelta(days=1)
+        catalog_start = source_start - timedelta(
+            minutes=event_comparison.EVENT_COMPARISON_CATALOG_LEAD_IN_MIN
+        )
+        # The public source payload includes the whole calendar day; this low is
+        # one minute before the configured source start, so its -300-minute trace
+        # reaches a carb entry just outside the catalog read bound.
+        low_anchor = source_start - timedelta(minutes=1)
+        low = {
+            "t": low_anchor.strftime(event_comparison.FMT), "date": "2026-08-01",
+            "bg": 62, "worst_bg": 58, "label": "Low", "ep_id": "low-1",
+            "cause_lever": "over_treated_low", "verdicts": [{
+                "classifier": "over_treated_low", "matched": True,
+                "silence_reason": "no_trigger",
+            }],
+        }
+        payload = {
+            "window": {"start": "2026-07-31", "end": "2026-08-02"},
+            "exposures": {
+                "meals": {"occurrences": []}, "lows": {"occurrences": [low]},
+                "highs": {"occurrences": []}, "correction_clusters": {"occurrences": []},
+            },
+        }
+
+        def project(rescue):
+            store = _CatalogStore(
+                now=now, cgm=[CgmReading(t=now, bg=110, type="EGV")], bolus=[],
+                basal=[], rescue=rescue,
+            )
+            with (
+                patch.object(findings_projection, "DIAGNOSE_SOURCE_WINDOW_DAYS", 1),
+                patch("ciq_autotune.explore_exposures.build_exposures", return_value=payload),
+            ):
+                return prepare_event_comparisons(store).project(
+                    ComparisonQuery.lows(occurrence_id="lows-1")
+                )
+
+        old = SimpleNamespace(t=catalog_start - timedelta(seconds=1), grams=15,
+                                  certainty="exact")
+        in_window = SimpleNamespace(t=low_anchor, grams=8, certainty="exact")
+        with_old = project([old, in_window])
+        without_old = project([in_window])
+
+        self.assertEqual(with_old, without_old)
+        self.assertEqual(with_old["selection"]["detail"]["markers"], [{
+            "kind": "rescue_carb", "t": low_anchor.strftime(event_comparison.FMT),
+            "minute": 0.0, "grams": 8, "certainty": "exact",
+        }])
 
     def test_capture_without_an_outcome_minute_fails_closed(self):
         capture = {
@@ -206,7 +382,7 @@ class EventComparisonTest(unittest.TestCase):
         )
         reading = SimpleNamespace(t=stamp, bg=150)
         store = _Store([bolus])
-        store.cgm_readings = lambda: [reading]
+        store.cgm_readings = lambda **_: [reading]
         store.settings_snapshots = lambda: []
         with (
             patch("ciq_autotune.explore_exposures.build_exposures",
@@ -249,6 +425,89 @@ class EventComparisonTest(unittest.TestCase):
             "state": "unavailable", "requested_id": "stale-catalog-id", "detail": None,
         })
 
+    def test_capture_reuses_one_ownership_object_for_every_meal_classifier_call(self):
+        first_t, second_t = datetime(2026, 8, 1, 12), datetime(2026, 8, 1, 18)
+        occurrences = [
+            {
+                "t": stamp.strftime("%Y-%m-%d %H:%M:%S"),
+                "date": stamp.strftime("%Y-%m-%d"), "bg": 150, "worst_bg": 220,
+                "label": "Meal", "ep_id": f"ep-{index}", "cause_lever": None,
+                "verdicts": [],
+            }
+            for index, stamp in enumerate((first_t, second_t), 1)
+        ]
+        store = _Store([
+            SimpleNamespace(t=first_t, completion="Completed", insulin=3.0, carbs=30.0,
+                            carb_ratio=None, bg=None, seq_num=1),
+            SimpleNamespace(t=second_t, completion="Completed", insulin=3.0, carbs=30.0,
+                            carb_ratio=None, bg=None, seq_num=2),
+        ])
+        store.cgm_readings = lambda **_: []
+        store.settings_snapshots = lambda: []
+        no_suspend = SimpleNamespace(matched=False, suspend_start=None, suspend_end=None,
+                                     suspend_duration_min=None)
+        ownership_type = event_comparison.MealSuspendOwnership
+        with (
+            patch("ciq_autotune.explore_exposures.build_exposures",
+                  return_value=_families_many(occurrences)),
+            patch("ciq_autotune.event_comparison._effective_isf", return_value=None),
+            patch("ciq_autotune.event_comparison.MealSuspendOwnership",
+                  wraps=ownership_type) as build_ownership,
+            patch("ciq_autotune.event_comparison.classify_meal_owned_suspend",
+                  return_value=no_suspend) as classify,
+        ):
+            prepare_event_comparisons(store)
+
+        self.assertEqual(build_ownership.call_count, 1)
+        self.assertEqual(classify.call_count, 6)
+        ownership = classify.call_args_list[0].kwargs["ownership"]
+        self.assertTrue(all(
+            call.kwargs["ownership"] is ownership for call in classify.call_args_list
+        ))
+
+    def test_suspend_straddling_capture_start_matches_full_history_with_lead_in(self):
+        meal_t = datetime(2026, 8, 1, 12)
+        meal = BolusEvent(meal_t, completion="Completed", insulin=3.0, carbs=30.0,
+                          seq_num=1)
+        full_basal = [
+            BasalEvent(meal_t - timedelta(minutes=15), "profile", basal_rate=1,
+                       profile_basal_rate=1),
+            BasalEvent(meal_t + timedelta(minutes=5), "algorithm", basal_rate=0,
+                       profile_basal_rate=1),
+            BasalEvent(meal_t + timedelta(minutes=10), "algorithm", basal_rate=0,
+                       profile_basal_rate=1),
+            BasalEvent(meal_t + timedelta(minutes=15), "algorithm", basal_rate=0,
+                       profile_basal_rate=1),
+            BasalEvent(meal_t + timedelta(minutes=20), "algorithm", basal_rate=0,
+                       profile_basal_rate=1),
+            BasalEvent(meal_t + timedelta(minutes=25), "algorithm", basal_rate=0,
+                       profile_basal_rate=1),
+            BasalEvent(meal_t + timedelta(minutes=30), "algorithm", basal_rate=0,
+                       profile_basal_rate=1),
+        ]
+        capture_basal = full_basal[3:]
+        cgm = [CgmReading(meal_t + timedelta(minutes=25), 70)]
+
+        full_ownership = MealSuspendOwnership([meal], full_basal)
+        full = classify_meal_owned_suspend(
+            meal, [meal], cgm, full_basal, ownership=full_ownership,
+        )
+        capture_ownership = MealSuspendOwnership([meal], capture_basal)
+        capture = classify_meal_owned_suspend(
+            meal, [meal], cgm, capture_basal, ownership=capture_ownership,
+        )
+
+        self.assertTrue(full_ownership.owned_anchors(meal))
+        self.assertTrue(capture_ownership.owned_anchors(meal))
+        self.assertGreater(
+            capture_ownership.owned_anchors(meal)[0].t,
+            full_ownership.owned_anchors(meal)[0].t,
+        )
+        self.assertTrue(full.matched)
+        self.assertEqual(capture.matched, full.matched)
+        self.assertEqual(capture.evidence_tier, full.evidence_tier)
+        self.assertEqual(capture.silence_reason, full.silence_reason)
+
     def test_projection_owns_half_bin_percentiles_and_selected_detail(self):
         first = {
             "t": "2026-08-01 12:00:00", "date": "2026-08-01", "bg": 100,
@@ -266,7 +525,7 @@ class EventComparisonTest(unittest.TestCase):
             SimpleNamespace(t=second_t, completion="Completed", insulin=3.0, carbs=30.0,
                             carb_ratio=None, bg=None, seq_num=2),
         ])
-        store.cgm_readings = lambda: [
+        store.cgm_readings = lambda **_: [
             SimpleNamespace(t=first_t.replace(minute=2, second=30), bg=100),
             SimpleNamespace(t=second_t.replace(minute=2, second=30), bg=200),
         ]
@@ -336,7 +595,7 @@ class EventComparisonTest(unittest.TestCase):
                 t=anchor + timedelta(minutes=minute), bg=150,
             ))
         store = _Store(boluses)
-        store.cgm_readings = lambda: readings
+        store.cgm_readings = lambda **_: readings
         store.settings_snapshots = lambda: []
         no_carb = SimpleNamespace(silence_reason="no_trigger", implied_carbs=None,
                                   logged_carbs=None)
@@ -405,9 +664,9 @@ class EventComparisonTest(unittest.TestCase):
             }],
         }
         store = _Store([])
-        store.cgm_readings = lambda: [SimpleNamespace(t=anchor, bg=62)]
+        store.cgm_readings = lambda **_: [SimpleNamespace(t=anchor, bg=62)]
         store.settings_snapshots = lambda: []
-        store.carb_entries = lambda: [
+        store.carb_entries = lambda **_: [
             SimpleNamespace(t=anchor, grams=8, certainty="exact", source="manual"),
             SimpleNamespace(t=anchor, grams=6, certainty="estimate", source="rise-prompt"),
             SimpleNamespace(t=anchor, grams=4, certainty="unknown", source="low-prompt"),

@@ -34,6 +34,15 @@ the GIL — but it is a scaling estimate, not a host measurement.
 
 Every shape in the ticket's list carries a measured time; none is missing.
 
+### #120 bounded catalog-capture measurement
+
+On the same read-only snapshot and cold `exposures` shape, bounding the
+event-comparison catalog to its 30-day Diagnose source window plus the required
+300-minute context lead-in reduced the aggregate exposure preparation time from
+**98.20s** to **26.74s**. This records aggregate timing only; the separately
+unbounded `build_exposures` reads and the per-meal suspend-ownership rescan
+remain for #121.
+
 ### The ~5-minute observation versus the 20–40s in `api.py`
 
 They are not in conflict once measured: **the operator's figure is the accurate
@@ -81,6 +90,14 @@ finding that reorders the map:** persisting the artifact would carry the same
 98 seconds into every post-fetch recompute rather than removing it. The two scan
 fixes (#120, #121) land first; the durable boundary is built around what is left.
 
+### #121 exposure update — capture-scoped meal-suspend ownership
+
+On the same profile shape, the branch baseline was **98.20s**. After #121,
+the measured exposure preparation is **37.93s**. `classify_meal_owned_suspend`
+is no longer the leader (**4.41s** cumulative); the remaining leaders are
+`builtins.sorted`, `model.__init__`, `classify_carb_undercount`, and
+`classify_late_bolus`.
+
 ### The duplication the ticket flagged is real and small
 
 The findings case preparation rebuilds the analysis, the exposures and the
@@ -99,6 +116,16 @@ cold arrival requests are therefore **the same computation** — the single most
 expensive one. It is not warm-set waste; it is the one entry that must stay. The
 other two counts hold: the trend window is warmed at 14 while Diagnose asks 30,
 and the findings case preparation is never warmed. #122 carries all three.
+
+## #122 — Reconcile the Diagnose cold-arrival pre-warm
+
+The hourly warm set now matches the fixed cacheable requests in `loadAll` and
+`loadAudit`: the trend uses its 30-day cold-arrival window, the global findings
+case preparation is warmed, and the event-comparison preparation remains because
+the exposures request consumes its payload. Coordinate projections remain
+visitor-lazy. The API and frontend source comments name the shared contract; the
+cache regression test fixes its eight backend keys and consumes each through its
+public request.
 
 ## ADR 82 — Durable derived-artifact boundary
 
@@ -214,3 +241,56 @@ fixes first, because they change what the durable store is built around.
 6. **#125** — one throttled paced recompute worker (ADR 82, recompute).
 7. **#126** — compute analysis, scenarios and exposures once and share them with
    the findings projection.
+# Implementation note (#123)
+
+Fixed reconstructible Diagnose artifacts are stored in a disposable adjacent
+SQLite sidecar. Their primary revision is committed with Store mutations and
+their automatic package-source fingerprint invalidates changed analysis code.
+
+## ADR 124 — Exact-key stale serving carries the input horizon
+
+**Status:** accepted, 2026-08-24.
+
+The fixed-route boundary owns a per-key in-flight registry separate from
+`ResultCache`. While one exact fixed key recomputes, another request for that
+same key may read only the newest earlier-revision sidecar artifact with the
+same coordinates and model marker. It must have a non-null `covers_to`; no
+cross-key, schema, marker, or coordinate fallback exists. Builder failures
+continue to propagate rather than turning an uncertain result into a stale one.
+An observer returns the current unlabeled result when that exact key is already
+hot; registry presence alone never replaces a current result with its predecessor.
+
+Each sidecar row stores `covers_to`, the maximum CGM/basal timestamp read from
+the query-only snapshot before its computation starts. The schema version
+advances with this column, so an older sidecar cannot masquerade as labeled.
+The row digest covers both the payload and `covers_to`; altered horizon metadata
+is a cache miss, never a forged fresh-looking result. Selecting a stale artifact
+reads the current primary revision, newest primary horizon and attached sidecar
+predecessor in one SQLite statement, so a fetch cannot split the revision bound
+from the row selected under it.
+
+A computation crossed by a primary revision change is retried from a new pinned
+snapshot before anything is returned or admitted to `ResultCache`. After three
+continuously crossed snapshots it fails explicitly. The boundary therefore never
+returns old-revision bytes as an unlabeled current result, including when the
+fresh-revision proof itself cannot be read.
+
+The fixed-route cache also validates the artifact revision while holding the same
+lock that returns a cache hit or admits a computed value. This closes the interval
+between the artifact store's post-snapshot check and cache publication: a fetch in
+that interval causes another bounded computation, never an uncached unlabeled
+response. Findings/history carries the same revision envelope internally, unwraps
+it only after lock-held validation, and maps exhausted artifact retries back to its
+existing `GenerationChanged` response contract.
+
+The API projects fixed results through one adapter which appends optional
+top-level `input_data_age` after the endpoint's normal projection. Its fields
+are the old revision, `covers_to`, and optional newest input horizon. Findings
+and history retain their generation-sensitive path and do not stale-serve; their
+shared canonical builders explicitly unwrap the fixed-result envelope.
+
+Diagnose records that backend fact per incoming shape before assignment. A
+fresh replacement clears only its own age; a full reload resets all shape ages.
+The cockpit banner selects the oldest rendered stale horizon and says exactly
+`Showing results from data through <covers_to>.` This is visibility, not a
+frontend inference about freshness or insulin guidance.

@@ -190,7 +190,10 @@ def generate(output: Path) -> None:
 
 def _logical_dump(path: Path) -> str:
     with sqlite3.connect(f"file:{path}?mode=ro&immutable=1", uri=True) as conn:
-        return "\n".join(conn.iterdump()) + "\n"
+        # Operational Store revision metadata is initialized on first normal
+        # open of older fixtures. It is not synthetic scenario content.
+        return "\n".join(line for line in conn.iterdump()
+                         if "input_data_revision" not in line) + "\n"
 
 
 def check(committed: Path) -> bool:

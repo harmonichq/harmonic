@@ -115,8 +115,8 @@ def test_case_file_consumes_the_authoritative_diagnose_window(monkeypatch):
             assert analysis_generation == "standalone:0"
             return {"rows": []}
 
-    def fake_projection(store, *, window_days):
-        observed.append(("queue", window_days))
+    def fake_projection(*, analysis, exposures, scenarios):
+        observed.append(("queue", findings_projection.DIAGNOSE_SOURCE_WINDOW_DAYS))
         return Projection()
 
     def fake_population(store, basal, cgm, bolus, *, window_days):
@@ -142,6 +142,7 @@ def test_case_file_consumes_the_authoritative_diagnose_window(monkeypatch):
     monkeypatch.setattr(finding_case_file, "_population", fake_population)
     prepared = finding_case_file.prepare(
         Store(), query=WindowQuery.whole_day(), version=0,
+        analysis={}, exposures={}, scenarios={},
     )
 
     assert observed == [("queue", 17), ("population", 17)]
@@ -193,6 +194,7 @@ def test_preparation_reads_one_sqlite_generation_across_constituent_reads():
 
             prepared = finding_case_file.prepare(
                 InterleavedStore(), query=WindowQuery.whole_day(), version=0,
+                analysis={}, exposures={}, scenarios={},
             )
 
         assert writer_errors == []

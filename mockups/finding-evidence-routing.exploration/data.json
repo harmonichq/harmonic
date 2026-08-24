@@ -54,7 +54,7 @@
       "confidence": 0.8,
       "hi": 4.2857,
       "lo": 4.2857,
-      "method": "bootstrap-pooled-ratio-clustered",
+      "method": "bootstrap-inverse-ratio-wls-clustered",
       "n": 24,
       "value": 4.2857,
       "wide": false
@@ -700,7 +700,7 @@
    }
   },
   "root": "Findings",
-  "meta": "8 findings · 30 days",
+  "meta": "7 findings · 30 days",
   "tiers": {
    "ic:720": {
     "tier": "next_in_line",
@@ -2037,7 +2037,7 @@
    },
    "basal": [
     {
-     "annotation": "too few clean nights to assert a direction here",
+     "annotation": "not enough nights of steady data yet to point one way",
      "asserts_move": false,
      "current": 0.8,
      "days": 3,
@@ -2191,7 +2191,7 @@
      "slot": 6
     },
     {
-     "annotation": "too few clean nights to assert a direction here",
+     "annotation": "not enough nights of steady data yet to point one way",
      "asserts_move": false,
      "current": 0.998,
      "days": 5,
@@ -2500,7 +2500,7 @@
      "slot": 20
     },
     {
-     "annotation": "too few clean nights to assert a direction here",
+     "annotation": "not enough nights of steady data yet to point one way",
      "asserts_move": false,
      "current": 0.896,
      "days": 2,
@@ -2654,7 +2654,7 @@
      "slot": 27
     },
     {
-     "annotation": "too few clean nights to assert a direction here",
+     "annotation": "not enough nights of steady data yet to point one way",
      "asserts_move": false,
      "current": 0.675,
      "days": 2,
@@ -2808,7 +2808,7 @@
      "slot": 34
     },
     {
-     "annotation": "too few clean nights to assert a direction here",
+     "annotation": "not enough nights of steady data yet to point one way",
      "asserts_move": false,
      "current": 0.552,
      "days": 5,
@@ -2962,7 +2962,7 @@
      "slot": 41
     },
     {
-     "annotation": "too few clean nights to assert a direction here",
+     "annotation": "not enough nights of steady data yet to point one way",
      "asserts_move": false,
      "current": 0.623,
      "days": 2,

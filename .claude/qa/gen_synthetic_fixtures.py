@@ -232,7 +232,7 @@ def build_audit():
                           'estimate': estimate(round(current + 0.06, 3), round(current - 0.30, 3),
                                                round(current + 0.44, 3), n, wide=True),
                           'recommended': None,
-                          'annotation': 'too few clean nights to assert a direction here',
+                          'annotation': 'not enough nights of steady data yet to point one way',
                           'days': n, 'evidence': {'points': []},
                           'asserts_move': False, 'safety_status': 'insufficient evidence'})
         else:

@@ -140,7 +140,8 @@ class PreparedCases:
         }
 
 
-def prepare(store, *, query, version, selected_id=None, analysis_generation="standalone:0"):
+def prepare(store, *, query, version, analysis, exposures, scenarios, selected_id=None,
+            analysis_generation="standalone:0"):
     """Materialize queue, opportunities, attribution, and traces in one read snapshot."""
     store.conn.execute("BEGIN")
     try:
@@ -150,7 +151,7 @@ def prepare(store, *, query, version, selected_id=None, analysis_generation="sta
         carbs = tuple(store.carb_entries())
         window_days = findings_projection.DIAGNOSE_SOURCE_WINDOW_DAYS
         projection = findings_projection.prepare_findings_projection(
-            store, window_days=window_days,
+            analysis=analysis, exposures=exposures, scenarios=scenarios,
         )
         findings = projection.project(
             query, selected_id, analysis_generation=analysis_generation,

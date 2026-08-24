@@ -13,8 +13,12 @@ a Trial on a carb-ratio change should accept as "ready to judge".
   Trial reported ready while neither block could assert). Disposition: → ADR.
 
 - **The bar counts the estimator's credited total, not whole meals in the block.**
-  Operator decision (Q1), 2026-08-24. Why: it is the same quantity the
-  recommendation is already gated on, so a trial can never report ready while the
+  Operator decision (Q1), 2026-08-24. Why: it is the same evidence quantity the
+  recommendation's own support condition reads, so the trial and the engine cannot
+  disagree about how much evidence exists. Readiness establishes sufficient
+  meal-capture support and nothing more: assertion additionally requires a numeric
+  block, a band excluding the programmed value, regime-bracket support and a real
+  move (`ic.ic_asserts_move`), so a block can be ready to judge while the
   recommendation stays withheld. Disposition: → ADR.
 
 - **Each changed block matures and is judged on its own.** Operator decision (Q2),
@@ -70,10 +74,16 @@ a Trial on a carb-ratio change should accept as "ready to judge".
 - **Unsupported:** eras with no stamped regime identity (before settings history
   begins) yield no trial evidence; parameters other than carb ratio keep their day
   count (Q6).
-- **Evidence owed:** the readiness verdict is read from the engine's stamped
-  eligibility rather than re-derived; tests through the public interface at counts
-  below, at, and above the bar; the dock and the Verify roster report the same
-  verdict for the same change; an absent or uncomputable count reports not ready.
+- **Evidence owed:** acceptance is proven through the public interface,
+  `GET /api/verify/trials`, with a case for each locked behavior: the readiness
+  verdict is read from the engine's stamped support flag rather than re-derived;
+  counts below, at, and above the bar; two changed blocks maturing independently of
+  each other; a whole-profile switch running the meal bar for its ratio part; a
+  block reaching the bar before day 14 reporting ready then; the fixed window
+  expiring with the bar unmet, naming the progress reached and releasing the watch;
+  basal, correction factor and target maturity unchanged; the dock and the Verify
+  roster reporting the same verdict for the same change; and an absent or
+  uncomputable count reporting not ready.
 
 Why: advisory dosing guidance, one operator, and a live observed case of ready
 appearing without evidence. Disposition: → ADR, copied into the work order.
@@ -130,11 +140,15 @@ successive cutoffs:
   freezes all other work for months.
 
 ## Open questions
-- Whether a multi-block ratio change matures per block or as one verdict.
-- Whether a whole-profile switch that moves the ratio runs the meal bar for its
-  ratio part.
-- Risk contract, once the shape is bounded.
+
+- None. Every question raised in this session is settled above, including
+  per-block maturity, whole-profile handling and the risk contract. Nothing here
+  is open for #136 to re-decide.
 
 ## Spawned tasks
 
-- None yet.
+- Rethink the one-Focus / one-Trial exclusivity model (engine, experience and
+  visualization together) — filed as its own issue.
+- Move the remaining parameters to their own engine evidence bars (the eventual
+  "all parameters" move deferred at Q6) — filed as its own issue.
+- #136 carries ADR 24 as a settled input for its attribution decision.

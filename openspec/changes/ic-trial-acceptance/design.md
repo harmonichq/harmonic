@@ -3,9 +3,12 @@
 ## ADR 24 — An I:C trial is ready to judge on meal captures, not elapsed days
 
 **Ruling.** A Trial watching a carb-ratio change is ready to judge when the changed
-block's own evidence reaches the engine's bar, read as the estimator-stamped
-`effective_run_count` against `safety._MIN_SUPPORTED_BLOCK_RUNS`. It is no longer
-decided by `TRIAL_WINDOW_DAYS` of target-metric data-days. Each changed block
+block's own evidence reaches the engine's bar. The verdict is the analyzer's
+already-stamped support flag (`evidence['eligibility']['runs_floor_met']`), read as
+published; the stamped `effective_run_count` and `runs_floor` beside it are for
+showing progress, not for re-deciding the bar. A Trial never re-applies
+`safety._MIN_SUPPORTED_BLOCK_RUNS` itself. Readiness is no longer decided by
+`TRIAL_WINDOW_DAYS` of target-metric data-days. Each changed block
 matures and is judged on its own. A whole-profile switch that moves a carb ratio
 runs this bar for its ratio part rather than maturing on glucose data-days. The
 foregrounded window stays a fixed stretch (30 days) that is deliberately *not* the
@@ -31,7 +34,13 @@ identity.
 **Consequences.**
 - Readiness is read from the engine's stamped eligibility, never re-derived. This is
   the same one-predicate discipline ADR 20 fixed for assertion, applied to the Trial:
-  a Trial that computed its own bar would be the second predicate again.
+  a Trial that compared the count against the floor itself would be the second
+  predicate again, even though it would agree with the first one today.
+- Ready to judge is not the same as recommending. The support flag is one of the
+  five conditions `ic.ic_asserts_move` requires; a block can be ready to judge while
+  the recommendation stays withheld for want of a band excluding the programmed
+  value, regime-bracket support, or a real move. A future build that treats
+  `asserts_move` as the readiness signal has read this record backwards.
 - A quiet block routinely expires without a verdict. That is the accepted outcome,
   not a failure to fix: evidence keeps accruing through the ordinary reading, and a
   recommendation surfaces later if one is warranted.
@@ -47,8 +56,11 @@ identity.
 - Credit follows the dose, never digestion: a meal is credited to the block holding
   its own timestamp, weighted by its carbs as a share of the run. A block a meal
   merely digests through earns nothing.
-- Withhold-only by construction. Every clause here can only delay or withhold a
-  readiness verdict relative to today; none widens what the app may recommend.
+- Withhold-only in the sense that matters: nothing here widens what the app may
+  recommend, because assertion authority is untouched. Readiness timing is not
+  withhold-only and is not claimed to be — with no minimum elapsed time, a block
+  that reaches the bar quickly reports ready sooner than today's fourteen data-days
+  would have allowed. That is the intended effect of tying readiness to evidence.
 
 **Not built here.** This record is locked ahead of its implementation, deliberately.
 The per-block judging rulings sit inside the decision space of #136 (Verify's

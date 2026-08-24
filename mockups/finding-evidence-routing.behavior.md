@@ -1930,8 +1930,8 @@ they intentionally inspect Watching evidence; the issue-81 probe restates its
 visible-row metadata. The dense-history browser order test and the ISF whole-day,
 held I:C, and ISF non-stageable browser tests do the same. S42 remains the
 sift/expand regression guard. S74 records the default disclosure and absence of
-the footer; S75 opens the all-Watching public queue and proves that its quiet
-reading stays compact above the disclosure.
+the footer; S75 answers the all-Watching population at the active public
+coordinate and proves that its quiet reading stays compact above the disclosure.
 Against the base it reports `app: 0 of 1 stories passed`; against the revision it
 reports `app: 1 of 1 stories passed`. The all-Watching quiet window now uses the
 existing empty sentence rather than a bare disclosure.

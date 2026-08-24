@@ -3443,6 +3443,16 @@ const refreshedCase = (body) => {
   next.finding.title += ' refreshed';
   return next;
 };
+/* S75 keeps the real request's coordinate and generation while replacing only
+   its rows with the frozen all-Watching population. A scoped fixture response
+   cannot answer the root request: the workstation correctly rejects a response
+   whose declared window differs from the request. */
+const allWatchingProjection = (projected) => ({
+  ...FINDINGS_PROJECTION.windows.quiet,
+  analysis_generation: projected.analysis_generation,
+  findings_window: projected.findings_window,
+  window: projected.window,
+});
 
 export const STORIES = [
   ['S01', S01, 'drawn'], ['S02', S02, 'typical'], ['S03', S03, 'drawn'],
@@ -3574,7 +3584,7 @@ export const STORIES = [
   ['S72', S72, 'typical'],
   ['S73', S73, 'typical', { analysisInputs: withNoDataBasal }],
   ['S74', S74, 'typical', { history: true }],
-  ['S75', S75, 'typical', { findingsProjectionInputs: () => FINDINGS_PROJECTION.windows.quiet }],
+  ['S75', S75, 'typical', { history: true, findingsProjectionInputs: allWatchingProjection }],
   ['C41', C41, 'typical', { caseScenario: {
     preparation: generatedFindingPose('finding:meal_over_delivery'),
   } }], ['C42', C42, 'typical'],

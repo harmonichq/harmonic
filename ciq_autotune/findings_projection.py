@@ -334,7 +334,7 @@ class FindingsProjection:
                           "days": s.get("days")} for s in span],
                 # The weakest slot governs how well-supported the whole run is.
                 support={"n": min(s.get("days") or 0 for s in span),
-                         "noun": "clean nights",
+                         "noun": "nights of steady data",
                          "run_days": self._analysis.get("window_days")},
                 # Verbatim, both of them: the cap() verdict string and the
                 # analyzer's own sentence. Neither is rewritten here.

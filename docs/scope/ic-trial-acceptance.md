@@ -17,6 +17,15 @@ a Trial on a carb-ratio change should accept as "ready to judge".
   recommendation is already gated on, so a trial can never report ready while the
   recommendation stays withheld. Disposition: → ADR.
 
+- **Each changed block matures and is judged on its own.** Operator decision (Q2),
+  2026-08-24. Why: on the current era the busy block had a real answer at day 15
+  while the quiet block is roughly two months out; one shared verdict hides both.
+  Disposition: → ADR.
+- **A whole-profile switch runs the meal bar for its ratio part.** Operator
+  decision (Q3), 2026-08-24. Why: the live case classified as a profile switch and
+  matured on glucose days, reporting ready while neither block could assert.
+  Disposition: → ADR.
+
 ## Grounding (read-only snapshot, 2026-08-24)
 
 Measured through the shipped path (`analyze` with the fuzzy estimator, the

@@ -383,3 +383,81 @@ ledger falls back to its correction-only form and flags those runs as
 unconfirmed. Confirmed and fallback runs centre differently, so whenever any run
 in a pool has a readable outcome the estimate is taken from that subpopulation
 alone rather than folding a mixture into one number.
+
+### Requirement: A candidate I:C estimator is admitted by evidence, never by plausibility
+
+No alternative I:C estimator influences a recommendation until it has cleared two
+bars, in order. The bars judge a candidate only through the same interface the
+engine uses, and read every verdict off engine-stamped block output — state, the
+assertion verdict, and the recorded eligibility conditions. A bar that re-derives
+an eligibility condition can drift silently away from the engine it is meant to
+certify, so it is a defect rather than a convenience.
+
+The shipped ledger is run through both bars as the calibration check. An
+incumbent that fails a bar means the bar is wrong.
+
+### Requirement: The entry bar recovers known ratios and stays silent on placebo
+
+A candidate is run over synthetic meal histories whose correct ratio is known in
+advance, and over placebo histories built to carry no ratio signal. It must
+recover every known ratio the bar gates on — the block's interval covering the
+true value and its point estimate within one display step of it — and it must
+produce no finding on any placebo.
+
+Not every known-ratio history gates. A history whose meal runs span a block
+boundary is deliberately information-free to the engine, and one dosed at the
+programmed ratio is placebo-shaped by definition; both are generated and
+reported as exploratory, and neither decides admission. When the shipped ledger
+does not recover an exploratory history, the engine-stamped reason is recorded
+rather than tuned away, because a generator adjusted until it goes green has
+stopped being evidence.
+
+Placebo silence is strict: a numeric block whose measured band excludes the
+programmed ratio disqualifies the candidate even when the block asserts no move,
+because a confident wrong finding is the failure this bar exists to catch. A
+finding anywhere in a set outranks vacuity in that set's verdict.
+
+Silence only counts as evidence when the block reached a scoreable state. A
+placebo whose block never became numeric with its evidence floor met is reported
+vacuous, and vacuous does not pass. A bar run that scored nothing at all fails
+rather than reporting a pass, because a green gate that ran zero assertions is
+indistinguishable from a gate that was never wired up.
+
+Placebo histories dose meals exactly at the programmed ratio and carry zero-mean,
+dose-independent glucose outcome noise at a realistic ISF. Dose jitter and low ISF
+are not signal-free: pooling is convex in carbs over insulin, so either turns
+zero-mean noise into a biased confident finding. A placebo the shipped ledger
+cannot pass is a defect in the placebo, never grounds for loosening the bar.
+
+### Requirement: The real-data bar measures agreement, not truth, and refuses what it cannot judge
+
+On real history a single held ratio offers no contrast, so no held-out score can
+establish that one estimator is closer to the truth than another. The real-data
+bar instead replays a stable era: a stretch during which one I:C schedule
+was programmed and held, and over which the shipped ledger's final pool meets its
+evidence floor. A candidate estimating from successive earlier cutoffs must reach
+the shipped ledger's own final answer no later than the ledger reaches it, with a
+final interval no wider, using strictly more meals. The shipped ledger replayed
+against itself is expected to agree trivially, and is exempt from the
+more-meals clause.
+
+The analysis path windows event streams at each cutoff but reads the programmed
+schedule from the latest snapshot, so a replay must not treat every window as
+judgeable. A window is refused, naming the failed precondition, when the snapshot
+log does not cover it, when any I:C or ISF schedule change appears from the
+window's start through the latest snapshot, or when the shipped ledger's final
+block does not meet its evidence floor. The schedule check reads the whole tail
+pairwise rather than comparing endpoints, because a change that reverted leaves
+the endpoints equal while placing a second regime inside the window. A refusal is
+a legitimate outcome that names why, never a score.
+
+### Requirement: Replay output carries counts, deltas, and verdicts only
+
+What a replay renders is counts, deltas, and verdicts. It never renders a meal
+row, a glucose value, or a ratio — an estimate is a ratio value. The bar runs
+against one person's own history, and anything a gate prints can become public.
+
+The guarantee holds against the candidate as well as the harness: candidate
+output produced during replay is suppressed, and a failure is reported by kind
+rather than by echoing the data that caused it, so neither a candidate that
+prints its arguments nor one that raises carrying them can leak through.

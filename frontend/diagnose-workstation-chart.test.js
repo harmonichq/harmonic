@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {
   BIN_MINUTES, buildMealMarkers, buildSlotLane, slotAssertsMove, snapWindow,
   renderCanvas, renderHistoryEvents, validateHistoryEvents, windowStats, windowSupport,
+  commitSlide, commitWindow, minuteAtX, windowSpans, xAtMinute,
 } from './diagnose-workstation-chart.js';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -72,6 +73,27 @@ test('windowStats reads a snapped hand-built envelope window', () => {
   assert.deepEqual(windowStats(envelope, window), {
     a: 1, b: 6, median: 118, lowest: 105, lowestIndex: 1, spread: 20, readings: 27,
   });
+});
+
+test('unrolled display windows snap, preserve their anchor, and commit circularly', () => {
+  assert.deepEqual(snapWindow([22 * 60, 26 * 60], 45), [1320, 1560]);
+  assert.deepEqual(commitWindow([1320, 1560]), [1320, 120]);
+  assert.deepEqual(snapWindow([-60, 3 * 60], 45, 'end'), [-60, 180]);
+  assert.deepEqual(commitWindow([-60, 180]), [1380, 180]);
+  assert.deepEqual(snapWindow([1425, 1440], 45), [1425, 1515]);
+  assert.deepEqual(snapWindow([1425, 1440], 10), [1425, 1455]);
+  assert.equal(commitWindow([1200, 2640]), null);
+  assert.deepEqual(commitSlide(23 * 60 + 30, 180), [1410, 150]);
+  assert.deepEqual(commitSlide(11 * 60 + 1440, 180), [660, 840]);
+});
+
+test('window spans and pointer mapping share the panned display domain', () => {
+  assert.deepEqual(windowSpans([1320, 120]), [[1320, 1440], [0, 120]]);
+  const el = { clientWidth: 1054 };
+  assert.equal(minuteAtX(el, 52, -120), -120);
+  assert.equal(minuteAtX(el, 1002, -120), 1305);
+  assert.equal(xAtMinute(el, -120, -120), 52);
+  assert.equal(xAtMinute(el, 1305, -120), 1002);
 });
 
 test('wrapped windows pool both stretches for stats and support', () => {
@@ -154,6 +176,131 @@ test('renderCanvas draws a wrapped window as two areas with one range label', ()
   }));
   assert.equal(option.series.find((series) => series.name === '__context').markArea.data
     .filter(([start]) => start.xAxis != null).length, 0);
+});
+
+test('renderCanvas pans labels and every data series into dimmed neighbouring days', () => {
+  const labels = Array.from({ length: 96 }, (_, index) =>
+    `${String(Math.floor(index / 4)).padStart(2, '0')}:${String((index % 4) * 15).padStart(2, '0')}`);
+  const filled = (value) => Array.from({ length: 96 }, () => value);
+  const envelope = {
+    labels, p10: filled(80), p25: filled(100), p50: filled(120), p75: filled(140),
+    p90: filled(160), counts: filled(12), raw: filled(1), days: 12, pool: 45,
+  };
+  const colors = {
+    muted: '#111111', warn: '#222', danger: '#333', targetFill: '#444', targetText: '#555',
+    rail: '#666', windowFill: '#777', windowEdge: '#888', bandOuter: '#999',
+    bandInner: '#aaa', bandEdge: '#bbb', median: '#ccc', targetEdge: '#ddd',
+    onAccent: '#eee', text: '#123', surface2: '#234', line: '#345', occurrence: '#456', meal: '#567', grid: '#678',
+  };
+  let option = null;
+  const chart = { setOption(next) { option = next; }, off() {}, on() {} };
+
+  renderCanvas({ clientWidth: 1200 }, { getInstanceByDom() { return chart; } }, {
+    envelope, markers: [{ index: 4, count: 1, minute: 60, medianCarbs: 20 }], colors,
+    window: [1320, 120], displayWindow: [1320, 1560], displayOffset: 135,
+  });
+
+  assert.equal(option.xAxis[0].data.length, 288);
+  assert.equal(option.xAxis[0].min, 105);
+  assert.equal(option.xAxis[0].max, 200);
+  const medians = option.series.filter((series) => series.name === 'Median');
+  assert.equal(medians.length, 3);
+  assert.equal(medians[0].data[96], 120);
+  assert.equal(medians[2].data[192], 120);
+  assert.ok(medians[2].lineStyle.opacity < (medians[0].lineStyle.opacity ?? 1));
+  const context = option.series.find((series) => series.name === '__context');
+  assert.deepEqual(context.markArea.data.filter(([start]) => start.xAxis != null)
+    .map(([start, end]) => [start.xAxis, end.xAxis]), [['1320', '1560']]);
+  assert.match(option.xAxis[0].axisLabel.formatter('-60'), /neighbour.*23:00/);
+  assert.equal(option.xAxis[0].axisLabel.rich.neighbour.color, 'rgba(17,17,17,0.42)');
+});
+
+test("#130 · a full-travel slide keeps its live band on the unrolled axis", () => {
+  const labels = Array.from({ length: 96 }, (_, index) =>
+    `${String(Math.floor(index / 4)).padStart(2, '0')}:${String((index % 4) * 15).padStart(2, '0')}`);
+  const filled = (value) => Array.from({ length: 96 }, () => value);
+  const envelope = {
+    labels, p10: filled(80), p25: filled(100), p50: filled(120), p75: filled(140),
+    p90: filled(160), counts: filled(12), raw: filled(1), days: 12, pool: 45,
+  };
+  const colors = {
+    muted: '#111111', warn: '#222', danger: '#333', targetFill: '#444', targetText: '#555',
+    rail: '#666', windowFill: '#777', windowEdge: '#888', bandOuter: '#999',
+    bandInner: '#aaa', bandEdge: '#bbb', median: '#ccc', targetEdge: '#ddd',
+    onAccent: '#eee', text: '#123', surface2: '#234', line: '#345', occurrence: '#456', meal: '#567', grid: '#678',
+  };
+  let option = null;
+  const chart = { setOption(next) { option = next; }, off() {}, on() {} };
+
+  /* A slide is the one gesture whose far edge can outrun the pan: both of these
+     are reachable by dragging a committed 2–3h window to the pan's own limit.
+     An endpoint the ordinal scale cannot resolve takes the whole live band and
+     its label off the plot for the rest of the travel. */
+  for (const [displayWindow, displayOffset, expected] of [
+    [[2760, 2940], 1425, ['2760', '2865']],     // slid right to panMax: end ran past 23:45
+    [[-1455, -1335], -1440, ['-1440', '-1335']], // grabbed after midnight, slid left to panMin
+    [[1320, 1560], 135, ['1320', '1560']],       // in range: untouched
+  ]) {
+    renderCanvas({ clientWidth: 1200 }, { getInstanceByDom() { return chart; } }, {
+      envelope, markers: [], colors, window: [1320, 60], displayWindow, displayOffset,
+    });
+    const axis = option.xAxis[0].data;
+    const points = option.series.find((series) => series.name === '__context').markArea.data
+      .filter(([start]) => start.xAxis != null).flatMap(([start, end]) => [start.xAxis, end.xAxis]);
+    assert.deepEqual(points, expected, `${displayWindow} stays on the axis`);
+    for (const point of points) {
+      assert.ok(axis.includes(point),
+        `${point} must be a real category — an unresolvable one hides the live band`);
+    }
+  }
+});
+
+test('#130 · the docked readout reads the pooled bin under a panning axis pointer', () => {
+  const labels = Array.from({ length: 96 }, (_, index) =>
+    `${String(Math.floor(index / 4)).padStart(2, '0')}:${String((index % 4) * 15).padStart(2, '0')}`);
+  /* Every bin carries its OWN number, so a readout that lands on the wrong bin
+     reports a wrong value rather than the same value everywhere. */
+  const perBin = (base) => Array.from({ length: 96 }, (_, index) => base + index);
+  const envelope = {
+    labels, p10: perBin(200), p25: perBin(300), p50: perBin(400), p75: perBin(500),
+    p90: perBin(600), counts: perBin(1), raw: perBin(0), days: 12, pool: 45,
+  };
+  const colors = {
+    muted: '#111111', warn: '#222', danger: '#333', targetFill: '#444', targetText: '#555',
+    rail: '#666', windowFill: '#777', windowEdge: '#888', bandOuter: '#999',
+    bandInner: '#aaa', bandEdge: '#bbb', median: '#ccc', targetEdge: '#ddd',
+    onAccent: '#eee', text: '#123', surface2: '#234', line: '#345', occurrence: '#456', meal: '#567', grid: '#678',
+  };
+  const handlers = {};
+  const chart = { setOption() {}, off() {}, on(name, fn) { handlers[name] = fn; } };
+  let reported = null;
+  const render = (extra) => renderCanvas({ clientWidth: 1200 }, { getInstanceByDom() { return chart; } }, {
+    envelope, markers: [], colors, window: [1320, 120],
+    onHover: (item) => { reported = item; }, ...extra,
+  });
+
+  /* A PANNING axis is the three-day DISPLAY_AXIS, so `axis.value`'s ordinal
+     index counts from the previous day's 00:00: display index j carries display
+     minute (j - 96) * 15 and reads pooled bin j mod 96. Reading the index as a
+     minute printed another time of day's median and IQR into the docked header
+     for the whole gesture, and could never map past ~05:00. */
+  render({ displayWindow: [1320, 1560], displayOffset: 135 });
+  for (const [index, label, bin] of [[96, '00:00', 0], [100, '01:00', 4],
+    [140, '11:00', 44], [191, '23:45', 95]]) {
+    handlers.updateAxisPointer({ axesInfo: [{ value: index }] });
+    assert.equal(reported.label, label, `display index ${index} reads ${label}`);
+    assert.deepEqual([reported.p50, reported.p25, reported.p75, reported.n],
+      [400 + bin, 300 + bin, 500 + bin, 1 + bin],
+      `display index ${index} carries bin ${bin}'s own pooled numbers`);
+  }
+
+  // at rest the axis is the canonical day and the index is the bin outright
+  render({});
+  handlers.updateAxisPointer({ axesInfo: [{ value: 44 }] });
+  assert.equal(reported.label, '11:00');
+  assert.equal(reported.p50, 444);
+  handlers.updateAxisPointer({ axesInfo: [{ value: 400 }] });
+  assert.equal(reported.label, '23:45', 'a resting index past the day clamps to the last bin');
 });
 
 test('S49/S70 · history event validation accepts one exact id and generation', () => {

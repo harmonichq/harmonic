@@ -11,7 +11,7 @@
 export const BIN_MINUTES = 15;
 export const BIN_COUNT = (24 * 60) / BIN_MINUTES; // 96
 
-function windowSpans([startMin, endMin]) {
+export function windowSpans([startMin, endMin]) {
   const spans = startMin <= endMin
     ? [[startMin, endMin]]
     : [[startMin, 1440], [0, endMin]];
@@ -150,15 +150,15 @@ export function windowStats(envelope, [startMin, endMin]) {
  */
 export const minWindowMinutes = (pool) => Math.max(2 * BIN_MINUTES, 2 * pool);
 
-/** Snap a minute to the pooling grid: nearest bin edge, clamped to the day. */
+/** Snap a display minute to the pooling grid. The live display spans three days. */
 export function snapMinute(minute) {
-  const snapped = Math.round(minute / BIN_MINUTES) * BIN_MINUTES;
-  return Math.min(1440, Math.max(0, snapped));
+  return Math.round(minute / BIN_MINUTES) * BIN_MINUTES;
 }
 
 /**
  * Snap a drawn window to the grid and widen it to the minimum the pooling
- * supports, pushing whichever edge keeps it inside the day.
+ * supports. Display minutes deliberately remain outside the canonical day until
+ * mouseup; that unrolled range is what lets a gesture cross midnight.
  * `anchor` is the edge the user is NOT dragging, so a resize grows away from it.
  */
 export function snapWindow([rawStart, rawEnd], pool, anchor = 'start') {
@@ -168,9 +168,24 @@ export function snapWindow([rawStart, rawEnd], pool, anchor = 'start') {
   if (end - start < min) {
     if (anchor === 'end') start = end - min; else end = start + min;
   }
-  if (start < 0) { start = 0; end = min; }
-  if (end > 1440) { end = 1440; start = Math.max(0, 1440 - min); }
+  if (end - start > 1440) {
+    if (anchor === 'end') start = end - 1440; else end = start + 1440;
+  }
   return [start, end];
+}
+
+const normalizeMinute = (minute) => ((minute % 1440) + 1440) % 1440;
+
+/** Commit an unrolled display range to the circular clock; null is whole-day scope. */
+export function commitWindow([displayStart, displayEnd]) {
+  if (displayEnd - displayStart >= 1440) return null;
+  return [normalizeMinute(displayStart), normalizeMinute(displayEnd)];
+}
+
+/** Commit a slide start while preserving the window's circular duration. */
+export function commitSlide(displayStart, duration) {
+  const start = normalizeMinute(snapMinute(displayStart));
+  return [start, normalizeMinute(start + duration)];
 }
 
 /** The plot body's px box inside `el`, in the element's own coordinate space. */
@@ -199,17 +214,18 @@ function estimateTextPx(text, fontSize, { caps = false, letterSpacing = 0 } = {}
 }
 
 /** px offset inside `el` for a clock minute. */
-export function xAtMinute(el, minute) {
+export function xAtMinute(el, minute, displayOffset = 0) {
   const box = plotBox(el);
-  const index = Math.min(CAT_MAX, Math.max(0, minute / BIN_MINUTES));
+  const index = Math.min(CAT_MAX, Math.max(0, (minute - displayOffset) / BIN_MINUTES));
   return box.left + (index / CAT_MAX) * box.width;
 }
 
 /** The clock minute under a px offset inside `el` (unsnapped). */
-export function minuteAtX(el, offsetX) {
+export function minuteAtX(el, offsetX, displayOffset = 0) {
   const box = plotBox(el);
   const ratio = (offsetX - box.left) / (box.width || 1);
-  return Math.min(1440, Math.max(0, ratio * CAT_MAX * BIN_MINUTES));
+  return displayOffset + Math.min(CAT_MAX * BIN_MINUTES,
+    Math.max(0, ratio * CAT_MAX * BIN_MINUTES));
 }
 
 /**
@@ -527,6 +543,60 @@ const edgeLine = (name, data, color, z) => ({
   lineStyle: { color, width: 1, type: [3, 3], opacity: 0.9 },
 });
 
+const DISPLAY_AXIS = Array.from({ length: BIN_COUNT * 3 }, (_, index) =>
+  String((index - BIN_COUNT) * BIN_MINUTES));
+
+/* The unrolled axis runs from the previous day's 00:00 to the next day's 23:45.
+   A SLIDE is the one gesture that can carry a display endpoint past that: the
+   pan can reach a start a full day beyond where it began, and the far edge sits
+   a whole window-length beyond THAT. Both ends can leave — a window slid right
+   to the pan's limit ends past 23:45, and one grabbed just after midnight and
+   slid left starts before the previous day's 00:00. An endpoint off the axis is
+   a category the ordinal scale cannot resolve, so the live band and its parked
+   label simply vanished for the last stretch of travel, which is precisely when
+   the wearer is reading where the window is going. The plot viewport is always
+   well inside this domain, so clamping the band to it loses nothing that was
+   ever visible. */
+const DISPLAY_MIN = -BIN_COUNT * BIN_MINUTES;
+const DISPLAY_MAX = (BIN_COUNT * 2 - 1) * BIN_MINUTES;
+const onDisplayAxis = (minute) => Math.max(DISPLAY_MIN, Math.min(DISPLAY_MAX, minute));
+
+function withOpacity(color, opacity) {
+  const hex = color.match(/^#([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i);
+  if (hex) return `rgba(${hex.slice(1).map((part) => parseInt(part, 16)).join(',')},${opacity})`;
+  const rgb = color.match(/^rgba?\(([^)]+)\)$/i);
+  if (rgb) return `rgba(${rgb[1].split(',').slice(0, 3).join(',')},${opacity})`;
+  return color;
+}
+
+function displaySeries(series) {
+  const positioned = series.data?.some((point) => point && typeof point === 'object'
+    && Array.isArray(point.value));
+  const place = (dayIndex) => {
+    if (positioned) {
+      return (series.data || []).map((point) => ({
+        ...point,
+        value: [point.value[0] + dayIndex * BIN_COUNT, ...point.value.slice(1)],
+      }));
+    }
+    const data = Array.from({ length: BIN_COUNT * 3 }, () => null);
+    (series.data || []).forEach((point, index) => { data[index + dayIndex * BIN_COUNT] = point; });
+    return data;
+  };
+  const main = { ...series, data: place(1) };
+  if (series.name === '__context') return [main];
+  const neighbour = (dayIndex) => ({
+    ...series,
+    data: place(dayIndex),
+    stack: series.stack ? `${series.stack}-${dayIndex}` : undefined,
+    lineStyle: { ...(series.lineStyle || {}), opacity: (series.lineStyle?.opacity ?? 1) * 0.28 },
+    areaStyle: series.areaStyle
+      ? { ...series.areaStyle, opacity: (series.areaStyle.opacity ?? 1) * 0.28 } : undefined,
+    itemStyle: { ...(series.itemStyle || {}), opacity: 0.28 },
+  });
+  return [main, neighbour(0), neighbour(2)];
+}
+
 /**
  * @param {object} opts { envelope, markers, colors, window:[startMin,endMin],
  *                        windowLabel, occurrences, selectedOcc }
@@ -536,10 +606,17 @@ export function renderCanvas(el, echarts, opts) {
   const stats = opts.stats || null;
   const target = opts.target || [70, 180];
   const [winStart, winEnd] = opts.window || [0, 360];
-  const binSpans = windowRenderSpans([winStart, winEnd]);
+  const canonicalBinSpans = windowRenderSpans([winStart, winEnd]);
+  const displayOffset = opts.displayOffset || 0;
+  const panning = displayOffset !== 0;
+  const displayWindow = panning ? opts.displayWindow : null;
+  const binSpans = displayWindow
+    ? [[onDisplayAxis(snapMinute(displayWindow[0])),
+      onDisplayAxis(snapMinute(displayWindow[1]))]]
+    : canonicalBinSpans;
   const [[startIndex, endIndex] = [0, 0]] = binSpans;
   const hasWindow = binSpans.length > 0;
-  const wrapped = binSpans.length > 1;
+  const wrapped = !panning && canonicalBinSpans.length > 1;
 
   /* Same floor the basal slots use, applied to the window's pooled sample: below
      it the canvas prints NO precise median — it says so, in the window's own
@@ -562,8 +639,10 @@ export function renderCanvas(el, echarts, opts) {
     ? `INSUFFICIENT SAMPLE — thinnest bin holds ${support.thinnest}`
     : (stats && stats.spread != null ? `25–75 spread ${stats.spread} mg/dL` : '');
   const labelBox = plotBox(el);
-  const xStart = labelBox.left + (startIndex / CAT_MAX) * labelBox.width;
-  const xEnd = labelBox.left + (endIndex / CAT_MAX) * labelBox.width;
+  const xStart = labelBox.left + ((panning ? startIndex - displayOffset
+    : startIndex * BIN_MINUTES) / (CAT_MAX * BIN_MINUTES)) * labelBox.width;
+  const xEnd = labelBox.left + ((panning ? endIndex - displayOffset
+    : endIndex * BIN_MINUTES) / (CAT_MAX * BIN_MINUTES)) * labelBox.width;
   const winPx = Math.max(0, xEnd - xStart);
   const capOpts = { caps: true, letterSpacing: 0.5 };
   const headPx = estimateTextPx(labelHead, 10, capOpts);
@@ -596,7 +675,7 @@ export function renderCanvas(el, echarts, opts) {
   };
   const windowAreas = binSpans.map(([start, end], index) => [
     {
-      xAxis: envelope.labels[start],
+      xAxis: panning ? String(start) : envelope.labels[start],
       itemStyle: {
         color: colors.windowFill, borderColor: colors.windowEdge,
         borderWidth: 1, borderType: [4, 3],
@@ -613,7 +692,7 @@ export function renderCanvas(el, echarts, opts) {
         formatter: labelText, rich: labelRich,
       } : { show: false },
     },
-    { xAxis: envelope.labels[end] },
+    { xAxis: panning ? String(end) : envelope.labels[end] },
   ]);
 
   /* A captured day's real trace, when the caller has one. With it on the plot
@@ -639,8 +718,19 @@ export function renderCanvas(el, echarts, opts) {
     },
   }));
 
+  const axisData = panning ? DISPLAY_AXIS : envelope.labels;
+  const axisMinute = (value) => panning ? Number(value)
+    : Number(value.slice(0, 2)) * 60 + Number(value.slice(3, 5));
+  const hourInterval = (i, value) => axisMinute(value) % 180 === 0;
+  const axisFormatter = panning
+    ? (value) => (Number(value) < 0 || Number(value) >= 1440
+      ? `{neighbour|${hhmm(Number(value))}}` : hhmm(Number(value)))
+    : undefined;
+  const axisRich = panning
+    ? { neighbour: { color: withOpacity(colors.muted, 0.42) } } : undefined;
+
   const chart = echarts.getInstanceByDom(el) || echarts.init(el, null, { renderer: 'canvas' });
-  chart.setOption({
+  const option = {
     backgroundColor: 'transparent',
     animation: false,
     textStyle: { fontFamily: 'Inter, system-ui, sans-serif', color: colors.muted },
@@ -696,25 +786,29 @@ export function renderCanvas(el, echarts, opts) {
     },
     xAxis: [
       {
-        type: 'category', data: envelope.labels, boundaryGap: false,
+        type: 'category', data: axisData, boundaryGap: false,
+        min: panning ? BIN_COUNT + displayOffset / BIN_MINUTES : undefined,
+        max: panning ? BIN_COUNT + displayOffset / BIN_MINUTES + CAT_MAX : undefined,
         axisLine: { lineStyle: { color: colors.line } },
         axisTick: { show: false },
         splitLine: {
           show: true,
-          interval: (i, v) => v.endsWith(':00') && Number(v.slice(0, 2)) % 3 === 0,
+          interval: hourInterval,
           lineStyle: { color: colors.grid },
         },
         axisLabel: {
           color: colors.muted, fontSize: 10, margin: 8,
-          interval: (i, v) => v.endsWith(':00') && Number(v.slice(0, 2)) % 3 === 0,
+          interval: hourInterval, formatter: axisFormatter, rich: axisRich,
         },
       },
       {
-        type: 'category', data: envelope.labels, boundaryGap: false, gridIndex: 1,
+        type: 'category', data: axisData, boundaryGap: false, gridIndex: 1,
+        min: panning ? BIN_COUNT + displayOffset / BIN_MINUTES : undefined,
+        max: panning ? BIN_COUNT + displayOffset / BIN_MINUTES + CAT_MAX : undefined,
         axisLine: { show: false }, axisTick: { show: false }, axisLabel: { show: false },
         splitLine: {
           show: true,
-          interval: (i, v) => v.endsWith(':00') && Number(v.slice(0, 2)) % 3 === 0,
+          interval: hourInterval,
           lineStyle: { color: colors.grid },
         },
       },
@@ -767,7 +861,8 @@ export function renderCanvas(el, echarts, opts) {
           silent: true, symbol: 'circle', symbolSize: 0, z: 10,
           data: [
             ...(!labelInside ? [{
-              coord: [envelope.labels[labelSide === 'right' ? endIndex : startIndex], LABEL_Y],
+              coord: [panning ? String(labelSide === 'right' ? endIndex : startIndex)
+                : envelope.labels[labelSide === 'right' ? endIndex : startIndex], LABEL_Y],
               label: {
                 show: true, position: labelSide, distance: 6,
                 formatter: labelText, rich: labelRich,
@@ -914,7 +1009,9 @@ export function renderCanvas(el, echarts, opts) {
         itemStyle: { color: colors.meal },
       },
     ]),
-  }, true);
+  };
+  if (panning) option.series = option.series.flatMap(displaySeries);
+  chart.setOption(option, true);
   /* Feed the docked header readout. renderCanvas re-runs on every window change
      and getInstanceByDom hands back the SAME chart, so rebind rather than stack
      handlers — otherwise every redraw adds another reporter.
@@ -957,7 +1054,14 @@ export function renderCanvas(el, echarts, opts) {
       if (overItem) { report(overItem); return; }
       const axis = (ev.axesInfo || [])[0];
       if (!axis || axis.value == null) { report(null); return; }
-      const i = Math.max(0, Math.min(last, Math.round(axis.value)));
+      /* `axis.value` is an ORDINAL CATEGORY INDEX, never a minute. While
+         panning the axis is the three-day DISPLAY_AXIS, so index j counts from
+         the previous day's 00:00 — it carries display minute
+         (j - BIN_COUNT) * BIN_MINUTES and reads pooled bin j mod BIN_COUNT.
+         Dividing the index by BIN_MINUTES instead reported another time of
+         day's median and IQR, and could never reach past ~05:00. */
+      const raw = Math.round(axis.value);
+      const i = panning ? raw % BIN_COUNT : Math.max(0, Math.min(last, raw));
       report({
         kind: 'bin',
         label: envelope.labels[i],

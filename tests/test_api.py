@@ -1460,11 +1460,7 @@ class FetchLoopWiringTest(unittest.TestCase):
             # one immediate fetch in before the context exited.
             mock_once.assert_called()
 
-    def test_loop_is_wired_to_the_warm_pass_not_a_bare_invalidate(self):
-        # #424: the writing-fetch callback must be the pre-warm pass (clear *then*
-        # rebuild the landing set), not a bare clear — otherwise the first visitor
-        # after every hourly fetch pays the cold recompute again. Nothing else pins
-        # this link: the warm pass and the loop are each covered on their own.
+    def test_loop_is_wired_to_the_worker_signal_not_inline_warming(self):
         import asyncio
         from unittest.mock import patch
 
@@ -1480,7 +1476,7 @@ class FetchLoopWiringTest(unittest.TestCase):
         with patch("ciq_autotune.fetch_loop.run_fetch_loop", fake_loop):
             with TestClient(self.app) as client:
                 self.assertEqual(client.get("/api/health").status_code, 200)
-        self.assertIs(seen.get("on_write"), self.app.state.invalidate_and_warm)
+        self.assertIs(seen.get("on_write"), self.app.state.signal_recompute)
 
     def test_disabled_loop_does_not_call_fetch(self):
         from unittest.mock import patch
@@ -1697,10 +1693,205 @@ class CachePreWarmTest(unittest.TestCase):
         with cache._lock:
             return tuple(cache._map) + tuple(cache._preparations)
 
+    @contextlib.contextmanager
+    def _run_worker(self):
+        """Signal the lifespan worker and wait for its real final warm shape."""
+        complete = threading.Event()
+        roster = list(self.app.state.recompute_roster())
+        label, warm = roster[-1]
+
+        def final_shape():
+            try:
+                return warm()
+            finally:
+                complete.set()
+
+        roster[-1] = (label, final_shape)
+        self.app.state.recompute_roster = lambda: tuple(roster)
+
+        async def no_delay():
+            return None
+
+        with TestClient(self.app) as client:
+            self.client = client
+            self.app.state.recompute_pace = no_delay
+            self.app.state.signal_recompute()
+            self.assertTrue(complete.wait(5), "worker did not finish the warm roster")
+            yield
+
+    def test_worker_paces_between_marker_shapes_without_a_trailing_pace(self):
+        trace, complete = [], threading.Event()
+
+        def a():
+            trace.append("A")
+
+        def b():
+            trace.append("B")
+            complete.set()
+
+        async def pace():
+            trace.append("pace")
+
+        self.app.state.recompute_roster = lambda: (("A", a), ("B", b))
+        self.app.state.recompute_pace = pace
+        with TestClient(self.app):
+            self.app.state.signal_recompute()
+            self.assertTrue(complete.wait(3))
+        self.assertEqual(trace, ["A", "pace", "B"])
+
+    def test_worker_supersede_abandons_the_old_set_at_the_next_boundary(self):
+        trace, entered, release, complete = [], threading.Event(), threading.Event(), threading.Event()
+
+        def a():
+            trace.append("A")
+            if len(trace) == 1:
+                entered.set()
+                self.assertTrue(release.wait(3))
+
+        def b():
+            trace.append("B")
+            complete.set()
+
+        async def pace():
+            trace.append("pace")
+
+        self.app.state.recompute_roster = lambda: (("A", a), ("B", b))
+        self.app.state.recompute_pace = pace
+        with TestClient(self.app):
+            self.app.state.signal_recompute()
+            self.assertTrue(entered.wait(3))
+            self.app.state.signal_recompute()
+            release.set()
+            self.assertTrue(complete.wait(3))
+        self.assertEqual(trace, ["A", "A", "pace", "B"])
+
+    def test_shutdown_waits_for_a_running_shape_and_starts_no_next_shape(self):
+        trace, entered, release, finished = [], threading.Event(), threading.Event(), threading.Event()
+
+        def a():
+            trace.append("A")
+            entered.set()
+            self.assertTrue(release.wait(3))
+            finished.set()
+
+        def b():
+            trace.append("B")
+
+        self.app.state.recompute_roster = lambda: (("A", a), ("B", b))
+        with TestClient(self.app):
+            self.app.state.signal_recompute()
+            self.assertTrue(entered.wait(3))
+            started = time.monotonic()
+            threading.Timer(0.15, release.set).start()
+        self.assertEqual(trace, ["A"])
+        self.assertTrue(finished.is_set())
+        self.assertGreaterEqual(time.monotonic() - started, 0.1)
+
+    def test_fetch_thread_signal_uses_loop_call_soon_threadsafe(self):
+        calls = []
+        self.app.state.recompute_roster = lambda: ()
+        with TestClient(self.app):
+            real = self.app.state.recompute_loop.call_soon_threadsafe
+
+            def recording(callback):
+                calls.append((threading.current_thread(), callback))
+                real(callback)
+
+            with patch.object(self.app.state.recompute_loop,
+                              "call_soon_threadsafe", side_effect=recording):
+                with ThreadPoolExecutor(max_workers=1) as pool:
+                    pool.submit(self.app.state.signal_recompute).result()
+            self.assertEqual(len(calls), 1)
+            self.assertIsNot(calls[0][0], threading.current_thread())
+            self.assertIs(calls[0][1].__self__, self.app.state.recompute_event)
+
+    def test_worker_fixed_shape_stale_serves_through_the_public_endpoint(self):
+        import ciq_autotune.api as api_mod
+
+        entered, release, completed = threading.Event(), threading.Event(), threading.Event()
+        with TestClient(self.app) as client:
+            self.assertEqual(client.get("/api/explore/time-of-day").status_code, 200)
+            with Store.open(self.tmp.name) as store:
+                store.upsert_cgm([{"EventDateTime": "2026-06-06 00:00:00",
+                                   "Readings (CGM / BGM)": 115}])
+            label, warm = next(item for item in self.app.state.recompute_roster()
+                               if item[0] == "explore-time-of-day")
+
+            def worker_shape():
+                try:
+                    return warm()
+                finally:
+                    completed.set()
+
+            self.app.state.recompute_roster = lambda: ((label, worker_shape),)
+            real = api_mod.build_time_of_day
+
+            def blocked(*args, **kwargs):
+                entered.set()
+                self.assertTrue(release.wait(3))
+                return real(*args, **kwargs)
+
+            with patch.object(api_mod, "build_time_of_day", side_effect=blocked):
+                self.app.state.signal_recompute()
+                self.assertTrue(entered.wait(3))
+                stale = client.get("/api/explore/time-of-day")
+                self.assertEqual(stale.status_code, 200)
+                self.assertIn("input_data_age", stale.json())
+                release.set()
+                self.assertTrue(completed.wait(3))
+            fresh = client.get("/api/explore/time-of-day")
+        self.assertEqual(fresh.status_code, 200)
+        self.assertNotIn("input_data_age", fresh.json())
+
+    def test_worker_finding_case_shape_uses_its_endpoint_adapter(self):
+        import ciq_autotune.api as api_mod
+
+        completed, calls = threading.Event(), []
+        label, warm = next(item for item in self.app.state.recompute_roster()
+                           if item[0] == "finding-case-file")
+
+        def worker_shape():
+            try:
+                return warm()
+            finally:
+                completed.set()
+
+        self.app.state.recompute_roster = lambda: ((label, worker_shape),)
+        real = api_mod.prepare_finding_cases
+        with patch.object(api_mod, "prepare_finding_cases",
+                          side_effect=lambda *args, **kwargs: calls.append(1) or real(*args, **kwargs)):
+            with TestClient(self.app):
+                self.app.state.signal_recompute()
+                self.assertTrue(completed.wait(3))
+        self.assertEqual(calls, [1])
+
+    def test_worker_and_direct_fixed_endpoint_keep_identical_payload_bytes(self):
+        completed = threading.Event()
+        label, warm = next(item for item in self.app.state.recompute_roster()
+                           if item[0] == "explore-time-of-day")
+
+        def worker_shape():
+            try:
+                return warm()
+            finally:
+                completed.set()
+
+        self.app.state.recompute_roster = lambda: ((label, worker_shape),)
+        with TestClient(self.app) as client:
+            direct = client.get("/api/explore/time-of-day")
+            self.assertEqual(direct.status_code, 200)
+            self.app.state.signal_recompute()
+            self.assertTrue(completed.wait(3))
+            worker_warm = client.get("/api/explore/time-of-day")
+        self.assertEqual(
+            json.dumps(worker_warm.json(), separators=(",", ":"), sort_keys=True),
+            json.dumps(direct.json(), separators=(",", ":"), sort_keys=True),
+        )
+
     def test_warm_pass_leaves_the_landing_set_answering_without_recompute(self):
         with self._counting_builders() as counts:
-            self.app.state.invalidate_and_warm()
-            after_warm = dict(counts)
+            with self._run_worker():
+                after_warm = dict(counts)
             # Exactly the landing shapes and nothing else — both /api/analyze modes
             # included. Findings consumers share the canonical pooled analysis,
             # scenario report, and exposure feed.
@@ -1744,7 +1935,8 @@ class CachePreWarmTest(unittest.TestCase):
         import ciq_autotune.event_comparison as comparison_mod
 
         with patch.object(comparison_mod.EventComparisonPreparation, "project") as project:
-            self.app.state.invalidate_and_warm()
+            with self._run_worker():
+                pass
         project.assert_not_called()
 
     def test_concurrent_comparison_reads_single_flight_the_preparation(self):
@@ -1785,32 +1977,21 @@ class CachePreWarmTest(unittest.TestCase):
 
     def test_warm_pass_invalidates_first_so_it_never_serves_pre_fetch_results(self):
         with self._counting_builders() as counts:
-            self._get_landing_set()          # cold: every shape computed once
-            self.assertEqual(counts, {"analyze": 2, "backtest": 1,
-                                      "outcomes-trend": 1, "scenarios": 1,
-                                      "exposures": 1,
-                                      "explore-time-of-day": 1,
-                                      "event-comparison-source-catalog": 1,
-                                      "finding-case-file": 1})
-            self.app.state.invalidate_and_warm()
-            # A cache-only invalidation has no new Store revision, so the fixed
-            # scenarios endpoint reuses its verified durable artifact, including
-            # the findings consumers' shared canonical report.
-            self.assertEqual(counts["scenarios"], 1)
-            self._get_landing_set()
-            self.assertEqual(counts["scenarios"], 1)
+            with self._run_worker():
+                self._get_landing_set()
+                self.assertEqual(counts["scenarios"], 1)
 
     def test_drill_downs_and_other_windows_stay_lazy(self):
         with self._counting_builders() as counts:
-            self.app.state.invalidate_and_warm()
-            after_warm = dict(counts)
-            self.assertEqual(self.client.get("/api/analyze", params={"window": 90}).status_code, 200)
-            self.assertGreater(counts["analyze"], after_warm["analyze"])
-            # Day/month drill-downs are unbounded in key space and are never warmed.
-            self.assertEqual(self.client.get("/api/day-navigator",
-                                             params={"month": "2026-06"}).status_code, 200)
-            self.assertEqual(self.client.get("/api/model-view",
-                                             params={"date": "2026-06-03"}).status_code, 200)
+            with self._run_worker():
+                after_warm = dict(counts)
+                self.assertEqual(self.client.get("/api/analyze", params={"window": 90}).status_code, 200)
+                self.assertGreater(counts["analyze"], after_warm["analyze"])
+                # Day/month drill-downs are unbounded in key space and are never warmed.
+                self.assertEqual(self.client.get("/api/day-navigator",
+                                                 params={"month": "2026-06"}).status_code, 200)
+                self.assertEqual(self.client.get("/api/model-view",
+                                                 params={"date": "2026-06-03"}).status_code, 200)
 
     def test_one_failing_shape_is_contained_and_the_rest_still_warm(self):
         # The witness must be a shape the warm pass reaches *after* the failing one,
@@ -1824,15 +2005,11 @@ class CachePreWarmTest(unittest.TestCase):
 
         with self._counting_builders() as counts:
             with patch.object(backtest_mod, "backtest", boom):
-                self.app.state.invalidate_and_warm()  # must not raise
-            self.assertEqual(counts["backtest"], 0)   # it never completed a build
-            # ...and every shape the pass reaches after it still warmed: outcomes-trend
-            # (third), analyze pooled (fourth — the second of analyze's two builds, the
-            # first having already run before backtest), and scenarios.
-            self.assertEqual(counts["outcomes-trend"], 1)
-            self.assertEqual(counts["analyze"], 2)
-            self.assertEqual(counts["scenarios"], 1)
-            # The failed shape is simply left cold, and a visitor recomputes it.
+                with self._run_worker():
+                    self.assertEqual(counts["backtest"], 0)
+                    self.assertEqual(counts["outcomes-trend"], 1)
+                    self.assertEqual(counts["analyze"], 2)
+                    self.assertEqual(counts["scenarios"], 1)
             self.assertEqual(self.client.get("/api/backtest",
                                              params={"holdout_days": 2}).status_code, 200)
             self.assertEqual(counts["backtest"], 1)

@@ -66,6 +66,7 @@ logger = logging.getLogger(__name__)
 DEFAULT_DB = "tconnect-data/ciq.db"
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8765
+RECOMPUTE_PACE_SECONDS = 0.1
 
 _FRONTEND_INDEX = Path(__file__).resolve().parent.parent / "frontend" / "index.html"
 SPA_PAGES = ("day", "diagnose", "verify", "plan", "settings", "guide")
@@ -124,16 +125,26 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
 
     @contextlib.asynccontextmanager
     async def lifespan(app: "FastAPI"):
-        task = None
+        loop = asyncio.get_running_loop()
+        event = asyncio.Event()
+        app.state.recompute_event = event
+        app.state.recompute_loop = loop
+        app.state.recompute_task = asyncio.create_task(recompute_worker(event))
+        fetch_task = None
         if enable_fetch_loop:
             from .fetch_loop import run_fetch_loop
-            task = asyncio.create_task(
-                run_fetch_loop(db_path, key_path=key_path, on_write=invalidate_and_warm))
-        yield
-        if task is not None:
-            task.cancel()
+            fetch_task = asyncio.create_task(
+                run_fetch_loop(db_path, key_path=key_path, on_write=signal_recompute))
+        try:
+            yield
+        finally:
+            if fetch_task is not None:
+                fetch_task.cancel()
+                with contextlib.suppress(asyncio.CancelledError):
+                    await fetch_task
+            app.state.recompute_task.cancel()
             with contextlib.suppress(asyncio.CancelledError):
-                await task
+                await app.state.recompute_task
 
     app = FastAPI(title="Harmonic", version="0.1.0",
                   summary="Local, advisory tuning for Tandem pumps using Control-IQ® technology.",
@@ -1373,24 +1384,21 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         cache.bump()  # (#267)
         return {"id": focus_id, "status": "resolved"}
 
-    def invalidate_and_warm() -> None:
-        """The hourly fetch's ``on_write``: clear the cache, then pre-warm
-        Diagnose's fixed cold-arrival set (#424).
+    def signal_recompute() -> None:
+        """Invalidate after a fetch and notify the lifespan-owned worker.
 
-        ``frontend/index.html``'s ``loadAll`` and ``loadAudit`` are the
-        cold-arrival source of truth. ADR 82's design.md records the historical
-        measurement. The fetch loop runs this in its own worker thread, so the
-        server keeps serving while the warm pass runs.
-
-        The set is exactly the fixed cacheable shapes those loads ask for —
-        nothing keyed on a date, month, or user-chosen window, which stay lazy so
-        an hourly warm can't grow unbounded.
-        Warming goes through the endpoint functions themselves where there is an
-        endpoint-shaped cache key, and one failure is logged and skipped rather
-        than killing the hourly loop.
+        ``run_fetch_loop`` invokes this from its fetch thread.  It deliberately
+        does no compute there: one event coalesces writes while the worker is
+        running and the loop remains free to serve requests between shapes.
         """
         cache.bump()
-        for label, warm in (
+        app.state.recompute_loop.call_soon_threadsafe(app.state.recompute_event.set)
+
+    async def default_recompute_pace() -> None:
+        await asyncio.sleep(RECOMPUTE_PACE_SECONDS)
+
+    def warm_roster():
+        return (
             ("analyze", lambda: analyze_endpoint(window=30, ignore_changes=False, pool=False)),
             ("backtest", lambda: backtest_endpoint(holdout_days=2)),
             ("outcomes-trend", lambda: outcomes_trend_endpoint(window=30)),
@@ -1401,14 +1409,52 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             ("event-comparison-source-catalog", event_comparison_preparation),
             ("finding-case-file", lambda: finding_case_file_preparation(
                 Request({"type": "http", "query_string": b""}))),
-        ):
-            try:
-                warm()
-            except Exception:  # one bad compute must not stop the rest, or the loop
-                logger.warning("Cache pre-warm failed for %s", label, exc_info=True)
+        )
 
-    # The seam tests drive the warm pass through (it is what the fetch loop calls).
-    app.state.invalidate_and_warm = invalidate_and_warm
+    async def recompute_worker(event) -> None:
+        """Run one complete warm shape at a time until shutdown.
+
+        A newer cache version abandons the old set at its next shape boundary;
+        the still-set event then causes one fresh complete roster, not a backlog.
+        """
+        while True:
+            await event.wait()
+            while True:
+                event.clear()
+                revision = cache.version
+                superseded = False
+                roster = app.state.recompute_roster()
+                for index, (label, warm) in enumerate(roster):
+                    if cache.version != revision:
+                        superseded = True
+                        break
+                    shape_task = asyncio.create_task(asyncio.to_thread(warm))
+                    app.state.recompute_shape_task = shape_task
+                    try:
+                        await asyncio.shield(shape_task)
+                    except asyncio.CancelledError:
+                        await shape_task
+                        raise
+                    except Exception:
+                        logger.warning("Cache pre-warm failed for %s", label, exc_info=True)
+                    finally:
+                        app.state.recompute_shape_task = None
+                    if cache.version != revision:
+                        superseded = True
+                        break
+                    if index + 1 < len(roster):
+                        await app.state.recompute_pace()
+                if superseded:
+                    continue
+                if not event.is_set():
+                    break
+
+    # These are deliberately app-local seams: production keeps one explicit
+    # pace, while lifecycle tests replace the roster and awaitable pace.
+    app.state.recompute_roster = warm_roster
+    app.state.recompute_pace = default_recompute_pace
+    app.state.recompute_shape_task = None
+    app.state.signal_recompute = signal_recompute
 
     return app
 

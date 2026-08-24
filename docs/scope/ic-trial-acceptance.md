@@ -12,6 +12,11 @@ a Trial on a carb-ratio change should accept as "ready to judge".
   quantities, and on the current era they disagreed in the unsafe direction (the
   Trial reported ready while neither block could assert). Disposition: → ADR.
 
+- **The bar counts the estimator's credited total, not whole meals in the block.**
+  Operator decision (Q1), 2026-08-24. Why: it is the same quantity the
+  recommendation is already gated on, so a trial can never report ready while the
+  recommendation stays withheld. Disposition: → ADR.
+
 ## Grounding (read-only snapshot, 2026-08-24)
 
 Measured through the shipped path (`analyze` with the fuzzy estimator, the
@@ -41,10 +46,19 @@ successive cutoffs:
   rate and a carb ratio together), so it matured on glucose days, the weakest
   available proxy for meal evidence.
 
-## Open questions
+### Established facts (from the shipped estimator)
 
-- What counts toward the bar: whole qualifying meals in the block, or the
-  estimator's credited total including partial cross-block credit.
+- **Blocks are runs of equal programmed ratio, not profile segments.** Consecutive
+  segments with equal values merge (`ic.ic_blocks_from_segments`), so a span where
+  only basal changes remains one I:C block. Distinct recommendations for two parts
+  of the day require distinct programmed ratios; no trial rule unlocks them.
+- **Credit follows the dose, never digestion.** Each member meal is assigned to the
+  block containing its own timestamp and weighted by its carbs as a share of the
+  run's covered carbs (`ic_regression._regression_block_fits`). A block a meal
+  merely digests through earns nothing, and an unbolused hour earns nothing
+  anywhere.
+
+## Open questions
 - Whether a multi-block ratio change matures per block or as one verdict.
 - Whether a whole-profile switch that moves the ratio runs the meal bar for its
   ratio part.

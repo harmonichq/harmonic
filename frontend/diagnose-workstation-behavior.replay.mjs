@@ -2512,6 +2512,27 @@ export const S76 = async (page) => {
     'S76 the Findings crumb restores focus to the drilled queue row');
 };
 
+/** S77 · ALIGN starts at the inspector edge when this factor case offers it. */
+// STORY:finding-evidence-routing:S77
+export const S77 = async (page) => {
+  await openWholeDay(page);
+  await clickQueueRow(page, 'Over-treated low');
+  const opened = await state(page);
+  ok(opened.alignShown, 'S77 precondition: ALIGN is offered on this case file');
+  const geometry = await page.evaluate(() => {
+    const ag = document.querySelector('#align-group');
+    const inspector = document.querySelectorAll('.panes > .pane')[1];
+    if (!ag || !inspector || !ag.getClientRects().length) return null;
+    return {
+      alignLeft: Math.round(ag.getBoundingClientRect().left),
+      inspectorLeft: Math.round(inspector.getBoundingClientRect().left),
+    };
+  });
+  ok(geometry !== null, 'S77 precondition: ALIGN is rendered beside a live inspector pane');
+  is(geometry.alignLeft, geometry.inspectorLeft,
+    `S77 ALIGN starts at the inspector edge (ALIGN ${geometry.alignLeft}, inspector ${geometry.inspectorLeft})`);
+};
+
 /** S33 · #58 — while the event canvas is mounted, its own header is the only
     canvas header on screen. The clock canvas's header used to stay mounted
     underneath and print the clock window over an event-aligned chart. */
@@ -3607,6 +3628,7 @@ export const STORIES = [
   ['S74', S74, 'typical', { history: true }],
   ['S75', S75, 'typical', { history: true, findingsProjectionInputs: allWatchingProjection }],
   ['S76', S76, 'typical', { findingsProjectionInputs: queueProjection }],
+  ['S77', S77, 'typical'],
   ['C41', C41, 'typical', { caseScenario: {
     preparation: generatedFindingPose('finding:meal_over_delivery'),
   } }], ['C42', C42, 'typical'],

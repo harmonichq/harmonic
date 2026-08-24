@@ -275,6 +275,14 @@ continuously crossed snapshots it fails explicitly. The boundary therefore never
 returns old-revision bytes as an unlabeled current result, including when the
 fresh-revision proof itself cannot be read.
 
+The fixed-route cache also validates the artifact revision while holding the same
+lock that returns a cache hit or admits a computed value. This closes the interval
+between the artifact store's post-snapshot check and cache publication: a fetch in
+that interval causes another bounded computation, never an uncached unlabeled
+response. Findings/history carries the same revision envelope internally, unwraps
+it only after lock-held validation, and maps exhausted artifact retries back to its
+existing `GenerationChanged` response contract.
+
 The API projects fixed results through one adapter which appends optional
 top-level `input_data_age` after the endpoint's normal projection. Its fields
 are the old revision, `covers_to`, and optional newest input horizon. Findings

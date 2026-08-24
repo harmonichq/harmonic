@@ -55,7 +55,8 @@ from .result import SCHEMA_VERSION
 from .result_cache import ResultCache
 from .derived_artifacts import (
     discard_artifact, dump_event_comparison, dump_findings, dump_ic_history,
-    FixedResult, is_sidecar_rebuilt, load_latest_prior, load_or_compute,
+    FixedResult, InputRevisionChanged, is_sidecar_rebuilt,
+    load_latest_prior, load_or_compute,
     rebuild_event_comparison, rebuild_findings, rebuild_ic_history,
 )
 from .store import Store
@@ -152,6 +153,13 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     fixed_flights: dict[tuple, None] = {}
     fixed_flights_lock = threading.Lock()
 
+    def current_fixed_result(result: FixedResult) -> bool:
+        """Validate a fresh envelope while ResultCache holds its publish lock."""
+        if result.revision is None or result.input_data_age is not None:
+            return False
+        with Store.open_queryonly(db_path) as current:
+            return current.input_data_revision() == result.revision
+
     def fixed(key, marker, compute, *, dump=None, rebuild=None, serve_stale=True):
         """Return one exact fixed result, or a labeled exact predecessor in flight."""
         with fixed_flights_lock:
@@ -166,7 +174,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             return load_or_compute(db_path, key, compute, shape_marker=marker,
                                    dump=dump, rebuild=rebuild, with_age=True)
         try:
-            return cache.get_or_compute(key, build)
+            return cache.get_or_compute(key, build, validate=current_fixed_result)
         finally:
             if owner:
                 with fixed_flights_lock:
@@ -242,9 +250,17 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             return {"findings": dump_findings(pair[0]), "events": dump_ic_history(pair[1])}
         def rebuild_pair(value):
             return (rebuild_findings(value["findings"]), rebuild_ic_history(value["events"]))
-        return cache.stable_read(key, lambda: load_or_compute(
-            db_path, key, compute, shape_marker="findings-history-v1",
-            dump=dump_pair, rebuild=rebuild_pair))
+        def build_snapshot():
+            try:
+                return load_or_compute(
+                    db_path, key, compute, shape_marker="findings-history-v1",
+                    dump=dump_pair, rebuild=rebuild_pair, with_age=True)
+            except InputRevisionChanged as error:
+                raise ResultCache.GenerationChanged(
+                    "input data changed during findings snapshot") from error
+        generation, result = cache.stable_read(
+            key, build_snapshot, validate=current_fixed_result)
+        return generation, result.value
 
     def _case_error(status, code, message):
         return JSONResponse(

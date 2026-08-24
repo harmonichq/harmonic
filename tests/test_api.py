@@ -707,6 +707,59 @@ class DurableArtifactApiTest(unittest.TestCase):
         fresh = client.get("/api/explore/time-of-day")
         self.assertNotIn("input_data_age", fresh.json())
 
+    def test_fetch_after_revision_check_recomputes_before_unlabeled_publish(self):
+        """The cache publication lock closes the final revision-check race."""
+        from ciq_autotune.api import create_app
+        import ciq_autotune.api as api_mod
+        app = create_app(db_path=self.tmp.name, token=None, enable_fetch_loop=False)
+        client = TestClient(app)
+        real_get = app.state.result_cache.get_or_compute
+        real_build = api_mod.build_time_of_day
+        builds = []
+        crossed = False
+
+        def counting_build(store):
+            builds.append(store.input_data_revision())
+            return real_build(store)
+
+        def crossed_get(key, build, **kwargs):
+            def cross_after_revision_check():
+                nonlocal crossed
+                result = build()
+                if not crossed:
+                    crossed = True
+                    with Store.open(self.tmp.name) as writer:
+                        writer.upsert_cgm([{
+                            "EventDateTime": "2026-07-16 00:00:00",
+                            "Readings (CGM / BGM)": 110,
+                        }])
+                    app.state.result_cache.bump()
+                return result
+            return real_get(key, cross_after_revision_check, **kwargs)
+
+        with patch.object(api_mod, "build_time_of_day", side_effect=counting_build), \
+             patch.object(app.state.result_cache, "get_or_compute", side_effect=crossed_get):
+            response = client.get("/api/explore/time-of-day")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("input_data_age", response.json())
+        self.assertEqual(len(builds), 2)
+        self.assertEqual(builds[1], builds[0] + 1)
+
+    def test_findings_maps_exhausted_artifact_retries_to_generation_409(self):
+        from ciq_autotune.api import create_app
+        import ciq_autotune.derived_artifacts as artifacts
+        app = create_app(db_path=self.tmp.name, token=None, enable_fetch_loop=False)
+        client = TestClient(app, raise_server_exceptions=False)
+
+        with patch.object(artifacts, "_load_or_compute_once",
+                          return_value=artifacts._REVISION_CHANGED):
+            response = client.get("/api/diagnose/findings")
+
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.json()["detail"]["code"],
+                         "analysis_generation_mismatch")
+
     def test_fixed_registry_is_acquired_before_entering_result_cache(self):
         """A reader arriving before the cache flight exists still stale-serves."""
         from ciq_autotune.api import create_app
@@ -722,7 +775,7 @@ class DurableArtifactApiTest(unittest.TestCase):
         calls = 0
         calls_lock = threading.Lock()
 
-        def paused_get(key, build):
+        def paused_get(key, build, **kwargs):
             nonlocal calls
             with calls_lock:
                 calls += 1
@@ -731,7 +784,7 @@ class DurableArtifactApiTest(unittest.TestCase):
                 raise AssertionError("a same-key observer entered ResultCache")
             entered.set()
             self.assertTrue(release.wait(3))
-            return real_get(key, build)
+            return real_get(key, build, **kwargs)
 
         with patch.object(app.state.result_cache, "get_or_compute", side_effect=paused_get):
             with ThreadPoolExecutor(max_workers=1) as pool:
@@ -803,7 +856,7 @@ class DurableArtifactApiTest(unittest.TestCase):
         calls = 0
         calls_lock = threading.Lock()
 
-        def paused_get(key, build):
+        def paused_get(key, build, **kwargs):
             nonlocal calls
             with calls_lock:
                 calls += 1
@@ -811,7 +864,7 @@ class DurableArtifactApiTest(unittest.TestCase):
             if call == 1:
                 entered.set()
                 self.assertTrue(release.wait(3))
-            return real_get(key, build)
+            return real_get(key, build, **kwargs)
 
         with patch.object(app.state.result_cache, "get_or_compute", side_effect=paused_get):
             with ThreadPoolExecutor(max_workers=1) as pool:

@@ -107,6 +107,35 @@ class ResultCacheTest(unittest.TestCase):
         # ...but it was NOT stored (version advanced), so the next call recomputes.
         self.assertEqual(cache.get_or_compute(("k",), lambda: "fresh"), "fresh")
 
+    def test_validated_publication_retries_instead_of_returning_crossed_value(self):
+        cache = ResultCache()
+        current = 0
+        calls = []
+
+        def compute():
+            nonlocal current
+            calls.append(current)
+            value = current
+            if len(calls) == 1:
+                current += 1
+            return value
+
+        value = cache.get_or_compute(
+            ("k",), compute, validate=lambda candidate: candidate == current)
+
+        self.assertEqual(value, 1)
+        self.assertEqual(calls, [0, 1])
+
+    def test_validated_cache_hit_is_rechecked_before_return(self):
+        cache = ResultCache()
+        current = 0
+        self.assertEqual(cache.get_or_compute(
+            ("k",), lambda: 0, validate=lambda candidate: candidate == current), 0)
+        current = 1
+
+        self.assertEqual(cache.get_or_compute(
+            ("k",), lambda: 1, validate=lambda candidate: candidate == current), 1)
+
     def test_lru_eviction_bounds_the_map(self):
         cache = ResultCache(cap=2)
         cache.get_or_compute(("a",), lambda: 1)

@@ -14,7 +14,9 @@ Design (see ADR 0035):
   refuses to *store* a result whose version advanced meanwhile (an hourly fetch
   landing mid-compute), so it can never leave a stale entry. That request still
   returns its own freshly computed value — discard-on-store means "don't poison the
-  cache," never "drop the response."
+  cache," never "drop the response." Callers with a stronger publication contract
+  supply a validator which runs under the cache lock; those callers retry instead
+  of returning a crossed value.
 - **Thread-safe.** Sync endpoints run in FastAPI's threadpool and the fetch loop
   bumps from a ``to_thread`` worker, so every mutation of the map is under a lock.
   ``compute`` runs *outside* the lock so recomputes never serialize against each
@@ -175,18 +177,28 @@ class ResultCache:
         with self._lock:
             value.pins -= 1
 
-    def get_or_compute(self, key: Hashable, compute: Callable[[], T]) -> T:
+    def get_or_compute(
+        self, key: Hashable, compute: Callable[[], T], *,
+        validate: Callable[[T], bool] | None = None, attempts: int = 3,
+    ) -> T:
         """Return ``key``'s cached value, or compute + store it.
 
         Snapshots ``version`` on a miss; ``compute`` runs outside the lock, and the
         result is only stored if ``version`` is unchanged on completion (the race
         guard). The freshly computed value is always returned to this caller
-        regardless of whether it was stored.
+        regardless of whether it was stored. When ``validate`` is supplied, cached
+        and computed values are returned only when it passes under the same lock
+        that admits the value; invalid values retry, then fail explicitly.
         """
+        if attempts < 1:
+            raise ValueError("attempts must be at least 1")
         with self._lock:
             if key in self._map:
-                self._map.move_to_end(key)
-                return self._map[key]  # type: ignore[return-value]
+                current = self._map[key]
+                if validate is None or validate(current):
+                    self._map.move_to_end(key)
+                    return current  # type: ignore[return-value]
+                self._map.pop(key)
             flight = self._flights.get(key)
             if flight is None:
                 flight = self._flights[key] = threading.Lock()
@@ -195,36 +207,43 @@ class ResultCache:
         # miss for the same key blocks here, then re-checks the map below and hits
         # the value the first thread filled — no duplicate recompute.
         with flight:
-            with self._lock:
-                if key in self._map:
-                    self._map.move_to_end(key)
-                    self._flights.pop(key, None)
-                    return self._map[key]  # type: ignore[return-value]
-                # Snapshot inside the flight lock: a write may have landed while we
-                # waited for it, so this is the version ``compute`` reads against.
-                snapshot = self._version
-
             try:
-                value = compute()
-                with self._lock:
-                    # Only cache if no write landed while we were computing; otherwise
-                    # this value is already stale relative to the current version —
-                    # return it to our caller but don't poison the cache.
-                    if self._version == snapshot:
+                for _ in range(attempts):
+                    with self._lock:
+                        if key in self._map:
+                            current = self._map[key]
+                            if validate is None or validate(current):
+                                self._map.move_to_end(key)
+                                return current  # type: ignore[return-value]
+                            self._map.pop(key)
+                        # Snapshot inside the flight lock: a write may have landed
+                        # while we waited, so this is the version ``compute`` reads.
+                        snapshot = self._version
+
+                    value = compute()
+                    with self._lock:
+                        if self._version != snapshot:
+                            if validate is None:
+                                return value
+                            continue
+                        if validate is not None and not validate(value):
+                            continue
                         self._map[key] = value
                         self._map.move_to_end(key)
                         while len(self._map) > self._cap:
                             self._map.popitem(last=False)  # evict least-recently-used
+                        return value
+                raise self.GenerationChanged(
+                    "result changed during every validated cache publication")
             finally:
                 # Drop the flight lock even if ``compute`` raised, so a key whose
                 # compute always fails (e.g. an endpoint validating a bad param
                 # inside ``compute``) can't leak an entry per distinct bad value.
                 with self._lock:
                     self._flights.pop(key, None)
-        return value
-
     def stable_read(
         self, key: Hashable, compute: Callable[[], T], *, attempts: int = 3,
+        validate: Callable[[T], bool] | None = None,
     ) -> tuple[str, T]:
         """Return one generation and value only when no invalidation crossed it.
 
@@ -239,8 +258,15 @@ class ResultCache:
         for _ in range(attempts):
             with self._lock:
                 snapshot = self._version
-            value = self.get_or_compute(key, compute)
+            try:
+                value = self.get_or_compute(
+                    key, compute, validate=validate,
+                    attempts=1 if validate is not None else attempts,
+                )
+            except self.GenerationChanged:
+                continue
             with self._lock:
-                if self._version == snapshot:
+                if (self._version == snapshot
+                        and (validate is None or validate(value))):
                     return f"{self._incarnation}:{snapshot}", value
         raise self.GenerationChanged("result cache changed during stable read")

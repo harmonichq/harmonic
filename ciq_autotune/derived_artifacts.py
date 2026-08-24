@@ -24,6 +24,10 @@ _FINGERPRINT: str | None = None
 _SIDECAR_REBUILDS: dict[int, weakref.ReferenceType] = {}
 
 
+class InputRevisionChanged(RuntimeError):
+    """Every bounded artifact snapshot crossed a primary-data revision."""
+
+
 @dataclass(frozen=True)
 class InputDataAge:
     schema_version: int
@@ -166,7 +170,8 @@ def load_or_compute(db_path: str, coordinates: tuple, compute: Callable,
         )
         if result is not _REVISION_CHANGED:
             return result
-    raise RuntimeError("input data changed during every derived-artifact snapshot")
+    raise InputRevisionChanged(
+        "input data changed during every derived-artifact snapshot")
 
 
 _REVISION_CHANGED = object()

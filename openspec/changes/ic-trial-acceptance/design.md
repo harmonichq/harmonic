@@ -56,6 +56,10 @@ identity.
 - Credit follows the dose, never digestion: a meal is credited to the block holding
   its own timestamp, weighted by its carbs as a share of the run. A block a meal
   merely digests through earns nothing.
+- The rule is settled here; the response shape that carries a per-block verdict is
+  not, and is deliberately left to the ticket that builds this. A Trial today
+  exposes one scalar state, so a build must first decide whether the roster returns
+  child block verdicts, several rows, or an aggregate with children.
 - Withhold-only in the sense that matters: nothing here widens what the app may
   recommend, because assertion authority is untouched. Readiness timing is not
   withhold-only and is not claimed to be — with no minimum elapsed time, a block
@@ -64,9 +68,10 @@ identity.
 
 **Not built here.** This record is locked ahead of its implementation, deliberately.
 The per-block judging rulings sit inside the decision space of #136 (Verify's
-per-lever attribution and outcome uncertainty), the surfaces that would report them
-are covered by #135's evidence-canvas lock, and #133 blocks Verify build handoffs on
-the #19 rework. #136 honours this record rather than reopening it. Building before
+per-lever attribution and outcome uncertainty), the Diagnose workstation that
+renders the watched-change dock is being re-locked by #135, and #133 blocks Verify
+build handoffs on the #19 rework. #135 covers the Diagnose canvas only; the Verify
+trial roster is deferred by #136 and #133/#19, not by #135. #136 honours this record rather than reopening it. Building before
 those settle would rebuild a surface about to be re-locked.
 
 Decision: harmonichq/harmonic#24 (map #19), 2026-08-24. Evidence: read-only snapshot

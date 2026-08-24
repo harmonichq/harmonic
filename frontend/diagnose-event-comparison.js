@@ -37,6 +37,7 @@
  * the browser contract.
  */
 import { createDiagnoseWorkstation } from './diagnose-workstation.js';
+import { validInputDataAge } from './diagnose-data-age.js';
 import { parseRoute, subscribeRoute, writeRoute } from './tab-routing.js';
 
 let params = new URLSearchParams();
@@ -167,8 +168,11 @@ function validOccurrence(value, view, selected = false) {
 }
 
 function validProjection(value, requestedView) {
-  if (!hasExactKeys(value, ['schema', 'coordinates', 'population', 'cohorts', 'occurrences', 'selection'])
-      || value.schema !== 'diagnose-event-comparison-v3') return false;
+  const allowed = ['schema', 'coordinates', 'population', 'cohorts', 'occurrences', 'selection', 'input_data_age'];
+  if (!isRecord(value) || Object.keys(value).some((key) => !allowed.includes(key))
+      || !['schema', 'coordinates', 'population', 'cohorts', 'occurrences', 'selection'].every((key) => Object.hasOwn(value, key))
+      || value.schema !== 'diagnose-event-comparison-v3'
+      || (Object.hasOwn(value, 'input_data_age') && !validInputDataAge(value.input_data_age))) return false;
   const { coordinates, population, cohorts, occurrences, selection } = value;
   const factorKeys = coordinates?.view === 'meals'
     ? ['carb_undercount', 'late_bolus', 'meal_over_delivery']

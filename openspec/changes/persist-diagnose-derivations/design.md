@@ -246,3 +246,51 @@ fixes first, because they change what the durable store is built around.
 Fixed reconstructible Diagnose artifacts are stored in a disposable adjacent
 SQLite sidecar. Their primary revision is committed with Store mutations and
 their automatic package-source fingerprint invalidates changed analysis code.
+
+## ADR 124 — Exact-key stale serving carries the input horizon
+
+**Status:** accepted, 2026-08-24.
+
+The fixed-route boundary owns a per-key in-flight registry separate from
+`ResultCache`. While one exact fixed key recomputes, another request for that
+same key may read only the newest earlier-revision sidecar artifact with the
+same coordinates and model marker. It must have a non-null `covers_to`; no
+cross-key, schema, marker, or coordinate fallback exists. Builder failures
+continue to propagate rather than turning an uncertain result into a stale one.
+An observer returns the current unlabeled result when that exact key is already
+hot; registry presence alone never replaces a current result with its predecessor.
+
+Each sidecar row stores `covers_to`, the maximum CGM/basal timestamp read from
+the query-only snapshot before its computation starts. The schema version
+advances with this column, so an older sidecar cannot masquerade as labeled.
+The row digest covers both the payload and `covers_to`; altered horizon metadata
+is a cache miss, never a forged fresh-looking result. Selecting a stale artifact
+reads the current primary revision, newest primary horizon and attached sidecar
+predecessor in one SQLite statement, so a fetch cannot split the revision bound
+from the row selected under it.
+
+A computation crossed by a primary revision change is retried from a new pinned
+snapshot before anything is returned or admitted to `ResultCache`. After three
+continuously crossed snapshots it fails explicitly. The boundary therefore never
+returns old-revision bytes as an unlabeled current result, including when the
+fresh-revision proof itself cannot be read.
+
+The fixed-route cache also validates the artifact revision while holding the same
+lock that returns a cache hit or admits a computed value. This closes the interval
+between the artifact store's post-snapshot check and cache publication: a fetch in
+that interval causes another bounded computation, never an uncached unlabeled
+response. Findings/history carries the same revision envelope internally, unwraps
+it only after lock-held validation, and maps exhausted artifact retries back to its
+existing `GenerationChanged` response contract.
+
+The API projects fixed results through one adapter which appends optional
+top-level `input_data_age` after the endpoint's normal projection. Its fields
+are the old revision, `covers_to`, and optional newest input horizon. Findings
+and history retain their generation-sensitive path and do not stale-serve; their
+shared canonical builders explicitly unwrap the fixed-result envelope.
+
+Diagnose records that backend fact per incoming shape before assignment. A
+fresh replacement clears only its own age; a full reload resets all shape ages.
+The cockpit banner selects the oldest rendered stale horizon and says exactly
+`Showing results from data through <covers_to>.` This is visibility, not a
+frontend inference about freshness or insulin guidance.

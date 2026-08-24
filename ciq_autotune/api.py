@@ -24,6 +24,7 @@ from __future__ import annotations
 import logging
 import re
 import sqlite3
+import threading
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Optional
@@ -54,7 +55,8 @@ from .result import SCHEMA_VERSION
 from .result_cache import ResultCache
 from .derived_artifacts import (
     discard_artifact, dump_event_comparison, dump_findings, dump_ic_history,
-    is_sidecar_rebuilt, load_or_compute,
+    FixedResult, InputRevisionChanged, is_sidecar_rebuilt,
+    load_latest_prior, load_or_compute,
     rebuild_event_comparison, rebuild_findings, rebuild_ic_history,
 )
 from .store import Store
@@ -148,18 +150,55 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     cache = ResultCache(incarnation=analysis_incarnation)
     app.state.result_cache = cache
     app.state.finding_case_file_before_commit = None
+    fixed_flights: dict[tuple, None] = {}
+    fixed_flights_lock = threading.Lock()
 
-    def fixed(key, marker, compute, *, dump=None, rebuild=None):
-        """Use the durable exact-match cache only after the hot cache misses."""
-        return cache.get_or_compute(
-            key, lambda: load_or_compute(db_path, key, compute, shape_marker=marker,
-                                         dump=dump, rebuild=rebuild))
+    def current_fixed_result(result: FixedResult) -> bool:
+        """Validate a fresh envelope while ResultCache holds its publish lock."""
+        if result.revision is None or result.input_data_age is not None:
+            return False
+        with Store.open_queryonly(db_path) as current:
+            return current.input_data_revision() == result.revision
 
-    def event_comparison_preparation():
+    def fixed(key, marker, compute, *, dump=None, rebuild=None, serve_stale=True):
+        """Return one exact fixed result, or a labeled exact predecessor in flight."""
+        with fixed_flights_lock:
+            owner = key not in fixed_flights
+            if owner:
+                fixed_flights[key] = None
+        if serve_stale and not owner and not cache.contains(key):
+            prior = load_latest_prior(db_path, key, shape_marker=marker, rebuild=rebuild)
+            if prior is not None:
+                return prior
+        def build():
+            return load_or_compute(db_path, key, compute, shape_marker=marker,
+                                   dump=dump, rebuild=rebuild, with_age=True)
+        try:
+            return cache.get_or_compute(key, build, validate=current_fixed_result)
+        finally:
+            if owner:
+                with fixed_flights_lock:
+                    fixed_flights.pop(key, None)
+
+    def fixed_response(result: FixedResult, project=lambda value: value):
+        """Project a fixed payload once, then atomically attach backend-owned age."""
+        payload = project(result.value)
+        if result.input_data_age is None:
+            return payload
+        age = {
+            "revision": result.input_data_age.revision,
+            "covers_to": result.input_data_age.covers_to,
+        }
+        if result.input_data_age.newest_covers_to is not None:
+            age["newest_covers_to"] = result.input_data_age.newest_covers_to
+        return {**payload, "input_data_age": age}
+
+    def event_comparison_preparation(*, serve_stale=True):
         """One fixed-window source/classifier preparation per cache version."""
         return fixed(("event-comparison-preparation",), "event-comparison-v1",
                      lambda store: prepare_event_comparisons(store),
-                     dump=dump_event_comparison, rebuild=rebuild_event_comparison)
+                     dump=dump_event_comparison, rebuild=rebuild_event_comparison,
+                     serve_stale=serve_stale)
 
     def findings_products(window):
         """The canonical payloads every 30-day findings consumer projects from."""
@@ -171,20 +210,24 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         analysis = fixed(("analyze", window, False, True), "analyze-v1", lambda store: analyze(
             store, window_days=window, ignore_setting_changes=False,
             pool_agreeing_basal_regimes=True, carb_entries=store.carb_entries(),
-            prompt_responses=store.prompt_responses()).to_dict())
-        scenarios = fixed(("scenarios", window), "scenarios-v1", build_canonical_scenarios)
-        exposures = event_comparison_preparation().exposure_payload
+            prompt_responses=store.prompt_responses()).to_dict(), serve_stale=False).value
+        scenarios = fixed(("scenarios", window), "scenarios-v1", build_canonical_scenarios,
+                          serve_stale=False).value
+        exposures = event_comparison_preparation(serve_stale=False).value.exposure_payload
         return analysis, exposures, scenarios
 
     def recover_sidecar_projection(key, marker, value, project, reload):
         try:
-            return project(value)
+            return fixed_response(value, project) if isinstance(value, FixedResult) else project(value)
         except Exception:
-            if not is_sidecar_rebuilt(value):
+            rebuilt = value.value if isinstance(value, FixedResult) else value
+            if not is_sidecar_rebuilt(rebuilt):
                 raise
             cache.drop(key)
             discard_artifact(db_path, key, marker)
-            return project(reload())
+            replacement = reload()
+            return (fixed_response(replacement, project)
+                    if isinstance(replacement, FixedResult) else project(replacement))
 
     def history_snapshot(window: int):
         """One coherent findings + history-evidence preparation per cache version.
@@ -207,9 +250,17 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             return {"findings": dump_findings(pair[0]), "events": dump_ic_history(pair[1])}
         def rebuild_pair(value):
             return (rebuild_findings(value["findings"]), rebuild_ic_history(value["events"]))
-        return cache.stable_read(key, lambda: load_or_compute(
-            db_path, key, compute, shape_marker="findings-history-v1",
-            dump=dump_pair, rebuild=rebuild_pair))
+        def build_snapshot():
+            try:
+                return load_or_compute(
+                    db_path, key, compute, shape_marker="findings-history-v1",
+                    dump=dump_pair, rebuild=rebuild_pair, with_age=True)
+            except InputRevisionChanged as error:
+                raise ResultCache.GenerationChanged(
+                    "input data changed during findings snapshot") from error
+        generation, result = cache.stable_read(
+            key, build_snapshot, validate=current_fixed_result)
+        return generation, result.value
 
     def _case_error(status, code, message):
         return JSONResponse(
@@ -364,6 +415,11 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         return FileResponse(_FRONTEND_DIR / "data.js",
                             media_type="text/javascript")
 
+    @app.get("/assets/diagnose-data-age.js")
+    def diagnose_data_age_js():
+        return FileResponse(_FRONTEND_DIR / "diagnose-data-age.js",
+                            media_type="text/javascript")
+
     @app.get("/assets/plan.js")
     def plan_js():
         return FileResponse(_FRONTEND_DIR / "plan.js",
@@ -503,10 +559,10 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
 
         key = ("analyze", window, ignore_changes, pool)
         if window == 30 and not ignore_changes:
-            return fixed(key, "analyze-v1", lambda store: analyze(
+            return fixed_response(fixed(key, "analyze-v1", lambda store: analyze(
                 store, window_days=window, ignore_setting_changes=ignore_changes,
                 pool_agreeing_basal_regimes=pool, carb_entries=store.carb_entries(),
-                prompt_responses=store.prompt_responses()).to_dict())
+                prompt_responses=store.prompt_responses()).to_dict()))
         return cache.get_or_compute(key, compute)
 
     @app.get("/api/scenarios")
@@ -522,7 +578,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 return build_scenarios(store, window_days=window).to_dict()
 
         key = ("scenarios", window)
-        return (fixed(key, "scenarios-v1", lambda store: build_scenarios(store, window_days=window).to_dict())
+        return (fixed_response(fixed(key, "scenarios-v1", lambda store: build_scenarios(store, window_days=window).to_dict()))
                 if window == 30 else cache.get_or_compute(key, compute))
 
     @app.get("/api/model-view")
@@ -599,7 +655,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 return summarize_trend(store, window_days=window).to_dict()
 
         key = ("outcomes-trend", window)
-        return fixed(key, "outcomes-trend-v1", lambda store: summarize_trend(store, window_days=window).to_dict())
+        return fixed_response(fixed(key, "outcomes-trend-v1", lambda store: summarize_trend(store, window_days=window).to_dict()))
 
     @app.get("/api/verify/trials")
     def verify_trials_endpoint(selected: Optional[str] = None,
@@ -634,8 +690,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             with Store.open(db_path) as store:
                 return build_time_of_day(store)
 
-        return fixed(("explore-time-of-day",), "time-of-day-v1",
-                     lambda store: build_time_of_day(store))
+        return fixed_response(fixed(("explore-time-of-day",), "time-of-day-v1",
+                                    lambda store: build_time_of_day(store)))
 
     @app.get("/api/explore/exposures")
     def explore_exposures_endpoint(_: None = Depends(require_token)) -> dict:
@@ -1226,7 +1282,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                     "n_current": bt.n_current, "mae_suggested_matched": bt.mae_suggested_matched,
                     "mae_current_matched": bt.mae_current_matched, "n_matched": bt.n_matched,
                     "improvement": bt.improvement}
-        return (fixed(key, "backtest-v1", snapshot_compute) if holdout_days == 2
+        return (fixed_response(fixed(key, "backtest-v1", snapshot_compute)) if holdout_days == 2
                 else cache.get_or_compute(key, compute))
 
     @app.get("/api/plan")

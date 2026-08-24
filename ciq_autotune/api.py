@@ -1433,7 +1433,11 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                     try:
                         await asyncio.shield(shape_task)
                     except asyncio.CancelledError:
-                        await shape_task
+                        try:
+                            await shape_task
+                        except Exception:
+                            logger.warning("Cache pre-warm failed for %s", label,
+                                           exc_info=True)
                         raise
                     except Exception:
                         logger.warning("Cache pre-warm failed for %s", label, exc_info=True)

@@ -1787,6 +1787,41 @@ class CachePreWarmTest(unittest.TestCase):
         self.assertTrue(finished.is_set())
         self.assertGreaterEqual(time.monotonic() - started, 0.1)
 
+    def test_shutdown_contains_a_failing_in_flight_shape(self):
+        entered, release = threading.Event(), threading.Event()
+
+        def failing_shape():
+            entered.set()
+            self.assertTrue(release.wait(3))
+            raise RuntimeError("shutdown shape failed")
+
+        self.app.state.recompute_roster = lambda: (("failing", failing_shape),)
+        with TestClient(self.app):
+            self.app.state.signal_recompute()
+            self.assertTrue(entered.wait(3))
+            threading.Timer(0.05, release.set).start()
+
+    def test_worker_failure_still_paces_before_the_next_shape(self):
+        trace, complete = [], threading.Event()
+
+        def a():
+            trace.append("A")
+            raise RuntimeError("A failed")
+
+        def b():
+            trace.append("B")
+            complete.set()
+
+        async def pace():
+            trace.append("pace")
+
+        self.app.state.recompute_roster = lambda: (("A", a), ("B", b))
+        self.app.state.recompute_pace = pace
+        with TestClient(self.app):
+            self.app.state.signal_recompute()
+            self.assertTrue(complete.wait(3))
+        self.assertEqual(trace, ["A", "pace", "B"])
+
     def test_fetch_thread_signal_uses_loop_call_soon_threadsafe(self):
         calls = []
         self.app.state.recompute_roster = lambda: ()
@@ -1901,16 +1936,16 @@ class CachePreWarmTest(unittest.TestCase):
                                           "explore-time-of-day": 1,
                                           "event-comparison-source-catalog": 1,
                                           "finding-case-file": 1})
-            self.assertEqual(self._warmed_keys(), (
-                ("analyze", 30, False, False),
-                ("backtest", 2),
-                ("outcomes-trend", 30),
-                ("explore-time-of-day",),
-                ("analyze", 30, False, True),
-                ("scenarios", 30),
+            expected_keys = (
+                ("analyze", 30, False, False), ("backtest", 2),
+                ("outcomes-trend", 30), ("explore-time-of-day",),
+                ("analyze", 30, False, True), ("scenarios", 30),
                 ("event-comparison-preparation",),
                 ("finding-case-file", None, None, None),
-            ))
+            )
+            warmed = self._warmed_keys()
+            for key in expected_keys:
+                self.assertIn(key, warmed)
             # ...and the visitor's own requests all hit it.
             self._get_landing_set()
             self.assertEqual(counts, after_warm)

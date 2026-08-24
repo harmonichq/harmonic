@@ -74,6 +74,59 @@ aborted run's ledger was discarded and re-derived rather than trusted.
   `mockups/finding-evidence-routing.behavior.md` (it registers the lens replay's
   stories, `S13` at line 1310) and the replay is
   `frontend/diagnose-event-comparison-behavior.replay.mjs` (13 stories). `inline`
+### Superseded on 2026-08-24 by the owner's mockup round
+
+The three decisions immediately below were drafted by a triage run with no
+interviewee, and every one of them ADDED words to the legend. Shown the rendered
+result, Connor rejected the direction outright: a chart legend the reader has to
+read four sentences of is a worse legend, whatever the sentences say. They are kept
+here because the plan-review ledger at the foot of this file is a record of rounds
+run against them, not against what replaced them.
+
+**What replaced them, and is now the decision of record:** the legend gets SHORTER.
+The support badge and the three-number point tally both go, because the key mark
+already carries support — solid for supported, thin-with-a-dot for limited, crossed
+for withheld. What remains is a count, plus a short qualifier on exactly the rows a
+reader must not read straight. Silence means the line is readable.
+
+The copy table is closed at four shapes, and it is executed rather than prosed:
+`docs/scope/99-legend-copy.spike.mjs` computes them over the real projection for all
+twelve fixture combinations and asserts nothing else is reachable.
+
+    supported                  `7 events`
+    limited                    `4 events · thin`
+    withheld, episodes drawn   `1 event · too few to average`
+    withheld, nothing drawn    `0 events · nothing to draw`
+
+The readout's false string goes the same way rather than being reworded at length:
+`Episodes shown individually` becomes `Withheld`, which is the only cohort-level
+claim a point-level state can honestly make. The spoken text branches on the
+cohort's support as well as the point's, per the spike's `proposedSpoken`.
+
+Two things fall out of the cut for free: the `1 events` plural (recorded below as
+adjacent and out of scope) dies with the string that carried it, and Q3's question
+about the point tally is answered — the tally goes, sanctioned by the owner on
+2026-08-24 in the mockup round.
+
+### Re-grounded on 2026-08-24
+
+The branch was 216 commits behind `origin/main` and was rebased onto it before any
+of the above was decided; main had since reworked this module's route strings and
+`validProjection`. Every citation in this ledger was re-executed against the rebased
+tree. The facts hold; the line numbers moved: `paintReadout` 462 -> 466,
+`paintLegend` 493 -> 497, `cohortReadout` 453 -> 457, the clipped `.head-live` rule
+236-239 -> 244-247, the support-audit pin 141 -> 142, the two `#ec-readout` replay
+pins 313,315 -> 314,316. `CONTEXT.md:277` is unchanged. One pointer no longer
+resolves: `mockups/finding-evidence-routing.behavior.md` no longer carries `S13` at
+line 1310.
+
+The defect itself reproduces on the rebased tree: in `meals`/`dense`, the `neutral`
+cohort is `Supported` with 66 supported, 6 limited and 1 withheld points, draws an
+aggregate line and no episodes, and hovering its one withheld point still says
+`Episodes shown individually`.
+
+### Decisions superseded above, kept for the review record
+
 - Decision, mine: the fix is labels-in-place. The support word in each legend chip
   gains a short reading of what the reader may conclude, the hover readout gains
   the point-level reading, and the withheld-point copy stops making a cohort-level
@@ -98,7 +151,8 @@ aborted run's ledger was discarded and re-derived rather than trusted.
   readings, so the glossary and the chart say one thing.
 - Recorded, not asked: the existing detail line prints `1 events · aggregate
   withheld` for a one-event cohort. Real, adjacent, and not this ticket; it wants
-  its own issue.
+  its own issue. **Resolved incidentally by the 2026-08-24 cut** — the string that
+  carried the plural is gone.
 
 ### Risk contract
 
@@ -121,6 +175,11 @@ Disposition: copied into the work order.
   of the affected states in light and dark.
 
 ## Open questions
+
+All three are **settled** by the owner's mockup round of 2026-08-24 and are kept
+for the record. Q1 resolved to A (reword in place, no caption). Q2's wording is the
+closed four-shape table above. Q3 resolved to dropping the point tally, which is the
+named, dated owner sanction that question asked for.
 
 - **Q1. Fix shape.** A. reword the chip and readout in place (recommended: honours
   the 2026-08-20 caption ruling and DESIGN.md rule 5, and fixes the gap where the

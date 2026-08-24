@@ -5633,6 +5633,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           if (!hasToken.value || diagnoseLoaded) return;
           diagnoseLoaded = true;
           try {
+            // Keep cacheable fixed arrivals aligned with api.py's invalidate_and_warm.
             const [a, s, e, x, p, o] = await Promise.all([
               enqueue(() => dataFetchAnalysis({ window: 30, pool: true })),
               enqueue(() => dataFetchScenarios(30)),

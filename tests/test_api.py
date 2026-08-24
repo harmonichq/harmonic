@@ -1350,6 +1350,7 @@ class CachePreWarmTest(unittest.TestCase):
         ("scenarios", "ciq_autotune.analyzers.scenario", "build_scenarios"),
         ("explore-time-of-day", "ciq_autotune.api", "build_time_of_day"),
         ("event-comparison-source-catalog", "ciq_autotune.api", "prepare_event_comparisons"),
+        ("finding-case-file", "ciq_autotune.api", "prepare_finding_cases"),
     )
 
     def setUp(self):
@@ -1386,27 +1387,43 @@ class CachePreWarmTest(unittest.TestCase):
         for path, params in (
             ("/api/analyze", {"window": 30, "ignore_changes": False, "pool": False}),
             ("/api/backtest", {"holdout_days": 2}),
-            ("/api/outcomes/trend", {"window": 14}),
+            ("/api/outcomes/trend", {"window": 30}),
             ("/api/analyze", {"window": 30, "ignore_changes": False, "pool": True}),
             ("/api/scenarios", {"window": 30}),
             ("/api/explore/time-of-day", {}),
             ("/api/explore/exposures", {}),
-            ("/api/diagnose/event-comparison", {"view": "meals"}),
+            ("/api/diagnose/finding-case-file-preparation", {}),
         ):
             r = self.client.get(path, params=params)
             self.assertEqual(r.status_code, 200, path)
+
+    def _warmed_keys(self):
+        cache = self.app.state.result_cache
+        with cache._lock:
+            return tuple(cache._map) + tuple(cache._preparations)
 
     def test_warm_pass_leaves_the_landing_set_answering_without_recompute(self):
         with self._counting_builders() as counts:
             self.app.state.invalidate_and_warm()
             after_warm = dict(counts)
             # Exactly the landing shapes and nothing else — both /api/analyze modes
-            # included, one build apiece for the rest. The exposure population
-            # and every comparison projection share one preparation.
+            # included. Findings preparation has its own scenario build; the
+            # exposure population shares one event-comparison preparation.
             self.assertEqual(after_warm, {"analyze": 2, "backtest": 1,
-                                          "outcomes-trend": 1, "scenarios": 1,
+                                          "outcomes-trend": 1, "scenarios": 2,
                                           "explore-time-of-day": 1,
-                                          "event-comparison-source-catalog": 1})
+                                          "event-comparison-source-catalog": 1,
+                                          "finding-case-file": 1})
+            self.assertEqual(self._warmed_keys(), (
+                ("analyze", 30, False, False),
+                ("backtest", 2),
+                ("outcomes-trend", 30),
+                ("analyze", 30, False, True),
+                ("scenarios", 30),
+                ("explore-time-of-day",),
+                ("event-comparison-preparation",),
+                ("finding-case-file", None, None, None),
+            ))
             # ...and the visitor's own requests all hit it.
             self._get_landing_set()
             self.assertEqual(counts, after_warm)
@@ -1473,12 +1490,12 @@ class CachePreWarmTest(unittest.TestCase):
     def test_warm_pass_invalidates_first_so_it_never_serves_pre_fetch_results(self):
         with self._counting_builders() as counts:
             self._get_landing_set()          # cold: every shape computed once
-            self.assertEqual(counts["scenarios"], 1)
+            self.assertEqual(counts["scenarios"], 2)
             self.app.state.invalidate_and_warm()
             # New data landed, so the pre-fetch results were dropped and rebuilt.
-            self.assertEqual(counts["scenarios"], 2)
+            self.assertEqual(counts["scenarios"], 4)
             self._get_landing_set()
-            self.assertEqual(counts["scenarios"], 2)
+            self.assertEqual(counts["scenarios"], 4)
 
     def test_drill_downs_and_other_windows_stay_lazy(self):
         with self._counting_builders() as counts:
@@ -1494,8 +1511,9 @@ class CachePreWarmTest(unittest.TestCase):
 
     def test_one_failing_shape_is_contained_and_the_rest_still_warm(self):
         # The witness must be a shape the warm pass reaches *after* the failing one,
-        # or containment isn't what's being proved. Backtest warms second, scenarios
-        # last, so a blown-up backtest leaves three later shapes to observe.
+        # or containment isn't what's being proved. Backtest warms second, the
+        # finding-case preparation last, so a blown-up backtest leaves later
+        # shapes to observe.
         import ciq_autotune.backtest as backtest_mod
 
         def boom(*args, **kwargs):
@@ -1507,10 +1525,11 @@ class CachePreWarmTest(unittest.TestCase):
             self.assertEqual(counts["backtest"], 0)   # it never completed a build
             # ...and every shape the pass reaches after it still warmed: outcomes-trend
             # (third), analyze pooled (fourth — the second of analyze's two builds, the
-            # first having already run before backtest), scenarios (last).
+            # first having already run before backtest), scenarios (including the
+            # findings preparation's internal scenario build).
             self.assertEqual(counts["outcomes-trend"], 1)
             self.assertEqual(counts["analyze"], 2)
-            self.assertEqual(counts["scenarios"], 1)
+            self.assertEqual(counts["scenarios"], 2)
             # The failed shape is simply left cold, and a visitor recomputes it.
             self.assertEqual(self.client.get("/api/backtest",
                                              params={"holdout_days": 2}).status_code, 200)

@@ -1240,18 +1240,17 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         return {"id": focus_id, "status": "resolved"}
 
     def invalidate_and_warm() -> None:
-        """The hourly fetch's ``on_write``: clear the cache, then pre-warm the
-        landing set (#424).
+        """The hourly fetch's ``on_write``: clear the cache, then pre-warm
+        Diagnose's fixed cold-arrival set (#424).
 
-        Without this the hourly fetch left the cache empty and the first visitor
-        after it paid the whole cold recompute (20–40s of spinner). The fetch loop
-        runs this in its own worker thread, so the warm pass costs no user and the
-        server keeps serving while it runs.
+        ``frontend/index.html``'s ``loadAll`` and ``loadAudit`` are the
+        cold-arrival source of truth. ADR 82's design.md records the historical
+        measurement. The fetch loop runs this in its own worker thread, so the
+        server keeps serving while the warm pass runs.
 
-        The set is exactly the fixed shapes the initial Diagnose load asks for —
+        The set is exactly the fixed cacheable shapes those loads ask for —
         nothing keyed on a date, month, or user-chosen window, which stay lazy so
-        an hourly warm can't grow unbounded. The comparison warm prepares only
-        its shared source/catalog; its coordinate projections remain lazy.
+        an hourly warm can't grow unbounded.
         Warming goes through the endpoint functions themselves where there is an
         endpoint-shaped cache key, and one failure is logged and skipped rather
         than killing the hourly loop.
@@ -1260,11 +1259,14 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         for label, warm in (
             ("analyze", lambda: analyze_endpoint(window=30, ignore_changes=False, pool=False)),
             ("backtest", lambda: backtest_endpoint(holdout_days=2)),
-            ("outcomes-trend", lambda: outcomes_trend_endpoint(window=14)),
+            ("outcomes-trend", lambda: outcomes_trend_endpoint(window=30)),
             ("analyze-pooled", lambda: analyze_endpoint(window=30, ignore_changes=False, pool=True)),
             ("scenarios", lambda: scenarios_endpoint(window=30)),
             ("explore-time-of-day", explore_time_of_day_endpoint),
+            # Exposures consumes this payload; only coordinate projections stay lazy.
             ("event-comparison-source-catalog", event_comparison_preparation),
+            ("finding-case-file", lambda: finding_case_file_preparation(
+                Request({"type": "http", "query_string": b""}))),
         ):
             try:
                 warm()

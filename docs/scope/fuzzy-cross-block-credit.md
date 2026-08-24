@@ -102,6 +102,33 @@ sets, and ship-vs-stop boundary are undecided.
 - Why: advisory insulin dosing, one wearer, public repo/CI. Disposition: copy
   into the work order at posting.
 
+- Plan-review round 1 (2026-08-23): 7 blockers + 5 notes, all tagged
+  `authoring`; all reproduced against the tree before fixing. Rulings folded
+  into the order: (a) ADR 23's "strictly more meals" is interpreted as meals
+  the estimate consumed — `n_meals` is coverage and already maximal, so the
+  replay gains an eligibility-evidence comparison (`fit_meals`) stamped by
+  both estimators; narrow replay.py change owned by chunk 1, recorded in ADR
+  117. (b) `IcBlock.n_runs` carries the floored integer effective run count;
+  whole/fractional split lands in additive eligibility fields; the display
+  consequence (chained-only blocks can reach numeric) is accepted and
+  recorded. (c) Chunk 1 may extract ic.py's block-stamping machinery into
+  shared helpers rather than forking it; incumbent behavior pinned by the
+  existing suite. (d) A placebo fire in any chunk stops work and reports; the
+  coordinator adjudicates implementation-defect vs design-fire; chunk 2's run
+  is the recorded verdict. (e) Verification baseline corrected to 1994/1 with
+  the api+sync extras. `inline`
+
+- Plan-review round 2 (2026-08-23): all 12 round-1 items verified resolved;
+  2 new blockers, both `injected` by round-1 fixes, both fixed: the incumbent
+  stamping `fit_meals` stales the two drift-checked committed fixtures
+  (regeneration ownership + both --check gates added to Verification), and the
+  replay report's meal counts had to follow the clause onto fit_meals so the
+  render explains its own verdict. One note applied (shared machinery resolves
+  the pooled estimator through the ic namespace so existing patches bind).
+  Conditional countersign satisfied by applying the reviewer's own prescribed
+  fixes. Operator directive folded in: sub-agents are codex models only, via
+  /orchestrate. `inline`
+
 ## Open questions
 
 - Q1 ship-or-stop; Q2 crediting scheme; Q3 floor counting; Q4 what "permanent

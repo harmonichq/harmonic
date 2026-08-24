@@ -420,7 +420,6 @@ for (const [name, probe, options] of [
   ['header and Filter ownership', issue86HeaderFilter, { state: 'drawn' }],
   ['Event charts and Sift intersection', issue86FilteredRoot, { state: 'typical' }],
   ['direct event entry and root restoration', issue86DirectEntryRestoration, { state: 'typical' }],
-  ['pending root projection', issue86PendingRoot, { state: 'typical', findingsDelayMs: 900 }],
   ['malformed event evidence recovery', issue86MalformedRecovery, {
     state: 'typical', caseScenario: { case: async ({ url, body }) =>
       url.searchParams.get('alignment') === 'event' ? { body: {
@@ -444,6 +443,56 @@ for (const [name, probe, options] of [
     }
   });
 }
+
+test('#86 issue-scoped probe · pending root projection', async () => {
+  const browser = await runner.browser();
+  const before = openerProblems().length;
+  let releaseResponse;
+  const responseReleased = new Promise((resolve) => { releaseResponse = resolve; });
+  let markResponseHeld;
+  let rejectResponseHeld;
+  const responseHeld = new Promise((resolve, reject) => {
+    markResponseHeld = resolve;
+    rejectResponseHeld = reject;
+  });
+  let released = false;
+  const release = () => {
+    if (released) return;
+    released = true;
+    releaseResponse();
+  };
+  const page = await openApp(browser, {
+    state: 'typical', appSource: 'fixture',
+    findingsResponseBarrier: async ({ url }) => {
+      if (url.pathname === '/api/diagnose/finding-case-file-preparation'
+          && url.searchParams.get('start_min') === '720'
+          && url.searchParams.get('end_min') === '1080') {
+        markResponseHeld();
+        await responseReleased;
+      }
+    },
+  });
+  const request = page.waitForRequest((candidate) => {
+    const url = new URL(candidate.url());
+    return url.pathname === '/api/diagnose/finding-case-file-preparation'
+      && url.searchParams.get('start_min') === '720'
+      && url.searchParams.get('end_min') === '1080';
+  }, { timeout: 10_000 });
+  const heldTimeout = setTimeout(() => {
+    rejectResponseHeld(new Error('pending-root response barrier was not entered within 10000ms'));
+  }, 10_000);
+  const heldRequest = Promise.all([request, responseHeld])
+    .finally(() => { clearTimeout(heldTimeout); })
+    .then(([matched]) => matched);
+  try {
+    await issue86PendingRoot(page, { request: heldRequest, release });
+    assert.deepEqual(openerProblems().slice(before), [],
+      'no opener problems while proving #86: pending root projection');
+  } finally {
+    release();
+    await page.close();
+  }
+});
 
 function contrastRatio(foreground, background) {
   const rgb = (color) => color.match(/\d+/g).map(Number).slice(0, 3);

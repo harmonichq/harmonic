@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
   BIN_MINUTES, buildMealMarkers, buildSlotLane, slotAssertsMove, snapWindow,
-  renderHistoryEvents, validateHistoryEvents, windowStats,
+  renderCanvas, renderHistoryEvents, validateHistoryEvents, windowStats, windowSupport,
 } from './diagnose-workstation-chart.js';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -72,6 +72,63 @@ test('windowStats reads a snapped hand-built envelope window', () => {
   assert.deepEqual(windowStats(envelope, window), {
     a: 1, b: 6, median: 118, lowest: 105, lowestIndex: 1, spread: 20, readings: 27,
   });
+});
+
+test('wrapped windows pool both stretches for stats and support', () => {
+  const values = Array.from({ length: 96 }, () => null);
+  const p25 = values.slice();
+  const p50 = values.slice();
+  const p75 = values.slice();
+  const raw = Array.from({ length: 96 }, () => 0);
+  const counts = Array.from({ length: 96 }, () => 12);
+  for (const [index, lo, mid, hi, readings] of [
+    [88, 130, 140, 160, 2], [89, 140, 150, 170, 3],
+    [0, 90, 100, 110, 5], [1, 100, 110, 130, 7],
+  ]) {
+    p25[index] = lo;
+    p50[index] = mid;
+    p75[index] = hi;
+    raw[index] = readings;
+  }
+  counts[1] = 7;
+
+  assert.deepEqual(windowStats({ p25, p50, p75, raw }, [1320, 120]), {
+    a: 88, b: 95, median: 125, lowest: 100, lowestIndex: 0, spread: 28, readings: 17,
+  });
+  assert.deepEqual(windowSupport({ counts }, [1320, 120]), { thinnest: 7, supported: false });
+  assert.deepEqual(windowSupport({ counts }, [1320, 1350]), { thinnest: 12, supported: true });
+});
+
+test('renderCanvas draws a wrapped window as two areas with one range label', () => {
+  const labels = Array.from({ length: 96 }, (_, index) => `${String(Math.floor(index / 4)).padStart(2, '0')}:${String((index % 4) * 15).padStart(2, '0')}`);
+  const envelope = {
+    labels,
+    p10: Array.from({ length: 96 }, () => 80), p25: Array.from({ length: 96 }, () => 100),
+    p50: Array.from({ length: 96 }, () => 120), p75: Array.from({ length: 96 }, () => 140),
+    p90: Array.from({ length: 96 }, () => 160), counts: Array.from({ length: 96 }, () => 12),
+    raw: Array.from({ length: 96 }, () => 1), days: 12, pool: 45,
+  };
+  const colors = {
+    muted: '#111', warn: '#222', danger: '#333', targetFill: '#444', targetText: '#555',
+    rail: '#666', windowFill: '#777', windowEdge: '#888', bandOuter: '#999',
+    bandInner: '#aaa', bandEdge: '#bbb', median: '#ccc', targetEdge: '#ddd',
+    onAccent: '#eee', text: '#123', surface2: '#234', line: '#345', occurrence: '#456', meal: '#567', grid: '#678',
+  };
+  let option = null;
+  const chart = { setOption(next) { option = next; }, off() {}, on() {} };
+
+  renderCanvas({ clientWidth: 4000 }, { getInstanceByDom() { return chart; } }, {
+    envelope, markers: [], colors, stats: { spread: 27 }, window: [1320, 120], windowLabel: '22:00–02:00',
+  });
+
+  const context = option.series.find((series) => series.name === '__context');
+  const areas = context.markArea.data.filter(([start]) => start.xAxis != null);
+  assert.deepEqual(areas.map(([start, end]) => [start.xAxis, end.xAxis]), [
+    ['22:00', '23:45'], ['00:00', '01:45'],
+  ]);
+  assert.equal(areas.filter(([start]) => start.label).length, 1);
+  assert.match(areas[0][0].label.formatter, /25–75 spread 27 mg\/dL/);
+  assert.equal(context.markPoint.data.at(-1).label.formatter, 'CONTINUES');
 });
 
 test('S49/S70 · history event validation accepts one exact id and generation', () => {

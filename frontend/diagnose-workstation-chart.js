@@ -11,6 +11,19 @@
 export const BIN_MINUTES = 15;
 export const BIN_COUNT = (24 * 60) / BIN_MINUTES; // 96
 
+function windowSpans([startMin, endMin]) {
+  return startMin <= endMin
+    ? [[startMin, endMin]]
+    : [[startMin, 1440], [0, endMin]];
+}
+
+function windowBinSpans(window) {
+  return windowSpans(window).map(([startMin, endMin]) => [
+    Math.floor(startMin / BIN_MINUTES),
+    Math.min(Math.ceil(endMin / BIN_MINUTES), BIN_COUNT) - 1,
+  ]);
+}
+
 // Shared plot insets. The HTML verdict lane is pinned to these so its cells sit
 // in register with the x-axis ticks.
 // the right margin seats the value tags that ride the median / lowest-median
@@ -89,26 +102,27 @@ export function buildEnvelope(days, { pool = 45 } = {}) {
  * nothing here is a whole-range constant.
  */
 export function windowStats(envelope, [startMin, endMin]) {
-  const a = Math.floor(startMin / BIN_MINUTES);
-  const b = Math.min(Math.ceil(endMin / BIN_MINUTES), BIN_COUNT) - 1;
-  const take = (arr) => arr.slice(a, b + 1).filter((v) => v != null);
+  const spans = windowBinSpans([startMin, endMin]);
+  const [[a, b]] = spans;
+  const take = (arr) => spans.flatMap(([lo, hi]) => arr.slice(lo, hi + 1).map((value, index) => [lo + index, value]))
+    .filter(([, value]) => value != null);
   const avg = (xs) => (xs.length ? Math.round(xs.reduce((s, x) => s + x, 0) / xs.length) : null);
   const med = take(envelope.p50);
-  const p25 = envelope.p25.slice(a, b + 1);
-  const p75 = envelope.p75.slice(a, b + 1);
-  const spread = p75.map((hi, i) => (hi == null || p25[i] == null ? null : hi - p25[i]))
+  const spread = take(envelope.p75).map(([index, hi]) => (
+    envelope.p25[index] == null ? null : hi - envelope.p25[index]
+  ))
     .filter((v) => v != null);
   const lowestIndex = med.length
-    ? envelope.p50.indexOf(Math.min(...med), a)
+    ? med.find(([index, value]) => value === Math.min(...med.map(([, sample]) => sample)))[0]
     : -1;
   return {
     a,
     b,
-    median: avg(med),
-    lowest: med.length ? Math.round(Math.min(...med)) : null,
+    median: avg(med.map(([, value]) => value)),
+    lowest: med.length ? Math.round(Math.min(...med.map(([, value]) => value))) : null,
     lowestIndex,
     spread: avg(spread),
-    readings: envelope.raw.slice(a, b + 1).reduce((s, x) => s + x, 0),
+    readings: take(envelope.raw).reduce((sum, [, value]) => sum + value, 0),
   };
 }
 
@@ -198,9 +212,8 @@ export function minuteAtX(el, offsetX) {
  * than printing a precise median off a handful of readings.
  */
 export function windowSupport(envelope, [startMin, endMin]) {
-  const a = Math.floor(startMin / BIN_MINUTES);
-  const b = Math.min(Math.ceil(endMin / BIN_MINUTES), BIN_COUNT) - 1;
-  const counts = envelope.counts.slice(a, Math.max(a, b) + 1);
+  const counts = windowBinSpans([startMin, endMin])
+    .flatMap(([a, b]) => envelope.counts.slice(a, b + 1));
   const thinnest = counts.length ? Math.min(...counts) : 0;
   return { thinnest, supported: thinnest >= MIN_SUPPORTED_NIGHTS };
 }
@@ -515,8 +528,9 @@ export function renderCanvas(el, echarts, opts) {
   const stats = opts.stats || null;
   const target = opts.target || [70, 180];
   const [winStart, winEnd] = opts.window || [0, 360];
-  const startIndex = Math.round(winStart / BIN_MINUTES);
-  const endIndex = Math.min(Math.round(winEnd / BIN_MINUTES), BIN_COUNT - 1);
+  const binSpans = windowBinSpans([winStart, winEnd]);
+  const [[startIndex, endIndex]] = binSpans;
+  const wrapped = binSpans.length > 1;
 
   /* Same floor the basal slots use, applied to the window's pooled sample: below
      it the canvas prints NO precise median — it says so, in the window's own
@@ -571,6 +585,27 @@ export function renderCanvas(el, echarts, opts) {
     sp: { color: colors.muted, fontSize: 9.5, fontWeight: 500, letterSpacing: 0 },
     th: { color: colors.warn || colors.danger, fontSize: 9.5, fontWeight: 700, letterSpacing: 0 },
   };
+  const windowAreas = binSpans.map(([start, end], index) => [
+    {
+      xAxis: envelope.labels[start],
+      itemStyle: {
+        color: colors.windowFill, borderColor: colors.windowEdge,
+        borderWidth: 1, borderType: [4, 3],
+      },
+      /* The 25–75 spread rides the window label rather than the band.
+         Anchored in the band it collided with the p75 edge and the median at narrow
+         windows and short viewports, and its two words broke across the band edge.
+         Here it is one line, at the top edge inside the highlight, where nothing
+         else is drawn — a rich-text tail so it stays subordinate to the window name. */
+      label: index === 0 ? {
+        show: labelInside, position: 'insideTop', distance: 5,
+        color: colors.windowEdge,
+        fontSize: 10, fontWeight: 700, letterSpacing: 0.5,
+        formatter: labelText, rich: labelRich,
+      } : undefined,
+    },
+    { xAxis: envelope.labels[end] },
+  ]);
 
   /* A captured day's real trace, when the caller has one. With it on the plot
      the pooled envelope recedes to context — it is a different thing (many days
@@ -714,44 +749,33 @@ export function renderCanvas(el, echarts, opts) {
               },
               { yAxis: target[1] },
             ],
-            [
-              {
-                xAxis: envelope.labels[startIndex],
-                itemStyle: {
-                  color: colors.windowFill, borderColor: colors.windowEdge,
-                  borderWidth: 1, borderType: [4, 3],
-                },
-                /* The 25–75 spread rides the window label rather than the band.
-                   Anchored in the band it collided with the p75 edge and the
-                   median at narrow windows and short viewports, and its two
-                   words broke across the band edge. Here it is one line, at the
-                   top edge inside the highlight, where nothing else is drawn —
-                   a rich-text tail so it stays subordinate to the window name. */
-                label: {
-                  show: labelInside, position: 'insideTop', distance: 5,
-                  color: colors.windowEdge,
-                  fontSize: 10, fontWeight: 700, letterSpacing: 0.5,
-                  formatter: labelText, rich: labelRich,
-                },
-              },
-              { xAxis: envelope.labels[endIndex] },
-            ],
+            ...windowAreas,
           ],
         },
         // the label, when it did not fit inside: parked in the margin beside the
         // window, on the same band, clear of both dashed edges
-        markPoint: labelInside ? undefined : {
+        markPoint: (!labelInside || wrapped) ? {
           silent: true, symbol: 'circle', symbolSize: 0, z: 10,
-          data: [{
-            coord: [envelope.labels[labelSide === 'right' ? endIndex : startIndex], LABEL_Y],
-            label: {
-              show: true, position: labelSide, distance: 6,
-              formatter: labelText, rich: labelRich,
-              align: labelSide === 'right' ? 'left' : 'right',
-              color: colors.windowEdge, fontSize: 10, fontWeight: 700, letterSpacing: 0.5,
-            },
-          }],
-        },
+          data: [
+            ...(!labelInside ? [{
+              coord: [envelope.labels[labelSide === 'right' ? endIndex : startIndex], LABEL_Y],
+              label: {
+                show: true, position: labelSide, distance: 6,
+                formatter: labelText, rich: labelRich,
+                align: labelSide === 'right' ? 'left' : 'right',
+                color: colors.windowEdge, fontSize: 10, fontWeight: 700, letterSpacing: 0.5,
+              },
+            }] : []),
+            ...(wrapped ? [{
+              coord: [envelope.labels[binSpans[1][1]], LABEL_Y],
+              label: {
+                show: true, position: 'insideTop', distance: 5,
+                formatter: 'CONTINUES', color: colors.muted, fontSize: 9, fontWeight: 600,
+                backgroundColor: colors.rail, padding: [2, 4], borderRadius: 2,
+              },
+            }] : []),
+          ],
+        } : undefined,
         markLine: {
           silent: true, symbol: 'none', z: 4,
           lineStyle: { color: colors.targetEdge, type: [4, 4], width: 1 },

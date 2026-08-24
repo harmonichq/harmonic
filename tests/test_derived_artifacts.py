@@ -33,6 +33,19 @@ class DerivedArtifactsTest(unittest.TestCase):
         self.assertEqual(self.load(lambda store: calls.append(3) or {"value": 3}), {"value": 3})
         self.assertEqual(calls, [1, 3])
 
+    def test_persists_snapshot_data_horizon_with_the_artifact(self):
+        with Store.open(self.tmp.name) as store:
+            store.upsert_cgm([{"EventDateTime": "2020-01-01 00:00:00", "Readings (CGM / BGM)": 100}])
+        first = load_or_compute(self.tmp.name, ("horizon",), lambda store: {"value": 1},
+                                shape_marker="test-v1", with_age=True)
+        second = load_or_compute(self.tmp.name, ("horizon",), lambda store: {"value": 2},
+                                 shape_marker="test-v1", with_age=True)
+        self.assertEqual(first.value, {"value": 1})
+        self.assertIsNone(first.input_data_age)
+        self.assertEqual(second.value, {"value": 1})
+        self.assertIsNone(second.input_data_age)
+        self.assertEqual(second.covers_to, "2020-01-01 00:00:00")
+
     def test_crossed_write_before_fresh_read_does_not_persist(self):
         def compute(store):
             with Store.open(self.tmp.name) as writer:
@@ -128,7 +141,7 @@ class DerivedArtifactsTest(unittest.TestCase):
 
     def test_layout_marker_change_misses(self):
         self.load(lambda store: {"first": True}, ("layout",))
-        with patch.object(artifacts, "DERIVED_ARTIFACT_STORE_SCHEMA_VERSION", 2):
+        with patch.object(artifacts, "DERIVED_ARTIFACT_STORE_SCHEMA_VERSION", 3):
             self.assertEqual(self.load(lambda store: {"second": True}, ("layout",)),
                              {"second": True})
 

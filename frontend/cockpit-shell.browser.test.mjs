@@ -293,6 +293,8 @@ async function routeApp(page, options = {}) {
   const { promptCount = 0, planDraftItems = [], verifyTrials = [maturing, complete] } = options;
   const findingsInput = options.findingsInput || { analysis: analyze, scenarios };
   await page.route('**/*', async (route) => {
+    const fixed = (payload) => options.inputDataAge
+      ? { ...payload, input_data_age: options.inputDataAge } : payload;
     const requestUrl = route.request().url();
     if (CDN.has(requestUrl)) return route.fulfill({
       body: await readFile(join(VENDOR_DIR, CDN.get(requestUrl))), contentType: 'text/javascript',
@@ -397,7 +399,7 @@ async function routeApp(page, options = {}) {
       catch { return route.abort('failed'); }
       return route.fulfill({ json: projected });
     }
-    if (url.pathname === '/api/analyze') return route.fulfill({ json: analyze });
+    if (url.pathname === '/api/analyze') return route.fulfill({ json: fixed(analyze) });
     // #735: level 1 IS the findings queue, and the workstation fails closed without
     // it — an unserved projection renders "Diagnose is unavailable.", which is an
     // empty body for every scenario that lands on the default Diagnose tab. Project
@@ -1157,6 +1159,25 @@ export async function S10(browser) {
   }
 }
 
+// STORY:cockpit-shell:S11
+export async function S11(browser) {
+  const options = { inputDataAge: { schema_version: 2, revision: 7,
+    covers_to: '2026-08-24 08:00:00', newest_covers_to: '2026-08-24 09:00:00' } };
+  const page = await openApp(browser, options);
+  try {
+    const banner = page.getByRole('status', { name: /Showing results from data through/ });
+    await banner.waitFor();
+    assert.equal(await banner.innerText(), 'Showing results from data through 2026-08-24 08:00:00.');
+    assert.equal(await page.locator('.dw').isVisible(), true, 'stale age keeps Diagnose rendered');
+    if (SHOTS) await page.screenshot({ path: join(SHOTS, 'stale-result-banner-1280x800-light.png'), fullPage: true });
+    options.inputDataAge = null;
+    await page.reload();
+    await page.locator('.dw').waitFor();
+    assert.equal(await banner.count(), 0, 'fresh fixed responses clear the banner without an empty Diagnose state');
+    assert.equal(await page.locator('.dw').isVisible(), true, 'fresh replacement retains rendered Diagnose');
+  } finally { await page.close(); }
+}
+
 async function assertRetiredOccurrenceRoute(page) {
   assert.equal(await page.evaluate(() => location.pathname + location.search), '/diagnose?view=glucose&mode=dense',
     'the stale occurrence-list URL must canonicalize to /diagnose?view=glucose&mode=dense');
@@ -1246,7 +1267,7 @@ export async function R1(browser) {
 }
 
 export const COCKPIT_SHELL_STORIES = Object.freeze([
-  S1, S2, S3, S4, S5, S6, S7, S8, S9, S10, R1,
+  S1, S2, S3, S4, S5, S6, S7, S8, S9, S10, S11, R1,
 ]);
 
 test('cockpit shell behavior ledger replays every registered story', async () => {

@@ -665,6 +665,39 @@ class DurableArtifactApiTest(unittest.TestCase):
         self.assertEqual(calls, [])
         self.assertEqual(restored.json(), initial.json())
 
+    def test_same_fixed_key_serves_labeled_prior_only_while_recomputing(self):
+        """A public fixed route keeps its exact predecessor visible during a rebuild."""
+        from ciq_autotune.api import create_app
+        import ciq_autotune.api as api_mod
+        app = create_app(db_path=self.tmp.name, token=None, enable_fetch_loop=False)
+        client = TestClient(app)
+        first = client.get("/api/explore/time-of-day")
+        self.assertEqual(first.status_code, 200)
+        with sqlite3.connect(sidecar_path(self.tmp.name)) as sidecar:
+            prior_covers_to = sidecar.execute("SELECT covers_to FROM artifacts").fetchone()[0]
+        with Store.open(self.tmp.name) as store:
+            store.upsert_cgm([{"EventDateTime": "2026-07-16 00:00:00", "Readings (CGM / BGM)": 110}])
+        app.state.result_cache.bump()
+        entered, release = threading.Event(), threading.Event()
+        real = api_mod.build_time_of_day
+        def blocked(store):
+            entered.set()
+            self.assertTrue(release.wait(3))
+            return real(store)
+        with patch.object(api_mod, "build_time_of_day", side_effect=blocked):
+            with ThreadPoolExecutor(max_workers=1) as pool:
+                future = pool.submit(client.get, "/api/explore/time-of-day")
+                self.assertTrue(entered.wait(3))
+                stale = client.get("/api/explore/time-of-day")
+                self.assertEqual(stale.status_code, 200)
+                age = stale.json()["input_data_age"]
+                self.assertEqual(age["covers_to"], prior_covers_to)
+                self.assertEqual(age["newest_covers_to"], "2026-07-16 00:00:00")
+                release.set()
+                self.assertEqual(future.result(timeout=3).status_code, 200)
+        fresh = client.get("/api/explore/time-of-day")
+        self.assertNotIn("input_data_age", fresh.json())
+
     def test_valid_json_wrong_event_comparison_shape_recomputes_and_serves(self):
         from ciq_autotune.api import create_app
         first = TestClient(create_app(db_path=self.tmp.name, token=None, enable_fetch_loop=False))
@@ -684,7 +717,7 @@ class DurableArtifactApiTest(unittest.TestCase):
                 }],
             },
         }, separators=(",", ":"))
-        marker = _canonical(("event-comparison-v1", 1, source_fingerprint()))
+        marker = _canonical(("event-comparison-v1", 2, source_fingerprint()))
         with Store.open_queryonly(self.tmp.name) as store:
             revision = store.input_data_revision()
         with sqlite3.connect(sidecar_path(self.tmp.name)) as sidecar:

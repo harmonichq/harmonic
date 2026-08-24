@@ -167,7 +167,9 @@ function validOccurrence(value, view, selected = false) {
 }
 
 function validProjection(value, requestedView) {
-  if (!hasExactKeys(value, ['schema', 'coordinates', 'population', 'cohorts', 'occurrences', 'selection'])
+  const allowed = ['schema', 'coordinates', 'population', 'cohorts', 'occurrences', 'selection', 'input_data_age'];
+  if (!isRecord(value) || Object.keys(value).some((key) => !allowed.includes(key))
+      || !['schema', 'coordinates', 'population', 'cohorts', 'occurrences', 'selection'].every((key) => Object.hasOwn(value, key))
       || value.schema !== 'diagnose-event-comparison-v3') return false;
   const { coordinates, population, cohorts, occurrences, selection } = value;
   const factorKeys = coordinates?.view === 'meals'

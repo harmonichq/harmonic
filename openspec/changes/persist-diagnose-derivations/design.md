@@ -246,3 +246,29 @@ fixes first, because they change what the durable store is built around.
 Fixed reconstructible Diagnose artifacts are stored in a disposable adjacent
 SQLite sidecar. Their primary revision is committed with Store mutations and
 their automatic package-source fingerprint invalidates changed analysis code.
+
+## ADR 124 — Exact-key stale serving carries the input horizon
+
+**Status:** accepted, 2026-08-24.
+
+The fixed-route boundary owns a bounded in-flight registry separate from
+`ResultCache`. While one exact fixed key recomputes, another request for that
+same key may read only the newest earlier-revision sidecar artifact with the
+same coordinates and model marker. It must have a non-null `covers_to`; no
+cross-key, schema, marker, or coordinate fallback exists. Builder failures
+continue to propagate rather than turning an uncertain result into a stale one.
+
+Each sidecar row stores `covers_to`, the maximum CGM/basal timestamp read from
+the query-only snapshot before its computation starts. The schema version
+advances with this column, so an older sidecar cannot masquerade as labeled.
+The API projects fixed results through one adapter which appends optional
+top-level `input_data_age` after the endpoint's normal projection. Its fields
+are the sidecar schema version, old revision, `covers_to`, and optional newest
+input horizon. Findings and history retain their generation-sensitive path and
+do not stale-serve.
+
+Diagnose records that backend fact per incoming shape before assignment. A
+fresh replacement clears only its own age; a full reload resets all shape ages.
+The cockpit banner selects the oldest rendered stale horizon and says exactly
+`Showing results from data through <covers_to>.` This is visibility, not a
+frontend inference about freshness or insulin guidance.

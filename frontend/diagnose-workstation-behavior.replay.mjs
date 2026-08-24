@@ -2094,11 +2094,16 @@ export const S49 = async (page) => {
 
 // STORY:finding-evidence-routing:S50
 export const S50 = async (page) => {
-  await openHistoryEvents(page);
+  await openHistoryCase(page);
+  const clockPool = (await state(page)).pool;
+  await page.getByRole('button', { name: 'By event', exact: true }).click();
+  await settle(page, 650);
   const before = await state(page);
+  is(before.pool, '', 'S50 history event header exposes no analysis generation');
   await page.getByRole('button', { name: 'By clock', exact: true }).click();
   await settle(page, 250);
   const after = await state(page);
+  is(after.pool, clockPool, 'S50 returning to clock restores its pooled-data header verbatim');
   is(after.history.id, before.history.id, 'S50 id survives return to clock');
   is(after.history.generation, before.history.generation, 'S50 generation survives return to clock');
   is(after.history.selectedRunId, before.history.selectedRunId, 'S50 selected run survives return to clock');
@@ -2124,11 +2129,19 @@ export const S51 = async (page) => {
 export const S52 = async (page) => {
   await openHistoryEvents(page);
   const before = await state(page);
-  ok(before.history.runLabels.every((label) => /2 meals · \+0 min, \+120 min/.test(label)),
+  ok(before.history.runLabels.every((label) => /2 meals · \+0, \+120 min/.test(label)),
     'S52 every server meal offset stays under its run');
   await page.locator('.history-run').first().click();
   await settle(page, 600);
   is((await state(page)).history.runIds.length, before.history.runIds.length, 'S52 selection does not split a run');
+};
+
+// STORY:finding-evidence-routing:S90
+export const S90 = async (page) => {
+  await openHistoryEvents(page);
+  const labels = await page.locator('.history-run small').allInnerTexts();
+  ok(labels.every((label) => label === '4 meals · +0, +137, +262, +398 min'),
+    'S90 meal offsets read as rounded whole minutes');
 };
 
 // STORY:finding-evidence-routing:S53
@@ -3948,6 +3961,15 @@ export const STORIES = [
   ['S82', S82, 'typical'], ['S83', S83, 'typical'], ['S84', S84, 'drawn'],
   ['S85', S85, 'typical'], ['S86', S86, 'typical'], ['S87', S87, 'typical'],
   ['S88', S88, 'typical'], ['S89', S89, 'typical'],
+  ['S90', S90, 'typical', { history: true, historyResponses: [{
+    body: (generated) => ({
+      ...generated,
+      series: generated.series.map((run) => ({
+        ...run,
+        member_offsets_min: [0, 137.31666666666666, 261.7, 398.1166666666667],
+      })),
+    }),
+  }] }],
   ['C41', C41, 'typical', { caseScenario: {
     preparation: generatedFindingPose('finding:meal_over_delivery'),
   } }], ['C42', C42, 'typical'],

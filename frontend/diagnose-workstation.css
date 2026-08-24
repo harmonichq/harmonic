@@ -864,7 +864,7 @@ html.dark .dw {
 .history-runs-cap { margin-top: 16px; }
 .history-runs { display: grid; gap: 4px; margin-top: 5px; }
 .history-run {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px;
+  display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px;
   align-items: center; min-height: 44px; padding: 6px 8px;
   border: 1px solid transparent; border-radius: 4px;
   background: transparent; color: var(--mk-text); text-align: left; cursor: pointer;
@@ -908,9 +908,7 @@ html.dark .dw {
   .history-case :is(.verdict, .qual, .history-current, .history-notice,
     .history-pending, .history-stale), .dw .history-retirement { font-size: 14px; }
   .dw .qcollapse { min-height: 44px; }
-  .history-run {
-    grid-template-columns: minmax(0, 1fr); gap: 2px; font-size: 14px;
-  }
+  .history-run { font-size: 14px; }
   .history-run small, .history-canvas-notice { font-size: 14px; }
   .history-retry { min-height: 44px; }
   .history-canvas-notice { inset-inline: 12px; }

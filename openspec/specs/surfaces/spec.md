@@ -30,7 +30,9 @@ programmed value. Its case file leads with the analyzer's finished historical
 conclusion, then the past setting, measured value, interval, and meal-run support,
 followed by exactly one quieter current-program line. `By clock` and `By event`
 remain projections of that one selected identity; event selection emphasizes one
-whole meal run without changing its published population.
+whole meal run without changing its published population. The event view keeps the
+analysis generation out of rendered copy and lists each run's meal offsets as
+rounded whole minutes beneath its date, with the unit printed once per run.
 
 History has no recommendation row, stage control, Priority, chip, Plan entry, or
 navigation path to Plan. The surface reads server-owned identity, membership,

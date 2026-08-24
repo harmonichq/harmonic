@@ -81,6 +81,14 @@ finding that reorders the map:** persisting the artifact would carry the same
 98 seconds into every post-fetch recompute rather than removing it. The two scan
 fixes (#120, #121) land first; the durable boundary is built around what is left.
 
+### #121 exposure update — capture-scoped meal-suspend ownership
+
+On the same profile shape, the branch baseline was **98.20s**. After #121,
+the measured exposure preparation is **37.93s**. `classify_meal_owned_suspend`
+is no longer the leader (**4.41s** cumulative); the remaining leaders are
+`builtins.sorted`, `model.__init__`, `classify_carb_undercount`, and
+`classify_late_bolus`.
+
 ### The duplication the ticket flagged is real and small
 
 The findings case preparation rebuilds the analysis, the exposures and the

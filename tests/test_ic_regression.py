@@ -9,6 +9,8 @@ from ciq_autotune.admission import run_synthetic_bar
 from ciq_autotune.analyze import analyze
 from ciq_autotune.analyzers.ic import analyze_ic_blocks
 from ciq_autotune.analyzers.ic_regression import analyze_ic_blocks_fuzzy
+from ciq_autotune.events import CarbEntry, CgmReading
+from ciq_autotune.harm import HarmArm, PrintedLow
 from ciq_autotune.settings import Snapshot
 from ciq_autotune.store import Store
 from scripts.gen_estimator_truth import (
@@ -87,6 +89,57 @@ class FuzzyAdmissionTest(unittest.TestCase):
             self.assertTrue(eligibility["runs_floor_met"])
             self.assertEqual("collecting", block.state)
             self.assertFalse(block.asserts_move)
+
+    def test_rescue_carbs_belong_to_the_member_block_that_owns_them(self):
+        truth = deepcopy(chained_run_sets()[0])
+        current = [event for event in truth["events"]
+                   if event.t >= truth["analysis_start"]]
+        chained_day = min(
+            day for day in {event.t.date() for event in current}
+            if sum(event.t.date() == day for event in current) == 2
+        )
+        members = sorted(
+            (event for event in current if event.t.date() == chained_day),
+            key=lambda event: event.t,
+        )
+        owner = members[0]
+        rescue_t = owner.t + timedelta(hours=2)
+        truth["cgm_readings"].extend([
+            CgmReading(t=rescue_t + timedelta(minutes=offset), bg=bg)
+            for offset, bg in ((-5, 58.0), (0, 55.0), (5, 65.0))
+        ])
+        rescue = CarbEntry(
+            t=rescue_t, grams=25.0, certainty="estimate", source="manual",
+        )
+        low = PrintedLow(
+            t=rescue_t,
+            bg=55.0,
+            iob_u=2.0,
+            arm=HarmArm.IC,
+            dominant_bolus_t=owner.t,
+            dominant_bolus_carbs=owner.carbs,
+            attribution_reason="meal-bolus",
+        )
+
+        blocks = {
+            block.block_id: block
+            for block in self._blocks(
+                analyze_ic_blocks_fuzzy,
+                truth,
+                carb_entries=[rescue],
+                harm_lows=[low],
+                history_harm_lows=[low],
+            )
+        }
+
+        self.assertAlmostEqual(
+            8.15,
+            blocks[0].evidence["eligibility"]["fractional_run_ownership"],
+        )
+        self.assertAlmostEqual(
+            7.85,
+            blocks[720].evidence["eligibility"]["fractional_run_ownership"],
+        )
 
     def test_snapshot_regime_change_excludes_the_same_lone_run(self):
         truth = deepcopy(known_ratio_sets()[0])

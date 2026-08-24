@@ -40,7 +40,7 @@ from datetime import datetime, timedelta
 from typing import List, Optional
 
 from .analyzers.basal import analyze_basal, consolidate_profile
-from .analyzers.ic import BLOCK_WINDOW_DAYS, analyze_ic, analyze_ic_blocks
+from .analyzers.ic import BLOCK_WINDOW_DAYS, analyze_ic
 from .analyzers.ic_regression import analyze_ic_blocks_fuzzy
 from .analyzers.isf import analyze_isf
 from .epochs import (

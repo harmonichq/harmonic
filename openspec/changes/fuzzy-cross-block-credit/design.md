@@ -32,10 +32,10 @@ The information does not come from splitting a run. It comes from contrasting
 runs that own *different* shares of the same two blocks: two blocks' ratios are
 two unknowns, and enough chained runs at varied shares determine both.
 
-The candidate passed the entry bar and real-data bar. It therefore becomes the
-engine's block estimator: `analyze` defaults to it, and the browser fixtures are
-regenerated from it, so no committed artifact depicts an engine the app no longer
-runs. Bar outcomes: **pass**, **pass**.
+Bar outcomes: **pass**, **pass**. The admission decision therefore makes the
+candidate the engine's block estimator: `analyze` defaults to it, and the browser
+fixtures are regenerated from it, so no committed artifact depicts an engine the
+app no longer runs.
 
 `analyzers.ic.analyze_ic_blocks` stays as the admission ladder's incumbent
 reference and calibration baseline. Nothing on the serving path calls it.
@@ -78,10 +78,7 @@ show that a cross-block estimator used more evidence.
 The replay therefore reads “meals” as `evidence["eligibility"]["fit_meals"]`:
 member meals in the runs the numeric estimate actually consumed. Both estimators
 stamp that field, and the existing replay report meal fields carry the same
-reading. The real-data bar outcome under this reading was **pass**. The incumbent
-self-run also passed, so the harness was not vacuous. Per ADR 23, the morning
-block has no ledger reference and remains synthetic-bar-only. No number, count,
-block label, or window date from the local snapshot is recorded.
+reading. Real-data bar: **pass**.
 
 ## ADR 117 — Gate chained truth at the caller for cross-block candidates
 

@@ -2,13 +2,11 @@
 
 ## Why
 
-A meal run whose member meals were dosed in more than one carb-ratio block is
-information-free to the shipped engine: it enters no block's pool, on the
-identity argument that splitting one run's ratio pro rata just re-derives that
-same ratio. The argument is sound for per-run splitting, and it is why the
-morning block can watch meal after meal go by without its evidence pool ever
-filling — the breakfast that straddles the boundary is the common case, not the
-exception.
+Before this change, a meal run whose member meals were dosed in more than one
+I:C block was information-free to the whole-run incumbent: it entered no block's
+pool, on the identity argument that splitting one run's ratio pro rata just
+re-derived that same ratio. The argument is sound for per-run splitting, but it
+can leave a block's evidence pool unable to fill when meals cross a boundary.
 
 ADR 23 named fuzzy cross-block credit as the first candidate to answer that, and
 ADR 109 built the two bars a candidate must clear before it may be trusted. This
@@ -40,8 +38,8 @@ is that candidate, run through those bars.
   the withhold-only posture are all unchanged. What changes is how much evidence
   a block is allowed to count, not what it takes to assert a move.
 - A block whose evidence is entirely chained can now reach a numeric state and
-  become assertable. That is the intended consequence, and it is what the
-  starved morning block was waiting for.
+  become assertable. That is the intended consequence and closes the motivating
+  evidence gap.
 - No UI change, no new write path, no cache-invalidation surface, no new CI step
   beyond the existing drift checks.
 

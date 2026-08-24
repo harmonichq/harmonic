@@ -152,13 +152,13 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     fixed_flights: dict[tuple, None] = {}
     fixed_flights_lock = threading.Lock()
 
-    def fixed(key, marker, compute, *, dump=None, rebuild=None):
+    def fixed(key, marker, compute, *, dump=None, rebuild=None, serve_stale=True):
         """Return one exact fixed result, or a labeled exact predecessor in flight."""
         with fixed_flights_lock:
             owner = key not in fixed_flights
             if owner:
                 fixed_flights[key] = None
-        if not owner and not cache.contains(key):
+        if serve_stale and not owner and not cache.contains(key):
             prior = load_latest_prior(db_path, key, shape_marker=marker, rebuild=rebuild)
             if prior is not None:
                 return prior
@@ -185,11 +185,12 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             age["newest_covers_to"] = result.input_data_age.newest_covers_to
         return {**payload, "input_data_age": age}
 
-    def event_comparison_preparation():
+    def event_comparison_preparation(*, serve_stale=True):
         """One fixed-window source/classifier preparation per cache version."""
         return fixed(("event-comparison-preparation",), "event-comparison-v1",
                      lambda store: prepare_event_comparisons(store),
-                     dump=dump_event_comparison, rebuild=rebuild_event_comparison)
+                     dump=dump_event_comparison, rebuild=rebuild_event_comparison,
+                     serve_stale=serve_stale)
 
     def findings_products(window):
         """The canonical payloads every 30-day findings consumer projects from."""
@@ -201,9 +202,10 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         analysis = fixed(("analyze", window, False, True), "analyze-v1", lambda store: analyze(
             store, window_days=window, ignore_setting_changes=False,
             pool_agreeing_basal_regimes=True, carb_entries=store.carb_entries(),
-            prompt_responses=store.prompt_responses()).to_dict())
-        scenarios = fixed(("scenarios", window), "scenarios-v1", build_canonical_scenarios)
-        exposures = event_comparison_preparation().exposure_payload
+            prompt_responses=store.prompt_responses()).to_dict(), serve_stale=False).value
+        scenarios = fixed(("scenarios", window), "scenarios-v1", build_canonical_scenarios,
+                          serve_stale=False).value
+        exposures = event_comparison_preparation(serve_stale=False).value.exposure_payload
         return analysis, exposures, scenarios
 
     def recover_sidecar_projection(key, marker, value, project, reload):

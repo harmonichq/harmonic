@@ -7,7 +7,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import ciq_autotune.derived_artifacts as artifacts
-from ciq_autotune.derived_artifacts import load_or_compute, sidecar_path
+from ciq_autotune.derived_artifacts import load_latest_prior, load_or_compute, sidecar_path
 from ciq_autotune.store import Store
 
 
@@ -46,23 +46,135 @@ class DerivedArtifactsTest(unittest.TestCase):
         self.assertIsNone(second.input_data_age)
         self.assertEqual(second.covers_to, "2020-01-01 00:00:00")
 
-    def test_crossed_write_before_fresh_read_does_not_persist(self):
-        def compute(store):
-            with Store.open(self.tmp.name) as writer:
-                writer.upsert_cgm([{"EventDateTime": "2020-01-01 00:00:00", "Readings (CGM / BGM)": 100}])
-            return {"fresh": True}
-        self.assertEqual(self.load(compute), {"fresh": True})
-        with sqlite3.connect(sidecar_path(self.tmp.name)) as conn:
-            self.assertEqual(conn.execute("SELECT COUNT(*) FROM artifacts").fetchone()[0], 0)
+    def test_crossed_write_recomputes_before_returning_an_unlabeled_result(self):
         calls = []
-        self.assertEqual(self.load(lambda store: calls.append(1) or {"next": True}), {"next": True})
-        self.assertEqual(calls, [1])
+
+        def compute(store):
+            calls.append(store.input_data_revision())
+            if len(calls) == 1:
+                with Store.open(self.tmp.name) as writer:
+                    writer.upsert_cgm([{"EventDateTime": "2020-01-01 00:00:00", "Readings (CGM / BGM)": 100}])
+            return {"revision": store.input_data_revision()}
+
+        result = load_or_compute(
+            self.tmp.name, ("crossed",), compute,
+            shape_marker="test-v1", with_age=True)
+
+        self.assertEqual(calls, [0, 1])
+        self.assertEqual(result.value, {"revision": 1})
+        self.assertEqual(result.revision, 1)
+        self.assertIsNone(result.input_data_age)
+        with sqlite3.connect(sidecar_path(self.tmp.name)) as conn:
+            self.assertEqual(conn.execute(
+                "SELECT revision FROM artifacts WHERE coordinates=?",
+                (artifacts._canonical(("crossed",)),),
+            ).fetchone()[0], 1)
+
+    def test_continuously_crossed_revisions_fail_instead_of_returning_old_data(self):
+        calls = []
+
+        def compute(store):
+            calls.append(store.input_data_revision())
+            with Store.open(self.tmp.name) as writer:
+                writer.upsert_cgm([{
+                    "EventDateTime": f"2020-01-0{len(calls)} 00:00:00",
+                    "Readings (CGM / BGM)": 100 + len(calls),
+                }])
+            return {"revision": calls[-1]}
+
+        with self.assertRaisesRegex(RuntimeError, "input data changed"):
+            load_or_compute(
+                self.tmp.name, ("always-crossed",), compute,
+                shape_marker="test-v1", with_age=True)
+
+        self.assertEqual(calls, [0, 1, 2])
+
+    def test_crossed_exact_hit_recomputes_before_returning_unlabeled_data(self):
+        with Store.open(self.tmp.name) as store:
+            store.upsert_cgm([{"EventDateTime": "2020-01-01 00:00:00", "Readings (CGM / BGM)": 100}])
+        self.load(lambda store: {"revision": 1}, ("crossed-hit",))
+        rebuilt = []
+
+        def rebuild(value):
+            rebuilt.append(value)
+            with Store.open(self.tmp.name) as writer:
+                writer.upsert_cgm([{
+                    "EventDateTime": "2020-01-02 00:00:00",
+                    "Readings (CGM / BGM)": 101,
+                }])
+            return value
+
+        result = load_or_compute(
+            self.tmp.name, ("crossed-hit",),
+            lambda store: {"revision": store.input_data_revision()},
+            shape_marker="test-v1", rebuild=rebuild, with_age=True)
+
+        self.assertEqual(rebuilt, [{"revision": 1}])
+        self.assertEqual(result.value, {"revision": 2})
+        self.assertEqual(result.revision, 2)
+        self.assertIsNone(result.input_data_age)
 
     def test_corrupt_artifact_is_never_served(self):
         self.load(lambda store: {"good": True})
         with sqlite3.connect(sidecar_path(self.tmp.name)) as conn:
             conn.execute("UPDATE artifacts SET payload = '{bad'")
         self.assertEqual(self.load(lambda store: {"recomputed": True}), {"recomputed": True})
+
+    def test_altered_covers_to_invalidates_the_artifact(self):
+        with Store.open(self.tmp.name) as store:
+            store.upsert_cgm([{"EventDateTime": "2020-01-01 00:00:00", "Readings (CGM / BGM)": 100}])
+        first = load_or_compute(
+            self.tmp.name, ("horizon-integrity",), lambda store: {"old": True},
+            shape_marker="test-v1", with_age=True)
+        self.assertEqual(first.covers_to, "2020-01-01 00:00:00")
+        with sqlite3.connect(sidecar_path(self.tmp.name)) as conn:
+            conn.execute(
+                "UPDATE artifacts SET covers_to='2099-01-01 00:00:00' WHERE coordinates=?",
+                (artifacts._canonical(("horizon-integrity",)),),
+            )
+
+        second = load_or_compute(
+            self.tmp.name, ("horizon-integrity",), lambda store: {"recomputed": True},
+            shape_marker="test-v1", with_age=True)
+
+        self.assertEqual(second.value, {"recomputed": True})
+        self.assertEqual(second.covers_to, "2020-01-01 00:00:00")
+
+    def test_latest_prior_selects_against_one_current_revision_snapshot(self):
+        with Store.open(self.tmp.name) as store:
+            store.upsert_cgm([{"EventDateTime": "2020-01-01 00:00:00", "Readings (CGM / BGM)": 100}])
+        self.load(lambda store: {"revision": 1}, ("prior",))
+        with Store.open(self.tmp.name) as store:
+            store.upsert_cgm([{"EventDateTime": "2020-01-02 00:00:00", "Readings (CGM / BGM)": 101}])
+        self.load(lambda store: {"revision": 2}, ("prior",))
+
+        real_open = artifacts._open
+
+        class BumpOnClose:
+            def __init__(self, connection):
+                self.connection = connection
+
+            def __getattr__(self, name):
+                return getattr(self.connection, name)
+
+            def close(self):
+                self.connection.close()
+                with Store.open(self.tmp_name) as writer:
+                    writer.upsert_cgm([{
+                        "EventDateTime": "2020-01-03 00:00:00",
+                        "Readings (CGM / BGM)": 102,
+                    }])
+
+        BumpOnClose.tmp_name = self.tmp.name
+        with patch.object(artifacts, "_open",
+                          side_effect=lambda path: BumpOnClose(real_open(path))):
+            prior = load_latest_prior(
+                self.tmp.name, ("prior",), shape_marker="test-v1")
+
+        self.assertEqual(prior.value, {"revision": 2})
+        self.assertEqual(prior.revision, 2)
+        self.assertEqual(prior.input_data_age.newest_covers_to,
+                         "2020-01-03 00:00:00")
 
     def test_transient_lock_returns_fresh_without_deleting_sidecar(self):
         self.load(lambda store: {"old": True})
@@ -99,7 +211,8 @@ class DerivedArtifactsTest(unittest.TestCase):
         with sqlite3.connect(path) as conn:
             payload = '{"wrong":true}'
             conn.execute("UPDATE artifacts SET payload=?, digest=? WHERE coordinates=?",
-                         (payload, artifacts._digest(payload), artifacts._canonical(("shape",))))
+                         (payload, artifacts._digest(payload, None),
+                          artifacts._canonical(("shape",))))
         self.assertEqual(load_or_compute(
             self.tmp.name, ("shape",), lambda store: {"fresh": True},
             shape_marker="test-v1",
@@ -141,7 +254,7 @@ class DerivedArtifactsTest(unittest.TestCase):
 
     def test_layout_marker_change_misses(self):
         self.load(lambda store: {"first": True}, ("layout",))
-        with patch.object(artifacts, "DERIVED_ARTIFACT_STORE_SCHEMA_VERSION", 3):
+        with patch.object(artifacts, "DERIVED_ARTIFACT_STORE_SCHEMA_VERSION", 4):
             self.assertEqual(self.load(lambda store: {"second": True}, ("layout",)),
                              {"second": True})
 
@@ -160,14 +273,21 @@ class DerivedArtifactsTest(unittest.TestCase):
         with sqlite3.connect(path) as conn:
             self.assertEqual(conn.execute("SELECT COUNT(*) FROM artifacts").fetchone()[0], 1)
 
-    def test_write_after_fresh_read_persists_only_old_revision(self):
+    def test_write_before_persist_recomputes_the_new_revision(self):
+        wrote = False
+
         def write_after_read():
+            nonlocal wrote
+            if wrote:
+                return
+            wrote = True
             with Store.open(self.tmp.name) as writer:
                 writer.upsert_cgm([{"EventDateTime": "2020-01-02 00:00:00", "Readings (CGM / BGM)": 101}])
 
         self.assertEqual(load_or_compute(
-            self.tmp.name, ("late",), lambda store: {"old": True},
-            shape_marker="test-v1", before_persist=write_after_read), {"old": True})
+            self.tmp.name, ("late",), lambda store: {"revision": store.input_data_revision()},
+            shape_marker="test-v1", before_persist=write_after_read), {"revision": 1})
         calls = []
-        self.assertEqual(self.load(lambda store: calls.append(1) or {"new": True}, ("late",)), {"new": True})
-        self.assertEqual(calls, [1])
+        self.assertEqual(self.load(lambda store: calls.append(1) or {"wrong": True}, ("late",)),
+                         {"revision": 1})
+        self.assertEqual(calls, [])

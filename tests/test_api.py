@@ -31,7 +31,13 @@ except ImportError:  # pragma: no cover
     _HAS_TCONNECTSYNC = False
 
 from ciq_autotune.result import SCHEMA_VERSION
-from ciq_autotune.derived_artifacts import _canonical, _digest, sidecar_path, source_fingerprint
+from ciq_autotune.derived_artifacts import (
+    DERIVED_ARTIFACT_STORE_SCHEMA_VERSION,
+    _canonical,
+    _digest,
+    sidecar_path,
+    source_fingerprint,
+)
 from ciq_autotune.settings import parse_pump_settings
 from ciq_autotune.store import Store
 
@@ -837,12 +843,18 @@ class DurableArtifactApiTest(unittest.TestCase):
                 }],
             },
         }, separators=(",", ":"))
-        marker = _canonical(("event-comparison-v1", 2, source_fingerprint()))
+        marker = _canonical(("event-comparison-v1",
+                             DERIVED_ARTIFACT_STORE_SCHEMA_VERSION,
+                             source_fingerprint()))
         with Store.open_queryonly(self.tmp.name) as store:
             revision = store.input_data_revision()
         with sqlite3.connect(sidecar_path(self.tmp.name)) as sidecar:
+            covers_to = sidecar.execute(
+                "SELECT covers_to FROM artifacts WHERE revision=? AND coordinates=? AND marker=?",
+                (revision, _canonical(("event-comparison-preparation",)), marker),
+            ).fetchone()[0]
             sidecar.execute("UPDATE artifacts SET payload=?, digest=? WHERE revision=? AND coordinates=? AND marker=?",
-                            (payload, _digest(payload), revision,
+                            (payload, _digest(payload, covers_to), revision,
                              _canonical(("event-comparison-preparation",)), marker))
         import ciq_autotune.api as api_mod
         real = api_mod.prepare_event_comparisons

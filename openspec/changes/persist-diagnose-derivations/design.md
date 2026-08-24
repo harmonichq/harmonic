@@ -263,10 +263,23 @@ hot; registry presence alone never replaces a current result with its predecesso
 Each sidecar row stores `covers_to`, the maximum CGM/basal timestamp read from
 the query-only snapshot before its computation starts. The schema version
 advances with this column, so an older sidecar cannot masquerade as labeled.
+The row digest covers both the payload and `covers_to`; altered horizon metadata
+is a cache miss, never a forged fresh-looking result. Selecting a stale artifact
+reads the current primary revision, newest primary horizon and attached sidecar
+predecessor in one SQLite statement, so a fetch cannot split the revision bound
+from the row selected under it.
+
+A computation crossed by a primary revision change is retried from a new pinned
+snapshot before anything is returned or admitted to `ResultCache`. After three
+continuously crossed snapshots it fails explicitly. The boundary therefore never
+returns old-revision bytes as an unlabeled current result, including when the
+fresh-revision proof itself cannot be read.
+
 The API projects fixed results through one adapter which appends optional
 top-level `input_data_age` after the endpoint's normal projection. Its fields
 are the old revision, `covers_to`, and optional newest input horizon. Findings
-and history retain their generation-sensitive path and do not stale-serve.
+and history retain their generation-sensitive path and do not stale-serve; their
+shared canonical builders explicitly unwrap the fixed-result envelope.
 
 Diagnose records that backend fact per incoming shape before assignment. A
 fresh replacement clears only its own age; a full reload resets all shape ages.

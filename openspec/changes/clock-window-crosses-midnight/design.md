@@ -27,7 +27,9 @@ read a shaded overnight window whose numbers described something else. Harmonic'
 output is advisory insulin-dosing guidance.
 
 **Decision.** A clock window is a scope on a circular day. It has exactly two clock
-endpoints and midnight is never one of them, however many stretches are drawn for it.
+endpoints, and a window that genuinely wraps puts neither of them at midnight, however
+many stretches are drawn for it. Midnight remains an ordinary endpoint for a window
+that merely ends there.
 
 - **One span derivation, two conventions, one home.** A window's linear spans are
   derived inside the chart module from the same `[startMin, endMin]` pair its functions

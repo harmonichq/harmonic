@@ -17,8 +17,9 @@ story, never through a hand-set fixture flag.
 - [x] The unwrapped path returns exactly what it returned before, pinned by test: an
       earlier attempt to unify the sampling and drawing conventions shortened every
       unwrapped band by one bin.
-- [x] Degenerate windows are safe: a window with no extent draws no highlight rather
-      than throwing, and no span endpoint indexes outside the axis.
+- [x] Degenerate windows are safe: a window with no extent draws no highlight and
+      reports an empty sample rather than throwing, and no span endpoint indexes
+      outside the axis.
 
 ## 2. The unrolling gesture, the brace it draws, and its browser evidence
 

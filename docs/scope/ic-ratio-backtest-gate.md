@@ -78,6 +78,7 @@
   invisible under today's rule once the block was reprogrammed away.
 - Even under C nothing asserts today: the current evening 5.6 pool is 7 runs (floor 8);
   first possible assert ≈ one more week of data.
+  *Resolved 2026-08-23 — the pool has since passed the floor; see Outcome.*
 - First Sol pass hand-rolled a 3-condition predicate and false-fired 3 asserts;
   caught at coordinator verification, fixed by wiring the engine's own eligibility
   path. Lesson: the sweep must read `IcBlock.asserts_move`, never re-derive.
@@ -120,6 +121,11 @@
   the ledger was never shown to beat the incumbent or programmed-as-is, because nothing was
   scoreable. Counterfactual method: match-only was the method used, and it scored nothing;
   analytic rescaling stays out of bounds.
+- The eight-run floor question above has resolved: the current-era evening block now
+  passes it, measured through the engine's own stamped eligibility during the #109
+  admission-bar calibration. The 2026-08-18 reading of 7 runs was accurate on its date
+  and is left standing as history; what it predicted has happened, so nothing in this
+  note should be read as saying the block is still short of the floor.
 - The binding constraint is holding one ratio steady. Ratio churn starves every pool, so no
   scoring rule recovers evidence the history does not contain.
 

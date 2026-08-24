@@ -1,4 +1,12 @@
-"""Candidate cross-block I:C estimator for synthetic admission and replay."""
+"""The shipped cross-block I:C estimator: fractional block credit by carb share.
+
+Admitted through the #109 ladder (ADR 117). A meal run whose member meals were
+dosed in more than one block is information-free to the whole-run estimator in
+`ic.py`; here every run, lone or chained, enters one weighted fit of inverse
+ratios on carb share, and each block reads its ratio off the fitted mixture.
+`ic.analyze_ic_blocks` remains the ladder's incumbent reference and is what the
+admission harnesses replay against; nothing else calls it.
+"""
 
 from __future__ import annotations
 

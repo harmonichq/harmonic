@@ -30,8 +30,8 @@ from ciq_autotune.analyzers.ic import (  # noqa: E402
     BLOCK_WINDOW_DAYS,
     IcConfig,
     analyze_ic,
-    analyze_ic_blocks,
 )
+from ciq_autotune.analyzers.ic_regression import analyze_ic_blocks_fuzzy  # noqa: E402
 from ciq_autotune.analyzers.tuning_priority import (  # noqa: E402
     ic_headline_block,
     ic_lever,
@@ -50,7 +50,7 @@ def meal(day, hour, carbs, dose, ratio=None, minute=0):
 
 
 def build(segments, events, *, observed_days=BLOCK_WINDOW_DAYS):
-    blocks, runs = analyze_ic_blocks(
+    blocks, runs = analyze_ic_blocks_fuzzy(
         events, segments, config=IcConfig(), observed_days=observed_days)
     priced = price_ic_blocks(blocks)
     lever = ic_lever(priced)

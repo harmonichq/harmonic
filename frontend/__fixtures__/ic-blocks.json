@@ -966,7 +966,7 @@
       "confidence": 0.8,
       "hi": 4.2857,
       "lo": 4.2857,
-      "method": "bootstrap-pooled-ratio-clustered",
+      "method": "bootstrap-inverse-ratio-wls-clustered",
       "n": 24,
       "value": 4.2857,
       "wide": false
@@ -974,9 +974,9 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": true,
-       "effective_run_count": 24.0,
-       "fit_meals": 24,
-       "fractional_run_ownership": 0.0,
+       "effective_run_count": 24,
+       "fit_meals": 48,
+       "fractional_run_ownership": 0,
        "n_runs": 24,
        "names_a_move": true,
        "regime_supported": true,
@@ -1676,7 +1676,7 @@
       "confidence": 0.8,
       "hi": 3.0,
       "lo": 3.0,
-      "method": "bootstrap-pooled-ratio-clustered",
+      "method": "bootstrap-inverse-ratio-wls-clustered",
       "n": 24,
       "value": 3.0,
       "wide": false
@@ -1684,9 +1684,9 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": true,
-       "effective_run_count": 24.0,
-       "fit_meals": 24,
-       "fractional_run_ownership": 0.0,
+       "effective_run_count": 24,
+       "fit_meals": 48,
+       "fractional_run_ownership": 0,
        "n_runs": 24,
        "names_a_move": true,
        "regime_supported": true,
@@ -2395,9 +2395,9 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": false,
-       "effective_run_count": 0.0,
+       "effective_run_count": 0,
        "fit_meals": 0,
-       "fractional_run_ownership": 0.0,
+       "fractional_run_ownership": 0,
        "n_runs": 0,
        "names_a_move": false,
        "regime_supported": false,
@@ -3336,7 +3336,7 @@
       "confidence": 0.8,
       "hi": 5.0,
       "lo": 5.0,
-      "method": "bootstrap-pooled-ratio-clustered",
+      "method": "bootstrap-inverse-ratio-wls-clustered",
       "n": 24,
       "value": 5.0,
       "wide": false
@@ -3344,9 +3344,9 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": false,
-       "effective_run_count": 24.0,
-       "fit_meals": 24,
-       "fractional_run_ownership": 0.0,
+       "effective_run_count": 24,
+       "fit_meals": 48,
+       "fractional_run_ownership": 0,
        "n_runs": 24,
        "names_a_move": false,
        "regime_supported": false,
@@ -4044,7 +4044,7 @@
       "confidence": 0.8,
       "hi": 6.0,
       "lo": 6.0,
-      "method": "bootstrap-pooled-ratio-clustered",
+      "method": "bootstrap-inverse-ratio-wls-clustered",
       "n": 24,
       "value": 6.0,
       "wide": false
@@ -4052,9 +4052,9 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": false,
-       "effective_run_count": 24.0,
-       "fit_meals": 24,
-       "fractional_run_ownership": 0.0,
+       "effective_run_count": 24,
+       "fit_meals": 48,
+       "fractional_run_ownership": 0,
        "n_runs": 24,
        "names_a_move": false,
        "regime_supported": false,
@@ -4956,9 +4956,9 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": false,
-       "effective_run_count": 0.0,
+       "effective_run_count": 0,
        "fit_meals": 0,
-       "fractional_run_ownership": 0.0,
+       "fractional_run_ownership": 0,
        "n_runs": 0,
        "names_a_move": false,
        "regime_supported": false,
@@ -5029,9 +5029,9 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": false,
-       "effective_run_count": 0.0,
+       "effective_run_count": 0,
        "fit_meals": 0,
-       "fractional_run_ownership": 0.0,
+       "fractional_run_ownership": 0,
        "n_runs": 0,
        "names_a_move": false,
        "regime_supported": false,
@@ -5103,9 +5103,9 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": false,
-       "effective_run_count": 0.0,
+       "effective_run_count": 0,
        "fit_meals": 0,
-       "fractional_run_ownership": 0.0,
+       "fractional_run_ownership": 0,
        "n_runs": 0,
        "names_a_move": false,
        "regime_supported": false,
@@ -6060,7 +6060,7 @@
       "confidence": 0.8,
       "hi": 5.0,
       "lo": 5.0,
-      "method": "bootstrap-pooled-ratio-clustered",
+      "method": "bootstrap-inverse-ratio-wls-clustered",
       "n": 24,
       "value": 5.0,
       "wide": false
@@ -6068,9 +6068,9 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": false,
-       "effective_run_count": 24.0,
-       "fit_meals": 24,
-       "fractional_run_ownership": 0.0,
+       "effective_run_count": 24,
+       "fit_meals": 49,
+       "fractional_run_ownership": 0,
        "n_runs": 24,
        "names_a_move": false,
        "regime_supported": false,
@@ -6766,9 +6766,9 @@
      "end_min": 1440,
      "estimate": {
       "confidence": 0.8,
-      "hi": 5.1713,
-      "lo": 5.0473,
-      "method": "bootstrap-pooled-ratio-clustered",
+      "hi": 5.1892,
+      "lo": 5.0625,
+      "method": "bootstrap-inverse-ratio-wls-clustered",
       "n": 25,
       "value": 5.1207,
       "wide": false
@@ -6776,9 +6776,9 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": true,
-       "effective_run_count": 25.0,
-       "fit_meals": 25,
-       "fractional_run_ownership": 0.0,
+       "effective_run_count": 25,
+       "fit_meals": 49,
+       "fractional_run_ownership": 0,
        "n_runs": 25,
        "names_a_move": true,
        "regime_supported": false,
@@ -7476,8 +7476,8 @@
      },
      "regime": {
       "full": {
-       "hi": 5.1713,
-       "lo": 5.0473,
+       "hi": 5.1892,
+       "lo": 5.0625,
        "value": 5.1207
       },
       "n_runs_on_regime": 5,
@@ -8381,7 +8381,7 @@
        "confidence": 0.8,
        "hi": 4.2522,
        "lo": 4.1613,
-       "method": "bootstrap-pooled-ratio-clustered",
+       "method": "bootstrap-inverse-ratio-wls-clustered",
        "n": 48,
        "value": 4.2,
        "wide": false
@@ -8389,9 +8389,9 @@
       "evidence": {
        "eligibility": {
         "band_excludes_programmed": true,
-        "effective_run_count": 48.0,
+        "effective_run_count": 48,
         "fit_meals": 48,
-        "fractional_run_ownership": 0.0,
+        "fractional_run_ownership": 0,
         "n_runs": 48,
         "names_a_move": true,
         "regime_supported": false,
@@ -10603,7 +10603,7 @@
        "confidence": 0.8,
        "hi": 4.0,
        "lo": 4.0,
-       "method": "bootstrap-pooled-ratio-clustered",
+       "method": "bootstrap-inverse-ratio-wls-clustered",
        "n": 24,
        "value": 4.0,
        "wide": false
@@ -10611,9 +10611,9 @@
       "evidence": {
        "eligibility": {
         "band_excludes_programmed": true,
-        "effective_run_count": 24.0,
-        "fit_meals": 24,
-        "fractional_run_ownership": 0.0,
+        "effective_run_count": 24,
+        "fit_meals": 48,
+        "fractional_run_ownership": 0,
         "n_runs": 24,
         "names_a_move": true,
         "regime_supported": true,
@@ -11313,7 +11313,7 @@
        "confidence": 0.8,
        "hi": 4.5,
        "lo": 4.5,
-       "method": "bootstrap-pooled-ratio-clustered",
+       "method": "bootstrap-inverse-ratio-wls-clustered",
        "n": 24,
        "value": 4.5,
        "wide": false
@@ -11321,9 +11321,9 @@
       "evidence": {
        "eligibility": {
         "band_excludes_programmed": false,
-        "effective_run_count": 24.0,
-        "fit_meals": 24,
-        "fractional_run_ownership": 0.0,
+        "effective_run_count": 24,
+        "fit_meals": 48,
+        "fractional_run_ownership": 0,
         "n_runs": 24,
         "names_a_move": false,
         "regime_supported": false,
@@ -12771,18 +12771,18 @@
       "confidence": 0.8,
       "hi": 5.0,
       "lo": 5.0,
-      "method": "bootstrap-pooled-ratio-clustered",
-      "n": 4,
+      "method": "bootstrap-inverse-ratio-wls-clustered",
+      "n": 12,
       "value": 5.0,
       "wide": false
      },
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": true,
-       "effective_run_count": 4.0,
-       "fit_meals": 4,
-       "fractional_run_ownership": 0.0,
-       "n_runs": 4,
+       "effective_run_count": 6.833333,
+       "fit_meals": 44,
+       "fractional_run_ownership": 2.833333,
+       "n_runs": 6,
        "names_a_move": true,
        "regime_supported": true,
        "runs_floor": 8,
@@ -12949,8 +12949,8 @@
        "low_days": 0,
        "measurement_asserts": true,
        "rescue_days": 0,
-       "side_k": 4,
-       "side_n": 4,
+       "side_k": 12,
+       "side_n": 12,
        "window_days": 90
       },
       "runs": [
@@ -12970,6 +12970,20 @@
        },
        {
         "bg_outcome_u": null,
+        "carbs": 120.0,
+        "directional_only": false,
+        "effective_insulin": 24.0,
+        "end_t": "2026-03-01T11:00:00",
+        "in_pool": true,
+        "n_meals": 2,
+        "outcome_bg": null,
+        "run_id": "2026-03-01T06:00:00",
+        "start_bg": null,
+        "t": "2026-03-01T06:00:00",
+        "true_ic": 5.0
+       },
+       {
+        "bg_outcome_u": null,
         "carbs": 60.0,
         "directional_only": false,
         "effective_insulin": 12.0,
@@ -12981,6 +12995,20 @@
         "start_bg": null,
         "t": "2026-03-02T00:30:00",
         "true_ic": 5.0
+       },
+       {
+        "bg_outcome_u": null,
+        "carbs": 180.0,
+        "directional_only": false,
+        "effective_insulin": 44.0,
+        "end_t": "2026-03-02T11:00:00",
+        "in_pool": true,
+        "n_meals": 3,
+        "outcome_bg": null,
+        "run_id": "2026-03-02T06:00:00",
+        "start_bg": null,
+        "t": "2026-03-02T06:00:00",
+        "true_ic": 4.091
        },
        {
         "bg_outcome_u": null,
@@ -12998,6 +13026,20 @@
        },
        {
         "bg_outcome_u": null,
+        "carbs": 180.0,
+        "directional_only": false,
+        "effective_insulin": 44.0,
+        "end_t": "2026-03-03T11:00:00",
+        "in_pool": true,
+        "n_meals": 3,
+        "outcome_bg": null,
+        "run_id": "2026-03-03T06:00:00",
+        "start_bg": null,
+        "t": "2026-03-03T06:00:00",
+        "true_ic": 4.091
+       },
+       {
+        "bg_outcome_u": null,
         "carbs": 60.0,
         "directional_only": false,
         "effective_insulin": 12.0,
@@ -13009,6 +13051,76 @@
         "start_bg": null,
         "t": "2026-03-04T00:30:00",
         "true_ic": 5.0
+       },
+       {
+        "bg_outcome_u": null,
+        "carbs": 180.0,
+        "directional_only": false,
+        "effective_insulin": 44.0,
+        "end_t": "2026-03-04T11:00:00",
+        "in_pool": true,
+        "n_meals": 3,
+        "outcome_bg": null,
+        "run_id": "2026-03-04T06:00:00",
+        "start_bg": null,
+        "t": "2026-03-04T06:00:00",
+        "true_ic": 4.091
+       },
+       {
+        "bg_outcome_u": null,
+        "carbs": 180.0,
+        "directional_only": false,
+        "effective_insulin": 44.0,
+        "end_t": "2026-03-05T11:00:00",
+        "in_pool": true,
+        "n_meals": 3,
+        "outcome_bg": null,
+        "run_id": "2026-03-05T06:00:00",
+        "start_bg": null,
+        "t": "2026-03-05T06:00:00",
+        "true_ic": 4.091
+       },
+       {
+        "bg_outcome_u": null,
+        "carbs": 180.0,
+        "directional_only": false,
+        "effective_insulin": 44.0,
+        "end_t": "2026-03-06T11:00:00",
+        "in_pool": true,
+        "n_meals": 3,
+        "outcome_bg": null,
+        "run_id": "2026-03-06T06:00:00",
+        "start_bg": null,
+        "t": "2026-03-06T06:00:00",
+        "true_ic": 4.091
+       },
+       {
+        "bg_outcome_u": null,
+        "carbs": 180.0,
+        "directional_only": false,
+        "effective_insulin": 44.0,
+        "end_t": "2026-03-07T11:00:00",
+        "in_pool": true,
+        "n_meals": 3,
+        "outcome_bg": null,
+        "run_id": "2026-03-07T06:00:00",
+        "start_bg": null,
+        "t": "2026-03-07T06:00:00",
+        "true_ic": 4.091
+       },
+       {
+        "bg_outcome_u": null,
+        "carbs": 180.0,
+        "directional_only": false,
+        "effective_insulin": 44.0,
+        "end_t": "2026-03-08T11:00:00",
+        "in_pool": true,
+        "n_meals": 3,
+        "outcome_bg": null,
+        "run_id": "2026-03-08T06:00:00",
+        "start_bg": null,
+        "t": "2026-03-08T06:00:00",
+        "true_ic": 4.091
        }
       ]
      },
@@ -13021,7 +13133,7 @@
       180
      ],
      "n_meals": 12,
-     "n_runs": 4,
+     "n_runs": 6,
      "priority": 0,
      "recommended": 5.0,
      "recurrence": 0.0,
@@ -13034,7 +13146,7 @@
        "lo": 5.0,
        "value": 5.0
       },
-      "n_runs_on_regime": 4,
+      "n_runs_on_regime": 12,
       "on_regime": {
        "value": 5.0
       },
@@ -13057,18 +13169,18 @@
       "confidence": 0.8,
       "hi": 3.0,
       "lo": 3.0,
-      "method": "bootstrap-pooled-ratio-clustered",
-      "n": 17,
+      "method": "bootstrap-inverse-ratio-wls-clustered",
+      "n": 24,
       "value": 3.0,
       "wide": false
      },
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": true,
-       "effective_run_count": 17.0,
-       "fit_meals": 17,
-       "fractional_run_ownership": 0.0,
-       "n_runs": 17,
+       "effective_run_count": 19.333333,
+       "fit_meals": 44,
+       "fractional_run_ownership": 2.333333,
+       "n_runs": 19,
        "names_a_move": true,
        "regime_supported": true,
        "runs_floor": 8,
@@ -13380,10 +13492,108 @@
        "measurement_asserts": true,
        "rescue_days": 0,
        "side_k": 17,
-       "side_n": 17,
+       "side_n": 24,
        "window_days": 90
       },
       "runs": [
+       {
+        "bg_outcome_u": null,
+        "carbs": 180.0,
+        "directional_only": false,
+        "effective_insulin": 44.0,
+        "end_t": "2026-03-02T11:00:00",
+        "in_pool": true,
+        "n_meals": 3,
+        "outcome_bg": null,
+        "run_id": "2026-03-02T06:00:00",
+        "start_bg": null,
+        "t": "2026-03-02T06:00:00",
+        "true_ic": 4.091
+       },
+       {
+        "bg_outcome_u": null,
+        "carbs": 180.0,
+        "directional_only": false,
+        "effective_insulin": 44.0,
+        "end_t": "2026-03-03T11:00:00",
+        "in_pool": true,
+        "n_meals": 3,
+        "outcome_bg": null,
+        "run_id": "2026-03-03T06:00:00",
+        "start_bg": null,
+        "t": "2026-03-03T06:00:00",
+        "true_ic": 4.091
+       },
+       {
+        "bg_outcome_u": null,
+        "carbs": 180.0,
+        "directional_only": false,
+        "effective_insulin": 44.0,
+        "end_t": "2026-03-04T11:00:00",
+        "in_pool": true,
+        "n_meals": 3,
+        "outcome_bg": null,
+        "run_id": "2026-03-04T06:00:00",
+        "start_bg": null,
+        "t": "2026-03-04T06:00:00",
+        "true_ic": 4.091
+       },
+       {
+        "bg_outcome_u": null,
+        "carbs": 180.0,
+        "directional_only": false,
+        "effective_insulin": 44.0,
+        "end_t": "2026-03-05T11:00:00",
+        "in_pool": true,
+        "n_meals": 3,
+        "outcome_bg": null,
+        "run_id": "2026-03-05T06:00:00",
+        "start_bg": null,
+        "t": "2026-03-05T06:00:00",
+        "true_ic": 4.091
+       },
+       {
+        "bg_outcome_u": null,
+        "carbs": 180.0,
+        "directional_only": false,
+        "effective_insulin": 44.0,
+        "end_t": "2026-03-06T11:00:00",
+        "in_pool": true,
+        "n_meals": 3,
+        "outcome_bg": null,
+        "run_id": "2026-03-06T06:00:00",
+        "start_bg": null,
+        "t": "2026-03-06T06:00:00",
+        "true_ic": 4.091
+       },
+       {
+        "bg_outcome_u": null,
+        "carbs": 180.0,
+        "directional_only": false,
+        "effective_insulin": 44.0,
+        "end_t": "2026-03-07T11:00:00",
+        "in_pool": true,
+        "n_meals": 3,
+        "outcome_bg": null,
+        "run_id": "2026-03-07T06:00:00",
+        "start_bg": null,
+        "t": "2026-03-07T06:00:00",
+        "true_ic": 4.091
+       },
+       {
+        "bg_outcome_u": null,
+        "carbs": 180.0,
+        "directional_only": false,
+        "effective_insulin": 44.0,
+        "end_t": "2026-03-08T11:00:00",
+        "in_pool": true,
+        "n_meals": 3,
+        "outcome_bg": null,
+        "run_id": "2026-03-08T06:00:00",
+        "start_bg": null,
+        "t": "2026-03-08T06:00:00",
+        "true_ic": 4.091
+       },
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
@@ -13633,14 +13843,14 @@
       570
      ],
      "n_meals": 24,
-     "n_runs": 17,
-     "priority": 72,
+     "n_runs": 19,
+     "priority": 58,
      "recommended": 3.5,
-     "recurrence": 0.9119,
+     "recurrence": 0.5792,
      "recurrence_channel": {
       "k": 17,
       "kind": "ic_runs",
-      "n": 17
+      "n": 24
      },
      "regime": {
       "full": {
@@ -13648,7 +13858,7 @@
        "lo": 3.0,
        "value": 3.0
       },
-      "n_runs_on_regime": 17,
+      "n_runs_on_regime": 24,
       "on_regime": {
        "value": 3.0
       },
@@ -13668,20 +13878,20 @@
      "end_min": 720,
      "estimate": {
       "confidence": 0.8,
-      "hi": null,
-      "lo": null,
-      "method": "none",
-      "n": 0,
-      "value": null,
-      "wide": true
+      "hi": 5.0,
+      "lo": 5.0,
+      "method": "bootstrap-inverse-ratio-wls-clustered",
+      "n": 8,
+      "value": 5.0,
+      "wide": false
      },
      "evidence": {
       "eligibility": {
-       "band_excludes_programmed": false,
-       "effective_run_count": 0.0,
-       "fit_meals": 0,
-       "fractional_run_ownership": 0.0,
-       "n_runs": 0,
+       "band_excludes_programmed": true,
+       "effective_run_count": 2.833333,
+       "fit_meals": 44,
+       "fractional_run_ownership": 2.833333,
+       "n_runs": 2,
        "names_a_move": false,
        "regime_supported": false,
        "runs_floor": 8,
@@ -13798,13 +14008,126 @@
       },
       "recurrence_channels": {
        "low_days": 0,
-       "measurement_asserts": false,
+       "measurement_asserts": true,
        "rescue_days": 0,
        "side_k": 0,
        "side_n": 0,
        "window_days": 90
       },
-      "runs": []
+      "runs": [
+       {
+        "bg_outcome_u": null,
+        "carbs": 120.0,
+        "directional_only": false,
+        "effective_insulin": 24.0,
+        "end_t": "2026-03-01T11:00:00",
+        "in_pool": true,
+        "n_meals": 2,
+        "outcome_bg": null,
+        "run_id": "2026-03-01T06:00:00",
+        "start_bg": null,
+        "t": "2026-03-01T06:00:00",
+        "true_ic": 5.0
+       },
+       {
+        "bg_outcome_u": null,
+        "carbs": 180.0,
+        "directional_only": false,
+        "effective_insulin": 44.0,
+        "end_t": "2026-03-02T11:00:00",
+        "in_pool": true,
+        "n_meals": 3,
+        "outcome_bg": null,
+        "run_id": "2026-03-02T06:00:00",
+        "start_bg": null,
+        "t": "2026-03-02T06:00:00",
+        "true_ic": 4.091
+       },
+       {
+        "bg_outcome_u": null,
+        "carbs": 180.0,
+        "directional_only": false,
+        "effective_insulin": 44.0,
+        "end_t": "2026-03-03T11:00:00",
+        "in_pool": true,
+        "n_meals": 3,
+        "outcome_bg": null,
+        "run_id": "2026-03-03T06:00:00",
+        "start_bg": null,
+        "t": "2026-03-03T06:00:00",
+        "true_ic": 4.091
+       },
+       {
+        "bg_outcome_u": null,
+        "carbs": 180.0,
+        "directional_only": false,
+        "effective_insulin": 44.0,
+        "end_t": "2026-03-04T11:00:00",
+        "in_pool": true,
+        "n_meals": 3,
+        "outcome_bg": null,
+        "run_id": "2026-03-04T06:00:00",
+        "start_bg": null,
+        "t": "2026-03-04T06:00:00",
+        "true_ic": 4.091
+       },
+       {
+        "bg_outcome_u": null,
+        "carbs": 180.0,
+        "directional_only": false,
+        "effective_insulin": 44.0,
+        "end_t": "2026-03-05T11:00:00",
+        "in_pool": true,
+        "n_meals": 3,
+        "outcome_bg": null,
+        "run_id": "2026-03-05T06:00:00",
+        "start_bg": null,
+        "t": "2026-03-05T06:00:00",
+        "true_ic": 4.091
+       },
+       {
+        "bg_outcome_u": null,
+        "carbs": 180.0,
+        "directional_only": false,
+        "effective_insulin": 44.0,
+        "end_t": "2026-03-06T11:00:00",
+        "in_pool": true,
+        "n_meals": 3,
+        "outcome_bg": null,
+        "run_id": "2026-03-06T06:00:00",
+        "start_bg": null,
+        "t": "2026-03-06T06:00:00",
+        "true_ic": 4.091
+       },
+       {
+        "bg_outcome_u": null,
+        "carbs": 180.0,
+        "directional_only": false,
+        "effective_insulin": 44.0,
+        "end_t": "2026-03-07T11:00:00",
+        "in_pool": true,
+        "n_meals": 3,
+        "outcome_bg": null,
+        "run_id": "2026-03-07T06:00:00",
+        "start_bg": null,
+        "t": "2026-03-07T06:00:00",
+        "true_ic": 4.091
+       },
+       {
+        "bg_outcome_u": null,
+        "carbs": 180.0,
+        "directional_only": false,
+        "effective_insulin": 44.0,
+        "end_t": "2026-03-08T11:00:00",
+        "in_pool": true,
+        "n_meals": 3,
+        "outcome_bg": null,
+        "run_id": "2026-03-08T06:00:00",
+        "start_bg": null,
+        "t": "2026-03-08T06:00:00",
+        "true_ic": 4.091
+       }
+      ]
      },
      "harm": {},
      "held_reason": null,
@@ -13814,7 +14137,7 @@
       660
      ],
      "n_meals": 8,
-     "n_runs": 0,
+     "n_runs": 2,
      "priority": 0,
      "recommended": null,
      "recurrence": 0.0,
@@ -13848,9 +14171,9 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": false,
-       "effective_run_count": 0.0,
+       "effective_run_count": 0,
        "fit_meals": 0,
-       "fractional_run_ownership": 0.0,
+       "fractional_run_ownership": 0,
        "n_runs": 0,
        "names_a_move": false,
        "regime_supported": false,
@@ -13906,12 +14229,12 @@
      "impact": 0.5714,
      "impact_u_day": 0.5714,
      "parameter": "carb_ratio",
-     "priority": 72,
-     "recurrence": 0.9119,
+     "priority": 58,
+     "recurrence": 0.5792,
      "recurrence_channel": {
       "k": 17,
       "kind": "ic_runs",
-      "n": 17
+      "n": 24
      },
      "title": "Carb ratio (I:C)"
     }
@@ -14878,7 +15201,7 @@
       "confidence": 0.8,
       "hi": 4.2857,
       "lo": 4.2857,
-      "method": "bootstrap-pooled-ratio-clustered",
+      "method": "bootstrap-inverse-ratio-wls-clustered",
       "n": 24,
       "value": 4.2857,
       "wide": false
@@ -14886,9 +15209,9 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": true,
-       "effective_run_count": 24.0,
-       "fit_meals": 24,
-       "fractional_run_ownership": 0.0,
+       "effective_run_count": 24,
+       "fit_meals": 48,
+       "fractional_run_ownership": 0,
        "n_runs": 24,
        "names_a_move": true,
        "regime_supported": true,
@@ -15589,7 +15912,7 @@
       "confidence": 0.8,
       "hi": 3.0,
       "lo": 3.0,
-      "method": "bootstrap-pooled-ratio-clustered",
+      "method": "bootstrap-inverse-ratio-wls-clustered",
       "n": 24,
       "value": 3.0,
       "wide": false
@@ -15597,9 +15920,9 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": true,
-       "effective_run_count": 24.0,
-       "fit_meals": 24,
-       "fractional_run_ownership": 0.0,
+       "effective_run_count": 24,
+       "fit_meals": 48,
+       "fractional_run_ownership": 0,
        "n_runs": 24,
        "names_a_move": true,
        "regime_supported": true,
@@ -16310,9 +16633,9 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": false,
-       "effective_run_count": 0.0,
+       "effective_run_count": 0,
        "fit_meals": 0,
-       "fractional_run_ownership": 0.0,
+       "fractional_run_ownership": 0,
        "n_runs": 0,
        "names_a_move": false,
        "regime_supported": false,

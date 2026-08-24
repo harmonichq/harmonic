@@ -42,7 +42,6 @@ from ciq_autotune.analyzers.classifiers.evidence import (  # noqa: E402
 )
 from ciq_autotune.analyzers.ic import (  # noqa: E402
     IcConfig,
-    analyze_ic_blocks,
 )
 from ciq_autotune.analyzers.isf import (  # noqa: E402
     IsfChannels,
@@ -57,6 +56,7 @@ from ciq_autotune.analyzers.scenario.payload import (  # noqa: E402
     ScenarioReport,
 )
 from ciq_autotune.analyzers.scenario.levers import Lever, recommendation, title  # noqa: E402
+from ciq_autotune.analyzers.ic_regression import analyze_ic_blocks_fuzzy  # noqa: E402
 from ciq_autotune.analyzers.tuning_priority import (  # noqa: E402
     build_tuning_levers,
     price_ic_blocks,
@@ -229,7 +229,7 @@ def history_catalogs():
 
     def catalog(now, schedule, snaps=snapshots):
         answer = []
-        analyze_ic_blocks(
+        analyze_ic_blocks_fuzzy(
             events, schedule, config=IcConfig(), observed_days=90,
             analysis_start=now - timedelta(days=90), analysis_end=now,
             snapshots=snaps, history_catalog=answer,
@@ -271,7 +271,7 @@ def density_history_catalog():
                 completion="Completed",
             ))
     answer = []
-    analyze_ic_blocks(
+    analyze_ic_blocks_fuzzy(
         events, current_schedule, config=IcConfig(), observed_days=90,
         analysis_start=datetime(2026, 8, 17) - timedelta(days=90),
         analysis_end=datetime(2026, 8, 17), snapshots=snapshots,
@@ -289,7 +289,7 @@ def ic_blocks():
     segments = [(0, 5.0), (720, 5.7)]
     events = ([_meal(d, 9, 60, 12.0, 5.0) for d in range(1, 25)]
               + [_meal(d, 19, 60, 14.0, 5.7) for d in range(1, 25)])
-    blocks, _runs = analyze_ic_blocks(events, segments, config=IcConfig(),
+    blocks, _runs = analyze_ic_blocks_fuzzy(events, segments, config=IcConfig(),
                                       observed_days=90)
     return price_ic_blocks(blocks)
 
@@ -299,7 +299,7 @@ def ic_raise_blocks():
     segments = [(0, 5.0), (720, 5.7)]
     events = ([_meal(d, 9, 60, 10.0, 5.0) for d in range(1, 25)]
               + [_meal(d, 19, 60, 14.0, 5.7) for d in range(1, 25)])
-    blocks, _runs = analyze_ic_blocks(events, segments, config=IcConfig(),
+    blocks, _runs = analyze_ic_blocks_fuzzy(events, segments, config=IcConfig(),
                                       observed_days=90)
     return price_ic_blocks(blocks)
 

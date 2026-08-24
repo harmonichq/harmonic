@@ -41,6 +41,7 @@ from typing import List, Optional
 
 from .analyzers.basal import analyze_basal, consolidate_profile
 from .analyzers.ic import BLOCK_WINDOW_DAYS, analyze_ic, analyze_ic_blocks
+from .analyzers.ic_regression import analyze_ic_blocks_fuzzy
 from .analyzers.isf import analyze_isf
 from .epochs import (
     Epoch,
@@ -119,7 +120,7 @@ def analyze(
     carb_entries: Optional[List[CarbEntry]] = None,
     harm_config: Optional[HarmConfig] = HarmConfig(),
     prompt_responses: Optional[List[dict]] = None,
-    ic_estimator=analyze_ic_blocks,
+    ic_estimator=analyze_ic_blocks_fuzzy,
 ) -> AnalysisResult:
     """Run the whole model over ``store`` and return one AnalysisResult.
 

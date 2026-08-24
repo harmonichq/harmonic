@@ -129,15 +129,22 @@ html.dark .dw {
    of the row's, matching `.pane > header`'s own content padding
    (`--ck-pad`), so ALIGN's label lines up with the inspector's own header
    text, not just its bare left edge. See the behaviour ledger's amendment
-   for the deviation this records. */
+   for the deviation this records. Between #68 and #86, an extra `auto` track
+   held the global Sift instrument #68 added; #86 removed Sift and left its track,
+   pushing ALIGN out of the reserved column until #106 removed it. This row's track
+   count must always equal its instrument count, `var(--side, 430px)` must stay the
+   last track with ALIGN the last child, and any addition or removal must change the
+   track list in the same commit; `createDiagnoseWorkstation`'s uncalled `railLead`
+   can prepend an instrument, and S77—not this comment—enforces the invariant. */
 .instruments {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto var(--side, 430px);
+  display: grid; grid-template-columns: minmax(0, 1fr) var(--side, 430px);
   align-items: center; gap: 0; padding: 0;
   background: var(--mk-bg);
 }
 .instruments > .instrument:first-child { padding-left: 14px; }
 #align-group { padding-left: var(--ck-pad); }
 .instrument { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.instrument[hidden] { display: none; }
 .instrument > .cap {
   font-size: var(--ck-micro); text-transform: uppercase; letter-spacing: var(--ck-track);
   color: var(--mk-muted); font-weight: 650; white-space: nowrap;
@@ -167,6 +174,7 @@ html.dark .dw {
   background: var(--mk-surface); color: var(--mk-text);
   box-shadow: 0 1px 2px rgba(0,0,0,.28), inset 0 0 0 1px color-mix(in srgb, var(--ck-accent) 34%, transparent);
 }
+#seg-align button:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: -2px; }
 /* ---- 3. pane grid --------------------------------------------------- */
 .panes {
   display: grid; gap: var(--ck-gap); padding: var(--ck-gap) 12px; min-height: 0;
@@ -459,6 +467,7 @@ html.dark .dw {
 
 /* exactly one level renders; the swap is a 90 ms slide, no cross-fade stack */
 .level { overflow: auto; min-height: 0; animation: push .09s ease-out; }
+.level:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: -2px; }
 .level[data-dir="pop"] { animation-name: pop; }
 @keyframes push { from { transform: translateX(9px); opacity: .35; } }
 @keyframes pop { from { transform: translateX(-9px); opacity: .35; } }
@@ -794,18 +803,6 @@ html.dark .dw {
 .dw .qrow .why {
   grid-column: 1 / -1; grid-row: 2; font-size: 11.5px; color: var(--mk-secondary); line-height: 1.45;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-
-/* #63 — the unexplained-highs line. It is NOT a queue row and must not read as one:
-   a hairline above separates it from the list, and it takes the same quiet register as
-   the tail sentence (`.tailnote`) because it is the same kind of thing — one sentence
-   about the list rather than an item in it. The rule is what says "the list ended
-   here", so it is carried in both states — including the empty queue, where the
-   sentence still reports the whole findings window. */
-.dw .uncaused-note {
-  margin: 16px 0 0; padding: 12px var(--ck-pad) 0;
-  border-top: 1px solid var(--ck-hair);
-  font-size: 11.5px; color: var(--mk-muted); line-height: 1.5;
 }
 
 /* Term 41 — the calm line is the WHOLE pane when there is nothing to rank, so it

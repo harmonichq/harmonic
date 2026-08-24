@@ -218,7 +218,7 @@ const FAMILY_SHORT = {
 
 const VERDICT_KEY = {
   up: 'suggests a raise', down: 'suggests a lower', hold: 'holds at current',
-  insufficient: 'insufficient evidence', nodata: 'no clean data',
+  insufficient: 'insufficient evidence', nodata: 'no nights of steady data',
 };
 // short forms for the single-line lane key
 const VERDICT_SHORT = {
@@ -348,19 +348,24 @@ function renderInstruments(winKey, capture, onPreset) {
 
 /** ALIGN (ADR 31 part 3): a switch over already-selected data, never a
     navigation — it does not push, and nothing else in the instrument row is a
-    function of it. Rebuilt every paint from the standing frame's own align
-    state, same as `renderInstruments` rebuilds WINDOW from `winKey`. */
+    function of it. Its fixed choices reconcile from the standing frame's own
+    align state, the same way `pressPreset` patches WINDOW from `winKey`. */
 function renderAlign(alignKey, onAlign) {
   const seg = el('seg-align');
-  seg.innerHTML = '';
-  for (const [key, label] of [['clock', 'By clock'], ['event', 'By event']]) {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.textContent = label;
-    b.setAttribute('aria-pressed', String(key === alignKey));
-    b.addEventListener('click', () => onAlign(key));
-    seg.append(b);
+  const choices = [['clock', 'By clock'], ['event', 'By event']];
+  if (!seg.querySelector('button')) {
+    for (const [, label] of choices) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = label;
+      seg.append(b);
+    }
   }
+  seg.querySelectorAll('button').forEach((b, index) => {
+    const [key] = choices[index];
+    b.setAttribute('aria-pressed', String(key === alignKey));
+    b.onclick = () => onAlign(key);
+  });
 }
 
 const CHIP_LABELS = [['highs', 'Highs'], ['lows', 'Lows'], ['meals', 'Meals'], ['corrections', 'Corrections']];
@@ -600,7 +605,7 @@ function renderCaseSelection(host, caseFile, onDay) {
   const box = document.createElement('div'); box.className = 'inner occ-detail';
   box.innerHTML = `<div class="occ-head"><span class="when">${fmtDate(detail.date)} · ${detail.anchor.t.slice(11, 16)}</span>
     <span class="tag">${verdictLabel}</span>${at >= 0 && rows.length > 1
-      ? `<span class="pos">${at + 1} of ${caseFile.verdict_counts[detail.verdict]}<i class="keyhint">← →</i></span>` : ''}</div>
+      ? `<span class="pos">${at + 1} of ${caseFile.verdict_counts[detail.verdict]}<i class="keyhint">↑ ↓</i></span>` : ''}</div>
     <div class="occ-nums">${detail.anchor.bg == null ? '—' : Math.round(detail.anchor.bg)}
       <span>at ${detail.anchor.label.toLowerCase()}</span></div>
     <div class="statline">The canvas shows this Occurrence's server-owned trace and evidence markers.</div>`;
@@ -699,7 +704,7 @@ function renderSlotLevel(host, cell, staged, windowDays, onStage) {
   const thin = e.n < MIN_SUPPORTED_NIGHTS || e.wide;
   renderParamLevel(host, {
     head: `${hhmm(cell.startMin)}–${hhmm(cell.endMin)}`,
-    verdict: canStage ? s.safety_status : 'insufficient evidence',
+    verdict: canStage ? s.safety_status : VERDICT_KEY[cell.verdict],
     unit: 'U/hr',
     current: s.current,
     estimate: e,
@@ -709,14 +714,14 @@ function renderSlotLevel(host, cell, staged, windowDays, onStage) {
       : 'no direction asserted, so nothing is recommended',
     currentNoun: 'rate',
     moveWord: /raise/i.test(s.safety_status || '') ? 'raise' : 'move',
-    support: `${e.n} clean night${e.n === 1 ? '' : 's'} <span>·</span> ${windowDays} d basal run`,
+    support: `${e.n} night${e.n === 1 ? '' : 's'} of steady data <span>·</span> ${windowDays} d basal run`,
     sentence: canStage
       ? (s.annotation || '').replace(/,?\s*capped to one ≤?20% step from current/i, '')
       : s.annotation,
     canStage,
     isStaged: staged.has(cell.i),
     footNote: thin
-      ? `${e.n} clean night${e.n === 1 ? '' : 's'} — below the ${MIN_SUPPORTED_NIGHTS}-night `
+      ? `${e.n} night${e.n === 1 ? '' : 's'} of steady data — below the ${MIN_SUPPORTED_NIGHTS}-night `
         + `support floor${e.wide ? ' and the interval is wide' : ''}; no direction asserted, `
         + 'nothing to stage.'
       : 'No direction asserted here, so there is nothing to stage; the number and its interval '
@@ -1591,10 +1596,13 @@ function boot(root, data, callbacks, signal) {
   /* THE STACK. One frame per level; only `top()` ever renders. Frames:
      {k:'factors'} · {k:'factor', factor} · {k:'occ', occ} · {k:'slot', cell}. */
   const stack = [{ k: 'factors' }];
+  let pendingFocus = null;
+  let occurrenceFocusId = null;
   const top = () => stack[stack.length - 1];
   const push = (frame) => {
     if (top().k === 'factors') queueScrollTop = el('level').scrollTop;
     filterOpen = false;
+    pendingFocus = 'level';
     dir = 'push'; stack.push(frame); shownRows = EVIDENCE_CAP; paint();
   };
   const popTo = (i) => {
@@ -1602,6 +1610,7 @@ function boot(root, data, callbacks, signal) {
     ++historyRequestGeneration;
     pendingKey = null;
     filterOpen = false;
+    pendingFocus = pendingRowFocus(stack[1]);
     dir = 'pop'; stack.length = i + 1; paint();
   };
 
@@ -1647,7 +1656,8 @@ function boot(root, data, callbacks, signal) {
   function selectOcc(occ) {
     const f = top();
     if (f.k !== 'factor') return;
-    requestCase(f, f.requestedAlignment || 'clock', occ.id || occ);
+    occurrenceFocusId = occ.id || occ;
+    requestCase(f, f.requestedAlignment || 'clock', occurrenceFocusId);
   }
 
   // opening depth per mock state — a payload publishing no re-projectable
@@ -2172,7 +2182,7 @@ function boot(root, data, callbacks, signal) {
            words back on screen beside the dock's `Plan · staged` (term 47: two
            claims about one object). Every sibling level's meta names its OWN
            denominator and run (term 16); this one now does too. */
-        : f.k === 'slot' ? `${f.cell.slot.days} clean nights · ${auditState.analysis.window_days} d basal run`
+        : f.k === 'slot' ? `${f.cell.slot.days} nights of steady data · ${auditState.analysis.window_days} d basal run`
           // every parameter's meta names its OWN denominator and run
           : f.k === 'block' ? `${f.cell.block.n_runs} meal runs · ${f.cell.block.n_meals} meals`
             : f.k === 'isf' ? `${isf.estimate.n.toLocaleString()} correction steps`
@@ -2294,6 +2304,12 @@ function boot(root, data, callbacks, signal) {
       shownRows);
     renderCaseSelection(host, caseFile, (detail) => callbacks.day?.(detail));
     appendCaseError(host);
+    if (occurrenceFocusId && !f.loading && f.selectedId === occurrenceFocusId) {
+      const row = [...host.querySelectorAll('.case-occurrence')]
+        .find((button) => button.dataset.occurrenceId === occurrenceFocusId);
+      row?.focus({ preventScroll: true });
+      occurrenceFocusId = null;
+    }
   }
 
   // Esc and the chip's × both mean "restore the last preset" — which is an
@@ -2546,15 +2562,40 @@ function boot(root, data, callbacks, signal) {
       note.textContent = canvasNotice;
       canvasBody.append(note);
     }
+    applyPendingFocus();
+  }
+
+  /* Focus consumes only a reader-driven navigation request after every painter
+     has settled. A missing originating row means the level is the stable landing,
+     not that no focus was requested. */
+  function pendingRowFocus(frame) {
+    const rowId = frame?.rowId ?? frame?.id;
+    return rowId == null ? 'level' : { rowId };
+  }
+
+  function applyPendingFocus() {
+    const focus = pendingFocus;
+    pendingFocus = null;
+    if (focus === null) return;
+    const host = el('level');
+    if (focus === 'level' || top().k !== 'factors') {
+      host.focus();
+      return;
+    }
+    const row = host.querySelector(`.qrow[data-id="${focus.rowId}"]`);
+    if (row) row.focus({ preventScroll: true });
+    else host.focus();
   }
 
 
   /* KEYBOARD. Esc is NOT bound here — it keeps its window semantics (see the
-     design note's KEYBOARD block). Backspace pops a level at any depth; ← and →
-     are dedicated to stepping the SELECTED occurrence (P24/P25, kept and
-     re-homed onto select-in-place — there is no occurrence level any more).
-     Stepping STOPS at the ends rather than wrapping: an instrument should not
-     silently return you to the first reading. */
+     design note's KEYBOARD block). Backspace pops a level at any depth; ↑ and ↓
+     step the SELECTED Occurrence along the roster's vertical axis (P24/P25).
+     The event chart owns its own cursor keys, so focus inside #ec-chart bails
+     out. No filter guard is needed: opening a case file closes the root-only
+     Filter before this factor frame can receive a roster key. Stepping STOPS at
+     the ends rather than wrapping: an instrument should not silently return you
+     to the first reading. */
   document.addEventListener('keydown', (ev) => {
     if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
     const f = top();
@@ -2564,20 +2605,23 @@ function boot(root, data, callbacks, signal) {
       ++historyRequestGeneration;
       pendingKey = null;
       filterOpen = false;
+      pendingFocus = pendingRowFocus(stack[1]);
       dir = 'pop';
       stack.pop();
       paint();
       return;
     }
     if (f.k !== 'factor' || !f.selectedId
-      || (ev.key !== 'ArrowLeft' && ev.key !== 'ArrowRight')) return;
+      || (ev.key !== 'ArrowUp' && ev.key !== 'ArrowDown')) return;
+    if (ev.target instanceof Element && ev.target.closest('#ec-chart')) return;
     const siblings = f.caseFile.occurrences
       .filter((row) => row.verdict === (f.bandVerdict || 'fired'));
     const at = siblings.findIndex((row) => row.id === f.selectedId);
-    const next = at + (ev.key === 'ArrowRight' ? 1 : -1);
+    const next = at + (ev.key === 'ArrowDown' ? 1 : -1);
     if (at < 0 || next < 0 || next >= siblings.length) return;
     ev.preventDefault();
-    requestCase(f, f.requestedAlignment, siblings[next].id);
+    occurrenceFocusId = siblings[next].id;
+    requestCase(f, f.requestedAlignment, occurrenceFocusId);
   }, { signal });   // PORT: abortable
 
   observeResize(el('chart'), () => chart);

@@ -1,5 +1,16 @@
 # Design — finding-evidence-routing
 
+## ADR 96 — Align stays two tab stops, reconciled in place
+
+**Decision.** Align remains a `role="group"` of two `aria-pressed` toggle buttons,
+each an ordinary Tab stop. It does not become a roving radiogroup. Its fixed choices
+are reconciled in place on repaint, rather than restoring focus after a rebuild.
+
+**Rationale.** The existing Window control establishes the local precedent: a stable
+button pair preserves reader position while its pressed state changes. Keeping
+Align's two tab stops preserves its shipped keyboard pattern without implying the
+Arrow/Home/End behavior retired with P27.
+
 ## ADR 31 — The inspector is the only steering wheel, and the canvas is a projection of what it selects
 
 **Ruling.** The cockpit has **one inspector** — breadcrumb path, subject case
@@ -244,6 +255,30 @@ top asserting row. When a cross-parameter headline exists on the server, it must
 arrive as its own predicate and be tested at this projection boundary.
 
 Decision: harmonichq/harmonic#42, 2026-08-19.
+
+## ADR 97 — Watching reads collapse by default
+
+Watching is a property of the server-published held, blind, and history row
+registers, not of the sift control. The default Findings queue therefore shows
+action-ready findings only and keeps Watching evidence behind its existing
+expandable control. This changes disclosure, not membership, order, or
+actionability. The uncaused-highs footer is withdrawn from the surface; the
+backend field remains published for its existing consumers.
+
+Decision: ConnorGriffin, 2026-08-23.
+
+## ADR 100 — Focus moves on navigation, never on repaint
+
+**Decision.** The Diagnose workstation records a pending focus destination only
+for reader-driven push and pop navigation. The end of the shared paint cycle
+consumes that destination once: a push, or an unrecoverable return, focuses the
+stable detail container; a return to the queue restores the originating row.
+
+**Rationale.** The one mechanism covers all five frame kinds without placing
+focus in a renderer that also runs for asynchronous data, controls, and
+retirements. The detail container survives its child repaint while a row does
+not, so it is the stable push target; the retained originating row id makes a
+queue return precise.
 
 ## Revise safe-start and evidence-row amendment — 2026-08-19
 

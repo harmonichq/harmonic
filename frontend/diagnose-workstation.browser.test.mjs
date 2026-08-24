@@ -147,6 +147,15 @@ async function shot(page, family, state_, viewport, theme) {
 
 const VIEWPORTS = [{ width: 1440, height: 900 }, { width: 1280, height: 800 }];
 
+const P27_SANCTION = 'Connor Griffin · 2026-08-23 · "#55 removed installSegKeys; the shipped Align control is two ordinary Tab stops"';
+
+const expandWatching = async (page) => {
+  const toggle = page.locator('#level .qcollapse');
+  if (await toggle.count() && await toggle.getAttribute('aria-expanded') !== 'true') {
+    await toggle.click();
+  }
+};
+
 test('seven generated history reads remain ordered, reachable, laid out, and non-stageable', async () => {
   const browser = await runner.browser();
   const inputs = await densityHistoryInputs();
@@ -159,6 +168,8 @@ test('seven generated history reads remain ordered, reachable, laid out, and non
     history: true, findingsInputs: inputs, appSource: 'fixture', stageProbe: true,
   });
   try {
+    const initialCollapse = page.locator('#level .qcollapse');
+    await initialCollapse.click();
     const historyRows = page.locator('#level .qrow[data-state="history"]');
     assert.deepEqual(await historyRows.evaluateAll((rows) => rows.map((row) => row.dataset.id)), expected,
       'the Watching history rows keep the server projection order');
@@ -203,6 +214,175 @@ test('an explicit fixture opener ignores a hostile ambient app-source override',
     if (previous === undefined) delete process.env.DIAGNOSE_APP_SOURCE;
     else process.env.DIAGNOSE_APP_SOURCE = previous;
   }
+});
+
+test(`#96 · Align keeps keyboard focus and stays two Tab stops — RETIRED — ${P27_SANCTION}`, async () => {
+  const browser = await runner.browser();
+  const cases = [
+    { name: 'case file', options: { state: 'drawn', appSource: 'fixture' }, row: 'finding:over_treated_low' },
+    { name: 'I:C history', options: { state: 'typical', history: true, appSource: 'fixture' }, row: 'ich1_WzAsNzIwLCI2Il0' },
+  ];
+  for (const scenario of cases) {
+    const before = openerProblems().length;
+    const page = await openApp(browser, scenario.options);
+    try {
+      if (scenario.options.history) await expandWatching(page);
+      const row = page.locator(`#level .qrow[data-id="${scenario.row}"]`);
+      assert.equal(await row.count(), 1, `${scenario.name} exposes the finding to drill`);
+      await row.click();
+      await page.locator('#seg-align button').first().waitFor();
+      await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false');
+      assert.equal(await page.locator('.ev-row[aria-pressed="true"], .history-run[aria-pressed="true"]').count(), 0,
+        `${scenario.name} has no selected occurrence before testing Align keys`);
+
+      await page.locator('#seg-window button:last-of-type').evaluate((button) => button.focus());
+      await page.keyboard.press('Tab');
+      const focused = page.locator('#seg-align button[aria-pressed="true"]');
+      assert.equal(await page.evaluate(() => document.activeElement?.closest('#seg-align') !== null), true,
+        `${scenario.name} reaches Align by a real Tab`);
+      assert.equal(await focused.innerText(), 'By clock', `${scenario.name} begins with By clock pressed`);
+      await page.keyboard.press('Tab');
+      assert.equal(await page.evaluate(() => document.activeElement?.textContent.trim()), 'By event',
+        `${scenario.name} Tabs to the other Align choice before activating it`);
+
+      const pressedBeforeArrows = await page.locator('#seg-align button').evaluateAll((buttons) =>
+        buttons.map((button) => button.getAttribute('aria-pressed')));
+      const activeBeforeArrows = await page.evaluate(() => document.activeElement?.textContent.trim());
+      await page.keyboard.press('ArrowRight');
+      await page.keyboard.press('ArrowLeft');
+      assert.equal(await page.evaluate(() => document.activeElement?.textContent.trim()), activeBeforeArrows,
+        `${scenario.name} Arrow keys leave focus on Align`);
+      assert.deepEqual(await page.locator('#seg-align button').evaluateAll((buttons) =>
+        buttons.map((button) => button.getAttribute('aria-pressed'))), pressedBeforeArrows,
+      `${scenario.name} Arrow keys do not move Align's pressed choice`);
+
+      const requests = [];
+      page.on('request', (request) => {
+        if (new URL(request.url()).pathname.startsWith('/api/diagnose/')) requests.push(request.url());
+      });
+      await page.keyboard.press('Enter');
+      await settle(page, 450);
+      assert.equal(await page.evaluate(() => document.activeElement?.textContent.trim()), 'By event',
+        `${scenario.name} Enter activates the other Align choice without moving focus`);
+      assert.deepEqual(await page.locator('#seg-align button').evaluateAll((buttons) =>
+        buttons.map((button) => [button.textContent.trim(), button.getAttribute('aria-pressed')])),
+      [['By clock', 'false'], ['By event', 'true']], `${scenario.name} moves the pressed state to By event`);
+      assert.deepEqual(await page.evaluate(() => {
+        const style = getComputedStyle(document.activeElement);
+        return [style.outlineWidth, style.outlineStyle, style.outlineOffset];
+      }), ['2px', 'solid', '-2px'], `${scenario.name} draws the inward app focus ring`);
+      assert.equal(requests.length, 1, `${scenario.name} Enter makes exactly one Diagnose request`);
+      requests.length = 0;
+      await page.keyboard.press('Shift+Tab');
+      assert.equal(await page.evaluate(() => document.activeElement?.textContent.trim()), 'By clock',
+        `${scenario.name} returns to By clock by keyboard before reactivating it`);
+      await page.keyboard.press('Enter');
+      await settle(page, 450);
+      assert.equal(await page.evaluate(() => document.activeElement?.textContent.trim()), 'By clock',
+        `${scenario.name} Enter restores By clock without moving focus`);
+      assert.deepEqual(await page.locator('#seg-align button').evaluateAll((buttons) =>
+        buttons.map((button) => [button.textContent.trim(), button.getAttribute('aria-pressed')])),
+      [['By clock', 'true'], ['By event', 'false']], `${scenario.name} moves the pressed state back to By clock`);
+      assert.equal(requests.length, scenario.options.history ? 0 : 1,
+        `${scenario.name} restores By clock through its one callback path`);
+    } finally {
+      await page.close();
+    }
+    assert.deepEqual(openerProblems().slice(before), [],
+      `no opener problems while exercising ${scenario.name} Align keyboard focus`);
+  }
+});
+
+test('#100 · Enter on a finding row focuses the opened detail container', async () => {
+  const browser = await runner.browser();
+  const before = openerProblems().length;
+  const page = await openApp(browser, {
+    state: 'dense', history: true, appSource: 'fixture',
+  });
+  try {
+    const firstRow = page.locator('#level .qrow').first();
+    await firstRow.focus();
+    await page.keyboard.press('Enter');
+    assert.equal(await page.evaluate(() => document.activeElement?.id || document.activeElement?.tagName), 'level',
+      'Enter on a queue row puts focus on the opened detail container');
+    assert.equal(await page.locator('#level').evaluate((level) => level.matches(':focus-visible')), true,
+      'keyboard entry makes the opened detail container visibly focused');
+  } finally {
+    await page.close();
+  }
+  assert.deepEqual(openerProblems().slice(before), [],
+    'no opener problems while exercising #100 keyboard entry focus');
+});
+
+test('#100 · the Findings crumb restores focus to the drilled finding row', async () => {
+  const browser = await runner.browser();
+  const before = openerProblems().length;
+  const page = await openApp(browser, {
+    state: 'dense', history: true, appSource: 'fixture',
+  });
+  try {
+    const findingId = 'finding:carb_undercount';
+    const findingRow = page.locator(`#level .qrow[data-id="${findingId}"]`);
+    assert.equal(await findingRow.count(), 1,
+      'the finding row intended for crumb restoration is present in the queue');
+    await findingRow.focus();
+    await page.keyboard.press('Enter');
+    await page.getByRole('button', { name: 'Findings', exact: true }).focus();
+    await page.keyboard.press('Enter');
+    assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('data-id') || document.activeElement?.tagName), findingId,
+      'the Findings crumb returns focus to the drilled finding row');
+  } finally {
+    await page.close();
+  }
+  assert.deepEqual(openerProblems().slice(before), [],
+    'no opener problems while exercising #100 crumb restoration');
+});
+
+test('#100 · Backspace restores focus to the drilled history row', async () => {
+  const browser = await runner.browser();
+  const before = openerProblems().length;
+  const page = await openApp(browser, {
+    state: 'dense', history: true, appSource: 'fixture',
+  });
+  try {
+    await expandWatching(page);
+    const historyId = 'ich1_WzAsNzIwLCI2Il0';
+    const historyRow = page.locator(`#level .qrow[data-id="${historyId}"]`);
+    assert.equal(await historyRow.count(), 1,
+      'the history row intended for Backspace restoration is present in the queue');
+    await historyRow.focus();
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('Backspace');
+    assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('data-id') || document.activeElement?.tagName), historyId,
+      'Backspace returns focus to the drilled history row');
+  } finally {
+    await page.close();
+  }
+  assert.deepEqual(openerProblems().slice(before), [],
+    'no opener problems while exercising #100 Backspace restoration');
+});
+
+test('#100 · an asynchronous repaint does not move focus without navigation', async () => {
+  const browser = await runner.browser();
+  const before = openerProblems().length;
+  const page = await openApp(browser, {
+    state: 'dense', findingsDelayMs: 900, appSource: 'fixture',
+  });
+  try {
+    const park = page.locator('#seg-window button').first();
+    await park.focus();
+    assert.equal(await page.evaluate(() => document.activeElement === document.querySelector('#seg-window button')),
+      true, 'the window preset button accepted the focus park');
+    await settle(page, 1100);
+    assert.equal(await page.evaluate(() => document.activeElement === document.querySelector('#seg-window button')),
+      true, 'the asynchronous repaint leaves parked focus in place');
+    assert.notEqual(await page.evaluate(() => document.activeElement?.id), 'level',
+      'the asynchronous repaint does not move focus to the level container');
+  } finally {
+    await page.close();
+  }
+  assert.deepEqual(openerProblems().slice(before), [],
+    'no opener problems while guarding against focus steal on repaint');
 });
 
 for (const [name, probe, options] of [
@@ -626,6 +806,7 @@ test('the ISF row visibly declares its whole-day scope', async () => {
     try {
       const before = openerProblems().length;
       const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
+      await expandWatching(page);
       const row = page.locator('#level .qrow[data-id="isf"]');
       assert.equal(await row.locator('.scope-note').innerText(), ' · Whole day');
       await page.close();
@@ -645,6 +826,7 @@ test('a held I:C finding enters through the findings queue with no stage button'
     try {
       const before = openerProblems().length;
       const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
+      await expandWatching(page);
       const row = await page.$('#level .qrow[data-id^="ic:"]');
       assert.ok(row, 'precondition: an I:C findings-queue row exists');
       assert.equal(await page.$('#iclane'), null, 'the retired I:C lane is absent');
@@ -660,6 +842,29 @@ test('a held I:C finding enters through the findings queue with no stage button'
     } finally { /* browser stays open; closed once in after() */ }
   });
 
+test('an insufficient basal slot case file names nights of steady data', async () => {
+    const browser = await runner.browser();
+    try {
+      const before = openerProblems().length;
+      const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
+      const idx = await page.evaluate(() => [...document.querySelectorAll('#lane button')]
+        .findIndex((b) => b.dataset.verdict === 'insufficient'));
+      assert.ok(idx >= 0, 'precondition: the lane holds an insufficient slot');
+      await page.click(`#lane button:nth-child(${idx + 1})`);
+      await settle(page, 450);
+      const support = await page.locator('#level .slot-stats').nth(1).innerText();
+      const footNote = await page.locator('#level .foot-note').innerText();
+      const levelText = await page.locator('#level').innerText();
+      assert.match(support, /nights of steady data/, 'the case file support names steady-data nights');
+      assert.match(footNote, /nights of steady data/, 'the case file footnote names steady-data nights');
+      assert.doesNotMatch(levelText, /clean night|clean data/i,
+        'the insufficient case file has no retired clean-data wording');
+      await page.close();
+      assert.deepEqual(openerProblems().slice(before), [],
+        'no opener problems while opening an insufficient basal slot');
+    } finally { /* browser stays open; closed once in after() */ }
+  });
+
 /* LOCK:diagnose-workstation:14 — ISF's own gate (`canStage = isf.recommended
    != null` at diagnose-workstation.js) is unguarded at this layer:
    frontend/plan.test.js backstops the Plan draft, not the workstation's own
@@ -671,6 +876,7 @@ test('ISF is not stageable without an exact true backend verdict', async () => {
     try {
       const before = openerProblems().length;
       const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
+      await expandWatching(page);
       // #735: ISF reaches its detail level from the findings QUEUE now — the three
       // per-parameter entry rows are retired with the factor grid (lock term 34).
       // Under this state's explicit Overnight window it is a held row (term 38).
@@ -1028,42 +1234,17 @@ test('frontend contains no client-side verdict threshold or direction comparison
   assert.match(index, /Diagnose needs an API token/);
 });
 
-/* #63 — the unexplained-highs line, rendered by the real app.
- *
- * The node tests around `uncausedNote` prove the pure read; this proves the words
- * reach the screen, below the queue and outside it, and that a clock scope does not
- * move the number. The fixture's highs rollup carries exactly one occurrence whose
- * episode drew nothing (`.claude/qa/gen_synthetic_fixtures.py`), so the sentence
- * being absent here means the surface lost it, not that the data went quiet. */
-test('#63 · the unexplained-highs sentence renders below the findings queue', async () => {
+test('#63 · the unexplained-highs sentence is retired from the findings queue', async () => {
     const browser = await runner.browser();
     try {
       const before = openerProblems().length;
       const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
-      const note = await page.evaluate(
-        () => document.querySelector('#level .uncaused-note')?.textContent.trim() ?? null);
-      assert.equal(note, '1 high had no cause detected by the app',
-        'the server sentence renders verbatim');
-      // It is a SIBLING of the list, never a row inside it: a reader who can select
-      // every queue row must not be able to select this, and it carries no drill.
-      const placement = await page.evaluate(() => {
-        const el = document.querySelector('#level .uncaused-note');
-        return {
-          insideList: !!el.closest('.q'),
-          isRow: el.matches('.qrow'),
-          afterList: !!(document.querySelector('#level .q')?.compareDocumentPosition(el)
-            & Node.DOCUMENT_POSITION_FOLLOWING),
-          tag: el.tagName,
-        };
-      });
-      assert.deepEqual(placement,
-        { insideList: false, isRow: false, afterList: true, tag: 'P' });
-      // Scope invariance is pinned where it can be asserted exactly — over every
-      // frozen window in `findings-projection-mirror.test.js` and over three clock
-      // windows in `tests/test_meal_bolus_short_attribution.py`. What only the real
-      // app can show is the two above: the words, and where they sit.
+      const sanction = 'sanction: ConnorGriffin · 2026-08-23 · "Retired and incomplete evidence stops competing with the findings you can act on."';
+      console.log(`RETIRED — ${sanction}`);
+      assert.equal(await page.locator('#level .uncaused-note').count(), 0,
+        `RETIRED — ${sanction}`);
       await page.close();
       assert.deepEqual(openerProblems().slice(before), [],
-        'no opener problems while reading the unexplained-highs line');
+        'no opener problems while checking the retired footer');
     } finally { /* browser stays open; closed once in after() */ }
   });

@@ -101,7 +101,7 @@ export const state = (page) => page.evaluate(() => {
     levelLoading: q('#level')?.dataset.loading ?? null,
     bandKeys: [...document.querySelectorAll('#level .vband .key .lead')].map((n) => n.textContent.trim()),
     // ALIGN's two canvases: which one is mounted, and whose header is up
-    alignShown: q('#align-group') ? !q('#align-group').hidden : null,
+    alignShown: q('#align-group') ? rendered(q('#align-group')) : null,
     alignPressed: [...document.querySelectorAll('#seg-align button')]
       .filter((b) => b.getAttribute('aria-pressed') === 'true')
       .map((b) => b.textContent.trim()),
@@ -743,7 +743,16 @@ export async function gotoState(page, want) {
   await settle(page, 600);
 }
 
+const expandWatching = async (page) => {
+  const toggle = page.locator('#level .qcollapse');
+  if (await toggle.count() && await toggle.getAttribute('aria-expanded') !== 'true') {
+    await toggle.click();
+    await settle(page, 150);
+  }
+};
+
 const openHistoryCase = async (page) => {
+  await expandWatching(page);
   const row = page.locator('#level .qrow[data-state="history"]').first();
   await row.waitFor({ state: 'visible' });
   await row.click();
@@ -994,33 +1003,31 @@ export const S11 = async (page) => {
   const selected = await page.evaluate(() =>
     document.querySelector('#level .ev-row[aria-pressed="true"]') !== null);
   ok(selected, 'S11 the selected row carries aria-pressed');
-  ok(/← →/.test(occ.levelHead || ''), 'S11 the keyboard hint rides the inline detail');
+  ok(/↑ ↓/.test(occ.levelHead || ''), 'S11 the keyboard hint rides the inline detail');
 };
 
-/** S12 · ←/→ step the SELECTED occurrence (P24/P25, kept and re-homed onto
-    select-in-place) and STOP at the ends — no wrap. Stepping changes neither
-    the crumb (P35 retired) nor the window (P21 retired): only the panel and
-    the day trace follow. */
+/** S12 · RETIRED — Left/Right no longer step the selected Occurrence. */
 // LOCK:diagnose-workstation:21
 export const S12 = async (page) => {
+  const author = await projectAuthor();
+  const sanction = `${author} · 2026-08-23 · "the roster is drawn vertically; one key model per list."`;
   await page.click('#level .qrow[data-state="finding"]');
   await settle(page, 450);
   await page.click('#level .ev-row');
   await settle(page, 450);
   const first = await state(page);
-  ok(/\b1 of \d+/.test(first.levelHead || ''), `S12 opens on the first occurrence (${first.levelHead})`);
-  await page.keyboard.press('ArrowLeft');
-  await settle(page, 300);
-  is((await state(page)).levelHead, first.levelHead, 'S12 ← at the start does not wrap');
+  const selected = async () => page.locator('#level .ev-row[aria-pressed="true"]')
+    .getAttribute('data-occurrence-id');
+  const selectedId = await selected();
   await page.keyboard.press('ArrowRight');
   await settle(page, 300);
-  const second = await state(page);
-  ok(/\b2 of \d+/.test(second.levelHead || ''), `S12 → steps one occurrence (${second.levelHead})`);
-  is(second.crumb.length, first.crumb.length, 'S12 stepping never changes the crumb depth (P35 retired)');
-  is(second.chip, first.chip, 'S12 stepping never moves the window (P21 retired)');
+  is((await state(page)).levelHead, first.levelHead, `S12 RETIRED — ${sanction}`);
+  is(await selected(), selectedId, `S12 RETIRED — ${sanction}`);
   await page.keyboard.press('ArrowLeft');
   await settle(page, 300);
-  is((await state(page)).levelHead, first.levelHead, 'S12 ← steps back');
+  is((await state(page)).levelHead, first.levelHead, `S12 RETIRED — ${sanction}`);
+  is(await selected(), selectedId, `S12 RETIRED — ${sanction}`);
+  return `RETIRED — ${sanction}`;
 };
 
 /** S13 · Backspace pops exactly one level at depth ≥ 2. Selecting an
@@ -1145,6 +1152,7 @@ export const S17 = async (page) => {
     unchanged. */
 // LOCK:diagnose-workstation:31 LOCK:diagnose-workstation:34 LOCK:diagnose-workstation:38
 export const S18 = async (page) => {
+  await expandWatching(page);
   const before = await state(page);
   is(before.entries, undefined, 'S18 the per-parameter entry rows are retired');
   const isfRow = before.queue.find((r) => r.title === 'ISF');
@@ -1444,6 +1452,7 @@ export const D3 = async (page) => {
     ADDED #735 with lock terms 34-45 (the #662 re-settle's owed behaviour sweep). */
 // LOCK:diagnose-workstation:34 LOCK:diagnose-workstation:36 LOCK:diagnose-workstation:37 LOCK:diagnose-workstation:43 LOCK:diagnose-workstation:44 LOCK:diagnose-workstation:45
 export const S24 = async (page) => {
+  await expandWatching(page);
   const open = await state(page);
   is(open.crumb, ['Findings'], 'S24 the crumb root is the queue\u2019s own noun');
   ok(open.queue.length > 0, 'S24 the queue renders rows');
@@ -1468,7 +1477,7 @@ export const S24 = async (page) => {
   await settle(page, 450);
   const preset = await state(page);
   is(preset.crumb, ['Findings'], 'S24 window scope is never a breadcrumb level');
-  is(preset.crumbMeta, `${preset.queue.length} in this window`, 'S24 the scoped meta form');
+  is(preset.crumbMeta, '4 in this window', 'S24 the scoped meta counts visible action-ready rows');
   ok(preset.queue.map((r) => r.title).join('|') !== open.queue.map((r) => r.title).join('|'),
     'S24 the pressed preset actually re-scoped the row set');
 
@@ -1480,9 +1489,10 @@ export const S24 = async (page) => {
   await page.mouse.move(b.x + 420, y, { steps: 8 });
   await page.mouse.up();
   await settle(page, 450);
+  await expandWatching(page);
   const drawn = await state(page);
   is(drawn.crumb, ['Findings'], 'S24 a drawn window is not a level either');
-  is(drawn.crumbMeta, `${drawn.queue.length} in this window`, 'S24 identical meta grammar to the preset');
+  ok(/^\d+ in this window$/.test(drawn.crumbMeta), 'S24 drawn scope retains the action-ready meta grammar');
   ok(/^Window \d\d:\d\d–\d\d:\d\d$/.test(drawn.chip || ''), `S24 the chip owns the hours (${drawn.chip})`);
   assertNoRangeInMeta(drawn.crumbMeta);
 
@@ -1656,6 +1666,7 @@ export const S30 = async (page) => {
 /** S31 · The correction-factor row declares its whole-day scope. */
 // STORY:finding-evidence-routing:S31
 export const S31 = async (page) => {
+  await expandWatching(page);
   const row = page.locator('#level .qrow[data-id="isf"]');
   is(await row.locator('.scope-note').innerText(), ' · Whole day',
     'S31 the correction-factor row visibly declares its whole-day scope');
@@ -1888,6 +1899,7 @@ export const S40 = async (page) => {
 export const S41 = async (page) => {
   await page.getByRole('button', { name: 'Morning', exact: true }).click();
   await settle(page, 450);
+  await expandWatching(page);
   const rows = await page.locator('#level .qrow').evaluateAll((nodes) => nodes.map((node) => node.dataset.state));
   is(rows.at(-1), 'history', 'S41 history follows every held/blind row');
   ok(rows.slice(0, -1).some((register) => register === 'held' || register === 'blind'),
@@ -1922,6 +1934,7 @@ export const S42 = async (page) => {
 
 // STORY:finding-evidence-routing:S43
 export const S43 = async (page) => {
+  await expandWatching(page);
   const row = page.locator('#level .qrow[data-state="history"]').first();
   const text = await row.innerText();
   ok(/past 6\.0 g\/U/.test(text) && /3 meal runs/.test(text), 'S43 past setting and support render');
@@ -1932,6 +1945,7 @@ export const S43 = async (page) => {
 
 // STORY:finding-evidence-routing:S44
 export const S44 = async (page) => {
+  await expandWatching(page);
   const id = await page.locator('.qrow[data-state="history"]').first().getAttribute('data-id');
   await openHistoryCase(page);
   is((await state(page)).history.id, id, 'S44 opaque row id opens the case');
@@ -2046,6 +2060,7 @@ export const S53 = async (page) => {
 
 // STORY:finding-evidence-routing:S54
 export const S54 = async (page) => {
+  await expandWatching(page);
   const row = page.locator('.qrow[data-state="history"]').first();
   ok(await row.isVisible(), 'S54 non-null history is present because the server published it');
   const source = await readFile(join(ROOT, 'frontend/diagnose-workstation.js'), 'utf8');
@@ -2360,6 +2375,7 @@ export const S71 = async (page) => {
   });
 
   await assertHistorySafety(page, draftWrites, 'before interaction');
+  await expandWatching(page);
   await page.locator('.qrow[data-state="history"]').first().click();
   await settle(page, 450);
   await assertHistorySafety(page, draftWrites, 'queue click/open');
@@ -2403,6 +2419,214 @@ export const S71 = async (page) => {
   is(final.history.stale, false, 'S71 explicit Retry resolves coherently');
   is(final.history.stageCount, 0, 'S71 no history state offers staging');
   await assertHistorySafety(page, draftWrites, 'explicit Retry');
+};
+
+/** S72 · The initial Diagnose frame offers no inert ALIGN control. */
+// STORY:finding-evidence-routing:S72
+export const S72 = async (page) => {
+  const initial = await state(page);
+  is(initial.alignShown, false, 'S72 ALIGN does not render on the initial frame');
+  is(await page.locator('#seg-align button').count(), 0, 'S72 initial ALIGN has no choices');
+};
+
+const withNoDataBasal = (analysis) => {
+  const next = structuredClone(analysis);
+  Object.assign(next.basal[0], {
+    safety_status: 'no data', days: 0, recommended: null, asserts_move: false,
+    direction: null,
+    estimate: { value: null, lo: null, hi: null, n: 0, wide: false },
+    annotation: 'no nights of steady data at this time yet',
+  });
+  return next;
+};
+
+/** S73 · A non-asserting basal case file names the same verdict as its lane tile. */
+// STORY:finding-evidence-routing:S73
+export const S73 = async (page) => {
+  const openVerdict = async (verdict) => {
+    const cell = await page.evaluate((want) => {
+      const buttons = [...document.querySelectorAll('#lane button')];
+      const index = buttons.findIndex((button) => button.dataset.verdict === want);
+      return index < 0 ? null : { index, ariaLabel: buttons[index].getAttribute('aria-label') };
+    }, verdict);
+    ok(cell, `S73 precondition: the lane holds a ${verdict} slot`);
+    await page.click(`#lane button:nth-child(${cell.index + 1})`);
+    await settle(page, 450);
+    return {
+      ariaLabel: cell.ariaLabel,
+      head: await page.locator('#level .slot-head .verdict').textContent(),
+    };
+  };
+
+  const noData = await openVerdict('nodata');
+  is(noData.head?.trim(), 'no nights of steady data', 'S73 no-data head names its own verdict');
+  ok(noData.head?.trim() !== 'insufficient evidence', 'S73 no-data head is not the thin-data verdict');
+  ok(noData.ariaLabel.endsWith(noData.head.trim()), 'S73 no-data tile name ends with its head');
+
+  const hold = await openVerdict('hold');
+  is(hold.head?.trim(), 'holds at current', 'S73 hold head names its own verdict');
+  ok(hold.ariaLabel.endsWith(hold.head.trim()), 'S73 hold tile name ends with its head');
+
+  const insufficient = await openVerdict('insufficient');
+  is(insufficient.head?.trim(), 'insufficient evidence', 'S73 thin-data head remains unchanged');
+};
+
+/** S74 · Watching evidence stays behind its disclosure until the reader asks for it. */
+// STORY:finding-evidence-routing:S74
+export const S74 = async (page) => {
+  const toggle = page.locator('#level .qcollapse');
+  ok(await toggle.isVisible(), 'S74 Watching control is present without a sift');
+  ok(/^Watching · \d+ reads?$/.test(await toggle.innerText()), 'S74 Watching control names its reads');
+  is(await page.locator('#level .qrow[data-state="held"], #level .qrow[data-state="blind"], #level .qrow[data-state="history"]').count(),
+    0, 'S74 Watching rows stay collapsed by default');
+  is(await page.locator('.uncaused-note').count(), 0, 'S74 RETIRED — uncaused-highs footer is absent');
+  is(await page.locator('#level .quiet-line').count(), 0,
+    'S74 action-ready rows keep the default queue out of the all-Watching empty state');
+  await captureEvidence(page, 'S74-watching-collapsed-default');
+  await toggle.click();
+  ok(await page.locator('#level .qrow[data-state="held"], #level .qrow[data-state="blind"], #level .qrow[data-state="history"]').count() > 0,
+    'S74 Watching rows appear after expansion');
+};
+
+/** S75 · An all-Watching window keeps its quiet line compact above the disclosure. */
+// STORY:finding-evidence-routing:S75
+export const S75 = async (page) => {
+  const empty = page.locator('#level .quiet-line.sift-empty');
+  is(await empty.innerText(), 'No pattern or setting asserts a direction in this window.',
+    'S75 the all-Watching window retains the quiet reading');
+  is(await page.evaluate(() => getComputedStyle(document.querySelector('#level .quiet-line')).minHeight), '0px',
+    'S75 the quiet reading is compact when Watching follows it');
+  const toggle = page.locator('#level .qcollapse');
+  ok(await toggle.isVisible(), 'S75 Watching remains reachable below the quiet reading');
+  ok(/^Watching · \d+ reads?$/.test(await toggle.innerText()), 'S75 Watching names its reads');
+};
+
+// STORY:finding-evidence-routing:S76
+export const S76 = async (page) => {
+  await page.getByRole('button', { name: '24 h', exact: true }).click();
+  await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false');
+  const row = page.locator('#level .qrow[data-id="finding:carb_undercount"]');
+  const rowId = await row.getAttribute('data-id');
+  await row.focus();
+  await page.keyboard.press('Enter');
+  is(await page.evaluate(() => document.activeElement?.id), 'level',
+    'S76 Enter lands keyboard focus on the opened detail container');
+  await page.getByRole('button', { name: 'Findings', exact: true }).click();
+  is(await page.evaluate(() => document.activeElement?.getAttribute('data-id')), rowId,
+    'S76 the Findings crumb restores focus to the drilled queue row');
+};
+
+/** S77 · ALIGN starts at the inspector edge when this factor case offers it. */
+// STORY:finding-evidence-routing:S77
+export const S77 = async (page) => {
+  await openWholeDay(page);
+  await clickQueueRow(page, 'Over-treated low');
+  const opened = await state(page);
+  ok(opened.alignShown, 'S77 precondition: ALIGN is offered on this case file');
+  const geometry = await page.evaluate(() => {
+    const ag = document.querySelector('#align-group');
+    const inspector = document.querySelectorAll('.panes > .pane')[1];
+    if (!ag || !inspector || !ag.getClientRects().length) return null;
+    return {
+      alignLeft: Math.round(ag.getBoundingClientRect().left),
+      inspectorLeft: Math.round(inspector.getBoundingClientRect().left),
+    };
+  });
+  ok(geometry !== null, 'S77 precondition: ALIGN is rendered beside a live inspector pane');
+  is(geometry.alignLeft, geometry.inspectorLeft,
+    `S77 ALIGN starts at the inspector edge (ALIGN ${geometry.alignLeft}, inspector ${geometry.inspectorLeft})`);
+};
+
+/** S78 · Up/Down follow the vertical Occurrence roster, stop at its ends, and
+    leave the Finding case file's standing navigation untouched. */
+// STORY:finding-evidence-routing:S78
+export const S78 = async (page) => {
+  await page.click('#level .qrow[data-state="finding"]');
+  await settle(page, 450);
+  await page.click('#level .ev-row');
+  await settle(page, 450);
+  const first = await state(page);
+  ok(/\b1 of \d+/.test(first.levelHead || ''), `S78 opens on the first Occurrence (${first.levelHead})`);
+  await page.keyboard.press('ArrowDown');
+  await settle(page, 450);
+  const second = await state(page);
+  ok(/\b2 of \d+/.test(second.levelHead || ''), `S78 ArrowDown steps one Occurrence (${second.levelHead})`);
+  is(second.crumb.length, first.crumb.length, 'S78 stepping never changes the crumb depth');
+  is(second.chip, first.chip, 'S78 stepping never moves the window');
+  await page.keyboard.press('ArrowUp');
+  await settle(page, 450);
+  is((await state(page)).levelHead, first.levelHead, 'S78 ArrowUp steps back');
+  await page.keyboard.press('ArrowUp');
+  await settle(page, 300);
+  is((await state(page)).levelHead, first.levelHead, 'S78 ArrowUp at the start does not wrap');
+};
+
+/** S79 · Occurrence activation and vertical stepping restore focus to the
+    selected roster row after the asynchronous case-file paint. */
+// STORY:finding-evidence-routing:S79
+export const S79 = async (page) => {
+  await page.click('#level .qrow[data-state="finding"]');
+  await settle(page, 450);
+  const first = page.locator('#level .case-occurrence').first();
+  await first.focus();
+  await page.keyboard.press('Enter');
+  await settle(page, 450);
+  const selectedId = await page.locator('#level .case-occurrence[aria-pressed="true"]')
+    .getAttribute('data-occurrence-id');
+  is(await page.evaluate(() => document.activeElement?.getAttribute('data-occurrence-id')), selectedId,
+    'S79 activation restores focus to the selected Occurrence');
+  await page.keyboard.press('ArrowDown');
+  await settle(page, 450);
+  const nextId = await page.locator('#level .case-occurrence[aria-pressed="true"]')
+    .getAttribute('data-occurrence-id');
+  is(await page.evaluate(() => document.activeElement?.getAttribute('data-occurrence-id')), nextId,
+    'S79 vertical stepping restores focus to the newly selected Occurrence');
+};
+
+/** S80 · Event-chart cursor focus owns its Up/Down keys and never steps the
+    surrounding Occurrence roster. */
+// STORY:finding-evidence-routing:S80
+export const S80 = async (page) => {
+  await openWholeDay(page);
+  await clickQueueRow(page, 'Carb undercount');
+  await page.click('#seg-align button:nth-child(2)');
+  await page.locator('#ec-chart').waitFor();
+  await settle(page, 600);
+  await page.click('#level .ev-row');
+  await settle(page, 800);
+  const before = await state(page);
+  const selected = async () => page.locator('#level .case-occurrence[aria-pressed="true"]')
+    .getAttribute('data-occurrence-id');
+  const selectedId = await selected();
+  await page.locator('#ec-chart').focus();
+  await page.keyboard.press('ArrowUp');
+  await settle(page, 300);
+  is((await state(page)).levelHead, before.levelHead, 'S80 chart ArrowUp leaves the selection unchanged');
+  is(await selected(), selectedId, 'S80 chart ArrowUp leaves the pressed row unchanged');
+  await page.keyboard.press('ArrowDown');
+  await settle(page, 300);
+  is((await state(page)).levelHead, before.levelHead, 'S80 chart ArrowDown leaves the selection unchanged');
+  is(await selected(), selectedId, 'S80 chart ArrowDown leaves the pressed row unchanged');
+};
+
+/** S81 · Choosing a rendered Occurrence keeps the reader's place on that row. */
+// STORY:finding-evidence-routing:S81
+export const S81 = async (page) => {
+  await page.click('#level .qrow[data-state="finding"]');
+  await settle(page, 450);
+  const rows = page.locator('#level .case-occurrence');
+  ok(await rows.count() >= 2, 'S81 precondition: the case file renders at least two Occurrences');
+  const occurrenceId = await rows.nth(1).getAttribute('data-occurrence-id');
+  await rows.nth(1).click();
+  await settle(page, 450);
+  await page.waitForSelector(`#level .case-occurrence[data-occurrence-id="${occurrenceId}"][aria-pressed="true"]`);
+  const active = await page.evaluate(() => ({
+    occurrenceId: document.activeElement?.dataset?.occurrenceId,
+    tagName: document.activeElement?.tagName,
+  }));
+  is(active.occurrenceId, occurrenceId,
+    `S81 direct selection restores focus to the chosen Occurrence (${active.tagName})`);
+  is((await state(page)).crumb.length, 2, 'S81 direct selection keeps the case-file crumb depth');
 };
 
 /** S33 · #58 — while the event canvas is mounted, its own header is the only
@@ -2707,6 +2931,7 @@ export const issue81PendingProjection = async (page) => {
   await page.getByRole('button', { name: /Filter/ }).click();
   await page.getByRole('menuitemcheckbox', { name: /^Lows / }).click();
   await page.keyboard.press('Escape');
+  await expandWatching(page);
   const queue = await state(page);
   ok(queue.queue.some((row) => row.title === 'Basal 19:30 to 21:00'),
     'S41 the settled queue contains the server-published evening basal row');
@@ -2723,6 +2948,7 @@ export const issue81PendingProjection = async (page) => {
   await page.click('#seg-window button:nth-child(4)');   // Evening, settles first
   await eveningResponse;
   await settle(page, 100);
+  await expandWatching(page);
   const newest = await state(page);
   is(newest.pressed, ['Evening'], 'S41 the newest window settles first');
   is(newest.levelLoading, 'false', 'S41 the newest response settles the inspector');
@@ -2731,6 +2957,7 @@ export const issue81PendingProjection = async (page) => {
   ok(!newest.queue.some((row) => row.title === 'Basal 12:30 to 14:00 · leaning lower'),
     'S41 no superseded afternoon row painted');
   await settle(page, 1100);                              // let superseded response arrive
+  await expandWatching(page);
   const afterStale = await state(page);
   is(afterStale.pressed, ['Evening'], 'S41 the superseded response cannot move the window');
   const rowIdentity = (rows) => rows.map(({ title, register, tier }) => ({ title, register, tier }));
@@ -2741,6 +2968,7 @@ export const issue81PendingProjection = async (page) => {
   await settle(page, 100);                              // Afternoon remains in flight
   await page.click('#seg-window button:nth-child(4)');   // return to loaded Evening
   await settle(page, 100);
+  await expandWatching(page);
   const returned = await state(page);
   is(returned.levelLoading, 'false', 'S41 returning to the loaded window settles immediately');
   is(returned.pressed, ['Evening'], 'S41 the loaded window remains selected after the return');
@@ -2809,6 +3037,7 @@ export const issue81FailedProjection = async (page) => {
   await page.click('#seg-window button:nth-child(4)');   // another window retries normally
   await recoveryResponse;
   await settle(page, 100);
+  await expandWatching(page);
   const recovered = await state(page);
   is(recovered.levelLoading, 'false', 'S42 a later window settles after failure');
   is(recovered.pressed, ['Evening'], 'S42 recovery keeps the later selected window');
@@ -2824,17 +3053,19 @@ export const issue81SlicedProjection = async (page) => {
   await page.click('#seg-window button:nth-child(5)');   // 24 h
   await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false');
   await settle(page, 150);                              // the level's 90 ms swap has landed
+  await expandWatching(page);
   const wholeDay = await state(page);
-  is(wholeDay.crumbMeta, '8 findings · 30 days', 'S43 whole day publishes all eight findings');
+  is(wholeDay.crumbMeta, '7 findings · 30 days', 'S43 whole day meta counts visible action-ready findings');
   is(wholeDay.queue.length, 8, 'S43 whole day renders all eight server rows');
 
   await page.click('#seg-window button:nth-child(1)');   // Overnight, 00:00–06:00
   await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false');
   await resizeWindowStart(page, 330, [0, 360]);          // minimum-width 04:30–06:00 slice
   await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false');
+  await expandWatching(page);
   const sliced = await state(page);
   is(sliced.chip, 'Window 04:30–06:00', 'S43 the public brace lands on the intended slice');
-  is(sliced.crumbMeta, '3 in this window', 'S43 the slice publishes its smaller non-empty count');
+  is(sliced.crumbMeta, '1 in this window', 'S43 the slice meta counts its visible action-ready finding');
   is(sliced.queue.map((row) => row.title),
     ['Basal 05:30 · raise', 'ISF', 'Carb ratio Morning. Past setting.'],
     'S43 the slice keeps exactly its three server-published findings');
@@ -3344,6 +3575,22 @@ const refreshedCase = (body) => {
   next.finding.title += ' refreshed';
   return next;
 };
+/* S75 keeps the real request's coordinate and generation while replacing only
+   its rows with the frozen all-Watching population. A scoped fixture response
+   cannot answer the root request: the workstation correctly rejects a response
+   whose declared window differs from the request. */
+const allWatchingProjection = (projected) => ({
+  ...FINDINGS_PROJECTION.windows.quiet,
+  analysis_generation: projected.analysis_generation,
+  findings_window: projected.findings_window,
+  window: projected.window,
+});
+const queueProjection = (projected) => ({
+  ...FINDINGS_PROJECTION.windows.global,
+  analysis_generation: projected.analysis_generation,
+  findings_window: projected.findings_window,
+  window: projected.window,
+});
 
 export const STORIES = [
   ['S01', S01, 'drawn'], ['S02', S02, 'typical'], ['S03', S03, 'drawn'],
@@ -3472,6 +3719,15 @@ export const STORIES = [
       { status: 500, detail: 'coordinated retry failed' },
       { body: withRestartGeneration },
     ] }],
+  ['S72', S72, 'typical'],
+  ['S73', S73, 'typical', { analysisInputs: withNoDataBasal }],
+  ['S74', S74, 'typical', { history: true }],
+  ['S75', S75, 'typical', { history: true, findingsProjectionInputs: allWatchingProjection }],
+  ['S76', S76, 'typical', { findingsProjectionInputs: queueProjection }],
+  ['S77', S77, 'typical'],
+  ['S78', S78, 'dense'], ['S79', S79, 'dense'],
+  ['S80', S80, 'dense', { findingsInputs: withFiredMeal, exposuresInputs: (d) => withFiredMeal(d).exposures }],
+  ['S81', S81, 'dense'],
   ['C41', C41, 'typical', { caseScenario: {
     preparation: generatedFindingPose('finding:meal_over_delivery'),
   } }], ['C42', C42, 'typical'],

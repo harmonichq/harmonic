@@ -240,6 +240,7 @@ test(`#96 · Align keeps keyboard focus and stays two Tab stops — RETIRED — 
       const focused = page.locator('#seg-align button[aria-pressed="true"]');
       assert.equal(await page.evaluate(() => document.activeElement?.closest('#seg-align') !== null), true,
         `${scenario.name} reaches Align by a real Tab`);
+      assert.equal(await focused.innerText(), 'By clock', `${scenario.name} begins with By clock pressed`);
       await page.keyboard.press('Tab');
       assert.equal(await page.evaluate(() => document.activeElement?.textContent.trim()), 'By event',
         `${scenario.name} Tabs to the other Align choice before activating it`);
@@ -263,11 +264,27 @@ test(`#96 · Align keeps keyboard focus and stays two Tab stops — RETIRED — 
       await settle(page, 450);
       assert.equal(await page.evaluate(() => document.activeElement?.textContent.trim()), 'By event',
         `${scenario.name} Enter activates the other Align choice without moving focus`);
+      assert.deepEqual(await page.locator('#seg-align button').evaluateAll((buttons) =>
+        buttons.map((button) => [button.textContent.trim(), button.getAttribute('aria-pressed')])),
+      [['By clock', 'false'], ['By event', 'true']], `${scenario.name} moves the pressed state to By event`);
       assert.deepEqual(await page.evaluate(() => {
         const style = getComputedStyle(document.activeElement);
         return [style.outlineWidth, style.outlineStyle, style.outlineOffset];
       }), ['2px', 'solid', '-2px'], `${scenario.name} draws the inward app focus ring`);
       assert.equal(requests.length, 1, `${scenario.name} Enter makes exactly one Diagnose request`);
+      requests.length = 0;
+      await page.keyboard.press('Shift+Tab');
+      assert.equal(await page.evaluate(() => document.activeElement?.textContent.trim()), 'By clock',
+        `${scenario.name} returns to By clock by keyboard before reactivating it`);
+      await page.keyboard.press('Enter');
+      await settle(page, 450);
+      assert.equal(await page.evaluate(() => document.activeElement?.textContent.trim()), 'By clock',
+        `${scenario.name} Enter restores By clock without moving focus`);
+      assert.deepEqual(await page.locator('#seg-align button').evaluateAll((buttons) =>
+        buttons.map((button) => [button.textContent.trim(), button.getAttribute('aria-pressed')])),
+      [['By clock', 'true'], ['By event', 'false']], `${scenario.name} moves the pressed state back to By clock`);
+      assert.equal(requests.length, scenario.options.history ? 0 : 1,
+        `${scenario.name} restores By clock through its one callback path`);
     } finally {
       await page.close();
     }

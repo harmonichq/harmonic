@@ -982,10 +982,10 @@ P55 · The Align group keeps its two ordinary Tab stops when a reader activates
 
 ## Tally
 
-**55 rows · 50 kept · 0 missed · 5 retired.**
+**55 rows · 49 kept · 0 missed · 6 retired.**
 
-Connor Griffin ruled all 43 open rows on 2026-08-19. P21, P35, P44, P48 and P52
-are retired with their sanctions inline. The other 38 are preserved.
+Connor Griffin ruled all 43 open rows on 2026-08-19. P21, P27, P35, P44, P48 and
+P52 are retired with their sanctions inline. The other 37 are preserved.
 
 ---
 
@@ -1983,10 +1983,21 @@ Story-id mapping: this work order's requested S72 was already taken by #95, so
 
 ## Revision — 2026-08-23, base a033b6e (issue #96: renderAlign reconciles in place)
 
-The base replay used the declared no-fetch server and the fixed-seed-620 synthetic
-database. P55 adds browser-driven keyboard coverage in
+The declared no-fetch server and fixed-seed-620 synthetic database produced
+`app: 94 of 94 stories passed` on base `a033b6e` and again on this revision.
+P55 adds browser-driven keyboard coverage in
 `frontend/diagnose-workstation.browser.test.mjs`; the replay story count is
 unchanged because this ticket adds no replay story.
+
+**Red proof.** Before the reconciliation, the focused browser test's initial
+focus-ring assertion read `actual: ['1px', 'auto', '0px']`, rather than the
+revision's inward app ring. The before/after render pairs below provide the
+focus-loss evidence: base activation repaints the selected choice after its
+button was replaced, while the revision keeps that button and its ring.
+
+**Renders.** `docs/screenshots/issue-96/` contains focused and activated,
+light and dark, base/revision pairs at identical 1440×900 framing. The revision
+pairs retain the focused Align control and its inward accent ring after activation.
 
 P27 is permanently retired: `installSegKeys` was deleted by 1d06530 (#55) after
 the ledger was frozen by 482d347 (#44), and no live segmented group in

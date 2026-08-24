@@ -153,6 +153,9 @@ def _regression_block_fits(
 ) -> Dict[int, _IcBlockFit]:
     block_ids = [group["start_min"] for group in groups]
     group_by_id = {group["start_min"]: group for group in groups}
+    blocks_by_run = {
+        RunIdentity(run.t): touched for run, touched in zip(runs, run_blocks)
+    }
     admitted = []
     for run, touched in zip(runs, run_blocks):
         if not touched or not _run_is_numeric_candidate(run):
@@ -235,11 +238,11 @@ def _regression_block_fits(
         ]
         whole = sum(
             1 for run in pool
-            if shares_by_run[RunIdentity(run.t)].get(bid, 0.0) == 1.0
+            if blocks_by_run[RunIdentity(run.t)] == {bid}
         )
         fractional = sum(
             shares_by_run[RunIdentity(run.t)][bid] for run in pool
-            if shares_by_run[RunIdentity(run.t)][bid] < 1.0
+            if blocks_by_run[RunIdentity(run.t)] != {bid}
         )
         estimate = estimate_by_id.get(bid, Estimate(None, None, None, 0, method="none"))
         estimate = replace(estimate, n=len(pool), n_clusters=len(pool))

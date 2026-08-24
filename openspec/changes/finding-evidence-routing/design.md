@@ -1,5 +1,16 @@
 # Design — finding-evidence-routing
 
+## ADR 96 — Align stays two tab stops, reconciled in place
+
+**Decision.** Align remains a `role="group"` of two `aria-pressed` toggle buttons,
+each an ordinary Tab stop. It does not become a roving radiogroup. Its fixed choices
+are reconciled in place on repaint, rather than restoring focus after a rebuild.
+
+**Rationale.** The existing Window control establishes the local precedent: a stable
+button pair preserves reader position while its pressed state changes. Keeping
+Align's two tab stops preserves its shipped keyboard pattern without implying the
+Arrow/Home/End behavior retired with P27.
+
 ## ADR 31 — The inspector is the only steering wheel, and the canvas is a projection of what it selects
 
 **Ruling.** The cockpit has **one inspector** — breadcrumb path, subject case

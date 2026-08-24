@@ -589,7 +589,8 @@ P27 · Segmented instrument groups take roving Arrow/Home/End focus with
             which the shipped app does not have
   evidence: probe3 (app: focus walks Glucose → Meals → Lows on ArrowRight/End) ·
             probe-mock (mock lane: 48 cells, 1 tab stop — a mock addition)
-  verdict:  kept          operator-ruled: Connor Griffin · 2026-08-19
+  verdict:  retired
+  sanction: Connor Griffin · 2026-08-23 · "#55 removed installSegKeys; the shipped Align control is two ordinary Tab stops"
 ```
 
 ### E · Hover and the docked readout
@@ -946,6 +947,14 @@ P54 · The lens's two routes out: "Open this date in Day" on the selected
 
 ---
 
+```
+P55 · The Align group keeps its two ordinary Tab stops when a reader activates
+      either projection from the keyboard; it has no Arrow/Home/End roving.
+  source:   frontend/diagnose-workstation.js (renderAlign)
+  evidence: frontend/diagnose-workstation.browser.test.mjs (#96)
+  verdict:  kept
+```
+
 ## §3 completeness check
 
 - Every inventoried predecessor handler maps to ≥1 row: **yes**. Counted across
@@ -973,10 +982,10 @@ P54 · The lens's two routes out: "Open this date in Day" on the selected
 
 ## Tally
 
-**55 rows · 50 kept · 0 missed · 5 retired.**
+**56 rows · 50 kept · 0 missed · 6 retired.**
 
-Connor Griffin ruled all 43 open rows on 2026-08-19. P21, P35, P44, P48 and P52
-are retired with their sanctions inline. The other 38 are preserved.
+Connor Griffin ruled all 43 open rows on 2026-08-19. P21, P27, P35, P44, P48 and
+P52 are retired with their sanctions inline. The other 38 are preserved.
 
 ---
 
@@ -1971,3 +1980,27 @@ and aggregate replay flows.
 
 Story-id mapping: this work order's requested S72 was already taken by #95, so
 #100 records S76 instead.
+
+## Revision — 2026-08-23, base a033b6e (issue #96: renderAlign reconciles in place)
+
+The declared no-fetch server and fixed-seed-620 synthetic database produced
+`app: 94 of 94 stories passed` on base `a033b6e` and again on this revision.
+P55 adds browser-driven keyboard coverage in
+`frontend/diagnose-workstation.browser.test.mjs`; the replay story count is
+unchanged because this ticket adds no replay story.
+
+**Red proof.** The measured base activation result was
+`{ active: 'BODY', inAlign: false, pressed: [ 'By event' ] }`: pressing Enter
+switched the projection, then repaint destroyed the focused button. The
+before/after render pairs below show the same focus-loss boundary; the revision
+keeps that button and its ring.
+
+**Renders.** `docs/screenshots/issue-96/` contains focused and activated,
+light and dark, base/revision pairs at identical 1440×900 framing. The revision
+pairs retain the focused Align control and its inward accent ring after activation.
+
+P27 is permanently retired: `installSegKeys` was deleted by 1d06530 (#55) after
+the ledger was frozen by 482d347 (#44), and no live segmented group in
+`frontend/diagnose-event-comparison.js` carries roving keys today.
+
+sanction: Connor Griffin · 2026-08-23 · "#55 removed installSegKeys; the shipped Align control is two ordinary Tab stops"

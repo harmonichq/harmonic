@@ -83,7 +83,10 @@ a Trial on a carb-ratio change should accept as "ready to judge".
   expiring with the bar unmet, naming the progress reached and releasing the watch;
   basal, correction factor and target maturity unchanged; the dock and the Verify
   roster reporting the same verdict for the same change; and an absent or
-  uncomputable count reporting not ready.
+  uncomputable count reporting not ready. Releasing the watch is proven at the
+  surface that enforces it, not at the roster: `review_trials` derives candidates
+  independently of the lock, so expiry is shown by `POST /api/focus` succeeding
+  after the window ends, alongside the roster verdict.
 
 Why: advisory dosing guidance, one operator, and a live observed case of ready
 appearing without evidence. Disposition: → ADR, copied into the work order.
@@ -141,9 +144,14 @@ successive cutoffs:
 
 ## Open questions
 
-- None. Every question raised in this session is settled above, including
-  per-block maturity, whole-profile handling and the risk contract. Nothing here
-  is open for #136 to re-decide.
+- None of the rulings is open; per-block maturity, whole-profile handling and the
+  risk contract are all settled above and are not for #136 to re-decide.
+- Assigned, not open: the response shape that carries a per-block verdict. Today a
+  Trial exposes one scalar `parameter` / `maturing` / `state`, and contemporaneous
+  multi-parameter changes collapse into one profile candidate, so independent block
+  maturity has no front door yet. The rule is settled here; the shape that carries
+  it belongs to the ticket that builds it, and must be decided there rather than
+  invented mid-implementation.
 
 ## Spawned tasks
 

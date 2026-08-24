@@ -6198,11 +6198,15 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": false,
+       "effective_run_count": 24.0,
+       "fit_meals": 24,
+       "fractional_run_ownership": 0.0,
        "n_runs": 24,
        "names_a_move": false,
        "regime_supported": false,
        "runs_floor": 8,
-       "runs_floor_met": true
+       "runs_floor_met": true,
+       "whole_runs": 24
       },
       "impact_inputs": {
        "carbs": 1440,
@@ -6903,11 +6907,15 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": true,
+       "effective_run_count": 24.0,
+       "fit_meals": 24,
+       "fractional_run_ownership": 0.0,
        "n_runs": 24,
        "names_a_move": true,
        "regime_supported": true,
        "runs_floor": 8,
-       "runs_floor_met": true
+       "runs_floor_met": true,
+       "whole_runs": 24
       },
       "impact_inputs": {
        "carbs": 1440,
@@ -16254,11 +16262,15 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": false,
+       "effective_run_count": 24.0,
+       "fit_meals": 24,
+       "fractional_run_ownership": 0.0,
        "n_runs": 24,
        "names_a_move": false,
        "regime_supported": false,
        "runs_floor": 8,
-       "runs_floor_met": true
+       "runs_floor_met": true,
+       "whole_runs": 24
       },
       "impact_inputs": {
        "carbs": 1440,
@@ -16959,11 +16971,15 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": true,
+       "effective_run_count": 24.0,
+       "fit_meals": 24,
+       "fractional_run_ownership": 0.0,
        "n_runs": 24,
        "names_a_move": true,
        "regime_supported": true,
        "runs_floor": 8,
-       "runs_floor_met": true
+       "runs_floor_met": true,
+       "whole_runs": 24
       },
       "impact_inputs": {
        "carbs": 1440,
@@ -23435,11 +23451,15 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": false,
+       "effective_run_count": 24.0,
+       "fit_meals": 24,
+       "fractional_run_ownership": 0.0,
        "n_runs": 24,
        "names_a_move": false,
        "regime_supported": false,
        "runs_floor": 8,
-       "runs_floor_met": true
+       "runs_floor_met": true,
+       "whole_runs": 24
       },
       "impact_inputs": {
        "carbs": 1440,
@@ -24140,11 +24160,15 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": true,
+       "effective_run_count": 24.0,
+       "fit_meals": 24,
+       "fractional_run_ownership": 0.0,
        "n_runs": 24,
        "names_a_move": true,
        "regime_supported": true,
        "runs_floor": 8,
-       "runs_floor_met": true
+       "runs_floor_met": true,
+       "whole_runs": 24
       },
       "impact_inputs": {
        "carbs": 1440,
@@ -30661,11 +30685,15 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": false,
+       "effective_run_count": 24.0,
+       "fit_meals": 24,
+       "fractional_run_ownership": 0.0,
        "n_runs": 24,
        "names_a_move": false,
        "regime_supported": false,
        "runs_floor": 8,
-       "runs_floor_met": true
+       "runs_floor_met": true,
+       "whole_runs": 24
       },
       "impact_inputs": {
        "carbs": 1440,
@@ -31366,11 +31394,15 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": true,
+       "effective_run_count": 24.0,
+       "fit_meals": 24,
+       "fractional_run_ownership": 0.0,
        "n_runs": 24,
        "names_a_move": true,
        "regime_supported": true,
        "runs_floor": 8,
-       "runs_floor_met": true
+       "runs_floor_met": true,
+       "whole_runs": 24
       },
       "impact_inputs": {
        "carbs": 1440,
@@ -37887,11 +37919,15 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": false,
+       "effective_run_count": 24.0,
+       "fit_meals": 24,
+       "fractional_run_ownership": 0.0,
        "n_runs": 24,
        "names_a_move": false,
        "regime_supported": false,
        "runs_floor": 8,
-       "runs_floor_met": true
+       "runs_floor_met": true,
+       "whole_runs": 24
       },
       "impact_inputs": {
        "carbs": 1440,
@@ -38592,11 +38628,15 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": true,
+       "effective_run_count": 24.0,
+       "fit_meals": 24,
+       "fractional_run_ownership": 0.0,
        "n_runs": 24,
        "names_a_move": true,
        "regime_supported": true,
        "runs_floor": 8,
-       "runs_floor_met": true
+       "runs_floor_met": true,
+       "whole_runs": 24
       },
       "impact_inputs": {
        "carbs": 1440,

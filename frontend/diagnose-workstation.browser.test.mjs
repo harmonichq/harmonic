@@ -69,7 +69,7 @@ import { mkdir, readFile } from 'node:fs/promises';
 import { extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  derivedPumpSettings, openApp, openerProblems, state, withIsfVerdict,
+  derivedPumpSettings, openApp, openerProblems, panThenAim, state, withIsfVerdict,
   withoutIsfProjectionVerdict, twoFamilyInputs,
   densityHistoryInputs,
   issue81PendingProjection, issue81FailedProjection, issue81SlicedProjection,
@@ -425,11 +425,11 @@ test('#130 · a wrapped draw leaves two endpoint edges and dims only the outside
       const chart = await page.locator('#chart').boundingBox();
       const xAt = (minute) => chart.x + 52 + (minute / 1425) * (chart.width - 104);
       const y = chart.y + chart.height * 0.45;
-      await page.mouse.move(xAt(22 * 60), y);
-      await page.mouse.down();
-      await page.mouse.move(chart.x + chart.width - 39, y, { steps: 8 });
-      await page.waitForFunction(() => document.querySelector('#seg-window [data-follow]')
-        ?.firstChild?.textContent.trim() === 'Window 22:00–02:00', null, { timeout: 5000 });
+      // travel at the right edge, then aim the draw's moving end onto the next
+      // day's 02:00 — a held boundary is travel, never a place to release on
+      const during = await panThenAim(page, { x: xAt(22 * 60), y }, 'right',
+        { past: 180, aim: 24 * 60 + 2 * 60 });
+      assert.equal(during.chip, 'Window 22:00–02:00', 'the draw wraps before release');
       await page.mouse.up();
       await settle(page, 500);
 

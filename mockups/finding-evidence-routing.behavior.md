@@ -378,6 +378,17 @@ P58 · At a clock boundary, the moving edge stays on the plot boundary while the
             frontend/diagnose-workstation.js
   evidence: replay S72, S73, S78, S79
   verdict:  added         operator-ruled: PENDING - #130
+
+  amendment #130: a held boundary is TRAVEL, not aim. The day keeps translating
+                  for as long as the pointer stays past the edge, at roughly ten
+                  display minutes per animation frame, so no snapped window
+                  stands still long enough to be released on — in either
+                  direction. The pan re-arms only while the pointer is past an
+                  edge, so bringing it back inside the plot stops the day where
+                  it stands and the window is then placed by the pointer alone.
+                  Travel at the edge, aim in the plot.
+  evidence: replay S72, S73, S74, S75, S76, S77
+  operator-ruled: PENDING - #130
 ```
 
 ```

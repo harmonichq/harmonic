@@ -2499,6 +2499,8 @@ export const S75 = async (page) => {
 
 // STORY:finding-evidence-routing:S76
 export const S76 = async (page) => {
+  await page.getByRole('button', { name: '24 h', exact: true }).click();
+  await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false');
   const row = page.locator('#level .qrow[data-id="finding:carb_undercount"]');
   const rowId = await row.getAttribute('data-id');
   await row.focus();

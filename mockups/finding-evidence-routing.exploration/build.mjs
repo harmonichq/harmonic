@@ -298,14 +298,13 @@ function voiceTitle(title) {
   return `${PARAMETER_WORD[parameter]} · ${span} · ${direction}`;
 }
 
-/** Rule 3 + rule 8 over the projection window the shipped queue painter reads.
+/** Rule 8 over the projection window the shipped queue painter reads.
  *
- * The projection is handed to `renderFindingsQueue` WHOLE, so the respelling has
- * to happen to the projection rather than to the painted DOM — the painter owns
- * how a title and a support noun are laid out, and reaching into its output to
- * retype them is the transcription this mock does not do. Fails closed both
- * ways: a window where nothing needed respelling means the fixture changed under
- * the rule, and that is worth stopping for. */
+ * The projection is handed to `renderFindingsQueue` WHOLE, so title respelling
+ * happens in the projection rather than in the painted DOM. The support noun
+ * passes through unchanged. This fails closed in one direction: a window where
+ * no title needed respelling means the fixture already speaks rule 8's register
+ * or its title shape changed, so this pass must be revisited. */
 function voiceProjection(window) {
   let touched = 0;
   const rows = window.rows.map((row) => {

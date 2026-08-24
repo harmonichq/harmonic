@@ -108,7 +108,7 @@ def qualify_window(store: Store, block: IcBlock, window: ReplayWindow) -> None:
     """Refuse a window where later settings can leak into replayed endpoints."""
     snapshots = _covered_snapshots(store, window)
     if _tail_schedule_changed(snapshots, window, "carb_ratio"):
-        raise WindowRefused("carb-ratio schedule changed in replay window tail")
+        raise WindowRefused("I:C schedule changed in replay window tail")
     if _tail_schedule_changed(snapshots, window, "isf"):
         raise WindowRefused("ISF schedule changed in replay window tail")
     eligibility = (block.evidence or {}).get("eligibility") or {}
@@ -164,8 +164,16 @@ def _analyze_at(store: Store, cutoff: datetime, estimator, *, suppress_output: b
 
 
 def _contract_estimator(estimator):
+    def candidate(*args, **kwargs):
+        failure_kind = None
+        try:
+            return estimator(*args, **kwargs)
+        except Exception as exc:
+            failure_kind = type(exc).__name__
+        raise RuntimeError(f"candidate raised {failure_kind}")
+
     def validated(bolus_events, ic_segments, **kwargs):
-        return call_ic_block_estimator(estimator, bolus_events, ic_segments, **kwargs)
+        return call_ic_block_estimator(candidate, bolus_events, ic_segments, **kwargs)
 
     return validated
 

@@ -66,12 +66,12 @@ class StableEraReplayTest(unittest.TestCase):
         self.assertNotIn("110", output)    # meal BG value
         self.assertNotIn("meal row", output)
 
-    def test_mid_window_carb_ratio_reprogramming_is_refused(self):
+    def test_mid_window_ic_reprogramming_is_refused(self):
         truth = self._truth()
         changed_at = truth["analysis_start"] + timedelta(days=7)
         truth["snapshots"].append(Snapshot(
             changed_at, _settings_changed(truth["settings"], ratio=4.0)))
-        with self.assertRaisesRegex(WindowRefused, "carb-ratio schedule changed"):
+        with self.assertRaisesRegex(WindowRefused, "I:C schedule changed"):
             self._replay(truth)
 
     def test_first_snapshot_mid_window_without_a_baseline_is_refused(self):
@@ -202,3 +202,9 @@ class StableEraReplayTest(unittest.TestCase):
                 self.assertEqual(replay_stable_era.main(), 1)
         self.assertIn("RuntimeError", stderr.getvalue())
         self.assertNotIn("60g", stderr.getvalue())
+
+    def test_run_replay_sanitizes_candidate_exception(self):
+        with self.assertRaisesRegex(RuntimeError, "candidate raised RuntimeError") as raised:
+            self._replay(self._truth(), raises_with_analysis_data)
+        self.assertNotIn("meal 60g", str(raised.exception))
+        self.assertIsNone(raised.exception.__context__)

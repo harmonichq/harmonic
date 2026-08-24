@@ -37,7 +37,7 @@ const QUIET_ROW = 0.9;
 const toMs = (t) => new Date(String(t).replace(' ', 'T')).getTime();
 
 /* ================= HERO: glucose curve + rings + thin dosing-tick row =================
-   `day` is the /timeline payload (cgm · boluses · basal · sleep/rest windows · pump
+   `day` is the /api/timeline payload (cgm · boluses · basal · sleep/rest windows · pump
    events); the model anchors ride the overlay below. showTimeAxis flips the HH:MM
    labels — the host shows them only on the lowest currently-open strip. */
 export function buildHeroOption(day, dateStr, { colors, carbEntries = [], xMin, xMax, showTimeAxis = true } = {}) {

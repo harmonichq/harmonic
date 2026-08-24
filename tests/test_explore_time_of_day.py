@@ -41,7 +41,7 @@ class ExploreTimeOfDayTest(unittest.TestCase):
             store.upsert_bolus(bolus)
 
     def _body(self):
-        response = self.client.get("/explore/time-of-day")
+        response = self.client.get("/api/explore/time-of-day")
         self.assertEqual(response.status_code, 200, response.text)
         return response.json()
 
@@ -216,10 +216,10 @@ class ExploreTimeOfDayTest(unittest.TestCase):
             self._body()
             self._body()
             self.assertEqual(len(calls), 1)
-            self.assertEqual(self.client.put("/plan", json={"items": []}).status_code, 200)
+            self.assertEqual(self.client.put("/api/plan", json={"items": []}).status_code, 200)
             self._body()
             self.assertEqual(len(calls), 1)
-            self.assertEqual(self.client.post("/carbs", json={
+            self.assertEqual(self.client.post("/api/carbs", json={
                 "t": "2026-06-30 12:05:00", "grams": 8, "certainty": "exact"}).status_code, 200)
             self._body()
             self.assertEqual(len(calls), 2)
@@ -231,10 +231,10 @@ class ExploreTimeOfDayAuthTest(unittest.TestCase):
         from ciq_autotune.api import create_app
         with tempfile.NamedTemporaryFile(suffix=".db") as db:
             client = TestClient(create_app(db_path=db.name, token="secret", enable_fetch_loop=False))
-            self.assertEqual(client.get("/explore/time-of-day").status_code, 401)
-            self.assertEqual(client.get("/explore/time-of-day", headers={
+            self.assertEqual(client.get("/api/explore/time-of-day").status_code, 401)
+            self.assertEqual(client.get("/api/explore/time-of-day", headers={
                 "Authorization": "Bearer wrong"}).status_code, 401)
-            response = client.get("/explore/time-of-day", headers={
+            response = client.get("/api/explore/time-of-day", headers={
                 "Authorization": "Bearer secret"})
             self.assertEqual(response.status_code, 200)
             self.assertEqual(response.json(), {

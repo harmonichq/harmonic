@@ -110,14 +110,15 @@ uv run harmonic backtest                # score basal on held-out days
 uv run harmonic report --plot           # markdown advisory + why-plot
 ```
 
-The most-used routes are GET /analyze, POST /fetch, GET/POST /credentials, GET
-/status, GET /pump-settings, GET /report and GET /health, plus the UI at `/`.
+The most-used routes are GET `/api/analyze`, POST `/api/fetch`, GET/POST
+`/api/credentials`, GET `/api/status`, GET `/api/pump-settings`, GET
+`/api/report`, and GET `/api/health`, plus the UI at `/diagnose`.
 They are a small sample. The server registers roughly seventy routes, about half
 of them data endpoints — the Diagnose findings queue, event comparisons,
 scenarios, the Plan draft and its history, Verify trials, outcomes and their
 trend, the carb log, prompts, focus, the timeline, backtests, the model view and
 more — and the rest the static files the UI loads. The complete list is
-browsable at `/docs` (FastAPI's Swagger UI) once `serve` is running.
+browsable at `/api/docs` (FastAPI's Swagger UI) once `serve` is running.
 
 `fetch` is idempotent: re-pulling an overlapping window merges rather than
 duplicates, so you can run it repeatedly. Windows longer than 31 days are split
@@ -158,8 +159,8 @@ it is unset (fail-fast beats a silent "data won't update").
 - Set `TCONNECT_EMAIL` / `TCONNECT_PASSWORD` / `TCONNECT_REGION` in the compose
   file. On first run they seed the encrypted credentials table; after that,
   editing them has no effect (credentials resolve DB-first).
-- Or leave them unset and POST to `/credentials` once the server is up. The
-  fetch loop records an error to `/status` and keeps serving until credentials
+- Or leave them unset and POST to `/api/credentials` once the server is up. The
+  fetch loop records an error to `/api/status` and keeps serving until credentials
   exist — no restart needed.
 
 **The API is open unless you set a token.** `HARMONIC_API_TOKEN` gates all three

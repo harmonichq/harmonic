@@ -60,82 +60,82 @@ function withToken(token, fn) {
 // URL / method / query-string construction
 // ---------------------------------------------------------------------------
 
-test('fetchCredentials builds GET /credentials', async () => {
+test('fetchCredentials builds GET /api/credentials', async () => {
   const { fetch, calls } = makeFakeFetch({ configured: true });
   const { fetchCredentials } = makeDeps({ fetch });
   await fetchCredentials();
   assert.equal(calls.length, 1);
-  assert.equal(calls[0].url, '/credentials');
+  assert.equal(calls[0].url, '/api/credentials');
   assert.ok(!calls[0].opts.method || calls[0].opts.method === 'GET');
 });
 
-test('saveCredentials builds POST /credentials with JSON body', async () => {
+test('saveCredentials builds POST /api/credentials with JSON body', async () => {
   const { fetch, calls } = makeFakeFetch({ configured: true });
   const { saveCredentials } = makeDeps({ fetch });
   const form = { email: 'a@b.com', password: 's3cr3t', region: 'US' };
   await saveCredentials(form);
-  assert.equal(calls[0].url, '/credentials');
+  assert.equal(calls[0].url, '/api/credentials');
   assert.equal(calls[0].opts.method, 'POST');
   assert.equal(calls[0].opts.headers['Content-Type'], 'application/json');
   assert.deepEqual(JSON.parse(calls[0].opts.body), form);
 });
 
-test('fetchStatus builds GET /status', async () => {
+test('fetchStatus builds GET /api/status', async () => {
   const { fetch, calls } = makeFakeFetch({});
   const { fetchStatus } = makeDeps({ fetch });
   await fetchStatus();
-  assert.equal(calls[0].url, '/status');
+  assert.equal(calls[0].url, '/api/status');
   assert.ok(!calls[0].opts.method || calls[0].opts.method === 'GET');
 });
 
-test('fetchNow builds POST /fetch', async () => {
+test('fetchNow builds POST /api/fetch', async () => {
   const { fetch, calls } = makeFakeFetch({});
   const { fetchNow } = makeDeps({ fetch });
   await fetchNow();
-  assert.equal(calls[0].url, '/fetch');
+  assert.equal(calls[0].url, '/api/fetch');
   assert.equal(calls[0].opts.method, 'POST');
 });
 
-test('fetchPumpSettings builds GET /pump-settings', async () => {
+test('fetchPumpSettings builds GET /api/pump-settings', async () => {
   const { fetch, calls } = makeFakeFetch({ configured: false });
   const { fetchPumpSettings } = makeDeps({ fetch });
   await fetchPumpSettings();
-  assert.equal(calls[0].url, '/pump-settings');
+  assert.equal(calls[0].url, '/api/pump-settings');
 });
 
-test('fetchBacktest builds GET /backtest with default holdout', async () => {
+test('fetchBacktest builds GET /api/backtest with default holdout', async () => {
   const { fetch, calls } = makeFakeFetch({ n_matched: 0 });
   const { fetchBacktest } = makeDeps({ fetch });
   await fetchBacktest();
-  assert.equal(calls[0].url, '/backtest');
+  assert.equal(calls[0].url, '/api/backtest');
 });
 
 test('fetchBacktest appends ?holdout_days when non-default', async () => {
   const { fetch, calls } = makeFakeFetch({ n_matched: 0 });
   const { fetchBacktest } = makeDeps({ fetch });
   await fetchBacktest({ holdoutDays: 5 });
-  assert.equal(calls[0].url, '/backtest?holdout_days=5');
+  assert.equal(calls[0].url, '/api/backtest?holdout_days=5');
 });
 
-test('fetchAnalysis builds GET /analyze without params by default', async () => {
+test('fetchAnalysis builds GET /api/analyze without params by default', async () => {
   const { fetch, calls } = makeFakeFetch({ basal: [], isf: [], ic: [] });
   const { fetchAnalysis } = makeDeps({ fetch });
   await fetchAnalysis();
-  assert.equal(calls[0].url, '/analyze');
+  assert.equal(calls[0].url, '/api/analyze');
 });
 
 test('fetchAnalysis appends ?ignore_changes=1 when requested', async () => {
   const { fetch, calls } = makeFakeFetch({});
   const { fetchAnalysis } = makeDeps({ fetch });
   await fetchAnalysis({ ignoreChanges: true });
-  assert.equal(calls[0].url, '/analyze?ignore_changes=1');
+  assert.equal(calls[0].url, '/api/analyze?ignore_changes=1');
 });
 
 test('fetchAnalysis appends window param when provided', async () => {
   const { fetch, calls } = makeFakeFetch({});
   const { fetchAnalysis } = makeDeps({ fetch });
   await fetchAnalysis({ window: 14 });
-  assert.equal(calls[0].url, '/analyze?window=14');
+  assert.equal(calls[0].url, '/api/analyze?window=14');
 });
 
 test('fetchAnalysis appends both params together', async () => {
@@ -143,14 +143,14 @@ test('fetchAnalysis appends both params together', async () => {
   const { fetchAnalysis } = makeDeps({ fetch });
   await fetchAnalysis({ window: 7, ignoreChanges: true });
   // URLSearchParams orders by insertion: window first, then ignore_changes.
-  assert.equal(calls[0].url, '/analyze?window=7&ignore_changes=1');
+  assert.equal(calls[0].url, '/api/analyze?window=7&ignore_changes=1');
 });
 
-test('fetchScenarios builds GET /scenarios?window=N', async () => {
+test('fetchScenarios builds GET /api/scenarios?window=N', async () => {
   const { fetch, calls } = makeFakeFetch({ patterns: [], episodes: {} });
   const { fetchScenarios } = makeDeps({ fetch });
   await fetchScenarios(30);
-  assert.equal(calls[0].url, '/scenarios?window=30');
+  assert.equal(calls[0].url, '/api/scenarios?window=30');
 });
 
 test('fetchCatalog builds GET /api/catalog', async () => {
@@ -166,18 +166,18 @@ test('fetchVerifyTrials builds the bounded roster request with selection', async
   await fetchVerifyTrials({ selected: 'carb_ratio-12-00-20260605090000' });
   assert.equal(
     calls[0].url,
-    '/verify/trials?selected=carb_ratio-12-00-20260605090000',
+    '/api/verify/trials?selected=carb_ratio-12-00-20260605090000',
   );
 });
 
-test('fetchTimeline builds GET /timeline with encoded start/end', async () => {
+test('fetchTimeline builds GET /api/timeline with encoded start/end', async () => {
   const { fetch, calls } = makeFakeFetch({ cgm: [], boluses: [], basal: [] });
   const { fetchTimeline } = makeDeps({ fetch });
   const start = '2025-01-01T00:00:00';
   const end   = '2025-01-08T00:00:00';
   await fetchTimeline({ start, end });
   const url = calls[0].url;
-  assert.ok(url.startsWith('/timeline?'), `expected /timeline? prefix, got: ${url}`);
+  assert.ok(url.startsWith('/api/timeline?'), `expected /api/timeline? prefix, got: ${url}`);
   assert.ok(url.includes('start=' + encodeURIComponent(start)), `missing start param: ${url}`);
   assert.ok(url.includes('end='   + encodeURIComponent(end)),   `missing end param: ${url}`);
 });
@@ -198,18 +198,18 @@ test('per-day reads forward an abort signal', async () => {
   for (const call of calls) assert.equal(call.opts.signal, signal);
 });
 
-test('loadPlan builds GET /plan', async () => {
+test('loadPlan builds GET /api/plan', async () => {
   const { fetch, calls } = makeFakeFetch({ items: [] });
   const { loadPlan } = makeDeps({ fetch });
   await loadPlan();
-  assert.equal(calls[0].url, '/plan');
+  assert.equal(calls[0].url, '/api/plan');
   assert.ok(!calls[0].opts.method || calls[0].opts.method === 'GET');
 });
 
 test('fetchExploreTimeOfDay builds the fixed server-owned endpoint', async () => {
   const { fetch, calls } = makeFakeFetch({ bins: [] });
   await makeDeps({ fetch }).fetchExploreTimeOfDay();
-  assert.equal(calls[0].url, '/explore/time-of-day');
+  assert.equal(calls[0].url, '/api/explore/time-of-day');
 });
 
 test('fetchDiagnoseEventComparison builds one coordinate-owned projection request', async () => {
@@ -219,13 +219,13 @@ test('fetchDiagnoseEventComparison builds one coordinate-owned projection reques
     occurrenceId: 'lows-42',
   });
   assert.equal(calls[0].url,
-    '/diagnose/event-comparison?view=lows&factor=correction_on_iob&start_min=1320&end_min=120&another=1&occ=lows-42');
+    '/api/diagnose/event-comparison?view=lows&factor=correction_on_iob&start_min=1320&end_min=120&another=1&occ=lows-42');
 });
 
 test('fetchDiagnoseFindings omits selection when no history identity is supplied', async () => {
   const { fetch, calls } = makeFakeFetch({ schema: 'diagnose-findings-v2' });
   await makeDeps({ fetch }).fetchDiagnoseFindings();
-  assert.equal(calls[0].url, '/diagnose/findings');
+  assert.equal(calls[0].url, '/api/diagnose/findings');
 });
 
 test('fetchDiagnoseFindings carries an optional selected history identity', async () => {
@@ -233,7 +233,7 @@ test('fetchDiagnoseFindings carries an optional selected history identity', asyn
   await makeDeps({ fetch }).fetchDiagnoseFindings(
     { start_min: 1320, end_min: 120 }, 'ich1_WzAsNzIwLCI2Il0');
   assert.equal(calls[0].url,
-    '/diagnose/findings?start_min=1320&end_min=120&selected_id=ich1_WzAsNzIwLCI2Il0');
+    '/api/diagnose/findings?start_min=1320&end_min=120&selected_id=ich1_WzAsNzIwLCI2Il0');
 });
 
 test('history events carries the findings generation and optional run selection', async () => {
@@ -245,7 +245,7 @@ test('history events carries the findings generation and optional run selection'
     selectedRunId: 'icr1_run',
   });
   assert.equal(calls[0].url,
-    '/diagnose/carb-ratio-history/events?history_id=ich1_history&analysis_generation=process%3A4&selected_run_id=icr1_run');
+    '/api/diagnose/carb-ratio-history/events?history_id=ich1_history&analysis_generation=process%3A4&selected_run_id=icr1_run');
 });
 
 test('Finding case-file preparation forwards the server-owned window and history selection', async () => {
@@ -255,8 +255,8 @@ test('Finding case-file preparation forwards the server-owned window and history
     { start_min: 1320, end_min: 120 }, 'ich1_WzAsNzIwLCI2Il0');
   await api.fetchDiagnoseFindingCasePreparation(null);
   assert.equal(calls[0].url,
-    '/diagnose/finding-case-file-preparation?start_min=1320&end_min=120&selected_id=ich1_WzAsNzIwLCI2Il0');
-  assert.equal(calls[1].url, '/diagnose/finding-case-file-preparation');
+    '/api/diagnose/finding-case-file-preparation?start_min=1320&end_min=120&selected_id=ich1_WzAsNzIwLCI2Il0');
+  assert.equal(calls[1].url, '/api/diagnose/finding-case-file-preparation');
 });
 
 test('Finding case-file request sends the opaque preparation and Occurrence coordinates exactly', async () => {
@@ -268,7 +268,7 @@ test('Finding case-file request sends the opaque preparation and Occurrence coor
     occ: 'o_fedcba9876543210fedcba9876543210',
   });
   assert.equal(calls[0].url,
-    '/diagnose/finding-case-file?projection_id=fp_0123456789abcdef0123456789abcdef'
+    '/api/diagnose/finding-case-file?projection_id=fp_0123456789abcdef0123456789abcdef'
     + '&finding_id=finding%3Acorrection_stacking&alignment=event'
     + '&occ=o_fedcba9876543210fedcba9876543210');
 });
@@ -412,33 +412,33 @@ test('audit dismissal uses the stable item id and evidence fingerprint', async (
   const deps = makeDeps({ fetch });
   await deps.fetchAuditDismissals();
   await deps.dismissAuditItem('basal:2', 'evidence-v1');
-  assert.equal(calls[0].url, '/audit/dismissals');
+  assert.equal(calls[0].url, '/api/audit/dismissals');
   assert.deepEqual(JSON.parse(calls[1].opts.body), { item_id:'basal:2', evidence_fingerprint:'evidence-v1' });
 });
 
-test('savePlanDraft builds PUT /plan with JSON body', async () => {
+test('savePlanDraft builds PUT /api/plan with JSON body', async () => {
   const { fetch, calls } = makeFakeFetch({ items: [] });
   const { savePlanDraft } = makeDeps({ fetch });
   const draft = { items: [{ type: 'basal', key: 'basal:0' }] };
   await savePlanDraft(draft);
-  assert.equal(calls[0].url, '/plan');
+  assert.equal(calls[0].url, '/api/plan');
   assert.equal(calls[0].opts.method, 'PUT');
   assert.equal(calls[0].opts.headers['Content-Type'], 'application/json');
   assert.deepEqual(JSON.parse(calls[0].opts.body), draft);
 });
 
-test('loadPlanHistory builds GET /plan/history', async () => {
+test('loadPlanHistory builds GET /api/plan/history', async () => {
   const { fetch, calls } = makeFakeFetch({ history: [] });
   const { loadPlanHistory } = makeDeps({ fetch });
   await loadPlanHistory();
-  assert.equal(calls[0].url, '/plan/history');
+  assert.equal(calls[0].url, '/api/plan/history');
 });
 
-test('applyPlan builds POST /plan/apply', async () => {
+test('applyPlan builds POST /api/plan/apply', async () => {
   const { fetch, calls } = makeFakeFetch({});
   const { applyPlan } = makeDeps({ fetch });
   await applyPlan();
-  assert.equal(calls[0].url, '/plan/apply');
+  assert.equal(calls[0].url, '/api/plan/apply');
   assert.equal(calls[0].opts.method, 'POST');
 });
 

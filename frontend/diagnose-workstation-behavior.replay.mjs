@@ -28,9 +28,14 @@ import { extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { projectSyntheticCapture } from '../mockups/diagnose-event-comparison.synthetic/project.mjs';
 import { projectFindings, projectIcHistoryEvents } from '../mockups/findings-projection.mirror.mjs';
+// ADR 94: a router-owned page path IS the SPA document. Reload stories re-request
+// the address the app canonicalized to (`/diagnose?...`), so the page set has to
+// come from the router that owns it rather than a second list here.
+import { TABS as ROUTER_TABS } from './tab-routing.js';
 
 const require = createRequire(import.meta.url);
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
+const PAGE_PATHS = new Set(ROUTER_TABS.map((tab) => `/${tab.id}`));
 const MIME = { '.js': 'text/javascript', '.css': 'text/css', '.html': 'text/html', '.json': 'application/json', '.svg': 'image/svg+xml' };
 const FINDINGS_PROJECTION = JSON.parse(await readFile(
   join(ROOT, 'frontend/__fixtures__/findings-projection.json'), 'utf8'));
@@ -448,10 +453,11 @@ export async function openApp(browser, {
   };
   const exposuresFrom = typeof exposuresInputs === 'function'
     ? await exposuresInputs(defaults) : (exposuresInputs || payload.exposures);
+  const apiPattern = (path) => new RegExp(`^/api${path}`);
   const STUBS = [
     // #698: the endpoint serves the bounded server-owned projection per
     // coordinate; exposures ride on their own #654 endpoint again.
-    [/^\/diagnose\/event-comparison/, (url) => projectSyntheticCapture(capture, {
+    [apiPattern('/diagnose/event-comparison'), (url) => projectSyntheticCapture(capture, {
       view: url.searchParams.get('view') || 'meals',
       factor: url.searchParams.get('factor') || undefined,
       window: url.searchParams.get('start_min') === null ? null : {
@@ -465,7 +471,7 @@ export async function openApp(browser, {
        browser gates have no Python, so the stub answers from the fixture-only JS
        mirror, which `frontend/findings-projection-mirror.test.js` deep-compares
        against the real projection's own frozen output window for window. */
-    [/^\/diagnose\/findings/, (url) => {
+    [apiPattern('/diagnose/findings'), (url) => {
       const projected = projectFindings(findingsFrom,
         url.searchParams.get('start_min') === null ? null : {
         start_min: Number(url.searchParams.get('start_min')),
@@ -474,26 +480,26 @@ export async function openApp(browser, {
       return typeof findingsProjectionInputs === 'function'
         ? findingsProjectionInputs(projected) : projected;
     }],
-    [/^\/explore\/exposures/, () => exposuresFrom],
-    [/^\/analyze/, () => findingsFrom.analysis],
-    [/^\/scenarios/, () => findingsFrom.scenarios],
-    [/^\/explore\/time/, () => payload.evidence],
-    [/^\/status/, () => ({ ok: true, last_fetch: payload.analyze.generated_at, counts: payload.analyze.data_quality?.counts || {} })],
-    [/^\/plan\/history/, () => ({ history: [] })],
-    [/^\/plan/, () => ({ items: [], updated_at: null })],
-    [/^\/verify\/trials/, () => ({ trials: [] })],
-    [/^\/api\/catalog/, () => ({ articles: [] })],
-    [/^\/carbs/, () => ({ entries: [] })],
-    [/^\/prompts/, () => ({ prompts: [] })],
-    [/^\/credentials/, () => ({ configured: true })],
-    [/^\/audit\/dismissals/, () => ({ dismissed: [] })],
-    [/^\/outcomes/, () => ({ points: [] })],
-    [/^\/timeline/, () => ({ events: [] })],
-    [/^\/backtest/, () => ({ folds: [] })],
-    [/^\/model/, () => ({ entries: [] })],
-    [/^\/day/, () => ({ days: [] })],
-    [/^\/pump-settings$/, () => pumpSettingsFrom || ({ configured: false })],
-    [/^\/pump/, () => ({ settings: {} })],
+    [apiPattern('/explore/exposures'), () => exposuresFrom],
+    [apiPattern('/analyze'), () => findingsFrom.analysis],
+    [apiPattern('/scenarios'), () => findingsFrom.scenarios],
+    [apiPattern('/explore/time'), () => payload.evidence],
+    [apiPattern('/status'), () => ({ ok: true, last_fetch: payload.analyze.generated_at, counts: payload.analyze.data_quality?.counts || {} })],
+    [apiPattern('/plan/history'), () => ({ history: [] })],
+    [apiPattern('/plan'), () => ({ items: [], updated_at: null })],
+    [apiPattern('/verify/trials'), () => ({ trials: [] })],
+    [apiPattern('/catalog'), () => ({ articles: [] })],
+    [apiPattern('/carbs'), () => ({ entries: [] })],
+    [apiPattern('/prompts'), () => ({ prompts: [] })],
+    [apiPattern('/credentials'), () => ({ configured: true })],
+    [apiPattern('/audit/dismissals'), () => ({ dismissed: [] })],
+    [apiPattern('/outcomes'), () => ({ points: [] })],
+    [apiPattern('/timeline'), () => ({ events: [] })],
+    [apiPattern('/backtest'), () => ({ folds: [] })],
+    [apiPattern('/model'), () => ({ entries: [] })],
+    [apiPattern('/day'), () => ({ days: [] })],
+    [apiPattern('/pump-settings$'), () => pumpSettingsFrom || ({ configured: false })],
+    [apiPattern('/pump'), () => ({ settings: {} })],
   ];
   const page = await browser.newPage({ viewport });
   let preparationRequests = 0;
@@ -532,8 +538,8 @@ export async function openApp(browser, {
     if (url.href.includes('echarts')) return route.fulfill({ body: await vendored('echarts.min.js'), contentType: 'text/javascript' });
     if (url.href.includes('vue')) return route.fulfill({ body: await vendored('vue.esm-browser.js'), contentType: 'text/javascript' });
     if (appSource === 'server' && url.origin === targetUrl.origin
-        && (path === '/' || /\.(js|css|svg|html)$/.test(path))) {
-      if (stageProbe && path === '/diagnose-workstation.js') {
+        && (path === '/' || PAGE_PATHS.has(path) || /\.(js|css|svg|html)$/.test(path))) {
+      if (stageProbe && path === '/assets/diagnose-workstation.js') {
         const source = await readFile(join(ROOT, 'frontend/diagnose-workstation.js'), 'utf8');
         const seam = 'export function createDiagnoseWorkstation({ root, callbacks = {}, railLead = null }) {';
         if (source.split(seam).length !== 2) fail('S71 staging seam must occur exactly once');
@@ -553,13 +559,13 @@ export async function openApp(browser, {
       return route.continue();
     }
     if (appSource === 'fixture' && url.origin === targetUrl.origin) {
-      if (path === '/') {
+      if (path === '/' || PAGE_PATHS.has(path)) {
         return route.fulfill({ body: await readFile(join(frontendRoot, 'index.html')), contentType: 'text/html' });
       }
       if (/\.(js|css|svg|html)$/.test(path)) {
         try {
           return route.fulfill({
-            body: await readFile(join(frontendRoot, path.slice(1))),
+            body: await readFile(join(frontendRoot, path.replace(/^\/assets\//, ''))),
             contentType: MIME[extname(path)] || 'text/plain',
           });
         } catch { /* fall through to the loud unrouted response below */ }
@@ -568,7 +574,7 @@ export async function openApp(browser, {
     /* The findings queue is a SERVER round trip, so a story that is about what
        the pane shows WHILE it is in flight needs that flight to last long enough
        to read. Delay, never stub differently: the response is the same one. */
-    if (path === '/diagnose/findings' || path === '/diagnose/finding-case-file-preparation') {
+    if (path === '/api/diagnose/findings' || path === '/api/diagnose/finding-case-file-preparation') {
       const start = url.searchParams.get('start_min');
       const key = start === null ? 'global' : `${start}-${url.searchParams.get('end_min')}`;
       const delay = findingsDelays[key] ?? findingsDelayMs;
@@ -581,7 +587,7 @@ export async function openApp(browser, {
             : { detail: 'findings unavailable' }) });
       }
     }
-    if (path === '/diagnose/finding-case-file-preparation') {
+    if (path === '/api/diagnose/finding-case-file-preparation') {
       preparationRequests += 1;
       const windowKey = url.searchParams.get('start_min') === null ? null
         : `${url.searchParams.get('start_min')}-${url.searchParams.get('end_min')}`;
@@ -640,7 +646,7 @@ export async function openApp(browser, {
       return route.fulfill({ contentType: 'application/json',
         body: JSON.stringify(preparedBody) });
     }
-    if (path === '/diagnose/finding-case-file') {
+    if (path === '/api/diagnose/finding-case-file') {
       caseRequests += 1;
       const finding = caseFiles.cases[url.searchParams.get('finding_id')];
       const alignment = url.searchParams.get('alignment');
@@ -662,9 +668,9 @@ export async function openApp(browser, {
       return route.fulfill({ status: finding ? 200 : 404, contentType: 'application/json',
         body: JSON.stringify(body) });
     }
-    const planned = path === '/diagnose/findings' && url.searchParams.has('selected_id')
+    const planned = path === '/api/diagnose/findings' && url.searchParams.has('selected_id')
       ? selectedFindingsResponses.shift()
-      : path === '/diagnose/carb-ratio-history/events' ? historyResponses.shift() : null;
+      : path === '/api/diagnose/carb-ratio-history/events' ? historyResponses.shift() : null;
     if (planned) {
       if (planned.delayMs) await new Promise((resolve) => { setTimeout(resolve, planned.delayMs); });
       const status = planned.status || 200;
@@ -672,7 +678,7 @@ export async function openApp(browser, {
         return route.fulfill({ status, contentType: 'application/json',
           body: JSON.stringify({ detail: planned.detail }) });
       }
-      const generated = path === '/diagnose/findings'
+      const generated = path === '/api/diagnose/findings'
         ? projectFindings(findingsFrom,
           url.searchParams.get('start_min') === null ? null : {
             start_min: Number(url.searchParams.get('start_min')),
@@ -684,17 +690,17 @@ export async function openApp(browser, {
         : planned.body || generated;
       return route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
     }
-    if (path === '/diagnose/carb-ratio-history/events') {
+    if (path === '/api/diagnose/carb-ratio-history/events') {
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify(
         projectIcHistoryEvents(historyCapture.inputs, url.searchParams.get('history_id'),
           url.searchParams.get('selected_run_id')),
       ) });
     }
-    if (comparisonProjection !== null && path === '/diagnose/event-comparison') {
+    if (comparisonProjection !== null && path === '/api/diagnose/event-comparison') {
       return route.fulfill({ contentType: 'application/json',
         body: JSON.stringify(comparisonProjection) });
     }
-    if (path === '/plan' && route.request().method() === 'PUT') {
+    if (path === '/api/plan' && route.request().method() === 'PUT') {
       const draft = JSON.parse(route.request().postData() || '{}');
       onPlanDraft?.(draft);
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify({
@@ -1362,7 +1368,7 @@ async function setupWorkspaceAtFactor(page) {
   return s;
 }
 
-/** D1 · A DELAYED successful /timeline resolves the real trace AFTER an
+/** D1 · A DELAYED successful /api/timeline resolves the real trace AFTER an
     occurrence is selected in place (P35 retired: there is no occurrence level
     to be "at"). The late arrival repaints in place: the reader stays at the
     same drilled factor, the #level/#chart nodes keep their identity, and the
@@ -1387,7 +1393,7 @@ export const D1 = async (page) => {
   ok(sameLevel && sameChart, 'D1 selection preserves the standing surface nodes');
 };
 
-/** D2 · An EXPLICIT empty /timeline ({ cgm: [] }) is the deliberate no-trace
+/** D2 · An EXPLICIT empty /api/timeline ({ cgm: [] }) is the deliberate no-trace
     state — the level says so and NO 'That day' series is ever minted. Asserted
     against an explicit empty stub, not a catch-all 404. */
 export const D2 = async (page) => {
@@ -1409,7 +1415,7 @@ export const D2 = async (page) => {
   ok(sameLevel && sameChart, 'D2 #level/#chart keep their identity — an empty day never remounts');
 };
 
-/** D3 · A /timeline that 500s settles into the no-trace state without any
+/** D3 · A /api/timeline that 500s settles into the no-trace state without any
     teardown: depth 3 holds, the sentence stays no-trace, the #level/#chart nodes
     keep their identity, and the drawn window and staged item are unchanged. */
 export const D3 = async (page) => {
@@ -1806,7 +1812,7 @@ export const S32 = async (page) => {
   await settle(page, 600);
   const request = page.waitForRequest((candidate) => {
     const url = new URL(candidate.url());
-    return url.pathname === '/diagnose/finding-case-file' && url.searchParams.has('occ');
+    return url.pathname === '/api/diagnose/finding-case-file' && url.searchParams.has('occ');
   });
   await page.click('#level .ev-row');
   const requested = new URL((await request).url()).searchParams.get('occ');
@@ -1850,7 +1856,7 @@ export const S40 = async (page) => {
   await settle(page, 600);
   const request = page.waitForRequest((candidate) => {
     const url = new URL(candidate.url());
-    return url.pathname === '/diagnose/finding-case-file' && url.searchParams.has('occ');
+    return url.pathname === '/api/diagnose/finding-case-file' && url.searchParams.has('occ');
   });
   await page.click('#level .ev-row');
   const requested = new URL((await request).url()).searchParams.get('occ');
@@ -1981,7 +1987,7 @@ export const S48 = async (page) => {
 export const S49 = async (page) => {
   const requests = [];
   page.on('request', (request) => {
-    if (new URL(request.url()).pathname === '/diagnose/carb-ratio-history/events') requests.push(new URL(request.url()));
+    if (new URL(request.url()).pathname === '/api/diagnose/carb-ratio-history/events') requests.push(new URL(request.url()));
   });
   await openHistoryEvents(page);
   const s = await state(page);
@@ -2087,11 +2093,11 @@ export const S57 = async (page) => {
   const calls = { findings: 0, events: 0 };
   page.on('request', (request) => {
     const url = new URL(request.url());
-    if (url.pathname === '/diagnose/findings' && url.searchParams.has('selected_id')) calls.findings += 1;
-    if (url.pathname === '/diagnose/carb-ratio-history/events') calls.events += 1;
+    if (url.pathname === '/api/diagnose/findings' && url.searchParams.has('selected_id')) calls.findings += 1;
+    if (url.pathname === '/api/diagnose/carb-ratio-history/events') calls.events += 1;
   });
   await openHistoryCase(page);
-  expectResponse(page, /\/diagnose\/carb-ratio-history\/events/, 410);
+  expectResponse(page, /\/api\/diagnose\/carb-ratio-history\/events/, 410);
   await page.getByRole('button', { name: 'By event', exact: true }).click();
   await assertRetired(page, 'Past-setting evidence aged out of the 90-day window.', 'S57');
   is(calls, { findings: 1, events: 1 }, 'S57 refreshes selection once and never retries event evidence');
@@ -2102,11 +2108,11 @@ export const S58 = async (page) => {
   const calls = { findings: 0, events: 0 };
   page.on('request', (request) => {
     const url = new URL(request.url());
-    if (url.pathname === '/diagnose/findings' && url.searchParams.has('selected_id')) calls.findings += 1;
-    if (url.pathname === '/diagnose/carb-ratio-history/events') calls.events += 1;
+    if (url.pathname === '/api/diagnose/findings' && url.searchParams.has('selected_id')) calls.findings += 1;
+    if (url.pathname === '/api/diagnose/carb-ratio-history/events') calls.events += 1;
   });
   await openHistoryCase(page);
-  expectResponse(page, /\/diagnose\/carb-ratio-history\/events/, 410);
+  expectResponse(page, /\/api\/diagnose\/carb-ratio-history\/events/, 410);
   await page.getByRole('button', { name: 'By event', exact: true }).click();
   await assertRetired(page, 'Past-setting evidence no longer maps to one current program block.', 'S58');
   is(calls, { findings: 1, events: 1 }, 'S58 refreshes selection once and never retries event evidence');
@@ -2116,7 +2122,7 @@ export const S58 = async (page) => {
 export const S59 = async (page) => {
   await openHistoryCase(page);
   const before = await state(page);
-  expectResponse(page, /\/diagnose\/carb-ratio-history\/events/, 500);
+  expectResponse(page, /\/api\/diagnose\/carb-ratio-history\/events/, 500);
   await page.getByRole('button', { name: 'By event', exact: true }).click();
   await settle(page, 150);
   const pending = await state(page);
@@ -2134,14 +2140,14 @@ export const S60 = async (page) => {
   const calls = [];
   page.on('request', (request) => {
     const url = new URL(request.url());
-    if (url.pathname.startsWith('/diagnose/')) calls.push(url.pathname);
+    if (url.pathname.startsWith('/api/diagnose/')) calls.push(url.pathname);
   });
   await openHistoryCase(page);
-  expectResponse(page, /\/diagnose\/carb-ratio-history\/events/, 409);
+  expectResponse(page, /\/api\/diagnose\/carb-ratio-history\/events/, 409);
   await page.getByRole('button', { name: 'By event', exact: true }).click();
   await settle(page, 900);
-  ok(calls.slice(-2)[0] === '/diagnose/findings'
-    && calls.slice(-2)[1] === '/diagnose/carb-ratio-history/events', 'S60 retry is findings then events');
+  ok(calls.slice(-2)[0] === '/api/diagnose/findings'
+    && calls.slice(-2)[1] === '/api/diagnose/carb-ratio-history/events', 'S60 retry is findings then events');
   const s = await state(page);
   is(s.history.canvasGeneration, s.history.generation, 'S60 coherent replacement generation commits');
 };
@@ -2149,11 +2155,11 @@ export const S60 = async (page) => {
 // STORY:finding-evidence-routing:S61
 export const S61 = async (page) => {
   let requests = 0;
-  page.on('request', (request) => { if (new URL(request.url()).pathname.startsWith('/diagnose/')) requests += 1; });
+  page.on('request', (request) => { if (new URL(request.url()).pathname.startsWith('/api/diagnose/')) requests += 1; });
   await openHistoryCase(page);
   const before = await state(page);
-  expectResponse(page, /\/diagnose\/carb-ratio-history\/events/, 500);
-  expectResponse(page, /\/diagnose\/findings/, 500);
+  expectResponse(page, /\/api\/diagnose\/carb-ratio-history\/events/, 500);
+  expectResponse(page, /\/api\/diagnose\/findings/, 500);
   await page.getByRole('button', { name: 'By event', exact: true }).click();
   await settle(page, 850);
   const terminal = await state(page);
@@ -2168,8 +2174,8 @@ export const S61 = async (page) => {
 // STORY:finding-evidence-routing:S62
 export const S62 = async (page) => {
   await openHistoryCase(page);
-  expectResponse(page, /\/diagnose\/carb-ratio-history\/events/, 500);
-  expectResponse(page, /\/diagnose\/findings/, 500);
+  expectResponse(page, /\/api\/diagnose\/carb-ratio-history\/events/, 500);
+  expectResponse(page, /\/api\/diagnose\/findings/, 500);
   await page.getByRole('button', { name: 'By event', exact: true }).click();
   await settle(page, 750);
   const stale = await state(page);
@@ -2185,8 +2191,8 @@ export const S62 = async (page) => {
 const assertTypedFindingsFailure = async (page, status, code, story) => {
   await openHistoryCase(page);
   const before = await state(page);
-  expectResponse(page, /\/diagnose\/findings/, status);
-  expectResponse(page, /\/diagnose\/findings/, status);
+  expectResponse(page, /\/api\/diagnose\/findings/, status);
+  expectResponse(page, /\/api\/diagnose\/findings/, status);
   await page.getByRole('button', { name: 'Morning', exact: true }).click();
   await settle(page, 750);
   const after = await state(page);
@@ -2204,8 +2210,8 @@ export const S64 = async (page) => assertTypedFindingsFailure(page, 404, 'histor
 
 const assertTypedRunFailure = async (page, status, code, story) => {
   await openHistoryEvents(page);
-  expectResponse(page, /\/diagnose\/carb-ratio-history\/events/, status);
-  expectResponse(page, /\/diagnose\/carb-ratio-history\/events/, status);
+  expectResponse(page, /\/api\/diagnose\/carb-ratio-history\/events/, status);
+  expectResponse(page, /\/api\/diagnose\/carb-ratio-history\/events/, status);
   await page.locator('.history-run').first().click();
   await settle(page, 850);
   const s = await state(page);
@@ -2232,7 +2238,7 @@ export const S67 = async (page) => {
   const eventRequests = [];
   page.on('request', (request) => {
     const url = new URL(request.url());
-    if (url.pathname === '/diagnose/carb-ratio-history/events') {
+    if (url.pathname === '/api/diagnose/carb-ratio-history/events') {
       eventRequests.push({
         historyId: url.searchParams.get('history_id'),
         generation: url.searchParams.get('analysis_generation'),
@@ -2240,15 +2246,15 @@ export const S67 = async (page) => {
     }
   });
   const firstResponse = page.waitForResponse((response) =>
-    new URL(response.url()).pathname === '/diagnose/carb-ratio-history/events' && response.status() === 200);
+    new URL(response.url()).pathname === '/api/diagnose/carb-ratio-history/events' && response.status() === 200);
   await openHistoryEvents(page);
   const firstPayload = await (await firstResponse).json();
   const before = await state(page);
 
   await page.getByRole('button', { name: 'By clock', exact: true }).click();
-  expectResponse(page, /\/diagnose\/carb-ratio-history\/events/, 409);
+  expectResponse(page, /\/api\/diagnose\/carb-ratio-history\/events/, 409);
   const restartedResponse = page.waitForResponse((response) =>
-    new URL(response.url()).pathname === '/diagnose/carb-ratio-history/events' && response.status() === 200);
+    new URL(response.url()).pathname === '/api/diagnose/carb-ratio-history/events' && response.status() === 200);
   await page.getByRole('button', { name: 'By event', exact: true }).click();
   const restartedPayload = await (await restartedResponse).json();
   await settle(page, 700);
@@ -2350,7 +2356,7 @@ export const S71 = async (page) => {
   let draftWrites = 0;
   page.on('request', (request) => {
     const url = new URL(request.url());
-    if (url.pathname === '/plan' && request.method() !== 'GET') draftWrites += 1;
+    if (url.pathname === '/api/plan' && request.method() !== 'GET') draftWrites += 1;
   });
 
   await assertHistorySafety(page, draftWrites, 'before interaction');
@@ -2371,21 +2377,21 @@ export const S71 = async (page) => {
   await settle(page, 650);
   await assertHistorySafety(page, draftWrites, 'member selection');
 
-  expectResponse(page, /\/diagnose\/carb-ratio-history\/events/, 500);
+  expectResponse(page, /\/api\/diagnose\/carb-ratio-history\/events/, 500);
   await page.locator('.history-run').nth(1).click();
   await settle(page, 950);
   is((await state(page)).history.stale, false, 'S71 ordinary recovery succeeds once');
   await assertHistorySafety(page, draftWrites, 'ordinary recovery');
 
-  expectResponse(page, /\/diagnose\/carb-ratio-history\/events/, 409);
+  expectResponse(page, /\/api\/diagnose\/carb-ratio-history\/events/, 409);
   await page.locator('.history-run').first().click();
   await settle(page, 950);
   is((await state(page)).history.generation, RESTART_GENERATION,
     'S71 coordinated recovery commits one coherent replacement generation');
   await assertHistorySafety(page, draftWrites, 'coordinated recovery');
 
-  expectResponse(page, /\/diagnose\/carb-ratio-history\/events/, 500);
-  expectResponse(page, /\/diagnose\/findings/, 500);
+  expectResponse(page, /\/api\/diagnose\/carb-ratio-history\/events/, 500);
+  expectResponse(page, /\/api\/diagnose\/findings/, 500);
   await page.locator('.history-run').nth(1).click();
   await settle(page, 850);
   is((await state(page)).history.stale, true, 'S71 terminal recovery exposes explicit Retry');
@@ -2469,12 +2475,12 @@ export const S34 = async (page) => {
   const byEventRequests = [];
   const observeCaseRequest = (request) => {
     const url = new URL(request.url());
-    if (url.pathname === '/diagnose/finding-case-file') {
+    if (url.pathname === '/api/diagnose/finding-case-file') {
       byEventRequests.push(url.searchParams.get('alignment'));
     }
   };
   page.on('request', observeCaseRequest);
-  expectResponse(page, /^\/diagnose\/finding-case-file$/, 500);
+  expectResponse(page, /^\/api\/diagnose\/finding-case-file$/, 500);
   await page.getByRole('button', { name: 'By event', exact: true }).click();
   await settle(page, 900);
   page.off('request', observeCaseRequest);
@@ -2711,7 +2717,7 @@ export const issue81PendingProjection = async (page) => {
   await settle(page, 100);
   const eveningResponse = page.waitForResponse((candidate) => {
     const url = new URL(candidate.url());
-    return url.pathname === '/diagnose/finding-case-file-preparation'
+    return url.pathname === '/api/diagnose/finding-case-file-preparation'
       && url.searchParams.get('start_min') === '1080';
   });
   await page.click('#seg-window button:nth-child(4)');   // Evening, settles first
@@ -2761,7 +2767,7 @@ export const issue81FailedProjection = async (page) => {
   const failedResponse = page.waitForResponse((candidate) => {
     const url = new URL(candidate.url());
     return candidate.status() === 500
-      && url.pathname === '/diagnose/finding-case-file-preparation';
+      && url.pathname === '/api/diagnose/finding-case-file-preparation';
   });
   await drawWindow(page, [900, 1260], [330, 360]);      // only this scoped load fails
   await failedResponse;
@@ -2797,7 +2803,7 @@ export const issue81FailedProjection = async (page) => {
   const recoveryResponse = page.waitForResponse((candidate) => {
     const url = new URL(candidate.url());
     return candidate.status() === 200
-      && url.pathname === '/diagnose/finding-case-file-preparation'
+      && url.pathname === '/api/diagnose/finding-case-file-preparation'
       && url.searchParams.get('start_min') === '1080';
   });
   await page.click('#seg-window button:nth-child(4)');   // another window retries normally
@@ -2965,7 +2971,7 @@ export const issue86MalformedRecovery = async (page) => {
   const caseRequests = [];
   const observeCaseRequest = (request) => {
     const url = new URL(request.url());
-    if (url.pathname === '/diagnose/finding-case-file') {
+    if (url.pathname === '/api/diagnose/finding-case-file') {
       caseRequests.push(url.searchParams.get('alignment'));
     }
   };
@@ -3110,7 +3116,7 @@ export const C46 = async (page) => {
   await openWholeDay(page);
   await clickQueueRow(page, 'Over-treated low');
   const before = await page.locator('#level .who').innerText();
-  expectResponse(page, /^\/diagnose\/finding-case-file$/, 500);
+  expectResponse(page, /^\/api\/diagnose\/finding-case-file$/, 500);
   await page.getByRole('button', { name: 'By event', exact: true }).click();
   await page.waitForSelector('#level [role="alert"]');
   is(await page.locator('#level .who').innerText(), before,
@@ -3124,7 +3130,7 @@ export const C46 = async (page) => {
 export const C47 = async (page) => {
   await openWholeDay(page);
   await clickQueueRow(page, 'Over-treated low');
-  expectResponse(page, /^\/diagnose\/finding-case-file$/, 409);
+  expectResponse(page, /^\/api\/diagnose\/finding-case-file$/, 409);
   await page.getByRole('button', { name: 'By event', exact: true }).click();
   await settle(page, 120);
   is(await page.locator('#level .clock').count(), 1,
@@ -3142,8 +3148,8 @@ export const C47 = async (page) => {
 export const C48 = async (page) => {
   await openWholeDay(page);
   await clickQueueRow(page, 'Over-treated low');
-  expectResponse(page, /^\/diagnose\/finding-case-file$/, 404);
-  expectResponse(page, /^\/diagnose\/finding-case-file-preparation$/, 503);
+  expectResponse(page, /^\/api\/diagnose\/finding-case-file$/, 404);
+  expectResponse(page, /^\/api\/diagnose\/finding-case-file-preparation$/, 503);
   await page.getByRole('button', { name: 'By event', exact: true }).click();
   await page.waitForSelector('#level [role="alert"]');
   is(await page.locator('#level [role="alert"]').getAttribute('data-code'), 'preparation_changed',
@@ -3155,8 +3161,8 @@ export const C48 = async (page) => {
 export const C49 = async (page) => {
   await openWholeDay(page);
   await clickQueueRow(page, 'Over-treated low');
-  expectResponse(page, /^\/diagnose\/finding-case-file$/, 409);
-  expectResponse(page, /^\/diagnose\/finding-case-file$/, 500);
+  expectResponse(page, /^\/api\/diagnose\/finding-case-file$/, 409);
+  expectResponse(page, /^\/api\/diagnose\/finding-case-file$/, 500);
   await page.getByRole('button', { name: 'By event', exact: true }).click();
   await page.waitForSelector('#level [role="alert"]');
   is(await page.locator('#level .clock').count(), 1,
@@ -3168,7 +3174,7 @@ export const C49 = async (page) => {
 export const C50 = async (page) => {
   await openWholeDay(page);
   await clickQueueRow(page, 'Over-treated low');
-  expectResponse(page, /^\/diagnose\/finding-case-file$/, 409);
+  expectResponse(page, /^\/api\/diagnose\/finding-case-file$/, 409);
   await page.getByRole('button', { name: 'By event', exact: true }).click();
   await settle(page, 80);
   await page.locator('#level .case-occurrence').first().click();
@@ -3182,7 +3188,7 @@ export const C50 = async (page) => {
 export const C51 = async (page) => {
   await openWholeDay(page);
   await clickQueueRow(page, 'Over-treated low');
-  expectResponse(page, /^\/diagnose\/finding-case-file$/, 409);
+  expectResponse(page, /^\/api\/diagnose\/finding-case-file$/, 409);
   await page.getByRole('button', { name: 'By event', exact: true }).click();
   await settle(page, 180);
   await page.locator('#level .case-occurrence').first().click();
@@ -3196,7 +3202,7 @@ export const C51 = async (page) => {
 export const C52 = async (page) => {
   await openWholeDay(page);
   await clickQueueRow(page, 'Over-treated low');
-  expectResponse(page, /^\/diagnose\/finding-case-file$/, 404);
+  expectResponse(page, /^\/api\/diagnose\/finding-case-file$/, 404);
   await page.getByRole('button', { name: 'By event', exact: true }).click();
   await page.waitForSelector('#level [role="alert"]');
   is(await page.locator('#level .clock').count(), 1,
@@ -3219,7 +3225,7 @@ export const C53 = async (page) => {
 
 export const C54 = async (page) => {
   await openWholeDay(page);
-  expectResponse(page, /^\/diagnose\/finding-case-file-preparation$/, 503);
+  expectResponse(page, /^\/api\/diagnose\/finding-case-file-preparation$/, 503);
   await page.getByRole('button', { name: 'Morning', exact: true }).click();
   await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false');
   is(await page.getByRole('button', { name: 'Morning', exact: true }).getAttribute('aria-pressed'), 'true',

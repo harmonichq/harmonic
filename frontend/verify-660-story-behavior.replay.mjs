@@ -68,30 +68,31 @@ const scoped = (page, prefix) => (selector) => page.locator(prefix + selector);
 export async function openApp(browser, { state = 'complete', theme = 'light' } = {}) {
   const payloadPath = process.env.PAYLOAD || fail('PAYLOAD is required for TARGET=app');
   const payload = JSON.parse(await readFile(payloadPath, 'utf8'));
+  const apiPattern = (path) => new RegExp(`^/api${path}`);
   const STUBS = [
     // The surface's own feed: the roster, then one detail per Trial.
-    [/^\/verify\/trials/, (url) => {
+    [apiPattern('/verify/trials'), (url) => {
       const id = url.searchParams.get('selected');
       if (!id) return payload.roster;
       return payload.details[id] || fail(`payload has no detail for ${id}`);
     }],
-    [/^\/status/, () => ({ ok: true, last_fetch: null, counts: {} })],
-    [/^\/plan\/history/, () => ({ history: [] })],
-    [/^\/plan/, () => ({ items: [], updated_at: null })],
-    [/^\/analyze/, () => payload.analyze || { slots: [] }],
-    [/^\/scenarios/, () => ({ scenarios: [] })],
-    [/^\/explore\//, () => ({})],
-    [/^\/api\/catalog/, () => ({ articles: [] })],
-    [/^\/carbs/, () => ({ entries: [] })],
-    [/^\/prompts/, () => ({ prompts: [] })],
-    [/^\/credentials/, () => ({ configured: true })],
-    [/^\/audit\/dismissals/, () => ({ dismissed: [] })],
-    [/^\/outcomes/, () => ({ points: [] })],
-    [/^\/timeline/, () => ({ events: [] })],
-    [/^\/backtest/, () => ({ folds: [] })],
-    [/^\/model/, () => ({ entries: [] })],
-    [/^\/day/, () => ({ days: [] })],
-    [/^\/pump/, () => ({ settings: {} })],
+    [apiPattern('/status'), () => ({ ok: true, last_fetch: null, counts: {} })],
+    [apiPattern('/plan/history'), () => ({ history: [] })],
+    [apiPattern('/plan'), () => ({ items: [], updated_at: null })],
+    [apiPattern('/analyze'), () => payload.analyze || { slots: [] }],
+    [apiPattern('/scenarios'), () => ({ scenarios: [] })],
+    [apiPattern('/explore/'), () => ({})],
+    [apiPattern('/catalog'), () => ({ articles: [] })],
+    [apiPattern('/carbs'), () => ({ entries: [] })],
+    [apiPattern('/prompts'), () => ({ prompts: [] })],
+    [apiPattern('/credentials'), () => ({ configured: true })],
+    [apiPattern('/audit/dismissals'), () => ({ dismissed: [] })],
+    [apiPattern('/outcomes'), () => ({ points: [] })],
+    [apiPattern('/timeline'), () => ({ events: [] })],
+    [apiPattern('/backtest'), () => ({ folds: [] })],
+    [apiPattern('/model'), () => ({ entries: [] })],
+    [apiPattern('/day'), () => ({ days: [] })],
+    [apiPattern('/pump'), () => ({ settings: {} })],
   ];
   const page = await browser.newPage({ viewport: VIEWPORT });
   page.on('pageerror', (e) => problems.push(`pageerror(app ${state}): ${e}`));
@@ -105,9 +106,9 @@ export async function openApp(browser, { state = 'complete', theme = 'light' } =
     if (url.hostname.startsWith('fonts.')) return route.fulfill({ status: 204 });
     if (url.href.includes('echarts')) return route.fulfill({ body: await vendored('echarts.min.js'), contentType: 'text/javascript' });
     if (url.href.includes('vue')) return route.fulfill({ body: await vendored('vue.esm-browser.js'), contentType: 'text/javascript' });
-    if (path === '/') return route.fulfill({ body: await readFile(join(ROOT, 'frontend/index.html')), contentType: 'text/html' });
+    if (path === '/' || path === '/verify') return route.fulfill({ body: await readFile(join(ROOT, 'frontend/index.html')), contentType: 'text/html' });
     if (/\.(js|css|svg|html)$/.test(path)) {
-      try { return route.fulfill({ body: await readFile(join(ROOT, 'frontend', path.slice(1))), contentType: MIME[extname(path)] || 'text/plain' }); } catch { /* fall through to the stubs */ }
+      try { return route.fulfill({ body: await readFile(join(ROOT, 'frontend', path.replace(/^\/assets\//, ''))), contentType: MIME[extname(path)] || 'text/plain' }); } catch { /* fall through to the stubs */ }
     }
     for (const [pattern, body] of STUBS) {
       if (pattern.test(path)) return route.fulfill({ contentType: 'application/json', body: JSON.stringify(body(url)) });
@@ -115,9 +116,9 @@ export async function openApp(browser, { state = 'complete', theme = 'light' } =
     problems.push(`unstubbed ${route.request().method()} ${path} (app ${state})`);
     return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ detail: 'not stubbed' }) });
   });
-  // The app carries the ported hash-route `?state=` hook, so the harness drives it
+  // The app carries the canonical route-query `?state=` hook, so the harness drives it
   // directly and asserts the state it actually rendered.
-  await page.goto(`http://app.local/#/verify?state=${encodeURIComponent(state)}`);
+  await page.goto(`http://app.local/verify?state=${encodeURIComponent(state)}`);
   await page.waitForSelector('.vw .trial-line .subject', { timeout: 15000 });
   await settle(page, 900);
   const $ = scoped(page, '.vw ');
@@ -125,7 +126,7 @@ export async function openApp(browser, { state = 'complete', theme = 'light' } =
   return { page, $, close: () => page.close() };
 }
 
-/** State addressability, loud on both sides: a hash-route `?state=` the surface silently
+/** State addressability, loud on both sides: a route-query `?state=` the surface silently
     ignores renders a plausible screen and hides the drift (the `?mode=` bug
     the Diagnose comparator shipped with). */
 async function assertState($, want, where) {

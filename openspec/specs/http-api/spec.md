@@ -57,8 +57,8 @@ response."
 
 ### Requirement: Historical findings and event evidence share one restart-safe generation
 
-`GET /diagnose/findings` and
-`GET /diagnose/carb-ratio-history/events` are projections of one cached historical
+`GET /api/diagnose/findings` and
+`GET /api/diagnose/carb-ratio-history/events` are projections of one cached historical
 snapshot: the analyzer-owned findings catalog and the exact event series prepared
 from that catalog. Both schemas carry the same opaque `analysis_generation`, formed
 from a collision-resistant per-app incarnation plus the cache's monotonic data
@@ -77,15 +77,15 @@ series without recomputing membership. Missing or malformed inputs are structure
 versus `unavailable` are distinct structured 410 outcomes. Bearer authentication is
 checked before any of those validation or data responses.
 
-Neither endpoint changes `/diagnose/event-comparison`, and neither projection may
+Neither endpoint changes `/api/diagnose/event-comparison`, and neither projection may
 infer schedule membership, lifecycle, support, or actionability. Selecting a run
 changes only the echoed selection; it does not filter `run_ids` or `series`.
 ### Requirement: Finding case files are bound to one snapshot preparation.
 
-`GET /diagnose/finding-case-file-preparation` builds the active Findings queue and
+`GET /api/diagnose/finding-case-file-preparation` builds the active Findings queue and
 its case-file population inside one SQLite read snapshot. It returns an opaque,
 versioned `projection_id` beside server-rendered rows. `GET
-/diagnose/finding-case-file` requires that id, a stable Finding id, an alignment,
+/api/diagnose/finding-case-file` requires that id, a stable Finding id, an alignment,
  and an optional Occurrence coordinate; it projects only from the
 retained preparation rather than recomputing against a newer population.
 
@@ -94,7 +94,7 @@ A data-version bump prevents an in-flight older preparation from becoming newly
 addressable. An expired or unknown well-formed id returns `409 stale_projection`;
 malformed coordinates return `400 invalid_request`; an unavailable Finding or
 Occurrence returns the contract's explicit unavailable state. These routes do not
-widen or replace `/diagnose/findings`, `/explore/exposures`, or the legacy event-
+widen or replace `/api/diagnose/findings`, `/api/explore/exposures`, or the event-
 comparison endpoint.
 ### Requirement: Every write path MUST invalidate the cache
 

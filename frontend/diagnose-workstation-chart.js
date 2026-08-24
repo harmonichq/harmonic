@@ -4,7 +4,7 @@
 // Everything here derives from PHI-safe captures:
 //   explore-day.capture.json       — 3 captured CGM days (envelope + meal glyphs)
 //   explore-exposures.capture.json — 35 days of exposure occurrences + verdicts
-//   settings-audit.capture.json    — real /analyze basal slot estimates (verdict lane)
+//   settings-audit.capture.json    — real /api/analyze basal slot estimates (verdict lane)
 // No numbers are invented. Where a value is pooled, the function says so and the
 // UI hedges the copy accordingly.
 

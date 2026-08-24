@@ -7,7 +7,7 @@
  *
  * EVERYTHING THIS MODULE RENDERS IS SERVER-OWNED (terms 39/40, ADR 730). The
  * projection arrives already classified, merged, outcome-anchored, counted and
- * ordered by `GET /diagnose/findings`; this module composes no membership, no
+ * ordered by `GET /api/diagnose/findings`; this module composes no membership, no
  * floor, no direction, no rank and no denominator. It decides one thing the wire
  * cannot: which of a row's own fields becomes its single detail line. That is the
  * #273/#465 rule applied to the queue — a frontend predicate of our own is how the

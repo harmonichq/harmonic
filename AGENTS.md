@@ -88,7 +88,7 @@ extracts from shipped source, add its `--check` and its CI step in the same
 change.
 
 The findings-projection fixture also freezes the three payloads it projected
-FROM. The browser gates have no Python, so they answer `/diagnose/findings` from
+FROM. The browser gates have no Python, so they answer `/api/diagnose/findings` from
 a fixture-only JS mirror of that projection, kept beside the synthetic fixture
 sets, and `frontend/findings-projection-mirror.test.js` deep-compares the mirror
 against those frozen answers window for window. The mirror is a transcription

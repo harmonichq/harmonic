@@ -45,8 +45,8 @@ ship it — scenario ``Pattern.priority`` for behaviors, ``tuning_levers[]`` for
 settings — and rows are ordered priced-first (priority desc), then unpriced by count,
 then the demoted held and blind registers.
 
-It reads the published payload dicts (``/analyze``, ``/explore/exposures``,
-``/scenarios``), not analyzer internals, so a fixture generator can drive the very
+It reads the published payload dicts (``/api/analyze``, ``/api/explore/exposures``,
+``/api/scenarios``), not analyzer internals, so a fixture generator can drive the very
 same public interface the API serves.
 """
 
@@ -133,8 +133,8 @@ def _span_label(start_min: int, end_min: int) -> str:
 class FindingsProjection:
     """One window's worth of analysis, with all queue policy behind ``project``.
 
-    Holds the three published payloads it projects from — the ``/analyze`` result,
-    the ``/explore/exposures`` feed and the ``/scenarios`` report — so the same
+    Holds the three published payloads it projects from — the ``/api/analyze`` result,
+    the ``/api/explore/exposures`` feed and the ``/api/scenarios`` report — so the same
     public interface serves the API and the fixture generator.
     """
 

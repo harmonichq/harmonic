@@ -43,7 +43,7 @@ class PartialFetchError(Exception):
     Carries the counts upserted before the failure (:attr:`written`) and how far
     the run got (:attr:`windows_completed` / :attr:`windows_total`). Upserts are
     idempotent, so the completed windows are left in place and a re-pull is safe
-    — this only signals that ``/status`` should report partial progress, not that
+    — this only signals that ``/api/status`` should report partial progress, not that
     the store is inconsistent. Raised only when at least one window completed; a
     failure on the very first window is an ordinary error (nothing to preserve).
     """
@@ -151,7 +151,7 @@ def pull_from_tconnect(store: Store, *, start, end, region=None,
         raise RuntimeError(
             "t:connect credentials are not configured. Create a .env with "
             "TCONNECT_EMAIL and TCONNECT_PASSWORD (see .env.example), or "
-            "store credentials via the API's /credentials endpoint."
+            "store credentials via the API's /api/credentials endpoint."
         )
 
     # Keep JWTs/tokens out of tconnectsync's on-disk pickle: the Fernet store is

@@ -4,8 +4,8 @@
 //     node --test           (auto-discovers *.test.js from the repo root)
 //
 // These import chart-builders.js with no importmap and no DOM — the whole point
-// of the #101 split. Fixtures under __fixtures__/ carry the real ``/analyze`` and
-// ``/timeline`` payload SHAPE, but are SYNTHETIC (#728): invented inputs run
+// of the #101 split. Fixtures under __fixtures__/ carry the real ``/api/analyze`` and
+// ``/api/timeline`` payload SHAPE, but are SYNTHETIC (#728): invented inputs run
 // through the real analyzers/endpoint builders by
 // scripts/gen_chart_builder_fixtures.py, never hand-written or captured from
 // real data — see each fixture's own ``_generated_by``/``_note`` stamp.

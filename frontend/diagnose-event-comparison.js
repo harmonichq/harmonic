@@ -22,7 +22,7 @@
  * a `By clock` / `By event` switch present only where the canvas is showing a
  * factor's events. The lens itself is canvas-only now (P52): no inspector,
  * no selects, no `Clear trace`. What remains here is the canvas and whatever
- * feeds it, reused by both this module's own `#/diagnose?view=meals`/`lows` read path
+ * feeds it, reused by both this module's own `/diagnose?view=meals`/`lows` read path
  * (P53 keeps it, unreachable by any control) and the workstation's ALIGN
  * "By event" mode.
  *
@@ -46,7 +46,7 @@ const paramsFromRoute = (route = parseRoute(location)) => {
   return new URLSearchParams(ROUTE_KEYS.flatMap((key) => route[key] === null ? [] : [[key, route[key]]]));
 };
 /* Glucose leads and is the fallback: it is the recommendation surface, so a
-   bare #diagnose opens there. Meals and Lows are evidence lenses you choose. */
+   bare /diagnose opens there. Meals and Lows are evidence lenses you choose. */
 const VIEWS = ['glucose', 'meals', 'lows'];
 
 const COHORTS = {
@@ -619,7 +619,7 @@ function eventSurfaceInput(payload) {
 }
 
 /** Canvas-only render (P52): the chart, its legend and its hover readout —
-    nothing else. Reused as-is by both this module's own `#/diagnose?view=meals`/`lows`
+    nothing else. Reused as-is by both this module's own `/diagnose?view=meals`/`lows`
     read path and, once exported, the workstation's ALIGN "By event" mode
     (ADR 31 part 3) — one implementation of the projection's draw, never two. */
 export function renderEventSurface(surface, payload, { headerHost = null } = {}) {

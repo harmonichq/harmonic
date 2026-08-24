@@ -10,6 +10,11 @@ import { mkdir, readFile } from 'node:fs/promises';
 import { extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { timeOfDay } from '../mockups/explore-investigation.fixture.js';
+// ADR 94: the shipped router owns the closed page set and the canonical address
+// form, so this suite proves the lifecycle against that owner instead of
+// restating its grammar — a restatement would be the third page registry ADR 94
+// forbids, and would drift the moment a page gained state.
+import { TABS as ROUTER_TABS, parseRoute, serializeRoute } from './tab-routing.js';
 import { projectSyntheticCapture } from '../mockups/diagnose-event-comparison.synthetic/project.mjs';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 
@@ -75,6 +80,42 @@ const CDN = new Map([
 ]);
 const ADVISORY = 'Advisory only — review with your clinician before changing pump settings.';
 const TABS = ['diagnose', 'plan', 'verify', 'day', 'guide', 'settings'];
+// Each page's own rendered root, verified in the browser to be visible on that
+// page and hidden on every other one: the panes are `v-show`, so a pane that has
+// been visited stays in the DOM and only visibility distinguishes the selected
+// page. Waiting on these (Playwright's default `visible` state) is what proves a
+// direct load "keeps that page selected" beyond the address bar.
+const TAB_READINESS = Object.freeze({
+  diagnose: '.dw',
+  plan: '.active-profile-ref',
+  verify: '.vw',
+  day: '.ds-root',
+  guide: '.kb',
+  settings: '.token-row',
+});
+// The cockpit marks its selected destination only where it has one. The three
+// workflow steps carry aria-current="step" and the Day link carries
+// aria-current="page"; Guide and Settings are footer utilities with no selected
+// state at cockpit widths — their aria-current lives on the drawer buttons,
+// which are `display: none` above 760px. A bare [aria-current] would also match
+// the Diagnose breadcrumb's own `.here`, so each marker is qualified to the
+// chrome affordance that owns it.
+const TAB_SELECTED_NAV = Object.freeze({
+  diagnose: '.cockpit-flow [data-shell-tab="diagnose"][aria-current="step"]',
+  plan: '.cockpit-flow [data-shell-tab="plan"][aria-current="step"]',
+  verify: '.cockpit-flow [data-shell-tab="verify"][aria-current="step"]',
+  day: '.cockpit-day[aria-current="page"]',
+  guide: null,
+  settings: null,
+});
+// The lifecycle proof below must cover every page the router admits, so the
+// suite's own list is pinned to the router's closed set rather than trusted.
+assert.deepEqual([...TABS].sort(), ROUTER_TABS.map((tab) => tab.id).sort(),
+  'the routing lifecycle proof must cover exactly the router-owned page set');
+assert.deepEqual(Object.keys(TAB_READINESS).sort(), [...TABS].sort(),
+  'every covered page needs a rendered-root readiness signal');
+assert.deepEqual(Object.keys(TAB_SELECTED_NAV).sort(), [...TABS].sort(),
+  'every covered page needs a declared selected-nav marker, null where the chrome has none');
 const VIEWPORTS = [
   { width: 1440, height: 900 },
   { width: 1280, height: 800 },
@@ -167,7 +208,7 @@ function detail(trial) {
   };
 }
 
-/** 48 half-hour bins around `mid`, the shape `/verify/trials` publishes. */
+/** 48 half-hour bins around `mid`, the shape `/api/verify/trials` publishes. */
 function envelope(mid) {
   return Array.from({ length: 48 }, (_, i) => ({
     t: `${String(Math.floor(i / 2)).padStart(2, '0')}:${i % 2 ? '30' : '00'}`,
@@ -249,7 +290,7 @@ const scenarios = {
 };
 
 async function routeApp(page, options = {}) {
-  const { promptCount = 0, planDraftItems = [] } = options;
+  const { promptCount = 0, planDraftItems = [], verifyTrials = [maturing, complete] } = options;
   const findingsInput = options.findingsInput || { analysis: analyze, scenarios };
   await page.route('**/*', async (route) => {
     const requestUrl = route.request().url();
@@ -258,25 +299,25 @@ async function routeApp(page, options = {}) {
     });
     if (requestUrl.includes('fonts.googleapis.com') || requestUrl.includes('fonts.gstatic.com')) return route.abort();
     const url = new URL(requestUrl);
-    if (url.pathname === '/verify/trials') {
+    if (url.pathname === '/api/verify/trials') {
       const selected = url.searchParams.get('selected');
-      const trials = [maturing, complete];
+      const trials = verifyTrials;
       return route.fulfill({ json: {
         trials, selected: selected ? detail(trials.find((trial) => trial.id === selected)) : null,
       } });
     }
-    if (url.pathname === '/prompts') {
+    if (url.pathname === '/api/prompts') {
       return route.fulfill({ json: Array.from({ length: promptCount }, (_, index) => ({
         anchor_t: `2026-07-1${index}T08:00:00`, kind: 'rise', answer: null,
       })) });
     }
-    if (url.pathname === '/status') return route.fulfill({
+    if (url.pathname === '/api/status') return route.fulfill({
       json: { earliest_data_day: '2026-05-01', latest_data_day: '2026-07-15' },
     });
-    if (url.pathname === '/pump-settings') return route.fulfill({ json: pumpSettings });
-    if (url.pathname === '/credentials') return route.fulfill({ json: { configured: false } });
-    if (url.pathname === '/explore/time-of-day') return route.fulfill({ json: timeOfDay });
-    if (url.pathname === '/diagnose/finding-case-file-preparation') {
+    if (url.pathname === '/api/pump-settings') return route.fulfill({ json: pumpSettings });
+    if (url.pathname === '/api/credentials') return route.fulfill({ json: { configured: false } });
+    if (url.pathname === '/api/explore/time-of-day') return route.fulfill({ json: timeOfDay });
+    if (url.pathname === '/api/diagnose/finding-case-file-preparation') {
       const windowKey = url.searchParams.get('start_min') === null ? null
         : `${url.searchParams.get('start_min')}-${url.searchParams.get('end_min')}`;
       const preparedBody = structuredClone(FINDING_CASE_FILES.scoped?.[windowKey]?.preparation
@@ -321,7 +362,7 @@ async function routeApp(page, options = {}) {
       return route.fulfill({ body: JSON.stringify(preparedBody),
         contentType: 'application/json' });
     }
-    if (url.pathname === '/diagnose/finding-case-file') {
+    if (url.pathname === '/api/diagnose/finding-case-file') {
       const finding = FINDING_CASE_FILES.cases[url.searchParams.get('finding_id')];
       const alignment = url.searchParams.get('alignment') || 'clock';
       const occurrence = url.searchParams.get('occ');
@@ -334,7 +375,7 @@ async function routeApp(page, options = {}) {
       return route.fulfill({ status: finding ? 200 : 404, body: JSON.stringify(body),
         contentType: 'application/json' });
     }
-    if (url.pathname === '/diagnose/event-comparison') {
+    if (url.pathname === '/api/diagnose/event-comparison') {
       const project = options.eventProjection || ((requestUrl, capture) =>
         projectSyntheticCapture(capture, {
           view: ['meals', 'lows'].includes(requestUrl.searchParams.get('view'))
@@ -356,13 +397,13 @@ async function routeApp(page, options = {}) {
       catch { return route.abort('failed'); }
       return route.fulfill({ json: projected });
     }
-    if (url.pathname === '/analyze') return route.fulfill({ json: analyze });
+    if (url.pathname === '/api/analyze') return route.fulfill({ json: analyze });
     // #735: level 1 IS the findings queue, and the workstation fails closed without
     // it — an unserved projection renders "Diagnose is unavailable.", which is an
     // empty body for every scenario that lands on the default Diagnose tab. Project
     // it from this suite's own analyze/scenarios fixtures through the same
     // fixture-only mirror the other browser legs route through.
-    if (url.pathname === '/diagnose/findings') {
+    if (url.pathname === '/api/diagnose/findings') {
       const scoped = url.searchParams.get('start_min') === null ? null : {
         start_min: Number(url.searchParams.get('start_min')),
         end_min: Number(url.searchParams.get('end_min')),
@@ -370,23 +411,25 @@ async function routeApp(page, options = {}) {
       return route.fulfill({ json: projectFindings(findingsInput, scoped,
         url.searchParams.get('selected_id')) });
     }
-    if (url.pathname === '/explore/exposures') {
+    if (url.pathname === '/api/explore/exposures') {
       return route.fulfill({ json: options.exposuresInput || {} });
     }
-    if (url.pathname === '/scenarios') return route.fulfill({ json: scenarios });
-    if (url.pathname === '/audit/dismissals') return route.fulfill({ json: { dismissals: {} } });
-    if (url.pathname === '/outcomes/trend') return route.fulfill({ json: {} });
-    if (url.pathname === '/plan' && route.request().method() === 'PUT') {
+    if (url.pathname === '/api/scenarios') return route.fulfill({ json: scenarios });
+    if (url.pathname === '/api/audit/dismissals') return route.fulfill({ json: { dismissals: {} } });
+    if (url.pathname === '/api/outcomes/trend') return route.fulfill({ json: {} });
+    if (url.pathname === '/api/catalog') return route.fulfill({ json: options.catalog || {} });
+    if (url.pathname === '/api/plan' && route.request().method() === 'PUT') {
       return route.fulfill({ json: { items: route.request().postDataJSON().items } });
     }
-    if (url.pathname === '/plan') return route.fulfill({ json: { items: planDraftItems } });
-    if (url.pathname === '/plan/history' || url.pathname === '/focus') {
+    if (url.pathname === '/api/plan') return route.fulfill({ json: { items: planDraftItems } });
+    if (url.pathname === '/api/plan/history' || url.pathname === '/api/focus') {
       return route.fulfill({ json: { history: [], focuses: [] } });
     }
     if (url.pathname === '/favicon.ico') return route.fulfill({ status: 204, body: '' });
-    const file = url.pathname === '/' ? join(FRONTEND, 'index.html')
-      : url.pathname.startsWith('/mockups/') ? join(ROOT, url.pathname.slice(1))
-      : join(FRONTEND, url.pathname.slice(1));
+    const file = ['/', '/day', '/diagnose', '/verify', '/plan', '/settings', '/guide'].includes(url.pathname)
+      ? join(FRONTEND, 'index.html')
+      : url.pathname.startsWith('/mockups/') ? join(ROOT, url.pathname.replace(/^\/assets\//, ''))
+      : join(FRONTEND, url.pathname.replace(/^\/assets\//, ''));
     try {
       return route.fulfill({
         body: await readFile(file), contentType: MIME[extname(file)] || 'application/octet-stream',
@@ -416,10 +459,11 @@ async function openApp(browser, options = {}) {
     localStorage.setItem('tab', tab);
     localStorage.setItem('theme', theme);
   }, { tab: options.tab || 'diagnose', theme: options.theme || 'light' });
-  const initialHash = options.initialHash || `#${options.tab || 'diagnose'}`;
+  const initialHash = options.initialHash || '';
   const query = new URLSearchParams({ view: options.eventView || 'glucose' });
   if (options.state) query.set('mode', options.state);
-  await page.goto(`http://ciq.local/?${query}${initialHash}`);
+  const pagePath = `/${options.tab || 'diagnose'}?${query}`;
+  await page.goto(initialHash ? `http://ciq.local/?${query}${initialHash}` : `http://ciq.local${pagePath}`);
   await page.locator('.cockpit-shell').waitFor();
   if (['meals', 'lows'].includes(options.eventView)) {
     await page.locator(options.expectEventError ? '.ec-error' : '.ec-surface').waitFor();
@@ -435,7 +479,37 @@ async function openApp(browser, options = {}) {
 async function chooseTab(page, id) {
   const trigger = page.locator(`[data-shell-tab="${id}"]:visible`).first();
   await trigger.click();
-  await page.waitForFunction((tab) => location.hash.startsWith(`#/${tab}`), id);
+  await waitForTabReady(page, id);
+}
+
+async function waitForTabReady(page, id) {
+  await page.waitForFunction((tab) => location.pathname === `/${tab}`, id);
+  if (TAB_SELECTED_NAV[id]) await page.locator(TAB_SELECTED_NAV[id]).first().waitFor();
+  await page.locator(TAB_READINESS[id]).first().waitFor();
+}
+
+// ADR 94's canonical address for a page: the clean path is the whole identity,
+// no fragment survives, and the query carries that page's own round-tripping
+// state and nothing else. Day and Guide resolve a default (a date, an article)
+// on arrival and publish it here, which is the bookmarkable page-local state
+// #53 guaranteed and #94 moved out of the fragment — so the path is pinned
+// exactly while the query is held to what the shipped router serializes for the
+// route this very address parses to. A regression to a fragment, to another
+// page, or to a foreign or stale query key fails one of the three clauses.
+function assertCanonicalAddress(address, id, label) {
+  const url = new URL(address, 'http://ciq.local');
+  assert.equal(url.hash, '', `${label}: no fragment state survives`);
+  assert.equal(url.pathname, `/${id}`, `${label}: the clean page path is the address`);
+  const route = parseRoute({ pathname: url.pathname, search: url.search, hash: '' });
+  assert.equal(route.page, id, `${label}: the address selects ${id}`);
+  // The parsed route names the page's own keys, so a foreign one is caught
+  // without asking the serializer — which would answer for both sides at once.
+  const own = new Set(Object.keys(route)
+    .filter((key) => key !== 'page' && key !== 'pageNamed'));
+  assert.deepEqual([...url.searchParams.keys()].filter((key) => !own.has(key)), [],
+    `${label}: no state outside ${id}'s own page-local keys rides in the query`);
+  assert.equal(serializeRoute(route), `${url.pathname}${url.search}`,
+    `${label}: the query is exactly what the router serializes for this route`);
 }
 
 async function proveRedOnce(term, check, mutate) {
@@ -522,7 +596,7 @@ async function assertDestinationInventory(page) {
   const day = page.locator('.cockpit-day');
   assert.equal(await day.innerText(), 'Day');
   assert.equal(await day.evaluate((node) => node.tagName), 'A', 'Day keeps native link semantics');
-  assert.equal(await day.getAttribute('href'), '#/day');
+  assert.equal(await day.getAttribute('href'), '/day');
   assert.equal(await day.locator('.cockpit-step-number').count(), 0, 'Day is never numbered');
   const dayStyle = await day.evaluate((node) => {
     const style = getComputedStyle(node);
@@ -662,7 +736,7 @@ test('top bar and footer expose the locked destination inventory and neutral pro
 
     for (const id of TABS) {
       await chooseTab(page, id);
-      assert.equal(locationHash(await page.evaluate(() => location.hash)), `#/${id}`);
+      assert.equal(await page.evaluate(() => location.pathname), `/${id}`);
     }
     await page.locator('.cockpit-glossary').click();
     assert.equal(await page.locator('.glossary[role="dialog"]').isVisible(), true);
@@ -692,9 +766,150 @@ test('top bar and footer expose the locked destination inventory and neutral pro
   } finally { await page.close(); }
 });
 
-function locationHash(hash) {
-  return hash.split('?')[0];
-}
+// A bare `/` arrival names no page, so the shell may choose one for the wearer:
+// a maturing Trial promotes the arrival to Verify. That choice hangs on the
+// difference between "named no page" and "the router resolved the default",
+// which the clean grammar can no longer express as a null page.
+test('a bare or hash arrival is promoted to a maturing Trial, and a named page is not', async () => {
+  const browser = await launch();
+  const promoted = await browser.newPage({ viewport: VIEWPORTS[1] });
+  await routeApp(promoted);
+  await promoted.addInitScript(() => localStorage.setItem('ciq_token', 'fixture-token'));
+  try {
+    await promoted.goto('http://ciq.local/');
+    await promoted.locator('.vw').waitFor();
+    assert.equal(await promoted.evaluate(() => location.pathname), '/verify',
+      'the promoted arrival addresses Verify');
+  } finally { await promoted.close(); }
+
+  // #94 retired the `#/<page>?...` grammar, so a saved hash link names nothing:
+  // it is a bare arrival, and it promotes like one. The fragment names Plan and
+  // the wearer still lands on Verify — the hash is not honoured, not migrated,
+  // and not treated as an asked-for page.
+  const stale = await browser.newPage({ viewport: VIEWPORTS[1] });
+  await routeApp(stale);
+  await stale.addInitScript(() => localStorage.setItem('ciq_token', 'fixture-token'));
+  try {
+    await stale.goto('http://ciq.local/#/plan');
+    await stale.locator('.vw').waitFor();
+    assert.equal(await stale.evaluate(() => location.pathname + location.hash), '/verify',
+      'a saved hash link is a bare arrival: promoted, and no fragment survives');
+  } finally { await stale.close(); }
+
+  // The same roster must not move a wearer who named a page: the promotion is
+  // the shell answering an unasked question, never overriding an asked one.
+  const named = await browser.newPage({ viewport: VIEWPORTS[1] });
+  await routeApp(named);
+  await named.addInitScript(() => localStorage.setItem('ciq_token', 'fixture-token'));
+  try {
+    await named.goto('http://ciq.local/diagnose');
+    await waitForTabReady(named, 'diagnose');
+    await named.waitForTimeout(1500);
+    assert.equal(await named.evaluate(() => location.pathname), '/diagnose',
+      'a named page is never promoted away from');
+  } finally { await named.close(); }
+});
+
+test('clean page paths own direct load, refresh, history, canonicalization, and local assets', async () => {
+  const browser = await launch();
+  const direct = await browser.newPage({ viewport: VIEWPORTS[1] });
+  const loadedAssets = new Set();
+  const misplacedAssets = [];
+  // A roster with no maturing Trial, so this page proves canonicalization and
+  // nothing else: a maturing Trial legitimately promotes a bare `/` arrival to
+  // Verify, which is a different behavior with its own proof below.
+  await routeApp(direct, { verifyTrials: [complete] });
+  await direct.addInitScript(() => localStorage.setItem('ciq_token', 'fixture-token'));
+  direct.on('response', (response) => {
+    const url = new URL(response.url());
+    if (url.origin === 'http://ciq.local' && url.pathname.startsWith('/assets/')
+        && response.status() === 200) loadedAssets.add(url.pathname);
+  });
+  direct.on('request', (request) => {
+    const url = new URL(request.url());
+    if (url.origin === 'http://ciq.local' && /\.(?:js|css|svg)$/.test(url.pathname)
+        && !url.pathname.startsWith('/assets/')) misplacedAssets.push(url.pathname);
+  });
+  try {
+    const address = () => direct.evaluate(() =>
+      location.pathname + location.search + location.hash);
+    for (const id of TABS) {
+      await direct.goto(`http://ciq.local/${id}`);
+      await waitForTabReady(direct, id);
+      const loaded = await address();
+      assertCanonicalAddress(loaded, id, `${id} direct load`);
+      await direct.reload();
+      await waitForTabReady(direct, id);
+      assert.equal(await address(), loaded,
+        `${id} refresh restores the same canonical address it was loaded from`);
+    }
+    await direct.goto('http://ciq.local/');
+    await direct.waitForFunction(() => location.pathname === '/diagnose');
+    assert.equal(await direct.evaluate(() => location.pathname + location.search + location.hash),
+      '/diagnose', 'bare / canonicalizes in place to /diagnose');
+    assert.deepEqual(misplacedAssets, [], 'the built app requests no local asset outside /assets');
+    for (const path of ['/assets/tab-routing.js', '/assets/data.js', '/assets/shell.css']) {
+      assert.ok(loadedAssets.has(path), `${path} loaded successfully through the built app`);
+    }
+  } finally { await direct.close(); }
+
+  const historyPage = await browser.newPage({ viewport: VIEWPORTS[1] });
+  await routeApp(historyPage);
+  await historyPage.addInitScript(() => localStorage.setItem('ciq_token', 'fixture-token'));
+  try {
+    await historyPage.goto('http://ciq.local/diagnose?view=glucose&mode=dense');
+    await historyPage.locator('.dw').waitFor();
+    await chooseTab(historyPage, 'plan');
+    await chooseTab(historyPage, 'verify');
+    await historyPage.goBack();
+    await historyPage.waitForFunction(() => location.pathname === '/plan');
+    assert.equal(await historyPage.locator(TAB_SELECTED_NAV['plan']).first().isVisible(), true,
+      'Back restores Plan selection');
+    await historyPage.goBack();
+    await historyPage.waitForFunction(() => location.pathname + location.search === '/diagnose?view=glucose&mode=dense');
+    await historyPage.locator('.dw').waitFor();
+    await historyPage.goForward();
+    await historyPage.waitForFunction(() => location.pathname === '/plan');
+    await historyPage.goForward();
+    await historyPage.waitForFunction(() => location.pathname === '/verify');
+    assert.equal(await historyPage.locator(TAB_SELECTED_NAV['verify']).first().isVisible(), true,
+      'Forward restores Verify selection');
+  } finally { await historyPage.close(); }
+
+  // ADR 94 retired the `#/<page>?...` grammar outright — a fragment is not read,
+  // not migrated and not honoured — so there is no migration left to prove. What
+  // survives is the canonicalization itself: a bare arrival becomes its page
+  // address in place, with no history entry, and is not rewritten again on
+  // refresh. R1 covers a stale fragment reaching the built app and being dropped
+  // rather than routed. The roster carries no maturing Trial, so nothing
+  // promotes this arrival off Diagnose while it is being measured.
+  const canonical = await browser.newPage({ viewport: VIEWPORTS[1] });
+  await routeApp(canonical, { verifyTrials: [complete] });
+  await canonical.addInitScript(() => {
+    localStorage.setItem('ciq_token', 'fixture-token');
+    window.__routeWrites = { pushes: [], replaces: [] };
+    for (const [method, key] of [['pushState', 'pushes'], ['replaceState', 'replaces']]) {
+      const original = history[method];
+      history[method] = function (...args) {
+        window.__routeWrites[key].push(String(args[2]));
+        return original.apply(this, args);
+      };
+    }
+  });
+  try {
+    await canonical.goto('http://ciq.local/?view=glucose&mode=dense');
+    await canonical.waitForFunction(() => location.pathname + location.search === '/diagnose?view=glucose&mode=dense');
+    await canonical.locator('.dw').waitFor();
+    assert.deepEqual(await canonical.evaluate(() => window.__routeWrites), {
+      pushes: [], replaces: ['/diagnose?view=glucose&mode=dense'],
+    }, 'a bare arrival canonicalizes with exactly one replacement and no history entry');
+    assert.equal(await canonical.evaluate(() => location.hash), '', 'no fragment survives the arrival');
+    await canonical.reload();
+    await canonical.locator('.dw').waitFor();
+    assert.deepEqual(await canonical.evaluate(() => window.__routeWrites), { pushes: [], replaces: [] },
+      'the canonical address is not rewritten again on refresh');
+  } finally { await canonical.close(); }
+});
 
 function contrastRatio(foreground, background) {
   const parse = (color) => {
@@ -736,7 +951,7 @@ export async function S2(browser) {
     await assertDestinationInventory(page);
     for (const id of TABS) {
       await chooseTab(page, id);
-      assert.equal(locationHash(await page.evaluate(() => location.hash)), `#/${id}`);
+      assert.equal(await page.evaluate(() => location.pathname), `/${id}`);
     }
   } finally { await page.close(); }
 }
@@ -943,8 +1158,8 @@ export async function S10(browser) {
 }
 
 async function assertRetiredOccurrenceRoute(page) {
-  assert.equal(await page.evaluate(() => location.hash), '#/diagnose?view=glucose&mode=dense',
-    'the stale occurrence-list URL must canonicalize to #/diagnose?view=glucose&mode=dense');
+  assert.equal(await page.evaluate(() => location.pathname + location.search), '/diagnose?view=glucose&mode=dense',
+    'the stale occurrence-list URL must canonicalize to /diagnose?view=glucose&mode=dense');
   const duplicates = await page.evaluate(() => ({
     dialogs: [...document.querySelectorAll('[role="dialog"]')]
       .filter((node) => /occurrences/i.test(
@@ -997,12 +1212,12 @@ async function openRetiredOccurrence(browser, options = {}) {
 export async function R1(browser) {
   const page = await openRetiredOccurrence(browser);
   try {
-    await proveRedOnce('R1 canonical hash',
+    await proveRedOnce('R1 canonical route',
       () => assertRetiredOccurrenceRoute(page), async () => {
         await page.evaluate(() => history.replaceState(null, '',
-          '#diagnose?modal=occurrences&detector=mutation'));
+          '/diagnose?modal=occurrences&detector=mutation'));
         return () => page.evaluate(() => history.replaceState(null, '',
-          '#/diagnose?view=glucose&mode=dense'));
+          '/diagnose?view=glucose&mode=dense'));
       });
     await proveRedOnce('R1 duplicate occurrence route',
       () => assertRetiredOccurrenceRoute(page), async () => {

@@ -1,5 +1,5 @@
-// Hash-tab routing stays Vue-free so both initial load and hashchange use the
-// same migration and the fallback can be covered without a browser.
+// Path-tab routing stays Vue-free so both initial load and popstate use the
+// same parse and the fallback can be covered without a browser.
 export const TABS = [
   // #248 (ADR 0027): Daily report + Model view merged into one Day surface.
   // #246 (ADR 0027): Diagnose fused Recommendations + Patterns into one queue;
@@ -37,23 +37,23 @@ function routeState(page, params) {
   return {};
 }
 
-// The one hash-routing seam owns the page plus only the page-local state that
+// The one routing seam owns the page plus only the page-local state that
 // already round-trips. It deliberately transports values without validating
 // them; each existing page retains its own defaults and value handling.
-export function parseRoute({ hash = '', search = '' } = {}) {
-  const raw = hash.replace(/^#/, '');
-  const [path = '', query = ''] = raw.split('?');
-  const splitParams = new URLSearchParams(search.replace(/^\?/, ''));
-  const page = path ? resolveTab(path.replace(/^\//, ''))
-    : DIAGNOSE_KEYS.some((key) => splitParams.has(key)) ? 'diagnose' : null;
-  if (!page) return { page: null };
-  const params = new URLSearchParams(query);
-  if (page === 'diagnose') {
-    for (const key of DIAGNOSE_KEYS) {
-      if (!params.has(key) && splitParams.has(key)) params.set(key, splitParams.get(key));
-    }
-  }
-  return { page, ...routeState(page, params) };
+//
+// #94: the address is the pathname and the ordinary query. A fragment carries
+// no route — the retired `#/<page>?...` grammar is not read, not migrated and
+// not honoured, so a saved hash link arrives as the bare `/` it literally is.
+export function parseRoute({ pathname = '/', search = '' } = {}) {
+  const params = new URLSearchParams(search);
+  const page = pathname === '/' ? DEFAULT_TAB : resolveTab(pathname.replace(/^\//, ''));
+  // Every address resolves to a page, so "which page is this" is not the same
+  // question as "did the wearer name one". A bare `/` names none, and the shell
+  // may then choose for them — the maturing-Trial promotion. A query carrying
+  // Diagnose's own state names Diagnose even from `/`, so an address that
+  // already says where it is is never promoted away from it.
+  const pageNamed = pathname !== '/' || DIAGNOSE_KEYS.some((key) => params.has(key));
+  return { page, pageNamed, ...routeState(page, params) };
 }
 
 export function serializeRoute(route, extra = []) {
@@ -66,31 +66,31 @@ export function serializeRoute(route, extra = []) {
   }
   for (const [key, value] of extra) params.set(key, value);
   const query = params.toString();
-  return `#/${page}${query ? `?${query}` : ''}`;
+  return `/${page}${query ? `?${query}` : ''}`;
 }
 
 export function writeRoute(route, { location = window.location, history = window.history,
   replace = false, extra = [] } = {}) {
-  const hash = serializeRoute(route, extra);
-  const address = `${location.pathname}${hash}`;
+  const address = serializeRoute(route, extra);
+  // The comparison spans the fragment even though nothing routes on it: an
+  // address that still carries one differs from its canonical form, so the
+  // in-place write is what drops a stale fragment rather than leaving it.
   if (`${location.pathname}${location.search}${location.hash}` !== address) {
     history[replace ? 'replaceState' : 'pushState'](null, '', address);
   }
-  return hash;
+  return address;
 }
 
 export function subscribeRoute(listener, browser = window) {
   let previous = null;
   const notify = () => {
-    const address = `${browser.location.search}${browser.location.hash}`;
+    const address = `${browser.location.pathname}${browser.location.search}${browser.location.hash}`;
     if (address === previous) return;
     previous = address;
     listener(parseRoute(browser.location));
   };
-  browser.addEventListener('hashchange', notify);
   browser.addEventListener('popstate', notify);
   return () => {
-    browser.removeEventListener('hashchange', notify);
     browser.removeEventListener('popstate', notify);
   };
 }

@@ -1,7 +1,7 @@
 /* The fixture-only JS mirror of the findings projection must agree with the server,
  * window for window (#735).
  *
- * The browser gates serve `/diagnose/findings` from
+ * The browser gates serve `/api/diagnose/findings` from
  * `mockups/findings-projection.mirror.mjs` because they have no Python
  * and a drawn brace can be any window. That stub is only worth having if it answers
  * what the real projection answers — otherwise the browser legs certify a queue the

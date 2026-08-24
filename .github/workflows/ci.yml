@@ -293,7 +293,7 @@ jobs:
         run: |
           uv run harmonic serve --no-fetch --db mockups/revise-e2e.synthetic/harmonic.sqlite > "$RUNNER_TEMP/harmonic-no-fetch.log" 2>&1 &
           for attempt in $(seq 1 30); do
-            curl -fsS http://127.0.0.1:8765/health && exit 0
+            curl -fsS http://127.0.0.1:8765/api/health && exit 0
             sleep 1
           done
           cat "$RUNNER_TEMP/harmonic-no-fetch.log"

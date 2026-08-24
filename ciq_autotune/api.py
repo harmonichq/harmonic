@@ -1015,11 +1015,23 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         end = date.today()
         start = end - timedelta(days=days)
         with Store.open(db_path) as store:
+            # The pull commits window by window, so a fetch that failed part-way
+            # still leaves rows behind. Invalidate on what was committed — read
+            # off the store's durable revision — rather than on whether the pull
+            # returned (#146). A partial fetch is not a RuntimeError, so it used
+            # to escape this handler entirely: it skipped the bump AND surfaced
+            # as an unhandled 500. It now joins RuntimeError at 503, carrying how
+            # far the pull got; every other failure keeps propagating as itself.
+            baseline = store.input_data_revision()
             try:
                 written = sync_mod.pull_from_tconnect(store, start=start, end=end,
                                                        key_path=key_path)
-            except RuntimeError as e:
-                raise HTTPException(status_code=503, detail=str(e))
+            except Exception as e:
+                if store.input_data_revision() > baseline:
+                    cache.bump()
+                if isinstance(e, (RuntimeError, sync_mod.PartialFetchError)):
+                    raise HTTPException(status_code=503, detail=str(e))
+                raise
         cache.bump()  # a manual fetch is an out-of-loop write path (#267)
         return {"pulled": written, "window": {"start": str(start), "end": str(end)}}
 

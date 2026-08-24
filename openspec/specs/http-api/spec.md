@@ -116,6 +116,18 @@ optimization: it leaves every cached read answering from pre-write data.
   that analysis recomputes — exactly once for the new data version, with every later
   request for the same key served from the cache
 
+#### Scenario: A fetch endpoint that committed rows and then failed invalidates before returning its error
+
+- **GIVEN** the analysis result for a window has been computed and cached
+- **WHEN** a client triggers a fetch that commits rows and then fails part-way
+- **THEN** the endpoint invalidates the cache before returning, and the client is
+  still told the fetch failed — a partial fetch answers the same `503` a rejected
+  pull does, carrying how far it got, rather than escaping the handler as an
+  unexplained server error
+- **AND** widening the handler far enough to invalidate MUST NOT widen that
+  status. Every other failure keeps whatever it produced before, so a defect in
+  reading the vendor's events still surfaces as the defect it is
+
 #### Scenario: A write path that skips invalidation serves stale advice
 
 - **GIVEN** a cached analysis result computed before a write
@@ -150,10 +162,21 @@ that invalidating is expensive. Absent that proof, the write invalidates.
 ### Requirement: A scheduled fetch that wrote invalidates, then re-warms the landing set
 
 The process runs a background fetch on startup and on a fixed hourly interval. A
-fetch that fails or writes nothing MUST NOT invalidate — there is nothing to
-invalidate against, and a failure must never kill the loop. A fetch that wrote calls
-one routine that invalidates first and only then re-warms, so no request can ever be
+fetch that committed nothing MUST NOT invalidate — there is nothing to invalidate
+against, and a failure must never kill the loop. A fetch that wrote calls one
+routine that invalidates first and only then re-warms, so no request can ever be
 served results computed before the new data landed.
+
+**What decides this is what the attempt committed, not whether it succeeded.** A
+multi-window pull commits each window as it lands, so an attempt that failed
+part-way — including one that failed on its very first window, after the settings
+snapshot was already captured — leaves rows durably in the store. Such an attempt
+MUST invalidate, even though it is recorded as a failure and even where the counts
+of what it wrote are not recoverable. The signal is the store's own durable
+input-data revision, which advances inside each write's transaction; it MUST be
+compared across a window that closes before the attempt's outcome is recorded,
+because recording the outcome advances that revision itself and would otherwise
+report every failed fetch as a write.
 
 The warm pass covers exactly the fixed shapes the initial Diagnose load requests,
 plus the shared event-comparison preparation. Anything keyed on a date, a month, or
@@ -162,6 +185,27 @@ event-comparison projections likewise stay lazy behind their warmed shared sourc
 Warming runs in the fetch loop's worker thread rather than the event loop, and one
 shape failing to warm is logged and skipped rather than aborting the pass or the
 loop.
+
+#### Scenario: A fetch that committed some windows and then failed still invalidates
+
+- **GIVEN** cached results computed before the fetch
+- **WHEN** a scheduled fetch commits some of its windows and a later window fails
+- **THEN** the attempt is recorded as a failure, with the last known good counts
+  standing and a summary of how far it got, **AND** the cache is invalidated and the
+  landing set re-warmed exactly once, so no read is answered from data the store has
+  already moved past
+
+#### Scenario: A fetch that committed nothing leaves the cache alone
+
+- **GIVEN** cached results computed before the fetch, and stored credentials
+- **WHEN** a scheduled fetch fails before committing anything — a rejected login, or a
+  network failure on the first request
+- **THEN** the attempt is recorded as a failure, the loop continues, and the cache is
+  neither invalidated nor re-warmed
+- **AND** the one attempt that seeds the credential table for the first time is not
+  this case: seeding is itself a committed write, so that attempt invalidates once.
+  Over-invalidation costs one recompute and is accepted; under-invalidation serves
+  numbers that no longer match the data
 
 ### Requirement: Invalidation is process-local, and an out-of-process write does not reach a running server
 

@@ -29,18 +29,30 @@ def run_fetch_once(db_path: str, *, key_path: str = DEFAULT_KEY_PATH,
     """One fetch attempt, recording its outcome regardless of success or
     failure so ``/api/status`` always reflects the last attempt.
 
-    Returns the written summary on a successful fetch (the truthy signal the loop
-    uses to invalidate a running server's result cache, #267); returns ``None`` on
-    a failure or partial fetch, which wrote nothing new to invalidate against."""
+    Returns the written summary on a successful fetch, and on a failed one that
+    committed rows before it stopped — possibly an empty summary, when the counts
+    are not recoverable from the failure. That return is the signal the loop uses
+    to invalidate a running server's result cache (#267), so it follows what was
+    committed rather than whether the pull returned (#146): the pull commits window
+    by window, and rows already in the store must not be served around. An attempt
+    that committed nothing returns ``None``."""
     from . import sync as sync_mod
 
     end = date.today()
     start = end - timedelta(days=days)
     attempted_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     with Store.open(db_path) as store:
+        # The store's durable revision advances inside every upsert's own
+        # transaction, so comparing it against this baseline says whether the
+        # attempt committed anything. Read the comparison FIRST in each failure
+        # branch: ``record_fetch_result`` advances the revision itself, so a
+        # reading taken after it is always higher and every failed fetch would
+        # look like a write (#146).
+        baseline = store.input_data_revision()
         try:
             written = sync_mod.pull_from_tconnect(store, start=start, end=end, key_path=key_path)
         except sync_mod.PartialFetchError as e:
+            committed = store.input_data_revision() > baseline
             # Some windows landed before a later one failed — the completed
             # windows are already persisted (idempotent upserts), so this is not
             # a total failure, but not a success either: record ok=False (so the
@@ -49,9 +61,16 @@ def run_fetch_once(db_path: str, *, key_path: str = DEFAULT_KEY_PATH,
             summary = (f"{e.windows_completed} of {e.windows_total} windows succeeded, "
                        f"partial data kept: {e.cause}")
             store.record_fetch_result(attempted_at=attempted_at, ok=False, error=summary)
+            if committed:
+                return e.written
         except Exception as e:  # any failure must not kill the loop
+            committed = store.input_data_revision() > baseline
             logger.warning("Hourly fetch failed: %s", e)
             store.record_fetch_result(attempted_at=attempted_at, ok=False, error=str(e))
+            if committed:
+                # Rows landed — the settings snapshot, or part of a window — but
+                # this path carries no counts to report them by.
+                return {}
         else:
             store.record_fetch_result(attempted_at=attempted_at, ok=True, written=written)
             return written
@@ -67,15 +86,16 @@ async def run_fetch_loop(db_path: str, *, key_path: str = DEFAULT_KEY_PATH,
     runs in a worker thread via :func:`asyncio.to_thread` and never blocks the
     event loop the rest of the API serves requests on.
 
-    ``on_write`` (optional, zero-arg) is called after any fetch that actually
-    wrote — the seam the app uses to invalidate its result cache without the loop
-    importing the app (#267). A failed or empty fetch does not fire it. It runs in
-    a worker thread like the fetch itself, because it now also pre-warms the cache
-    (#424) and that is seconds of pure-Python compute the event loop must not
-    stall on.
+    ``on_write`` (optional, zero-arg) is called after any fetch that committed
+    anything — the seam the app uses to invalidate its result cache without the
+    loop importing the app (#267). A fetch that committed nothing does not fire
+    it; a failed one that committed rows before it stopped does, because those
+    rows are durably in the store (#146). It runs in a worker thread like the
+    fetch itself, because it now also pre-warms the cache (#424) and that is
+    seconds of pure-Python compute the event loop must not stall on.
     """
     while True:
         written = await asyncio.to_thread(run_fetch_once, db_path, key_path=key_path)
-        if written and on_write is not None:
+        if written is not None and on_write is not None:
             await asyncio.to_thread(on_write)
         await asyncio.sleep(interval_seconds)

@@ -982,10 +982,10 @@ P55 · The Align group keeps its two ordinary Tab stops when a reader activates
 
 ## Tally
 
-**55 rows · 49 kept · 0 missed · 6 retired.**
+**56 rows · 50 kept · 0 missed · 6 retired.**
 
 Connor Griffin ruled all 43 open rows on 2026-08-19. P21, P27, P35, P44, P48 and
-P52 are retired with their sanctions inline. The other 37 are preserved.
+P52 are retired with their sanctions inline. The other 38 are preserved.
 
 ---
 
@@ -1989,11 +1989,11 @@ P55 adds browser-driven keyboard coverage in
 `frontend/diagnose-workstation.browser.test.mjs`; the replay story count is
 unchanged because this ticket adds no replay story.
 
-**Red proof.** Before the reconciliation, the focused browser test's initial
-focus-ring assertion read `actual: ['1px', 'auto', '0px']`, rather than the
-revision's inward app ring. The before/after render pairs below provide the
-focus-loss evidence: base activation repaints the selected choice after its
-button was replaced, while the revision keeps that button and its ring.
+**Red proof.** The measured base activation result was
+`{ active: 'BODY', inAlign: false, pressed: [ 'By event' ] }`: pressing Enter
+switched the projection, then repaint destroyed the focused button. The
+before/after render pairs below show the same focus-loss boundary; the revision
+keeps that button and its ring.
 
 **Renders.** `docs/screenshots/issue-96/` contains focused and activated,
 light and dark, base/revision pairs at identical 1440×900 framing. The revision

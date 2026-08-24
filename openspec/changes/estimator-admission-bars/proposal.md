@@ -23,10 +23,11 @@ tell an improvement from a confident fabrication.
   known ratios within the pinned tolerance, and stay silent on placebo. Silence
   only counts when the placebo block actually reached a scoreable state, so an
   estimator that never scores anything cannot pass by saying nothing.
-- A replay harness takes a local snapshot, finds a stretch where one ratio was
-  programmed and held, and measures whether a candidate reaches the shipped
-  ledger's own answer sooner, no less precisely, from strictly more meals. It
-  refuses any stretch that fails the stable-era precondition, naming which one.
+- A replay harness takes a local snapshot and a stretch the operator names, and
+  measures whether a candidate reaches the shipped ledger's own answer sooner,
+  no less precisely, from strictly more meals. It refuses any stretch that fails
+  the stable-era precondition, naming which one — so choosing a window is the
+  operator's to propose and the harness's to reject, not a search the tool runs.
 - Both bars reach a candidate only through the engine's own interface, and read
   every verdict off engine-stamped output. Neither re-derives an eligibility
   condition.

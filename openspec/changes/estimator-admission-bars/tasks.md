@@ -49,7 +49,7 @@
 
 ## 3. Calibrate against the wearer's own history
 
-- [ ] Fetch a WAL-safe read-only copy of the live snapshot, run the replay
+- [x] Fetch a WAL-safe read-only copy of the live snapshot, run the replay
       against it with the default incumbent self-run, delete the copy, and record
       exactly one verdict phrase — pass, refused (precondition), or not run — in
       the pull request body, with no numbers, counts, or window dates.

@@ -400,9 +400,17 @@ incumbent that fails a bar means the bar is wrong.
 
 A candidate is run over synthetic meal histories whose correct ratio is known in
 advance, and over placebo histories built to carry no ratio signal. It must
-recover each known ratio — the block's interval covering the true value and its
-point estimate within one display step of it — and it must produce no finding on
-any placebo.
+recover every known ratio the bar gates on — the block's interval covering the
+true value and its point estimate within one display step of it — and it must
+produce no finding on any placebo.
+
+Not every known-ratio history gates. A history whose meal runs span a block
+boundary is deliberately information-free to the engine, and one dosed at the
+programmed ratio is placebo-shaped by definition; both are generated and
+reported as exploratory, and neither decides admission. When the shipped ledger
+does not recover an exploratory history, the engine-stamped reason is recorded
+rather than tuned away, because a generator adjusted until it goes green has
+stopped being evidence.
 
 Placebo silence is strict: a numeric block whose measured band excludes the
 programmed ratio disqualifies the candidate even when the block asserts no move,

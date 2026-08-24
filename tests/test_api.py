@@ -1623,6 +1623,88 @@ class CacheInvalidationTest(unittest.TestCase):
 
 
 @unittest.skipUnless(_HAS_FASTAPI, "api extra not installed")
+class FetchEndpointCacheInvalidationTest(unittest.TestCase):
+    """#146: the pull commits window by window, so a fetch that failed part-way
+    still leaves rows in the store. What decides invalidation is whether anything
+    was committed, not whether the pull returned.
+
+    Observed on the cache's public ``version``: the endpoint's error paths return
+    no body to read the invalidation through, and the app is built with
+    ``enable_fetch_loop=False``, so nothing else bumps between two readings.
+    """
+
+    def setUp(self):
+        from ciq_autotune.api import create_app
+        self.tmp = tempfile.NamedTemporaryFile(suffix=".db")
+        _seed(self.tmp.name)
+        self.app = create_app(db_path=self.tmp.name, token=None,
+                              enable_fetch_loop=False)
+
+    def tearDown(self):
+        self.tmp.close()
+
+    @staticmethod
+    def _commits_then_raises(error):
+        """A window's upserts land through the real Store, then a later one fails."""
+        def pull(store, **kwargs):
+            store.upsert_basal([{"seq_num": 987654, "time": "2026-06-04 00:00:00",
+                                 "delivery_type": "algorithmDelivery",
+                                 "duration_mins": 5, "basal_rate": 0.8,
+                                 "profile_basal_rate": 0.6}])
+            raise error
+        return pull
+
+    def _post_fetch(self, side_effect, *, raise_server_exceptions=False):
+        """POST /api/fetch with the pull replaced; returns (response, version delta)."""
+        client = TestClient(self.app, raise_server_exceptions=raise_server_exceptions)
+        before = self.app.state.result_cache.version
+        with patch("ciq_autotune.sync.pull_from_tconnect", side_effect=side_effect):
+            r = client.post("/api/fetch")
+        return r, self.app.state.result_cache.version - before
+
+    def _partial(self):
+        from ciq_autotune.sync import PartialFetchError
+        return PartialFetchError(RuntimeError("network blip"),
+                                 written={"basal_events": 1},
+                                 windows_completed=2, windows_total=5,
+                                 failed_window=("2026-02-01", "2026-03-03"))
+
+    def test_partial_fetch_that_committed_invalidates_and_answers_503(self):
+        r, bumped = self._post_fetch(self._commits_then_raises(self._partial()))
+        self.assertEqual(r.status_code, 503)
+        self.assertIn("2 of 5 windows", r.json()["detail"])
+        self.assertEqual(bumped, 1)
+
+    def test_partial_fetch_that_committed_nothing_does_not_invalidate(self):
+        r, bumped = self._post_fetch(self._partial())
+        self.assertEqual(r.status_code, 503)
+        self.assertEqual(bumped, 0)
+
+    def test_runtime_error_after_a_committed_write_invalidates(self):
+        r, bumped = self._post_fetch(
+            self._commits_then_raises(RuntimeError("network blip")))
+        self.assertEqual(r.status_code, 503)
+        self.assertEqual(bumped, 1)
+
+    def test_runtime_error_that_committed_nothing_does_not_invalidate(self):
+        r, bumped = self._post_fetch(RuntimeError("no creds"))
+        self.assertEqual(r.status_code, 503)
+        self.assertEqual(bumped, 0)
+
+    def test_other_failure_invalidates_but_keeps_propagating(self):
+        # An ingest bug (a KeyError out of events_to_rows, a TimezoneNotConfigured)
+        # must not start reading as a vendor outage just because the handler now
+        # catches everything to invalidate. It still escapes the endpoint.
+        before = self.app.state.result_cache.version
+        client = TestClient(self.app, raise_server_exceptions=True)
+        with patch("ciq_autotune.sync.pull_from_tconnect",
+                   side_effect=self._commits_then_raises(KeyError("carbAmount"))):
+            with self.assertRaises(KeyError):
+                client.post("/api/fetch")
+        self.assertEqual(self.app.state.result_cache.version - before, 1)
+
+
+@unittest.skipUnless(_HAS_FASTAPI, "api extra not installed")
 class CachePreWarmTest(unittest.TestCase):
     """#424: after the hourly fetch writes, the app clears the cache and then
     pre-warms the fixed shapes the initial Diagnose load asks for, so the first

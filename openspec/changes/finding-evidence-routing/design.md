@@ -256,6 +256,19 @@ backend field remains published for its existing consumers.
 
 Decision: ConnorGriffin, 2026-08-23.
 
+## ADR 100 — Focus moves on navigation, never on repaint
+
+**Decision.** The Diagnose workstation records a pending focus destination only
+for reader-driven push and pop navigation. The end of the shared paint cycle
+consumes that destination once: a push, or an unrecoverable return, focuses the
+stable detail container; a return to the queue restores the originating row.
+
+**Rationale.** The one mechanism covers all five frame kinds without placing
+focus in a renderer that also runs for asynchronous data, controls, and
+retirements. The detail container survives its child repaint while a row does
+not, so it is the stable push target; the retained originating row id makes a
+queue return precise.
+
 ## Revise safe-start and evidence-row amendment — 2026-08-19
 
 **Safe-start declaration.** `AGENTS.md` declares this sole offline UI-design

@@ -147,6 +147,13 @@ async function shot(page, family, state_, viewport, theme) {
 
 const VIEWPORTS = [{ width: 1440, height: 900 }, { width: 1280, height: 800 }];
 
+const expandWatching = async (page) => {
+  const toggle = page.locator('#level .qcollapse');
+  if (await toggle.count() && await toggle.getAttribute('aria-expanded') !== 'true') {
+    await toggle.click();
+  }
+};
+
 test('seven generated history reads remain ordered, reachable, laid out, and non-stageable', async () => {
   const browser = await runner.browser();
   const inputs = await densityHistoryInputs();
@@ -159,6 +166,8 @@ test('seven generated history reads remain ordered, reachable, laid out, and non
     history: true, findingsInputs: inputs, appSource: 'fixture', stageProbe: true,
   });
   try {
+    const initialCollapse = page.locator('#level .qcollapse');
+    await initialCollapse.click();
     const historyRows = page.locator('#level .qrow[data-state="history"]');
     assert.deepEqual(await historyRows.evaluateAll((rows) => rows.map((row) => row.dataset.id)), expected,
       'the Watching history rows keep the server projection order');
@@ -626,6 +635,7 @@ test('the ISF row visibly declares its whole-day scope', async () => {
     try {
       const before = openerProblems().length;
       const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
+      await expandWatching(page);
       const row = page.locator('#level .qrow[data-id="isf"]');
       assert.equal(await row.locator('.scope-note').innerText(), ' · Whole day');
       await page.close();
@@ -645,6 +655,7 @@ test('a held I:C finding enters through the findings queue with no stage button'
     try {
       const before = openerProblems().length;
       const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
+      await expandWatching(page);
       const row = await page.$('#level .qrow[data-id^="ic:"]');
       assert.ok(row, 'precondition: an I:C findings-queue row exists');
       assert.equal(await page.$('#iclane'), null, 'the retired I:C lane is absent');
@@ -694,6 +705,7 @@ test('ISF is not stageable without an exact true backend verdict', async () => {
     try {
       const before = openerProblems().length;
       const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
+      await expandWatching(page);
       // #735: ISF reaches its detail level from the findings QUEUE now — the three
       // per-parameter entry rows are retired with the factor grid (lock term 34).
       // Under this state's explicit Overnight window it is a held row (term 38).
@@ -1050,42 +1062,17 @@ test('frontend contains no client-side verdict threshold or direction comparison
   assert.match(index, /Diagnose needs an API token/);
 });
 
-/* #63 — the unexplained-highs line, rendered by the real app.
- *
- * The node tests around `uncausedNote` prove the pure read; this proves the words
- * reach the screen, below the queue and outside it, and that a clock scope does not
- * move the number. The fixture's highs rollup carries exactly one occurrence whose
- * episode drew nothing (`.claude/qa/gen_synthetic_fixtures.py`), so the sentence
- * being absent here means the surface lost it, not that the data went quiet. */
-test('#63 · the unexplained-highs sentence renders below the findings queue', async () => {
+test('#63 · the unexplained-highs sentence is retired from the findings queue', async () => {
     const browser = await runner.browser();
     try {
       const before = openerProblems().length;
       const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
-      const note = await page.evaluate(
-        () => document.querySelector('#level .uncaused-note')?.textContent.trim() ?? null);
-      assert.equal(note, '1 high had no cause detected by the app',
-        'the server sentence renders verbatim');
-      // It is a SIBLING of the list, never a row inside it: a reader who can select
-      // every queue row must not be able to select this, and it carries no drill.
-      const placement = await page.evaluate(() => {
-        const el = document.querySelector('#level .uncaused-note');
-        return {
-          insideList: !!el.closest('.q'),
-          isRow: el.matches('.qrow'),
-          afterList: !!(document.querySelector('#level .q')?.compareDocumentPosition(el)
-            & Node.DOCUMENT_POSITION_FOLLOWING),
-          tag: el.tagName,
-        };
-      });
-      assert.deepEqual(placement,
-        { insideList: false, isRow: false, afterList: true, tag: 'P' });
-      // Scope invariance is pinned where it can be asserted exactly — over every
-      // frozen window in `findings-projection-mirror.test.js` and over three clock
-      // windows in `tests/test_meal_bolus_short_attribution.py`. What only the real
-      // app can show is the two above: the words, and where they sit.
+      const sanction = 'sanction: ConnorGriffin · 2026-08-23 · "Retired and incomplete evidence stops competing with the findings you can act on."';
+      console.log(`RETIRED — ${sanction}`);
+      assert.equal(await page.locator('#level .uncaused-note').count(), 0,
+        `RETIRED — ${sanction}`);
       await page.close();
       assert.deepEqual(openerProblems().slice(before), [],
-        'no opener problems while reading the unexplained-highs line');
+        'no opener problems while checking the retired footer');
     } finally { /* browser stays open; closed once in after() */ }
   });

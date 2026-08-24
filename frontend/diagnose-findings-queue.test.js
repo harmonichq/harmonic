@@ -7,7 +7,8 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
   EMPTY_LINE, EMPTY_SIFT_LINE, HELD_PREFIX, TAIL_NOTE, eventChartCoordinate,
-  queueMeta, queueRows, uncausedNote,
+  renderFindingsQueue,
+  queueMeta, queueRows,
 } from './diagnose-findings-queue.js';
 
 const fixture = JSON.parse(readFileSync(
@@ -15,14 +16,65 @@ const fixture = JSON.parse(readFileSync(
 const W = fixture.windows;
 
 test('term 45 · the meta has three forms and no others', () => {
-  assert.equal(queueMeta(W.global), '8 findings · 30 days');
-  assert.equal(queueMeta(W.afternoon), '5 in this window');
+  // Meta counts only the rows a reader can currently see.
+  assert.equal(queueMeta(W.global), '7 findings · 30 days');
+  assert.equal(queueMeta(W.afternoon), '3 in this window');
   assert.equal(queueMeta(fixture.no_data.global), '30 days');
   // never sort language, never the window range restated — the chip owns the hours
   for (const projection of [W.global, W.afternoon, W.overnight, fixture.no_data.morning]) {
     const meta = queueMeta(projection);
     assert.doesNotMatch(meta, /ranked|sort|bar:/i, `${meta} carries sort language`);
     assert.doesNotMatch(meta, /\d\d:\d\d/, `${meta} restates the window range`);
+  }
+});
+
+test('Watching rows collapse by default, without changing actionable rows', () => {
+  for (const name of ['global', 'morning', 'overnight', 'quiet', 'afternoon', 'low_block', 'rebound']) {
+    const rows = queueRows(W[name]);
+    const watching = rows.filter((row) => ['held', 'blind', 'history'].includes(row.register));
+    assert.ok(watching.length > 0, `${name} has Watching rows`);
+    assert.ok(watching.every((row) => row.collapsed), `${name} collapses every Watching row`);
+    assert.ok(rows.filter((row) => ['assert', 'finding'].includes(row.register))
+      .every((row) => !row.collapsed), `${name} keeps actionable rows visible`);
+  }
+  const quiet = queueRows(W.quiet);
+  assert.ok(quiet.every((row) => row.collapsed), 'quiet is all Watching');
+  assert.equal(quiet.filter((row) => !row.hidden && !row.collapsed).length, 0,
+    'quiet has no shown row and takes the empty-copy state');
+});
+
+test('Event charts retain Watching rows, including while sifting', () => {
+  const history = { id: 'history', register: 'history', kind: 'setting', chips: ['highs'],
+    event_chart: { view: 'highs', factor: 'meal_bolus_short' } };
+  const finding = { id: 'finding', register: 'finding', kind: 'habit', chips: ['highs'],
+    event_chart: { view: 'highs', factor: 'meal_bolus_short' } };
+  const projection = { rows: [finding, history], window: { scoped: false }, findings_window: { days: 30 } };
+  for (const selected of [null, new Set(['highs'])]) {
+    const rows = queueRows(projection, selected, true);
+    assert.equal(rows.find((row) => row.id === 'history').collapsed, false);
+  }
+});
+
+test('all-Watching queue keeps its empty line compact above the disclosure', () => {
+  class Node {
+    constructor() { this.children = []; this.dataset = {}; }
+    append(...nodes) { this.children.push(...nodes); }
+    setAttribute() {}
+    addEventListener() {}
+  }
+  const previous = globalThis.document;
+  globalThis.document = { createElement: () => new Node() };
+  try {
+    const host = new Node();
+    renderFindingsQueue(host, W.quiet, () => {});
+    assert.equal(host.children[0].textContent, EMPTY_LINE);
+    assert.equal(host.children[0].className, 'quiet-line sift-empty',
+      'the empty line is compact when the Watching disclosure follows');
+    assert.equal(host.children[1].className, 'q');
+    assert.equal(host.children[1].children[0].className, 'qcollapse');
+    assert.match(host.children[1].children[0].textContent, /^Watching · \d+ reads?$/);
+  } finally {
+    globalThis.document = previous;
   }
 });
 
@@ -300,37 +352,6 @@ test('#83 · metadata and empty copy describe the visible root filters', () => {
   assert.equal(queueMeta(W.global, new Set(['meals']), true), '1 finding · 30 days');
   assert.equal(queueMeta(W.afternoon, new Set(['meals']), true), '30 days');
   assert.equal(EMPTY_SIFT_LINE, 'No findings match the current filters.');
-});
-
-/* #63 — the unexplained-highs line. It is the server's finished sentence and the
- * frontend's only job is to hand it back, so these tests are about what is NOT
- * decided here: no count, no pluralization, no threshold, and no leak into the
- * meta slot the queue's own copy owns. */
-
-test('#63 · the line is read off the projection, never composed', () => {
-  assert.equal(uncausedNote(W.global), '1 high had no cause detected by the app');
-  // the server publishes the finished string; changing it must change what renders
-  const relabelled = { ...W.global, uncaused_highs: { count: 9, text: 'nine of them' } };
-  assert.equal(uncausedNote(relabelled), 'nine of them');
-});
-
-test('#63 · a null text publishes no line, and the threshold is not ours', () => {
-  assert.equal(uncausedNote(fixture.no_data.global), null);
-  assert.equal(uncausedNote({ uncaused_highs: { count: 0, text: null } }), null);
-  // a count with no sentence still renders nothing: the server decides, not a
-  // predicate here (the #273/#465 rule the thin-slot hold kept escaping through)
-  assert.equal(uncausedNote({ uncaused_highs: { count: 4, text: null } }), null);
-  assert.equal(uncausedNote(null), null);
-  assert.equal(uncausedNote({}), null);
-});
-
-test('#63 · the line is whole-window, so every scope carries the same sentence', () => {
-  const scopes = ['global', 'morning', 'low_block', 'rebound', 'afternoon',
-    'overnight', 'quiet'];
-  for (const name of scopes) {
-    assert.equal(uncausedNote(W[name]), '1 high had no cause detected by the app',
-      `${name} must not re-scope the count`);
-  }
 });
 
 test('#63 · the sentence never enters the queue meta, which counts the window', () => {

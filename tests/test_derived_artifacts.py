@@ -68,7 +68,7 @@ class DerivedArtifactsTest(unittest.TestCase):
             self.assertEqual(conn.execute("SELECT payload FROM artifacts").fetchone()[0], before)
 
     def test_concurrent_identical_and_distinct_keys_leave_complete_artifacts(self):
-        barrier = threading.Barrier(3)
+        barrier = threading.Barrier(4)
         errors = []
 
         def write(key, value):
@@ -79,6 +79,7 @@ class DerivedArtifactsTest(unittest.TestCase):
                 errors.append(error)
 
         threads = [threading.Thread(target=write, args=(("same",), 1)),
+                   threading.Thread(target=write, args=(("same",), 3)),
                    threading.Thread(target=write, args=(("other",), 2))]
         for thread in threads:
             thread.start()
@@ -86,7 +87,8 @@ class DerivedArtifactsTest(unittest.TestCase):
         for thread in threads:
             thread.join()
         self.assertEqual(errors, [])
-        self.assertEqual(self.load(lambda store: {"bad": True}, ("same",)), {"value": 1})
+        self.assertIn(self.load(lambda store: {"bad": True}, ("same",)),
+                      ({"value": 1}, {"value": 3}))
         self.assertEqual(self.load(lambda store: {"bad": True}, ("other",)), {"value": 2})
 
     def test_injected_source_fingerprint_change_misses(self):

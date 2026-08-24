@@ -241,3 +241,8 @@ fixes first, because they change what the durable store is built around.
 6. **#125** — one throttled paced recompute worker (ADR 82, recompute).
 7. **#126** — compute analysis, scenarios and exposures once and share them with
    the findings projection.
+# Implementation note (#123)
+
+Fixed reconstructible Diagnose artifacts are stored in a disposable adjacent
+SQLite sidecar. Their primary revision is committed with Store mutations and
+their automatic package-source fingerprint invalidates changed analysis code.

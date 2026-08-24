@@ -1492,10 +1492,11 @@ class CachePreWarmTest(unittest.TestCase):
             self._get_landing_set()          # cold: every shape computed once
             self.assertEqual(counts["scenarios"], 2)
             self.app.state.invalidate_and_warm()
-            # New data landed, so the pre-fetch results were dropped and rebuilt.
-            self.assertEqual(counts["scenarios"], 4)
+            # A cache-only invalidation has no new Store revision, so the warm
+            # pass may reuse its verified durable exact-match artifact.
+            self.assertEqual(counts["scenarios"], 1)
             self._get_landing_set()
-            self.assertEqual(counts["scenarios"], 4)
+            self.assertEqual(counts["scenarios"], 1)
 
     def test_drill_downs_and_other_windows_stay_lazy(self):
         with self._counting_builders() as counts:

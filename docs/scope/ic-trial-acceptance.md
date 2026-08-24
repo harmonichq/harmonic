@@ -49,6 +49,14 @@ a Trial on a carb-ratio change should accept as "ready to judge".
   (Q8), 2026-08-24. Why: reporting ready without evidence is the failure this
   ticket exists to close. Disposition: → ADR.
 
+- **Lock the decisions; do not build yet.** Operator decision (Q9), 2026-08-24.
+  Why: the per-block judging rulings sit inside #136's decision space, the
+  surfaces are covered by #135's lock, and #133 blocks Verify build handoffs on
+  #19. Disposition: → ADR.
+- **The per-block judging answers stay this ticket's decision**, which #136 must
+  honour rather than reopen. Operator decision (Q10), 2026-08-24. Disposition:
+  → ADR.
+
 ### Risk contract
 
 - **Must prevent:** reporting a carb-ratio change ready to judge while the block's

@@ -6,9 +6,9 @@ suite fell into: its fixtures encoded the very assumption that was false against
 data, so the tests stayed green while the product shipped a hold that did not hold.
 
 So the block payloads the JS tests read are produced here, by feeding synthetic meals
-through `analyze_ic_blocks` + `price_ic_blocks` and serialising whatever the analyzer
-decided. If a gate changes, this file's output changes, and the frontend tests move
-with it — which is the point.
+through the shipped I:C block estimator + `price_ic_blocks` and serialising whatever
+the analyzer decided. If a gate changes, this file's output changes, and the frontend
+tests move with it — which is the point.
 
 Synthetic only: invented meals on the real schema, no patient data anywhere near it.
 

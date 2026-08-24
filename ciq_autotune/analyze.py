@@ -590,7 +590,7 @@ def _settling(
             out.append(Settling("isf", _fmt(isf_ep.start), IsfConfig().describe_gate(), None))
 
     # I:C: gate is IcConfig.min_runs qualifying MEAL RUNS (#518). `have` is the one
-    # whole-day run total `analyze_ic_blocks` returned — never a sum across rows or
+    # whole-day run total the active block estimator returned — never a sum across rows or
     # blocks, because a run that spans a block boundary belongs to both and summing
     # would count it twice. This countdown speaks only to the whole-day gate; a block's
     # own "N of 8 meal runs" countdown is a different denominator and the two never

@@ -9,9 +9,9 @@ it projects from comes out of the real engines: basal verdicts through
 :func:`~ciq_autotune.safety.cap`, their sentences through
 ``analyzers.basal._annotation_for``, the ISF read through ``analyzers.isf._recommend``
 and ``analyzers.isf.isf_asserts_move``,
-the I:C blocks through ``analyze_ic_blocks`` + ``price_ic_blocks``, the priorities
-through ``build_tuning_levers`` and ``behavioral_priority``. Nothing here hand-sets
-``asserts_move``, a status, a hold reason or a score — that is the exact trap
+the I:C blocks through the shipped block estimator + ``price_ic_blocks``, the
+priorities through ``build_tuning_levers`` and ``behavioral_priority``. Nothing here
+hand-sets ``asserts_move``, a status, a hold reason or a score — that is the exact trap
 `CLAUDE.md` records for the thin-slot hold, and a queue fixture is where it would do
 the most damage, because the queue IS the verdict.
 

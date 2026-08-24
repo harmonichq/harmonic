@@ -566,8 +566,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 return summarize_trend(store, window_days=window).to_dict()
 
         key = ("outcomes-trend", window)
-        return (fixed(key, "outcomes-trend-v1", lambda store: summarize_trend(store, window_days=window).to_dict())
-                if window == 30 else cache.get_or_compute(key, compute))
+        return fixed(key, "outcomes-trend-v1", lambda store: summarize_trend(store, window_days=window).to_dict())
 
     @app.get("/api/verify/trials")
     def verify_trials_endpoint(selected: Optional[str] = None,

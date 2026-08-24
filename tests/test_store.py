@@ -617,6 +617,11 @@ class PlanDraftStoreTest(unittest.TestCase):
         self.assertEqual(draft["items"], items)
         self.assertEqual(draft["updated_at"], "2026-06-01 09:00:00")
 
+    def test_save_draft_leaves_durable_revision_unchanged(self):
+        before = self.store.input_data_revision()
+        self.store.save_plan_draft([{"type": "basal", "key": 0}], "2026-06-01 09:00:00")
+        self.assertEqual(self.store.input_data_revision(), before)
+
     def test_save_allows_empty_and_single_family_drafts(self):
         cases = [
             [],
@@ -816,6 +821,15 @@ class MigrationTest(unittest.TestCase):
                 # The #125 carb log is a manual store, deliberately kept out of
                 # counts() (which tracks the synced feeds' data quality).
                 self.assertNotIn("carb_entries", store.counts())
+
+    def test_migration_advances_durable_revision_once(self):
+        with tempfile.NamedTemporaryFile(suffix=".db") as f:
+            conn = sqlite3.connect(f.name)
+            conn.execute("CREATE TABLE profile_settings (captured_at TEXT PRIMARY KEY)")
+            conn.commit()
+            conn.close()
+            with Store.open(f.name) as store:
+                self.assertEqual(store.input_data_revision(), 1)
 
     def test_rekeys_legacy_bolus_iob_pump_tables_wiping_rows(self):
         # Pre-#198 bolus/iob/pump tables keyed on derived tuples with no seq_num.

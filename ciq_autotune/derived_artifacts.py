@@ -67,6 +67,20 @@ def _corrupt(error: sqlite3.Error) -> bool:
     return "malformed" in text or "not a database" in text or "database disk image is malformed" in text
 
 
+def _recreate_if_exclusive(path: str) -> bool:
+    try:
+        conn = sqlite3.connect(path, timeout=0.0)
+        try:
+            conn.execute("BEGIN IMMEDIATE")
+            Path(path).unlink(missing_ok=True)
+            conn.rollback()
+        finally:
+            conn.close()
+        return True
+    except (sqlite3.Error, OSError):
+        return False
+
+
 def _call(compute: Callable, store: Store):
     return compute(store) if inspect.signature(compute).parameters else compute()
 
@@ -74,7 +88,8 @@ def _call(compute: Callable, store: Store):
 def load_or_compute(db_path: str, coordinates: tuple, compute: Callable,
                     *, shape_marker: str, dump: Callable[[Any], Any] | None = None,
                     rebuild: Callable[[Any], Any] | None = None,
-                    readonly: bool = False, before_persist: Callable[[], None] | None = None) -> Any:
+                    readonly: bool = False, before_persist: Callable[[], None] | None = None,
+                    before_commit: Callable[[], None] | None = None) -> Any:
     """Return an exact durable hit or compute from one query-only Store snapshot.
 
     ``compute`` may accept the pinned Store snapshot or no arguments for simple
@@ -134,14 +149,13 @@ def load_or_compute(db_path: str, coordinates: tuple, compute: Callable,
                     VALUES(?,?,?,?,?) ON CONFLICT(revision,coordinates,marker)
                     DO UPDATE SET payload=excluded.payload,digest=excluded.digest""",
                     (revision, coords, marker, payload, _digest(payload)))
+                if before_commit is not None:
+                    before_commit()
     except sqlite3.Error as error:
         if _corrupt(error):
             # A malformed sidecar is disposable, but only remove it after opening
             # failed; a locked sidecar is never recreated.
-            try:
-                Path(path).unlink(missing_ok=True)
-            except OSError:
-                pass
+            _recreate_if_exclusive(path)
         # Return fresh computation for every persistence failure.
     return value
 
@@ -154,6 +168,8 @@ def dump_event_comparison(value):
 
 def rebuild_event_comparison(value):
     from .event_comparison import EventComparisonPreparation
+    if not isinstance(value, dict) or not isinstance(value.get("exposures"), dict) or not isinstance(value.get("catalog"), dict):
+        raise ValueError("invalid event-comparison artifact")
     return EventComparisonPreparation(_exposures=value["exposures"], _catalog=value["catalog"])
 
 
@@ -163,6 +179,10 @@ def dump_findings(value):
 
 def rebuild_findings(value):
     from .findings_projection import FindingsProjection
+    if (not isinstance(value, dict) or not isinstance(value.get("analysis"), dict)
+            or not isinstance(value.get("exposures"), dict)
+            or not isinstance(value.get("scenarios"), dict)):
+        raise ValueError("invalid findings artifact")
     return FindingsProjection(_analysis=value["analysis"], _exposures=value["exposures"], _scenarios=value["scenarios"])
 
 
@@ -172,4 +192,8 @@ def dump_ic_history(value):
 
 def rebuild_ic_history(value):
     from .ic_history_events import IcHistoryEventProjection
+    if (not isinstance(value, dict) or not isinstance(value.get("catalog"), list)
+            or not isinstance(value.get("series"), dict)
+            or any(not isinstance(series, list) for series in value["series"].values())):
+        raise ValueError("invalid I:C history artifact")
     return IcHistoryEventProjection(_catalog=tuple(value["catalog"]), _series={k: tuple(v) for k, v in value["series"].items()})

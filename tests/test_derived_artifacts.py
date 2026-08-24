@@ -58,14 +58,40 @@ class DerivedArtifactsTest(unittest.TestCase):
             self.assertEqual(self.load(lambda store: {"fresh": True}, ("other",)), {"fresh": True})
         self.assertTrue(Path(path).exists())
 
-    def test_crash_mid_write_keeps_prior_artifact_readable(self):
+    def test_corruption_with_concurrently_held_handle_does_not_delete(self):
         self.load(lambda store: {"old": True})
         path = sidecar_path(self.tmp.name)
-        with sqlite3.connect(path) as conn:
-            before = conn.execute("SELECT payload FROM artifacts").fetchone()[0]
+        with sqlite3.connect(path, timeout=0.0) as held:
+            held.execute("BEGIN IMMEDIATE")
+            with patch("ciq_autotune.derived_artifacts._open",
+                       side_effect=sqlite3.DatabaseError("database disk image is malformed")):
+                self.assertEqual(self.load(lambda store: {"fresh": True}, ("other",)),
+                                 {"fresh": True})
+            self.assertTrue(Path(path).exists())
+
+    def test_crash_mid_write_keeps_prior_artifact_readable(self):
+        self.load(lambda store: {"old": True})
+        self.assertEqual(load_or_compute(
+            self.tmp.name, ("fixed",), lambda store: {"new": True},
+            shape_marker="test-v1",
+            rebuild=lambda _: (_ for _ in ()).throw(ValueError("force replacement")),
+            before_commit=lambda: (_ for _ in ()).throw(
+                sqlite3.OperationalError("injected before commit")),
+        ), {"new": True})
         self.assertEqual(self.load(lambda store: {"ignored": True}), {"old": True})
+
+    def test_valid_json_wrong_adapter_shape_recomputes(self):
+        self.load(lambda store: {"good": True}, ("shape",))
+        path = sidecar_path(self.tmp.name)
         with sqlite3.connect(path) as conn:
-            self.assertEqual(conn.execute("SELECT payload FROM artifacts").fetchone()[0], before)
+            payload = '{"wrong":true}'
+            conn.execute("UPDATE artifacts SET payload=?, digest=? WHERE coordinates=?",
+                         (payload, artifacts._digest(payload), artifacts._canonical(("shape",))))
+        self.assertEqual(load_or_compute(
+            self.tmp.name, ("shape",), lambda store: {"fresh": True},
+            shape_marker="test-v1",
+            rebuild=lambda value: (_ for _ in ()).throw(ValueError("wrong shape")),
+        ), {"fresh": True})
 
     def test_concurrent_identical_and_distinct_keys_leave_complete_artifacts(self):
         barrier = threading.Barrier(4)

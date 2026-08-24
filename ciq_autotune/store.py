@@ -501,19 +501,34 @@ class Store:
 
     def _migrate(self) -> None:
         """Add post-release columns to a database created by an earlier schema."""
-        for table, column, coltype in _ADDED_COLUMNS:
-            existing = {r["name"] for r in
-                        self.conn.execute(f"PRAGMA table_info({table})")}
-            if column not in existing:
-                with self.conn:
-                    self.conn.execute(
-                        f"ALTER TABLE {table} ADD COLUMN {column} {coltype}")
-        self._rekey_seq_num_tables()
+        additions = [(table, column, coltype) for table, column, coltype in _ADDED_COLUMNS
+                     if column not in {r["name"] for r in
+                                       self.conn.execute(f"PRAGMA table_info({table})")}]
+        stale = self._stale_seq_num_tables()
+        if not additions and not stale:
+            return
+        statements = ["BEGIN"]
+        statements.extend(
+            f"ALTER TABLE {table} ADD COLUMN {column} {coltype}"
+            for table, column, coltype in additions)
+        statements.extend(f"DROP TABLE {table}" for table in stale)
+        if stale:
+            statements.append(_SCHEMA)
+        statements.extend((
+            "UPDATE input_data_revision SET revision = revision + 1 WHERE id = 1",
+            "COMMIT",
+        ))
+        self.conn.executescript(";\n".join(statements) + ";")
 
     # The pump-feed tables re-keyed on the pump's stable ``seq_num`` — basal by
     # #194, the rest by #198. Each is a re-fetchable cache keyed on its own event
     # identity; see :meth:`_rekey_seq_num_tables`.
     _SEQ_NUM_TABLES = ("basal_events", "bolus_events", "iob_events", "pump_events")
+
+    def _stale_seq_num_tables(self) -> list[str]:
+        return [t for t in self._SEQ_NUM_TABLES
+                if "seq_num" not in {r["name"] for r in
+                                     self.conn.execute(f"PRAGMA table_info({t})")}]
 
     def _rekey_seq_num_tables(self) -> None:
         """Re-key the pump-feed tables on the pump's ``seq_num``, wiping legacy rows.
@@ -530,15 +545,17 @@ class Store:
         instead of doubling. Only the manual carb log is irreplaceable, and it
         lives in its own tables — untouched. No-op once every table carries
         ``seq_num``, so this fires at most once per store."""
-        stale = [t for t in self._SEQ_NUM_TABLES
-                 if "seq_num" not in {r["name"] for r in
-                                      self.conn.execute(f"PRAGMA table_info({t})")}]
+        stale = self._stale_seq_num_tables()
         if not stale:
             return
-        with self.conn:
-            for table in stale:
-                self.conn.execute(f"DROP TABLE {table}")
-            self.conn.executescript(_SCHEMA)
+        statements = ["BEGIN"]
+        statements.extend(f"DROP TABLE {table}" for table in stale)
+        statements.extend((
+            _SCHEMA,
+            "UPDATE input_data_revision SET revision = revision + 1 WHERE id = 1",
+            "COMMIT",
+        ))
+        self.conn.executescript(";\n".join(statements) + ";")
 
     @classmethod
     def open(cls, path: str) -> "Store":
@@ -1090,7 +1107,6 @@ class Store:
                 "updated_at=excluded.updated_at",
                 (json.dumps(items), updated_at),
             )
-            self._advance_revision()
 
     def apply_plan(self, applied_at: str) -> dict:
         """Snapshot the current draft into history and clear it, starting a

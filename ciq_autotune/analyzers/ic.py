@@ -2647,7 +2647,12 @@ def analyze_ic_blocks(
     history_catalog: Optional[List[IcHistory]] = None,
     history_harm_lows: Optional[Sequence[PrintedLow]] = None,
 ) -> Tuple[List[IcBlock], int]:
-    """Run the shipped whole-run I:C estimator through the shared block stamper."""
+    """Run the whole-run I:C estimator through the shared block stamper.
+
+    Superseded on the shipped path by `ic_regression.analyze_ic_blocks_fuzzy`
+    (ADR 117); kept as the admission ladder's incumbent reference, which every
+    candidate replays against.
+    """
     return _analyze_ic_blocks_shared(
         bolus_events,
         ic_segments,

@@ -1,10 +1,12 @@
 """Public sidecar safety contract (#123)."""
 import sqlite3
 import tempfile
+import threading
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+import ciq_autotune.derived_artifacts as artifacts
 from ciq_autotune.derived_artifacts import load_or_compute, sidecar_path
 from ciq_autotune.store import Store
 
@@ -37,6 +39,8 @@ class DerivedArtifactsTest(unittest.TestCase):
                 writer.upsert_cgm([{"EventDateTime": "2020-01-01 00:00:00", "Readings (CGM / BGM)": 100}])
             return {"fresh": True}
         self.assertEqual(self.load(compute), {"fresh": True})
+        with sqlite3.connect(sidecar_path(self.tmp.name)) as conn:
+            self.assertEqual(conn.execute("SELECT COUNT(*) FROM artifacts").fetchone()[0], 0)
         calls = []
         self.assertEqual(self.load(lambda store: calls.append(1) or {"next": True}), {"next": True})
         self.assertEqual(calls, [1])
@@ -62,3 +66,46 @@ class DerivedArtifactsTest(unittest.TestCase):
         self.assertEqual(self.load(lambda store: {"ignored": True}), {"old": True})
         with sqlite3.connect(path) as conn:
             self.assertEqual(conn.execute("SELECT payload FROM artifacts").fetchone()[0], before)
+
+    def test_concurrent_identical_and_distinct_keys_leave_complete_artifacts(self):
+        barrier = threading.Barrier(3)
+        errors = []
+
+        def write(key, value):
+            try:
+                barrier.wait()
+                self.load(lambda store: {"value": value}, key)
+            except Exception as error:  # pragma: no cover - assertion below reports it
+                errors.append(error)
+
+        threads = [threading.Thread(target=write, args=(("same",), 1)),
+                   threading.Thread(target=write, args=(("other",), 2))]
+        for thread in threads:
+            thread.start()
+        barrier.wait()
+        for thread in threads:
+            thread.join()
+        self.assertEqual(errors, [])
+        self.assertEqual(self.load(lambda store: {"bad": True}, ("same",)), {"value": 1})
+        self.assertEqual(self.load(lambda store: {"bad": True}, ("other",)), {"value": 2})
+
+    def test_injected_source_fingerprint_change_misses(self):
+        self.load(lambda store: {"first": True})
+        old = artifacts._FINGERPRINT
+        try:
+            artifacts._FINGERPRINT = "different-source-fingerprint"
+            self.assertEqual(self.load(lambda store: {"second": True}), {"second": True})
+        finally:
+            artifacts._FINGERPRINT = old
+
+    def test_write_after_fresh_read_persists_only_old_revision(self):
+        def write_after_read():
+            with Store.open(self.tmp.name) as writer:
+                writer.upsert_cgm([{"EventDateTime": "2020-01-02 00:00:00", "Readings (CGM / BGM)": 101}])
+
+        self.assertEqual(load_or_compute(
+            self.tmp.name, ("late",), lambda store: {"old": True},
+            shape_marker="test-v1", before_persist=write_after_read), {"old": True})
+        calls = []
+        self.assertEqual(self.load(lambda store: calls.append(1) or {"new": True}, ("late",)), {"new": True})
+        self.assertEqual(calls, [1])

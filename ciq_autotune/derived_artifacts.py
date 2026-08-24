@@ -74,7 +74,7 @@ def _call(compute: Callable, store: Store):
 def load_or_compute(db_path: str, coordinates: tuple, compute: Callable,
                     *, shape_marker: str, dump: Callable[[Any], Any] | None = None,
                     rebuild: Callable[[Any], Any] | None = None,
-                    readonly: bool = False) -> Any:
+                    readonly: bool = False, before_persist: Callable[[], None] | None = None) -> Any:
     """Return an exact durable hit or compute from one query-only Store snapshot.
 
     ``compute`` may accept the pinned Store snapshot or no arguments for simple
@@ -126,6 +126,8 @@ def load_or_compute(db_path: str, coordinates: tuple, compute: Callable,
         with Store.open_queryonly(db_path) as fresh:
             if fresh.input_data_revision() != revision:
                 return value
+        if before_persist is not None:
+            before_persist()
         with _open(path) as sidecar:
             with sidecar:
                 sidecar.execute("""INSERT INTO artifacts(revision,coordinates,marker,payload,digest)

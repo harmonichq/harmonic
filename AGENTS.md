@@ -112,7 +112,12 @@ support audit. Reproduce it locally:
 
 ```sh
 # One-time setup — an isolated Playwright + Chromium, and the two CDN modules
-# the browser suites route through instead of the network.
+# the browser suites route through instead of the network. On a machine that
+# runs the gates repeatedly, skip the mktemp lines and instead provision a
+# persistent cache once with
+#   eval "$(scripts/ensure_browser_gate_env.sh)"
+# which sets PLAYWRIGHT_MODULE and VENDOR_DIR for the legs below and costs
+# one stat per piece on reruns.
 PW=$(mktemp -d) VENDOR=$(mktemp -d)
 npm install --prefix "$PW" playwright@1.61.1
 npx --prefix "$PW" playwright install --with-deps chromium

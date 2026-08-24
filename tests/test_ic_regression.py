@@ -175,24 +175,45 @@ if __name__ == "__main__":
 class ShippedEstimatorTest(unittest.TestCase):
     """The default `analyze` path is the fuzzy estimator (ADR 117)."""
 
-    def _blocks(self, **kwargs):
-        truth_set = chained_run_sets()[0]
+    def _blocks(self, truth_set, **kwargs):
         with Store.open(":memory:") as store:
             write_set_to_store(store, truth_set)
             result = analyze(store, now=truth_set["analysis_end"], **kwargs)
         return {block.block_id: block for block in result.ic_blocks}
 
-    def test_chained_evidence_reaches_the_floor_on_the_shipped_path(self):
+    def test_starved_morning_reaches_numeric_via_the_fractional_floor(self):
         # Two lone runs per block, the rest chained across the boundary: the whole-run
-        # incumbent sees the lone pair only, the shipped estimator credits both.
-        incumbent = self._blocks(ic_estimator=analyze_ic_blocks)
-        shipped = self._blocks()
-        for block_id in (0, 720):
-            with self.subTest(block=block_id):
-                incumbent_eligibility = incumbent[block_id].evidence["eligibility"]
-                shipped_eligibility = shipped[block_id].evidence["eligibility"]
-                self.assertFalse(incumbent_eligibility["runs_floor_met"])
-                self.assertTrue(shipped_eligibility["runs_floor_met"])
-                self.assertEqual(shipped[block_id].state, "numeric")
-                self.assertGreater(
-                    shipped_eligibility["fit_meals"], incumbent_eligibility["fit_meals"])
+        # incumbent sees the morning lone pair only, while the shipped estimator
+        # consumes the varied chained evidence and credits its fractional ownership.
+        truth_set = chained_run_sets()[0]
+        incumbent = self._blocks(truth_set, ic_estimator=analyze_ic_blocks)[0]
+        morning = self._blocks(truth_set)[0]
+
+        incumbent_eligibility = incumbent.evidence["eligibility"]
+        eligibility = morning.evidence["eligibility"]
+        self.assertFalse(incumbent_eligibility["runs_floor_met"])
+        self.assertTrue(eligibility["runs_floor_met"])
+        self.assertGreater(eligibility["fractional_run_ownership"], 0.0)
+        self.assertEqual("numeric", morning.state)
+
+    def test_placebo_shaped_store_stays_silent(self):
+        blocks = self._blocks(placebo_sets()[0])
+
+        self.assertTrue(blocks)
+        for block in blocks.values():
+            self.assertEqual("numeric", block.state)
+            self.assertFalse(block.asserts_move)
+
+    def test_lone_run_history_agrees_with_the_incumbent(self):
+        truth_set = known_ratio_sets()[0]
+        incumbent = self._blocks(truth_set, ic_estimator=analyze_ic_blocks)[0]
+        shipped = self._blocks(truth_set)[0]
+
+        self.assertEqual(incumbent.state, shipped.state)
+        self.assertEqual(incumbent.asserts_move, shipped.asserts_move)
+        self.assertEqual(incumbent.recommended, shipped.recommended)
+        self.assertIsNotNone(incumbent.estimate.value)
+        self.assertIsNotNone(shipped.estimate.value)
+        self.assertLessEqual(
+            abs(incumbent.estimate.value - shipped.estimate.value), 0.1,
+        )

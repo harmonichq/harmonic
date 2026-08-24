@@ -81,8 +81,8 @@ _CIQ_SUSPEND_TYPE = "algorithmDelivery (control-iq suspension)"
 
 # --- the one I:C eligibility decision (#465, moved to block scope by #518) ---------
 # A carb-ratio BLOCK may move a deliverable schedule only when its evidence asserts a
-# direction. This is the I:C twin of `SlotEstimate.asserts_move`: `analyze_ic_blocks`
-# stamps it on every block, and ranking (`tuning_priority.ic_lever`), the consolidated
+# direction. This is the I:C twin of `SlotEstimate.asserts_move`: the active block
+# estimator stamps it on every block, and ranking (`tuning_priority.ic_lever`), the consolidated
 # pump profile (`basal._param_schedule`) and Plan staging
 # (`frontend/diagnose-workspaces.js`, `stageItemsFor`) all read that one flag. See
 # `ic_asserts_move` below for the four conditions.
@@ -129,8 +129,9 @@ def ic_asserts_move(block: "IcBlock") -> bool:
        say — and that requirement lives HERE, not at the call site, because a
        condition a consumer has to remember to re-apply is the second predicate all
        over again.
-    1. ``n_runs >= safety._MIN_SUPPORTED_BLOCK_RUNS`` — enough closed meal-run ledgers
-       wholly inside the block. #273's lesson is that a narrow CI at n = 3–7 clears
+    1. The estimator-stamped effective run count meets
+       ``safety._MIN_SUPPORTED_BLOCK_RUNS``. ``n_runs`` carries its floored integer
+       display value. #273's lesson is that a narrow CI below the floor clears
        ``wide`` and stages anyway.
     2. The clustered band excludes the block's programmed value.
     3. The **regime bracket** does not straddle programmed and its on-regime sub-pool
@@ -138,9 +139,9 @@ def ic_asserts_move(block: "IcBlock") -> bool:
        post-edit meals accrue.
     4. ``recommended`` names a real move off ``current`` (half-gap + cap, ADR 435).
 
-    :func:`analyze_ic_blocks` computes each condition, stamps the verdict on the block
-    and records *why* in ``evidence['eligibility']``; this function is the single
-    reader of that evidence. Ranking (``tuning_priority.ic_lever``), the consolidated
+    :func:`_analyze_ic_blocks_shared` computes each condition, stamps the verdict on
+    the block and records *why* in ``evidence['eligibility']``; this function is the
+    single reader of that evidence. Ranking (``tuning_priority.ic_lever``), the consolidated
     pump profile (``basal._param_schedule``) and Plan staging
     (``frontend/diagnose-workspaces.js``) all read the one flag it produces. Keeping every
     condition here — beside the block that carries it — is what stops the
@@ -1781,10 +1782,10 @@ def analyze_ic(
         # Post-#518 a segment row is PUMP-LANE DISPLAY: it says what the profile is
         # programmed to at this boundary and what this window's meals read there, and
         # it never moves anything. `asserts_move` is therefore always False here — the
-        # one live flag rides the owning BLOCK (`analyze_ic_blocks`), because adjacent
-        # segments sharing a value are one thing on the pump and the meals cannot tell
-        # them apart. Naming the owner in the annotation is what keeps that honest on
-        # screen: a segment with no number of its own says which stretch reads for it.
+        # one live flag rides the owning I:C block result, because adjacent segments
+        # sharing a value are one thing on the pump and the meals cannot tell them
+        # apart. Naming the owner in the annotation is what keeps that honest on screen:
+        # a segment with no number of its own says which stretch reads for it.
         owner = _block_of(start_min, blocks)
         row_evidence = dict(row.evidence or {})
         row_evidence["block_id"] = owner
@@ -2310,12 +2311,11 @@ def _analyze_ic_blocks_shared(
     and one Control-IQ response, so treating them as independent understates the 80%
     interval by 1.6–1.8×.
 
-    **Only runs wholly inside a block enter its numeric pool.** A run that spans a
-    block boundary is information-free at block scope: under a pro-rata split its block
-    ratio is identically the whole-run ratio, so it can only add noise and cross-block
-    contamination. It still counts toward the block's coverage (``n_meals``) and its
-    display, which is exactly how a block is honestly reported as ``unmeasured-alone``
-    — meals happen here, and none of them ever sat alone.
+    The incumbent fit admits only runs wholly inside a block to its numeric pool: a
+    pro-rata split of one run's ratio is identically the whole-run ratio and carries no
+    block-level information. Cross-block estimators may instead admit chained runs
+    through ``_fit_builder`` when their combined evidence separates the block ratios.
+    Every touching run still counts toward coverage (``n_meals``).
 
     The returned ``whole_day_run_count`` is different: it counts each qualifying
     closed ledger once, including a run that crosses a block boundary. It feeds the
@@ -2363,9 +2363,9 @@ def _analyze_ic_blocks_shared(
             if (analysis_start is None or run.t >= analysis_start)
             and (analysis_end is None or run.t <= analysis_end)]
 
-    # Assign every run to the set of blocks its member meals fall in. A run enters a
-    # block's NUMERIC pool only when that set is exactly ``{block}``; it counts toward
-    # every block it touches for coverage.
+    # Assign every run to the set of blocks its member meals fall in. The fit builder
+    # decides which of those runs its numeric estimate consumes; every touching run
+    # counts toward coverage.
     run_blocks: List[set] = []
     for run in runs:
         ids = {_block_of(_tod(m.t), groups) for m in run.meals}
@@ -2429,8 +2429,8 @@ def _analyze_ic_blocks_shared(
         elif est.value is not None and effective_runs >= cfg.min_runs:
             state = "below-floor"
         elif n_meals >= cfg.min_runs:
-            # The pool cannot fill by construction: meals happen here, but every one of
-            # them chains into a neighbour, so none ever sits wholly inside this block.
+            # Meals happen here, but the admitted evidence carries no contrast from
+            # which this estimator can separate a numeric ratio for the block.
             state = "unmeasured-alone"
         else:
             state = "collecting"

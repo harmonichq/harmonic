@@ -1,0 +1,360 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Clock window — unrolling past midnight</title>
+<style>
+:root{
+  --primary:#1C6E8C; --primary-600:#15576F; --primary-100:#E2EEF2;
+  --bg:#F7F8FA; --bg-tint:#F1F4F7; --surface:#FFFFFF; --surface-2:#F1F3F5;
+  --text:#1B2126; --muted:#656D76; --line:#E3E7EA;
+  --in-range:#1C6E8C; --basal:#4A6FA5; --warn:#93701B; --warn-bg:#F6EFDC;
+  --font:Inter,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:400 .9rem/1.5 var(--font);padding:28px 24px 60px}
+h1{font:700 1.02rem/1.3 var(--font);letter-spacing:-.01em;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 20px;max-width:66ch}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px 14px;max-width:1080px}
+.label{font:700 .72rem/1.3 var(--font);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.row{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:12px}
+.readout{font:800 1.4rem/1.2 var(--font);letter-spacing:-.02em}
+.wrapflag{font:700 .72rem/1.3 var(--font);letter-spacing:.1em;text-transform:uppercase;
+  color:var(--warn);background:var(--warn-bg);padding:3px 7px;border-radius:4px;margin-left:10px;vertical-align:middle}
+.model{font:400 .78rem/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--muted)}
+
+/* Full width at rest. Nothing is reserved, and the axis never rescales. */
+.stage{position:relative;user-select:none}
+.track{position:relative;height:190px;background:var(--surface-2);border:1px solid var(--line);
+  border-radius:8px;cursor:crosshair;overflow:hidden}
+.content{position:absolute;inset:0}
+.settling .content,.settling .axisinner{transition:transform .3s cubic-bezier(.3,.7,.2,1)}
+
+/* The continuation strip: the same day again, parented INSIDE the panning
+   content so it scrolls in from the right rather than covering anything. It
+   runs a full 24h, so a drag can travel all the way back to its own start. */
+.cont,.prev{position:absolute;top:0;bottom:0;width:100%;background:var(--bg-tint);
+  overflow:hidden;opacity:0;transition:opacity .16s ease}
+.cont{left:100%;border-left:1px dashed var(--line)}
+.prev{left:-100%;border-right:1px dashed var(--line)}
+.stage.unrolled .cont,.stage.unrolled .prev{opacity:1}
+.cont .plot,.prev .plot{opacity:.4}   /* the repeat reads as a repeat, not new data */
+.daymark{position:absolute;bottom:6px;left:10px;font:700 .66rem/1 var(--font);
+  letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.prev .daymark{left:auto;right:10px}
+/* where the drag started, seen again a day later: the stop */
+.startmark{position:absolute;top:0;bottom:0;width:0;border-left:2px dashed var(--primary-600);opacity:.85}
+.startmark span{position:absolute;top:10px;left:6px;white-space:nowrap;
+  font:700 .66rem/1 var(--font);letter-spacing:.08em;text-transform:uppercase;color:var(--primary-600)}
+
+.plot{position:absolute;inset:0}
+.plot svg{position:absolute;inset:0;width:100%;height:100%}
+.midnight{position:absolute;top:0;bottom:0;left:100%;width:0;border-left:2px solid var(--text);opacity:.3}
+.band{position:absolute;top:0;bottom:0;background:rgba(28,110,140,.16);
+  border-left:2px solid var(--primary);border-right:2px solid var(--primary)}
+.band.open-right{border-right:0}
+.band.open-left{border-left:0}
+.settling .band{transition:left .3s cubic-bezier(.3,.7,.2,1),width .3s cubic-bezier(.3,.7,.2,1)}
+.bandlabel{position:absolute;top:10px;transform:translateX(-50%);white-space:nowrap;z-index:5;
+  background:var(--primary);color:#fff;font:700 .72rem/1 var(--font);letter-spacing:.04em;
+  padding:5px 8px;border-radius:4px;pointer-events:none}
+.bandlabel.cont-chip{background:var(--primary-100);color:var(--primary-600);border:1px solid var(--primary)}
+.handle{position:absolute;top:0;bottom:0;width:11px;margin-left:-5px;cursor:col-resize;z-index:6}
+.handle::after{content:"";position:absolute;top:50%;left:4px;width:3px;height:34px;margin-top:-17px;
+  background:var(--primary);border-radius:2px}
+.axis{position:relative;height:22px;margin-top:6px;overflow:hidden}
+.axisinner{position:absolute;inset:0}
+.tick{position:absolute;transform:translateX(-50%);font:400 .72rem/22px var(--font);color:var(--muted)}
+.tick.next{color:var(--primary-600);font-weight:700}
+
+button{font:400 .82rem var(--font);background:var(--surface);border:1px solid var(--line);
+  border-radius:6px;padding:6px 10px;cursor:pointer;color:var(--text)}
+button:hover{border-color:var(--primary);color:var(--primary-600)}
+.presets{display:flex;gap:8px;align-items:center;margin-top:14px;flex-wrap:wrap;
+  border-top:1px solid var(--line);padding-top:12px}
+.note{max-width:76ch;margin:26px 0 0;color:var(--muted);font-size:.84rem}
+.note b{color:var(--text)}
+</style>
+
+<h1>Clock window — unrolling past midnight</h1>
+<p class="sub">The window is <code>start + duration (mod 24h)</code>. Drag on the strip to select one. The
+chart is full width at rest and never rescales; once the drag edge reaches either end of the day the day
+slides underneath it and the neighbouring day's hours arrive from the far side, so the edge stays exactly
+under the cursor. It works both ways — right past 24:00, or left past 00:00. Keep going and the drag runs a
+full day, landing back on its own start as the whole-day scope. Release and the axis rolls back to
+0–24, where a wrapped window renders as two bands under one label.</p>
+
+<div class="panel">
+  <div class="row">
+    <div><div class="label">Window</div><div class="readout" id="readout">—</div></div>
+    <div class="model" id="model"></div>
+  </div>
+
+  <div class="stage" id="stage">
+    <div class="track" id="track">
+      <div class="content" id="content">
+        <div class="plot" id="plotA"></div>
+        <div class="prev" id="prev">
+          <div class="plot" id="plotC"></div>
+          <div class="daymark">the day before</div>
+        </div>
+        <div class="cont" id="cont">
+          <div class="plot" id="plotB"></div>
+          <div class="daymark">the same day again</div>
+        </div>
+      </div>
+    </div>
+    <div class="midnight"></div>
+  </div>
+  <div class="axis" id="axis"><div class="axisinner" id="axisinner"></div></div>
+
+  <div class="presets">
+    <span class="label" style="margin-right:2px">Presets</span>
+    <button data-preset="22,4">Overnight 22:00 +4h</button>
+    <button data-preset="0,6">Early 00:00 +6h</button>
+    <button data-preset="11,3">Midday 11:00 +3h</button>
+    <button data-preset="20,9">Long wrap 20:00 +9h</button>
+  </div>
+</div>
+
+<p class="note"><b>Where the limits sit.</b> A drag runs in either direction until it meets its own start, one full day out, and
+lands there on <b>the whole day</b> — the scope the backend already expresses as an unwindowed day, so the
+gesture has no dead end and no near-miss. Presets stay contiguous; a wrapped window is something you draw, not
+something you pick. The wrap exists only in committed state: during the gesture the axis is monotonic, which
+is why the cursor never detaches from the edge it is dragging.</p>
+
+<script>
+const HOURS = 24, SNAP = 0.25, MAX_DUR = 24, EDGE = 26, PAN_RATE = 13;
+const stage = document.getElementById('stage'), track = document.getElementById('track');
+const content = document.getElementById('content'), cont = document.getElementById('cont');
+const prev = document.getElementById('prev');
+const axisInner = document.getElementById('axisinner');
+let win = {start: 22, dur: 4};        // the model: start + duration, mod 24h
+let offset = 0, drag = null, lastX = 0, raf = 0;
+
+/* ---- synthetic day (deterministic; no real data anywhere near this) ---- */
+function rng(seed){ return () => (seed = seed*1664525+1013904223 & 0x7fffffff) / 0x7fffffff; }
+const day = (() => {
+  const r = rng(97), pts = [];
+  for (let i = 0; i <= 288; i++){
+    const h = i/12;
+    let g = 118 + 34*Math.sin((h-3)/24*2*Math.PI) + 26*Math.sin((h-7)/6*2*Math.PI);
+    if (h > 7.5 && h < 10)  g += 52*Math.exp(-Math.pow(h-8.6,2)/.6);
+    if (h > 12.5 && h < 15) g += 40*Math.exp(-Math.pow(h-13.4,2)/.5);
+    if (h > 18.5 && h < 21.5) g += 60*Math.exp(-Math.pow(h-19.6,2)/.9);
+    pts.push([h, g + (r()-.5)*9]);
+  }
+  const basal = Array.from({length: 48}, (_, i) => [i/2, .55 + .3*Math.sin((i/2-4)/24*2*Math.PI) + rng(i+5)()*.12]);
+  return {pts, basal};
+})();
+
+const hourPx = () => track.clientWidth / HOURS;
+const fmt = h => String(Math.floor(h % 24)).padStart(2,'0') + ':' + String(Math.round((h%1)*60)).padStart(2,'0');
+const durTxt = d => `${Math.floor(d)}h ${Math.round((d%1)*60)}m`;
+const whole = () => win.dur >= MAX_DUR - 1e-9;   // dragged all the way round
+
+function plot(el){
+  const y = g => 100 - ((Math.min(Math.max(g,40),320) - 40) / 280) * 100;
+  const x = h => (h / HOURS) * 100;
+  const path = day.pts.map(([h,g],i) => `${i?'L':'M'}${x(h).toFixed(2)},${y(g).toFixed(2)}`).join(' ');
+  const bars = day.basal.map(([h,u]) =>
+    `<rect x="${x(h).toFixed(2)}" y="${(100-u*17).toFixed(1)}" width="${(100/HOURS*.42).toFixed(2)}" height="${(u*17).toFixed(1)}" fill="var(--basal)" opacity=".5"/>`).join('');
+  el.innerHTML = `<svg viewBox="0 0 100 100" preserveAspectRatio="none">
+    <line x1="0" x2="100" y1="${y(180)}" y2="${y(180)}" stroke="var(--line)" stroke-width=".4"/>
+    <line x1="0" x2="100" y1="${y(70)}" y2="${y(70)}" stroke="var(--line)" stroke-width=".4"/>
+    ${bars}
+    <path d="${path}" fill="none" stroke="var(--in-range)" stroke-width="2" vector-effect="non-scaling-stroke"/>
+  </svg>`;
+}
+
+function drawAxis(unrolled){
+  const w = track.clientWidth, step = w < 520 ? 6 : w < 780 ? 4 : 2, parts = [];
+  const tick = (h, px, cls) => parts.push(
+    `<span class="tick ${cls}" style="left:${px}px${h === HOURS ? ';transform:translateX(-100%)'
+      : h === 0 ? ';transform:none' : ''}">${h === HOURS ? '24:00' : fmt(h)}</span>`);
+  for (let h = 0; h <= HOURS; h += step) tick(h, h/HOURS*w, '');
+  if (unrolled) for (let h = step; h <= HOURS; h += step){
+    tick(h % HOURS, w + h/HOURS*w, 'next');            // the day after
+    if (h !== HOURS) tick(h, h/HOURS*w - w, 'next');    // the day before, whose
+                                                       // 24:00 is today's 00:00
+  }
+  axisInner.innerHTML = parts.join('');
+}
+
+/* ---- render ---- */
+function render(){
+  const w = track.clientWidth, px = h => h/HOURS*w;
+  const unrolled = !!drag && (drag.live > HOURS || drag.live < 0 || offset !== 0);
+
+  stage.classList.toggle('unrolled', unrolled);
+  content.style.transform = `translateX(${-offset}px)`;
+  axisInner.style.transform = `translateX(${-offset}px)`;
+  ['plotA','plotB','plotC'].forEach(id => plot(document.getElementById(id)));
+  drawAxis(unrolled);
+
+  stage.querySelectorAll('.band,.bandlabel,.handle,.startmark').forEach(n => n.remove());
+  const s = win.start, e = s + win.dur;
+  const label = whole() ? 'Whole day' : `${fmt(s)} → ${fmt(e)} · ${durTxt(win.dur)}`;
+
+  /* A band is one interval in content pixels, which may run off either end of
+     the 0–24 strip. Each strip clips its own share of it; an edge that leaves a
+     strip loses its cap, so the pieces read as one band across the seams. */
+  const strips = [{el: prev, base: -w}, {el: content, base: 0}, {el: cont, base: w}];
+  const piece = (l, width, cls) => {
+    if (width <= 0) return;
+    for (const {el, base} of strips){
+      const from = Math.max(l, base), to = Math.min(l + width, base + w);
+      if (to <= from) continue;
+      const n = document.createElement('div');
+      n.className = 'band ' + (cls || '')
+        + (from > l ? ' open-left' : '') + (to < l + width ? ' open-right' : '');
+      n.style.left = (from - base) + 'px'; n.style.width = (to - from) + 'px';
+      el.appendChild(n);
+    }
+  };
+  const chip = (text, atPx, cls) => {
+    const t = document.createElement('div');
+    t.className = 'bandlabel ' + (cls || ''); t.textContent = text; content.appendChild(t);
+    const half = t.offsetWidth/2 + 4;                    // clamp into what is VISIBLE
+    t.style.left = Math.max(offset + half, Math.min(offset + w - half, atPx)) + 'px';
+  };
+
+  if (whole() && !drag){                                 // dragged right round
+    piece(0, w);
+    chip(label, w/2);
+  } else if (drag){        // live gesture: ONE band, drawn where the hand put it
+    piece(px(drag.lo), px(drag.hi - drag.lo));
+    chip(label, px((drag.lo + drag.hi)/2));
+    if (unrolled && drag.kind !== 'slide'){
+      // the stop: the anchor seen again a day out, on the side the drag went
+      const fwd = drag.live >= drag.anchor;
+      const mark = document.createElement('div');
+      mark.className = 'startmark';
+      mark.style.left = px(drag.anchor % 24) + 'px';
+      // a forward stop sits hard against the right boundary, so its caption
+      // flips inward; a backward stop is against the left, where the default
+      // side already points into the view
+      const flip = fwd && w + px(drag.anchor % 24) - offset > w - 130;
+      mark.innerHTML = `<span style="${flip ? 'left:-6px;transform:translateX(-100%)' : ''}">`
+        + `${whole() ? 'back to start · whole day' : 'start'}</span>`;
+      (fwd ? cont : prev).appendChild(mark);
+    }
+  } else if (e <= HOURS){
+    piece(px(s), px(win.dur));
+    chip(label, px(s + win.dur/2));
+  } else {                                               // committed wrap: TWO bands
+    const tail = HOURS - s, head = e - HOURS, wide = tail >= head;
+    piece(px(s), px(tail), 'open-right');
+    piece(0, px(head), 'open-left');
+    chip(label, px(wide ? s + tail/2 : head/2));
+    chip('↵ same window', px(wide ? head/2 : s + tail/2), 'cont-chip');
+  }
+  // the whole day has no edges to grab — both would land on the same place
+  if (!drag && !whole()){ addHandle(s); addHandle(e > HOURS ? e - HOURS : e); }
+
+  document.getElementById('readout').innerHTML = whole()
+    ? 'Whole day <span style="font-size:.9rem;color:var(--muted);font-weight:400">(24h 0m)</span>'
+    : `${fmt(s)} → ${fmt(e)} <span style="font-size:.9rem;color:var(--muted);font-weight:400">(${durTxt(win.dur)})</span>`
+      + (e > HOURS ? '<span class="wrapflag">crosses midnight</span>' : '');
+  document.getElementById('model').textContent = whole()
+    ? '{ scoped: false }   // the day scope, unwindowed'
+    : `{ start: "${fmt(s)}", duration_h: ${win.dur.toFixed(2)} }   // mod 24h`;
+}
+function addHandle(h){
+  const n = document.createElement('div');
+  n.className = 'handle'; n.style.left = (h/HOURS*track.clientWidth) + 'px';
+  n.dataset.at = h; content.appendChild(n);
+}
+
+/* ---- the gesture ----
+   The display hour under the cursor is (pointer x + offset) / hourPx. Once the
+   cursor reaches the right edge the offset does the travelling, so the moving
+   edge stays pinned under it; panning stops dead when the window reaches a full
+   day, so the view can never slide past the point the drag started from. */
+/* Is this clock hour inside the shown window, clear of the two grips? A
+   whole-day window has no outside, so nothing can be grabbed to slide. */
+function inWindow(h){
+  if (whole()) return false;
+  const margin = 6 / hourPx();
+  const into = ((((h % 24) + 24) % 24) - win.start + 24) % 24;
+  return into > margin && into < win.dur - margin;
+}
+function hourAt(x){
+  const h = (x + offset) / hourPx();
+  return Math.max(-HOURS, Math.min(2*HOURS, Math.round(h/SNAP)*SNAP));
+}
+function apply(x){
+  // whatever the cursor is holding follows it INSIDE the strip; once the cursor
+  // leaves, the held thing holds the boundary and the pan supplies the travel,
+  // so it is never off-screen and the pan limit and the full-day stop coincide
+  const h = hourAt(Math.max(0, Math.min(track.clientWidth, x)));
+  drag.live = h;
+  if (drag.kind === 'slide'){        // the window keeps its length and travels
+    drag.lo = h - drag.grab;
+    drag.hi = drag.lo + win.dur;
+  } else {                           // one edge travels, the other is the anchor
+    drag.lo = Math.min(drag.anchor, h);
+    drag.hi = Math.max(drag.anchor, h);
+    win.dur = Math.max(SNAP, Math.min(MAX_DUR, drag.hi - drag.lo));
+  }
+  win.start = ((drag.lo % 24) + 24) % 24;      // display hours; lo may be negative
+  render();
+}
+function tick(){
+  if (!drag) return;
+  const w = track.clientWidth, over = lastX - (w - EDGE), back = EDGE - lastX;
+  /* The pan can travel a full day either way from the anchor, and no further —
+     at both limits the moving edge has come back round to its own start, so the
+     limit and the whole-day stop are the same place. */
+  const far = drag.hi0 * hourPx(), near = (drag.lo0 - HOURS) * hourPx();
+  if (over > 0 && offset < far)
+    offset = Math.min(far, offset + Math.min(1, over/EDGE) * PAN_RATE);
+  else if (back > 0 && offset > near)
+    offset = Math.max(near, offset - Math.min(1, back/EDGE) * PAN_RATE);
+  apply(lastX);
+  raf = requestAnimationFrame(tick);
+}
+stage.addEventListener('mousedown', ev => {
+  if (ev.button !== 0) return;
+  ev.preventDefault();
+  stage.classList.remove('settling');
+  lastX = ev.clientX - track.getBoundingClientRect().left;
+  const grip = ev.target.closest('.handle'), at = hourAt(lastX);
+  if (grip){                                   // resize: the far edge anchors
+    const other = Number(grip.dataset.at) === win.start ? win.start + win.dur : win.start;
+    drag = {kind: 'resize', anchor: other % 24, live: at, lo0: other % 24, hi0: other % 24};
+  } else if (inWindow(at)){                    // slide: the whole window travels
+    const lo = win.start > at ? win.start - HOURS : win.start;   // the copy under the hand
+    drag = {kind: 'slide', grab: at - lo, live: at, lo0: lo, hi0: lo + win.dur};
+  } else {                                     // draw a new one from here
+    drag = {kind: 'draw', anchor: at, live: at, lo0: at, hi0: at};
+    win = {start: ((at % 24) + 24) % 24, dur: SNAP};
+  }
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+  raf = requestAnimationFrame(tick);
+  render();
+});
+function onMove(ev){ if (drag) lastX = ev.clientX - track.getBoundingClientRect().left; }
+// the only hover feedback: the cursor says which gesture this press will be
+track.addEventListener('mousemove', ev => {
+  if (drag) return;
+  track.style.cursor = inWindow(hourAt(ev.clientX - track.getBoundingClientRect().left))
+    ? 'grab' : 'crosshair';
+});
+function onUp(){
+  if (!drag) return;
+  cancelAnimationFrame(raf); raf = 0;
+  document.removeEventListener('mousemove', onMove);
+  document.removeEventListener('mouseup', onUp);
+  drag = null; offset = 0;                   // the axis rolls back to canonical 0–24
+  stage.classList.add('settling');
+  render();
+  setTimeout(() => stage.classList.remove('settling'), 340);
+}
+
+document.querySelectorAll('[data-preset]').forEach(b => b.onclick = () => {
+  const [s, d] = b.dataset.preset.split(',').map(Number);
+  win = {start: s, dur: d}; render();
+});
+addEventListener('resize', render);
+render();
+</script>

@@ -61,6 +61,14 @@ a Trial on a carb-ratio change should accept as "ready to judge".
   honour rather than reopen. Operator decision (Q10), 2026-08-24. Disposition:
   → ADR.
 
+- **A restored ratio starts its watch empty.** Operator decision (Q12), 2026-08-24:
+  only meals dosed after the change count toward the bar. Why: block identity
+  carries no era and the trailing pool would otherwise hand a restored ratio a
+  bar already met, before a single meal under the restored setting. Consequence:
+  the engine must publish a Trial-scoped support verdict; today's shipped
+  `runs_floor_met` is stamped over the whole pool and cannot serve. Disposition:
+  → ADR.
+
 ### Risk contract
 
 - **Must prevent:** reporting a carb-ratio change ready to judge while the block's
@@ -83,7 +91,9 @@ a Trial on a carb-ratio change should accept as "ready to judge".
   expiring with the bar unmet, naming the progress reached and releasing the watch;
   basal, correction factor and target maturity unchanged; the dock and the Verify
   roster reporting the same verdict for the same change; and an absent or
-  uncomputable count reporting not ready. Releasing the watch is proven at the
+  uncomputable count reporting not ready; and a ratio restored to an earlier value
+  after the maturing window reporting not ready with an empty count, rather than
+  inheriting the earlier stretch's meals. Releasing the watch is proven at the
   surface that enforces it, not at the roster: `review_trials` derives candidates
   independently of the lock, so expiry is shown by `POST /api/focus` succeeding
   after the window ends, alongside the roster verdict.

@@ -3,11 +3,15 @@
 ## ADR 24 — An I:C trial is ready to judge on meal captures, not elapsed days
 
 **Ruling.** A Trial watching a carb-ratio change is ready to judge when the changed
-block's own evidence reaches the engine's bar. The verdict is the analyzer's
-already-stamped support flag (`evidence['eligibility']['runs_floor_met']`), read as
-published; the stamped `effective_run_count` and `runs_floor` beside it are for
-showing progress, not for re-deciding the bar. A Trial never re-applies
-`safety._MIN_SUPPORTED_BLOCK_RUNS` itself. Readiness is no longer decided by
+block's own evidence reaches the engine's bar, counting only meals dosed **after
+the change**. The verdict is stamped by the analyzer and read as published; the
+stamped count and floor beside it are for showing progress, not for re-deciding the
+bar. A Trial never re-applies `safety._MIN_SUPPORTED_BLOCK_RUNS` itself, and never
+scopes the pool itself either: the engine owns both the post-change scoping and the
+comparison, and publishes one Trial-scoped support verdict. Today's shipped
+`evidence['eligibility']['runs_floor_met']` is **not** that verdict — it is stamped
+over the whole trailing pool — so this ruling requires a new stamped, Trial-scoped
+verdict rather than a read of the existing flag. Readiness is no longer decided by
 `TRIAL_WINDOW_DAYS` of target-metric data-days. Each changed block
 matures and is judged on its own. A whole-profile switch that moves a carb ratio
 runs this bar for its ratio part rather than maturing on glucose data-days. The
@@ -36,6 +40,14 @@ identity.
   the same one-predicate discipline ADR 20 fixed for assertion, applied to the Trial:
   a Trial that compared the count against the floor itself would be the second
   predicate again, even though it would agree with the first one today.
+- A ratio moved away and later restored starts its watch empty. Block identity is
+  the time-of-day span plus the ratio value with no era in it (`HistoryIdentity`),
+  the pool is a trailing window, and the walk-back suppression in `_is_revert` only
+  catches an undo that lands inside the maturing window. Without post-change
+  scoping, restoring an old ratio after a month would report ready on meals eaten
+  during the earlier stretch, before a single meal had been eaten under the restored
+  setting. That case is reachable by construction, and the post-change scoping above
+  is what closes it.
 - Ready to judge is not the same as recommending. The support flag is one of the
   five conditions `ic.ic_asserts_move` requires; a block can be ready to judge while
   the recommendation stays withheld for want of a band excluding the programmed

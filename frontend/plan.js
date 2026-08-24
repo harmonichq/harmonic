@@ -2,7 +2,7 @@
    #99 PLAN MODULE — pure deliverable-building logic for the Plan tab.
 
    The Plan tab has three layers:
-     1. Active-profile reference (rendered straight from /pump-settings).
+     1. Active-profile reference (rendered straight from /api/pump-settings).
      2. Accepted-changes list — removable provenance chips (add/remove only),
         each linking back to the Review evidence it came from.
      3. Deliverable — a unified ≤16-segment four-parameter pump-ready table
@@ -616,7 +616,7 @@ export function normalizeIcBlockProvenance(items) {
  * collapsed deliverable segment's four values match the snapshot's schedule at
  * that time-of-day (the pump now delivers what the plan proposed).
  *
- * `snapshotSegments` is the /pump-settings active profile segments; `fetchedAt`
+ * `snapshotSegments` is the /api/pump-settings active profile segments; `fetchedAt`
  * is the snapshot's capture time (shown as "✓ on pump as of <fetch>").
  *
  * @param {Array<row>} deliverableRows  from buildDeliverable
@@ -649,7 +649,7 @@ export function detectOnPump(deliverableRows, snapshotSegments, fetchedAt = null
    matches (confirmed) or it diverges (mismatch, with a diff of the exact cells
    that are off — the mis-keys).
 
-   Detection basis: the latest /pump-settings active profile (NOT the changelog).
+   Detection basis: the latest /api/pump-settings active profile (NOT the changelog).
 
    Match rule (per parameter, no tolerance band): round BOTH sides to the
    pump-programmable precision, then require exact equality. A difference that
@@ -703,7 +703,7 @@ export const PARAM_LABEL = {
  * grouped by time so the UI can render one block per boundary.
  *
  * @param {Array<row>} deliverableRows  from buildDeliverable (uncollapsed OK)
- * @param {Array} detectedSegments      latest /pump-settings active-profile
+ * @param {Array} detectedSegments      latest /api/pump-settings active-profile
  *                                       segments [{ start_min, basal_rate, isf,
  *                                       carb_ratio, target_bg }]
  * @param {string} [fetchedAt]          snapshot capture time

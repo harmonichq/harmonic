@@ -1,12 +1,12 @@
 """FastAPI HTTP surface (the ``api`` extra) — S1.
 
 A thin renderer over the same :class:`~ciq_autotune.result.AnalysisResult` the CLI
-prints (ROADMAP §5): ``GET /analyze`` returns its JSON, ``POST /fetch`` triggers a
+prints (ROADMAP §5): ``GET /api/analyze`` returns its JSON, ``POST /api/fetch`` triggers a
 live pull. The result schema *is* the contract a frontend builds on, so the API
 adds no analysis of its own.
 
-It also serves the frontend SPA (``frontend/index.html``) at ``/``, alongside
-these API routes, on the same port — there is no separate frontend server and
+It also serves the frontend SPA (``frontend/index.html``) at ``/`` and its explicit
+page paths, alongside the ``/api`` routes on the same port — there is no separate frontend server and
 no login screen (#10): the SPA shell itself loads unauthenticated, then makes
 bearer-token-gated API calls.
 
@@ -52,6 +52,11 @@ from .ic_history_events import (
 from .window_membership import WindowQuery
 from .result import SCHEMA_VERSION
 from .result_cache import ResultCache
+from .derived_artifacts import (
+    discard_artifact, dump_event_comparison, dump_findings, dump_ic_history,
+    is_sidecar_rebuilt, load_or_compute,
+    rebuild_event_comparison, rebuild_findings, rebuild_ic_history,
+)
 from .store import Store
 
 logger = logging.getLogger(__name__)
@@ -61,6 +66,7 @@ DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8765
 
 _FRONTEND_INDEX = Path(__file__).resolve().parent.parent / "frontend" / "index.html"
+SPA_PAGES = ("day", "diagnose", "verify", "plan", "settings", "guide")
 
 # #269 Guide-KB: the authored how-tos live as markdown here, served raw by
 # ``/api/kb/{slug}``. ``slug`` is restricted to this charset so a request can
@@ -129,6 +135,9 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
 
     app = FastAPI(title="Harmonic", version="0.1.0",
                   summary="Local, advisory tuning for Tandem pumps using Control-IQ® technology.",
+                  openapi_url="/api/openapi.json", docs_url="/api/docs",
+                  redoc_url="/api/redoc",
+                  swagger_ui_oauth2_redirect_url="/api/docs/oauth2-redirect",
                   lifespan=lifespan)
     app.state.configuration = configuration
 
@@ -140,13 +149,42 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     app.state.result_cache = cache
     app.state.finding_case_file_before_commit = None
 
+    def fixed(key, marker, compute, *, dump=None, rebuild=None):
+        """Use the durable exact-match cache only after the hot cache misses."""
+        return cache.get_or_compute(
+            key, lambda: load_or_compute(db_path, key, compute, shape_marker=marker,
+                                         dump=dump, rebuild=rebuild))
+
     def event_comparison_preparation():
         """One fixed-window source/classifier preparation per cache version."""
-        def compute():
-            with Store.open(db_path) as store:
-                return prepare_event_comparisons(store)
+        return fixed(("event-comparison-preparation",), "event-comparison-v1",
+                     lambda store: prepare_event_comparisons(store),
+                     dump=dump_event_comparison, rebuild=rebuild_event_comparison)
 
-        return cache.get_or_compute(("event-comparison-preparation",), compute)
+    def findings_products(window):
+        """The canonical payloads every 30-day findings consumer projects from."""
+        if window != findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS:
+            raise ValueError("findings requires its fixed source window")
+        def build_canonical_scenarios(store):
+            from .analyzers.scenario import build_scenarios
+            return build_scenarios(store, window_days=window).to_dict()
+        analysis = fixed(("analyze", window, False, True), "analyze-v1", lambda store: analyze(
+            store, window_days=window, ignore_setting_changes=False,
+            pool_agreeing_basal_regimes=True, carb_entries=store.carb_entries(),
+            prompt_responses=store.prompt_responses()).to_dict())
+        scenarios = fixed(("scenarios", window), "scenarios-v1", build_canonical_scenarios)
+        exposures = event_comparison_preparation().exposure_payload
+        return analysis, exposures, scenarios
+
+    def recover_sidecar_projection(key, marker, value, project, reload):
+        try:
+            return project(value)
+        except Exception:
+            if not is_sidecar_rebuilt(value):
+                raise
+            cache.drop(key)
+            discard_artifact(db_path, key, marker)
+            return project(reload())
 
     def history_snapshot(window: int):
         """One coherent findings + history-evidence preparation per cache version.
@@ -157,13 +195,21 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         what is read. Like every other heavy read it answers from the cache until a
         write bumps it.
         """
-        def compute():
-            with Store.open(db_path) as store:
-                findings = prepare_findings_projection(store, window_days=window)
-                events = prepare_ic_history_events(store, findings)
-                return findings, events
-
-        return cache.stable_read(("findings-history-snapshot", window), compute)
+        key = ("findings-history-snapshot", window)
+        def compute(store):
+            analysis, exposures, scenarios = findings_products(window)
+            findings = prepare_findings_projection(
+                analysis=analysis, exposures=exposures, scenarios=scenarios,
+            )
+            return (findings, prepare_ic_history_events(store, findings))
+        # Store both reconstructible preparations as one plain tuple payload.
+        def dump_pair(pair):
+            return {"findings": dump_findings(pair[0]), "events": dump_ic_history(pair[1])}
+        def rebuild_pair(value):
+            return (rebuild_findings(value["findings"]), rebuild_ic_history(value["events"]))
+        return cache.stable_read(key, lambda: load_or_compute(
+            db_path, key, compute, shape_marker="findings-history-v1",
+            dump=dump_pair, rebuild=rebuild_pair))
 
     def _case_error(status, code, message):
         return JSONResponse(
@@ -205,8 +251,12 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         key = ("finding-case-file", query.start_min, query.end_min, selected_id)
         def build(version):
             with Store.open_queryonly(db_path) as store:
+                analysis, exposures, scenarios = findings_products(
+                    findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS,
+                )
                 return prepare_finding_cases(
-                    store, query=query, version=version, selected_id=selected_id,
+                    store, query=query, version=version, analysis=analysis,
+                    exposures=exposures, scenarios=scenarios, selected_id=selected_id,
                     analysis_generation=cache.generation_for_version(version),
                 )
         def before_commit():
@@ -221,9 +271,26 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         if token and authorization != f"Bearer {token}":
             raise HTTPException(status_code=401, detail="missing or invalid bearer token")
 
+    # #94: these file routes carry no `-> FileResponse` return annotation, and
+    # must not regain one. Two facts combine: this module's
+    # ``from __future__ import annotations`` makes every annotation a string, and
+    # ``FileResponse`` is imported inside this function (it belongs to the
+    # optional ``api`` extra), so the name is absent from the module globals
+    # FastAPI resolves those strings against. The annotation stays an unresolved
+    # ForwardRef and building the schema raises PydanticUserError. Neither fact
+    # alone does it, and the resolver can be fed by hand — ``globals()["Request"]``
+    # above is that escape hatch — so this is a standing choice, not a language
+    # rule: omitting the annotation is simply cheaper than publishing a name per
+    # file route. That went unnoticed while nothing fetched the generated schema;
+    # ADR 94 publishes it at ``/api/openapi.json``, and
+    # ``tests/test_frontend_asset_routes.py`` fails the moment it stops
+    # answering.
     @app.get("/")
-    def index() -> FileResponse:
+    def index():
         return FileResponse(_FRONTEND_INDEX)
+
+    for _page in SPA_PAGES:
+        app.add_api_route(f"/{_page}", index, methods=["GET"])
 
     # Serve the frontend's sibling ES-module / stylesheet assets (#100). These
     # are explicit per-file routes (not a StaticFiles mount) so they can never
@@ -232,197 +299,192 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     # browser rejects the .js MIME type.
     _FRONTEND_DIR = _FRONTEND_INDEX.parent
 
-    @app.get("/tab-routing.js")
-    def tab_routing_js() -> FileResponse:
+    @app.get("/assets/tab-routing.js")
+    def tab_routing_js():
         return FileResponse(_FRONTEND_DIR / "tab-routing.js",
                             media_type="text/javascript")
 
-    @app.get("/scenario-chart.js")
-    def scenario_chart_js() -> FileResponse:
+    @app.get("/assets/scenario-chart.js")
+    def scenario_chart_js():
         return FileResponse(_FRONTEND_DIR / "scenario-chart.js",
                             media_type="text/javascript")
 
-    @app.get("/chart-builders.js")
-    def chart_builders_js() -> FileResponse:
+    @app.get("/assets/chart-builders.js")
+    def chart_builders_js():
         return FileResponse(_FRONTEND_DIR / "chart-builders.js",
                             media_type="text/javascript")
 
-    @app.get("/diagnose-workspaces.js")
-    def diagnose_workspaces_js() -> FileResponse:
+    @app.get("/assets/diagnose-workspaces.js")
+    def diagnose_workspaces_js():
         return FileResponse(_FRONTEND_DIR / "diagnose-workspaces.js",
                             media_type="text/javascript")
 
-    @app.get("/diagnose-workstation-chart.js")
-    def diagnose_workstation_chart_js() -> FileResponse:
+    @app.get("/assets/diagnose-workstation-chart.js")
+    def diagnose_workstation_chart_js():
         return FileResponse(_FRONTEND_DIR / "diagnose-workstation-chart.js",
                             media_type="text/javascript")
 
-    @app.get("/diagnose-workstation.js")
-    def diagnose_workstation_js() -> FileResponse:
+    @app.get("/assets/diagnose-workstation.js")
+    def diagnose_workstation_js():
         return FileResponse(_FRONTEND_DIR / "diagnose-workstation.js",
                             media_type="text/javascript")
 
-    @app.get("/diagnose-workstation-data.js")
-    def diagnose_workstation_data_js() -> FileResponse:
+    @app.get("/assets/diagnose-workstation-data.js")
+    def diagnose_workstation_data_js():
         return FileResponse(_FRONTEND_DIR / "diagnose-workstation-data.js",
                             media_type="text/javascript")
 
-    @app.get("/finding-case-file-validation.js")
-    def finding_case_file_validation_js() -> FileResponse:
+    @app.get("/assets/finding-case-file-validation.js")
+    def finding_case_file_validation_js():
         return FileResponse(_FRONTEND_DIR / "finding-case-file-validation.js",
                             media_type="text/javascript")
 
-    @app.get("/diagnose-findings-queue.js")
-    def diagnose_findings_queue_js() -> FileResponse:  # #735: the inspector's level 1
+    @app.get("/assets/diagnose-findings-queue.js")
+    def diagnose_findings_queue_js():  # #735: the inspector's level 1
         return FileResponse(_FRONTEND_DIR / "diagnose-findings-queue.js",
                             media_type="text/javascript")
 
-    @app.get("/watched-change-dock.js")
-    def watched_change_dock_js() -> FileResponse:  # #735: the inspector's floor
+    @app.get("/assets/watched-change-dock.js")
+    def watched_change_dock_js():  # #735: the inspector's floor
         return FileResponse(_FRONTEND_DIR / "watched-change-dock.js",
                             media_type="text/javascript")
 
-    @app.get("/diagnose-event-comparison.js")
-    def diagnose_event_comparison_js() -> FileResponse:
+    @app.get("/assets/diagnose-event-comparison.js")
+    def diagnose_event_comparison_js():
         return FileResponse(_FRONTEND_DIR / "diagnose-event-comparison.js",
                             media_type="text/javascript")
 
-    @app.get("/diagnose-event-comparison.css")
-    def diagnose_event_comparison_css() -> FileResponse:
+    @app.get("/assets/diagnose-event-comparison.css")
+    def diagnose_event_comparison_css():
         return FileResponse(_FRONTEND_DIR / "diagnose-event-comparison.css",
                             media_type="text/css")
 
-    @app.get("/data.js")
-    def data_js() -> FileResponse:
+    @app.get("/assets/data.js")
+    def data_js():
         return FileResponse(_FRONTEND_DIR / "data.js",
                             media_type="text/javascript")
 
-    @app.get("/plan.js")
-    def plan_js() -> FileResponse:
+    @app.get("/assets/plan.js")
+    def plan_js():
         return FileResponse(_FRONTEND_DIR / "plan.js",
                             media_type="text/javascript")
 
-    @app.get("/settling.js")
-    def settling_js() -> FileResponse:
+    @app.get("/assets/settling.js")
+    def settling_js():
         return FileResponse(_FRONTEND_DIR / "settling.js",
                             media_type="text/javascript")
 
-    @app.get("/carb-log.js")
-    def carb_log_js() -> FileResponse:
+    @app.get("/assets/carb-log.js")
+    def carb_log_js():
         return FileResponse(_FRONTEND_DIR / "carb-log.js",
                             media_type="text/javascript")
 
-    @app.get("/prompt-queue.js")
-    def prompt_queue_js() -> FileResponse:
+    @app.get("/assets/prompt-queue.js")
+    def prompt_queue_js():
         return FileResponse(_FRONTEND_DIR / "prompt-queue.js",
                             media_type="text/javascript")
 
-    @app.get("/verify-workstation.js")
-    def verify_workstation_js() -> FileResponse:
+    @app.get("/assets/verify-workstation.js")
+    def verify_workstation_js():
         return FileResponse(_FRONTEND_DIR / "verify-workstation.js",
                             media_type="text/javascript")
 
-    @app.get("/verify-workstation-chart.js")
-    def verify_workstation_chart_js() -> FileResponse:
+    @app.get("/assets/verify-workstation-chart.js")
+    def verify_workstation_chart_js():
         return FileResponse(_FRONTEND_DIR / "verify-workstation-chart.js",
                             media_type="text/javascript")
 
-    @app.get("/verify-workstation-data.js")
-    def verify_workstation_data_js() -> FileResponse:
+    @app.get("/assets/verify-workstation-data.js")
+    def verify_workstation_data_js():
         return FileResponse(_FRONTEND_DIR / "verify-workstation-data.js",
                             media_type="text/javascript")
 
-    @app.get("/verify-trial.js")
-    def verify_trial_js() -> FileResponse:
+    @app.get("/assets/verify-trial.js")
+    def verify_trial_js():
         return FileResponse(_FRONTEND_DIR / "verify-trial.js",
                             media_type="text/javascript")
 
-    @app.get("/daily-nav.js")
-    def daily_nav_js() -> FileResponse:
+    @app.get("/assets/daily-nav.js")
+    def daily_nav_js():
         return FileResponse(_FRONTEND_DIR / "daily-nav.js",
                             media_type="text/javascript")
 
-    @app.get("/guide.js")
-    def guide_js() -> FileResponse:
+    @app.get("/assets/guide.js")
+    def guide_js():
         return FileResponse(_FRONTEND_DIR / "guide.js",
                             media_type="text/javascript")
 
-    @app.get("/kb.js")
-    def kb_js() -> FileResponse:  # #269: Guide-KB shell + markdown render (vue-free)
+    @app.get("/assets/kb.js")
+    def kb_js():  # #269: Guide-KB shell + markdown render (vue-free)
         return FileResponse(_FRONTEND_DIR / "kb.js",
                             media_type="text/javascript")
 
-    @app.get("/model-view-log.js")
-    def model_view_log_js() -> FileResponse:
+    @app.get("/assets/model-view-log.js")
+    def model_view_log_js():
         return FileResponse(_FRONTEND_DIR / "model-view-log.js",
                             media_type="text/javascript")
 
-    @app.get("/rest-window.js")
-    def rest_window_js() -> FileResponse:
-        return FileResponse(_FRONTEND_DIR / "rest-window.js",
-                            media_type="text/javascript")
-
-    @app.get("/serial-gate.js")
-    def serial_gate_js() -> FileResponse:
+    @app.get("/assets/serial-gate.js")
+    def serial_gate_js():
         return FileResponse(_FRONTEND_DIR / "serial-gate.js",
                             media_type="text/javascript")
 
-    @app.get("/day-chart.js")
-    def day_chart_js() -> FileResponse:
+    @app.get("/assets/day-chart.js")
+    def day_chart_js():
         return FileResponse(_FRONTEND_DIR / "day-chart.js",
                             media_type="text/javascript")
 
-    @app.get("/day-hero-chart.js")
-    def day_hero_chart_js() -> FileResponse:  # #332: mobile glucose-hero Day chart
+    @app.get("/assets/day-hero-chart.js")
+    def day_hero_chart_js():  # #332: mobile glucose-hero Day chart
         return FileResponse(_FRONTEND_DIR / "day-hero-chart.js",
                             media_type="text/javascript")
 
-    @app.get("/day-dose-focus.js")
-    def day_dose_focus_js() -> FileResponse:  # #385: Day-chart insulin-lane dose-focus core
+    @app.get("/assets/day-dose-focus.js")
+    def day_dose_focus_js():  # #385: Day-chart insulin-lane dose-focus core
         return FileResponse(_FRONTEND_DIR / "day-dose-focus.js",
                             media_type="text/javascript")
 
-    @app.get("/nav-chart.js")
-    def nav_chart_js() -> FileResponse:
+    @app.get("/assets/nav-chart.js")
+    def nav_chart_js():
         return FileResponse(_FRONTEND_DIR / "nav-chart.js",
                             media_type="text/javascript")
 
-    @app.get("/scenario.css")
-    def scenario_css() -> FileResponse:
+    @app.get("/assets/scenario.css")
+    def scenario_css():
         return FileResponse(_FRONTEND_DIR / "scenario.css",
                             media_type="text/css")
 
-    @app.get("/shell.css")
-    def shell_css() -> FileResponse:
+    @app.get("/assets/shell.css")
+    def shell_css():
         return FileResponse(_FRONTEND_DIR / "shell.css",
                             media_type="text/css")
 
-    @app.get("/diagnose-workstation.css")
-    def diagnose_workstation_css() -> FileResponse:
+    @app.get("/assets/diagnose-workstation.css")
+    def diagnose_workstation_css():
         return FileResponse(_FRONTEND_DIR / "diagnose-workstation.css",
                             media_type="text/css")
 
-    @app.get("/verify-workstation.css")
-    def verify_workstation_css() -> FileResponse:
+    @app.get("/assets/verify-workstation.css")
+    def verify_workstation_css():
         return FileResponse(_FRONTEND_DIR / "verify-workstation.css",
                             media_type="text/css")
 
-    @app.get("/theme.css")
-    def theme_css() -> FileResponse:
+    @app.get("/assets/theme.css")
+    def theme_css():
         """The Harmonic theme's role rules (#736) — served last, loaded last."""
         return FileResponse(_FRONTEND_DIR / "theme.css",
                             media_type="text/css")
 
-    @app.get("/favicon.svg")
-    def favicon_svg() -> FileResponse:
+    @app.get("/assets/favicon.svg")
+    def favicon_svg():
         return FileResponse(_FRONTEND_DIR / "favicon.svg",
                             media_type="image/svg+xml")
 
-    @app.get("/health")
+    @app.get("/api/health")
     def health() -> dict:
         return {"status": "ok", "schema_version": SCHEMA_VERSION}
 
-    @app.get("/analyze")
+    @app.get("/api/analyze")
     def analyze_endpoint(window: int = 30, ignore_changes: bool = False,
                          pool: bool = False,
                          _: None = Depends(require_token)) -> dict:
@@ -439,9 +501,15 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                                carb_entries=store.carb_entries(),
                                prompt_responses=store.prompt_responses()).to_dict()
 
-        return cache.get_or_compute(("analyze", window, ignore_changes, pool), compute)
+        key = ("analyze", window, ignore_changes, pool)
+        if window == 30 and not ignore_changes:
+            return fixed(key, "analyze-v1", lambda store: analyze(
+                store, window_days=window, ignore_setting_changes=ignore_changes,
+                pool_agreeing_basal_regimes=pool, carb_entries=store.carb_entries(),
+                prompt_responses=store.prompt_responses()).to_dict())
+        return cache.get_or_compute(key, compute)
 
-    @app.get("/scenarios")
+    @app.get("/api/scenarios")
     def scenarios_endpoint(window: int = 30, _: None = Depends(require_token)) -> dict:
         """The ranked, episode-level scenario payload (#70): patterns faced by a
         hero episode, each scored with #58 Confidence, plus the referenced episodes
@@ -453,15 +521,17 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             with Store.open(db_path) as store:
                 return build_scenarios(store, window_days=window).to_dict()
 
-        return cache.get_or_compute(("scenarios", window), compute)
+        key = ("scenarios", window)
+        return (fixed(key, "scenarios-v1", lambda store: build_scenarios(store, window_days=window).to_dict())
+                if window == 30 else cache.get_or_compute(key, compute))
 
-    @app.get("/model-view")
+    @app.get("/api/model-view")
     def model_view_endpoint(date: str, _: None = Depends(require_token)) -> dict:
         """The per-day model-view (#152 / ADR 0019): every anchor the engine saw on
         ``date`` (YYYY-MM-DD) and, for each, every classifier's verdict + its state
         (fired / outranked / near-miss / clean / no-data) — the debug/introspection
         feed that surfaces buried near-misses the coaching path collapses. A separate
-        per-day GET, not a flag on ``/scenarios`` (different question, different shape)."""
+        per-day GET, not a flag on ``/api/scenarios`` (different question, different shape)."""
         from .analyzers.scenario import build_model_view
         try:
             target = datetime.strptime(date, "%Y-%m-%d").date()
@@ -474,7 +544,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
 
         return cache.get_or_compute(("model-view", date), compute)
 
-    @app.get("/day-navigator")
+    @app.get("/api/day-navigator")
     def day_navigator_endpoint(month: Optional[str] = None,
                                _: None = Depends(require_token)) -> dict:
         """The Day surface's navigator feed (#248 / ADR 0030): per-day glycemic
@@ -500,7 +570,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         # cache, so a default-month resolution can never go stale within a version.
         return cache.get_or_compute(("day-navigator", month), compute)
 
-    @app.get("/outcomes")
+    @app.get("/api/outcomes")
     def outcomes_endpoint(window: int = 14, _: None = Depends(require_token)) -> dict:
         """The outcome summary (#113): the 2019 consensus / AGP glycemic panel plus
         the derived per-exposure clean rates (ADR 0007), over one flat user-selected
@@ -514,13 +584,13 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
 
         return cache.get_or_compute(("outcomes", window), compute)
 
-    @app.get("/outcomes/trend")
+    @app.get("/api/outcomes/trend")
     def outcomes_trend_endpoint(window: int = 14, _: None = Depends(require_token)) -> dict:
         """The Outcomes trend (#131): a behavioral + glycemic scorecard across rolling
         ``window``-day windows (oldest→newest, index-aligned), each behavior and metric
         emitting a series so the frontend can show movement. Behaviors use the fixed
         current-profile ISF and each meal's Dose-stamped I:C across all windows. A third
-        versioned result, standalone like ``/outcomes`` — not a field on the
+        versioned result, standalone like ``/api/outcomes`` — not a field on the
         AnalysisResult."""
         from .outcomes_trend import summarize_trend
 
@@ -528,9 +598,10 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             with Store.open(db_path) as store:
                 return summarize_trend(store, window_days=window).to_dict()
 
-        return cache.get_or_compute(("outcomes-trend", window), compute)
+        key = ("outcomes-trend", window)
+        return fixed(key, "outcomes-trend-v1", lambda store: summarize_trend(store, window_days=window).to_dict())
 
-    @app.get("/verify/trials")
+    @app.get("/api/verify/trials")
     def verify_trials_endpoint(selected: Optional[str] = None,
                                _: None = Depends(require_token)) -> dict:
         """The bounded, side-effect-free Trial roster for Verify (ADR 579).
@@ -556,21 +627,25 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         except KeyError:
             raise HTTPException(status_code=404, detail="unknown or expired Trial")
 
-    @app.get("/explore/time-of-day")
+    @app.get("/api/explore/time-of-day")
     def explore_time_of_day_endpoint(_: None = Depends(require_token)) -> dict:
         """The fixed 30-day, time-of-day evidence feed for Explore (#578)."""
         def compute() -> dict:
             with Store.open(db_path) as store:
                 return build_time_of_day(store)
 
-        return cache.get_or_compute(("explore-time-of-day",), compute)
+        return fixed(("explore-time-of-day",), "time-of-day-v1",
+                     lambda store: build_time_of_day(store))
 
-    @app.get("/explore/exposures")
+    @app.get("/api/explore/exposures")
     def explore_exposures_endpoint(_: None = Depends(require_token)) -> dict:
         """The recent anchor-level exposure feed for Diagnose (#654)."""
-        return event_comparison_preparation().exposure_payload
+        return recover_sidecar_projection(
+            ("event-comparison-preparation",), "event-comparison-v1",
+            event_comparison_preparation(), lambda preparation: preparation.exposure_payload,
+            event_comparison_preparation)
 
-    @app.get("/diagnose/event-comparison")
+    @app.get("/api/diagnose/event-comparison")
     def diagnose_event_comparison_endpoint(
         view: Optional[str] = None, factor: Optional[str] = None,
         start_min: Optional[int] = None, end_min: Optional[int] = None,
@@ -602,11 +677,14 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 view=view, factor=factor, window=clock_window, another=another == "1",
                 occurrence_id=occ,
             )
-            return event_comparison_preparation().project(query)
+            return recover_sidecar_projection(
+                ("event-comparison-preparation",), "event-comparison-v1",
+                event_comparison_preparation(), lambda preparation: preparation.project(query),
+                event_comparison_preparation)
         except ValueError as error:
             raise HTTPException(status_code=400, detail=str(error)) from error
 
-    @app.get("/diagnose/findings")
+    @app.get("/api/diagnose/findings")
     def diagnose_findings_endpoint(
         start_min: Optional[int] = None, end_min: Optional[int] = None,
         window: int = findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS,
@@ -631,9 +709,11 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         except ValueError as error:
             raise HTTPException(status_code=400, detail=str(error)) from error
         try:
-            generation, (findings, _events) = history_snapshot(window)
-            return findings.project(
-                query, selected_id, analysis_generation=generation)
+            generation, snapshot = history_snapshot(window)
+            return recover_sidecar_projection(
+                ("findings-history-snapshot", window), "findings-history-v1", snapshot,
+                lambda pair: pair[0].project(query, selected_id, analysis_generation=generation),
+                lambda: history_snapshot(window)[1])
         except InvalidIcHistoryId as error:
             raise HTTPException(status_code=400, detail={
                 "code": "invalid_history_id", "message": str(error)}) from error
@@ -648,7 +728,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 "message": "Evidence changed. Refresh findings.",
             }) from error
 
-    @app.get("/diagnose/carb-ratio-history/events")
+    @app.get("/api/diagnose/carb-ratio-history/events")
     def diagnose_ic_history_events_endpoint(
         history_id: Optional[str] = None,
         analysis_generation: Optional[str] = None,
@@ -664,14 +744,17 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 "code": "analysis_generation_required",
                 "message": "analysis_generation is required"})
         try:
-            generation, (_findings, events) = history_snapshot(30)
+            generation, snapshot = history_snapshot(30)
             if analysis_generation != generation:
                 raise HTTPException(status_code=409, detail={
                     "code": "analysis_generation_mismatch",
                     "message": "Evidence changed. Refresh findings.",
                 })
-            return events.project(
-                history_id, selected_run_id, analysis_generation=generation)
+            return recover_sidecar_projection(
+                ("findings-history-snapshot", 30), "findings-history-v1", snapshot,
+                lambda pair: pair[1].project(history_id, selected_run_id,
+                                             analysis_generation=generation),
+                lambda: history_snapshot(30)[1])
         except (InvalidIcHistoryId, InvalidIcRunId) as error:
             code = ("invalid_history_id" if isinstance(error, InvalidIcHistoryId)
                     else "invalid_history_run_id")
@@ -705,7 +788,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 "message": "Evidence changed. Refresh findings.",
             }) from error
 
-    @app.get("/diagnose/finding-case-file-preparation")
+    @app.get("/api/diagnose/finding-case-file-preparation")
     def finding_case_file_preparation(request: Request, _: None = Depends(require_token)):
         try:
             query, selected_id = _case_params(request)
@@ -726,7 +809,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             logger.exception("Finding case-file preparation was inconsistent")
             return _case_error(500, "inconsistent_projection", "Case population is inconsistent.")
 
-    @app.get("/diagnose/finding-case-file")
+    @app.get("/api/diagnose/finding-case-file")
     def finding_case_file(request: Request, _: None = Depends(require_token)):
         try:
             projection_id, finding_id, alignment, occ = _case_params(request, True)
@@ -750,12 +833,12 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         finally:
             cache.release_preparation(prepared)
 
-    @app.get("/audit/dismissals")
+    @app.get("/api/audit/dismissals")
     def audit_dismissals_endpoint(_: None = Depends(require_token)) -> dict:
         with Store.open(db_path) as store:
             return {"dismissals": store.audit_dismissals()}
 
-    @app.post("/audit/dismissals")
+    @app.post("/api/audit/dismissals")
     def dismiss_audit_item_endpoint(payload: dict = Body(...),
                                     _: None = Depends(require_token)) -> dict:
         item_id = payload.get("item_id")
@@ -775,7 +858,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         cache.bump()  # dismissal changes the Audit read (#586)
         return {"item_id": item_id, "evidence_fingerprint": fingerprint}
 
-    @app.get("/pattern-sweep")
+    @app.get("/api/pattern-sweep")
     def pattern_sweep_endpoint(_: None = Depends(require_token)) -> dict:
         """The pattern-sweep payload (#378): every generated candidate cell priced
         through one gate, the tracked-candidate set, and the ready-for-review queue.
@@ -812,13 +895,13 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         cache.bump()  # a sign-off changes the ready-for-review queue (#267)
         return {"cell_id": cell_id, "era_start": era_str, "decision": decision}
 
-    @app.post("/pattern-sweep/approve")
+    @app.post("/api/pattern-sweep/approve")
     def approve_pattern_endpoint(payload: dict = Body(...),
                                  _: None = Depends(require_token)) -> dict:
         """Sign off a cleared cell so it may ship as a card. Scoped to the current era."""
         return _record_pattern_decision(payload, "approved")
 
-    @app.post("/pattern-sweep/dismiss")
+    @app.post("/api/pattern-sweep/dismiss")
     def dismiss_pattern_endpoint(payload: dict = Body(...),
                                  _: None = Depends(require_token)) -> dict:
         """Dismiss a cleared cell so it never ships this era."""
@@ -852,7 +935,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         return PlainTextResponse(path.read_text(encoding="utf-8"),
                                  media_type="text/markdown")
 
-    @app.post("/fetch")
+    @app.post("/api/fetch")
     def fetch_endpoint(days: int = 120, _: None = Depends(require_token)) -> dict:
         from . import sync as sync_mod
         end = date.today()
@@ -866,7 +949,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         cache.bump()  # a manual fetch is an out-of-loop write path (#267)
         return {"pulled": written, "window": {"start": str(start), "end": str(end)}}
 
-    @app.get("/credentials")
+    @app.get("/api/credentials")
     def get_credentials_endpoint(_: None = Depends(require_token)) -> dict:
         with Store.open(db_path) as store:
             creds = credentials.load_credentials(store, key_path=key_path)
@@ -874,7 +957,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             return {"configured": False, "email": None, "region": None}
         return {"configured": True, "email": creds.email, "region": creds.region}
 
-    @app.post("/credentials")
+    @app.post("/api/credentials")
     def set_credentials_endpoint(
         email: str = Body(...), password: str = Body(...), region: str = Body("US"),
         _: None = Depends(require_token),
@@ -884,7 +967,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         cache.bump()  # (#267)
         return {"configured": True}
 
-    @app.get("/status")
+    @app.get("/api/status")
     def status_endpoint(_: None = Depends(require_token)) -> dict:
         with Store.open(db_path) as store:
             status = store.fetch_status()
@@ -893,7 +976,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                           "last_error": None, "last_written": None}
         return {**base, "earliest_data_day": earliest_day, "latest_data_day": latest_day}
 
-    @app.get("/pump-settings")
+    @app.get("/api/pump-settings")
     def pump_settings_endpoint(_: None = Depends(require_token)) -> dict:
         with Store.open(db_path) as store:
             snaps = store.settings_snapshots()
@@ -929,7 +1012,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             "other_profile_count": len(settings.profiles) - 1,
         }
 
-    @app.get("/timeline")
+    @app.get("/api/timeline")
     def timeline_endpoint(start: datetime, end: datetime,
                           _: None = Depends(require_token)) -> dict:
         from .timeline import timeline as build_timeline
@@ -964,7 +1047,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         except (KeyError, TypeError, ValueError) as e:
             raise HTTPException(status_code=400, detail=f"invalid carb entry: {e}")
 
-    @app.get("/carbs")
+    @app.get("/api/carbs")
     def list_carbs_endpoint(start: Optional[datetime] = None,
                             end: Optional[datetime] = None,
                             _: None = Depends(require_token)) -> dict:
@@ -974,17 +1057,17 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         with Store.open(db_path) as store:
             return {"carb_entries": store.list_carb_entries(s, e)}
 
-    @app.post("/carbs")
+    @app.post("/api/carbs")
     def create_carb_endpoint(payload: dict = Body(...),
                              _: None = Depends(require_token)) -> dict:
         entry = _carb_entry_from_payload(payload)
         with Store.open(db_path) as store:
             new_id = store.upsert_carb_entry(entry)
             result = store.get_carb_entry(new_id)
-        cache.bump()  # carb entries feed /analyze's fasting-ISF exclusion (#267)
+        cache.bump()  # carb entries feed /api/analyze's fasting-ISF exclusion (#267)
         return result
 
-    @app.patch("/carbs/{entry_id}")
+    @app.patch("/api/carbs/{entry_id}")
     def update_carb_endpoint(entry_id: int, payload: dict = Body(...),
                              _: None = Depends(require_token)) -> dict:
         with Store.open(db_path) as store:
@@ -999,7 +1082,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         cache.bump()  # (#267)
         return result
 
-    @app.delete("/carbs/{entry_id}")
+    @app.delete("/api/carbs/{entry_id}")
     def delete_carb_endpoint(entry_id: int,
                              _: None = Depends(require_token)) -> dict:
         # Deleting a prompt-sourced entry cascades its prompt_responses row away
@@ -1025,14 +1108,14 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     # answer (no carb entry), so it rides the same non-``carbs`` write path below.
     _PROMPT_ANSWERS = ("carbs", "no", "not-sure", "false-low")
 
-    @app.get("/prompts")
+    @app.get("/api/prompts")
     def list_prompts_endpoint(_: None = Depends(require_token)) -> list:
         from .pending_prompts import build_pending_prompts
         with Store.open(db_path) as store:
             prompts = build_pending_prompts(store)
         return [p.to_dict() for p in prompts]
 
-    @app.post("/prompts/answer")
+    @app.post("/api/prompts/answer")
     def answer_prompt_endpoint(payload: dict = Body(...),
                                _: None = Depends(require_token)) -> dict:
         from .pending_prompts import SOURCE_BY_DETECTOR
@@ -1070,7 +1153,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         cache.bump()  # an answered prompt changes the carb-exclusion set (#267)
         return result
 
-    @app.delete("/prompts/answer")
+    @app.delete("/api/prompts/answer")
     def clear_prompt_endpoint(payload: dict = Body(...),
                               _: None = Depends(require_token)) -> dict:
         """Clear a prompt's answer so it resurrects (delete-resurrects, #128).
@@ -1090,7 +1173,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         cache.bump()  # (#267)
         return {"cleared": n}
 
-    @app.get("/report")
+    @app.get("/api/report")
     def report_endpoint(window: int = 30, ignore_changes: bool = False,
                         _: None = Depends(require_token)) -> dict:
         from .render import render_text
@@ -1101,7 +1184,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                              prompt_responses=store.prompt_responses())
         return {"text": render_text(result)}
 
-    @app.get("/backtest")
+    @app.get("/api/backtest")
     def backtest_endpoint(holdout_days: int = 2,
                           _: None = Depends(require_token)) -> dict:
         """Run the held-out backtest and return a JSON-serialisable result.
@@ -1133,15 +1216,26 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 "improvement": bt.improvement,
             }
 
-        return cache.get_or_compute(("backtest", holdout_days), compute)
+        key = ("backtest", holdout_days)
+        def snapshot_compute(store):
+            bt = run_backtest(store.basal_events(), store.cgm_readings(),
+                              store.bolus_events(), store.pump_events(), holdout_days=holdout_days)
+            return {"holdout_days": bt.holdout_days, "train_days": bt.train_days,
+                    "test_clean_minutes": bt.test_clean_minutes, "mae_suggested": bt.mae_suggested,
+                    "n_suggested": bt.n_suggested, "mae_current": bt.mae_current,
+                    "n_current": bt.n_current, "mae_suggested_matched": bt.mae_suggested_matched,
+                    "mae_current_matched": bt.mae_current_matched, "n_matched": bt.n_matched,
+                    "improvement": bt.improvement}
+        return (fixed(key, "backtest-v1", snapshot_compute) if holdout_days == 2
+                else cache.get_or_compute(key, compute))
 
-    @app.get("/plan")
+    @app.get("/api/plan")
     def get_plan_endpoint(_: None = Depends(require_token)) -> dict:
         with Store.open(db_path) as store:
             draft = store.get_plan_draft()
         return draft or {"items": [], "updated_at": None}
 
-    @app.put("/plan")
+    @app.put("/api/plan")
     def put_plan_endpoint(items: list = Body(..., embed=True),
                           _: None = Depends(require_token)) -> dict:
         updated_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -1154,7 +1248,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         # any analysis computation — clearing heavy results here is pure waste (#427).
         return {"items": items, "updated_at": updated_at}
 
-    @app.post("/plan/apply")
+    @app.post("/api/plan/apply")
     def apply_plan_endpoint(_: None = Depends(require_token)) -> dict:
         applied_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with Store.open(db_path) as store:
@@ -1169,14 +1263,14 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         cache.bump()  # (#267)
         return result
 
-    @app.get("/plan/history")
+    @app.get("/api/plan/history")
     def plan_history_endpoint(_: None = Depends(require_token)) -> dict:
         with Store.open(db_path) as store:
             return {"history": store.plan_history()}
 
     # --- Focus: pin / unpin / list a watched behavioral lever (#244) ----------
 
-    @app.get("/focus")
+    @app.get("/api/focus")
     def list_focus_endpoint(_: None = Depends(require_token)) -> dict:
         """Every Focus ever pinned (active + closed), newest first, plus the pinnable
         universe so the client can offer only behavioral-flavored levers (ADR 0029)."""
@@ -1185,7 +1279,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             return {"focuses": store.list_focuses(),
                     "pinnable": sorted(pinnable_levers())}
 
-    @app.post("/focus")
+    @app.post("/api/focus")
     def pin_focus_endpoint(lever: str = Body(..., embed=True),
                            _: None = Depends(require_token)) -> dict:
         """Pin a behavioral lever as the active Focus.
@@ -1213,7 +1307,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         cache.bump()  # (#267)
         return result
 
-    @app.post("/focus/{focus_id}/resolve")
+    @app.post("/api/focus/{focus_id}/resolve")
     def resolve_focus_endpoint(focus_id: int,
                                _: None = Depends(require_token)) -> dict:
         """Unpin (resolve) an active Focus. 404 if there is no active Focus by that id."""
@@ -1224,18 +1318,17 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         return {"id": focus_id, "status": "resolved"}
 
     def invalidate_and_warm() -> None:
-        """The hourly fetch's ``on_write``: clear the cache, then pre-warm the
-        landing set (#424).
+        """The hourly fetch's ``on_write``: clear the cache, then pre-warm
+        Diagnose's fixed cold-arrival set (#424).
 
-        Without this the hourly fetch left the cache empty and the first visitor
-        after it paid the whole cold recompute (20–40s of spinner). The fetch loop
-        runs this in its own worker thread, so the warm pass costs no user and the
-        server keeps serving while it runs.
+        ``frontend/index.html``'s ``loadAll`` and ``loadAudit`` are the
+        cold-arrival source of truth. ADR 82's design.md records the historical
+        measurement. The fetch loop runs this in its own worker thread, so the
+        server keeps serving while the warm pass runs.
 
-        The set is exactly the fixed shapes the initial Diagnose load asks for —
+        The set is exactly the fixed cacheable shapes those loads ask for —
         nothing keyed on a date, month, or user-chosen window, which stay lazy so
-        an hourly warm can't grow unbounded. The comparison warm prepares only
-        its shared source/catalog; its coordinate projections remain lazy.
+        an hourly warm can't grow unbounded.
         Warming goes through the endpoint functions themselves where there is an
         endpoint-shaped cache key, and one failure is logged and skipped rather
         than killing the hourly loop.
@@ -1244,11 +1337,14 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         for label, warm in (
             ("analyze", lambda: analyze_endpoint(window=30, ignore_changes=False, pool=False)),
             ("backtest", lambda: backtest_endpoint(holdout_days=2)),
-            ("outcomes-trend", lambda: outcomes_trend_endpoint(window=14)),
+            ("outcomes-trend", lambda: outcomes_trend_endpoint(window=30)),
             ("analyze-pooled", lambda: analyze_endpoint(window=30, ignore_changes=False, pool=True)),
             ("scenarios", lambda: scenarios_endpoint(window=30)),
             ("explore-time-of-day", explore_time_of_day_endpoint),
+            # Exposures consumes this payload; only coordinate projections stay lazy.
             ("event-comparison-source-catalog", event_comparison_preparation),
+            ("finding-case-file", lambda: finding_case_file_preparation(
+                Request({"type": "http", "query_string": b""}))),
         ):
             try:
                 warm()

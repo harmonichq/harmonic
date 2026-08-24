@@ -111,7 +111,7 @@ class FindingCaseFileRouteTest(unittest.TestCase):
         self.client.close(); self.tmp.close()
 
     def test_preparation_has_exact_envelope_on_empty_snapshot(self):
-        response = self.client.get("/diagnose/finding-case-file-preparation")
+        response = self.client.get("/api/diagnose/finding-case-file-preparation")
         self.assertEqual(response.status_code, 200)
         payload = response.json()
         self.assertEqual(payload["schema"], "diagnose-finding-case-file-preparation-v1")
@@ -159,7 +159,7 @@ class FindingCaseFileRouteTest(unittest.TestCase):
             return_value=projection,
         ):
             response = self.client.get(
-                "/diagnose/finding-case-file-preparation",
+                "/api/diagnose/finding-case-file-preparation",
                 params={"start_min": 0, "end_min": 300,
                         "selected_id": "ich1_selected"},
             )
@@ -172,25 +172,25 @@ class FindingCaseFileRouteTest(unittest.TestCase):
 
     def test_raw_query_failures_use_the_structured_400_envelope(self):
         for url in (
-            "/diagnose/finding-case-file-preparation?start_min=1",
-            "/diagnose/finding-case-file-preparation?start_min=x&end_min=2",
-            "/diagnose/finding-case-file-preparation?start_min=-1&end_min=2",
-            "/diagnose/finding-case-file-preparation?start_min=1.5&end_min=2",
-            "/diagnose/finding-case-file-preparation?start_min=1&start_min=2&end_min=3",
-            "/diagnose/finding-case-file-preparation?start_min=1&end_min=2&end_min=3",
-            "/diagnose/finding-case-file-preparation?start_min=0&end_min=1441",
-            "/diagnose/finding-case-file-preparation?unknown=1",
-            "/diagnose/finding-case-file?projection_id=nope",
-            "/diagnose/finding-case-file?projection_id=fp_00000000000000000000000000000000"
+            "/api/diagnose/finding-case-file-preparation?start_min=1",
+            "/api/diagnose/finding-case-file-preparation?start_min=x&end_min=2",
+            "/api/diagnose/finding-case-file-preparation?start_min=-1&end_min=2",
+            "/api/diagnose/finding-case-file-preparation?start_min=1.5&end_min=2",
+            "/api/diagnose/finding-case-file-preparation?start_min=1&start_min=2&end_min=3",
+            "/api/diagnose/finding-case-file-preparation?start_min=1&end_min=2&end_min=3",
+            "/api/diagnose/finding-case-file-preparation?start_min=0&end_min=1441",
+            "/api/diagnose/finding-case-file-preparation?unknown=1",
+            "/api/diagnose/finding-case-file?projection_id=nope",
+            "/api/diagnose/finding-case-file?projection_id=fp_00000000000000000000000000000000"
             "&finding_id=finding:not_a_lever&alignment=clock",
-            "/diagnose/finding-case-file?projection_id=fp_00000000000000000000000000000000"
+            "/api/diagnose/finding-case-file?projection_id=fp_00000000000000000000000000000000"
             "&finding_id=finding:late_bolus&alignment=sideways",
-            "/diagnose/finding-case-file?projection_id=fp_00000000000000000000000000000000"
+            "/api/diagnose/finding-case-file?projection_id=fp_00000000000000000000000000000000"
             "&finding_id=finding:late_bolus&alignment=clock&occ=o_00000000000000000000000000000000"
             "&occ=o_11111111111111111111111111111111",
-            "/diagnose/finding-case-file?projection_id=fp_00000000000000000000000000000000"
+            "/api/diagnose/finding-case-file?projection_id=fp_00000000000000000000000000000000"
             "&finding_id=finding:late_bolus&alignment=clock&unknown=1",
-            "/diagnose/finding-case-file?projection_id=fp_00000000000000000000000000000000"
+            "/api/diagnose/finding-case-file?projection_id=fp_00000000000000000000000000000000"
             "&projection_id=fp_11111111111111111111111111111111"
             "&finding_id=finding:late_bolus&alignment=clock",
         ):
@@ -202,15 +202,15 @@ class FindingCaseFileRouteTest(unittest.TestCase):
 
     def test_unknown_retained_preparation_is_structured_stale(self):
         response = self.client.get(
-            "/diagnose/finding-case-file?projection_id=fp_00000000000000000000000000000000"
+            "/api/diagnose/finding-case-file?projection_id=fp_00000000000000000000000000000000"
             "&finding_id=finding:late_bolus&alignment=clock"
         )
         self.assertEqual(response.status_code, 409)
         self.assertEqual(response.json()["detail"]["code"], "stale_projection")
 
     def test_registered_preparation_is_immediately_addressable_and_bump_invalidates(self):
-        prepared = self.client.get("/diagnose/finding-case-file-preparation").json()
-        url = (f"/diagnose/finding-case-file?projection_id={prepared['projection_id']}"
+        prepared = self.client.get("/api/diagnose/finding-case-file-preparation").json()
+        url = (f"/api/diagnose/finding-case-file?projection_id={prepared['projection_id']}"
                "&finding_id=finding:late_bolus&alignment=clock")
         unavailable = self.client.get(url)
         self.assertEqual(unavailable.status_code, 404)
@@ -227,7 +227,7 @@ class FindingCaseFileRouteTest(unittest.TestCase):
         def worker():
             entered.wait()
             ids.append(self.client.get(
-                "/diagnose/finding-case-file-preparation?start_min=60&end_min=120"
+                "/api/diagnose/finding-case-file-preparation?start_min=60&end_min=120"
             ).json()["projection_id"])
 
         first = threading.Thread(target=worker)
@@ -247,14 +247,14 @@ class FindingCaseFileRouteTest(unittest.TestCase):
         self.app.state.finding_case_file_before_commit = bump_once
         try:
             response = self.client.get(
-                "/diagnose/finding-case-file-preparation?start_min=120&end_min=180"
+                "/api/diagnose/finding-case-file-preparation?start_min=120&end_min=180"
             )
         finally:
             self.app.state.finding_case_file_before_commit = None
         self.assertEqual(response.status_code, 200)
         projection_id = response.json()["projection_id"]
         case = self.client.get(
-            f"/diagnose/finding-case-file?projection_id={projection_id}"
+            f"/api/diagnose/finding-case-file?projection_id={projection_id}"
             "&finding_id=finding:late_bolus&alignment=clock"
         )
         self.assertEqual(case.status_code, 404)
@@ -273,7 +273,7 @@ class FindingCaseFileRouteTest(unittest.TestCase):
             with patch("ciq_autotune.finding_case_file.uuid.uuid4",
                        side_effect=identities):
                 response = self.client.get(
-                    "/diagnose/finding-case-file-preparation?start_min=300&end_min=360"
+                    "/api/diagnose/finding-case-file-preparation?start_min=300&end_min=360"
                 )
         finally:
             self.app.state.finding_case_file_before_commit = None
@@ -281,7 +281,7 @@ class FindingCaseFileRouteTest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["projection_id"], "fp_" + "b" * 32)
         old = self.client.get(
-            f"/diagnose/finding-case-file?projection_id=fp_{'a' * 32}"
+            f"/api/diagnose/finding-case-file?projection_id=fp_{'a' * 32}"
             "&finding_id=finding:late_bolus&alignment=clock"
         )
         self.assertEqual(old.status_code, 409)
@@ -294,7 +294,7 @@ class FindingCaseFileRouteTest(unittest.TestCase):
         self.app.state.finding_case_file_before_commit = self.app.state.result_cache.bump
         try:
             response = self.client.get(
-                "/diagnose/finding-case-file-preparation?start_min=180&end_min=240"
+                "/api/diagnose/finding-case-file-preparation?start_min=180&end_min=240"
             )
         finally:
             self.app.state.finding_case_file_before_commit = None
@@ -310,7 +310,7 @@ class FindingCaseFileRouteTest(unittest.TestCase):
                 ("occupied", index), lambda version, fake=fake: fake,
             )
         response = self.client.get(
-            "/diagnose/finding-case-file-preparation?start_min=240&end_min=300"
+            "/api/diagnose/finding-case-file-preparation?start_min=240&end_min=300"
         )
         self.assertEqual(response.status_code, 503)
         self.assertEqual(response.json()["detail"]["code"], "preparation_capacity")
@@ -335,7 +335,7 @@ class FindingCaseFileRouteTest(unittest.TestCase):
 
         def request_case():
             responses.append(self.client.get(
-                f"/diagnose/finding-case-file?projection_id={fake.projection_id}"
+                f"/api/diagnose/finding-case-file?projection_id={fake.projection_id}"
                 "&finding_id=finding:late_bolus&alignment=event"
             ))
 
@@ -362,7 +362,7 @@ class FindingCaseFileRouteTest(unittest.TestCase):
         cache.get_or_build_preparation(
             ("finding-case-file", None, None, None), lambda version: broken,
         )
-        response = self.client.get("/diagnose/finding-case-file-preparation")
+        response = self.client.get("/api/diagnose/finding-case-file-preparation")
         self.assertEqual(response.status_code, 500)
         self.assertEqual(response.json()["detail"]["code"], "inconsistent_projection")
 
@@ -417,7 +417,7 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
             _seed_events(database.name, [(row.t, row.bg) for row in cgm], bolus_rows)
             with TestClient(create_app(
                     db_path=database.name, token=None, enable_fetch_loop=False)) as client:
-                findings_response = client.get("/diagnose/findings")
+                findings_response = client.get("/api/diagnose/findings")
                 self.assertEqual(findings_response.status_code, 200)
                 finding = next(
                     row for row in findings_response.json()["rows"]
@@ -428,7 +428,7 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
                 self.assertEqual(sum(finding["verdict_counts"].values()),
                                  len(finding["evidence"]))
 
-                preparation_response = client.get("/diagnose/finding-case-file-preparation")
+                preparation_response = client.get("/api/diagnose/finding-case-file-preparation")
                 self.assertEqual(preparation_response.status_code, 200)
                 preparation = preparation_response.json()
                 prepared_finding = next(
@@ -438,7 +438,7 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
                 self.assertEqual(prepared_finding["evidence"], finding["evidence"])
                 self.assertEqual(prepared_finding["verdict_counts"], finding["verdict_counts"])
 
-                case_response = client.get("/diagnose/finding-case-file", params={
+                case_response = client.get("/api/diagnose/finding-case-file", params={
                     "projection_id": preparation["projection_id"],
                     "finding_id": "finding:over_treated_low", "alignment": "event",
                 })
@@ -469,7 +469,7 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
 
                 selected_id = next(row["id"] for row in case["occurrences"]
                                    if row["verdict"] == "outranked")
-                selected_response = client.get("/diagnose/finding-case-file", params={
+                selected_response = client.get("/api/diagnose/finding-case-file", params={
                     "projection_id": preparation["projection_id"],
                     "finding_id": "finding:over_treated_low", "alignment": "event",
                     "occ": selected_id,
@@ -577,7 +577,7 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
                 self.assertEqual(set(marker), marker_fields[marker["kind"]])
 
     def test_populated_preparation_and_selected_case_are_publicly_addressable(self):
-        response = self.client.get("/diagnose/finding-case-file-preparation")
+        response = self.client.get("/api/diagnose/finding-case-file-preparation")
         self.assertEqual(response.status_code, 200)
         prepared = response.json()
         self.assert_preparation_tree(prepared)
@@ -593,7 +593,7 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
                 self.assertEqual(rendered, source)
 
         case_url = (
-            "/diagnose/finding-case-file"
+            "/api/diagnose/finding-case-file"
             f"?projection_id={prepared['projection_id']}"
             "&finding_id=finding:late_bolus&alignment=event"
         )
@@ -636,12 +636,12 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
             with TestClient(create_app(
                     db_path=database.name, token=None, enable_fetch_loop=False)) as client:
                 prepared = client.get(
-                    "/diagnose/finding-case-file-preparation", params=query or {},
+                    "/api/diagnose/finding-case-file-preparation", params=query or {},
                 )
                 self.assertEqual(prepared.status_code, 200)
                 projection_id = prepared.json()["projection_id"]
                 response = client.get(
-                    "/diagnose/finding-case-file",
+                    "/api/diagnose/finding-case-file",
                     params={"projection_id": projection_id,
                             "finding_id": f"finding:{lever}",
                             "alignment": "event"},
@@ -650,7 +650,7 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
                 case = response.json()
                 if select_claimed:
                     clock = client.get(
-                        "/diagnose/finding-case-file",
+                        "/api/diagnose/finding-case-file",
                         params={"projection_id": projection_id,
                                 "finding_id": f"finding:{lever}",
                                 "alignment": "clock"},
@@ -670,7 +670,7 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
                         case["occurrences"][0],
                     )
                 selected = client.get(
-                    "/diagnose/finding-case-file",
+                    "/api/diagnose/finding-case-file",
                     params={"projection_id": projection_id,
                             "finding_id": f"finding:{lever}",
                             "alignment": "event", "occ": occurrence["id"]},
@@ -684,7 +684,7 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
             with TestClient(create_app(
                     db_path=database.name, token=None, enable_fetch_loop=False)) as client:
                 response = client.get(
-                    "/diagnose/finding-case-file-preparation", params=query or {},
+                    "/api/diagnose/finding-case-file-preparation", params=query or {},
                 )
                 self.assertEqual(response.status_code, 200, response.text)
                 return response.json()

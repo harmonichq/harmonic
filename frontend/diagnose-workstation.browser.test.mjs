@@ -258,7 +258,7 @@ test(`#96 · Align keeps keyboard focus and stays two Tab stops — RETIRED — 
 
       const requests = [];
       page.on('request', (request) => {
-        if (new URL(request.url()).pathname.startsWith('/diagnose/')) requests.push(request.url());
+        if (new URL(request.url()).pathname.startsWith('/api/diagnose/')) requests.push(request.url());
       });
       await page.keyboard.press('Enter');
       await settle(page, 450);
@@ -1008,7 +1008,7 @@ test('an exact true capped ISF verdict stages one unchanged value per generated 
       await page.locator('#level .stagebtn').click();
       await page.waitForFunction(() => document.querySelector('#plan-badge')?.textContent.trim() === '4');
       await page.waitForTimeout(100);
-      assert.equal(drafts.length, 1, 'the real stage affordance issues one PUT /plan');
+      assert.equal(drafts.length, 1, 'the real stage affordance issues one PUT /api/plan');
       assert.deepEqual(drafts[0].items, [
         { type: 'isf', key: 0, start_min: 0, label: '00:00', current: 42, recommended: 33.6, value: 33.6 },
         { type: 'isf', key: 360, start_min: 360, label: '06:00', current: 45, recommended: 33.6, value: 33.6 },
@@ -1063,7 +1063,7 @@ test('setError tears down a live render and replaces the mount with a plain fail
               + '<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script></head>'
               + '<body><div id="wrap"><div class="mount"></div></div>'
               + '<script type="module">import {createDiagnoseWorkstation} from '
-              + `'/frontend/diagnose-workstation.js';`
+              + `'/assets/diagnose-workstation.js';`
               + `window.__view = createDiagnoseWorkstation({ root: document.querySelector('.mount'), callbacks: {} });`
               + `window.__ready = true;</script></body></html>`,
             contentType: 'text/html',
@@ -1073,8 +1073,8 @@ test('setError tears down a live render and replaces the mount with a plain fail
           if (!VENDOR) return route.continue();
           return route.fulfill({ body: await readFile(join(VENDOR, 'echarts.min.js')), contentType: 'text/javascript' });
         }
-        if (url.pathname.startsWith('/frontend/')) {
-          const path = join(ROOT, url.pathname.slice(1));
+        if (url.pathname.startsWith('/assets/')) {
+          const path = join(ROOT, 'frontend', url.pathname.replace(/^\/assets\//, ''));
           try { return route.fulfill({ body: await readFile(path), contentType: MIME[extname(path)] || 'text/javascript' }); }
           catch { return route.fulfill({ status: 404, body: 'missing' }); }
         }
@@ -1108,32 +1108,33 @@ test('setError tears down a live render and replaces the mount with a plain fail
    page after its first load already succeeded, and this failure has to be
    live for that very load. Its stub table mirrors openApp's
    (diagnose-workstation-behavior.replay.mjs) so the app boots exactly as it
-   does for every other test, except /analyze is made to fail. */
+   does for every other test, except /api/analyze is made to fail. */
 test('a rejected first-load fetch shows the failure message, not an uncaught error', async () => {
     const payloadPath = process.env.PAYLOAD;
     assert.ok(payloadPath, 'PAYLOAD is required (backs the endpoints that do not fail)');
     const payload = JSON.parse(await readFile(payloadPath, 'utf8'));
     const comparison = JSON.parse(await readFile(
       join(ROOT, 'mockups/diagnose-event-comparison.synthetic/capture.json'), 'utf8'));
+    const apiPattern = (path) => new RegExp(`^/api${path}`);
     const STUBS = [
-      [/^\/diagnose\/event-comparison/, () => ({ comparison, exposures: payload.exposures })],
-      [/^\/scenarios/, () => payload.scenarios],
-      [/^\/explore\/time/, () => payload.evidence],
-      [/^\/status/, () => ({ ok: true, last_fetch: payload.analyze.generated_at, counts: payload.analyze.data_quality?.counts || {} })],
-      [/^\/plan\/history/, () => ({ history: [] })],
-      [/^\/plan/, () => ({ items: [], updated_at: null })],
-      [/^\/verify\/trials/, () => ({ trials: [] })],
-      [/^\/api\/catalog/, () => ({ articles: [] })],
-      [/^\/carbs/, () => ({ entries: [] })],
-      [/^\/prompts/, () => ({ prompts: [] })],
-      [/^\/credentials/, () => ({ configured: true })],
-      [/^\/audit\/dismissals/, () => ({ dismissed: [] })],
-      [/^\/outcomes/, () => ({ points: [] })],
-      [/^\/timeline/, () => ({ events: [] })],
-      [/^\/backtest/, () => ({ folds: [] })],
-      [/^\/model/, () => ({ entries: [] })],
-      [/^\/day/, () => ({ days: [] })],
-      [/^\/pump/, () => ({ settings: {} })],
+      [apiPattern('/diagnose/event-comparison'), () => ({ comparison, exposures: payload.exposures })],
+      [apiPattern('/scenarios'), () => payload.scenarios],
+      [apiPattern('/explore/time'), () => payload.evidence],
+      [apiPattern('/status'), () => ({ ok: true, last_fetch: payload.analyze.generated_at, counts: payload.analyze.data_quality?.counts || {} })],
+      [apiPattern('/plan/history'), () => ({ history: [] })],
+      [apiPattern('/plan'), () => ({ items: [], updated_at: null })],
+      [apiPattern('/verify/trials'), () => ({ trials: [] })],
+      [apiPattern('/catalog'), () => ({ articles: [] })],
+      [apiPattern('/carbs'), () => ({ entries: [] })],
+      [apiPattern('/prompts'), () => ({ prompts: [] })],
+      [apiPattern('/credentials'), () => ({ configured: true })],
+      [apiPattern('/audit/dismissals'), () => ({ dismissed: [] })],
+      [apiPattern('/outcomes'), () => ({ points: [] })],
+      [apiPattern('/timeline'), () => ({ events: [] })],
+      [apiPattern('/backtest'), () => ({ folds: [] })],
+      [apiPattern('/model'), () => ({ entries: [] })],
+      [apiPattern('/day'), () => ({ days: [] })],
+      [apiPattern('/pump'), () => ({ settings: {} })],
     ];
     const browser = await runner.browser();
     const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
@@ -1153,12 +1154,12 @@ test('a rejected first-load fetch shows the failure message, not an uncaught err
         if (url.href.includes('vue')) return route.fulfill({ body: await readFile(join(VENDOR, 'vue.esm-browser.js')), contentType: 'text/javascript' });
         if (path === '/') return route.fulfill({ body: await readFile(join(ROOT, 'frontend/index.html')), contentType: 'text/html' });
         if (/\.(js|css|svg|html)$/.test(path)) {
-          try { return route.fulfill({ body: await readFile(join(ROOT, 'frontend', path.slice(1))), contentType: MIME[extname(path)] || 'text/plain' }); } catch { /* fall through */ }
+          try { return route.fulfill({ body: await readFile(join(ROOT, 'frontend', path.replace(/^\/assets\//, ''))), contentType: MIME[extname(path)] || 'text/plain' }); } catch { /* fall through */ }
         }
         // The one deliberately broken endpoint: loadAudit's Promise.all
         // rejects on this, taking the real catch path a live fetch failure
         // (a timeout, a 5xx, a dropped connection) would.
-        if (/^\/analyze/.test(path)) {
+        if (/^\/api\/analyze/.test(path)) {
           return route.fulfill({ status: 500, contentType: 'application/json',
             body: JSON.stringify({ detail: 'synthetic failure for the #654 hotfix regression test' }) });
         }
@@ -1224,7 +1225,7 @@ test('frontend contains no client-side verdict threshold or direction comparison
   // LOCK:diagnose-workstation:29 — occurrence handoff retains claim date into Day.
   const index = await readFile(join(ROOT, 'frontend/index.html'), 'utf8');
   assert.match(index, /day: \(occurrence\) => goToMoment\(occurrence\.t \|\| occurrence\.anchor\?\.t,[\s\S]*occurrence\.text \|\| occurrence\.anchor\?\.label/);
-  assert.match(index, /import \{ createDiagnoseEventComparison \} from '\.\/diagnose-event-comparison\.js';/);
+  assert.match(index, /import \{ createDiagnoseEventComparison \} from '\/assets\/diagnose-event-comparison\.js';/);
   assert.match(index, /diagnoseView = createDiagnoseEventComparison\(\{ root: diagnoseRoot\.value,/);
   assert.match(index, /diagnoseStageItemsFor\(item\.key, diagnoseAnalysis\.value\)/);
   assert.match(index, /keepOnlyPlanFamily\(planItemFamily\(items\[0\]\)\)/);

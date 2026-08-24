@@ -210,7 +210,7 @@ export function dayStats(day) {
    mark. Markers carry `_t`/`_epId` for the chart↔Episode-Log link. There is NO persistent
    full-height evidence line — the single cross-track hairline is drawn by the host from
    evidenceFocusGraphic only while a moment (or its log row) is hovered/keyboard-focused.
-   `mvDay` is the /model-view payload; `focusT` the spotlighted anchor time; `preempted` the Set
+   `mvDay` is the /api/model-view payload; `focusT` the spotlighted anchor time; `preempted` the Set
    from preemptedTimes. `selectedLever` (#272) dims anchors NOT on that lever so the lever's own
    markers read as isolated. Returns ECharts series to append to the lanes option. */
 // The one state→hue map both the anchor rings and the focus hairline read from,

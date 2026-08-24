@@ -3,7 +3,7 @@
 // Vue-free so Node's built-in runner can cover the arrow-bounds / cold-arrival /
 // empty-day-nudge / label logic with no DOM and no importmap (see CLAUDE.md
 // "Frontend tests"). Every date here is a pump-local 'YYYY-MM-DD' string. The
-// day bounds (earliest/latest day WITH data) come from /status
+// day bounds (earliest/latest day WITH data) come from /api/status
 // (earliest_data_day / latest_data_day, added in #137) — this module never
 // re-derives them from timestamps.
 
@@ -17,7 +17,7 @@ export function addDays(dateStr, n) {
 }
 
 // The [start, end) wall-clock range covering one calendar day, in the local
-// 'YYYY-MM-DDTHH:MM:SS' shape the /timeline fetch expects.
+// 'YYYY-MM-DDTHH:MM:SS' shape the /api/timeline fetch expects.
 export function dayBounds(dateStr) {
   return { start: `${dateStr}T00:00:00`, end: `${addDays(dateStr, 1)}T00:00:00` };
 }

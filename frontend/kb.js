@@ -224,7 +224,7 @@ export function rankMiniQueue(catalog, meta = LEVER_META) {
 
 /** The "Reading a Day" preview chart — the REAL Day surface, grounded (LOCKED
     spec, the archived Day-preview-glucose mock). An ECharts option over the user's own
-    captured day (`/timeline`): target-range bands (markArea), the CGM curve with
+    captured day (`/api/timeline`): target-range bands (markArea), the CGM curve with
     points COLORED BY RANGE (the app's own rangeColor: >180 high / <70 low / else
     in-range — the color-never-alone signal), and meal boluses in the app's
     triangle. Pure (takes a resolved `colors` object like the shipping

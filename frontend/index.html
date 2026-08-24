@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Harmonic</title>
-  <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
 
   <script>
     (function () {
@@ -22,14 +22,14 @@
   <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
 
   <!-- #64 scenario screen styles (extracted from this file's <style> in #100). -->
-  <link rel="stylesheet" href="./scenario.css" />
+  <link rel="stylesheet" href="/assets/scenario.css" />
   <!-- #634: cockpit shell, built to the Diagnose workstation lock. -->
-  <link rel="stylesheet" href="./shell.css" />
+  <link rel="stylesheet" href="/assets/shell.css" />
   <!-- #636: locked Diagnose workstation surface mounted inside that shell. -->
-  <link rel="stylesheet" href="./diagnose-workstation.css" />
-  <link rel="stylesheet" href="./diagnose-event-comparison.css" />
+  <link rel="stylesheet" href="/assets/diagnose-workstation.css" />
+  <link rel="stylesheet" href="/assets/diagnose-event-comparison.css" />
   <!-- #660: locked Verify workstation surface, same shell. -->
-  <link rel="stylesheet" href="./verify-workstation.css" />
+  <link rel="stylesheet" href="/assets/verify-workstation.css" />
 
   <style>
     :root {
@@ -1364,7 +1364,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
        surface rule collide at equal specificity and the later file has to win:
        scoping the docked shell to a surface is exactly what left Verify
        rendering as two floating cards (the archived Harmonic-theme lock, #736). -->
-  <link rel="stylesheet" href="./theme.css" />
+  <link rel="stylesheet" href="/assets/theme.css" />
 </head>
 <body>
   <svg width="0" height="0" aria-hidden="true" style="position:absolute">
@@ -1407,7 +1407,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           </template>
         </nav>
         <span class="cockpit-divider" data-zone="divider" aria-hidden="true"></span>
-        <a class="cockpit-day" data-zone="day" data-shell-tab="day" href="#/day"
+        <a class="cockpit-day" data-zone="day" data-shell-tab="day" href="/day"
            :aria-current="tab === 'day' ? 'page' : null" @click.prevent="shellGo('day')">Day</a>
         <span class="cockpit-gap" data-zone="gap"></span>
         <div class="cockpit-scope" data-zone="scope">
@@ -1906,7 +1906,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
          the archived Guide-KB-companion mock): a left sidebar mirroring the app's
          tab map + a two-column article pane — teaching copy beside an embedded
          miniature of the surface it teaches, with an "Open your … surface"
-         handoff that switches tabs via the real hash router. Two content
+         handoff that switches tabs via the shared router. Two content
          streams (ADR 0044): the 4 authored "reading the app" how-tos are
          markdown from /api/kb/<slug> (rendered by kb.js `renderMarkdown`); the
          "engine concepts" (pipeline / worked example / silence / tiers / lever
@@ -1953,7 +1953,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         <main class="article">
           <p class="crumbs">
             <b>Guide</b> / {{ kbCategoryLabel(kbArticle.category) }}
-            <span class="hash">#guide?article={{ kbArticle.slug }}</span>
+            <span class="hash">/guide?article={{ kbArticle.slug }}</span>
           </p>
           <h1 class="art-title">{{ kbArticle.title }}</h1>
           <p class="art-kicker">{{ kbKicker(kbArticle) }}</p>
@@ -2264,7 +2264,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
 
   <script type="module">
     import { createApp, ref, reactive, computed, onMounted, onUnmounted, watch, nextTick, provide, inject } from 'vue';
-    import { TABS, parseRoute, resolveTab, subscribeRoute, writeRoute } from './tab-routing.js';
+    import { TABS, parseRoute, resolveTab, subscribeRoute, writeRoute } from '/assets/tab-routing.js';
 
     /* =========================================================================
        #64 SCENARIO SCREEN — the pure chart logic (SCN_* consts + helpers, incl.
@@ -2282,7 +2282,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
       scnFmtClock, SCN_EVIDENCE_TIER, scnBuildEpisodeOption, scnCitedEventsForStep,
       scnRateLine, scnFmtWhen, scnFmtTimeOnly, scnFmtDayShort,
       scnPreemptedSummary,
-    } from './scenario-chart.js';
+    } from '/assets/scenario-chart.js';
 
     // #101: the pure chart-option builders live in their own vue-free module so
     // their returned option JSON is node-testable. The shared pure helpers
@@ -2294,30 +2294,30 @@ html.dark .viz .tie:hover::before { opacity:.13; }
     import {
       buildLanesOption,
       fmt, direction, LANE_SPAN,
-    } from './chart-builders.js';
+    } from '/assets/chart-builders.js';
 
     // #136: pure date/bounds helpers for the Daily Report day-picker nav
     // (arrow bounds, cold arrival, empty-day nudge, labels). Vue-free + node-tested.
     import {
       dayBounds, clampDay, coldArrivalDay,
-    } from './daily-nav.js';
+    } from '/assets/daily-nav.js';
 
     // #152: pure per-day model-view logic + detector/silence-reason reference
-    // data (flatten→sort→humanize the /model-view payload into log rows, the
+    // data (flatten→sort→humanize the /api/model-view payload into log rows, the
     // contextual chart option, cross-link glue). Vue-free + node-tested; the
     // ModelView component below wires it into the DOM.
-    import * as MV from './model-view-log.js';
+    import * as MV from '/assets/model-view-log.js';
     // #248 Day surface (ADR 0027): pure render/logic cores for the merged Day tab —
     // DC = the chart + Episode-Log reasoning core; NAV = the severity navigator.
-    import * as DC from './day-chart.js';
+    import * as DC from '/assets/day-chart.js';
     // #332: the MOBILE Day chart render core — the glucose-hero + folded accordion
     // reshape. Desktop keeps DC + buildLanesOption; DH is the phone-only path.
-    import * as DH from './day-hero-chart.js';
-    import * as NAV from './nav-chart.js';
+    import * as DH from '/assets/day-hero-chart.js';
+    import * as NAV from '/assets/nav-chart.js';
     // #385: the Day-chart insulin-lane dose-focus core — the event model, the
     // chronological reveal copy, PIXEL-proximity grouping, and the preview/pin
     // state machine. Vue-free + node-tested; the overlay/capsule DOM below wires it.
-    import * as DF from './day-dose-focus.js';
+    import * as DF from '/assets/day-dose-focus.js';
 
     // #102: consolidated data-access module — one named export per operation,
     // injectable fetch seam for tests.  No fetch() or endpoint path literals
@@ -2351,7 +2351,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
       savePlanDraft as dataSavePlanDraft,
       loadPlanHistory as dataLoadPlanHistory,
       applyPlan as dataApplyPlan,
-    } from './data.js';
+    } from '/assets/data.js';
 
     // #99: pure Plan-deliverable logic (consolidation, provenance, hand-edit
     // merge, Confirmation-B on-pump detection) lives in a vue-free module.
@@ -2370,17 +2370,17 @@ html.dark .viz .tie:hover::before { opacity:.13; }
       planParamFamily,
       reconcileDeliverable as planReconcileDeliverable,
       PLAN_FAMILY_LABEL,
-    } from './plan.js';
+    } from '/assets/plan.js';
 
     // #95: pure per-parameter settling helpers (vue-free, node-tested).
-    import { settlingByParam as buildSettlingByParam, settlingCountdown } from './settling.js';
+    import { settlingByParam as buildSettlingByParam, settlingCountdown } from '/assets/settling.js';
 
     // #126: pure carb quick-log capture helpers (vue-free, node-tested). The
     // header popover is a thin shell over these — time math + payload shaping.
     import {
       QUICKLOG_PRESETS, QUICKLOG_TIMES, buildCarbPayload, isLoggable, carbToast,
       msToDatetimeLocal,
-    } from './carb-log.js';
+    } from '/assets/carb-log.js';
 
     // #128: pure carb-log prompt-queue logic (vue-free, node-tested). The retained
     // pqBuildRibbonOption alias marks this explicitly as the review-queue ribbon
@@ -2394,29 +2394,29 @@ html.dark .viz .tie:hover::before { opacity:.13; }
       prettyAnchor as pqPrettyAnchor,
       sortOldestFirst as pqSortOldestFirst,
       windowDays as pqWindowDaysOf,
-    } from './prompt-queue.js';
+    } from '/assets/prompt-queue.js';
     import {
       fetchPrompts as dataFetchPrompts,
       answerPrompt as dataAnswerPrompt,
       clearPrompt as dataClearPrompt,
       fetchFocuses as dataFetchFocuses,
       resolveFocus as dataResolveFocus,
-    } from './data.js';
+    } from '/assets/data.js';
 
     import {
       auditIdForPlanItem as diagnoseAuditIdForPlanItem,
       stageItemsFor as diagnoseStageItemsFor,
-    } from './diagnose-workspaces.js';
+    } from '/assets/diagnose-workspaces.js';
     // #654: the Diagnose surface is the locked mock's own module, ported. The
     // #636 surface it replaces predates the behaviour contract.
-    import { createDiagnoseEventComparison } from './diagnose-event-comparison.js';
+    import { createDiagnoseEventComparison } from '/assets/diagnose-event-comparison.js';
 
     // #660: the ported Verify workstation (locked mock + frozen ledger).
-    import { createVerifyWorkstation } from './verify-workstation.js';
-    import { toCaptures as verifyToCaptures } from './verify-workstation-data.js';
+    import { createVerifyWorkstation } from '/assets/verify-workstation.js';
+    import { toCaptures as verifyToCaptures } from '/assets/verify-workstation-data.js';
     // The only helper the retired workbench leaves behind: Revert's prior-setting
     // draft is the server's, and staging it is the same intent it always was.
-    import { planRevertIntent as verifyPlanRevertIntent } from './verify-trial.js';
+    import { planRevertIntent as verifyPlanRevertIntent } from '/assets/verify-trial.js';
 
     // #157: pure Guide-tab render helpers (vue-free, node-tested). The catalog
     // payload (/api/catalog) drives both the worked example and the lever /
@@ -2424,7 +2424,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
     import {
       guideGroups, guideTierLabel, guideLeverTitles, guideMd, guideDefFor,
       guideWorkedRows, guideRowClass, guideSpark,
-    } from './guide.js';
+    } from '/assets/guide.js';
 
     // #269: pure Guide-KB shell logic (vue-free, node-tested) — the article
     // corpus, markdown render for the authored how-tos, sidebar nav/search, and
@@ -2437,11 +2437,11 @@ html.dark .viz .tie:hover::before { opacity:.13; }
       categoryLabel as kbCategoryLabel, surfaceLabel as kbSurfaceLabel, kicker as kbKicker,
       pct as kbPct, rankMiniQueue as kbRankMiniQueue, silenceByTier as kbSilenceByTier,
       buildDayPreviewOption as kbBuildDayPreviewOption,
-    } from './kb.js';
+    } from '/assets/kb.js';
 
     // #425: serial gate — funnels the heavy ResultCache-backed reads through a
     // single-concurrency promise chain so cold-cache threads don't GIL-thrash.
-    import { makeSerialGate } from './serial-gate.js';
+    import { makeSerialGate } from '/assets/serial-gate.js';
 
     function scnColors() {
       const v = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
@@ -2709,7 +2709,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         const selected = computed(() => props.date ? decorate(props.date) : null);
 
         // ---- day-stepping over days-with-data (ADR 0031), sourced from the navigator's
-        // OWN feed so ‹ › work whenever nav data is loaded — independent of /status (which
+        // OWN feed so ‹ › work whenever nav data is loaded — independent of /api/status (which
         // only loads with an API token). Spans the loaded months (current ± neighbors). ----
         const dataDays = computed(() => Object.values(daysByIso)
           .filter((d) => d.has_data).map((d) => d.iso).sort());
@@ -2906,9 +2906,9 @@ html.dark .viz .tie:hover::before { opacity:.13; }
     const DaySurface = {
       props: { date: String, dev: Boolean, highlight: Object },
       setup(props) {
-        const day = ref(null);               // /model-view payload (reasoning: anchors, verdicts)
-        const timeline = ref(null);          // /timeline payload (rich chart layers)
-        const carbEntries = ref([]);         // /carbs (manual rescue-carb pills)
+        const day = ref(null);               // /api/model-view payload (reasoning: anchors, verdicts)
+        const timeline = ref(null);          // /api/timeline payload (rich chart layers)
+        const carbEntries = ref([]);         // /api/carbs (manual rescue-carb pills)
         const loading = ref(false);
         const error = ref(null);
         const expanded = ref(new Set());     // open Episode Log rows (epId+t)
@@ -2955,7 +2955,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         const preempted = computed(() => day.value ? DC.preemptedTimes(day.value) : new Set());
         const stats = computed(() => day.value ? DC.dayStats(day.value) : null);
         // Emptiness is decided from the model-view payload itself (no CGM that day),
-        // not from the parent — so the surface is self-sufficient off /model-view.
+        // not from the parent — so the surface is self-sufficient off /api/model-view.
         const noData = computed(() => !!day.value && !(day.value.window && day.value.window.cgm && day.value.window.cgm.length));
 
         const TIER_LABEL = { observed: 'Observed', inferred: 'Inferred', not_in_data: 'Not in data' };
@@ -3394,8 +3394,8 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           loading.value = true; error.value = null;
           try {
             const range = dayBounds(props.date);
-            // Reasoning (/model-view) + the rich chart layers (/timeline) + manual rescue
-            // carbs (/carbs) for the day, all in parallel; the surface is self-sufficient.
+            // Reasoning (/api/model-view) + the rich chart layers (/api/timeline) + manual rescue
+            // carbs (/api/carbs) for the day, all in parallel; the surface is self-sufficient.
             const [mv, tl, carbs] = await Promise.all([
               dataFetchModelView(props.date, { signal: controller.signal }),
               dataFetchTimeline(range, { signal: controller.signal }),
@@ -3424,7 +3424,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         }
 
         // #381: the flagged sensor-artifact excursions visible on this day (one chip
-        // each), read off the /timeline payload. `hm` trims the stored 'YYYY-MM-DD
+        // each), read off the /api/timeline payload. `hm` trims the stored 'YYYY-MM-DD
         // HH:MM:SS' to a HH:MM range for the chip.
         const falseLowArtifacts = computed(() => {
           const spans = (timeline.value && timeline.value.false_low_exclusion_spans) || [];
@@ -3713,37 +3713,46 @@ html.dark .viz .tie:hover::before { opacity:.13; }
       `,
     };
 
-    // URL hash is the source of truth for shareable view state (tab + daily
-    // date, #16/#19; modal state, #19 follow-up): #<tab>?date=YYYY-MM-DD&modal=...
+    // The clean URL is the source of truth for shareable view state (tab + daily
+    // date, #16/#19; modal state, #19 follow-up): /<tab>?date=YYYY-MM-DD&modal=...
     // localStorage remains a fallback for theme + token only — those aren't
     // shareable. The surviving modal-shaped params are:
     //   modal=dataquality                                        (openDataQuality)
     //   modal=occurrence&occt=<ISO ts>&occd=<detail text>        (goToMoment's
     //     resulting highlight on Day — not a modal itself, but "Back" should
     //     restore/dismiss it like one)
-    // Patterns / Investigate deep-links (#132): #patterns?mode=investigate&day=YYYY-MM-DD&ep=<id>
-    //   Also accepts the flat ?-less format emitted by Daily flag cards:
-    //   #tab=patterns&mode=investigate&day=YYYY-MM-DD&ep=<id>
+    // Initial arrival still accepts the retired Patterns / Investigate hash forms
+    // narrowly enough to migrate them once; new navigation never emits hash state.
     const app = createApp({
       setup() {
         // #425: one shared gate for all heavy ResultCache-backed reads so cold
         // threads never run concurrently and GIL-thrash the single uvicorn worker.
         const enqueue = makeSerialGate();
 
-        const initialHash = parseRoute(location);
+        // #94: the address is the pathname and query; a fragment routes nothing.
+        // A bare `/` canonicalizes in place to the default page, which also
+        // drops any stale fragment a saved link still carries — that link is
+        // not migrated to the page it used to name, because the retired
+        // `#/<page>?...` grammar is no longer supported at all.
+        const initialRoute = parseRoute(location);
+        if (location.pathname === '/') writeRoute(initialRoute, { replace: true });
         // #132: if the initial URL is a patterns/investigate deep-link, stash the
         // #246: the old Patterns/Investigate deep-link is retired with the tab; a stale
         // `#patterns?mode=investigate` hash now just lands on Diagnose (resolveTab below).
         let pendingScnDeepLink = null;
 
         // #99: `dashboard` was renamed to `review` and the standalone `pump`
-        // tab folded into Plan; migrate any stale hash / localStorage value.
-        // Old tab ids kept working in shared hashes/localStorage: dashboard/pump →
-        // review (legacy), daily/modelview → day (#248 merge, ADR 0027), and
-        // outcomes → verify (#245). #246 (ADR 0027) retires Recommendations + Patterns
-        // into Diagnose, so `review`/`patterns` (and the legacy `dashboard`/`pump`) all
-        // migrate to `diagnose`.
-        const tab = ref(resolveTab((initialHash && initialHash.page) || localStorage.getItem('tab') || 'diagnose'));
+        // tab folded into Plan; a stale id in a shared link still migrates:
+        // dashboard/pump → review (legacy), daily/modelview → day (#248 merge,
+        // ADR 0027), and outcomes → verify (#245). #246 (ADR 0027) retires
+        // Recommendations + Patterns into Diagnose, so `review`/`patterns` (and
+        // the legacy `dashboard`/`pump`) all migrate to `diagnose`. parseRoute
+        // resolves all of that, so the address alone decides the landing page.
+        // #94: the remembered-tab fallback is gone with the hash grammar. ADR 94
+        // rules that `/` normalizes in place to the default page, so restoring a
+        // different pane here would leave the address naming one page while the
+        // shell showed another. Nothing has written `tab` for some time either.
+        const tab = ref(initialRoute.page);
         const dark = ref(document.documentElement.classList.contains('dark'));
         // #248 / ADR 0024: the developer flag. Tier-2 reasoning (near-miss, outranked,
         // per-detector meaning, model steps) is always on; this gates only tier-3
@@ -3806,14 +3815,14 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         // #136: Daily shows exactly one pump-local day, driven by the day-picker
         // nav (arrows + date-button + Latest). dailyDate starts null on a cold
         // open — status resolves it to the latest pump-local day WITH data
-        // (coldArrivalDay, from /status.latest_data_day) rather than "today",
+        // (coldArrivalDay, from /api/status.latest_data_day) rather than "today",
         // killing the old UTC-tomorrow bug. Keep a deep-link/hash date pending
         // until those bounds arrive: mounting the keyed Day surface before that
         // clamp would load the out-of-range day and then load its replacement.
         // The retired window model (#22/#35 presets, custom range, anchor+lookback
-        // stack) is gone; nav bounds come from /status, never re-derived here.
+        // stack) is gone; nav bounds come from /api/status, never re-derived here.
         const dailyDate = ref(null);
-        const pendingDailyDate = ref((initialHash && initialHash.date) || null);
+        const pendingDailyDate = ref((initialRoute && initialRoute.date) || null);
 
         // Local (NOT UTC) calendar-today — only a fallback for the pathological
         // "store has zero CGM" case; normal cold arrival uses latest_data_day.
@@ -3822,8 +3831,8 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           const pad = (x) => String(x).padStart(2, '0');
           return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
         }
-        // Earliest / latest pump-local day WITH data, from /status (#137). These
-        // bound the arrows and the date-picker; null until /status resolves.
+        // Earliest / latest pump-local day WITH data, from /api/status (#137). These
+        // bound the arrows and the date-picker; null until /api/status resolves.
         const dailyEarliest = computed(() => (status.value && status.value.earliest_data_day) || null);
         const dailyLatest = computed(() => (status.value && status.value.latest_data_day) || null);
 
@@ -3930,7 +3939,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
 
         // --- #128 carb-log prompt review queue --------------------------------
         // The ribbon overlay is a thin Vue shell over the vue-free prompt-queue.js
-        // builders. GET /prompts returns only PENDING prompts (oldest-first); a
+        // builders. GET /api/prompts returns only PENDING prompts (oldest-first); a
         // prompt answered in this session fades to ✓ via pqAnswers (client state)
         // but stays in pqPrompts until the next refetch drops it. Answering 'carbs'
         // hands off to a prefilled capture that POSTs the atomic carbs answer.
@@ -4114,8 +4123,8 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           // #248 Day surface (ADR 0027): status resolves dailyDate; the keyed
           // DaySurface then owns the selected day's model, timeline, and carb reads.
           if (t === 'day') resolveDailyDate();
-          // #246 Diagnose (ADR 0027): the ranked lever queue binds live /analyze(pooled)
-          // + /scenarios + /backtest. Load them lazily on first open; the ECharts inside
+          // #246 Diagnose (ADR 0027): the ranked lever queue binds live /api/analyze(pooled)
+          // + /api/scenarios + /api/backtest. Load them lazily on first open; the ECharts inside
           if (t === 'diagnose') loadAudit();
           // #157: lazy-load the Guide / About catalog the first time it opens.
           if (t === 'guide') loadCatalog();
@@ -4186,8 +4195,8 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         }
 
         watch(dark, () => { if (verifyView) verifyView.refresh(); });
-        // Push tab/date/modal -> URL hash. Guarded against re-entrancy from the
-        // hashchange listener below (applyingHash).
+        // Push tab/date/modal -> URL path/query. Guarded against re-entrancy from
+        // the popstate listener below (applyingHash).
         let applyingHash = false;
         function currentModalParam() {
           if (dataQualityModalOpen.value) return 'modal=dataquality';
@@ -4200,13 +4209,13 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         function syncHashFromState() {
           if (applyingHash) return;
           const route = { page: tab.value };
-          // #248: the Day surface's selected date rides the hash — `#day?date=YYYY-MM-DD`
+          // #248: the Day surface's selected date rides the route — `/day?date=YYYY-MM-DD`
           // deep-links to a day (and back/forward moves the day). Skip it until cold
           // arrival resolves the day so we never write `date=null`.
           if (tab.value === 'day') {
             if (dailyDate.value) route.date = dailyDate.value;
           }
-          // #269: the Guide-KB's open article rides the hash — `#guide?article=<slug>`
+          // #269: the Guide-KB's open article rides the route — `/guide?article=<slug>`
           // deep-links to an article (and back/forward moves between articles).
           if (tab.value === 'guide' && kbCurrent.value) route.article = kbCurrent.value;
           if (tab.value === 'verify') {
@@ -4221,14 +4230,14 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           // Diagnose carries no shareable sub-state beyond the tab + modal params.
           const modalParam = currentModalParam();
           const extra = modalParam ? [...new URLSearchParams(modalParam)] : [];
-          writeRoute(route, { extra, replace: !location.hash.startsWith('#/') || location.search !== '' });
+          writeRoute(route, { extra });
         }
-        // The state->hash watch is registered *after* the scenario refs are
+        // The state->route watch is registered *after* the scenario refs are
         // declared (scnMode/scnPickDay/scnActiveInvestigateId, ~L3160) — its
         // source array reads those ref objects, so registering it here would hit
         // their temporal dead zone and abort setup() (#132 regression).
 
-        // Pull URL hash -> tab/date/modal, for back/forward navigation and direct links.
+        // Pull the browser route -> tab/date/modal for Back/Forward and direct links.
         function reopenModalFromHash(modal) {
           if (!modal) {
             dataQualityModalOpen.value = false;
@@ -4249,21 +4258,22 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           try {
             if (parsed.page !== tab.value) setTab(parsed.page);
             // #248: the Day surface owns the day-picker — back/forward just moves the
-            // picked date (old #daily / #modelview hashes migrate to #day here too).
+            // picked date (old #daily / #modelview hashes migrate to /day here too).
             if (resolveTab(parsed.page) === 'day' && parsed.date
                 && parsed.date !== (pendingDailyDate.value || dailyDate.value)) {
               dailyHighlight.value = null;
               pendingDailyDate.value = parsed.date;
               resolveDailyDate();
             }
-            // #269: back/forward between KB articles, and app -> #guide?article deep-links.
+            // #269: Back/Forward between KB articles and direct /guide?article links.
             if (resolveTab(parsed.page) === 'guide' && parsed.article && parsed.article !== kbCurrent.value
                 && KB_ARTICLES.some((a) => a.slug === parsed.article)) {
               kbCurrent.value = parsed.article;
               kbFetchArticle(parsed.article);
             }
-            // #246: `#patterns` migrated to `#diagnose` in setTab above; the retired
-            // Investigate sub-state (mode/day/ep) no longer applies.
+            // #246: the legacy `patterns` id migrates to `diagnose` in setTab
+            // above; the retired Investigate sub-state (mode/day/ep) no longer
+            // applies.
             reopenModalFromHash(parsed.modal);
           } finally {
             nextTick(() => {
@@ -4341,7 +4351,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
 
         // The Day surface owns the selected day's model, timeline, and carb reads.
         // The parent only resolves an initial/deep-linked pump-local date from
-        // /status and clamps it to the available CGM-day bounds.
+        // /api/status and clamps it to the available CGM-day bounds.
         function resolveDailyDate() {
           if (!hasToken.value || !status.value) return;
           const requested = pendingDailyDate.value || dailyDate.value
@@ -4468,7 +4478,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
 
         /* ================= #64 SCENARIO SCREEN state + fetch =================
            The mockup logic verbatim; the only Phase-2 change is loadScnWindow,
-           which hits the live GET /scenarios?window=N instead of a capture file.
+           which hits the live GET /api/scenarios?window=N instead of a capture file.
            The 30d payload backs Investigate mode's day-strip; Pattern mode swaps
            the whole payload per window preset (7/14/30). */
         const scnReport = ref(null);
@@ -4483,7 +4493,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         const scnActiveLevers = ref(new Set());
         let scnLoaded = false;
 
-        // state -> URL hash. Registered here (not next to syncHashFromState) so
+        // state -> browser route. Registered here (not next to syncHashFromState) so
         // the scenario refs above are already initialized — the source array
         // reads them, so an earlier registration would trip their TDZ (#132).
         watch([tab, dailyDate, dataQualityModalOpen, dailyHighlight,
@@ -4564,9 +4574,9 @@ html.dark .viz .tie:hover::before { opacity:.13; }
            the shell (sidebar / search / deep-link) and the authored how-tos
            (markdown fetched from /api/kb/<slug>). See ADR 0044. */
         const kbCurrent = ref(
-          initialHash && initialHash.page === 'guide' && initialHash.article
-            && KB_ARTICLES.some((a) => a.slug === initialHash.article)
-            ? initialHash.article : 'start-here');
+          initialRoute && initialRoute.page === 'guide' && initialRoute.article
+            && KB_ARTICLES.some((a) => a.slug === initialRoute.article)
+            ? initialRoute.article : 'start-here');
         const kbQuery = ref('');
         // Per-slug raw-markdown cache + per-slug error, both reactive so the body
         // and the full-text search index update as bodies land. Read by the ACTIVE
@@ -4602,7 +4612,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
 
         // #269 "Reading a Day" preview — the REAL Day chart (LOCKED spec,
         // the archived Day-preview-glucose mock), rendered over the user's OWN latest
-        // captured day (the glucose lane of /timeline + /model-view episodes), via
+        // captured day (the glucose lane of /api/timeline + /api/model-view episodes), via
         // the same ECharts the Day surface uses. Not a hand-drawn facsimile.
         const kbDayChartEl = ref(null);
         const kbDayPreview = ref(null);   // { date, timeline, modelView }
@@ -4618,7 +4628,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         async function kbLoadDayPreview() {
           if (kbDayLoaded || !hasToken.value) return;
           const date = dailyLatest.value;
-          if (!date) return;   // /status not in yet — a later open retries
+          if (!date) return;   // /api/status not in yet — a later open retries
           kbDayLoaded = true;
           try {
             const [tl, mv] = await Promise.all([
@@ -4682,12 +4692,12 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           if (!KB_ARTICLES.some((a) => a.slug === slug)) return;
           kbCurrent.value = slug;
           kbFetchArticle(slug);
-          syncHashFromState();   // pushState #guide?article=<slug> — back/forward work
+          syncHashFromState();   // pushState /guide?article=<slug> — Back/Forward work
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }
         // The article -> app-surface handoff: switch to the real tab via the router.
         function kbHandoff(surface) {
-          if (surface) setTab(surface);   // the [tab] watch syncs the hash
+          if (surface) setTab(surface);   // the [tab] watch syncs the route
         }
         // Clicks inside rendered copy: in-KB xlinks + app-surface handoffs.
         function kbBodyClick(e) {
@@ -5082,8 +5092,8 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           planDeliverableHasChanges(deliverableRowsRaw.value));
 
         // #94 Reconcile: compare the planned deliverable against the latest
-        // /pump-settings active profile (NOT the changelog). Pure; the snapshot
-        // is whatever /pump-settings last returned. State machine:
+        // /api/pump-settings active profile (NOT the changelog). Pure; the snapshot
+        // is whatever /api/pump-settings last returned. State machine:
         //   pending    — nothing to reconcile yet, or the user hit "Re-key &
         //                 recheck" and this snapshot has already been dismissed.
         //   confirmed  — every cell matches after per-param rounding.
@@ -5262,7 +5272,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         provide('scnLeverTitles', catalogLeverTitles);
         async function loadAll() {
           if (!hasToken.value) return;
-          // allSettled, not all: one failing loader (e.g. /credentials can 500 when the
+          // allSettled, not all: one failing loader (e.g. /api/credentials can 500 when the
           // encrypted-credential key is missing) must NOT abort the cold-arrival tab load
           // below, or the landing tab hangs on its spinner forever.
           await Promise.allSettled([
@@ -5270,14 +5280,14 @@ html.dark .viz .tie:hover::before { opacity:.13; }
             enqueue(() => loadBacktest()),
             enqueue(() => loadAnalysis()),
           ]);
-          // #248: /status resolves the cold-arrival date; the keyed Day surface
+          // #248: /api/status resolves the cold-arrival date; the keyed Day surface
           // mounts afterward and performs the visible day's reads once.
           if (tab.value === 'day') resolveDailyDate();
           if (tab.value === 'diagnose') loadAudit();   // #495
-          if (tab.value === 'guide') loadCatalog();       // #269: initial #guide deep-link
+          if (tab.value === 'guide') loadCatalog();       // #269: initial /guide deep-link
           if (tab.value === 'verify') {
             loadVerify();
-          } else if (!(initialHash && initialHash.page)) {
+          } else if (!initialRoute.pageNamed) {
             await loadVerify();
             if (verifyTrials.value.some((trial) => trial.state === 'maturing')
                 && tab.value === 'diagnose') tab.value = 'verify';
@@ -5292,11 +5302,11 @@ html.dark .viz .tie:hover::before { opacity:.13; }
 
         onMounted(() => {
           // Data quality and the occurrence-highlight pseudo-modal don't depend
-          // on /analyze having resolved to be set, so apply those immediately.
-          if (initialHash && initialHash.modal) {
-            if (initialHash.modal.kind === 'dataquality' || initialHash.modal.kind === 'occurrence') {
+          // on /api/analyze having resolved to be set, so apply those immediately.
+          if (initialRoute && initialRoute.modal) {
+            if (initialRoute.modal.kind === 'dataquality' || initialRoute.modal.kind === 'occurrence') {
               applyingHash = true;
-              try { reopenModalFromHash(initialHash.modal); }
+              try { reopenModalFromHash(initialRoute.modal); }
               finally { nextTick(() => { applyingHash = false; }); }
             }
           }
@@ -5322,7 +5332,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         // One pooled canvas and one stacked inspector. This glue owns real Plan calls.
         const diagnoseRoot = ref(null);
         const diagnoseReady = ref(false);
-        const diagnoseExposures = ref(null);   // #654: /explore/exposures
+        const diagnoseExposures = ref(null);   // #654: /api/explore/exposures
         let diagnoseLoaded = false;
         let diagnoseView = null;
         const diagnoseAnalysis = ref(null);
@@ -5342,6 +5352,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           if (!hasToken.value || diagnoseLoaded) return;
           diagnoseLoaded = true;
           try {
+            // Keep cacheable fixed arrivals aligned with api.py's invalidate_and_warm.
             const [a, s, e, x, p, o] = await Promise.all([
               enqueue(() => dataFetchAnalysis({ window: 30, pool: true })),
               enqueue(() => dataFetchScenarios(30)),

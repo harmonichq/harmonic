@@ -24,8 +24,8 @@ Contract (ADR 0019), all realised here, deliberately **off** the coaching hot pa
    bolus on a prior carb bolus shows both ``owned_by_prior_bolus`` and the retained
    carb-undercount near-miss. Most-specific-wins (ADR 0009) is a coaching-layer
    surfacing rule and does not bind this debug feed.
-4. **Its own per-day feed** — ``/model-view?date=YYYY-MM-DD`` (api.py), not a flag on
-   ``/scenarios``.
+4. **Its own per-day feed** — ``/api/model-view?date=YYYY-MM-DD`` (api.py), not a flag on
+   ``/api/scenarios``.
 
 Day assignment (the deferred ADR-0019 question, settled by the locked mockup): a
 spanning episode renders on the day it **resolves** (``episode.end``'s calendar day),
@@ -538,7 +538,7 @@ def build_model_view(
     # Carb-log exclusion spans over the assembled window — the Day surface reads
     # these to tag a low that was arrested by rescue carbs ("⤴ rescued", the
     # pre-empted-low chart tag; ADR 0012/0027). Computed the same way the
-    # /timeline daily report does, then clamped to the window it actually shows.
+    # /api/timeline daily report does, then clamped to the window it actually shows.
     win_start = datetime.strptime(day["window"]["start"], _FMT)
     win_end = datetime.strptime(day["window"]["end"], _FMT)
     excl = carb_log_exclusion_spans(store.carb_entries(win_start, win_end))
@@ -548,7 +548,7 @@ def build_model_view(
         if lo < win_end and hi > win_start
     ]
     # False-low excursion spans (#381), clamped to the shown window: the Day chart
-    # greys these (still drawn) as sensor artifacts with an undo, matching /timeline.
+    # greys these (still drawn) as sensor artifacts with an undo, matching /api/timeline.
     day["window"]["false_low_exclusion_spans"] = [
         {"anchor_t": _fmt(rec["anchor_t"]),
          "start": _fmt(max(rec["start"], win_start)), "end": _fmt(min(rec["end"], win_end))}

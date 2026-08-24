@@ -11,7 +11,7 @@
    The chart builders are lifted verbatim from the LOCKED visual spec
    (the archived prompt-queue ribbon mock, #128): the week ribbon (typed pins
    on one shared CGM trace) and the BIG ±2h pop-up sparkline. Both bind the real
-   `GET /prompts` -> List[Prompt] shape { detector, anchor_t, key_bg, cgm[], ... }.
+   `GET /api/prompts` -> List[Prompt] shape { detector, anchor_t, key_bg, cgm[], ... }.
 
    answerToSource / prompt answers follow the #125 vocab: an answer is one of
    'carbs' | 'no' | 'not-sure'; a 'carbs' answer logs a CarbEntry whose source is

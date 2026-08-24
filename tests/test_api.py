@@ -6,7 +6,9 @@ itself (that is covered by the analyzer/facade tests).
 """
 
 import contextlib
+import json
 import os
+import sqlite3
 from concurrent.futures import ThreadPoolExecutor
 import tempfile
 import threading
@@ -29,6 +31,7 @@ except ImportError:  # pragma: no cover
     _HAS_TCONNECTSYNC = False
 
 from ciq_autotune.result import SCHEMA_VERSION
+from ciq_autotune.derived_artifacts import _canonical, _digest, sidecar_path, source_fingerprint
 from ciq_autotune.settings import parse_pump_settings
 from ciq_autotune.store import Store
 
@@ -144,12 +147,12 @@ class ApiTest(unittest.TestCase):
         self.tmp.close()
 
     def test_health(self):
-        r = self.client.get("/health")
+        r = self.client.get("/api/health")
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.json()["schema_version"], SCHEMA_VERSION)
 
     def test_analyze_returns_versioned_result(self):
-        r = self.client.get("/analyze", params={"window": 30})
+        r = self.client.get("/api/analyze", params={"window": 30})
         self.assertEqual(r.status_code, 200)
         body = r.json()
         self.assertEqual(body["schema_version"], SCHEMA_VERSION)
@@ -160,15 +163,15 @@ class ApiTest(unittest.TestCase):
     def test_analyze_is_cached_two_identical_gets_are_equal(self):
         # #267: two identical GETs return the same payload — the second answers from
         # the in-process cache, correctness unchanged.
-        a = self.client.get("/analyze", params={"window": 30})
-        b = self.client.get("/analyze", params={"window": 30})
+        a = self.client.get("/api/analyze", params={"window": 30})
+        b = self.client.get("/api/analyze", params={"window": 30})
         self.assertEqual(a.status_code, 200)
         self.assertEqual(a.json(), b.json())
 
     def test_pattern_sweep_serves_payload_with_exact_footnote(self):
         # #378: the read endpoint answers with the versioned sweep payload; its only
         # always-on user-facing string is the empty-state footnote.
-        r = self.client.get("/pattern-sweep")
+        r = self.client.get("/api/pattern-sweep")
         self.assertEqual(r.status_code, 200)
         body = r.json()
         self.assertEqual(body["grammar_version"], 1)
@@ -182,8 +185,8 @@ class ApiTest(unittest.TestCase):
         self.assertEqual(_find_adr_refs(body), [])
 
     def test_pattern_sweep_is_cached(self):
-        a = self.client.get("/pattern-sweep")
-        b = self.client.get("/pattern-sweep")
+        a = self.client.get("/api/pattern-sweep")
+        b = self.client.get("/api/pattern-sweep")
         self.assertEqual(a.json(), b.json())
 
     def test_pattern_sweep_sign_off_rejects_a_cell_that_is_not_ready(self):
@@ -193,9 +196,9 @@ class ApiTest(unittest.TestCase):
         # its evidence changes. Nothing is persisted.
         from ciq_autotune.result_cache import ResultCache
         with patch.object(ResultCache, "bump", autospec=True) as bump:
-            approve = self.client.post("/pattern-sweep/approve",
+            approve = self.client.post("/api/pattern-sweep/approve",
                                        json={"cell_id": "low__full__dow-6"})
-            dismiss = self.client.post("/pattern-sweep/dismiss",
+            dismiss = self.client.post("/api/pattern-sweep/dismiss",
                                        json={"cell_id": "high__suspend__follow"})
         self.assertEqual(approve.status_code, 409)
         self.assertEqual(dismiss.status_code, 409)
@@ -204,11 +207,11 @@ class ApiTest(unittest.TestCase):
             self.assertEqual(store.pattern_reviews(), {})
 
     def test_pattern_sweep_approve_requires_cell_id(self):
-        r = self.client.post("/pattern-sweep/approve", json={})
+        r = self.client.post("/api/pattern-sweep/approve", json={})
         self.assertEqual(r.status_code, 400)
 
     def test_isf_is_a_single_fasting_estimate(self):
-        r = self.client.get("/analyze", params={"window": 30})
+        r = self.client.get("/api/analyze", params={"window": 30})
         isf = r.json()["isf"]
         self.assertEqual(len(isf), 1)
         self.assertEqual(isf[0]["start_min"], 0)
@@ -221,12 +224,12 @@ class ApiTest(unittest.TestCase):
     def test_serves_scenario_chart_js_as_javascript(self):
         # #100: sibling ESM asset must load with a JS MIME type or the module
         # graph fails in the browser.
-        r = self.client.get("/scenario-chart.js")
+        r = self.client.get("/assets/scenario-chart.js")
         self.assertEqual(r.status_code, 200)
         self.assertTrue(r.headers["content-type"].startswith("text/javascript"))
 
     def test_every_index_module_import_is_served_as_javascript(self):
-        # #332: index.html imports each ``./*.js`` sibling as an ES module. If any
+        # #332: index.html imports each ``/assets/*.js`` module as an ES module. If any
         # one has no serving route the browser gets a 404 (application/json), blocks
         # the module, and the WHOLE SPA fails to mount (raw ``{{ }}`` mustaches).
         # The per-file tests above miss new modules; this derives the list from the
@@ -235,10 +238,10 @@ class ApiTest(unittest.TestCase):
         from pathlib import Path
         index = (Path(__file__).resolve().parent.parent
                  / "frontend" / "index.html").read_text()
-        modules = sorted(set(_re.findall(r"""["']\./([a-z0-9-]+\.js)["']""", index)))
+        modules = sorted(set(_re.findall(r"""["']/assets/([a-z0-9-]+\.js)["']""", index)))
         self.assertIn("day-hero-chart.js", modules)  # guards the regex itself
         for mod in modules:
-            r = self.client.get("/" + mod)
+            r = self.client.get("/assets/" + mod)
             self.assertEqual(r.status_code, 200, f"{mod} import has no serving route")
             self.assertTrue(r.headers["content-type"].startswith("text/javascript"),
                             f"{mod} not served as JavaScript")
@@ -246,14 +249,14 @@ class ApiTest(unittest.TestCase):
     def test_serves_model_view_log_js_as_javascript(self):
         # #152: the model-view's pure module is a sibling ESM asset and must load
         # with a JS MIME type or the SPA silently fails to mount (bits #99/#95).
-        r = self.client.get("/model-view-log.js")
+        r = self.client.get("/assets/model-view-log.js")
         self.assertEqual(r.status_code, 200)
         self.assertTrue(r.headers["content-type"].startswith("text/javascript"))
 
     def test_model_view_returns_per_day_payload(self):
         # #152 / ADR 0019: the per-day introspection feed — a day's episodes with
         # every anchor's every verdict + state, plus the chart window.
-        r = self.client.get("/model-view", params={"date": "2026-06-03"})
+        r = self.client.get("/api/model-view", params={"date": "2026-06-03"})
         self.assertEqual(r.status_code, 200)
         body = r.json()
         self.assertEqual(body["date"], "2026-06-03")
@@ -263,48 +266,41 @@ class ApiTest(unittest.TestCase):
         self.assertIsInstance(body["episodes"], list)
 
     def test_model_view_rejects_bad_date(self):
-        r = self.client.get("/model-view", params={"date": "06/03/2026"})
+        r = self.client.get("/api/model-view", params={"date": "06/03/2026"})
         self.assertEqual(r.status_code, 400)
 
     def test_serves_plan_js_as_javascript(self):
         # #99: the Plan deliverable's pure module is a sibling ESM asset and
         # must load with a JS MIME type or the module graph fails in the browser.
-        r = self.client.get("/plan.js")
+        r = self.client.get("/assets/plan.js")
         self.assertEqual(r.status_code, 200)
         self.assertTrue(r.headers["content-type"].startswith("text/javascript"))
 
     def test_serves_settling_js_as_javascript(self):
         # #95: the settling helpers are a sibling ESM asset; without this route
         # the import 404s and the whole SPA fails to mount (raw mustaches).
-        r = self.client.get("/settling.js")
+        r = self.client.get("/assets/settling.js")
         self.assertEqual(r.status_code, 200)
         self.assertTrue(r.headers["content-type"].startswith("text/javascript"))
 
     def test_serves_carb_log_js_as_javascript(self):
         # #99/#95 gotcha: every frontend/*.js needs its own route or the SPA
         # module graph fails to load.
-        r = self.client.get("/carb-log.js")
+        r = self.client.get("/assets/carb-log.js")
         self.assertEqual(r.status_code, 200)
         self.assertTrue(r.headers["content-type"].startswith("text/javascript"))
 
     def test_serves_daily_nav_js_as_javascript(self):
         # #136: the day-picker nav's pure helpers are a sibling ESM asset; without
         # this route the import 404s and the whole SPA fails to mount.
-        r = self.client.get("/daily-nav.js")
+        r = self.client.get("/assets/daily-nav.js")
         self.assertEqual(r.status_code, 200)
         self.assertTrue(r.headers["content-type"].startswith("text/javascript"))
 
     def test_serves_guide_js_as_javascript(self):
         # #157: the Guide tab's pure render helpers are a sibling ESM asset;
         # without this route the import 404s and the whole SPA fails to mount.
-        r = self.client.get("/guide.js")
-        self.assertEqual(r.status_code, 200)
-        self.assertTrue(r.headers["content-type"].startswith("text/javascript"))
-
-    def test_serves_rest_window_js_as_javascript(self):
-        # #202: the rest-window display helpers are a sibling ESM asset;
-        # without this route the import 404s and the whole SPA fails to mount.
-        r = self.client.get("/rest-window.js")
+        r = self.client.get("/assets/guide.js")
         self.assertEqual(r.status_code, 200)
         self.assertTrue(r.headers["content-type"].startswith("text/javascript"))
 
@@ -364,7 +360,7 @@ class ApiTest(unittest.TestCase):
     def test_pump_settings_includes_fetched_at(self):
         # #99: Confirmation-B shows "on pump as of <fetch>" — the endpoint
         # must surface the snapshot's capture time.
-        r = self.client.get("/pump-settings")
+        r = self.client.get("/api/pump-settings")
         self.assertEqual(r.status_code, 200)
         body = r.json()
         self.assertTrue(body["configured"])
@@ -372,30 +368,30 @@ class ApiTest(unittest.TestCase):
         self.assertTrue(body["fetched_at"])
 
     def test_serves_scenario_css(self):
-        r = self.client.get("/scenario.css")
+        r = self.client.get("/assets/scenario.css")
         self.assertEqual(r.status_code, 200)
         self.assertTrue(r.headers["content-type"].startswith("text/css"))
 
     def test_serves_diagnose_workstation_assets(self):
-        css = self.client.get("/diagnose-workstation.css")
+        css = self.client.get("/assets/diagnose-workstation.css")
         self.assertEqual(css.status_code, 200)
         self.assertTrue(css.headers["content-type"].startswith("text/css"))
-        chart = self.client.get("/diagnose-workstation-chart.js")
+        chart = self.client.get("/assets/diagnose-workstation-chart.js")
         self.assertEqual(chart.status_code, 200)
         self.assertTrue(chart.headers["content-type"].startswith("text/javascript"))
 
     def test_serves_diagnose_event_comparison_assets(self):
-        js = self.client.get("/diagnose-event-comparison.js")
+        js = self.client.get("/assets/diagnose-event-comparison.js")
         self.assertEqual(js.status_code, 200)
         self.assertTrue(js.headers["content-type"].startswith("text/javascript"))
-        css = self.client.get("/diagnose-event-comparison.css")
+        css = self.client.get("/assets/diagnose-event-comparison.css")
         self.assertEqual(css.status_code, 200)
         self.assertTrue(css.headers["content-type"].startswith("text/css"))
 
     def test_serves_the_app_icon_the_page_asks_for(self):
-        # The index links ./favicon.svg; without its own route the tab falls back
+        # The index links ./assets/favicon.svg; without its own route the tab falls back
         # to a 404 and the browser shows a blank page icon.
-        r = self.client.get("/favicon.svg")
+        r = self.client.get("/assets/favicon.svg")
         self.assertEqual(r.status_code, 200)
         self.assertTrue(r.headers["content-type"].startswith("image/svg+xml"))
         # ...and it must actually parse. A browser drops a malformed icon silently
@@ -404,7 +400,7 @@ class ApiTest(unittest.TestCase):
         self.assertTrue(root.tag.endswith("svg"))
 
     def test_status_with_no_fetch_yet(self):
-        r = self.client.get("/status")
+        r = self.client.get("/api/status")
         self.assertEqual(r.status_code, 200)
         body = r.json()
         self.assertIsNone(body["last_attempt_at"])
@@ -412,27 +408,27 @@ class ApiTest(unittest.TestCase):
 
     def test_status_includes_cgm_day_bounds(self):
         # _seed inserts CGM for 2026-06-01 through 2026-06-05
-        r = self.client.get("/status")
+        r = self.client.get("/api/status")
         self.assertEqual(r.status_code, 200)
         body = r.json()
         self.assertEqual(body["earliest_data_day"], "2026-06-01")
         self.assertEqual(body["latest_data_day"], "2026-06-05")
 
     def test_credentials_unconfigured_by_default(self):
-        r = self.client.get("/credentials")
+        r = self.client.get("/api/credentials")
         self.assertEqual(r.status_code, 200)
         body = r.json()
         self.assertFalse(body["configured"])
         self.assertIsNone(body["email"])
 
     def test_set_then_get_credentials_round_trips_email_not_password(self):
-        r = self.client.post("/credentials", json={
+        r = self.client.post("/api/credentials", json={
             "email": "me@example.com", "password": "hunter2", "region": "US",
         })
         self.assertEqual(r.status_code, 200)
         self.assertTrue(r.json()["configured"])
 
-        r = self.client.get("/credentials")
+        r = self.client.get("/api/credentials")
         body = r.json()
         self.assertTrue(body["configured"])
         self.assertEqual(body["email"], "me@example.com")
@@ -440,7 +436,7 @@ class ApiTest(unittest.TestCase):
         self.assertNotIn("password", body)
 
     def test_pump_settings_returns_active_profile(self):
-        r = self.client.get("/pump-settings")
+        r = self.client.get("/api/pump-settings")
         self.assertEqual(r.status_code, 200)
         body = r.json()
         self.assertTrue(body["configured"])
@@ -470,7 +466,7 @@ class ApiTest(unittest.TestCase):
                          {"startTime": 0, "basalRate": 400, "isf": 40, "carbRatio": 8000,
                           "targetBg": 130}] + pad},
                 ]}, "cgmSettings": {}}))
-        r = self.client.get("/pump-settings")
+        r = self.client.get("/api/pump-settings")
         self.assertEqual(r.json()["other_profile_count"], 1)
 
     def test_pump_settings_unconfigured_with_no_snapshot(self):
@@ -478,19 +474,19 @@ class ApiTest(unittest.TestCase):
             from ciq_autotune.api import create_app
             client = TestClient(create_app(db_path=empty_db.name, token=None,
                                            enable_fetch_loop=False))
-            r = client.get("/pump-settings")
+            r = client.get("/api/pump-settings")
             self.assertEqual(r.status_code, 200)
             self.assertFalse(r.json()["configured"])
 
     def test_report_endpoint_returns_rendered_text(self):
-        r = self.client.get("/report", params={"window": 30})
+        r = self.client.get("/api/report", params={"window": 30})
         self.assertEqual(r.status_code, 200)
         body = r.json()
         self.assertIn("Control-IQ Autotune", body["text"])
         self.assertIn("BASAL", body["text"])
 
     def test_timeline_endpoint_returns_events_in_window(self):
-        r = self.client.get("/timeline", params={
+        r = self.client.get("/api/timeline", params={
             "start": "2026-06-03T00:00:00", "end": "2026-06-04T00:00:00",
         })
         self.assertEqual(r.status_code, 200)
@@ -501,11 +497,11 @@ class ApiTest(unittest.TestCase):
         self.assertEqual(len(body["basal"]), 72)
 
     def test_timeline_endpoint_requires_start_and_end(self):
-        r = self.client.get("/timeline")
+        r = self.client.get("/api/timeline")
         self.assertEqual(r.status_code, 422)
 
     def test_scenarios_endpoint_returns_ranked_payload(self):
-        r = self.client.get("/scenarios", params={"window": 30})
+        r = self.client.get("/api/scenarios", params={"window": 30})
         self.assertEqual(r.status_code, 200)
         body = r.json()
         # The scenario-payload contract (#70 §5): its own schema version and the
@@ -523,20 +519,20 @@ class ApiTest(unittest.TestCase):
         self.assertEqual(self.client.get("/exposures").status_code, 404)
         # ...while the reads that survived still answer, so this fails loudly if the
         # app stopped serving rather than if one route was correctly dropped.
-        self.assertEqual(self.client.get("/scenarios", params={"window": 30}).status_code, 200)
+        self.assertEqual(self.client.get("/api/scenarios", params={"window": 30}).status_code, 200)
 
     def test_plan_starts_empty(self):
-        r = self.client.get("/plan")
+        r = self.client.get("/api/plan")
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.json(), {"items": [], "updated_at": None})
 
     def test_put_then_get_plan_round_trips(self):
         items = [{"type": "basal", "key": 0, "label": "00:00", "value": 0.7}]
-        r = self.client.put("/plan", json={"items": items})
+        r = self.client.put("/api/plan", json={"items": items})
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.json()["items"], items)
 
-        r = self.client.get("/plan")
+        r = self.client.get("/api/plan")
         self.assertEqual(r.json()["items"], items)
         self.assertIsNotNone(r.json()["updated_at"])
 
@@ -549,29 +545,29 @@ class ApiTest(unittest.TestCase):
             [],
         ):
             with self.subTest(items=items):
-                r = self.client.put("/plan", json={"items": items})
+                r = self.client.put("/api/plan", json={"items": items})
                 self.assertEqual(r.status_code, 200)
                 self.assertEqual(r.json()["items"], items)
 
     def test_put_plan_rejects_mixed_family_items(self):
         items = [{"type": "basal", "key": 0}, {"type": "isf", "key": 540}]
-        r = self.client.put("/plan", json={"items": items})
+        r = self.client.put("/api/plan", json={"items": items})
         self.assertEqual(r.status_code, 400)
         self.assertIn("mixes tuning families", r.json()["detail"])
-        self.assertEqual(self.client.get("/plan").json()["items"], [])
+        self.assertEqual(self.client.get("/api/plan").json()["items"], [])
 
     def test_put_plan_rejects_non_tuning_items(self):
-        r = self.client.put("/plan", json={"items": [{"type": "behavior", "key": "late-meal"}]})
+        r = self.client.put("/api/plan", json={"items": [{"type": "behavior", "key": "late-meal"}]})
         self.assertEqual(r.status_code, 400)
         self.assertIn("unsupported tuning family", r.json()["detail"])
 
     def test_put_plan_overwrites_previous_draft(self):
-        self.client.put("/plan", json={"items": [{"type": "basal", "key": 0}]})
-        self.client.put("/plan", json={"items": [{"type": "isf", "key": 540}]})
-        self.assertEqual(self.client.get("/plan").json()["items"], [{"type": "isf", "key": 540}])
+        self.client.put("/api/plan", json={"items": [{"type": "basal", "key": 0}]})
+        self.client.put("/api/plan", json={"items": [{"type": "isf", "key": 540}]})
+        self.assertEqual(self.client.get("/api/plan").json()["items"], [{"type": "isf", "key": 540}])
 
     def test_apply_with_no_draft_returns_400(self):
-        r = self.client.post("/plan/apply")
+        r = self.client.post("/api/plan/apply")
         self.assertEqual(r.status_code, 400)
 
     def test_applying_twice_in_the_same_second_returns_409_not_500(self):
@@ -582,26 +578,26 @@ class ApiTest(unittest.TestCase):
         with patch("ciq_autotune.api.datetime") as mock_dt:
             mock_dt.now.return_value.strftime.return_value = "2026-01-01 00:00:00"
 
-            self.client.put("/plan", json={"items": [{"type": "basal", "key": 0}]})
-            r = self.client.post("/plan/apply")
+            self.client.put("/api/plan", json={"items": [{"type": "basal", "key": 0}]})
+            r = self.client.post("/api/plan/apply")
             self.assertEqual(r.status_code, 200)
 
-            self.client.put("/plan", json={"items": [{"type": "basal", "key": 0}]})
-            r = self.client.post("/plan/apply")
+            self.client.put("/api/plan", json={"items": [{"type": "basal", "key": 0}]})
+            r = self.client.post("/api/plan/apply")
             self.assertEqual(r.status_code, 409)
 
     def test_apply_snapshots_into_history_and_clears_draft(self):
         items = [{"type": "isf", "key": 540, "value": 32}]
-        self.client.put("/plan", json={"items": items})
+        self.client.put("/api/plan", json={"items": items})
 
-        r = self.client.post("/plan/apply")
+        r = self.client.post("/api/plan/apply")
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.json()["items"], items)
         self.assertIsNotNone(r.json()["applied_at"])
 
-        self.assertEqual(self.client.get("/plan").json()["items"], [])
+        self.assertEqual(self.client.get("/api/plan").json()["items"], [])
 
-        history = self.client.get("/plan/history").json()["history"]
+        history = self.client.get("/api/plan/history").json()["history"]
         self.assertEqual(len(history), 1)
         self.assertEqual(history[0]["items"], items)
 
@@ -616,16 +612,16 @@ class ApiTest(unittest.TestCase):
             {"type": "ic", "start_min": 720, "value": 9.5, "ic_block_provenance": prov},
             {"type": "ic", "start_min": 780, "value": 9.5, "ic_block_provenance": prov},
         ]
-        r = self.client.put("/plan", json={"items": items})
+        r = self.client.put("/api/plan", json={"items": items})
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.json()["items"], items)
-        self.assertEqual(self.client.get("/plan").json()["items"], items)
+        self.assertEqual(self.client.get("/api/plan").json()["items"], items)
 
-        r = self.client.post("/plan/apply")
+        r = self.client.post("/api/plan/apply")
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.json()["items"], items)
 
-        history = self.client.get("/plan/history").json()["history"]
+        history = self.client.get("/api/plan/history").json()["history"]
         self.assertEqual(history[0]["items"], items)
 
     def test_put_plan_rejects_incomplete_ic_block_group(self):
@@ -634,9 +630,81 @@ class ApiTest(unittest.TestCase):
             "block_member_start_mins": [720, 780],
         }
         items = [{"type": "ic", "start_min": 720, "value": 9.5, "ic_block_provenance": prov}]
-        r = self.client.put("/plan", json={"items": items})
+        r = self.client.put("/api/plan", json={"items": items})
         self.assertEqual(r.status_code, 400)
-        self.assertEqual(self.client.get("/plan").json()["items"], [])
+        self.assertEqual(self.client.get("/api/plan").json()["items"], [])
+
+
+@unittest.skipUnless(_HAS_FASTAPI, "api extra not installed")
+class DurableArtifactApiTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.NamedTemporaryFile(suffix=".db")
+        _seed(self.tmp.name)
+
+    def tearDown(self):
+        for suffix in ("", "-wal", "-shm"):
+            try:
+                os.unlink(sidecar_path(self.tmp.name) + suffix)
+            except FileNotFoundError:
+                pass
+        self.tmp.close()
+
+    def test_restart_warms_event_comparison_without_rebuilding(self):
+        from ciq_autotune.api import create_app
+        first = TestClient(create_app(db_path=self.tmp.name, token=None, enable_fetch_loop=False))
+        initial = first.get("/api/explore/exposures")
+        self.assertEqual(initial.status_code, 200)
+        import ciq_autotune.api as api_mod
+        real = api_mod.prepare_event_comparisons
+        calls = []
+        with patch.object(api_mod, "prepare_event_comparisons",
+                          side_effect=lambda *args, **kwargs: calls.append(1) or real(*args, **kwargs)):
+            second = TestClient(create_app(db_path=self.tmp.name, token=None, enable_fetch_loop=False))
+            restored = second.get("/api/explore/exposures")
+            self.assertEqual(restored.status_code, 200)
+        self.assertEqual(calls, [])
+        self.assertEqual(restored.json(), initial.json())
+
+    def test_valid_json_wrong_event_comparison_shape_recomputes_and_serves(self):
+        from ciq_autotune.api import create_app
+        first = TestClient(create_app(db_path=self.tmp.name, token=None, enable_fetch_loop=False))
+        self.assertEqual(first.get("/api/explore/exposures").status_code, 200)
+        routes = {
+            factor: {"cohort": "fired", "other_factors": [{}]}
+            for factor in ("over_treated_low", "correction_on_iob", "correction_stacking")
+        }
+        payload = json.dumps({
+            "exposures": {"window": {"start": "2026-05-01", "end": "2026-06-01"}},
+            "catalog": {
+                "meals": [],
+                "lows": [{
+                    "id": "bad", "ep_id": "bad-episode", "anchor_t": "2026-06-01 00:00:00",
+                    "date": "2026-06-01", "outcome_min": 0,
+                    "routes": routes, "trace": {"cgm": [{}]},
+                }],
+            },
+        }, separators=(",", ":"))
+        marker = _canonical(("event-comparison-v1", 1, source_fingerprint()))
+        with Store.open_queryonly(self.tmp.name) as store:
+            revision = store.input_data_revision()
+        with sqlite3.connect(sidecar_path(self.tmp.name)) as sidecar:
+            sidecar.execute("UPDATE artifacts SET payload=?, digest=? WHERE revision=? AND coordinates=? AND marker=?",
+                            (payload, _digest(payload), revision,
+                             _canonical(("event-comparison-preparation",)), marker))
+        import ciq_autotune.api as api_mod
+        real = api_mod.prepare_event_comparisons
+        calls = []
+        with patch.object(api_mod, "prepare_event_comparisons",
+                          side_effect=lambda *args, **kwargs: calls.append(1) or real(*args, **kwargs)):
+            second = TestClient(create_app(db_path=self.tmp.name, token=None, enable_fetch_loop=False))
+            response = second.get("/api/diagnose/event-comparison", params={"view": "lows"})
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(calls, [1])
+        with sqlite3.connect(sidecar_path(self.tmp.name)) as sidecar:
+            self.assertNotEqual(sidecar.execute(
+                "SELECT payload FROM artifacts WHERE revision=? AND coordinates=? AND marker=?",
+                (revision, _canonical(("event-comparison-preparation",)), marker),
+            ).fetchone()[0], payload)
 
 
 @unittest.skipUnless(_HAS_FASTAPI, "api extra not installed")
@@ -654,12 +722,12 @@ class CarbCrudTest(unittest.TestCase):
         self.tmp.close()
 
     def test_list_starts_empty(self):
-        r = self.client.get("/carbs")
+        r = self.client.get("/api/carbs")
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.json(), {"carb_entries": []})
 
     def test_create_returns_id_bearing_entry(self):
-        r = self.client.post("/carbs", json={
+        r = self.client.post("/api/carbs", json={
             "t": "2026-06-03 10:05:00", "grams": 8, "certainty": "exact",
             "source": "manual", "note": "candy"})
         self.assertEqual(r.status_code, 200)
@@ -669,31 +737,31 @@ class CarbCrudTest(unittest.TestCase):
         self.assertEqual(body["certainty"], "exact")
         self.assertEqual(body["source"], "manual")
         # It now lists.
-        listed = self.client.get("/carbs").json()["carb_entries"]
+        listed = self.client.get("/api/carbs").json()["carb_entries"]
         self.assertEqual([e["id"] for e in listed], [body["id"]])
 
     def test_create_unknown_allows_null_grams(self):
-        r = self.client.post("/carbs", json={
+        r = self.client.post("/api/carbs", json={
             "t": "2026-06-03 22:10:00", "grams": None, "certainty": "unknown"})
         self.assertEqual(r.status_code, 200)
         self.assertIsNone(r.json()["grams"])
 
     def test_create_rejects_grams_null_when_not_unknown(self):
         # The CarbEntry invariant surfaces as a 400, not a 500.
-        r = self.client.post("/carbs", json={
+        r = self.client.post("/api/carbs", json={
             "t": "2026-06-03 10:00:00", "grams": None, "certainty": "exact"})
         self.assertEqual(r.status_code, 400)
 
     def test_create_rejects_bad_certainty(self):
-        r = self.client.post("/carbs", json={
+        r = self.client.post("/api/carbs", json={
             "t": "2026-06-03 10:00:00", "grams": 5, "certainty": "guesstimate"})
         self.assertEqual(r.status_code, 400)
 
     def test_patch_merges_and_preserves_source(self):
-        cid = self.client.post("/carbs", json={
+        cid = self.client.post("/api/carbs", json={
             "t": "2026-06-03 10:00:00", "grams": 8, "certainty": "estimate",
             "source": "manual"}).json()["id"]
-        r = self.client.patch(f"/carbs/{cid}", json={"grams": 12, "certainty": "exact"})
+        r = self.client.patch(f"/api/carbs/{cid}", json={"grams": 12, "certainty": "exact"})
         self.assertEqual(r.status_code, 200)
         body = r.json()
         self.assertEqual(body["grams"], 12)
@@ -701,25 +769,25 @@ class CarbCrudTest(unittest.TestCase):
         self.assertEqual(body["source"], "manual")  # untouched by the partial edit
 
     def test_patch_unknown_entry_404(self):
-        self.assertEqual(self.client.patch("/carbs/9999", json={"grams": 5}).status_code, 404)
+        self.assertEqual(self.client.patch("/api/carbs/9999", json={"grams": 5}).status_code, 404)
 
     def test_delete_removes_entry(self):
-        cid = self.client.post("/carbs", json={
+        cid = self.client.post("/api/carbs", json={
             "t": "2026-06-03 10:00:00", "grams": 8, "certainty": "exact"}).json()["id"]
-        r = self.client.delete(f"/carbs/{cid}")
+        r = self.client.delete(f"/api/carbs/{cid}")
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.json(), {"deleted": 1})
-        self.assertEqual(self.client.get("/carbs").json()["carb_entries"], [])
+        self.assertEqual(self.client.get("/api/carbs").json()["carb_entries"], [])
 
     def test_delete_unknown_entry_404(self):
-        self.assertEqual(self.client.delete("/carbs/9999").status_code, 404)
+        self.assertEqual(self.client.delete("/api/carbs/9999").status_code, 404)
 
     def test_list_is_windowed(self):
-        self.client.post("/carbs", json={
+        self.client.post("/api/carbs", json={
             "t": "2026-06-01 10:00:00", "grams": 5, "certainty": "exact"})
-        self.client.post("/carbs", json={
+        self.client.post("/api/carbs", json={
             "t": "2026-06-03 10:00:00", "grams": 8, "certainty": "exact"})
-        r = self.client.get("/carbs", params={"start": "2026-06-02T00:00:00"})
+        r = self.client.get("/api/carbs", params={"start": "2026-06-02T00:00:00"})
         rows = r.json()["carb_entries"]
         self.assertEqual([e["grams"] for e in rows], [8])
 
@@ -767,12 +835,12 @@ class PromptQueueTest(unittest.TestCase):
         self.tmp.close()
 
     def test_serves_prompt_queue_js_as_javascript(self):
-        r = self.client.get("/prompt-queue.js")
+        r = self.client.get("/assets/prompt-queue.js")
         self.assertEqual(r.status_code, 200)
         self.assertTrue(r.headers["content-type"].startswith("text/javascript"))
 
     def test_lists_the_two_live_prompts(self):
-        r = self.client.get("/prompts")
+        r = self.client.get("/api/prompts")
         self.assertEqual(r.status_code, 200)
         prompts = r.json()
         detectors = sorted(p["detector"] for p in prompts)
@@ -783,13 +851,13 @@ class PromptQueueTest(unittest.TestCase):
             self.assertTrue(p["cgm"])          # carries its ±2h context
 
     def test_answer_no_resolves_the_prompt(self):
-        low = next(p for p in self.client.get("/prompts").json() if p["detector"] == "low")
+        low = next(p for p in self.client.get("/api/prompts").json() if p["detector"] == "low")
         self.assertIsNone(low["answer"])       # pending before answering
-        r = self.client.post("/prompts/answer", json={
+        r = self.client.post("/api/prompts/answer", json={
             "detector": "low", "anchor_t": low["anchor_t"], "answer": "no"})
         self.assertEqual(r.status_code, 200)
         # It stays in the queue as a faded ✓ (reviseable), now tagged with its answer.
-        again = next(p for p in self.client.get("/prompts").json()
+        again = next(p for p in self.client.get("/api/prompts").json()
                      if p["anchor_t"] == low["anchor_t"])
         self.assertEqual(again["answer"], "no")
 
@@ -797,82 +865,82 @@ class PromptQueueTest(unittest.TestCase):
         # #381: the low prompt's fourth answer flags the excursion as a sensor
         # artifact. It stores only the answer (no carb entry) on the same write path
         # as 'no' / 'not-sure', and the token persists in prompt_responses.
-        low = next(p for p in self.client.get("/prompts").json() if p["detector"] == "low")
-        r = self.client.post("/prompts/answer", json={
+        low = next(p for p in self.client.get("/api/prompts").json() if p["detector"] == "low")
+        r = self.client.post("/api/prompts/answer", json={
             "detector": "low", "anchor_t": low["anchor_t"], "answer": "false-low"})
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.json()["answer"], "false-low")
         self.assertNotIn("carb_entry_id", r.json())    # no carb entry minted
-        again = next(p for p in self.client.get("/prompts").json()
+        again = next(p for p in self.client.get("/api/prompts").json()
                      if p["anchor_t"] == low["anchor_t"])
         self.assertEqual(again["answer"], "false-low")
 
     def test_answer_carbs_creates_entry_and_response_atomically(self):
-        mm = next(p for p in self.client.get("/prompts").json()
+        mm = next(p for p in self.client.get("/api/prompts").json()
                   if p["detector"] == "missed-meal")
-        r = self.client.post("/prompts/answer", json={
+        r = self.client.post("/api/prompts/answer", json={
             "detector": "missed-meal", "anchor_t": mm["anchor_t"], "answer": "carbs",
             "entry": {"grams": 30, "certainty": "estimate"}})
         self.assertEqual(r.status_code, 200)
         self.assertIn("carb_entry_id", r.json())
         # The carb entry exists, pinned to the anchor, tagged rise-prompt.
-        carbs = self.client.get("/carbs").json()["carb_entries"]
+        carbs = self.client.get("/api/carbs").json()["carb_entries"]
         self.assertEqual(len(carbs), 1)
         self.assertEqual(carbs[0]["source"], "rise-prompt")
         self.assertEqual(carbs[0]["t"], mm["anchor_t"])
         self.assertEqual(carbs[0]["grams"], 30)
         # And the prompt is now tagged 'carbs' in the queue (faded ✓).
-        again = next(p for p in self.client.get("/prompts").json()
+        again = next(p for p in self.client.get("/api/prompts").json()
                      if p["anchor_t"] == mm["anchor_t"])
         self.assertEqual(again["answer"], "carbs")
 
     def test_carbs_answer_ignores_client_source_and_time(self):
         # Even if the client echoes a bogus source/time, the server pins both.
-        mm = next(p for p in self.client.get("/prompts").json()
+        mm = next(p for p in self.client.get("/api/prompts").json()
                   if p["detector"] == "missed-meal")
-        self.client.post("/prompts/answer", json={
+        self.client.post("/api/prompts/answer", json={
             "detector": "missed-meal", "anchor_t": mm["anchor_t"], "answer": "carbs",
             "entry": {"grams": 12, "certainty": "exact",
                       "source": "manual", "t": "2020-01-01 00:00:00"}})
-        carb = self.client.get("/carbs").json()["carb_entries"][0]
+        carb = self.client.get("/api/carbs").json()["carb_entries"][0]
         self.assertEqual(carb["source"], "rise-prompt")
         self.assertEqual(carb["t"], mm["anchor_t"])
 
     def test_clear_answer_resurrects_the_prompt(self):
-        low = next(p for p in self.client.get("/prompts").json() if p["detector"] == "low")
-        self.client.post("/prompts/answer", json={
+        low = next(p for p in self.client.get("/api/prompts").json() if p["detector"] == "low")
+        self.client.post("/api/prompts/answer", json={
             "detector": "low", "anchor_t": low["anchor_t"], "answer": "no"})
-        r = self.client.request("DELETE", "/prompts/answer", json={
+        r = self.client.request("DELETE", "/api/prompts/answer", json={
             "detector": "low", "anchor_t": low["anchor_t"]})
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.json(), {"cleared": 1})
         # It is pending again (answer cleared back to null).
-        again = next(p for p in self.client.get("/prompts").json()
+        again = next(p for p in self.client.get("/api/prompts").json()
                      if p["anchor_t"] == low["anchor_t"])
         self.assertIsNone(again["answer"])
 
     def test_clearing_a_carbs_answer_deletes_the_entry(self):
-        mm = next(p for p in self.client.get("/prompts").json()
+        mm = next(p for p in self.client.get("/api/prompts").json()
                   if p["detector"] == "missed-meal")
-        self.client.post("/prompts/answer", json={
+        self.client.post("/api/prompts/answer", json={
             "detector": "missed-meal", "anchor_t": mm["anchor_t"], "answer": "carbs",
             "entry": {"grams": 20, "certainty": "estimate"}})
-        self.client.request("DELETE", "/prompts/answer", json={
+        self.client.request("DELETE", "/api/prompts/answer", json={
             "detector": "missed-meal", "anchor_t": mm["anchor_t"]})
         # The prompt-sourced carb entry cascaded away with the response, and the
         # prompt is pending again.
-        self.assertEqual(self.client.get("/carbs").json()["carb_entries"], [])
-        again = next(p for p in self.client.get("/prompts").json()
+        self.assertEqual(self.client.get("/api/carbs").json()["carb_entries"], [])
+        again = next(p for p in self.client.get("/api/prompts").json()
                      if p["anchor_t"] == mm["anchor_t"])
         self.assertIsNone(again["answer"])
 
     def test_bad_detector_is_400(self):
-        r = self.client.post("/prompts/answer", json={
+        r = self.client.post("/api/prompts/answer", json={
             "detector": "banana", "anchor_t": "2026-06-05 03:15:00", "answer": "no"})
         self.assertEqual(r.status_code, 400)
 
     def test_bad_answer_is_400(self):
-        r = self.client.post("/prompts/answer", json={
+        r = self.client.post("/api/prompts/answer", json={
             "detector": "low", "anchor_t": "2026-06-05 03:15:00", "answer": "maybe"})
         self.assertEqual(r.status_code, 400)
 
@@ -895,13 +963,13 @@ class PromptQueueTest(unittest.TestCase):
         # nested strings included. Walk the representative read endpoints.
         window = {"window": 30}
         payloads = [
-            self.client.get("/analyze", params=window),
-            self.client.get("/scenarios", params=window),
-            self.client.get("/outcomes", params=window),
-            self.client.get("/backtest", params=window),
-            self.client.get("/model-view", params={"date": "2026-06-03"}),
+            self.client.get("/api/analyze", params=window),
+            self.client.get("/api/scenarios", params=window),
+            self.client.get("/api/outcomes", params=window),
+            self.client.get("/api/backtest", params=window),
+            self.client.get("/api/model-view", params={"date": "2026-06-03"}),
             self.client.get("/api/catalog"),
-            self.client.get("/report", params=window),
+            self.client.get("/api/report", params=window),
         ]
         for r in payloads:
             self.assertEqual(r.status_code, 200)
@@ -925,14 +993,14 @@ class ApiAuthTest(unittest.TestCase):
         self.tmp.close()
 
     def test_rejects_missing_token(self):
-        self.assertEqual(self.client.get("/analyze").status_code, 401)
+        self.assertEqual(self.client.get("/api/analyze").status_code, 401)
 
     def test_rejects_wrong_token(self):
-        r = self.client.get("/analyze", headers={"Authorization": "Bearer nope"})
+        r = self.client.get("/api/analyze", headers={"Authorization": "Bearer nope"})
         self.assertEqual(r.status_code, 401)
 
     def test_accepts_correct_token(self):
-        r = self.client.get("/analyze", headers={"Authorization": "Bearer s3cret"})
+        r = self.client.get("/api/analyze", headers={"Authorization": "Bearer s3cret"})
         self.assertEqual(r.status_code, 200)
 
     def test_kb_article_is_token_gated(self):
@@ -943,67 +1011,67 @@ class ApiAuthTest(unittest.TestCase):
         self.assertEqual(r.status_code, 200)
 
     def test_finding_case_file_validation_js_is_public_javascript(self):
-        r = self.client.get("/finding-case-file-validation.js")
+        r = self.client.get("/assets/finding-case-file-validation.js")
         self.assertEqual(r.status_code, 200)
         self.assertTrue(r.headers["content-type"].startswith("text/javascript"))
 
     def test_fetch_requires_token_before_any_pull(self):
         # Wrong token must 401 before the route ever attempts a live fetch.
-        self.assertEqual(self.client.post("/fetch").status_code, 401)
+        self.assertEqual(self.client.post("/api/fetch").status_code, 401)
 
     def test_credentials_get_requires_token(self):
-        self.assertEqual(self.client.get("/credentials").status_code, 401)
+        self.assertEqual(self.client.get("/api/credentials").status_code, 401)
 
     def test_credentials_post_requires_token(self):
-        r = self.client.post("/credentials", json={
+        r = self.client.post("/api/credentials", json={
             "email": "me@example.com", "password": "x", "region": "US",
         })
         self.assertEqual(r.status_code, 401)
 
     def test_status_requires_token(self):
-        self.assertEqual(self.client.get("/status").status_code, 401)
+        self.assertEqual(self.client.get("/api/status").status_code, 401)
 
     def test_pump_settings_requires_token(self):
-        self.assertEqual(self.client.get("/pump-settings").status_code, 401)
+        self.assertEqual(self.client.get("/api/pump-settings").status_code, 401)
 
     def test_report_requires_token(self):
-        self.assertEqual(self.client.get("/report").status_code, 401)
+        self.assertEqual(self.client.get("/api/report").status_code, 401)
 
     def test_timeline_requires_token(self):
-        r = self.client.get("/timeline", params={
+        r = self.client.get("/api/timeline", params={
             "start": "2026-06-03T00:00:00", "end": "2026-06-04T00:00:00",
         })
         self.assertEqual(r.status_code, 401)
 
     def test_scenarios_requires_token(self):
-        self.assertEqual(self.client.get("/scenarios").status_code, 401)
+        self.assertEqual(self.client.get("/api/scenarios").status_code, 401)
 
     def test_get_plan_requires_token(self):
-        self.assertEqual(self.client.get("/plan").status_code, 401)
+        self.assertEqual(self.client.get("/api/plan").status_code, 401)
 
     def test_put_plan_requires_token(self):
-        r = self.client.put("/plan", json={"items": []})
+        r = self.client.put("/api/plan", json={"items": []})
         self.assertEqual(r.status_code, 401)
 
     def test_apply_plan_requires_token(self):
-        self.assertEqual(self.client.post("/plan/apply").status_code, 401)
+        self.assertEqual(self.client.post("/api/plan/apply").status_code, 401)
 
     def test_carbs_list_requires_token(self):
-        self.assertEqual(self.client.get("/carbs").status_code, 401)
+        self.assertEqual(self.client.get("/api/carbs").status_code, 401)
 
     def test_carbs_create_requires_token(self):
-        r = self.client.post("/carbs", json={
+        r = self.client.post("/api/carbs", json={
             "t": "2026-06-03 10:00:00", "grams": 8, "certainty": "exact"})
         self.assertEqual(r.status_code, 401)
 
     def test_carbs_delete_requires_token(self):
-        self.assertEqual(self.client.delete("/carbs/1").status_code, 401)
+        self.assertEqual(self.client.delete("/api/carbs/1").status_code, 401)
 
     def test_plan_history_requires_token(self):
-        self.assertEqual(self.client.get("/plan/history").status_code, 401)
+        self.assertEqual(self.client.get("/api/plan/history").status_code, 401)
 
     def test_history_events_authenticates_before_query_validation(self):
-        path = "/diagnose/carb-ratio-history/events"
+        path = "/api/diagnose/carb-ratio-history/events"
         self.assertEqual(self.client.get(path).status_code, 401)
         self.assertEqual(self.client.get(
             path, headers={"Authorization": "Bearer wrong"},
@@ -1057,13 +1125,13 @@ class ApiEnvironmentCompatibilityTest(unittest.TestCase):
             with patch("ciq_autotune.fetch_loop.run_fetch_once") as mock_once:
                 with TestClient(app) as client:
                     response = client.get(
-                        "/pump-settings",
+                        "/api/pump-settings",
                         headers={"Authorization": "Bearer legacy-token"},
                     )
                     self.assertEqual(response.status_code, 200)
                     self.assertTrue(response.json()["configured"])
                     saved = client.post(
-                        "/credentials",
+                        "/api/credentials",
                         headers={"Authorization": "Bearer legacy-token"},
                         json={"email": "legacy@example.com", "password": "pw", "region": "US"},
                     )
@@ -1095,20 +1163,20 @@ class ApiEnvironmentCompatibilityTest(unittest.TestCase):
             with patch("ciq_autotune.fetch_loop.run_fetch_once") as mock_once:
                 with TestClient(app) as client:
                     response = client.get(
-                        "/pump-settings",
+                        "/api/pump-settings",
                         headers={"Authorization": "Bearer harmonic-token"},
                     )
                     self.assertEqual(response.status_code, 200)
                     self.assertTrue(response.json()["configured"])
                     self.assertEqual(
                         client.get(
-                            "/pump-settings",
+                            "/api/pump-settings",
                             headers={"Authorization": "Bearer legacy-token"},
                         ).status_code,
                         401,
                     )
                     saved = client.post(
-                        "/credentials",
+                        "/api/credentials",
                         headers={"Authorization": "Bearer harmonic-token"},
                         json={"email": "harmonic@example.com", "password": "pw", "region": "US"},
                     )
@@ -1135,7 +1203,7 @@ class ApiEnvironmentCompatibilityTest(unittest.TestCase):
                 app = create_app(db_path=db.name, token=None)
                 with patch("ciq_autotune.fetch_loop.run_fetch_once", return_value=None) as mock_once:
                     with TestClient(app) as client:
-                        self.assertEqual(client.get("/health").status_code, 200)
+                        self.assertEqual(client.get("/api/health").status_code, 200)
                         time.sleep(0.2)
                     mock_once.assert_called()
         finally:
@@ -1167,7 +1235,7 @@ class FetchLoopWiringTest(unittest.TestCase):
 
         with patch("ciq_autotune.fetch_loop.run_fetch_once") as mock_once:
             with TestClient(self.app) as client:
-                r = client.get("/health")
+                r = client.get("/api/health")
                 self.assertEqual(r.status_code, 200)
                 time.sleep(0.2)  # let the backgrounded asyncio.to_thread call land
             # Lifespan shutdown must not hang or raise; the loop got at least
@@ -1193,7 +1261,7 @@ class FetchLoopWiringTest(unittest.TestCase):
 
         with patch("ciq_autotune.fetch_loop.run_fetch_loop", fake_loop):
             with TestClient(self.app) as client:
-                self.assertEqual(client.get("/health").status_code, 200)
+                self.assertEqual(client.get("/api/health").status_code, 200)
         self.assertIs(seen.get("on_write"), self.app.state.invalidate_and_warm)
 
     def test_disabled_loop_does_not_call_fetch(self):
@@ -1205,7 +1273,7 @@ class FetchLoopWiringTest(unittest.TestCase):
             app = create_app(db_path=db.name, token=None, enable_fetch_loop=False)
             with patch("ciq_autotune.fetch_loop.run_fetch_once") as mock_once:
                 with TestClient(app) as client:
-                    r = client.get("/health")
+                    r = client.get("/api/health")
                     self.assertEqual(r.status_code, 200)
                 mock_once.assert_not_called()
 
@@ -1269,15 +1337,15 @@ class CacheInvalidationTest(unittest.TestCase):
             return real_analyze(*args, **kwargs)
 
         with patch.object(api_mod, "analyze", counting_analyze):
-            self.client.get("/analyze", params={"window": 30})   # miss → compute
-            self.client.get("/analyze", params={"window": 30})   # hit → no compute
+            self.client.get("/api/analyze", params={"window": 30})   # miss → compute
+            self.client.get("/api/analyze", params={"window": 30})   # hit → no compute
             self.assertEqual(len(calls), 1)
 
-            r = self.client.post("/carbs", json={
+            r = self.client.post("/api/carbs", json={
                 "t": "2026-06-03 10:05:00", "grams": 8, "certainty": "exact"})
             self.assertEqual(r.status_code, 200)
 
-            self.client.get("/analyze", params={"window": 30})   # bumped → recompute
+            self.client.get("/api/analyze", params={"window": 30})   # bumped → recompute
             self.assertEqual(len(calls), 2)  # exactly one recompute per data version
 
     def test_plan_draft_save_does_not_invalidate_cache(self):
@@ -1291,12 +1359,12 @@ class CacheInvalidationTest(unittest.TestCase):
             return real_analyze(*args, **kwargs)
 
         with patch.object(api_mod, "analyze", counting_analyze):
-            self.client.get("/analyze", params={"window": 30})   # miss → compute
-            self.client.get("/analyze", params={"window": 30})   # hit → no compute
+            self.client.get("/api/analyze", params={"window": 30})   # miss → compute
+            self.client.get("/api/analyze", params={"window": 30})   # hit → no compute
             self.assertEqual(len(calls), 1)
-            r = self.client.put("/plan", json={"items": [{"type": "basal", "note": "x"}]})
+            r = self.client.put("/api/plan", json={"items": [{"type": "basal", "note": "x"}]})
             self.assertEqual(r.status_code, 200)
-            self.client.get("/analyze", params={"window": 30})   # draft save → still a hit
+            self.client.get("/api/analyze", params={"window": 30})   # draft save → still a hit
             self.assertEqual(len(calls), 1, "draft save must not clear the cache")
 
     def test_plan_apply_invalidates_cache(self):
@@ -1310,13 +1378,13 @@ class CacheInvalidationTest(unittest.TestCase):
             return real_analyze(*args, **kwargs)
 
         with patch.object(api_mod, "analyze", counting_analyze):
-            self.client.get("/analyze", params={"window": 30})   # miss → compute
-            self.client.get("/analyze", params={"window": 30})   # hit → no compute
+            self.client.get("/api/analyze", params={"window": 30})   # miss → compute
+            self.client.get("/api/analyze", params={"window": 30})   # hit → no compute
             self.assertEqual(len(calls), 1)
-            self.client.put("/plan", json={"items": [{"type": "isf", "key": 540, "value": 32}]})
-            r = self.client.post("/plan/apply")
+            self.client.put("/api/plan", json={"items": [{"type": "isf", "key": 540, "value": 32}]})
+            r = self.client.post("/api/plan/apply")
             self.assertEqual(r.status_code, 200)
-            self.client.get("/analyze", params={"window": 30})   # bumped → recompute
+            self.client.get("/api/analyze", params={"window": 30})   # bumped → recompute
             self.assertEqual(len(calls), 2, "plan apply must clear the cache")
 
     def test_focus_pin_invalidates_cache(self):
@@ -1330,12 +1398,12 @@ class CacheInvalidationTest(unittest.TestCase):
             return real_analyze(*args, **kwargs)
 
         with patch.object(api_mod, "analyze", counting_analyze):
-            self.client.get("/analyze", params={"window": 30})   # miss → compute
-            self.client.get("/analyze", params={"window": 30})   # hit → no compute
+            self.client.get("/api/analyze", params={"window": 30})   # miss → compute
+            self.client.get("/api/analyze", params={"window": 30})   # hit → no compute
             self.assertEqual(len(calls), 1)
-            r = self.client.post("/focus", json={"lever": "late_bolus"})
+            r = self.client.post("/api/focus", json={"lever": "late_bolus"})
             self.assertEqual(r.status_code, 200, r.text)
-            self.client.get("/analyze", params={"window": 30})   # bumped → recompute
+            self.client.get("/api/analyze", params={"window": 30})   # bumped → recompute
             self.assertEqual(len(calls), 2, "a focus pin must clear the cache")
 
 
@@ -1355,8 +1423,10 @@ class CachePreWarmTest(unittest.TestCase):
         ("backtest", "ciq_autotune.backtest", "backtest"),
         ("outcomes-trend", "ciq_autotune.outcomes_trend", "summarize_trend"),
         ("scenarios", "ciq_autotune.analyzers.scenario", "build_scenarios"),
+        ("exposures", "ciq_autotune.explore_exposures", "build_exposures"),
         ("explore-time-of-day", "ciq_autotune.api", "build_time_of_day"),
         ("event-comparison-source-catalog", "ciq_autotune.api", "prepare_event_comparisons"),
+        ("finding-case-file", "ciq_autotune.api", "prepare_finding_cases"),
     )
 
     def setUp(self):
@@ -1391,29 +1461,47 @@ class CachePreWarmTest(unittest.TestCase):
     def _get_landing_set(self):
         """Exactly what the browser asks for on the initial Diagnose load."""
         for path, params in (
-            ("/analyze", {"window": 30, "ignore_changes": False, "pool": False}),
-            ("/backtest", {"holdout_days": 2}),
-            ("/outcomes/trend", {"window": 14}),
-            ("/analyze", {"window": 30, "ignore_changes": False, "pool": True}),
-            ("/scenarios", {"window": 30}),
-            ("/explore/time-of-day", {}),
-            ("/explore/exposures", {}),
-            ("/diagnose/event-comparison", {"view": "meals"}),
+            ("/api/analyze", {"window": 30, "ignore_changes": False, "pool": False}),
+            ("/api/backtest", {"holdout_days": 2}),
+            ("/api/outcomes/trend", {"window": 30}),
+            ("/api/analyze", {"window": 30, "ignore_changes": False, "pool": True}),
+            ("/api/scenarios", {"window": 30}),
+            ("/api/explore/time-of-day", {}),
+            ("/api/explore/exposures", {}),
+            ("/api/diagnose/findings", {}),
+            ("/api/diagnose/finding-case-file-preparation", {}),
         ):
             r = self.client.get(path, params=params)
             self.assertEqual(r.status_code, 200, path)
+
+    def _warmed_keys(self):
+        cache = self.app.state.result_cache
+        with cache._lock:
+            return tuple(cache._map) + tuple(cache._preparations)
 
     def test_warm_pass_leaves_the_landing_set_answering_without_recompute(self):
         with self._counting_builders() as counts:
             self.app.state.invalidate_and_warm()
             after_warm = dict(counts)
-            # Exactly the landing shapes and nothing else — both /analyze modes
-            # included, one build apiece for the rest. The exposure population
-            # and every comparison projection share one preparation.
+            # Exactly the landing shapes and nothing else — both /api/analyze modes
+            # included. Findings consumers share the canonical pooled analysis,
+            # scenario report, and exposure feed.
             self.assertEqual(after_warm, {"analyze": 2, "backtest": 1,
                                           "outcomes-trend": 1, "scenarios": 1,
+                                          "exposures": 1,
                                           "explore-time-of-day": 1,
-                                          "event-comparison-source-catalog": 1})
+                                          "event-comparison-source-catalog": 1,
+                                          "finding-case-file": 1})
+            self.assertEqual(self._warmed_keys(), (
+                ("analyze", 30, False, False),
+                ("backtest", 2),
+                ("outcomes-trend", 30),
+                ("explore-time-of-day",),
+                ("analyze", 30, False, True),
+                ("scenarios", 30),
+                ("event-comparison-preparation",),
+                ("finding-case-file", None, None, None),
+            ))
             # ...and the visitor's own requests all hit it.
             self._get_landing_set()
             self.assertEqual(counts, after_warm)
@@ -1421,13 +1509,13 @@ class CachePreWarmTest(unittest.TestCase):
     def test_exposure_and_coordinate_reads_share_one_preparation(self):
         """The two public comparison endpoints share their fixed-window work."""
         with self._counting_builders() as counts:
-            self.assertEqual(self.client.get("/explore/exposures").status_code, 200)
+            self.assertEqual(self.client.get("/api/explore/exposures").status_code, 200)
             self.assertEqual(self.client.get(
-                "/diagnose/event-comparison",
+                "/api/diagnose/event-comparison",
                 params={"view": "meals", "factor": "late_bolus"},
             ).status_code, 200)
             self.assertEqual(self.client.get(
-                "/diagnose/event-comparison",
+                "/api/diagnose/event-comparison",
                 params={"view": "lows", "start_min": 1080, "end_min": 1440,
                         "another": "1"},
             ).status_code, 200)
@@ -1461,10 +1549,10 @@ class CachePreWarmTest(unittest.TestCase):
 
         with patch.object(api_mod, "prepare_event_comparisons", counting_prepare):
             with ThreadPoolExecutor(max_workers=2) as pool:
-                first = pool.submit(self.client.get, "/explore/exposures")
+                first = pool.submit(self.client.get, "/api/explore/exposures")
                 self.assertTrue(entered.wait(1), "the first public read did not prepare")
                 second = pool.submit(
-                    self.client.get, "/diagnose/event-comparison",
+                    self.client.get, "/api/diagnose/event-comparison",
                     params={"view": "meals"},
                 )
                 # The first build stays deliberately in flight while the second
@@ -1480,29 +1568,37 @@ class CachePreWarmTest(unittest.TestCase):
     def test_warm_pass_invalidates_first_so_it_never_serves_pre_fetch_results(self):
         with self._counting_builders() as counts:
             self._get_landing_set()          # cold: every shape computed once
-            self.assertEqual(counts["scenarios"], 1)
+            self.assertEqual(counts, {"analyze": 2, "backtest": 1,
+                                      "outcomes-trend": 1, "scenarios": 1,
+                                      "exposures": 1,
+                                      "explore-time-of-day": 1,
+                                      "event-comparison-source-catalog": 1,
+                                      "finding-case-file": 1})
             self.app.state.invalidate_and_warm()
-            # New data landed, so the pre-fetch results were dropped and rebuilt.
-            self.assertEqual(counts["scenarios"], 2)
+            # A cache-only invalidation has no new Store revision, so the fixed
+            # scenarios endpoint reuses its verified durable artifact, including
+            # the findings consumers' shared canonical report.
+            self.assertEqual(counts["scenarios"], 1)
             self._get_landing_set()
-            self.assertEqual(counts["scenarios"], 2)
+            self.assertEqual(counts["scenarios"], 1)
 
     def test_drill_downs_and_other_windows_stay_lazy(self):
         with self._counting_builders() as counts:
             self.app.state.invalidate_and_warm()
             after_warm = dict(counts)
-            self.assertEqual(self.client.get("/analyze", params={"window": 90}).status_code, 200)
+            self.assertEqual(self.client.get("/api/analyze", params={"window": 90}).status_code, 200)
             self.assertGreater(counts["analyze"], after_warm["analyze"])
             # Day/month drill-downs are unbounded in key space and are never warmed.
-            self.assertEqual(self.client.get("/day-navigator",
+            self.assertEqual(self.client.get("/api/day-navigator",
                                              params={"month": "2026-06"}).status_code, 200)
-            self.assertEqual(self.client.get("/model-view",
+            self.assertEqual(self.client.get("/api/model-view",
                                              params={"date": "2026-06-03"}).status_code, 200)
 
     def test_one_failing_shape_is_contained_and_the_rest_still_warm(self):
         # The witness must be a shape the warm pass reaches *after* the failing one,
-        # or containment isn't what's being proved. Backtest warms second, scenarios
-        # last, so a blown-up backtest leaves three later shapes to observe.
+        # or containment isn't what's being proved. Backtest warms second, the
+        # finding-case preparation last, so a blown-up backtest leaves later
+        # shapes to observe.
         import ciq_autotune.backtest as backtest_mod
 
         def boom(*args, **kwargs):
@@ -1514,12 +1610,12 @@ class CachePreWarmTest(unittest.TestCase):
             self.assertEqual(counts["backtest"], 0)   # it never completed a build
             # ...and every shape the pass reaches after it still warmed: outcomes-trend
             # (third), analyze pooled (fourth — the second of analyze's two builds, the
-            # first having already run before backtest), scenarios (last).
+            # first having already run before backtest), and scenarios.
             self.assertEqual(counts["outcomes-trend"], 1)
             self.assertEqual(counts["analyze"], 2)
             self.assertEqual(counts["scenarios"], 1)
             # The failed shape is simply left cold, and a visitor recomputes it.
-            self.assertEqual(self.client.get("/backtest",
+            self.assertEqual(self.client.get("/api/backtest",
                                              params={"holdout_days": 2}).status_code, 200)
             self.assertEqual(counts["backtest"], 1)
 
@@ -1542,11 +1638,11 @@ class ApiPatternSignOffTest(unittest.TestCase):
     def test_ready_cell_can_be_approved_and_persists_and_bumps(self):
         from ciq_autotune.result_cache import ResultCache
         # The seed clears low__full__dow-6 into the ready queue.
-        before = self.client.get("/pattern-sweep").json()
+        before = self.client.get("/api/pattern-sweep").json()
         self.assertIn("low__full__dow-6", before["ready_for_review"])
 
         with patch.object(ResultCache, "bump", autospec=True) as bump:
-            approve = self.client.post("/pattern-sweep/approve",
+            approve = self.client.post("/api/pattern-sweep/approve",
                                        json={"cell_id": "low__full__dow-6"})
         self.assertEqual(approve.status_code, 200)
         self.assertEqual(approve.json()["decision"], "approved")

@@ -40,7 +40,7 @@ from .uncertainty import Confidence, Estimate
 # the version marks the new backend generation the frontend keys off.
 # v7 (issue #259): additive `tuning_levers` — one unified Lever `priority` (0–100) per
 # tuning flavor (basal / ISF / I:C) computed on the backend in insulin currency, plus a
-# `priority_active_threshold` echo, so tuning Levers interleave with the /scenarios
+# `priority_active_threshold` echo, so tuning Levers interleave with the /api/scenarios
 # behavioral Levers on one axis (ADR 0032). Empty list by default; older
 # producers/consumers still read.
 # v8 (issue #518): additive `ic_blocks` + `ic_runs` — the carb-ratio reading moves
@@ -276,9 +276,9 @@ class IcBlock:
     * ``below-floor`` — 90 days observed and the pool sits in
       ``[min_runs, _MIN_SUPPORTED_BLOCK_RUNS)``: the number and band display with an
       honest "N of 8 meal runs" countdown, and nothing asserts;
-    * ``unmeasured-alone`` — 90 days observed, meals were seen here, but every one of
-      them chains into a neighbouring block, so no run ever sits wholly inside this
-      one and the pool cannot fill by construction;
+    * ``unmeasured-alone`` — 90 days observed and meals were seen here, but the
+      estimator's admitted evidence carries no contrast that separates a numeric
+      ratio for this block;
     * ``numeric`` — the pool cleared the floor; the eligibility gates decide.
 
     ``priority`` / ``recurrence`` / ``impact_u_day`` are server-computed (ADR 0032):
@@ -557,11 +557,11 @@ class Finding:
 
 @dataclass(frozen=True)
 class TuningLever:
-    """One tuning flavor's unified Lever **Priority** (0–100) on the /analyze payload (ADR 0032).
+    """One tuning flavor's unified Lever **Priority** (0–100) on the /api/analyze payload (ADR 0032).
 
     Basal, ISF and I:C each roll up into *one* Lever (all of a flavor's block/segment
     changes stage into one Plan — the Diagnose decision #1), scored on the same axis the
-    /scenarios behavioral Levers carry so the frontend interleaves them in one queue.
+    /api/scenarios behavioral Levers carry so the frontend interleaves them in one queue.
 
     ``parameter`` is ``"basal_rate" | "isf" | "carb_ratio"``. ``impact`` and
     ``recurrence`` are the two ``[0, 1]`` factors behind ``priority`` (both surfaced so
@@ -631,7 +631,7 @@ class AnalysisResult:
     # Empty when the facade hasn't populated them; older stored JSON omits the key.
     tuning_levers: List[TuningLever] = field(default_factory=list)
     # The Diagnose active/tail split line (ADR 0032), echoed so the frontend splits
-    # tuning + behavioral Levers on one config-owned line. Mirrors the /scenarios echo.
+    # tuning + behavioral Levers on one config-owned line. Mirrors the /api/scenarios echo.
     priority_active_threshold: int = 30
     # Additive #518 view: the per-programmed-value carb-ratio blocks — the unit that
     # decides. Measured over a fixed trailing 90 days, unlike `ic` above (see

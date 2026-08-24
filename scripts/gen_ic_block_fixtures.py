@@ -6,9 +6,9 @@ suite fell into: its fixtures encoded the very assumption that was false against
 data, so the tests stayed green while the product shipped a hold that did not hold.
 
 So the block payloads the JS tests read are produced here, by feeding synthetic meals
-through `analyze_ic_blocks` + `price_ic_blocks` and serialising whatever the analyzer
-decided. If a gate changes, this file's output changes, and the frontend tests move
-with it — which is the point.
+through the shipped I:C block estimator + `price_ic_blocks` and serialising whatever
+the analyzer decided. If a gate changes, this file's output changes, and the frontend
+tests move with it — which is the point.
 
 Synthetic only: invented meals on the real schema, no patient data anywhere near it.
 
@@ -30,8 +30,8 @@ from ciq_autotune.analyzers.ic import (  # noqa: E402
     BLOCK_WINDOW_DAYS,
     IcConfig,
     analyze_ic,
-    analyze_ic_blocks,
 )
+from ciq_autotune.analyzers.ic_regression import analyze_ic_blocks_fuzzy  # noqa: E402
 from ciq_autotune.analyzers.tuning_priority import (  # noqa: E402
     ic_headline_block,
     ic_lever,
@@ -50,7 +50,7 @@ def meal(day, hour, carbs, dose, ratio=None, minute=0):
 
 
 def build(segments, events, *, observed_days=BLOCK_WINDOW_DAYS):
-    blocks, runs = analyze_ic_blocks(
+    blocks, runs = analyze_ic_blocks_fuzzy(
         events, segments, config=IcConfig(), observed_days=observed_days)
     priced = price_ic_blocks(blocks)
     lever = ic_lever(priced)

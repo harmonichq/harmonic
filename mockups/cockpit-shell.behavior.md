@@ -14,7 +14,7 @@ S1 · The viewport stays fixed while each populated pane scrolls internally, and
   evidence: `STORY:cockpit-shell:S1` / exported `S1`; full matrix remains in the surrounding Cockpit browser gate
   status: replayed-pass on base
 
-S2 · The numbered Diagnose → Plan → Verify workflow, Day link, utility destinations, and URL hash all route through their visible public affordances.
+S2 · The numbered Diagnose → Plan → Verify workflow, Day link, utility destinations, and canonical clean address all route through their visible public affordances.
   handlers/invariants: `@click="shellGo(...)"`; native Day link; `tab-routing.js`
   source: `frontend/index.html` cockpit top bar, footer utilities, and `shellGo`
   evidence: `STORY:cockpit-shell:S2` / exported `S2`
@@ -76,9 +76,9 @@ S10 · Opening Theme and hovering the unchecked row paints a neutral 95% panel /
 
 R1 · The obsolete occurrence-list route stays retired while the Diagnose Inspector remains the sole populated occurrence-evidence path.
   sanction: Connor · 2026-08-18 · "the dead `occurrenceModal` hash machinery goes with them."
-  handlers/invariants: a fixture-derived stale `modal=occurrences` URL canonicalizes to `#diagnose`; no accessible occurrences dialog or second roster appears; a public finding-row click populates the Inspector
+  handlers/invariants: a fixture-derived stale `modal=occurrences` URL canonicalizes to `/diagnose`; no accessible occurrences dialog or second roster appears; a public finding-row click populates the Inspector
   source: `frontend/index.html`; generated findings/exposures inputs in `frontend/__fixtures__/findings-projection.json`
-  evidence: `STORY:cockpit-shell:R1` / exported `R1`; source-adjacent `RETIRED:Connor:2026-08-18`; independent canonical-hash and duplicate-route mutations
+  evidence: `STORY:cockpit-shell:R1` / exported `R1`; source-adjacent `RETIRED:Connor:2026-08-18`; independent canonical-route and duplicate-route mutations
   status: retired 2026-08-21 · replayed-pass on revision
 
 ## Inventory completeness

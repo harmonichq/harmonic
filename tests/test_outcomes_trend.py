@@ -1048,7 +1048,7 @@ class ApiRendererTest(unittest.TestCase):
         self.tmp.close()
 
     def test_trend_endpoint_returns_versioned_payload(self):
-        r = self.client.get("/outcomes/trend", params={"window": 14})
+        r = self.client.get("/api/outcomes/trend", params={"window": 14})
         self.assertEqual(r.status_code, 200)
         body = r.json()
         self.assertEqual(body["schema_version"], SCHEMA_VERSION)
@@ -1059,7 +1059,7 @@ class ApiRendererTest(unittest.TestCase):
         self.assertGreaterEqual(len(body["windows"]), 2)
 
     def test_window_param_flows_through(self):
-        r = self.client.get("/outcomes/trend", params={"window": 7})
+        r = self.client.get("/api/outcomes/trend", params={"window": 7})
         self.assertEqual(r.json()["window_days"], 7)
 
 
@@ -1083,32 +1083,32 @@ class FocusApiTest(unittest.TestCase):
         self.tmp.close()
 
     def test_pin_list_resolve_roundtrip(self):
-        r = self.client.post("/focus", json={"lever": "late_bolus"})
+        r = self.client.post("/api/focus", json={"lever": "late_bolus"})
         self.assertEqual(r.status_code, 200, r.text)
         fid = r.json()["id"]
         self.assertEqual(r.json()["status"], "active")
 
-        listing = self.client.get("/focus").json()
+        listing = self.client.get("/api/focus").json()
         self.assertEqual(listing["focuses"][0]["lever"], "late_bolus")
         self.assertIn("late_bolus", listing["pinnable"])
         self.assertNotIn("isf", listing["pinnable"])
 
-        r = self.client.post(f"/focus/{fid}/resolve")
+        r = self.client.post(f"/api/focus/{fid}/resolve")
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(self.client.get("/focus").json()["focuses"][0]["status"],
+        self.assertEqual(self.client.get("/api/focus").json()["focuses"][0]["status"],
                          "resolved")
 
     def test_non_behavioral_lever_rejected(self):
-        r = self.client.post("/focus", json={"lever": "isf"})
+        r = self.client.post("/api/focus", json={"lever": "isf"})
         self.assertEqual(r.status_code, 400)
 
     def test_second_active_pin_rejected(self):
-        self.assertEqual(self.client.post("/focus", json={"lever": "late_bolus"}).status_code, 200)
-        r = self.client.post("/focus", json={"lever": "missed_meal"})
+        self.assertEqual(self.client.post("/api/focus", json={"lever": "late_bolus"}).status_code, 200)
+        r = self.client.post("/api/focus", json={"lever": "missed_meal"})
         self.assertEqual(r.status_code, 409)
 
     def test_resolve_missing_focus_is_404(self):
-        self.assertEqual(self.client.post("/focus/999/resolve").status_code, 404)
+        self.assertEqual(self.client.post("/api/focus/999/resolve").status_code, 404)
 
 
 class DayLevelGateTest(unittest.TestCase):

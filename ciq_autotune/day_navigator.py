@@ -4,7 +4,7 @@ The Day navigator is a month calendar of per-day glucose sparklines, tinted by
 **glycemic severity** (lows / highs / TIR), not lever color. Each rendered cell
 needs the day's own miniature glucose curve plus the low/high/TIR stats that drive
 the severity tint — a heavier feed than a flat severity cell, so it gets its own
-per-month GET rather than riding the per-day ``/model-view``.
+per-month GET rather than riding the per-day ``/api/model-view``.
 
 Severity *encoding* (the tint / glyph mapping — lows win the tie, etc.) is decided
 frontend-side in ``nav-chart.js`` (``navSeverity``) so the vocabulary lives in one

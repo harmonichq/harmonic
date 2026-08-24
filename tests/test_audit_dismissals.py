@@ -27,9 +27,9 @@ class AuditDismissalApiTest(unittest.TestCase):
     def test_get_post_replace_and_cache_invalidation_through_public_interface(self):
         from ciq_autotune.result_cache import ResultCache
 
-        self.assertEqual(self.client.get("/audit/dismissals").json(), {"dismissals": {}})
+        self.assertEqual(self.client.get("/api/audit/dismissals").json(), {"dismissals": {}})
         with patch.object(ResultCache, "bump", autospec=True) as bump:
-            response = self.client.post("/audit/dismissals", json={
+            response = self.client.post("/api/audit/dismissals", json={
                 "item_id": "ic:lunch", "evidence_fingerprint": '{"support":8}',
             })
         self.assertEqual(response.status_code, 200, response.text)
@@ -38,10 +38,10 @@ class AuditDismissalApiTest(unittest.TestCase):
         })
         self.assertEqual(bump.call_count, 1)
         self.assertEqual(
-            self.client.get("/audit/dismissals").json()["dismissals"]["ic:lunch"]
+            self.client.get("/api/audit/dismissals").json()["dismissals"]["ic:lunch"]
             ["evidence_fingerprint"], '{"support":8}')
 
-        self.assertEqual(self.client.post("/audit/dismissals", json={
+        self.assertEqual(self.client.post("/api/audit/dismissals", json={
             "item_id": "ic:lunch", "evidence_fingerprint": '{"support":9}',
         }).status_code, 200)
         with Store.open(self.tmp.name) as store:
@@ -62,9 +62,9 @@ class AuditDismissalApiTest(unittest.TestCase):
         with patch.object(ResultCache, "bump", autospec=True) as bump:
             for payload in bad_payloads:
                 self.assertEqual(
-                    self.client.post("/audit/dismissals", json=payload).status_code, 400)
+                    self.client.post("/api/audit/dismissals", json=payload).status_code, 400)
         self.assertEqual(bump.call_count, 0)
-        self.assertEqual(self.client.get("/audit/dismissals").json(), {"dismissals": {}})
+        self.assertEqual(self.client.get("/api/audit/dismissals").json(), {"dismissals": {}})
 
 
 @unittest.skipUnless(_HAS_FASTAPI, "api extra not installed")
@@ -79,14 +79,14 @@ class AuditDismissalAuthTest(unittest.TestCase):
                 call = getattr(client, method)
                 kwargs = {} if method == "get" else {"json": {
                     "item_id": "basal:2", "evidence_fingerprint": "v1"}}
-                self.assertEqual(call("/audit/dismissals", **kwargs).status_code, 401)
-                self.assertEqual(call("/audit/dismissals", headers={
+                self.assertEqual(call("/api/audit/dismissals", **kwargs).status_code, 401)
+                self.assertEqual(call("/api/audit/dismissals", headers={
                     "Authorization": "Bearer wrong"}, **kwargs).status_code, 401)
-            response = client.post("/audit/dismissals", headers={
+            response = client.post("/api/audit/dismissals", headers={
                 "Authorization": "Bearer secret"}, json={
                     "item_id": "basal:2", "evidence_fingerprint": "v1"})
             self.assertEqual(response.status_code, 200)
-            self.assertIn("basal:2", client.get("/audit/dismissals", headers={
+            self.assertIn("basal:2", client.get("/api/audit/dismissals", headers={
                 "Authorization": "Bearer secret"}).json()["dismissals"])
 
 

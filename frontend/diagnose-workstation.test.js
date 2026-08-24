@@ -3,15 +3,15 @@ import assert from 'node:assert/strict';
 
 import { queryState } from './diagnose-workstation.js';
 
-test('queryState reads Diagnose state from the canonical hash before the split query', () => {
+test('queryState reads Diagnose state from the canonical route query', () => {
   const original = globalThis.window;
   try {
     globalThis.window = {
-      location: { hash: '#/diagnose?mode=drawn', search: '?mode=dense' },
+      location: { hash: '', search: '?mode=drawn' },
     };
     assert.equal(queryState('typical'), 'drawn');
 
-    globalThis.window.location.hash = '#diagnose';
+    globalThis.window.location.search = '?mode=dense';
     assert.equal(queryState('typical'), 'dense');
   } finally {
     globalThis.window = original;

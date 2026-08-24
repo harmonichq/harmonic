@@ -13,7 +13,7 @@ detected mid-Focus *preempts and drops* the Focus. So the outcomes payload expos
 **single** active watched-change object, never two lists.
 
 The target metric a Trial foregrounds is inferred from the changed parameter + slot
-and always selects an **existing** ``/outcomes/trend`` series (ADR 0028 §4 — never
+and always selects an **existing** ``/api/outcomes/trend`` series (ADR 0028 §4 — never
 invent a metric): basal→``tbr``, ISF→``tir``, I:C→``arc``, target→``tir``, a
 whole-profile / untargeted edit→overall (``tir`` + ``arc``). A Trial never carries a
 lever — the "inherited from a Diagnose lever" branch is cut (ADR 0029 §3).
@@ -43,7 +43,7 @@ from .trial_evidence import trial_breakdown
 _DT_FMT = "%Y-%m-%d %H:%M:%S"
 
 # The changed parameter → the existing trend series its before/after is read off
-# (ADR 0028 §4). Every value here is a series ``/outcomes/trend`` already emits
+# (ADR 0028 §4). Every value here is a series ``/api/outcomes/trend`` already emits
 # (``tir``/``tbr`` in ``metrics``, ``arc`` the top-level arc object).
 _TARGET_METRIC: Dict[str, List[str]] = {
     "basal_rate": ["tbr"],

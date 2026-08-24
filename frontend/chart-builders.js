@@ -27,7 +27,7 @@
 // bridged across the excursion (its in-span points nulled + connectNulls), and this
 // returns the muted dashed ghost of the fabricated V that overlays the gap, plus an
 // "excluded" tag at each nadir — so the pulled V is always visible (and undoable). Pure
-// over its inputs (cgmSorted + the /timeline false_low_exclusion_spans), node-tested.
+// over its inputs (cgmSorted + the /api/timeline false_low_exclusion_spans), node-tested.
 export function falseLowGhost(cgmSorted, spans, colors, toMs, { xAxisIndex = 0, yAxisIndex = 0 } = {}) {
   const ranges = (spans || []).map((s) => [toMs(s.start), toMs(s.end)]);
   const inSpan = (ms) => ranges.some(([a, b]) => ms >= a && ms <= b);
@@ -164,7 +164,7 @@ export function basalPlateaus(basalSorted) {
 //     0 glucose (range-colored, 70/180 guides, min/max labels)
 //     1 model evidence — left EMPTY here; the Day surface fills it from the model
 //       anchors (day-chart.buildAnchorOverlay), keeping this builder bound to the
-//       /timeline + /carbs feeds only
+//       /api/timeline + /api/carbs feeds only
 //     2 insulin + carbs (bolus glyphs by kind, bolus-carb + manual-carb marks)
 //     3 signed basal difference (delivered − programmed: CIQ ADDING above zero,
 //       CUTTING below) — the shared tooltip still reports both raw rates in U/h

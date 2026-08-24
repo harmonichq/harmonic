@@ -7,7 +7,7 @@
  * What is NOT verbatim, and why:
  *   - the chart module is imported from its ported path;
  *   - `_shell.js` is mock-harness chrome. `resolveColors` is copied from it and
- *     `queryState` is adapted to the app's hash route because the ported code
+ *     `queryState` is adapted to the app's route query because the ported code
  *     calls them; `applyTheme` and `renderMockBar` are dropped (the app owns its
  *     theme, and the mock bar is excluded from the contract by the behaviour
  *     ledger, story S22's note);
@@ -57,12 +57,9 @@ export function resolveColors() {
   return Object.fromEntries(names.map((name) => [name, styles.getPropertyValue(`--mk-${name}`).trim()]));
 }
 
-/* PORT: the mock reads `?mode=` from the split query; the app carries it in
-   Diagnose's canonical hash-route query, with the split form retained for the
-   mock and legacy URLs. */
+/* PORT: the mock reads `?mode=` from the route query. */
 export function queryState(fallback, param = 'mode') {
-  const hashValue = new URLSearchParams(window.location.hash.split('?')[1] || '').get(param);
-  return hashValue || new URLSearchParams(window.location.search).get(param) || fallback;
+  return new URLSearchParams(window.location.search).get(param) || fallback;
 }
 
 /* The surface's markup — VERBATIM from the mock's body, lines 1025-1094 (the
@@ -2702,7 +2699,7 @@ export function createDiagnoseWorkstation({ root, callbacks = {}, railLead = nul
     if (!Object.prototype.hasOwnProperty.call(CFG_BY_STATE, state)) state = 'typical';
     CFG = CFG_BY_STATE[state];
     captures = toCaptures(payload, { ...callbacks, state });
-    /* PORT DEVIATION (#654): a real /analyze response always carries exactly
+    /* PORT DEVIATION (#654): a real /api/analyze response always carries exactly
        one ISF row, so an empty one here means this payload never had real
        analyze data — a caller across the app's own HTTP boundary fed
        `setData` something malformed or absent (the reachable case: the

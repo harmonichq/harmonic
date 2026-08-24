@@ -49,7 +49,7 @@ function pumpSettings({ matched }) {
 }
 
 // A fixture server for one scenario. `items` is the plan draft; `matched` picks
-// the pump profile. Records every PUT /plan body so the test can assert what a
+// the pump profile. Records every PUT /api/plan body so the test can assert what a
 // confirmation persists. History is always empty — this is the FIRST plan.
 function fixtureServer({ items, matched }) {
   const savedDrafts = [];
@@ -61,32 +61,33 @@ function fixtureServer({ items, matched }) {
       res.end(JSON.stringify(body));
     };
 
-    if (url.pathname === '/plan' && req.method === 'PUT') {
+    if (url.pathname === '/api/plan' && req.method === 'PUT') {
       let raw = '';
       for await (const chunk of req) raw += chunk;
       const body = JSON.parse(raw || '{}');
       savedDrafts.push(body.items || []);
       return json({ items: body.items || [], updated_at: '2026-07-20 08:01:00' });
     }
-    if (url.pathname === '/plan/apply' && req.method === 'POST') {
+    if (url.pathname === '/api/plan/apply' && req.method === 'POST') {
       applied = true;
       const last = savedDrafts[savedDrafts.length - 1] || items;
       return json({ applied_at: '2026-07-20 08:02:00', items: last });
     }
-    if (url.pathname === '/plan') return json({ items });
-    if (url.pathname === '/plan/history') return json({ history: [] });
-    if (url.pathname === '/pump-settings') return json(pumpSettings({ matched }));
-    if (url.pathname === '/status') return json({ earliest_data_day: '2026-06-20', latest_data_day: '2026-07-20' });
-    if (url.pathname === '/credentials') return json({ configured: true });
-    if (url.pathname === '/analyze') return json({ basal: [], isf: [], ic: [], behavioral: [], epochs: [], settling: {} });
-    if (url.pathname === '/scenarios') return json({ patterns: [], low_confidence: [], episodes: {}, priority_active_threshold: 30 });
-    if (url.pathname === '/backtest') return json({});
-    if (url.pathname === '/day-navigator') return json({ days: [] });
-    if (url.pathname === '/prompts' || url.pathname === '/carbs') return json([]);
-    if (url.pathname === '/focus') return json({ focuses: [] });
+    if (url.pathname === '/api/plan') return json({ items });
+    if (url.pathname === '/api/plan/history') return json({ history: [] });
+    if (url.pathname === '/api/pump-settings') return json(pumpSettings({ matched }));
+    if (url.pathname === '/api/status') return json({ earliest_data_day: '2026-06-20', latest_data_day: '2026-07-20' });
+    if (url.pathname === '/api/credentials') return json({ configured: true });
+    if (url.pathname === '/api/analyze') return json({ basal: [], isf: [], ic: [], behavioral: [], epochs: [], settling: {} });
+    if (url.pathname === '/api/scenarios') return json({ patterns: [], low_confidence: [], episodes: {}, priority_active_threshold: 30 });
+    if (url.pathname === '/api/backtest') return json({});
+    if (url.pathname === '/api/day-navigator') return json({ days: [] });
+    if (url.pathname === '/api/prompts' || url.pathname === '/api/carbs') return json([]);
+    if (url.pathname === '/api/focus') return json({ focuses: [] });
     if (url.pathname === '/favicon.ico') { res.writeHead(204); res.end(); return; }
 
-    const file = url.pathname === '/' ? 'index.html' : url.pathname.slice(1);
+    const file = url.pathname === '/' || url.pathname === '/plan'
+      ? 'index.html' : url.pathname.replace(/^\/assets\//, '');
     try {
       const body = await readFile(join(FRONTEND, file));
       res.writeHead(200, { 'content-type': MIME[extname(file)] || 'application/octet-stream' });
@@ -101,7 +102,7 @@ async function openPlanCard(page, origin) {
     localStorage.setItem('ciq_token', 'fixture-token');
     localStorage.setItem('tab', 'plan');
   });
-  await page.goto(`${origin}/#plan`);
+  await page.goto(`${origin}/plan`);
   const card = page.locator('.card.full', { has: page.locator('h2', { hasText: 'Deliverable' }) });
   await card.waitFor();
   return card;
@@ -152,7 +153,7 @@ test('first exact match renders "Confirm & re-baseline" and confirming persists 
     // Confirming persists the EFFECTIVE plan (accepted noon I:C), not an empty
     // draft — proving the confirmation records what is actually on the pump.
     const applyPosted = page.waitForResponse(
-      (r) => r.url().endsWith('/plan/apply') && r.request().method() === 'POST');
+      (r) => r.url().endsWith('/api/plan/apply') && r.request().method() === 'POST');
     await card.getByRole('button', { name: /Confirm & re-baseline/ }).click();
     await applyPosted;
     assert.equal(fixture.wasApplied(), true, 'apply was posted');

@@ -14,5 +14,5 @@ The parameter analyzers emit the result rows defined in
 :mod:`~ciq_autotune.result`; the :func:`~ciq_autotune.analyze.analyze` facade
 applies the analyzer-specific windows and funnels them into one
 :class:`~ciq_autotune.result.AnalysisResult`. The scenario engine is served
-separately (``/scenarios``) as its own ranked payload.
+separately (``/api/scenarios``) as its own ranked payload.
 """

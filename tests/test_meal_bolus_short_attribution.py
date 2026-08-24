@@ -255,8 +255,17 @@ def _seed(store, bolus, cgm):
 
 
 def _projection(store):
+    from ciq_autotune.analyze import analyze
+    from ciq_autotune.analyzers.scenario import build_scenarios
+    from ciq_autotune.explore_exposures import build_exposures
     from ciq_autotune.findings_projection import prepare_findings_projection
-    return prepare_findings_projection(store)
+    return prepare_findings_projection(
+        analysis=analyze(
+            store, pool_agreeing_basal_regimes=True,
+            carb_entries=store.carb_entries(), prompt_responses=store.prompt_responses(),
+        ).to_dict(),
+        exposures=build_exposures(store), scenarios=build_scenarios(store).to_dict(),
+    )
 
 
 class WilsonSupportTest(unittest.TestCase):

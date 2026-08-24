@@ -15,7 +15,7 @@ import { blockKey } from './diagnose-workspaces.js';
 /** The mock's `buildEnvelope()` return, rebuilt from the server's pooled feed.
  *
  *  The mock pools 30 days of raw CGM in the browser. The app pools server-side
- *  (`/explore/time-of-day` → `pooled`) and never ships the raw readings, so this
+ *  (`/api/explore/time-of-day` → `pooled`) and never ships the raw readings, so this
  *  renames the server's bins onto the arrays the chart module already indexes.
  *  Field-for-field, no arithmetic: median→p50, n→counts, raw_n→raw. */
 export function envelopeFromPooled(pooled) {
@@ -62,7 +62,7 @@ export function markersFromPooled(pooled) {
  * Build the mock's four captures from one API payload.
  *
  * `payload` is `{analyze, scenarios, evidence, exposures}` — the app's
- * `/analyze`, `/scenarios`, `/explore/time-of-day` and `/explore/exposures`.
+ * `/api/analyze`, `/api/scenarios`, `/api/explore/time-of-day` and `/api/explore/exposures`.
  * `loadDay(date)` is optional; when supplied, the occurrence level's real CGM
  * trace is fetched on demand (see `dayMap`).
  */
@@ -106,7 +106,7 @@ export function toCaptures(payload = {}, { loadDay = null, onDayLoaded = null, s
     },
     icMissing: '',
     /* #735 — carried through UNTOUCHED, not adapted. `findings` is the server-owned
-       findings projection (`GET /diagnose/findings`, ADR 730) and `watched` is the
+       findings projection (`GET /api/diagnose/findings`, ADR 730) and `watched` is the
        single active watched-change object the outcomes payload already resolves
        (`watched_change`, ADR 0029). Both are rendered verbatim (lock terms 40, 47),
        so nothing here reshapes either: renaming a field is the first step towards

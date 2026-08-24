@@ -148,7 +148,7 @@ class ExploreExposuresRouteTest(unittest.TestCase):
 
         with tempfile.NamedTemporaryFile(suffix=".db") as db:
             client = TestClient(create_app(db_path=db.name, token=None, enable_fetch_loop=False))
-            response = client.get("/explore/exposures")
+            response = client.get("/api/explore/exposures")
 
         self.assertEqual(response.status_code, 200, response.text)
         self.assertEqual(set(response.json()), {"window", "exposures"})

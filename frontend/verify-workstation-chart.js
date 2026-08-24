@@ -6,7 +6,7 @@
  *
  * The two-median ribbon: the area between the Before and Trial medians, tinted
  * by which ran higher; no quartile bands. Medians reach it through
- * verify-workstation-data.js, which maps /verify/trials' `envelopes` (clock
+ * verify-workstation-data.js, which maps /api/verify/trials' `envelopes` (clock
  * family) and `meal_arcs.bins` (meal family) onto the shape below — the same
  * numbers the mock read from its capture, now backend-supplied.
  */

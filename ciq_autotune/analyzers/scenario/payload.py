@@ -15,7 +15,7 @@ Shapes (verbatim from #70 §5):
     Suspends are ``basal_rate == 0`` runs within ``window.basal`` — the supported
     contract (#82), not a separate array (see :class:`Step`).
 
-The episode ``window`` reuses the existing ``/timeline`` payload shape, so the
+The episode ``window`` reuses the existing ``/api/timeline`` payload shape, so the
 frontend's step-through chart renders it with the same code the daily chart uses.
 """
 
@@ -37,7 +37,7 @@ from .priority import behavioral_priority
 # breakdown on a confirmed (logged-carbs) over-treated low (ADR 0008).
 # v4 (#259): adds the unified Lever ``priority`` (+ its two factor inputs) per Pattern
 # and the ``priority_active_threshold`` echo, so behavioral Levers interleave with the
-# /analyze tuning Levers on one axis (ADR 0032). Additive — the rank order of
+# /api/analyze tuning Levers on one axis (ADR 0032). Additive — the rank order of
 # ``patterns`` is unchanged.
 # v5 (#400): removes ``Step.over_treated_breakdown`` — the needed-vs-logged /
 # rescue-carb estimates it carried (``lift_g``, ``iob_covered_g``, staged/point
@@ -134,7 +134,7 @@ def window_ref(start: datetime, end: datetime) -> dict:
 class Episode:
     """One attributed episode: a trigger, a single lever, severity, and its story.
 
-    ``window`` is the raw ``/timeline`` payload for ``[start, end]`` (with a little
+    ``window`` is the raw ``/api/timeline`` payload for ``[start, end]`` (with a little
     lead-in/out) — the step-through chart. ``severity`` is the hypo-weighted
     time-out-of-range score (:mod:`.severity`); ``worst_bg`` is the nadir-or-peak
     the frontend can headline.
@@ -206,7 +206,7 @@ class Pattern:
             # The unified Lever Priority (ADR 0032): impact = effect, recurrence = the
             # Wilson lower bound ``lo``. ``100·√(effect·lo)`` is monotonic in the
             # ``confidence.score`` above, so this never reorders ``patterns`` — it only
-            # puts behavioral Levers on the same axis the /analyze tuning Levers carry.
+            # puts behavioral Levers on the same axis the /api/analyze tuning Levers carry.
             **behavioral_priority(c).to_dict(),
             "rank": self.rank,
             "recommendation": self.recommendation,

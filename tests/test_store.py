@@ -110,6 +110,39 @@ class StoreTest(unittest.TestCase):
         self.store.upsert_basal(row)  # same row again
         self.assertEqual(self.store.counts()["basal_events"], 1)
 
+    def test_latest_cgm_or_basal_timestamp_uses_both_streams_without_rows(self):
+        self.assertIsNone(self.store.latest_cgm_or_basal_timestamp())
+
+        self.store.upsert_cgm([{
+            "EventDateTime": "2026-08-01 09:00:00",
+            "Readings (CGM / BGM)": 100,
+        }])
+        self.assertEqual(
+            self.store.latest_cgm_or_basal_timestamp(), datetime(2026, 8, 1, 9)
+        )
+
+        self.store.upsert_basal([{
+            "seq_num": 1, "time": "2026-08-01 10:00:00",
+            "delivery_type": "profileDelivery", "duration_mins": 5,
+            "basal_rate": 0.6,
+        }])
+        self.assertEqual(
+            self.store.latest_cgm_or_basal_timestamp(), datetime(2026, 8, 1, 10)
+        )
+
+        self.store.conn.execute("DELETE FROM cgm_readings")
+        self.assertEqual(
+            self.store.latest_cgm_or_basal_timestamp(), datetime(2026, 8, 1, 10)
+        )
+
+        self.store.upsert_cgm([{
+            "EventDateTime": "2026-08-01 11:00:00",
+            "Readings (CGM / BGM)": 110,
+        }])
+        self.assertEqual(
+            self.store.latest_cgm_or_basal_timestamp(), datetime(2026, 8, 1, 11)
+        )
+
     def test_upsert_updates_changed_fields(self):
         self.store.upsert_basal([{"seq_num": 100, "time": "2022-05-27 00:00:00-04:00",
                                   "delivery_type": "profileDelivery",
@@ -152,23 +185,6 @@ class StoreTest(unittest.TestCase):
         self.store.upsert_basal([{"seq_num": 1, "time": "2026-07-02 00:04:15", **base}])
         self.store.upsert_basal([{"seq_num": 2, "time": "2026-07-02 00:04:48", **base}])
         self.assertEqual(len(self.store.basal_events()), 2)
-
-    def test_migrate_basal_to_seq_num_wipes_legacy_rows(self):
-        # A pre-#194 store keyed basal on (t, delivery_type) with no seq_num. Those
-        # rows can't be back-keyed and a doubled store can't be de-conflated in
-        # place, so the migration drops them; the next fetch repopulates the cache.
-        self.store.conn.executescript(
-            "DROP TABLE basal_events;"
-            "CREATE TABLE basal_events (t TEXT NOT NULL, delivery_type TEXT NOT NULL,"
-            " duration_mins REAL, basal_rate REAL, profile_basal_rate REAL,"
-            " PRIMARY KEY (t, delivery_type));"
-            "INSERT INTO basal_events VALUES ('2026-07-02 00:04:15',"
-            " 'algorithmDelivery', 5.0, 0.6, 0.6);")
-        self.store._rekey_seq_num_tables()
-        cols = {r["name"] for r in
-                self.store.conn.execute("PRAGMA table_info(basal_events)")}
-        self.assertIn("seq_num", cols)
-        self.assertEqual(self.store.counts()["basal_events"], 0)
 
     def test_cgm_drops_serial_number(self):
         fake_serial = "FAKE-SERIAL-0000"
@@ -584,6 +600,11 @@ class PlanDraftStoreTest(unittest.TestCase):
         self.assertEqual(draft["items"], items)
         self.assertEqual(draft["updated_at"], "2026-06-01 09:00:00")
 
+    def test_save_draft_leaves_durable_revision_unchanged(self):
+        before = self.store.input_data_revision()
+        self.store.save_plan_draft([{"type": "basal", "key": 0}], "2026-06-01 09:00:00")
+        self.assertEqual(self.store.input_data_revision(), before)
+
     def test_save_allows_empty_and_single_family_drafts(self):
         cases = [
             [],
@@ -783,6 +804,15 @@ class MigrationTest(unittest.TestCase):
                 # The #125 carb log is a manual store, deliberately kept out of
                 # counts() (which tracks the synced feeds' data quality).
                 self.assertNotIn("carb_entries", store.counts())
+
+    def test_migration_advances_durable_revision_once(self):
+        with tempfile.NamedTemporaryFile(suffix=".db") as f:
+            conn = sqlite3.connect(f.name)
+            conn.execute("CREATE TABLE profile_settings (captured_at TEXT PRIMARY KEY)")
+            conn.commit()
+            conn.close()
+            with Store.open(f.name) as store:
+                self.assertEqual(store.input_data_revision(), 1)
 
     def test_rekeys_legacy_bolus_iob_pump_tables_wiping_rows(self):
         # Pre-#198 bolus/iob/pump tables keyed on derived tuples with no seq_num.

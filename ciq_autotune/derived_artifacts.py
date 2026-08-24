@@ -10,6 +10,7 @@ import hashlib
 import inspect
 import json
 import sqlite3
+import weakref
 from contextlib import closing
 from pathlib import Path
 from typing import Any, Callable
@@ -18,6 +19,7 @@ from .store import Store
 
 DERIVED_ARTIFACT_STORE_SCHEMA_VERSION = 1
 _FINGERPRINT: str | None = None
+_SIDECAR_REBUILDS: dict[int, weakref.ReferenceType] = {}
 
 
 def sidecar_path(db_path: str) -> str:
@@ -89,6 +91,41 @@ def _call(compute: Callable, store: Store):
     return compute(store) if inspect.signature(compute).parameters else compute()
 
 
+def _mark_sidecar_rebuilt(value: Any) -> None:
+    if isinstance(value, tuple):
+        for item in value:
+            _mark_sidecar_rebuilt(item)
+        return
+    try:
+        identity = id(value)
+        _SIDECAR_REBUILDS[identity] = weakref.ref(
+            value, lambda _, identity=identity: _SIDECAR_REBUILDS.pop(identity, None))
+    except TypeError:
+        pass
+
+
+def is_sidecar_rebuilt(value: Any) -> bool:
+    if isinstance(value, tuple):
+        return any(is_sidecar_rebuilt(item) for item in value)
+    ref = _SIDECAR_REBUILDS.get(id(value))
+    return ref is not None and ref() is value
+
+
+def discard_artifact(db_path: str, coordinates: tuple, shape_marker: str) -> None:
+    """Best-effort removal of one damaged exact-key artifact."""
+    try:
+        with Store.open_queryonly(db_path) as primary:
+            revision = primary.input_data_revision()
+        with closing(_open(sidecar_path(db_path))) as sidecar:
+            with sidecar:
+                sidecar.execute("DELETE FROM artifacts WHERE revision=? AND coordinates=? AND marker=?",
+                                (revision, _canonical(coordinates), _canonical(
+                                    (shape_marker, DERIVED_ARTIFACT_STORE_SCHEMA_VERSION,
+                                     source_fingerprint()))))
+    except sqlite3.Error:
+        pass
+
+
 def load_or_compute(db_path: str, coordinates: tuple, compute: Callable,
                     *, shape_marker: str, dump: Callable[[Any], Any] | None = None,
                     rebuild: Callable[[Any], Any] | None = None,
@@ -122,7 +159,10 @@ def load_or_compute(db_path: str, coordinates: tuple, compute: Callable,
                     if row is not None and _digest(row[0]) == row[1]:
                         try:
                             plain = json.loads(row[0])
-                            return rebuild(plain) if rebuild else plain
+                            value = rebuild(plain) if rebuild else plain
+                            if rebuild is not None:
+                                _mark_sidecar_rebuilt(value)
+                            return value
                         except (ValueError, TypeError, KeyError):
                             pass
             except sqlite3.Error as error:
@@ -187,51 +227,8 @@ def rebuild_event_comparison(value):
 
 
 def _event_comparison_shape(value: Any) -> bool:
-    """Validate every durable field the preparation's public projections index."""
-    from .event_comparison import COHORTS, VIEW_CONFIG
-
-    if not isinstance(value, dict):
-        return False
-    exposures = value.get("exposures")
-    catalog = value.get("catalog")
-    window = exposures.get("window") if isinstance(exposures, dict) else None
-    if (not isinstance(window, dict) or not isinstance(window.get("start"), str)
-            or not isinstance(window.get("end"), str) or not isinstance(catalog, dict)):
-        return False
-    for view, config in VIEW_CONFIG.items():
-        occurrences = catalog.get(view)
-        if not isinstance(occurrences, list):
-            return False
-        for occurrence in occurrences:
-            if not isinstance(occurrence, dict):
-                return False
-            if any(not isinstance(occurrence.get(key), str)
-                   for key in ("id", "ep_id", "anchor_t", "date")):
-                return False
-            if not isinstance(occurrence.get("outcome_min"), (int, float)):
-                return False
-            trace = occurrence.get("trace")
-            if not isinstance(trace, dict) or not isinstance(trace.get("cgm"), list):
-                return False
-            if any(not isinstance(point, dict) for point in trace["cgm"]):
-                return False
-            if view == "lows" and any(not isinstance(marker, dict)
-                                      for marker in trace.get("rescue_carbs", [])):
-                return False
-            if not isinstance(occurrence.get("verdicts", []), list) or any(
-                    not isinstance(item, dict) or not isinstance(item.get("classifier"), str)
-                    for item in occurrence["verdicts"]):
-                return False
-            routes = occurrence.get("routes")
-            if not isinstance(routes, dict):
-                return False
-            for factor in config["factors"]:
-                route = routes.get(factor)
-                if (not isinstance(route, dict) or route.get("cohort") not in COHORTS
-                        or not isinstance(route.get("other_factors", []), list)
-                        or not isinstance(route.get("boundary", {}), dict)):
-                    return False
-    return True
+    return (isinstance(value, dict) and isinstance(value.get("exposures"), dict)
+            and isinstance(value.get("catalog"), dict))
 
 
 def dump_findings(value):

@@ -53,7 +53,8 @@ from .window_membership import WindowQuery
 from .result import SCHEMA_VERSION
 from .result_cache import ResultCache
 from .derived_artifacts import (
-    dump_event_comparison, dump_findings, dump_ic_history, load_or_compute,
+    discard_artifact, dump_event_comparison, dump_findings, dump_ic_history,
+    is_sidecar_rebuilt, load_or_compute,
     rebuild_event_comparison, rebuild_findings, rebuild_ic_history,
 )
 from .store import Store
@@ -159,6 +160,16 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         return fixed(("event-comparison-preparation",), "event-comparison-v1",
                      lambda store: prepare_event_comparisons(store),
                      dump=dump_event_comparison, rebuild=rebuild_event_comparison)
+
+    def recover_sidecar_projection(key, marker, value, project, reload):
+        try:
+            return project(value)
+        except Exception:
+            if not is_sidecar_rebuilt(value):
+                raise
+            cache.drop(key)
+            discard_artifact(db_path, key, marker)
+            return project(reload())
 
     def history_snapshot(window: int):
         """One coherent findings + history-evidence preparation per cache version.
@@ -607,7 +618,10 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     @app.get("/api/explore/exposures")
     def explore_exposures_endpoint(_: None = Depends(require_token)) -> dict:
         """The recent anchor-level exposure feed for Diagnose (#654)."""
-        return event_comparison_preparation().exposure_payload
+        return recover_sidecar_projection(
+            ("event-comparison-preparation",), "event-comparison-v1",
+            event_comparison_preparation(), lambda preparation: preparation.exposure_payload,
+            event_comparison_preparation)
 
     @app.get("/api/diagnose/event-comparison")
     def diagnose_event_comparison_endpoint(
@@ -641,7 +655,10 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 view=view, factor=factor, window=clock_window, another=another == "1",
                 occurrence_id=occ,
             )
-            return event_comparison_preparation().project(query)
+            return recover_sidecar_projection(
+                ("event-comparison-preparation",), "event-comparison-v1",
+                event_comparison_preparation(), lambda preparation: preparation.project(query),
+                event_comparison_preparation)
         except ValueError as error:
             raise HTTPException(status_code=400, detail=str(error)) from error
 
@@ -670,9 +687,11 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         except ValueError as error:
             raise HTTPException(status_code=400, detail=str(error)) from error
         try:
-            generation, (findings, _events) = history_snapshot(window)
-            return findings.project(
-                query, selected_id, analysis_generation=generation)
+            generation, snapshot = history_snapshot(window)
+            return recover_sidecar_projection(
+                ("findings-history-snapshot", window), "findings-history-v1", snapshot,
+                lambda pair: pair[0].project(query, selected_id, analysis_generation=generation),
+                lambda: history_snapshot(window)[1])
         except InvalidIcHistoryId as error:
             raise HTTPException(status_code=400, detail={
                 "code": "invalid_history_id", "message": str(error)}) from error
@@ -703,14 +722,17 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 "code": "analysis_generation_required",
                 "message": "analysis_generation is required"})
         try:
-            generation, (_findings, events) = history_snapshot(30)
+            generation, snapshot = history_snapshot(30)
             if analysis_generation != generation:
                 raise HTTPException(status_code=409, detail={
                     "code": "analysis_generation_mismatch",
                     "message": "Evidence changed. Refresh findings.",
                 })
-            return events.project(
-                history_id, selected_run_id, analysis_generation=generation)
+            return recover_sidecar_projection(
+                ("findings-history-snapshot", 30), "findings-history-v1", snapshot,
+                lambda pair: pair[1].project(history_id, selected_run_id,
+                                             analysis_generation=generation),
+                lambda: history_snapshot(30)[1])
         except (InvalidIcHistoryId, InvalidIcRunId) as error:
             code = ("invalid_history_id" if isinstance(error, InvalidIcHistoryId)
                     else "invalid_history_run_id")

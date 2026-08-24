@@ -10,3 +10,6 @@ layout/shape marker, and a process-cached hash of package source. Contention is
 a miss and never deletes a sidecar; malformed/corrupt sidecars are disposable.
 `PreparedCases` remains excluded: its domain objects/non-plain collections are
 not safe JSON artifacts and its recomputation is already pre-warmed.
+
+Byte-exactness is the digest's job; consumability is proven by use, with a total
+recompute-once guard for sidecar-sourced objects.

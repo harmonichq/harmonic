@@ -669,9 +669,20 @@ class DurableArtifactApiTest(unittest.TestCase):
         from ciq_autotune.api import create_app
         first = TestClient(create_app(db_path=self.tmp.name, token=None, enable_fetch_loop=False))
         self.assertEqual(first.get("/api/explore/exposures").status_code, 200)
+        routes = {
+            factor: {"cohort": "fired", "other_factors": [{}]}
+            for factor in ("over_treated_low", "correction_on_iob", "correction_stacking")
+        }
         payload = json.dumps({
             "exposures": {"window": {"start": "2026-05-01", "end": "2026-06-01"}},
-            "catalog": {"meals": {}},
+            "catalog": {
+                "meals": [],
+                "lows": [{
+                    "id": "bad", "ep_id": "bad-episode", "anchor_t": "2026-06-01 00:00:00",
+                    "date": "2026-06-01", "outcome_min": 0,
+                    "routes": routes, "trace": {"cgm": [{}]},
+                }],
+            },
         }, separators=(",", ":"))
         marker = _canonical(("event-comparison-v1", 1, source_fingerprint()))
         with Store.open_queryonly(self.tmp.name) as store:
@@ -689,6 +700,11 @@ class DurableArtifactApiTest(unittest.TestCase):
             response = second.get("/api/diagnose/event-comparison", params={"view": "lows"})
         self.assertEqual(response.status_code, 200, response.text)
         self.assertEqual(calls, [1])
+        with sqlite3.connect(sidecar_path(self.tmp.name)) as sidecar:
+            self.assertNotEqual(sidecar.execute(
+                "SELECT payload FROM artifacts WHERE revision=? AND coordinates=? AND marker=?",
+                (revision, _canonical(("event-comparison-preparation",)), marker),
+            ).fetchone()[0], payload)
 
 
 @unittest.skipUnless(_HAS_FASTAPI, "api extra not installed")

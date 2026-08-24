@@ -87,6 +87,11 @@ class ResultCache:
             self._preparations.clear()
             self._version += 1
 
+    def drop(self, key: Hashable) -> None:
+        """Evict one damaged cached result without changing its generation."""
+        with self._lock:
+            self._map.pop(key, None)
+
     def _commit_preparation(self, key, value, version, *, cap):
         """Commit under ``_lock``; version, capacity, and registration are one step."""
         if version != self._version:

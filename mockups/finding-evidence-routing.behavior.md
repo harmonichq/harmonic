@@ -2108,8 +2108,10 @@ its handler is at 661–676; that citation drift is likewise observed, not fixed
 P24 · ↑/↓ step selected Occurrences through the visible verdict roster and STOP
       at its ends rather than wrapping. Selection keeps the existing case file,
       breadcrumb depth, and window; a requested rendered row regains focus after
-      its asynchronous case-file render completes, while a requested Occurrence
-      beyond the five-row evidence cap remains selected and focus falls to BODY.
+      its asynchronous case-file render completes. Only while the roster remains
+      collapsed at its five-row evidence cap does a requested beyond-cap
+      Occurrence remain selected and focus fall to BODY; once expanded, every row
+      renders and regains focus normally.
   source:   frontend/diagnose-workstation.js (document keydown and paintLevel)
   evidence: replay S78/S79 (app, pass)
   verdict:  revised       operator-ruled: Connor Griffin · 2026-08-23

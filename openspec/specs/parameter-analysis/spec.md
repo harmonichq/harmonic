@@ -433,7 +433,7 @@ cannot pass is a defect in the placebo, never grounds for loosening the bar.
 
 On real history a single held ratio offers no contrast, so no held-out score can
 establish that one estimator is closer to the truth than another. The real-data
-bar instead replays a stable era: a stretch during which one carb-ratio schedule
+bar instead replays a stable era: a stretch during which one I:C schedule
 was programmed and held, and over which the shipped ledger's final pool meets its
 evidence floor. A candidate estimating from successive earlier cutoffs must reach
 the shipped ledger's own final answer no later than the ledger reaches it, with a
@@ -444,7 +444,7 @@ more-meals clause.
 The analysis path windows event streams at each cutoff but reads the programmed
 schedule from the latest snapshot, so a replay must not treat every window as
 judgeable. A window is refused, naming the failed precondition, when the snapshot
-log does not cover it, when any carb-ratio or ISF schedule change appears from the
+log does not cover it, when any I:C or ISF schedule change appears from the
 window's start through the latest snapshot, or when the shipped ledger's final
 block does not meet its evidence floor. The schedule check reads the whole tail
 pairwise rather than comparing endpoints, because a change that reverted leaves

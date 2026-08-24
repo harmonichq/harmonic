@@ -2,7 +2,7 @@
 
 ## Why
 
-No candidate carb-ratio estimator may ship on plausibility. The spanning-chain
+No candidate I:C estimator may ship on plausibility. The spanning-chain
 candidate produced confident findings on data that carried no ratio signal at
 all, and nothing in the tree would have caught it: the held-out backtest that
 was going to be the gate is dead (ADR 21), because a single held ratio gives a
@@ -43,7 +43,7 @@ tell an improvement from a confident fabrication.
 - The known settings leak in `analyze()` — event streams are windowed at the
   cutoff while the programmed schedule is read from the latest snapshot — is
   left untouched and made inert by precondition instead. A window whose snapshot
-  log does not cover it, or which contains any carb-ratio or ISF schedule change
+  log does not cover it, or which contains any I:C or ISF schedule change
   through the latest snapshot, is refused rather than scored.
 - No UI, no CI step, and no committed fixture bytes. The eight-run floor and the
   assertion predicate are unchanged.

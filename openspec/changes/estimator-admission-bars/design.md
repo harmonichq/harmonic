@@ -75,7 +75,7 @@ Instead the replay refuses any window where the leak could bite:
   before the window start, or none at all, is refused for coverage rather than
   assumed stable, because absence of evidence of a change is not evidence of
   stability;
-- no carb-ratio schedule change may appear anywhere from the window's start
+- no I:C schedule change may appear anywhere from the window's start
   through the latest snapshot, checked pairwise across the whole tail rather
   than at the endpoints, because a change that reverted (5.6 → 4.0 → 5.6)
   satisfies endpoint equality while injecting an intermediate regime into every

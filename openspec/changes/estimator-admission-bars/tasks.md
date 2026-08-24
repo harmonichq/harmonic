@@ -29,7 +29,7 @@
       behavior at its existing call site, with the replay as its second caller.
 - [x] Refuse a window whose snapshot log does not cover it, rather than reading
       an uncovered log as stable.
-- [x] Refuse a window with any carb-ratio or ISF schedule change from the
+- [x] Refuse a window with any I:C or ISF schedule change from the
       window's start through the latest snapshot, checked pairwise across the
       whole tail so a reverted change cannot pass endpoint equality.
 - [x] Refuse a window whose incumbent final block fails the engine-stamped runs

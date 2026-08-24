@@ -342,97 +342,14 @@
     .basal-table-actions { display: flex; gap: 6px; justify-content: flex-end; }
     .basal-table-actions .ghost.small { min-width: 116px; text-align: center; justify-content: center; }
     .basal-table-actions .btn-primary.small { min-width: 116px; text-align: center; justify-content: center; }
-    .basal-block-row td { background: var(--surface-2); border-top: 1px solid var(--line); border-left: 3px solid var(--primary); padding-top: 8px; padding-bottom: 8px; }
-    .basal-block-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: .82rem; }
-    .basal-block-member td:first-child { border-left: 3px solid var(--primary); }
-
-    /* ---- #57 Basal: Profile Diff + coverage Ribbon (replaces the 48-row table) ---- */
-    /* trust tiers: add=suggested change, ok=confirmed on target, warn=insufficient, muted=no data */
-    .basal-lede { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; box-shadow: var(--shadow); margin-bottom: 14px; font-size: .88rem; line-height: 1.55; }
-    .basal-lede b { font-weight: 700; }
-
-    /* coverage ribbon */
-    .ribbon-card { padding: 16px 14px 8px; margin-bottom: 16px; }
-    .ribbon-chart { width: 100%; height: 280px; }
-    .ribbon-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: .72rem; color: var(--muted); margin: 8px 4px 0; }
-    .ribbon-legend span { display: inline-flex; align-items: center; gap: 6px; }
-    .ribbon-legend .sw { width: 16px; height: 9px; border-radius: 2px; display: inline-block; }
-    .sw-prog { background: none; border-top: 1.6px dashed var(--secondary); height: 0; }
-    .sw-solid { background: var(--on-target); }
-    .sw-hatch { background: none; border-top: 1.8px dashed var(--warn); height: 0; }
-    .sw-hollow { background: none; border: 1.5px dashed var(--muted); }
-    .sw-gap { background: repeating-linear-gradient(90deg, var(--line), var(--line) 2px, transparent 2px, transparent 5px); }
-
-    /* tier filter row */
-    .tier-toggle { appearance: none; border: 1px solid var(--line); background: var(--surface); border-radius: var(--wk-radius); padding: 7px 12px; font-family: inherit; font-size: .8rem; font-weight: 600; color: var(--muted); cursor: pointer; display: inline-flex; align-items: center; gap: 7px; transition: background .15s, color .15s, border-color .15s, opacity .15s; }
-    .tier-toggle:hover { color: var(--text); }
-    .tier-toggle .sw { width: 12px; height: 12px; border-radius: 3px; flex: none; }
-    .tier-toggle .cnt { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--muted); background: var(--surface-2); border-radius: 999px; padding: 0 6px; font-size: .72rem; }
-    .tier-toggle.active { color: var(--text); border-color: var(--primary); background: var(--primary-100); }
-    .tier-toggle.off { opacity: .4; }
-
     /* the diff surface */
     .diff { border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; background: var(--surface); }
-    .diff-block { border-top: 1px solid var(--line); }
-    .diff-block:first-child { border-top: none; }
-    .diff-block-head { display: flex; align-items: center; gap: 12px; padding: 11px 14px; cursor: pointer; user-select: none; background: var(--surface); transition: background .12s; }
-    .diff-block-head:hover { background: var(--surface-2); }
-    .diff-caret { width: 12px; height: 12px; flex: none; color: var(--muted); transition: transform .15s; }
-    .diff-block.collapsed .diff-caret { transform: rotate(-90deg); }
-    .diff-range { font-variant-numeric: tabular-nums; font-size: .84rem; font-weight: 600; white-space: nowrap; }
-    .diff-block-title { font-size: .84rem; color: var(--muted); }
-    .diff-block-tag { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: .7rem; font-weight: 700; letter-spacing: .02em; padding: 4px 10px; border-radius: var(--wk-radius); white-space: nowrap; }
-    .diff-block-tag .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
-    .tag-change { color: var(--on-primary); background: var(--accent); }
-    .tag-confirmed { color: var(--on-target); background: var(--on-target-soft); }
-    .tag-insufficient { color: var(--warn); background: var(--warn-bg); }
-    .tag-nodata { color: var(--muted); background: var(--surface-2); }
-    .diff-block.collapsed .diff-block-body { display: none; }
-
-    /* one diff line per slot */
-    .diff-row { display: grid; grid-template-columns: 26px 1fr; align-items: stretch; font-variant-numeric: tabular-nums; font-size: .8rem; border-top: 1px solid var(--line); }
-    .diff-block-body .diff-row:first-child { border-top: none; }
-    .diff-gutter { display: grid; place-items: center; font-weight: 800; user-select: none; font-size: .95rem; }
-    .g-context { color: var(--muted); background: var(--surface); }
-    .g-add { color: var(--on-target); background: var(--on-target-soft); }
-    .g-del { color: var(--accent); background: var(--accent-100); }
-    .g-unver { color: var(--warn); background: var(--warn-bg); }
-    .g-nodata { color: var(--muted); background: var(--surface-2); }
-    .diff-cell { padding: 7px 12px; display: flex; align-items: center; gap: 12px; }
-    .r-add .diff-cell { background: var(--on-target-soft); }
-    .r-del .diff-cell { background: var(--accent-100); }
-    .r-unver .diff-cell { background: var(--warn-bg); }
-    .diff-time { width: 52px; flex: none; color: var(--muted); }
-    .diff-rate { width: 64px; flex: none; font-weight: 700; }
-    .r-add .diff-rate { color: var(--on-target); }
-    .r-del .diff-rate { color: var(--accent); text-decoration: line-through; opacity: .75; }
-    .diff-note { color: var(--muted); font-size: .78rem; }
-    .diff-n { margin-left: auto; flex: none; font-size: .72rem; color: var(--muted); white-space: nowrap; }
-    .diff-fold { padding: 9px 14px 9px 40px; font-size: .8rem; color: var(--muted); background: var(--surface); display: flex; align-items: center; gap: 8px; }
-    .diff-fold a { color: var(--primary); font-weight: 600; cursor: pointer; }
-    .diff-fold a:hover { text-decoration: underline; }
-
-    /* the change hunk (the star) */
-    .hunk-head { display: flex; align-items: center; gap: 10px; padding: 9px 14px; font-variant-numeric: tabular-nums; font-size: .76rem; color: var(--primary-600); background: var(--primary-100); font-weight: 600; }
-    .hunk-detail { padding: 14px 16px 16px 40px; background: var(--surface); border-top: 1px solid var(--line); }
-    .hunk-why { font-size: .86rem; line-height: 1.5; margin: 0 0 12px; }
-    .hunk-why b { font-weight: 700; }
-    .hunk-actions { display: flex; gap: 9px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
     .staged { font-size: .82rem; font-weight: 700; display: inline-flex; align-items: center; gap: 7px; }
     .staged.acc { color: var(--on-target); }
     .staged.rej { color: var(--accent); }
     .staged button { background: none; border: none; color: var(--muted); font-family: inherit; font-size: .76rem; text-decoration: underline; cursor: pointer; }
     .btn-reject { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
     .btn-reject:hover { background: var(--accent-100); }
-    .unver-why { padding: 12px 16px 14px 40px; background: var(--warn-bg); font-size: .82rem; line-height: 1.55; border-top: 1px solid var(--line); }
-    .unver-why b { color: var(--text); font-weight: 700; }
-
-    /* evidence strip plot (error-bar-on-estimate) */
-    .evidence-strip { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-2); padding: 12px 12px 8px; margin: 12px 0; }
-    .evidence-strip .head { font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
-    .evidence-strip-chart { width: 100%; height: 220px; }
-    .evidence-strip .foot { font-size: .74rem; color: var(--muted); margin: 6px 2px 0; line-height: 1.5; }
-
     .modal-overlay { position: fixed; inset: 0; background: rgba(10,14,16,.5); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 20px; }
     .modal { background: var(--surface); border-radius: var(--radius); box-shadow: var(--wk-elevation); max-width: 640px; width: 100%; padding: 0 22px 22px; max-height: 85vh; overflow: auto; }
     .modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; gap: 12px; position: sticky; top: 0; background: var(--surface); z-index: 1; padding-top: 22px; }
@@ -507,19 +424,6 @@
     /* #134: the daily-lanes chart is four stacked lanes on a shared clock, so
        it needs more vertical room than the old single panel. */
     .daily-chart-wrap { height: 482px; overflow: hidden; }
-    .range-legend { display: flex; gap: 6px 12px; flex-wrap: wrap; font-size: .72rem; color: var(--muted); margin: 14px 2px 0; }
-    .range-legend span { display: inline-flex; align-items: center; gap: 6px; }
-    .range-legend .sw { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
-    /* "logged carbs (you)" — a plain amber ring, not a gram-labeled pill, so it
-       can't be mistaken for a plotted manual-carb bubble when the legend wraps
-       on a narrow viewport (#141). */
-    .range-legend .sw.logged { background: var(--manual-carb-soft); border: 1.5px solid var(--manual-carb); }
-    .range-legend .sw.diamond { border-radius: 2px; transform: rotate(45deg); }
-    .range-legend .sw.pin { border-radius: 50% 50% 50% 0; }
-    .range-legend .sw.line { width: 14px; height: 0; background: none !important; border-radius: 0; }
-    .range-legend .sw.hatch { background: repeating-linear-gradient(45deg, var(--muted) 0 1.5px, transparent 1.5px 5px); opacity: .5; }
-    .range-legend .sw.band { width: 16px; height: 10px; border-radius: 2px; opacity: .5; }
-    .range-legend .sw.badge-lg { width: 14px; height: 14px; border-radius: 50%; background: var(--accent); color: var(--on-primary); font-size: .58rem; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; }
 
     /* #134 engine-flag footnotes: numbered flag list + on-demand detail card,
        lifted from the locked mockup (daily-flags-hybrid). Number ↔ chart badge
@@ -2344,15 +2248,10 @@ html.dark .viz .tie:hover::before { opacity:.13; }
     } from './scenario-chart.js';
 
     // #101: the pure chart-option builders live in their own vue-free module so
-    // their returned option JSON is node-testable. The shared pure helpers
-    // (fmt/direction/basalTier/ribbonYMax)
-    // are re-imported here so there's a single source of truth. The render
-    // functions (renderRibbonChart/renderEvidenceStrips) stay below — they own
-    // the echarts instances and DOM, and inject analysis/filters/colors into
-    // the builders.
+    // their returned option JSON is node-testable.
     import {
-      buildLanesOption, buildRibbonOption, buildEvidenceStripOption,
-      fmt, direction, basalTier, ribbonYMax, LANE_SPAN,
+      buildLanesOption,
+      fmt, direction, LANE_SPAN,
     } from './chart-builders.js';
 
     // #136: pure date/bounds helpers for the Daily Report day-picker nav
@@ -2441,9 +2340,8 @@ html.dark .viz .tie:hover::before { opacity:.13; }
       msToDatetimeLocal,
     } from './carb-log.js';
 
-    // #128: pure carb-log prompt-queue logic (vue-free, node-tested). The ribbon
-    // chart builders are aliased (buildRibbonOption already names the daily-chart
-    // ribbon from chart-builders.js above) — this is the review-queue ribbon.
+    // #128: pure carb-log prompt-queue logic (vue-free, node-tested). This is
+    // the review-queue ribbon.
     import {
       buildRibbonOption as pqBuildRibbonOption,
       buildSparklineOption as pqBuildSparklineOption,
@@ -4116,7 +4014,6 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           dark.value = !dark.value;
           document.documentElement.classList.toggle('dark', dark.value);
           localStorage.setItem('theme', dark.value ? 'dark' : 'light');
-          if (analysis.value) nextTick(() => { renderRibbonChart(); renderEvidenceStrips(); });
           if (verifyView) verifyView.refresh();
         }
 
@@ -4503,225 +4400,6 @@ html.dark .viz .tie:hover::before { opacity:.13; }
             dataQualityDismissed.value = false;
             lastThinSignature = sig;
           }
-        });
-
-        // ---- #57 Basal: trust tiers, block grouping, ribbon, evidence strip ----
-        // The gating status (safety.Status) isn't carried literally in the JSON,
-        // but SlotEstimate.annotation is 1:1 with it (see analyzers/basal._annotation_for),
-        // so we classify a slot into a trust tier off annotation + n + wide.
-        //   change  ← RAISE/LOWER/CAPPED_* (an actionable, directional suggestion)
-        //   confirmed ← NO_CHANGE (within noise of current) — the on-target hours
-        //   insufficient ← INSUFFICIENT / NO_BASELINE (data exists, direction can't be asserted)
-        //   nodata  ← NO_DATA (no clean days at all)
-        // basalTier moved to chart-builders.js (#101) — pure over the slot.
-
-        const basalTierMeta = [
-          { id: 'change',       label: 'Suggested changes',   swatch: 'var(--accent)' },
-          { id: 'confirmed',    label: 'Confirmed on-target', swatch: 'var(--on-target)' },
-          { id: 'insufficient', label: 'Insufficient data',   swatch: 'var(--warn)' },
-          { id: 'nodata',       label: 'No clean data',       swatch: 'var(--muted)' },
-        ];
-        const activeBasalTiers = ref(new Set(['change', 'confirmed', 'insufficient', 'nodata']));
-        function toggleBasalTier(id) {
-          const set = new Set(activeBasalTiers.value);
-          if (set.has(id)) set.delete(id); else set.add(id);
-          // Never leave every tier off — that would blank the whole surface.
-          if (set.size === 0) return;
-          activeBasalTiers.value = set;
-        }
-        const basalTierCounts = computed(() => {
-          const c = { change: 0, confirmed: 0, insufficient: 0, nodata: 0 };
-          if (analysis.value) for (const s of analysis.value.basal) c[basalTier(s)]++;
-          return c;
-        });
-        const basalChangeCount = computed(() => basalTierCounts.value.change);
-
-        // Group contiguous slots that share the same programmed rate into blocks,
-        // then split off any single-slot change into its own hunk block so the
-        // real edit is a highlighted +/- rather than buried in a run.
-        const basalBlocks = computed(() => {
-          if (!analysis.value) return [];
-          const slots = analysis.value.basal;
-          // First, contiguous same-programmed-rate runs.
-          const runs = [];
-          for (const s of slots) {
-            const last = runs[runs.length - 1];
-            if (last && s.slot === last.slots[last.slots.length - 1].slot + 1
-                && ((last.rate == null && s.current == null) || last.rate === s.current)) {
-              last.slots.push(s);
-            } else {
-              runs.push({ rate: s.current, slots: [s] });
-            }
-          }
-          // Then split each run into sub-blocks by tier, promoting a change slot.
-          const blocks = [];
-          for (const run of runs) {
-            let cur = null;
-            for (const s of run.slots) {
-              const tier = basalTier(s);
-              const key = tier === 'change' ? 'change:' + s.slot : tier;
-              if (cur && cur.key === key && tier !== 'change') {
-                cur.slots.push(s);
-              } else {
-                cur = { key, tier, rate: run.rate, slots: [s] };
-                blocks.push(cur);
-              }
-            }
-          }
-          return blocks.map(decorateBlock);
-        });
-
-        const TIER_TAG = {
-          change:       { tagClass: 'tag-change',       tagLabel: '1 CHANGE',    title: 'suggested edit' },
-          confirmed:    { tagClass: 'tag-confirmed',    tagLabel: 'CONFIRMED',   title: 'on target' },
-          insufficient: { tagClass: 'tag-insufficient', tagLabel: 'INSUFFICIENT', title: 'not enough evidence' },
-          nodata:       { tagClass: 'tag-nodata',       tagLabel: 'NO DATA',     title: 'no clean windows' },
-        };
-        function slotLabel(slot) {
-          const m = slot * 30;
-          return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
-        }
-        function decorateBlock(block) {
-          const first = block.slots[0], last = block.slots[block.slots.length - 1];
-          // Range end is the EXCLUSIVE end of the last slot: a block covering
-          // slots 0–2 runs 00:00–01:30, and a single slot 15 renders 07:30–08:00.
-          // last.slot maxes at 47, so last.slot+1 is at most 48 → "24:00".
-          const range = slotLabel(first.slot) + '–' + slotLabel(last.slot + 1);
-          const meta = TIER_TAG[block.tier];
-          const out = Object.assign({}, block, {
-            startSlot: first.slot, range,
-            tagClass: meta.tagClass, tagLabel: meta.tagLabel, title: meta.title,
-            confirmedCount: block.slots.filter((s) => s.days > 0).length,
-          });
-          if (block.tier === 'change') {
-            const s = block.slots[0];
-            const e = s.estimate;
-            const delta = s.recommended - s.current;
-            const ciPct = e.confidence != null ? Math.round(e.confidence * 100) : 80;
-            const ciLabel = (e.lo != null && e.hi != null) ? fmt(e.lo) + '–' + fmt(e.hi) : '—';
-            const pts = (s.evidence && s.evidence.points) || [];
-            const above = pts.filter((p) => p.rate > s.current + 1e-9).length;
-            const below = pts.filter((p) => p.rate < s.current - 1e-9).length;
-            const dirWord = delta > 0 ? 'above' : 'below';
-            out.change = Object.assign({}, s, {
-              current: s.current, recommended: s.recommended, measured: e.value,
-              days: s.days, estimate: e, ciPct, ciLabel,
-              deltaLabel: (delta > 0 ? '+' : '−') + fmt(Math.abs(delta)) + ' U/h',
-              evidenceFoot: `<b>${above} of ${pts.length}</b> clean night${pts.length === 1 ? '' : 's'} ran `
-                + `${dirWord} your current <b>${fmt(s.current)}</b>${below ? `, ${below} the other way` : ''}. `
-                + `The green bar at right is the estimate's ${ciPct}% CI (<b>${ciLabel}</b>) — uncertainty in your `
-                + `true need, not a range each night must fall inside.`,
-            });
-          }
-          if (block.tier === 'insufficient') {
-            const thin = block.slots.some((s) => s.days > 0 && s.days < 3);
-            out.unverWhy = thin
-              ? 'Only a night or two of clean data per slot, and the readings swing too widely to separate signal from noise.'
-              : 'The confidence interval spans your current rate, so even with data we can\'t assert a direction.';
-          }
-          return out;
-        }
-
-        const visibleBasalBlocks = computed(() =>
-          basalBlocks.value.filter((b) => activeBasalTiers.value.has(b.tier)
-            // #95 REPLACE-gating: while basal is settling, suppress the actionable
-            // change hunks (a fresh edit's post-change data can't support a new
-            // suggestion yet) — the settling card renders in their place. Preview
-            // mode empties `settling`, so the hunks reappear (the manual override).
-            && !(b.tier === 'change' && basalSettling.value)));
-
-        // Confirmed / insufficient / no-data blocks start collapsed; change blocks open.
-        const collapsedBlocks = ref(new Set());
-        watch(basalBlocks, (blocks) => {
-          const set = new Set();
-          for (const b of blocks) if (b.tier !== 'change') set.add(b.startSlot);
-          collapsedBlocks.value = set;
-        });
-        function toggleBlock(startSlot) {
-          const set = new Set(collapsedBlocks.value);
-          if (set.has(startSlot)) set.delete(startSlot); else set.add(startSlot);
-          collapsedBlocks.value = set;
-        }
-        function basalSlotNote(s) {
-          if (s.days === 0) return 'no clean days — keeps programmed';
-          if (s.days < 3) return `measured ${fmt(s.estimate.value)} — too few clean days to trust`;
-          return `measured ${fmt(s.estimate.value)} — CI spans current, no direction asserted`;
-        }
-
-        // Themed colors read from CSS vars so both charts track light/dark.
-        function cssVar(name) {
-          return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || '#888';
-        }
-        function chartColors() {
-          return {
-            text: cssVar('--text'), muted: cssVar('--muted'), line: cssVar('--line'),
-            primary: cssVar('--primary'), accent: cssVar('--accent'), secondary: cssVar('--secondary'),
-            onTarget: cssVar('--on-target'), warn: cssVar('--warn'),
-            surface: cssVar('--surface'), surface2: cssVar('--surface-2'),
-          };
-        }
-
-        // ---- coverage ribbon (24h ECharts strip) ----
-        // Replaces the old hand-rolled SVG (#57). Same init/setOption/resize
-        // lifecycle as the other ECharts surfaces.
-        const ribbonEl = ref(null);
-        let ribbonChart = null;
-
-        // ribbonYMax / buildRibbonOption moved to chart-builders.js (#101).
-
-        function renderRibbonChart() {
-          if (!analysis.value || !ribbonEl.value) return;
-          if (!ribbonChart) {
-            ribbonChart = echarts.init(ribbonEl.value);
-            // Click a slot → its evidence pane on the Settings audit clock (#495).
-            ribbonChart.getZr().on('click', (e) => {
-              if (!analysis.value) return;
-              const pt = [e.offsetX, e.offsetY];
-              if (!ribbonChart.containPixel({ gridIndex: 0 }, pt)) return;
-              const x = ribbonChart.convertFromPixel({ gridIndex: 0 }, pt)[0];
-              const slot = Math.floor(x / 30);
-              if (analysis.value.basal[slot]) jumpToReview({ type: 'basal', key: slot });
-            });
-          }
-          ribbonChart.setOption(buildRibbonOption(analysis.value.basal, { analysis: analysis.value, colors: chartColors() }), true);
-          ribbonChart.resize();
-        }
-
-        // ---- per-clean-night evidence strip (ECharts; #57 §3) ----
-        // The estimate's 80% CI is an ERROR BAR ON THE ESTIMATE at the right edge,
-        // NOT a band each night must fall inside.
-        const evidenceStripEls = reactive({});
-        const evidenceStripCharts = {};
-        function setEvidenceStripEl(slot, el) {
-          if (el) { evidenceStripEls[slot] = el; nextTick(renderEvidenceStrips); }
-          else {
-            if (evidenceStripCharts[slot]) { evidenceStripCharts[slot].dispose(); delete evidenceStripCharts[slot]; }
-            delete evidenceStripEls[slot];
-          }
-        }
-
-        // buildEvidenceStripOption moved to chart-builders.js (#101) — already pure.
-
-        function renderEvidenceStrips() {
-          const colors = chartColors();
-          for (const block of basalBlocks.value) {
-            if (block.tier !== 'change') continue;
-            const slot = block.change.slot;
-            const el = evidenceStripEls[slot];
-            if (!el) continue;
-            if (!evidenceStripCharts[slot]) evidenceStripCharts[slot] = echarts.init(el);
-            evidenceStripCharts[slot].setOption(buildEvidenceStripOption(block.change, colors), true);
-            evidenceStripCharts[slot].resize();
-          }
-        }
-
-        // Render the ribbon + evidence-strip ECharts once analysis lands (and the
-        // basal section's DOM exists). Trust-tier filtering also changes which
-        // change-blocks are mounted, so re-render on that too. Declared here,
-        // after activeBasalTiers/basalBlocks, so the deps are initialized.
-        watch([analysis, activeBasalTiers], () => {
-          if (!analysis.value) return;
-          nextTick(() => { renderRibbonChart(); renderEvidenceStrips(); });
         });
 
         let analysisRequestId = 0;
@@ -5583,8 +5261,6 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           loadAll();
           pqLoadPrompts();   // #128: seed the Review badge count on load
           window.addEventListener('resize', () => {
-            if (ribbonChart) ribbonChart.resize();
-            for (const c of Object.values(evidenceStripCharts)) c.resize();
             if (pqRibbon) pqRibbon.resize();
             if (pqSpark) pqSpark.resize();
             if (verifyView) verifyView.refresh();
@@ -5787,9 +5463,6 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           dataQualityDismissed, thinEpochs, thinEpochsSummary, dataQualityModalOpen, openDataQuality, closeDataQuality,
           dashboardGroups, icFindings, itemKey,
           settlingByParam, basalSettling, settlingCountdown,
-          basalTierMeta, activeBasalTiers, toggleBasalTier, basalTierCounts, basalChangeCount,
-          basalBlocks, visibleBasalBlocks, collapsedBlocks, toggleBlock, basalSlotNote,
-          ribbonEl, setEvidenceStripEl,
           fmt, direction, directionBadgeClass, severityBadgeClass, findingTitle, mealsStartHighFinding,
           inPlan, togglePlan,
           planItems, planHistory, applyingPlan, planReviewGuidance,

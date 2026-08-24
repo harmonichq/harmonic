@@ -11,7 +11,7 @@
 export const BIN_MINUTES = 15;
 export const BIN_COUNT = (24 * 60) / BIN_MINUTES; // 96
 
-function windowSpans([startMin, endMin]) {
+export function windowSpans([startMin, endMin]) {
   const spans = startMin <= endMin
     ? [[startMin, endMin]]
     : [[startMin, 1440], [0, endMin]];
@@ -150,15 +150,15 @@ export function windowStats(envelope, [startMin, endMin]) {
  */
 export const minWindowMinutes = (pool) => Math.max(2 * BIN_MINUTES, 2 * pool);
 
-/** Snap a minute to the pooling grid: nearest bin edge, clamped to the day. */
+/** Snap a display minute to the pooling grid. The live display spans three days. */
 export function snapMinute(minute) {
-  const snapped = Math.round(minute / BIN_MINUTES) * BIN_MINUTES;
-  return Math.min(1440, Math.max(0, snapped));
+  return Math.round(minute / BIN_MINUTES) * BIN_MINUTES;
 }
 
 /**
  * Snap a drawn window to the grid and widen it to the minimum the pooling
- * supports, pushing whichever edge keeps it inside the day.
+ * supports. Display minutes deliberately remain outside the canonical day until
+ * mouseup; that unrolled range is what lets a gesture cross midnight.
  * `anchor` is the edge the user is NOT dragging, so a resize grows away from it.
  */
 export function snapWindow([rawStart, rawEnd], pool, anchor = 'start') {
@@ -168,9 +168,24 @@ export function snapWindow([rawStart, rawEnd], pool, anchor = 'start') {
   if (end - start < min) {
     if (anchor === 'end') start = end - min; else end = start + min;
   }
-  if (start < 0) { start = 0; end = min; }
-  if (end > 1440) { end = 1440; start = Math.max(0, 1440 - min); }
+  if (end - start > 1440) {
+    if (anchor === 'end') start = end - 1440; else end = start + 1440;
+  }
   return [start, end];
+}
+
+const normalizeMinute = (minute) => ((minute % 1440) + 1440) % 1440;
+
+/** Commit an unrolled display range to the circular clock; null is whole-day scope. */
+export function commitWindow([displayStart, displayEnd]) {
+  if (displayEnd - displayStart >= 1440) return null;
+  return [normalizeMinute(displayStart), normalizeMinute(displayEnd)];
+}
+
+/** Commit a slide start while preserving the window's circular duration. */
+export function commitSlide(displayStart, duration) {
+  const start = normalizeMinute(snapMinute(displayStart));
+  return [start, normalizeMinute(start + duration)];
 }
 
 /** The plot body's px box inside `el`, in the element's own coordinate space. */
@@ -199,17 +214,18 @@ function estimateTextPx(text, fontSize, { caps = false, letterSpacing = 0 } = {}
 }
 
 /** px offset inside `el` for a clock minute. */
-export function xAtMinute(el, minute) {
+export function xAtMinute(el, minute, displayOffset = 0) {
   const box = plotBox(el);
-  const index = Math.min(CAT_MAX, Math.max(0, minute / BIN_MINUTES));
+  const index = Math.min(CAT_MAX, Math.max(0, (minute - displayOffset) / BIN_MINUTES));
   return box.left + (index / CAT_MAX) * box.width;
 }
 
 /** The clock minute under a px offset inside `el` (unsnapped). */
-export function minuteAtX(el, offsetX) {
+export function minuteAtX(el, offsetX, displayOffset = 0) {
   const box = plotBox(el);
   const ratio = (offsetX - box.left) / (box.width || 1);
-  return Math.min(1440, Math.max(0, ratio * CAT_MAX * BIN_MINUTES));
+  return displayOffset + Math.min(CAT_MAX * BIN_MINUTES,
+    Math.max(0, ratio * CAT_MAX * BIN_MINUTES));
 }
 
 /**

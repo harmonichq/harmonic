@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {
   BIN_MINUTES, buildMealMarkers, buildSlotLane, slotAssertsMove, snapWindow,
   renderCanvas, renderHistoryEvents, validateHistoryEvents, windowStats, windowSupport,
+  commitSlide, commitWindow, minuteAtX, windowSpans, xAtMinute,
 } from './diagnose-workstation-chart.js';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -72,6 +73,27 @@ test('windowStats reads a snapped hand-built envelope window', () => {
   assert.deepEqual(windowStats(envelope, window), {
     a: 1, b: 6, median: 118, lowest: 105, lowestIndex: 1, spread: 20, readings: 27,
   });
+});
+
+test('unrolled display windows snap, preserve their anchor, and commit circularly', () => {
+  assert.deepEqual(snapWindow([22 * 60, 26 * 60], 45), [1320, 1560]);
+  assert.deepEqual(commitWindow([1320, 1560]), [1320, 120]);
+  assert.deepEqual(snapWindow([-60, 3 * 60], 45, 'end'), [-60, 180]);
+  assert.deepEqual(commitWindow([-60, 180]), [1380, 180]);
+  assert.deepEqual(snapWindow([1425, 1440], 45), [1425, 1515]);
+  assert.deepEqual(snapWindow([1425, 1440], 10), [1425, 1455]);
+  assert.equal(commitWindow([1200, 2640]), null);
+  assert.deepEqual(commitSlide(23 * 60 + 30, 180), [1410, 150]);
+  assert.deepEqual(commitSlide(11 * 60 + 1440, 180), [660, 840]);
+});
+
+test('window spans and pointer mapping share the panned display domain', () => {
+  assert.deepEqual(windowSpans([1320, 120]), [[1320, 1440], [0, 120]]);
+  const el = { clientWidth: 1054 };
+  assert.equal(minuteAtX(el, 52, -120), -120);
+  assert.equal(minuteAtX(el, 1002, -120), 1305);
+  assert.equal(xAtMinute(el, -120, -120), 52);
+  assert.equal(xAtMinute(el, 1305, -120), 1002);
 });
 
 test('wrapped windows pool both stretches for stats and support', () => {

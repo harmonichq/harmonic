@@ -26,6 +26,21 @@ a Trial on a carb-ratio change should accept as "ready to judge".
   matured on glucose days, reporting ready while neither block could assert.
   Disposition: → ADR.
 
+- **The foregrounded window is a fixed stretch, not the evidence bar.** Operator
+  decision (Q4), 2026-08-24: keep the window fixed and short (30 days), let
+  evidence keep accruing quietly after it, and accept that a block which never
+  gathered enough simply expires without a verdict. Why: tying the window to the
+  bar would lock Focus out for months on a quiet block. Disposition: → ADR.
+- **No minimum elapsed time; the capture count alone decides.** Operator decision
+  (Q5), 2026-08-24. Why: the bar is already an evidence count. Disposition: → ADR.
+- **Carb ratio only; basal and correction factor keep their day count.** Operator
+  decision (Q6), 2026-08-24, with all-parameters noted as a possible later move.
+  Why: a basal change accrues usable nights at about one a day, so 14 days already
+  clears its eight-night bar. Disposition: → ADR, plus → issue for the later move.
+- **The one-Focus / one-Trial model needs a rethink** (engine, experience and
+  visualization together). Operator note, 2026-08-24: out of scope here, taken as a
+  separate effort. Disposition: → issue.
+
 ## Grounding (read-only snapshot, 2026-08-24)
 
 Measured through the shipped path (`analyze` with the fuzzy estimator, the
@@ -44,6 +59,8 @@ successive cutoffs:
   estimator's `effective_run_count`.
 - At the 14-day mark the Trial reported ready to judge while the busiest block
   was still short of the floor and the quieter block was at 1.31.
+- Stamped settings history begins 2026-07-04, so the current era is the only
+  cleanly measurable one; earlier eras admit no runs for lack of regime identity.
 - The quieter block extrapolates to roughly two months to reach the same bar, so
   one global window cannot serve both blocks.
 - Three different clocks can gate the same ratio change today: glucose data-days

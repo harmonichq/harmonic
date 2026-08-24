@@ -67,6 +67,14 @@ successive cutoffs:
   merely digests through earns nothing, and an unbolused hour earns nothing
   anywhere.
 
+- **Watching a change is exclusive, and the lock rides the same clock as maturity.**
+  While a Trial is live, pinning a Focus is rejected (409) and any active Focus is
+  *dropped*, persisted, not paused (`api` pin endpoint, `active_watched_change`).
+  "Live" means within the watch horizon, not "still maturing", so a horizon that
+  followed a slow block's meal bar would lock Focus out for that whole stretch.
+  Consequence: maturity and exclusivity have to be separated, or a quiet block
+  freezes all other work for months.
+
 ## Open questions
 - Whether a multi-block ratio change matures per block or as one verdict.
 - Whether a whole-profile switch that moves the ratio runs the meal bar for its

@@ -608,7 +608,7 @@ function renderCaseSelection(host, caseFile, onDay) {
   const box = document.createElement('div'); box.className = 'inner occ-detail';
   box.innerHTML = `<div class="occ-head"><span class="when">${fmtDate(detail.date)} · ${detail.anchor.t.slice(11, 16)}</span>
     <span class="tag">${verdictLabel}</span>${at >= 0 && rows.length > 1
-      ? `<span class="pos">${at + 1} of ${caseFile.verdict_counts[detail.verdict]}<i class="keyhint">← →</i></span>` : ''}</div>
+      ? `<span class="pos">${at + 1} of ${caseFile.verdict_counts[detail.verdict]}<i class="keyhint">↑ ↓</i></span>` : ''}</div>
     <div class="occ-nums">${detail.anchor.bg == null ? '—' : Math.round(detail.anchor.bg)}
       <span>at ${detail.anchor.label.toLowerCase()}</span></div>
     <div class="statline">The canvas shows this Occurrence's server-owned trace and evidence markers.</div>`;
@@ -1600,6 +1600,7 @@ function boot(root, data, callbacks, signal) {
      {k:'factors'} · {k:'factor', factor} · {k:'occ', occ} · {k:'slot', cell}. */
   const stack = [{ k: 'factors' }];
   let pendingFocus = null;
+  let occurrenceFocusId = null;
   const top = () => stack[stack.length - 1];
   const push = (frame) => {
     if (top().k === 'factors') queueScrollTop = el('level').scrollTop;
@@ -1658,7 +1659,8 @@ function boot(root, data, callbacks, signal) {
   function selectOcc(occ) {
     const f = top();
     if (f.k !== 'factor') return;
-    requestCase(f, f.requestedAlignment || 'clock', occ.id || occ);
+    occurrenceFocusId = occ.id || occ;
+    requestCase(f, f.requestedAlignment || 'clock', occurrenceFocusId);
   }
 
   // opening depth per mock state — a payload publishing no re-projectable
@@ -2305,6 +2307,12 @@ function boot(root, data, callbacks, signal) {
       shownRows);
     renderCaseSelection(host, caseFile, (detail) => callbacks.day?.(detail));
     appendCaseError(host);
+    if (occurrenceFocusId && !f.loading && f.selectedId === occurrenceFocusId) {
+      const row = [...host.querySelectorAll('.case-occurrence')]
+        .find((button) => button.dataset.occurrenceId === occurrenceFocusId);
+      row?.focus({ preventScroll: true });
+      occurrenceFocusId = null;
+    }
   }
 
   // Esc and the chip's × both mean "restore the last preset" — which is an
@@ -2584,11 +2592,13 @@ function boot(root, data, callbacks, signal) {
 
 
   /* KEYBOARD. Esc is NOT bound here — it keeps its window semantics (see the
-     design note's KEYBOARD block). Backspace pops a level at any depth; ← and →
-     are dedicated to stepping the SELECTED occurrence (P24/P25, kept and
-     re-homed onto select-in-place — there is no occurrence level any more).
-     Stepping STOPS at the ends rather than wrapping: an instrument should not
-     silently return you to the first reading. */
+     design note's KEYBOARD block). Backspace pops a level at any depth; ↑ and ↓
+     step the SELECTED Occurrence along the roster's vertical axis (P24/P25).
+     The event chart owns its own cursor keys, so focus inside #ec-chart bails
+     out. No filter guard is needed: opening a case file closes the root-only
+     Filter before this factor frame can receive a roster key. Stepping STOPS at
+     the ends rather than wrapping: an instrument should not silently return you
+     to the first reading. */
   document.addEventListener('keydown', (ev) => {
     if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
     const f = top();
@@ -2605,14 +2615,16 @@ function boot(root, data, callbacks, signal) {
       return;
     }
     if (f.k !== 'factor' || !f.selectedId
-      || (ev.key !== 'ArrowLeft' && ev.key !== 'ArrowRight')) return;
+      || (ev.key !== 'ArrowUp' && ev.key !== 'ArrowDown')) return;
+    if (ev.target instanceof Element && ev.target.closest('#ec-chart')) return;
     const siblings = f.caseFile.occurrences
       .filter((row) => row.verdict === (f.bandVerdict || 'fired'));
     const at = siblings.findIndex((row) => row.id === f.selectedId);
-    const next = at + (ev.key === 'ArrowRight' ? 1 : -1);
+    const next = at + (ev.key === 'ArrowDown' ? 1 : -1);
     if (at < 0 || next < 0 || next >= siblings.length) return;
     ev.preventDefault();
-    requestCase(f, f.requestedAlignment, siblings[next].id);
+    occurrenceFocusId = siblings[next].id;
+    requestCase(f, f.requestedAlignment, occurrenceFocusId);
   }, { signal });   // PORT: abortable
 
   observeResize(el('chart'), () => chart);

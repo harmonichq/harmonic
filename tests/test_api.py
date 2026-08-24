@@ -1568,7 +1568,12 @@ class CachePreWarmTest(unittest.TestCase):
     def test_warm_pass_invalidates_first_so_it_never_serves_pre_fetch_results(self):
         with self._counting_builders() as counts:
             self._get_landing_set()          # cold: every shape computed once
-            self.assertEqual(counts["scenarios"], 1)
+            self.assertEqual(counts, {"analyze": 2, "backtest": 1,
+                                      "outcomes-trend": 1, "scenarios": 1,
+                                      "exposures": 1,
+                                      "explore-time-of-day": 1,
+                                      "event-comparison-source-catalog": 1,
+                                      "finding-case-file": 1})
             self.app.state.invalidate_and_warm()
             # A cache-only invalidation has no new Store revision, so the fixed
             # scenarios endpoint reuses its verified durable artifact, including

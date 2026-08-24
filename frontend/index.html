@@ -2442,7 +2442,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
     // header popover is a thin shell over these — time math + payload shaping.
     import {
       QUICKLOG_PRESETS, QUICKLOG_TIMES, buildCarbPayload, isLoggable, carbToast,
-      msToDatetimeLocal,
+      formatWallClock, msToDatetimeLocal,
     } from '/assets/carb-log.js';
 
     // #128: pure carb-log prompt-queue logic (vue-free, node-tested). The ribbon
@@ -5629,8 +5629,11 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         const diagnoseCasePreparation = ref(null);
         const diagnoseWatched = ref(null);
         const diagnoseAges = ref({});
-        const diagnoseStaleCoversTo = computed(() => Object.values(diagnoseAges.value)
-          .map((age) => age.covers_to).filter(Boolean).sort()[0] || null);
+        const diagnoseStaleCoversTo = computed(() => {
+          const oldest = Object.values(diagnoseAges.value)
+            .map((age) => age.covers_to).sort()[0];
+          return oldest ? formatWallClock(new Date(oldest.replace(' ', 'T'))) : null;
+        });
 
         // The navigator feed is per calendar month with a week of pad either side, so
         // one month usually covers the 30-day window. When it does not reach far
@@ -5653,16 +5656,21 @@ html.dark .viz .tie:hover::before { opacity:.13; }
               // invariant is already resolved, so nothing is re-derived here
               enqueue(() => dataFetchOutcomesTrend(30)),
             ]);
-            recordDiagnoseAge(diagnoseAges.value, 'analysis', a);
-            recordDiagnoseAge(diagnoseAges.value, 'scenarios', s);
-            recordDiagnoseAge(diagnoseAges.value, 'time_of_day', e);
-            recordDiagnoseAge(diagnoseAges.value, 'exposures', x);
-            recordDiagnoseAge(diagnoseAges.value, 'trend', o);
-            diagnoseAnalysis.value = a; diagnoseScenarios.value = s; diagnoseEvidence.value = e;
-            diagnoseExposures.value = x;
+            const displays = [
+              recordDiagnoseAge(diagnoseAges.value, 'analysis', a),
+              recordDiagnoseAge(diagnoseAges.value, 'scenarios', s),
+              recordDiagnoseAge(diagnoseAges.value, 'time_of_day', e),
+              recordDiagnoseAge(diagnoseAges.value, 'exposures', x),
+              recordDiagnoseAge(diagnoseAges.value, 'trend', o),
+            ];
+            if (displays.some((payload) => payload === null)) {
+              throw new Error('Diagnose received invalid input-data age.');
+            }
+            [diagnoseAnalysis.value, diagnoseScenarios.value, diagnoseEvidence.value,
+              diagnoseExposures.value] = displays;
             diagnoseCasePreparation.value = p;
             diagnoseFindings.value = { ...p.findings, rows: p.rendered_rows };
-            diagnoseWatched.value = o?.watched_change || null;
+            diagnoseWatched.value = displays[4]?.watched_change || null;
             diagnoseReady.value = true;
             nextTick(diagnoseMount);
           } catch (e) {
@@ -5733,8 +5741,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
               onDayLoaded: () => diagnoseView?.repaintDay(),
               loadProjection: (coordinates) => enqueue(() =>
                 dataFetchDiagnoseEventComparison(coordinates).then((payload) => {
-                  recordDiagnoseAge(diagnoseAges.value, 'event_comparison', payload);
-                  return payload;
+                  return recordDiagnoseAge(diagnoseAges.value, 'event_comparison', payload);
                 })),
               // #735: a pressed preset and a drawn brace both ask the server for
               // that window's rows (lock terms 37/40) — the frontend re-scopes

@@ -14,6 +14,9 @@ const projection = projectSyntheticCapture(capture, requested);
 
 test('#83 · the workstation accepts a response matching its exact request', () => {
   assert.equal(validEventProjection(projection, requested), true);
+  assert.equal(validEventProjection({ ...projection, input_data_age: {
+    revision: 7, covers_to: '2026-08-24 08:00:00',
+  } }, requested), true);
 });
 
 test('#83 · the workstation rejects malformed and stale event responses', () => {
@@ -22,6 +25,10 @@ test('#83 · the workstation rejects malformed and stale event responses', () =>
   assert.equal(validEventProjection(projection, {
     ...requested, window: { start_min: 420, end_min: 615 },
   }), false);
+  assert.equal(validEventProjection({ ...projection, input_data_age: 'malformed' }, requested), false);
+  assert.equal(validEventProjection({ ...projection, input_data_age: {
+    revision: 7, covers_to: null,
+  } }, requested), false);
 });
 
 test('#83 · selected event evidence must match the requested occurrence exactly', () => {

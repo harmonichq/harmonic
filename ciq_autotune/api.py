@@ -151,41 +151,39 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     app.state.finding_case_file_before_commit = None
     fixed_flights: dict[tuple, None] = {}
     fixed_flights_lock = threading.Lock()
-    _MAX_FIXED_FLIGHTS = 64
 
     def fixed(key, marker, compute, *, dump=None, rebuild=None):
         """Return one exact fixed result, or a labeled exact predecessor in flight."""
         with fixed_flights_lock:
-            in_flight = key in fixed_flights
-        if in_flight:
+            owner = key not in fixed_flights
+            if owner:
+                fixed_flights[key] = None
+        if not owner and not cache.contains(key):
             prior = load_latest_prior(db_path, key, shape_marker=marker, rebuild=rebuild)
             if prior is not None:
                 return prior
         def build():
-            with fixed_flights_lock:
-                registered = len(fixed_flights) < _MAX_FIXED_FLIGHTS
-                if registered:
-                    fixed_flights[key] = None
-            try:
-                return load_or_compute(db_path, key, compute, shape_marker=marker,
-                                       dump=dump, rebuild=rebuild, with_age=True)
-            finally:
-                if registered:
-                    with fixed_flights_lock:
-                        fixed_flights.pop(key, None)
-        return cache.get_or_compute(key, build)
+            return load_or_compute(db_path, key, compute, shape_marker=marker,
+                                   dump=dump, rebuild=rebuild, with_age=True)
+        try:
+            return cache.get_or_compute(key, build)
+        finally:
+            if owner:
+                with fixed_flights_lock:
+                    fixed_flights.pop(key, None)
 
     def fixed_response(result: FixedResult, project=lambda value: value):
         """Project a fixed payload once, then atomically attach backend-owned age."""
         payload = project(result.value)
         if result.input_data_age is None:
             return payload
-        return {**payload, "input_data_age": {
-            "schema_version": result.input_data_age.schema_version,
+        age = {
             "revision": result.input_data_age.revision,
             "covers_to": result.input_data_age.covers_to,
-            "newest_covers_to": result.input_data_age.newest_covers_to,
-        }}
+        }
+        if result.input_data_age.newest_covers_to is not None:
+            age["newest_covers_to"] = result.input_data_age.newest_covers_to
+        return {**payload, "input_data_age": age}
 
     def event_comparison_preparation():
         """One fixed-window source/classifier preparation per cache version."""

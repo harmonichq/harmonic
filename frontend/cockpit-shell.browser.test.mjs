@@ -1161,11 +1161,11 @@ export async function S10(browser) {
 
 // STORY:cockpit-shell:S11
 export async function S11(browser) {
-  const options = { inputDataAge: { schema_version: 2, revision: 7,
+  const options = { inputDataAge: { revision: 7,
     covers_to: '2026-08-24 08:00:00', newest_covers_to: '2026-08-24 09:00:00' } };
   const page = await openApp(browser, options);
   try {
-    const banner = page.getByRole('status', { name: /Showing results from data through/ });
+    const banner = page.locator('.diagnose-data-age[role="status"]');
     await banner.waitFor();
     assert.equal(await banner.innerText(), 'Showing results from data through 2026-08-24 08:00:00.');
     assert.equal(await page.locator('.dw').isVisible(), true, 'stale age keeps Diagnose rendered');

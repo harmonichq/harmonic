@@ -92,6 +92,11 @@ class ResultCache:
         with self._lock:
             self._map.pop(key, None)
 
+    def contains(self, key: Hashable) -> bool:
+        """Return whether the current version already holds this exact result."""
+        with self._lock:
+            return key in self._map
+
     def _commit_preparation(self, key, value, version, *, cap):
         """Commit under ``_lock``; version, capacity, and registration are one step."""
         if version != self._version:

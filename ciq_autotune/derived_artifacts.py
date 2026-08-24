@@ -10,6 +10,7 @@ import hashlib
 import inspect
 import json
 import sqlite3
+from contextlib import closing
 from pathlib import Path
 from typing import Any, Callable
 
@@ -64,7 +65,10 @@ def _transient(error: sqlite3.Error) -> bool:
 
 def _corrupt(error: sqlite3.Error) -> bool:
     text = str(error).lower()
-    return "malformed" in text or "not a database" in text or "database disk image is malformed" in text
+    return ("malformed" in text or "not a database" in text
+            or "database disk image is malformed" in text
+            or "no such table: artifacts" in text or "no such column" in text
+            or "has no column named" in text)
 
 
 def _recreate_if_exclusive(path: str) -> bool:
@@ -111,7 +115,7 @@ def load_or_compute(db_path: str, coordinates: tuple, compute: Callable,
             primary.conn.execute("BEGIN")
             revision = primary.input_data_revision()
             try:
-                with _open(path) as sidecar:
+                with closing(_open(path)) as sidecar:
                     row = sidecar.execute(
                         "SELECT payload, digest FROM artifacts WHERE revision=? AND coordinates=? AND marker=?",
                         (revision, coords, marker)).fetchone()
@@ -143,7 +147,7 @@ def load_or_compute(db_path: str, coordinates: tuple, compute: Callable,
                 return value
         if before_persist is not None:
             before_persist()
-        with _open(path) as sidecar:
+        with closing(_open(path)) as sidecar:
             with sidecar:
                 sidecar.execute("""INSERT INTO artifacts(revision,coordinates,marker,payload,digest)
                     VALUES(?,?,?,?,?) ON CONFLICT(revision,coordinates,marker)
@@ -155,7 +159,16 @@ def load_or_compute(db_path: str, coordinates: tuple, compute: Callable,
         if _corrupt(error):
             # A malformed sidecar is disposable, but only remove it after opening
             # failed; a locked sidecar is never recreated.
-            _recreate_if_exclusive(path)
+            if _recreate_if_exclusive(path):
+                try:
+                    with closing(_open(path)) as sidecar:
+                        with sidecar:
+                            sidecar.execute("""INSERT INTO artifacts(revision,coordinates,marker,payload,digest)
+                                VALUES(?,?,?,?,?) ON CONFLICT(revision,coordinates,marker)
+                                DO UPDATE SET payload=excluded.payload,digest=excluded.digest""",
+                                (revision, coords, marker, payload, _digest(payload)))
+                except sqlite3.Error:
+                    pass
         # Return fresh computation for every persistence failure.
     return value
 

@@ -126,6 +126,27 @@ class DerivedArtifactsTest(unittest.TestCase):
         finally:
             artifacts._FINGERPRINT = old
 
+    def test_layout_marker_change_misses(self):
+        self.load(lambda store: {"first": True}, ("layout",))
+        with patch.object(artifacts, "DERIVED_ARTIFACT_STORE_SCHEMA_VERSION", 2):
+            self.assertEqual(self.load(lambda store: {"second": True}, ("layout",)),
+                             {"second": True})
+
+    def test_readonly_compute_does_not_create_sidecar(self):
+        self.assertEqual(load_or_compute(
+            self.tmp.name, ("readonly",), lambda store: {"snapshot": True},
+            shape_marker="test-v1", readonly=True), {"snapshot": True})
+        self.assertFalse(Path(sidecar_path(self.tmp.name)).exists())
+
+    def test_malformed_sidecar_schema_recreates_after_recompute(self):
+        path = sidecar_path(self.tmp.name)
+        with sqlite3.connect(path) as conn:
+            conn.execute("CREATE TABLE artifacts (wrong INTEGER)")
+        self.assertEqual(self.load(lambda store: {"recovered": True}, ("schema",)),
+                         {"recovered": True})
+        with sqlite3.connect(path) as conn:
+            self.assertEqual(conn.execute("SELECT COUNT(*) FROM artifacts").fetchone()[0], 1)
+
     def test_write_after_fresh_read_persists_only_old_revision(self):
         def write_after_read():
             with Store.open(self.tmp.name) as writer:

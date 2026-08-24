@@ -652,15 +652,18 @@ class DurableArtifactApiTest(unittest.TestCase):
     def test_restart_warms_event_comparison_without_rebuilding(self):
         from ciq_autotune.api import create_app
         first = TestClient(create_app(db_path=self.tmp.name, token=None, enable_fetch_loop=False))
-        self.assertEqual(first.get("/api/explore/exposures").status_code, 200)
+        initial = first.get("/api/explore/exposures")
+        self.assertEqual(initial.status_code, 200)
         import ciq_autotune.api as api_mod
         real = api_mod.prepare_event_comparisons
         calls = []
         with patch.object(api_mod, "prepare_event_comparisons",
                           side_effect=lambda *args, **kwargs: calls.append(1) or real(*args, **kwargs)):
             second = TestClient(create_app(db_path=self.tmp.name, token=None, enable_fetch_loop=False))
-            self.assertEqual(second.get("/api/explore/exposures").status_code, 200)
+            restored = second.get("/api/explore/exposures")
+            self.assertEqual(restored.status_code, 200)
         self.assertEqual(calls, [])
+        self.assertEqual(restored.json(), initial.json())
 
     def test_valid_json_wrong_event_comparison_shape_recomputes_and_serves(self):
         from ciq_autotune.api import create_app

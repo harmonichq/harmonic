@@ -100,6 +100,16 @@ expensive one. It is not warm-set waste; it is the one entry that must stay. The
 other two counts hold: the trend window is warmed at 14 while Diagnose asks 30,
 and the findings case preparation is never warmed. #122 carries all three.
 
+## #122 — Reconcile the Diagnose cold-arrival pre-warm
+
+The hourly warm set now matches the fixed cacheable requests in `loadAll` and
+`loadAudit`: the trend uses its 30-day cold-arrival window, the global findings
+case preparation is warmed, and the event-comparison preparation remains because
+the exposures request consumes its payload. Coordinate projections remain
+visitor-lazy. The API and frontend source comments name the shared contract; the
+cache regression test fixes its eight backend keys and consumes each through its
+public request.
+
 ## ADR 82 — Durable derived-artifact boundary
 
 **Status:** accepted, 2026-08-24. Extends ADR 0035 (the in-process result cache);

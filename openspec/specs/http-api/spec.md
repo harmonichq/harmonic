@@ -121,11 +121,12 @@ optimization: it leaves every cached read answering from pre-write data.
 - **GIVEN** the analysis result for a window has been computed and cached
 - **WHEN** a client triggers a fetch that commits rows and then fails part-way
 - **THEN** the endpoint invalidates the cache before returning, and the client is
-  still told the fetch failed: a fetch failure — a partial fetch among them —
-  answers `503`, carrying how far the pull got
-- **AND** a failure that is not the fetch's own is not flattened into that status.
-  An ingest defect keeps propagating as itself, so a bug in reading the vendor's
-  events cannot present as a vendor outage
+  still told the fetch failed — a partial fetch answers the same `503` a rejected
+  pull does, carrying how far it got, rather than escaping the handler as an
+  unexplained server error
+- **AND** widening the handler far enough to invalidate MUST NOT widen that
+  status. Every other failure keeps whatever it produced before, so a defect in
+  reading the vendor's events still surfaces as the defect it is
 
 #### Scenario: A write path that skips invalidation serves stale advice
 

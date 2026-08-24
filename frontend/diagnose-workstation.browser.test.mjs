@@ -147,6 +147,8 @@ async function shot(page, family, state_, viewport, theme) {
 
 const VIEWPORTS = [{ width: 1440, height: 900 }, { width: 1280, height: 800 }];
 
+const P27_SANCTION = 'Connor Griffin · 2026-08-23 · "#55 removed installSegKeys; the shipped Align control is two ordinary Tab stops"';
+
 const expandWatching = async (page) => {
   const toggle = page.locator('#level .qcollapse');
   if (await toggle.count() && await toggle.getAttribute('aria-expanded') !== 'true') {
@@ -211,6 +213,66 @@ test('an explicit fixture opener ignores a hostile ambient app-source override',
   } finally {
     if (previous === undefined) delete process.env.DIAGNOSE_APP_SOURCE;
     else process.env.DIAGNOSE_APP_SOURCE = previous;
+  }
+});
+
+test(`#96 · Align keeps keyboard focus and stays two Tab stops — RETIRED — ${P27_SANCTION}`, async () => {
+  const browser = await runner.browser();
+  const cases = [
+    { name: 'case file', options: { state: 'drawn', appSource: 'fixture' }, row: 'finding:over_treated_low' },
+    { name: 'I:C history', options: { state: 'typical', history: true, appSource: 'fixture' }, row: 'ich1_WzAsNzIwLCI2Il0' },
+  ];
+  for (const scenario of cases) {
+    const before = openerProblems().length;
+    const page = await openApp(browser, scenario.options);
+    try {
+      if (scenario.options.history) await expandWatching(page);
+      const row = page.locator(`#level .qrow[data-id="${scenario.row}"]`);
+      assert.equal(await row.count(), 1, `${scenario.name} exposes the finding to drill`);
+      await row.click();
+      await page.locator('#seg-align button').first().waitFor();
+      await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false');
+      assert.equal(await page.locator('.ev-row[aria-pressed="true"], .history-run[aria-pressed="true"]').count(), 0,
+        `${scenario.name} has no selected occurrence before testing Align keys`);
+
+      await page.locator('#seg-window button:last-of-type').evaluate((button) => button.focus());
+      await page.keyboard.press('Tab');
+      const focused = page.locator('#seg-align button[aria-pressed="true"]');
+      assert.equal(await page.evaluate(() => document.activeElement?.closest('#seg-align') !== null), true,
+        `${scenario.name} reaches Align by a real Tab`);
+      await page.keyboard.press('Tab');
+      assert.equal(await page.evaluate(() => document.activeElement?.textContent.trim()), 'By event',
+        `${scenario.name} Tabs to the other Align choice before activating it`);
+
+      const pressedBeforeArrows = await page.locator('#seg-align button').evaluateAll((buttons) =>
+        buttons.map((button) => button.getAttribute('aria-pressed')));
+      const activeBeforeArrows = await page.evaluate(() => document.activeElement?.textContent.trim());
+      await page.keyboard.press('ArrowRight');
+      await page.keyboard.press('ArrowLeft');
+      assert.equal(await page.evaluate(() => document.activeElement?.textContent.trim()), activeBeforeArrows,
+        `${scenario.name} Arrow keys leave focus on Align`);
+      assert.deepEqual(await page.locator('#seg-align button').evaluateAll((buttons) =>
+        buttons.map((button) => button.getAttribute('aria-pressed'))), pressedBeforeArrows,
+      `${scenario.name} Arrow keys do not move Align's pressed choice`);
+
+      const requests = [];
+      page.on('request', (request) => {
+        if (new URL(request.url()).pathname.startsWith('/diagnose/')) requests.push(request.url());
+      });
+      await page.keyboard.press('Enter');
+      await settle(page, 450);
+      assert.equal(await page.evaluate(() => document.activeElement?.textContent.trim()), 'By event',
+        `${scenario.name} Enter activates the other Align choice without moving focus`);
+      assert.deepEqual(await page.evaluate(() => {
+        const style = getComputedStyle(document.activeElement);
+        return [style.outlineWidth, style.outlineStyle, style.outlineOffset];
+      }), ['2px', 'solid', '-2px'], `${scenario.name} draws the inward app focus ring`);
+      assert.equal(requests.length, 1, `${scenario.name} Enter makes exactly one Diagnose request`);
+    } finally {
+      await page.close();
+    }
+    assert.deepEqual(openerProblems().slice(before), [],
+      `no opener problems while exercising ${scenario.name} Align keyboard focus`);
   }
 });
 

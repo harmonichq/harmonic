@@ -93,6 +93,7 @@ prose-exempt pyproject.toml owner-name | deliberate authorship, ruled to stay (Â
 prose-exempt frontend/diagnose-event-comparison-behavior.replay.mjs owner-name | required permanent dated acceptance sanction (#58)
 prose-exempt frontend/diagnose-workstation-behavior.replay.mjs owner-name | required permanent dated acceptance sanction (#58)
 prose-exempt frontend/cockpit-shell.browser.test.mjs owner-name | required permanent dated retirement sanction (#52)
+prose-exempt frontend/diagnose-workstation.browser.test.mjs owner-name | required permanent dated retirement sanction (#96)
 # The licence names its licensor for the same reason, and a licence with no
 # licensor named is not a licence. Same class as the pyproject.toml authorship;
 # holds under the pending swap to PolyForm Noncommercial 1.0.0, which also

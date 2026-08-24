@@ -589,7 +589,8 @@ P27 · Segmented instrument groups take roving Arrow/Home/End focus with
             which the shipped app does not have
   evidence: probe3 (app: focus walks Glucose → Meals → Lows on ArrowRight/End) ·
             probe-mock (mock lane: 48 cells, 1 tab stop — a mock addition)
-  verdict:  kept          operator-ruled: Connor Griffin · 2026-08-19
+  verdict:  retired
+  sanction: Connor Griffin · 2026-08-23 · "#55 removed installSegKeys; the shipped Align control is two ordinary Tab stops"
 ```
 
 ### E · Hover and the docked readout
@@ -945,6 +946,14 @@ P54 · The lens's two routes out: "Open this date in Day" on the selected
 ```
 
 ---
+
+```
+P55 · The Align group keeps its two ordinary Tab stops when a reader activates
+      either projection from the keyboard; it has no Arrow/Home/End roving.
+  source:   frontend/diagnose-workstation.js (renderAlign)
+  evidence: frontend/diagnose-workstation.browser.test.mjs (#96)
+  verdict:  kept
+```
 
 ## §3 completeness check
 
@@ -1971,3 +1980,16 @@ and aggregate replay flows.
 
 Story-id mapping: this work order's requested S72 was already taken by #95, so
 #100 records S76 instead.
+
+## Revision — 2026-08-23, base a033b6e (issue #96: renderAlign reconciles in place)
+
+The base replay used the declared no-fetch server and the fixed-seed-620 synthetic
+database. P55 adds browser-driven keyboard coverage in
+`frontend/diagnose-workstation.browser.test.mjs`; the replay story count is
+unchanged because this ticket adds no replay story.
+
+P27 is permanently retired: `installSegKeys` was deleted by 1d06530 (#55) after
+the ledger was frozen by 482d347 (#44), and no live segmented group in
+`frontend/diagnose-event-comparison.js` carries roving keys today.
+
+sanction: Connor Griffin · 2026-08-23 · "#55 removed installSegKeys; the shipped Align control is two ordinary Tab stops"

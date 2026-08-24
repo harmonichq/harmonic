@@ -351,19 +351,24 @@ function renderInstruments(winKey, capture, onPreset) {
 
 /** ALIGN (ADR 31 part 3): a switch over already-selected data, never a
     navigation — it does not push, and nothing else in the instrument row is a
-    function of it. Rebuilt every paint from the standing frame's own align
-    state, same as `renderInstruments` rebuilds WINDOW from `winKey`. */
+    function of it. Its fixed choices reconcile from the standing frame's own
+    align state, the same way `pressPreset` patches WINDOW from `winKey`. */
 function renderAlign(alignKey, onAlign) {
   const seg = el('seg-align');
-  seg.innerHTML = '';
-  for (const [key, label] of [['clock', 'By clock'], ['event', 'By event']]) {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.textContent = label;
-    b.setAttribute('aria-pressed', String(key === alignKey));
-    b.addEventListener('click', () => onAlign(key));
-    seg.append(b);
+  const choices = [['clock', 'By clock'], ['event', 'By event']];
+  if (!seg.querySelector('button')) {
+    for (const [, label] of choices) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = label;
+      seg.append(b);
+    }
   }
+  seg.querySelectorAll('button').forEach((b, index) => {
+    const [key] = choices[index];
+    b.setAttribute('aria-pressed', String(key === alignKey));
+    b.onclick = () => onAlign(key);
+  });
 }
 
 const CHIP_LABELS = [['highs', 'Highs'], ['lows', 'Lows'], ['meals', 'Meals'], ['corrections', 'Corrections']];

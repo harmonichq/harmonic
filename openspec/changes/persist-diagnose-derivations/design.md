@@ -212,6 +212,32 @@ whole set.
 failing shape, and that behavior is kept: a single bad compute must not stop the
 rest, or the hourly loop.
 
+## ADR 125 — One paced lifecycle recompute worker
+
+**Status:** accepted, 2026-08-24.
+
+The API owns one asyncio task and one asyncio event for its entire lifespan. A
+successful fetch calls the cache bump from its fetch thread, then uses
+`loop.call_soon_threadsafe(event.set)`; it never starts a warm pass itself. The
+worker clears that event, runs each complete roster shape through
+`asyncio.to_thread`, and awaits an explicit inter-shape pace seam. Production's
+seam is `asyncio.sleep` with the configured pace, so it yields the serving loop;
+tests supply a recording awaitable without sleeping.
+
+Signals while a set is running coalesce. The worker snapshots the cache revision
+at set start and checks it at every shape boundary. A newer revision lets the
+current thread finish, but abandons the remaining old shapes and restarts one
+fresh roster at its first shape. Shutdown cancels the task at a boundary or
+during the awaitable pace; when a thread shape is in flight, the task awaits it
+before exiting and starts no further shape.
+
+Fixed warm shapes continue through their endpoint functions and `fixed()`'s
+single in-flight registry, preserving labeled prior-result service for a
+concurrent same-shape request. The finding-case shape instead invokes its
+empty-query Request endpoint adapter and preserves its preparation single-flight;
+it is not a fixed stale-serving shape. A shape exception is logged and skipped,
+without terminating its set, the worker, or the fetch loop.
+
 ## Shared preparation is computed once per input revision and model version
 
 The canonical analysis, scenario report and exposure feed are derived **once** per

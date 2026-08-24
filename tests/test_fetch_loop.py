@@ -93,8 +93,8 @@ class RunFetchLoopTest(unittest.IsolatedAsyncioTestCase):
 
     @patch("ciq_autotune.fetch_loop.run_fetch_once")
     async def test_on_write_runs_off_the_event_loop(self, mock_once):
-        # #424: on_write now also pre-warms the result cache — seconds of pure-Python
-        # compute — so it must run in a worker thread, not on the loop serving requests.
+        # #125: on_write is the fetch-thread callback that bumps and signals the
+        # lifecycle worker; it must not run on the serving loop.
         import threading
 
         mock_once.return_value = {"cgm_readings": 5}

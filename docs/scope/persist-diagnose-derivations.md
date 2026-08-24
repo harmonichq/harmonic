@@ -32,3 +32,22 @@
 - Round 2 (same reviewer, deltas only): 0 blockers, 2 notes tagged `injected`/`authoring` — WAL-safe snapshot copy (`.backup`), and a leftover unqualified ~5-min clause. Both applied. Order countersigned.
 
 ## Spawned tasks
+
+- #120 — bound the event-comparison catalog capture to its source window
+- #121 — hoist the per-meal suspend-ownership rescan
+- #122 — reconcile the hourly pre-warm set with the cold arrival (the ledger's
+  deferred warm-set fix, discharged as its own issue)
+- #123 — the versioned sidecar artifact store
+- #124 — serve previous results with a visible input-data age
+- #125 — one throttled paced recompute worker
+- #126 — share the canonical analysis, scenarios and exposures with the findings
+  projection
+
+## Findings
+
+- The profiling this ledger deferred is done (2026-08-24 snapshot). One shape —
+  the event-comparison preparation behind the exposures feed — is 98.2s of a
+  113.3s cold arrival, and its cost is a whole-history rescan per meal, not a
+  cache miss. The persistence boundary is still worth building; it is no longer
+  the fix for the five-minute symptom. See
+  `openspec/changes/persist-diagnose-derivations/design.md`.

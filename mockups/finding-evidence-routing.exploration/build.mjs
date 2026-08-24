@@ -281,10 +281,6 @@ const icBlockAtMinute = (icLane, minute) =>
  * instead.
  */
 
-/** DESIGN.md rule 3 — "Do not say 'clean nights'… Say 'nights of steady data.'"
-    The noun is the projection's own `support.noun`, respelled. */
-const STEADY_NOUN = { 'clean nights': 'nights of steady data' };
-
 /** DESIGN.md rule 8 — user copy uses `Correction factor` and `Carb ratio`, and
     shows basal model slots as bare time ranges (`Basal · 00:00–00:30`). The
     projection's row titles carry the engine spellings (`I:C`, `Basal 00:30 to
@@ -315,12 +311,11 @@ function voiceProjection(window) {
   const rows = window.rows.map((row) => {
     const title = voiceTitle(row.title);
     const noun = row.support?.noun;
-    const respelled = noun && STEADY_NOUN[noun];
-    if (title !== row.title || respelled) touched += 1;
+    if (title !== row.title) touched += 1;
     return {
       ...row,
       title,
-      support: row.support ? { ...row.support, noun: respelled || noun } : row.support,
+      support: row.support ? { ...row.support, noun } : row.support,
     };
   });
   if (!touched) {

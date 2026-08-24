@@ -182,6 +182,7 @@ export const state = (page) => page.evaluate(() => {
           .map((button) => ({
             text: button.getAttribute('aria-label'),
             checked: button.getAttribute('aria-checked'),
+            disabled: button.disabled,
           })),
       };
     })(),
@@ -478,7 +479,7 @@ export async function openApp(browser, {
   findingsProjectionInputs = null, exposuresInputs = null, analysisInputs = null,
   pumpSettingsInputs = null, onPlanDraft = null,
   comparisonProjection = null,
-  findingsDelayMs = 0, findingsDelays = {}, findingsFailures = {},
+  findingsDelayMs = 0, findingsDelays = {}, findingsFailures = {}, findingsResponseBarrier = null,
   appSource = 'server',
   history = false, selectedFindingsResponses = [], historyResponses = [], stageProbe = false,
   caseScenario = null, frontendRoot = join(ROOT, 'frontend'), fixtureBaseUrl = null,
@@ -657,6 +658,9 @@ export async function openApp(browser, {
        the pane shows WHILE it is in flight needs that flight to last long enough
        to read. Delay, never stub differently: the response is the same one. */
     if (path === '/api/diagnose/findings' || path === '/api/diagnose/finding-case-file-preparation') {
+      if (appSource === 'fixture' && findingsResponseBarrier) {
+        await findingsResponseBarrier({ url, request: route.request() });
+      }
       const start = url.searchParams.get('start_min');
       const key = start === null ? 'global' : `${start}-${url.searchParams.get('end_min')}`;
       const delay = findingsDelays[key] ?? findingsDelayMs;
@@ -3385,14 +3389,14 @@ export const issue86DirectEntryRestoration = async (page) => {
 
 /** #86 probe — while a root projection is pending, Filter selections remain
     enabled and checked but old row and chip counts are withheld. */
-export const issue86PendingRoot = async (page) => {
+export const issue86PendingRoot = async (page, control) => {
   await page.getByRole('button', { name: /Filter/ }).click();
   await page.getByRole('menuitemcheckbox', { name: /^Lows / }).click();
   await page.getByRole('menuitemradio', { name: 'Event charts', exact: true }).click();
   const checked = (await state(page)).filter.sift.map((item) => item.checked);
   await page.keyboard.press('Escape');
   await page.click('#seg-window button:nth-child(3)');
-  await settle(page, 250);
+  await control.request;
   const pending = await state(page);
   is(pending.levelLoading, 'true', '#86 the root projection declares loading');
   is(pending.queue, [], '#86 no old rows remain under the arriving window');
@@ -3405,6 +3409,19 @@ export const issue86PendingRoot = async (page) => {
   ok(pending.filter.sift.every((item) => !item.disabled), '#86 pending controls stay enabled');
   is(pending.filter.view.map((item) => item.checked), ['false', 'true'],
     '#86 pending View selection is retained');
+  ok(pending.filter.view.every((item) => !item.disabled), '#86 pending View controls stay enabled');
+  control.release();
+  await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false',
+    null, { timeout: 10_000 });
+  const settled = await state(page);
+  is(settled.levelLoading, 'false', '#86 the root projection settles after release');
+  is(settled.crumbMeta, '4 in this window', '#86 settled metadata carries the Afternoon count');
+  is(settled.queue.map((row) => row.title), [
+    'Over-treated low',
+    'Correction on active insulin',
+    'Late bolus',
+    'Missed / unannounced meal',
+  ], '#86 the exact Afternoon projection replaces the pending state in server order');
 };
 
 /** #86 probe — a malformed direct By-event response leaves the requested

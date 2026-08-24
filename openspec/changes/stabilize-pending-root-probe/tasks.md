@@ -2,20 +2,20 @@
 
 ## 1. Replace the timing race with a response barrier
 
-- [ ] Add one optional fixture-only asynchronous response-barrier callback to
+- [x] Add one optional fixture-only asynchronous response-barrier callback to
       the Diagnose opener; await its returned promise and propagate callback
       failures.
-- [ ] Give the pending-root browser case a locally owned, idempotently released
+- [x] Give the pending-root browser case a locally owned, idempotently released
       barrier scoped to the `720-1080` finding-case preparation request.
-- [ ] Assert the existing pending rendered state only after the request is held,
+- [x] Assert the existing pending rendered state only after the request is held,
       then release it and assert the exact settled Afternoon projection through
       a bounded condition wait.
-- [ ] Remove the fixed pending-state sleep and case-wide response delay from this
+- [x] Remove the fixed pending-state sleep and case-wide response delay from this
       probe without changing unrelated timing stories.
 
 ## 2. Verify
 
-- [ ] Red-prove that bypassing the barrier fails the focused regression for the
+- [x] Red-prove that bypassing the barrier fails the focused regression for the
       intended pending-state reason.
-- [ ] Run the Diagnose workstation browser suite and the dependency-free
+- [x] Run the Diagnose workstation browser suite and the dependency-free
       frontend suite with zero failures.

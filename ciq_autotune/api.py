@@ -191,6 +191,13 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 with fixed_flights_lock:
                     fixed_flights.pop(key, None)
 
+    def fixed_in_flight_keys():
+        """Expose a stable snapshot of the fixed-shape registry."""
+        with fixed_flights_lock:
+            return tuple(fixed_flights)
+
+    app.state.fixed_in_flight_keys = fixed_in_flight_keys
+
     def fixed_response(result: FixedResult, project=lambda value: value):
         """Project a fixed payload once, then atomically attach backend-owned age."""
         payload = project(result.value)

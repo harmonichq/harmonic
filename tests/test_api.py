@@ -35,6 +35,7 @@ from ciq_autotune.derived_artifacts import (
     DERIVED_ARTIFACT_STORE_SCHEMA_VERSION,
     _canonical,
     _digest,
+    load_latest_prior,
     sidecar_path,
     source_fingerprint,
 )
@@ -1765,6 +1766,53 @@ class CachePreWarmTest(unittest.TestCase):
             self.assertTrue(complete.wait(3))
         self.assertEqual(trace, ["A", "A", "pace", "B"])
 
+    def test_worker_supersede_leaves_an_old_fixed_shape_unpublished(self):
+        """A crossed worker result neither fills the public cache nor persists."""
+        import ciq_autotune.api as api_mod
+        import ciq_autotune.derived_artifacts as artifacts
+
+        key = ("analyze", 30, False, True)
+        entered, release, completed = threading.Event(), threading.Event(), threading.Event()
+        label, warm = next(item for item in self.app.state.recompute_roster()
+                           if item[0] == "analyze-pooled")
+
+        def old_shape():
+            try:
+                return warm()
+            finally:
+                completed.set()
+
+        rosters = iter((((label, old_shape),), ()))
+        self.app.state.recompute_roster = lambda: next(rosters)
+        real = api_mod.analyze
+        builds = []
+
+        def blocked_analyze(*args, **kwargs):
+            builds.append(1)
+            if len(builds) == 1:
+                entered.set()
+                self.assertTrue(release.wait(3))
+            return real(*args, **kwargs)
+
+        with patch.object(artifacts, "_MAX_SNAPSHOT_ATTEMPTS", 1), \
+             patch.object(api_mod, "analyze", side_effect=blocked_analyze):
+            with TestClient(self.app) as client:
+                self.app.state.signal_recompute()
+                self.assertTrue(entered.wait(3))
+                with Store.open(self.tmp.name) as store:
+                    store.upsert_cgm([{"EventDateTime": "2026-06-06 00:00:00",
+                                       "Readings (CGM / BGM)": 115}])
+                self.app.state.signal_recompute()
+                release.set()
+                self.assertTrue(completed.wait(3))
+                self.assertFalse(self.app.state.result_cache.contains(key))
+                before_read = len(builds)
+                response = client.get("/api/analyze", params={"window": 30, "pool": True})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(builds), before_read + 1)
+        self.assertIsNone(load_latest_prior(self.tmp.name, key, shape_marker="analyze-v1"))
+
     def test_shutdown_waits_for_a_running_shape_and_starts_no_next_shape(self):
         trace, entered, release, finished = [], threading.Event(), threading.Event(), threading.Event()
 
@@ -1881,7 +1929,8 @@ class CachePreWarmTest(unittest.TestCase):
     def test_worker_finding_case_shape_uses_its_endpoint_adapter(self):
         import ciq_autotune.api as api_mod
 
-        completed, calls = threading.Event(), []
+        entered, release, completed, calls = (threading.Event(), threading.Event(),
+                                              threading.Event(), [])
         label, warm = next(item for item in self.app.state.recompute_roster()
                            if item[0] == "finding-case-file")
 
@@ -1893,17 +1942,48 @@ class CachePreWarmTest(unittest.TestCase):
 
         self.app.state.recompute_roster = lambda: ((label, worker_shape),)
         real = api_mod.prepare_finding_cases
+
+        def blocked_prepare(*args, **kwargs):
+            calls.append((args, kwargs))
+            entered.set()
+            self.assertTrue(release.wait(3))
+            return real(*args, **kwargs)
+
         with patch.object(api_mod, "prepare_finding_cases",
-                          side_effect=lambda *args, **kwargs: calls.append(1) or real(*args, **kwargs)):
-            with TestClient(self.app):
+                          side_effect=blocked_prepare):
+            with TestClient(self.app) as client:
                 self.app.state.signal_recompute()
+                self.assertTrue(entered.wait(3))
+                self.assertEqual(self.app.state.fixed_in_flight_keys(), ())
+                with ThreadPoolExecutor(max_workers=1) as pool:
+                    request = pool.submit(client.get,
+                                          "/api/diagnose/finding-case-file-preparation")
+                    self.assertFalse(request.done())
+                    release.set()
+                    self.assertEqual(request.result(timeout=3).status_code, 200)
                 self.assertTrue(completed.wait(3))
-        self.assertEqual(calls, [1])
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(calls[0][1]["query"].start_min, None)
+        self.assertEqual(calls[0][1]["query"].end_min, None)
 
     def test_worker_and_direct_fixed_endpoint_keep_identical_payload_bytes(self):
+        import ciq_autotune.api as api_mod
+
+        def staging_verdicts(value):
+            verdicts = []
+            if isinstance(value, dict):
+                if "safety_status" in value or "asserts_move" in value:
+                    verdicts.append((value.get("safety_status"), value.get("asserts_move")))
+                for child in value.values():
+                    verdicts.extend(staging_verdicts(child))
+            elif isinstance(value, list):
+                for child in value:
+                    verdicts.extend(staging_verdicts(child))
+            return verdicts
+
         completed = threading.Event()
         label, warm = next(item for item in self.app.state.recompute_roster()
-                           if item[0] == "explore-time-of-day")
+                           if item[0] == "analyze-pooled")
 
         def worker_shape():
             try:
@@ -1912,16 +1992,27 @@ class CachePreWarmTest(unittest.TestCase):
                 completed.set()
 
         self.app.state.recompute_roster = lambda: ((label, worker_shape),)
-        with TestClient(self.app) as client:
-            direct = client.get("/api/explore/time-of-day")
-            self.assertEqual(direct.status_code, 200)
-            self.app.state.signal_recompute()
-            self.assertTrue(completed.wait(3))
-            worker_warm = client.get("/api/explore/time-of-day")
-        self.assertEqual(
-            json.dumps(worker_warm.json(), separators=(",", ":"), sort_keys=True),
-            json.dumps(direct.json(), separators=(",", ":"), sort_keys=True),
-        )
+        real = api_mod.analyze
+        builds = []
+        with patch.object(api_mod, "analyze", side_effect=lambda *args, **kwargs:
+                          builds.append(1) or real(*args, **kwargs)):
+            with TestClient(self.app) as client:
+                direct = client.get("/api/analyze", params={"window": 30, "pool": True})
+                self.assertEqual(direct.status_code, 200)
+                # The fetch-shaped idempotent write advances the input revision without
+                # changing this synthetic analysis, so the worker must compute rather
+                # than reopen the first response's durable artifact.
+                with Store.open(self.tmp.name) as store:
+                    store.upsert_cgm([{"EventDateTime": "2026-06-01 00:00:00",
+                                       "Readings (CGM / BGM)": 110}])
+                self.app.state.signal_recompute()
+                self.assertTrue(completed.wait(3))
+                worker_warm = client.get("/api/analyze", params={"window": 30, "pool": True})
+        self.assertEqual(len(builds), 2)
+        self.assertEqual(worker_warm.content, direct.content)
+        worker_verdicts = staging_verdicts(worker_warm.json())
+        self.assertTrue(worker_verdicts)
+        self.assertEqual(worker_verdicts, staging_verdicts(direct.json()))
 
     def test_warm_pass_leaves_the_landing_set_answering_without_recompute(self):
         with self._counting_builders() as counts:

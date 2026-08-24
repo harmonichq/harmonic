@@ -669,7 +669,10 @@ class DurableArtifactApiTest(unittest.TestCase):
         from ciq_autotune.api import create_app
         first = TestClient(create_app(db_path=self.tmp.name, token=None, enable_fetch_loop=False))
         self.assertEqual(first.get("/api/explore/exposures").status_code, 200)
-        payload = json.dumps({"exposures": [], "catalog": {}}, separators=(",", ":"))
+        payload = json.dumps({
+            "exposures": {"window": {"start": "2026-05-01", "end": "2026-06-01"}},
+            "catalog": {"meals": {}},
+        }, separators=(",", ":"))
         marker = _canonical(("event-comparison-v1", 1, source_fingerprint()))
         with Store.open_queryonly(self.tmp.name) as store:
             revision = store.input_data_revision()
@@ -683,7 +686,7 @@ class DurableArtifactApiTest(unittest.TestCase):
         with patch.object(api_mod, "prepare_event_comparisons",
                           side_effect=lambda *args, **kwargs: calls.append(1) or real(*args, **kwargs)):
             second = TestClient(create_app(db_path=self.tmp.name, token=None, enable_fetch_loop=False))
-            response = second.get("/api/explore/exposures")
+            response = second.get("/api/diagnose/event-comparison", params={"view": "lows"})
         self.assertEqual(response.status_code, 200, response.text)
         self.assertEqual(calls, [1])
 

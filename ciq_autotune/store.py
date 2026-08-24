@@ -530,33 +530,6 @@ class Store:
                 if "seq_num" not in {r["name"] for r in
                                      self.conn.execute(f"PRAGMA table_info({t})")}]
 
-    def _rekey_seq_num_tables(self) -> None:
-        """Re-key the pump-feed tables on the pump's ``seq_num``, wiping legacy rows.
-
-        Pre-re-key rows were keyed on a derived tuple (e.g. ``(t, delivery_type)``,
-        ``(t, description, insulin)``) and carry no ``seq_num``. They cannot be
-        back-filled with one (the sequence number only rides on a live pull), and a
-        store doubled by a bad re-pull — basal timestamp jitter (#194) or a
-        wrong-timezone fetch that stored the whole history +7 h (#198) — can't be
-        de-conflated in place. So any such table is dropped and rebuilt empty from
-        the current schema. These are re-fetchable caches (Tandem Source is the
-        source of truth); the next full ``fetch`` repopulates them cleanly and
-        idempotently, keyed on ``seq_num`` so even a mislabeled re-pull merges
-        instead of doubling. Only the manual carb log is irreplaceable, and it
-        lives in its own tables — untouched. No-op once every table carries
-        ``seq_num``, so this fires at most once per store."""
-        stale = self._stale_seq_num_tables()
-        if not stale:
-            return
-        statements = ["BEGIN"]
-        statements.extend(f"DROP TABLE {table}" for table in stale)
-        statements.extend((
-            _SCHEMA,
-            "UPDATE input_data_revision SET revision = revision + 1 WHERE id = 1",
-            "COMMIT",
-        ))
-        self.conn.executescript(";\n".join(statements) + ";")
-
     @classmethod
     def open(cls, path: str) -> "Store":
         # `ciq-autotune serve` runs the API and the hourly fetch loop in one

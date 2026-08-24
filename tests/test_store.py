@@ -186,23 +186,6 @@ class StoreTest(unittest.TestCase):
         self.store.upsert_basal([{"seq_num": 2, "time": "2026-07-02 00:04:48", **base}])
         self.assertEqual(len(self.store.basal_events()), 2)
 
-    def test_migrate_basal_to_seq_num_wipes_legacy_rows(self):
-        # A pre-#194 store keyed basal on (t, delivery_type) with no seq_num. Those
-        # rows can't be back-keyed and a doubled store can't be de-conflated in
-        # place, so the migration drops them; the next fetch repopulates the cache.
-        self.store.conn.executescript(
-            "DROP TABLE basal_events;"
-            "CREATE TABLE basal_events (t TEXT NOT NULL, delivery_type TEXT NOT NULL,"
-            " duration_mins REAL, basal_rate REAL, profile_basal_rate REAL,"
-            " PRIMARY KEY (t, delivery_type));"
-            "INSERT INTO basal_events VALUES ('2026-07-02 00:04:15',"
-            " 'algorithmDelivery', 5.0, 0.6, 0.6);")
-        self.store._rekey_seq_num_tables()
-        cols = {r["name"] for r in
-                self.store.conn.execute("PRAGMA table_info(basal_events)")}
-        self.assertIn("seq_num", cols)
-        self.assertEqual(self.store.counts()["basal_events"], 0)
-
     def test_cgm_drops_serial_number(self):
         fake_serial = "FAKE-SERIAL-0000"
         self.store.upsert_cgm([{

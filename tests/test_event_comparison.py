@@ -442,7 +442,7 @@ class EventComparisonTest(unittest.TestCase):
             SimpleNamespace(t=second_t, completion="Completed", insulin=3.0, carbs=30.0,
                             carb_ratio=None, bg=None, seq_num=2),
         ])
-        store.cgm_readings = lambda: []
+        store.cgm_readings = lambda **_: []
         store.settings_snapshots = lambda: []
         no_suspend = SimpleNamespace(matched=False, suspend_start=None, suspend_end=None,
                                      suspend_duration_min=None)

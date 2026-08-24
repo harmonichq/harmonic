@@ -40,7 +40,8 @@ from datetime import datetime, timedelta
 from typing import List, Optional
 
 from .analyzers.basal import analyze_basal, consolidate_profile
-from .analyzers.ic import BLOCK_WINDOW_DAYS, analyze_ic, analyze_ic_blocks
+from .analyzers.ic import BLOCK_WINDOW_DAYS, analyze_ic
+from .analyzers.ic_regression import analyze_ic_blocks_fuzzy
 from .analyzers.isf import analyze_isf
 from .epochs import (
     Epoch,
@@ -119,7 +120,7 @@ def analyze(
     carb_entries: Optional[List[CarbEntry]] = None,
     harm_config: Optional[HarmConfig] = HarmConfig(),
     prompt_responses: Optional[List[dict]] = None,
-    ic_estimator=analyze_ic_blocks,
+    ic_estimator=analyze_ic_blocks_fuzzy,
 ) -> AnalysisResult:
     """Run the whole model over ``store`` and return one AnalysisResult.
 
@@ -589,7 +590,7 @@ def _settling(
             out.append(Settling("isf", _fmt(isf_ep.start), IsfConfig().describe_gate(), None))
 
     # I:C: gate is IcConfig.min_runs qualifying MEAL RUNS (#518). `have` is the one
-    # whole-day run total `analyze_ic_blocks` returned — never a sum across rows or
+    # whole-day run total the active block estimator returned — never a sum across rows or
     # blocks, because a run that spans a block boundary belongs to both and summing
     # would count it twice. This countdown speaks only to the whole-day gate; a block's
     # own "N of 8 meal runs" countdown is a different denominator and the two never

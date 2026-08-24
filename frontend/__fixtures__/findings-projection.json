@@ -6190,7 +6190,7 @@
       "confidence": 0.8,
       "hi": 5.0,
       "lo": 5.0,
-      "method": "bootstrap-pooled-ratio-clustered",
+      "method": "bootstrap-inverse-ratio-wls-clustered",
       "n": 24,
       "value": 5.0,
       "wide": false
@@ -6198,11 +6198,15 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": false,
+       "effective_run_count": 24.0,
+       "fit_meals": 48,
+       "fractional_run_ownership": 0.0,
        "n_runs": 24,
        "names_a_move": false,
        "regime_supported": false,
        "runs_floor": 8,
-       "runs_floor_met": true
+       "runs_floor_met": true,
+       "whole_runs": 24
       },
       "impact_inputs": {
        "carbs": 1440,
@@ -6895,7 +6899,7 @@
       "confidence": 0.8,
       "hi": 4.2857,
       "lo": 4.2857,
-      "method": "bootstrap-pooled-ratio-clustered",
+      "method": "bootstrap-inverse-ratio-wls-clustered",
       "n": 24,
       "value": 4.2857,
       "wide": false
@@ -6903,11 +6907,15 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": true,
+       "effective_run_count": 24.0,
+       "fit_meals": 48,
+       "fractional_run_ownership": 0.0,
        "n_runs": 24,
        "names_a_move": true,
        "regime_supported": true,
        "runs_floor": 8,
-       "runs_floor_met": true
+       "runs_floor_met": true,
+       "whole_runs": 24
       },
       "impact_inputs": {
        "carbs": 1440,
@@ -8366,7 +8374,7 @@
       "confidence": 0.8,
       "hi": 4.2857,
       "lo": 4.2857,
-      "method": "bootstrap-pooled-ratio-clustered",
+      "method": "bootstrap-inverse-ratio-wls-clustered",
       "n": 24,
       "value": 4.2857,
       "wide": false
@@ -9000,7 +9008,7 @@
       "confidence": 0.8,
       "hi": 4.2857,
       "lo": 4.2857,
-      "method": "bootstrap-pooled-ratio-clustered",
+      "method": "bootstrap-inverse-ratio-wls-clustered",
       "n": 24,
       "value": 4.2857,
       "wide": false
@@ -9310,7 +9318,7 @@
       "confidence": 0.8,
       "hi": 4.2857,
       "lo": 4.2857,
-      "method": "bootstrap-pooled-ratio-clustered",
+      "method": "bootstrap-inverse-ratio-wls-clustered",
       "n": 24,
       "value": 4.2857,
       "wide": false
@@ -9994,7 +10002,7 @@
       "confidence": 0.8,
       "hi": 4.2857,
       "lo": 4.2857,
-      "method": "bootstrap-pooled-ratio-clustered",
+      "method": "bootstrap-inverse-ratio-wls-clustered",
       "n": 24,
       "value": 4.2857,
       "wide": false
@@ -16246,7 +16254,7 @@
       "confidence": 0.8,
       "hi": 5.0,
       "lo": 5.0,
-      "method": "bootstrap-pooled-ratio-clustered",
+      "method": "bootstrap-inverse-ratio-wls-clustered",
       "n": 24,
       "value": 5.0,
       "wide": false
@@ -16254,11 +16262,15 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": false,
+       "effective_run_count": 24.0,
+       "fit_meals": 48,
+       "fractional_run_ownership": 0.0,
        "n_runs": 24,
        "names_a_move": false,
        "regime_supported": false,
        "runs_floor": 8,
-       "runs_floor_met": true
+       "runs_floor_met": true,
+       "whole_runs": 24
       },
       "impact_inputs": {
        "carbs": 1440,
@@ -16951,7 +16963,7 @@
       "confidence": 0.8,
       "hi": 4.2857,
       "lo": 4.2857,
-      "method": "bootstrap-pooled-ratio-clustered",
+      "method": "bootstrap-inverse-ratio-wls-clustered",
       "n": 24,
       "value": 4.2857,
       "wide": false
@@ -16959,11 +16971,15 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": true,
+       "effective_run_count": 24.0,
+       "fit_meals": 48,
+       "fractional_run_ownership": 0.0,
        "n_runs": 24,
        "names_a_move": true,
        "regime_supported": true,
        "runs_floor": 8,
-       "runs_floor_met": true
+       "runs_floor_met": true,
+       "whole_runs": 24
       },
       "impact_inputs": {
        "carbs": 1440,
@@ -23427,7 +23443,7 @@
       "confidence": 0.8,
       "hi": 5.0,
       "lo": 5.0,
-      "method": "bootstrap-pooled-ratio-clustered",
+      "method": "bootstrap-inverse-ratio-wls-clustered",
       "n": 24,
       "value": 5.0,
       "wide": false
@@ -23435,11 +23451,15 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": false,
+       "effective_run_count": 24.0,
+       "fit_meals": 48,
+       "fractional_run_ownership": 0.0,
        "n_runs": 24,
        "names_a_move": false,
        "regime_supported": false,
        "runs_floor": 8,
-       "runs_floor_met": true
+       "runs_floor_met": true,
+       "whole_runs": 24
       },
       "impact_inputs": {
        "carbs": 1440,
@@ -24132,7 +24152,7 @@
       "confidence": 0.8,
       "hi": 4.2857,
       "lo": 4.2857,
-      "method": "bootstrap-pooled-ratio-clustered",
+      "method": "bootstrap-inverse-ratio-wls-clustered",
       "n": 24,
       "value": 4.2857,
       "wide": false
@@ -24140,11 +24160,15 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": true,
+       "effective_run_count": 24.0,
+       "fit_meals": 48,
+       "fractional_run_ownership": 0.0,
        "n_runs": 24,
        "names_a_move": true,
        "regime_supported": true,
        "runs_floor": 8,
-       "runs_floor_met": true
+       "runs_floor_met": true,
+       "whole_runs": 24
       },
       "impact_inputs": {
        "carbs": 1440,
@@ -30653,7 +30677,7 @@
       "confidence": 0.8,
       "hi": 5.0,
       "lo": 5.0,
-      "method": "bootstrap-pooled-ratio-clustered",
+      "method": "bootstrap-inverse-ratio-wls-clustered",
       "n": 24,
       "value": 5.0,
       "wide": false
@@ -30661,11 +30685,15 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": false,
+       "effective_run_count": 24.0,
+       "fit_meals": 48,
+       "fractional_run_ownership": 0.0,
        "n_runs": 24,
        "names_a_move": false,
        "regime_supported": false,
        "runs_floor": 8,
-       "runs_floor_met": true
+       "runs_floor_met": true,
+       "whole_runs": 24
       },
       "impact_inputs": {
        "carbs": 1440,
@@ -31358,7 +31386,7 @@
       "confidence": 0.8,
       "hi": 4.2857,
       "lo": 4.2857,
-      "method": "bootstrap-pooled-ratio-clustered",
+      "method": "bootstrap-inverse-ratio-wls-clustered",
       "n": 24,
       "value": 4.2857,
       "wide": false
@@ -31366,11 +31394,15 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": true,
+       "effective_run_count": 24.0,
+       "fit_meals": 48,
+       "fractional_run_ownership": 0.0,
        "n_runs": 24,
        "names_a_move": true,
        "regime_supported": true,
        "runs_floor": 8,
-       "runs_floor_met": true
+       "runs_floor_met": true,
+       "whole_runs": 24
       },
       "impact_inputs": {
        "carbs": 1440,
@@ -37879,7 +37911,7 @@
       "confidence": 0.8,
       "hi": 5.0,
       "lo": 5.0,
-      "method": "bootstrap-pooled-ratio-clustered",
+      "method": "bootstrap-inverse-ratio-wls-clustered",
       "n": 24,
       "value": 5.0,
       "wide": false
@@ -37887,11 +37919,15 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": false,
+       "effective_run_count": 24.0,
+       "fit_meals": 48,
+       "fractional_run_ownership": 0.0,
        "n_runs": 24,
        "names_a_move": false,
        "regime_supported": false,
        "runs_floor": 8,
-       "runs_floor_met": true
+       "runs_floor_met": true,
+       "whole_runs": 24
       },
       "impact_inputs": {
        "carbs": 1440,
@@ -38584,7 +38620,7 @@
       "confidence": 0.8,
       "hi": 4.2857,
       "lo": 4.2857,
-      "method": "bootstrap-pooled-ratio-clustered",
+      "method": "bootstrap-inverse-ratio-wls-clustered",
       "n": 24,
       "value": 4.2857,
       "wide": false
@@ -38592,11 +38628,15 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": true,
+       "effective_run_count": 24.0,
+       "fit_meals": 48,
+       "fractional_run_ownership": 0.0,
        "n_runs": 24,
        "names_a_move": true,
        "regime_supported": true,
        "runs_floor": 8,
-       "runs_floor_met": true
+       "runs_floor_met": true,
+       "whole_runs": 24
       },
       "impact_inputs": {
        "carbs": 1440,
@@ -39491,7 +39531,7 @@
       "confidence": 0.8,
       "hi": 6.0,
       "lo": 6.0,
-      "method": "bootstrap-pooled-ratio-clustered",
+      "method": "bootstrap-inverse-ratio-wls-clustered",
       "n": 24,
       "value": 6.0,
       "wide": false
@@ -39543,7 +39583,7 @@
       "confidence": 0.8,
       "hi": 4.2857,
       "lo": 4.2857,
-      "method": "bootstrap-pooled-ratio-clustered",
+      "method": "bootstrap-inverse-ratio-wls-clustered",
       "n": 24,
       "value": 4.2857,
       "wide": false
@@ -40225,7 +40265,7 @@
       "confidence": 0.8,
       "hi": 4.2857,
       "lo": 4.2857,
-      "method": "bootstrap-pooled-ratio-clustered",
+      "method": "bootstrap-inverse-ratio-wls-clustered",
       "n": 24,
       "value": 4.2857,
       "wide": false
@@ -40590,7 +40630,7 @@
       "confidence": 0.8,
       "hi": 4.2857,
       "lo": 4.2857,
-      "method": "bootstrap-pooled-ratio-clustered",
+      "method": "bootstrap-inverse-ratio-wls-clustered",
       "n": 24,
       "value": 4.2857,
       "wide": false
@@ -41270,7 +41310,7 @@
       "confidence": 0.8,
       "hi": 4.2857,
       "lo": 4.2857,
-      "method": "bootstrap-pooled-ratio-clustered",
+      "method": "bootstrap-inverse-ratio-wls-clustered",
       "n": 24,
       "value": 4.2857,
       "wide": false
@@ -41756,7 +41796,7 @@
       "confidence": 0.8,
       "hi": 4.2857,
       "lo": 4.2857,
-      "method": "bootstrap-pooled-ratio-clustered",
+      "method": "bootstrap-inverse-ratio-wls-clustered",
       "n": 24,
       "value": 4.2857,
       "wide": false
@@ -42214,7 +42254,7 @@
       "confidence": 0.8,
       "hi": 4.2857,
       "lo": 4.2857,
-      "method": "bootstrap-pooled-ratio-clustered",
+      "method": "bootstrap-inverse-ratio-wls-clustered",
       "n": 24,
       "value": 4.2857,
       "wide": false

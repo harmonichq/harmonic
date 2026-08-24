@@ -276,9 +276,9 @@ class IcBlock:
     * ``below-floor`` — 90 days observed and the pool sits in
       ``[min_runs, _MIN_SUPPORTED_BLOCK_RUNS)``: the number and band display with an
       honest "N of 8 meal runs" countdown, and nothing asserts;
-    * ``unmeasured-alone`` — 90 days observed, meals were seen here, but every one of
-      them chains into a neighbouring block, so no run ever sits wholly inside this
-      one and the pool cannot fill by construction;
+    * ``unmeasured-alone`` — 90 days observed and meals were seen here, but the
+      estimator's admitted evidence carries no contrast that separates a numeric
+      ratio for this block;
     * ``numeric`` — the pool cleared the floor; the eligibility gates decide.
 
     ``priority`` / ``recurrence`` / ``impact_u_day`` are server-computed (ADR 0032):

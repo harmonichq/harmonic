@@ -218,11 +218,21 @@ uses that same span, and mixing a count from one span with a divisor from the
 other is a defect. Per-segment rows survive as request-windowed pump-lane display
 only, naming their owning block, and never assert a move.
 
-Only runs lying wholly inside a block enter its numeric pool; a run spanning a
-boundary is information-free at block scope and would only add cross-block
-contamination. Such runs still count toward the block's coverage, which is how a
-block where every meal chains into a neighbour is honestly reported as
-unmeasurable on its own rather than as merely short of data.
+A run lying wholly inside a block speaks for that block alone. A run whose meals
+were dosed on either side of a boundary speaks for both, and is credited to each
+by the share of the run's carbs that block owns. Splitting one such run's own
+ratio pro rata would carry no information — the pieces just restate the whole —
+so the blocks are fitted jointly instead: all runs, lone and chained, enter one
+carb-weighted fit of inverse ratios on per-block share, and each block reads its
+ratio off the fitted mixture. What informs it is the contrast between runs owning
+different shares of the same blocks, which is why a block where every meal chains
+into a neighbour can now be measured at all.
+
+A chained run counts toward the block's support floor by that same ownership
+share, so whole runs and fractional ownership sum to the floor together. A run
+that barely touches a block cannot unlock it, and a block built entirely of
+chained evidence is no longer condemned to report itself unmeasurable when it has
+plenty to say.
 
 ### Requirement: Retired I:C history requires proved schedule membership
 
@@ -368,11 +378,14 @@ Several silences are deliberate and must survive refactoring:
   steps, are the estimator and recurrence unit.
 - **No dynamic COB anywhere.** Carb absorption is a static forward decay from the
   logged amount; re-fitting it from CGM shape would absorb the ISF residual.
-- **No pooled ratio behind a fabricated denominator**, and no numeric pooling of a
-  run that crosses a block boundary.
-- **No mean of per-meal ratios.** The I:C point estimate pools total carbs over
-  total insulin; averaging ratios overweights small meals and biases the number
-  high.
+- **No pooled ratio behind a fabricated denominator.** A run that crosses a block
+  boundary may enter numeric pooling only through the joint inverse-ratio fit, which
+  assigns each block its carb-share ownership. Effective support remains whole runs
+  plus fractional carb-share ownership, with the floor unchanged at eight.
+- **No mean of per-meal ratios.** A whole-run pool divides total carbs by total
+  insulin; the joint cross-block fit instead pools each run's inverse-ratio
+  response against its carb-share ownership. Neither averages meal ratios, which
+  would overweight small meals and bias the number high.
 
 ### Requirement: The measured ISF feeds the I:C ledger's glucose-travel term
 
@@ -404,10 +417,12 @@ recover every known ratio the bar gates on — the block's interval covering the
 true value and its point estimate within one display step of it — and it must
 produce no finding on any placebo.
 
-Not every known-ratio history gates. A history whose meal runs span a block
-boundary is deliberately information-free to the engine, and one dosed at the
-programmed ratio is placebo-shaped by definition; both are generated and
-reported as exploratory, and neither decides admission. When the shipped ledger
+Not every known-ratio history gates every estimator. A history whose meal runs
+chain across a block boundary gates any candidate that claims to credit them and
+stays exploratory for the whole-run reference, which is not built to recover it;
+a history dosed at the programmed ratio is placebo-shaped by definition and is
+exploratory for everything. An exploratory history is generated and reported, and
+decides no admission. When the shipped ledger
 does not recover an exploratory history, the engine-stamped reason is recorded
 rather than tuned away, because a generator adjusted until it goes green has
 stopped being evidence.

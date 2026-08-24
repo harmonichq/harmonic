@@ -1955,8 +1955,12 @@ recomposition.
 **Behavior added.**
 
 ```
-S76 · Enter on a finding row focuses the opened detail, and the Findings crumb restores its originating row
+S76 · Enter on the Carb undercount Finding focuses the opened detail, and the Findings crumb restores its originating row
 ```
+
+S76 keeps the active request's window, findings window, and analysis generation
+while substituting its frozen queue population, so the aggregate replay's scoped
+coordinate remains a valid response.
 
 Story-id mapping: this work order's requested S72 was already taken by #95, so
 #100 records S76 instead.

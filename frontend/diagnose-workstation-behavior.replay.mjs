@@ -2499,7 +2499,7 @@ export const S75 = async (page) => {
 
 // STORY:finding-evidence-routing:S76
 export const S76 = async (page) => {
-  const row = page.locator('#level .qrow').first();
+  const row = page.locator('#level .qrow[data-id="finding:carb_undercount"]');
   const rowId = await row.getAttribute('data-id');
   await row.focus();
   await page.keyboard.press('Enter');
@@ -3466,6 +3466,12 @@ const allWatchingProjection = (projected) => ({
   findings_window: projected.findings_window,
   window: projected.window,
 });
+const queueProjection = (projected) => ({
+  ...FINDINGS_PROJECTION.windows.global,
+  analysis_generation: projected.analysis_generation,
+  findings_window: projected.findings_window,
+  window: projected.window,
+});
 
 export const STORIES = [
   ['S01', S01, 'drawn'], ['S02', S02, 'typical'], ['S03', S03, 'drawn'],
@@ -3598,7 +3604,7 @@ export const STORIES = [
   ['S73', S73, 'typical', { analysisInputs: withNoDataBasal }],
   ['S74', S74, 'typical', { history: true }],
   ['S75', S75, 'typical', { history: true, findingsProjectionInputs: allWatchingProjection }],
-  ['S76', S76, 'typical'],
+  ['S76', S76, 'typical', { findingsProjectionInputs: queueProjection }],
   ['C41', C41, 'typical', { caseScenario: {
     preparation: generatedFindingPose('finding:meal_over_delivery'),
   } }], ['C42', C42, 'typical'],

@@ -24,7 +24,11 @@ from ciq_autotune.event_comparison import (
 )
 from ciq_autotune.findings_projection import FindingsProjection
 from ciq_autotune.window_membership import WindowQuery
-from ciq_autotune.events import CarbEntry
+from ciq_autotune.events import BasalEvent, BolusEvent, CarbEntry, CgmReading
+from ciq_autotune.analyzers.scenario.meal_suspend import (
+    MealSuspendOwnership,
+    classify_meal_owned_suspend,
+)
 from ciq_autotune.store import Store
 
 
@@ -248,6 +252,76 @@ class EventComparisonTest(unittest.TestCase):
         self.assertEqual(unavailable["selection"], {
             "state": "unavailable", "requested_id": "stale-catalog-id", "detail": None,
         })
+
+    def test_capture_reuses_one_ownership_object_for_every_meal_classifier_call(self):
+        first_t, second_t = datetime(2026, 8, 1, 12), datetime(2026, 8, 1, 18)
+        occurrences = [
+            {
+                "t": stamp.strftime("%Y-%m-%d %H:%M:%S"),
+                "date": stamp.strftime("%Y-%m-%d"), "bg": 150, "worst_bg": 220,
+                "label": "Meal", "ep_id": f"ep-{index}", "cause_lever": None,
+                "verdicts": [],
+            }
+            for index, stamp in enumerate((first_t, second_t), 1)
+        ]
+        store = _Store([
+            SimpleNamespace(t=first_t, completion="Completed", insulin=3.0, carbs=30.0,
+                            carb_ratio=None, bg=None, seq_num=1),
+            SimpleNamespace(t=second_t, completion="Completed", insulin=3.0, carbs=30.0,
+                            carb_ratio=None, bg=None, seq_num=2),
+        ])
+        store.cgm_readings = lambda: []
+        store.settings_snapshots = lambda: []
+        no_suspend = SimpleNamespace(matched=False, suspend_start=None, suspend_end=None,
+                                     suspend_duration_min=None)
+        ownership_type = event_comparison.MealSuspendOwnership
+        with (
+            patch("ciq_autotune.explore_exposures.build_exposures",
+                  return_value=_families_many(occurrences)),
+            patch("ciq_autotune.event_comparison._effective_isf", return_value=None),
+            patch("ciq_autotune.event_comparison.MealSuspendOwnership",
+                  wraps=ownership_type) as build_ownership,
+            patch("ciq_autotune.event_comparison.classify_meal_owned_suspend",
+                  return_value=no_suspend) as classify,
+        ):
+            prepare_event_comparisons(store)
+
+        self.assertEqual(build_ownership.call_count, 1)
+        self.assertEqual(classify.call_count, 6)
+        ownership = classify.call_args_list[0].kwargs["ownership"]
+        self.assertTrue(all(
+            call.kwargs["ownership"] is ownership for call in classify.call_args_list
+        ))
+
+    def test_suspend_straddling_capture_start_matches_full_history_with_lead_in(self):
+        meal_t = datetime(2026, 8, 1, 12)
+        meal = BolusEvent(meal_t, completion="Completed", insulin=3.0, carbs=30.0,
+                          seq_num=1)
+        full_basal = [
+            BasalEvent(meal_t - timedelta(minutes=15), "profile", basal_rate=1,
+                       profile_basal_rate=1),
+            BasalEvent(meal_t + timedelta(minutes=5), "algorithm", basal_rate=0,
+                       profile_basal_rate=1),
+            BasalEvent(meal_t + timedelta(minutes=10), "algorithm", basal_rate=0,
+                       profile_basal_rate=1),
+            BasalEvent(meal_t + timedelta(minutes=15), "algorithm", basal_rate=0,
+                       profile_basal_rate=1),
+        ]
+        capture_start = meal_t + timedelta(minutes=10)
+        capture_basal = full_basal[1:]
+        cgm = [CgmReading(meal_t + timedelta(minutes=10), 70)]
+
+        full = classify_meal_owned_suspend(meal, [meal], cgm, full_basal)
+        capture_ownership = MealSuspendOwnership([meal], capture_basal)
+        capture = classify_meal_owned_suspend(
+            meal, [meal], cgm, capture_basal, ownership=capture_ownership,
+        )
+
+        self.assertEqual(capture_ownership.owned_anchors(meal)[0].t,
+                         meal_t + timedelta(minutes=5))
+        self.assertLess(capture_basal[0].t, capture_start)
+        self.assertLessEqual(capture_basal[1].t, capture_start)
+        self.assertEqual(capture, full)
 
     def test_projection_owns_half_bin_percentiles_and_selected_detail(self):
         first = {

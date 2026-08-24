@@ -20,7 +20,10 @@ from .analyzers.classifiers import (
 )
 from .analyzers.scenario.engine import _effective_isf
 from .analyzers.scenario.attribute import over_treated_rebound_judgment
-from .analyzers.scenario.meal_suspend import classify_meal_owned_suspend
+from .analyzers.scenario.meal_suspend import (
+    MealSuspendOwnership,
+    classify_meal_owned_suspend,
+)
 from .analyzers.scenario_config import ScenarioConfig
 from .window_membership import WindowQuery, outcome_minute
 
@@ -149,9 +152,9 @@ def _completed_meal_at(bolus, anchor: datetime, ordinal: int = 0):
     return candidates[ordinal] if ordinal < len(candidates) else None
 
 
-def _meal_over_delivery_near(meal, bolus, cgm, basal) -> dict | None:
+def _meal_over_delivery_near(meal, bolus, cgm, basal, ownership) -> dict | None:
     verdict = classify_meal_owned_suspend(
-        meal, bolus, cgm, basal, scenario_config=CONFIG
+        meal, bolus, cgm, basal, scenario_config=CONFIG, ownership=ownership,
     )
     if verdict.matched or verdict.suspend_start is None or verdict.suspend_end is None:
         return None
@@ -325,6 +328,7 @@ def _route_meal(
     cgm,
     basal,
     isf,
+    ownership,
 ) -> dict:
     verdicts = _verdicts(occurrence)
     matches = {name for name, verdict in verdicts.items() if verdict.get("matched")}
@@ -335,7 +339,7 @@ def _route_meal(
     late_near = _late_near(classify_late_bolus(
         meal, cgm, basal, bolus, scenario_config=CONFIG,
     ))
-    delivery_near = _meal_over_delivery_near(meal, bolus, cgm, basal)
+    delivery_near = _meal_over_delivery_near(meal, bolus, cgm, basal, ownership)
     if carb_near:
         near["carb_undercount"] = carb_near
     if late_near:
@@ -460,6 +464,7 @@ def _build_catalog_capture(
     cgm = sorted(store.cgm_readings(), key=lambda item: item.t)
     bolus = sorted(store.bolus_events(), key=lambda item: item.t)
     basal = sorted(store.basal_events(), key=lambda item: item.t)
+    ownership = MealSuspendOwnership(bolus, basal, scenario_config=CONFIG)
     rescue = sorted(store.carb_entries(), key=lambda item: item.t)
     times = [item.t for item in cgm] + [item.t for item in basal]
     now = max(times) if times else datetime.now()
@@ -539,7 +544,7 @@ def _build_catalog_capture(
             for factor in config["factors"]:
                 if view_name == "meals":
                     routes[factor] = _route_meal(
-                        source, factor, meal, bolus, cgm, basal, isf
+                        source, factor, meal, bolus, cgm, basal, isf, ownership
                     )
                 else:
                     routes[factor] = _route_low(

@@ -64,7 +64,6 @@ from ciq_autotune.analyzers.tuning_priority import (  # noqa: E402
 )
 from ciq_autotune.events import BolusEvent, CgmReading  # noqa: E402
 from ciq_autotune.event_comparison import EVENT_CHARTS  # noqa: E402
-from ciq_autotune.explore_exposures import build_exposures  # noqa: E402
 from ciq_autotune.findings_projection import (  # noqa: E402
     FindingsProjection,
     WindowQuery,
@@ -440,15 +439,13 @@ def _over_treated_fixture_events():
 
 
 def _real_over_treated_low_occurrences():
-    """Five public states through typed events → scenario → model view → exposures.
+    """The five frozen production-shaped occurrences in this synthetic input.
 
-    This is deliberately not an exposure-schema helper. Every own verdict, silence
-    reason, and competing cause comes from :func:`build_exposures`, the production
-    producer that follows the scenario/model-view pipeline.
+    The fixture freezes its three projection inputs alongside its outputs. Re-reading
+    this closed synthetic exposure slice keeps regeneration on the projection seam;
+    it must never invoke a production builder while checking those frozen bytes.
     """
-    cgm, bolus = _over_treated_fixture_events()
-
-    produced = build_exposures(_ScenarioFixtureStore(cgm, bolus))
+    produced = json.loads(OUT.read_text())['inputs']['exposures']
     lows = produced["exposures"]["lows"]["occurrences"]
 
     def own(item):

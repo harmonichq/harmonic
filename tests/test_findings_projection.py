@@ -1039,8 +1039,10 @@ class FindingEvidenceBlockTest(unittest.TestCase):
         self.assertEqual(fired_rows[0]["family"], "lows")
 
     def test_cross_family_episode_pair_is_emitted_by_the_real_producer(self):
+        from ciq_autotune.explore_exposures import build_exposures
+
         cgm, bolus = gen._over_treated_fixture_events()
-        produced = gen.build_exposures(gen._ScenarioFixtureStore(cgm, bolus))["exposures"]
+        produced = build_exposures(gen._ScenarioFixtureStore(cgm, bolus))["exposures"]
         fired = next(o for o in self.exposures["lows"]["occurrences"]
                      if o["cause_lever"] == "over_treated_low")
         rebound = next(o for o in self.exposures["highs"]["occurrences"]

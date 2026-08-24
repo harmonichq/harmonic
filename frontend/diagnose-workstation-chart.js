@@ -537,7 +537,8 @@ export function renderCanvas(el, echarts, opts) {
   const target = opts.target || [70, 180];
   const [winStart, winEnd] = opts.window || [0, 360];
   const binSpans = windowRenderSpans([winStart, winEnd]);
-  const [[startIndex, endIndex]] = binSpans;
+  const [[startIndex, endIndex] = [0, 0]] = binSpans;
+  const hasWindow = binSpans.length > 0;
   const wrapped = binSpans.length > 1;
 
   /* Same floor the basal slots use, applied to the window's pooled sample: below
@@ -762,7 +763,7 @@ export function renderCanvas(el, echarts, opts) {
         },
         // the label, when it did not fit inside: parked in the margin beside the
         // window, on the same band, clear of both dashed edges
-        markPoint: (!labelInside || wrapped) ? {
+        markPoint: hasWindow && (!labelInside || wrapped) ? {
           silent: true, symbol: 'circle', symbolSize: 0, z: 10,
           data: [
             ...(!labelInside ? [{

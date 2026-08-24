@@ -147,6 +147,12 @@ test('renderCanvas draws a wrapped window as two areas with one range label', ()
     assert.equal(degenerateAreas.length, 1);
     assert.ok(degenerateAreas.flat().every((point) => point.xAxis == null || point.xAxis !== undefined));
   }
+
+  assert.doesNotThrow(() => renderCanvas({ clientWidth: 4000 }, { getInstanceByDom() { return chart; } }, {
+    envelope, markers: [], colors, window: [0, 0], windowLabel: 'SELECTED WINDOW',
+  }));
+  assert.equal(option.series.find((series) => series.name === '__context').markArea.data
+    .filter(([start]) => start.xAxis != null).length, 0);
 });
 
 test('S49/S70 · history event validation accepts one exact id and generation', () => {

@@ -16,7 +16,13 @@ import assert from 'node:assert/strict';
 
 export const DAY = 1440;
 export const BIN = 15;          // the pooling grid, frontend/diagnose-workstation-chart.js
-export const FLOOR = 90;        // the drawn-window floor asserted by ledger P10
+/**
+ * The drawn-window floor is NOT a constant: `minWindowMinutes(pool)` in that same
+ * module is `max(2 * BIN, 2 * pool)`, so it moves with the pooling diameter the
+ * envelope was built at. Ledger P10's "90-minute floor" is that value under its
+ * own fixture's pool, not a literal. Cases below pass it in.
+ */
+export const floorFor = (pool) => Math.max(2 * BIN, 2 * pool);
 
 const snap = (min) => Math.round(min / BIN) * BIN;
 const norm = (min) => ((min % DAY) + DAY) % DAY;
@@ -27,14 +33,14 @@ const norm = (min) => ((min % DAY) + DAY) % DAY;
  * sit outside the day and that is what expresses a wrap. Returns the committed
  * window, or null for the whole day (the unscoped day scope).
  */
-export function commit({ kind, anchor, released, duration }) {
+export function commit({ kind, anchor, released, duration, pool = 45 }) {
   if (kind === 'slide') {
     const start = snap(released);                      // length is preserved
     return { start_min: norm(start), end_min: norm(start + duration) };
   }
   const lo = snap(Math.min(anchor, released));
   const hi = snap(Math.max(anchor, released));
-  const span = Math.min(DAY, Math.max(FLOOR, hi - lo));
+  const span = Math.min(DAY, Math.max(floorFor(pool), hi - lo));
   if (span >= DAY) return null;                        // ran right round: whole day
   return { start_min: norm(lo), end_min: norm(lo + span) };
 }
@@ -46,8 +52,10 @@ const cases = [
     { kind: 'draw', anchor: 22 * 60, released: 26 * 60 }, { start_min: 1320, end_min: 120 }],
   ['draw leftwards past 00:00',
     { kind: 'draw', anchor: 3 * 60, released: -60 }, { start_min: 1380, end_min: 180 }],
-  ['a drawn window still respects the 90-minute floor',
-    { kind: 'draw', anchor: 23 * 60 + 45, released: 24 * 60 }, { start_min: 1425, end_min: 75 }],
+  ['a drawn window still respects the floor, which the pooling diameter sets',
+    { kind: 'draw', anchor: 23 * 60 + 45, released: 24 * 60, pool: 45 }, { start_min: 1425, end_min: 75 }],
+  ['the same draw against a finer pool takes the finer floor',
+    { kind: 'draw', anchor: 23 * 60 + 45, released: 24 * 60, pool: 10 }, { start_min: 1425, end_min: 15 }],
   ['a draw that runs a full day is the whole day, not a 24h window',
     { kind: 'draw', anchor: 20 * 60, released: 44 * 60 }, null],
   ['resize carries one edge past the boundary, anchored on the other',

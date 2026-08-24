@@ -95,6 +95,65 @@ def known_ratio_sets() -> List[dict]:
     return [gated_tighten, gated_loosen, multi, equal]
 
 
+def _run_cgm(events: List[BolusEvent], effective_insulin: float) -> List[CgmReading]:
+    first, last = events[0], events[-1]
+    delivered = sum(event.insulin for event in events)
+    outcome = 120.0 + (effective_insulin - delivered) * EFFECTIVE_ISF
+    return [
+        CgmReading(t=first.t + timedelta(minutes=offset), bg=120.0)
+        for offset in (-5, 0, 5)
+    ] + [
+        CgmReading(t=last.t + timedelta(minutes=offset), bg=outcome)
+        for offset in (285, 300, 315)
+    ]
+
+
+def chained_run_sets() -> List[dict]:
+    """Two planted I:C blocks joined by ledgers with varied carb ownership."""
+    segments = [(0, PROGRAMMED_RATIO), (720, 6.8)]
+    true_ratios = {0: 5.0, 720: 6.2}
+    events: List[BolusEvent] = []
+    cgm: List[CgmReading] = []
+    day = 1
+
+    for block_id, hour in ((0, 9), (720, 13)):
+        programmed = dict(segments)[block_id]
+        for carbs in (48.0, 64.0):
+            meal = _meal(day, hour, carbs, carbs / programmed, programmed)
+            events.append(meal)
+            noise = 0.04 if day % 2 else -0.04
+            cgm.extend(_run_cgm([meal], carbs / true_ratios[block_id] + noise))
+            day += 1
+
+    shares = (0.25, 0.35, 0.45, 0.55, 0.65, 0.75, 0.3, 0.7) * 2
+    for share in shares:
+        total_carbs = 100.0
+        first_carbs = total_carbs * share
+        second_carbs = total_carbs - first_carbs
+        run = [
+            _meal(day, 9, first_carbs, first_carbs / segments[0][1], segments[0][1]),
+            _meal(day, 13, second_carbs, second_carbs / segments[1][1], segments[1][1]),
+        ]
+        events.extend(run)
+        noise = 0.04 if day % 2 else -0.04
+        cgm.extend(_run_cgm(
+            run,
+            first_carbs / true_ratios[0] + second_carbs / true_ratios[720] + noise,
+        ))
+        day += 1
+
+    truth = _set(
+        "known-chained-cross-block",
+        0,
+        segments,
+        events,
+        cgm,
+        true_ratios,
+    )
+    truth["gated"] = True
+    return [truth]
+
+
 def _placebo(seed: int) -> dict:
     rng = random.Random(seed)
     segments = [(0, PROGRAMMED_RATIO)]

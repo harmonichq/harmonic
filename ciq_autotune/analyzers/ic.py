@@ -21,10 +21,11 @@ to recommend a ratio.
 from __future__ import annotations
 
 import bisect
+import math
 import statistics
 from dataclasses import dataclass, replace
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Callable, Dict, List, Optional, Sequence, Tuple
 
 from ..events import BasalEvent, BolusEvent, CarbEntry, CgmReading
 from ..harm import (
@@ -2003,6 +2004,72 @@ def _run_pool(runs: Sequence[MealRun]) -> List[MealRun]:
     return confirmed if confirmed else supported
 
 
+@dataclass(frozen=True)
+class _IcBlockFit:
+    """Estimator-owned numeric inputs consumed by the shared block stamper."""
+
+    estimate: Estimate
+    eligible_runs: Tuple[MealRun, ...]
+    pool_runs: Tuple[MealRun, ...]
+    effective_run_count: float
+    whole_runs: int
+    fractional_run_ownership: float
+    fit_meals: int
+    on_regime_value: Optional[float]
+    n_runs_on_regime: int
+
+
+def _incumbent_block_fits(
+    groups: Sequence[Dict],
+    runs: Sequence[MealRun],
+    run_blocks: Sequence[set],
+    members_by_run: Dict[RunIdentity, List[BolusEvent]],
+    identity_by_run: Dict[RunIdentity, HistoryIdentity],
+    snapshots: Optional[Sequence[Snapshot]],
+    cfg: IcConfig,
+) -> Dict[int, _IcBlockFit]:
+    """Build the shipped whole-run-only pools without stamping block decisions."""
+    fits: Dict[int, _IcBlockFit] = {}
+    for group in groups:
+        bid = group["start_min"]
+        programmed = group["value"]
+        inside = [run for run, ids in zip(runs, run_blocks) if ids == {bid}]
+        if snapshots is not None:
+            if programmed is None:
+                inside = []
+            else:
+                current_identity = HistoryIdentity(
+                    group["start_min"], group["end_min"], float(programmed))
+                inside = [
+                    run for run in inside
+                    if identity_by_run.get(RunIdentity(run.t)) == current_identity
+                ]
+        pool = _run_pool(inside)
+        estimate = estimate_pooled_ratio_clustered([
+            [(run.carbs_covered, run.effective_insulin)] for run in pool
+        ])
+        on_regime = [
+            run for run in pool
+            if _run_is_on_regime(members_by_run.get(RunIdentity(run.t), []), programmed)
+        ]
+        on_carbs = sum(run.carbs_covered for run in on_regime)
+        on_insulin = sum(run.effective_insulin for run in on_regime)
+        fits[bid] = _IcBlockFit(
+            estimate=estimate,
+            eligible_runs=tuple(inside),
+            pool_runs=tuple(pool),
+            effective_run_count=float(len(pool)),
+            whole_runs=len(pool),
+            fractional_run_ownership=0.0,
+            fit_meals=sum(run.n_meals for run in pool),
+            on_regime_value=(
+                round(on_carbs / on_insulin, 4) if on_insulin > 0 else None
+            ),
+            n_runs_on_regime=len(on_regime),
+        )
+    return fits
+
+
 def _run_is_numeric_candidate(run: MealRun) -> bool:
     return run.prior_action_status == "supported" and not run.directional_only
 
@@ -2209,7 +2276,7 @@ def _history_catalog(
     return catalog, identity_by_run
 
 
-def analyze_ic_blocks(
+def _analyze_ic_blocks_shared(
     bolus_events: List[BolusEvent],
     ic_segments: List[Tuple[int, float]],
     *,
@@ -2227,6 +2294,7 @@ def analyze_ic_blocks(
     analysis_end: Optional[datetime] = None,
     history_catalog: Optional[List[IcHistory]] = None,
     history_harm_lows: Optional[Sequence[PrintedLow]] = None,
+    _fit_builder: Callable[..., Dict[int, _IcBlockFit]] = _incumbent_block_fits,
 ) -> Tuple[List[IcBlock], int]:
     """Per-programmed-value carb-ratio blocks off the meal-run ledger (#518).
 
@@ -2295,11 +2363,6 @@ def analyze_ic_blocks(
             if (analysis_start is None or run.t >= analysis_start)
             and (analysis_end is None or run.t <= analysis_end)]
 
-    # Index the member boluses of each run so the regime bracket can read their stamped
-    # ratios. `run_burdens` keeps member times; match them back to the source events.
-    def _members_of(run: MealRun) -> List[BolusEvent]:
-        return members_by_run.get(RunIdentity(run.t), [])
-
     # Assign every run to the set of blocks its member meals fall in. A run enters a
     # block's NUMERIC pool only when that set is exactly ``{block}``; it counts toward
     # every block it touches for coverage.
@@ -2337,6 +2400,9 @@ def analyze_ic_blocks(
         harm = arm_harm(lows, HarmArm.IC, _key,
                         min_recurrence_nights=harm_config.min_recurrence_nights)
 
+    block_fits = _fit_builder(
+        groups, runs, run_blocks, members_by_run, identity_by_run, snapshots, cfg,
+    )
     observed = (BLOCK_WINDOW_DAYS if observed_days is None
                 else max(0, int(observed_days)))
     out: List[IcBlock] = []
@@ -2344,30 +2410,23 @@ def analyze_ic_blocks(
         bid = g["start_min"]
         programmed = g["value"]
         label = _block_label(bid, g["end_min"])
-        inside = [r for r, ids in zip(runs, run_blocks) if ids == {bid}]
         touching = [r for r, ids in zip(runs, run_blocks) if bid in ids]
         coverage_meals = [m for r in touching for m in r.meals
                           if _block_of(_tod(m.t), groups) == bid]
-        if snapshots is not None:
-            if programmed is None:
-                inside = []
-            else:
-                current_identity = HistoryIdentity(
-                    g["start_min"], g["end_min"], float(programmed))
-                inside = [run for run in inside
-                          if identity_by_run.get(RunIdentity(run.t)) == current_identity]
-        pool = _run_pool(inside)
+        fit = block_fits[bid]
+        inside = list(fit.eligible_runs)
+        pool = list(fit.pool_runs)
         pool_ids = {id(r) for r in pool}
-        est = estimate_pooled_ratio_clustered(
-            [[(r.carbs_covered, r.effective_insulin)] for r in pool])
-        n_runs = len(pool)
+        est = fit.estimate
+        effective_runs = fit.effective_run_count
+        n_runs = math.floor(effective_runs)
         n_meals = len(coverage_meals)
 
         if observed < BLOCK_WINDOW_DAYS:
             state = "collecting"
-        elif n_runs >= _MIN_SUPPORTED_BLOCK_RUNS:
+        elif est.value is not None and effective_runs >= _MIN_SUPPORTED_BLOCK_RUNS:
             state = "numeric"
-        elif n_runs >= cfg.min_runs:
+        elif est.value is not None and effective_runs >= cfg.min_runs:
             state = "below-floor"
         elif n_meals >= cfg.min_runs:
             # The pool cannot fill by construction: meals happen here, but every one of
@@ -2387,7 +2446,6 @@ def analyze_ic_blocks(
         # estimator hugs the dosed ratio — so a move is held while the full-window and
         # on-regime readings still bracket the programmed value. The hold decays by
         # design: it releases exactly when post-change meals themselves support the move.
-        on_regime = [r for r in pool if _run_is_on_regime(_members_of(r), programmed)]
         regime: Optional[Dict] = None
         regime_supported = False
         if measured is not None:
@@ -2395,9 +2453,7 @@ def analyze_ic_blocks(
             # whether the two readings sit on the same side of programmed, which is a
             # comparison of two numbers. Bootstrapping a band nobody reads would
             # double this analyzer's cost for no decision and no display.
-            on_carbs = sum(r.carbs_covered for r in on_regime)
-            on_insulin = sum(r.effective_insulin for r in on_regime)
-            on_value = round(on_carbs / on_insulin, 4) if on_insulin > 0 else None
+            on_value = fit.on_regime_value
             straddles: Optional[bool] = None
             if on_value is not None and programmed is not None:
                 lo_b = min(est.value, on_value)
@@ -2407,7 +2463,7 @@ def analyze_ic_blocks(
             regime = {
                 "full": {"value": est.value, "lo": est.lo, "hi": est.hi},
                 "on_regime": None if on_value is None else {"value": on_value},
-                "n_runs_on_regime": len(on_regime),
+                "n_runs_on_regime": fit.n_runs_on_regime,
                 "straddles_programmed": straddles,
             }
 
@@ -2448,9 +2504,13 @@ def analyze_ic_blocks(
             and not (est.lo <= programmed <= est.hi)
         )
         eligibility = {
-            "runs_floor_met": n_runs >= _MIN_SUPPORTED_BLOCK_RUNS,
+            "runs_floor_met": effective_runs >= _MIN_SUPPORTED_BLOCK_RUNS,
             "runs_floor": _MIN_SUPPORTED_BLOCK_RUNS,
             "n_runs": n_runs,
+            "effective_run_count": round(effective_runs, 6),
+            "whole_runs": fit.whole_runs,
+            "fractional_run_ownership": round(fit.fractional_run_ownership, 6),
+            "fit_meals": fit.fit_meals,
             "band_excludes_programmed": band_excludes,
             "regime_supported": regime_supported,
             "names_a_move": bool(rec is not None and programmed is not None
@@ -2566,3 +2626,44 @@ def analyze_ic_blocks(
     # proof govern numeric regime pools above; they must not drop a qualifying run
     # that crosses a block or count one once per block here.
     return out, len(_run_pool(runs))
+
+
+def analyze_ic_blocks(
+    bolus_events: List[BolusEvent],
+    ic_segments: List[Tuple[int, float]],
+    *,
+    config: IcConfig = IcConfig(),
+    cgm_readings: Optional[List[CgmReading]] = None,
+    isf_effective: Optional[float] = None,
+    carb_entries: Optional[List[CarbEntry]] = None,
+    basal_events: Optional[List[BasalEvent]] = None,
+    harm_config: Optional[HarmConfig] = None,
+    harm_lows: Optional[Sequence[PrintedLow]] = None,
+    analysis_start: Optional[datetime] = None,
+    prior_action_observed_from: Optional[datetime] = None,
+    observed_days: Optional[int] = None,
+    snapshots: Optional[Sequence[Snapshot]] = None,
+    analysis_end: Optional[datetime] = None,
+    history_catalog: Optional[List[IcHistory]] = None,
+    history_harm_lows: Optional[Sequence[PrintedLow]] = None,
+) -> Tuple[List[IcBlock], int]:
+    """Run the shipped whole-run I:C estimator through the shared block stamper."""
+    return _analyze_ic_blocks_shared(
+        bolus_events,
+        ic_segments,
+        config=config,
+        cgm_readings=cgm_readings,
+        isf_effective=isf_effective,
+        carb_entries=carb_entries,
+        basal_events=basal_events,
+        harm_config=harm_config,
+        harm_lows=harm_lows,
+        analysis_start=analysis_start,
+        prior_action_observed_from=prior_action_observed_from,
+        observed_days=observed_days,
+        snapshots=snapshots,
+        analysis_end=analysis_end,
+        history_catalog=history_catalog,
+        history_harm_lows=history_harm_lows,
+        _fit_builder=_incumbent_block_fits,
+    )

@@ -132,6 +132,16 @@ def _ci_width(block: Optional[IcBlock]) -> Optional[float]:
     return block.estimate.hi - block.estimate.lo
 
 
+def _fit_meals(block: Optional[IcBlock]) -> int:
+    if block is None:
+        return 0
+    eligibility = (block.evidence or {}).get("eligibility") or {}
+    value = eligibility.get("fit_meals")
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        return 0
+    return value
+
+
 def _cutoffs(window: ReplayWindow, step_days: int) -> list[datetime]:
     if step_days <= 0:
         raise ValueError("replay step_days must be positive")
@@ -207,8 +217,8 @@ def run_replay(
     candidate_width = _ci_width(candidate)
     incumbent_runs = incumbent.n_runs
     candidate_runs = 0 if candidate is None else candidate.n_runs
-    incumbent_meals = incumbent.n_meals
-    candidate_meals = 0 if candidate is None else candidate.n_meals
+    incumbent_meals = _fit_meals(incumbent)
+    candidate_meals = _fit_meals(candidate)
     convergence_delta = (
         None if incumbent_first is None or candidate_first is None
         else int((candidate_first - incumbent_first).total_seconds() // 86400)

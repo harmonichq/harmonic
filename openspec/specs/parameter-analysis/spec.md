@@ -378,11 +378,14 @@ Several silences are deliberate and must survive refactoring:
   steps, are the estimator and recurrence unit.
 - **No dynamic COB anywhere.** Carb absorption is a static forward decay from the
   logged amount; re-fitting it from CGM shape would absorb the ISF residual.
-- **No pooled ratio behind a fabricated denominator**, and no numeric pooling of a
-  run that crosses a block boundary.
-- **No mean of per-meal ratios.** The I:C point estimate pools total carbs over
-  total insulin; averaging ratios overweights small meals and biases the number
-  high.
+- **No pooled ratio behind a fabricated denominator.** A run that crosses a block
+  boundary may enter numeric pooling only through the joint inverse-ratio fit, which
+  assigns each block its carb-share ownership. Effective support remains whole runs
+  plus fractional carb-share ownership, with the floor unchanged at eight.
+- **No mean of per-meal ratios.** A whole-run pool divides total carbs by total
+  insulin; the joint cross-block fit instead pools each run's inverse-ratio
+  response against its carb-share ownership. Neither averages meal ratios, which
+  would overweight small meals and bias the number high.
 
 ### Requirement: The measured ISF feeds the I:C ledger's glucose-travel term
 

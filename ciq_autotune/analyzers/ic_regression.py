@@ -187,14 +187,15 @@ def _regression_block_fits(
     fitted = _run_pool(admitted)
     shares_by_run: Dict[RunIdentity, Dict[int, float]] = {}
     for run in fitted:
-        meal_carbs = sum(meal.carbs for meal in run.meals)
-        if meal_carbs <= 0 or run.carbs_covered <= 0:
+        if run.carbs_covered <= 0:
             continue
         shares = {bid: 0.0 for bid in block_ids}
         for meal in run.meals:
             bid = _block_of(_tod(meal.t), groups)
             if bid is not None:
-                shares[bid] += meal.carbs / meal_carbs
+                shares[bid] += (
+                    meal.carbs + meal.rescue_carbs
+                ) / run.carbs_covered
         shares_by_run[RunIdentity(run.t)] = shares
     active_ids = [
         bid for bid in block_ids
@@ -248,7 +249,7 @@ def _regression_block_fits(
             1 for run in pool
             if blocks_by_run[RunIdentity(run.t)] == {bid}
         )
-        fractional = sum(
+        fractional = math.fsum(
             shares_by_run[RunIdentity(run.t)][bid] for run in pool
             if blocks_by_run[RunIdentity(run.t)] != {bid}
         )

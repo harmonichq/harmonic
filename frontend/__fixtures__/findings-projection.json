@@ -6198,9 +6198,9 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": false,
-       "effective_run_count": 24,
+       "effective_run_count": 24.0,
        "fit_meals": 48,
-       "fractional_run_ownership": 0,
+       "fractional_run_ownership": 0.0,
        "n_runs": 24,
        "names_a_move": false,
        "regime_supported": false,
@@ -6907,9 +6907,9 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": true,
-       "effective_run_count": 24,
+       "effective_run_count": 24.0,
        "fit_meals": 48,
-       "fractional_run_ownership": 0,
+       "fractional_run_ownership": 0.0,
        "n_runs": 24,
        "names_a_move": true,
        "regime_supported": true,
@@ -16262,9 +16262,9 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": false,
-       "effective_run_count": 24,
+       "effective_run_count": 24.0,
        "fit_meals": 48,
-       "fractional_run_ownership": 0,
+       "fractional_run_ownership": 0.0,
        "n_runs": 24,
        "names_a_move": false,
        "regime_supported": false,
@@ -16971,9 +16971,9 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": true,
-       "effective_run_count": 24,
+       "effective_run_count": 24.0,
        "fit_meals": 48,
-       "fractional_run_ownership": 0,
+       "fractional_run_ownership": 0.0,
        "n_runs": 24,
        "names_a_move": true,
        "regime_supported": true,
@@ -23451,9 +23451,9 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": false,
-       "effective_run_count": 24,
+       "effective_run_count": 24.0,
        "fit_meals": 48,
-       "fractional_run_ownership": 0,
+       "fractional_run_ownership": 0.0,
        "n_runs": 24,
        "names_a_move": false,
        "regime_supported": false,
@@ -24160,9 +24160,9 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": true,
-       "effective_run_count": 24,
+       "effective_run_count": 24.0,
        "fit_meals": 48,
-       "fractional_run_ownership": 0,
+       "fractional_run_ownership": 0.0,
        "n_runs": 24,
        "names_a_move": true,
        "regime_supported": true,
@@ -30685,9 +30685,9 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": false,
-       "effective_run_count": 24,
+       "effective_run_count": 24.0,
        "fit_meals": 48,
-       "fractional_run_ownership": 0,
+       "fractional_run_ownership": 0.0,
        "n_runs": 24,
        "names_a_move": false,
        "regime_supported": false,
@@ -31394,9 +31394,9 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": true,
-       "effective_run_count": 24,
+       "effective_run_count": 24.0,
        "fit_meals": 48,
-       "fractional_run_ownership": 0,
+       "fractional_run_ownership": 0.0,
        "n_runs": 24,
        "names_a_move": true,
        "regime_supported": true,
@@ -37919,9 +37919,9 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": false,
-       "effective_run_count": 24,
+       "effective_run_count": 24.0,
        "fit_meals": 48,
-       "fractional_run_ownership": 0,
+       "fractional_run_ownership": 0.0,
        "n_runs": 24,
        "names_a_move": false,
        "regime_supported": false,
@@ -38628,9 +38628,9 @@
      "evidence": {
       "eligibility": {
        "band_excludes_programmed": true,
-       "effective_run_count": 24,
+       "effective_run_count": 24.0,
        "fit_meals": 48,
-       "fractional_run_ownership": 0,
+       "fractional_run_ownership": 0.0,
        "n_runs": 24,
        "names_a_move": true,
        "regime_supported": true,

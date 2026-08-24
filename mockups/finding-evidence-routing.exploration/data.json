@@ -54,7 +54,7 @@
       "confidence": 0.8,
       "hi": 4.2857,
       "lo": 4.2857,
-      "method": "bootstrap-pooled-ratio-clustered",
+      "method": "bootstrap-inverse-ratio-wls-clustered",
       "n": 24,
       "value": 4.2857,
       "wide": false

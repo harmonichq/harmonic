@@ -54,16 +54,7 @@ sets, and ship-vs-stop boundary are undecided.
   Caveat: noise model is multiplicative on effective insulin; the engine's
   clustered pooling and the committed placebo construction are stricter.
   Prototype: scratchpad `proto_fuzzy_credit.py` (session-local, not kept).
-- Real-snapshot grounding (2026-08-23, read-only copy, deleted after the run;
-  word-only here per the data boundary): chained cross-block runs are a large
-  fraction of the window's ledgers, the morning block is starved exactly as
-  predicted (meals plentiful, whole runs almost absent, `unmeasured-alone`),
-  and the regression preview agreed closely with the shipped ledger's estimate
-  on the floor-passing block while giving the morning block a plausible
-  estimate near its programmed value off ample fractional ownership. The
-  preview did not apply the engine's regime filtering; the real candidate
-  must. `inline`
-  `inline`
+- Real-data bar (2026-08-23): **pass**. `inline`
 
 - Q2 final (2026-08-23): the candidate IS inverse-ratio regression — infer
   each block's ratio jointly from all runs, lone and chained, weighting by
@@ -73,10 +64,9 @@ sets, and ship-vs-stop boundary are undecided.
   the starved pool). `→ ADR` (record at execution in the change's design.md)
 - Q3 (2026-08-23): floor semantics — a chained run counts toward the eight-run
   floor fractionally by the block's carb-share ownership; the floor is met
-  when lone runs plus fractional ownership sum to eight. Real-snapshot
-  grounding showed this actually unlocks the starved morning block. Why:
-  lone-only defeats the ticket; count-any-touch lets barely-touching runs
-  unlock a move. `→ ADR` (same record)
+  when lone runs plus fractional ownership sum to eight. Why: lone-only defeats
+  the ticket; count-any-touch lets barely-touching runs unlock a move. `→ ADR`
+  (same record)
 - Q4 (2026-08-23): ADR 23 placebo permanence attaches to the PINNED design;
   one formal bar run decides it; a materially different scheme is a new
   candidate. Development may iterate before pinning. `inline`
@@ -141,15 +131,8 @@ sets, and ship-vs-stop boundary are undecided.
 
 Both bars run in-ticket, through the committed harnesses only.
 
-- **Entry bar:** every gated truth set recovered within ADR 109's tolerance,
-  including the chained cross-block set; both placebos non-vacuously clean —
-  each placebo block reached a scoreable state, excluded no programmed value,
-  asserted no move. No placebo fire, so ADR 23's permanent-rejection clause was
-  never reached.
-- **Real-data bar:** stable-era replay, read-only against a local snapshot on a
-  floor-passing stretch, incumbent self-run as calibration: **pass**. No number,
-  count, or window date from it is recorded here or anywhere else; the snapshot
-  was deleted from the host and this machine when the run finished.
+- **Entry bar:** pass.
+- **Real-data bar:** pass.
 - **Shipped:** the candidate is now the engine's block estimator (ADR 117 in
   `openspec/changes/fuzzy-cross-block-credit/design.md`); the whole-run
   estimator stays as the ladder's incumbent reference.

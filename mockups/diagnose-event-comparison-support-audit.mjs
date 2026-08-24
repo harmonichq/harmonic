@@ -172,6 +172,9 @@ try {
       if (check.name === 'selected-withheld-light') {
         assert.equal(got.selected, 'meals-synthetic-18', `${check.name}: selected occurrence`);
         assert.equal(got.cohortSupport.another_factor, 'withheld', `${check.name}: cohort support`);
+        assert.equal(got.legend.find((item) => item.cohort === 'another_factor').detail,
+          '1 event · too few to average · selected cohort',
+          `${check.name}: one-event cohort detail does not say too few to average`);
         assert.ok(got.selectedTrace, `${check.name}: exact trace missing`);
         assert.ok(!got.ids.some((id) => /^another_factor:(?:line|spread):/.test(id)),
           `${check.name}: selection promoted a Withheld aggregate`);

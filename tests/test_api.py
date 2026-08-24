@@ -1567,11 +1567,12 @@ class CachePreWarmTest(unittest.TestCase):
             self._get_landing_set()          # cold: every shape computed once
             self.assertEqual(counts["scenarios"], 2)
             self.app.state.invalidate_and_warm()
-            # A cache-only invalidation has no new Store revision, so the warm
-            # pass may reuse its verified durable exact-match artifact.
-            self.assertEqual(counts["scenarios"], 1)
+            # A cache-only invalidation has no new Store revision, so the fixed
+            # scenarios endpoint reuses its verified durable artifact. The warm
+            # finding-case preparation still has its own scenario build.
+            self.assertEqual(counts["scenarios"], 3)
             self._get_landing_set()
-            self.assertEqual(counts["scenarios"], 1)
+            self.assertEqual(counts["scenarios"], 3)
 
     def test_drill_downs_and_other_windows_stay_lazy(self):
         with self._counting_builders() as counts:

@@ -376,7 +376,13 @@ P58 · At a clock boundary, the moving edge stays on the plot boundary while the
       dimmed; mouseup returns the axis to 00:00–24:00.
   source:   renderCanvas, frontend/diagnose-workstation-chart.js; installDrag,
             frontend/diagnose-workstation.js
-  evidence: replay S72, S73, S78, S79
+  evidence: the pan and the axis restored on mouseup — replay S72, S73, S78, S79.
+            The dimmed repeat — diagnose-workstation-chart.test.js "renderCanvas
+            pans labels and every data series into dimmed neighbouring days"
+            (three series copies, the neighbour label colour) and, for the lane
+            copies leaving at rest, browser test #130's `copies === 0`. The four
+            replay stories assert the pan, never the repetition; they were cited
+            for it and did not carry it.
   verdict:  added         operator-ruled: PENDING - #130
 
   amendment #130: a held boundary is TRAVEL, not aim. The day keeps translating
@@ -388,6 +394,20 @@ P58 · At a clock boundary, the moving edge stays on the plot boundary while the
                   it stands and the window is then placed by the pointer alone.
                   Travel at the edge, aim in the plot.
   evidence: replay S72, S73, S74, S75, S76, S77
+  operator-ruled: PENDING - #130
+
+  amendment #130: what the pointer is over keeps reading correctly for the WHOLE
+                  travel, not just at rest. The docked readout reports the pooled
+                  bin under the axis pointer — the panning axis is the unrolled
+                  three-day axis, so its pointer value is an ordinal index, not a
+                  minute, and reading it as a minute printed a different time of
+                  day's median and IQR onto the evidence path. The live band and
+                  its label likewise stay on the plot for the whole of a slide's
+                  travel, including the last stretch, where a display endpoint
+                  can otherwise run off either end of the unrolled axis.
+  evidence: diagnose-workstation-chart.test.js "#130 · the docked readout reads
+            the pooled bin under a panning axis pointer" and "#130 · a full-travel
+            slide keeps its live band on the unrolled axis"
   operator-ruled: PENDING - #130
 ```
 

@@ -437,6 +437,7 @@ test('#130 · a wrapped draw leaves two endpoint edges and dims only the outside
         chip: document.querySelector('#seg-window [data-follow]')?.firstChild?.textContent.trim(),
         edges: [...document.querySelectorAll('#brace .edge')].map((edge) => parseFloat(edge.style.left)),
         grips: [...document.querySelectorAll('#brace .grip')].map((grip) => parseFloat(grip.style.left)),
+        braceParts: document.getElementById('brace').children.length,
         inside: [...document.querySelectorAll('#lane button:not([data-clock-copy])')]
           .filter((button) => button.dataset.outside === 'false').length,
         outside: [...document.querySelectorAll('#lane button:not([data-clock-copy])')]
@@ -446,12 +447,23 @@ test('#130 · a wrapped draw leaves two endpoint edges and dims only the outside
           .getOption().xAxis[0].data.length,
       }));
       assert.equal(wrapped.chip, 'Window 22:00–02:00');
-      assert.equal(wrapped.edges.length, 2, 'midnight adds no brace edge');
-      assert.deepEqual(wrapped.grips, wrapped.edges, 'one grip sits on each clock endpoint');
+      /* Edge and grip counts are static markup and paintBrace writes the same
+         two offsets into both, so counting them or comparing them proves
+         nothing. What can actually move is WHERE each one lands: pin all four
+         against this file's own minute-to-pixel formula, and pin the wrap
+         itself — a window that failed to cross midnight would put its end edge
+         to the RIGHT of its start edge. */
+      assert.equal(wrapped.braceParts, 5, 'the brace is two edges, two grips and one readout');
+      assert.ok(wrapped.edges[1] < wrapped.edges[0],
+        'a wrapped window carries its end edge left of its start edge');
       assert.ok(Math.abs(wrapped.edges[0] - (xAt(1320) - chart.x)) <= 1,
         'the start edge sits at 22:00');
       assert.ok(Math.abs(wrapped.edges[1] - (xAt(120) - chart.x)) <= 1,
         'the end edge sits at 02:00');
+      assert.ok(Math.abs(wrapped.grips[0] - (xAt(1320) - chart.x)) <= 1,
+        'the start grip sits on the 22:00 endpoint');
+      assert.ok(Math.abs(wrapped.grips[1] - (xAt(120) - chart.x)) <= 1,
+        'the end grip sits on the 02:00 endpoint');
       assert.deepEqual([wrapped.inside, wrapped.outside], [8, 40],
         'the two wrapped stretches keep eight half-hour slots in scope');
       assert.equal(wrapped.copies, 0, 'neighbour lane copies leave with the pan');

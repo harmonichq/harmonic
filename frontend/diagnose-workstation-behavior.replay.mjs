@@ -123,7 +123,6 @@ export const state = (page) => page.evaluate(() => {
     live: ['brace-a', 'brace-b'].filter((i) => document.getElementById(i)?.classList.contains('live')),
     readout: q('#brace-readout')?.hidden ? null : (q('#brace-readout')?.textContent.trim() ?? null),
     panOffset: Number(q('#chart')?.parentElement?.dataset.clockPan || 0),
-    braceEdges: document.querySelectorAll('#brace .edge').length,
     badge: txt('#plan-badge'),
     /* #735 — `#inspector-meta` is GONE (lock term 47): the pane header's staged
        status named only the Plan branch of a four-branch object, so it could read
@@ -257,8 +256,6 @@ export const state = (page) => page.evaluate(() => {
     laneSelected: [...document.querySelectorAll('#lane button')].findIndex((b) => b.getAttribute('aria-pressed') === 'true'),
     laneCells: document.querySelectorAll('#lane button').length,
     laneOutside: [...document.querySelectorAll('#lane button')].filter((b) => b.dataset.outside === 'true').length,
-    laneInside: [...document.querySelectorAll('#lane button:not([data-clock-copy])')]
-      .filter((b) => b.dataset.outside === 'false').length,
     laneKey: q('#lane-key')?.innerText.replace(/\s+/g, ' ').trim() ?? null,
     hover: q('#canvas-head')?.dataset.hover ?? null,
     rd: {

@@ -546,6 +546,21 @@ const edgeLine = (name, data, color, z) => ({
 const DISPLAY_AXIS = Array.from({ length: BIN_COUNT * 3 }, (_, index) =>
   String((index - BIN_COUNT) * BIN_MINUTES));
 
+/* The unrolled axis runs from the previous day's 00:00 to the next day's 23:45.
+   A SLIDE is the one gesture that can carry a display endpoint past that: the
+   pan can reach a start a full day beyond where it began, and the far edge sits
+   a whole window-length beyond THAT. Both ends can leave — a window slid right
+   to the pan's limit ends past 23:45, and one grabbed just after midnight and
+   slid left starts before the previous day's 00:00. An endpoint off the axis is
+   a category the ordinal scale cannot resolve, so the live band and its parked
+   label simply vanished for the last stretch of travel, which is precisely when
+   the wearer is reading where the window is going. The plot viewport is always
+   well inside this domain, so clamping the band to it loses nothing that was
+   ever visible. */
+const DISPLAY_MIN = -BIN_COUNT * BIN_MINUTES;
+const DISPLAY_MAX = (BIN_COUNT * 2 - 1) * BIN_MINUTES;
+const onDisplayAxis = (minute) => Math.max(DISPLAY_MIN, Math.min(DISPLAY_MAX, minute));
+
 function withOpacity(color, opacity) {
   const hex = color.match(/^#([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i);
   if (hex) return `rgba(${hex.slice(1).map((part) => parseInt(part, 16)).join(',')},${opacity})`;
@@ -596,7 +611,8 @@ export function renderCanvas(el, echarts, opts) {
   const panning = displayOffset !== 0;
   const displayWindow = panning ? opts.displayWindow : null;
   const binSpans = displayWindow
-    ? [[snapMinute(displayWindow[0]), snapMinute(displayWindow[1])]]
+    ? [[onDisplayAxis(snapMinute(displayWindow[0])),
+      onDisplayAxis(snapMinute(displayWindow[1]))]]
     : canonicalBinSpans;
   const [[startIndex, endIndex] = [0, 0]] = binSpans;
   const hasWindow = binSpans.length > 0;
@@ -1038,9 +1054,14 @@ export function renderCanvas(el, echarts, opts) {
       if (overItem) { report(overItem); return; }
       const axis = (ev.axesInfo || [])[0];
       if (!axis || axis.value == null) { report(null); return; }
-      const raw = panning ? Number(axis.value) : Math.round(axis.value);
-      const i = panning ? Math.round(normalizeMinute(raw) / BIN_MINUTES) % BIN_COUNT
-        : Math.max(0, Math.min(last, raw));
+      /* `axis.value` is an ORDINAL CATEGORY INDEX, never a minute. While
+         panning the axis is the three-day DISPLAY_AXIS, so index j counts from
+         the previous day's 00:00 — it carries display minute
+         (j - BIN_COUNT) * BIN_MINUTES and reads pooled bin j mod BIN_COUNT.
+         Dividing the index by BIN_MINUTES instead reported another time of
+         day's median and IQR, and could never reach past ~05:00. */
+      const raw = Math.round(axis.value);
+      const i = panning ? raw % BIN_COUNT : Math.max(0, Math.min(last, raw));
       report({
         kind: 'bin',
         label: envelope.labels[i],

@@ -96,7 +96,7 @@ function appearanceParts(row) {
 
 /**
  * A parameter row's own support denominator, in its own noun and naming its own run
- * (term 16). `clean nights` belongs to basal alone — I:C names meal runs, ISF names
+ * (term 16). `nights of steady data` belongs to basal alone — I:C names meal runs, ISF names
  * fasting nights — and every one of them is read off the row, never inferred.
  */
 function supportPart(row) {

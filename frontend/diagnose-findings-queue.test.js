@@ -248,7 +248,7 @@ test('term 16 · a merged span prints its OWN support denominator, never an inve
   const merged = queueRows(W.global).find((r) => r.title === 'Basal 00:30 to 01:30 · raise');
   assert.equal(merged.raw.current, null, 'the server left the span\u2019s numbers on its members');
   assert.deepEqual(merged.detail,
-    { kind: 'support', parts: [{ count: '19', noun: 'clean nights' }, '30 d run'] });
+    { kind: 'support', parts: [{ count: '19', noun: 'nights of steady data' }, '30 d run'] });
 });
 
 test('a single asserting item prints the number pair the mock shows', () => {

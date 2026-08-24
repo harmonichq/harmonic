@@ -281,10 +281,6 @@ const icBlockAtMinute = (icLane, minute) =>
  * instead.
  */
 
-/** DESIGN.md rule 3 — "Do not say 'clean nights'… Say 'nights of steady data.'"
-    The noun is the projection's own `support.noun`, respelled. */
-const STEADY_NOUN = { 'clean nights': 'nights of steady data' };
-
 /** DESIGN.md rule 8 — user copy uses `Correction factor` and `Carb ratio`, and
     shows basal model slots as bare time ranges (`Basal · 00:00–00:30`). The
     projection's row titles carry the engine spellings (`I:C`, `Basal 00:30 to
@@ -302,25 +298,23 @@ function voiceTitle(title) {
   return `${PARAMETER_WORD[parameter]} · ${span} · ${direction}`;
 }
 
-/** Rule 3 + rule 8 over the projection window the shipped queue painter reads.
+/** Rule 8 over the projection window the shipped queue painter reads.
  *
- * The projection is handed to `renderFindingsQueue` WHOLE, so the respelling has
- * to happen to the projection rather than to the painted DOM — the painter owns
- * how a title and a support noun are laid out, and reaching into its output to
- * retype them is the transcription this mock does not do. Fails closed both
- * ways: a window where nothing needed respelling means the fixture changed under
- * the rule, and that is worth stopping for. */
+ * The projection is handed to `renderFindingsQueue` WHOLE, so title respelling
+ * happens in the projection rather than in the painted DOM. The support noun
+ * passes through unchanged. This fails closed in one direction: a window where
+ * no title needed respelling means the fixture already speaks rule 8's register
+ * or its title shape changed, so this pass must be revisited. */
 function voiceProjection(window) {
   let touched = 0;
   const rows = window.rows.map((row) => {
     const title = voiceTitle(row.title);
     const noun = row.support?.noun;
-    const respelled = noun && STEADY_NOUN[noun];
-    if (title !== row.title || respelled) touched += 1;
+    if (title !== row.title) touched += 1;
     return {
       ...row,
       title,
-      support: row.support ? { ...row.support, noun: respelled || noun } : row.support,
+      support: row.support ? { ...row.support, noun } : row.support,
     };
   });
   if (!touched) {

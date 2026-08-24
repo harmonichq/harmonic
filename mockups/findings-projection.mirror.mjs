@@ -211,7 +211,7 @@ function basalRows(analysis, window) {
       // the weakest slot governs how well-supported the whole run is
       support: {
         n: Math.min(...span.map((s) => s.days || 0)),
-        noun: 'clean nights',
+        noun: 'nights of steady data',
         run_days: analysis.window_days ?? null,
       },
       reason: register !== 'assert' ? head.safety_status ?? null : null,

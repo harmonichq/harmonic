@@ -6,17 +6,18 @@
    `node --test` can import it with no importmap and no DOM. The builders take
    everything they need as PLAIN arguments:
 
-     - `colors`  — a plain dict of resolved theme colors (getComputedStyle
-                   stays in index.html via chartColors()/cssVar()).
+     - `colors`  — a plain dict of resolved theme colors.
+                   Callers resolve their own visual tokens before invoking a builder.
      - `analysis`, `filters`, `highlights`, `dailyHighlight` — the reactive
-                   state that buildDayOption/buildRibbonOption used to reach
-                   through setup()'s closure is now injected, breaking the
-                   closure capture so the returned option JSON is testable.
+                   state that buildDayOption used to reach through setup()'s
+                   closure is now injected, breaking the closure capture so
+                   the returned option JSON is testable.
+                   The option carries every derived value it needs.
+                   No builder reaches back into the page shell.
 
    No `ref`/`reactive`/`computed`, no `getComputedStyle`, no `fetch` inside.
-   The render functions (renderRibbonChart/renderEvidenceStrips) stay in
-   index.html — they own the echarts instances and the DOM; these return
-   option JSON only. scnBuildEpisodeOption stays in scenario-chart.js.
+   These return option JSON only. scnBuildEpisodeOption stays in
+   scenario-chart.js.
    ========================================================================= */
 
 // --- small pure helpers (single source of truth; index.html re-imports) ----
@@ -63,18 +64,6 @@ export function direction(s) {
   if (s.recommended == null || s.current == null) return null;
   if (Math.abs(s.recommended - s.current) < 1e-9) return 'on target';
   return s.recommended > s.current ? 'raise' : 'lower';
-}
-
-// Tier for a basal slot. Pure over the slot `s` — it reads s.days /
-// s.estimate / s.annotation / direction(s), NOT any outer analysis ref.
-export function basalTier(s) {
-  if (s.days === 0 || s.estimate.value == null) return 'nodata';
-  const a = (s.annotation || '').toLowerCase();
-  if (a.startsWith('insufficient') || a.includes('no programmed rate')) return 'insufficient';
-  if (a.includes('no change')) return 'confirmed';
-  const d = direction(s);
-  if (d != null && d !== 'on target' && s.recommended != null) return 'change';
-  return 'confirmed';
 }
 
 export function bolusKind(b) {
@@ -531,233 +520,3 @@ export function buildLanesOption(day, dateStr, {
 // strip bottom, kept in sync with the grid layout in buildLanesOption so the Day
 // surface can draw one cross-track line without re-deriving the shell geometry.
 export const LANE_SPAN = { top: 0.02, bottom: 0.97 };
-
-// --- 2. coverage ribbon -----------------------------------------------------
-// The y-axis top: driven by programmed + measured, NOT by CI hi. On real data
-// almost every slot's CI is `wide`, so letting hi drive the scale is exactly
-// what made the old ribbon unreadable. We compute a tight max and then clamp
-// each CI band's drawn height below (see buildRibbonOption).
-export function ribbonYMax(basal) {
-  let m = 1.2;
-  for (const s of basal) {
-    if (s.current != null) m = Math.max(m, s.current);
-    if (s.estimate.value != null) m = Math.max(m, s.estimate.value);
-  }
-  return Math.ceil((m + 0.2) * 2) / 2;
-}
-
-// buildRibbonOption(basal, { analysis, colors }). `basal` is analysis.value.basal
-// passed in by renderRibbonChart; `analysis` is accepted for symmetry / future
-// use but the tiering is pure over each slot (basalTier), so no closure read.
-export function buildRibbonOption(basal, { colors } = {}) {
-  const ymax = ribbonYMax(basal);
-  // Clamp the drawn half-height of any CI band so wide slots read as
-  // "uncertain" rather than swamping the plot. A band is centered on the
-  // estimate and never drawn taller than 2*CAP in data units.
-  const CAP = Math.min(0.35, ymax * 0.18);
-  const slotMin = (s) => s.slot * 30;
-
-  // CI band as a custom renderItem series: one clamped rect per slot,
-  // centered on the estimate. encode maps [xStart, xEnd, cLo, cHi].
-  const bandData = [];
-  for (const s of basal) {
-    if (s.estimate.lo == null || s.estimate.hi == null || s.days === 0 || s.estimate.value == null) continue;
-    const c = s.estimate.value;
-    const lo = Math.max(0, c - Math.min(CAP, c - s.estimate.lo));
-    const hi = c + Math.min(CAP, s.estimate.hi - c);
-    const tier = basalTier(s);
-    let color = colors.onTarget;
-    if (tier === 'insufficient') color = colors.warn;
-    else if (tier === 'change') color = colors.accent;
-    bandData.push({ value: [slotMin(s), slotMin(s) + 30, lo, hi], itemStyle: { color } });
-  }
-
-  // Programmed rate: dashed grey step, gaps at nulls. One point per slot
-  // edge so step:'middle' draws a flat segment across each slot.
-  const progData = basal.map((s) => [slotMin(s) + 15, s.current == null ? null : s.current]);
-
-  // Measured median, split into per-tier series so each gets its own
-  // line style; gaps ('-') where a slot doesn't belong to that tier.
-  const measSolid = [], measThin = [], measInsuf = [], measChange = [];
-  const nodataPts = [];
-  for (const s of basal) {
-    const x = slotMin(s) + 15;
-    const tier = basalTier(s);
-    if (tier === 'nodata') nodataPts.push([x, ymax * 0.02]);
-    const v = s.estimate.value;
-    const val = v == null ? '-' : v;
-    const isThin = tier === 'confirmed' && s.days > 0 && s.days < 3;
-    measSolid.push([x, tier === 'confirmed' && !isThin ? val : '-']);
-    measThin.push([x, isThin ? val : '-']);
-    measInsuf.push([x, tier === 'insufficient' ? val : '-']);
-    measChange.push([x, tier === 'change' ? val : '-']);
-  }
-
-  // Suggested-rate marker on change slots.
-  const changeMarks = basal.filter((s) => basalTier(s) === 'change' && s.recommended != null)
-    .map((s) => ({ value: [slotMin(s) + 15, s.recommended] }));
-  // 03:00 highlighted change scatter (per spec) — the real edit.
-  const realChange = changeMarks;
-
-  const measLine = (data, style) => ({
-    type: 'line', step: 'middle', symbol: 'none', data, z: 5,
-    connectNulls: false, lineStyle: style,
-  });
-
-  return {
-    backgroundColor: 'transparent',
-    textStyle: { color: colors.text, fontFamily: 'Inter, system-ui, sans-serif' },
-    grid: { left: 44, right: 16, top: 18, bottom: 30 },
-    tooltip: {
-      trigger: 'axis', axisPointer: { type: 'line' },
-      backgroundColor: colors.surface, borderColor: colors.line, textStyle: { color: colors.text },
-      formatter: (ps) => {
-        const x = ps[0] && ps[0].axisValue;
-        const slot = Math.floor(x / 30);
-        const s = basal[slot];
-        if (!s) return '';
-        const hm = String(Math.floor(slot * 30 / 60)).padStart(2, '0') + ':' + String((slot * 30) % 60).padStart(2, '0');
-        const meas = s.estimate.value == null ? 'no clean data' : fmt(s.estimate.value) + ' U/h';
-        const ci = (s.estimate.lo != null && s.estimate.hi != null) ? ` (CI ${fmt(s.estimate.lo)}–${fmt(s.estimate.hi)})` : '';
-        const prog = s.current == null ? '—' : fmt(s.current) + ' U/h';
-        return `<b>${hm}</b><br/>programmed ${prog}<br/>measured ${meas}${ci}<br/>n=${s.days} · ${basalTier(s)}`;
-      },
-    },
-    xAxis: {
-      type: 'value', min: 0, max: 1440, interval: 180,
-      axisLine: { lineStyle: { color: colors.line } },
-      axisTick: { show: false },
-      splitLine: { show: true, lineStyle: { color: colors.line, opacity: 0.4 } },
-      axisLabel: {
-        color: colors.muted, fontSize: 10,
-        formatter: (v) => String(Math.floor(v / 60)).padStart(2, '0') + ':00',
-      },
-    },
-    yAxis: {
-      type: 'value', min: 0, max: ymax, name: 'U/h',
-      nameGap: 14, nameTextStyle: { color: colors.muted, fontSize: 10, padding: [0, 0, 4, 0] },
-      axisLabel: { color: colors.muted, fontSize: 10, formatter: (v) => v.toFixed(1) },
-      axisLine: { show: false },
-      splitLine: { lineStyle: { color: colors.line } },
-    },
-    series: [
-      // CI bands (clamped), drawn first/behind.
-      {
-        type: 'custom', z: 1, silent: true,
-        renderItem: (params, api) => {
-          const xa = api.coord([api.value(0), 0])[0];
-          const xb = api.coord([api.value(1), 0])[0];
-          const yLo = api.coord([0, api.value(2)])[1];
-          const yHi = api.coord([0, api.value(3)])[1];
-          const style = api.style();
-          return {
-            type: 'rect',
-            shape: { x: xa + 1, y: yHi, width: (xb - xa) - 2, height: Math.max(2, yLo - yHi) },
-            style: { fill: style.fill, opacity: 0.22 },
-          };
-        },
-        encode: { x: [0, 1], y: [2, 3] },
-        data: bandData,
-      },
-      // Programmed (dashed grey step).
-      {
-        type: 'line', step: 'middle', symbol: 'none', z: 3, connectNulls: false,
-        data: progData, lineStyle: { color: colors.secondary, type: 'dashed', width: 1.6 },
-      },
-      // Measured, per-tier styling.
-      measLine(measSolid, { color: colors.onTarget, width: 2.6 }),
-      measLine(measThin, { color: colors.muted, width: 1.6, type: 'dotted' }),
-      measLine(measInsuf, { color: colors.warn, width: 1.8, type: 'dashed' }),
-      measLine(measChange, { color: colors.accent, width: 3 }),
-      // No-clean-data ticks along the baseline.
-      {
-        type: 'scatter', z: 2, symbol: 'rect', symbolSize: [10, 2], silent: true,
-        itemStyle: { color: colors.muted, opacity: 0.6 }, data: nodataPts,
-      },
-      // Suggested-rate marker on the real 03:00 change.
-      {
-        type: 'scatter', z: 6, symbol: 'circle', symbolSize: 11,
-        itemStyle: { color: colors.accent, borderColor: colors.surface, borderWidth: 2 },
-        data: realChange,
-      },
-    ],
-  };
-}
-
-// --- 3. per-clean-night evidence strip --------------------------------------
-// Already pure — moved as-is. The estimate's 80% CI is an ERROR BAR ON THE
-// ESTIMATE at the right edge, NOT a band each night must fall inside.
-export function buildEvidenceStripOption(change, colors) {
-  const pts = ((change.evidence && change.evidence.points) || []).map((p) => p.rate);
-  const e = change.estimate;
-  // x categories: d1..dN nights, then a gap, then the "est" column.
-  const cats = pts.map((_, i) => 'd' + (i + 1)).concat(['', 'est']);
-  const estIdx = cats.length - 1;
-  const dots = pts.map((v, i) => {
-    const above = v > change.current + 1e-9, below = v < change.current - 1e-9;
-    const color = above ? colors.primary : (below ? colors.accent : colors.muted);
-    return { value: [i, v], itemStyle: { color, borderColor: colors.surface2, borderWidth: 1.5 } };
-  });
-  // Estimate error bar via custom renderItem: whisker lo..hi + caps + dot.
-  const errData = (e.lo != null && e.hi != null)
-    ? [{ value: [estIdx, e.lo, e.hi, change.recommended] }] : [];
-
-  const vals = pts.concat([change.current, change.recommended, e.lo, e.hi].filter((v) => v != null));
-  const lo = Math.min(...vals) - 0.06, hi = Math.max(...vals) + 0.06;
-
-  return {
-    backgroundColor: 'transparent',
-    textStyle: { color: colors.text, fontFamily: 'Inter, system-ui, sans-serif' },
-    grid: { left: 48, right: 16, top: 16, bottom: 26 },
-    xAxis: {
-      type: 'category', data: cats, boundaryGap: true,
-      axisLine: { lineStyle: { color: colors.line } }, axisTick: { show: false },
-      axisLabel: { color: colors.muted, fontSize: 9 },
-    },
-    yAxis: {
-      type: 'value', min: lo, max: hi, scale: true,
-      axisLabel: { color: colors.muted, fontSize: 10, formatter: (v) => v.toFixed(2) },
-      axisLine: { show: false }, splitLine: { lineStyle: { color: colors.line } },
-    },
-    series: [
-      // current reference (dashed) + suggested (solid) markLines.
-      {
-        type: 'scatter', data: dots, symbolSize: 9, z: 5,
-        markLine: {
-          symbol: 'none', silent: true,
-          data: [
-            { yAxis: change.current, lineStyle: { type: 'dashed', color: colors.muted, width: 1.5 },
-              label: { show: true, position: 'insideStartTop', color: colors.muted, fontSize: 9, formatter: 'current ' + fmt(change.current) } },
-            { yAxis: change.recommended, lineStyle: { type: 'solid', color: colors.onTarget, width: 1.5, opacity: 0.6 },
-              label: { show: false } },
-          ],
-        },
-      },
-      // Estimate error bar (the CI) at the right edge.
-      {
-        type: 'custom', z: 6,
-        renderItem: (params, api) => {
-          const x = api.coord([api.value(0), 0])[0];
-          const yLo = api.coord([0, api.value(1)])[1];
-          const yHi = api.coord([0, api.value(2)])[1];
-          const yEst = api.coord([0, api.value(3)])[1];
-          const cap = 7;
-          const stroke = colors.onTarget;
-          return {
-            type: 'group',
-            children: [
-              { type: 'line', shape: { x1: x, y1: yLo, x2: x, y2: yHi }, style: { stroke, lineWidth: 2 } },
-              { type: 'line', shape: { x1: x - cap, y1: yLo, x2: x + cap, y2: yLo }, style: { stroke, lineWidth: 2 } },
-              { type: 'line', shape: { x1: x - cap, y1: yHi, x2: x + cap, y2: yHi }, style: { stroke, lineWidth: 2 } },
-              { type: 'circle', shape: { cx: x, cy: yEst, r: 5.5 }, style: { fill: stroke, stroke: colors.surface2, lineWidth: 1.5 } },
-              { type: 'text', style: { text: fmt(change.recommended), x, y: yEst - 12, fill: stroke, font: '700 10px Inter, sans-serif', align: 'center' } },
-              { type: 'text', style: { text: 'est ±CI', x, y: yLo + 14, fill: colors.muted, font: '9px Inter, sans-serif', align: 'center' } },
-            ],
-          };
-        },
-        encode: { x: [0], y: [1, 2, 3] },
-        data: errData,
-      },
-    ],
-  };
-}

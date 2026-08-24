@@ -280,7 +280,7 @@ P05 · Dragging INSIDE the window slides it whole — width preserved, both edge
                   while crossing either clock boundary, and a one-day slide
                   lands back on its own start.
   evidence: replay S86, S87, S89
-  operator-ruled: PENDING - #130
+  operator-ruled: Connor Griffin · 2026-08-24
 ```
 
 ```
@@ -345,7 +345,7 @@ P55 · A fresh draw crosses either clock boundary. Its committed window has two
       third endpoint.
   source:   installDrag / paintBrace, frontend/diagnose-workstation.js
   evidence: replay S82, S83
-  verdict:  added         operator-ruled: PENDING - #130
+  verdict:  added         operator-ruled: Connor Griffin · 2026-08-24
 ```
 
 ```
@@ -354,7 +354,7 @@ P56 · Either resize grip can carry its endpoint across midnight while the far
       grips at those clock endpoints.
   source:   installDrag / paintBrace, frontend/diagnose-workstation.js
   evidence: replay S84, S85
-  verdict:  added         operator-ruled: PENDING - #130
+  verdict:  added         operator-ruled: Connor Griffin · 2026-08-24
 ```
 
 ```
@@ -372,7 +372,7 @@ P57 · A slide can cross 24:00 in either direction. It preserves the circular
             false on both stretches of a wrapped window. The two replay stories
             commit the slide and check the chip; neither re-grabs the committed
             window, so they do not carry that clause.
-  verdict:  added         operator-ruled: PENDING - #130
+  verdict:  added         operator-ruled: Connor Griffin · 2026-08-24
 ```
 
 ```
@@ -389,18 +389,17 @@ P58 · At a clock boundary, the moving edge stays on the plot boundary while the
             copies leaving at rest, browser test #130's `copies === 0`. The four
             replay stories assert the pan, never the repetition; they were cited
             for it and did not carry it.
-  verdict:  added         operator-ruled: PENDING - #130
+  verdict:  added         operator-ruled: Connor Griffin · 2026-08-24
 
   amendment #130: a held boundary is TRAVEL, not aim. The day keeps translating
-                  for as long as the pointer stays past the edge, at roughly ten
-                  display minutes per animation frame, so no snapped window
-                  stands still long enough to be released on — in either
-                  direction. The pan re-arms only while the pointer is past an
-                  edge, so bringing it back inside the plot stops the day where
-                  it stands and the window is then placed by the pointer alone.
-                  Travel at the edge, aim in the plot.
+                  for as long as the pointer stays past the edge, fast enough
+                  that no snapped window stands still long enough to be released
+                  on — in either direction. The pan re-arms only while the
+                  pointer is past an edge, so bringing it back inside the plot
+                  stops the day where it stands and the window is then placed by
+                  the pointer alone. Travel at the edge, aim in the plot.
   evidence: replay S82, S83, S84, S85, S86, S87
-  operator-ruled: PENDING - #130
+  operator-ruled: Connor Griffin · 2026-08-24
 
   amendment #130: what the pointer is over keeps reading correctly for the WHOLE
                   travel, not just at rest. The docked readout reports the pooled
@@ -414,7 +413,7 @@ P58 · At a clock boundary, the moving edge stays on the plot boundary while the
   evidence: diagnose-workstation-chart.test.js "#130 · the docked readout reads
             the pooled bin under a panning axis pointer" and "#130 · a full-travel
             slide keeps its live band on the unrolled axis"
-  operator-ruled: PENDING - #130
+  operator-ruled: Connor Griffin · 2026-08-24
 ```
 
 ```
@@ -423,7 +422,7 @@ P59 · Draw and resize stop after one full day and commit the unscoped whole day
       trip returns the same window to its own start.
   source:   commitWindow / commitSlide, frontend/diagnose-workstation-chart.js
   evidence: replay S88, S89
-  verdict:  added         operator-ruled: PENDING - #130
+  verdict:  added         operator-ruled: Connor Griffin · 2026-08-24
 ```
 
 ```

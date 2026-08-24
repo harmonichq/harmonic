@@ -122,6 +122,7 @@ export const state = (page) => page.evaluate(() => {
     gripB: parseFloat(q('#grip-b')?.style.left || 'NaN'),
     live: ['brace-a', 'brace-b'].filter((i) => document.getElementById(i)?.classList.contains('live')),
     readout: q('#brace-readout')?.hidden ? null : (q('#brace-readout')?.textContent.trim() ?? null),
+    panOffset: Number(q('#chart')?.parentElement?.dataset.clockPan || 0),
     badge: txt('#plan-badge'),
     /* #735 — `#inspector-meta` is GONE (lock term 47): the pane header's staged
        status named only the Plan branch of a four-branch object, so it could read
@@ -282,6 +283,87 @@ const plot = (page) => page.evaluate(() => {
   const r = document.getElementById('chart').getBoundingClientRect();
   return { x: r.x, y: r.y, w: r.width, h: r.height };
 });
+
+const chartXAt = (box, minute) => box.x + 52 + (minute / 1425) * (box.w - 104);
+
+const chipIs = (page, want) => page.waitForFunction((expected) => {
+  const follow = document.querySelector('#seg-window [data-follow]');
+  return follow?.firstChild?.textContent.trim() === expected;
+}, want, { timeout: 5000 });
+
+const beginFreshDraw = async (page) => {
+  await page.getByRole('button', { name: '24 h', exact: true }).click();
+  await settle(page, 450);
+};
+
+const drawInside = async (page, start, end) => {
+  await beginFreshDraw(page);
+  const b = await plot(page);
+  const y = b.y + b.h * 0.45;
+  await page.mouse.move(chartXAt(b, start), y);
+  await page.mouse.down();
+  await page.mouse.move(chartXAt(b, end), y, { steps: 8 });
+  await page.mouse.up();
+  await settle(page, 450);
+};
+
+/* A HELD PLOT BOUNDARY IS TRAVEL, NOT AIM. While the pointer sits past an edge
+   the day translates under it at the chart's own minutes-per-pixel — about ten
+   display minutes per animation frame on a locked viewport, so any one snapped
+   window is on screen for roughly a frame and a half. Watching for a window and
+   then releasing cannot land it: the observation costs a round trip and is
+   already a frame stale when it arrives, and the release commits wherever the
+   pan has got to by then, which is a bin or two further on. That overshoot is
+   symmetric — both directions do it — and it is a property of a moving target,
+   not of the arithmetic.
+
+   So these stories travel first and aim second. `panThenAim` shoves the pointer
+   past an edge until the day has translated far enough, then brings it back
+   INSIDE the plot, which stops the pan where it stands (it re-arms only while
+   the pointer is past an edge), and places one exact display minute under the
+   pointer. What commits is then a function of where the pointer is rather than
+   of when it let go. `holdUntilStop` is the only sound way to wait at an edge,
+   and only because what it waits for is a stop the gesture cannot travel out
+   of. */
+const shoveToBoundary = async (page, start, direction) => {
+  const b = await plot(page);
+  const y = start.y ?? b.y + b.h * 0.45;
+  await page.mouse.move(start.x, y);
+  await page.mouse.down();
+  await page.mouse.move(direction === 'right' ? b.x + b.w - 39 : b.x + 39, y,
+    { steps: 8 });
+  return y;
+};
+
+const clockPan = (page) => page.evaluate(() => Number(document.getElementById('chart')
+  .parentElement.dataset.clockPan || 0));
+
+/** Travel `past` display minutes at `direction`'s edge, then put display minute
+    `aim` of the translated axis under the pointer. `aim` is unrolled, so 1440 is
+    the next day's 00:00 and a negative minute is the previous day's. */
+export const panThenAim = async (page, start, direction, { past, aim }) => {
+  const y = await shoveToBoundary(page, start, direction);
+  await page.waitForFunction((want) => Math.abs(Number(document.getElementById('chart')
+    .parentElement.dataset.clockPan || 0)) >= want, past, { timeout: 7000 });
+  const b = await plot(page);
+  await page.mouse.move(b.x + b.w / 2, y);   // back inside the plot: the day stops
+  await settle(page, 150);
+  const pan = await clockPan(page);
+  const x = chartXAt(b, aim - pan);
+  // a silent clamp to the plot edge would commit a window nobody asked for
+  if (x < b.x + 52 || x > b.x + b.w - 52) {
+    throw new Error(`aim ${aim} is off the plot at pan ${pan} — travel further first`);
+  }
+  await page.mouse.move(x, y);
+  await settle(page, 150);
+  return state(page);
+};
+
+const holdUntilStop = async (page, start, direction, want) => {
+  await shoveToBoundary(page, start, direction);
+  await chipIs(page, want);
+  return state(page);
+};
 
 /** Pixel centres of the chart's own occurrence dots / meal glyphs, from the
     ECharts instance — never guessed by scanning the canvas. */
@@ -2629,6 +2711,141 @@ export const S81 = async (page) => {
   is((await state(page)).crumb.length, 2, 'S81 direct selection keeps the case-file crumb depth');
 };
 
+/** S82 · A fresh draw crosses 24:00 to the right. */
+export const S82 = async (page) => {
+  await beginFreshDraw(page);
+  const b = await plot(page);
+  const during = await panThenAim(page, { x: chartXAt(b, 22 * 60) }, 'right',
+    { past: 180, aim: 24 * 60 + 2 * 60 });
+  ok(during.panOffset > 0, 'S82 the day pans left under the right boundary');
+  is(during.chip, 'Window 22:00–02:00', 'S82 the draw reads its wrapped window before release');
+  await captureEvidence(page, 'S82-mid-pan-right');
+  await page.mouse.up();
+  await settle(page, 500);
+  is((await state(page)).chip, 'Window 22:00–02:00', 'S82 draw right commits across midnight');
+};
+
+/** S83 · A fresh draw crosses 00:00 to the left. */
+export const S83 = async (page) => {
+  await beginFreshDraw(page);
+  const b = await plot(page);
+  const during = await panThenAim(page, { x: chartXAt(b, 3 * 60) }, 'left',
+    { past: 120, aim: -60 });
+  ok(during.panOffset < 0, 'S83 the day pans right under the left boundary');
+  is(during.chip, 'Window 23:00–03:00', 'S83 the draw reads its wrapped window before release');
+  await captureEvidence(page, 'S83-mid-pan-left');
+  await page.mouse.up();
+  await settle(page, 500);
+  is((await state(page)).chip, 'Window 23:00–03:00', 'S83 draw left commits across midnight');
+};
+
+/** S84 · The start grip crosses 00:00 while its far endpoint stays anchored. */
+export const S84 = async (page) => {
+  const before = await state(page);
+  const grip = await page.locator('#grip-a').boundingBox();
+  const during = await panThenAim(page,
+    { x: grip.x + grip.width / 2, y: grip.y + grip.height / 2 },
+    'left', { past: 120, aim: -60 });
+  ok(during.panOffset < 0, 'S84 the start grip reaches its target through a leftward pan');
+  is(during.chip, 'Window 23:00–04:45', 'S84 the grip reads its wrapped window before release');
+  await page.mouse.up();
+  await settle(page, 500);
+  const after = await state(page);
+  is(after.chip, 'Window 23:00–04:45', 'S84 start grip commits across midnight');
+  near(after.gripB, before.gripB, 1, 'S84 the far endpoint remains anchored');
+};
+
+/** S85 · The end grip crosses 24:00 while its far endpoint stays anchored. */
+export const S85 = async (page) => {
+  await drawInside(page, 20 * 60, 22 * 60);
+  const before = await state(page);
+  const grip = await page.locator('#grip-b').boundingBox();
+  const during = await panThenAim(page,
+    { x: grip.x + grip.width / 2, y: grip.y + grip.height / 2 },
+    'right', { past: 120, aim: 24 * 60 + 60 });
+  is(during.chip, 'Window 20:00–01:00', 'S85 the grip reads its wrapped window before release');
+  await page.mouse.up();
+  await settle(page, 500);
+  const after = await state(page);
+  is(after.chip, 'Window 20:00–01:00', 'S85 end grip commits across midnight');
+  near(after.gripA, before.gripA, 1, 'S85 the far endpoint remains anchored');
+};
+
+/* S86 and S87 are each other's mirror: the same 2h window, grabbed the same 60
+   minutes in, carried the same three hours onto the neighbouring day's 24:00 and
+   00:00. Both must land the identical wrapped window. */
+
+/** S86 · Sliding right crosses 24:00 without changing the window's length. */
+export const S86 = async (page) => {
+  await drawInside(page, 20 * 60, 22 * 60);
+  const b = await plot(page);
+  const during = await panThenAim(page, { x: chartXAt(b, 21 * 60) }, 'right',
+    { past: 120, aim: 24 * 60 });
+  ok(during.panOffset > 0, 'S86 the slide reaches its target through a rightward pan');
+  is(during.live, ['brace-a', 'brace-b'], 'S86 both slide edges stay live');
+  await page.mouse.up();
+  await settle(page, 500);
+  is((await state(page)).chip, 'Window 23:00–01:00', 'S86 slide right commits across midnight');
+};
+
+/** S87 · Sliding left crosses 00:00 without changing the window's length. */
+export const S87 = async (page) => {
+  await drawInside(page, 2 * 60, 4 * 60);
+  const b = await plot(page);
+  const during = await panThenAim(page, { x: chartXAt(b, 3 * 60) }, 'left',
+    { past: 120, aim: 0 });
+  ok(during.panOffset < 0, 'S87 the slide reaches its target through a leftward pan');
+  is(during.live, ['brace-a', 'brace-b'], 'S87 both slide edges stay live');
+  await page.mouse.up();
+  await settle(page, 500);
+  is((await state(page)).chip, 'Window 23:00–01:00', 'S87 slide left commits across midnight');
+};
+
+/** S88 · Draw's one-day stop commits the unscoped day and restores the axis. */
+export const S88 = async (page) => {
+  await beginFreshDraw(page);
+  const b = await plot(page);
+  const during = await holdUntilStop(page,
+    { x: chartXAt(b, 20 * 60) }, 'right', 'Whole day');
+  ok(during.panOffset > 0, 'S88 full-day stop is reached through the pan');
+  await captureEvidence(page, 'S88-full-day-stop');
+  await page.mouse.up();
+  await settle(page, 500);
+  const after = await state(page);
+  is(after.chip, null, 'S88 whole day is not retained as a 24-hour drawn window');
+  is(after.pressed, ['24 h'], 'S88 whole day commits the unscoped day');
+  is(after.panOffset, 0, 'S88 the axis returns to 00:00–24:00 on release');
+
+  await drawInside(page, 20 * 60, 22 * 60);
+  const grip = await page.locator('#grip-b').boundingBox();
+  await holdUntilStop(page, { x: grip.x + grip.width / 2, y: grip.y + grip.height / 2 },
+    'right', 'Whole day');
+  await page.mouse.up();
+  await settle(page, 500);
+  const resized = await state(page);
+  is(resized.chip, null, 'S88 a full-day resize is not retained as a 24-hour window');
+  is(resized.pressed, ['24 h'], 'S88 a full-day resize commits the unscoped day');
+};
+
+/** S89 · A full-day slide returns to its own start, preserving its duration. */
+export const S89 = async (page) => {
+  await drawInside(page, 20 * 60, 22 * 60);
+  const before = await state(page);
+  const b = await plot(page);
+  await page.mouse.move(chartXAt(b, 21 * 60), b.y + b.h * 0.45);
+  await page.mouse.down();
+  await page.mouse.move(b.x + b.w - 39, b.y + b.h * 0.45, { steps: 8 });
+  await page.waitForFunction(() => Number(document.getElementById('chart').parentElement
+    .dataset.clockPan || 0) >= 1274, null, { timeout: 7000 });
+  await page.mouse.up();
+  await settle(page, 500);
+  const after = await state(page);
+  is(after.chip, before.chip, 'S89 a one-day slide lands back on its own start');
+  near(after.gripB - after.gripA, before.gripB - before.gripA, 2,
+    'S89 a one-day slide preserves its length');
+  is(after.panOffset, 0, 'S89 the axis returns after the slide');
+};
+
 /** S33 · #58 — while the event canvas is mounted, its own header is the only
     canvas header on screen. The clock canvas's header used to stay mounted
     underneath and print the clock window over an event-aligned chart. */
@@ -3728,6 +3945,9 @@ export const STORIES = [
   ['S78', S78, 'dense'], ['S79', S79, 'dense'],
   ['S80', S80, 'dense', { findingsInputs: withFiredMeal, exposuresInputs: (d) => withFiredMeal(d).exposures }],
   ['S81', S81, 'dense'],
+  ['S82', S82, 'typical'], ['S83', S83, 'typical'], ['S84', S84, 'drawn'],
+  ['S85', S85, 'typical'], ['S86', S86, 'typical'], ['S87', S87, 'typical'],
+  ['S88', S88, 'typical'], ['S89', S89, 'typical'],
   ['C41', C41, 'typical', { caseScenario: {
     preparation: generatedFindingPose('finding:meal_over_delivery'),
   } }], ['C42', C42, 'typical'],

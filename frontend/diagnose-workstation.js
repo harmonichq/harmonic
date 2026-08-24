@@ -24,8 +24,10 @@
  */
 import {
   buildEnvelope, buildMealMarkers, renderCanvas, observeResize,
-  buildSlotLane, cellAtMinute, windowStats, hhmm, BIN_MINUTES, MIN_SUPPORTED_NIGHTS,
-  snapWindow, minuteAtX, xAtMinute, plotBox, buildDayTrace,
+  buildSlotLane, cellAtMinute, windowStats, hhmm, windowSpanText,
+  BIN_MINUTES, MIN_SUPPORTED_NIGHTS,
+  snapMinute, snapWindow, commitWindow, commitSlide, minuteAtX, xAtMinute, plotBox, windowSpans,
+  buildDayTrace,
   renderHistoryEvents, validateHistoryEvents,
 } from './diagnose-workstation-chart.js';
 import { toCaptures, isfVerdict } from './diagnose-workstation-data.js';
@@ -233,8 +235,7 @@ const WINDOWS = {
   evening: { label: 'Evening', range: [1080, 1440] },
   all: { label: '24 h', range: [0, 1440] },
 };
-const winEdge = (m) => (m === 1440 ? '24:00' : hhmm(m));
-const winText = (w) => `${hhmm(w.range[0])}–${winEdge(w.range[1])}`;
+const winText = (w) => windowSpanText(w.range);
 
 /* ---- mock 1222-1242 — VERBATIM except the trailing `[state]` index:
        the app re-derives CFG per mount instead of once at load. ---- */
@@ -1098,6 +1099,8 @@ function boot(root, data, callbacks, signal) {
   let presetKey = CFG.win;                          // what Esc restores
   let shownRange = null;                            // the window the canvas resolved to
   let braceGripTop = 48;                            // y of the grip band, set by paintBrace
+  let dragDisplayWindow = null;                     // monotonic minutes while a drag is live
+  let clockPanOffset = 0;                           // left edge of the unrolled clock display
   /* An EXPLICIT window choice — a preset press, or a drag — outranks the window
      a frame would derive (factor peak, occurrence, slot span). It stands until
      a NEW navigation: drilling a different factor or occurrence hands the window
@@ -1114,7 +1117,7 @@ function boot(root, data, callbacks, signal) {
   const scopeWindow = () => drawn || WINDOWS[presetKey].range;
   const scopeLabel = () => {
     const w = scopeWindow();
-    return w ? `${hhmm(w[0])}–${winEdge(w[1])}` : 'full range';
+    return w ? windowSpanText(w) : 'full range';
   };
   /* The opening depth of a mock state, as FRAMES. A factor frame is (factor,
      rowId) together — the row is where its population comes from — so the boot
@@ -1696,7 +1699,11 @@ function boot(root, data, callbacks, signal) {
     let label = `${preset.label.toUpperCase()} ${winText(preset)}`;
     let note = '';   // the droppable count tail — shed first when space is tight
     braceless = false;
-    if (f.k === 'factor' && f.caseFile
+    if (dragDisplayWindow) {
+      const committed = commitWindow(dragDisplayWindow);
+      win = { label: committed ? 'Window' : 'Whole day', range: committed || [0, 1440] };
+      label = committed ? `WINDOW ${winText(win)}` : 'WHOLE DAY';
+    } else if (f.k === 'factor' && f.caseFile
       && !(f.eventDiscovery && (drawn || explicitPreset))) {
       const caseWindow = f.caseFile.window;
       const clock = f.caseFile.projection.alignment === 'clock'
@@ -1723,7 +1730,7 @@ function boot(root, data, callbacks, signal) {
          already occupies. */
       win = { label: 'Window', range: canvasDrawn };
       label = `WINDOW ${winText(win)}`;
-      markWindowSegment(`Window ${hhmm(canvasDrawn[0])}–${hhmm(canvasDrawn[1])}`,
+      markWindowSegment(`Window ${windowSpanText(canvasDrawn)}`,
         retainedHistoryScope ? null : clearDrawn);
     } else if (explicitPreset || retainedHistoryScope) {
       /* A pressed preset is a workspace too, and it outranks the frame for the
@@ -1787,7 +1794,7 @@ function boot(root, data, callbacks, signal) {
     chart = renderCanvas(el('chart'), window.echarts, {
       envelope, markers, colors, occurrences, stats, window: win.range,
       windowLabel: label, windowNote: note, trace, onHover: paintReadout,
-      selectedOcc,
+      selectedOcc, displayWindow: dragDisplayWindow, displayOffset: clockPanOffset,
     });
     const chartNode = el('chart');
     const priorNotice = chartNode.parentElement.querySelector('.history-canvas-notice');
@@ -2328,7 +2335,8 @@ function boot(root, data, callbacks, signal) {
   function paintBrace() {
     const brace = el('brace');
     const chartEl = el('chart');
-    const cells = el('lane').querySelectorAll('button');
+    const laneEl = el('lane');
+    let cells = [...laneEl.querySelectorAll('button:not([data-clock-copy])')];
     if (!shownRange) {
       brace.hidden = true;
       for (const b of cells) b.removeAttribute('data-outside');
@@ -2337,13 +2345,12 @@ function boot(root, data, callbacks, signal) {
     // a block selection marks its segment WITHOUT a resizable brace (term 32);
     // the dimming below still runs, so the register stays readable
     brace.hidden = braceless;
-    const [from, to] = shownRange;
-    const xa = xAtMinute(chartEl, from);
-    const xb = xAtMinute(chartEl, to);
+    const [from, to] = dragDisplayWindow || shownRange;
+    const xa = xAtMinute(chartEl, from, clockPanOffset);
+    const xb = xAtMinute(chartEl, to, clockPanOffset);
     /* PLOT_TOP/PLOT_BOTTOM track the chart module's grid[0] insets. The edges
        run from the plot's top edge down to the bottom of the basal lane — the
        "project through the lane" spine, clipped at both ends. */
-    const laneEl = el('lane');
     const laneBottom = laneEl.offsetTop + laneEl.offsetHeight;
     const plotTop = PLOT_TOP;
     const plotBottom = chartEl.clientHeight - PLOT_BOTTOM;
@@ -2360,24 +2367,59 @@ function boot(root, data, callbacks, signal) {
       el(id).style.left = `${x}px`;
       el(id).style.top = `${gripTop}px`;
     }
-    // a slot outside the window is dimmed, never removed
-    lane.cells.forEach((cell, i) => {
-      if (!cells[i]) return;
-      cells[i].dataset.outside = String(cell.endMin <= from || cell.startMin >= to);
+    /* During an unroll the basal day travels with the chart. The two copies are
+       inert repeats of the shipped lane, dimmed as neighbouring days; at rest
+       they are removed and the original 48 buttons regain their normal track. */
+    const panning = clockPanOffset !== 0;
+    if (panning && !laneEl.querySelector('[data-clock-copy]')) {
+      const copy = (day) => cells.map((button) => {
+        const clone = button.cloneNode(true);
+        clone.dataset.clockCopy = String(day);
+        clone.tabIndex = -1;
+        clone.disabled = true;
+        return clone;
+      });
+      laneEl.prepend(...copy(-1));
+      laneEl.append(...copy(1));
+    } else if (!panning) {
+      laneEl.querySelectorAll('[data-clock-copy]').forEach((button) => button.remove());
+    }
+    cells = [...laneEl.querySelectorAll('button:not([data-clock-copy])')];
+    laneEl.toggleAttribute('data-clock-panning', panning);
+    laneEl.style.gridTemplateColumns = `repeat(${lane.cells.length * (panning ? 3 : 1)}, 1fr)`;
+    laneEl.style.setProperty('--clock-pan-px', `${clockPanOffset / (95 * BIN_MINUTES)
+      * plotBox(chartEl).width}px`);
+
+    const spans = dragDisplayWindow ? [dragDisplayWindow] : windowSpans(shownRange);
+    const allCells = panning ? [...laneEl.querySelectorAll('button')] : cells;
+    allCells.forEach((button, index) => {
+      const sourceIndex = index % lane.cells.length;
+      const cell = lane.cells[sourceIndex];
+      const day = Number(button.dataset.clockCopy || 0);
+      const start = cell.startMin + day * 1440;
+      const end = cell.endMin + day * 1440;
+      button.dataset.outside = String(!spans.some(([spanStart, spanEnd]) =>
+        end > spanStart && start < spanEnd));
+      button.toggleAttribute('data-neighbour', day !== 0);
     });
   }
 
   /**
    * Drag to draw. Originates in the PLOT BODY only — the lane has no drag
-   * listener, so it stays click-only. While dragging, only the two dashed edges
-   * and the chip text move: the chart is not re-rendered, so there is no
-   * rubber-band fill and no animation. The commit happens on mouseup.
+   * listener, so it stays click-only. The existing frame-throttled chart repaint
+   * carries the committed window treatment throughout the gesture; at a clock
+   * boundary it also translates the repeated day beneath the held edge. The
+   * circular window commits only on mouseup.
    */
   function installDrag() {
     const chartEl = el('chart');
     let mode = null; let anchor = 0; let width = 0; let grabOffset = 0;
     let moved = false; let pressMinute = 0;
+    let lastX = 0; let panMin = 0; let panMax = 0;
     let rafId = 0;
+    const DISPLAY_SPAN = 95 * BIN_MINUTES;
+    const PAN_EDGE = 26;
+    const PAN_PX_PER_FRAME = 13;
 
     /* LIVE SHADING. Two moving dashed edges with nothing between them gave no
        read on the window being created. Rather than invent a rubber-band style,
@@ -2393,44 +2435,88 @@ function boot(root, data, callbacks, signal) {
        Throttled to one repaint per frame; the inspector is deliberately NOT
        repainted here (only paintChart), so the drag costs one canvas redraw and
        no DOM rebuild. */
-    const liveRepaint = () => {
+    const localX = (ev) => ev.clientX - chartEl.getBoundingClientRect().left;
+    const minuteAt = (x) => minuteAtX(chartEl, x, clockPanOffset);
+    const duration = ([start, end]) => end > start ? end - start : end + 1440 - start;
+
+    function applyDrag() {
+      const m = minuteAt(lastX);
+      if (mode === 'draw') {
+        dragDisplayWindow = snapWindow([anchor, m], envelope.pool, m < anchor ? 'end' : 'start');
+        drawn = commitWindow(dragDisplayWindow);
+      } else if (mode === 'a') {
+        dragDisplayWindow = snapWindow([m, anchor], envelope.pool, 'end');
+        drawn = commitWindow(dragDisplayWindow);
+      } else if (mode === 'b') {
+        dragDisplayWindow = snapWindow([anchor, m], envelope.pool, 'start');
+        drawn = commitWindow(dragDisplayWindow);
+      } else {
+        const start = snapMinute(m - grabOffset);
+        dragDisplayWindow = [start, start + width];
+        drawn = commitSlide(start, width);
+      }
+      explicitPreset = true;
+      paintChart();
+      paintBrace();
+      paintLive(mode === 'slide' ? 'both'
+        : mode === 'draw' ? (m >= anchor ? 'b' : 'a')
+          : mode);
+      markWindowSegment(drawn
+        ? `Window ${windowSpanText(drawn)}` : 'Whole day', clearDrawn);
+    }
+
+    function liveRepaint() {
       if (rafId) return;
-      rafId = requestAnimationFrame(() => { rafId = 0; paintChart(); paintBrace(); });
-    };
-    const minuteAt = (ev) => minuteAtX(chartEl, ev.clientX - chartEl.getBoundingClientRect().left);
+      rafId = requestAnimationFrame(() => {
+        rafId = 0;
+        if (!mode || !moved) return;
+        const box = plotBox(chartEl);
+        const over = lastX - box.right;
+        const back = box.left - lastX;
+        const perPixel = DISPLAY_SPAN / (box.width || 1);
+        /* The pan re-arms only while the pointer is PAST an edge. Bring it back
+           inside the plot and the day stops where it stands, so the window is
+           placed by the pointer alone — travel at the edge, aim in the plot. */
+        if (over >= 0 && clockPanOffset < panMax) {
+          const step = Math.min(PAN_PX_PER_FRAME, Math.max(1, over / PAN_EDGE * PAN_PX_PER_FRAME));
+          clockPanOffset = Math.min(panMax, clockPanOffset + step * perPixel);
+        } else if (back >= 0 && clockPanOffset > panMin) {
+          const step = Math.min(PAN_PX_PER_FRAME, Math.max(1, back / PAN_EDGE * PAN_PX_PER_FRAME));
+          clockPanOffset = Math.max(panMin, clockPanOffset - step * perPixel);
+        }
+        chartEl.parentElement.dataset.clockPan = String(clockPanOffset);
+        applyDrag();
+        if ((over >= 0 && clockPanOffset < panMax)
+          || (back >= 0 && clockPanOffset > panMin)) liveRepaint();
+      });
+    }
 
     function move(ev) {
       if (!mode) return;
-      const m = minuteAt(ev);
+      lastX = localX(ev);
       if (!moved) {
         /* First real movement: NOW the gesture takes hold of the window. Every
            mutation lives here, so a press that never moves cannot leave one. */
         moved = true;
         if (mode === 'draw') {
           anchor = pressMinute;
-        } else if (mode === 'a') { takeHold(); anchor = drawn[1]; }
-        else if (mode === 'b') { takeHold(); anchor = drawn[0]; }
-        else { takeHold(); width = drawn[1] - drawn[0]; grabOffset = pressMinute - drawn[0]; }
+        } else if (mode === 'a') {
+          takeHold();
+          anchor = drawn[0] + duration(drawn);
+        } else if (mode === 'b') {
+          takeHold();
+          anchor = drawn[1] - duration(drawn);
+        } else {
+          takeHold();
+          width = duration(drawn);
+          let displayStart = drawn[0];
+          if (displayStart > pressMinute) displayStart -= 1440;
+          grabOffset = pressMinute - displayStart;
+        }
+        panMin = pressMinute - 1440;
+        panMax = pressMinute + 1440 - DISPLAY_SPAN;
       }
-      if (mode === 'draw') {
-        drawn = snapWindow([anchor, m], envelope.pool, m < anchor ? 'end' : 'start');
-      } else if (mode === 'a') {
-        drawn = snapWindow([m, anchor], envelope.pool, 'end');
-      } else if (mode === 'b') {
-        drawn = snapWindow([anchor, m], envelope.pool, 'start');
-      } else {
-        const raw = Math.min(1440 - width, Math.max(0, m - grabOffset));
-        const start = Math.round(raw / BIN_MINUTES) * BIN_MINUTES;
-        drawn = [start, start + width];
-      }
-      paintBrace();
-      liveRepaint();   // the window fills in as it is drawn, in its final skin
-      // which edge is under the hand? for a fresh draw it is whichever side of
-      // the anchor the pointer is on; a slide moves both
-      paintLive(mode === 'slide' ? 'both'
-        : mode === 'draw' ? (m >= anchor ? 'b' : 'a')
-          : mode);
-      markWindowSegment(`Window ${hhmm(drawn[0])}–${winEdge(drawn[1])}`, clearDrawn);
+      liveRepaint();   // the window fills and pans at most once per animation frame
     }
 
     /** Mid-drag feedback: the moving edge goes solid, and reads its snapped time. */
@@ -2438,14 +2524,16 @@ function boot(root, data, callbacks, signal) {
       const readout = el('brace-readout');
       el('brace-a').classList.toggle('live', which === 'a' || which === 'both');
       el('brace-b').classList.toggle('live', which === 'b' || which === 'both');
-      if (!which || !drawn) { readout.hidden = true; return; }
+      if (!which || (!dragDisplayWindow && !drawn)) { readout.hidden = true; return; }
       readout.hidden = false;
+      const range = dragDisplayWindow || drawn;
       readout.textContent = which === 'both'
-        ? `${hhmm(drawn[0])}–${winEdge(drawn[1])}`
-        : winEdge(which === 'a' ? drawn[0] : drawn[1]);
+        ? `${hhmm(range[0])}–${hhmm(range[1])}`
+        : hhmm(which === 'a' ? range[0] : range[1]);
       const x = which === 'both'
-        ? (xAtMinute(chartEl, drawn[0]) + xAtMinute(chartEl, drawn[1])) / 2
-        : xAtMinute(chartEl, which === 'a' ? drawn[0] : drawn[1]);
+        ? (xAtMinute(chartEl, range[0], clockPanOffset)
+          + xAtMinute(chartEl, range[1], clockPanOffset)) / 2
+        : xAtMinute(chartEl, which === 'a' ? range[0] : range[1], clockPanOffset);
       readout.style.left = `${x}px`;
       readout.style.top = `${braceGripTop + 26}px`;
     }
@@ -2454,12 +2542,22 @@ function boot(root, data, callbacks, signal) {
       if (!mode) return;
       if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
       const dragged = moved;
+      const wholeDay = dragged && mode !== 'slide' && dragDisplayWindow
+        && commitWindow(dragDisplayWindow) === null;
       mode = null;
       document.removeEventListener('mousemove', move);
       document.removeEventListener('mouseup', end);
       // a press that never moved changed nothing, so there is nothing to commit
       // and nothing to undo — leave the panel exactly as the press found it
       if (!dragged) return;
+      if (wholeDay) {
+        drawn = null;
+        presetKey = 'all';
+        explicitPreset = true;
+      }
+      dragDisplayWindow = null;
+      clockPanOffset = 0;
+      delete chartEl.parentElement.dataset.clockPan;
       paintLive(null);
       paint();   // commit: the window now renders in the full brace treatment
     }
@@ -2479,9 +2577,10 @@ function boot(root, data, callbacks, signal) {
       if (Math.abs(x - xAtMinute(chartEl, shownRange[1])) <= EDGE_GRAB) return 'b';
       return null;
     };
-    const overInterior = (x) => shownRange && !braceless
-      && x > xAtMinute(chartEl, shownRange[0]) + EDGE_GRAB
-      && x < xAtMinute(chartEl, shownRange[1]) - EDGE_GRAB;
+    const overInterior = (x) => shownRange && !braceless && duration(shownRange) < 1440
+      && windowSpans(shownRange).some(([start, end]) =>
+        x > xAtMinute(chartEl, start) + EDGE_GRAB
+        && x < xAtMinute(chartEl, end) - EDGE_GRAB);
 
     /* A preset is just a starting brace. The moment a handle or the interior is
        grabbed the window becomes the user's own: the preset unpresses and the
@@ -2510,7 +2609,8 @@ function boot(root, data, callbacks, signal) {
       ev.preventDefault();
       mode = kind;
       moved = false;
-      pressMinute = minuteAt(ev);
+      lastX = localX(ev);
+      pressMinute = minuteAt(lastX);
       document.addEventListener('mousemove', move);
       document.addEventListener('mouseup', end);
     }

@@ -69,7 +69,7 @@ import { mkdir, readFile } from 'node:fs/promises';
 import { extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  derivedPumpSettings, openApp, openerProblems, state, withIsfVerdict,
+  derivedPumpSettings, openApp, openerProblems, panThenAim, state, withIsfVerdict,
   withoutIsfProjectionVerdict, twoFamilyInputs,
   densityHistoryInputs,
   issue81PendingProjection, issue81FailedProjection, issue81SlicedProjection,
@@ -592,6 +592,74 @@ test('locked panel geometry matches across both required viewports and light/dar
         'no opener problems (page errors / unstubbed routes) across the four geometry opens');
     } finally { /* browser stays open; closed once in after() */ }
   });
+
+test('#130 · a wrapped draw leaves two endpoint edges and dims only the outside basal slots', async () => {
+  const browser = await runner.browser();
+  const before = openerProblems().length;
+  const viewport = VIEWPORTS[0];
+  for (const theme of ['light', 'dark']) {
+    const page = await openApp(browser, { state: 'typical', theme, viewport, appSource: 'fixture' });
+    try {
+      await page.getByRole('button', { name: '24 h', exact: true }).click();
+      await settle(page, 450);
+      const chart = await page.locator('#chart').boundingBox();
+      const xAt = (minute) => chart.x + 52 + (minute / 1425) * (chart.width - 104);
+      const y = chart.y + chart.height * 0.45;
+      // travel at the right edge, then aim the draw's moving end onto the next
+      // day's 02:00 — a held boundary is travel, never a place to release on
+      const during = await panThenAim(page, { x: xAt(22 * 60), y }, 'right',
+        { past: 180, aim: 24 * 60 + 2 * 60 });
+      assert.equal(during.chip, 'Window 22:00–02:00', 'the draw wraps before release');
+      await page.mouse.up();
+      await settle(page, 500);
+
+      const wrapped = await page.evaluate(() => ({
+        chip: document.querySelector('#seg-window [data-follow]')?.firstChild?.textContent.trim(),
+        edges: [...document.querySelectorAll('#brace .edge')].map((edge) => parseFloat(edge.style.left)),
+        grips: [...document.querySelectorAll('#brace .grip')].map((grip) => parseFloat(grip.style.left)),
+        braceParts: document.getElementById('brace').children.length,
+        inside: [...document.querySelectorAll('#lane button:not([data-clock-copy])')]
+          .filter((button) => button.dataset.outside === 'false').length,
+        outside: [...document.querySelectorAll('#lane button:not([data-clock-copy])')]
+          .filter((button) => button.dataset.outside === 'true').length,
+        copies: document.querySelectorAll('#lane [data-clock-copy]').length,
+        axisPoints: window.echarts.getInstanceByDom(document.getElementById('chart'))
+          .getOption().xAxis[0].data.length,
+      }));
+      assert.equal(wrapped.chip, 'Window 22:00–02:00');
+      /* Edge and grip counts are static markup and paintBrace writes the same
+         two offsets into both, so counting them or comparing them proves
+         nothing. What can actually move is WHERE each one lands: pin all four
+         against this file's own minute-to-pixel formula, and pin the wrap
+         itself — a window that failed to cross midnight would put its end edge
+         to the RIGHT of its start edge. */
+      assert.equal(wrapped.braceParts, 5, 'the brace is two edges, two grips and one readout');
+      assert.ok(wrapped.edges[1] < wrapped.edges[0],
+        'a wrapped window carries its end edge left of its start edge');
+      assert.ok(Math.abs(wrapped.edges[0] - (xAt(1320) - chart.x)) <= 1,
+        'the start edge sits at 22:00');
+      assert.ok(Math.abs(wrapped.edges[1] - (xAt(120) - chart.x)) <= 1,
+        'the end edge sits at 02:00');
+      assert.ok(Math.abs(wrapped.grips[0] - (xAt(1320) - chart.x)) <= 1,
+        'the start grip sits on the 22:00 endpoint');
+      assert.ok(Math.abs(wrapped.grips[1] - (xAt(120) - chart.x)) <= 1,
+        'the end grip sits on the 02:00 endpoint');
+      assert.deepEqual([wrapped.inside, wrapped.outside], [8, 40],
+        'the two wrapped stretches keep eight half-hour slots in scope');
+      assert.equal(wrapped.copies, 0, 'neighbour lane copies leave with the pan');
+      assert.equal(wrapped.axisPoints, 96, 'the settled axis returns to the canonical day');
+
+      for (const [minute, cursor] of [[1380, 'grab'], [60, 'grab'], [1320, 'col-resize']]) {
+        await page.mouse.move(xAt(minute), y);
+        assert.equal(await page.locator('#chart').evaluate((node) => getComputedStyle(node).cursor), cursor,
+          `${minute} minutes advertises the wrapped-window gesture`);
+      }
+      await shot(page, 'issue-130', 'wrapped-window-at-rest', viewport, theme);
+    } finally { await page.close(); }
+  }
+  assert.deepEqual(openerProblems().slice(before), [],
+    'no opener problems while proving the wrapped window in both themes');
+});
 
 test('the Filter menu renders each server-published Sift count', async () => {
     const browser = await runner.browser();

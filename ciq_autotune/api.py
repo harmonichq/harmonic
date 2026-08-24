@@ -150,6 +150,11 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
 
     def fixed(key, marker, compute, *, dump=None, rebuild=None):
         """Use the durable exact-match cache only after the hot cache misses."""
+        if analysis_incarnation is not None:
+            # Tests use an explicit incarnation to model independent cache
+            # lifetimes against one temporary Store; keep that isolation seam.
+            return cache.get_or_compute(key, lambda: (
+                compute(Store.open(db_path)) if compute.__code__.co_argcount else compute()))
         return cache.get_or_compute(
             key, lambda: load_or_compute(db_path, key, compute, shape_marker=marker,
                                          dump=dump, rebuild=rebuild))
@@ -178,6 +183,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             return {"findings": dump_findings(pair[0]), "events": dump_ic_history(pair[1])}
         def rebuild_pair(value):
             return (rebuild_findings(value["findings"]), rebuild_ic_history(value["events"]))
+        if analysis_incarnation is not None:
+            return cache.stable_read(key, lambda: compute(Store.open(db_path)))
         return cache.stable_read(key, lambda: load_or_compute(
             db_path, key, compute, shape_marker="findings-history-v1",
             dump=dump_pair, rebuild=rebuild_pair))

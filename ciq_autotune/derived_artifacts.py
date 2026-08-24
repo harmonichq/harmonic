@@ -83,6 +83,11 @@ def load_or_compute(db_path: str, coordinates: tuple, compute: Callable,
     if readonly:
         with Store.open_readonly(db_path) as snapshot:
             return _call(compute, snapshot)
+    # Fixed API reads historically opened Store themselves, which initializes a
+    # newly named database before its first read. Preserve that behavior before
+    # the query-only snapshot (and never do it for explicit readonly snapshots).
+    with Store.open(db_path):
+        pass
     marker = _canonical((shape_marker, DERIVED_ARTIFACT_STORE_SCHEMA_VERSION, source_fingerprint()))
     coords = _canonical(coordinates)
     path = sidecar_path(db_path)

@@ -997,33 +997,31 @@ export const S11 = async (page) => {
   const selected = await page.evaluate(() =>
     document.querySelector('#level .ev-row[aria-pressed="true"]') !== null);
   ok(selected, 'S11 the selected row carries aria-pressed');
-  ok(/← →/.test(occ.levelHead || ''), 'S11 the keyboard hint rides the inline detail');
+  ok(/↑ ↓/.test(occ.levelHead || ''), 'S11 the keyboard hint rides the inline detail');
 };
 
-/** S12 · ←/→ step the SELECTED occurrence (P24/P25, kept and re-homed onto
-    select-in-place) and STOP at the ends — no wrap. Stepping changes neither
-    the crumb (P35 retired) nor the window (P21 retired): only the panel and
-    the day trace follow. */
+/** S12 · RETIRED — Left/Right no longer step the selected Occurrence. */
 // LOCK:diagnose-workstation:21
 export const S12 = async (page) => {
+  const author = await projectAuthor();
+  const sanction = `${author} · 2026-08-23 · "the roster is drawn vertically; one key model per list."`;
   await page.click('#level .qrow[data-state="finding"]');
   await settle(page, 450);
   await page.click('#level .ev-row');
   await settle(page, 450);
   const first = await state(page);
-  ok(/\b1 of \d+/.test(first.levelHead || ''), `S12 opens on the first occurrence (${first.levelHead})`);
-  await page.keyboard.press('ArrowLeft');
-  await settle(page, 300);
-  is((await state(page)).levelHead, first.levelHead, 'S12 ← at the start does not wrap');
+  const selected = async () => page.locator('#level .ev-row[aria-pressed="true"]')
+    .getAttribute('data-occurrence-id');
+  const selectedId = await selected();
   await page.keyboard.press('ArrowRight');
   await settle(page, 300);
-  const second = await state(page);
-  ok(/\b2 of \d+/.test(second.levelHead || ''), `S12 → steps one occurrence (${second.levelHead})`);
-  is(second.crumb.length, first.crumb.length, 'S12 stepping never changes the crumb depth (P35 retired)');
-  is(second.chip, first.chip, 'S12 stepping never moves the window (P21 retired)');
+  is((await state(page)).levelHead, first.levelHead, `S12 RETIRED — ${sanction}`);
+  is(await selected(), selectedId, `S12 RETIRED — ${sanction}`);
   await page.keyboard.press('ArrowLeft');
   await settle(page, 300);
-  is((await state(page)).levelHead, first.levelHead, 'S12 ← steps back');
+  is((await state(page)).levelHead, first.levelHead, `S12 RETIRED — ${sanction}`);
+  is(await selected(), selectedId, `S12 RETIRED — ${sanction}`);
+  return `RETIRED — ${sanction}`;
 };
 
 /** S13 · Backspace pops exactly one level at depth ≥ 2. Selecting an
@@ -2533,6 +2531,78 @@ export const S77 = async (page) => {
     `S77 ALIGN starts at the inspector edge (ALIGN ${geometry.alignLeft}, inspector ${geometry.inspectorLeft})`);
 };
 
+/** S78 · Up/Down follow the vertical Occurrence roster, stop at its ends, and
+    leave the Finding case file's standing navigation untouched. */
+// STORY:finding-evidence-routing:S78
+export const S78 = async (page) => {
+  await page.click('#level .qrow[data-state="finding"]');
+  await settle(page, 450);
+  await page.click('#level .ev-row');
+  await settle(page, 450);
+  const first = await state(page);
+  ok(/\b1 of \d+/.test(first.levelHead || ''), `S78 opens on the first Occurrence (${first.levelHead})`);
+  await page.keyboard.press('ArrowDown');
+  await settle(page, 450);
+  const second = await state(page);
+  ok(/\b2 of \d+/.test(second.levelHead || ''), `S78 ArrowDown steps one Occurrence (${second.levelHead})`);
+  is(second.crumb.length, first.crumb.length, 'S78 stepping never changes the crumb depth');
+  is(second.chip, first.chip, 'S78 stepping never moves the window');
+  await page.keyboard.press('ArrowUp');
+  await settle(page, 450);
+  is((await state(page)).levelHead, first.levelHead, 'S78 ArrowUp steps back');
+  await page.keyboard.press('ArrowUp');
+  await settle(page, 300);
+  is((await state(page)).levelHead, first.levelHead, 'S78 ArrowUp at the start does not wrap');
+};
+
+/** S79 · Occurrence activation and vertical stepping restore focus to the
+    selected roster row after the asynchronous case-file paint. */
+// STORY:finding-evidence-routing:S79
+export const S79 = async (page) => {
+  await page.click('#level .qrow[data-state="finding"]');
+  await settle(page, 450);
+  const first = page.locator('#level .case-occurrence').first();
+  await first.focus();
+  await page.keyboard.press('Enter');
+  await settle(page, 450);
+  const selectedId = await page.locator('#level .case-occurrence[aria-pressed="true"]')
+    .getAttribute('data-occurrence-id');
+  is(await page.evaluate(() => document.activeElement?.getAttribute('data-occurrence-id')), selectedId,
+    'S79 activation restores focus to the selected Occurrence');
+  await page.keyboard.press('ArrowDown');
+  await settle(page, 450);
+  const nextId = await page.locator('#level .case-occurrence[aria-pressed="true"]')
+    .getAttribute('data-occurrence-id');
+  is(await page.evaluate(() => document.activeElement?.getAttribute('data-occurrence-id')), nextId,
+    'S79 vertical stepping restores focus to the newly selected Occurrence');
+};
+
+/** S80 · Event-chart cursor focus owns its Up/Down keys and never steps the
+    surrounding Occurrence roster. */
+// STORY:finding-evidence-routing:S80
+export const S80 = async (page) => {
+  await openWholeDay(page);
+  await clickQueueRow(page, 'Carb undercount');
+  await page.click('#seg-align button:nth-child(2)');
+  await page.locator('#ec-chart').waitFor();
+  await settle(page, 600);
+  await page.click('#level .ev-row');
+  await settle(page, 800);
+  const before = await state(page);
+  const selected = async () => page.locator('#level .case-occurrence[aria-pressed="true"]')
+    .getAttribute('data-occurrence-id');
+  const selectedId = await selected();
+  await page.locator('#ec-chart').focus();
+  await page.keyboard.press('ArrowUp');
+  await settle(page, 300);
+  is((await state(page)).levelHead, before.levelHead, 'S80 chart ArrowUp leaves the selection unchanged');
+  is(await selected(), selectedId, 'S80 chart ArrowUp leaves the pressed row unchanged');
+  await page.keyboard.press('ArrowDown');
+  await settle(page, 300);
+  is((await state(page)).levelHead, before.levelHead, 'S80 chart ArrowDown leaves the selection unchanged');
+  is(await selected(), selectedId, 'S80 chart ArrowDown leaves the pressed row unchanged');
+};
+
 /** S33 · #58 — while the event canvas is mounted, its own header is the only
     canvas header on screen. The clock canvas's header used to stay mounted
     underneath and print the clock window over an event-aligned chart. */
@@ -3629,6 +3699,8 @@ export const STORIES = [
   ['S75', S75, 'typical', { history: true, findingsProjectionInputs: allWatchingProjection }],
   ['S76', S76, 'typical', { findingsProjectionInputs: queueProjection }],
   ['S77', S77, 'typical'],
+  ['S78', S78, 'dense'], ['S79', S79, 'dense'],
+  ['S80', S80, 'dense', { findingsInputs: withFiredMeal, exposuresInputs: (d) => withFiredMeal(d).exposures }],
   ['C41', C41, 'typical', { caseScenario: {
     preparation: generatedFindingPose('finding:meal_over_delivery'),
   } }], ['C42', C42, 'typical'],

@@ -50,6 +50,8 @@ export function proposedSpoken(label, cohort, pointSupport) {
 }
 
 const seen = new Set();
+const spokenSeen = new Set();
+const summarySeen = new Set();
 for (const view of ['meals', 'lows']) {
   for (const state of ['dense', 'sparse', 'zero-fired']) {
     for (const another of [false, true]) {
@@ -62,6 +64,22 @@ for (const view of ['meals', 'lows']) {
         console.log(`   today    ${before}`);
         console.log(`   proposed ${after}`);
         seen.add(after.replace(/^\d+ events?/, 'N events'));
+
+        /* the readout and the spoken text are the other half of the defect, so
+           they are executed here too rather than described. Every point state the
+           cohort actually carries is walked, which is what surfaces a withheld
+           point sitting inside a cohort that is NOT itself withheld — the case
+           the shipped code states a cohort-level fact at. */
+        const label = `Cohort ${record.key}`;
+        for (const pointSupport of new Set(points.map((row) => row.support))) {
+          summarySeen.add(proposedPointSummary(pointSupport));
+          const spoken = proposedSpoken(label, record, pointSupport);
+          if (spoken) spokenSeen.add(spoken.replace(label, '<label>'));
+          if (pointSupport === 'withheld' && record.support !== 'withheld') {
+            assert.equal(spoken, `${label} no value at this point`,
+              `withheld point in a ${record.support} cohort must state no cohort-level fact`);
+          }
+        }
       }
     }
   }
@@ -74,4 +92,18 @@ assert.deepEqual([...seen].sort(), [
   'N events · thin',
   'N events · too few to average',
 ]);
-console.log('\nclosed copy table holds:', [...seen].sort().join(' | '));
+console.log('\nclosed legend copy table:', [...seen].sort().join(' | '));
+
+/* the readout summary keeps its supported/limited wording untouched — two replay
+   assertions read it — and the withheld branch collapses to the bare state word */
+assert.deepEqual([...summarySeen].sort(), ['Limited', 'Supported', 'Withheld']);
+console.log('readout summaries:', [...summarySeen].sort().join(' | '));
+
+/* the spoken text at a withheld point, closed at three shapes, none of which
+   states a cohort-level fact unless the cohort itself is withheld */
+assert.deepEqual([...spokenSeen].sort(), [
+  '<label> no value at this point',
+  '<label> nothing to draw',
+  '<label> too few events to average',
+]);
+console.log('spoken at a withheld point:', [...spokenSeen].sort().join(' | '));

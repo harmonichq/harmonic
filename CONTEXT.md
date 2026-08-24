@@ -278,6 +278,10 @@ _Avoid_: proof, support, backing data.
 The presentation authority of an event-aligned cohort or five-minute point,
 based on how many distinct usable Occurrences contribute. `Supported`, `Limited`,
 and `Withheld` are independent of classifier outcome and Evidence tier.
+The By-event key carries that state in its mark rather than printing the state word.
+A solid mark is Supported and its aggregate may be read straight.
+A thin mark with a dot is Limited, so the key says the line is thin.
+A crossed mark is Withheld, so the key says there are too few events to average or nothing to draw.
 _Avoid_: confidence, reliability, evidence tier, sample quality.
 
 **Occurrence**:

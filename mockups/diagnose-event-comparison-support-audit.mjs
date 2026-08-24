@@ -90,8 +90,10 @@ async function facts(page) {
         cohort: item.dataset.cohort,
         support: item.dataset.support || null,
         selected: item.dataset.selectedCohort || null,
+        detail: item.querySelector('small')?.textContent.replace(/\s+/g, ' ').trim(),
         text: item.textContent.replace(/\s+/g, ' ').trim(),
       })),
+      chartLabel: document.querySelector('#ec-chart')?.getAttribute('aria-label') || '',
       overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
     };
   });
@@ -107,9 +109,10 @@ try {
       assert.equal(got.serverOwned, true, `${check.name}: support is not server-owned`);
       assert.deepEqual(got.invalidLinePoints, [], `${check.name}: line crossed a support boundary`);
       assert.ok(got.overflow <= 1, `${check.name}: page overflows by ${got.overflow}px`);
-      assert.ok(got.legend.every((item) => item.cohort === 'selected'
-        || /Supported|Limited|Withheld/.test(item.text)),
-      `${check.name}: legend omits cohort support`);
+      for (const item of got.legend.filter((entry) => entry.cohort !== 'selected')) {
+        assert.equal(item.support, got.cohortSupport[item.cohort],
+          `${check.name}: ${item.cohort} legend mark does not match server support`);
+      }
       assert.ok(!got.ids.some((id) => /:(?:line|spread):withheld$/.test(id)),
         `${check.name}: Withheld aggregate series exists`);
       // one occurrence never becomes a median; it is drawn as itself instead
@@ -127,6 +130,25 @@ try {
           `${check.name}: dispersed Supported cohort is not visible`);
         assert.ok(got.maxSpread.near_rule >= 30,
           `${check.name}: dispersed Limited cohort is not visible`);
+        assert.match(got.legend.find((item) => item.cohort === 'fired').detail,
+          /^\d+ events?$/,
+          `${check.name}: supported cohort detail is not plain event count`);
+        assert.match(got.legend.find((item) => item.cohort === 'near_rule').detail,
+          /^\d+ events? · thin$/,
+          `${check.name}: limited cohort detail does not say thin`);
+      }
+      if (check.name === 'meals-mixed-light') {
+        if (got.chartLabel) {
+          assert.doesNotMatch(got.chartLabel, /episodes|whiskers|percentile/i,
+            `${check.name}: chart's standing label retains retired explanatory copy`);
+        }
+        await page.locator('#ec-chart').focus();
+        await page.keyboard.press('End');
+        const inspectedLabel = await page.locator('#ec-chart').getAttribute('aria-label');
+        assert.match(inspectedLabel, /no value at this point/i,
+          `${check.name}: withheld point does not state that it has no value`);
+        assert.doesNotMatch(inspectedLabel, /shown individually/i,
+          `${check.name}: withheld point states a false cohort-level fact`);
       }
       if (check.state === 'sparse') {
         assert.ok(Object.values(got.cohortSupport).every((support) => support !== 'supported'),
@@ -138,9 +160,9 @@ try {
            usable episode there is nothing to draw at all, which is a different
            fact from a thin cohort drawing its episodes one by one. */
         assert.equal(got.cohortUsable.fired, 0, `${check.name}: zero cohort has usable episodes`);
-        assert.ok(got.legend.some((item) => item.cohort === 'fired'
-          && /0 events · no usable episodes to draw/.test(item.text)),
-        `${check.name}: zero cohort lacks the withheld state`);
+        assert.equal(got.legend.find((item) => item.cohort === 'fired').detail,
+          '0 events · nothing to draw',
+          `${check.name}: zero cohort detail does not say nothing to draw`);
       }
       if (check.name === 'selected-supported-dark') {
         assert.ok(got.selected && got.selectedTrace, `${check.name}: selected trace missing`);

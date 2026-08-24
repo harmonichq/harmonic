@@ -1942,4 +1942,21 @@ sanction: ConnorGriffin · 2026-08-23 · "Retired and incomplete evidence stops 
 
 The browser gate permanently asserts that no `.uncaused-note` exists and prints
 this sanction. The backend `uncaused_highs` field and all frozen fixtures remain
-unchanged. The current executable count is 93: S01–S75, C41–C55, and D1–D3.
+unchanged. The current executable count is 94: S01–S76, C41–C55, and D1–D3.
+
+## Revision — 2026-08-23, base 9988e43 (issue #100: drill-in focus lands on the opened detail container)
+
+**What changed.** Reader-driven navigation now lands keyboard focus on the opened
+detail container and returns it to the originating queue row when the reader
+comes back. Repaints that do not navigate keep focus where the reader left it.
+The ledger header correction is deferred to #101, which owns its audited
+recomposition.
+
+**Behavior added.**
+
+```
+S76 · Enter on a finding row focuses the opened detail, and the Findings crumb restores its originating row
+```
+
+Story-id mapping: this work order's requested S72 was already taken by #95, so
+#100 records S76 instead.

@@ -214,6 +214,98 @@ test('an explicit fixture opener ignores a hostile ambient app-source override',
   }
 });
 
+test('#100 · Enter on a finding row focuses the opened detail container', async () => {
+  const browser = await runner.browser();
+  const before = openerProblems().length;
+  const page = await openApp(browser, {
+    state: 'dense', history: true, appSource: 'fixture',
+  });
+  try {
+    const firstRow = page.locator('#level .qrow').first();
+    await firstRow.focus();
+    await page.keyboard.press('Enter');
+    assert.equal(await page.evaluate(() => document.activeElement?.id || document.activeElement?.tagName), 'level',
+      'Enter on a queue row puts focus on the opened detail container');
+    assert.equal(await page.locator('#level').evaluate((level) => level.matches(':focus-visible')), true,
+      'keyboard entry makes the opened detail container visibly focused');
+  } finally {
+    await page.close();
+  }
+  assert.deepEqual(openerProblems().slice(before), [],
+    'no opener problems while exercising #100 keyboard entry focus');
+});
+
+test('#100 · the Findings crumb restores focus to the drilled finding row', async () => {
+  const browser = await runner.browser();
+  const before = openerProblems().length;
+  const page = await openApp(browser, {
+    state: 'dense', history: true, appSource: 'fixture',
+  });
+  try {
+    const findingId = 'finding:carb_undercount';
+    const findingRow = page.locator(`#level .qrow[data-id="${findingId}"]`);
+    assert.equal(await findingRow.count(), 1,
+      'the finding row intended for crumb restoration is present in the queue');
+    await findingRow.focus();
+    await page.keyboard.press('Enter');
+    await page.getByRole('button', { name: 'Findings', exact: true }).focus();
+    await page.keyboard.press('Enter');
+    assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('data-id') || document.activeElement?.tagName), findingId,
+      'the Findings crumb returns focus to the drilled finding row');
+  } finally {
+    await page.close();
+  }
+  assert.deepEqual(openerProblems().slice(before), [],
+    'no opener problems while exercising #100 crumb restoration');
+});
+
+test('#100 · Backspace restores focus to the drilled history row', async () => {
+  const browser = await runner.browser();
+  const before = openerProblems().length;
+  const page = await openApp(browser, {
+    state: 'dense', history: true, appSource: 'fixture',
+  });
+  try {
+    await expandWatching(page);
+    const historyId = 'ich1_WzAsNzIwLCI2Il0';
+    const historyRow = page.locator(`#level .qrow[data-id="${historyId}"]`);
+    assert.equal(await historyRow.count(), 1,
+      'the history row intended for Backspace restoration is present in the queue');
+    await historyRow.focus();
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('Backspace');
+    assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('data-id') || document.activeElement?.tagName), historyId,
+      'Backspace returns focus to the drilled history row');
+  } finally {
+    await page.close();
+  }
+  assert.deepEqual(openerProblems().slice(before), [],
+    'no opener problems while exercising #100 Backspace restoration');
+});
+
+test('#100 · an asynchronous repaint does not move focus without navigation', async () => {
+  const browser = await runner.browser();
+  const before = openerProblems().length;
+  const page = await openApp(browser, {
+    state: 'dense', findingsDelayMs: 900, appSource: 'fixture',
+  });
+  try {
+    const park = page.locator('#seg-window button').first();
+    await park.focus();
+    assert.equal(await page.evaluate(() => document.activeElement === document.querySelector('#seg-window button')),
+      true, 'the window preset button accepted the focus park');
+    await settle(page, 1100);
+    assert.equal(await page.evaluate(() => document.activeElement === document.querySelector('#seg-window button')),
+      true, 'the asynchronous repaint leaves parked focus in place');
+    assert.notEqual(await page.evaluate(() => document.activeElement?.id), 'level',
+      'the asynchronous repaint does not move focus to the level container');
+  } finally {
+    await page.close();
+  }
+  assert.deepEqual(openerProblems().slice(before), [],
+    'no opener problems while guarding against focus steal on repaint');
+});
+
 for (const [name, probe, options] of [
   ['pending and superseded projections replace the whole inspector',
     issue81PendingProjection, {

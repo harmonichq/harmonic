@@ -2497,6 +2497,19 @@ export const S75 = async (page) => {
   ok(/^Watching · \d+ reads?$/.test(await toggle.innerText()), 'S75 Watching names its reads');
 };
 
+// STORY:finding-evidence-routing:S76
+export const S76 = async (page) => {
+  const row = page.locator('#level .qrow').first();
+  const rowId = await row.getAttribute('data-id');
+  await row.focus();
+  await page.keyboard.press('Enter');
+  is(await page.evaluate(() => document.activeElement?.id), 'level',
+    'S76 Enter lands keyboard focus on the opened detail container');
+  await page.getByRole('button', { name: 'Findings', exact: true }).click();
+  is(await page.evaluate(() => document.activeElement?.getAttribute('data-id')), rowId,
+    'S76 the Findings crumb restores focus to the drilled queue row');
+};
+
 /** S33 · #58 — while the event canvas is mounted, its own header is the only
     canvas header on screen. The clock canvas's header used to stay mounted
     underneath and print the clock window over an event-aligned chart. */
@@ -3585,6 +3598,7 @@ export const STORIES = [
   ['S73', S73, 'typical', { analysisInputs: withNoDataBasal }],
   ['S74', S74, 'typical', { history: true }],
   ['S75', S75, 'typical', { history: true, findingsProjectionInputs: allWatchingProjection }],
+  ['S76', S76, 'typical'],
   ['C41', C41, 'typical', { caseScenario: {
     preparation: generatedFindingPose('finding:meal_over_delivery'),
   } }], ['C42', C42, 'typical'],

@@ -460,6 +460,7 @@ html.dark .dw {
 
 /* exactly one level renders; the swap is a 90 ms slide, no cross-fade stack */
 .level { overflow: auto; min-height: 0; animation: push .09s ease-out; }
+.level:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: -2px; }
 .level[data-dir="pop"] { animation-name: pop; }
 @keyframes push { from { transform: translateX(9px); opacity: .35; } }
 @keyframes pop { from { transform: translateX(-9px); opacity: .35; } }

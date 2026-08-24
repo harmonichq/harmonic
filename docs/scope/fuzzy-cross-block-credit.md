@@ -136,3 +136,24 @@ sets, and ship-vs-stop boundary are undecided.
   sets. Asked round 1, 2026-08-23.
 
 ## Spawned tasks
+
+## Verdict — admitted (2026-08-23)
+
+Both bars run in-ticket, through the committed harnesses only.
+
+- **Entry bar:** every gated truth set recovered within ADR 109's tolerance,
+  including the chained cross-block set; both placebos non-vacuously clean —
+  each placebo block reached a scoreable state, excluded no programmed value,
+  asserted no move. No placebo fire, so ADR 23's permanent-rejection clause was
+  never reached.
+- **Real-data bar:** stable-era replay, read-only against a local snapshot on a
+  floor-passing stretch, incumbent self-run as calibration: **pass**. No number,
+  count, or window date from it is recorded here or anywhere else; the snapshot
+  was deleted from the host and this machine when the run finished.
+- **Shipped:** the candidate is now the engine's block estimator (ADR 117 in
+  `openspec/changes/fuzzy-cross-block-credit/design.md`); the whole-run
+  estimator stays as the ladder's incumbent reference.
+
+Q4's permanence attaches to the pinned inverse-ratio regression design, as
+recorded. Hierarchical pooling across retired regimes is the next candidate
+through the same ladder.

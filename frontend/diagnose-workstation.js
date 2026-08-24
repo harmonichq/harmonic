@@ -915,8 +915,8 @@ function renderHistoryLevel(host, frame, onSelectRun, onRetry) {
       const day = new Date(run.first_member_at).toLocaleDateString('en-US', {
         month: 'short', day: 'numeric', year: 'numeric',
       });
-      const offsets = run.member_offsets_min.map((minute) => `${minute >= 0 ? '+' : ''}${minute} min`).join(', ');
-      button.innerHTML = `<span>${day}</span><small>${run.member_offsets_min.length} meal${run.member_offsets_min.length === 1 ? '' : 's'} · ${offsets}</small>`;
+      const offsets = run.member_offsets_min.map((minute) => `${minute >= 0 ? '+' : ''}${Math.round(minute)}`);
+      button.innerHTML = `<span>${day}</span><small>${offsets.length} meal${offsets.length === 1 ? '' : 's'} · ${offsets.join(', ')} min</small>`;
       button.addEventListener('click', () => onSelectRun(run.run_id));
       roster.append(button);
     }
@@ -1904,7 +1904,7 @@ function boot(root, data, callbacks, signal) {
       };
       title.textContent = 'Meal runs after the past setting';
       el('canvas-scope').textContent = `${f.events.run_ids.length} meal runs`;
-      el('canvas-pool').textContent = `analysis ${f.generation}`;
+      el('canvas-pool').textContent = '';
       const historyChart = renderHistoryEvents(host, window.echarts, f.events, colors);
       alignMount = {
         chart: historyChart,

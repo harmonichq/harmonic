@@ -39,11 +39,13 @@ _MIN_DIRECTIONAL_DAYS = 3
 # delivery, and priority predicate (#273/#480).
 _MIN_SUPPORTED_NIGHTS = 8
 
-# An I:C **block** needs this many meal runs wholly inside it before it may assert a
-# dosing direction (#518). Deliberately the same number as `_MIN_SUPPORTED_NIGHTS`
-# above, and for the same reason: #273 showed that a narrow CI at n = 3–7 clears
-# `wide`, reads actionable, and stages — a per-block carb-ratio assertion is the same
-# shape of decision as a basal slot's, so it gets the same floor.
+# An I:C **block** needs eight units of effective support — whole closed meal runs
+# owned by the block plus fractional carb-share ownership of chained runs — before
+# it may assert a dosing direction (#518/#117). Deliberately the same number as
+# `_MIN_SUPPORTED_NIGHTS` above, and for the same reason: #273 showed that a narrow
+# CI at n = 3–7 clears `wide`, reads actionable, and stages — a per-block I:C
+# assertion is the same shape of decision as a basal slot's, so it gets the same
+# floor.
 #
 # There IS a real argument that a run is stronger per-unit evidence than a night (a
 # closed full-DIA balance sheet versus a slot median), and it is written down here

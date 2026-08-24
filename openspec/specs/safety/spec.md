@@ -154,33 +154,39 @@ that merely touches the current value at an endpoint survives.
 - **WHEN** the interval direction rule is applied
 - **THEN** the verdict is `INSUFFICIENT` — a narrow band alone does not license a move
 
-### Requirement: A carb-ratio block asserts only above the minimum-supported-runs floor
+### Requirement: An I:C block asserts only when it meets the minimum-supported-runs floor
 
 An I:C block — a maximal contiguous group of programmed segments sharing one value on
 the circular day, which is the unit a person can actually edit on the pump — may
-assert a direction only when at least `_MIN_SUPPORTED_BLOCK_RUNS` (8) closed meal-run
-ledgers fall wholly inside it. The number is deliberately the same as the basal
-supported-nights floor: a per-block carb-ratio assertion is the same shape of dosing
-decision as a basal slot's, so it carries the same evidence bar. The floor gates
-assertion only. A block below it still prints its measured ratio and its band once a
-smaller display pool has filled, so a reader sees the emerging number without it being
-able to move anything.
+assert a direction only when it has at least `_MIN_SUPPORTED_BLOCK_RUNS` (8) units of
+effective support: whole closed meal runs owned by the block plus the block's
+fractional carb-share ownership of chained runs that span a boundary. The number is
+deliberately the same as the basal supported-nights floor: a per-block I:C
+assertion is the same shape of dosing decision as a basal slot's, so it carries the
+same evidence bar. The floor gates assertion only. A block below it still prints its
+measured ratio and its band once a smaller display pool has filled, so a reader sees
+the emerging number without it being able to move anything.
 
 #### Scenario: Just below the supported-runs floor
 
-- **GIVEN** an I:C block with seven closed meal runs wholly inside it
+- **GIVEN** an I:C block with a completed 90-day block window, a non-null estimate,
+  and just under eight units of effective support from whole closed meal runs plus
+  fractional carb-share ownership of chained boundary-spanning runs
 - **WHEN** block eligibility is computed
 - **THEN** the block reports a below-floor state, prints its number and band, and
   asserts no move
 
-#### Scenario: Just above the supported-runs floor
+#### Scenario: At the supported-runs floor
 
-- **GIVEN** the same block with eight closed meal runs
+- **GIVEN** the same block with its completed 90-day block window and non-null
+  estimate held constant, and exactly eight units of effective support from whole
+  closed meal runs plus fractional carb-share ownership of chained boundary-spanning
+  runs
 - **WHEN** block eligibility is computed
-- **THEN** the block becomes numeric and asserts only if *all* remaining conditions
-  also hold — its band excludes the programmed ratio, the regime bracket does not
-  straddle the programmed value with a non-empty on-regime pool, and the capped
-  recommendation names a real move off the current setting
+- **THEN** the block becomes numeric and may assert only if *all* remaining
+  conditions also hold — its band excludes the programmed ratio, the regime bracket
+  does not straddle the programmed value with a non-empty on-regime pool, and the
+  capped recommendation names a real move off the current setting
 
 ### Requirement: Historical I:C measurements can never become dosing advice
 

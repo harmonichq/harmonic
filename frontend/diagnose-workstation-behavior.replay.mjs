@@ -2473,8 +2473,10 @@ export const S73 = async (page) => {
 export const S74 = async (page) => {
   const before = await state(page);
   const grip = await page.locator('#grip-a').boundingBox();
-  await holdAtBoundary(page, { x: grip.x + grip.width / 2, y: grip.y + grip.height / 2 },
+  const during = await holdAtBoundary(page,
+    { x: grip.x + grip.width / 2, y: grip.y + grip.height / 2 },
     'left', 'Window 23:00–04:45');
+  ok(during.panOffset < 0, 'S74 the start grip reaches its target through a leftward pan');
   await page.mouse.up();
   await settle(page, 500);
   const after = await state(page);
@@ -2512,9 +2514,10 @@ export const S76 = async (page) => {
 export const S77 = async (page) => {
   await drawInside(page, 2 * 60, 4 * 60);
   const b = await plot(page);
-  await holdAtBoundary(page, { x: chartXAt(b, 3 * 60) },
+  const during = await holdAtBoundary(page, { x: chartXAt(b, 3 * 60) },
     'left', 'Window 23:00–01:00');
-  is((await state(page)).live, ['brace-a', 'brace-b'], 'S77 both slide edges stay live');
+  ok(during.panOffset < 0, 'S77 the slide reaches its target through a leftward pan');
+  is(during.live, ['brace-a', 'brace-b'], 'S77 both slide edges stay live');
   await page.mouse.up();
   await settle(page, 500);
   is((await state(page)).chip, 'Window 23:00–01:00', 'S77 slide left commits across midnight');

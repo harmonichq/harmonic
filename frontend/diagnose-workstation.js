@@ -2404,6 +2404,7 @@ function boot(root, data, callbacks, signal) {
     const DISPLAY_SPAN = 95 * BIN_MINUTES;
     const PAN_EDGE = 26;
     const PAN_PX_PER_FRAME = 13;
+    const PAN_MINUTES_PER_FRAME = BIN_MINUTES / 2;
 
     /* LIVE SHADING. Two moving dashed edges with nothing between them gave no
        read on the window being created. Rather than invent a rubber-band style,
@@ -2460,10 +2461,15 @@ function boot(root, data, callbacks, signal) {
         const perPixel = DISPLAY_SPAN / (box.width || 1);
         if (over >= 0 && clockPanOffset < panMax) {
           const step = Math.min(PAN_PX_PER_FRAME, Math.max(1, over / PAN_EDGE * PAN_PX_PER_FRAME));
-          clockPanOffset = Math.min(panMax, clockPanOffset + step * perPixel);
+          /* A frame may cover many display minutes on a narrow plot. Keep each
+             advance within half a snap bin so neither direction can jump over
+             a committed clock value before that value is painted. */
+          const displayStep = Math.min(PAN_MINUTES_PER_FRAME, step * perPixel);
+          clockPanOffset = Math.min(panMax, clockPanOffset + displayStep);
         } else if (back >= 0 && clockPanOffset > panMin) {
           const step = Math.min(PAN_PX_PER_FRAME, Math.max(1, back / PAN_EDGE * PAN_PX_PER_FRAME));
-          clockPanOffset = Math.max(panMin, clockPanOffset - step * perPixel);
+          const displayStep = Math.min(PAN_MINUTES_PER_FRAME, step * perPixel);
+          clockPanOffset = Math.max(panMin, clockPanOffset - displayStep);
         }
         chartEl.parentElement.dataset.clockPan = String(clockPanOffset);
         applyDrag();

@@ -25,9 +25,12 @@ any window is fetched, and the upserts inside a window commit one at a time.
   nothing was committed. The loop's guard becomes an explicit `is not None`, so
   an empty summary still invalidates.
 - `POST /api/fetch` reads the same revision comparison in one `except` branch,
-  bumps the cache when it advanced, and then maps the status exactly as it does
-  today: `RuntimeError` and a partial fetch answer 503, and anything else keeps
-  propagating rather than being flattened into a vendor-outage status.
+  bumps the cache when it advanced, and then maps the failure to its status. A
+  partial fetch answers 503 alongside `RuntimeError`, carrying how far the pull
+  got — today it escapes the handler entirely and surfaces as an unhandled 500,
+  so the person triggering the fetch is told nothing about the windows that
+  landed. Anything else keeps propagating rather than being flattened into a
+  vendor-outage status.
 - The revision comparison is read as the first statement of each failure branch,
   before the outcome is recorded. Recording an outcome advances the revision
   itself, so a reading taken after it would be true on every failed fetch.

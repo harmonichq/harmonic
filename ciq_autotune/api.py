@@ -1018,9 +1018,10 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             # The pull commits window by window, so a fetch that failed part-way
             # still leaves rows behind. Invalidate on what was committed — read
             # off the store's durable revision — rather than on whether the pull
-            # returned (#146). The status mapping below is unchanged: a partial
-            # fetch is not a RuntimeError, so it used to escape this handler
-            # entirely and skip the bump.
+            # returned (#146). A partial fetch is not a RuntimeError, so it used
+            # to escape this handler entirely: it skipped the bump AND surfaced
+            # as an unhandled 500. It now joins RuntimeError at 503, carrying how
+            # far the pull got; every other failure keeps propagating as itself.
             baseline = store.input_data_revision()
             try:
                 written = sync_mod.pull_from_tconnect(store, start=start, end=end,

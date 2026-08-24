@@ -47,10 +47,13 @@ both branches against it.
 **What this deliberately does not change.** A partial fetch is still not a
 success: the recorded outcome, the last known good counts, and the window summary
 in `last_error` are untouched, and the person using the app is still told the
-fetch failed. The endpoint keeps its status mapping, including that a failure
-which is neither a `RuntimeError` nor a partial fetch keeps propagating — an
-ingest bug must not start reading as a vendor outage merely because the handler
-was widened to catch everything for the sake of invalidating. Over-invalidation
+fetch failed. The endpoint's one status change is the partial fetch itself,
+which answered an unhandled 500 only because it escaped a handler that caught
+`RuntimeError` alone; it now answers the 503 that every other fetch failure
+already did, carrying how far the pull got. A failure that is neither keeps
+propagating unchanged — an ingest bug must not start reading as a vendor outage
+merely because the handler was widened to catch everything for the sake of
+invalidating. Over-invalidation
 is accepted in exchange: a successful fetch that changed nothing still
 invalidates, and a first-ever credential seeding inside a failed pull counts as a
 commit and invalidates once.

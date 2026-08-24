@@ -121,8 +121,11 @@ optimization: it leaves every cached read answering from pre-write data.
 - **GIVEN** the analysis result for a window has been computed and cached
 - **WHEN** a client triggers a fetch that commits rows and then fails part-way
 - **THEN** the endpoint invalidates the cache before returning, and the client is
-  still told the fetch failed — the failure's status is unchanged by the
-  invalidation, and a failure that is not the fetch's own is not flattened into one
+  still told the fetch failed: a fetch failure — a partial fetch among them —
+  answers `503`, carrying how far the pull got
+- **AND** a failure that is not the fetch's own is not flattened into that status.
+  An ingest defect keeps propagating as itself, so a bug in reading the vendor's
+  events cannot present as a vendor outage
 
 #### Scenario: A write path that skips invalidation serves stale advice
 
@@ -193,11 +196,15 @@ loop.
 
 #### Scenario: A fetch that committed nothing leaves the cache alone
 
-- **GIVEN** cached results computed before the fetch
-- **WHEN** a scheduled fetch fails before committing anything — bad credentials, or a
+- **GIVEN** cached results computed before the fetch, and stored credentials
+- **WHEN** a scheduled fetch fails before committing anything — a rejected login, or a
   network failure on the first request
 - **THEN** the attempt is recorded as a failure, the loop continues, and the cache is
   neither invalidated nor re-warmed
+- **AND** the one attempt that seeds the credential table for the first time is not
+  this case: seeding is itself a committed write, so that attempt invalidates once.
+  Over-invalidation costs one recompute and is accepted; under-invalidation serves
+  numbers that no longer match the data
 
 ### Requirement: Invalidation is process-local, and an out-of-process write does not reach a running server
 

@@ -15,8 +15,9 @@
 ## 2. Close the same gap on the manual endpoint
 
 - [x] Read the baseline inside the opened store, bump when the revision advanced,
-      and preserve today's status mapping: 503 for a `RuntimeError` and for a
-      partial fetch, anything else propagating unchanged.
+      and settle the failure statuses: a partial fetch joins `RuntimeError` at 503
+      instead of escaping the handler as an unhandled 500, and anything else keeps
+      propagating unchanged.
 
 ## 3. Pin the behavior through the public interface
 

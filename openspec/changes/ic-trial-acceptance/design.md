@@ -78,6 +78,16 @@ identity.
   that reaches the bar quickly reports ready sooner than today's fourteen data-days
   would have allowed. That is the intended effect of tying readiness to evidence.
 
+**Relationship to the glossary.** `CONTEXT.md` defines "Maturing" as a Trial's watch
+phase gated on the target metric's data accrual filling a fixed 14-day window. That
+remains the **shipped** definition and stays accurate until this record is
+implemented. This record supersedes it prospectively and only for carb ratio: an I:C
+Trial matures on post-change meal captures, may reach ready before fourteen days, and
+carries a foregrounding window that is no longer the same quantity as its readiness
+bar. The ticket that builds this updates the glossary in the same change; until then
+a reader who finds the two disagreeing should follow `CONTEXT.md` for what the app
+does today and this record for what was decided.
+
 **Not built here.** This record is locked ahead of its implementation, deliberately.
 The per-block judging rulings sit inside the decision space of #136 (Verify's
 per-lever attribution and outcome uncertainty), the Diagnose workstation that

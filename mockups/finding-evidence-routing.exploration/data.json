@@ -700,7 +700,7 @@
    }
   },
   "root": "Findings",
-  "meta": "8 findings · 30 days",
+  "meta": "7 findings · 30 days",
   "tiers": {
    "ic:720": {
     "tier": "next_in_line",

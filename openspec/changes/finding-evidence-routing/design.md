@@ -245,6 +245,17 @@ arrive as its own predicate and be tested at this projection boundary.
 
 Decision: harmonichq/harmonic#42, 2026-08-19.
 
+## ADR 97 — Watching reads collapse by default
+
+Watching is a property of the server-published held, blind, and history row
+registers, not of the sift control. The default Findings queue therefore shows
+action-ready findings only and keeps Watching evidence behind its existing
+expandable control. This changes disclosure, not membership, order, or
+actionability. The uncaused-highs footer is withdrawn from the surface; the
+backend field remains published for its existing consumers.
+
+Decision: ConnorGriffin, 2026-08-23.
+
 ## Revise safe-start and evidence-row amendment — 2026-08-19
 
 **Safe-start declaration.** `AGENTS.md` declares this sole offline UI-design

@@ -737,7 +737,16 @@ export async function gotoState(page, want) {
   await settle(page, 600);
 }
 
+const expandWatching = async (page) => {
+  const toggle = page.locator('#level .qcollapse');
+  if (await toggle.count() && await toggle.getAttribute('aria-expanded') !== 'true') {
+    await toggle.click();
+    await settle(page, 150);
+  }
+};
+
 const openHistoryCase = async (page) => {
+  await expandWatching(page);
   const row = page.locator('#level .qrow[data-state="history"]').first();
   await row.waitFor({ state: 'visible' });
   await row.click();
@@ -1139,6 +1148,7 @@ export const S17 = async (page) => {
     unchanged. */
 // LOCK:diagnose-workstation:31 LOCK:diagnose-workstation:34 LOCK:diagnose-workstation:38
 export const S18 = async (page) => {
+  await expandWatching(page);
   const before = await state(page);
   is(before.entries, undefined, 'S18 the per-parameter entry rows are retired');
   const isfRow = before.queue.find((r) => r.title === 'ISF');
@@ -1438,6 +1448,7 @@ export const D3 = async (page) => {
     ADDED #735 with lock terms 34-45 (the #662 re-settle's owed behaviour sweep). */
 // LOCK:diagnose-workstation:34 LOCK:diagnose-workstation:36 LOCK:diagnose-workstation:37 LOCK:diagnose-workstation:43 LOCK:diagnose-workstation:44 LOCK:diagnose-workstation:45
 export const S24 = async (page) => {
+  await expandWatching(page);
   const open = await state(page);
   is(open.crumb, ['Findings'], 'S24 the crumb root is the queue\u2019s own noun');
   ok(open.queue.length > 0, 'S24 the queue renders rows');
@@ -1462,7 +1473,7 @@ export const S24 = async (page) => {
   await settle(page, 450);
   const preset = await state(page);
   is(preset.crumb, ['Findings'], 'S24 window scope is never a breadcrumb level');
-  is(preset.crumbMeta, `${preset.queue.length} in this window`, 'S24 the scoped meta form');
+  is(preset.crumbMeta, '4 in this window', 'S24 the scoped meta counts visible action-ready rows');
   ok(preset.queue.map((r) => r.title).join('|') !== open.queue.map((r) => r.title).join('|'),
     'S24 the pressed preset actually re-scoped the row set');
 
@@ -1474,9 +1485,10 @@ export const S24 = async (page) => {
   await page.mouse.move(b.x + 420, y, { steps: 8 });
   await page.mouse.up();
   await settle(page, 450);
+  await expandWatching(page);
   const drawn = await state(page);
   is(drawn.crumb, ['Findings'], 'S24 a drawn window is not a level either');
-  is(drawn.crumbMeta, `${drawn.queue.length} in this window`, 'S24 identical meta grammar to the preset');
+  ok(/^\d+ in this window$/.test(drawn.crumbMeta), 'S24 drawn scope retains the action-ready meta grammar');
   ok(/^Window \d\d:\d\d–\d\d:\d\d$/.test(drawn.chip || ''), `S24 the chip owns the hours (${drawn.chip})`);
   assertNoRangeInMeta(drawn.crumbMeta);
 
@@ -1650,6 +1662,7 @@ export const S30 = async (page) => {
 /** S31 · The correction-factor row declares its whole-day scope. */
 // STORY:finding-evidence-routing:S31
 export const S31 = async (page) => {
+  await expandWatching(page);
   const row = page.locator('#level .qrow[data-id="isf"]');
   is(await row.locator('.scope-note').innerText(), ' · Whole day',
     'S31 the correction-factor row visibly declares its whole-day scope');
@@ -1882,6 +1895,7 @@ export const S40 = async (page) => {
 export const S41 = async (page) => {
   await page.getByRole('button', { name: 'Morning', exact: true }).click();
   await settle(page, 450);
+  await expandWatching(page);
   const rows = await page.locator('#level .qrow').evaluateAll((nodes) => nodes.map((node) => node.dataset.state));
   is(rows.at(-1), 'history', 'S41 history follows every held/blind row');
   ok(rows.slice(0, -1).some((register) => register === 'held' || register === 'blind'),
@@ -1916,6 +1930,7 @@ export const S42 = async (page) => {
 
 // STORY:finding-evidence-routing:S43
 export const S43 = async (page) => {
+  await expandWatching(page);
   const row = page.locator('#level .qrow[data-state="history"]').first();
   const text = await row.innerText();
   ok(/past 6\.0 g\/U/.test(text) && /3 meal runs/.test(text), 'S43 past setting and support render');
@@ -1926,6 +1941,7 @@ export const S43 = async (page) => {
 
 // STORY:finding-evidence-routing:S44
 export const S44 = async (page) => {
+  await expandWatching(page);
   const id = await page.locator('.qrow[data-state="history"]').first().getAttribute('data-id');
   await openHistoryCase(page);
   is((await state(page)).history.id, id, 'S44 opaque row id opens the case');
@@ -2040,6 +2056,7 @@ export const S53 = async (page) => {
 
 // STORY:finding-evidence-routing:S54
 export const S54 = async (page) => {
+  await expandWatching(page);
   const row = page.locator('.qrow[data-state="history"]').first();
   ok(await row.isVisible(), 'S54 non-null history is present because the server published it');
   const source = await readFile(join(ROOT, 'frontend/diagnose-workstation.js'), 'utf8');
@@ -2354,6 +2371,7 @@ export const S71 = async (page) => {
   });
 
   await assertHistorySafety(page, draftWrites, 'before interaction');
+  await expandWatching(page);
   await page.locator('.qrow[data-state="history"]').first().click();
   await settle(page, 450);
   await assertHistorySafety(page, draftWrites, 'queue click/open');
@@ -2447,6 +2465,21 @@ export const S73 = async (page) => {
 
   const insufficient = await openVerdict('insufficient');
   is(insufficient.head?.trim(), 'insufficient evidence', 'S73 thin-data head remains unchanged');
+};
+
+/** S74 · Watching evidence stays behind its disclosure until the reader asks for it. */
+// STORY:finding-evidence-routing:S74
+export const S74 = async (page) => {
+  const toggle = page.locator('#level .qcollapse');
+  ok(await toggle.isVisible(), 'S74 Watching control is present without a sift');
+  ok(/^Watching · \d+ reads?$/.test(await toggle.innerText()), 'S74 Watching control names its reads');
+  is(await page.locator('#level .qrow[data-state="held"], #level .qrow[data-state="blind"], #level .qrow[data-state="history"]').count(),
+    0, 'S74 Watching rows stay collapsed by default');
+  is(await page.locator('.uncaused-note').count(), 0, 'S74 RETIRED — uncaused-highs footer is absent');
+  await toggle.click();
+  ok(await page.locator('#level .qrow[data-state="held"], #level .qrow[data-state="blind"], #level .qrow[data-state="history"]').count() > 0,
+    'S74 Watching rows appear after expansion');
+  await captureEvidence(page, 'S74-watching-collapsed-default');
 };
 
 /** S33 · #58 — while the event canvas is mounted, its own header is the only
@@ -2751,6 +2784,7 @@ export const issue81PendingProjection = async (page) => {
   await page.getByRole('button', { name: /Filter/ }).click();
   await page.getByRole('menuitemcheckbox', { name: /^Lows / }).click();
   await page.keyboard.press('Escape');
+  await expandWatching(page);
   const queue = await state(page);
   ok(queue.queue.some((row) => row.title === 'Basal 19:30 to 21:00'),
     'S41 the settled queue contains the server-published evening basal row');
@@ -2767,6 +2801,7 @@ export const issue81PendingProjection = async (page) => {
   await page.click('#seg-window button:nth-child(4)');   // Evening, settles first
   await eveningResponse;
   await settle(page, 100);
+  await expandWatching(page);
   const newest = await state(page);
   is(newest.pressed, ['Evening'], 'S41 the newest window settles first');
   is(newest.levelLoading, 'false', 'S41 the newest response settles the inspector');
@@ -2775,6 +2810,7 @@ export const issue81PendingProjection = async (page) => {
   ok(!newest.queue.some((row) => row.title === 'Basal 12:30 to 14:00 · leaning lower'),
     'S41 no superseded afternoon row painted');
   await settle(page, 1100);                              // let superseded response arrive
+  await expandWatching(page);
   const afterStale = await state(page);
   is(afterStale.pressed, ['Evening'], 'S41 the superseded response cannot move the window');
   const rowIdentity = (rows) => rows.map(({ title, register, tier }) => ({ title, register, tier }));
@@ -2785,6 +2821,7 @@ export const issue81PendingProjection = async (page) => {
   await settle(page, 100);                              // Afternoon remains in flight
   await page.click('#seg-window button:nth-child(4)');   // return to loaded Evening
   await settle(page, 100);
+  await expandWatching(page);
   const returned = await state(page);
   is(returned.levelLoading, 'false', 'S41 returning to the loaded window settles immediately');
   is(returned.pressed, ['Evening'], 'S41 the loaded window remains selected after the return');
@@ -2853,6 +2890,7 @@ export const issue81FailedProjection = async (page) => {
   await page.click('#seg-window button:nth-child(4)');   // another window retries normally
   await recoveryResponse;
   await settle(page, 100);
+  await expandWatching(page);
   const recovered = await state(page);
   is(recovered.levelLoading, 'false', 'S42 a later window settles after failure');
   is(recovered.pressed, ['Evening'], 'S42 recovery keeps the later selected window');
@@ -2868,17 +2906,19 @@ export const issue81SlicedProjection = async (page) => {
   await page.click('#seg-window button:nth-child(5)');   // 24 h
   await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false');
   await settle(page, 150);                              // the level's 90 ms swap has landed
+  await expandWatching(page);
   const wholeDay = await state(page);
-  is(wholeDay.crumbMeta, '8 findings · 30 days', 'S43 whole day publishes all eight findings');
+  is(wholeDay.crumbMeta, '7 findings · 30 days', 'S43 whole day meta counts visible action-ready findings');
   is(wholeDay.queue.length, 8, 'S43 whole day renders all eight server rows');
 
   await page.click('#seg-window button:nth-child(1)');   // Overnight, 00:00–06:00
   await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false');
   await resizeWindowStart(page, 330, [0, 360]);          // minimum-width 04:30–06:00 slice
   await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false');
+  await expandWatching(page);
   const sliced = await state(page);
   is(sliced.chip, 'Window 04:30–06:00', 'S43 the public brace lands on the intended slice');
-  is(sliced.crumbMeta, '3 in this window', 'S43 the slice publishes its smaller non-empty count');
+  is(sliced.crumbMeta, '1 in this window', 'S43 the slice meta counts its visible action-ready finding');
   is(sliced.queue.map((row) => row.title),
     ['Basal 05:30 · raise', 'ISF', 'Carb ratio Morning. Past setting.'],
     'S43 the slice keeps exactly its three server-published findings');
@@ -3518,6 +3558,7 @@ export const STORIES = [
     ] }],
   ['S72', S72, 'typical'],
   ['S73', S73, 'typical', { analysisInputs: withNoDataBasal }],
+  ['S74', S74, 'typical', { history: true }],
   ['C41', C41, 'typical', { caseScenario: {
     preparation: generatedFindingPose('finding:meal_over_delivery'),
   } }], ['C42', C42, 'typical'],

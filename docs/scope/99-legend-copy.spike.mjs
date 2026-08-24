@@ -50,6 +50,7 @@ export function proposedSpoken(label, cohort, pointSupport) {
 }
 
 const seen = new Set();
+const composedSeen = new Set();
 const spokenSeen = new Set();
 const summarySeen = new Set();
 for (const view of ['meals', 'lows']) {
@@ -64,6 +65,15 @@ for (const view of ['meals', 'lows']) {
         console.log(`   today    ${before}`);
         console.log(`   proposed ${after}`);
         seen.add(after.replace(/^\d+ events?/, 'N events'));
+
+        /* paintLegend does not print proposedDetail's return value directly: it
+           composes ` · selected cohort` onto it when this cohort is the selected
+           one. Both compositions are walked, because the acceptance criterion is
+           about what the legend RENDERS, not what this function returns. */
+        for (const selectedCohort of [false, true]) {
+          composedSeen.add(`${after}${selectedCohort ? ' · selected cohort' : ''}`
+            .replace(/^\d+ events?/, 'N events'));
+        }
 
         /* the readout and the spoken text are the other half of the defect, so
            they are executed here too rather than described. Every point state the
@@ -93,6 +103,21 @@ assert.deepEqual([...seen].sort(), [
   'N events · too few to average',
 ]);
 console.log('\nclosed legend copy table:', [...seen].sort().join(' | '));
+
+/* what the legend actually renders: the four shapes, each optionally carrying the
+   selected-cohort suffix paintLegend appends. The Selected-trace row it emits
+   separately (`<date> · observed`) is not built from this table and does not move. */
+assert.deepEqual([...composedSeen].sort(), [
+  'N events',
+  'N events · nothing to draw',
+  'N events · nothing to draw · selected cohort',
+  'N events · selected cohort',
+  'N events · thin',
+  'N events · thin · selected cohort',
+  'N events · too few to average',
+  'N events · too few to average · selected cohort',
+]);
+console.log('as rendered, with the selected suffix:', composedSeen.size, 'shapes');
 
 /* the readout summary keeps its supported/limited wording untouched — two replay
    assertions read it — and the withheld branch collapses to the bare state word */

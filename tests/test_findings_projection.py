@@ -585,11 +585,9 @@ class WindowQueryTest(unittest.TestCase):
 
 class PreparedFromStoreTest(unittest.TestCase):
     def test_an_empty_store_projects_an_empty_queue(self):
-        from ciq_autotune.store import Store
-
-        with tempfile.NamedTemporaryFile(suffix=".db") as db:
-            with Store.open(db.name) as store:
-                projection = prepare_findings_projection(store)
+        projection = prepare_findings_projection(
+            analysis={"window_days": 30}, exposures={}, scenarios={},
+        )
         result = projection.project(WindowQuery.whole_day())
         self.assertEqual(result["rows"], [])
         self.assertEqual(result["window"]["scoped"], False)
@@ -641,10 +639,10 @@ class FindingsEndpointTest(unittest.TestCase):
         from unittest.mock import patch
 
         real = api_mod.prepare_findings_projection
-        windows = []
+        analyses = []
 
         def capture(*args, **kwargs):
-            windows.append(kwargs["window_days"])
+            analyses.append(kwargs["analysis"])
             return real(*args, **kwargs)
 
         with patch.object(
@@ -658,7 +656,7 @@ class FindingsEndpointTest(unittest.TestCase):
             response = client.get("/api/diagnose/findings")
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(windows, [17])
+        self.assertEqual([value["window_days"] for value in analyses], [17])
         self.assertEqual(response.json()["findings_window"]["days"], 17)
 
     def test_it_answers_from_the_cache_and_a_write_invalidates_it(self):
@@ -1041,8 +1039,10 @@ class FindingEvidenceBlockTest(unittest.TestCase):
         self.assertEqual(fired_rows[0]["family"], "lows")
 
     def test_cross_family_episode_pair_is_emitted_by_the_real_producer(self):
+        from ciq_autotune.explore_exposures import build_exposures
+
         cgm, bolus = gen._over_treated_fixture_events()
-        produced = gen.build_exposures(gen._ScenarioFixtureStore(cgm, bolus))["exposures"]
+        produced = build_exposures(gen._ScenarioFixtureStore(cgm, bolus))["exposures"]
         fired = next(o for o in self.exposures["lows"]["occurrences"]
                      if o["cause_lever"] == "over_treated_low")
         rebound = next(o for o in self.exposures["highs"]["occurrences"]

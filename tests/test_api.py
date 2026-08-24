@@ -1423,6 +1423,7 @@ class CachePreWarmTest(unittest.TestCase):
         ("backtest", "ciq_autotune.backtest", "backtest"),
         ("outcomes-trend", "ciq_autotune.outcomes_trend", "summarize_trend"),
         ("scenarios", "ciq_autotune.analyzers.scenario", "build_scenarios"),
+        ("exposures", "ciq_autotune.explore_exposures", "build_exposures"),
         ("explore-time-of-day", "ciq_autotune.api", "build_time_of_day"),
         ("event-comparison-source-catalog", "ciq_autotune.api", "prepare_event_comparisons"),
         ("finding-case-file", "ciq_autotune.api", "prepare_finding_cases"),
@@ -1467,6 +1468,7 @@ class CachePreWarmTest(unittest.TestCase):
             ("/api/scenarios", {"window": 30}),
             ("/api/explore/time-of-day", {}),
             ("/api/explore/exposures", {}),
+            ("/api/diagnose/findings", {}),
             ("/api/diagnose/finding-case-file-preparation", {}),
         ):
             r = self.client.get(path, params=params)
@@ -1482,10 +1484,11 @@ class CachePreWarmTest(unittest.TestCase):
             self.app.state.invalidate_and_warm()
             after_warm = dict(counts)
             # Exactly the landing shapes and nothing else — both /api/analyze modes
-            # included. Findings preparation has its own scenario build; the
-            # exposure population shares one event-comparison preparation.
+            # included. Findings consumers share the canonical pooled analysis,
+            # scenario report, and exposure feed.
             self.assertEqual(after_warm, {"analyze": 2, "backtest": 1,
-                                          "outcomes-trend": 1, "scenarios": 2,
+                                          "outcomes-trend": 1, "scenarios": 1,
+                                          "exposures": 1,
                                           "explore-time-of-day": 1,
                                           "event-comparison-source-catalog": 1,
                                           "finding-case-file": 1})
@@ -1493,9 +1496,9 @@ class CachePreWarmTest(unittest.TestCase):
                 ("analyze", 30, False, False),
                 ("backtest", 2),
                 ("outcomes-trend", 30),
+                ("explore-time-of-day",),
                 ("analyze", 30, False, True),
                 ("scenarios", 30),
-                ("explore-time-of-day",),
                 ("event-comparison-preparation",),
                 ("finding-case-file", None, None, None),
             ))
@@ -1565,14 +1568,19 @@ class CachePreWarmTest(unittest.TestCase):
     def test_warm_pass_invalidates_first_so_it_never_serves_pre_fetch_results(self):
         with self._counting_builders() as counts:
             self._get_landing_set()          # cold: every shape computed once
-            self.assertEqual(counts["scenarios"], 2)
+            self.assertEqual(counts, {"analyze": 2, "backtest": 1,
+                                      "outcomes-trend": 1, "scenarios": 1,
+                                      "exposures": 1,
+                                      "explore-time-of-day": 1,
+                                      "event-comparison-source-catalog": 1,
+                                      "finding-case-file": 1})
             self.app.state.invalidate_and_warm()
             # A cache-only invalidation has no new Store revision, so the fixed
-            # scenarios endpoint reuses its verified durable artifact. The warm
-            # finding-case preparation still has its own scenario build.
-            self.assertEqual(counts["scenarios"], 3)
+            # scenarios endpoint reuses its verified durable artifact, including
+            # the findings consumers' shared canonical report.
+            self.assertEqual(counts["scenarios"], 1)
             self._get_landing_set()
-            self.assertEqual(counts["scenarios"], 3)
+            self.assertEqual(counts["scenarios"], 1)
 
     def test_drill_downs_and_other_windows_stay_lazy(self):
         with self._counting_builders() as counts:
@@ -1602,11 +1610,10 @@ class CachePreWarmTest(unittest.TestCase):
             self.assertEqual(counts["backtest"], 0)   # it never completed a build
             # ...and every shape the pass reaches after it still warmed: outcomes-trend
             # (third), analyze pooled (fourth — the second of analyze's two builds, the
-            # first having already run before backtest), scenarios (including the
-            # findings preparation's internal scenario build).
+            # first having already run before backtest), and scenarios.
             self.assertEqual(counts["outcomes-trend"], 1)
             self.assertEqual(counts["analyze"], 2)
-            self.assertEqual(counts["scenarios"], 2)
+            self.assertEqual(counts["scenarios"], 1)
             # The failed shape is simply left cold, and a visitor recomputes it.
             self.assertEqual(self.client.get("/api/backtest",
                                              params={"holdout_days": 2}).status_code, 200)

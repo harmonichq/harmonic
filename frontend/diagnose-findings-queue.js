@@ -273,7 +273,7 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
   const collapsed = rows.filter((row) => row.collapsed);
   if (!shown.length) {
     const line = document.createElement('p');
-    line.className = `quiet-line${filtering ? ' sift-empty' : ''}`;
+    line.className = `quiet-line${filtering || collapsed.length ? ' sift-empty' : ''}`;
     line.textContent = filtering ? EMPTY_SIFT_LINE : EMPTY_LINE;
     host.append(line);
     if (!collapsed.length) return rows;

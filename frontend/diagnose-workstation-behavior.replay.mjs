@@ -2476,10 +2476,25 @@ export const S74 = async (page) => {
   is(await page.locator('#level .qrow[data-state="held"], #level .qrow[data-state="blind"], #level .qrow[data-state="history"]').count(),
     0, 'S74 Watching rows stay collapsed by default');
   is(await page.locator('.uncaused-note').count(), 0, 'S74 RETIRED — uncaused-highs footer is absent');
+  is(await page.locator('#level .quiet-line').count(), 0,
+    'S74 action-ready rows keep the default queue out of the all-Watching empty state');
+  await captureEvidence(page, 'S74-watching-collapsed-default');
   await toggle.click();
   ok(await page.locator('#level .qrow[data-state="held"], #level .qrow[data-state="blind"], #level .qrow[data-state="history"]').count() > 0,
     'S74 Watching rows appear after expansion');
-  await captureEvidence(page, 'S74-watching-collapsed-default');
+};
+
+/** S75 · An all-Watching window keeps its quiet line compact above the disclosure. */
+// STORY:finding-evidence-routing:S75
+export const S75 = async (page) => {
+  const empty = page.locator('#level .quiet-line.sift-empty');
+  is(await empty.innerText(), 'No pattern or setting asserts a direction in this window.',
+    'S75 the all-Watching window retains the quiet reading');
+  is(await page.evaluate(() => getComputedStyle(document.querySelector('#level .quiet-line')).minHeight), '0px',
+    'S75 the quiet reading is compact when Watching follows it');
+  const toggle = page.locator('#level .qcollapse');
+  ok(await toggle.isVisible(), 'S75 Watching remains reachable below the quiet reading');
+  ok(/^Watching · \d+ reads?$/.test(await toggle.innerText()), 'S75 Watching names its reads');
 };
 
 /** S33 · #58 — while the event canvas is mounted, its own header is the only
@@ -3559,6 +3574,7 @@ export const STORIES = [
   ['S72', S72, 'typical'],
   ['S73', S73, 'typical', { analysisInputs: withNoDataBasal }],
   ['S74', S74, 'typical', { history: true }],
+  ['S75', S75, 'typical', { findingsProjectionInputs: () => FINDINGS_PROJECTION.windows.quiet }],
   ['C41', C41, 'typical', { caseScenario: {
     preparation: generatedFindingPose('finding:meal_over_delivery'),
   } }], ['C42', C42, 'typical'],

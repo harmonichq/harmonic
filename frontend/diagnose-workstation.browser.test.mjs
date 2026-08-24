@@ -147,6 +147,13 @@ async function shot(page, family, state_, viewport, theme) {
 
 const VIEWPORTS = [{ width: 1440, height: 900 }, { width: 1280, height: 800 }];
 
+const expandWatching = async (page) => {
+  const toggle = page.locator('#level .qcollapse');
+  if (await toggle.count() && await toggle.getAttribute('aria-expanded') !== 'true') {
+    await toggle.click();
+  }
+};
+
 test('seven generated history reads remain ordered, reachable, laid out, and non-stageable', async () => {
   const browser = await runner.browser();
   const inputs = await densityHistoryInputs();
@@ -628,7 +635,7 @@ test('the ISF row visibly declares its whole-day scope', async () => {
     try {
       const before = openerProblems().length;
       const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
-      await page.locator('#level .qcollapse').click();
+      await expandWatching(page);
       const row = page.locator('#level .qrow[data-id="isf"]');
       assert.equal(await row.locator('.scope-note').innerText(), ' · Whole day');
       await page.close();
@@ -648,7 +655,7 @@ test('a held I:C finding enters through the findings queue with no stage button'
     try {
       const before = openerProblems().length;
       const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
-      await page.locator('#level .qcollapse').click();
+      await expandWatching(page);
       const row = await page.$('#level .qrow[data-id^="ic:"]');
       assert.ok(row, 'precondition: an I:C findings-queue row exists');
       assert.equal(await page.$('#iclane'), null, 'the retired I:C lane is absent');
@@ -698,7 +705,7 @@ test('ISF is not stageable without an exact true backend verdict', async () => {
     try {
       const before = openerProblems().length;
       const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
-      await page.locator('#level .qcollapse').click();
+      await expandWatching(page);
       // #735: ISF reaches its detail level from the findings QUEUE now — the three
       // per-parameter entry rows are retired with the factor grid (lock term 34).
       // Under this state's explicit Overnight window it is a held row (term 38).

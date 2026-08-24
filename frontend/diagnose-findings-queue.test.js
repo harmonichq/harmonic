@@ -7,6 +7,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
   EMPTY_LINE, EMPTY_SIFT_LINE, HELD_PREFIX, TAIL_NOTE, eventChartCoordinate,
+  renderFindingsQueue,
   queueMeta, queueRows,
 } from './diagnose-findings-queue.js';
 
@@ -51,6 +52,29 @@ test('Event charts retain Watching rows, including while sifting', () => {
   for (const selected of [null, new Set(['highs'])]) {
     const rows = queueRows(projection, selected, true);
     assert.equal(rows.find((row) => row.id === 'history').collapsed, false);
+  }
+});
+
+test('all-Watching queue keeps its empty line compact above the disclosure', () => {
+  class Node {
+    constructor() { this.children = []; this.dataset = {}; }
+    append(...nodes) { this.children.push(...nodes); }
+    setAttribute() {}
+    addEventListener() {}
+  }
+  const previous = globalThis.document;
+  globalThis.document = { createElement: () => new Node() };
+  try {
+    const host = new Node();
+    renderFindingsQueue(host, W.quiet, () => {});
+    assert.equal(host.children[0].textContent, EMPTY_LINE);
+    assert.equal(host.children[0].className, 'quiet-line sift-empty',
+      'the empty line is compact when the Watching disclosure follows');
+    assert.equal(host.children[1].className, 'q');
+    assert.equal(host.children[1].children[0].className, 'qcollapse');
+    assert.match(host.children[1].children[0].textContent, /^Watching · \d+ reads?$/);
+  } finally {
+    globalThis.document = previous;
   }
 });
 

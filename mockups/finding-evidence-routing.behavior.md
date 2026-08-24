@@ -1923,10 +1923,15 @@ exception, and the uncaused-highs footer. The footer was the sole observed base
 behavior without a ledger entry, and is resolved below as a sanctioned retirement.
 
 **CHANGED — 2026-08-23.** ConnorGriffin ruled that held, blind, and past-setting
-reads collapse under Watching without a sift. S18, S24, S41, S43, S44, S54,
-S71, the dense-history browser order test, and the new S74 open the control when
-they intentionally inspect Watching evidence; S42 remains the sift/expand
-regression guard. S74 records the default disclosure and absence of the footer.
+reads collapse under Watching without a sift. `openHistoryCase`, S18, S24, S31,
+S41, S43, S44, S54, S71, `issue81PendingProjection`,
+`issue81FailedProjection`, and `issue81SlicedProjection` open the control when
+they intentionally inspect Watching evidence; the issue-81 probe restates its
+visible-row metadata. The dense-history browser order test and the ISF whole-day,
+held I:C, and ISF non-stageable browser tests do the same. S42 remains the
+sift/expand regression guard. S74 records the default disclosure and absence of
+the footer; S75 opens the all-Watching public queue and proves that its quiet
+reading stays compact above the disclosure.
 Against the base it reports `app: 0 of 1 stories passed`; against the revision it
 reports `app: 1 of 1 stories passed`. The all-Watching quiet window now uses the
 existing empty sentence rather than a bare disclosure.
@@ -1937,4 +1942,4 @@ sanction: ConnorGriffin · 2026-08-23 · "Retired and incomplete evidence stops 
 
 The browser gate permanently asserts that no `.uncaused-note` exists and prints
 this sanction. The backend `uncaused_highs` field and all frozen fixtures remain
-unchanged. The current executable count is 92: S01–S74, C41–C55, and D1–D3.
+unchanged. The current executable count is 93: S01–S75, C41–C55, and D1–D3.

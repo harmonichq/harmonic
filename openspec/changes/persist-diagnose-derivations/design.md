@@ -34,6 +34,15 @@ the GIL — but it is a scaling estimate, not a host measurement.
 
 Every shape in the ticket's list carries a measured time; none is missing.
 
+### #120 bounded catalog-capture measurement
+
+On the same read-only snapshot and cold `exposures` shape, bounding the
+event-comparison catalog to its 30-day Diagnose source window plus the required
+300-minute context lead-in reduced the aggregate exposure preparation time from
+**98.20s** to **26.74s**. This records aggregate timing only; the separately
+unbounded `build_exposures` reads and the per-meal suspend-ownership rescan
+remain for #121.
+
 ### The ~5-minute observation versus the 20–40s in `api.py`
 
 They are not in conflict once measured: **the operator's figure is the accurate

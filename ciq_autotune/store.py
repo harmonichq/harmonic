@@ -748,6 +748,21 @@ class Store:
             for r in self._select("basal_events", start, end)
         ]
 
+    def latest_cgm_or_basal_timestamp(self) -> Optional[datetime]:
+        """The latest timestamp in the two streams that define a data horizon.
+
+        The scalar query avoids materializing either event stream when callers
+        need only the latest observed instant.
+        """
+        row = self.conn.execute(
+            "SELECT MAX(t) AS latest FROM ("
+            "SELECT MAX(t) AS t FROM cgm_readings "
+            "UNION ALL "
+            "SELECT MAX(t) AS t FROM basal_events"
+            ")"
+        ).fetchone()
+        return parse_t(row["latest"]) if row["latest"] is not None else None
+
     def settings_snapshots(self) -> List[Snapshot]:
         """Every settings snapshot, oldest first, grouped back into typed
         :class:`~ciq_autotune.settings.Snapshot` objects (one per fetch)."""

@@ -352,17 +352,21 @@ class _ScenarioFixtureStore:
         self._cgm = cgm
         self._bolus = bolus
 
-    def cgm_readings(self):
+    def cgm_readings(self, start=None, end=None):
         return self._cgm
 
-    def bolus_events(self):
+    def bolus_events(self, start=None, end=None):
         return self._bolus
 
-    def basal_events(self):
+    def basal_events(self, start=None, end=None):
         return []
 
-    def carb_entries(self):
+    def carb_entries(self, start=None, end=None):
         return []
+
+    def latest_cgm_or_basal_timestamp(self):
+        times = [row.t for row in self._cgm]
+        return max(times) if times else None
 
     def prompt_responses(self):
         return []

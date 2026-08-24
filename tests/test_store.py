@@ -110,6 +110,39 @@ class StoreTest(unittest.TestCase):
         self.store.upsert_basal(row)  # same row again
         self.assertEqual(self.store.counts()["basal_events"], 1)
 
+    def test_latest_cgm_or_basal_timestamp_uses_both_streams_without_rows(self):
+        self.assertIsNone(self.store.latest_cgm_or_basal_timestamp())
+
+        self.store.upsert_cgm([{
+            "EventDateTime": "2026-08-01 09:00:00",
+            "Readings (CGM / BGM)": 100,
+        }])
+        self.assertEqual(
+            self.store.latest_cgm_or_basal_timestamp(), datetime(2026, 8, 1, 9)
+        )
+
+        self.store.upsert_basal([{
+            "seq_num": 1, "time": "2026-08-01 10:00:00",
+            "delivery_type": "profileDelivery", "duration_mins": 5,
+            "basal_rate": 0.6,
+        }])
+        self.assertEqual(
+            self.store.latest_cgm_or_basal_timestamp(), datetime(2026, 8, 1, 10)
+        )
+
+        self.store.conn.execute("DELETE FROM cgm_readings")
+        self.assertEqual(
+            self.store.latest_cgm_or_basal_timestamp(), datetime(2026, 8, 1, 10)
+        )
+
+        self.store.upsert_cgm([{
+            "EventDateTime": "2026-08-01 11:00:00",
+            "Readings (CGM / BGM)": 110,
+        }])
+        self.assertEqual(
+            self.store.latest_cgm_or_basal_timestamp(), datetime(2026, 8, 1, 11)
+        )
+
     def test_upsert_updates_changed_fields(self):
         self.store.upsert_basal([{"seq_num": 100, "time": "2022-05-27 00:00:00-04:00",
                                   "delivery_type": "profileDelivery",

@@ -25,10 +25,22 @@ from .analyzers.scenario.meal_suspend import (
     classify_meal_owned_suspend,
 )
 from .analyzers.scenario_config import ScenarioConfig
+from .insulin import ACCOUNTING_DIA_MIN
 from .window_membership import WindowQuery, outcome_minute
 
 FMT = "%Y-%m-%d %H:%M:%S"
 CONFIG = ScenarioConfig()
+# The 300-minute maximum preserves accounting-IOB tails, attribution/engine
+# context, the low trace, and suspend grouping while retaining every named
+# component's contract.
+EVENT_COMPARISON_CATALOG_LEAD_IN_MIN = max(
+    CONFIG.gate_lookback_min,
+    ACCOUNTING_DIA_MIN,
+    CONFIG.attribute_split_context_pad_min,
+    CONFIG.engine_context_pad_min,
+    CONFIG.meal_suspend_ownership_min,
+    CONFIG.gate_suspend_group_gap_min,
+)
 VIEW_CONFIG = {
     "meals": {
         "anchor": "completed carb-bolus",
@@ -461,19 +473,32 @@ def _build_catalog_capture(
     for occurrence in families["correction_clusters"]["occurrences"]:
         episode_corrections.setdefault(occurrence["ep_id"], []).append(occurrence)
 
-    cgm = sorted(store.cgm_readings(), key=lambda item: item.t)
-    bolus = sorted(store.bolus_events(), key=lambda item: item.t)
-    basal = sorted(store.basal_events(), key=lambda item: item.t)
+    now = store.latest_cgm_or_basal_timestamp() or datetime.now()
+    source_start = now - timedelta(days=window_days)
+    catalog_start = source_start - timedelta(
+        minutes=EVENT_COMPARISON_CATALOG_LEAD_IN_MIN
+    )
+    cgm = sorted(
+        store.cgm_readings(start=catalog_start, end=None), key=lambda item: item.t
+    )
+    bolus = sorted(
+        store.bolus_events(start=catalog_start, end=None), key=lambda item: item.t
+    )
+    basal = sorted(
+        store.basal_events(start=catalog_start, end=None), key=lambda item: item.t
+    )
+    rescue = sorted(
+        store.carb_entries(start=catalog_start, end=None), key=lambda item: item.t
+    )
     ownership = MealSuspendOwnership(bolus, basal, scenario_config=CONFIG)
-    rescue = sorted(store.carb_entries(), key=lambda item: item.t)
-    times = [item.t for item in cgm] + [item.t for item in basal]
-    now = max(times) if times else datetime.now()
     isf = _effective_isf(
         bolus,
         basal,
         cgm,
-        store.settings_snapshots() if hasattr(store, "settings_snapshots") else [],
-        now - timedelta(days=window_days),
+        # Settings are not a source-window event stream: the latest active
+        # programmed schedule remains the effective-ISF fallback.
+        store.settings_snapshots(),
+        source_start,
         now,
     )
 

@@ -95,22 +95,159 @@ class _Store:
     def __init__(self, bolus):
         self._bolus = bolus
 
-    def basal_events(self):
+    def basal_events(self, start=None, end=None):
         return []
 
-    def bolus_events(self):
+    def bolus_events(self, start=None, end=None):
         return self._bolus
 
-    def carb_entries(self):
+    def carb_entries(self, start=None, end=None):
         return []
 
-    def cgm_readings(self):
+    def cgm_readings(self, start=None, end=None):
+        return []
+
+    def latest_cgm_or_basal_timestamp(self):
+        return None
+
+    def settings_snapshots(self):
+        return []
+
+
+class _CatalogStore:
+    """Records the typed catalog interface without a compatibility path."""
+
+    def __init__(self, *, now, cgm, bolus, basal, rescue):
+        self.now = now
+        self._cgm = cgm
+        self._bolus = bolus
+        self._basal = basal
+        self._rescue = rescue
+        self.requests = []
+
+    def latest_cgm_or_basal_timestamp(self):
+        self.requests.append(("latest",))
+        return self.now
+
+    def _read(self, name, rows, *, start=None, end=None):
+        self.requests.append((name, start, end))
+        return [row for row in rows if (start is None or row.t >= start)
+                and (end is None or row.t < end)]
+
+    def cgm_readings(self, *, start=None, end=None):
+        return self._read("cgm", self._cgm, start=start, end=end)
+
+    def bolus_events(self, *, start=None, end=None):
+        return self._read("bolus", self._bolus, start=start, end=end)
+
+    def basal_events(self, *, start=None, end=None):
+        return self._read("basal", self._basal, start=start, end=end)
+
+    def carb_entries(self, *, start=None, end=None):
+        return self._read("rescue", self._rescue, start=start, end=end)
+
+    def settings_snapshots(self):
         return []
 
 
 class EventComparisonTest(unittest.TestCase):
     def test_only_preparation_exposes_the_comparison_projection_interface(self):
         self.assertFalse(hasattr(event_comparison, "build_event_comparison"))
+
+    def test_preparation_bounds_catalog_inputs_without_losing_leadin_or_rescue_trace(self):
+        now = datetime(2026, 8, 2)
+        source_start = now - timedelta(days=1)
+        catalog_start = source_start - timedelta(
+            minutes=event_comparison.EVENT_COMPARISON_CATALOG_LEAD_IN_MIN
+        )
+        meal_anchor = source_start
+        low_anchor = source_start + timedelta(hours=12)
+        meal = {
+            "t": meal_anchor.strftime(event_comparison.FMT), "date": "2026-08-01",
+            "bg": 150, "worst_bg": 220, "label": "Meal", "ep_id": "meal-1",
+            "cause_lever": None, "verdicts": [],
+        }
+        low = {
+            "t": low_anchor.strftime(event_comparison.FMT), "date": "2026-08-01",
+            "bg": 62, "worst_bg": 58, "label": "Low", "ep_id": "low-1",
+            "cause_lever": None, "verdicts": [],
+        }
+        payload = {
+            "window": {"start": "2026-08-01", "end": "2026-08-02"},
+            "exposures": {
+                "meals": {"occurrences": [meal]},
+                "lows": {"occurrences": [low]},
+                "highs": {"occurrences": []},
+                "correction_clusters": {"occurrences": []},
+            },
+        }
+        pre_boundary_suspend = BasalEvent(
+            t=source_start - timedelta(minutes=5), delivery_type="suspend",
+            basal_rate=0, profile_basal_rate=0.8,
+        )
+        source_suspend = BasalEvent(
+            t=source_start, delivery_type="suspend", basal_rate=0,
+            profile_basal_rate=0.8,
+        )
+        old_rescue = SimpleNamespace(
+            t=catalog_start - timedelta(minutes=1), grams=15, certainty="exact",
+        )
+        in_window_rescue = SimpleNamespace(
+            t=low_anchor, grams=8, certainty="exact",
+        )
+        store = _CatalogStore(
+            now=now,
+            cgm=[CgmReading(t=now, bg=110, type="EGV")],
+            bolus=[BolusEvent(
+                t=meal_anchor, completion="Completed", insulin=3.0, carbs=30.0,
+                carb_ratio=None, bg=None, seq_num=1,
+            )],
+            basal=[pre_boundary_suspend, source_suspend],
+            rescue=[old_rescue, in_window_rescue],
+        )
+        expected_ownership = event_comparison.classify_meal_owned_suspend(
+            store._bolus[0], store._bolus, store._cgm, store._basal,
+            scenario_config=event_comparison.CONFIG,
+        )
+        no_carb = SimpleNamespace(silence_reason="no_trigger", implied_carbs=None,
+                                  logged_carbs=None)
+        no_late = SimpleNamespace(silence_reason="no_trigger", pre_bolus_slope=None)
+
+        with (
+            patch.object(findings_projection, "DIAGNOSE_SOURCE_WINDOW_DAYS", 1),
+            patch("ciq_autotune.explore_exposures.build_exposures", return_value=payload),
+            patch("ciq_autotune.event_comparison._effective_isf", return_value=None),
+            patch("ciq_autotune.event_comparison.classify_carb_undercount",
+                  return_value=no_carb),
+            patch("ciq_autotune.event_comparison.classify_late_bolus", return_value=no_late),
+            patch("ciq_autotune.event_comparison.classify_meal_owned_suspend",
+                  wraps=event_comparison.classify_meal_owned_suspend) as ownership,
+            patch("ciq_autotune.event_comparison._route_low",
+                  return_value={"cohort": "neutral"}),
+        ):
+            preparation = prepare_event_comparisons(store)
+
+        self.assertEqual(
+            store.requests,
+            [("latest",)] + [
+                (name, catalog_start, None)
+                for name in ("cgm", "bolus", "basal", "rescue")
+            ],
+        )
+        # The lead-in keeps a suspend episode spanning the published source start
+        # intact for ADR 681 ownership. Rescue carbs never reach this route.
+        self.assertFalse(expected_ownership.matched)
+        self.assertTrue(ownership.called)
+        self.assertTrue(all(
+            call.args[3] == [pre_boundary_suspend, source_suspend]
+            for call in ownership.call_args_list
+        ))
+        self.assertEqual(
+            preparation._catalog["meals"][0]["routes"]["meal_over_delivery"],
+            {"cohort": "excluded", "provenance": "not safely comparable"},
+        )
+        rescue_trace = preparation._catalog["lows"][0]["trace"]["rescue_carbs"]
+        self.assertEqual([point["grams"] for point in rescue_trace], [8])
 
     def test_capture_without_an_outcome_minute_fails_closed(self):
         capture = {
@@ -210,7 +347,7 @@ class EventComparisonTest(unittest.TestCase):
         )
         reading = SimpleNamespace(t=stamp, bg=150)
         store = _Store([bolus])
-        store.cgm_readings = lambda: [reading]
+        store.cgm_readings = lambda **_: [reading]
         store.settings_snapshots = lambda: []
         with (
             patch("ciq_autotune.explore_exposures.build_exposures",
@@ -353,7 +490,7 @@ class EventComparisonTest(unittest.TestCase):
             SimpleNamespace(t=second_t, completion="Completed", insulin=3.0, carbs=30.0,
                             carb_ratio=None, bg=None, seq_num=2),
         ])
-        store.cgm_readings = lambda: [
+        store.cgm_readings = lambda **_: [
             SimpleNamespace(t=first_t.replace(minute=2, second=30), bg=100),
             SimpleNamespace(t=second_t.replace(minute=2, second=30), bg=200),
         ]
@@ -423,7 +560,7 @@ class EventComparisonTest(unittest.TestCase):
                 t=anchor + timedelta(minutes=minute), bg=150,
             ))
         store = _Store(boluses)
-        store.cgm_readings = lambda: readings
+        store.cgm_readings = lambda **_: readings
         store.settings_snapshots = lambda: []
         no_carb = SimpleNamespace(silence_reason="no_trigger", implied_carbs=None,
                                   logged_carbs=None)
@@ -492,9 +629,9 @@ class EventComparisonTest(unittest.TestCase):
             }],
         }
         store = _Store([])
-        store.cgm_readings = lambda: [SimpleNamespace(t=anchor, bg=62)]
+        store.cgm_readings = lambda **_: [SimpleNamespace(t=anchor, bg=62)]
         store.settings_snapshots = lambda: []
-        store.carb_entries = lambda: [
+        store.carb_entries = lambda **_: [
             SimpleNamespace(t=anchor, grams=8, certainty="exact", source="manual"),
             SimpleNamespace(t=anchor, grams=6, certainty="estimate", source="rise-prompt"),
             SimpleNamespace(t=anchor, grams=4, certainty="unknown", source="low-prompt"),

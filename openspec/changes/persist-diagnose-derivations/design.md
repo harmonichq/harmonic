@@ -84,9 +84,11 @@ fixes (#120, #121) land first; the durable boundary is built around what is left
 ### The duplication the ticket flagged is real and small
 
 The findings case preparation rebuilds the analysis, the exposures and the
-scenario report. Measured, the whole preparation is 4.65s, of which roughly 2.6s
-is analysis and scenario work the cold arrival already computed separately —
-about 2% of the cold path. Worth removing (#126), never the reason the surface is
+scenario report. Measured, the whole preparation is 4.65s, and under cProfile the
+rebuild is 7.83s of that run's 10.17s — so about **3.4s** of the 4.65s is
+analysis, scenario and exposure work the cold arrival already computed elsewhere,
+and roughly 1.0s is the case population that only this shape builds. Three
+percent of the cold path. Worth removing (#126), never the reason the surface is
 slow.
 
 ### One of the ticket's three drift counts is the opposite of what it looked like

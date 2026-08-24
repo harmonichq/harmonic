@@ -187,7 +187,7 @@ test('renderCanvas pans labels and every data series into dimmed neighbouring da
     p90: filled(160), counts: filled(12), raw: filled(1), days: 12, pool: 45,
   };
   const colors = {
-    muted: '#111', warn: '#222', danger: '#333', targetFill: '#444', targetText: '#555',
+    muted: '#111111', warn: '#222', danger: '#333', targetFill: '#444', targetText: '#555',
     rail: '#666', windowFill: '#777', windowEdge: '#888', bandOuter: '#999',
     bandInner: '#aaa', bandEdge: '#bbb', median: '#ccc', targetEdge: '#ddd',
     onAccent: '#eee', text: '#123', surface2: '#234', line: '#345', occurrence: '#456', meal: '#567', grid: '#678',
@@ -212,6 +212,7 @@ test('renderCanvas pans labels and every data series into dimmed neighbouring da
   assert.deepEqual(context.markArea.data.filter(([start]) => start.xAxis != null)
     .map(([start, end]) => [start.xAxis, end.xAxis]), [['1320', '1560']]);
   assert.match(option.xAxis[0].axisLabel.formatter('-60'), /neighbour.*23:00/);
+  assert.equal(option.xAxis[0].axisLabel.rich.neighbour.color, 'rgba(17,17,17,0.42)');
 });
 
 test('S49/S70 · history event validation accepts one exact id and generation', () => {

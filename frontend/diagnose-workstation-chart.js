@@ -546,6 +546,14 @@ const edgeLine = (name, data, color, z) => ({
 const DISPLAY_AXIS = Array.from({ length: BIN_COUNT * 3 }, (_, index) =>
   String((index - BIN_COUNT) * BIN_MINUTES));
 
+function withOpacity(color, opacity) {
+  const hex = color.match(/^#([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i);
+  if (hex) return `rgba(${hex.slice(1).map((part) => parseInt(part, 16)).join(',')},${opacity})`;
+  const rgb = color.match(/^rgba?\(([^)]+)\)$/i);
+  if (rgb) return `rgba(${rgb[1].split(',').slice(0, 3).join(',')},${opacity})`;
+  return color;
+}
+
 function displaySeries(series) {
   const positioned = series.data?.some((point) => point && typeof point === 'object'
     && Array.isArray(point.value));
@@ -703,7 +711,7 @@ export function renderCanvas(el, echarts, opts) {
       ? `{neighbour|${hhmm(Number(value))}}` : hhmm(Number(value)))
     : undefined;
   const axisRich = panning
-    ? { neighbour: { color: colors.muted, opacity: 0.42 } } : undefined;
+    ? { neighbour: { color: withOpacity(colors.muted, 0.42) } } : undefined;
 
   const chart = echarts.getInstanceByDom(el) || echarts.init(el, null, { renderer: 'canvas' });
   const option = {

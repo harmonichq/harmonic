@@ -12,15 +12,23 @@ export const BIN_MINUTES = 15;
 export const BIN_COUNT = (24 * 60) / BIN_MINUTES; // 96
 
 function windowSpans([startMin, endMin]) {
-  return startMin <= endMin
+  const spans = startMin <= endMin
     ? [[startMin, endMin]]
     : [[startMin, 1440], [0, endMin]];
+  return spans.filter(([start, end]) => end > start);
 }
 
 function windowBinSpans(window) {
   return windowSpans(window).map(([startMin, endMin]) => [
     Math.floor(startMin / BIN_MINUTES),
     Math.min(Math.ceil(endMin / BIN_MINUTES), BIN_COUNT) - 1,
+  ]);
+}
+
+function windowRenderSpans(window) {
+  return windowSpans(window).map(([startMin, endMin]) => [
+    Math.min(Math.round(startMin / BIN_MINUTES), BIN_COUNT - 1),
+    Math.min(Math.round(endMin / BIN_MINUTES), BIN_COUNT - 1),
   ]);
 }
 
@@ -528,7 +536,7 @@ export function renderCanvas(el, echarts, opts) {
   const stats = opts.stats || null;
   const target = opts.target || [70, 180];
   const [winStart, winEnd] = opts.window || [0, 360];
-  const binSpans = windowBinSpans([winStart, winEnd]);
+  const binSpans = windowRenderSpans([winStart, winEnd]);
   const [[startIndex, endIndex]] = binSpans;
   const wrapped = binSpans.length > 1;
 
@@ -602,7 +610,7 @@ export function renderCanvas(el, echarts, opts) {
         color: colors.windowEdge,
         fontSize: 10, fontWeight: 700, letterSpacing: 0.5,
         formatter: labelText, rich: labelRich,
-      } : undefined,
+      } : { show: false },
     },
     { xAxis: envelope.labels[end] },
   ]);

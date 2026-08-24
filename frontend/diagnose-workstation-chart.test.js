@@ -124,11 +124,29 @@ test('renderCanvas draws a wrapped window as two areas with one range label', ()
   const context = option.series.find((series) => series.name === '__context');
   const areas = context.markArea.data.filter(([start]) => start.xAxis != null);
   assert.deepEqual(areas.map(([start, end]) => [start.xAxis, end.xAxis]), [
-    ['22:00', '23:45'], ['00:00', '01:45'],
+    ['22:00', '23:45'], ['00:00', '02:00'],
   ]);
-  assert.equal(areas.filter(([start]) => start.label).length, 1);
+  assert.equal(areas.filter(([start]) => start.label.show).length, 1);
   assert.match(areas[0][0].label.formatter, /25–75 spread 27 mg\/dL/);
+  assert.deepEqual(areas[1][0].label, { show: false });
   assert.equal(context.markPoint.data.at(-1).label.formatter, 'CONTINUES');
+
+  renderCanvas({ clientWidth: 4000 }, { getInstanceByDom() { return chart; } }, {
+    envelope, markers: [], colors, window: [15, 105], windowLabel: '00:15–01:45',
+  });
+  assert.deepEqual(option.series.find((series) => series.name === '__context').markArea.data
+    .filter(([start]) => start.xAxis != null)
+    .map(([start, end]) => [start.xAxis, end.xAxis]), [['00:15', '01:45']]);
+
+  for (const window of [[1320, 0], [1440, 120]]) {
+    renderCanvas({ clientWidth: 4000 }, { getInstanceByDom() { return chart; } }, {
+      envelope, markers: [], colors, window, windowLabel: 'SELECTED WINDOW',
+    });
+    const degenerateAreas = option.series.find((series) => series.name === '__context').markArea.data
+      .filter(([start]) => start.xAxis != null);
+    assert.equal(degenerateAreas.length, 1);
+    assert.ok(degenerateAreas.flat().every((point) => point.xAxis == null || point.xAxis !== undefined));
+  }
 });
 
 test('S49/S70 · history event validation accepts one exact id and generation', () => {

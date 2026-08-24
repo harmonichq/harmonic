@@ -161,6 +161,21 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                      lambda store: prepare_event_comparisons(store),
                      dump=dump_event_comparison, rebuild=rebuild_event_comparison)
 
+    def findings_products(window):
+        """The canonical payloads every 30-day findings consumer projects from."""
+        if window != findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS:
+            raise ValueError("findings requires its fixed source window")
+        def build_canonical_scenarios(store):
+            from .analyzers.scenario import build_scenarios
+            return build_scenarios(store, window_days=window).to_dict()
+        analysis = fixed(("analyze", window, False, True), "analyze-v1", lambda store: analyze(
+            store, window_days=window, ignore_setting_changes=False,
+            pool_agreeing_basal_regimes=True, carb_entries=store.carb_entries(),
+            prompt_responses=store.prompt_responses()).to_dict())
+        scenarios = fixed(("scenarios", window), "scenarios-v1", build_canonical_scenarios)
+        exposures = event_comparison_preparation().exposure_payload
+        return analysis, exposures, scenarios
+
     def recover_sidecar_projection(key, marker, value, project, reload):
         try:
             return project(value)
@@ -182,7 +197,10 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         """
         key = ("findings-history-snapshot", window)
         def compute(store):
-            findings = prepare_findings_projection(store, window_days=window)
+            analysis, exposures, scenarios = findings_products(window)
+            findings = prepare_findings_projection(
+                analysis=analysis, exposures=exposures, scenarios=scenarios,
+            )
             return (findings, prepare_ic_history_events(store, findings))
         # Store both reconstructible preparations as one plain tuple payload.
         def dump_pair(pair):
@@ -233,8 +251,12 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         key = ("finding-case-file", query.start_min, query.end_min, selected_id)
         def build(version):
             with Store.open_queryonly(db_path) as store:
+                analysis, exposures, scenarios = findings_products(
+                    findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS,
+                )
                 return prepare_finding_cases(
-                    store, query=query, version=version, selected_id=selected_id,
+                    store, query=query, version=version, analysis=analysis,
+                    exposures=exposures, scenarios=scenarios, selected_id=selected_id,
                     analysis_generation=cache.generation_for_version(version),
                 )
         def before_commit():

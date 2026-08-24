@@ -742,30 +742,13 @@ def _pattern_priorities(scenarios: dict) -> Dict[str, int]:
     return priced
 
 
-def prepare_findings_projection(
-    store, *, window_days: int = DIAGNOSE_SOURCE_WINDOW_DAYS,
-) -> FindingsProjection:
-    """Read one findings window from ``store`` and keep all queue policy behind
-    :meth:`FindingsProjection.project`.
+def prepare_findings_projection(*, analysis: dict, exposures: dict,
+                                scenarios: dict) -> FindingsProjection:
+    """Construct the findings projection from its three published payloads.
 
-    The three payloads are the published ones, built by their own modules — this adds
-    no analysis, exactly as the API adds none over ``AnalysisResult``.
+    Building those products belongs to the callers that own their fixed cache paths.
+    This seam keeps queue policy here while letting each guarded consumer share one
+    canonical analysis, exposure feed, and scenario report per cache generation.
     """
-    from .analyze import analyze
-    from .analyzers.scenario import build_scenarios
-    from .explore_exposures import build_exposures
-
-    analysis = analyze(
-        store, window_days=window_days,
-        # The pooling mode the Diagnose surface already reads in (#85 / #246, ADR
-        # 0032): the queue and the lanes under it must not rank the same slot from
-        # two different estimates.
-        pool_agreeing_basal_regimes=True,
-        carb_entries=store.carb_entries(),
-        prompt_responses=store.prompt_responses(),
-    ).to_dict()
-    return FindingsProjection(
-        _analysis=analysis,
-        _exposures=build_exposures(store, window_days=window_days),
-        _scenarios=build_scenarios(store, window_days=window_days).to_dict(),
-    )
+    return FindingsProjection(_analysis=analysis, _exposures=exposures,
+                              _scenarios=scenarios)

@@ -50,7 +50,18 @@ class ReviseE2EDatabaseGeneratorTest(unittest.TestCase):
                 )
                 self.assertEqual(len(store.settings_snapshots()), 2)
                 self.assertIsNone(store.get_credentials())
-                projection = prepare_findings_projection(store, window_days=30)
+                from ciq_autotune.analyze import analyze
+                from ciq_autotune.analyzers.scenario import build_scenarios
+                from ciq_autotune.explore_exposures import build_exposures
+                projection = prepare_findings_projection(
+                    analysis=analyze(
+                        store, window_days=30, pool_agreeing_basal_regimes=True,
+                        carb_entries=store.carb_entries(),
+                        prompt_responses=store.prompt_responses(),
+                    ).to_dict(),
+                    exposures=build_exposures(store, window_days=30),
+                    scenarios=build_scenarios(store, window_days=30).to_dict(),
+                )
                 self.assertGreaterEqual(
                     projection.project(WindowQuery.whole_day())["counts"]["finding"],
                     1,

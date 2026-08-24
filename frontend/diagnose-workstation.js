@@ -1607,8 +1607,7 @@ function boot(root, data, callbacks, signal) {
     ++historyRequestGeneration;
     pendingKey = null;
     filterOpen = false;
-    const rowId = stack[1]?.rowId ?? stack[1]?.id;
-    pendingFocus = rowId == null ? 'level' : { rowId };
+    pendingFocus = pendingRowFocus(stack[1]);
     dir = 'pop'; stack.length = i + 1; paint();
   };
 
@@ -2556,6 +2555,14 @@ function boot(root, data, callbacks, signal) {
     applyPendingFocus();
   }
 
+  /* Focus consumes only a reader-driven navigation request after every painter
+     has settled. A missing originating row means the level is the stable landing,
+     not that no focus was requested. */
+  function pendingRowFocus(frame) {
+    const rowId = frame?.rowId ?? frame?.id;
+    return rowId == null ? 'level' : { rowId };
+  }
+
   function applyPendingFocus() {
     const focus = pendingFocus;
     pendingFocus = null;
@@ -2565,7 +2572,7 @@ function boot(root, data, callbacks, signal) {
       host.focus();
       return;
     }
-    const row = host.querySelector(`#level .qrow[data-id="${focus.rowId}"]`);
+    const row = host.querySelector(`.qrow[data-id="${focus.rowId}"]`);
     if (row) row.focus({ preventScroll: true });
     else host.focus();
   }
@@ -2586,8 +2593,7 @@ function boot(root, data, callbacks, signal) {
       ++historyRequestGeneration;
       pendingKey = null;
       filterOpen = false;
-      const rowId = stack[1]?.rowId ?? stack[1]?.id;
-      pendingFocus = rowId == null ? 'level' : { rowId };
+      pendingFocus = pendingRowFocus(stack[1]);
       dir = 'pop';
       stack.pop();
       paint();

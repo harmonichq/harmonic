@@ -1942,7 +1942,7 @@ sanction: ConnorGriffin · 2026-08-23 · "Retired and incomplete evidence stops 
 
 The browser gate permanently asserts that no `.uncaused-note` exists and prints
 this sanction. The backend `uncaused_highs` field and all frozen fixtures remain
-unchanged. The current executable count is 94: S01–S76, C41–C55, and D1–D3.
+unchanged. The current executable count is 93: S01–S75, C41–C55, and D1–D3.
 
 ## Revision — 2026-08-23, base 9988e43 (issue #100: drill-in focus lands on the opened detail container)
 
@@ -1951,6 +1951,12 @@ detail container and returns it to the originating queue row when the reader
 comes back. Repaints that do not navigate keep focus where the reader left it.
 The ledger header correction is deferred to #101, which owns its audited
 recomposition.
+
+The current executable count is 94: S01–S76, C41–C55, and D1–D3.
+
+**Red proof.** On base, 6a failed with `actual: 'BODY', expected: 'level'`;
+6b with `actual: 'BODY', expected: 'finding:carb_undercount'`; and 6c with
+`actual: 'BODY', expected: 'ich1_WzAsNzIwLCI2Il0'`. 6d passed before the fix.
 
 **Behavior added.**
 

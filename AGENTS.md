@@ -115,7 +115,7 @@ support audit. Reproduce it locally:
 # the browser suites route through instead of the network. On a machine that
 # runs the gates repeatedly, skip the mktemp lines and instead provision a
 # persistent cache once with
-#   eval "$(scripts/ensure_browser_gate_env.sh)"
+#   eval "$(python3 scripts/ensure_browser_gate_env.py)"
 # which sets PLAYWRIGHT_MODULE and VENDOR_DIR for the legs below and costs
 # one stat per piece on reruns.
 PW=$(mktemp -d) VENDOR=$(mktemp -d)

@@ -122,6 +122,8 @@ export const state = (page) => page.evaluate(() => {
     gripB: parseFloat(q('#grip-b')?.style.left || 'NaN'),
     live: ['brace-a', 'brace-b'].filter((i) => document.getElementById(i)?.classList.contains('live')),
     readout: q('#brace-readout')?.hidden ? null : (q('#brace-readout')?.textContent.trim() ?? null),
+    panOffset: Number(q('#chart')?.parentElement?.dataset.clockPan || 0),
+    braceEdges: document.querySelectorAll('#brace .edge').length,
     badge: txt('#plan-badge'),
     /* #735 — `#inspector-meta` is GONE (lock term 47): the pane header's staged
        status named only the Plan branch of a four-branch object, so it could read
@@ -255,6 +257,8 @@ export const state = (page) => page.evaluate(() => {
     laneSelected: [...document.querySelectorAll('#lane button')].findIndex((b) => b.getAttribute('aria-pressed') === 'true'),
     laneCells: document.querySelectorAll('#lane button').length,
     laneOutside: [...document.querySelectorAll('#lane button')].filter((b) => b.dataset.outside === 'true').length,
+    laneInside: [...document.querySelectorAll('#lane button:not([data-clock-copy])')]
+      .filter((b) => b.dataset.outside === 'false').length,
     laneKey: q('#lane-key')?.innerText.replace(/\s+/g, ' ').trim() ?? null,
     hover: q('#canvas-head')?.dataset.hover ?? null,
     rd: {
@@ -282,6 +286,40 @@ const plot = (page) => page.evaluate(() => {
   const r = document.getElementById('chart').getBoundingClientRect();
   return { x: r.x, y: r.y, w: r.width, h: r.height };
 });
+
+const chartXAt = (box, minute) => box.x + 52 + (minute / 1425) * (box.w - 104);
+
+const chipIs = (page, want) => page.waitForFunction((expected) => {
+  const follow = document.querySelector('#seg-window [data-follow]');
+  return follow?.firstChild?.textContent.trim() === expected;
+}, want, { timeout: 5000 });
+
+const beginFreshDraw = async (page) => {
+  await page.getByRole('button', { name: '24 h', exact: true }).click();
+  await settle(page, 450);
+};
+
+const drawInside = async (page, start, end) => {
+  await beginFreshDraw(page);
+  const b = await plot(page);
+  const y = b.y + b.h * 0.45;
+  await page.mouse.move(chartXAt(b, start), y);
+  await page.mouse.down();
+  await page.mouse.move(chartXAt(b, end), y, { steps: 8 });
+  await page.mouse.up();
+  await settle(page, 450);
+};
+
+const holdAtBoundary = async (page, start, direction, want) => {
+  const b = await plot(page);
+  const y = start.y ?? b.y + b.h * 0.45;
+  await page.mouse.move(start.x, y);
+  await page.mouse.down();
+  await page.mouse.move(direction === 'right' ? b.x + b.w - 39 : b.x + 39, y,
+    { steps: 8 });
+  await chipIs(page, want);
+  return state(page);
+};
 
 /** Pixel centres of the chart's own occurrence dots / meal glyphs, from the
     ECharts instance — never guessed by scanning the canvas. */
@@ -2405,6 +2443,128 @@ export const S71 = async (page) => {
   await assertHistorySafety(page, draftWrites, 'explicit Retry');
 };
 
+/** S72 · A fresh draw crosses 24:00 to the right. */
+export const S72 = async (page) => {
+  await beginFreshDraw(page);
+  const b = await plot(page);
+  const during = await holdAtBoundary(page,
+    { x: chartXAt(b, 22 * 60) }, 'right', 'Window 22:00–02:00');
+  ok(during.panOffset > 0, 'S72 the day pans left under the right boundary');
+  await captureEvidence(page, 'S72-mid-pan-right');
+  await page.mouse.up();
+  await settle(page, 500);
+  is((await state(page)).chip, 'Window 22:00–02:00', 'S72 draw right commits across midnight');
+};
+
+/** S73 · A fresh draw crosses 00:00 to the left. */
+export const S73 = async (page) => {
+  await beginFreshDraw(page);
+  const b = await plot(page);
+  const during = await holdAtBoundary(page,
+    { x: chartXAt(b, 3 * 60) }, 'left', 'Window 23:00–03:00');
+  ok(during.panOffset < 0, 'S73 the day pans right under the left boundary');
+  await captureEvidence(page, 'S73-mid-pan-left');
+  await page.mouse.up();
+  await settle(page, 500);
+  is((await state(page)).chip, 'Window 23:00–03:00', 'S73 draw left commits across midnight');
+};
+
+/** S74 · The start grip crosses 00:00 while its far endpoint stays anchored. */
+export const S74 = async (page) => {
+  const before = await state(page);
+  const grip = await page.locator('#grip-a').boundingBox();
+  await holdAtBoundary(page, { x: grip.x + grip.width / 2, y: grip.y + grip.height / 2 },
+    'left', 'Window 23:00–04:45');
+  await page.mouse.up();
+  await settle(page, 500);
+  const after = await state(page);
+  is(after.chip, 'Window 23:00–04:45', 'S74 start grip commits across midnight');
+  near(after.gripB, before.gripB, 1, 'S74 the far endpoint remains anchored');
+};
+
+/** S75 · The end grip crosses 24:00 while its far endpoint stays anchored. */
+export const S75 = async (page) => {
+  await drawInside(page, 20 * 60, 22 * 60);
+  const before = await state(page);
+  const grip = await page.locator('#grip-b').boundingBox();
+  await holdAtBoundary(page, { x: grip.x + grip.width / 2, y: grip.y + grip.height / 2 },
+    'right', 'Window 20:00–01:00');
+  await page.mouse.up();
+  await settle(page, 500);
+  const after = await state(page);
+  is(after.chip, 'Window 20:00–01:00', 'S75 end grip commits across midnight');
+  near(after.gripA, before.gripA, 1, 'S75 the far endpoint remains anchored');
+};
+
+/** S76 · Sliding right crosses 24:00 without changing the window's length. */
+export const S76 = async (page) => {
+  await drawInside(page, 20 * 60, 22 * 60);
+  const b = await plot(page);
+  await holdAtBoundary(page, { x: chartXAt(b, 21 * 60) },
+    'right', 'Window 23:00–01:00');
+  is((await state(page)).live, ['brace-a', 'brace-b'], 'S76 both slide edges stay live');
+  await page.mouse.up();
+  await settle(page, 500);
+  is((await state(page)).chip, 'Window 23:00–01:00', 'S76 slide right commits across midnight');
+};
+
+/** S77 · Sliding left crosses 00:00 without changing the window's length. */
+export const S77 = async (page) => {
+  await drawInside(page, 2 * 60, 4 * 60);
+  const b = await plot(page);
+  await holdAtBoundary(page, { x: chartXAt(b, 3 * 60) },
+    'left', 'Window 23:00–01:00');
+  is((await state(page)).live, ['brace-a', 'brace-b'], 'S77 both slide edges stay live');
+  await page.mouse.up();
+  await settle(page, 500);
+  is((await state(page)).chip, 'Window 23:00–01:00', 'S77 slide left commits across midnight');
+};
+
+/** S78 · Draw's one-day stop commits the unscoped day and restores the axis. */
+export const S78 = async (page) => {
+  await beginFreshDraw(page);
+  const b = await plot(page);
+  const during = await holdAtBoundary(page,
+    { x: chartXAt(b, 20 * 60) }, 'right', 'Whole day');
+  ok(during.panOffset > 0, 'S78 full-day stop is reached through the pan');
+  await captureEvidence(page, 'S78-full-day-stop');
+  await page.mouse.up();
+  await settle(page, 500);
+  const after = await state(page);
+  is(after.chip, null, 'S78 whole day is not retained as a 24-hour drawn window');
+  is(after.pressed, ['24 h'], 'S78 whole day commits the unscoped day');
+  is(after.panOffset, 0, 'S78 the axis returns to 00:00–24:00 on release');
+
+  await drawInside(page, 20 * 60, 22 * 60);
+  const grip = await page.locator('#grip-b').boundingBox();
+  await holdAtBoundary(page, { x: grip.x + grip.width / 2, y: grip.y + grip.height / 2 },
+    'right', 'Whole day');
+  await page.mouse.up();
+  await settle(page, 500);
+  const resized = await state(page);
+  is(resized.chip, null, 'S78 a full-day resize is not retained as a 24-hour window');
+  is(resized.pressed, ['24 h'], 'S78 a full-day resize commits the unscoped day');
+};
+
+/** S79 · A full-day slide returns to its own start, preserving its duration. */
+export const S79 = async (page) => {
+  await drawInside(page, 20 * 60, 22 * 60);
+  const before = await state(page);
+  const b = await plot(page);
+  await page.mouse.move(chartXAt(b, 21 * 60), b.y + b.h * 0.45);
+  await page.mouse.down();
+  await page.mouse.move(b.x + b.w - 39, b.y + b.h * 0.45, { steps: 8 });
+  await page.waitForFunction(() => Number(document.getElementById('chart').parentElement
+    .dataset.clockPan || 0) >= 1274, null, { timeout: 7000 });
+  await page.mouse.up();
+  await settle(page, 500);
+  const after = await state(page);
+  is(after.chip, before.chip, 'S79 a one-day slide lands back on its own start');
+  near(after.gripB - after.gripA, before.gripB - before.gripA, 2,
+    'S79 a one-day slide preserves its length');
+  is(after.panOffset, 0, 'S79 the axis returns after the slide');
+};
+
 /** S33 · #58 — while the event canvas is mounted, its own header is the only
     canvas header on screen. The clock canvas's header used to stay mounted
     underneath and print the clock window over an event-aligned chart. */
@@ -3472,6 +3632,9 @@ export const STORIES = [
       { status: 500, detail: 'coordinated retry failed' },
       { body: withRestartGeneration },
     ] }],
+  ['S72', S72, 'typical'], ['S73', S73, 'typical'], ['S74', S74, 'drawn'],
+  ['S75', S75, 'typical'], ['S76', S76, 'typical'], ['S77', S77, 'typical'],
+  ['S78', S78, 'typical'], ['S79', S79, 'typical'],
   ['C41', C41, 'typical', { caseScenario: {
     preparation: generatedFindingPose('finding:meal_over_delivery'),
   } }], ['C42', C42, 'typical'],

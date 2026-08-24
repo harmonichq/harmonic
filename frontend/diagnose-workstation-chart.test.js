@@ -178,6 +178,42 @@ test('renderCanvas draws a wrapped window as two areas with one range label', ()
     .filter(([start]) => start.xAxis != null).length, 0);
 });
 
+test('renderCanvas pans labels and every data series into dimmed neighbouring days', () => {
+  const labels = Array.from({ length: 96 }, (_, index) =>
+    `${String(Math.floor(index / 4)).padStart(2, '0')}:${String((index % 4) * 15).padStart(2, '0')}`);
+  const filled = (value) => Array.from({ length: 96 }, () => value);
+  const envelope = {
+    labels, p10: filled(80), p25: filled(100), p50: filled(120), p75: filled(140),
+    p90: filled(160), counts: filled(12), raw: filled(1), days: 12, pool: 45,
+  };
+  const colors = {
+    muted: '#111', warn: '#222', danger: '#333', targetFill: '#444', targetText: '#555',
+    rail: '#666', windowFill: '#777', windowEdge: '#888', bandOuter: '#999',
+    bandInner: '#aaa', bandEdge: '#bbb', median: '#ccc', targetEdge: '#ddd',
+    onAccent: '#eee', text: '#123', surface2: '#234', line: '#345', occurrence: '#456', meal: '#567', grid: '#678',
+  };
+  let option = null;
+  const chart = { setOption(next) { option = next; }, off() {}, on() {} };
+
+  renderCanvas({ clientWidth: 1200 }, { getInstanceByDom() { return chart; } }, {
+    envelope, markers: [{ index: 4, count: 1, minute: 60, medianCarbs: 20 }], colors,
+    window: [1320, 120], displayWindow: [1320, 1560], displayOffset: 135,
+  });
+
+  assert.equal(option.xAxis[0].data.length, 288);
+  assert.equal(option.xAxis[0].min, 105);
+  assert.equal(option.xAxis[0].max, 200);
+  const medians = option.series.filter((series) => series.name === 'Median');
+  assert.equal(medians.length, 3);
+  assert.equal(medians[0].data[96], 120);
+  assert.equal(medians[2].data[192], 120);
+  assert.ok(medians[2].lineStyle.opacity < (medians[0].lineStyle.opacity ?? 1));
+  const context = option.series.find((series) => series.name === '__context');
+  assert.deepEqual(context.markArea.data.filter(([start]) => start.xAxis != null)
+    .map(([start, end]) => [start.xAxis, end.xAxis]), [['1320', '1560']]);
+  assert.match(option.xAxis[0].axisLabel.formatter('-60'), /neighbour.*23:00/);
+});
+
 test('S49/S70 · history event validation accepts one exact id and generation', () => {
   const projection = historyCapture.cases.all_runs;
   assert.equal(validateHistoryEvents(projection, {

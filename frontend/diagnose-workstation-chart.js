@@ -543,6 +543,37 @@ const edgeLine = (name, data, color, z) => ({
   lineStyle: { color, width: 1, type: [3, 3], opacity: 0.9 },
 });
 
+const DISPLAY_AXIS = Array.from({ length: BIN_COUNT * 3 }, (_, index) =>
+  String((index - BIN_COUNT) * BIN_MINUTES));
+
+function displaySeries(series) {
+  const positioned = series.data?.some((point) => point && typeof point === 'object'
+    && Array.isArray(point.value));
+  const place = (dayIndex) => {
+    if (positioned) {
+      return (series.data || []).map((point) => ({
+        ...point,
+        value: [point.value[0] + dayIndex * BIN_COUNT, ...point.value.slice(1)],
+      }));
+    }
+    const data = Array.from({ length: BIN_COUNT * 3 }, () => null);
+    (series.data || []).forEach((point, index) => { data[index + dayIndex * BIN_COUNT] = point; });
+    return data;
+  };
+  const main = { ...series, data: place(1) };
+  if (series.name === '__context') return [main];
+  const neighbour = (dayIndex) => ({
+    ...series,
+    data: place(dayIndex),
+    stack: series.stack ? `${series.stack}-${dayIndex}` : undefined,
+    lineStyle: { ...(series.lineStyle || {}), opacity: (series.lineStyle?.opacity ?? 1) * 0.28 },
+    areaStyle: series.areaStyle
+      ? { ...series.areaStyle, opacity: (series.areaStyle.opacity ?? 1) * 0.28 } : undefined,
+    itemStyle: { ...(series.itemStyle || {}), opacity: 0.28 },
+  });
+  return [main, neighbour(0), neighbour(2)];
+}
+
 /**
  * @param {object} opts { envelope, markers, colors, window:[startMin,endMin],
  *                        windowLabel, occurrences, selectedOcc }
@@ -552,10 +583,16 @@ export function renderCanvas(el, echarts, opts) {
   const stats = opts.stats || null;
   const target = opts.target || [70, 180];
   const [winStart, winEnd] = opts.window || [0, 360];
-  const binSpans = windowRenderSpans([winStart, winEnd]);
+  const canonicalBinSpans = windowRenderSpans([winStart, winEnd]);
+  const displayOffset = opts.displayOffset || 0;
+  const panning = displayOffset !== 0;
+  const displayWindow = panning ? opts.displayWindow : null;
+  const binSpans = displayWindow
+    ? [[snapMinute(displayWindow[0]), snapMinute(displayWindow[1])]]
+    : canonicalBinSpans;
   const [[startIndex, endIndex] = [0, 0]] = binSpans;
   const hasWindow = binSpans.length > 0;
-  const wrapped = binSpans.length > 1;
+  const wrapped = !panning && canonicalBinSpans.length > 1;
 
   /* Same floor the basal slots use, applied to the window's pooled sample: below
      it the canvas prints NO precise median — it says so, in the window's own
@@ -578,8 +615,10 @@ export function renderCanvas(el, echarts, opts) {
     ? `INSUFFICIENT SAMPLE — thinnest bin holds ${support.thinnest}`
     : (stats && stats.spread != null ? `25–75 spread ${stats.spread} mg/dL` : '');
   const labelBox = plotBox(el);
-  const xStart = labelBox.left + (startIndex / CAT_MAX) * labelBox.width;
-  const xEnd = labelBox.left + (endIndex / CAT_MAX) * labelBox.width;
+  const xStart = labelBox.left + ((panning ? startIndex - displayOffset
+    : startIndex * BIN_MINUTES) / (CAT_MAX * BIN_MINUTES)) * labelBox.width;
+  const xEnd = labelBox.left + ((panning ? endIndex - displayOffset
+    : endIndex * BIN_MINUTES) / (CAT_MAX * BIN_MINUTES)) * labelBox.width;
   const winPx = Math.max(0, xEnd - xStart);
   const capOpts = { caps: true, letterSpacing: 0.5 };
   const headPx = estimateTextPx(labelHead, 10, capOpts);
@@ -612,7 +651,7 @@ export function renderCanvas(el, echarts, opts) {
   };
   const windowAreas = binSpans.map(([start, end], index) => [
     {
-      xAxis: envelope.labels[start],
+      xAxis: panning ? String(start) : envelope.labels[start],
       itemStyle: {
         color: colors.windowFill, borderColor: colors.windowEdge,
         borderWidth: 1, borderType: [4, 3],
@@ -629,7 +668,7 @@ export function renderCanvas(el, echarts, opts) {
         formatter: labelText, rich: labelRich,
       } : { show: false },
     },
-    { xAxis: envelope.labels[end] },
+    { xAxis: panning ? String(end) : envelope.labels[end] },
   ]);
 
   /* A captured day's real trace, when the caller has one. With it on the plot
@@ -655,8 +694,19 @@ export function renderCanvas(el, echarts, opts) {
     },
   }));
 
+  const axisData = panning ? DISPLAY_AXIS : envelope.labels;
+  const axisMinute = (value) => panning ? Number(value)
+    : Number(value.slice(0, 2)) * 60 + Number(value.slice(3, 5));
+  const hourInterval = (i, value) => axisMinute(value) % 180 === 0;
+  const axisFormatter = panning
+    ? (value) => (Number(value) < 0 || Number(value) >= 1440
+      ? `{neighbour|${hhmm(Number(value))}}` : hhmm(Number(value)))
+    : undefined;
+  const axisRich = panning
+    ? { neighbour: { color: colors.muted, opacity: 0.42 } } : undefined;
+
   const chart = echarts.getInstanceByDom(el) || echarts.init(el, null, { renderer: 'canvas' });
-  chart.setOption({
+  const option = {
     backgroundColor: 'transparent',
     animation: false,
     textStyle: { fontFamily: 'Inter, system-ui, sans-serif', color: colors.muted },
@@ -712,25 +762,29 @@ export function renderCanvas(el, echarts, opts) {
     },
     xAxis: [
       {
-        type: 'category', data: envelope.labels, boundaryGap: false,
+        type: 'category', data: axisData, boundaryGap: false,
+        min: panning ? BIN_COUNT + displayOffset / BIN_MINUTES : undefined,
+        max: panning ? BIN_COUNT + displayOffset / BIN_MINUTES + CAT_MAX : undefined,
         axisLine: { lineStyle: { color: colors.line } },
         axisTick: { show: false },
         splitLine: {
           show: true,
-          interval: (i, v) => v.endsWith(':00') && Number(v.slice(0, 2)) % 3 === 0,
+          interval: hourInterval,
           lineStyle: { color: colors.grid },
         },
         axisLabel: {
           color: colors.muted, fontSize: 10, margin: 8,
-          interval: (i, v) => v.endsWith(':00') && Number(v.slice(0, 2)) % 3 === 0,
+          interval: hourInterval, formatter: axisFormatter, rich: axisRich,
         },
       },
       {
-        type: 'category', data: envelope.labels, boundaryGap: false, gridIndex: 1,
+        type: 'category', data: axisData, boundaryGap: false, gridIndex: 1,
+        min: panning ? BIN_COUNT + displayOffset / BIN_MINUTES : undefined,
+        max: panning ? BIN_COUNT + displayOffset / BIN_MINUTES + CAT_MAX : undefined,
         axisLine: { show: false }, axisTick: { show: false }, axisLabel: { show: false },
         splitLine: {
           show: true,
-          interval: (i, v) => v.endsWith(':00') && Number(v.slice(0, 2)) % 3 === 0,
+          interval: hourInterval,
           lineStyle: { color: colors.grid },
         },
       },
@@ -783,7 +837,8 @@ export function renderCanvas(el, echarts, opts) {
           silent: true, symbol: 'circle', symbolSize: 0, z: 10,
           data: [
             ...(!labelInside ? [{
-              coord: [envelope.labels[labelSide === 'right' ? endIndex : startIndex], LABEL_Y],
+              coord: [panning ? String(labelSide === 'right' ? endIndex : startIndex)
+                : envelope.labels[labelSide === 'right' ? endIndex : startIndex], LABEL_Y],
               label: {
                 show: true, position: labelSide, distance: 6,
                 formatter: labelText, rich: labelRich,
@@ -930,7 +985,9 @@ export function renderCanvas(el, echarts, opts) {
         itemStyle: { color: colors.meal },
       },
     ]),
-  }, true);
+  };
+  if (panning) option.series = option.series.flatMap(displaySeries);
+  chart.setOption(option, true);
   /* Feed the docked header readout. renderCanvas re-runs on every window change
      and getInstanceByDom hands back the SAME chart, so rebind rather than stack
      handlers — otherwise every redraw adds another reporter.
@@ -973,7 +1030,9 @@ export function renderCanvas(el, echarts, opts) {
       if (overItem) { report(overItem); return; }
       const axis = (ev.axesInfo || [])[0];
       if (!axis || axis.value == null) { report(null); return; }
-      const i = Math.max(0, Math.min(last, Math.round(axis.value)));
+      const raw = panning ? Number(axis.value) : Math.round(axis.value);
+      const i = panning ? Math.round(normalizeMinute(raw) / BIN_MINUTES) % BIN_COUNT
+        : Math.max(0, Math.min(last, raw));
       report({
         kind: 'bin',
         label: envelope.labels[i],

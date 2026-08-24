@@ -278,6 +278,12 @@ P05 · Dragging INSIDE the window slides it whole — width preserved, both edge
   mock:     no interior hit test
   evidence: replay S04 (app, pass)
   verdict:  kept          operator-ruled: Connor Griffin · 2026-08-19
+
+  amendment #130: the final clamp clause is superseded. A slide keeps its width
+                  while crossing either clock boundary, and a one-day slide
+                  lands back on its own start.
+  evidence: replay S76, S77, S79
+  operator-ruled: PENDING - #130
 ```
 
 ```
@@ -334,6 +340,53 @@ P10 · A drawn window snaps to the pooling grid and respects a 90-minute floor;
   mock:     no drawn window
   evidence: replay S02, S15 (app, pass)
   verdict:  kept          operator-ruled: Connor Griffin · 2026-08-19
+```
+
+```
+P55 · A fresh draw crosses either clock boundary. Its committed window has two
+      circular clock endpoints and may wrap midnight; midnight itself is not a
+      third endpoint.
+  source:   installDrag / paintBrace, frontend/diagnose-workstation.js
+  evidence: replay S72, S73
+  verdict:  added         operator-ruled: PENDING - #130
+```
+
+```
+P56 · Either resize grip can carry its endpoint across midnight while the far
+      endpoint stays anchored. The brace still draws exactly two edges and two
+      grips at those clock endpoints.
+  source:   installDrag / paintBrace, frontend/diagnose-workstation.js
+  evidence: replay S74, S75
+  verdict:  added         operator-ruled: PENDING - #130
+```
+
+```
+P57 · A slide can cross 24:00 in either direction. It preserves the circular
+      window length, keeps both edges live, and remains grabbable on either
+      stretch after release.
+  source:   installDrag edgeAt / overInterior, frontend/diagnose-workstation.js
+  evidence: replay S76, S77
+  verdict:  added         operator-ruled: PENDING - #130
+```
+
+```
+P58 · At a clock boundary, the moving edge stays on the plot boundary while the
+      day translates underneath it at the chart's fixed minutes-per-pixel. The
+      neighbouring day's labels, evidence, meal marks and basal cells repeat
+      dimmed; mouseup returns the axis to 00:00–24:00.
+  source:   renderCanvas, frontend/diagnose-workstation-chart.js; installDrag,
+            frontend/diagnose-workstation.js
+  evidence: replay S72, S73, S78, S79
+  verdict:  added         operator-ruled: PENDING - #130
+```
+
+```
+P59 · Draw and resize stop after one full day and commit the unscoped whole day,
+      never a 24-hour drawn window. A slide has no whole-day stop: one full-day
+      trip returns the same window to its own start.
+  source:   commitWindow / commitSlide, frontend/diagnose-workstation-chart.js
+  evidence: replay S78, S79
+  verdict:  added         operator-ruled: PENDING - #130
 ```
 
 ```

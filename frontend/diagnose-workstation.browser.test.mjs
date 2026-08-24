@@ -413,6 +413,62 @@ test('locked panel geometry matches across both required viewports and light/dar
     } finally { /* browser stays open; closed once in after() */ }
   });
 
+test('#130 · a wrapped draw leaves two endpoint edges and dims only the outside basal slots', async () => {
+  const browser = await runner.browser();
+  const before = openerProblems().length;
+  const viewport = VIEWPORTS[0];
+  for (const theme of ['light', 'dark']) {
+    const page = await openApp(browser, { state: 'typical', theme, viewport, appSource: 'fixture' });
+    try {
+      await page.getByRole('button', { name: '24 h', exact: true }).click();
+      await settle(page, 450);
+      const chart = await page.locator('#chart').boundingBox();
+      const xAt = (minute) => chart.x + 52 + (minute / 1425) * (chart.width - 104);
+      const y = chart.y + chart.height * 0.45;
+      await page.mouse.move(xAt(22 * 60), y);
+      await page.mouse.down();
+      await page.mouse.move(chart.x + chart.width - 39, y, { steps: 8 });
+      await page.waitForFunction(() => document.querySelector('#seg-window [data-follow]')
+        ?.firstChild?.textContent.trim() === 'Window 22:00–02:00', null, { timeout: 5000 });
+      await page.mouse.up();
+      await settle(page, 500);
+
+      const wrapped = await page.evaluate(() => ({
+        chip: document.querySelector('#seg-window [data-follow]')?.firstChild?.textContent.trim(),
+        edges: [...document.querySelectorAll('#brace .edge')].map((edge) => parseFloat(edge.style.left)),
+        grips: [...document.querySelectorAll('#brace .grip')].map((grip) => parseFloat(grip.style.left)),
+        inside: [...document.querySelectorAll('#lane button:not([data-clock-copy])')]
+          .filter((button) => button.dataset.outside === 'false').length,
+        outside: [...document.querySelectorAll('#lane button:not([data-clock-copy])')]
+          .filter((button) => button.dataset.outside === 'true').length,
+        copies: document.querySelectorAll('#lane [data-clock-copy]').length,
+        axisPoints: window.echarts.getInstanceByDom(document.getElementById('chart'))
+          .getOption().xAxis[0].data.length,
+      }));
+      assert.equal(wrapped.chip, 'Window 22:00–02:00');
+      assert.equal(wrapped.edges.length, 2, 'midnight adds no brace edge');
+      assert.deepEqual(wrapped.grips, wrapped.edges, 'one grip sits on each clock endpoint');
+      assert.ok(Math.abs(wrapped.edges[0] - (xAt(1320) - chart.x)) <= 1,
+        'the start edge sits at 22:00');
+      assert.ok(Math.abs(wrapped.edges[1] - (xAt(120) - chart.x)) <= 1,
+        'the end edge sits at 02:00');
+      assert.deepEqual([wrapped.inside, wrapped.outside], [8, 40],
+        'the two wrapped stretches keep eight half-hour slots in scope');
+      assert.equal(wrapped.copies, 0, 'neighbour lane copies leave with the pan');
+      assert.equal(wrapped.axisPoints, 96, 'the settled axis returns to the canonical day');
+
+      for (const [minute, cursor] of [[1380, 'grab'], [60, 'grab'], [1320, 'col-resize']]) {
+        await page.mouse.move(xAt(minute), y);
+        assert.equal(await page.locator('#chart').evaluate((node) => getComputedStyle(node).cursor), cursor,
+          `${minute} minutes advertises the wrapped-window gesture`);
+      }
+      await shot(page, 'issue-130', 'wrapped-window-at-rest', viewport, theme);
+    } finally { await page.close(); }
+  }
+  assert.deepEqual(openerProblems().slice(before), [],
+    'no opener problems while proving the wrapped window in both themes');
+});
+
 test('the Filter menu renders each server-published Sift count', async () => {
     const browser = await runner.browser();
     try {

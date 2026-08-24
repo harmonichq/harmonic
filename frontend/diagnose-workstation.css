@@ -129,9 +129,15 @@ html.dark .dw {
    of the row's, matching `.pane > header`'s own content padding
    (`--ck-pad`), so ALIGN's label lines up with the inspector's own header
    text, not just its bare left edge. See the behaviour ledger's amendment
-   for the deviation this records. */
+   for the deviation this records. Between #68 and #86, an extra `auto` track
+   held the global Sift instrument #68 added; #86 removed Sift and left its track,
+   pushing ALIGN out of the reserved column until #106 removed it. This row's track
+   count must always equal its instrument count, `var(--side, 430px)` must stay the
+   last track with ALIGN the last child, and any addition or removal must change the
+   track list in the same commit; `createDiagnoseWorkstation`'s uncalled `railLead`
+   can prepend an instrument, and S77—not this comment—enforces the invariant. */
 .instruments {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto var(--side, 430px);
+  display: grid; grid-template-columns: minmax(0, 1fr) var(--side, 430px);
   align-items: center; gap: 0; padding: 0;
   background: var(--mk-bg);
 }

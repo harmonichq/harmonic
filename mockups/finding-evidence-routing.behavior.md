@@ -1265,6 +1265,7 @@ legacy P-row inventory remains untouched.
 ## Revision amendment — 2026-08-19 (ALIGN's fixed position; the canvas header truncates at 1024px)
 
 SUPERSEDED in part by #95, 2026-08-23; kept as the record of why it stood
+RESTORED by #106, 2026-08-23: #68 widened this two-column list for Sift, #86 removed Sift and left the third track.
 
 Two deviations from the ported mock in `frontend/diagnose-workstation.css`, both direct rulings from Connor Griffin, 2026-08-19 (not filed through this ledger's replay/probe evidence process — layout-only CSS, asserted by real-browser geometry instead, below):
 
@@ -2004,3 +2005,57 @@ the ledger was frozen by 482d347 (#44), and no live segmented group in
 `frontend/diagnose-event-comparison.js` carries roving keys today.
 
 sanction: Connor Griffin · 2026-08-23 · "#55 removed installSegKeys; the shipped Align control is two ordinary Tab stops"
+
+## Revision — 2026-08-23, base 261d972 (issue #106: ALIGN returns to the inspector edge)
+
+Before product changes, `app: 94 of 94 stories passed` against exact integration
+base `261d972` through the declared no-fetch server and fixed-seed-620 synthetic
+database.
+
+**Behavior added.**
+
+```
+S77 · ALIGN starts at the inspector edge when this factor case offers it
+```
+
+S77 executes in `frontend/diagnose-workstation-behavior.replay.mjs`. It opens
+the whole-day Over-treated low case, first proves that ALIGN is offered, then
+compares the rendered left edges of ALIGN and the live inspector pane.
+
+Story-id mapping: the work order's S73 was already taken, so this revision uses
+S77 (`S73 → S77`).
+
+The built revision replay reported `app: 95 of 95 stories passed`; no opener
+problem was printed.
+
+**Regression and standing rule.** #68 added the third `auto` track together
+with the global Sift instrument that occupied it. #86 (`cd756b2`, 2026-08-21)
+removed Sift and left the track; that is where the ruling stopped holding. This
+row's track count must always equal its instrument count, `var(--side, 430px)`
+must stay the last track with ALIGN the last child, and any change that adds or
+removes an instrument must change the track list in the same commit. S77, not
+the stylesheet comment, enforces that rule.
+
+**Rendered measurements.** At 1280×720 Light, the base tracks were
+`655.797px 194.203px 430px`, ALIGN ran from 655.8 to 850, and the inspector
+started at 850; the restored tracks are `850px 430px` and ALIGN starts at 850.
+At 1440×900 Light, the base was `815.797px 194.203px 430px`, ALIGN started at
+815.8 and the inspector at 1010; the restored tracks are `1010px 430px` and
+both start at 1010. At 1024×900 Light, the base was
+`399.797px 194.203px 430px`, ALIGN started at 399.8 and the inspector at 594;
+the restored tracks are `594px 430px` and both start at 594. The 1024 base also
+clipped WINDOW at right edge 399.8; the restored two-track rail extends it to
+577.8, so WINDOW is no longer clipped. At 390×844 the narrow flex rail makes
+this change inert; the paired renders match.
+
+**Red proof.** With S77 applied but the two-track declaration reverted, the
+served replay reported:
+
+```
+FAIL S77 — S77 ALIGN starts at the inspector edge (ALIGN 816, inspector 1010): expected 1010, got 816
+
+app: 0 of 1 stories passed
+```
+
+Paired synthetic renders: `openspec/changes/diagnose-align-inspector-edge/evidence/base/`
+and `openspec/changes/diagnose-align-inspector-edge/evidence/revision/`.

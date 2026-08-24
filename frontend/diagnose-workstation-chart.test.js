@@ -143,9 +143,10 @@ test('renderCanvas draws a wrapped window as two areas with one range label', ()
       envelope, markers: [], colors, window, windowLabel: 'SELECTED WINDOW',
     });
     const degenerateAreas = option.series.find((series) => series.name === '__context').markArea.data
-      .filter(([start]) => start.xAxis != null);
+      .filter(([start]) => start.yAxis == null);
+    assert.ok(degenerateAreas.flat().every((point) => envelope.labels.includes(point.xAxis)),
+      'every degenerate area endpoint must be a chart axis label');
     assert.equal(degenerateAreas.length, 1);
-    assert.ok(degenerateAreas.flat().every((point) => point.xAxis == null || point.xAxis !== undefined));
   }
 
   assert.doesNotThrow(() => renderCanvas({ clientWidth: 4000 }, { getInstanceByDom() { return chart; } }, {

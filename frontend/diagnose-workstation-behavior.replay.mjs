@@ -2735,6 +2735,7 @@ export const S81 = async (page) => {
 };
 
 /** S82 · A fresh draw crosses 24:00 to the right. */
+// STORY:finding-evidence-routing:S82
 export const S82 = async (page) => {
   await beginFreshDraw(page);
   const b = await plot(page);
@@ -2749,6 +2750,7 @@ export const S82 = async (page) => {
 };
 
 /** S83 · A fresh draw crosses 00:00 to the left. */
+// STORY:finding-evidence-routing:S83
 export const S83 = async (page) => {
   await beginFreshDraw(page);
   const b = await plot(page);
@@ -2763,6 +2765,7 @@ export const S83 = async (page) => {
 };
 
 /** S84 · The start grip crosses 00:00 while its far endpoint stays anchored. */
+// STORY:finding-evidence-routing:S84
 export const S84 = async (page) => {
   const before = await state(page);
   const grip = await page.locator('#grip-a').boundingBox();
@@ -2779,6 +2782,7 @@ export const S84 = async (page) => {
 };
 
 /** S85 · The end grip crosses 24:00 while its far endpoint stays anchored. */
+// STORY:finding-evidence-routing:S85
 export const S85 = async (page) => {
   await drawInside(page, 20 * 60, 22 * 60);
   const before = await state(page);
@@ -2799,6 +2803,7 @@ export const S85 = async (page) => {
    00:00. Both must land the identical wrapped window. */
 
 /** S86 · Sliding right crosses 24:00 without changing the window's length. */
+// STORY:finding-evidence-routing:S86
 export const S86 = async (page) => {
   await drawInside(page, 20 * 60, 22 * 60);
   const b = await plot(page);
@@ -2812,6 +2817,7 @@ export const S86 = async (page) => {
 };
 
 /** S87 · Sliding left crosses 00:00 without changing the window's length. */
+// STORY:finding-evidence-routing:S87
 export const S87 = async (page) => {
   await drawInside(page, 2 * 60, 4 * 60);
   const b = await plot(page);
@@ -2825,6 +2831,7 @@ export const S87 = async (page) => {
 };
 
 /** S88 · Draw's one-day stop commits the unscoped day and restores the axis. */
+// STORY:finding-evidence-routing:S88
 export const S88 = async (page) => {
   await beginFreshDraw(page);
   const b = await plot(page);
@@ -2851,6 +2858,7 @@ export const S88 = async (page) => {
 };
 
 /** S89 · A full-day slide returns to its own start, preserving its duration. */
+// STORY:finding-evidence-routing:S89
 export const S89 = async (page) => {
   await drawInside(page, 20 * 60, 22 * 60);
   const before = await state(page);
@@ -3581,6 +3589,7 @@ export const C44 = async (page) => {
     'C44 announced-meal selection retains its trace and markers');
 };
 
+// STORY:finding-evidence-routing:C56
 export const C56 = async (page) => {
   await openWholeDay(page);
   await clickQueueRow(page, 'Missed / unannounced meal');
@@ -3596,6 +3605,7 @@ export const C56 = async (page) => {
 
 /** C57 · Selecting an attributed missed meal emphasizes the served missed
     comparison cohort, not the finding's fired verdict cohort. */
+// STORY:finding-evidence-routing:C57
 export const C57 = async (page) => {
   await openWholeDay(page);
   await clickQueueRow(page, 'Missed / unannounced meal');

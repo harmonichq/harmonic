@@ -76,17 +76,17 @@ class BasalNightEvidenceEndpointTest(unittest.TestCase):
             self.client.get("/api/diagnose/basal-night-evidence", params={"slot": 0})
             self.assertEqual(len(calls), 2)
 
-    def _epoch_client(self, rates, *, cut_minute=0, change_after=None):
+    def _epoch_client(self, rates):
         """Build a public API client with an analyzer-detected slot setting epoch."""
         from ciq_autotune.api import create_app
 
         database = tempfile.NamedTemporaryFile(suffix=".db")
         self.addCleanup(database.close)
         basal, cgm = [], []
-        split = len(rates) // 2 if change_after is None else change_after
+        split = len(rates) // 2
         for day, rate in enumerate(rates, 1):
-            start = datetime(2026, 3, day, cut_minute if day == split + 1 else 0)
-            duration = 30 - start.minute
+            start = datetime(2026, 3, day)
+            duration = 30
             profile = 0.6 if day <= split else 1.0
             basal.append({"seq_num": day, "time": start.isoformat(" "),
                           "delivery_type": "algorithmDelivery", "duration_mins": duration,

@@ -52,11 +52,13 @@ python3 scripts/check_public_allowlist.py  # publishable-tree guard
 ```
 
 The backend job also runs nine **drift checks**, so a committed
-generator-authored artifact can never silently diverge from its generator:
+generator-authored artifact can never silently diverge from its generator.
+Eight are listed below; the ninth is the evidence-canvas exploration's
+generator — a private design artifact the public tree excludes, so its
+`--check` command lives in `.github/workflows/ci.yml`:
 
 ```sh
 uv run python scripts/gen_ic_block_fixtures.py --check
-uv run python mockups/diagnose-evidence-canvas.exploration/generate.py --check
 uv run python scripts/gen_annotation_fixtures.py --check
 uv run python scripts/gen_chart_builder_fixtures.py --check
 uv run python scripts/check_demo_fixtures.py   # the committed synthetic demo sets

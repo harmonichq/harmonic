@@ -74,6 +74,27 @@ Canvas lock that consumes this: #135 (triaged, blocked on #188).
   to the operator and open to correction: "all history" is therefore not an offered
   stretch, and every request's compute cost is bounded by a 90-day window. `-> ADR`
 
+- **Entering Explore computes all three warmed stretches (30, 60, 90) at once,
+  through the existing cache-and-sidecar path.** Why: the operator's ruling —
+  switching between stretches is instant afterwards, and the cost is one trigger
+  on mode entry rather than hourly pre-warm burn (#82's saturation problem).
+  `-> ADR`
+- **A previously viewed window recomputes after the hourly pull; every Explore
+  result stays keyed on the store's global input-data revision, exactly as #82
+  shipped.** Why: the operator's ruling, "keep it light." A per-window exemption
+  would be new keying machinery built on a premise the CGM feed violates — a
+  sensor reconnect backfills `cgmDataType=[1]` rows into closed past windows, so
+  "rows the pull cannot touch" does not hold. The cost is bounded by the 90-day
+  window cap and paid only when a past stretch is re-picked across a pull.
+  `-> ADR`
+- **The range rides only on the Explore chart feeds as an explicit request
+  parameter, and the backend clamps and enforces the 90-day maximum window.**
+  Advice and findings endpoints accept no range parameter at all, so a
+  reader-picked stretch is unrepresentable on the advice path — this is the risk
+  contract, and it keeps the hold in the backend per the repo's no-frontend-gate
+  invariant. Defaulted under the operator's "keep it light" delegation, not
+  asked. `-> ADR`
+
 ## Open questions
 
 - Round 1 settled: what re-scopes (Q1 = charts only), how the range is chosen
@@ -82,11 +103,15 @@ Canvas lock that consumes this: #135 (triaged, blocked on #188).
   session-scoped stretch (Q5), charts own their own honesty (Q6).
 - Round 3 settled: warm 60 and 90 (Q7), paint chart by chart (Q8), no ceiling on
   how far back but a 90-day maximum window length (Q9).
-- Round 4 asked, unanswered: when 60 and 90 are actually computed given Explore
-  sits behind a mode switch (Q10); whether a closed past window's result survives
-  the hourly pull (Q11).
-- Not yet asked, pending the above: the interface shape of the range parameter
-  across the Explore feeds, and the risk contract.
+- Round 4 settled: compute all three stretches on entering Explore (Q10 = B);
+  a past window recomputes after the pull, revision-keyed as #82 shipped
+  (Q11 = A, re-put with the corrected backfill premise after the operator's
+  over-engineering flag; the original round's rec A — survive the pull — was
+  withdrawn as new keying machinery on a false premise).
+- The interface shape and the risk contract were defaulted, not asked, under
+  the operator's "keep it light" delegation: range parameter on the chart feeds
+  only, backend-enforced 90-day cap, no range parameter on advice endpoints.
+- Nothing remains open. The interview is complete.
 
 ## Spawned tasks
 

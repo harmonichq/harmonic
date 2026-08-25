@@ -67,12 +67,42 @@ interlocking design decisions the operator holds, not missing facts.
   by this decision and change with it. Why: it carries the same residue baseline,
   and leaving it means two comparison vocabularies in one app. `inline`
 
+- **The three cohorts partition the population** (Q5, A). A nearly-matched
+  occurrence is drawn on the near-miss line only, never also on the comparison
+  line, so the three counts reconcile against the population. Why: an occurrence
+  drawn twice makes the chart's own numbers unaddable. `inline`
+- **Occurrences too sparse to judge are a count, never a curve** (Q6, A), riding
+  the support provisions already in the tree (`event_comparison.py:682-690`
+  grades each point `supported` / `limited` / `withheld` against a floor). Why:
+  drawing them adds broken curves and quietly weakens the comparison line.
+  `inline`
+- **`Meal bolus fell short` compares against completed carb-bolus meals**
+  (Q7, B), cross-family, not against other highs. Why: the claim is about a meal
+  dose falling short, so meals are the population it is really speaking about.
+  `inline`
+- **The missed-meal family keeps the three-line shape** (Q8, A): matched highs,
+  near-miss highs, announced meals. Why: #178 pins the announced-meal comparison
+  without forbidding a near-miss line, so the shared shape holds unbroken.
+  `inline`
+- **Comparison identity, per factor**, derived from the settled rule:
+
+  | Factor | Comparison line |
+  | --- | --- |
+  | Carb undercount | Other completed carb-bolus meals |
+  | Late bolus | Other completed carb-bolus meals |
+  | Meal over-delivery | Other completed carb-bolus meals |
+  | Over-treated low | Other low excursions |
+  | Correction on active insulin | Other low excursions |
+  | Correction stacking | Other back-to-back correction pairs |
+  | Missed / unannounced meal | Completed carb-bolus meals (#178, cross-family) |
+  | Meal bolus fell short | Completed carb-bolus meals (cross-family) |
+
+  `inline`
+
 ## Open questions
 
-Round 3: whether the three cohorts partition the population (near-misses out of
-the comparison line); where occurrences too sparse to judge go; the comparison
-identity for `meal bolus fell short`; and whether the missed-meal family's
-announced-meal line occupies the third slot.
+Round 4: cohort naming; the anchor and window for the newly cross-family
+`meal bolus fell short` comparison; the risk contract; the handoff shape.
 
 ## Spawned tasks
 

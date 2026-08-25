@@ -26,7 +26,6 @@ import { createRequire } from 'node:module';
 import { readFile, access, mkdir } from 'node:fs/promises';
 import { extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { projectSyntheticCapture } from '../mockups/diagnose-event-comparison.synthetic/project.mjs';
 import { projectFindings, projectIcHistoryEvents } from '../mockups/findings-projection.mirror.mjs';
 // ADR 94: a router-owned page path IS the SPA document. Reload stories re-request
 // the address the app canonicalized to (`/diagnose?...`), so the page set has to
@@ -540,18 +539,6 @@ export async function openApp(browser, {
     ? await exposuresInputs(defaults) : (exposuresInputs || payload.exposures);
   const apiPattern = (path) => new RegExp(`^/api${path}`);
   const STUBS = [
-    // #698: the endpoint serves the bounded server-owned projection per
-    // coordinate; exposures ride on their own #654 endpoint again.
-    [apiPattern('/diagnose/event-comparison'), (url) => projectSyntheticCapture(capture, {
-      view: url.searchParams.get('view') || 'meals',
-      factor: url.searchParams.get('factor') || undefined,
-      window: url.searchParams.get('start_min') === null ? null : {
-        start_min: Number(url.searchParams.get('start_min')),
-        end_min: Number(url.searchParams.get('end_min')),
-      },
-      another: url.searchParams.get('another') === '1',
-      occurrenceId: url.searchParams.get('occ') || undefined,
-    })],
     /* #735: the findings queue is a SERVER-owned projection (ADR 730) and the
        browser gates have no Python, so the stub answers from the fixture-only JS
        mirror, which `frontend/findings-projection-mirror.test.js` deep-compares
@@ -784,10 +771,6 @@ export async function openApp(browser, {
           url.searchParams.get('selected_run_id')),
       ) });
     }
-    if (comparisonProjection !== null && path === '/api/diagnose/event-comparison') {
-      return route.fulfill({ contentType: 'application/json',
-        body: JSON.stringify(comparisonProjection) });
-    }
     if (path === '/api/plan' && route.request().method() === 'PUT') {
       const draft = JSON.parse(route.request().postData() || '{}');
       onPlanDraft?.(draft);
@@ -801,7 +784,6 @@ export async function openApp(browser, {
     problems.push(`unstubbed ${route.request().method()} ${path} (app ${want})`);
     return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ detail: 'not stubbed' }) });
   });
-  targetUrl.searchParams.set('view', 'glucose');
   await page.goto(targetUrl.href);
   try {
     await page.waitForSelector('.dw', { timeout: 10_000 });

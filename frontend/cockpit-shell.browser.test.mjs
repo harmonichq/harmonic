@@ -15,7 +15,6 @@ import { timeOfDay } from '../mockups/explore-investigation.fixture.js';
 // restating its grammar — a restatement would be the third page registry ADR 94
 // forbids, and would drift the moment a page gained state.
 import { TABS as ROUTER_TABS, parseRoute, serializeRoute } from './tab-routing.js';
-import { projectSyntheticCapture } from '../mockups/diagnose-event-comparison.synthetic/project.mjs';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 
 const require = createRequire(import.meta.url);
@@ -378,6 +377,10 @@ async function routeApp(page, options = {}) {
         contentType: 'application/json' });
     }
     if (url.pathname === '/api/diagnose/event-comparison') {
+      return route.fulfill({ status: 404, contentType: 'application/json',
+        body: JSON.stringify({ detail: 'retired endpoint' }) });
+      /* retired standalone projector retained below only as archived test provenance
+         until its dependent story helpers are removed with the next ledger sweep. */
       const project = options.eventProjection || ((requestUrl, capture) =>
         projectSyntheticCapture(capture, {
           view: ['meals', 'lows'].includes(requestUrl.searchParams.get('view'))

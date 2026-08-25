@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { buildCapture } from '../mockups/diagnose-event-comparison.synthetic/generate.mjs';
-import { projectSyntheticCapture } from '../mockups/diagnose-event-comparison.synthetic/project.mjs';
 
 const here = (path) => fileURLToPath(new URL(path, import.meta.url));
 const payload = JSON.parse(readFileSync(
@@ -23,13 +22,10 @@ test('browser fixtures retain the canonical nested workstation exposure object',
   });
 });
 
-test('browser fixtures publish the exact same source window and republish it in projections', () => {
+test('browser fixtures publish the exact same source window for case-file preparation', () => {
   assert.deepEqual(capture.source_window, payload.exposures.window,
     'event capture source window must exactly equal the workstation window');
-  for (const family of families) {
-    assert.deepEqual(projectSyntheticCapture(capture, { view: family }).coordinates.source_window,
-      payload.exposures.window, `${family} projection must republish the workstation window`);
-  }
+  assert.equal(capture.schema, 'finding-case-file-event-capture-v1');
 });
 
 test('browser fixtures preserve both twenty-row populations, their joins, and their dates', () => {

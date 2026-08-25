@@ -10,7 +10,6 @@ import { createRequire } from 'node:module';
 import { access, readFile } from 'node:fs/promises';
 import { extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { projectSyntheticCapture } from '../mockups/diagnose-event-comparison.synthetic/project.mjs';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 
 const require = createRequire(import.meta.url);
@@ -69,19 +68,6 @@ export async function openApp(browser, options = {}) {
     join(ROOT, 'mockups/diagnose-workstation.synthetic/finding-case-files.json'), 'utf8'));
   const apiPattern = (path) => new RegExp(`^/api${path}`);
   const stubs = [
-    [apiPattern('/diagnose/event-comparison'), (url) => options.invalidComparison ? {} : projectSyntheticCapture(capture, {
-      view: url.searchParams.get('view') || 'meals',
-      factor: url.searchParams.get('factor') || undefined,
-      window: url.searchParams.get('start_min') === null ? null : {
-        start_min: Number(url.searchParams.get('start_min')),
-        end_min: Number(url.searchParams.get('end_min')),
-      },
-      another: url.searchParams.get('another') === '1',
-      occurrenceId: url.searchParams.get('occ') || undefined,
-      // A replay fixture is permitted to select the lock's seven required
-      // server-stamped populations. This is not a browser request parameter.
-      state: options.state || 'dense',
-    })],
     [apiPattern('/analyze'), () => payload.analyze],
     [apiPattern('/diagnose/finding-case-file-preparation'), () =>
       JSON.parse(JSON.stringify(caseFiles.preparation))],

@@ -24,11 +24,9 @@ if (target !== 'app') throw new Error(`TARGET must be app, got ${target || '(uns
 const open = openApp;
 
 const cases = [
-  { name: 'meals-mixed-light', view: 'meals', state: 'dense', theme: 'light' },
-  { name: 'lows-mixed-dark', view: 'lows', state: 'dense', theme: 'dark' },
-  { name: 'meals-limited-light', view: 'meals', state: 'sparse', theme: 'light' },
-  { name: 'meals-zero-dark', view: 'meals', state: 'zero-fired', theme: 'dark' },
-  { name: 'selected-supported-dark', view: 'lows', state: 'selected-occurrence', theme: 'dark' },
+  { name: 'matched-supported-light', finding: 'finding:late_bolus', theme: 'light' },
+  { name: 'comparison-withheld-dark', finding: 'finding:missed_meal', theme: 'dark' },
+  { name: 'selected-trace-light', finding: 'finding:missed_meal', theme: 'light' },
   {
     name: 'selected-withheld-light', view: 'meals', state: 'selected-occurrence',
     theme: 'light', another: 1, occ: 'meals-synthetic-18',
@@ -62,8 +60,7 @@ async function facts(page) {
       !series.id.startsWith(`${selectedCohort}:`));
     const cohorts = exposed.cohorts || exposed.support?.cohorts || {};
     return {
-      serverOwned: exposed.projection?.schema === 'diagnose-event-comparison-v3'
-        || exposed.support?.server_owned === true,
+      serverOwned: exposed.projection?.schema === 'diagnose-finding-case-file-v1',
       cohortSupport: Object.fromEntries(Object.entries(cohorts)
         .map(([key, value]) => [key, value.support])),
       /* #62 — a cohort too thin for an aggregate draws its own episodes, faint
@@ -122,8 +119,9 @@ try {
       }
 
       if (check.state === 'dense') {
-        assert.equal(got.cohortSupport.fired, 'supported', `${check.name}: fired cohort`);
-        assert.equal(got.cohortSupport.near_rule, 'limited', `${check.name}: near cohort`);
+        assert.ok(Object.hasOwn(got.cohortSupport, 'matched'), `${check.name}: matched cohort`);
+        assert.ok(Object.hasOwn(got.cohortSupport, 'nearly_matched'), `${check.name}: nearly-matched cohort`);
+        assert.ok(Object.hasOwn(got.cohortSupport, 'comparison'), `${check.name}: comparison cohort`);
         assert.deepEqual(got.pointStates.fired, ['limited', 'supported', 'withheld'],
           `${check.name}: changing point membership is absent`);
         assert.ok(got.maxSpread.fired >= 30,

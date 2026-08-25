@@ -1929,6 +1929,18 @@ serialized case-file responses. The browser does not route a title to an
 Exposure, join membership, count a cohort, or fall back from event to clock.
 The legacy standalone event-comparison route remains unchanged.
 
+## Revision — #181: one served event comparison
+
+The standalone event-comparison route, its `view`/`factor`/`another` coordinates,
+and its five browser-owned cohort labels are retired. A Finding row opens its
+published lever-and-window `event_chart` coordinate through the case-file route.
+The event canvas renders exactly the served `Matched`, `Nearly matched`, and named
+comparison populations, their served counts and support, and an optional selected
+trace. When the served comparison state is unavailable, the matched population stays
+visible and the legend says the named comparison is unavailable. Verdict accounting
+remains the independent Finding account; the browser derives no membership, label,
+support floor, or comparison identity.
+
 The app replay adds these closed stories:
 
 - `C41` renders the generated authoritative Meal over-delivery case with

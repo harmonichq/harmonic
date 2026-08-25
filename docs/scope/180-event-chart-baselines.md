@@ -151,7 +151,7 @@ interlocking design decisions the operator holds, not missing facts.
 Why: served advisory dosing evidence for one operator, read in a clinician
 conversation, where a mislabelled population misgrounds the conversation while
 every failure mode is recoverable by reload.
-Disposition: copied into the work order at admission.
+Disposition: copied unchanged into the build handoff #181 at admission.
 
 ## Open questions
 
@@ -159,4 +159,7 @@ Disposition: copied into the work order at admission.
 
 ## Spawned tasks
 
-(none yet)
+- Build handoff filed: #181, "Build the one event comparison: every chart names
+  its population" -- blocked by #178, consumed by #135, sized for `/epic` to map.
+  Discharges the Q13 `→ issue` disposition. The risk contract above is copied
+  into it unchanged.

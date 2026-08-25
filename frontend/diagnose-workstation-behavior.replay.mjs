@@ -3509,8 +3509,8 @@ export const C41 = async (page) => {
   const stat = await page.locator('#level .statline').innerText();
   const denominator = Number(stat.match(/^\d+ of (\d+) meal responses/)?.[1]);
   is(denominator, 10, `C41 claimed denominator is exact (${stat})`);
-  is(await page.locator('#level .vband button[aria-label="Meets criteria · 6"]').count(), 1,
-    'C41 fired can exceed claimed without browser recounting');
+  is(await page.locator('#level .vband button[aria-label="Meets criteria · 6"]').count(), 2,
+    'C41 fired can exceed claimed without browser recounting across both verdict controls');
   const visibleBands = await page.locator('#level .vband button[aria-label]').evaluateAll((buttons) =>
     buttons.map((button) => Number(button.getAttribute('aria-label').match(/(\d+)$/)?.[1])));
   const residue = await page.locator('#level .vband-foot').innerText();

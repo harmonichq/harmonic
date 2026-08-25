@@ -102,7 +102,10 @@ verified live 2026-08-25).
   revision's chart labeled with its age, exactly as Diagnose stale-serves
   (ADR 124).** Why: defaulted under the same delegation, open to correction —
   the labeled stale-serve path already exists, Explore is advice-free, and
-  waiting instead would need a new per-surface hold. `-> ADR`
+  waiting instead would need a new per-surface hold. This inherits ADR 124's
+  eligibility and failure guards: an observer stale-serves only a valid exact
+  predecessor while computation is in flight; otherwise its fresh/error path
+  remains. `-> ADR`
 
 ## Open questions
 
@@ -120,7 +123,8 @@ verified live 2026-08-25).
 - The interface shape and the risk contract were defaulted, not asked, under
   the operator's "keep it light" delegation: range parameter on the chart feeds
   only, backend-enforced 90-day cap, no range parameter on advice endpoints,
-  and recompute-in-progress served as ADR 124 labeled stale rather than a wait.
+  and an eligible recompute-in-progress observer served as ADR 124 labeled stale
+  rather than adding a new per-surface wait.
 - Nothing remains open. The interview is complete.
 
 ## Spawned tasks

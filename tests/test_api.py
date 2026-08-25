@@ -1723,6 +1723,7 @@ class CachePreWarmTest(unittest.TestCase):
         ("exposures", "ciq_autotune.explore_exposures", "build_exposures"),
         ("explore-time-of-day", "ciq_autotune.api", "build_time_of_day"),
         ("event-comparison-source-catalog", "ciq_autotune.api", "prepare_event_comparisons"),
+        ("isf-rest-window-evidence", "ciq_autotune.api", "prepare_isf_rest_window_evidence"),
         ("finding-case-file", "ciq_autotune.api", "prepare_finding_cases"),
     )
 
@@ -1765,6 +1766,7 @@ class CachePreWarmTest(unittest.TestCase):
             ("/api/scenarios", {"window": 30}),
             ("/api/explore/time-of-day", {}),
             ("/api/explore/exposures", {}),
+            ("/api/diagnose/isf-rest-window-evidence", {}),
             ("/api/diagnose/findings", {}),
             ("/api/diagnose/finding-case-file-preparation", {}),
         ):
@@ -2112,12 +2114,14 @@ class CachePreWarmTest(unittest.TestCase):
                                           "exposures": 1,
                                           "explore-time-of-day": 1,
                                           "event-comparison-source-catalog": 1,
+                                          "isf-rest-window-evidence": 1,
                                           "finding-case-file": 1})
             expected_keys = (
                 ("analyze", 30, False, False), ("backtest", 2),
                 ("outcomes-trend", 30), ("explore-time-of-day",),
                 ("analyze", 30, False, True), ("scenarios", 30),
                 ("event-comparison-preparation",),
+                ("isf-rest-window-evidence", 30),
                 ("finding-case-file", None, None, None),
             )
             warmed = self._warmed_keys()

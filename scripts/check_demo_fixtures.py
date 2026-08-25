@@ -73,7 +73,8 @@ ENTRIES = [
         # them keeps the legacy demo generator from becoming a second writer while
         # preserving closed-set checking for every other file.
         "externally_generated": ["ic-history-events.capture.json",
-                                 "ic-block-evidence.capture.json"],
+                                 "ic-block-evidence.capture.json",
+                                 "isf-rest-window-evidence.capture.json"],
     },
 ]
 

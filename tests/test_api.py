@@ -672,6 +672,26 @@ class DurableArtifactApiTest(unittest.TestCase):
         self.assertEqual(calls, [])
         self.assertEqual(restored.json(), initial.json())
 
+    def test_isf_steps_are_durable_but_not_public_findings_data(self):
+        """The shared analyzer adjunct survives both sidecars, not projections."""
+        from ciq_autotune.api import create_app
+        client = TestClient(create_app(db_path=self.tmp.name, token=None, enable_fetch_loop=False))
+        self.assertEqual(client.get("/api/analyze", params={"pool": True}).status_code, 200)
+        findings = client.get("/api/diagnose/findings")
+        self.assertEqual(findings.status_code, 200)
+        with sqlite3.connect(sidecar_path(self.tmp.name)) as sidecar:
+            payloads = dict(sidecar.execute(
+                "SELECT coordinates, payload FROM artifacts WHERE coordinates IN (?, ?)",
+                (_canonical(("analyze", 30, False, True)),
+                 _canonical(("findings-history-snapshot", 30))),
+            ).fetchall())
+        self.assertIn("_isf_rest_window_steps",
+                      json.loads(payloads[_canonical(("analyze", 30, False, True))]))
+        self.assertIn("_isf_rest_window_steps", json.loads(
+            payloads[_canonical(("findings-history-snapshot", 30))]
+        )["findings"]["analysis"])
+        self.assertNotIn("_isf_rest_window_steps", findings.text)
+
     def test_same_fixed_key_serves_labeled_prior_only_while_recomputing(self):
         """A public fixed route keeps its exact predecessor visible during a rebuild."""
         from ciq_autotune.api import create_app

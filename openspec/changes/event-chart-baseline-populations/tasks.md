@@ -32,3 +32,11 @@ this decision settled, not a completed plan.
 - [ ] Amend the frozen behavior ledger and replay it against the built app.
 - [ ] Regenerate every affected synthetic capture through its generator, with
       each `--check` preserved.
+
+## 4. Fold into the baseline
+
+- [ ] Update the two capability statements that assert the five event cohorts —
+      `openspec/specs/surfaces/spec.md:55-57` and
+      `openspec/specs/behavioral-layer/spec.md:39` — in the pull request that
+      makes them false. Both are accurate until then, which is why the decision
+      record alone does not touch them.

@@ -758,7 +758,13 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
                             for row in high_case["occurrences"]))
         self.assertTrue(all(row["anchor"]["t"].endswith("16:40:00")
                             for row in high_case["occurrences"]))
-        self.assertEqual(high_case["projection"]["window_min"], [-195, 0])
+        self.assertEqual(high_case["projection"]["window_min"], [-60, 300])
+        missed, announced = high_case["projection"]["cohorts"]
+        self.assertEqual(missed["anchor"]["kind"], "detected_rise_onset")
+        self.assertEqual(announced["anchor"]["kind"], "completed_carb_bolus")
+        self.assertEqual(high_case["projection"]["counts"], {
+            "missed": 4, "announced": 4, "not_comparable": 0,
+        })
 
     def test_analyzer_built_near_lows_are_withheld_not_relabelled(self):
         readings = [point for day in range(1, 5)

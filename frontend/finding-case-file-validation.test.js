@@ -14,9 +14,13 @@ const capture = JSON.parse(await readFile(new URL(
 const projectionFixture = JSON.parse(await readFile(new URL(
   './__fixtures__/findings-projection.json', import.meta.url,
 )));
+const missedMealFixture = JSON.parse(await readFile(new URL(
+  './__fixtures__/missed-meal-comparison.json', import.meta.url,
+)));
 
 const independent = (value) => JSON.parse(JSON.stringify(value));
 const eventCase = () => independent(capture.cases['finding:meal_over_delivery'].event);
+const missedMealCase = () => independent(capture.cases['finding:missed_meal'].event);
 
 test('accepts a preparation carrying the current v2 findings projection', () => {
   const preparation = independent(capture.preparation);
@@ -127,4 +131,35 @@ test('rejects routed-count and denominator equations that do not reconcile', () 
   const caseFile = eventCase();
   caseFile.projection.cohorts[0].routed_count += 1;
   assert.equal(validFindingCaseFile(caseFile), false);
+});
+
+test('accepts the two-cohort fixed-axis missed-meal comparison', () => {
+  const caseFile = missedMealCase();
+  assert.deepEqual(caseFile.projection.cohorts.map((cohort) => cohort.key),
+    ['missed', 'announced']);
+  assert.equal(validFindingCaseFile(caseFile), true);
+});
+
+test('rejects a missed-meal comparison with a widened or roster-mismatched axis', () => {
+  const caseFile = missedMealCase();
+  caseFile.projection.cohorts[0].points.pop();
+  assert.equal(validFindingCaseFile(caseFile), false);
+  const mismatched = missedMealCase();
+  mismatched.projection.cohorts[0].occurrence_ids.pop();
+  mismatched.projection.cohorts[0].routed_count -= 1;
+  mismatched.projection.counts.missed -= 1;
+  mismatched.projection.counts.not_comparable += 1;
+  assert.equal(validFindingCaseFile(mismatched), false);
+});
+
+test('rejects a missed-meal comparison with a malformed cohort anchor', () => {
+  const caseFile = missedMealCase();
+  caseFile.projection.cohorts[1].anchor.label = 7;
+  assert.equal(validFindingCaseFile(caseFile), false);
+});
+
+test('rejects a forged selected announced-meal detail', () => {
+  const selected = independent(missedMealFixture.selected_announced);
+  selected.selection.detail.verdict = 'fired';
+  assert.equal(validFindingCaseFile(selected), false);
 });

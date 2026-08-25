@@ -408,7 +408,8 @@ def build_case_file_capture():
                                       days=index % 3)
             while True:
                 if family is Exposure.MEALS:
-                    dose = BolusEvent(t=anchor, insulin=4.0, carbs=40, seq_num=seq)
+                    dose = BolusEvent(t=anchor, insulin=4.0, carbs=40, seq_num=seq,
+                                      completion='Completed')
                     row = Opportunity(family, (seq,), anchor, 'meal', 130, members=(dose,))
                 elif family is Exposure.LOWS:
                     row = Opportunity(family,

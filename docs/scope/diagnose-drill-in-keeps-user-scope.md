@@ -118,6 +118,49 @@ Classification: code. UI Craft lifecycle: revise. Review depth: Targeted.
   change; the failure mode is a reader losing the slice they chose.
 - **Disposition:** copied into the work order.
 
+## Plan-review rounds
+
+**Degraded, and recorded as such.** This session authored the order and is under a
+standing instruction not to spawn subagents, so the cold-reviewer panel the
+procedure calls for did not run. What ran instead was the rubric's grounding pass
+executed directly: every load-bearing claim in the draft was reproduced against the
+worktree — each cited line opened, each count executed rather than typed. That
+catches wrong facts, which is the objection class that measured reviews find most
+of; it does not catch what a cold reader would. Two of three objections below were
+authoring defects in claims that read as confident and were false.
+
+**Round 1 — 1 blocking, 2 notes, all 3 `authoring`, 0 `injected`.**
+
+Blocking:
+
+1. Step 2 asserted that `windowNote` in `frontend/diagnose-workstation-chart.js`
+   is "shared and node-tested" and told the agent to leave it. Both halves are
+   wrong. `windowNote` appears nowhere in
+   `frontend/diagnose-workstation-chart.test.js` (grepped), and `renderCanvas`
+   has exactly one production caller — `diagnose-workstation.js:1796`, the very
+   line step 2 deletes. Leaving it would strand a parameter no caller can ever
+   set, which is the charter's dead-code rule, and the order would have
+   instructed the defect. Step 2 now removes `labelNote` (`chart.js:651`) and its
+   three dependent expressions by name.
+
+Notes, both adopted:
+
+2. Step 5 said "register it wherever the newest story is registered" without
+   naming the registration, and told the agent to drive a brace drag to obtain a
+   drawn window. The replay has a `STORIES` array (`:3843`, `:3978-3981`) and a
+   boot state `'drawn'` that S01 already uses, whose CFG carries
+   `drawn: [135, 285]`. Driving a drag to reach a state the harness boots into is
+   avoidable flakiness. Step 5 now names `['S91', S91, 'drawn']` and the
+   `// STORY:finding-evidence-routing:S91` tag form.
+3. P17's own `source:` cite in the ledger is stale — it reads `:1176-1183`,
+   `:1479-1480`, `:1213-1226`, while the real lines are `:1109`, `:2324/:2328`
+   and `:1706-1740`, and they move again under step 1. P17 becomes the single
+   load-bearing precedence rule in this ledger, so the order now sanctions
+   correcting that one cite in the same revision section.
+
+No round 2: the three fixes are fact corrections with exact, reproduced
+counterparts rather than decisions, and the order names no unsettled decision.
+
 ## Open questions
 
 - none. The dominant uncertainty (what replaces the seizure) was ruled by the

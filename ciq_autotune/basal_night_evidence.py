@@ -16,6 +16,10 @@ class UnknownBasalSlot(KeyError):
     """A requested clock slot was not published by the fixed-window analysis."""
 
 
+class IncompleteBasalNightEvidence(ValueError):
+    """A cached analyzer payload lacks required basal evidence facts."""
+
+
 @dataclass(frozen=True)
 class BasalNightEvidence:
     """One fixed analysis payload, projected by the requested basal slot."""
@@ -27,7 +31,14 @@ class BasalNightEvidence:
         if row is None:
             raise UnknownBasalSlot(slot)
         evidence = row.get("evidence") or {}
-        roster = evidence.get("night_roster") or []
+        required = ("night_roster", "directional_support_count", "excluded_night_count")
+        missing = [key for key in required if key not in evidence]
+        if missing:
+            raise IncompleteBasalNightEvidence(
+                f"basal slot {slot} lacks required evidence: {', '.join(missing)}")
+        roster = evidence["night_roster"]
+        if not isinstance(roster, list):
+            raise IncompleteBasalNightEvidence(f"basal slot {slot} has malformed night roster")
         return {
             "schema": SCHEMA,
             "analysis_generation": analysis_generation,

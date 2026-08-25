@@ -4,6 +4,7 @@ import json
 import pathlib
 import tempfile
 import unittest
+from datetime import datetime, timedelta
 
 try:
     from fastapi.testclient import TestClient
@@ -12,6 +13,8 @@ except ImportError:  # pragma: no cover
     _HAS_FASTAPI = False
 
 from ciq_autotune.store import Store
+from ciq_autotune.analyzers.basal import analyze_basal
+from ciq_autotune.events import BasalEvent, CgmReading
 
 _FIXTURE = (pathlib.Path(__file__).resolve().parents[1]
             / "frontend" / "__fixtures__" / "basal-night-evidence.json")
@@ -72,3 +75,67 @@ class BasalNightEvidenceEndpointTest(unittest.TestCase):
             self.assertEqual(response.status_code, 200)
             self.client.get("/api/diagnose/basal-night-evidence", params={"slot": 0})
             self.assertEqual(len(calls), 2)
+
+    def _epoch_client(self, rates, *, cut_minute=0, change_after=None):
+        """Build a public API client with an analyzer-detected slot setting epoch."""
+        from ciq_autotune.api import create_app
+
+        database = tempfile.NamedTemporaryFile(suffix=".db")
+        self.addCleanup(database.close)
+        basal, cgm = [], []
+        split = len(rates) // 2 if change_after is None else change_after
+        for day, rate in enumerate(rates, 1):
+            start = datetime(2026, 3, day, cut_minute if day == split + 1 else 0)
+            duration = 30 - start.minute
+            profile = 0.6 if day <= split else 1.0
+            basal.append({"seq_num": day, "time": start.isoformat(" "),
+                          "delivery_type": "algorithmDelivery", "duration_mins": duration,
+                          "basal_rate": rate, "profile_basal_rate": profile})
+            cgm.extend({"EventDateTime": (start + timedelta(minutes=minute)).isoformat(),
+                        "Readings (CGM / BGM)": 120, "Description": "EGV"}
+                       for minute in range(0, duration + 6, 5))
+        with Store.open(database.name) as store:
+            store.upsert_basal(basal)
+            store.upsert_cgm(cgm)
+        return TestClient(create_app(db_path=database.name, token=None,
+                                    enable_fetch_loop=False))
+
+    def test_endpoint_counts_regime_b_pre_cut_nights_outside_the_roster(self):
+        response = self._epoch_client([0.8, 0.8, 0.8, 1.2, 1.2, 1.2]).get(
+            "/api/diagnose/basal-night-evidence", params={"slot": 0})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["roster_count"], 3)
+        self.assertEqual(response.json()["excluded_night_count"], 3)
+
+
+class BasalNightEvidenceAccountingTest(unittest.TestCase):
+    """The analyzer's public result retains every omitted source night."""
+
+    @staticmethod
+    def _nights(rates):
+        basal, cgm = [], []
+        for day, rate in enumerate(rates, 1):
+            start = datetime(2026, 2, day)
+            basal.append(BasalEvent(start, "algorithmDelivery", 30, rate, 0.6))
+            cgm.extend(CgmReading(start + timedelta(minutes=minute), 120, "EGV")
+                       for minute in range(0, 36, 5))
+        return basal, cgm
+
+    def test_mid_slot_epoch_cut_counts_pre_cut_nights_outside_the_roster(self):
+        basal, cgm = self._nights([0.8, 0.8, 0.8, 0.8])
+        slot = analyze_basal(
+            basal, cgm, [], [],
+            slot_starts={0: datetime(2026, 2, 4, 0, 15)},
+        )[0]
+        self.assertEqual([point["date"] for point in slot.evidence["points"]], ["2026-02-04"])
+        self.assertEqual(slot.evidence["excluded_night_count"], 3)
+
+    def test_regime_b_post_only_keeps_omitted_pre_cut_nights_accounted(self):
+        basal, cgm = self._nights([0.8, 0.8, 0.8, 1.2, 1.2, 1.2])
+        slot = analyze_basal(
+            basal, cgm, [], [], pool_agreeing_regimes=True,
+            slot_starts={0: datetime(2026, 2, 4)},
+        )[0]
+        self.assertEqual(slot.evidence["pooling"]["pooled"], False)
+        self.assertEqual(len(slot.evidence["night_roster"]), 3)
+        self.assertEqual(slot.evidence["excluded_night_count"], 3)

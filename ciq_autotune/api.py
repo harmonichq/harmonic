@@ -35,6 +35,7 @@ from .analyzers.scenario.levers import Lever
 from .config import resolve_runtime_configuration
 from .event_comparison import ComparisonQuery, prepare_event_comparisons
 from .basal_night_evidence import (
+    IncompleteBasalNightEvidence,
     UnknownBasalSlot,
     dump_basal_night_evidence,
     prepare_basal_night_evidence,
@@ -42,6 +43,7 @@ from .basal_night_evidence import (
 )
 from .explore_time_of_day import build_time_of_day
 from .events import CarbEntry, parse_t
+from .model import ModelConfig
 from . import findings_projection as findings_projection_module
 from .findings_projection import UnknownHistorySelection, prepare_findings_projection
 from .finding_case_file import (
@@ -885,19 +887,24 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         _: None = Depends(require_token),
     ) -> dict:
         """Analyzer-owned nightly delivered-versus-programmed basal evidence."""
-        if slot is None or not 0 <= slot < 24 * 60 // 30:
+        n_slots = 24 * 60 // ModelConfig().slot_minutes
+        if slot is None or not 0 <= slot < n_slots:
             raise HTTPException(status_code=400, detail="slot must name a basal clock slot")
+        if window != findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS:
+            raise HTTPException(status_code=400, detail=(
+                "basal night evidence requires its fixed source window"))
         try:
             result = basal_night_evidence_preparation(window)
-            return fixed_response(
-                result,
+            return recover_sidecar_projection(
+                ("basal-night-evidence", window), "basal-night-evidence-v1", result,
                 lambda prepared: prepared.project(
                     slot, analysis_generation=cache.generation),
+                lambda: basal_night_evidence_preparation(window),
             )
-        except ValueError as error:
-            raise HTTPException(status_code=400, detail=str(error)) from error
         except UnknownBasalSlot as error:
             raise HTTPException(status_code=404, detail="basal slot was not found") from error
+        except IncompleteBasalNightEvidence as error:
+            raise HTTPException(status_code=500, detail="basal night evidence is incomplete") from error
 
     @app.get("/api/diagnose/carb-ratio-history/events")
     def diagnose_ic_history_events_endpoint(
@@ -1524,7 +1531,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             # Exposures consumes this payload; only coordinate projections stay lazy.
             ("event-comparison-source-catalog", event_comparison_preparation),
             ("ic-block-evidence-preparation", ic_block_evidence_preparation),
-            ("basal-night-evidence", lambda: basal_night_evidence_preparation(30)),
+            ("basal-night-evidence", lambda: basal_night_evidence_preparation(
+                findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS)),
             ("finding-case-file", lambda: finding_case_file_preparation(
                 Request({"type": "http", "query_string": b""}))),
         )

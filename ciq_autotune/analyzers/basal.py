@@ -360,12 +360,15 @@ def analyze_basal(
             smp.rate - smp.programmed_rate
         )
     signs_by_slot: List[List[int]] = []
+    night_signs: Dict[int, Dict[object, int]] = {s: {} for s in range(n_slots)}
     for s in range(n_slots):
         signs = []
-        for departures in sign_nights[s].values():
+        for night, departures in sign_nights[s].items():
             night_departure = statistics.median(departures)
             if night_departure != 0.0:
-                signs.append(1 if night_departure > 0.0 else -1)
+                sign = 1 if night_departure > 0.0 else -1
+                signs.append(sign)
+                night_signs[s][night] = sign
         signs_by_slot.append(signs)
     supported_directions = basal_sign_directions(signs_by_slot)
     # Harm layer (ADR 0038): the basal arm's gate/nudge verdict over the overnight
@@ -388,21 +391,19 @@ def analyze_basal(
 
     # Keep the source-night roster beside the clean samples.  The evidence
     # projection reads these analyzer-owned facts; it must never run the window
-    # classifier again just to explain a published estimate.  Match the estimate's
-    # epoch cut so this count names clean-window exclusions, not pre-edit data.
+    # classifier again just to explain a published estimate.  Source minutes use
+    # the same duration and per-minute cut semantics as the clean-sample pass.
     source_nights: Dict[int, set] = {s: set() for s in range(n_slots)}
     pre_source_nights: Dict[int, set] = {s: set() for s in range(n_slots)}
     for event in basal_events:
-        end = event.t + timedelta(minutes=event.duration_mins or cfg.slot_minutes)
+        end = event.t + timedelta(minutes=event.duration_mins or 0.0)
         t = event.t
         while t < end:
             slot = _slot_of(t, cfg.slot_minutes)
             target = pre_source_nights if (slot_starts.get(slot) is not None
                                             and t < slot_starts[slot]) else source_nights
             target[slot].add(t.date())
-            minute = t.hour * 60 + t.minute
-            step = cfg.slot_minutes - minute % cfg.slot_minutes
-            t += timedelta(minutes=step)
+            t += timedelta(minutes=1)
 
     # Clean minutes within one night are autocorrelated, so bootstrapping over
     # them would understate uncertainty. Reduce each (slot, day) to that day's
@@ -503,13 +504,15 @@ def analyze_basal(
                            minute=(s * cfg.slot_minutes) % 60).isoformat(),
              "delivered_rate": rate,
              "programmed_rate": (statistics.median(programmed_map[d])
-                                 if programmed_map.get(d) else None)}
+                                 if programmed_map.get(d) else None),
+             "sign": night_signs[s].get(d)}
             for (d, _), rate in zip(days_sorted, per_day)
         ]
         estimate_dates = {d for d, _ in days_sorted}
-        source_dates = source_nights[s]
-        if pool_agreeing_regimes and pre_map and day_map is not post_map:
-            source_dates = source_dates | pre_source_nights[s]
+        # This count names every source night absent from the final estimate,
+        # including epoch and Regime-B exclusions.  Pooling merely decides which
+        # source nights return to the estimate; it never changes the accounting.
+        source_dates = source_nights[s] | pre_source_nights[s]
         evidence["excluded_night_count"] = len(source_dates - estimate_dates)
         # This is deliberately not the roster size: the sign test uses the full
         # non-tie, as-of-programmed pool before any setting-epoch estimate cut.

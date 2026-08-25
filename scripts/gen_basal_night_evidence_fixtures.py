@@ -26,7 +26,7 @@ OUT = (pathlib.Path(__file__).resolve().parents[1]
 
 
 def fixture() -> dict:
-    """Run the public endpoint over ten invented nights, one excluded by IOB."""
+    """Run the public endpoint over eight invented nights, one excluded by IOB."""
     with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
         basal, cgm, bolus = [], [], []
         for day in range(1, 9):

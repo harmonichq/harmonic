@@ -11,42 +11,49 @@
         "date": "2026-01-01",
         "delivered_rate": 0.8,
         "programmed_rate": 0.6,
+        "sign": 1,
         "t": "2026-01-01T00:00:00"
       },
       {
         "date": "2026-01-02",
         "delivered_rate": 0.8,
         "programmed_rate": 0.6,
+        "sign": 1,
         "t": "2026-01-02T00:00:00"
       },
       {
         "date": "2026-01-03",
         "delivered_rate": 0.8,
         "programmed_rate": 0.6,
+        "sign": 1,
         "t": "2026-01-03T00:00:00"
       },
       {
         "date": "2026-01-04",
         "delivered_rate": 0.8,
         "programmed_rate": 0.6,
+        "sign": 1,
         "t": "2026-01-04T00:00:00"
       },
       {
         "date": "2026-01-05",
         "delivered_rate": 0.8,
         "programmed_rate": 0.6,
+        "sign": 1,
         "t": "2026-01-05T00:00:00"
       },
       {
         "date": "2026-01-06",
         "delivered_rate": 0.8,
         "programmed_rate": 0.6,
+        "sign": 1,
         "t": "2026-01-06T00:00:00"
       },
       {
         "date": "2026-01-07",
         "delivered_rate": 0.6,
         "programmed_rate": 0.6,
+        "sign": null,
         "t": "2026-01-07T00:00:00"
       }
     ],

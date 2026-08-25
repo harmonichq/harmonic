@@ -40,7 +40,12 @@ def payload():
                                carb_entries=store.carb_entries(),
                                prompt_responses=store.prompt_responses(),
                                isf_fasting_evidence_sink=captured.append).to_dict()
-        prepared = prepare_isf_rest_window_evidence(analysis, captured[0])
+        analysis["_isf_rest_window_steps"] = [
+            {"insulin_acted": round(step.insulin_acted, 4), "dbg": round(step.dbg, 2),
+             "window_id": f"rest:{step.cluster.isoformat()}"}
+            for step in captured[0].steps
+        ]
+        prepared = prepare_isf_rest_window_evidence(analysis)
     return {"_generated_by": "scripts/gen_isf_rest_window_evidence_fixtures.py",
             "_note": "SYNTHETIC. Generated analyzer-owned rest-window evidence.",
             "payload": prepared.project()}

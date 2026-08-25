@@ -229,6 +229,28 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                      dump=dump_event_comparison, rebuild=rebuild_event_comparison,
                      serve_stale=serve_stale)
 
+    def canonical_pooled_analysis(window: int, *, serve_stale=True):
+        """The shared pooled analysis plus retained ISF step identities."""
+        def build(store):
+            captured = []
+            payload = analyze(
+                store, window_days=window, ignore_setting_changes=False,
+                pool_agreeing_basal_regimes=True, carb_entries=store.carb_entries(),
+                prompt_responses=store.prompt_responses(),
+                isf_fasting_evidence_sink=captured.append,
+            ).to_dict()
+            if len(captured) != 1:
+                raise ValueError("ISF analyzer did not retain fasting evidence")
+            payload["_isf_rest_window_steps"] = [
+                {"insulin_acted": round(step.insulin_acted, 4),
+                 "dbg": round(step.dbg, 2),
+                 "window_id": f"rest:{step.cluster.isoformat()}"}
+                for step in captured[0].steps
+            ]
+            return payload
+        return fixed(("analyze", window, False, True), "analyze-v1", build,
+                     serve_stale=serve_stale)
+
     def findings_products(window):
         """The canonical payloads every 30-day findings consumer projects from."""
         if window != findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS:
@@ -236,10 +258,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         def build_canonical_scenarios(store):
             from .analyzers.scenario import build_scenarios
             return build_scenarios(store, window_days=window).to_dict()
-        analysis = fixed(("analyze", window, False, True), "analyze-v1", lambda store: analyze(
-            store, window_days=window, ignore_setting_changes=False,
-            pool_agreeing_basal_regimes=True, carb_entries=store.carb_entries(),
-            prompt_responses=store.prompt_responses()).to_dict(), serve_stale=False).value
+        analysis = canonical_pooled_analysis(window, serve_stale=False).value
         scenarios = fixed(("scenarios", window), "scenarios-v1", build_canonical_scenarios,
                           serve_stale=False).value
         exposures = event_comparison_preparation(serve_stale=False).value.exposure_payload
@@ -329,16 +348,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         """One complete fasting-step population for the fixed Diagnose window."""
         key = ("isf-rest-window-evidence", window)
         def compute(store):
-            captured = []
-            analysis = analyze(
-                store, window_days=window, ignore_setting_changes=False,
-                pool_agreeing_basal_regimes=True, carb_entries=store.carb_entries(),
-                prompt_responses=store.prompt_responses(),
-                isf_fasting_evidence_sink=captured.append,
-            ).to_dict()
-            if len(captured) != 1:
-                raise ValueError("ISF analyzer did not retain fasting evidence")
-            return prepare_isf_rest_window_evidence(analysis, captured[0])
+            analysis = canonical_pooled_analysis(window, serve_stale=False).value
+            return prepare_isf_rest_window_evidence(analysis)
         return fixed(key, "isf-rest-window-evidence-v1", compute, serve_stale=False)
 
     def _case_error(status, code, message):
@@ -638,6 +649,12 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
 
         key = ("analyze", window, ignore_changes, pool)
         if window == 30 and not ignore_changes:
+            if pool:
+                return fixed_response(
+                    canonical_pooled_analysis(window),
+                    lambda value: {key: item for key, item in value.items()
+                                   if key != "_isf_rest_window_steps"},
+                )
             return fixed_response(fixed(key, "analyze-v1", lambda store: analyze(
                 store, window_days=window, ignore_setting_changes=ignore_changes,
                 pool_agreeing_basal_regimes=pool, carb_entries=store.carb_entries(),

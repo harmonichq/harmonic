@@ -5,8 +5,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Tuple
 
-from .analyzers.isf import FastingEvidence
-
 SCHEMA = "diagnose-isf-rest-window-evidence-v1"
 
 
@@ -22,15 +20,12 @@ class IsfRestWindowEvidence:
                 "counts": self.counts, "finding": self.finding}
 
 
-def prepare_isf_rest_window_evidence(analysis: dict, fasting: FastingEvidence) -> IsfRestWindowEvidence:
+def prepare_isf_rest_window_evidence(analysis: dict) -> IsfRestWindowEvidence:
     """Copy published analyzer evidence plus its retained step-to-window mapping."""
     row = next((row for row in analysis.get("isf", []) if row.get("parameter") == "isf"), {})
     evidence = row.get("evidence") or {}
     published_windows = tuple(evidence.get("rest_windows") or ())
-    steps = tuple({"insulin_acted": round(step.insulin_acted, 4),
-                   "dbg": round(step.dbg, 2),
-                   "window_id": f"rest:{step.cluster.isoformat()}"}
-                  for step in fasting.steps)
+    steps = tuple(analysis.get("_isf_rest_window_steps") or ())
     counts = {"detected_windows": len(published_windows),
               "qualifying_windows": row.get("estimate", {}).get("n_clusters", 0),
               "qualifying_steps": evidence.get("n_steps", 0)}

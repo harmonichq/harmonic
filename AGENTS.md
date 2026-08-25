@@ -51,11 +51,12 @@ python3 scripts/check_owned_identifiers.py # product-name guard
 python3 scripts/check_public_allowlist.py  # publishable-tree guard
 ```
 
-The backend job also runs eight **drift checks**, so a committed
+The backend job also runs nine **drift checks**, so a committed
 generator-authored artifact can never silently diverge from its generator:
 
 ```sh
 uv run python scripts/gen_ic_block_fixtures.py --check
+uv run python mockups/diagnose-evidence-canvas.exploration/generate.py --check
 uv run python scripts/gen_annotation_fixtures.py --check
 uv run python scripts/gen_chart_builder_fixtures.py --check
 uv run python scripts/check_demo_fixtures.py   # the committed synthetic demo sets

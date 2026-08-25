@@ -27,6 +27,7 @@ import { readFile, access, mkdir } from 'node:fs/promises';
 import { extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { projectFindings, projectIcHistoryEvents } from '../mockups/findings-projection.mirror.mjs';
+import { populateFindingCasePreparation } from './browser-fixture-population.js';
 // ADR 94: a router-owned page path IS the SPA document. Reload stories re-request
 // the address the app canonicalized to (`/diagnose?...`), so the page set has to
 // come from the router that owns it rather than a second list here.
@@ -686,28 +687,7 @@ export async function openApp(browser, {
       const projected = projectFindings(findingsFrom, window, url.searchParams.get('selected_id'));
       const findingsProjection = typeof findingsProjectionInputs === 'function'
         ? findingsProjectionInputs(projected, caseFiles) : projected;
-      const readyRows = new Map(preparedBody.rendered_rows
-        .filter((row) => row.case_header?.inspectability === 'ready')
-        .map((row) => [row.id, row]));
-      preparedBody.findings = independent(findingsProjection);
-      preparedBody.rendered_rows = independent(findingsProjection.rows).flatMap((row) => {
-        if (row.register !== 'finding') return [row];
-        const ready = readyRows.get(row.id);
-        if (!ready) return [];
-        return [{ ...row,
-          appearances: ready.appearances,
-          episodes: ready.episodes,
-          evidence: ready.evidence,
-          verdict_counts: ready.verdict_counts,
-          verdict_counts_by_family: ready.verdict_counts_by_family,
-          event_chart: ready.event_chart,
-          case_header: ready.case_header }];
-      });
-      preparedBody.behavioral_case_headers = Object.fromEntries(
-        preparedBody.rendered_rows
-          .filter((row) => row.case_header?.inspectability === 'ready')
-          .map((row) => [row.id, row.case_header]),
-      );
+      populateFindingCasePreparation(preparedBody, findingsProjection);
       if (caseScenario?.preparation) {
         const response = await caseScenario.preparation({ request: preparationRequests,
           url, preparation: preparedBody, caseFiles });

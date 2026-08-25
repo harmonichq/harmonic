@@ -16,6 +16,7 @@ import { timeOfDay } from '../mockups/explore-investigation.fixture.js';
 // forbids, and would drift the moment a page gained state.
 import { TABS as ROUTER_TABS, parseRoute, serializeRoute } from './tab-routing.js';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
+import { populateFindingCasePreparation } from './browser-fixture-population.js';
 
 const require = createRequire(import.meta.url);
 // #672: fail closed. A missing prerequisite must exit nonzero, never `skip` —
@@ -288,7 +289,11 @@ const scenarios = {
 
 async function routeApp(page, options = {}) {
   const { promptCount = 0, planDraftItems = [], verifyTrials = [maturing, complete] } = options;
-  const findingsInput = options.findingsInput || { analysis: analyze, scenarios };
+  const findingsInput = options.findingsInput || {
+    analysis: analyze,
+    exposures: DIAGNOSE_PAYLOAD.exposures,
+    scenarios,
+  };
   const preparedWindows = new Map();
   await page.route('**/*', async (route) => {
     const fixed = (payload) => options.inputDataAge
@@ -338,28 +343,7 @@ async function routeApp(page, options = {}) {
       } : null;
       const projected = projectFindings(findingsInput, window,
         url.searchParams.get('selected_id'));
-      const readyRows = new Map(preparedBody.rendered_rows
-        .filter((row) => row.case_header?.inspectability === 'ready')
-        .map((row) => [row.id, row]));
-      preparedBody.findings = structuredClone(projected);
-      preparedBody.rendered_rows = structuredClone(projected.rows).flatMap((row) => {
-        if (row.register !== 'finding') return [row];
-        const ready = readyRows.get(row.id);
-        if (!ready) return [];
-        return [{ ...row,
-          appearances: ready.appearances,
-          episodes: ready.episodes,
-          evidence: ready.evidence,
-          verdict_counts: ready.verdict_counts,
-          verdict_counts_by_family: ready.verdict_counts_by_family,
-          event_chart: ready.event_chart,
-          case_header: ready.case_header }];
-      });
-      preparedBody.behavioral_case_headers = Object.fromEntries(
-        preparedBody.rendered_rows
-          .filter((row) => row.case_header?.inspectability === 'ready')
-          .map((row) => [row.id, row.case_header]),
-      );
+      populateFindingCasePreparation(preparedBody, projected);
       preparedWindows.set(preparedBody.projection_id, preparedBody.coordinates.window);
       return route.fulfill({ body: JSON.stringify(preparedBody),
         contentType: 'application/json' });

@@ -44,10 +44,12 @@ test('Watching rows collapse by default, without changing actionable rows', () =
 });
 
 test('Event charts retain Watching rows, including while sifting', () => {
+  const coordinate = { lever: 'meal_bolus_short',
+    window: { start_min: 0, end_min: 1440, scoped: false } };
   const history = { id: 'history', register: 'history', kind: 'setting', chips: ['highs'],
-    event_chart: { view: 'highs', factor: 'meal_bolus_short' } };
+    event_chart: coordinate };
   const finding = { id: 'finding', register: 'finding', kind: 'habit', chips: ['highs'],
-    event_chart: { view: 'highs', factor: 'meal_bolus_short' } };
+    event_chart: coordinate };
   const projection = { rows: [finding, history], window: { scoped: false }, findings_window: { days: 30 } };
   for (const selected of [null, new Set(['highs'])]) {
     const rows = queueRows(projection, selected, true);
@@ -331,8 +333,10 @@ test('#83 · Event charts excludes settings, held reads, and incompatible Findin
 
 test('#83 · malformed coordinates never make a row eligible', () => {
   const source = W.global.rows.find((row) => row.event_chart !== null);
-  for (const event_chart of [{}, [], { view: 'meals' }, { view: '', factor: 'late_bolus' },
-    { view: 'meals', factor: '' }, { view: 'meals', factor: 'late_bolus', extra: true }]) {
+  for (const event_chart of [{}, [], { lever: 'late_bolus' },
+    { lever: '', window: { start_min: 0, end_min: 1440, scoped: false } },
+    { lever: 'late_bolus', window: {} },
+    { lever: 'late_bolus', window: { start_min: 0, end_min: 1440, scoped: false }, extra: true }]) {
     const row = { ...source, event_chart };
     assert.equal(eventChartCoordinate(row), null);
     const [rendered] = queueRows({ rows: [row] }, null, true);
@@ -340,9 +344,10 @@ test('#83 · malformed coordinates never make a row eligible', () => {
   }
 });
 
-test('event-chart eligibility accepts a server-owned High coordinate', () => {
+test('event-chart eligibility accepts a server-owned lever-and-window coordinate', () => {
   const row = { ...W.global.rows.find((item) => item.event_chart !== null),
-    event_chart: { view: 'highs', factor: 'meal_bolus_short' } };
+    event_chart: { lever: 'meal_bolus_short',
+      window: { start_min: null, end_min: null, scoped: false } } };
   assert.deepEqual(eventChartCoordinate(row), row.event_chart);
 });
 

@@ -75,16 +75,11 @@ def _time_of_day(store):
     build_time_of_day(store)
 
 
-def _event_comparison_preparation(store):
-    """The shared source/classifier preparation.
+def _exposures(store):
+    """`/api/explore/exposures`, independent of retired comparison projections."""
+    from ciq_autotune.explore_exposures import build_exposures
 
-    `/api/explore/exposures` returns this preparation's `exposure_payload`, so the
-    exposures feed the cold arrival asks for and the "event-comparison" shape the
-    hourly warm pass computes are one and the same read.
-    """
-    from ciq_autotune.event_comparison import prepare_event_comparisons
-
-    prepare_event_comparisons(store)
+    build_exposures(store, window_days=DIAGNOSE_WINDOW_DAYS)
 
 
 def _findings_case_preparation(store):
@@ -114,7 +109,7 @@ SHAPES = (
     ("analyze-pooled", "cold", lambda store: _analyze(store, pool=True)),
     ("scenarios", "cold", _scenarios),
     ("explore-time-of-day", "cold", _time_of_day),
-    ("exposures", "cold", _event_comparison_preparation),
+    ("exposures", "cold", _exposures),
     ("findings-case-preparation", "cold", _findings_case_preparation),
     ("outcomes-trend-30", "cold", lambda store: _outcomes_trend(store, window=30)),
     ("outcomes-trend-14", "warm-only", lambda store: _outcomes_trend(store, window=14)),

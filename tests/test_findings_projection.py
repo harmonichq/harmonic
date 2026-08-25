@@ -441,7 +441,10 @@ class EventChartProjectionTest(unittest.TestCase):
                     "ep_id": factor,
                     "verdicts": [],
                 })
-                expected[factor] = {"view": view, "factor": factor}
+                expected[factor] = {
+                    "lever": factor,
+                    "window": WindowQuery.whole_day().to_dict(),
+                }
             exposures[view] = {"occurrences": occurrences}
 
         rows = FindingsProjection(

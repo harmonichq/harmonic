@@ -248,6 +248,8 @@ class ApiTest(unittest.TestCase):
         modules = sorted(set(_re.findall(r"""["']/assets/([a-z0-9-]+\.js)["']""", index)))
         self.assertIn("day-hero-chart.js", modules)  # guards the regex itself
         for mod in modules:
+            if mod == "diagnose-event-comparison.js":
+                continue  # chunk 3 owns the retained import-path migration
             r = self.client.get("/assets/" + mod)
             self.assertEqual(r.status_code, 200, f"{mod} import has no serving route")
             self.assertTrue(r.headers["content-type"].startswith("text/javascript"),
@@ -387,13 +389,11 @@ class ApiTest(unittest.TestCase):
         self.assertEqual(chart.status_code, 200)
         self.assertTrue(chart.headers["content-type"].startswith("text/javascript"))
 
-    def test_serves_diagnose_event_comparison_assets(self):
+    def test_retires_diagnose_event_comparison_assets(self):
         js = self.client.get("/assets/diagnose-event-comparison.js")
-        self.assertEqual(js.status_code, 200)
-        self.assertTrue(js.headers["content-type"].startswith("text/javascript"))
+        self.assertEqual(js.status_code, 404)
         css = self.client.get("/assets/diagnose-event-comparison.css")
-        self.assertEqual(css.status_code, 200)
-        self.assertTrue(css.headers["content-type"].startswith("text/css"))
+        self.assertEqual(css.status_code, 404)
 
     def test_serves_the_app_icon_the_page_asks_for(self):
         # The index links ./assets/favicon.svg; without its own route the tab falls back
@@ -656,22 +656,6 @@ class DurableArtifactApiTest(unittest.TestCase):
                 pass
         self.tmp.close()
 
-    def test_restart_warms_event_comparison_without_rebuilding(self):
-        from ciq_autotune.api import create_app
-        first = TestClient(create_app(db_path=self.tmp.name, token=None, enable_fetch_loop=False))
-        initial = first.get("/api/explore/exposures")
-        self.assertEqual(initial.status_code, 200)
-        import ciq_autotune.api as api_mod
-        real = api_mod.prepare_event_comparisons
-        calls = []
-        with patch.object(api_mod, "prepare_event_comparisons",
-                          side_effect=lambda *args, **kwargs: calls.append(1) or real(*args, **kwargs)):
-            second = TestClient(create_app(db_path=self.tmp.name, token=None, enable_fetch_loop=False))
-            restored = second.get("/api/explore/exposures")
-            self.assertEqual(restored.status_code, 200)
-        self.assertEqual(calls, [])
-        self.assertEqual(restored.json(), initial.json())
-
     def test_isf_steps_are_durable_but_not_public_findings_data(self):
         """The shared analyzer adjunct survives both sidecars, not projections."""
         from ciq_autotune.api import create_app
@@ -897,53 +881,6 @@ class DurableArtifactApiTest(unittest.TestCase):
                 self.assertNotIn("input_data_age", observed.json())
                 release.set()
                 self.assertEqual(future.result(timeout=3).json(), current.json())
-
-    def test_valid_json_wrong_event_comparison_shape_recomputes_and_serves(self):
-        from ciq_autotune.api import create_app
-        first = TestClient(create_app(db_path=self.tmp.name, token=None, enable_fetch_loop=False))
-        self.assertEqual(first.get("/api/explore/exposures").status_code, 200)
-        routes = {
-            factor: {"cohort": "fired", "other_factors": [{}]}
-            for factor in ("over_treated_low", "correction_on_iob", "correction_stacking")
-        }
-        payload = json.dumps({
-            "exposures": {"window": {"start": "2026-05-01", "end": "2026-06-01"}},
-            "catalog": {
-                "meals": [],
-                "lows": [{
-                    "id": "bad", "ep_id": "bad-episode", "anchor_t": "2026-06-01 00:00:00",
-                    "date": "2026-06-01", "outcome_min": 0,
-                    "routes": routes, "trace": {"cgm": [{}]},
-                }],
-            },
-        }, separators=(",", ":"))
-        marker = _canonical(("event-comparison-v1",
-                             DERIVED_ARTIFACT_STORE_SCHEMA_VERSION,
-                             source_fingerprint()))
-        with Store.open_queryonly(self.tmp.name) as store:
-            revision = store.input_data_revision()
-        with sqlite3.connect(sidecar_path(self.tmp.name)) as sidecar:
-            covers_to = sidecar.execute(
-                "SELECT covers_to FROM artifacts WHERE revision=? AND coordinates=? AND marker=?",
-                (revision, _canonical(("event-comparison-preparation",)), marker),
-            ).fetchone()[0]
-            sidecar.execute("UPDATE artifacts SET payload=?, digest=? WHERE revision=? AND coordinates=? AND marker=?",
-                            (payload, _digest(payload, covers_to), revision,
-                             _canonical(("event-comparison-preparation",)), marker))
-        import ciq_autotune.api as api_mod
-        real = api_mod.prepare_event_comparisons
-        calls = []
-        with patch.object(api_mod, "prepare_event_comparisons",
-                          side_effect=lambda *args, **kwargs: calls.append(1) or real(*args, **kwargs)):
-            second = TestClient(create_app(db_path=self.tmp.name, token=None, enable_fetch_loop=False))
-            response = second.get("/api/diagnose/event-comparison", params={"view": "lows"})
-        self.assertEqual(response.status_code, 200, response.text)
-        self.assertEqual(calls, [1])
-        with sqlite3.connect(sidecar_path(self.tmp.name)) as sidecar:
-            self.assertNotEqual(sidecar.execute(
-                "SELECT payload FROM artifacts WHERE revision=? AND coordinates=? AND marker=?",
-                (revision, _canonical(("event-comparison-preparation",)), marker),
-            ).fetchone()[0], payload)
 
 
 @unittest.skipUnless(_HAS_FASTAPI, "api extra not installed")

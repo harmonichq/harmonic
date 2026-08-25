@@ -62,7 +62,6 @@ from .ic_history import decode_history_id
 # on. `window_membership` asks the same question for the same reason, so this is
 # one definition read twice, never a second copy of the mapping.
 from .analyzers.scenario.levers import outcome_kind
-from .event_comparison import EVENT_CHARTS
 from .safety import Status
 from .window_membership import DAY_MINUTES, WindowQuery, outcome_minute
 
@@ -82,6 +81,24 @@ _HELD_STATUSES = frozenset({str(Status.INSUFFICIENT), str(Status.HARM_GATED),
                             str(Status.NO_BASELINE)})
 # No suggestion at all — the model saw no clean day in this slot.
 _BLIND_STATUS = str(Status.NO_DATA)
+
+# Case-file event charts use the Finding lever and the server-owned clock window.
+# The mapping remains here with the projection that publishes the coordinate; it
+# no longer borrows the retired standalone comparison route vocabulary.
+_EVENT_CHART_FAMILIES = {
+    "carb_undercount": "meals",
+    "late_bolus": "meals",
+    "meal_over_delivery": "meals",
+    "over_treated_low": "lows",
+    "correction_on_iob": "lows",
+    "correction_stacking": "lows",
+}
+
+
+def event_chart_coordinate(lever: str, query: WindowQuery, families: Sequence[str]):
+    if _EVENT_CHART_FAMILIES.get(lever) not in families:
+        return None
+    return {"lever": lever, "window": query.to_dict()}
 
 # The one place the unexplained-highs sentence is written (#63). The operator-confirmed
 # wording is "N highs had no cause detected by the app"; the ONLY thing that varies is
@@ -475,7 +492,6 @@ class FindingsProjection:
         rows = []
         for lever, entry in by_lever.items():
             entry["appearances"].sort(key=lambda a: a["family"])
-            coordinate = EVENT_CHARTS.get(lever)
             evidence, verdict_counts, verdict_counts_by_family = _lever_evidence(
                 lever, entry["families"], in_window,
             )
@@ -502,9 +518,7 @@ class FindingsProjection:
                 # roster it scopes share one denominator.
                 verdict_counts=verdict_counts,
                 verdict_counts_by_family=verdict_counts_by_family,
-                event_chart=(dict(coordinate)
-                             if coordinate and coordinate["view"] in entry["families"]
-                             else None),
+                event_chart=event_chart_coordinate(lever, query, entry["families"]),
             ))
         return rows
 

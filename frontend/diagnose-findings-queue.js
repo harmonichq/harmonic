@@ -61,9 +61,14 @@ export function eventChartCoordinate(row) {
   const coordinate = row?.event_chart;
   if (coordinate === null || typeof coordinate !== 'object' || Array.isArray(coordinate)) return null;
   if (Object.keys(coordinate).length !== 2
-      || !Object.hasOwn(coordinate, 'view') || !Object.hasOwn(coordinate, 'factor')) return null;
-  if (typeof coordinate.view !== 'string' || coordinate.view.length === 0
-      || typeof coordinate.factor !== 'string' || coordinate.factor.length === 0) return null;
+      || !Object.hasOwn(coordinate, 'lever') || !Object.hasOwn(coordinate, 'window')) return null;
+  if (typeof coordinate.lever !== 'string' || coordinate.lever.length === 0) return null;
+  const { window } = coordinate;
+  if (window === null || typeof window !== 'object' || Array.isArray(window)
+      || typeof window.scoped !== 'boolean'
+      || (window.scoped && (typeof window.start_min !== 'number'
+                            || typeof window.end_min !== 'number'))
+      || (!window.scoped && (window.start_min !== null || window.end_min !== null))) return null;
   return coordinate;
 }
 

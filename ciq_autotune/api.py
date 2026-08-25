@@ -33,7 +33,7 @@ from . import credentials
 from .analyze import analyze
 from .analyzers.scenario.levers import Lever
 from .config import resolve_runtime_configuration
-from .event_comparison import ComparisonQuery, prepare_event_comparisons
+from .explore_exposures import build_exposures
 from .basal_night_evidence import (
     IncompleteBasalNightEvidence,
     UnknownBasalSlot,
@@ -64,10 +64,10 @@ from .window_membership import WindowQuery
 from .result import SCHEMA_VERSION
 from .result_cache import ResultCache
 from .derived_artifacts import (
-    discard_artifact, dump_event_comparison, dump_findings, dump_ic_history,
+    discard_artifact, dump_findings, dump_ic_history,
     dump_ic_block_evidence, FixedResult, InputRevisionChanged, is_sidecar_rebuilt,
     load_latest_prior, load_or_compute,
-    rebuild_event_comparison, rebuild_findings, rebuild_ic_history,
+    rebuild_findings, rebuild_ic_history,
     rebuild_ic_block_evidence,
 )
 from .store import Store
@@ -222,13 +222,6 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             age["newest_covers_to"] = result.input_data_age.newest_covers_to
         return {**payload, "input_data_age": age}
 
-    def event_comparison_preparation(*, serve_stale=True):
-        """One fixed-window source/classifier preparation per cache version."""
-        return fixed(("event-comparison-preparation",), "event-comparison-v1",
-                     lambda store: prepare_event_comparisons(store),
-                     dump=dump_event_comparison, rebuild=rebuild_event_comparison,
-                     serve_stale=serve_stale)
-
     def canonical_pooled_analysis(window: int, *, serve_stale=True):
         """The shared pooled analysis plus retained ISF step identities."""
         def build(store):
@@ -266,7 +259,11 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         analysis = canonical_pooled_analysis(window, serve_stale=False).value
         scenarios = fixed(("scenarios", window), "scenarios-v1", build_canonical_scenarios,
                           serve_stale=False).value
-        exposures = event_comparison_preparation(serve_stale=False).value.exposure_payload
+        exposures = fixed(
+            ("exposures",), "exposures-v1",
+            lambda store: build_exposures(store, window_days=window),
+            serve_stale=False,
+        ).value
         return analysis, exposures, scenarios
 
     def basal_night_evidence_preparation(window):
@@ -365,8 +362,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
 
     def _case_params(request, case=False):
         allowed = (
-            {"projection_id", "finding_id", "alignment", "occ"}
-            if case else {"start_min", "end_min", "selected_id"}
+            {"projection_id", "finding_id", "lever", "alignment", "occ"}
+            if case else {"start_min", "end_min", "selected_id", "lever"}
         )
         params = request.query_params
         if any(key not in allowed or len(params.getlist(key)) != 1 for key in params):
@@ -374,24 +371,30 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         if case:
             pid = params.get("projection_id")
             finding = params.get("finding_id")
+            lever = params.get("lever")
             alignment = params.get("alignment")
             occ = params.get("occ")
             valid_findings = {f"finding:{lever.value}" for lever in Lever}
             if (not isinstance(pid, str) or not re.fullmatch(r"fp_[0-9a-f]{32}", pid)
-                    or finding not in valid_findings
+                    or ((finding is None) == (lever is None))
+                    or (finding is not None and finding not in valid_findings)
+                    or (lever is not None and lever not in {item.value for item in Lever})
                     or alignment not in {"clock", "event"}
                     or (occ is not None and not re.fullmatch(r"[om]_[0-9a-f]{32}", occ))):
                 raise ValueError("malformed case-file coordinate")
-            return pid, finding, alignment, occ
+            return pid, finding, lever, alignment, occ
         start, end = params.get("start_min"), params.get("end_min")
         selected_id = params.get("selected_id")
+        lever = params.get("lever")
+        if lever is not None and lever not in {item.value for item in Lever}:
+            raise ValueError("malformed case-file lever")
         if (start is None) != (end is None):
             raise ValueError("a window needs both start_min and end_min, or neither")
         if start is None:
-            return WindowQuery.whole_day(), selected_id
+            return WindowQuery.whole_day(), selected_id, lever
         if not start.isdecimal() or not end.isdecimal():
             raise ValueError("window coordinates must be decimal minutes")
-        return WindowQuery.clock(int(start), int(end)), selected_id
+        return WindowQuery.clock(int(start), int(end)), selected_id, lever
 
     def _prepared_cases(query, selected_id):
         key = ("finding-case-file", query.start_min, query.end_min, selected_id)
@@ -494,16 +497,6 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     def watched_change_dock_js():  # #735: the inspector's floor
         return FileResponse(_FRONTEND_DIR / "watched-change-dock.js",
                             media_type="text/javascript")
-
-    @app.get("/assets/diagnose-event-comparison.js")
-    def diagnose_event_comparison_js():
-        return FileResponse(_FRONTEND_DIR / "diagnose-event-comparison.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/diagnose-event-comparison.css")
-    def diagnose_event_comparison_css():
-        return FileResponse(_FRONTEND_DIR / "diagnose-event-comparison.css",
-                            media_type="text/css")
 
     @app.get("/assets/data.js")
     def data_js():
@@ -797,49 +790,11 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     @app.get("/api/explore/exposures")
     def explore_exposures_endpoint(_: None = Depends(require_token)) -> dict:
         """The recent anchor-level exposure feed for Diagnose (#654)."""
-        return recover_sidecar_projection(
-            ("event-comparison-preparation",), "event-comparison-v1",
-            event_comparison_preparation(), lambda preparation: preparation.exposure_payload,
-            event_comparison_preparation)
-
-    @app.get("/api/diagnose/event-comparison")
-    def diagnose_event_comparison_endpoint(
-        view: Optional[str] = None, factor: Optional[str] = None,
-        start_min: Optional[int] = None, end_min: Optional[int] = None,
-        block: Optional[str] = None, occ: Optional[str] = None, another: str = "0",
-        window: int = findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS,
-        _: None = Depends(require_token),
-    ) -> dict:
-        """Evidence-only Meals and Lows cohorts for the Diagnose lenses."""
-        if (window != findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS
-                or view not in {"meals", "lows"}):
-            raise HTTPException(
-                status_code=400,
-                detail=(
-                    "event comparison requires meals or lows in its fixed "
-                    f"{findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS}-day window"
-                ),
-            )
-        if another not in {"0", "1"}:
-            raise HTTPException(status_code=400, detail="another must be 0 or 1")
-        if block is not None:
-            raise HTTPException(status_code=400, detail="block is no longer a comparison coordinate")
-        if (start_min is None) != (end_min is None):
-            raise HTTPException(status_code=400,
-                                detail="a window needs both start_min and end_min, or neither")
-        try:
-            clock_window = (WindowQuery.whole_day() if start_min is None
-                            else WindowQuery.clock(start_min, end_min))
-            query = ComparisonQuery(
-                view=view, factor=factor, window=clock_window, another=another == "1",
-                occurrence_id=occ,
-            )
-            return recover_sidecar_projection(
-                ("event-comparison-preparation",), "event-comparison-v1",
-                event_comparison_preparation(), lambda preparation: preparation.project(query),
-                event_comparison_preparation)
-        except ValueError as error:
-            raise HTTPException(status_code=400, detail=str(error)) from error
+        return fixed_response(fixed(
+            ("exposures",), "exposures-v1",
+            lambda store: build_exposures(
+                store, window_days=findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS),
+        ))
 
     @app.get("/api/diagnose/findings")
     def diagnose_findings_endpoint(
@@ -1020,7 +975,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     @app.get("/api/diagnose/finding-case-file-preparation")
     def finding_case_file_preparation(request: Request, _: None = Depends(require_token)):
         try:
-            query, selected_id = _case_params(request)
+            query, selected_id, _lever = _case_params(request)
         except ValueError as error:
             return _case_error(400, "invalid_request", str(error))
         try:
@@ -1041,14 +996,15 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     @app.get("/api/diagnose/finding-case-file")
     def finding_case_file(request: Request, _: None = Depends(require_token)):
         try:
-            projection_id, finding_id, alignment, occ = _case_params(request, True)
+            projection_id, finding_id, lever, alignment, occ = _case_params(request, True)
         except ValueError as error:
             return _case_error(400, "invalid_request", str(error))
         prepared = cache.acquire_preparation(projection_id)
         if prepared is None:
             return _case_error(409, "stale_projection", "Preparation is unavailable.")
         try:
-            result = prepared.case(finding_id, alignment, occ)
+            result = prepared.case(finding_id, alignment, occ,
+                                   lever=Lever(lever) if lever is not None else None)
             if result is None:
                 return _case_error(
                     404, "finding_unavailable", "Finding has no inspectable member."
@@ -1579,8 +1535,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             ("analyze-pooled", lambda: analyze_endpoint(window=30, ignore_changes=False, pool=True)),
             ("scenarios", lambda: scenarios_endpoint(window=30)),
             ("explore-time-of-day", explore_time_of_day_endpoint),
-            # Exposures consumes this payload; only coordinate projections stay lazy.
-            ("event-comparison-source-catalog", event_comparison_preparation),
+            ("exposures", explore_exposures_endpoint),
             ("ic-block-evidence-preparation", ic_block_evidence_preparation),
             ("basal-night-evidence", lambda: basal_night_evidence_preparation(
                 findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS)),

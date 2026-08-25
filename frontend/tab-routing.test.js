@@ -2,7 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { parseRoute, resolveTab, serializeRoute, subscribeRoute, writeRoute } from './tab-routing.js';
-import { createDiagnoseEventComparison } from './diagnose-event-comparison.js';
 
 test('resolveTab preserves current and legacy routes, then falls back to Diagnose', () => {
   for (const tab of ['day', 'diagnose', 'verify', 'plan', 'settings', 'guide']) {
@@ -107,35 +106,4 @@ test('P53 coordinates move from the split query into the Diagnose route and rest
   listeners.get('popstate')();
   unsubscribe();
   assert.deepEqual(seen, [{ page: 'diagnose', pageNamed: true, view: 'meals', factor: null, start_min: null, end_min: null, another: null, occ: null, mode: null }]);
-});
-
-test('P53 restoration re-requests and an older projection response stays rejected', async () => {
-  const original = { window: globalThis.window, location: globalThis.location, history: globalThis.history };
-  const listeners = new Map();
-  globalThis.location = { pathname: '/diagnose', hash: '', search: '?view=meals&factor=late_bolus' };
-  globalThis.history = { pushState() {} };
-  globalThis.window = { location, history, addEventListener(type, listener) { listeners.set(type, listener); }, removeEventListener() {} };
-  const requests = [];
-  let resolveOld;
-  let rejectNew;
-  const root = { classList: { remove() {} }, replaceChildren() {} };
-  const view = createDiagnoseEventComparison({ root, callbacks: { loadProjection(coordinates) {
-    requests.push(coordinates);
-    return new Promise((resolve, reject) => {
-      if (requests.length === 1) resolveOld = resolve;
-      else rejectNew = reject;
-    });
-  } } });
-  view.setData({});
-  view.applyChanges({ factor: 'carb_undercount' });
-  rejectNew(new Error('newest response'));
-  await new Promise(setImmediate);
-  assert.equal(root.textContent, 'newest response');
-  resolveOld({});
-  await new Promise(setImmediate);
-  assert.equal(requests.length, 2);
-  assert.equal(requests[1].factor, 'carb_undercount');
-  assert.equal(root.textContent, 'newest response');
-  view.destroy();
-  Object.assign(globalThis, original);
 });

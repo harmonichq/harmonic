@@ -92,26 +92,38 @@ class PreparedCases:
     def _authoritative_row(self, finding_id):
         return next((row for row in self.findings["rows"] if row.get("id") == finding_id), None)
 
-    def case(self, finding_id, alignment, occ):
-        lever = Lever(finding_id.removeprefix("finding:"))
-        if finding_id != f"finding:{lever.value}" or lever in self.withheld:
+    def case(self, finding_id, alignment, occ, *, lever=None):
+        """Project a Finding claim or a claim-free lever/window case file.
+
+        Lever requests retain the same roster and event inputs, but do not borrow
+        a Finding's attribution equation merely to make a case-shaped response.
+        """
+        finding_keyed = finding_id is not None
+        if finding_keyed:
+            lever = Lever(finding_id.removeprefix("finding:"))
+        elif not isinstance(lever, Lever):
             return None
-        row = self._authoritative_row(finding_id)
-        if row is None:
+        if ((finding_keyed and finding_id != f"finding:{lever.value}")
+                or lever in self.withheld):
+            return None
+        row = self._authoritative_row(finding_id) if finding_keyed else None
+        if finding_keyed and row is None:
             return None
         roster = self._roster(lever)
-        claimed_ids = self.associations[lever].intersection(member.id for member in roster)
-        if not claimed_ids and (lever is not Lever.MISSED_MEAL or row.get("episodes") != 0):
+        claimed_ids = (self.associations[lever].intersection(member.id for member in roster)
+                       if finding_keyed else frozenset())
+        if (finding_keyed and not claimed_ids
+                and (lever is not Lever.MISSED_MEAL or row.get("episodes") != 0)):
             return None
         counts = {
             key: sum(member.verdict == key for member in roster)
             for key in findings_projection.FINDING_VERDICTS
         }
         if (len(roster) != sum(counts.values()) or len(claimed_ids) > counts["fired"]
-                or row.get("episodes") != len(claimed_ids)):
+                or (finding_keyed and row.get("episodes") != len(claimed_ids))):
             raise InconsistentProjection("inconsistent_projection")
         pattern = self.recurrence.get(lever)
-        if (not self.query.scoped and pattern is not None
+        if (finding_keyed and not self.query.scoped and pattern is not None
                 and pattern != (len(claimed_ids), len(roster))):
             raise InconsistentProjection("inconsistent_projection")
         projection = (
@@ -343,8 +355,8 @@ def wrap(prepared):
             continue
         header = {"finding_id": finding_id, "lever": case["finding"]["lever"],
                   "title": case["finding"]["title"], "family": case["family"],
-                  "event_chart": {"view": case["family"],
-                                  "factor": case["finding"]["lever"]},
+                  "event_chart": findings_projection.event_chart_coordinate(
+                      case["finding"]["lever"], prepared.query, [case["family"]]),
                   "summary": case["summary"], "verdict_counts": case["verdict_counts"],
                   "inspectability": "ready"}
         changed = deepcopy(row)

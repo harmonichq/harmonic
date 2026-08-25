@@ -63,7 +63,6 @@ from ciq_autotune.analyzers.tuning_priority import (  # noqa: E402
     price_ic_blocks,
 )
 from ciq_autotune.events import BolusEvent, CgmReading  # noqa: E402
-from ciq_autotune.event_comparison import EVENT_CHARTS  # noqa: E402
 from ciq_autotune.findings_projection import (  # noqa: E402
     FindingsProjection,
     WindowQuery,
@@ -675,9 +674,6 @@ def payload() -> dict:
             "exposures": prepared._exposures,
             "scenarios": prepared._scenarios,
             "analysis_generation": ANALYSIS_GENERATION,
-            # Derived from event_comparison.VIEW_CONFIG. The fixture-only mirror
-            # consumes this object instead of transcribing queue eligibility.
-            "event_charts": EVENT_CHARTS,
         },
         # The browser derives its density input from `inputs` by replacing only
         # this generator-authored analyzer catalog.  Freezing the whole input a

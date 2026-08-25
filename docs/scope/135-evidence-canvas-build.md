@@ -48,6 +48,19 @@ The map-level ledger for this whole workstream is `docs/scope/evidence-canvas.md
   into unpinned positions only. Why: that ranking already drives the findings
   queue, so seating agrees with what the queue is telling the user, and #139 then
   re-prices how rank is explained rather than what rank is. `inline` (work order)
+- **Per-finding seating ships as one chart, with the widening filed.** The build
+  seats the top-ranked finding's existing server-published `event_chart`
+  coordinate (`findings_projection.py:505`), falling back to registry order when
+  it is null. Widening that field into an ordered `seats` list (up to four
+  charts, tuned per finding) is filed as a follow-on issue against the same
+  server-owned field, keeping #135 frontend-only. Why: the field is already
+  server-owned, so widening later is well-located rather than rework, and the
+  frontend never becomes a second home for routing. `→ issue`
+- **Surplus seats are dropped, never evicting a pin.** Seats fill unpinned
+  positions in order; anything beyond the free positions is dropped. Why: an
+  explicit pin outranks any recommendation, and without this rule a finding
+  seating more charts than there are free positions has no defined behavior.
+  `inline` (work order)
 
 ## Open questions
 

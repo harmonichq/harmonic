@@ -847,6 +847,9 @@ export function createDiagnoseEventComparison({ root, callbacks = {} }) {
         // does not remount the whole workstation and throw the reader back to
         // the opening depth. Full `refresh()` stays for theme/payload remounts.
         repaintDay: () => glucose.repaintDay(),
+        // #135: leaving Diagnose drops the canvas's pins and focus. Only the
+        // glucose view nests the canvas, so only it has a session to leave.
+        leaveSurface: () => glucose.leaveSurface(),
       };
       return;
     }
@@ -903,6 +906,7 @@ export function createDiagnoseEventComparison({ root, callbacks = {} }) {
     // #666: only the glucose (workstation) view nests a repaintable surface; on
     // any other view a resolved day-load has nothing to repaint.
     repaintDay() { current?.repaintDay?.(); },
+    leaveSurface() { current?.leaveSurface?.(); },
     applyChanges(changes) {
       for (const [key, value] of Object.entries(changes)) {
         if (value == null || value === '') params.delete(key);

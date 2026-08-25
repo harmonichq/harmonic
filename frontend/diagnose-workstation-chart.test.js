@@ -174,8 +174,12 @@ test('renderCanvas draws a wrapped window as two areas with one range label', ()
   const chart = { setOption(next) { option = next; }, off() {}, on() {} };
 
   renderCanvas({ clientWidth: 4000 }, { getInstanceByDom() { return chart; } }, {
-    envelope, markers: [], colors, stats: { spread: 27 }, window: [1320, 120], windowLabel: '22:00–02:00',
+    envelope, markers: [], colors, stats: { spread: 27 }, range: [60, 220],
+    window: [1320, 120], windowLabel: '22:00–02:00',
   });
+
+  assert.deepEqual([option.yAxis[0].min, option.yAxis[0].max], [60, 220],
+    'the strip draws on the injected arrangement range');
 
   const context = option.series.find((series) => series.name === '__context');
   const areas = context.markArea.data.filter(([start]) => start.xAxis != null);
@@ -188,7 +192,8 @@ test('renderCanvas draws a wrapped window as two areas with one range label', ()
   assert.equal(context.markPoint.data.at(-1).label.formatter, 'CONTINUES');
 
   renderCanvas({ clientWidth: 4000 }, { getInstanceByDom() { return chart; } }, {
-    envelope, markers: [], colors, window: [15, 105], windowLabel: '00:15–01:45',
+    envelope, markers: [], colors, range: [40, 300],
+    window: [15, 105], windowLabel: '00:15–01:45',
   });
   assert.deepEqual(option.series.find((series) => series.name === '__context').markArea.data
     .filter(([start]) => start.xAxis != null)
@@ -196,7 +201,7 @@ test('renderCanvas draws a wrapped window as two areas with one range label', ()
 
   for (const window of [[1320, 0], [1440, 120]]) {
     renderCanvas({ clientWidth: 4000 }, { getInstanceByDom() { return chart; } }, {
-      envelope, markers: [], colors, window, windowLabel: 'SELECTED WINDOW',
+      envelope, markers: [], colors, range: [40, 300], window, windowLabel: 'SELECTED WINDOW',
     });
     const degenerateAreas = option.series.find((series) => series.name === '__context').markArea.data
       .filter(([start]) => start.yAxis == null);
@@ -206,7 +211,8 @@ test('renderCanvas draws a wrapped window as two areas with one range label', ()
   }
 
   assert.doesNotThrow(() => renderCanvas({ clientWidth: 4000 }, { getInstanceByDom() { return chart; } }, {
-    envelope, markers: [], colors, window: [0, 0], windowLabel: 'SELECTED WINDOW',
+    envelope, markers: [], colors, range: [40, 300],
+    window: [0, 0], windowLabel: 'SELECTED WINDOW',
   }));
   assert.equal(option.series.find((series) => series.name === '__context').markArea.data
     .filter(([start]) => start.xAxis != null).length, 0);
@@ -231,6 +237,7 @@ test('renderCanvas pans labels and every data series into dimmed neighbouring da
 
   renderCanvas({ clientWidth: 1200 }, { getInstanceByDom() { return chart; } }, {
     envelope, markers: [{ index: 4, count: 1, minute: 60, medianCarbs: 20 }], colors,
+    range: [40, 300],
     window: [1320, 120], displayWindow: [1320, 1560], displayOffset: 135,
   });
 
@@ -276,7 +283,8 @@ test("#130 · a full-travel slide keeps its live band on the unrolled axis", () 
     [[1320, 1560], 135, ['1320', '1560']],       // in range: untouched
   ]) {
     renderCanvas({ clientWidth: 1200 }, { getInstanceByDom() { return chart; } }, {
-      envelope, markers: [], colors, window: [1320, 60], displayWindow, displayOffset,
+      envelope, markers: [], colors, range: [40, 300],
+      window: [1320, 60], displayWindow, displayOffset,
     });
     const axis = option.xAxis[0].data;
     const points = option.series.find((series) => series.name === '__context').markArea.data
@@ -309,7 +317,7 @@ test('#130 · the docked readout reads the pooled bin under a panning axis point
   const chart = { setOption() {}, off() {}, on(name, fn) { handlers[name] = fn; } };
   let reported = null;
   const render = (extra) => renderCanvas({ clientWidth: 1200 }, { getInstanceByDom() { return chart; } }, {
-    envelope, markers: [], colors, window: [1320, 120],
+    envelope, markers: [], colors, range: [40, 300], window: [1320, 120],
     onHover: (item) => { reported = item; }, ...extra,
   });
 

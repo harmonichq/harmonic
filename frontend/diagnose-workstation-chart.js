@@ -622,6 +622,11 @@ function displaySeries(series) {
  */
 export function renderCanvas(el, echarts, opts) {
   const { envelope, markers, colors } = opts;
+  const range = opts.range;
+  if (!Array.isArray(range) || range.length !== 2
+      || !range.every(Number.isFinite) || range[0] >= range[1]) {
+    throw new TypeError('glucose strip needs one injected arrangement range');
+  }
   const stats = opts.stats || null;
   const target = opts.target || [70, 180];
   const [winStart, winEnd] = opts.window || [0, 360];
@@ -827,7 +832,7 @@ export function renderCanvas(el, echarts, opts) {
     ],
     yAxis: [
       {
-        type: 'value', min: 40, max: 300, interval: 60,
+        type: 'value', min: range[0], max: range[1], interval: 60,
         axisLine: { show: false }, axisTick: { show: false },
         axisLabel: { color: colors.muted, fontSize: 10, formatter: '{value}' },
         splitLine: { lineStyle: { color: colors.grid } },

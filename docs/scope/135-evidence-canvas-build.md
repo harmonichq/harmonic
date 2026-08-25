@@ -77,6 +77,14 @@ The map-level ledger for this whole workstream is `docs/scope/evidence-canvas.md
   cohort-key rules already give. Why: operator ruling — mobile-first behavior is a
   separate epic once the UI has settled, and option A is pure CSS where the
   alternatives need new JS state. `inline` (work order)
+- **Three pins derive `1 + 2`, a distinct fifth arrangement.** The pin-count map
+  is 0 → focal + slots, 1 → 50/50 with the strip, 2 → stacked pair, 3 → 1 + 2,
+  4 → quad. The ticket's required-set sentence "three or four give the quad" is
+  **struck as stale**. Why: the approved mock renders 1 + 2 deliberately (STATE D)
+  and the ticket's own evidence obligations name it — two artifacts against one
+  sentence — and an empty quad cell would contradict the layout miniature's rule
+  that the single hollow cell marks where the next chart lands. `inline` (work
+  order)
 
 ## Open questions
 

@@ -622,7 +622,7 @@ function renderMissedMealComparisonRoster(host, caseFile, selectedId, onSelect, 
         : `Announced meal ${row.index + 1}`;
       const detail = row.anchor
         ? `${row.anchor.bg == null ? '—' : Math.round(row.anchor.bg)} · ${row.anchor.label}`
-        : 'Select to view server-owned trace';
+        : "Select to see this meal's glucose trace";
       button.innerHTML = `<span class="when">${when}</span><span class="only">${detail}</span>
         <span class="tier">${cohort.key === 'missed' ? 'Attributed missed meal' : 'Announced meal'}</span>`;
       button.addEventListener('click', () => onSelect(row.id));
@@ -1012,27 +1012,31 @@ const VERDICT_RESIDUE_KEY = { outranked: 'claimed by another factor', no_data: '
  * claimed no hit here. Then there is no published split for the frame's family
  * and the band draws nothing, exactly as it does with no row at all.
  */
-function renderVerdictBand(host, row, family, activeVerdict, onPick) {
+function renderVerdictBand(host, row, family, activeVerdict, onPick = null) {
   if (!row || !row.verdict_counts) return;
   const vc = row.verdict_counts_by_family
     ? row.verdict_counts_by_family[family] : row.verdict_counts;
   if (!vc) return;
   const groups = Object.entries(VERDICT_BAND_KEY).map(([key, lead]) => ({ key, lead, count: vc[key] || 0 }));
+  const interactive = typeof onPick === 'function';
+  const part = (className, group, content) => interactive
+    ? `<button type="button" class="${className}" data-verdict="${group.key}"
+        aria-pressed="${group.key === activeVerdict}" aria-label="${group.lead} · ${group.count}">${content}</button>`
+    : `<span class="${className}" data-verdict="${group.key}"
+        aria-label="${group.lead} · ${group.count}">${content}</span>`;
   const band = document.createElement('div');
   band.className = 'vband';
-  const seg = (g) => `data-verdict="${g.key}" aria-pressed="${g.key === activeVerdict}"`;
   band.innerHTML = `
     <div class="bar" role="group" aria-label="Verdict split"
          style="grid-template-columns:${groups.map((g) => Math.max(g.count, 0.001)).join('fr ')}fr">
-      ${groups.map((g) => `<button type="button" class="seg" ${seg(g)}
-          aria-label="${g.lead} · ${g.count}"></button>`).join('')}
+      ${groups.map((g) => part('seg', g, '')).join('')}
     </div>
     <div class="keys">
-      ${groups.map((g) => `<button type="button" class="key" ${seg(g)}>
-          <span class="lead">${g.lead}</span><span class="n">${g.count}</span></button>`).join('')}
+      ${groups.map((g) => part('key', g,
+        `<span class="lead">${g.lead}</span><span class="n">${g.count}</span>`)).join('')}
     </div>`;
-  for (const b of band.querySelectorAll('button[data-verdict]')) {
-    b.addEventListener('click', () => onPick(b.dataset.verdict));
+  for (const button of band.querySelectorAll('button[data-verdict]')) {
+    button.addEventListener('click', () => onPick(button.dataset.verdict));
   }
   host.append(band);
   const residue = Object.entries(VERDICT_RESIDUE_KEY)
@@ -2352,6 +2356,10 @@ function boot(root, data, callbacks, signal) {
     const missedMealComparison = caseFile.finding.lever === 'missed_meal'
       && caseFile.projection.alignment === 'event';
     if (missedMealComparison) {
+      /* The attribution header's verdict accounting and the meal comparison
+         describe different server-owned populations. Keep both visible, but
+         do not turn this comparison into a verdict-filtered roster. */
+      renderVerdictBand(host, caseFile, caseFile.family, null);
       renderMissedMealComparisonRoster(host, caseFile, f.selectedId, selectOcc,
         () => { shownRows = shownRows > EVIDENCE_CAP ? EVIDENCE_CAP : Infinity; paint(); },
         shownRows);

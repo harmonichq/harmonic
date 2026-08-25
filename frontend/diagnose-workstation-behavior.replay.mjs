@@ -39,6 +39,8 @@ const PAGE_PATHS = new Set(ROUTER_TABS.map((tab) => `/${tab.id}`));
 const MIME = { '.js': 'text/javascript', '.css': 'text/css', '.html': 'text/html', '.json': 'application/json', '.svg': 'image/svg+xml' };
 const FINDINGS_PROJECTION = JSON.parse(await readFile(
   join(ROOT, 'frontend/__fixtures__/findings-projection.json'), 'utf8'));
+const MISSED_MEAL_COMPARISON = JSON.parse(await readFile(
+  join(ROOT, 'frontend/__fixtures__/missed-meal-comparison.json'), 'utf8'));
 
 const evidenceDir = process.env.DIAGNOSE_EVIDENCE_DIR || null;
 const evidenceViewport = () => process.env.VIEWPORT || '1440x900';
@@ -3554,6 +3556,15 @@ export const C44 = async (page) => {
     'C44 exposes ALIGN from the server-owned missed-meal coordinate');
   await page.getByRole('button', { name: 'By event', exact: true }).click();
   await page.waitForSelector('#ec-chart');
+  const verdictBand = await page.locator('#level .vband').evaluate((band) => ({
+    segments: [...band.querySelectorAll('.bar [aria-label]')]
+      .map((part) => part.getAttribute('aria-label')),
+    residue: band.parentElement.querySelector('.vband-foot')?.textContent.trim() ?? null,
+  }));
+  is(verdictBand, {
+    segments: ['Meets criteria · 6', 'Borderline · 1', 'Does not meet · 1'],
+    residue: '1 claimed by another factor · 1 not comparable',
+  }, 'C44 retains fired, near-miss, clean, outranked, and no-data High accounting');
   const comparison = await page.locator('#level .lvl-cap').innerText();
   ok(/attributed missed.*announced.*not comparable/i.test(comparison),
     `C44 prints the three served comparison counts (${comparison})`);
@@ -3561,6 +3572,8 @@ export const C44 = async (page) => {
     'C44 renders the attributed-missed cohort row');
   const announced = page.locator('[data-comparison-cohort="announced"]').first();
   ok(await announced.isVisible(), 'C44 renders an announced-meal occurrence outside the High roster');
+  is(await announced.locator('.only').innerText(), "Select to see this meal's glucose trace",
+    'C44 announced-meal rows describe the glucose trace a selection reveals');
   await announced.click();
   await page.waitForSelector('#level .case-facts');
   const evidence = await page.locator('#level .case-facts').innerText();
@@ -3579,6 +3592,47 @@ export const C56 = async (page) => {
     'C56 does not fall back to High roster rows when the cohort is empty');
   ok(await page.locator('[data-comparison-cohort="announced"]').first().isVisible(),
     'C56 leaves the announced-meal baseline available beside the empty cohort');
+};
+
+/** C57 · Selecting an attributed missed meal emphasizes the served missed
+    comparison cohort, not the finding's fired verdict cohort. */
+export const C57 = async (page) => {
+  await openWholeDay(page);
+  await clickQueueRow(page, 'Missed / unannounced meal');
+  await page.getByRole('button', { name: 'By event', exact: true }).click();
+  await page.waitForSelector('#ec-chart');
+  const request = page.waitForRequest((candidate) => {
+    const url = new URL(candidate.url());
+    return url.pathname === '/api/diagnose/finding-case-file' && url.searchParams.has('occ');
+  });
+  await page.locator('[data-comparison-cohort="missed"]').first().click();
+  const requested = new URL((await request).url()).searchParams.get('occ');
+  await page.waitForSelector('#level .case-facts');
+  const drawn = await page.evaluate(() => {
+    const exposed = window.__diagnoseEventComparison;
+    const selected = exposed?.selected;
+    const series = exposed?.chart.getOption().series || [];
+    const line = (cohort) => series.find((item) => item.id === `${cohort}:line:limited`);
+    const episode = (cohort) => series.find((item) => item.id?.startsWith(`${cohort}:episode:`));
+    const trace = series.find((item) => item.name === 'Selected occurrence');
+    return {
+      id: selected?.id ?? null,
+      cohort: selected?.verdict?.cohort ?? null,
+      trace: trace?.data ?? null,
+      responseTrace: selected?.glucose?.map((point) => [point.minute, point.bg]) ?? null,
+      opacity: { missed: line('missed')?.lineStyle?.opacity ?? null,
+        announced: episode('announced')?.lineStyle?.opacity ?? null },
+      legend: [...document.querySelectorAll('#ec-chart-key [data-cohort]')]
+        .map((item) => [item.dataset.cohort, item.dataset.selectedCohort]),
+    };
+  });
+  is(requested, drawn.id, 'C57 selection requests the server-owned attributed-missed occurrence');
+  is(drawn.cohort, 'missed', 'C57 uses the served missed comparison cohort for emphasis');
+  is(drawn.opacity, { missed: .5, announced: null },
+    'C57 emphasizes the served limited missed aggregate without inventing an announced aggregate');
+  is(Object.fromEntries(drawn.legend).missed, 'true', 'C57 legend marks the missed cohort selected');
+  is(Object.fromEntries(drawn.legend).announced, 'false', 'C57 legend leaves the announced cohort unselected');
+  is(drawn.trace, drawn.responseTrace, 'C57 draws the exact selected attributed-missed trace');
 };
 
 /* The ordinary generated projection withholds some case-file rows. A story may
@@ -3605,7 +3659,7 @@ export const generatedFindingPreparation = (preparation, caseFiles, findingId) =
   return next;
 };
 
-const generatedFindingPose = (findingId) => ({ preparation, caseFiles }) => ({
+export const generatedFindingPose = (findingId) => ({ preparation, caseFiles }) => ({
   body: generatedFindingPreparation(preparation, caseFiles, findingId),
 });
 
@@ -4121,6 +4175,17 @@ export const STORIES = [
     case: async ({ url, body, caseFiles }) => !url.searchParams.get('occ')
       ? { body: structuredClone(caseFiles.cases['finding:missed_meal'].empty_event) } : { body },
   } }],
+  ['C57', C57, 'typical', { caseScenario: {
+    /* This generated case-file fixture has a limited missed aggregate and a
+       withheld announced cohort, so selected-cohort emphasis is observable
+       through the public built app without inventing an announced aggregate. */
+    case: async ({ url, body }) => {
+      const source = url.searchParams.has('occ')
+        ? MISSED_MEAL_COMPARISON.selected_missed : MISSED_MEAL_COMPARISON.payload;
+      return { body: { ...structuredClone(source), projection_id: body.projection_id,
+        window: structuredClone(body.window) } };
+    },
+  }, findingsProjectionInputs: generatedFindingProjection('finding:missed_meal') }],
   ['D1', D1, 'dense'], ['D2', D2, 'dense'], ['D3', D3, 'dense'],
 ];
 

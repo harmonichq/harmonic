@@ -3,9 +3,10 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 import { queryState } from './diagnose-workstation.js';
+import { assertMatchingFindingCasePreparation } from './finding-case-file-validation.js';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 import {
-  generatedFindingPreparation,
+  generatedFindingPose,
   generatedFindingProjection,
 } from './diagnose-workstation-behavior.replay.mjs';
 
@@ -38,14 +39,14 @@ test('C44/C56 replay poses enter the existing Findings queue once', () => {
     'C56 passes its generated queue pose to the app opener, not only to the case handler');
 });
 
-test('generated finding preparation keeps an already projected ready finding unique', () => {
+test('generated finding story pose preserves a ready id already in its preparation', () => {
   const caseFiles = JSON.parse(readFileSync(
     new URL('../mockups/diagnose-workstation.synthetic/finding-case-files.json', import.meta.url), 'utf8',
   ));
   const id = 'finding:missed_meal';
   const preparation = structuredClone(caseFiles.preparation);
   const before = preparation.rendered_rows.filter((row) => row.id === id).length;
-  const posed = generatedFindingPreparation(preparation, caseFiles, id);
+  const posed = generatedFindingPose(id)({ preparation, caseFiles }).body;
   assert.equal(posed.rendered_rows.filter((row) => row.id === id).length, before,
     'a queue-projected row is not duplicated in the preparation response');
   assert.equal(posed.findings.rows.filter((row) => row.id === id).length, 1,
@@ -69,7 +70,14 @@ test('generated missed-meal queue pose does not duplicate a served row', () => {
     scenarios: payload.scenarios,
     event_charts: projectionFixture.inputs.event_charts,
   });
-  const posed = generatedFindingProjection(id)(served, caseFiles);
-  assert.equal(posed.rows.filter((row) => row.id === id).length, 1,
+  const projection = generatedFindingProjection(id)(served, caseFiles);
+  assert.equal(projection.rows.filter((row) => row.id === id).length, 1,
     'the replay sends one ready missed-meal row through the same fixture projection as the built app');
+  const preparation = structuredClone(caseFiles.preparation);
+  preparation.findings = structuredClone(projection);
+  const posed = generatedFindingPose(id)({ preparation, caseFiles }).body;
+  assert.equal(posed.findings.rows.filter((row) => row.id === id).length, 1,
+    'the combined queue projection and story pose retain one missed-meal finding');
+  assert.doesNotThrow(() => assertMatchingFindingCasePreparation(posed, null),
+    'the combined pose remains a valid no-duplicate-ready-id preparation response');
 });

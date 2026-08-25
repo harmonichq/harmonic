@@ -588,6 +588,10 @@ function chartOption(surface, coordinates, copy, cohortOrder, cohorts, aggregate
   };
 }
 
+export function caseFileSelectionCohort(detail) {
+  return detail?.comparison_cohort || detail?.verdict || null;
+}
+
 function eventSurfaceInput(payload) {
   if (payload.schema !== 'diagnose-finding-case-file-v1') {
     return { projection: payload, copy: viewCopy[payload.coordinates.view] };
@@ -606,7 +610,10 @@ function eventSurfaceInput(payload) {
   const selection = detail ? {
     state: 'selected', requested_id: payload.selection.requested_id,
     detail: { ...detail, anchor: { ...detail.anchor, date: detail.date },
-      verdict: { cohort: detail.verdict } },
+      /* A missed-meal case's two cohorts are not verdict cohorts. The served
+         comparison cohort controls its aggregate emphasis; ordinary Finding
+         case files retain their existing verdict-keyed emphasis. */
+      verdict: { cohort: caseFileSelectionCohort(detail) } },
   } : payload.selection;
   return {
     projection: {

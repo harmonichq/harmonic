@@ -1,13 +1,82 @@
 {
  "_generated_by": "scripts/gen_ic_block_evidence_fixtures.py",
- "_note": "SYNTHETIC. Current I:C blocks and run rosters are real analyzer output; CGM curves are deterministic invented evidence.",
+ "_note": "SYNTHETIC. Current I:C blocks and run rosters are production fuzzy analyzer output; CGM curves are deterministic invented evidence.",
  "cases": {
+  "all_rejected": {
+   "analysis_generation": "ic-block-evidence-fixture:0",
+   "block": {
+    "asserts_move": false,
+    "block_id": 0,
+    "effective_support": 0.0,
+    "end_min": 1440,
+    "examined_runs": 1,
+    "excluded_runs": 1,
+    "label": "All day",
+    "start_min": 0,
+    "state": "collecting",
+    "support": 0
+   },
+   "runs": [
+    {
+     "bg_outcome_u": -5.2,
+     "carbs": 20.0,
+     "cgm_end_min": 315.0,
+     "cgm_start_min": -10.0,
+     "directional_only": true,
+     "effective_insulin": 0.4,
+     "end_t": "2026-01-02T09:00:00",
+     "in_pool": false,
+     "member_offsets_min": [
+      0.0
+     ],
+     "n_meals": 1,
+     "outcome_bg": 40.0,
+     "outcome_min": 300.0,
+     "ownership": 1.0,
+     "run_id": "2026-01-02T09:00:00",
+     "start_bg": 300,
+     "t": "2026-01-02T09:00:00",
+     "true_ic": 50.0
+    }
+   ],
+   "schema": "diagnose-carb-ratio-block-evidence-v1",
+   "series": [
+    {
+     "points": [
+      {
+       "bg": 40,
+       "minute": 290.0
+      },
+      {
+       "bg": 40,
+       "minute": 295.0
+      },
+      {
+       "bg": 40,
+       "minute": 300.0
+      },
+      {
+       "bg": 40,
+       "minute": 305.0
+      },
+      {
+       "bg": 40,
+       "minute": 310.0
+      }
+     ],
+     "run_id": "2026-01-02T09:00:00"
+    }
+   ]
+  },
   "below_floor": {
    "analysis_generation": "ic-block-evidence-fixture:0",
    "block": {
     "asserts_move": false,
     "block_id": 0,
+    "effective_support": 4.0,
     "end_min": 1440,
+    "examined_runs": 4,
+    "excluded_runs": 0,
     "label": "All day",
     "start_min": 0,
     "state": "below-floor",
@@ -29,6 +98,7 @@
      "n_meals": 1,
      "outcome_bg": null,
      "outcome_min": 300.0,
+     "ownership": 1.0,
      "run_id": "2026-01-01T09:00:00",
      "start_bg": 110.0,
      "t": "2026-01-01T09:00:00",
@@ -49,6 +119,7 @@
      "n_meals": 1,
      "outcome_bg": null,
      "outcome_min": 300.0,
+     "ownership": 1.0,
      "run_id": "2026-01-02T09:00:00",
      "start_bg": 110.0,
      "t": "2026-01-02T09:00:00",
@@ -69,6 +140,7 @@
      "n_meals": 1,
      "outcome_bg": null,
      "outcome_min": 300.0,
+     "ownership": 1.0,
      "run_id": "2026-01-03T09:00:00",
      "start_bg": 110.0,
      "t": "2026-01-03T09:00:00",
@@ -89,6 +161,7 @@
      "n_meals": 1,
      "outcome_bg": null,
      "outcome_min": 300.0,
+     "ownership": 1.0,
      "run_id": "2026-01-04T09:00:00",
      "start_bg": 110.0,
      "t": "2026-01-04T09:00:00",
@@ -171,16 +244,19 @@
    "analysis_generation": "ic-block-evidence-fixture:0",
    "block": {
     "asserts_move": false,
-    "block_id": 0,
-    "end_min": 1440,
-    "label": "All day",
-    "start_min": 0,
+    "block_id": 1200,
+    "effective_support": 9.0,
+    "end_min": 420,
+    "examined_runs": 9,
+    "excluded_runs": 0,
+    "label": "Overnight",
+    "start_min": 1200,
     "state": "numeric",
     "support": 9
    },
    "runs": [
     {
-     "bg_outcome_u": null,
+     "bg_outcome_u": 0.0,
      "carbs": 120.0,
      "cgm_end_min": 435.0,
      "cgm_start_min": -10.0,
@@ -193,15 +269,16 @@
       120.0
      ],
      "n_meals": 2,
-     "outcome_bg": null,
+     "outcome_bg": 110.0,
      "outcome_min": 420.0,
+     "ownership": 1.0,
      "run_id": "2026-01-01T23:00:00",
      "start_bg": 110.0,
      "t": "2026-01-01T23:00:00",
      "true_ic": 5.0
     },
     {
-     "bg_outcome_u": null,
+     "bg_outcome_u": 0.0,
      "carbs": 120.0,
      "cgm_end_min": 435.0,
      "cgm_start_min": -10.0,
@@ -214,15 +291,16 @@
       120.0
      ],
      "n_meals": 2,
-     "outcome_bg": null,
+     "outcome_bg": 110.0,
      "outcome_min": 420.0,
+     "ownership": 1.0,
      "run_id": "2026-01-02T23:00:00",
      "start_bg": 110.0,
      "t": "2026-01-02T23:00:00",
      "true_ic": 5.0
     },
     {
-     "bg_outcome_u": null,
+     "bg_outcome_u": 0.0,
      "carbs": 120.0,
      "cgm_end_min": 435.0,
      "cgm_start_min": -10.0,
@@ -235,15 +313,16 @@
       120.0
      ],
      "n_meals": 2,
-     "outcome_bg": null,
+     "outcome_bg": 110.0,
      "outcome_min": 420.0,
+     "ownership": 1.0,
      "run_id": "2026-01-03T23:00:00",
      "start_bg": 110.0,
      "t": "2026-01-03T23:00:00",
      "true_ic": 5.0
     },
     {
-     "bg_outcome_u": null,
+     "bg_outcome_u": 0.0,
      "carbs": 120.0,
      "cgm_end_min": 435.0,
      "cgm_start_min": -10.0,
@@ -256,15 +335,16 @@
       120.0
      ],
      "n_meals": 2,
-     "outcome_bg": null,
+     "outcome_bg": 110.0,
      "outcome_min": 420.0,
+     "ownership": 1.0,
      "run_id": "2026-01-04T23:00:00",
      "start_bg": 110.0,
      "t": "2026-01-04T23:00:00",
      "true_ic": 5.0
     },
     {
-     "bg_outcome_u": null,
+     "bg_outcome_u": 0.0,
      "carbs": 120.0,
      "cgm_end_min": 435.0,
      "cgm_start_min": -10.0,
@@ -277,15 +357,16 @@
       120.0
      ],
      "n_meals": 2,
-     "outcome_bg": null,
+     "outcome_bg": 110.0,
      "outcome_min": 420.0,
+     "ownership": 1.0,
      "run_id": "2026-01-05T23:00:00",
      "start_bg": 110.0,
      "t": "2026-01-05T23:00:00",
      "true_ic": 5.0
     },
     {
-     "bg_outcome_u": null,
+     "bg_outcome_u": 0.0,
      "carbs": 120.0,
      "cgm_end_min": 435.0,
      "cgm_start_min": -10.0,
@@ -298,15 +379,16 @@
       120.0
      ],
      "n_meals": 2,
-     "outcome_bg": null,
+     "outcome_bg": 110.0,
      "outcome_min": 420.0,
+     "ownership": 1.0,
      "run_id": "2026-01-06T23:00:00",
      "start_bg": 110.0,
      "t": "2026-01-06T23:00:00",
      "true_ic": 5.0
     },
     {
-     "bg_outcome_u": null,
+     "bg_outcome_u": 0.0,
      "carbs": 120.0,
      "cgm_end_min": 435.0,
      "cgm_start_min": -10.0,
@@ -319,15 +401,16 @@
       120.0
      ],
      "n_meals": 2,
-     "outcome_bg": null,
+     "outcome_bg": 110.0,
      "outcome_min": 420.0,
+     "ownership": 1.0,
      "run_id": "2026-01-07T23:00:00",
      "start_bg": 110.0,
      "t": "2026-01-07T23:00:00",
      "true_ic": 5.0
     },
     {
-     "bg_outcome_u": null,
+     "bg_outcome_u": 0.0,
      "carbs": 120.0,
      "cgm_end_min": 435.0,
      "cgm_start_min": -10.0,
@@ -340,15 +423,16 @@
       120.0
      ],
      "n_meals": 2,
-     "outcome_bg": null,
+     "outcome_bg": 110.0,
      "outcome_min": 420.0,
+     "ownership": 1.0,
      "run_id": "2026-01-08T23:00:00",
      "start_bg": 110.0,
      "t": "2026-01-08T23:00:00",
      "true_ic": 5.0
     },
     {
-     "bg_outcome_u": null,
+     "bg_outcome_u": 0.0,
      "carbs": 120.0,
      "cgm_end_min": 435.0,
      "cgm_start_min": -10.0,
@@ -361,8 +445,9 @@
       120.0
      ],
      "n_meals": 2,
-     "outcome_bg": null,
+     "outcome_bg": 110.0,
      "outcome_min": 420.0,
+     "ownership": 1.0,
      "run_id": "2026-01-09T23:00:00",
      "start_bg": 110.0,
      "t": "2026-01-09T23:00:00",
@@ -374,20 +459,44 @@
     {
      "points": [
       {
-       "bg": 90,
-       "minute": -10.0
+       "bg": 110,
+       "minute": 290.0
       },
       {
-       "bg": 100,
-       "minute": 0.0
+       "bg": 110,
+       "minute": 295.0
       },
       {
-       "bg": 220,
-       "minute": 120.0
+       "bg": 110,
+       "minute": 300.0
       },
       {
-       "bg": 535,
-       "minute": 435.0
+       "bg": 110,
+       "minute": 305.0
+      },
+      {
+       "bg": 110,
+       "minute": 310.0
+      },
+      {
+       "bg": 110,
+       "minute": 410.0
+      },
+      {
+       "bg": 110,
+       "minute": 415.0
+      },
+      {
+       "bg": 110,
+       "minute": 420.0
+      },
+      {
+       "bg": 110,
+       "minute": 425.0
+      },
+      {
+       "bg": 110,
+       "minute": 430.0
       }
      ],
      "run_id": "2026-01-01T23:00:00"
@@ -395,20 +504,44 @@
     {
      "points": [
       {
-       "bg": 90,
-       "minute": -10.0
+       "bg": 110,
+       "minute": 290.0
       },
       {
-       "bg": 100,
-       "minute": 0.0
+       "bg": 110,
+       "minute": 295.0
       },
       {
-       "bg": 220,
-       "minute": 120.0
+       "bg": 110,
+       "minute": 300.0
       },
       {
-       "bg": 535,
-       "minute": 435.0
+       "bg": 110,
+       "minute": 305.0
+      },
+      {
+       "bg": 110,
+       "minute": 310.0
+      },
+      {
+       "bg": 110,
+       "minute": 410.0
+      },
+      {
+       "bg": 110,
+       "minute": 415.0
+      },
+      {
+       "bg": 110,
+       "minute": 420.0
+      },
+      {
+       "bg": 110,
+       "minute": 425.0
+      },
+      {
+       "bg": 110,
+       "minute": 430.0
       }
      ],
      "run_id": "2026-01-02T23:00:00"
@@ -416,20 +549,44 @@
     {
      "points": [
       {
-       "bg": 90,
-       "minute": -10.0
+       "bg": 110,
+       "minute": 290.0
       },
       {
-       "bg": 100,
-       "minute": 0.0
+       "bg": 110,
+       "minute": 295.0
       },
       {
-       "bg": 220,
-       "minute": 120.0
+       "bg": 110,
+       "minute": 300.0
       },
       {
-       "bg": 535,
-       "minute": 435.0
+       "bg": 110,
+       "minute": 305.0
+      },
+      {
+       "bg": 110,
+       "minute": 310.0
+      },
+      {
+       "bg": 110,
+       "minute": 410.0
+      },
+      {
+       "bg": 110,
+       "minute": 415.0
+      },
+      {
+       "bg": 110,
+       "minute": 420.0
+      },
+      {
+       "bg": 110,
+       "minute": 425.0
+      },
+      {
+       "bg": 110,
+       "minute": 430.0
       }
      ],
      "run_id": "2026-01-03T23:00:00"
@@ -437,20 +594,44 @@
     {
      "points": [
       {
-       "bg": 90,
-       "minute": -10.0
+       "bg": 110,
+       "minute": 290.0
       },
       {
-       "bg": 100,
-       "minute": 0.0
+       "bg": 110,
+       "minute": 295.0
       },
       {
-       "bg": 220,
-       "minute": 120.0
+       "bg": 110,
+       "minute": 300.0
       },
       {
-       "bg": 535,
-       "minute": 435.0
+       "bg": 110,
+       "minute": 305.0
+      },
+      {
+       "bg": 110,
+       "minute": 310.0
+      },
+      {
+       "bg": 110,
+       "minute": 410.0
+      },
+      {
+       "bg": 110,
+       "minute": 415.0
+      },
+      {
+       "bg": 110,
+       "minute": 420.0
+      },
+      {
+       "bg": 110,
+       "minute": 425.0
+      },
+      {
+       "bg": 110,
+       "minute": 430.0
       }
      ],
      "run_id": "2026-01-04T23:00:00"
@@ -458,20 +639,44 @@
     {
      "points": [
       {
-       "bg": 90,
-       "minute": -10.0
+       "bg": 110,
+       "minute": 290.0
       },
       {
-       "bg": 100,
-       "minute": 0.0
+       "bg": 110,
+       "minute": 295.0
       },
       {
-       "bg": 220,
-       "minute": 120.0
+       "bg": 110,
+       "minute": 300.0
       },
       {
-       "bg": 535,
-       "minute": 435.0
+       "bg": 110,
+       "minute": 305.0
+      },
+      {
+       "bg": 110,
+       "minute": 310.0
+      },
+      {
+       "bg": 110,
+       "minute": 410.0
+      },
+      {
+       "bg": 110,
+       "minute": 415.0
+      },
+      {
+       "bg": 110,
+       "minute": 420.0
+      },
+      {
+       "bg": 110,
+       "minute": 425.0
+      },
+      {
+       "bg": 110,
+       "minute": 430.0
       }
      ],
      "run_id": "2026-01-05T23:00:00"
@@ -479,20 +684,44 @@
     {
      "points": [
       {
-       "bg": 90,
-       "minute": -10.0
+       "bg": 110,
+       "minute": 290.0
       },
       {
-       "bg": 100,
-       "minute": 0.0
+       "bg": 110,
+       "minute": 295.0
       },
       {
-       "bg": 220,
-       "minute": 120.0
+       "bg": 110,
+       "minute": 300.0
       },
       {
-       "bg": 535,
-       "minute": 435.0
+       "bg": 110,
+       "minute": 305.0
+      },
+      {
+       "bg": 110,
+       "minute": 310.0
+      },
+      {
+       "bg": 110,
+       "minute": 410.0
+      },
+      {
+       "bg": 110,
+       "minute": 415.0
+      },
+      {
+       "bg": 110,
+       "minute": 420.0
+      },
+      {
+       "bg": 110,
+       "minute": 425.0
+      },
+      {
+       "bg": 110,
+       "minute": 430.0
       }
      ],
      "run_id": "2026-01-06T23:00:00"
@@ -500,20 +729,44 @@
     {
      "points": [
       {
-       "bg": 90,
-       "minute": -10.0
+       "bg": 110,
+       "minute": 290.0
       },
       {
-       "bg": 100,
-       "minute": 0.0
+       "bg": 110,
+       "minute": 295.0
       },
       {
-       "bg": 220,
-       "minute": 120.0
+       "bg": 110,
+       "minute": 300.0
       },
       {
-       "bg": 535,
-       "minute": 435.0
+       "bg": 110,
+       "minute": 305.0
+      },
+      {
+       "bg": 110,
+       "minute": 310.0
+      },
+      {
+       "bg": 110,
+       "minute": 410.0
+      },
+      {
+       "bg": 110,
+       "minute": 415.0
+      },
+      {
+       "bg": 110,
+       "minute": 420.0
+      },
+      {
+       "bg": 110,
+       "minute": 425.0
+      },
+      {
+       "bg": 110,
+       "minute": 430.0
       }
      ],
      "run_id": "2026-01-07T23:00:00"
@@ -521,20 +774,44 @@
     {
      "points": [
       {
-       "bg": 90,
-       "minute": -10.0
+       "bg": 110,
+       "minute": 290.0
       },
       {
-       "bg": 100,
-       "minute": 0.0
+       "bg": 110,
+       "minute": 295.0
       },
       {
-       "bg": 220,
-       "minute": 120.0
+       "bg": 110,
+       "minute": 300.0
       },
       {
-       "bg": 535,
-       "minute": 435.0
+       "bg": 110,
+       "minute": 305.0
+      },
+      {
+       "bg": 110,
+       "minute": 310.0
+      },
+      {
+       "bg": 110,
+       "minute": 410.0
+      },
+      {
+       "bg": 110,
+       "minute": 415.0
+      },
+      {
+       "bg": 110,
+       "minute": 420.0
+      },
+      {
+       "bg": 110,
+       "minute": 425.0
+      },
+      {
+       "bg": 110,
+       "minute": 430.0
       }
      ],
      "run_id": "2026-01-08T23:00:00"
@@ -542,20 +819,44 @@
     {
      "points": [
       {
-       "bg": 90,
-       "minute": -10.0
+       "bg": 110,
+       "minute": 290.0
       },
       {
-       "bg": 100,
-       "minute": 0.0
+       "bg": 110,
+       "minute": 295.0
       },
       {
-       "bg": 220,
-       "minute": 120.0
+       "bg": 110,
+       "minute": 300.0
       },
       {
-       "bg": 535,
-       "minute": 435.0
+       "bg": 110,
+       "minute": 305.0
+      },
+      {
+       "bg": 110,
+       "minute": 310.0
+      },
+      {
+       "bg": 110,
+       "minute": 410.0
+      },
+      {
+       "bg": 110,
+       "minute": 415.0
+      },
+      {
+       "bg": 110,
+       "minute": 420.0
+      },
+      {
+       "bg": 110,
+       "minute": 425.0
+      },
+      {
+       "bg": 110,
+       "minute": 430.0
       }
      ],
      "run_id": "2026-01-09T23:00:00"
@@ -567,7 +868,10 @@
    "block": {
     "asserts_move": false,
     "block_id": 0,
+    "effective_support": 8.0,
     "end_min": 1440,
+    "examined_runs": 9,
+    "excluded_runs": 1,
     "label": "All day",
     "start_min": 0,
     "state": "numeric",
@@ -589,6 +893,7 @@
      "n_meals": 1,
      "outcome_bg": 110.0,
      "outcome_min": 300.0,
+     "ownership": 1.0,
      "run_id": "2026-01-02T09:00:00",
      "start_bg": 110.0,
      "t": "2026-01-02T09:00:00",
@@ -609,6 +914,7 @@
      "n_meals": 1,
      "outcome_bg": 110.0,
      "outcome_min": 300.0,
+     "ownership": 1.0,
      "run_id": "2026-01-03T09:00:00",
      "start_bg": 110.0,
      "t": "2026-01-03T09:00:00",
@@ -629,6 +935,7 @@
      "n_meals": 1,
      "outcome_bg": 110.0,
      "outcome_min": 300.0,
+     "ownership": 1.0,
      "run_id": "2026-01-04T09:00:00",
      "start_bg": 110.0,
      "t": "2026-01-04T09:00:00",
@@ -649,6 +956,7 @@
      "n_meals": 1,
      "outcome_bg": 110.0,
      "outcome_min": 300.0,
+     "ownership": 1.0,
      "run_id": "2026-01-05T09:00:00",
      "start_bg": 110.0,
      "t": "2026-01-05T09:00:00",
@@ -669,6 +977,7 @@
      "n_meals": 1,
      "outcome_bg": 110.0,
      "outcome_min": 300.0,
+     "ownership": 1.0,
      "run_id": "2026-01-06T09:00:00",
      "start_bg": 110.0,
      "t": "2026-01-06T09:00:00",
@@ -689,6 +998,7 @@
      "n_meals": 1,
      "outcome_bg": 110.0,
      "outcome_min": 300.0,
+     "ownership": 1.0,
      "run_id": "2026-01-07T09:00:00",
      "start_bg": 110.0,
      "t": "2026-01-07T09:00:00",
@@ -709,6 +1019,7 @@
      "n_meals": 1,
      "outcome_bg": 110.0,
      "outcome_min": 300.0,
+     "ownership": 1.0,
      "run_id": "2026-01-08T09:00:00",
      "start_bg": 110.0,
      "t": "2026-01-08T09:00:00",
@@ -729,6 +1040,7 @@
      "n_meals": 1,
      "outcome_bg": 110.0,
      "outcome_min": 300.0,
+     "ownership": 1.0,
      "run_id": "2026-01-09T09:00:00",
      "start_bg": 110.0,
      "t": "2026-01-09T09:00:00",
@@ -749,6 +1061,7 @@
      "n_meals": 1,
      "outcome_bg": 40.0,
      "outcome_min": 300.0,
+     "ownership": 1.0,
      "run_id": "2026-01-10T09:00:00",
      "start_bg": 300,
      "t": "2026-01-10T09:00:00",

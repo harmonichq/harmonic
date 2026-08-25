@@ -11,7 +11,8 @@ from datetime import datetime, timedelta
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from ciq_autotune.analyzers.ic import IcConfig, analyze_ic_blocks  # noqa: E402
+from ciq_autotune.analyzers.ic import IcConfig  # noqa: E402
+from ciq_autotune.analyzers.ic_regression import analyze_ic_blocks_fuzzy  # noqa: E402
 from ciq_autotune.events import BolusEvent, CgmReading  # noqa: E402
 from ciq_autotune.ic_block_evidence import prepare_ic_block_evidence  # noqa: E402
 
@@ -33,10 +34,11 @@ def _meal(day, hour, *, carbs=60.0, insulin=12.0, bg=110.0):
                       carbs=carbs, carb_ratio=5.0, bg=bg, completion="Completed")
 
 
-def _project(events, *, cgm=None):
-    blocks, _ = analyze_ic_blocks(events, [(0, 5.0)], config=IcConfig(), observed_days=90,
-                                  cgm_readings=cgm, isf_effective=50.0)
-    block = blocks[0].to_dict()
+def _project(events, *, segments=((0, 5.0),), block_id=0, cgm=None):
+    blocks, _ = analyze_ic_blocks_fuzzy(events, list(segments), config=IcConfig(),
+                                        observed_days=90, cgm_readings=cgm,
+                                        isf_effective=50.0)
+    block = next(row.to_dict() for row in blocks if row.block_id == block_id)
     readings = cgm or [
         CgmReading(datetime.fromisoformat(run["t"]) + timedelta(minutes=minute),
                    100 + minute, "synthetic")
@@ -48,9 +50,17 @@ def _project(events, *, cgm=None):
 
 
 def payload():
-    cross_midnight = _project([
-        item for day in range(9) for item in (_meal(day, 23), _meal(day + 1, 1))
-    ])
+    cross_events = [
+        item for day in range(9)
+        for item in (_meal(day, 23, bg=110.0), _meal(day + 1, 1, bg=110.0))
+    ]
+    cross_cgm = [
+        CgmReading(event.t + timedelta(minutes=minute), 110, "synthetic")
+        for event in cross_events for minute in (290, 295, 300, 305, 310)
+    ]
+    cross_midnight = _project(cross_events, cgm=cross_cgm,
+                              segments=((0, 5.0), (420, 4.0), (1200, 5.0)),
+                              block_id=1200)
     events = [_meal(day, 9) for day in range(1, 9)] + [_meal(9, 9, carbs=20, insulin=4,
                                                               bg=300)]
     cgm = [
@@ -60,12 +70,16 @@ def payload():
     ]
     directional = _project(events, cgm=cgm)
     below_floor = _project([_meal(day, 9) for day in range(4)])
+    rejected_event = _meal(1, 9, carbs=20, insulin=4, bg=300)
+    rejected_cgm = [CgmReading(rejected_event.t + timedelta(minutes=minute), 40, "synthetic")
+                    for minute in (290, 295, 300, 305, 310)]
+    all_rejected = _project([rejected_event], cgm=rejected_cgm)
     return {
         "_generated_by": "scripts/gen_ic_block_evidence_fixtures.py",
-        "_note": ("SYNTHETIC. Current I:C blocks and run rosters are real analyzer "
-                  "output; CGM curves are deterministic invented evidence."),
+        "_note": ("SYNTHETIC. Current I:C blocks and run rosters are production fuzzy "
+                  "analyzer output; CGM curves are deterministic invented evidence."),
         "cases": {"cross_midnight": cross_midnight, "directional_only": directional,
-                  "below_floor": below_floor},
+                  "below_floor": below_floor, "all_rejected": all_rejected},
     }
 
 

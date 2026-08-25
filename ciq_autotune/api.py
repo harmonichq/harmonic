@@ -290,10 +290,14 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS,
             )
             return prepare_ic_block_evidence(store, analysis)
-        return fixed(key, "ic-block-evidence-v1", compute,
-                     dump=dump_ic_block_evidence,
-                     rebuild=rebuild_ic_block_evidence,
-                     serve_stale=False)
+        try:
+            return fixed(key, "ic-block-evidence-v1", compute,
+                         dump=dump_ic_block_evidence,
+                         rebuild=rebuild_ic_block_evidence,
+                         serve_stale=False)
+        except InputRevisionChanged as error:
+            raise ResultCache.GenerationChanged(
+                "input data changed during I:C block evidence preparation") from error
 
     def ic_block_evidence_snapshot():
         """Publish one current-block preparation with its matching generation."""

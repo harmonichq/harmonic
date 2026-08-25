@@ -166,13 +166,13 @@ def _completed_meal_at(bolus, anchor: datetime, ordinal: int = 0):
 
 def completed_carb_boluses(bolus):
     """Return the ADR 679 completed carb-bolus population in stable order."""
-    return tuple(sorted(
-        (item for item in bolus
-         if item.completion == "Completed"
-         and item.insulin is not None and item.insulin > 0
-         and item.carbs is not None and item.carbs >= CONFIG.anchor_meal_min_carbs),
-        key=lambda item: (item.t, item.seq_num),
-    ))
+    meals = []
+    for anchor in sorted({item.t for item in bolus}):
+        ordinal = 0
+        while (meal := _completed_meal_at(bolus, anchor, ordinal)) is not None:
+            meals.append(meal)
+            ordinal += 1
+    return tuple(meals)
 
 
 def _meal_over_delivery_near(meal, bolus, cgm, basal, ownership) -> dict | None:

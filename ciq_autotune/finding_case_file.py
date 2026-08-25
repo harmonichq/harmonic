@@ -124,12 +124,14 @@ class PreparedCases:
         if occ is not None:
             selected = next((member for member in roster if member.id == occ), None)
             selection = {"state": "unavailable", "requested_id": occ, "detail": None}
-            if selected is not None:
+            if selected is not None and not (lever is Lever.MISSED_MEAL and alignment == "event"
+                                             and selected.id not in claimed_ids):
                 selection = {"state": "selected", "requested_id": occ,
-                             "detail": _detail(
-                                 selected, lever, self.cgm, self.basal,
-                                 self.bolus, self.carbs,
-                             )}
+                             "detail": (_missed_detail(selected, self.cgm, self.basal, self.bolus)
+                                        if lever is Lever.MISSED_MEAL and alignment == "event" else _detail(
+                                            selected, lever, self.cgm, self.basal,
+                                            self.bolus, self.carbs,
+                                        ))}
             elif lever is Lever.MISSED_MEAL:
                 announced = next((row for row in _completed_carb_boluses(
                     self.bolus, self.cgm, self.basal, self.source_window_days,
@@ -475,7 +477,29 @@ def _missed_meal_comparison(roster, claimed_ids, cgm, bolus, basal=(), source_wi
             "anchor": {"kind": "cohort_specific_meal_start", "label": "Meal start"},
             "window_min": list(_MISSED_MEAL_COMPARISON_WINDOW), "cohorts": cohorts,
             "counts": {"missed": len(missed), "announced": len(announced),
-                       "not_comparable": len(roster) - len(missed)}, "clock": None}
+                       "not_comparable": len(roster) - len(missed)},
+            "attributed_occurrence_ids": [member.id for member in missed], "clock": None}
+
+
+def _missed_detail(member, cgm, basal, bolus):
+    anchor = member.opportunity.reach_start or member.opportunity.anchor_t
+    trace = _comparison_trace(member.id, anchor, cgm)["trace"]["cgm"]
+    return {"id": member.id, "date": anchor.date().isoformat(),
+            "anchor": {"t": anchor.strftime(FMT), "kind": "detected_rise_onset",
+                       "label": "Detected rise onset", "bg": member.opportunity.anchor_bg},
+            "verdict": member.verdict, "comparison_cohort": "missed", "glucose": trace,
+            "markers": ([{"kind": "bolus", "t": dose.t.strftime(FMT),
+                         "minute": round((dose.t - anchor).total_seconds() / 60, 1),
+                         "seq_num": dose.seq_num, "insulin": dose.insulin, "carbs": dose.carbs}
+                        for dose in bolus if anchor - timedelta(minutes=60) <= dose.t
+                        <= anchor + timedelta(minutes=300)] + [{
+                            "kind": "suspend", "t": row.t.strftime(FMT),
+                            "minute": round((row.t - anchor).total_seconds() / 60, 1),
+                            "delivery_type": row.delivery_type, "basal_rate": row.basal_rate,
+                            "profile_basal_rate": row.profile_basal_rate,
+                        } for row in basal if anchor - timedelta(minutes=60) <= row.t
+                        <= anchor + timedelta(minutes=300) and row.basal_rate == 0]),
+            "source_corrections": [], "day_target": {"date": anchor.date().isoformat()}}
 
 
 def _announced_detail(row, cgm, bolus):

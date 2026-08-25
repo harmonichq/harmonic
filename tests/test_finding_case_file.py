@@ -242,7 +242,8 @@ def test_factor_specific_event_horizons_and_far_pair_selected_evidence():
         assert case["selection"]["state"] == "selected"
         detail = case["selection"]["detail"]
         assert set(detail) == {"id", "date", "anchor", "verdict", "glucose",
-                               "markers", "source_corrections", "day_target"}
+                               "markers", "source_corrections", "day_target",
+                               *( {"comparison_cohort"} if lever is Lever.MISSED_MEAL else set())}
         if lever is Lever.CORRECTION_STACKING:
             assert [row["seq_num"] for row in detail["source_corrections"]] == [21, 22]
             assert detail["source_corrections"][0]["t"] == "2026-08-01 09:30:00"
@@ -355,7 +356,7 @@ def test_selected_high_retains_upstream_suspend_evidence():
     case = prepared.case("finding:missed_meal", "event", occurrence_id)
     suspend = next(marker for marker in case["selection"]["detail"]["markers"]
                    if marker["kind"] == "suspend")
-    assert suspend["minute"] == -60
+    assert suspend["minute"] == -30
     assert suspend["profile_basal_rate"] == 0.8
 
 

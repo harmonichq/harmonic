@@ -188,7 +188,12 @@ its specific v2 tests to both authoritative and wrapper routes.
 `finding_id`, required `alignment=clock|event`, and optional `occ`. It does not
 accept a second window; the preparation id owns it. `projection_id` is `fp_` plus
 32 lowercase hex characters. `finding_id` is exactly `finding:<Lever.value>`.
-`occ` is `o_` plus 32 lowercase hex characters. Its response is:
+`occ` is either an `o_` High-roster identity or an `m_` announced-meal identity,
+followed by 32 lowercase hex characters. Other prefixes and malformed identities
+are rejected. The missed-meal event projection carries its exact
+`attributed_occurrence_ids`; those IDs, not every classifier-fired High, form the
+missed cohort and selected missed details use the same rise-onset `[-60, +300]`
+frame as its aggregate. Its response is:
 
 ```json
 {

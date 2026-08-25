@@ -38,6 +38,9 @@
     "kind": "cohort_specific_meal_start",
     "label": "Meal start"
    },
+   "attributed_occurrence_ids": [
+    "o_866511635510128a8bcffd147b23beaa"
+   ],
    "clock": null,
    "cohorts": [
     {
@@ -1312,6 +1315,9 @@
     "kind": "cohort_specific_meal_start",
     "label": "Meal start"
    },
+   "attributed_occurrence_ids": [
+    "o_866511635510128a8bcffd147b23beaa"
+   ],
    "clock": null,
    "cohorts": [
     {

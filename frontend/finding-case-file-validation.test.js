@@ -163,3 +163,12 @@ test('rejects a forged selected announced-meal detail', () => {
   selected.selection.detail.verdict = 'fired';
   assert.equal(validFindingCaseFile(selected), false);
 });
+
+test('rejects replacing an attributed missed winner with another fired High', () => {
+  const caseFile = missedMealCase();
+  const replacement = caseFile.occurrences.find((row) => row.id
+    !== caseFile.projection.attributed_occurrence_ids[0] && row.verdict === 'fired');
+  if (!replacement) return;
+  caseFile.projection.cohorts[0].occurrence_ids[0] = replacement.id;
+  assert.equal(validFindingCaseFile(caseFile), false);
+});

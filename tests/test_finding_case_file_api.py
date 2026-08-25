@@ -208,6 +208,14 @@ class FindingCaseFileRouteTest(unittest.TestCase):
         self.assertEqual(response.status_code, 409)
         self.assertEqual(response.json()["detail"]["code"], "stale_projection")
 
+    def test_announced_meal_identity_passes_the_public_coordinate_boundary(self):
+        response = self.client.get(
+            "/api/diagnose/finding-case-file?projection_id=fp_00000000000000000000000000000000"
+            "&finding_id=finding:missed_meal&alignment=event&occ=m_00000000000000000000000000000000"
+        )
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.json()["detail"]["code"], "stale_projection")
+
     def test_registered_preparation_is_immediately_addressable_and_bump_invalidates(self):
         prepared = self.client.get("/api/diagnose/finding-case-file-preparation").json()
         url = (f"/api/diagnose/finding-case-file?projection_id={prepared['projection_id']}"

@@ -164,6 +164,17 @@ def _completed_meal_at(bolus, anchor: datetime, ordinal: int = 0):
     return candidates[ordinal] if ordinal < len(candidates) else None
 
 
+def completed_carb_boluses(bolus):
+    """Return the ADR 679 completed carb-bolus population in stable order."""
+    meals = []
+    for anchor in sorted({item.t for item in bolus}):
+        ordinal = 0
+        while (meal := _completed_meal_at(bolus, anchor, ordinal)) is not None:
+            meals.append(meal)
+            ordinal += 1
+    return tuple(meals)
+
+
 def _meal_over_delivery_near(meal, bolus, cgm, basal, ownership) -> dict | None:
     verdict = classify_meal_owned_suspend(
         meal, bolus, cgm, basal, scenario_config=CONFIG, ownership=ownership,

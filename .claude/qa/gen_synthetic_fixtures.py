@@ -26,6 +26,7 @@ import random
 import sys
 import time
 from copy import deepcopy
+from dataclasses import replace
 from datetime import datetime, timedelta
 
 from ciq_autotune.explore_exposures import build_exposures as build_endpoint_exposures
@@ -408,7 +409,8 @@ def build_case_file_capture():
                                       days=index % 3)
             while True:
                 if family is Exposure.MEALS:
-                    dose = BolusEvent(t=anchor, insulin=4.0, carbs=40, seq_num=seq)
+                    dose = BolusEvent(t=anchor, insulin=4.0, carbs=40, seq_num=seq,
+                                      completion='Completed')
                     row = Opportunity(family, (seq,), anchor, 'meal', 130, members=(dose,))
                 elif family is Exposure.LOWS:
                     row = Opportunity(family,
@@ -487,15 +489,33 @@ def build_case_file_capture():
     cases = {}
     for lever in Lever:
         finding_id = f'finding:{lever.value}'
+        event = prepared.case(finding_id, 'event', None)
+        event_ids = tuple(member.id for member in all_members[lever])
+        if lever is Lever.MISSED_MEAL:
+            event_ids = tuple(event['projection']['cohorts'][0]['occurrence_ids']
+                              + event['projection']['cohorts'][1]['occurrence_ids'])
+        empty_event = None
+        if lever is Lever.MISSED_MEAL:
+            zero_findings = deepcopy(findings)
+            next(row for row in zero_findings['rows']
+                 if row['id'] == finding_id)['episodes'] = 0
+            zero_recurrence = recurrence | {lever: (0, len(all_members[lever]))}
+            zero_associations = associations | {lever: frozenset()}
+            zero_prepared = replace(
+                prepared, findings=zero_findings, recurrence=zero_recurrence,
+                associations=zero_associations,
+            )
+            empty_event = zero_prepared.case(finding_id, 'event', None)
         cases[finding_id] = {
             'clock': prepared.case(finding_id, 'clock', None),
-            'event': prepared.case(finding_id, 'event', None),
+            'event': event,
             'selected_clock': {member.id: prepared.case(finding_id, 'clock', member.id)
                                for member in all_members[lever]},
-            'selected_event': {member.id: prepared.case(finding_id, 'event', member.id)
-                               for member in all_members[lever]},
+            'selected_event': {member_id: prepared.case(finding_id, 'event', member_id)
+                               for member_id in event_ids},
             'unavailable_clock': prepared.case(finding_id, 'clock', 'o_' + '9' * 32),
             'unavailable_event': prepared.case(finding_id, 'event', 'o_' + '9' * 32),
+            **({'empty_event': empty_event} if empty_event else {}),
         }
     held_rows = [
         {'id': 'basal:0-30', 'register': 'held', 'kind': 'setting', 'title': 'Basal 00:00',

@@ -13,12 +13,37 @@ export function inconsistentFindingProjection(message) {
 
 const FINDING_VERDICTS = ['fired', 'outranked', 'near_miss', 'no_data', 'clean'];
 const OCCURRENCE_ID = /^o_[0-9a-f]{32}$/;
+const ANNOUNCED_MEAL_ID = /^m_[0-9a-f]{32}$/;
+const SUPPORT = new Set(['withheld', 'limited', 'supported']);
 
 const validCount = (value) => Number.isInteger(value) && value >= 0;
 const validNumberOrNull = (value) => value === null || Number.isFinite(value);
 const validAnchor = (anchor) => typeof anchor?.t === 'string'
   && typeof anchor.kind === 'string' && typeof anchor.label === 'string'
   && validNumberOrNull(anchor.bg);
+const validCohort = (cohort, identity) => validCount(cohort?.routed_count)
+  && validCount(cohort.usable_count) && cohort.usable_count <= cohort.routed_count
+  && SUPPORT.has(cohort.support)
+  && Array.isArray(cohort.occurrence_ids)
+  && cohort.routed_count === cohort.occurrence_ids.length
+  && cohort.occurrence_ids.every(identity) && Array.isArray(cohort.points)
+  && cohort.points.every((point) => {
+    if (!Number.isFinite(point?.minute) || !validCount(point.n)
+      || point.n > cohort.usable_count || !SUPPORT.has(point.support)) return false;
+    const aggregatesAreNull = point.median === null
+      && point.p25 === null && point.p75 === null;
+    if (point.n === 0 || point.support === 'withheld') return aggregatesAreNull;
+    return Number.isFinite(point.median) && Number.isFinite(point.p25)
+      && Number.isFinite(point.p75) && point.p25 <= point.median
+      && point.median <= point.p75;
+  })
+  && (cohort.routed_count !== 0 || (cohort.support === 'withheld'
+    && cohort.points.every((point) => point.n === 0 && point.support === 'withheld')
+    && (cohort.episodes === undefined
+      || (Array.isArray(cohort.episodes) && cohort.episodes.length === 0))));
+const fixedMinutes = (window) => Array.from(
+  { length: ((window[1] - window[0]) / 5) + 1 }, (_, index) => window[0] + (index * 5),
+);
 
 export function validFindingCaseFile(caseFile) {
   const counts = caseFile?.verdict_counts;
@@ -40,6 +65,17 @@ export function validFindingCaseFile(caseFile) {
 
   const roster = new Map(occurrences.map((row) => [row.id, row]));
   if (roster.size !== occurrences.length) return false;
+  const missedMeal = caseFile.finding.lever === 'missed_meal';
+  const attributedIds = missedMeal ? occurrences.filter((row) => row.attributed)
+    .map((row) => row.id) : [];
+  if (missedMeal && (!occurrences.every((row) => typeof row.attributed === 'boolean'
+    && (row.attributed
+      ? row.verdict === 'fired' && validAnchor(row.comparison_anchor)
+        && row.comparison_anchor.kind === 'detected_rise_onset'
+        && row.comparison_anchor.label === 'Detected rise onset'
+        && Number.isFinite(row.comparison_anchor.bg)
+      : row.comparison_anchor === null))
+    || attributedIds.length !== caseFile.summary.claimed)) return false;
 
   if (projection?.alignment === 'clock') {
     const clock = projection.clock;
@@ -51,47 +87,103 @@ export function validFindingCaseFile(caseFile) {
       || !clock.buckets.every((bucket) => validCount(bucket?.n)
         && Number.isFinite(bucket.start_min) && Number.isFinite(bucket.end_min)
         && Array.isArray(bucket.occurrence_ids)
-        && bucket.occurrence_ids.every((id) => typeof id === 'string'))
+        && bucket.n === bucket.occurrence_ids.length
+        && bucket.occurrence_ids.every((id) => roster.has(id)
+          && (!missedMeal || roster.get(id).attributed)))
       || clock.buckets.reduce((sum, bucket) => sum + bucket.n, 0) !== clock.total) return false;
+    const clockIds = clock.buckets.flatMap((bucket) => bucket.occurrence_ids);
+    if (new Set(clockIds).size !== clockIds.length) return false;
   } else if (projection?.alignment === 'event') {
     const cohorts = projection.cohorts;
     if (typeof projection.anchor?.kind !== 'string'
       || typeof projection.anchor?.label !== 'string'
       || !Array.isArray(projection.window_min) || projection.window_min.length !== 2
       || !projection.window_min.every(Number.isFinite)
-      || projection.clock !== null || !Array.isArray(cohorts)
-      || cohorts.length !== FINDING_VERDICTS.length
-      || !cohorts.every((cohort, index) => cohort?.key === FINDING_VERDICTS[index]
-        && validCount(cohort.routed_count) && validCount(cohort.usable_count)
-        && cohort.usable_count <= cohort.routed_count
-        && Array.isArray(cohort.occurrence_ids)
-        && cohort.routed_count === cohort.occurrence_ids.length
-        && cohort.occurrence_ids.every((id) => OCCURRENCE_ID.test(id))
-        && Array.isArray(cohort.points) && cohort.points.every((point) =>
-          Number.isFinite(point?.minute) && validCount(point.n)
-          && typeof point.support === 'string' && validNumberOrNull(point.median)
-          && validNumberOrNull(point.p25) && validNumberOrNull(point.p75)))) return false;
+      || projection.clock !== null || !Array.isArray(cohorts)) return false;
 
-    const cohortIds = new Set();
-    for (const cohort of cohorts) {
-      if (cohort.routed_count !== counts[cohort.key]
-        || new Set(cohort.occurrence_ids).size !== cohort.occurrence_ids.length) return false;
-      for (const id of cohort.occurrence_ids) {
-        if (cohortIds.has(id) || roster.get(id)?.verdict !== cohort.key) return false;
-        cohortIds.add(id);
+    if (missedMeal) {
+      const [missed, announced] = cohorts;
+      const counts = projection.counts;
+      if (projection.anchor.kind !== 'cohort_specific_meal_start'
+        || projection.anchor.label !== 'Meal start'
+        || JSON.stringify(projection.window_min) !== JSON.stringify([-60, 300])
+        || cohorts.length !== 2 || missed?.key !== 'missed' || announced?.key !== 'announced'
+        || missed?.anchor?.kind !== 'detected_rise_onset'
+        || missed.anchor.label !== 'Detected rise onset'
+        || announced?.anchor?.kind !== 'completed_carb_bolus'
+        || announced.anchor.label !== 'Completed carb bolus'
+        || !validCohort(missed, (id) => OCCURRENCE_ID.test(id))
+        || !validCohort(announced, (id) => ANNOUNCED_MEAL_ID.test(id))
+        || !validCount(counts?.missed) || !validCount(counts.announced)
+        || !validCount(counts.not_comparable) || counts.missed !== missed.routed_count
+        || counts.announced !== announced.routed_count
+        || counts.missed !== caseFile.summary.claimed
+        || counts.not_comparable !== caseFile.summary.denominator - counts.missed
+        || ![missed, announced].every((cohort) => JSON.stringify(
+          cohort.points.map((point) => point.minute),
+        ) === JSON.stringify(fixedMinutes([-60, 300])))) return false;
+
+      if (new Set(missed.occurrence_ids).size !== missed.occurrence_ids.length
+        || new Set(announced.occurrence_ids).size !== announced.occurrence_ids.length
+        || JSON.stringify(missed.occurrence_ids.slice().sort())
+          !== JSON.stringify(attributedIds.slice().sort())) return false;
+    } else {
+      if (cohorts.length !== FINDING_VERDICTS.length
+        || !cohorts.every((cohort, index) => cohort?.key === FINDING_VERDICTS[index]
+          && validCohort(cohort, (id) => OCCURRENCE_ID.test(id)))) return false;
+
+      const cohortIds = new Set();
+      for (const cohort of cohorts) {
+        if (cohort.routed_count !== counts[cohort.key]
+          || new Set(cohort.occurrence_ids).size !== cohort.occurrence_ids.length) return false;
+        for (const id of cohort.occurrence_ids) {
+          if (cohortIds.has(id) || roster.get(id)?.verdict !== cohort.key) return false;
+          cohortIds.add(id);
+        }
       }
+      if (cohortIds.size !== caseFile.summary.denominator
+        || cohorts.reduce((sum, cohort) => sum + cohort.routed_count, 0)
+          !== caseFile.summary.denominator) return false;
     }
-    if (cohortIds.size !== caseFile.summary.denominator
-      || cohorts.reduce((sum, cohort) => sum + cohort.routed_count, 0)
-        !== caseFile.summary.denominator) return false;
   } else return false;
 
   if (!selection || !['none', 'selected', 'unavailable'].includes(selection.state)) return false;
   if (selection.state === 'selected') {
     const detail = selection.detail;
+    const activeIds = new Set(projection.alignment === 'event'
+      ? projection.cohorts.flatMap((cohort) => cohort.occurrence_ids)
+      : occurrences.map((row) => row.id));
+    const selectedRosterRow = roster.get(detail?.id);
+    const comparisonSelection = missedMeal && projection.alignment === 'event'
+      && detail?.comparison_cohort === 'announced'
+      && detail?.verdict === 'announced'
+      && detail?.anchor?.kind === 'completed_carb_bolus'
+      && detail.anchor.label === 'Completed carb bolus'
+      && projection?.cohorts?.[1]?.occurrence_ids?.includes(detail.id);
+    const missedSelection = missedMeal && projection.alignment === 'event'
+      && detail?.comparison_cohort === 'missed'
+      && detail?.verdict === 'fired' && detail?.anchor?.kind === 'detected_rise_onset'
+      && detail.anchor.label === 'Detected rise onset'
+      && selectedRosterRow?.attributed
+      && projection?.cohorts?.[0]?.occurrence_ids?.includes(detail.id)
+      && JSON.stringify(detail.anchor) === JSON.stringify(selectedRosterRow.comparison_anchor)
+      && detail.date === detail.anchor.t.slice(0, 10)
+      && detail.day_target?.date === detail.date
+      && detail.glucose?.some((point) => point.minute === 0
+        && point.bg === detail.anchor.bg);
+    const fixedComparisonDetail = !missedMeal || projection.alignment !== 'event'
+      || ((comparisonSelection || missedSelection)
+        && detail.date === detail.anchor.t.slice(0, 10)
+        && detail.day_target?.date === detail.date
+        && Array.isArray(detail.glucose)
+        && detail.glucose.every((point) => point.minute >= -60 && point.minute <= 300)
+        && Array.isArray(detail.markers)
+        && detail.markers.every((marker) => marker.minute >= -60 && marker.minute <= 300));
     if (!detail || detail.id !== selection.requested_id
+      || !activeIds.has(detail.id)
       || typeof detail.date !== 'string' || !validAnchor(detail.anchor)
-      || !FINDING_VERDICTS.includes(detail.verdict) || !Array.isArray(detail.glucose)
+      || !(FINDING_VERDICTS.includes(detail.verdict) || comparisonSelection)
+      || !Array.isArray(detail.glucose)
       || !detail.glucose.every((point) => typeof point?.t === 'string'
         && Number.isFinite(point.minute) && Number.isFinite(point.bg))
       || !Array.isArray(detail.markers)
@@ -101,9 +193,12 @@ export function validFindingCaseFile(caseFile) {
       || !detail.source_corrections.every((dose) => typeof dose?.t === 'string'
         && Number.isFinite(dose.insulin))
       || typeof detail.day_target?.date !== 'string'
-      || !occurrences.some((row) => row.id === detail.id && row.date === detail.date
-        && row.verdict === detail.verdict
-        && JSON.stringify(row.anchor) === JSON.stringify(detail.anchor))) return false;
+      || !fixedComparisonDetail
+      || (missedMeal && projection.alignment === 'event'
+        ? !(comparisonSelection || missedSelection)
+        : !occurrences.some((row) => row.id === detail.id
+        && row.date === detail.date && row.verdict === detail.verdict
+        && JSON.stringify(row.anchor) === JSON.stringify(detail.anchor)))) return false;
   } else if (selection.detail !== null) return false;
   return true;
 }

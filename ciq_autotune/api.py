@@ -380,7 +380,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             if (not isinstance(pid, str) or not re.fullmatch(r"fp_[0-9a-f]{32}", pid)
                     or finding not in valid_findings
                     or alignment not in {"clock", "event"}
-                    or (occ is not None and not re.fullmatch(r"o_[0-9a-f]{32}", occ))):
+                    or (occ is not None and not re.fullmatch(r"[om]_[0-9a-f]{32}", occ))):
                 raise ValueError("malformed case-file coordinate")
             return pid, finding, alignment, occ
         start, end = params.get("start_min"), params.get("end_min")

@@ -39,6 +39,8 @@ const PAGE_PATHS = new Set(ROUTER_TABS.map((tab) => `/${tab.id}`));
 const MIME = { '.js': 'text/javascript', '.css': 'text/css', '.html': 'text/html', '.json': 'application/json', '.svg': 'image/svg+xml' };
 const FINDINGS_PROJECTION = JSON.parse(await readFile(
   join(ROOT, 'frontend/__fixtures__/findings-projection.json'), 'utf8'));
+const MISSED_MEAL_COMPARISON = JSON.parse(await readFile(
+  join(ROOT, 'frontend/__fixtures__/missed-meal-comparison.json'), 'utf8'));
 
 const evidenceDir = process.env.DIAGNOSE_EVIDENCE_DIR || null;
 const evidenceViewport = () => process.env.VIEWPORT || '1440x900';
@@ -561,7 +563,7 @@ export async function openApp(browser, {
         end_min: Number(url.searchParams.get('end_min')),
         }, url.searchParams.get('selected_id'));
       return typeof findingsProjectionInputs === 'function'
-        ? findingsProjectionInputs(projected) : projected;
+        ? findingsProjectionInputs(projected, caseFiles) : projected;
     }],
     [apiPattern('/explore/exposures'), () => exposuresFrom],
     [apiPattern('/analyze'), () => findingsFrom.analysis],
@@ -696,7 +698,7 @@ export async function openApp(browser, {
       } : null;
       const projected = projectFindings(findingsFrom, window, url.searchParams.get('selected_id'));
       const findingsProjection = typeof findingsProjectionInputs === 'function'
-        ? findingsProjectionInputs(projected) : projected;
+        ? findingsProjectionInputs(projected, caseFiles) : projected;
       const readyRows = new Map(preparedBody.rendered_rows
         .filter((row) => row.case_header?.inspectability === 'ready')
         .map((row) => [row.id, row]));
@@ -747,7 +749,7 @@ export async function openApp(browser, {
         body.window = independent(preparedWindows.get(body.projection_id));
       }
       if (caseScenario?.case) {
-        const response = await caseScenario.case({ request: caseRequests, url, body });
+        const response = await caseScenario.case({ request: caseRequests, url, body, caseFiles });
         return route.fulfill({ status: response.status || 200, contentType: 'application/json',
           body: JSON.stringify(response.body) });
       }
@@ -1478,7 +1480,7 @@ export const D1 = async (page) => {
   const after = await state(page);
   is(after.crumb.length, 2, 'D1 the server selection stays in the standing case');
   is(await page.locator('#level .occ-detail .statline').innerText(),
-    "The canvas shows this Occurrence's server-owned trace and evidence markers.",
+    'The canvas shows the selected glucose trace and evidence markers.',
     'D1 clinical evidence is present without a paint-time fallback fetch');
   ok((await traceSeries(page))?.length > 0, 'D1 the server trace is drawn');
   is(after.chip, setup.chip, 'D1 the same drawn window remains');
@@ -1500,7 +1502,7 @@ export const D2 = async (page) => {
   const after = await state(page);
   is(after.crumb.length, 2, 'D2 at the drilled factor, occurrence selected in place');
   const sentence = await page.evaluate(() => document.querySelector('#level .occ-detail .statline')?.textContent.trim() ?? null);
-  is(sentence, "The canvas shows this Occurrence's server-owned trace and evidence markers.",
+  is(sentence, 'The canvas shows the selected glucose trace and evidence markers.',
     'D2 the case file, not a second timeline request, owns selection evidence');
   ok((await traceSeries(page))?.length > 0, 'D2 the selected server trace remains complete');
   is(after.chip, setup.chip, 'D2 the drawn window is untouched');
@@ -1522,8 +1524,8 @@ export const D3 = async (page) => {
   const after = await state(page);
   is(after.crumb.length, 2, 'D3 remains at the drilled factor');
   const sentence = await page.evaluate(() => document.querySelector('#level .occ-detail .statline')?.textContent.trim() ?? null);
-  is(sentence, "The canvas shows this Occurrence's server-owned trace and evidence markers.",
-    'D3 selection evidence remains server-owned and complete');
+  is(sentence, 'The canvas shows the selected glucose trace and evidence markers.',
+    'D3 selection evidence remains complete');
   ok((await traceSeries(page))?.length > 0, 'D3 the selected trace is not replaced by a fallback');
   is(after.chip, setup.chip, 'D3 the drawn window is unchanged');
   is(after.dock.kind, 'Plan · staged', 'D3 the staged item is unchanged');
@@ -1855,9 +1857,13 @@ export const densityHistoryInputs = async () => {
     testing the wrong population. */
 const clickQueueRow = async (page, title) => {
   await page.waitForFunction(() => document.getElementById('level')?.dataset.loading !== 'true');
-  const at = await page.evaluate((want) => [...document.querySelectorAll('#level .qrow')]
-    .findIndex((row) => row.querySelector('.lab')?.textContent.trim() === want), title);
-  if (at < 0) fail(`the queue holds no row titled ${title}`);
+  const queue = await page.evaluate(() => [...document.querySelectorAll('#level .qrow')]
+    .map((row) => row.querySelector('.lab')?.textContent.trim()).filter(Boolean));
+  const at = queue.indexOf(title);
+  if (at < 0) {
+    const detail = await page.evaluate(() => document.getElementById('level')?.innerText.replace(/\s+/g, ' ').trim());
+    fail(`the queue holds no row titled ${title}; saw ${queue.join(', ') || '(none)'}; level ${detail || '(empty)'}`);
+  }
   await page.locator('#level .qrow').nth(at).click();
   await settle(page, 500);
 };
@@ -2743,6 +2749,7 @@ export const S81 = async (page) => {
 };
 
 /** S82 · A fresh draw crosses 24:00 to the right. */
+// STORY:finding-evidence-routing:S82
 export const S82 = async (page) => {
   await beginFreshDraw(page);
   const b = await plot(page);
@@ -2757,6 +2764,7 @@ export const S82 = async (page) => {
 };
 
 /** S83 · A fresh draw crosses 00:00 to the left. */
+// STORY:finding-evidence-routing:S83
 export const S83 = async (page) => {
   await beginFreshDraw(page);
   const b = await plot(page);
@@ -2771,6 +2779,7 @@ export const S83 = async (page) => {
 };
 
 /** S84 · The start grip crosses 00:00 while its far endpoint stays anchored. */
+// STORY:finding-evidence-routing:S84
 export const S84 = async (page) => {
   const before = await state(page);
   const grip = await page.locator('#grip-a').boundingBox();
@@ -2787,6 +2796,7 @@ export const S84 = async (page) => {
 };
 
 /** S85 · The end grip crosses 24:00 while its far endpoint stays anchored. */
+// STORY:finding-evidence-routing:S85
 export const S85 = async (page) => {
   await drawInside(page, 20 * 60, 22 * 60);
   const before = await state(page);
@@ -2807,6 +2817,7 @@ export const S85 = async (page) => {
    00:00. Both must land the identical wrapped window. */
 
 /** S86 · Sliding right crosses 24:00 without changing the window's length. */
+// STORY:finding-evidence-routing:S86
 export const S86 = async (page) => {
   await drawInside(page, 20 * 60, 22 * 60);
   const b = await plot(page);
@@ -2820,6 +2831,7 @@ export const S86 = async (page) => {
 };
 
 /** S87 · Sliding left crosses 00:00 without changing the window's length. */
+// STORY:finding-evidence-routing:S87
 export const S87 = async (page) => {
   await drawInside(page, 2 * 60, 4 * 60);
   const b = await plot(page);
@@ -2833,6 +2845,7 @@ export const S87 = async (page) => {
 };
 
 /** S88 · Draw's one-day stop commits the unscoped day and restores the axis. */
+// STORY:finding-evidence-routing:S88
 export const S88 = async (page) => {
   await beginFreshDraw(page);
   const b = await plot(page);
@@ -2859,6 +2872,7 @@ export const S88 = async (page) => {
 };
 
 /** S89 · A full-day slide returns to its own start, preserving its duration. */
+// STORY:finding-evidence-routing:S89
 export const S89 = async (page) => {
   await drawInside(page, 20 * 60, 22 * 60);
   const before = await state(page);
@@ -3510,9 +3524,9 @@ export const C41 = async (page) => {
   const stat = await page.locator('#level .statline').innerText();
   const denominator = Number(stat.match(/^\d+ of (\d+) meal responses/)?.[1]);
   is(denominator, 10, `C41 claimed denominator is exact (${stat})`);
-  is(await page.locator('#level .vband button[aria-label="Meets criteria · 6"]').count(), 1,
-    'C41 fired can exceed claimed without browser recounting');
-  const visibleBands = await page.locator('#level .vband button[aria-label]').evaluateAll((buttons) =>
+  is(await page.locator('#level .vband button[aria-label="Meets criteria · 6"]').count(), 2,
+    'C41 fired can exceed claimed without browser recounting across both verdict controls');
+  const visibleBands = await page.locator('#level .vband .keys button.key[aria-label]').evaluateAll((buttons) =>
     buttons.map((button) => Number(button.getAttribute('aria-label').match(/(\d+)$/)?.[1])));
   const residue = await page.locator('#level .vband-foot').innerText();
   const residueBands = [...residue.matchAll(/\d+/g)].map((match) => Number(match[0]));
@@ -3557,29 +3571,98 @@ export const C43 = async (page) => {
 
 export const C44 = async (page) => {
   await openWholeDay(page);
-  await clickQueueRow(page, 'Meal bolus fell short');
+  await clickQueueRow(page, 'Missed / unannounced meal');
   await page.waitForSelector('#level .who');
-  is(await page.locator('#level .who').innerText(), 'Meal bolus fell short · highs',
-    'C44 opens the server-owned High case');
+  is(await page.locator('#level .who').innerText(), 'Missed / unannounced meal · highs',
+    'C44 opens the server-owned missed-meal High case');
   is(await page.getByRole('button', { name: 'By event', exact: true }).count(), 1,
-    'C44 exposes ALIGN from the server-owned High coordinate');
-  const stat = await page.locator('#level .statline').innerText();
-  ok(/^1 of 10 high episodes\b/.test(stat),
-    `C44 preserves the server High denominator and claimed count (${stat})`);
+    'C44 exposes ALIGN from the server-owned missed-meal coordinate');
   await page.getByRole('button', { name: 'By event', exact: true }).click();
   await page.waitForSelector('#ec-chart');
-  is((await state(page)).eventCanvas, true,
-    'C44 renders Meal bolus fell short in By event without a client roster');
-  await page.locator('#level .case-occurrence').first().click();
+  const verdictBand = await page.locator('#level .vband').evaluate((band) => ({
+    segments: [...band.querySelectorAll('.bar [aria-label]')]
+      .map((part) => part.getAttribute('aria-label')),
+    residue: band.parentElement.querySelector('.vband-foot')?.textContent.trim() ?? null,
+  }));
+  is(verdictBand, {
+    segments: ['Meets criteria · 6', 'Borderline · 1', 'Does not meet · 1'],
+    residue: '1 claimed by another factor · 1 not comparable',
+  }, 'C44 retains fired, near-miss, clean, outranked, and no-data High accounting');
+  const comparison = await page.locator('#level .lvl-cap').innerText();
+  ok(/attributed missed.*announced.*not comparable/i.test(comparison),
+    `C44 prints the three served comparison counts (${comparison})`);
+  is(await page.locator('[data-comparison-cohort="missed"]').count(), 1,
+    'C44 renders the attributed-missed cohort row');
+  const announced = page.locator('[data-comparison-cohort="announced"]').first();
+  ok(await announced.isVisible(), 'C44 renders an announced-meal occurrence outside the High roster');
+  is(await announced.locator('.only').innerText(), "Select to see this meal's glucose trace",
+    'C44 announced-meal rows describe the glucose trace a selection reveals');
+  await announced.click();
   await page.waitForSelector('#level .case-facts');
   const evidence = await page.locator('#level .case-facts').innerText();
   ok(/\d+ glucose readings/.test(evidence) && /\d+ event markers/.test(evidence),
-    'C44 selected High evidence retains its server trace and bolus marker evidence');
+    'C44 announced-meal selection retains its trace and markers');
+};
+
+// STORY:finding-evidence-routing:C56
+export const C56 = async (page) => {
+  await openWholeDay(page);
+  await clickQueueRow(page, 'Missed / unannounced meal');
+  await page.getByRole('button', { name: 'By event', exact: true }).click();
+  await page.waitForSelector('#ec-chart');
+  is(await page.locator('#level .empty').innerText(), 'No attributed missed meals in this window.',
+    'C56 renders the served empty attributed-missed cohort explicitly');
+  is(await page.locator('[data-comparison-cohort="missed"]').count(), 0,
+    'C56 does not fall back to High roster rows when the cohort is empty');
+  ok(await page.locator('[data-comparison-cohort="announced"]').first().isVisible(),
+    'C56 leaves the announced-meal baseline available beside the empty cohort');
+};
+
+/** C57 · Selecting an attributed missed meal emphasizes the served missed
+    comparison cohort, not the finding's fired verdict cohort. */
+// STORY:finding-evidence-routing:C57
+export const C57 = async (page) => {
+  await openWholeDay(page);
+  await clickQueueRow(page, 'Missed / unannounced meal');
+  await page.getByRole('button', { name: 'By event', exact: true }).click();
+  await page.waitForSelector('#ec-chart');
+  const request = page.waitForRequest((candidate) => {
+    const url = new URL(candidate.url());
+    return url.pathname === '/api/diagnose/finding-case-file' && url.searchParams.has('occ');
+  });
+  await page.locator('[data-comparison-cohort="missed"]').first().click();
+  const requested = new URL((await request).url()).searchParams.get('occ');
+  await page.waitForSelector('#level .case-facts');
+  const drawn = await page.evaluate(() => {
+    const exposed = window.__diagnoseEventComparison;
+    const selected = exposed?.selected;
+    const series = exposed?.chart.getOption().series || [];
+    const line = (cohort) => series.find((item) => item.id === `${cohort}:line:limited`);
+    const episode = (cohort) => series.find((item) => item.id?.startsWith(`${cohort}:episode:`));
+    const trace = series.find((item) => item.name === 'Selected occurrence');
+    return {
+      id: selected?.id ?? null,
+      cohort: selected?.verdict?.cohort ?? null,
+      trace: trace?.data ?? null,
+      responseTrace: selected?.glucose?.map((point) => [point.minute, point.bg]) ?? null,
+      opacity: { missed: line('missed')?.lineStyle?.opacity ?? null,
+        announced: episode('announced')?.lineStyle?.opacity ?? null },
+      legend: [...document.querySelectorAll('#ec-chart-key [data-cohort]')]
+        .map((item) => [item.dataset.cohort, item.dataset.selectedCohort]),
+    };
+  });
+  is(requested, drawn.id, 'C57 selection requests the server-owned attributed-missed occurrence');
+  is(drawn.cohort, 'missed', 'C57 uses the served missed comparison cohort for emphasis');
+  is(drawn.opacity, { missed: .5, announced: null },
+    'C57 emphasizes the served limited missed aggregate without inventing an announced aggregate');
+  is(Object.fromEntries(drawn.legend).missed, 'true', 'C57 legend marks the missed cohort selected');
+  is(Object.fromEntries(drawn.legend).announced, 'false', 'C57 legend leaves the announced cohort unselected');
+  is(drawn.trace, drawn.responseTrace, 'C57 draws the exact selected attributed-missed trace');
 };
 
 /* The ordinary generated projection withholds some case-file rows. A story may
  * pose one generated production-shaped row without changing that roster policy. */
-const generatedFindingPose = (findingId) => ({ preparation, caseFiles }) => {
+export const generatedFindingPreparation = (preparation, caseFiles, findingId) => {
   const sourceRow = caseFiles.preparation.findings.rows.find((row) => row.id === findingId);
   const sourceRendered = caseFiles.preparation.rendered_rows.find((row) => row.id === findingId);
   const sourceHeader = caseFiles.preparation.behavioral_case_headers[findingId];
@@ -3587,11 +3670,31 @@ const generatedFindingPose = (findingId) => ({ preparation, caseFiles }) => {
     fail(`generated case-file fixture has no ${findingId} pose`);
   }
   const next = structuredClone(preparation);
-  next.findings.rows.push(structuredClone(sourceRow));
+  /* A replay can pose a row through both the queue projection and preparation.
+     The preparation is a validated server contract, where duplicate ready ids
+     are invalid; preserve the projected row when it is already present. */
+  if (!next.findings.rows.some((row) => row.id === findingId)) {
+    next.findings.rows.push(structuredClone(sourceRow));
+  }
   next.findings.counts = { ...next.findings.counts, total: next.findings.rows.length };
-  next.rendered_rows.push(structuredClone(sourceRendered));
+  if (!next.rendered_rows.some((row) => row.id === findingId)) {
+    next.rendered_rows.push(structuredClone(sourceRendered));
+  }
   next.behavioral_case_headers[findingId] = structuredClone(sourceHeader);
-  return { body: next };
+  return next;
+};
+
+export const generatedFindingPose = (findingId) => ({ preparation, caseFiles }) => ({
+  body: generatedFindingPreparation(preparation, caseFiles, findingId),
+});
+
+export const generatedFindingProjection = (findingId) => (projected, caseFiles) => {
+  if (projected.rows.some((row) => row.id === findingId)) return projected;
+  return {
+    ...projected,
+    rows: [...projected.rows, structuredClone(caseFiles.preparation.rendered_rows
+      .find((row) => row.id === findingId))],
+  };
 };
 
 export const C45 = async (page) => {
@@ -4010,8 +4113,8 @@ export const STORIES = [
     findingsInputs: twoFamilyInputs,
     exposuresInputs: async () => (await twoFamilyInputs()).exposures,
   }], ['C44', C44, 'typical', { caseScenario: {
-    preparation: generatedFindingPose('finding:meal_bolus_short'),
-  } }],
+    preparation: generatedFindingPose('finding:missed_meal'),
+  }, findingsProjectionInputs: generatedFindingProjection('finding:missed_meal') }],
   ['C45', C45, 'typical', { caseScenario: {
     case: async ({ request, url, body }) => request === 2
       ? { body: { ...body, selection: { state: 'unavailable',
@@ -4092,6 +4195,23 @@ export const STORIES = [
       return { body: preparation };
     },
   } }],
+  ['C56', C56, 'typical', { findingsProjectionInputs: generatedFindingProjection('finding:missed_meal'),
+    caseScenario: {
+    preparation: generatedFindingPose('finding:missed_meal'),
+    case: async ({ url, body, caseFiles }) => !url.searchParams.get('occ')
+      ? { body: structuredClone(caseFiles.cases['finding:missed_meal'].empty_event) } : { body },
+  } }],
+  ['C57', C57, 'typical', { caseScenario: {
+    /* This generated case-file fixture has a limited missed aggregate and a
+       withheld announced cohort, so selected-cohort emphasis is observable
+       through the public built app without inventing an announced aggregate. */
+    case: async ({ url, body }) => {
+      const source = url.searchParams.has('occ')
+        ? MISSED_MEAL_COMPARISON.selected_missed : MISSED_MEAL_COMPARISON.payload;
+      return { body: { ...structuredClone(source), projection_id: body.projection_id,
+        window: structuredClone(body.window) } };
+    },
+  }, findingsProjectionInputs: generatedFindingProjection('finding:missed_meal') }],
   ['D1', D1, 'dense'], ['D2', D2, 'dense'], ['D3', D3, 'dense'],
 ];
 

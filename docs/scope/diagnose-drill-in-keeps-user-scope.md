@@ -222,7 +222,7 @@ Notes, all adopted:
    the agent to leave intact. Behavior-identical to drop (it is 0 whenever
    `labelNote` is empty), but the contradiction was introduced by round 1's own
    fix.
-6. `authoring`. "One production caller" for `renderCanvas` is wrong — 
+6. `authoring`. "One production caller" for `renderCanvas` is wrong —
    `mockups/finding-evidence-routing.exploration/pooled.js:243` is a second. The
    conclusion holds for the true reason: no caller anywhere passes `windowNote`.
 7. `authoring`. The order's verification enumerated AGENTS.md's eight backend

@@ -14,9 +14,14 @@ const capture = JSON.parse(await readFile(new URL(
 const projectionFixture = JSON.parse(await readFile(new URL(
   './__fixtures__/findings-projection.json', import.meta.url,
 )));
+const missedMealFixture = JSON.parse(await readFile(new URL(
+  './__fixtures__/missed-meal-comparison.json', import.meta.url,
+)));
 
 const independent = (value) => JSON.parse(JSON.stringify(value));
 const eventCase = () => independent(capture.cases['finding:meal_over_delivery'].event);
+const missedMealCase = () => independent(capture.cases['finding:missed_meal'].event);
+const zeroMissedMealCase = () => independent(missedMealFixture.zero_payload);
 
 test('accepts a preparation carrying the current v2 findings projection', () => {
   const preparation = independent(capture.preparation);
@@ -127,4 +132,153 @@ test('rejects routed-count and denominator equations that do not reconcile', () 
   const caseFile = eventCase();
   caseFile.projection.cohorts[0].routed_count += 1;
   assert.equal(validFindingCaseFile(caseFile), false);
+});
+
+test('accepts the two-cohort fixed-axis missed-meal comparison', () => {
+  const caseFile = missedMealCase();
+  assert.deepEqual(caseFile.projection.cohorts.map((cohort) => cohort.key),
+    ['missed', 'announced']);
+  assert.equal(validFindingCaseFile(caseFile), true);
+});
+
+test('accepts structurally valid server-owned support classifications', () => {
+  const caseFile = missedMealCase();
+  const missed = caseFile.projection.cohorts[0];
+  const point = missed.points.find((candidate) => candidate.n === 1);
+  missed.support = 'supported';
+  point.support = 'limited';
+  point.p25 = 119;
+  point.median = 120;
+  point.p75 = 121;
+  assert.equal(validFindingCaseFile(caseFile), true);
+});
+
+test('rejects drawable aggregates on a zero-sample point in a nonzero cohort', () => {
+  const caseFile = missedMealCase();
+  const missed = caseFile.projection.cohorts[0];
+  const point = missed.points.find((candidate) => candidate.n === 0);
+  assert.ok(point, 'the generated nonzero cohort includes an unsampled axis point');
+  point.support = 'limited';
+  point.p25 = 119;
+  point.median = 120;
+  point.p75 = 121;
+  assert.equal(validFindingCaseFile(caseFile), false);
+});
+
+test('rejects support values outside the server contract enum', () => {
+  const cohortCase = missedMealCase();
+  cohortCase.projection.cohorts[0].support = 'plausible';
+  assert.equal(validFindingCaseFile(cohortCase), false);
+  const pointCase = missedMealCase();
+  pointCase.projection.cohorts[0].points[0].support = 'plausible';
+  assert.equal(validFindingCaseFile(pointCase), false);
+});
+
+test('rejects missed-meal aggregate points that exceed their usable cohort', () => {
+  const caseFile = missedMealCase();
+  caseFile.projection.cohorts[0].usable_count = 0;
+  assert.equal(validFindingCaseFile(caseFile), false);
+});
+
+test('rejects a declared zero missed cohort that retains drawable aggregate points', () => {
+  const caseFile = missedMealCase();
+  const missed = caseFile.projection.cohorts[0];
+  for (const row of caseFile.occurrences) {
+    row.attributed = false;
+    row.comparison_anchor = null;
+  }
+  caseFile.summary.claimed = 0;
+  missed.occurrence_ids = [];
+  missed.routed_count = 0;
+  missed.usable_count = 0;
+  caseFile.projection.counts.missed = 0;
+  caseFile.projection.counts.not_comparable = caseFile.summary.denominator;
+  assert.equal(caseFile.projection.cohorts[0].usable_count, 0);
+  assert.equal(validFindingCaseFile(caseFile), false);
+});
+
+test('accepts the exact generator-authored zero-attribution response', () => {
+  const caseFile = zeroMissedMealCase();
+  const missed = caseFile.projection.cohorts[0];
+  assert.equal(missed.routed_count, 0);
+  assert.equal(missed.usable_count, 0);
+  assert.ok(missed.points.every((point) => point.n === 0
+    && point.support === 'withheld'
+    && point.median === null && point.p25 === null && point.p75 === null));
+  assert.equal(validFindingCaseFile(caseFile), true);
+  missed.episodes = [{}];
+  assert.equal(validFindingCaseFile(caseFile), false);
+});
+
+test('rejects a missed-meal comparison with a widened or roster-mismatched axis', () => {
+  const caseFile = missedMealCase();
+  caseFile.projection.cohorts[0].points.pop();
+  assert.equal(validFindingCaseFile(caseFile), false);
+  const mismatched = missedMealCase();
+  mismatched.projection.cohorts[0].occurrence_ids.pop();
+  mismatched.projection.cohorts[0].routed_count -= 1;
+  mismatched.projection.counts.missed -= 1;
+  mismatched.projection.counts.not_comparable += 1;
+  assert.equal(validFindingCaseFile(mismatched), false);
+});
+
+test('rejects a missed-meal comparison with a malformed cohort anchor', () => {
+  const caseFile = missedMealCase();
+  caseFile.projection.cohorts[1].anchor.label = 7;
+  assert.equal(validFindingCaseFile(caseFile), false);
+});
+
+test('rejects a forged selected announced-meal detail', () => {
+  const selected = independent(missedMealFixture.selected_announced);
+  selected.selection.detail.verdict = 'fired';
+  assert.equal(validFindingCaseFile(selected), false);
+});
+
+test('rejects replacing an attributed missed winner with another fired High', () => {
+  const caseFile = missedMealCase();
+  const attributed = caseFile.occurrences.find((row) => row.attributed);
+  const replacement = caseFile.occurrences.find((row) => row.id
+    !== attributed.id && row.verdict === 'fired');
+  if (!replacement) return;
+  caseFile.projection.cohorts[0].occurrence_ids[0] = replacement.id;
+  assert.equal(validFindingCaseFile(caseFile), false);
+});
+
+test('rejects synchronized fabricated missed-meal identities', () => {
+  const caseFile = missedMealCase();
+  const fabricated = 'o_ffffffffffffffffffffffffffffffff';
+  caseFile.projection.cohorts[0].occurrence_ids[0] = fabricated;
+  caseFile.projection.attributed_occurrence_ids = [fabricated];
+  assert.equal(validFindingCaseFile(caseFile), false);
+});
+
+test('rejects retired High-peak selected detail for a missed meal', () => {
+  const caseFile = independent(missedMealFixture.selected_missed);
+  const rosterRow = caseFile.occurrences.find(
+    (row) => row.id === caseFile.selection.requested_id,
+  );
+  caseFile.selection.detail.anchor = independent(rosterRow.anchor);
+  caseFile.selection.detail.date = rosterRow.date;
+  caseFile.selection.detail.day_target.date = rosterRow.date;
+  assert.equal(validFindingCaseFile(caseFile), false);
+});
+
+test('rejects missed-meal selected traces outside the fixed comparison window', () => {
+  const caseFile = independent(missedMealFixture.selected_missed);
+  caseFile.selection.detail.glucose.push({
+    t: '2026-01-03 05:45:00', minute: -61, bg: 109,
+  });
+  assert.equal(validFindingCaseFile(caseFile), false);
+});
+
+test('fails closed when selected missed-meal marker families are malformed', () => {
+  const caseFile = independent(missedMealFixture.selected_missed);
+  delete caseFile.selection.detail.markers;
+  assert.equal(validFindingCaseFile(caseFile), false);
+});
+
+test('accepts event-to-clock transition with an unavailable announced selection', () => {
+  const caseFile = independent(missedMealFixture.clock_after_announced);
+  assert.equal(caseFile.selection.state, 'unavailable');
+  assert.equal(validFindingCaseFile(caseFile), true);
 });

@@ -590,6 +590,53 @@ function renderCaseRoster(host, caseFile, verdict, selectedId, onSelect, onMore,
   }
 }
 
+/* The missed-meal comparison is two server-published cohorts, not a High
+   verdict roster. Announced members remain opaque until selection requests
+   their server-owned detail and trace. */
+function renderMissedMealComparisonRoster(host, caseFile, selectedId, onSelect, onMore, shownCount) {
+  const { cohorts = [], counts = {} } = caseFile.projection;
+  const missedRows = new Map(caseFile.occurrences.map((row) => [row.id, {
+    ...row, anchor: row.comparison_anchor,
+  }]));
+  host.insertAdjacentHTML('beforeend', `<div class="lvl-cap">Meal comparison
+    <span class="meta">${counts.missed} attributed missed · ${counts.announced} announced
+      · ${counts.not_comparable} not comparable</span></div>`);
+  for (const cohort of cohorts) {
+    const label = cohort.key === 'missed' ? 'Attributed missed meals' : 'Announced meals';
+    const rows = cohort.occurrence_ids.map((id, index) => cohort.key === 'missed'
+      ? missedRows.get(id) : { id, index });
+    host.insertAdjacentHTML('beforeend', `<div class="ev-group"><b>${label}</b>
+      <span class="n">· ${cohort.routed_count} meal${cohort.routed_count === 1 ? '' : 's'}</span></div>`);
+    if (cohort.routed_count === 0) {
+      host.insertAdjacentHTML('beforeend', `<div class="empty">No ${cohort.key === 'missed'
+        ? 'attributed missed meals' : 'announced meals'} in this window.</div>`);
+      continue;
+    }
+    for (const row of rows.slice(0, shownCount)) {
+      const button = document.createElement('button');
+      button.type = 'button'; button.className = 'ev-row case-occurrence';
+      button.dataset.occurrenceId = row.id;
+      button.dataset.comparisonCohort = cohort.key;
+      button.setAttribute('aria-pressed', String(row.id === selectedId));
+      const when = row.anchor ? `${fmtDate(row.date)} · ${row.anchor.t.slice(11, 16)}`
+        : `Announced meal ${row.index + 1}`;
+      const detail = row.anchor
+        ? `${row.anchor.bg == null ? '—' : Math.round(row.anchor.bg)} · ${row.anchor.label}`
+        : "Select to see this meal's glucose trace";
+      button.innerHTML = `<span class="when">${when}</span><span class="only">${detail}</span>
+        <span class="tier">${cohort.key === 'missed' ? 'Attributed missed meal' : 'Announced meal'}</span>`;
+      button.addEventListener('click', () => onSelect(row.id));
+      host.append(button);
+    }
+    if (cohort.routed_count > EVIDENCE_CAP) {
+      const more = document.createElement('button'); more.type = 'button'; more.className = 'more';
+      more.textContent = shownCount > EVIDENCE_CAP ? `Show first ${EVIDENCE_CAP}`
+        : `${cohort.routed_count - EVIDENCE_CAP} more`;
+      more.addEventListener('click', onMore); host.append(more);
+    }
+  }
+}
+
 function renderCaseSelection(host, caseFile, onDay) {
   const { selection } = caseFile;
   if (selection.state === 'unavailable') {
@@ -599,17 +646,24 @@ function renderCaseSelection(host, caseFile, onDay) {
   }
   if (selection.state !== 'selected') return;
   const detail = selection.detail;
-  const rows = caseFile.occurrences.filter((row) => row.verdict === detail.verdict);
+  const comparison = caseFile.finding.lever === 'missed_meal'
+    && caseFile.projection.alignment === 'event';
+  const rows = comparison
+    ? (caseFile.projection.cohorts.find((cohort) => cohort.key === detail.comparison_cohort)
+      ?.occurrence_ids.map((id) => ({ id })) || [])
+    : caseFile.occurrences.filter((row) => row.verdict === detail.verdict);
   const at = rows.findIndex((row) => row.id === detail.id);
-  const verdictLabel = VERDICT_BAND_KEY[detail.verdict]
+  const verdictLabel = detail.comparison_cohort === 'announced' ? 'Announced meal'
+    : detail.comparison_cohort === 'missed' ? 'Attributed missed meal' : VERDICT_BAND_KEY[detail.verdict]
     || VERDICT_RESIDUE_KEY[detail.verdict] || detail.verdict;
   const box = document.createElement('div'); box.className = 'inner occ-detail';
   box.innerHTML = `<div class="occ-head"><span class="when">${fmtDate(detail.date)} · ${detail.anchor.t.slice(11, 16)}</span>
     <span class="tag">${verdictLabel}</span>${at >= 0 && rows.length > 1
-      ? `<span class="pos">${at + 1} of ${caseFile.verdict_counts[detail.verdict]}<i class="keyhint">↑ ↓</i></span>` : ''}</div>
+      ? `<span class="pos">${at + 1} of ${comparison
+        ? caseFile.projection.counts[detail.comparison_cohort] : caseFile.verdict_counts[detail.verdict]}<i class="keyhint">↑ ↓</i></span>` : ''}</div>
     <div class="occ-nums">${detail.anchor.bg == null ? '—' : Math.round(detail.anchor.bg)}
       <span>at ${detail.anchor.label.toLowerCase()}</span></div>
-    <div class="statline">The canvas shows this Occurrence's server-owned trace and evidence markers.</div>`;
+    <div class="statline">The canvas shows the selected glucose trace and evidence markers.</div>`;
   host.append(box);
   const facts = document.createElement('div'); facts.className = 'ev-detail case-facts';
   facts.innerHTML = `<div class="lab">Evidence facts</div>
@@ -958,27 +1012,31 @@ const VERDICT_RESIDUE_KEY = { outranked: 'claimed by another factor', no_data: '
  * claimed no hit here. Then there is no published split for the frame's family
  * and the band draws nothing, exactly as it does with no row at all.
  */
-function renderVerdictBand(host, row, family, activeVerdict, onPick) {
+function renderVerdictBand(host, row, family, activeVerdict, onPick = null) {
   if (!row || !row.verdict_counts) return;
   const vc = row.verdict_counts_by_family
     ? row.verdict_counts_by_family[family] : row.verdict_counts;
   if (!vc) return;
   const groups = Object.entries(VERDICT_BAND_KEY).map(([key, lead]) => ({ key, lead, count: vc[key] || 0 }));
+  const interactive = typeof onPick === 'function';
+  const part = (className, group, content) => interactive
+    ? `<button type="button" class="${className}" data-verdict="${group.key}"
+        aria-pressed="${group.key === activeVerdict}" aria-label="${group.lead} · ${group.count}">${content}</button>`
+    : `<span class="${className}" data-verdict="${group.key}"
+        aria-label="${group.lead} · ${group.count}">${content}</span>`;
   const band = document.createElement('div');
   band.className = 'vband';
-  const seg = (g) => `data-verdict="${g.key}" aria-pressed="${g.key === activeVerdict}"`;
   band.innerHTML = `
     <div class="bar" role="group" aria-label="Verdict split"
          style="grid-template-columns:${groups.map((g) => Math.max(g.count, 0.001)).join('fr ')}fr">
-      ${groups.map((g) => `<button type="button" class="seg" ${seg(g)}
-          aria-label="${g.lead} · ${g.count}"></button>`).join('')}
+      ${groups.map((g) => part('seg', g, '')).join('')}
     </div>
     <div class="keys">
-      ${groups.map((g) => `<button type="button" class="key" ${seg(g)}>
-          <span class="lead">${g.lead}</span><span class="n">${g.count}</span></button>`).join('')}
+      ${groups.map((g) => part('key', g,
+        `<span class="lead">${g.lead}</span><span class="n">${g.count}</span>`)).join('')}
     </div>`;
-  for (const b of band.querySelectorAll('button[data-verdict]')) {
-    b.addEventListener('click', () => onPick(b.dataset.verdict));
+  for (const button of band.querySelectorAll('button[data-verdict]')) {
+    button.addEventListener('click', () => onPick(button.dataset.verdict));
   }
   host.append(band);
   const residue = Object.entries(VERDICT_RESIDUE_KEY)
@@ -2273,20 +2331,32 @@ function boot(root, data, callbacks, signal) {
     }
     const caseFile = f.caseFile;
     renderCaseHead(host, caseFile, lane, pickCell, icBlocks, pickBlock);
-    renderVerdictBand(host, { verdict_counts: caseFile.verdict_counts }, caseFile.family,
-      f.bandVerdict, (verdict) => {
-        f.bandVerdict = f.bandVerdict === verdict ? null : verdict;
-        const selectedVerdict = caseFile.selection.state === 'selected'
-          ? caseFile.selection.detail.verdict : null;
-        if (f.bandVerdict && selectedVerdict && selectedVerdict !== f.bandVerdict) {
-          requestCase(f, f.requestedAlignment, null);
-          return;
-        }
-        paint();
-      });
-    renderCaseRoster(host, caseFile, f.bandVerdict || 'fired', f.selectedId, selectOcc,
-      () => { shownRows = shownRows > EVIDENCE_CAP ? EVIDENCE_CAP : Infinity; paint(); },
-      shownRows);
+    const missedMealComparison = caseFile.finding.lever === 'missed_meal'
+      && caseFile.projection.alignment === 'event';
+    if (missedMealComparison) {
+      /* The attribution header's verdict accounting and the meal comparison
+         describe different server-owned populations. Keep both visible, but
+         do not turn this comparison into a verdict-filtered roster. */
+      renderVerdictBand(host, caseFile, caseFile.family, null);
+      renderMissedMealComparisonRoster(host, caseFile, f.selectedId, selectOcc,
+        () => { shownRows = shownRows > EVIDENCE_CAP ? EVIDENCE_CAP : Infinity; paint(); },
+        shownRows);
+    } else {
+      renderVerdictBand(host, { verdict_counts: caseFile.verdict_counts }, caseFile.family,
+        f.bandVerdict, (verdict) => {
+          f.bandVerdict = f.bandVerdict === verdict ? null : verdict;
+          const selectedVerdict = caseFile.selection.state === 'selected'
+            ? caseFile.selection.detail.verdict : null;
+          if (f.bandVerdict && selectedVerdict && selectedVerdict !== f.bandVerdict) {
+            requestCase(f, f.requestedAlignment, null);
+            return;
+          }
+          paint();
+        });
+      renderCaseRoster(host, caseFile, f.bandVerdict || 'fired', f.selectedId, selectOcc,
+        () => { shownRows = shownRows > EVIDENCE_CAP ? EVIDENCE_CAP : Infinity; paint(); },
+        shownRows);
+    }
     renderCaseSelection(host, caseFile, (detail) => callbacks.day?.(detail));
     appendCaseError(host);
     if (occurrenceFocusId && !f.loading && f.selectedId === occurrenceFocusId) {
@@ -2692,8 +2762,12 @@ function boot(root, data, callbacks, signal) {
     if (f.k !== 'factor' || !f.selectedId
       || (ev.key !== 'ArrowUp' && ev.key !== 'ArrowDown')) return;
     if (ev.target instanceof Element && ev.target.closest('#ec-chart')) return;
-    const siblings = f.caseFile.occurrences
-      .filter((row) => row.verdict === (f.bandVerdict || 'fired'));
+    const missedMealComparison = f.caseFile.finding.lever === 'missed_meal'
+      && f.caseFile.projection.alignment === 'event';
+    const siblings = missedMealComparison
+      ? (f.caseFile.projection.cohorts.find((cohort) => cohort.key
+        === f.caseFile.selection.detail?.comparison_cohort)?.occurrence_ids.map((id) => ({ id })) || [])
+      : f.caseFile.occurrences.filter((row) => row.verdict === (f.bandVerdict || 'fired'));
     const at = siblings.findIndex((row) => row.id === f.selectedId);
     const next = at + (ev.key === 'ArrowDown' ? 1 : -1);
     if (at < 0 || next < 0 || next >= siblings.length) return;

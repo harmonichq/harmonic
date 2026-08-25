@@ -50,13 +50,43 @@ Canvas lock that consumes this: #135 (triaged, blocked on #188).
 - **Quick ranges are relative to now and the absolute range is pinned**, per the
   Grafana model the operator named. Defaulted, not asked. `inline`
 
+- **The picker appears only in Explore.** Switching to the advice-off mode is what
+  unlocks a different stretch. Why: while advice is on screen, the numbers beside it
+  came from the same stretch, so there is nothing to explain away. `-> ADR`
+- **The chosen stretch holds while the app stays open and resets to 30 days on
+  reload.** Why: matches the picker shape without a stretch chosen weeks ago
+  silently framing today's reading. `-> ADR`
+- **Explore applies no thin-data gate of its own; each chart states its own
+  support.** The operator's ruling: "Explore just draws charts, it's up to those
+  charts to make sure they're honest about their usefulness." Why: Explore asserts
+  nothing, so thinness is a fact about the data rather than a hold on advice.
+  `-> ADR`
+- **The quick ranges are pre-warmed; an absolute date pick takes its wait.** Why:
+  warming shrinks the cold set but cannot cover an unbounded absolute pick. `-> ADR`
+- **60 and 90 days are the warmed stretches beside today's 30; all history is not
+  warmed.** Why: all history grows without bound and re-earns its full cost every
+  pull, while 60 and 90 stay fixed-size forever. `-> ADR`
+- **Charts paint as each one is ready, never held for the slowest.** Why: the
+  glucose-by-clock strip is a fraction of a second while the event evidence is the
+  slow part. `-> ADR`
+- **An absolute pick may reach arbitrarily far back, but the window length is
+  capped at 90 days, with a stated wait rather than a refusal.** Consequence, stated
+  to the operator and open to correction: "all history" is therefore not an offered
+  stretch, and every request's compute cost is bounded by a 90-day window. `-> ADR`
+
 ## Open questions
 
 - Round 1 settled: what re-scopes (Q1 = charts only), how the range is chosen
   (Q2 = quick ranges + absolute date pick, anchored ranges deferred).
-- Round 2 asks: where the picker is available (Q3), what a not-yet-computed
-  stretch does (Q4), whether the stretch persists (Q5), how a thin stretch renders
-  (Q6).
+- Round 2 settled: picker in Explore only (Q3), pre-warm the quick ranges (Q4),
+  session-scoped stretch (Q5), charts own their own honesty (Q6).
+- Round 3 settled: warm 60 and 90 (Q7), paint chart by chart (Q8), no ceiling on
+  how far back but a 90-day maximum window length (Q9).
+- Round 4 asked, unanswered: when 60 and 90 are actually computed given Explore
+  sits behind a mode switch (Q10); whether a closed past window's result survives
+  the hourly pull (Q11).
+- Not yet asked, pending the above: the interface shape of the range parameter
+  across the Explore feeds, and the risk contract.
 
 ## Spawned tasks
 

@@ -99,10 +99,46 @@ interlocking design decisions the operator holds, not missing facts.
 
   `inline`
 
+- **Line naming is server-owned, shared for two lines and per-factor for the
+  third** (Q9, B). The matched and nearly-matched lines read the same on every
+  chart; the comparison line names its own population. The frontend renders the
+  published words and derives none of them, per the repo's standing rule that
+  membership and its labels stay server-owned. `inline`
+- **`Meal bolus fell short` lines up both cohorts on a meal dose** (Q10, A): the
+  matched occurrences on the dose the engine already records as the one it
+  judged (`MealBolusShortVerdict.meal_t`), the comparison meals on their own
+  dose, over one fixed window. Why: both lines then mean "the hours after a meal
+  dose", which is the comparison the factor's claim actually rests on. `inline`
+- **A window too thin to build a comparison draws the matched line and says so**
+  (Q11, A). Never a withheld chart, and never a silent fall back to the verdict
+  cohorts. Why: a visible gap is safer than a chart that quietly changes what it
+  compares. `inline`
+
+### Risk contract
+
+- **Must prevent:** a chart whose drawn comparison line is not the population its
+  caption names; a baseline conditioned on the outcome that followed; any
+  membership or label decided in the browser.
+- **Must recover:** nothing automatically.
+- **Accepted failure:** too few comparison occurrences in a window draws the
+  matched line with the comparison stated as unavailable (Q11).
+- **Unsupported:** windows with no occurrences of the factor's own population;
+  real-data grounding beyond a local read-only snapshot.
+- **Evidence owed:** per factor, that the three cohorts partition the population
+  and their counts reconcile against it; that a nearly-matched occurrence is
+  drawn once; that occurrences too sparse to judge are counted and not drawn;
+  that both cross-family factors anchor on a real carb bolus; that no occurrence
+  claimed by another factor is removed from the comparison line.
+
+Why: served advisory dosing evidence for one operator, read in a clinician
+conversation, where a mislabelled population misgrounds the conversation while
+every failure mode is recoverable by reload.
+Disposition: copied into the work order at admission.
+
 ## Open questions
 
-Round 4: cohort naming; the anchor and window for the newly cross-family
-`meal bolus fell short` comparison; the risk contract; the handoff shape.
+Round 5: where the comparison lives after this (one module for both surfaces, or
+two shapes sharing a vocabulary); and the build shape that follows.
 
 ## Spawned tasks
 

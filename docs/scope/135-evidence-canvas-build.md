@@ -130,6 +130,54 @@ Every load-bearing path and line reference in the order was opened and verified.
 5. **note** — "the eight generator --check steps" is a hand-typed count this ticket
    itself changes. Replaced with a self-maintaining phrasing.
 
+Round 2 — TWO FRESH COLD REVIEWERS, routed per /orchestrate (Codex headroom probed
+at 73%, known). Terra (`gpt-5.6-terra`, the plan/spec area's top rung) and Sol
+(`gpt-5.6-sol`) each read the rewritten order cold, told only that it had already
+survived one review. **11 blocking objections, every one reproduced against the
+code before being acted on.** Two were fixed in place (chunk 1's 409 client stops
+at transport, chunk 2 owns recovery via the existing `refreshHistoryPair`; chunk 4
+owns the cockpit gate's synthetic route table). The remaining nine are not
+drafting defects — they name capabilities the order does not contain:
+
+1. **The frozen baseline is already stale.** The ledger header claims 99 executable
+   entries; `diagnose-workstation-behavior.replay.mjs` exports **108**. UI Craft's
+   `revise` requires the base replayed and the inventory reconciled BEFORE design,
+   and this order schedules the ledger last. Reconciling it is its own piece of work.
+2. **One shared glucose range cannot reach the charts.** `renderCanvas` hard-codes
+   `min: 40, max: 300` (`frontend/diagnose-workstation-chart.js:833`) and takes no
+   range; `frontend/diagnose-event-comparison.js:565` hard-codes the same and is
+   owned by no chunk. Injecting the range means refactoring two shipped renderers.
+3. **Explore's inspector has no chart-keyed case file.** Case components are built
+   per lever inside a wrap that only runs for `register == "finding"` rows
+   (`ciq_autotune/finding_case_file.py:309`), addressed by `finding_id`. Three of
+   the four chart families have no coordinate. Either a backend projection or an
+   explicit narrowing — an operator decision, open as Q9.
+4. **"Zero stories silently absent" is not enforced.** The replay runner iterates
+   its own `STORIES` array and fails only when the whole array is empty; it never
+   compares ids against the ledger. The order's principal completeness claim needs
+   a parity check that does not exist yet.
+5. **An asset route added before its module is reachable FAILS the guard.**
+   `tests/test_frontend_asset_routes.py` fails on extra routes as well as missing
+   ones, so the route belongs in the chunk where the import lands, not the chunk
+   that creates the file.
+6. **The registry entry shape carries no request coordinates** — event comparison
+   needs `view`/`factor`/`window`, basal a slot, I:C `block_id` + generation. A
+   runtime tile descriptor is a distinct contract from a registry entry.
+7. **Verification names 3-5 browser legs; CI runs nine**, and the bare commands
+   fail closed without `PLAYWRIGHT_MODULE`, `VENDOR_DIR`, `BASE_URL`, `TARGET` and
+   `PAYLOAD`.
+8. **No acceptance story for the live re-read during a slicer drag** — the gesture
+   the pin feature exists for. Endpoint screenshots pass while mid-drag is broken.
+9. **The sanitized visual derivative has no legal executor**: coordinator mode
+   delegates implementation, and build agents may not open the real-data source.
+
+### Verdict — #135 is an epic, not a ticket
+
+Nine surviving capabilities against a four-chunk ceiling. The slicing rubric's own
+rule is that more than four chunks means the ticket wants child tickets. Drafting
+stopped here rather than forcing a fifth and sixth chunk; the split goes back to
+the operator.
+
 ## Spawned tasks
 
 (none yet)

@@ -41,13 +41,25 @@ interlocking design decisions the operator holds, not missing facts.
 
 ## Decisions
 
-(none yet)
+- **The comparison line and the claimed events never share a member** (Q1, B).
+  Each factor's chart draws its claimed events against the same declared
+  population with those events taken out, so the two lines are disjoint groups
+  rather than a slice inside its own whole. Why: two disjoint groups read as a
+  comparison; a slice inside its own total mutes the contrast it exists to show.
+  `inline`
+- **#178 already satisfies this rule and is not reopened.** Its two lines are
+  different kinds of event entirely (a high with no bolus near it, versus a meal
+  that had one), so nothing needs subtracting for them to be disjoint. Why: the
+  general rule subsumes the prototype rather than contradicting it. `inline`
 
 ## Open questions
 
-Round 1 asked: baseline shape when the attributed set is a slice of its own
-population; whether the served shape is uniform across families; whether the
-standalone comparison route is bound by the same contract.
+Carried from round 1, unanswered: whether the served shape is uniform across
+families; whether the standalone comparison route is bound by the same contract.
+
+Round 2 opened by Q1's answer: what exactly comes out of the comparison
+population -- only the events this factor claimed, or every event some factor
+claimed.
 
 ## Spawned tasks
 

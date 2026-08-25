@@ -95,10 +95,11 @@ for one the same way every other surface does.
   lever-and-window request is not measured against a claim it does not carry.
 - The retired schema's fixtures, mirrors and drift checks retire or move with it,
   every existing `--check` obligation preserved.
-- Two capability statements assert the five cohorts today and become false only
-  when the build lands: `openspec/specs/surfaces/spec.md:55-57` and
-  `openspec/specs/behavioral-layer/spec.md:39`. They fold in that pull request,
-  not in this record's.
+- Two capability statements assert five event cohorts today and become false only
+  when the build lands: the surfaces capability requiring "authoritative counts,
+  full roster, 12-bucket clock, five event cohorts, selection", and the
+  behavioral-layer capability requiring the drill-down to read "the five
+  server-declared cohorts". They fold in that pull request, not in this record's.
 - #135's Explore mode needs the same lever-and-window generalization, and gets it
   here rather than forcing it later.
 - #178 remains the prototype and lands first; nothing here contradicts it.

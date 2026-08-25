@@ -128,9 +128,13 @@ interlocking design decisions the operator holds, not missing facts.
   (1) case files reachable by lever and window, retiring the standalone
   projection; (2) the shared three-cohort comparison with its per-lever
   identities, labels, counts and both cross-Exposure anchors; (3) rendering,
-  labels, ledger amendment, replay and fixtures. Why: one builder serves both
-  entry points, so a per-surface split would have two tickets editing one
-  module. Handed off as a single issue for `/epic` to map. `→ issue`
+  labels, ledger amendment, replay and fixtures; (4) the baseline fold, which
+  moves the two capability statements asserting five event cohorts in the pull
+  request that makes them false. Why: one builder serves both entry points, so a
+  per-surface split would have two tickets editing one module; the fourth layer
+  was identified while landing the record, under the same delegated call, because
+  ADR 180's own consequences already owe it. Handed off as a single issue for
+  `/epic` to map. `→ issue`
 
 ### Risk contract
 

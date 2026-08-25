@@ -174,8 +174,16 @@ successive cutoffs:
 
 ## Spawned tasks
 
-- Rethink the one-Focus / one-Trial exclusivity model (engine, experience and
-  visualization together) — filed as its own issue.
-- Move the remaining parameters to their own engine evidence bars (the eventual
-  "all parameters" move deferred at Q6) — filed as its own issue.
 - #136 carries ADR 24 as a settled input for its attribution decision.
+
+Two follow-ups surfaced here are **deliberately not filed as issues** (operator
+decision, 2026-08-24): neither is near implementation, and an unspecced tracker
+issue is noise. They live here as the record, to be filed if and when they become
+real work.
+
+- Rethink the one-Focus / one-Trial exclusivity model, engine, experience and
+  visualization together. Watching a change rejects a Focus pin and drops an active
+  Focus; the lock rides the watch horizon rather than maturity.
+- Move the remaining parameters onto their own engine evidence bars (the eventual
+  "all parameters" move deferred at Q6). Basal clears its eight-night bar inside 14
+  days today, so it does not starve the way carb ratio does.

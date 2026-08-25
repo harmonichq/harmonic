@@ -72,7 +72,7 @@ interlocking design decisions the operator holds, not missing facts.
   line, so the three counts reconcile against the population. Why: an occurrence
   drawn twice makes the chart's own numbers unaddable. `inline`
 - **Occurrences too sparse to judge are a count, never a curve** (Q6, A), riding
-  the support provisions already in the tree (`event_comparison.py:682-690`
+  the support provisions already in the tree (`event_comparison.py:685-691`
   grades each point `supported` / `limited` / `withheld` against a floor). Why:
   drawing them adds broken curves and quietly weakens the comparison line.
   `inline`

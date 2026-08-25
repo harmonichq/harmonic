@@ -62,7 +62,7 @@ occurrences on the dose the engine already records as the one it judged
 same fixed window. Both lines then mean "the hours after a meal dose".
 
 **Occurrences too sparse to judge are counted, never drawn**, riding the support
-grading already in the tree (`event_comparison.py:682-690`).
+grading already in the tree (`event_comparison.py:685-691`).
 
 **A window too thin to build a comparison draws the matched line and says the
 comparison is unavailable.** Never a withheld chart, and never a silent fall back

@@ -1,0 +1,3192 @@
+{
+  "_generated_by": "scripts/gen_basal_night_evidence_fixtures.py",
+  "_note": "Synthetic basal and CGM rows only; generated through the public API.",
+  "expected": {
+    "analysis_generation": "basal-night-evidence-fixture:0",
+    "asserts_move": false,
+    "directional_support_count": 6,
+    "excluded_night_count": 1,
+    "nights": [
+      {
+        "date": "2026-01-01",
+        "delivered_rate": 0.8,
+        "programmed_rate": 0.6,
+        "t": "2026-01-01T00:00:00"
+      },
+      {
+        "date": "2026-01-02",
+        "delivered_rate": 0.8,
+        "programmed_rate": 0.6,
+        "t": "2026-01-02T00:00:00"
+      },
+      {
+        "date": "2026-01-03",
+        "delivered_rate": 0.8,
+        "programmed_rate": 0.6,
+        "t": "2026-01-03T00:00:00"
+      },
+      {
+        "date": "2026-01-04",
+        "delivered_rate": 0.8,
+        "programmed_rate": 0.6,
+        "t": "2026-01-04T00:00:00"
+      },
+      {
+        "date": "2026-01-05",
+        "delivered_rate": 0.8,
+        "programmed_rate": 0.6,
+        "t": "2026-01-05T00:00:00"
+      },
+      {
+        "date": "2026-01-06",
+        "delivered_rate": 0.8,
+        "programmed_rate": 0.6,
+        "t": "2026-01-06T00:00:00"
+      },
+      {
+        "date": "2026-01-07",
+        "delivered_rate": 0.6,
+        "programmed_rate": 0.6,
+        "t": "2026-01-07T00:00:00"
+      }
+    ],
+    "roster_count": 7,
+    "safety_status": "insufficient evidence",
+    "schema": "diagnose-basal-night-evidence-v1",
+    "slot": 0
+  },
+  "input": {
+    "basal": [
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 100,
+        "time": "2026-01-01 00:00:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 101,
+        "time": "2026-01-01 00:01:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 102,
+        "time": "2026-01-01 00:02:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 103,
+        "time": "2026-01-01 00:03:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 104,
+        "time": "2026-01-01 00:04:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 105,
+        "time": "2026-01-01 00:05:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 106,
+        "time": "2026-01-01 00:06:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 107,
+        "time": "2026-01-01 00:07:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 108,
+        "time": "2026-01-01 00:08:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 109,
+        "time": "2026-01-01 00:09:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 110,
+        "time": "2026-01-01 00:10:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 111,
+        "time": "2026-01-01 00:11:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 112,
+        "time": "2026-01-01 00:12:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 113,
+        "time": "2026-01-01 00:13:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 114,
+        "time": "2026-01-01 00:14:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 115,
+        "time": "2026-01-01 00:15:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 116,
+        "time": "2026-01-01 00:16:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 117,
+        "time": "2026-01-01 00:17:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 118,
+        "time": "2026-01-01 00:18:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 119,
+        "time": "2026-01-01 00:19:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 120,
+        "time": "2026-01-01 00:20:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 121,
+        "time": "2026-01-01 00:21:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 122,
+        "time": "2026-01-01 00:22:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 123,
+        "time": "2026-01-01 00:23:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 124,
+        "time": "2026-01-01 00:24:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 125,
+        "time": "2026-01-01 00:25:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 126,
+        "time": "2026-01-01 00:26:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 127,
+        "time": "2026-01-01 00:27:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 128,
+        "time": "2026-01-01 00:28:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 129,
+        "time": "2026-01-01 00:29:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 200,
+        "time": "2026-01-02 00:00:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 201,
+        "time": "2026-01-02 00:01:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 202,
+        "time": "2026-01-02 00:02:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 203,
+        "time": "2026-01-02 00:03:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 204,
+        "time": "2026-01-02 00:04:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 205,
+        "time": "2026-01-02 00:05:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 206,
+        "time": "2026-01-02 00:06:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 207,
+        "time": "2026-01-02 00:07:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 208,
+        "time": "2026-01-02 00:08:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 209,
+        "time": "2026-01-02 00:09:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 210,
+        "time": "2026-01-02 00:10:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 211,
+        "time": "2026-01-02 00:11:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 212,
+        "time": "2026-01-02 00:12:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 213,
+        "time": "2026-01-02 00:13:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 214,
+        "time": "2026-01-02 00:14:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 215,
+        "time": "2026-01-02 00:15:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 216,
+        "time": "2026-01-02 00:16:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 217,
+        "time": "2026-01-02 00:17:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 218,
+        "time": "2026-01-02 00:18:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 219,
+        "time": "2026-01-02 00:19:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 220,
+        "time": "2026-01-02 00:20:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 221,
+        "time": "2026-01-02 00:21:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 222,
+        "time": "2026-01-02 00:22:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 223,
+        "time": "2026-01-02 00:23:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 224,
+        "time": "2026-01-02 00:24:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 225,
+        "time": "2026-01-02 00:25:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 226,
+        "time": "2026-01-02 00:26:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 227,
+        "time": "2026-01-02 00:27:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 228,
+        "time": "2026-01-02 00:28:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 229,
+        "time": "2026-01-02 00:29:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 300,
+        "time": "2026-01-03 00:00:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 301,
+        "time": "2026-01-03 00:01:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 302,
+        "time": "2026-01-03 00:02:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 303,
+        "time": "2026-01-03 00:03:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 304,
+        "time": "2026-01-03 00:04:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 305,
+        "time": "2026-01-03 00:05:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 306,
+        "time": "2026-01-03 00:06:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 307,
+        "time": "2026-01-03 00:07:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 308,
+        "time": "2026-01-03 00:08:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 309,
+        "time": "2026-01-03 00:09:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 310,
+        "time": "2026-01-03 00:10:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 311,
+        "time": "2026-01-03 00:11:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 312,
+        "time": "2026-01-03 00:12:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 313,
+        "time": "2026-01-03 00:13:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 314,
+        "time": "2026-01-03 00:14:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 315,
+        "time": "2026-01-03 00:15:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 316,
+        "time": "2026-01-03 00:16:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 317,
+        "time": "2026-01-03 00:17:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 318,
+        "time": "2026-01-03 00:18:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 319,
+        "time": "2026-01-03 00:19:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 320,
+        "time": "2026-01-03 00:20:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 321,
+        "time": "2026-01-03 00:21:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 322,
+        "time": "2026-01-03 00:22:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 323,
+        "time": "2026-01-03 00:23:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 324,
+        "time": "2026-01-03 00:24:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 325,
+        "time": "2026-01-03 00:25:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 326,
+        "time": "2026-01-03 00:26:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 327,
+        "time": "2026-01-03 00:27:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 328,
+        "time": "2026-01-03 00:28:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 329,
+        "time": "2026-01-03 00:29:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 400,
+        "time": "2026-01-04 00:00:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 401,
+        "time": "2026-01-04 00:01:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 402,
+        "time": "2026-01-04 00:02:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 403,
+        "time": "2026-01-04 00:03:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 404,
+        "time": "2026-01-04 00:04:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 405,
+        "time": "2026-01-04 00:05:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 406,
+        "time": "2026-01-04 00:06:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 407,
+        "time": "2026-01-04 00:07:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 408,
+        "time": "2026-01-04 00:08:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 409,
+        "time": "2026-01-04 00:09:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 410,
+        "time": "2026-01-04 00:10:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 411,
+        "time": "2026-01-04 00:11:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 412,
+        "time": "2026-01-04 00:12:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 413,
+        "time": "2026-01-04 00:13:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 414,
+        "time": "2026-01-04 00:14:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 415,
+        "time": "2026-01-04 00:15:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 416,
+        "time": "2026-01-04 00:16:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 417,
+        "time": "2026-01-04 00:17:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 418,
+        "time": "2026-01-04 00:18:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 419,
+        "time": "2026-01-04 00:19:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 420,
+        "time": "2026-01-04 00:20:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 421,
+        "time": "2026-01-04 00:21:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 422,
+        "time": "2026-01-04 00:22:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 423,
+        "time": "2026-01-04 00:23:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 424,
+        "time": "2026-01-04 00:24:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 425,
+        "time": "2026-01-04 00:25:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 426,
+        "time": "2026-01-04 00:26:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 427,
+        "time": "2026-01-04 00:27:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 428,
+        "time": "2026-01-04 00:28:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 429,
+        "time": "2026-01-04 00:29:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 500,
+        "time": "2026-01-05 00:00:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 501,
+        "time": "2026-01-05 00:01:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 502,
+        "time": "2026-01-05 00:02:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 503,
+        "time": "2026-01-05 00:03:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 504,
+        "time": "2026-01-05 00:04:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 505,
+        "time": "2026-01-05 00:05:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 506,
+        "time": "2026-01-05 00:06:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 507,
+        "time": "2026-01-05 00:07:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 508,
+        "time": "2026-01-05 00:08:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 509,
+        "time": "2026-01-05 00:09:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 510,
+        "time": "2026-01-05 00:10:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 511,
+        "time": "2026-01-05 00:11:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 512,
+        "time": "2026-01-05 00:12:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 513,
+        "time": "2026-01-05 00:13:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 514,
+        "time": "2026-01-05 00:14:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 515,
+        "time": "2026-01-05 00:15:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 516,
+        "time": "2026-01-05 00:16:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 517,
+        "time": "2026-01-05 00:17:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 518,
+        "time": "2026-01-05 00:18:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 519,
+        "time": "2026-01-05 00:19:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 520,
+        "time": "2026-01-05 00:20:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 521,
+        "time": "2026-01-05 00:21:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 522,
+        "time": "2026-01-05 00:22:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 523,
+        "time": "2026-01-05 00:23:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 524,
+        "time": "2026-01-05 00:24:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 525,
+        "time": "2026-01-05 00:25:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 526,
+        "time": "2026-01-05 00:26:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 527,
+        "time": "2026-01-05 00:27:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 528,
+        "time": "2026-01-05 00:28:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 529,
+        "time": "2026-01-05 00:29:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 600,
+        "time": "2026-01-06 00:00:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 601,
+        "time": "2026-01-06 00:01:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 602,
+        "time": "2026-01-06 00:02:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 603,
+        "time": "2026-01-06 00:03:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 604,
+        "time": "2026-01-06 00:04:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 605,
+        "time": "2026-01-06 00:05:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 606,
+        "time": "2026-01-06 00:06:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 607,
+        "time": "2026-01-06 00:07:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 608,
+        "time": "2026-01-06 00:08:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 609,
+        "time": "2026-01-06 00:09:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 610,
+        "time": "2026-01-06 00:10:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 611,
+        "time": "2026-01-06 00:11:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 612,
+        "time": "2026-01-06 00:12:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 613,
+        "time": "2026-01-06 00:13:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 614,
+        "time": "2026-01-06 00:14:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 615,
+        "time": "2026-01-06 00:15:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 616,
+        "time": "2026-01-06 00:16:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 617,
+        "time": "2026-01-06 00:17:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 618,
+        "time": "2026-01-06 00:18:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 619,
+        "time": "2026-01-06 00:19:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 620,
+        "time": "2026-01-06 00:20:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 621,
+        "time": "2026-01-06 00:21:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 622,
+        "time": "2026-01-06 00:22:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 623,
+        "time": "2026-01-06 00:23:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 624,
+        "time": "2026-01-06 00:24:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 625,
+        "time": "2026-01-06 00:25:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 626,
+        "time": "2026-01-06 00:26:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 627,
+        "time": "2026-01-06 00:27:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 628,
+        "time": "2026-01-06 00:28:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 629,
+        "time": "2026-01-06 00:29:00"
+      },
+      {
+        "basal_rate": 0.6,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 700,
+        "time": "2026-01-07 00:00:00"
+      },
+      {
+        "basal_rate": 0.6,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 701,
+        "time": "2026-01-07 00:01:00"
+      },
+      {
+        "basal_rate": 0.6,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 702,
+        "time": "2026-01-07 00:02:00"
+      },
+      {
+        "basal_rate": 0.6,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 703,
+        "time": "2026-01-07 00:03:00"
+      },
+      {
+        "basal_rate": 0.6,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 704,
+        "time": "2026-01-07 00:04:00"
+      },
+      {
+        "basal_rate": 0.6,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 705,
+        "time": "2026-01-07 00:05:00"
+      },
+      {
+        "basal_rate": 0.6,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 706,
+        "time": "2026-01-07 00:06:00"
+      },
+      {
+        "basal_rate": 0.6,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 707,
+        "time": "2026-01-07 00:07:00"
+      },
+      {
+        "basal_rate": 0.6,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 708,
+        "time": "2026-01-07 00:08:00"
+      },
+      {
+        "basal_rate": 0.6,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 709,
+        "time": "2026-01-07 00:09:00"
+      },
+      {
+        "basal_rate": 0.6,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 710,
+        "time": "2026-01-07 00:10:00"
+      },
+      {
+        "basal_rate": 0.6,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 711,
+        "time": "2026-01-07 00:11:00"
+      },
+      {
+        "basal_rate": 0.6,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 712,
+        "time": "2026-01-07 00:12:00"
+      },
+      {
+        "basal_rate": 0.6,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 713,
+        "time": "2026-01-07 00:13:00"
+      },
+      {
+        "basal_rate": 0.6,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 714,
+        "time": "2026-01-07 00:14:00"
+      },
+      {
+        "basal_rate": 0.6,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 715,
+        "time": "2026-01-07 00:15:00"
+      },
+      {
+        "basal_rate": 0.6,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 716,
+        "time": "2026-01-07 00:16:00"
+      },
+      {
+        "basal_rate": 0.6,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 717,
+        "time": "2026-01-07 00:17:00"
+      },
+      {
+        "basal_rate": 0.6,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 718,
+        "time": "2026-01-07 00:18:00"
+      },
+      {
+        "basal_rate": 0.6,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 719,
+        "time": "2026-01-07 00:19:00"
+      },
+      {
+        "basal_rate": 0.6,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 720,
+        "time": "2026-01-07 00:20:00"
+      },
+      {
+        "basal_rate": 0.6,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 721,
+        "time": "2026-01-07 00:21:00"
+      },
+      {
+        "basal_rate": 0.6,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 722,
+        "time": "2026-01-07 00:22:00"
+      },
+      {
+        "basal_rate": 0.6,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 723,
+        "time": "2026-01-07 00:23:00"
+      },
+      {
+        "basal_rate": 0.6,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 724,
+        "time": "2026-01-07 00:24:00"
+      },
+      {
+        "basal_rate": 0.6,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 725,
+        "time": "2026-01-07 00:25:00"
+      },
+      {
+        "basal_rate": 0.6,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 726,
+        "time": "2026-01-07 00:26:00"
+      },
+      {
+        "basal_rate": 0.6,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 727,
+        "time": "2026-01-07 00:27:00"
+      },
+      {
+        "basal_rate": 0.6,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 728,
+        "time": "2026-01-07 00:28:00"
+      },
+      {
+        "basal_rate": 0.6,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 729,
+        "time": "2026-01-07 00:29:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 800,
+        "time": "2026-01-08 00:00:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 801,
+        "time": "2026-01-08 00:01:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 802,
+        "time": "2026-01-08 00:02:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 803,
+        "time": "2026-01-08 00:03:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 804,
+        "time": "2026-01-08 00:04:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 805,
+        "time": "2026-01-08 00:05:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 806,
+        "time": "2026-01-08 00:06:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 807,
+        "time": "2026-01-08 00:07:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 808,
+        "time": "2026-01-08 00:08:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 809,
+        "time": "2026-01-08 00:09:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 810,
+        "time": "2026-01-08 00:10:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 811,
+        "time": "2026-01-08 00:11:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 812,
+        "time": "2026-01-08 00:12:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 813,
+        "time": "2026-01-08 00:13:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 814,
+        "time": "2026-01-08 00:14:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 815,
+        "time": "2026-01-08 00:15:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 816,
+        "time": "2026-01-08 00:16:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 817,
+        "time": "2026-01-08 00:17:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 818,
+        "time": "2026-01-08 00:18:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 819,
+        "time": "2026-01-08 00:19:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 820,
+        "time": "2026-01-08 00:20:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 821,
+        "time": "2026-01-08 00:21:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 822,
+        "time": "2026-01-08 00:22:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 823,
+        "time": "2026-01-08 00:23:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 824,
+        "time": "2026-01-08 00:24:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 825,
+        "time": "2026-01-08 00:25:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 826,
+        "time": "2026-01-08 00:26:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 827,
+        "time": "2026-01-08 00:27:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 828,
+        "time": "2026-01-08 00:28:00"
+      },
+      {
+        "basal_rate": 0.8,
+        "delivery_type": "algorithmDelivery",
+        "duration_mins": 1,
+        "profile_basal_rate": 0.6,
+        "seq_num": 829,
+        "time": "2026-01-08 00:29:00"
+      }
+    ],
+    "bolus": [
+      {
+        "description": "Bolus",
+        "insulin": 1.0,
+        "request_time": "2026-01-08 00:00:00",
+        "seq_num": 1000
+      }
+    ],
+    "cgm": [
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-01T00:00:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-01T00:01:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-01T00:02:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-01T00:03:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-01T00:04:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-01T00:05:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-01T00:06:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-01T00:07:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-01T00:08:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-01T00:09:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-01T00:10:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-01T00:11:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-01T00:12:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-01T00:13:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-01T00:14:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-01T00:15:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-01T00:16:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-01T00:17:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-01T00:18:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-01T00:19:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-01T00:20:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-01T00:21:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-01T00:22:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-01T00:23:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-01T00:24:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-01T00:25:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-01T00:26:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-01T00:27:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-01T00:28:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-01T00:29:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-02T00:00:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-02T00:01:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-02T00:02:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-02T00:03:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-02T00:04:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-02T00:05:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-02T00:06:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-02T00:07:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-02T00:08:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-02T00:09:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-02T00:10:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-02T00:11:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-02T00:12:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-02T00:13:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-02T00:14:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-02T00:15:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-02T00:16:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-02T00:17:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-02T00:18:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-02T00:19:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-02T00:20:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-02T00:21:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-02T00:22:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-02T00:23:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-02T00:24:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-02T00:25:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-02T00:26:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-02T00:27:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-02T00:28:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-02T00:29:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-03T00:00:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-03T00:01:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-03T00:02:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-03T00:03:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-03T00:04:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-03T00:05:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-03T00:06:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-03T00:07:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-03T00:08:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-03T00:09:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-03T00:10:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-03T00:11:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-03T00:12:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-03T00:13:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-03T00:14:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-03T00:15:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-03T00:16:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-03T00:17:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-03T00:18:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-03T00:19:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-03T00:20:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-03T00:21:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-03T00:22:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-03T00:23:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-03T00:24:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-03T00:25:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-03T00:26:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-03T00:27:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-03T00:28:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-03T00:29:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-04T00:00:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-04T00:01:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-04T00:02:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-04T00:03:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-04T00:04:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-04T00:05:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-04T00:06:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-04T00:07:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-04T00:08:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-04T00:09:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-04T00:10:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-04T00:11:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-04T00:12:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-04T00:13:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-04T00:14:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-04T00:15:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-04T00:16:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-04T00:17:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-04T00:18:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-04T00:19:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-04T00:20:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-04T00:21:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-04T00:22:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-04T00:23:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-04T00:24:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-04T00:25:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-04T00:26:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-04T00:27:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-04T00:28:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-04T00:29:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-05T00:00:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-05T00:01:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-05T00:02:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-05T00:03:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-05T00:04:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-05T00:05:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-05T00:06:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-05T00:07:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-05T00:08:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-05T00:09:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-05T00:10:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-05T00:11:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-05T00:12:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-05T00:13:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-05T00:14:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-05T00:15:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-05T00:16:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-05T00:17:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-05T00:18:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-05T00:19:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-05T00:20:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-05T00:21:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-05T00:22:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-05T00:23:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-05T00:24:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-05T00:25:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-05T00:26:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-05T00:27:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-05T00:28:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-05T00:29:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-06T00:00:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-06T00:01:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-06T00:02:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-06T00:03:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-06T00:04:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-06T00:05:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-06T00:06:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-06T00:07:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-06T00:08:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-06T00:09:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-06T00:10:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-06T00:11:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-06T00:12:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-06T00:13:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-06T00:14:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-06T00:15:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-06T00:16:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-06T00:17:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-06T00:18:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-06T00:19:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-06T00:20:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-06T00:21:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-06T00:22:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-06T00:23:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-06T00:24:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-06T00:25:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-06T00:26:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-06T00:27:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-06T00:28:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-06T00:29:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-07T00:00:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-07T00:01:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-07T00:02:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-07T00:03:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-07T00:04:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-07T00:05:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-07T00:06:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-07T00:07:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-07T00:08:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-07T00:09:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-07T00:10:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-07T00:11:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-07T00:12:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-07T00:13:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-07T00:14:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-07T00:15:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-07T00:16:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-07T00:17:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-07T00:18:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-07T00:19:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-07T00:20:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-07T00:21:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-07T00:22:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-07T00:23:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-07T00:24:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-07T00:25:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-07T00:26:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-07T00:27:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-07T00:28:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-07T00:29:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-08T00:00:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-08T00:01:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-08T00:02:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-08T00:03:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-08T00:04:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-08T00:05:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-08T00:06:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-08T00:07:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-08T00:08:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-08T00:09:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-08T00:10:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-08T00:11:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-08T00:12:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-08T00:13:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-08T00:14:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-08T00:15:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-08T00:16:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-08T00:17:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-08T00:18:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-08T00:19:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-08T00:20:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-08T00:21:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-08T00:22:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-08T00:23:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-08T00:24:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-08T00:25:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-08T00:26:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-08T00:27:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-08T00:28:00",
+        "Readings (CGM / BGM)": 120
+      },
+      {
+        "Description": "EGV",
+        "EventDateTime": "2026-01-08T00:29:00",
+        "Readings (CGM / BGM)": 120
+      }
+    ]
+  }
+}

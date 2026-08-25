@@ -386,6 +386,24 @@ def analyze_basal(
     programmed = active_by_slot or reconstructed
     slot_starts = slot_starts or {}
 
+    # Keep the source-night roster beside the clean samples.  The evidence
+    # projection reads these analyzer-owned facts; it must never run the window
+    # classifier again just to explain a published estimate.  Match the estimate's
+    # epoch cut so this count names clean-window exclusions, not pre-edit data.
+    source_nights: Dict[int, set] = {s: set() for s in range(n_slots)}
+    pre_source_nights: Dict[int, set] = {s: set() for s in range(n_slots)}
+    for event in basal_events:
+        end = event.t + timedelta(minutes=event.duration_mins or cfg.slot_minutes)
+        t = event.t
+        while t < end:
+            slot = _slot_of(t, cfg.slot_minutes)
+            target = pre_source_nights if (slot_starts.get(slot) is not None
+                                            and t < slot_starts[slot]) else source_nights
+            target[slot].add(t.date())
+            minute = t.hour * 60 + t.minute
+            step = cfg.slot_minutes - minute % cfg.slot_minutes
+            t += timedelta(minutes=step)
+
     # Clean minutes within one night are autocorrelated, so bootstrapping over
     # them would understate uncertainty. Reduce each (slot, day) to that day's
     # median first; the per-slot estimate then bootstraps over independent *days*,
@@ -395,19 +413,27 @@ def analyze_basal(
     # ``pre_day_rates`` rather than dropped, so #85's pooling can reconsider them.
     day_rates: Dict[int, Dict[object, List[float]]] = {s: {} for s in range(n_slots)}
     pre_day_rates: Dict[int, Dict[object, List[float]]] = {s: {} for s in range(n_slots)}
+    day_programmed: Dict[int, Dict[object, List[float]]] = {s: {} for s in range(n_slots)}
+    pre_day_programmed: Dict[int, Dict[object, List[float]]] = {s: {} for s in range(n_slots)}
     for smp in samples:
         cut = slot_starts.get(smp.slot)
         if cut is not None and smp.t < cut:
             # Predates the slot's current programmed rate. Kept aside for #85's
             # pre/post pooling; still excluded from the post-edit estimate.
             pre_day_rates[smp.slot].setdefault(smp.t.date(), []).append(smp.rate)
+            if smp.programmed_rate is not None:
+                pre_day_programmed[smp.slot].setdefault(smp.t.date(), []).append(
+                    smp.programmed_rate)
             continue
         day_rates[smp.slot].setdefault(smp.t.date(), []).append(smp.rate)
+        if smp.programmed_rate is not None:
+            day_programmed[smp.slot].setdefault(smp.t.date(), []).append(smp.programmed_rate)
 
     out: List[SlotEstimate] = []
     for s in range(n_slots):
         post_map = day_rates[s]
         pre_map = pre_day_rates[s]
+        programmed_map = day_programmed[s]
         pooling_note: Optional[str] = None
 
         # Default: post-edit-only (the current behavior / issue #56 cut).
@@ -425,6 +451,12 @@ def analyze_basal(
                 for d, rs in pre_map.items():
                     merged.setdefault(d, []).extend(rs)
                 day_map = merged
+                merged_programmed: Dict[object, List[float]] = {
+                    d: list(rs) for d, rs in day_programmed[s].items()
+                }
+                for d, rs in pre_day_programmed[s].items():
+                    merged_programmed.setdefault(d, []).extend(rs)
+                programmed_map = merged_programmed
             else:
                 pooling_note = note  # None when post was merely too thin to test
 
@@ -464,6 +496,24 @@ def analyze_basal(
             # midnight) so the unified drill-down (#20) can jump straight to the
             # moment in the Daily report, same as basal/ISF/I:C now all support.
             for (d, _), r in zip(days_sorted, per_day)]}
+        evidence["night_roster"] = [
+            {"date": d.isoformat(),
+             "t": datetime.combine(d, datetime.min.time())
+                  .replace(hour=(s * cfg.slot_minutes) // 60,
+                           minute=(s * cfg.slot_minutes) % 60).isoformat(),
+             "delivered_rate": rate,
+             "programmed_rate": (statistics.median(programmed_map[d])
+                                 if programmed_map.get(d) else None)}
+            for (d, _), rate in zip(days_sorted, per_day)
+        ]
+        estimate_dates = {d for d, _ in days_sorted}
+        source_dates = source_nights[s]
+        if pool_agreeing_regimes and pre_map and day_map is not post_map:
+            source_dates = source_dates | pre_source_nights[s]
+        evidence["excluded_night_count"] = len(source_dates - estimate_dates)
+        # This is deliberately not the roster size: the sign test uses the full
+        # non-tie, as-of-programmed pool before any setting-epoch estimate cut.
+        evidence["directional_support_count"] = len(signs_by_slot[s])
         if pooling_note is not None:
             # Regime B: divergence detected, post-edit-only kept. Surfaced as a
             # per-slot data-quality note (analyze.py rolls these into the report).

@@ -34,6 +34,12 @@ from .analyze import analyze
 from .analyzers.scenario.levers import Lever
 from .config import resolve_runtime_configuration
 from .event_comparison import ComparisonQuery, prepare_event_comparisons
+from .basal_night_evidence import (
+    UnknownBasalSlot,
+    dump_basal_night_evidence,
+    prepare_basal_night_evidence,
+    rebuild_basal_night_evidence,
+)
 from .explore_time_of_day import build_time_of_day
 from .events import CarbEntry, parse_t
 from . import findings_projection as findings_projection_module
@@ -235,6 +241,17 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                           serve_stale=False).value
         exposures = event_comparison_preparation(serve_stale=False).value.exposure_payload
         return analysis, exposures, scenarios
+
+    def basal_night_evidence_preparation(window):
+        """One fixed analyzer-owned basal roster set per source window."""
+        if window != findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS:
+            raise ValueError("basal night evidence requires its fixed source window")
+        return fixed(
+            ("basal-night-evidence", window), "basal-night-evidence-v1",
+            lambda store: prepare_basal_night_evidence(findings_products(window)[0]),
+            dump=dump_basal_night_evidence, rebuild=rebuild_basal_night_evidence,
+            serve_stale=False,
+        )
 
     def recover_sidecar_projection(key, marker, value, project, reload):
         try:
@@ -861,6 +878,26 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 "code": "analysis_generation_mismatch",
                 "message": "Evidence changed. Refresh findings.",
             }) from error
+    @app.get("/api/diagnose/basal-night-evidence")
+    def diagnose_basal_night_evidence_endpoint(
+        slot: Optional[int] = None,
+        window: int = findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS,
+        _: None = Depends(require_token),
+    ) -> dict:
+        """Analyzer-owned nightly delivered-versus-programmed basal evidence."""
+        if slot is None or not 0 <= slot < 24 * 60 // 30:
+            raise HTTPException(status_code=400, detail="slot must name a basal clock slot")
+        try:
+            result = basal_night_evidence_preparation(window)
+            return fixed_response(
+                result,
+                lambda prepared: prepared.project(
+                    slot, analysis_generation=cache.generation),
+            )
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+        except UnknownBasalSlot as error:
+            raise HTTPException(status_code=404, detail="basal slot was not found") from error
 
     @app.get("/api/diagnose/carb-ratio-history/events")
     def diagnose_ic_history_events_endpoint(
@@ -1487,6 +1524,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             # Exposures consumes this payload; only coordinate projections stay lazy.
             ("event-comparison-source-catalog", event_comparison_preparation),
             ("ic-block-evidence-preparation", ic_block_evidence_preparation),
+            ("basal-night-evidence", lambda: basal_night_evidence_preparation(30)),
             ("finding-case-file", lambda: finding_case_file_preparation(
                 Request({"type": "http", "query_string": b""}))),
         )

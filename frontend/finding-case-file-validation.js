@@ -27,14 +27,16 @@ const validCohort = (cohort, identity) => validCount(cohort?.routed_count)
   && Array.isArray(cohort.occurrence_ids)
   && cohort.routed_count === cohort.occurrence_ids.length
   && cohort.occurrence_ids.every(identity) && Array.isArray(cohort.points)
-  && cohort.points.every((point) => Number.isFinite(point?.minute) && validCount(point.n)
-    && point.n <= cohort.usable_count
-    && SUPPORT.has(point.support)
-    && (point.support === 'withheld'
-      ? point.median === null && point.p25 === null && point.p75 === null
-      : Number.isFinite(point.median) && Number.isFinite(point.p25)
-        && Number.isFinite(point.p75) && point.p25 <= point.median
-        && point.median <= point.p75))
+  && cohort.points.every((point) => {
+    if (!Number.isFinite(point?.minute) || !validCount(point.n)
+      || point.n > cohort.usable_count || !SUPPORT.has(point.support)) return false;
+    const aggregatesAreNull = point.median === null
+      && point.p25 === null && point.p75 === null;
+    if (point.n === 0 || point.support === 'withheld') return aggregatesAreNull;
+    return Number.isFinite(point.median) && Number.isFinite(point.p25)
+      && Number.isFinite(point.p75) && point.p25 <= point.median
+      && point.median <= point.p75;
+  })
   && (cohort.routed_count !== 0 || (cohort.support === 'withheld'
     && cohort.points.every((point) => point.n === 0 && point.support === 'withheld')
     && (cohort.episodes === undefined

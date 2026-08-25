@@ -153,6 +153,18 @@ test('accepts structurally valid server-owned support classifications', () => {
   assert.equal(validFindingCaseFile(caseFile), true);
 });
 
+test('rejects drawable aggregates on a zero-sample point in a nonzero cohort', () => {
+  const caseFile = missedMealCase();
+  const missed = caseFile.projection.cohorts[0];
+  const point = missed.points.find((candidate) => candidate.n === 0);
+  assert.ok(point, 'the generated nonzero cohort includes an unsampled axis point');
+  point.support = 'limited';
+  point.p25 = 119;
+  point.median = 120;
+  point.p75 = 121;
+  assert.equal(validFindingCaseFile(caseFile), false);
+});
+
 test('rejects support values outside the server contract enum', () => {
   const cohortCase = missedMealCase();
   cohortCase.projection.cohorts[0].support = 'plausible';

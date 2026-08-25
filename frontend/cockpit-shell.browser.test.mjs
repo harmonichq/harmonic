@@ -1568,6 +1568,11 @@ test('event comparisons render the served case-file cohorts and retain no standa
   let page;
   try {
     page = await openApp(browser);
+    // The workstation opens at its Overnight preset, and that scope is a real
+    // window: a dinner-time habit has no occurrences in it, so it is correctly
+    // absent from the queue. 24 h is the unscoped global queue (term 38) — the
+    // one place every Finding the window holds is listed.
+    await page.locator('#seg-window button', { hasText: '24 h' }).click();
     await page.locator('#level .qrow[data-id="finding:late_bolus"]').click();
     await page.getByRole('button', { name: 'By event', exact: true }).click();
     await page.locator('.ec-surface').waitFor();
@@ -1586,7 +1591,8 @@ test('event comparisons render the served case-file cohorts and retain no standa
     ['Matched', 'Nearly matched', 'Other completed carb-bolus meals']);
     assert.deepEqual(await page.locator('.ec-key-item[data-cohort] small').evaluateAll((items) =>
       items.map((item) => item.textContent.trim())),
-    ['6 occurrences', '1 occurrence', '3 occurrences']);
+    ['6 occurrences', '1 occurrence · unavailable for an average',
+      '3 occurrences · limited support']);
     assert.equal(await page.locator('.case-file-error').count(), 0);
   } finally { if (page) await page.close(); }
 });
@@ -1603,6 +1609,7 @@ test('event comparisons fail closed when the served case file is malformed',
           cohorts: caseFile.projection.cohorts.map((cohort, index) => index === 0
             ? { ...cohort, support: 'unknown' } : cohort) },
       } });
+    await page.locator('#seg-window button', { hasText: '24 h' }).click();
     await page.locator('#level .qrow[data-id="finding:late_bolus"]').click();
     await page.getByRole('button', { name: 'By event', exact: true }).click();
     const error = page.locator('.case-file-error');

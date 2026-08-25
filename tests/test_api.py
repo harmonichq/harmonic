@@ -1677,9 +1677,8 @@ class CachePreWarmTest(unittest.TestCase):
         ("backtest", "ciq_autotune.backtest", "backtest"),
         ("outcomes-trend", "ciq_autotune.outcomes_trend", "summarize_trend"),
         ("scenarios", "ciq_autotune.analyzers.scenario", "build_scenarios"),
-        ("exposures", "ciq_autotune.explore_exposures", "build_exposures"),
+        ("exposures", "ciq_autotune.api", "build_exposures"),
         ("explore-time-of-day", "ciq_autotune.api", "build_time_of_day"),
-        ("event-comparison-source-catalog", "ciq_autotune.api", "prepare_event_comparisons"),
         ("isf-rest-window-evidence", "ciq_autotune.api", "prepare_isf_rest_window_evidence"),
         ("finding-case-file", "ciq_autotune.api", "prepare_finding_cases"),
     )
@@ -2070,14 +2069,13 @@ class CachePreWarmTest(unittest.TestCase):
                                           "outcomes-trend": 1, "scenarios": 1,
                                           "exposures": 1,
                                           "explore-time-of-day": 1,
-                                          "event-comparison-source-catalog": 1,
                                           "isf-rest-window-evidence": 1,
                                           "finding-case-file": 1})
             expected_keys = (
                 ("analyze", 30, False, False), ("backtest", 2),
                 ("outcomes-trend", 30), ("explore-time-of-day",),
                 ("analyze", 30, False, True), ("scenarios", 30),
-                ("event-comparison-preparation",),
+                ("exposures",),
                 ("isf-rest-window-evidence", 30),
                 ("finding-case-file", None, None, None),
             )
@@ -2088,56 +2086,36 @@ class CachePreWarmTest(unittest.TestCase):
             self._get_landing_set()
             self.assertEqual(counts, after_warm)
 
-    def test_exposure_and_coordinate_reads_share_one_preparation(self):
-        """The two public comparison endpoints share their fixed-window work."""
+    def test_exposure_read_uses_the_surviving_fixed_shape(self):
+        """The exposure feed owns one fixed preparation, independent of case files."""
         with self._counting_builders() as counts:
             self.assertEqual(self.client.get("/api/explore/exposures").status_code, 200)
-            self.assertEqual(self.client.get(
-                "/api/diagnose/event-comparison",
-                params={"view": "meals", "factor": "late_bolus"},
-            ).status_code, 200)
-            self.assertEqual(self.client.get(
-                "/api/diagnose/event-comparison",
-                params={"view": "lows", "start_min": 1080, "end_min": 1440,
-                        "another": "1"},
-            ).status_code, 200)
-            self.assertEqual(counts["event-comparison-source-catalog"], 1)
+            self.assertEqual(self.client.get("/api/explore/exposures").status_code, 200)
+            self.assertEqual(counts["exposures"], 1)
 
-    def test_warm_pass_prepares_the_shared_source_without_projecting_a_coordinate(self):
-        """A fetch warms the reusable catalog; view coordinates stay visitor-lazy."""
-        import ciq_autotune.event_comparison as comparison_mod
-
-        with patch.object(comparison_mod.EventComparisonPreparation, "project") as project:
-            with self._run_worker():
-                pass
-        project.assert_not_called()
-
-    def test_concurrent_comparison_reads_single_flight_the_preparation(self):
-        """Two public reads reaching the cold key cannot build two catalogs."""
+    def test_concurrent_exposure_reads_single_flight_the_fixed_shape(self):
+        """Two public reads reaching the cold key cannot build two exposure payloads."""
         import ciq_autotune.api as api_mod
 
-        real_prepare = api_mod.prepare_event_comparisons
+        real_build = api_mod.build_exposures
         entered = threading.Event()
         release = threading.Event()
         calls = 0
         calls_lock = threading.Lock()
 
-        def counting_prepare(*args, **kwargs):
+        def counting_build(*args, **kwargs):
             nonlocal calls
             with calls_lock:
                 calls += 1
             entered.set()
             self.assertTrue(release.wait(3), "test did not release preparation")
-            return real_prepare(*args, **kwargs)
+            return real_build(*args, **kwargs)
 
-        with patch.object(api_mod, "prepare_event_comparisons", counting_prepare):
+        with patch.object(api_mod, "build_exposures", counting_build):
             with ThreadPoolExecutor(max_workers=2) as pool:
                 first = pool.submit(self.client.get, "/api/explore/exposures")
                 self.assertTrue(entered.wait(1), "the first public read did not prepare")
-                second = pool.submit(
-                    self.client.get, "/api/diagnose/event-comparison",
-                    params={"view": "meals"},
-                )
+                second = pool.submit(self.client.get, "/api/explore/exposures")
                 # The first build stays deliberately in flight while the second
                 # request reaches the same cache key. A duplicate build is visible
                 # before either request is allowed to complete.

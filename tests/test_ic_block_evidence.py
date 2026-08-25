@@ -7,6 +7,7 @@ from unittest.mock import patch
 from fastapi.testclient import TestClient
 
 from ciq_autotune.analyzers.ic import IcConfig
+from ciq_autotune.analyzers.isf import FastingEvidence
 from ciq_autotune.analyzers.ic_regression import analyze_ic_blocks_fuzzy
 from ciq_autotune.events import BolusEvent, CgmReading
 from ciq_autotune.ic_block_evidence import InconsistentIcBlockEvidence, prepare_ic_block_evidence
@@ -151,7 +152,12 @@ class IcBlockEvidenceEndpointTest(unittest.TestCase):
         class Analysis:
             def to_dict(_,):
                 return self.analysis
-        return app, patch.object(api, "analyze", return_value=Analysis())
+
+        def analysis_with_fasting_evidence(*_, **kwargs):
+            kwargs["isf_fasting_evidence_sink"](FastingEvidence((), ()))
+            return Analysis()
+
+        return app, patch.object(api, "analyze", side_effect=analysis_with_fasting_evidence)
 
     def test_public_route_copies_roster_and_reuses_then_invalidates_its_preparation(self):
         from ciq_autotune import api

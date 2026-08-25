@@ -181,6 +181,14 @@ class FastingStep:
     cluster: date
 
 
+@dataclass(frozen=True)
+class FastingEvidence:
+    """The complete analyzer-owned population behind a fasting ISF estimate."""
+
+    rest_windows: Tuple[RestWindow, ...]
+    steps: Tuple[FastingStep, ...]
+
+
 def _rest_membership(rest_windows: List[RestWindow]):
     """Return ``cluster_of(t0, t1)`` — the containing detected rest window's
     ``date`` when both endpoints fall in the *same* window, else ``None``. Windows
@@ -289,6 +297,22 @@ def fasting_steps(bolus_events: List[BolusEvent], basal_events: List[BasalEvent]
         out.append(FastingStep(t=t0, insulin_acted=activity.acted(t0, t1), dbg=dbg,
                                cluster=cluster))
     return out
+
+
+def prepare_fasting_evidence(
+    bolus_events: List[BolusEvent], basal_events: List[BasalEvent],
+    cgm_readings: List[CgmReading], config: IsfConfig, *,
+    carb_entries: Optional[List[CarbEntry]] = None,
+    rest_windows: Optional[List[RestWindow]] = None,
+) -> FastingEvidence:
+    """Detect rest windows and retain every qualifying fasting step once."""
+    windows = (detect_rest_windows(cgm_readings, bolus_events, config=config.rest_window)
+               if rest_windows is None else rest_windows)
+    return FastingEvidence(
+        tuple(windows),
+        tuple(fasting_steps(bolus_events, basal_events, cgm_readings, config, windows,
+                            carb_entries=carb_entries)),
+    )
 
 
 def _programmed_fasting_isf(isf_segments: List[Tuple[int, float]],
@@ -660,6 +684,7 @@ def analyze_isf(
     correction_rescue_days: int = 0,
     prior_strengthen_signal: bool = False,
     rescue_observation: Optional[RescueObservation] = None,
+    fasting_evidence_sink=None,
 ) -> List[SegmentEstimate]:
     """A single fasting ISF measured vs programmed, with a CI and an advisory move.
 
@@ -685,11 +710,14 @@ def analyze_isf(
     keeping the pure-analyzer callers unchanged.
     """
     cfg = config
-    if rest_windows is None:
-        rest_windows = detect_rest_windows(cgm_readings, bolus_events,
-                                           config=cfg.rest_window)
-    steps = fasting_steps(bolus_events, basal_events, cgm_readings, cfg,
-                          rest_windows, carb_entries=carb_entries)
+    fasting_evidence = prepare_fasting_evidence(
+        bolus_events, basal_events, cgm_readings, cfg,
+        carb_entries=carb_entries, rest_windows=rest_windows,
+    )
+    rest_windows = list(fasting_evidence.rest_windows)
+    steps = list(fasting_evidence.steps)
+    if fasting_evidence_sink is not None:
+        fasting_evidence_sink(fasting_evidence)
     # ISF = -slope of ΔBG on insulin_acted; negate the slope estimate (flipping
     # and swapping its CI bounds) so the reported number is in ISF units. The CI
     # resamples whole nights (each step's containing rest window), not individual

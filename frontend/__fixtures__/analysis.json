@@ -14273,6 +14273,7 @@
     "lo": -0.0,
     "method": "bootstrap-ols-isf-clustered",
     "n": 2900,
+    "n_clusters": 29,
     "value": -0.0,
     "wide": false
    },

@@ -59,6 +59,7 @@ from .ic_history_events import (
     prepare_ic_history_events,
 )
 from .ic_block_evidence import UnknownIcBlockId, prepare_ic_block_evidence
+from .isf_rest_window_evidence import prepare_isf_rest_window_evidence
 from .window_membership import WindowQuery
 from .result import SCHEMA_VERSION
 from .result_cache import ResultCache
@@ -228,6 +229,33 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                      dump=dump_event_comparison, rebuild=rebuild_event_comparison,
                      serve_stale=serve_stale)
 
+    def canonical_pooled_analysis(window: int, *, serve_stale=True):
+        """The shared pooled analysis plus retained ISF step identities."""
+        def build(store):
+            captured = []
+            payload = analyze(
+                store, window_days=window, ignore_setting_changes=False,
+                pool_agreeing_basal_regimes=True, carb_entries=store.carb_entries(),
+                prompt_responses=store.prompt_responses(),
+                isf_fasting_evidence_sink=captured.append,
+            ).to_dict()
+            if len(captured) != 1:
+                raise ValueError("ISF analyzer did not retain fasting evidence")
+            # The retained rows are an internal fixed-artifact adjunct: only the
+            # ISF evidence projection reads them, and /api/analyze strips them.
+            # They persist in analyze-v1 and, via dump_findings wholesale under
+            # _analysis, in every retained findings-history-v1 revision (about
+            # 150–200 KB per real 30-day revision); findings never reads the key.
+            payload["_isf_rest_window_steps"] = [
+                {"insulin_acted": round(step.insulin_acted, 4),
+                 "dbg": round(step.dbg, 2),
+                 "window_id": f"rest:{step.cluster.isoformat()}"}
+                for step in captured[0].steps
+            ]
+            return payload
+        return fixed(("analyze", window, False, True), "analyze-v1", build,
+                     serve_stale=serve_stale)
+
     def findings_products(window):
         """The canonical payloads every 30-day findings consumer projects from."""
         if window != findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS:
@@ -235,10 +263,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         def build_canonical_scenarios(store):
             from .analyzers.scenario import build_scenarios
             return build_scenarios(store, window_days=window).to_dict()
-        analysis = fixed(("analyze", window, False, True), "analyze-v1", lambda store: analyze(
-            store, window_days=window, ignore_setting_changes=False,
-            pool_agreeing_basal_regimes=True, carb_entries=store.carb_entries(),
-            prompt_responses=store.prompt_responses()).to_dict(), serve_stale=False).value
+        analysis = canonical_pooled_analysis(window, serve_stale=False).value
         scenarios = fixed(("scenarios", window), "scenarios-v1", build_canonical_scenarios,
                           serve_stale=False).value
         exposures = event_comparison_preparation(serve_stale=False).value.exposure_payload
@@ -324,6 +349,13 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             ("ic-block-evidence-snapshot",), ic_block_evidence_preparation,
             validate=current_fixed_result,
         )
+    def isf_rest_window_evidence_preparation(window: int):
+        """One complete fasting-step population for the fixed Diagnose window."""
+        key = ("isf-rest-window-evidence", window)
+        def compute(store):
+            analysis = canonical_pooled_analysis(window, serve_stale=False).value
+            return prepare_isf_rest_window_evidence(analysis)
+        return fixed(key, "isf-rest-window-evidence-v1", compute, serve_stale=False)
 
     def _case_error(status, code, message):
         return JSONResponse(
@@ -622,6 +654,12 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
 
         key = ("analyze", window, ignore_changes, pool)
         if window == 30 and not ignore_changes:
+            if pool:
+                return fixed_response(
+                    canonical_pooled_analysis(window),
+                    lambda value: {key: item for key, item in value.items()
+                                   if key != "_isf_rest_window_steps"},
+                )
             return fixed_response(fixed(key, "analyze-v1", lambda store: analyze(
                 store, window_days=window, ignore_setting_changes=ignore_changes,
                 pool_agreeing_basal_regimes=pool, carb_entries=store.carb_entries(),
@@ -965,6 +1003,19 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 "code": "analysis_generation_mismatch",
                 "message": "Evidence changed. Refresh findings.",
             }) from error
+
+    @app.get("/api/diagnose/isf-rest-window-evidence")
+    def diagnose_isf_rest_window_evidence_endpoint(
+        window: int = findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS,
+        _: None = Depends(require_token),
+    ) -> dict:
+        """Analyzer-owned rest windows and complete qualifying fasting steps."""
+        if window != findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS:
+            raise HTTPException(status_code=400, detail=(
+                "ISF rest-window evidence requires the fixed "
+                f"{findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS}-day window"))
+        return fixed_response(
+            isf_rest_window_evidence_preparation(window), lambda preparation: preparation.project())
 
     @app.get("/api/diagnose/finding-case-file-preparation")
     def finding_case_file_preparation(request: Request, _: None = Depends(require_token)):
@@ -1533,6 +1584,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             ("ic-block-evidence-preparation", ic_block_evidence_preparation),
             ("basal-night-evidence", lambda: basal_night_evidence_preparation(
                 findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS)),
+            ("isf-rest-window-evidence", lambda: diagnose_isf_rest_window_evidence_endpoint()),
             ("finding-case-file", lambda: finding_case_file_preparation(
                 Request({"type": "http", "query_string": b""}))),
         )

@@ -121,6 +121,7 @@ def analyze(
     harm_config: Optional[HarmConfig] = HarmConfig(),
     prompt_responses: Optional[List[dict]] = None,
     ic_estimator=analyze_ic_blocks_fuzzy,
+    isf_fasting_evidence_sink=None,
 ) -> AnalysisResult:
     """Run the whole model over ``store`` and return one AnalysisResult.
 
@@ -384,6 +385,7 @@ def analyze(
         correction_rescue_days=isf_rescue_days,
         prior_strengthen_signal=prior_strengthen_signal,
         rescue_observation=isf_rescue_observation,
+        fasting_evidence_sink=isf_fasting_evidence_sink,
     )
     ic_rows, ic_findings = analyze_ic(
         # At least one Accounting-DIA of bolus lead-in certifies whether each in-window

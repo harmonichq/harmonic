@@ -1,0 +1,1232 @@
+{
+ "_generated_by": "scripts/gen_isf_rest_window_evidence_fixtures.py",
+ "_note": "SYNTHETIC. Generated analyzer-owned rest-window evidence.",
+ "payload": {
+  "counts": {
+   "detected_windows": 2,
+   "qualifying_steps": 240,
+   "qualifying_windows": 2
+  },
+  "finding": {
+   "asserts_move": false,
+   "direction": null
+  },
+  "schema": "diagnose-isf-rest-window-evidence-v1",
+  "steps": [
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0002,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0007,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0014,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0024,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0036,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.005,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0065,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0082,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.01,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0118,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0138,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0157,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0177,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0198,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0218,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0239,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0259,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0279,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0299,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0319,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0338,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0357,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0375,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0393,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.041,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0427,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0443,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0459,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0474,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0488,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0502,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0515,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0527,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0539,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.055,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0561,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0571,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.058,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0589,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0597,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0605,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0612,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0619,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0625,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0631,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0636,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.064,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0645,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0649,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0652,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0655,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0658,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.066,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0662,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0663,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0665,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0665,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0666,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-01"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0002,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0007,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0014,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0024,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0036,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.005,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0065,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0082,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.01,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0118,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0138,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0157,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0177,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0198,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0218,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0239,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0259,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0279,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0299,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0319,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0338,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0357,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0375,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0393,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.041,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0427,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0443,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0459,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0474,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0488,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0502,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0515,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0527,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0539,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.055,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0561,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0571,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.058,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0589,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0597,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0605,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0612,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0619,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0625,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0631,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0636,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.064,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0645,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0649,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0652,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0655,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0658,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.066,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0662,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0663,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0665,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0665,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0666,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   },
+   {
+    "dbg": 0.0,
+    "insulin_acted": 0.0667,
+    "window_id": "rest:2026-06-02"
+   }
+  ],
+  "windows": [
+   {
+    "date": "2026-06-01",
+    "end": "2026-06-02 08:00:00",
+    "id": "rest:2026-06-01",
+    "start": "2026-06-01 22:00:00"
+   },
+   {
+    "date": "2026-06-02",
+    "end": "2026-06-03 08:00:00",
+    "id": "rest:2026-06-02",
+    "start": "2026-06-02 22:00:00"
+   }
+  ]
+ }
+}

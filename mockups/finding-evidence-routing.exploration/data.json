@@ -56,6 +56,7 @@
       "lo": 4.2857,
       "method": "bootstrap-inverse-ratio-wls-clustered",
       "n": 24,
+      "n_clusters": 24,
       "value": 4.2857,
       "wide": false
      },
@@ -649,6 +650,7 @@
       "lo": 6,
       "method": "bootstrap-pooled-ratio-clustered",
       "n": 3,
+      "n_clusters": 3,
       "value": 6,
       "wide": false
      },

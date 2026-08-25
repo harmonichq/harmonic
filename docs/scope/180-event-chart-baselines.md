@@ -151,7 +151,8 @@ interlocking design decisions the operator holds, not missing facts.
 Why: served advisory dosing evidence for one operator, read in a clinician
 conversation, where a mislabelled population misgrounds the conversation while
 every failure mode is recoverable by reload.
-Disposition: copied unchanged into the build handoff #181 at admission.
+Disposition: copied into the build handoff #181 at admission, verbatim but for
+this ledger's own interview back-references, which mean nothing outside it.
 
 ## Open questions
 
@@ -162,4 +163,4 @@ Disposition: copied unchanged into the build handoff #181 at admission.
 - Build handoff filed: #181, "Build the one event comparison: every chart names
   its population" -- blocked by #178, consumed by #135, sized for `/epic` to map.
   Discharges the Q13 `→ issue` disposition. The risk contract above is copied
-  into it unchanged.
+  into it, verbatim but for the interview back-references.

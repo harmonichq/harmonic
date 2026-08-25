@@ -171,12 +171,49 @@ drafting defects — they name capabilities the order does not contain:
 9. **The sanitized visual derivative has no legal executor**: coordinator mode
    delegates implementation, and build agents may not open the real-data source.
 
-### Verdict — #135 is an epic, not a ticket
+### Refutation — the Explore inspector objection, and the epic verdict it drove
 
-Nine surviving capabilities against a four-chunk ceiling. The slicing rubric's own
-rule is that more than four chunks means the ticket wants child tickets. Drafting
-stopped here rather than forcing a fifth and sixth chunk; the split goes back to
-the operator.
+Terra's finding 3 (and my Q9 built on it) claimed basal, ISF and I:C charts have no
+case-file coordinate and so need a backend projection. The first half is true; the
+conclusion is FALSE, and grounding it properly dissolved the objection:
+
+- `Lever` is the closed EIGHT-MEMBER BEHAVIORAL taxonomy — carb undercount, late
+  bolus, correction stacking and siblings (`analyzers/scenario/levers.py:47`). The
+  case-file machinery in `finding_case_file.py` serves those and only those.
+- Behavioral rows are `id: "finding:<lever>"`, `register: "finding"`, `kind: "habit"`
+  (`findings_projection.py:484`). Parameter rows are `id: "basal:<start>-<end>"`,
+  `kind: "setting"` (`findings_projection.py:314`) — NOT findings, and they never had
+  a case file.
+- Parameter charts already have a purpose-built evidence path: exactly what
+  #143/#144/#145 shipped. Those endpoints take a slot, window or `block_id`
+  coordinate rather than a finding id, so they serve a chart whether or not a finding
+  exists for it.
+
+So there is no gap, no backend work and no follow-up issue. Chunk 3 routes each chart
+to its family's existing inspector content — a paragraph. The only genuine placeholder
+case is a withheld behavioral lever.
+
+### Revised verdict — a predecessor ticket, then a four-chunk order
+
+With that objection withdrawn, six survivors were order edits, one folded into the
+composition chunk (injecting the shared range into the two renderers that hard-code
+40-300), and only two were separate work — and they are the same work.
+
+- **#188 filed** — reconcile the stale behavior ledger against its replay and add the
+  parity check that would have caught it. Stamped a blocking predecessor on the order:
+  `/ui-craft revise` requires the base inventory reconciled before a surface revision
+  is designed.
+- **#135 stays a four-chunk order.** The earlier epic verdict was over-called; it was
+  driven by an objection that did not survive grounding.
+
+Order edits applied after panel 2: the nine-leg CI matrix replaces a hand-copied
+subset; `coordinates` added to the registry entry because the four feeds are not
+uniform; a runtime tile descriptor separated from the stateless registry entry; asset
+routes moved to the chunk where modules become reachable; the shared-range refactor of
+`renderCanvas` and the event-comparison builder given an owner; live-during-drag
+replay stories added; and the sanitized derivative made a dispatch precondition
+confirmed by the operator, since no machine should unilaterally certify that a file no
+longer holds someone's health data.
 
 ## Spawned tasks
 

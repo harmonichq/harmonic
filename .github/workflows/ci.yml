@@ -72,6 +72,8 @@ jobs:
       # mirror to those answers window for window.
       - name: Check the generated event-comparison mirror fixtures are current
         run: uv run python scripts/gen_event_comparison_mirror_fixtures.py --check
+      - name: Check the generated missed-meal comparison fixture is current
+        run: uv run python scripts/gen_missed_meal_comparison_fixtures.py --check
 
   docs:
     name: ADR numbering guard

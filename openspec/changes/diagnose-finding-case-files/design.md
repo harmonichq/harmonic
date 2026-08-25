@@ -32,15 +32,19 @@ join while leaving the production browser composition intact.
    implementation owns the declared-Exposure population, attributed summary,
    denominator, verdict band, complete Occurrence roster, selection disposition,
    and chart projection. Trace rows may enrich those same roster members from the
-   preparation snapshot; they cannot add or drop members. The browser renders the
+   preparation snapshot; they cannot add or drop members. Decision 6's declared
+   missed-meal comparison is the sole cross-family exception: its announced meals
+   are comparison Occurrences outside the High roster. The browser renders the
    result and never joins it to a second population.
 3. The Lever's declared `Exposure` selects one canonical identity-bearing
    opportunity builder in `ciq_autotune/analyzers/scenario/opportunities.py`, not
    the broader Explore anchor feed. Both the case-file preparation and
    `engine._exposure_counts` call this same builder; `_exposure_counts` becomes
    only `{family: len(opportunities)}` and retains no parallel predicates.
-   Browser-visible ids are opaque `o_` plus 32 lowercase hexadecimal characters,
+   Canonical roster ids are opaque `o_` plus 32 lowercase hexadecimal characters,
    derived from the immutable source keys below; the browser never parses them.
+   Decision 6's announced-meal comparison Occurrences use the distinct opaque
+   `m_` prefix and likewise remain server-owned and unparsed.
 
    | Exposure | Canonical opportunities and stable source key | Anchor |
    | --- | --- | --- |
@@ -94,7 +98,7 @@ join while leaving the production browser composition intact.
    | Meals | Carb undercount; Late bolus; Meal over-delivery | Existing completed carb-bolus anchor and `[-60, +300]` minute trace. |
    | Lows | Over-treated low; Correction on active insulin | Existing excursion-nadir anchor and `[-300, +120]` minute trace. |
    | correction clusters | Correction stacking | Minute zero is the pair's second dose. Every aggregate uses one bounded common frame: start at the second dose minus `max(stacking_window_min, stacking_slope_lookback_min, gate_lookback_min)` and end at the second dose plus `stacking_low_lookahead_min`. `source_corrections` always carries both doses' sequence number, time, and insulin; both become chart markers when they fall inside the common frame, while a far-separated first dose remains an explicit selected-evidence fact without widening the CGM frame. |
-   | Highs | Missed / unannounced meal | Minute zero remains the published high peak. Retain the source anchor's `reach_start`; start at `reach_start` minus the largest applicable missed-meal slope, digestion, and upstream-cause lookback, and end at the later of `reach_start` or the published peak. Plot minutes relative to the peak. |
+   | Highs | Missed / unannounced meal | This is the one cross-family comparison, not a verdict-band replot. The missed cohort contains only Highs whose attribution winner is Missed / unannounced meal (`fired` in the retained High roster), anchored at each source anchor's `reach_start`. Each High roster row owns an `attributed` boolean; an attributed row also owns a `comparison_anchor` whose timestamp is `reach_start` and whose BG is the exact EGV at that timestamp. Non-attributed rows carry `comparison_anchor: null`. The missed cohort identities must equal the roster rows marked attributed, so no duplicated identity list can become a second authority. The announced cohort contains every completed carb-bolus in the analysis window (completed, insulin > 0, and carbs at or above `anchor_meal_min_carbs`), regardless of its subsequent outcome, anchored at bolus time. Both use the fixed `[-60, +300]` minute axis. The announced cohort is not a High roster member: ADR 79's roster/episode/verdict equations and the five-state verdict band continue to range only over Highs; the payload declares missed, announced, and not-comparable counts independently. |
    | Highs | Meal bolus fell short | Minute zero remains the published high peak. Start at `reach_start` minus the largest applicable slope, digestion, and upstream-cause lookback; end at the later of the peak or `reach_start + meal_bolus_short_correction_horizon_min`. Plot minutes relative to the peak. |
 
    The values come from `ScenarioConfig`; changing a classifier horizon moves the
@@ -188,7 +192,12 @@ its specific v2 tests to both authoritative and wrapper routes.
 `finding_id`, required `alignment=clock|event`, and optional `occ`. It does not
 accept a second window; the preparation id owns it. `projection_id` is `fp_` plus
 32 lowercase hex characters. `finding_id` is exactly `finding:<Lever.value>`.
-`occ` is `o_` plus 32 lowercase hex characters. Its response is:
+`occ` is either an `o_` High-roster identity or an `m_` announced-meal identity,
+followed by 32 lowercase hex characters. Other prefixes and malformed identities
+are rejected. For missed meal, the High roster itself marks attributed members and
+publishes their truthful rise-onset comparison anchors; exactly those roster IDs,
+not every classifier-fired High, form the missed cohort. Selected missed details
+use the same rise-onset `[-60, +300]` frame as its aggregate. Its response is:
 
 ```json
 {
@@ -205,7 +214,12 @@ accept a second window; the preparation id owns it. `projection_id` is `fp_` plu
 }
 ```
 
-`occurrences` is complete and has exactly `summary.denominator` members.
+`occurrences` is complete and has exactly `summary.denominator` members. A
+missed-meal High row additionally has `attributed: true|false` and
+`comparison_anchor`; the latter is the exact rise-onset timestamp/EGV pair for an
+attributed row and `null` otherwise. Its ordinary `anchor` and `date` remain the
+High peak summary, so the roster stays the same High roster used by the verdict
+band.
 `projection.cohorts` has one entry per displayed verdict cohort with `{key,
 routed_count, usable_count, support, occurrence_ids, points}`; points retain the
 existing event-comparison `{minute, n, support, median, p25, p75}` shape. Event
@@ -215,10 +229,20 @@ alignment sets `clock: null`. Clock alignment sets `anchor: null`,
 12 entries of `{start_min, end_min, n, occurrence_ids}` over this Finding's
 associated/claimed opportunities, binned by their Finding-relative outcome minute;
 their `n` values sum to `clock.total == summary.claimed`, and
-`peak_bucket_index` is the first maximum. Selection states are
-exactly `none`, `selected`, or `unavailable`; selected `detail` contains the same
-occurrence summary plus `{glucose, markers, source_corrections, day_target}`;
-`source_corrections` is empty outside correction pairs.
+`peak_bucket_index` is the first maximum. Selection states are exactly `none`,
+`selected`, or `unavailable`, and `selected` is legal only when the requested ID
+is present in the active alignment's selectable population: an event cohort or
+the complete High roster retained by a clock case. Consequently an announced
+`m_` selection carried from event to clock is `unavailable`, never selected beside
+`cohorts: []`; existing `o_` roster selection remains available. Selected `detail` normally
+contains the same occurrence summary plus `{glucose, markers,
+source_corrections, day_target}`; `source_corrections` is empty outside correction
+pairs. The missed-meal event exception retains the roster identity and verdict but
+uses the roster row's `comparison_anchor`; `date` and `day_target.date` are that
+onset's wall-clock date, even when onset and High peak straddle midnight. Its
+glucose and every in-window marker family remain bounded to `[-60, +300]`, and
+minute-zero glucose equals the comparison anchor BG. A peak-anchored detail, a
+missing/mismatched onset EGV, or an out-of-window trace fails validation.
 
 Every non-2xx response from either new route has the exact JSON envelope
 `{"detail": {"code": "<matrix code>", "message": "<human-readable text>"}}`.

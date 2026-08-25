@@ -85,6 +85,16 @@ The map-level ledger for this whole workstream is `docs/scope/evidence-canvas.md
   sentence — and an empty quad cell would contradict the layout miniature's rule
   that the single hollow cell marks where the next chart lands. `inline` (work
   order)
+- **Build agents get a committed synthetic derivative of the approved mock, never
+  the mock itself.** Before chunk 1 is dispatched, the coordinator derives a
+  data-free version of the glass-cockpit v7 packet — same markup, stylesheet and
+  geometry, real values replaced by the committed synthetic captures — and commits
+  it as `mockups/diagnose-evidence-canvas.exploration/` with its generator and a
+  `--check` step, as AGENTS.md requires of any mockup extracting from shipped
+  source. The ledger governs behavior; the derivative governs geometry; issue 135's
+  prose wins over both on conflict. Why: prose alone cannot carry gutters, edge
+  treatment or arrangement geometry, and the source packet holds real patient data
+  that no chunk agent may open. `inline` (work order)
 
 ## Open questions
 

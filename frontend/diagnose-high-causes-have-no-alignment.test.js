@@ -90,12 +90,12 @@ test('ADR 79 · every visible behavioral row requests its opaque case id', () =>
 });
 
 test('ADR 79 · case-file ALIGN follows the active server event coordinate', () => {
-  const alignment = source.match(/const caseAlignmentIn =[\s\S]*?;\n  const availableAlignment/);
-  assert.ok(alignment, 'the case-file alignment predicate exists');
-  assert.match(alignment[0], /const row = source\?\.rendered_rows\?\.find\(\(row\) => row\.id === frame\.rowId\);\s*return eventChartCoordinate\(row\);/,
-    'the active rendered row\'s server coordinate controls ALIGN');
-  assert.doesNotMatch(alignment[0], /case_header|alignments/,
-    'retired case-header alignments do not control ALIGN');
+  const alignment = source.match(/if \(entry\.modes\) \{[\s\S]*?head\.append\(modes\);\n      \}/);
+  assert.ok(alignment, 'each multi-mode chart mounts its own alignment control');
+  assert.match(alignment[0], /for \(const mode of entry\.modes\)[\s\S]*descriptor\.mode = mode/,
+    'each tile reads its registry modes and keeps its own selected alignment');
+  assert.doesNotMatch(source, /renderAlign|seg-align|align-canvas/,
+    'the retired global alignment control and host are absent');
 });
 
 test('ADR 79 · event alignment never falls back to clock at paint time', () => {

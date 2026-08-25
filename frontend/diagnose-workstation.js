@@ -1,4 +1,4 @@
-/* Diagnose workstation — PORTED from the locked mock, not authored here.
+/* Diagnose workstation — based on the shipped workstation port.
  *
  * Source: the archived ★ LOCKED cockpit mock, the module in its
  * <script type="module"> block, lines 1105-2717. Everything from the readout
@@ -19,8 +19,8 @@
  *   - `CFG` is indexed per mount rather than once at module load, so a state
  *     change can re-derive it without a page reload.
  *
- * Edit this file only to re-sync it with the mock. A change that is not in the
- * mock is a deviation and needs a re-settle against the surface's lock manifest.
+ * Issue #135 deliberately revises the canvas composition below: the clock
+ * canvas is now a strip above a registry-backed evidence tile field.
  */
 import {
   buildEnvelope, buildMealMarkers, renderCanvas, observeResize,
@@ -28,9 +28,16 @@ import {
   BIN_MINUTES, MIN_SUPPORTED_NIGHTS,
   snapMinute, snapWindow, commitWindow, commitSlide, minuteAtX, xAtMinute, plotBox, windowSpans,
   buildDayTrace,
-  renderHistoryEvents, validateHistoryEvents,
+  validateHistoryEvents,
 } from './diagnose-workstation-chart.js';
 import { toCaptures, isfVerdict } from './diagnose-workstation-data.js';
+import { DIAGNOSE_EVIDENCE_CHARTS, glucoseRange } from './diagnose-evidence-charts.js';
+import {
+  PIN_CAP, arrangementRange, createCanvasLayout, descriptorsFromFindings,
+  focusSwap, optionForDescriptor, pinChart, placeSeats,
+  recoverStaleGeneration, refreshStillCurrent, seatCountFor,
+  tileStatePresentation, unpinChart,
+} from './diagnose-canvas-layout.js';
 import {
   assertMatchingFindingCasePreparation,
   inconsistentFindingProjection,
@@ -42,13 +49,9 @@ import {
   eventChartCoordinate, renderFindingsQueue, queueMeta,
 } from './diagnose-findings-queue.js';
 import { watchDockView, paintWatchDock } from './watched-change-dock.js';
-/* ADR 31 part 3 (issue #41) — ALIGN's "By event" mode reuses the lens's own
-   canvas-only render rather than a second implementation of the projection's
-   draw. `diagnose-event-comparison.js` imports `createDiagnoseWorkstation`
-   from this module too; the cycle is safe because neither side calls the
-   other's import at module-evaluation time, only from inside functions run
-   later, after both modules have finished loading. */
-import { renderEventSurface, validEventProjection } from './diagnose-event-comparison.js';
+/* Event-comparison validation remains shared with the standalone legacy route;
+   each evidence tile now owns its registry mode and chart host. */
+import { validEventProjection } from './diagnose-event-comparison.js';
 
 /* VERBATIM from the mock's shared harness chrome. The ported chartColors() calls it, and
    it must read the live stylesheet rather than any restated token (R3). */
@@ -64,23 +67,18 @@ export function queryState(fallback, param = 'mode') {
   return new URLSearchParams(window.location.search).get(param) || fallback;
 }
 
-/* The surface's markup — VERBATIM from the mock's body, lines 1025-1094 (the
-   instrument row and the pane grid). The mock's topbar and status rows are the
-   app shell's, already built to this same lock by #634, so they are not
-   restated here. */
+/* The shipped pane shell, revised by #135 to hold a condensed clock strip and
+   the evidence tile field. The app shell still owns the topbar and status. */
 const MARKUP = `
   <div class="instruments">
     <div class="instrument">
       <span class="cap">Window</span>
       <div class="seg" id="seg-window" role="group" aria-label="Clock window"></div>
     </div>
-    <!-- ADR 31 part 3 (issue #41) — ALIGN, present only where the canvas is
-         showing a factor's events. A switch over already-selected data: it
-         never pushes, and WINDOW keeps filtering by clock under either
-         projection. Absorbs VIEW's function; VIEW itself is deleted. -->
-    <div class="instrument" id="align-group" hidden>
-      <span class="cap">Align</span>
-      <div class="seg" id="seg-align" role="group" aria-label="Alignment"></div>
+    <div class="instrument pin-cap" aria-label="Pinned evidence charts">
+      <span class="tile-schematic" id="tile-schematic" role="group"
+        aria-label="Evidence tile arrangement and next pin"></span>
+      <span class="cap" id="pin-count">0/4 pinned</span>
     </div>
   </div>
 
@@ -116,13 +114,9 @@ const MARKUP = `
           <div class="lane" id="lane" role="group" aria-label="Basal slot verdicts"></div>
           <div class="lane-key" id="lane-key"></div>
         </div>
-        <!-- ALIGN's "By event" pane (ADR 31 part 3): the event-comparison
-             lens's own canvas-only render, mounted here rather than
-             re-implemented — the same projection, drawn the same way,
-             whether reached through the lens's own read path or through
-             this switch. Hidden and empty under "By clock". -->
-        <div class="ec-surface" id="align-canvas" hidden></div>
       </div>
+      <div class="tile-field" id="tile-field" data-arrangement="focal"
+        aria-label="Evidence charts"></div>
     </section>
 
     <section class="pane inspector" aria-labelledby="crumb-trail">
@@ -351,24 +345,6 @@ function renderInstruments(winKey, capture, onPreset) {
     navigation — it does not push, and nothing else in the instrument row is a
     function of it. Its fixed choices reconcile from the standing frame's own
     align state, the same way `pressPreset` patches WINDOW from `winKey`. */
-function renderAlign(alignKey, onAlign) {
-  const seg = el('seg-align');
-  const choices = [['clock', 'By clock'], ['event', 'By event']];
-  if (!seg.querySelector('button')) {
-    for (const [, label] of choices) {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.textContent = label;
-      seg.append(b);
-    }
-  }
-  seg.querySelectorAll('button').forEach((b, index) => {
-    const [key] = choices[index];
-    b.setAttribute('aria-pressed', String(key === alignKey));
-    b.onclick = () => onAlign(key);
-  });
-}
-
 const CHIP_LABELS = [['highs', 'Highs'], ['lows', 'Lows'], ['meals', 'Meals'], ['corrections', 'Corrections']];
 
 /**
@@ -1152,8 +1128,15 @@ function boot(root, data, callbacks, signal) {
   let chart = null;
   let shownRows = EVIDENCE_CAP;
   let dir = 'push';
-  /* ALIGN's mounted event-comparison canvas (ADR 31 part 3). */
-  let alignMount = null;
+  let canvasLayout = createCanvasLayout();
+  let tileDescriptors = [];
+  let tileRuntime = new Map();
+  let tileMounts = [];
+  let tileAnalysisGeneration = findings?.analysis_generation || null;
+  let tileRequestGeneration = 0;
+  const tileRecoveryGenerations = new Map();
+  let findingsRefreshTail = Promise.resolve();
+  let sharedGlucoseRange = glucoseRange([]);
   let presetKey = CFG.win;                          // what Esc restores
   let shownRange = null;                            // the window the canvas resolved to
   let braceGripTop = 48;                            // y of the grip band, set by paintBrace
@@ -1225,6 +1208,209 @@ function boot(root, data, callbacks, signal) {
     drawn: drawn ? drawn.slice() : null,
   });
 
+  const validFindingsGeneration = (next) => {
+    if (next?.schema !== 'diagnose-findings-v2'
+      || typeof next.analysis_generation !== 'string' || !next.analysis_generation
+      || !Array.isArray(next.rows)) {
+      throw new Error('Server did not return one coherent findings generation.');
+    }
+    return next;
+  };
+
+  async function refreshFindingsGeneration(selectedHistoryId = null) {
+    const window = requestWindow();
+    const refresh = findingsRefreshTail.then(() => callbacks.loadFindings?.(
+      window, selectedHistoryId,
+    ));
+    findingsRefreshTail = refresh.catch(() => null);
+    return validFindingsGeneration(await refresh);
+  }
+
+  const descriptorCoordinatesKey = (descriptor) => JSON.stringify(descriptor.coordinates);
+  const descriptorHasData = (descriptor) => {
+    const data = descriptor.data;
+    if (!data || data.stale) return false;
+    if (descriptor.kind === 'basal') return (data.nights || []).length > 0;
+    if (descriptor.kind === 'isf') {
+      return (data.windows || []).length > 0 || (data.steps || []).length > 0;
+    }
+    if (descriptor.kind === 'carb-ratio') {
+      return (data.runs || []).length > 0 || (data.series || []).length > 0;
+    }
+    return (data.cohorts || []).some((cohort) => (cohort.points || []).length > 0);
+  };
+
+  function descriptorLoader(descriptor) {
+    if (descriptor.kind === 'basal') return callbacks.loadBasalEvidence;
+    if (descriptor.kind === 'isf') return callbacks.loadIsfEvidence;
+    if (descriptor.kind === 'carb-ratio') return callbacks.loadCarbRatioEvidence;
+    return callbacks.loadProjection;
+  }
+
+  function disposeTiles() {
+    for (const mount of tileMounts) {
+      mount.observer?.disconnect();
+      mount.chart?.dispose();
+    }
+    tileMounts = [];
+  }
+
+  function currentTileCandidates() {
+    return tileDescriptors.filter((descriptor) => tileRuntime.get(descriptor.chartId)?.current)
+      .map((descriptor) => descriptor.chartId);
+  }
+
+  function reconcileTileDescriptors({ skipLoadIds = new Set() } = {}) {
+    const generation = findings?.analysis_generation || null;
+    const generated = descriptorsFromFindings(
+      findings, DIAGNOSE_EVIDENCE_CHARTS, requestWindow(),
+    );
+    const generatedIds = new Set(generated.map(({ chartId }) => chartId));
+    const generationChanged = tileAnalysisGeneration !== null
+      && tileAnalysisGeneration !== generation;
+    const old = new Map(tileDescriptors.map((descriptor) => [descriptor.chartId, descriptor]));
+    const oldRuntime = tileRuntime;
+    if (generationChanged) {
+      canvasLayout = createCanvasLayout({
+        focalId: generatedIds.has(canvasLayout.focalId) ? canvasLayout.focalId : null,
+        pins: canvasLayout.pins.filter((id) => generatedIds.has(id)),
+      });
+    }
+    const nextRuntime = new Map();
+    const next = generated.map((seed) => {
+      const prior = old.get(seed.chartId);
+      const heldRequest = prior && !generationChanged
+        && canvasLayout.pins.includes(seed.chartId);
+      const sameRequest = prior && prior.kind === seed.kind
+        && descriptorCoordinatesKey(prior) === descriptorCoordinatesKey(seed);
+      nextRuntime.set(seed.chartId, sameRequest || heldRequest
+        ? { ...oldRuntime.get(seed.chartId), current: true }
+        : { current: true, pending: false, message: null, request: 0 });
+      return sameRequest || heldRequest ? prior : seed;
+    });
+    if (!generationChanged) {
+      for (const pinnedId of canvasLayout.pins) {
+        if (!generatedIds.has(pinnedId) && old.has(pinnedId)) {
+          next.push(old.get(pinnedId));
+          nextRuntime.set(pinnedId, { ...oldRuntime.get(pinnedId), current: false });
+        }
+      }
+    }
+    tileDescriptors = next;
+    tileRuntime = nextRuntime;
+    tileAnalysisGeneration = generation;
+    const available = new Set(tileDescriptors.map(({ chartId }) => chartId));
+    canvasLayout = createCanvasLayout({
+      focalId: available.has(canvasLayout.focalId)
+        ? canvasLayout.focalId : currentTileCandidates()[0] || canvasLayout.pins[0] || null,
+      pins: canvasLayout.pins.filter((id) => available.has(id)),
+    });
+    for (const descriptor of tileDescriptors) {
+      const runtime = tileRuntime.get(descriptor.chartId);
+      if (!skipLoadIds.has(descriptor.chartId) && !runtime.pending
+          && descriptor.data === null && descriptor.state === 'empty') {
+        void fetchTile(descriptor);
+      }
+    }
+  }
+
+  async function recoverStaleTile(chartId, staleResult) {
+    const recovery = (tileRecoveryGenerations.get(chartId) || 0) + 1;
+    tileRecoveryGenerations.set(chartId, recovery);
+    const currentRecovery = () => tileRecoveryGenerations.get(chartId) === recovery;
+    const recoveryKey = currentFindingsKey();
+    try {
+      const stale = tileDescriptors.find((item) => item.chartId === chartId);
+      if (!stale) return;
+      await recoverStaleGeneration(stale, canvasLayout, {
+        stale: staleResult,
+        refresh: async () => {
+          const next = await refreshFindingsGeneration();
+          if (!currentRecovery()
+              || !refreshStillCurrent(recoveryKey, currentFindingsKey())) return null;
+          findings = next;
+          loadedKey = currentFindingsKey();
+          pendingKey = null;
+          failedKey = null;
+          reconcileTileDescriptors({ skipLoadIds: new Set([chartId]) });
+          const descriptor = tileDescriptors.find((item) => item.chartId === chartId);
+          if (descriptor) {
+            descriptor.state = 'stale-generation';
+            descriptor.data = null;
+            const runtime = tileRuntime.get(chartId);
+            runtime.message = staleResult.message;
+            runtime.pending = true;
+            paintTiles();
+          }
+          return descriptor || null;
+        },
+        reload: (descriptor) => descriptorLoader(descriptor)(descriptor.coordinates),
+        hasData: descriptorHasData,
+        redraw: (result) => {
+          if (!currentRecovery()) return;
+          canvasLayout = result.layout;
+          const descriptor = tileDescriptors.find((item) => item.chartId === chartId);
+          if (!descriptor) return;
+          Object.assign(descriptor, result.descriptor);
+          const runtime = tileRuntime.get(chartId);
+          runtime.pending = false;
+          runtime.message = result.message;
+          paintTiles();
+          paintChart();
+          paintBrace();
+        },
+      });
+      if (!currentRecovery()) return;
+    } catch {
+      if (!currentRecovery()) return;
+      const descriptor = tileDescriptors.find((item) => item.chartId === chartId);
+      if (descriptor) {
+        descriptor.state = 'stale-generation';
+        const runtime = tileRuntime.get(chartId);
+        runtime.message = staleResult.message;
+        runtime.pending = false;
+        paintTiles();
+      }
+    }
+  }
+
+  async function fetchTile(descriptor) {
+    const load = descriptorLoader(descriptor);
+    const runtime = tileRuntime.get(descriptor.chartId);
+    if (!load) {
+      runtime.pending = false;
+      descriptor.state = 'error';
+      runtime.message = 'Evidence request is unavailable.';
+      paintTiles();
+      return;
+    }
+    const request = ++tileRequestGeneration;
+    runtime.request = request;
+    runtime.pending = true;
+    paintTiles();
+    try {
+      const data = await load(descriptor.coordinates);
+      if (runtime.request !== request || !tileDescriptors.includes(descriptor)) return;
+      runtime.pending = false;
+      if (data?.stale === true) {
+        await recoverStaleTile(descriptor.chartId, data);
+        return;
+      }
+      descriptor.data = data;
+      descriptor.state = descriptorHasData(descriptor) ? 'ok' : 'empty';
+      runtime.message = descriptor.state === 'empty' ? 'No evidence in this request.' : null;
+      paintTiles();
+      paintChart();
+      paintBrace();
+    } catch (error) {
+      if (runtime.request !== request || !tileDescriptors.includes(descriptor)) return;
+      runtime.pending = false;
+      descriptor.state = 'error';
+      runtime.message = error?.message || 'Evidence request failed.';
+      paintTiles();
+    }
+  }
+
   function historyRetired(frame, message, nextFindings = null) {
     ++historyRequestGeneration;
     if (nextFindings) findings = nextFindings;
@@ -1262,7 +1448,7 @@ function boot(root, data, callbacks, signal) {
 
   async function refreshHistoryRetirement(frame, request) {
     try {
-      const next = await callbacks.loadFindings?.(requestWindow(), frame.id);
+      const next = await refreshFindingsGeneration(frame.id);
       if (request !== historyRequestGeneration || top() !== frame) return;
       const selection = validateHistorySelection(next, frame);
       if (!['aged_out', 'unavailable'].includes(selection.disposition)) {
@@ -1289,7 +1475,7 @@ function boot(root, data, callbacks, signal) {
     frame.stale = false;
     paint();
     try {
-      const next = await callbacks.loadFindings?.(requestWindow(), frame.id);
+      const next = await refreshFindingsGeneration(frame.id);
       if (request !== historyRequestGeneration || top() !== frame) return;
       const selection = validateHistorySelection(next, frame);
       if (['aged_out', 'unavailable'].includes(selection.disposition)) {
@@ -1828,7 +2014,8 @@ function boot(root, data, callbacks, signal) {
     const stats = windowStats(envelope, win.range);
     paintReadout(null);          // a redraw ends the old hover
     chart = renderCanvas(el('chart'), window.echarts, {
-      envelope, markers, colors, occurrences, stats, window: win.range,
+      envelope, markers, colors, occurrences, stats, range: sharedGlucoseRange,
+      window: win.range,
       windowLabel: label, trace, onHover: paintReadout,
       selectedOcc, displayWindow: dragDisplayWindow, displayOffset: clockPanOffset,
     });
@@ -1867,109 +2054,186 @@ function boot(root, data, callbacks, signal) {
       `pooled from ${envelope.days} captured CGM days · ±${envelope.pool} min`;
   }
 
-  /** Tear down whatever ALIGN mounted, and restore the clock canvas. */
-  function disposeAlign() {
-    alignMount?.observer?.disconnect();
-    alignMount?.chart?.dispose();
-    alignMount?.restoreHeader?.();
-    alignMount = null;
-    el('align-canvas').innerHTML = '';
-    el('align-canvas').hidden = true;
-    el('chart').hidden = false;
-    el('brace').hidden = braceless || !shownRange;
-    el('lane-wrap').hidden = false;
+  function paintPinCap(seats) {
+    const host = el('tile-schematic');
+    host.dataset.arrangement = canvasLayout.arrangement;
+    host.innerHTML = '';
+    const candidates = currentTileCandidates();
+    const nextChartId = candidates.find((chartId) => !canvasLayout.pins.includes(chartId));
+    const cellCount = Math.max(seats.length + (canvasLayout.pins.length < PIN_CAP ? 1 : 0),
+      seatCountFor(canvasLayout.arrangement));
+    for (let index = 0; index < cellCount; index += 1) {
+      const isNext = !seats[index] && canvasLayout.pins.length < PIN_CAP
+        && index === Math.min(seats.length, cellCount - 1);
+      const cell = document.createElement(isNext ? 'button' : 'i');
+      const seat = seats[index];
+      if (seat) cell.className = seat.pinned ? 'pinned' : 'seated';
+      else if (isNext) {
+        cell.type = 'button';
+        cell.className = 'next';
+        cell.disabled = !nextChartId;
+        cell.setAttribute('aria-label', nextChartId
+          ? `Pin next evidence chart (${nextChartId})` : 'No next evidence chart to pin');
+        cell.title = nextChartId ? 'Pin next evidence chart' : 'No next evidence chart';
+        cell.onclick = () => {
+          const result = pinChart(canvasLayout, nextChartId);
+          if (!result.accepted) return;
+          canvasLayout = result.layout;
+          paintTiles();
+          paintChart();
+          paintBrace();
+        };
+      }
+      host.append(cell);
+    }
+    el('pin-count').textContent = `${canvasLayout.pins.length}/${PIN_CAP} pinned`;
   }
 
-  /** ALIGN owns two explicit projections: behavioral case files and I:C history. */
-  function paintAlign() {
-    const f = top();
-    const isCase = f.k === 'factor';
-    const isHistory = f.k === 'history';
-    const liveRow = isCase && settled() ? findingRowFor(f) : null;
-    const mappedCase = liveRow && (f.eventDiscovery
-      ? eventChartCoordinate(liveRow)
-      : caseAlignmentIn(preparation, f) ? { caseFile: true } : null);
-    el('align-group').hidden = !mappedCase && !isHistory;
-    if (!mappedCase && !isHistory) {
-      disposeAlign();
+  function paintTiles() {
+    const host = el('tile-field');
+    if (!host) return;
+    disposeTiles();
+    const seats = placeSeats(currentTileCandidates(), canvasLayout);
+    const byId = new Map(tileDescriptors.map((descriptor) => [descriptor.chartId, descriptor]));
+    const displayed = seats.map(({ chartId }) => byId.get(chartId)).filter(Boolean);
+    sharedGlucoseRange = arrangementRange(displayed, DIAGNOSE_EVIDENCE_CHARTS, glucoseRange);
+    host.dataset.arrangement = canvasLayout.arrangement;
+    host.innerHTML = '';
+    paintPinCap(seats);
+    if (!seats.length) {
+      host.innerHTML = '<div class="tile-field-empty">No evidence charts in this window.</div>';
       return;
     }
-    const alignKey = isHistory
-      ? f.align
-      : f.caseFile?.projection?.alignment || f.requestedAlignment || 'clock';
-    renderAlign(alignKey, (key) => {
-      if (alignKey === key || f.loading || (isHistory && f.pending)) return;
-      if (isHistory) {
-        if (key === 'clock') {
-          ++historyRequestGeneration;
-          pendingKey = null;
-          f.pending = false;
-          f.align = 'clock';
-          disposeAlign();
-          paint();
-        } else {
-          requestHistoryEvents(f, f.selectedRunId);
+    const entries = new Map(DIAGNOSE_EVIDENCE_CHARTS.map((entry) => [entry.kind, entry]));
+    for (const seat of seats) {
+      const descriptor = byId.get(seat.chartId);
+      const entry = entries.get(descriptor.kind);
+      const tile = document.createElement('article');
+      tile.className = 'evidence-tile';
+      tile.dataset.chartId = descriptor.chartId;
+      tile.dataset.seat = seat.seat;
+      tile.dataset.state = descriptor.state;
+      tile.toggleAttribute('data-pinned', seat.pinned);
+      tile.style.order = String(seat.pinned ? canvasLayout.pins.indexOf(descriptor.chartId) + 1 : 0);
+
+      const head = document.createElement('header');
+      head.className = 'tile-head';
+      const title = document.createElement('h3');
+      title.textContent = entry.name;
+      const meta = document.createElement('span');
+      meta.className = 'tile-meta';
+      meta.textContent = entry.meta(descriptor.mode);
+      const state = document.createElement('span');
+      state.className = 'tile-state-name';
+      state.textContent = descriptor.state;
+      head.append(title, meta, state);
+
+      if (entry.modes) {
+        const modes = document.createElement('span');
+        modes.className = 'tile-modes';
+        modes.setAttribute('role', 'group');
+        modes.setAttribute('aria-label', `${entry.name} alignment`);
+        for (const mode of entry.modes) {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.textContent = mode === 'clock' ? 'Clock' : 'Event';
+          button.setAttribute('aria-label', `Align ${entry.name} by ${mode}`);
+          button.setAttribute('aria-pressed', String(mode === descriptor.mode));
+          button.onclick = (event) => {
+            event.stopPropagation();
+            descriptor.mode = mode;
+            paintTiles();
+          };
+          modes.append(button);
         }
-        return;
+        head.append(modes);
       }
-      requestCase(f, key, f.selectedId);
-    });
-    if (alignKey === 'clock') {
-      disposeAlign();
-      return;
-    }
-    if (isHistory) {
-      if (!f.events) return;
-      const mounted = alignMount?.frame === f
-        && alignMount.analysisGeneration === f.generation
-        && alignMount.selectedRunId === (f.selectedRunId || null);
-      if (mounted) return;
-      el('chart').hidden = true;
-      el('brace').hidden = true;
-      el('lane-wrap').hidden = true;
-      const host = el('align-canvas');
-      host.hidden = false;
-      alignMount?.observer?.disconnect();
-      alignMount?.chart?.dispose();
-      alignMount?.restoreHeader?.();
-      const title = el('canvas-head').querySelector('h2');
-      const old = {
-        title: title.textContent,
-        scope: el('canvas-scope').textContent,
-        pool: el('canvas-pool').textContent,
+
+      const pin = document.createElement('button');
+      pin.type = 'button';
+      pin.className = 'tile-pin';
+      pin.textContent = seat.pinned ? 'Unpin' : 'Pin';
+      pin.setAttribute('aria-pressed', String(seat.pinned));
+      pin.disabled = !seat.pinned && canvasLayout.pins.length === PIN_CAP;
+      pin.title = pin.disabled ? `Pin cap reached (${PIN_CAP})` : pin.textContent;
+      pin.onclick = (event) => {
+        event.stopPropagation();
+        if (seat.pinned) {
+          canvasLayout = unpinChart(canvasLayout, descriptor.chartId);
+          reconcileTileDescriptors();
+        } else {
+          const result = pinChart(canvasLayout, descriptor.chartId);
+          if (!result.accepted) return;
+          canvasLayout = result.layout;
+        }
+        paintTiles();
+        paintChart();
+        paintBrace();
       };
-      title.textContent = 'Meal runs after the past setting';
-      el('canvas-scope').textContent = `${f.events.run_ids.length} meal runs`;
-      el('canvas-pool').textContent = '';
-      const historyChart = renderHistoryEvents(host, window.echarts, f.events, colors);
-      alignMount = {
-        chart: historyChart,
-        observer: observeResize(host, () => historyChart),
-        restoreHeader: () => {
-          title.textContent = old.title;
-          el('canvas-scope').textContent = old.scope;
-          el('canvas-pool').textContent = old.pool;
-        },
-        frame: f,
-        analysisGeneration: f.generation,
-        selectedRunId: f.selectedRunId || null,
+      head.append(pin);
+      tile.append(head);
+
+      const body = document.createElement('div');
+      body.className = 'tile-body';
+      const runtime = tileRuntime.get(descriptor.chartId);
+      const presentation = tileStatePresentation(
+        descriptor, runtime.pending, runtime.message,
+      );
+      if (runtime.pending) {
+        body.innerHTML = `<div class="tile-state"><strong>${presentation.name}</strong><span>${presentation.message}</span></div>`;
+      } else if (descriptor.state !== 'ok') {
+        const named = document.createElement('div');
+        named.className = 'tile-state';
+        const strong = document.createElement('strong');
+        strong.textContent = presentation.name;
+        const message = document.createElement('span');
+        message.textContent = presentation.message;
+        named.append(strong, message);
+        body.append(named);
+      } else {
+        const chartHost = document.createElement('div');
+        chartHost.className = 'tile-chart';
+        body.append(chartHost);
+        try {
+          const option = optionForDescriptor(
+            descriptor, DIAGNOSE_EVIDENCE_CHARTS, sharedGlucoseRange, {
+            explore: false, mini: false, window: scopeWindow(),
+            },
+          );
+          const evidenceChart = window.echarts.init(chartHost, null, { renderer: 'canvas' });
+          evidenceChart.setOption(option, true);
+          tileMounts.push({ chart: evidenceChart,
+            observer: observeResize(chartHost, () => evidenceChart) });
+        } catch (error) {
+          descriptor.state = 'error';
+          runtime.message = error?.message || 'Evidence chart could not be drawn.';
+          tile.dataset.state = descriptor.state;
+          state.textContent = descriptor.state;
+          body.innerHTML = '';
+          const named = document.createElement('div');
+          named.className = 'tile-state';
+          const strong = document.createElement('strong');
+          strong.textContent = 'error';
+          const message = document.createElement('span');
+          message.textContent = runtime.message;
+          named.append(strong, message);
+          body.append(named);
+        }
+      }
+      tile.append(body);
+      tile.onclick = () => {
+        if (seat.seat === 'focal') return;
+        const ids = tileDescriptors.map(({ chartId }) => chartId);
+        const swapped = focusSwap(ids, canvasLayout, descriptor.chartId);
+        canvasLayout = swapped.layout;
+        const rank = new Map(swapped.candidates.map((id, index) => [id, index]));
+        tileDescriptors.sort((a, b) => rank.get(a.chartId) - rank.get(b.chartId));
+        paintTiles();
+        paintChart();
+        paintBrace();
       };
-      return;
+      host.append(tile);
     }
-    if (!f.caseFile || f.caseFile.projection.alignment !== 'event') return;
-    if (alignMount?.caseFile === f.caseFile) return;
-    el('chart').hidden = true;
-    el('brace').hidden = true;
-    el('lane-wrap').hidden = true;
-    const host = el('align-canvas');
-    host.hidden = false;
-    alignMount?.observer?.disconnect();
-    alignMount?.chart?.dispose();
-    alignMount?.restoreHeader?.();
-    alignMount = {
-      ...renderEventSurface(host, f.caseFile, { headerHost: el('canvas-head') }),
-      frame: f, caseFile: f.caseFile,
-    };
   }
 
   /* The badge counts STAGED PARAMETER ITEMS — a basal slot, an I:C block, the
@@ -2682,22 +2946,16 @@ function boot(root, data, callbacks, signal) {
 
   function paint() {
     ensurePreparation();
-    const open = top();
-    const ownsAlign = (open.k === 'factor'
-      && open.caseFile?.projection?.alignment === 'event')
-      || (open.k === 'history' && open.align === 'event');
-    if (alignMount && !ownsAlign) disposeAlign();
+    reconcileTileDescriptors();
     paintFilter();
     paintCrumb();
     paintLevel();
     renderLane(lane, top().k === 'slot' ? top().cell : null, staged, pickCell);
     renderLaneKey(lane);
     paintWatch();
-    if (!alignMount) {
-      paintChart();
-      paintBrace();
-    }
-    paintAlign();
+    paintTiles();
+    paintChart();
+    paintBrace();
     const canvasBody = el('chart').parentElement;
     canvasBody.querySelector('.history-canvas-notice')?.remove();
     const history = top().k === 'history' ? top() : null;
@@ -2787,6 +3045,21 @@ function boot(root, data, callbacks, signal) {
     ev.stopImmediatePropagation();
     closeFilter({ restoreFocus: true });
   }, { capture: true, signal });
+  let canvasWasHidden = false;
+  const sessionMonitor = window.setInterval(() => {
+    const hidden = !root.isConnected || root.getClientRects().length === 0;
+    if (hidden && !canvasWasHidden) {
+      canvasLayout = createCanvasLayout();
+      canvasWasHidden = true;
+    } else if (!hidden && canvasWasHidden) {
+      canvasWasHidden = false;
+      reconcileTileDescriptors();
+      paintTiles();
+      paintChart();
+      paintBrace();
+    }
+  }, 100);
+  signal.addEventListener('abort', () => window.clearInterval(sessionMonitor), { once: true });
   const initialFrame = top();
   if (initialFrame.k === 'factor') requestCase(initialFrame, 'clock');
   else paint();
@@ -2801,7 +3074,7 @@ function boot(root, data, callbacks, signal) {
      level and chart off the SAME frame stack, drawn window and staged sets.
      It reuses `paint()`, so the reader's depth and workspace survive; it does
      NOT re-run boot() or reassign the root MARKUP (#666). */
-  return { destroy() { chart = null; }, repaintDay: paint };
+  return { destroy() { chart = null; disposeTiles(); }, repaintDay: paint };
 }
 
 /* ---------------------------------------------------------------------------

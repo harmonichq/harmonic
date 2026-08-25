@@ -1,4 +1,4 @@
-/* Diagnose workstation — PORTED from the locked mock, not authored here.
+/* Diagnose workstation — based on the shipped locked workstation port.
  *
  * Source: the archived ★ LOCKED cockpit mock (the fork that executes lock terms
  * 31-33). Lines 258-298 (tokens) and 393-939 (instrument row, pane grid, brace,
@@ -11,8 +11,8 @@
  * chrome rules on top would double-declare and fight it. The mock's `.mockbar`
  * is harness chrome and is excluded from the contract by the behaviour ledger.
  *
- * Keep the ported rules synchronized with the mock. Any deviation needs a
- * behavior-ledger amendment; P44 is the recorded retirement for the omitted lane.
+ * Issue #135 deliberately revises the canvas composition, tile geometry, and
+ * pane depth below; its behavior retirements are recorded with the issue scope.
  */
 
 /* ---- token adapter (NEW — the seam between the app's design system and the
@@ -101,6 +101,11 @@
   --ck-body: 12.5px;
   --ck-grid-left: 52px;
   --ck-grid-right: 52px;   /* must track GRID in shell-cockpit-chart.js */
+  --ck-canvas-gap: 8px;
+  --ck-trench: color-mix(in srgb, var(--mk-bg) 70%, #000);
+  --ck-tile-edge: color-mix(in srgb, var(--mk-line) 72%, transparent);
+  --ck-tile-top: color-mix(in srgb, var(--mk-text) 15%, transparent);
+  --ck-tile-shadow: 0 7px 15px -11px rgba(0, 0, 0, .72);
 }
 html.dark .dw {
   --ck-inset: #101215;
@@ -110,39 +115,17 @@ html.dark .dw {
   --ck-manual-soft: #332C1B;
 }
 
-/* ---- mock 393-939 — VERBATIM (one line rescoped, marked inline) ---- */
+/* ---- shipped workstation rules, with #135 canvas revisions ---- */
 /* ---- 2. instrument row ---------------------------------------------- */
-/* DEVIATION from the ported mock (owner ruling, 2026-08-19, see the behavior
-   ledger: "I want this to
-   maintain a consistent position on the screen … visually aligned nicely
-   with something, probably directly above the inspector"). The mock's row
-   was a flex row, so ALIGN's position slid with whatever sat before it in
-   flow. `.instruments` now mirrors `.panes`' ACTUAL rendered geometry — its
-   `.panes` base rule in the mock port is itself overridden by
-   `theme.css`'s ":is(.dw, .vw) .panes { gap: 0; padding: 0; }" (the "docked
-   workspace" pane rule, term 1), so the real column boundary is a bare
-   `100% - var(--side)` with no gap or padding to account for. Zero gap and
-   zero padding here reproduce that exactly, so the SECOND column starts at
-   the identical x as the inspector pane — reserved space directly above it
-   whether or not `#align-group` is hidden, since WINDOW (column 1) can never
-   push a sibling grid track. `#align-group` gets its own left inset instead
-   of the row's, matching `.pane > header`'s own content padding
-   (`--ck-pad`), so ALIGN's label lines up with the inspector's own header
-   text, not just its bare left edge. See the behaviour ledger's amendment
-   for the deviation this records. Between #68 and #86, an extra `auto` track
-   held the global Sift instrument #68 added; #86 removed Sift and left its track,
-   pushing ALIGN out of the reserved column until #106 removed it. This row's track
-   count must always equal its instrument count, `var(--side, 430px)` must stay the
-   last track with ALIGN the last child, and any addition or removal must change the
-   track list in the same commit; `createDiagnoseWorkstation`'s uncalled `railLead`
-   can prepend an instrument, and S77—not this comment—enforces the invariant. */
+/* Window remains the strip's slicer; the retired global alignment seat is now
+   the live pin-cap schematic. Alignment belongs to each evidence tile. */
 .instruments {
-  display: grid; grid-template-columns: minmax(0, 1fr) var(--side, 430px);
+  display: grid; grid-template-columns: minmax(0, 1fr) auto;
   align-items: center; gap: 0; padding: 0;
   background: var(--mk-bg);
 }
 .instruments > .instrument:first-child { padding-left: 14px; }
-#align-group { padding-left: var(--ck-pad); }
+.pin-cap { padding-right: 14px; gap: 8px; }
 .instrument { display: flex; align-items: center; gap: 7px; min-width: 0; }
 .instrument[hidden] { display: none; }
 .instrument > .cap {
@@ -173,11 +156,31 @@ html.dark .dw {
   background: var(--mk-surface); color: var(--mk-text);
   box-shadow: 0 1px 2px rgba(0,0,0,.28), inset 0 0 0 1px color-mix(in srgb, var(--ck-accent) 34%, transparent);
 }
-#seg-align button:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: -2px; }
+.tile-schematic {
+  display: grid; width: 38px; height: 24px; gap: 2px; padding: 2px;
+  border: 1px solid var(--ck-hair); border-radius: 1px; background: var(--ck-trench);
+}
+.tile-schematic[data-arrangement="focal"] { grid-template: 2fr 1fr / repeat(3, 1fr); }
+.tile-schematic[data-arrangement="focal"] > :first-child { grid-column: 1 / -1; }
+.tile-schematic[data-arrangement="split"] { grid-template-columns: repeat(2, 1fr); }
+.tile-schematic[data-arrangement="pair"] { grid-template-rows: repeat(2, 1fr); }
+.tile-schematic[data-arrangement="onetwo"] { grid-template: repeat(2, 1fr) / 1.32fr 1fr; }
+.tile-schematic[data-arrangement="onetwo"] > :first-child { grid-row: 1 / -1; }
+.tile-schematic[data-arrangement="quad"] { grid-template: repeat(2, 1fr) / repeat(2, 1fr); }
+.tile-schematic > * { min-width: 0; min-height: 0; border-radius: 1px; }
+.tile-schematic .seated { background: var(--mk-secondary); }
+.tile-schematic .pinned { background: var(--ck-accent); }
+.tile-schematic .next {
+  appearance: none; padding: 0; border: 1px dashed var(--mk-muted);
+  background: transparent; cursor: pointer;
+}
+.tile-schematic .next:disabled { cursor: default; opacity: .45; }
+.tile-schematic .next:focus-visible { outline: 1px solid var(--ck-accent); outline-offset: 1px; }
 /* ---- 3. pane grid --------------------------------------------------- */
-.panes {
-  display: grid; gap: var(--ck-gap); padding: var(--ck-gap) 12px; min-height: 0;
+.main-content .dw .panes {
+  display: grid; gap: var(--ck-canvas-gap); padding: var(--ck-canvas-gap); min-height: 0;
   grid-template-columns: minmax(0, 1fr) var(--side, 430px);
+  background: var(--ck-trench);
   transition: grid-template-columns .18s ease;
 }
 /* one fixed inspector width in every state — a per-state width made the canvas
@@ -186,8 +189,11 @@ html.dark .dw {
 
 .pane {
   display: grid; grid-template-rows: auto minmax(0, 1fr); min-height: 0; min-width: 0;
-  background: var(--ck-rail); border-radius: var(--ck-r);
+  background: var(--ck-rail); border-radius: 2px;
+  box-shadow: inset 0 0 0 1px var(--ck-tile-edge),
+    inset 0 1px 0 var(--ck-tile-top), var(--ck-tile-shadow);
 }
+.pane.inspector { border-radius: 0; }
 /* ONE SPINE PER COLUMN. The inspector's is --ck-pad; the chart's is the
    plot's own left edge (--ck-grid-left), so the panel title, the provenance,
    the mg/dL caption, the basal lane and the lane key all start on the same
@@ -274,6 +280,7 @@ html.dark .dw {
 }
 
 /* canvas pane */
+.canvas-pane { grid-template-rows: auto 210px minmax(0, 1fr); }
 .canvas-pane > .body {
   display: grid; grid-template-rows: minmax(0, 1fr) auto; overflow: hidden; min-height: 0;
   position: relative;   /* the brace overlay is measured against this box */
@@ -288,10 +295,72 @@ html.dark .dw {
    time — there is simply nothing to reflow. Behaviour-ledger Q3 (#651). */
 #chart { min-height: 0; min-width: 0; cursor: crosshair; }
 
-/* ALIGN's "By event" pane (ADR 31 part 3, issue #41) — spans the whole canvas
-   body (both grid rows), the same footprint `#chart` + `.lane-wrap` cover
-   together, so it replaces them rather than adding a third row underneath. */
-#align-canvas { grid-row: 1 / -1; grid-column: 1; min-height: 0; }
+.tile-field {
+  display: grid; gap: var(--ck-canvas-gap); padding: var(--ck-canvas-gap);
+  min-width: 0; min-height: 0; overflow: hidden; background: var(--ck-trench);
+}
+.tile-field[data-arrangement="focal"] {
+  grid-template: minmax(0, 1fr) 145px / repeat(3, minmax(0, 1fr));
+}
+.tile-field[data-arrangement="focal"] > .evidence-tile:first-child { grid-column: 1 / -1; }
+.tile-field[data-arrangement="split"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.tile-field[data-arrangement="pair"] { grid-template-rows: repeat(2, minmax(0, 1fr)); }
+.tile-field[data-arrangement="onetwo"] {
+  grid-template: repeat(2, minmax(0, 1fr)) / 1.32fr minmax(0, 1fr);
+}
+.tile-field[data-arrangement="onetwo"] > .evidence-tile:first-child { grid-row: 1 / -1; }
+.tile-field[data-arrangement="quad"] {
+  grid-template: repeat(2, minmax(0, 1fr)) / repeat(2, minmax(0, 1fr));
+}
+.evidence-tile {
+  display: grid; grid-template-rows: 28px minmax(0, 1fr); min-width: 0; min-height: 0;
+  margin: 0; overflow: hidden; background: var(--ck-rail); border-radius: 2px;
+  box-shadow: inset 0 0 0 1px var(--ck-tile-edge),
+    inset 0 1px 0 var(--ck-tile-top), var(--ck-tile-shadow);
+}
+.evidence-tile[data-pinned] {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ck-accent) 72%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--ck-accent) 76%, var(--mk-text)),
+    var(--ck-tile-shadow);
+}
+.tile-head {
+  display: flex; align-items: center; gap: 8px; min-width: 0; padding: 4px 7px 3px;
+}
+.tile-head h3 {
+  margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--mk-secondary); font-size: var(--ck-micro); font-weight: 700;
+  letter-spacing: var(--ck-track); text-transform: uppercase;
+}
+.tile-meta {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--mk-muted); font-family: var(--ck-mono); font-size: var(--ck-micro);
+}
+.tile-state-name {
+  color: var(--mk-muted); font-family: var(--ck-mono); font-size: 9px;
+  text-transform: uppercase;
+}
+.tile-modes { display: flex; margin-left: auto; gap: 2px; }
+.tile-modes button, .tile-pin {
+  border: 1px solid var(--ck-hair); border-radius: 1px; background: transparent;
+  color: var(--mk-muted); padding: 2px 5px; font-size: 9px; line-height: 1.2; cursor: pointer;
+}
+.tile-modes button[aria-pressed="true"], .tile-pin[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--ck-accent) 62%, var(--ck-hair));
+  color: var(--mk-text);
+}
+.tile-modes button:focus-visible, .tile-pin:focus-visible {
+  outline: 2px solid var(--ck-accent); outline-offset: 1px;
+}
+.tile-pin:disabled { opacity: .55; cursor: not-allowed; }
+.tile-body, .tile-chart { min-width: 0; min-height: 0; height: 100%; }
+.tile-state, .tile-field-empty {
+  display: grid; place-content: center; gap: 4px; height: 100%; padding: 12px;
+  color: var(--mk-muted); font-size: 11px; text-align: center;
+}
+.tile-state strong {
+  color: var(--mk-secondary); font-family: var(--ck-mono); font-size: var(--ck-micro);
+  letter-spacing: var(--ck-track); text-transform: uppercase;
+}
 
 /* ---- drawn-window brace ---------------------------------------------
    Two dashed edges on the SAME optical spine as the plot and the lane —
@@ -881,8 +950,6 @@ html.dark .dw {
   background: color-mix(in srgb, var(--mk-surface) 94%, transparent);
   color: var(--mk-secondary); font-size: 11.5px;
 }
-#align-canvas[data-history-id] { min-width: 0; }
-
 @media (max-width: 760px) {
   .dw { grid-template-rows: auto minmax(0, 1fr); }
   .instruments {
@@ -890,10 +957,10 @@ html.dark .dw {
     padding-inline: 8px; gap: 12px;
   }
   .instruments > .instrument:first-child { padding-left: 0; }
-  #align-group { padding-left: 0; }
+  .pin-cap { padding-right: 0; }
   .instrument { flex: 0 0 auto; }
   .seg button { min-width: 44px; min-height: 44px; padding-inline: 8px; }
-  .panes {
+  .main-content .dw .panes {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(250px, 42%) minmax(0, 1fr);
   }
@@ -911,6 +978,14 @@ html.dark .dw {
   .history-run small, .history-canvas-notice { font-size: 14px; }
   .history-retry { min-height: 44px; }
   .history-canvas-notice { inset-inline: 12px; }
+  .canvas-pane { overflow-y: auto; }
+  .canvas-pane > .body { height: 210px; min-height: 210px; }
+  .tile-field {
+    display: flex; flex-direction: column; overflow: visible; min-height: auto;
+  }
+  .tile-field > .evidence-tile { flex: 0 0 280px; order: 0; }
+  .tile-field > .evidence-tile[data-pinned] { order: var(--pin-order, 1); }
+  .tile-field > .evidence-tile:not([data-seat="focal"]):not([data-pinned]) { display: none; }
 }
 
 /* ---- terms 46–49 · the watched-change dock ---------------------------

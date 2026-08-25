@@ -2343,6 +2343,9 @@ html.dark .viz .tie:hover::before { opacity:.13; }
       fetchExploreTimeOfDay as dataFetchExploreTimeOfDay,
       fetchExploreExposures as dataFetchExploreExposures,
       fetchDiagnoseEventComparison as dataFetchDiagnoseEventComparison,
+      fetchDiagnoseBasalNightEvidence as dataFetchDiagnoseBasalNightEvidence,
+      fetchDiagnoseIsfRestWindowEvidence as dataFetchDiagnoseIsfRestWindowEvidence,
+      fetchDiagnoseCarbRatioBlockEvidence as dataFetchDiagnoseCarbRatioBlockEvidence,
       fetchDiagnoseFindings as dataFetchDiagnoseFindings,
       fetchDiagnoseCarbRatioHistoryEvents as dataFetchDiagnoseCarbRatioHistoryEvents,
       fetchDiagnoseFindingCasePreparation as dataFetchDiagnoseFindingCasePreparation,
@@ -5462,6 +5465,12 @@ html.dark .viz .tie:hover::before { opacity:.13; }
                 dataFetchDiagnoseEventComparison(coordinates).then((payload) => {
                   return recordDiagnoseAge(diagnoseAges.value, 'event_comparison', payload);
                 })),
+              loadBasalEvidence: (coordinates) => enqueue(() =>
+                dataFetchDiagnoseBasalNightEvidence(coordinates)),
+              loadIsfEvidence: (coordinates) => enqueue(() =>
+                dataFetchDiagnoseIsfRestWindowEvidence(coordinates)),
+              loadCarbRatioEvidence: (coordinates) => enqueue(() =>
+                dataFetchDiagnoseCarbRatioBlockEvidence(coordinates)),
               // #735: a pressed preset and a drawn brace both ask the server for
               // that window's rows (lock terms 37/40) — the frontend re-scopes
               // nothing itself.

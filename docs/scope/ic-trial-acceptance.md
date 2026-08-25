@@ -69,6 +69,11 @@ a Trial on a carb-ratio change should accept as "ready to judge".
   `runs_floor_met` is stamped over the whole pool and cannot serve. Disposition:
   → ADR.
 
+- **The 30-day window counts days that carry data.** Operator decision (Q13),
+  2026-08-24. Why: it matches how the rest of the app counts, and a stalled feed
+  holding the watch open is harmless — with nothing syncing there is nothing to
+  judge and no reason to be in the app. Disposition: → ADR.
+
 ### Risk contract
 
 - **Must prevent:** reporting a carb-ratio change ready to judge while the block's
@@ -82,6 +87,10 @@ a Trial on a carb-ratio change should accept as "ready to judge".
 - **Unsupported:** eras with no stamped regime identity (before settings history
   begins) yield no trial evidence; parameters other than carb ratio keep their day
   count (Q6).
+- **Accepted failure (second):** a stalled data feed holds the watch open, because
+  the window counts days that carry data (Q13). Nothing expires and a Focus stays
+  unpinnable until data resumes. Accepted deliberately: with nothing syncing there
+  is nothing to judge.
 - **Evidence owed:** acceptance is proven through the public interface,
   `GET /api/verify/trials`, with a case for each locked behavior: the readiness
   verdict is read from the engine's stamped support flag rather than re-derived;

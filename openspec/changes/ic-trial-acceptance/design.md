@@ -15,8 +15,8 @@ verdict rather than a read of the existing flag. Readiness is no longer decided 
 `TRIAL_WINDOW_DAYS` of target-metric data-days. Each changed block
 matures and is judged on its own. A whole-profile switch that moves a carb ratio
 runs this bar for its ratio part rather than maturing on glucose data-days. The
-foregrounded window stays a fixed stretch (30 days) that is deliberately *not* the
-evidence bar: when it ends with the bar unmet, the change stops being watched and
+foregrounded window stays a fixed stretch — 30 days that carry data, counted the way
+the rest of the app counts — and is deliberately *not* the evidence bar: when it ends with the bar unmet, the change stops being watched and
 states the progress it reached. No minimum elapsed time applies; the capture count
 alone decides. Basal, correction factor and target keep their existing day count.
 
@@ -72,6 +72,8 @@ identity.
   not, and is deliberately left to the ticket that builds this. A Trial today
   exposes one scalar state, so a build must first decide whether the roster returns
   child block verdicts, several rows, or an aggregate with children.
+- The window counts days that carry data, so a stalled feed holds the watch open
+  rather than expiring it. Accepted: with nothing syncing there is nothing to judge.
 - Withhold-only in the sense that matters: nothing here widens what the app may
   recommend, because assertion authority is untouched. Readiness timing is not
   withhold-only and is not claimed to be — with no minimum elapsed time, a block

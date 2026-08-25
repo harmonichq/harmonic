@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 import { makeDeps } from './data.js';
+import { renderEventSurface } from './diagnose-event-comparison.js';
 
 import {
   DIAGNOSE_EVIDENCE_CHARTS,
@@ -37,12 +38,14 @@ test('the shared glucose range contains the envelope and expands in 20 mg/dL ste
 test('Diagnose evidence clients send each feed its declared request coordinates', async () => {
   const transport = fakeFetch();
   const deps = makeDeps({ fetch: transport.fetch });
+  const carbRatio = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'carb-ratio');
+  const coordinateValues = { block_id: 1200, analysis_generation: 'process:7' };
+  const declaredCoordinates = Object.fromEntries(carbRatio.coordinateSchema
+    .map((name) => [name, coordinateValues[name]]));
 
   await deps.fetchDiagnoseBasalNightEvidence({ slot: 11 });
   await deps.fetchDiagnoseIsfRestWindowEvidence();
-  await deps.fetchDiagnoseCarbRatioBlockEvidence({
-    blockId: 1200, analysisGeneration: 'process:7',
-  });
+  await deps.fetchDiagnoseCarbRatioBlockEvidence(declaredCoordinates);
 
   assert.deepEqual(transport.calls.map(({ url }) => url), [
     '/api/diagnose/basal-night-evidence?slot=11',
@@ -62,7 +65,7 @@ test('I:C block evidence turns only a stale-generation 409 into a typed stale re
   };
 
   assert.deepEqual(await makeDeps({ fetch }).fetchDiagnoseCarbRatioBlockEvidence({
-    blockId: 660, analysisGeneration: 'process:8',
+    block_id: 660, analysis_generation: 'process:8',
   }), { stale: true, message: 'Evidence changed. Refresh findings.' });
   assert.equal(calls, 1, 'the transport reports staleness without retrying');
 });
@@ -108,6 +111,129 @@ test('entries build different alignments simultaneously with one optical spine',
   assert.deepEqual(basalClock.grid, isfEvent.grid);
   assert.deepEqual(isfEvent.grid, icEvent.grid);
   assert.deepEqual(icEvent.grid, comparison.grid);
+});
+
+test('basal event alignment shows directional support against the eight-night floor', () => {
+  const basal = fixture('./__fixtures__/basal-night-evidence.json').expected;
+  const entry = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'basal');
+  const option = entry.option('event', { data: basal });
+
+  assert.equal(option.series[0].type, 'bar');
+  assert.deepEqual(option.series[0].data, [basal.directional_support_count]);
+  assert.deepEqual(option.series[0].markLine.data, [{ yAxis: 8, name: 'Eight-night floor' }]);
+});
+
+test('every multi-series evidence form carries an on-chart legend', () => {
+  const basal = fixture('./__fixtures__/basal-night-evidence.json').expected;
+  const isf = fixture('../mockups/diagnose-workstation.synthetic/isf-rest-window-evidence.capture.json').payload;
+  const ic = fixture('../mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json')
+    .cases.directional_only;
+  const byKind = Object.fromEntries(DIAGNOSE_EVIDENCE_CHARTS.map((entry) => [entry.kind, entry]));
+  const options = [
+    byKind.basal.option('clock', { data: basal }),
+    byKind.basal.option('event', { data: basal }),
+    byKind.isf.option('clock', { data: isf }),
+    byKind.isf.option('event', { data: isf }),
+    byKind['carb-ratio'].option('clock', { data: ic, window: [1200, 420] }),
+  ];
+
+  assert.ok(options.every(({ legend }) => legend?.show === true));
+  assert.ok(options.every(({ legend }) => legend.data.length > 0));
+});
+
+test('feed-only forms do not invent unavailable fit or current-setting values', () => {
+  const isf = fixture('../mockups/diagnose-workstation.synthetic/isf-rest-window-evidence.capture.json').payload;
+  const ic = fixture('../mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json')
+    .cases.directional_only;
+  const byKind = Object.fromEntries(DIAGNOSE_EVIDENCE_CHARTS.map((entry) => [entry.kind, entry]));
+
+  assert.deepEqual(Object.keys(isf).sort(), ['counts', 'finding', 'schema', 'steps', 'windows']);
+  assert.ok(isf.steps.every((step) => !Object.hasOwn(step, 'fit')));
+  assert.deepEqual(byKind.isf.option('event', { data: isf }).series
+    .map(({ name }) => name), ['Qualifying fasting steps']);
+  assert.deepEqual(byKind.isf.option('clock', { data: isf }).series
+    .map(({ name }) => name), ['Qualifying fasting steps']);
+  assert.equal(Object.hasOwn(ic.block, 'current'), false);
+  assert.deepEqual(byKind['carb-ratio'].option('clock', { data: ic }).series
+    .map(({ name }) => name), ['Directional-only run', 'Support run']);
+});
+
+test('surface copy says Carb ratio rather than the engine abbreviation', () => {
+  const ic = fixture('../mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json')
+    .cases.directional_only;
+  const entry = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'carb-ratio');
+  const visible = JSON.stringify({
+    name: entry.name,
+    meta: entry.modes.map((mode) => entry.meta(mode)),
+    clock: entry.option('clock', { data: ic, window: [1200, 420] }),
+    event: entry.option('event', { data: ic, range: [60, 200] }),
+    thumbnail: entry.thumbnail(ic),
+  });
+
+  assert.doesNotMatch(visible, /I:C/);
+  assert.match(visible, /Carb ratio/);
+});
+
+test('chart options resolve live light and dark theme tokens', () => {
+  const prior = { document: globalThis.document, getComputedStyle: globalThis.getComputedStyle };
+  const basal = fixture('./__fixtures__/basal-night-evidence.json').expected;
+  const isf = fixture('../mockups/diagnose-workstation.synthetic/isf-rest-window-evidence.capture.json').payload;
+  const ic = fixture('../mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json')
+    .cases.directional_only;
+  const event = fixture('./__fixtures__/event-comparison-mirror.json').windows.meals_default;
+  const byKind = Object.fromEntries(DIAGNOSE_EVIDENCE_CHARTS.map((entry) => [entry.kind, entry]));
+  const build = (tokens) => {
+    globalThis.document = { documentElement: {} };
+    globalThis.getComputedStyle = () => ({
+      getPropertyValue: (name) => tokens[name] || '',
+    });
+    return {
+      basal: byKind.basal.option('clock', { data: basal }),
+      isf: byKind.isf.option('event', { data: isf }),
+      ic: byKind['carb-ratio'].option('event', { data: ic, range: [60, 240] }),
+      event: byKind['event-comparison'].option(null, { data: event, range: [60, 240] }),
+      thumbnail: byKind.basal.thumbnail(basal),
+    };
+  };
+  const luminance = (hex) => {
+    const channels = hex.match(/[0-9a-f]{2}/gi).map((value) => parseInt(value, 16) / 255)
+      .map((value) => value <= .04045 ? value / 12.92 : ((value + .055) / 1.055) ** 2.4);
+    return .2126 * channels[0] + .7152 * channels[1] + .0722 * channels[2];
+  };
+  const contrast = (foreground, background) => {
+    const [lighter, darker] = [luminance(foreground), luminance(background)]
+      .sort((a, b) => b - a);
+    return (lighter + .05) / (darker + .05);
+  };
+  try {
+    const light = build({ '--text': '#141a15', '--muted': '#3d5848',
+      '--line': '#c3bfb4', '--in-range': '#3f5a3b', '--basal': '#5d7368',
+      '--secondary': '#4d5c53', '--warn': '#8d3c17', '--notindata': '#6b7169',
+      '--surface': '#faf8f4', '--primary': '#a94f21', '--accent': '#a94f21',
+      '--ok': '#5d7368', '--danger': '#9d3018', '--manual-carb': '#a94f21' });
+    const dark = build({ '--text': '#f5ece0', '--muted': '#a3968a',
+      '--line': '#4f4640', '--in-range': '#86ad78', '--basal': '#a89a85',
+      '--secondary': '#a89a85', '--warn': '#c98a4e', '--notindata': '#8d8579',
+      '--surface': '#262220', '--primary': '#e07f3f', '--accent': '#d08150',
+      '--ok': '#9aada1', '--danger': '#ec6f55', '--manual-carb': '#d2743e' });
+    assert.equal(light.basal.yAxis.axisLabel.color, '#3d5848');
+    assert.equal(dark.basal.yAxis.axisLabel.color, '#a3968a');
+    assert.equal(light.basal.series[1].lineStyle.color, '#5d7368');
+    assert.equal(dark.basal.series[1].lineStyle.color, '#a89a85');
+    assert.equal(light.isf.series[0].itemStyle.color, '#3f5a3b');
+    assert.equal(dark.isf.series[0].itemStyle.color, '#86ad78');
+    assert.equal(light.ic.series[1].lineStyle.color, '#3f5a3b');
+    assert.equal(dark.ic.series[1].lineStyle.color, '#86ad78');
+    assert.equal(light.event.yAxis.axisLabel.color, '#3d5848');
+    assert.equal(dark.event.yAxis.axisLabel.color, '#a3968a');
+    assert.equal(light.thumbnail.graphic[0].style.fill, '#3d5848');
+    assert.equal(dark.thumbnail.graphic[0].style.fill, '#a3968a');
+    assert.ok(contrast('#3d5848', '#faf8f4') >= 4.5);
+    assert.ok(contrast('#a3968a', '#262220') >= 4.5);
+  } finally {
+    globalThis.document = prior.document;
+    globalThis.getComputedStyle = prior.getComputedStyle;
+  }
 });
 
 test('payload counts stay distinct in chart and thumbnail presentation', () => {
@@ -173,6 +299,37 @@ test('the event-comparison entry reuses continuous shipped traces with the injec
   assert.ok(traces.every((series) => series.connectNulls === true));
   assert.equal(option.legend.length, 2, 'the option carries a two-column cohort key');
   assert.ok(option.legend.every(({ orient, bottom }) => orient === 'vertical' && bottom === 0));
+});
+
+test('the shipped event-comparison mount derives its axis from rendered cohort glucose', () => {
+  const prior = {
+    window: globalThis.window,
+    ResizeObserver: globalThis.ResizeObserver,
+    getComputedStyle: globalThis.getComputedStyle,
+  };
+  let mountedOption;
+  const chart = {
+    setOption: (option) => { mountedOption = option; },
+    on() {}, getZr: () => ({ on() {} }), resize() {}, dispose() {},
+  };
+  const key = { dataset: {}, innerHTML: '', insertAdjacentHTML() {} };
+  const chartElement = { addEventListener() {}, setAttribute() {} };
+  const surface = {
+    innerHTML: '',
+    querySelector: (selector) => selector === '#ec-chart-key' ? key : chartElement,
+  };
+  globalThis.window = { echarts: { init: () => chart } };
+  globalThis.ResizeObserver = class { observe() {} };
+  globalThis.getComputedStyle = () => ({ getPropertyValue: () => '#3d5848' });
+  try {
+    const event = fixture('./__fixtures__/event-comparison-mirror.json').windows.meals_default;
+    renderEventSurface(surface, event);
+    assert.deepEqual([mountedOption.yAxis.min, mountedOption.yAxis.max], [60, 240]);
+  } finally {
+    globalThis.window = prior.window;
+    globalThis.ResizeObserver = prior.ResizeObserver;
+    globalThis.getComputedStyle = prior.getComputedStyle;
+  }
 });
 
 test('selected and thin-cohort event traces also join across missing samples', () => {

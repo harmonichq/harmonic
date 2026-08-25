@@ -40,6 +40,18 @@ import { createDiagnoseWorkstation } from './diagnose-workstation.js';
 import { validInputDataAge } from './diagnose-data-age.js';
 import { parseRoute, subscribeRoute, writeRoute } from './tab-routing.js';
 
+export const GLUCOSE_STEP = 20;
+export const GLUCOSE_ENVELOPE = [60, 200];
+
+export function glucoseRange(values) {
+  const finite = values.filter((v) => Number.isFinite(v));
+  const [floorFloor, ceilCeil] = GLUCOSE_ENVELOPE;
+  if (finite.length === 0) return [floorFloor, ceilCeil];
+  const low = Math.min(floorFloor, Math.floor(Math.min(...finite) / GLUCOSE_STEP) * GLUCOSE_STEP);
+  const high = Math.max(ceilCeil, Math.ceil(Math.max(...finite) / GLUCOSE_STEP) * GLUCOSE_STEP);
+  return [low, high];
+}
+
 let params = new URLSearchParams();
 let activeInstance = null;
 const ROUTE_KEYS = ['view', 'factor', 'start_min', 'end_min', 'another', 'occ'];
@@ -294,14 +306,29 @@ const setUrl = (changes) => {
 };
 
 const OPTION_FALLBACK_COLORS = {
-  '--mk-ok': '#3DB87E', '--mk-muted': '#93979E', '--mk-line': '#2C2E33',
-  '--mk-surface': '#1C1F22', '--mk-danger': '#E08B6E', '--mk-text': '#E9EAEC',
-  '--ec-fired': '#5BAFD0', '--ec-near': '#D9B568', '--ec-neutral': '#93979E',
-  '--ec-other': '#E08B7E', '--ec-focus': '#E9EAEC', '--ck-manual': '#D9B568',
+  '--mk-ok': '#5d7368', '--mk-muted': '#3d5848', '--mk-line': '#c3bfb4',
+  '--mk-surface': '#faf8f4', '--mk-danger': '#9d3018', '--mk-text': '#141a15',
+  '--ec-fired': '#a94f21', '--ec-near': '#8d3c17', '--ec-neutral': '#3d5848',
+  '--ec-other': '#a94f21', '--ec-focus': '#141a15', '--ck-manual': '#a94f21',
 };
-const css = (element, name) => element
-  ? getComputedStyle(element).getPropertyValue(name).trim()
-  : OPTION_FALLBACK_COLORS[name];
+const OPTION_ROOT_TOKENS = {
+  '--mk-ok': '--ok', '--mk-muted': '--muted', '--mk-line': '--line',
+  '--mk-surface': '--surface', '--mk-danger': '--danger', '--mk-text': '--text',
+  '--ec-fired': '--primary', '--ec-near': '--warn', '--ec-neutral': '--muted',
+  '--ec-other': '--accent', '--ec-focus': '--text', '--ck-manual': '--manual-carb',
+};
+const css = (element, name) => {
+  const source = element || (typeof document !== 'undefined' ? document.documentElement : null);
+  if (source && typeof getComputedStyle !== 'undefined') {
+    const styles = getComputedStyle(source);
+    const direct = styles.getPropertyValue(name).trim();
+    if (direct) return direct;
+    const rootToken = OPTION_ROOT_TOKENS[name];
+    const resolved = rootToken && styles.getPropertyValue(rootToken).trim();
+    if (resolved) return resolved;
+  }
+  return OPTION_FALLBACK_COLORS[name];
+};
 
 const fmtDate = (iso) => new Date(`${iso}T00:00:00`).toLocaleDateString(
   'en-US', { month: 'short', day: 'numeric' },
@@ -679,6 +706,19 @@ export function eventComparisonChartOption(payload, range, surface = null) {
     cohorts, aggregates, selected, range);
 }
 
+export function eventComparisonGlucoseValues(data) {
+  const projection = data?.schema === 'diagnose-finding-case-file-v1'
+    ? data.projection : data;
+  const aggregateValues = (projection?.cohorts || []).flatMap((cohort) => [
+    ...(cohort.points || []).flatMap((point) => [point.median, point.p25, point.p75]),
+    ...(cohort.episodes || []).flatMap((episode) =>
+      (episode.glucose || []).map((point) => point.bg)),
+  ]);
+  const selected = projection?.selection?.state === 'selected'
+    ? (projection.selection.detail.glucose || []).map((point) => point.bg) : [];
+  return [...aggregateValues, ...selected].filter(Number.isFinite);
+}
+
 /** Canvas-only render (P52): the chart, its legend and its hover readout —
     nothing else. Reused as-is by both this module's own `/diagnose?view=meals`/`lows`
     read path and, once exported, the workstation's ALIGN "By event" mode
@@ -708,7 +748,9 @@ export function renderEventSurface(surface, payload, { headerHost = null } = {})
 
   const chartElement = surface.querySelector('#ec-chart');
   const chart = window.echarts.init(chartElement, null, { renderer: 'canvas' });
-  const option = eventComparisonChartOption(payload, [40, 300], surface);
+  const option = eventComparisonChartOption(
+    payload, glucoseRange(eventComparisonGlucoseValues(payload)), surface,
+  );
   chart.setOption(option);
   const keyboardSeriesIndex = Math.max(0, option.series.findIndex((series) =>
     series.id?.includes(':line:') || series.id?.includes(':episode:')));

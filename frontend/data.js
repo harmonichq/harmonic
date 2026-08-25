@@ -255,10 +255,10 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
     return api('/api/diagnose/isf-rest-window-evidence');
   }
   /** Current I:C block's published meal-run roster and bounded CGM series. */
-  async function fetchDiagnoseCarbRatioBlockEvidence({ blockId, analysisGeneration } = {}) {
+  async function fetchDiagnoseCarbRatioBlockEvidence({ block_id, analysis_generation } = {}) {
     const params = new URLSearchParams();
-    if (blockId != null) params.set('block_id', blockId);
-    if (analysisGeneration) params.set('analysis_generation', analysisGeneration);
+    if (block_id != null) params.set('block_id', block_id);
+    if (analysis_generation != null) params.set('analysis_generation', analysis_generation);
     try {
       return await api('/api/diagnose/carb-ratio-block-evidence?' + params.toString());
     } catch (error) {

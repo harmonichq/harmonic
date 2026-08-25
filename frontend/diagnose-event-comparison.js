@@ -5,8 +5,8 @@
  * cohorts with aggregate lines and hourly 25–75 whiskers; a cohort too thin for
  * an aggregate draws its individual episodes instead; another-factor events are
  * hidden by default. Meals align on one completed positive-dose carb bolus over
- * −1 h/+5 h; Lows align on the nadir over −5 h/+2 h; glucose stays fixed at
- * 40–300 mg/dL. Selecting one exact occurrence dims aggregates, overlays its
+ * −1 h/+5 h; Lows align on the nadir over −5 h/+2 h; glucose uses one
+ * caller-injected range. Selecting one exact occurrence dims aggregates, overlays its
  * observed trace, shows logged rescue carbs when present, and links to Day.
  * Near-rule is disclosure only and never enters Priority, recommendations,
  * Plan, or settings actions. The full contract is the event-comparison lock
@@ -39,6 +39,18 @@
 import { createDiagnoseWorkstation } from './diagnose-workstation.js';
 import { validInputDataAge } from './diagnose-data-age.js';
 import { parseRoute, subscribeRoute, writeRoute } from './tab-routing.js';
+
+export const GLUCOSE_STEP = 20;
+export const GLUCOSE_ENVELOPE = [60, 200];
+
+export function glucoseRange(values) {
+  const finite = values.filter((v) => Number.isFinite(v));
+  const [floorFloor, ceilCeil] = GLUCOSE_ENVELOPE;
+  if (finite.length === 0) return [floorFloor, ceilCeil];
+  const low = Math.min(floorFloor, Math.floor(Math.min(...finite) / GLUCOSE_STEP) * GLUCOSE_STEP);
+  const high = Math.max(ceilCeil, Math.ceil(Math.max(...finite) / GLUCOSE_STEP) * GLUCOSE_STEP);
+  return [low, high];
+}
 
 let params = new URLSearchParams();
 let activeInstance = null;
@@ -293,8 +305,30 @@ const setUrl = (changes) => {
   activeInstance?.applyChanges(changes);
 };
 
-const css = (element, name) =>
-  getComputedStyle(element).getPropertyValue(name).trim();
+const OPTION_FALLBACK_COLORS = {
+  '--mk-ok': '#5d7368', '--mk-muted': '#3d5848', '--mk-line': '#c3bfb4',
+  '--mk-surface': '#faf8f4', '--mk-danger': '#9d3018', '--mk-text': '#141a15',
+  '--ec-fired': '#a94f21', '--ec-near': '#8d3c17', '--ec-neutral': '#3d5848',
+  '--ec-other': '#a94f21', '--ec-focus': '#141a15', '--ck-manual': '#a94f21',
+};
+const OPTION_ROOT_TOKENS = {
+  '--mk-ok': '--ok', '--mk-muted': '--muted', '--mk-line': '--line',
+  '--mk-surface': '--surface', '--mk-danger': '--danger', '--mk-text': '--text',
+  '--ec-fired': '--primary', '--ec-near': '--warn', '--ec-neutral': '--muted',
+  '--ec-other': '--accent', '--ec-focus': '--text', '--ck-manual': '--manual-carb',
+};
+const css = (element, name) => {
+  const source = element || (typeof document !== 'undefined' ? document.documentElement : null);
+  if (source && typeof getComputedStyle !== 'undefined') {
+    const styles = getComputedStyle(source);
+    const direct = styles.getPropertyValue(name).trim();
+    if (direct) return direct;
+    const rootToken = OPTION_ROOT_TOKENS[name];
+    const resolved = rootToken && styles.getPropertyValue(rootToken).trim();
+    if (resolved) return resolved;
+  }
+  return OPTION_FALLBACK_COLORS[name];
+};
 
 const fmtDate = (iso) => new Date(`${iso}T00:00:00`).toLocaleDateString(
   'en-US', { month: 'short', day: 'numeric' },
@@ -377,7 +411,7 @@ function lineSeries(surface, cohort, aggregateRows, selectedCohort, support) {
     showSymbol: limited,
     symbol: 'emptyCircle',
     symbolSize: limited ? 3.5 : 0,
-    connectNulls: false,
+    connectNulls: true,
     animation: false,
     emphasis: { disabled: true },
     data: aggregateRows.map((row) => [row.minute,
@@ -407,7 +441,7 @@ function episodeSeries(surface, cohort, episodes, selectedCohort) {
     type: 'line',
     z: 3,
     showSymbol: false,
-    connectNulls: false,
+    connectNulls: true,
     animation: false,
     emphasis: { disabled: true },
     data: episode.glucose.map((point) => [point.minute, point.bg]),
@@ -427,6 +461,7 @@ function selectedSeries(surface, occurrence) {
     type: 'line',
     z: 8,
     showSymbol: false,
+    connectNulls: true,
     animation: false,
     data: occurrence.glucose.map((point) => [point.minute, point.bg]),
     lineStyle: { color: css(surface, '--ec-focus'), width: 2.2, opacity: 1 },
@@ -524,7 +559,8 @@ function paintLegend(surface, cohortOrder, cohorts, selected) {
   }
 }
 
-function chartOption(surface, coordinates, copy, cohortOrder, cohorts, aggregates, selected) {
+function chartOption(surface, coordinates, copy, cohortOrder, cohorts, aggregates, selected,
+                     range) {
   const series = [{
     name: 'Target range',
     type: 'line',
@@ -550,6 +586,28 @@ function chartOption(surface, coordinates, copy, cohortOrder, cohorts, aggregate
   }
   series.push(...selectedSeries(surface, selected));
 
+  let legend;
+  if (!surface) {
+    const keyNames = cohortOrder.map((cohort) => {
+      const count = cohorts[cohort].routed_count;
+      const name = `${COHORTS[cohort].label} · ${count} ${count === 1 ? 'event' : 'events'}`;
+      series.push({
+        id: `${cohort}:key`, name, type: 'line', data: [], symbol: 'none', silent: true,
+        lineStyle: { color: colorFor(surface, cohort), width: 1.8,
+          type: COHORTS[cohort].lineType },
+      });
+      return name;
+    });
+    if (selected) keyNames.push('Selected occurrence');
+    const column = (left, parity) => ({
+      show: true, left, bottom: 0, orient: 'vertical', selectedMode: false,
+      itemWidth: 22, itemHeight: 8, itemGap: 3,
+      textStyle: { color: css(surface, '--mk-muted'), fontFamily: 'Inter', fontSize: 9 },
+      data: keyNames.filter((_name, index) => index % 2 === parity),
+    });
+    legend = [column(52, 0), column('52%', 1)];
+  }
+
   return {
     animation: false,
     backgroundColor: 'transparent',
@@ -558,6 +616,7 @@ function chartOption(surface, coordinates, copy, cohortOrder, cohorts, aggregate
       decal: { show: false },
       description: `${copy.title}.`,
     },
+    ...(legend ? { legend } : {}),
     grid: { left: 52, right: 22, top: 24, bottom: 42, containLabel: false },
     tooltip: { trigger: 'axis', showContent: false, axisPointer: { type: 'cross', label: { show: false } } },
     xAxis: {
@@ -572,8 +631,8 @@ function chartOption(surface, coordinates, copy, cohortOrder, cohorts, aggregate
     },
     yAxis: {
       type: 'value',
-      min: 40,
-      max: 300,
+      min: range[0],
+      max: range[1],
       interval: 60,
       name: 'mg/dL',
       nameLocation: 'end',
@@ -630,6 +689,36 @@ function eventSurfaceInput(payload) {
   };
 }
 
+/** Reusable, presentation-only adapter for the shipped event comparison chart. */
+export function eventComparisonChartOption(payload, range, surface = null) {
+  if (!Array.isArray(range) || range.length !== 2
+      || !range.every(Number.isFinite) || range[0] >= range[1]) {
+    throw new TypeError('event comparison needs one injected arrangement glucose range');
+  }
+  const normalized = eventSurfaceInput(payload);
+  const projection = normalized.projection;
+  const cohortOrder = projection.cohorts.map(({ key }) => key);
+  const cohorts = Object.fromEntries(projection.cohorts.map((cohort) => [cohort.key, cohort]));
+  const aggregates = Object.fromEntries(projection.cohorts.map((cohort) => [cohort.key, cohort.points]));
+  const selected = projection.selection.state === 'selected'
+    ? projection.selection.detail : null;
+  return chartOption(surface, projection.coordinates, normalized.copy, cohortOrder,
+    cohorts, aggregates, selected, range);
+}
+
+export function eventComparisonGlucoseValues(data) {
+  const projection = data?.schema === 'diagnose-finding-case-file-v1'
+    ? data.projection : data;
+  const aggregateValues = (projection?.cohorts || []).flatMap((cohort) => [
+    ...(cohort.points || []).flatMap((point) => [point.median, point.p25, point.p75]),
+    ...(cohort.episodes || []).flatMap((episode) =>
+      (episode.glucose || []).map((point) => point.bg)),
+  ]);
+  const selected = projection?.selection?.state === 'selected'
+    ? (projection.selection.detail.glucose || []).map((point) => point.bg) : [];
+  return [...aggregateValues, ...selected].filter(Number.isFinite);
+}
+
 /** Canvas-only render (P52): the chart, its legend and its hover readout —
     nothing else. Reused as-is by both this module's own `/diagnose?view=meals`/`lows`
     read path and, once exported, the workstation's ALIGN "By event" mode
@@ -659,7 +748,9 @@ export function renderEventSurface(surface, payload, { headerHost = null } = {})
 
   const chartElement = surface.querySelector('#ec-chart');
   const chart = window.echarts.init(chartElement, null, { renderer: 'canvas' });
-  const option = chartOption(surface, coordinates, copy, cohortOrder, cohorts, aggregates, selected);
+  const option = eventComparisonChartOption(
+    payload, glucoseRange(eventComparisonGlucoseValues(payload)), surface,
+  );
   chart.setOption(option);
   const keyboardSeriesIndex = Math.max(0, option.series.findIndex((series) =>
     series.id?.includes(':line:') || series.id?.includes(':episode:')));

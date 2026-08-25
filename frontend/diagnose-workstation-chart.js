@@ -459,6 +459,20 @@ const historyRunLabel = (run) => new Date(run.first_member_at).toLocaleDateStrin
 );
 const HISTORY_MEAL_RAIL_BG = 44;
 
+/** Place every server-published meal member at its nearest observed glucose. */
+export function mealMemberMarkers(runs, railBg) {
+  return runs.flatMap((run) => run.member_offsets_min.map((minute, index) => {
+    const nearest = run.points.filter((point) => point.bg != null).reduce((best, point) => (
+      !best || Math.abs(point.minute - minute) < Math.abs(best.minute - minute) ? point : best
+    ), null);
+    return {
+      value: [minute, nearest?.bg ?? railBg],
+      runId: run.run_id,
+      mealNumber: index + 1,
+    };
+  }));
+}
+
 /** Purpose-built event projection for one retired I:C item. */
 export function renderHistoryEvents(el, echarts, projection, colors) {
   const selected = projection.selected_run_id;
@@ -481,25 +495,15 @@ export function renderHistoryEvents(el, echarts, projection, colors) {
       emphasis: { disabled: true },
     };
   });
-  const meals = projection.series.flatMap((run) => run.member_offsets_min.map((minute, index) => {
-    const nearest = run.points.filter((point) => point.bg != null).reduce((best, point) => (
-      !best || Math.abs(point.minute - minute) < Math.abs(best.minute - minute) ? point : best
-    ), null);
-    return {
-      // A run may have no CGM points. The marker still belongs to the server's
-      // published meal membership, so place it on a quiet plot-floor rail
-      // rather than dropping it or inventing a glucose reading.
-      value: [minute, nearest?.bg ?? HISTORY_MEAL_RAIL_BG],
-      runId: run.run_id,
-      mealNumber: index + 1,
+  const meals = mealMemberMarkers(projection.series, HISTORY_MEAL_RAIL_BG).map((marker) => ({
+      ...marker,
       itemStyle: {
         color: colors.meal,
-        opacity: !selected || run.run_id === selected ? 1 : 0.2,
+        opacity: !selected || marker.runId === selected ? 1 : 0.2,
         borderColor: colors.rail,
         borderWidth: 1,
       },
-    };
-  }));
+    }));
   chart.setOption({
     backgroundColor: 'transparent', animation: false,
     textStyle: { fontFamily: 'Inter, system-ui, sans-serif', color: colors.muted },

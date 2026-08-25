@@ -375675,8 +375675,13 @@
   "behavioral_case_headers": {
    "finding:carb_undercount": {
     "event_chart": {
-     "factor": "carb_undercount",
-     "view": "meals"
+     "lever": "carb_undercount",
+     "window": {
+      "end_min": null,
+      "label": null,
+      "scoped": false,
+      "start_min": null
+     }
     },
     "family": "meals",
     "finding_id": "finding:carb_undercount",
@@ -375698,8 +375703,13 @@
    },
    "finding:correction_on_iob": {
     "event_chart": {
-     "factor": "correction_on_iob",
-     "view": "lows"
+     "lever": "correction_on_iob",
+     "window": {
+      "end_min": null,
+      "label": null,
+      "scoped": false,
+      "start_min": null
+     }
     },
     "family": "lows",
     "finding_id": "finding:correction_on_iob",
@@ -375720,10 +375730,7 @@
     }
    },
    "finding:correction_stacking": {
-    "event_chart": {
-     "factor": "correction_stacking",
-     "view": "correction_clusters"
-    },
+    "event_chart": null,
     "family": "correction_clusters",
     "finding_id": "finding:correction_stacking",
     "inspectability": "ready",
@@ -375744,8 +375751,13 @@
    },
    "finding:late_bolus": {
     "event_chart": {
-     "factor": "late_bolus",
-     "view": "meals"
+     "lever": "late_bolus",
+     "window": {
+      "end_min": null,
+      "label": null,
+      "scoped": false,
+      "start_min": null
+     }
     },
     "family": "meals",
     "finding_id": "finding:late_bolus",
@@ -375766,10 +375778,7 @@
     }
    },
    "finding:meal_bolus_short": {
-    "event_chart": {
-     "factor": "meal_bolus_short",
-     "view": "highs"
-    },
+    "event_chart": null,
     "family": "highs",
     "finding_id": "finding:meal_bolus_short",
     "inspectability": "ready",
@@ -375790,8 +375799,13 @@
    },
    "finding:meal_over_delivery": {
     "event_chart": {
-     "factor": "meal_over_delivery",
-     "view": "meals"
+     "lever": "meal_over_delivery",
+     "window": {
+      "end_min": null,
+      "label": null,
+      "scoped": false,
+      "start_min": null
+     }
     },
     "family": "meals",
     "finding_id": "finding:meal_over_delivery",
@@ -375813,8 +375827,13 @@
    },
    "finding:missed_meal": {
     "event_chart": {
-     "factor": "missed_meal",
-     "view": "highs"
+     "lever": "missed_meal",
+     "window": {
+      "end_min": null,
+      "label": null,
+      "scoped": false,
+      "start_min": null
+     }
     },
     "family": "highs",
     "finding_id": "finding:missed_meal",
@@ -375836,8 +375855,13 @@
    },
    "finding:over_treated_low": {
     "event_chart": {
-     "factor": "over_treated_low",
-     "view": "lows"
+     "lever": "over_treated_low",
+     "window": {
+      "end_min": null,
+      "label": null,
+      "scoped": false,
+      "start_min": null
+     }
     },
     "family": "lows",
     "finding_id": "finding:over_treated_low",
@@ -376150,8 +376174,13 @@
     ],
     "case_header": {
      "event_chart": {
-      "factor": "carb_undercount",
-      "view": "meals"
+      "lever": "carb_undercount",
+      "window": {
+       "end_min": null,
+       "label": null,
+       "scoped": false,
+       "start_min": null
+      }
      },
      "family": "meals",
      "finding_id": "finding:carb_undercount",
@@ -376179,8 +376208,13 @@
     "episodes": 1,
     "estimate": null,
     "event_chart": {
-     "factor": "carb_undercount",
-     "view": "meals"
+     "lever": "carb_undercount",
+     "window": {
+      "end_min": null,
+      "label": null,
+      "scoped": false,
+      "start_min": null
+     }
     },
     "evidence": null,
     "id": "finding:carb_undercount",
@@ -376228,8 +376262,13 @@
     ],
     "case_header": {
      "event_chart": {
-      "factor": "late_bolus",
-      "view": "meals"
+      "lever": "late_bolus",
+      "window": {
+       "end_min": null,
+       "label": null,
+       "scoped": false,
+       "start_min": null
+      }
      },
      "family": "meals",
      "finding_id": "finding:late_bolus",
@@ -376257,8 +376296,13 @@
     "episodes": 1,
     "estimate": null,
     "event_chart": {
-     "factor": "late_bolus",
-     "view": "meals"
+     "lever": "late_bolus",
+     "window": {
+      "end_min": null,
+      "label": null,
+      "scoped": false,
+      "start_min": null
+     }
     },
     "evidence": null,
     "id": "finding:late_bolus",
@@ -376306,8 +376350,13 @@
     ],
     "case_header": {
      "event_chart": {
-      "factor": "meal_over_delivery",
-      "view": "meals"
+      "lever": "meal_over_delivery",
+      "window": {
+       "end_min": null,
+       "label": null,
+       "scoped": false,
+       "start_min": null
+      }
      },
      "family": "meals",
      "finding_id": "finding:meal_over_delivery",
@@ -376335,8 +376384,13 @@
     "episodes": 1,
     "estimate": null,
     "event_chart": {
-     "factor": "meal_over_delivery",
-     "view": "meals"
+     "lever": "meal_over_delivery",
+     "window": {
+      "end_min": null,
+      "label": null,
+      "scoped": false,
+      "start_min": null
+     }
     },
     "evidence": null,
     "id": "finding:meal_over_delivery",
@@ -376384,8 +376438,13 @@
     ],
     "case_header": {
      "event_chart": {
-      "factor": "over_treated_low",
-      "view": "lows"
+      "lever": "over_treated_low",
+      "window": {
+       "end_min": null,
+       "label": null,
+       "scoped": false,
+       "start_min": null
+      }
      },
      "family": "lows",
      "finding_id": "finding:over_treated_low",
@@ -376413,8 +376472,13 @@
     "episodes": 1,
     "estimate": null,
     "event_chart": {
-     "factor": "over_treated_low",
-     "view": "lows"
+     "lever": "over_treated_low",
+     "window": {
+      "end_min": null,
+      "label": null,
+      "scoped": false,
+      "start_min": null
+     }
     },
     "evidence": null,
     "id": "finding:over_treated_low",
@@ -376461,10 +376525,7 @@
      }
     ],
     "case_header": {
-     "event_chart": {
-      "factor": "correction_stacking",
-      "view": "correction_clusters"
-     },
+     "event_chart": null,
      "family": "correction_clusters",
      "finding_id": "finding:correction_stacking",
      "inspectability": "ready",
@@ -376490,10 +376551,7 @@
     "direction": null,
     "episodes": 1,
     "estimate": null,
-    "event_chart": {
-     "factor": "correction_stacking",
-     "view": "correction_clusters"
-    },
+    "event_chart": null,
     "evidence": null,
     "id": "finding:correction_stacking",
     "kind": "habit",
@@ -376540,8 +376598,13 @@
     ],
     "case_header": {
      "event_chart": {
-      "factor": "correction_on_iob",
-      "view": "lows"
+      "lever": "correction_on_iob",
+      "window": {
+       "end_min": null,
+       "label": null,
+       "scoped": false,
+       "start_min": null
+      }
      },
      "family": "lows",
      "finding_id": "finding:correction_on_iob",
@@ -376569,8 +376632,13 @@
     "episodes": 1,
     "estimate": null,
     "event_chart": {
-     "factor": "correction_on_iob",
-     "view": "lows"
+     "lever": "correction_on_iob",
+     "window": {
+      "end_min": null,
+      "label": null,
+      "scoped": false,
+      "start_min": null
+     }
     },
     "evidence": null,
     "id": "finding:correction_on_iob",
@@ -376618,8 +376686,13 @@
     ],
     "case_header": {
      "event_chart": {
-      "factor": "missed_meal",
-      "view": "highs"
+      "lever": "missed_meal",
+      "window": {
+       "end_min": null,
+       "label": null,
+       "scoped": false,
+       "start_min": null
+      }
      },
      "family": "highs",
      "finding_id": "finding:missed_meal",
@@ -376647,8 +376720,13 @@
     "episodes": 1,
     "estimate": null,
     "event_chart": {
-     "factor": "missed_meal",
-     "view": "highs"
+     "lever": "missed_meal",
+     "window": {
+      "end_min": null,
+      "label": null,
+      "scoped": false,
+      "start_min": null
+     }
     },
     "evidence": null,
     "id": "finding:missed_meal",
@@ -376695,10 +376773,7 @@
      }
     ],
     "case_header": {
-     "event_chart": {
-      "factor": "meal_bolus_short",
-      "view": "highs"
-     },
+     "event_chart": null,
      "family": "highs",
      "finding_id": "finding:meal_bolus_short",
      "inspectability": "ready",
@@ -376724,10 +376799,7 @@
     "direction": null,
     "episodes": 1,
     "estimate": null,
-    "event_chart": {
-     "factor": "meal_bolus_short",
-     "view": "highs"
-    },
+    "event_chart": null,
     "evidence": null,
     "id": "finding:meal_bolus_short",
     "kind": "habit",

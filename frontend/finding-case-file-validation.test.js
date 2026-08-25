@@ -24,13 +24,23 @@ const missedMealCase = () => independent(capture.cases['finding:missed_meal'].ev
 const zeroMissedMealCase = () => independent(missedMealFixture.zero_payload);
 
 test('accepts a preparation carrying the current v2 findings projection', () => {
-  const preparation = independent(capture.preparation);
+  const preparation = independent(missedMealFixture.preparation);
   preparation.findings = projectFindings(projectionFixture.inputs);
   assert.equal(preparation.findings.schema, 'diagnose-findings-v2');
   assert.equal(
     assertMatchingFindingCasePreparation(preparation, null),
     preparation,
   );
+});
+
+test('accepts the generator-owned missed-meal preparation coordinate', () => {
+  const preparation = independent(missedMealFixture.preparation);
+  const header = preparation.behavioral_case_headers['finding:missed_meal'];
+  assert.deepEqual(header.event_chart, {
+    lever: header.lever,
+    window: preparation.coordinates.window,
+  });
+  assert.equal(assertMatchingFindingCasePreparation(preparation, null), preparation);
 });
 
 test('rejects a preparation whose rendered case header diverges from its header map', () => {
@@ -43,7 +53,7 @@ test('rejects a preparation whose rendered case header diverges from its header 
 });
 
 test('accepts matching headers independent of JSON object key order', () => {
-  const preparation = independent(capture.preparation);
+  const preparation = independent(missedMealFixture.preparation);
   const [id, header] = Object.entries(preparation.behavioral_case_headers)[0];
   preparation.behavioral_case_headers[id] = Object.fromEntries(
     Object.entries(header).reverse(),
@@ -55,7 +65,7 @@ test('accepts matching headers independent of JSON object key order', () => {
 });
 
 test('rejects a header that has no rendered Finding', () => {
-  const preparation = independent(capture.preparation);
+  const preparation = independent(missedMealFixture.preparation);
   preparation.behavioral_case_headers['finding:not-rendered'] = {
     ...independent(Object.values(preparation.behavioral_case_headers)[0]),
     finding_id: 'finding:not-rendered',
@@ -67,8 +77,17 @@ test('rejects a header that has no rendered Finding', () => {
 });
 
 test('rejects a rendered coordinate that diverges from the server case header', () => {
-  const preparation = independent(capture.preparation);
-  preparation.rendered_rows[0].event_chart.view = 'lows';
+  const preparation = independent(missedMealFixture.preparation);
+  preparation.rendered_rows[0].event_chart.lever = 'late_bolus';
+  assert.throws(
+    () => assertMatchingFindingCasePreparation(preparation, null),
+    (error) => error.detail?.code === 'inconsistent_projection',
+  );
+});
+
+test('rejects a rendered coordinate whose label diverges from the server case header', () => {
+  const preparation = independent(missedMealFixture.preparation);
+  preparation.rendered_rows[0].event_chart.window.label = 'forged';
   assert.throws(
     () => assertMatchingFindingCasePreparation(preparation, null),
     (error) => error.detail?.code === 'inconsistent_projection',
@@ -76,7 +95,7 @@ test('rejects a rendered coordinate that diverges from the server case header', 
 });
 
 test('rejects a malformed server case-header coordinate without throwing TypeError', () => {
-  const preparation = independent(capture.preparation);
+  const preparation = independent(missedMealFixture.preparation);
   delete preparation.rendered_rows[0].case_header.event_chart;
   assert.throws(
     () => assertMatchingFindingCasePreparation(preparation, null),
@@ -85,7 +104,7 @@ test('rejects a malformed server case-header coordinate without throwing TypeErr
 });
 
 test('rejects a preparation projected for a different requested window', () => {
-  const preparation = independent(capture.preparation);
+  const preparation = independent(missedMealFixture.preparation);
   assert.throws(
     () => assertMatchingFindingCasePreparation(preparation, { start_min: 0, end_min: 360 }),
     (error) => error.detail?.code === 'inconsistent_projection',

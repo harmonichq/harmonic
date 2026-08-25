@@ -389,11 +389,13 @@ class ApiTest(unittest.TestCase):
         self.assertEqual(chart.status_code, 200)
         self.assertTrue(chart.headers["content-type"].startswith("text/javascript"))
 
-    def test_retires_diagnose_event_comparison_assets(self):
+    def test_serves_diagnose_event_comparison_assets_used_by_diagnose(self):
         js = self.client.get("/assets/diagnose-event-comparison.js")
-        self.assertEqual(js.status_code, 404)
+        self.assertEqual(js.status_code, 200)
+        self.assertTrue(js.headers["content-type"].startswith("text/javascript"))
         css = self.client.get("/assets/diagnose-event-comparison.css")
-        self.assertEqual(css.status_code, 404)
+        self.assertEqual(css.status_code, 200)
+        self.assertTrue(css.headers["content-type"].startswith("text/css"))
 
     def test_serves_the_app_icon_the_page_asks_for(self):
         # The index links ./assets/favicon.svg; without its own route the tab falls back

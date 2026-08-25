@@ -477,12 +477,12 @@ class EventChartProjectionTest(unittest.TestCase):
             _scenarios={"patterns": [], "low_confidence": []},
         ).project(WindowQuery.whole_day())["rows"][0]
 
-        rows = [*settings, unsupported]
-        self.assertTrue(all("event_chart" in row for row in rows))
-        self.assertTrue(all(
-            row["event_chart"] is None
-            for row in rows
-        ))
+        self.assertTrue(all("event_chart" in row for row in settings))
+        self.assertTrue(all(row["event_chart"] is None for row in settings))
+        self.assertEqual(unsupported["event_chart"], {
+            "lever": "missed_meal",
+            "window": WindowQuery.whole_day().to_dict(),
+        })
 
     def test_a_compatible_factor_without_its_event_family_publishes_null(self):
         projection = FindingsProjection(
@@ -861,12 +861,10 @@ class FindingsEndpointTest(unittest.TestCase):
                 self.assertEqual(response.json()["detail"],
                                  {"code": code, "message": message})
 
-    def test_behavioral_event_comparison_contract_is_unchanged(self):
+    def test_retired_behavioral_event_comparison_route_is_not_served(self):
         response = self.client.get(
             "/api/diagnose/event-comparison", params={"view": "meals"})
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["schema"], "diagnose-event-comparison-v3")
-        self.assertNotIn("analysis_generation", response.json())
+        self.assertEqual(response.status_code, 404)
 
     def test_process_restart_rejects_a_prior_generation(self):
         from ciq_autotune.api import create_app

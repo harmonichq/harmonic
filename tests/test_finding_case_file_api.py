@@ -409,7 +409,7 @@ class FindingCaseFileRouteTest(unittest.TestCase):
             lease_until = time.monotonic() + 60
             pins = 0
 
-            def case(self, finding_id, alignment, occ):
+            def case(self, finding_id, alignment, occ, *, lever=None):
                 entered.set(); release.wait(2)
                 return {"schema": "diagnose-finding-case-file-v1", "ok": True}
 
@@ -592,7 +592,8 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
                 "event_chart", "verdict_counts", "inspectability",
             })
             self.assertEqual(header["event_chart"], {
-                "view": header["family"], "factor": header["lever"],
+                "lever": header["lever"],
+                "window": prepared["coordinates"]["window"],
             })
             self.assertEqual(set(header["summary"]), {"claimed", "denominator", "noun"})
             self.assertEqual(set(header["verdict_counts"]), {

@@ -1475,6 +1475,159 @@
    "start_min": null
   }
  },
+ "preparation": {
+  "behavioral_case_headers": {
+   "finding:missed_meal": {
+    "event_chart": {
+     "lever": "missed_meal",
+     "window": {
+      "end_min": null,
+      "label": null,
+      "scoped": false,
+      "start_min": null
+     }
+    },
+    "family": "highs",
+    "finding_id": "finding:missed_meal",
+    "inspectability": "ready",
+    "lever": "missed_meal",
+    "summary": {
+     "claimed": 2,
+     "denominator": 3,
+     "noun": "highs"
+    },
+    "title": "Missed / unannounced meal",
+    "verdict_counts": {
+     "clean": 0,
+     "fired": 2,
+     "near_miss": 0,
+     "no_data": 0,
+     "outranked": 1
+    }
+   }
+  },
+  "coordinates": {
+   "source_window_days": 30,
+   "window": {
+    "end_min": null,
+    "label": null,
+    "scoped": false,
+    "start_min": null
+   }
+  },
+  "findings": {
+   "analysis_generation": "synthetic:178",
+   "chip_counts": {
+    "corrections": 0,
+    "highs": 1,
+    "lows": 0,
+    "meals": 0
+   },
+   "counts": {
+    "assert": 0,
+    "blind": 0,
+    "finding": 1,
+    "held": 0,
+    "history": 0
+   },
+   "findings_window": {
+    "days": 30,
+    "end": null,
+    "start": null
+   },
+   "rows": [
+    {
+     "episodes": 2,
+     "id": "finding:missed_meal",
+     "register": "finding"
+    }
+   ],
+   "schema": "diagnose-findings-v2",
+   "selection": null,
+   "uncaused_highs": {
+    "count": 0,
+    "text": "None"
+   },
+   "window": {
+    "end_min": null,
+    "label": null,
+    "scoped": false,
+    "start_min": null
+   }
+  },
+  "projection_id": "fp_11111111111111111111111111111111",
+  "rendered_rows": [
+   {
+    "appearances": [
+     {
+      "family": "highs",
+      "m": 3,
+      "n": 2,
+      "noun": "highs"
+     }
+    ],
+    "case_header": {
+     "event_chart": {
+      "lever": "missed_meal",
+      "window": {
+       "end_min": null,
+       "label": null,
+       "scoped": false,
+       "start_min": null
+      }
+     },
+     "family": "highs",
+     "finding_id": "finding:missed_meal",
+     "inspectability": "ready",
+     "lever": "missed_meal",
+     "summary": {
+      "claimed": 2,
+      "denominator": 3,
+      "noun": "highs"
+     },
+     "title": "Missed / unannounced meal",
+     "verdict_counts": {
+      "clean": 0,
+      "fired": 2,
+      "near_miss": 0,
+      "no_data": 0,
+      "outranked": 1
+     }
+    },
+    "episodes": 2,
+    "event_chart": {
+     "lever": "missed_meal",
+     "window": {
+      "end_min": null,
+      "label": null,
+      "scoped": false,
+      "start_min": null
+     }
+    },
+    "evidence": null,
+    "id": "finding:missed_meal",
+    "register": "finding",
+    "verdict_counts": {
+     "clean": 0,
+     "fired": 2,
+     "near_miss": 0,
+     "no_data": 0,
+     "outranked": 1
+    },
+    "verdict_counts_by_family": {
+     "highs": {
+      "clean": 0,
+      "fired": 2,
+      "near_miss": 0,
+      "no_data": 0,
+      "outranked": 1
+     }
+    }
+   }
+  ],
+  "schema": "diagnose-finding-case-file-preparation-v1",
+  "withheld_findings": []
+ },
  "selected_announced": {
   "family": "highs",
   "finding": {

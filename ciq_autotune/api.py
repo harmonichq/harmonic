@@ -478,6 +478,11 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         return FileResponse(_FRONTEND_DIR / "diagnose-workstation.js",
                             media_type="text/javascript")
 
+    @app.get("/assets/diagnose-event-comparison.js")
+    def diagnose_event_comparison_js():
+        return FileResponse(_FRONTEND_DIR / "diagnose-event-comparison.js",
+                            media_type="text/javascript")
+
     @app.get("/assets/diagnose-workstation-data.js")
     def diagnose_workstation_data_js():
         return FileResponse(_FRONTEND_DIR / "diagnose-workstation-data.js",
@@ -606,6 +611,11 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     @app.get("/assets/diagnose-workstation.css")
     def diagnose_workstation_css():
         return FileResponse(_FRONTEND_DIR / "diagnose-workstation.css",
+                            media_type="text/css")
+
+    @app.get("/assets/diagnose-event-comparison.css")
+    def diagnose_event_comparison_css():
+        return FileResponse(_FRONTEND_DIR / "diagnose-event-comparison.css",
                             media_type="text/css")
 
     @app.get("/assets/verify-workstation.css")

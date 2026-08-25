@@ -355,8 +355,8 @@ def wrap(prepared):
             continue
         header = {"finding_id": finding_id, "lever": case["finding"]["lever"],
                   "title": case["finding"]["title"], "family": case["family"],
-                  "event_chart": {"view": case["family"],
-                                  "factor": case["finding"]["lever"]},
+                  "event_chart": findings_projection.event_chart_coordinate(
+                      case["finding"]["lever"], prepared.query, [case["family"]]),
                   "summary": case["summary"], "verdict_counts": case["verdict_counts"],
                   "inspectability": "ready"}
         changed = deepcopy(row)

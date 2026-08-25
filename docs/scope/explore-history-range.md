@@ -80,8 +80,8 @@ Canvas lock that consumes this: #135 (triaged, blocked on #188).
   on mode entry rather than hourly pre-warm burn (#82's saturation problem).
   `-> ADR`
 - **A previously viewed window recomputes after the hourly pull; every Explore
-  result stays keyed on the store's global input-data revision, exactly as #82
-  shipped.** Why: the operator's ruling, "keep it light." A per-window exemption
+  result stays keyed on the store's global input-data revision, exactly as the
+  #82 epic's sidecar shipped it (ADR 123, `ciq_autotune/derived_artifacts.py`).** Why: the operator's ruling, "keep it light." A per-window exemption
   would be new keying machinery built on a premise the CGM feed violates — a
   sensor reconnect backfills `cgmDataType=[1]` rows into closed past windows, so
   "rows the pull cannot touch" does not hold. The cost is bounded by the 90-day

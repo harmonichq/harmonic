@@ -561,7 +561,7 @@ export async function openApp(browser, {
         end_min: Number(url.searchParams.get('end_min')),
         }, url.searchParams.get('selected_id'));
       return typeof findingsProjectionInputs === 'function'
-        ? findingsProjectionInputs(projected) : projected;
+        ? findingsProjectionInputs(projected, caseFiles) : projected;
     }],
     [apiPattern('/explore/exposures'), () => exposuresFrom],
     [apiPattern('/analyze'), () => findingsFrom.analysis],
@@ -696,7 +696,7 @@ export async function openApp(browser, {
       } : null;
       const projected = projectFindings(findingsFrom, window, url.searchParams.get('selected_id'));
       const findingsProjection = typeof findingsProjectionInputs === 'function'
-        ? findingsProjectionInputs(projected) : projected;
+        ? findingsProjectionInputs(projected, caseFiles) : projected;
       const readyRows = new Map(preparedBody.rendered_rows
         .filter((row) => row.case_header?.inspectability === 'ready')
         .map((row) => [row.id, row]));
@@ -747,7 +747,7 @@ export async function openApp(browser, {
         body.window = independent(preparedWindows.get(body.projection_id));
       }
       if (caseScenario?.case) {
-        const response = await caseScenario.case({ request: caseRequests, url, body });
+        const response = await caseScenario.case({ request: caseRequests, url, body, caseFiles });
         return route.fulfill({ status: response.status || 200, contentType: 'application/json',
           body: JSON.stringify(response.body) });
       }
@@ -3542,24 +3542,41 @@ export const C43 = async (page) => {
 
 export const C44 = async (page) => {
   await openWholeDay(page);
-  await clickQueueRow(page, 'Meal bolus fell short');
+  await page.getByRole('button', { name: 'Findings', exact: true }).click();
+  await clickQueueRow(page, 'Missed / unannounced meal');
   await page.waitForSelector('#level .who');
-  is(await page.locator('#level .who').innerText(), 'Meal bolus fell short · highs',
-    'C44 opens the server-owned High case');
+  is(await page.locator('#level .who').innerText(), 'Missed / unannounced meal · highs',
+    'C44 opens the server-owned missed-meal High case');
   is(await page.getByRole('button', { name: 'By event', exact: true }).count(), 1,
-    'C44 exposes ALIGN from the server-owned High coordinate');
-  const stat = await page.locator('#level .statline').innerText();
-  ok(/^1 of 10 high episodes\b/.test(stat),
-    `C44 preserves the server High denominator and claimed count (${stat})`);
+    'C44 exposes ALIGN from the server-owned missed-meal coordinate');
   await page.getByRole('button', { name: 'By event', exact: true }).click();
   await page.waitForSelector('#ec-chart');
-  is((await state(page)).eventCanvas, true,
-    'C44 renders Meal bolus fell short in By event without a client roster');
-  await page.locator('#level .case-occurrence').first().click();
+  const comparison = await page.locator('#level .lvl-cap').innerText();
+  ok(/attributed missed.*announced.*not comparable/i.test(comparison),
+    `C44 prints the three served comparison counts (${comparison})`);
+  is(await page.locator('[data-comparison-cohort="missed"]').count(), 1,
+    'C44 renders the attributed-missed cohort row');
+  const announced = page.locator('[data-comparison-cohort="announced"]').first();
+  ok(await announced.isVisible(), 'C44 renders an announced-meal occurrence outside the High roster');
+  await announced.click();
   await page.waitForSelector('#level .case-facts');
   const evidence = await page.locator('#level .case-facts').innerText();
   ok(/\d+ glucose readings/.test(evidence) && /\d+ event markers/.test(evidence),
-    'C44 selected High evidence retains its server trace and bolus marker evidence');
+    'C44 announced-meal selection retains its server-owned trace and markers');
+};
+
+export const C56 = async (page) => {
+  await openWholeDay(page);
+  await page.getByRole('button', { name: 'Findings', exact: true }).click();
+  await clickQueueRow(page, 'Missed / unannounced meal');
+  await page.getByRole('button', { name: 'By event', exact: true }).click();
+  await page.waitForSelector('#ec-chart');
+  is(await page.locator('#level .empty').innerText(), 'No attributed missed meals in this window.',
+    'C56 renders the served empty attributed-missed cohort explicitly');
+  is(await page.locator('[data-comparison-cohort="missed"]').count(), 0,
+    'C56 does not fall back to High roster rows when the cohort is empty');
+  ok(await page.locator('[data-comparison-cohort="announced"]').first().isVisible(),
+    'C56 leaves the announced-meal baseline available beside the empty cohort');
 };
 
 /* The ordinary generated projection withholds some case-file rows. A story may
@@ -3578,6 +3595,12 @@ const generatedFindingPose = (findingId) => ({ preparation, caseFiles }) => {
   next.behavioral_case_headers[findingId] = structuredClone(sourceHeader);
   return { body: next };
 };
+
+const generatedFindingProjection = (findingId) => (projected, caseFiles) => ({
+  ...projected,
+  rows: [...projected.rows, structuredClone(caseFiles.preparation.rendered_rows
+    .find((row) => row.id === findingId))],
+});
 
 export const C45 = async (page) => {
   await openWholeDay(page);
@@ -3994,8 +4017,8 @@ export const STORIES = [
     findingsInputs: twoFamilyInputs,
     exposuresInputs: async () => (await twoFamilyInputs()).exposures,
   }], ['C44', C44, 'typical', { caseScenario: {
-    preparation: generatedFindingPose('finding:meal_bolus_short'),
-  } }],
+    preparation: generatedFindingPose('finding:missed_meal'),
+  }, findingsProjectionInputs: generatedFindingProjection('finding:missed_meal') }],
   ['C45', C45, 'typical', { caseScenario: {
     case: async ({ request, url, body }) => request === 2
       ? { body: { ...body, selection: { state: 'unavailable',
@@ -4075,6 +4098,12 @@ export const STORIES = [
       if (url.searchParams.get('start_min') === '360') await pause(250);
       return { body: preparation };
     },
+  } }],
+  ['C56', C56, 'typical', { caseScenario: {
+    preparation: generatedFindingPose('finding:missed_meal'),
+    findingsProjectionInputs: generatedFindingProjection('finding:missed_meal'),
+    case: async ({ url, body, caseFiles }) => !url.searchParams.get('occ')
+      ? { body: structuredClone(caseFiles.cases['finding:missed_meal'].empty_event) } : { body },
   } }],
   ['D1', D1, 'dense'], ['D2', D2, 'dense'], ['D3', D3, 'dense'],
 ];

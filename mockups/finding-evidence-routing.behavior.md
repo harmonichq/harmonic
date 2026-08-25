@@ -1931,10 +1931,27 @@ The app replay adds these closed stories:
 - `C42` opens every visible behavioral row by its published Finding id.
 - `C43` selects a correction-pair Occurrence in By event and preserves both
   source corrections.
-- `C44` uses one story-scoped generated preparation pose for **Meal bolus fell
-  short**, then opens its server-owned High coordinate, enters By event, and
-  selects its authoritative trace and event markers without changing the
-  ordinary roster.
+- `C44` uses one story-scoped generated preparation pose for **Missed /
+  unannounced meal**, then opens its server-owned event coordinate. It renders
+  attributed missed meals and announced meals as separate cohorts, prints the
+  served attributed-missed, announced, and not-comparable counts, and selects
+  an announced-meal row for its server-owned trace and markers. An empty
+  attributed-missed cohort remains an explicit empty state rather than a
+  fallback to High verdict membership.
+- `C56` serves that same Finding with an empty attributed-missed cohort and
+  asserts the explicit empty state, no High-roster fallback, and the retained
+  announced-meal baseline.
+
+## Revision amendment — 2026-08-25 (missed-meal comparison)
+
+C44 retires its prior Meal bolus fell short High-roster assertion. It now pins
+the served missed-meal comparison: identity labels, all three served counts,
+and announced-meal selection through its opaque server ID. C56 adds the
+accepted empty-cohort failure as a replayed state. Base: `85ad74f`; revised
+commit: `5741840`. The previous C44 assertion fails against this revision at
+the finding title; C44 and C56 pass against the declared no-fetch synthetic
+server with the regenerated workstation capture. The standalone event lens
+remains on its legacy capture; its S3, S7–S9, and S13 replayed unchanged.
 - `C45` visibly distinguishes a successful unavailable selection from failure.
 - `C46` preserves the prior inspector and clock canvas on an active structured
   case error.

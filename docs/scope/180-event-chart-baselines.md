@@ -135,14 +135,13 @@ interlocking design decisions the operator holds, not missing facts.
 ### Risk contract
 
 - **Must prevent:** a chart whose drawn comparison line is not the Exposure
-  population its caption names; a baseline conditioned on the outcome that followed; any
-  membership or label decided in the browser.
+  population its caption names; a baseline conditioned on the outcome that
+  followed; any membership or label decided in the browser.
 - **Must recover:** nothing automatically.
 - **Accepted failure:** a Withheld comparison population draws the matched line
   with the comparison stated as unavailable (Q11).
 - **Unsupported:** windows with no Occurrences in the lever's own Exposure
-  population;
-  real-data grounding beyond a local read-only snapshot.
+  population; real-data grounding beyond a local read-only snapshot.
 - **Evidence owed:** per lever, that the three cohorts partition the Exposure
   population and their counts reconcile against it; that a nearly-matched
   Occurrence is drawn once; that Comparison support still decides what is drawn;

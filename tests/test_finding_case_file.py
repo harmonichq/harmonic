@@ -437,31 +437,6 @@ def test_missed_meal_selection_uses_truthful_onset_bg_and_cross_midnight_date():
     assert next(point for point in detail["glucose"] if point["minute"] == 0)["bg"] == 145
 
 
-def test_missed_meal_fixed_axis_ignores_heterogeneous_onset_to_peak_durations():
-    peak = datetime(2026, 8, 2, 12)
-    opportunities = tuple(
-        Opportunity(Exposure.HIGHS, (f"high-{duration}",), peak + timedelta(hours=index * 8),
-                    "high", 280 + index,
-                    reach_start=peak + timedelta(hours=index * 8, minutes=-duration))
-        for index, duration in enumerate((15, 120))
-    )
-    members = tuple(Member(row, row.anchor_t, "fired") for row in opportunities)
-    prepared = _prepared(Lever.MISSED_MEAL, members, frozenset(row.id for row in members))
-    prepared.findings = _findings(Lever.MISSED_MEAL, episodes=2)
-    prepared.recurrence[Lever.MISSED_MEAL] = (2, 2)
-    prepared.cgm = tuple(
-        CgmReading(row.reach_start + timedelta(minutes=minute), 140 + minute / 10, "EGV")
-        for row in opportunities for minute in (-60, 0, 300)
-    )
-
-    case = prepared.case("finding:missed_meal", "event", None)
-
-    assert case["projection"]["window_min"] == [-60, 300]
-    assert [point["minute"] for point in case["projection"]["cohorts"][0]["points"]] == list(
-        range(-60, 301, 5)
-    )
-
-
 def test_missed_meal_comparison_explicitly_serves_an_empty_attributed_cohort():
     prepared = _prepared(Lever.MISSED_MEAL, claimed=frozenset(),
                          findings=_findings(Lever.MISSED_MEAL, episodes=0))

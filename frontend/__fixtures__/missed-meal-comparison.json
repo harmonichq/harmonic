@@ -18,13 +18,31 @@
     },
     "attributed": true,
     "comparison_anchor": {
-     "bg": 110.0,
+     "bg": 110,
      "kind": "detected_rise_onset",
      "label": "Detected rise onset",
-     "t": "2026-01-03 11:15:00"
+     "t": "2026-01-03 11:45:00"
     },
     "date": "2026-01-03",
-    "id": "o_866511635510128a8bcffd147b23beaa",
+    "id": "o_c281816958d35a86706fd0017f599a2d",
+    "verdict": "fired"
+   },
+   {
+    "anchor": {
+     "bg": 275,
+     "kind": "high",
+     "label": "High peak",
+     "t": "2026-01-04 12:00:00"
+    },
+    "attributed": true,
+    "comparison_anchor": {
+     "bg": 110,
+     "kind": "detected_rise_onset",
+     "label": "Detected rise onset",
+     "t": "2026-01-04 10:00:00"
+    },
+    "date": "2026-01-04",
+    "id": "o_318cbbb3a65cdec87252cb3cd3dfbf38",
     "verdict": "fired"
    },
    {
@@ -32,11 +50,11 @@
      "bg": 250,
      "kind": "high",
      "label": "High peak",
-     "t": "2026-01-03 16:00:00"
+     "t": "2026-01-05 12:00:00"
     },
     "attributed": false,
     "comparison_anchor": null,
-    "date": "2026-01-03",
+    "date": "2026-01-05",
     "id": "o_c3c777ba6aceb41ce56d29ed5527a472",
     "verdict": "outranked"
    }
@@ -85,9 +103,10 @@
      },
      {
       "end_min": 840,
-      "n": 1,
+      "n": 2,
       "occurrence_ids": [
-       "o_866511635510128a8bcffd147b23beaa"
+       "o_c281816958d35a86706fd0017f599a2d",
+       "o_318cbbb3a65cdec87252cb3cd3dfbf38"
       ],
       "start_min": 720
      },
@@ -123,7 +142,7 @@
      }
     ],
     "peak_bucket_index": 6,
-    "total": 1
+    "total": 2
    },
    "cohorts": [],
    "window_min": null
@@ -136,13 +155,13 @@
    "state": "unavailable"
   },
   "summary": {
-   "claimed": 1,
-   "denominator": 2,
+   "claimed": 2,
+   "denominator": 3,
    "noun": "highs"
   },
   "verdict_counts": {
    "clean": 0,
-   "fired": 1,
+   "fired": 2,
    "near_miss": 0,
    "no_data": 0,
    "outranked": 1
@@ -171,13 +190,31 @@
     },
     "attributed": true,
     "comparison_anchor": {
-     "bg": 110.0,
+     "bg": 110,
      "kind": "detected_rise_onset",
      "label": "Detected rise onset",
-     "t": "2026-01-03 11:15:00"
+     "t": "2026-01-03 11:45:00"
     },
     "date": "2026-01-03",
-    "id": "o_866511635510128a8bcffd147b23beaa",
+    "id": "o_c281816958d35a86706fd0017f599a2d",
+    "verdict": "fired"
+   },
+   {
+    "anchor": {
+     "bg": 275,
+     "kind": "high",
+     "label": "High peak",
+     "t": "2026-01-04 12:00:00"
+    },
+    "attributed": true,
+    "comparison_anchor": {
+     "bg": 110,
+     "kind": "detected_rise_onset",
+     "label": "Detected rise onset",
+     "t": "2026-01-04 10:00:00"
+    },
+    "date": "2026-01-04",
+    "id": "o_318cbbb3a65cdec87252cb3cd3dfbf38",
     "verdict": "fired"
    },
    {
@@ -185,11 +222,11 @@
      "bg": 250,
      "kind": "high",
      "label": "High peak",
-     "t": "2026-01-03 16:00:00"
+     "t": "2026-01-05 12:00:00"
     },
     "attributed": false,
     "comparison_anchor": null,
-    "date": "2026-01-03",
+    "date": "2026-01-05",
     "id": "o_c3c777ba6aceb41ce56d29ed5527a472",
     "verdict": "outranked"
    }
@@ -209,16 +246,17 @@
      },
      "key": "missed",
      "occurrence_ids": [
-      "o_866511635510128a8bcffd147b23beaa"
+      "o_c281816958d35a86706fd0017f599a2d",
+      "o_318cbbb3a65cdec87252cb3cd3dfbf38"
      ],
      "points": [
       {
-       "median": null,
+       "median": 105.0,
        "minute": -60,
-       "n": 1,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
+       "n": 2,
+       "p25": 105.0,
+       "p75": 105.0,
+       "support": "limited"
       },
       {
        "median": null,
@@ -309,12 +347,12 @@
        "support": "withheld"
       },
       {
-       "median": null,
+       "median": 110.0,
        "minute": 0,
-       "n": 1,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
+       "n": 2,
+       "p25": 110.0,
+       "p75": 110.0,
+       "support": "limited"
       },
       {
        "median": null,
@@ -335,7 +373,7 @@
       {
        "median": null,
        "minute": 15,
-       "n": 0,
+       "n": 1,
        "p25": null,
        "p75": null,
        "support": "withheld"
@@ -503,7 +541,7 @@
       {
        "median": null,
        "minute": 120,
-       "n": 0,
+       "n": 1,
        "p25": null,
        "p75": null,
        "support": "withheld"
@@ -551,7 +589,7 @@
       {
        "median": null,
        "minute": 150,
-       "n": 1,
+       "n": 0,
        "p25": null,
        "p75": null,
        "support": "withheld"
@@ -623,7 +661,7 @@
       {
        "median": null,
        "minute": 195,
-       "n": 0,
+       "n": 1,
        "p25": null,
        "p75": null,
        "support": "withheld"
@@ -647,7 +685,7 @@
       {
        "median": null,
        "minute": 210,
-       "n": 1,
+       "n": 0,
        "p25": null,
        "p75": null,
        "support": "withheld"
@@ -671,7 +709,7 @@
       {
        "median": null,
        "minute": 225,
-       "n": 1,
+       "n": 0,
        "p25": null,
        "p75": null,
        "support": "withheld"
@@ -789,17 +827,17 @@
        "support": "withheld"
       },
       {
-       "median": null,
+       "median": 145.0,
        "minute": 300,
-       "n": 1,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
+       "n": 2,
+       "p25": 145.0,
+       "p75": 145.0,
+       "support": "limited"
       }
      ],
-     "routed_count": 1,
-     "support": "withheld",
-     "usable_count": 1
+     "routed_count": 2,
+     "support": "limited",
+     "usable_count": 2
     },
     {
      "anchor": {
@@ -934,7 +972,7 @@
       {
        "median": null,
        "minute": 15,
-       "n": 1,
+       "n": 0,
        "p25": null,
        "p75": null,
        "support": "withheld"
@@ -982,7 +1020,7 @@
       {
        "median": null,
        "minute": 45,
-       "n": 0,
+       "n": 1,
        "p25": null,
        "p75": null,
        "support": "withheld"
@@ -1030,7 +1068,7 @@
       {
        "median": null,
        "minute": 75,
-       "n": 1,
+       "n": 0,
        "p25": null,
        "p75": null,
        "support": "withheld"
@@ -1078,7 +1116,7 @@
       {
        "median": null,
        "minute": 105,
-       "n": 0,
+       "n": 1,
        "p25": null,
        "p75": null,
        "support": "withheld"
@@ -1102,7 +1140,7 @@
       {
        "median": null,
        "minute": 120,
-       "n": 0,
+       "n": 1,
        "p25": null,
        "p75": null,
        "support": "withheld"
@@ -1270,7 +1308,7 @@
       {
        "median": null,
        "minute": 225,
-       "n": 1,
+       "n": 0,
        "p25": null,
        "p75": null,
        "support": "withheld"
@@ -1366,7 +1404,7 @@
       {
        "median": null,
        "minute": 285,
-       "n": 1,
+       "n": 0,
        "p25": null,
        "p75": null,
        "support": "withheld"
@@ -1403,7 +1441,7 @@
    ],
    "counts": {
     "announced": 1,
-    "missed": 1,
+    "missed": 2,
     "not_comparable": 1
    },
    "window_min": [
@@ -1419,13 +1457,13 @@
    "state": "none"
   },
   "summary": {
-   "claimed": 1,
-   "denominator": 2,
+   "claimed": 2,
+   "denominator": 3,
    "noun": "highs"
   },
   "verdict_counts": {
    "clean": 0,
-   "fired": 1,
+   "fired": 2,
    "near_miss": 0,
    "no_data": 0,
    "outranked": 1
@@ -1454,13 +1492,31 @@
     },
     "attributed": true,
     "comparison_anchor": {
-     "bg": 110.0,
+     "bg": 110,
      "kind": "detected_rise_onset",
      "label": "Detected rise onset",
-     "t": "2026-01-03 11:15:00"
+     "t": "2026-01-03 11:45:00"
     },
     "date": "2026-01-03",
-    "id": "o_866511635510128a8bcffd147b23beaa",
+    "id": "o_c281816958d35a86706fd0017f599a2d",
+    "verdict": "fired"
+   },
+   {
+    "anchor": {
+     "bg": 275,
+     "kind": "high",
+     "label": "High peak",
+     "t": "2026-01-04 12:00:00"
+    },
+    "attributed": true,
+    "comparison_anchor": {
+     "bg": 110,
+     "kind": "detected_rise_onset",
+     "label": "Detected rise onset",
+     "t": "2026-01-04 10:00:00"
+    },
+    "date": "2026-01-04",
+    "id": "o_318cbbb3a65cdec87252cb3cd3dfbf38",
     "verdict": "fired"
    },
    {
@@ -1468,11 +1524,11 @@
      "bg": 250,
      "kind": "high",
      "label": "High peak",
-     "t": "2026-01-03 16:00:00"
+     "t": "2026-01-05 12:00:00"
     },
     "attributed": false,
     "comparison_anchor": null,
-    "date": "2026-01-03",
+    "date": "2026-01-05",
     "id": "o_c3c777ba6aceb41ce56d29ed5527a472",
     "verdict": "outranked"
    }
@@ -1492,16 +1548,17 @@
      },
      "key": "missed",
      "occurrence_ids": [
-      "o_866511635510128a8bcffd147b23beaa"
+      "o_c281816958d35a86706fd0017f599a2d",
+      "o_318cbbb3a65cdec87252cb3cd3dfbf38"
      ],
      "points": [
       {
-       "median": null,
+       "median": 105.0,
        "minute": -60,
-       "n": 1,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
+       "n": 2,
+       "p25": 105.0,
+       "p75": 105.0,
+       "support": "limited"
       },
       {
        "median": null,
@@ -1592,12 +1649,12 @@
        "support": "withheld"
       },
       {
-       "median": null,
+       "median": 110.0,
        "minute": 0,
-       "n": 1,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
+       "n": 2,
+       "p25": 110.0,
+       "p75": 110.0,
+       "support": "limited"
       },
       {
        "median": null,
@@ -1618,7 +1675,7 @@
       {
        "median": null,
        "minute": 15,
-       "n": 0,
+       "n": 1,
        "p25": null,
        "p75": null,
        "support": "withheld"
@@ -1786,7 +1843,7 @@
       {
        "median": null,
        "minute": 120,
-       "n": 0,
+       "n": 1,
        "p25": null,
        "p75": null,
        "support": "withheld"
@@ -1834,7 +1891,7 @@
       {
        "median": null,
        "minute": 150,
-       "n": 1,
+       "n": 0,
        "p25": null,
        "p75": null,
        "support": "withheld"
@@ -1906,7 +1963,7 @@
       {
        "median": null,
        "minute": 195,
-       "n": 0,
+       "n": 1,
        "p25": null,
        "p75": null,
        "support": "withheld"
@@ -1930,7 +1987,7 @@
       {
        "median": null,
        "minute": 210,
-       "n": 1,
+       "n": 0,
        "p25": null,
        "p75": null,
        "support": "withheld"
@@ -1954,7 +2011,7 @@
       {
        "median": null,
        "minute": 225,
-       "n": 1,
+       "n": 0,
        "p25": null,
        "p75": null,
        "support": "withheld"
@@ -2072,17 +2129,17 @@
        "support": "withheld"
       },
       {
-       "median": null,
+       "median": 145.0,
        "minute": 300,
-       "n": 1,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
+       "n": 2,
+       "p25": 145.0,
+       "p75": 145.0,
+       "support": "limited"
       }
      ],
-     "routed_count": 1,
-     "support": "withheld",
-     "usable_count": 1
+     "routed_count": 2,
+     "support": "limited",
+     "usable_count": 2
     },
     {
      "anchor": {
@@ -2217,7 +2274,7 @@
       {
        "median": null,
        "minute": 15,
-       "n": 1,
+       "n": 0,
        "p25": null,
        "p75": null,
        "support": "withheld"
@@ -2265,7 +2322,7 @@
       {
        "median": null,
        "minute": 45,
-       "n": 0,
+       "n": 1,
        "p25": null,
        "p75": null,
        "support": "withheld"
@@ -2313,7 +2370,7 @@
       {
        "median": null,
        "minute": 75,
-       "n": 1,
+       "n": 0,
        "p25": null,
        "p75": null,
        "support": "withheld"
@@ -2361,7 +2418,7 @@
       {
        "median": null,
        "minute": 105,
-       "n": 0,
+       "n": 1,
        "p25": null,
        "p75": null,
        "support": "withheld"
@@ -2385,7 +2442,7 @@
       {
        "median": null,
        "minute": 120,
-       "n": 0,
+       "n": 1,
        "p25": null,
        "p75": null,
        "support": "withheld"
@@ -2553,7 +2610,7 @@
       {
        "median": null,
        "minute": 225,
-       "n": 1,
+       "n": 0,
        "p25": null,
        "p75": null,
        "support": "withheld"
@@ -2649,7 +2706,7 @@
       {
        "median": null,
        "minute": 285,
-       "n": 1,
+       "n": 0,
        "p25": null,
        "p75": null,
        "support": "withheld"
@@ -2686,7 +2743,7 @@
    ],
    "counts": {
     "announced": 1,
-    "missed": 1,
+    "missed": 2,
     "not_comparable": 1
    },
    "window_min": [
@@ -2711,37 +2768,32 @@
     },
     "glucose": [
      {
-      "bg": 104.0,
-      "minute": 15.0,
-      "t": "2026-01-03 10:15:00"
-     },
-     {
-      "bg": 110.0,
-      "minute": 75.0,
-      "t": "2026-01-03 11:15:00"
-     },
-     {
-      "bg": 104.0,
-      "minute": 225.0,
-      "t": "2026-01-03 13:45:00"
-     },
-     {
-      "bg": 110.0,
-      "minute": 285.0,
-      "t": "2026-01-03 14:45:00"
-     },
-     {
-      "bg": 104.0,
+      "bg": 109.0,
       "minute": -60.0,
       "t": "2026-01-03 09:00:00"
      },
      {
-      "bg": 110.0,
+      "bg": 115.0,
       "minute": 0.0,
       "t": "2026-01-03 10:00:00"
      },
      {
-      "bg": 140.0,
+      "bg": 105,
+      "minute": 45.0,
+      "t": "2026-01-03 10:45:00"
+     },
+     {
+      "bg": 110,
+      "minute": 105.0,
+      "t": "2026-01-03 11:45:00"
+     },
+     {
+      "bg": 260,
+      "minute": 120.0,
+      "t": "2026-01-03 12:00:00"
+     },
+     {
+      "bg": 145.0,
       "minute": 300.0,
       "t": "2026-01-03 15:00:00"
      }
@@ -2772,13 +2824,13 @@
    "state": "selected"
   },
   "summary": {
-   "claimed": 1,
-   "denominator": 2,
+   "claimed": 2,
+   "denominator": 3,
    "noun": "highs"
   },
   "verdict_counts": {
    "clean": 0,
-   "fired": 1,
+   "fired": 2,
    "near_miss": 0,
    "no_data": 0,
    "outranked": 1
@@ -2807,13 +2859,31 @@
     },
     "attributed": true,
     "comparison_anchor": {
-     "bg": 110.0,
+     "bg": 110,
      "kind": "detected_rise_onset",
      "label": "Detected rise onset",
-     "t": "2026-01-03 11:15:00"
+     "t": "2026-01-03 11:45:00"
     },
     "date": "2026-01-03",
-    "id": "o_866511635510128a8bcffd147b23beaa",
+    "id": "o_c281816958d35a86706fd0017f599a2d",
+    "verdict": "fired"
+   },
+   {
+    "anchor": {
+     "bg": 275,
+     "kind": "high",
+     "label": "High peak",
+     "t": "2026-01-04 12:00:00"
+    },
+    "attributed": true,
+    "comparison_anchor": {
+     "bg": 110,
+     "kind": "detected_rise_onset",
+     "label": "Detected rise onset",
+     "t": "2026-01-04 10:00:00"
+    },
+    "date": "2026-01-04",
+    "id": "o_318cbbb3a65cdec87252cb3cd3dfbf38",
     "verdict": "fired"
    },
    {
@@ -2821,11 +2891,11 @@
      "bg": 250,
      "kind": "high",
      "label": "High peak",
-     "t": "2026-01-03 16:00:00"
+     "t": "2026-01-05 12:00:00"
     },
     "attributed": false,
     "comparison_anchor": null,
-    "date": "2026-01-03",
+    "date": "2026-01-05",
     "id": "o_c3c777ba6aceb41ce56d29ed5527a472",
     "verdict": "outranked"
    }
@@ -2845,16 +2915,17 @@
      },
      "key": "missed",
      "occurrence_ids": [
-      "o_866511635510128a8bcffd147b23beaa"
+      "o_c281816958d35a86706fd0017f599a2d",
+      "o_318cbbb3a65cdec87252cb3cd3dfbf38"
      ],
      "points": [
       {
-       "median": null,
+       "median": 105.0,
        "minute": -60,
-       "n": 1,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
+       "n": 2,
+       "p25": 105.0,
+       "p75": 105.0,
+       "support": "limited"
       },
       {
        "median": null,
@@ -2945,12 +3016,12 @@
        "support": "withheld"
       },
       {
-       "median": null,
+       "median": 110.0,
        "minute": 0,
-       "n": 1,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
+       "n": 2,
+       "p25": 110.0,
+       "p75": 110.0,
+       "support": "limited"
       },
       {
        "median": null,
@@ -2971,7 +3042,7 @@
       {
        "median": null,
        "minute": 15,
-       "n": 0,
+       "n": 1,
        "p25": null,
        "p75": null,
        "support": "withheld"
@@ -3139,7 +3210,7 @@
       {
        "median": null,
        "minute": 120,
-       "n": 0,
+       "n": 1,
        "p25": null,
        "p75": null,
        "support": "withheld"
@@ -3187,7 +3258,7 @@
       {
        "median": null,
        "minute": 150,
-       "n": 1,
+       "n": 0,
        "p25": null,
        "p75": null,
        "support": "withheld"
@@ -3259,7 +3330,7 @@
       {
        "median": null,
        "minute": 195,
-       "n": 0,
+       "n": 1,
        "p25": null,
        "p75": null,
        "support": "withheld"
@@ -3283,7 +3354,7 @@
       {
        "median": null,
        "minute": 210,
-       "n": 1,
+       "n": 0,
        "p25": null,
        "p75": null,
        "support": "withheld"
@@ -3307,7 +3378,7 @@
       {
        "median": null,
        "minute": 225,
-       "n": 1,
+       "n": 0,
        "p25": null,
        "p75": null,
        "support": "withheld"
@@ -3425,17 +3496,17 @@
        "support": "withheld"
       },
       {
-       "median": null,
+       "median": 145.0,
        "minute": 300,
-       "n": 1,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
+       "n": 2,
+       "p25": 145.0,
+       "p75": 145.0,
+       "support": "limited"
       }
      ],
-     "routed_count": 1,
-     "support": "withheld",
-     "usable_count": 1
+     "routed_count": 2,
+     "support": "limited",
+     "usable_count": 2
     },
     {
      "anchor": {
@@ -3570,7 +3641,7 @@
       {
        "median": null,
        "minute": 15,
-       "n": 1,
+       "n": 0,
        "p25": null,
        "p75": null,
        "support": "withheld"
@@ -3618,7 +3689,7 @@
       {
        "median": null,
        "minute": 45,
-       "n": 0,
+       "n": 1,
        "p25": null,
        "p75": null,
        "support": "withheld"
@@ -3666,7 +3737,7 @@
       {
        "median": null,
        "minute": 75,
-       "n": 1,
+       "n": 0,
        "p25": null,
        "p75": null,
        "support": "withheld"
@@ -3714,7 +3785,7 @@
       {
        "median": null,
        "minute": 105,
-       "n": 0,
+       "n": 1,
        "p25": null,
        "p75": null,
        "support": "withheld"
@@ -3738,7 +3809,7 @@
       {
        "median": null,
        "minute": 120,
-       "n": 0,
+       "n": 1,
        "p25": null,
        "p75": null,
        "support": "withheld"
@@ -3906,7 +3977,7 @@
       {
        "median": null,
        "minute": 225,
-       "n": 1,
+       "n": 0,
        "p25": null,
        "p75": null,
        "support": "withheld"
@@ -4002,7 +4073,7 @@
       {
        "median": null,
        "minute": 285,
-       "n": 1,
+       "n": 0,
        "p25": null,
        "p75": null,
        "support": "withheld"
@@ -4039,7 +4110,7 @@
    ],
    "counts": {
     "announced": 1,
-    "missed": 1,
+    "missed": 2,
     "not_comparable": 1
    },
    "window_min": [
@@ -4052,10 +4123,10 @@
   "selection": {
    "detail": {
     "anchor": {
-     "bg": 110.0,
+     "bg": 110,
      "kind": "detected_rise_onset",
      "label": "Detected rise onset",
-     "t": "2026-01-03 11:15:00"
+     "t": "2026-01-03 11:45:00"
     },
     "comparison_cohort": "missed",
     "date": "2026-01-03",
@@ -4064,60 +4135,55 @@
     },
     "glucose": [
      {
-      "bg": 104.0,
+      "bg": 105,
       "minute": -60.0,
-      "t": "2026-01-03 10:15:00"
+      "t": "2026-01-03 10:45:00"
      },
      {
-      "bg": 110.0,
+      "bg": 110,
       "minute": 0.0,
-      "t": "2026-01-03 11:15:00"
+      "t": "2026-01-03 11:45:00"
      },
      {
-      "bg": 140.0,
-      "minute": 300.0,
-      "t": "2026-01-03 16:15:00"
+      "bg": 260,
+      "minute": 15.0,
+      "t": "2026-01-03 12:00:00"
      },
      {
-      "bg": 104.0,
-      "minute": 150.0,
-      "t": "2026-01-03 13:45:00"
-     },
-     {
-      "bg": 110.0,
-      "minute": 210.0,
-      "t": "2026-01-03 14:45:00"
-     },
-     {
-      "bg": 140.0,
-      "minute": 225.0,
+      "bg": 145.0,
+      "minute": 195.0,
       "t": "2026-01-03 15:00:00"
+     },
+     {
+      "bg": 145,
+      "minute": 300.0,
+      "t": "2026-01-03 16:45:00"
      }
     ],
-    "id": "o_866511635510128a8bcffd147b23beaa",
+    "id": "o_c281816958d35a86706fd0017f599a2d",
     "markers": [
      {
       "certainty": "exact",
       "grams": 15,
       "kind": "rescue_carb",
       "minute": 10.0,
-      "t": "2026-01-03 11:25:00"
+      "t": "2026-01-03 11:55:00"
      }
     ],
     "source_corrections": [],
     "verdict": "fired"
    },
-   "requested_id": "o_866511635510128a8bcffd147b23beaa",
+   "requested_id": "o_c281816958d35a86706fd0017f599a2d",
    "state": "selected"
   },
   "summary": {
-   "claimed": 1,
-   "denominator": 2,
+   "claimed": 2,
+   "denominator": 3,
    "noun": "highs"
   },
   "verdict_counts": {
    "clean": 0,
-   "fired": 1,
+   "fired": 2,
    "near_miss": 0,
    "no_data": 0,
    "outranked": 1

@@ -1,5 +1,6 @@
 """Public contract smoke tests for ADR 79's server-owned preparation routes."""
 from datetime import datetime, timedelta
+import json
 import os
 from pathlib import Path
 from runpy import run_path
@@ -215,6 +216,38 @@ class FindingCaseFileRouteTest(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 409)
         self.assertEqual(response.json()["detail"]["code"], "stale_projection")
+
+    def test_generated_heterogeneous_missed_meals_reach_the_public_case_route(self):
+        root = Path(__file__).resolve().parents[1]
+        generator = run_path(str(root / "scripts/gen_missed_meal_comparison_fixtures.py"))
+        prepared = generator["_preparation"]()
+        retained, reason = self.app.state.result_cache.get_or_build_preparation(
+            ("generated-missed-meal",), lambda version: prepared,
+        )
+        self.assertIs(retained, prepared)
+        self.assertIsNone(reason)
+
+        response = self.client.get("/api/diagnose/finding-case-file", params={
+            "projection_id": prepared.projection_id,
+            "finding_id": "finding:missed_meal",
+            "alignment": "event",
+        })
+        self.assertEqual(response.status_code, 200, response.text)
+        frozen = json.loads((
+            root / "frontend/__fixtures__/missed-meal-comparison.json"
+        ).read_text())["payload"]
+        self.assertEqual(response.json(), frozen)
+
+        case = response.json()
+        attributed = [row for row in case["occurrences"] if row["attributed"]]
+        missed = case["projection"]["cohorts"][0]
+        self.assertEqual(len(attributed), missed["routed_count"])
+        self.assertEqual(case["projection"]["window_min"], [-60, 300])
+        self.assertEqual(
+            [(missed["points"][index]["minute"], missed["points"][index]["n"])
+             for index in (0, -1)],
+            [(-60, 2), (300, 2)],
+        )
 
     def test_registered_preparation_is_immediately_addressable_and_bump_invalidates(self):
         prepared = self.client.get("/api/diagnose/finding-case-file-preparation").json()

@@ -9,6 +9,8 @@ const fixture = JSON.parse(readFileSync(new URL(
 const missedMealFixture = JSON.parse(readFileSync(new URL(
   '../frontend/__fixtures__/missed-meal-comparison.json', import.meta.url), 'utf8'));
 
+const wallMinutes = (timestamp) => Date.parse(`${timestamp.replace(' ', 'T')}Z`) / 60_000;
+
 test('ADR 79 fixture keeps verdict cohorts except for the missed-meal comparison', () => {
   const cases = Object.values(fixture.cases).map((entry) => entry.event);
   assert.deepEqual(new Set(cases.map((entry) => entry.family)),
@@ -67,7 +69,7 @@ test('missed-meal fixture pins attributed membership and the unconditioned basel
   const { payload } = missedMealFixture;
   const [missed, announced] = payload.projection.cohorts;
   assert.equal(validFindingCaseFile(payload), true);
-  assert.equal(missed.routed_count, 1);
+  assert.equal(missed.routed_count, 2);
   assert.equal(announced.routed_count, 1);
   assert.equal(payload.projection.counts.not_comparable, 1);
   assert.deepEqual(payload.projection.window_min, [-60, 300]);
@@ -86,4 +88,23 @@ test('missed-meal fixture pins attributed membership and the unconditioned basel
     'announced');
   assert.equal(validFindingCaseFile(missedMealFixture.clock_after_announced), true);
   assert.equal(missedMealFixture.clock_after_announced.selection.state, 'unavailable');
+});
+
+test('generated attributed missed meals share one fixed axis across heterogeneous rises', () => {
+  const { payload } = missedMealFixture;
+  const missed = payload.projection.cohorts[0];
+  const attributed = payload.occurrences.filter((row) => row.attributed);
+  const onsetToPeak = attributed.map((row) => (
+    wallMinutes(row.anchor.t) - wallMinutes(row.comparison_anchor.t)
+  )).sort((left, right) => left - right);
+
+  assert.deepEqual(onsetToPeak, [15, 120]);
+  assert.equal(missed.routed_count, 2);
+  assert.deepEqual(payload.projection.window_min, [-60, 300]);
+  assert.deepEqual(
+    [missed.points[0].minute, missed.points.at(-1).minute],
+    [-60, 300],
+  );
+  assert.equal(missed.points[0].n, 2);
+  assert.equal(missed.points.at(-1).n, 2);
 });

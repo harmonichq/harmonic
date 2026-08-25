@@ -1962,9 +1962,11 @@ Implementation sequence, recorded without backdating a green result:
 - `9a75bc2` fixed the duplicate ready-ID queue pose that had prevented C44 and
   C56 from mounting the Findings queue in the built-app replay.
 - `225268e` preserves the five-way verdict band beside the comparison, corrects
-  selected missed-cohort emphasis, adds C57, replaces the technical occurrence
-  prompt with plain user language, and adds the composed non-browser
+  selected missed-cohort emphasis, adds C57, and adds the composed non-browser
   duplicate-pose regression.
+- `345b30c` is the copy-and-evidence follow-up: it replaces the technical
+  selected-detail sentence with plain product language and records the
+  coordinator-supplied evidence.
 
 Coordinator-supplied and -verified synthetic built-app evidence is recorded at
 the `1440x900` viewport:

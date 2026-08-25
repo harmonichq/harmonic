@@ -488,15 +488,35 @@ def build_case_file_capture():
     cases = {}
     for lever in Lever:
         finding_id = f'finding:{lever.value}'
+        event = prepared.case(finding_id, 'event', None)
+        event_ids = tuple(member.id for member in all_members[lever])
+        if lever is Lever.MISSED_MEAL:
+            event_ids = tuple(event['projection']['cohorts'][0]['occurrence_ids']
+                              + event['projection']['cohorts'][1]['occurrence_ids'])
+        empty_event = None
+        if lever is Lever.MISSED_MEAL:
+            empty_event = deepcopy(event)
+            for row in empty_event['occurrences']:
+                row['attributed'] = False
+                row['comparison_anchor'] = None
+            empty_event['summary']['claimed'] = 0
+            missed = empty_event['projection']['cohorts'][0]
+            missed['occurrence_ids'] = []
+            missed['routed_count'] = 0
+            missed['usable_count'] = 0
+            empty_event['projection']['counts']['missed'] = 0
+            empty_event['projection']['counts']['not_comparable'] = \
+                empty_event['summary']['denominator']
         cases[finding_id] = {
             'clock': prepared.case(finding_id, 'clock', None),
-            'event': prepared.case(finding_id, 'event', None),
+            'event': event,
             'selected_clock': {member.id: prepared.case(finding_id, 'clock', member.id)
                                for member in all_members[lever]},
-            'selected_event': {member.id: prepared.case(finding_id, 'event', member.id)
-                               for member in all_members[lever]},
+            'selected_event': {member_id: prepared.case(finding_id, 'event', member_id)
+                               for member_id in event_ids},
             'unavailable_clock': prepared.case(finding_id, 'clock', 'o_' + '9' * 32),
             'unavailable_event': prepared.case(finding_id, 'event', 'o_' + '9' * 32),
+            **({'empty_event': empty_event} if empty_event else {}),
         }
     held_rows = [
         {'id': 'basal:0-30', 'register': 'held', 'kind': 'setting', 'title': 'Basal 00:00',

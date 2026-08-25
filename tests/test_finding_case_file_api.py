@@ -249,6 +249,50 @@ class FindingCaseFileRouteTest(unittest.TestCase):
             [(-60, 2), (300, 2)],
         )
 
+    def test_generated_zero_attribution_reaches_the_public_case_route(self):
+        root = Path(__file__).resolve().parents[1]
+        generator = run_path(str(root / "scripts/gen_missed_meal_comparison_fixtures.py"))
+        prepared = generator["_zero_attribution_preparation"]()
+        retained, reason = self.app.state.result_cache.get_or_build_preparation(
+            ("generated-zero-attribution",), lambda version: prepared,
+        )
+        self.assertIs(retained, prepared)
+        self.assertIsNone(reason)
+
+        response = self.client.get("/api/diagnose/finding-case-file", params={
+            "projection_id": prepared.projection_id,
+            "finding_id": "finding:missed_meal",
+            "alignment": "event",
+        })
+        self.assertEqual(response.status_code, 200, response.text)
+        frozen = json.loads((
+            root / "frontend/__fixtures__/missed-meal-comparison.json"
+        ).read_text())["zero_payload"]
+        self.assertEqual(response.json(), frozen)
+
+        case = response.json()
+        missed, announced = case["projection"]["cohorts"]
+        self.assertEqual(case["schema"], "diagnose-finding-case-file-v1")
+        self.assertEqual(case["summary"], {
+            "claimed": 0, "denominator": 3, "noun": "highs",
+        })
+        self.assertEqual(case["projection"]["window_min"], [-60, 300])
+        self.assertEqual(case["projection"]["counts"], {
+            "missed": 0, "announced": 1, "not_comparable": 3,
+        })
+        self.assertEqual(missed["occurrence_ids"], [])
+        self.assertEqual(missed["routed_count"], missed["usable_count"])
+        self.assertEqual(missed["usable_count"], 0)
+        expected_points = [{
+            "minute": minute, "n": 0, "support": "withheld",
+            "median": None, "p25": None, "p75": None,
+        } for minute in range(-60, 301, 5)]
+        self.assertEqual(len(expected_points), 73)
+        self.assertEqual(missed["points"], expected_points)
+        self.assertEqual(announced["routed_count"], 1)
+        self.assertEqual(len(announced["occurrence_ids"]), 1)
+        self.assertRegex(announced["occurrence_ids"][0], r"^m_[0-9a-f]{32}$")
+
     def test_registered_preparation_is_immediately_addressable_and_bump_invalidates(self):
         prepared = self.client.get("/api/diagnose/finding-case-file-preparation").json()
         url = (f"/api/diagnose/finding-case-file?projection_id={prepared['projection_id']}"

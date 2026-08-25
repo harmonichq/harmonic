@@ -21,7 +21,7 @@ from ciq_autotune.window_membership import WindowQuery  # noqa: E402
 OUT = ROOT / "frontend" / "__fixtures__" / "missed-meal-comparison.json"
 
 
-def _preparation():
+def _preparation(*, zero_attribution=False):
     peak = datetime(2026, 1, 3, 12)
     short_rise = Opportunity(Exposure.HIGHS, ("short-rise",), peak, "high", 260,
                              reach_start=peak - timedelta(minutes=15))
@@ -52,11 +52,12 @@ def _preparation():
         ))
     cgm.extend(CgmReading(announced.t + timedelta(minutes=minute), 115 + minute / 10,
                           "synthetic") for minute in (-60, 0, 300))
-    findings = {"rows": [{"id": "finding:missed_meal", "episodes": 2}]}
-    claimed = frozenset(member.id for member in members[:2])
+    claimed = (frozenset() if zero_attribution
+               else frozenset(member.id for member in members[:2]))
+    findings = {"rows": [{"id": "finding:missed_meal", "episodes": len(claimed)}]}
     return PreparedCases(
         "fp_" + "1" * 32, 178, WindowQuery.whole_day(), findings,
-        {Lever.MISSED_MEAL: (2, 3)},
+        {Lever.MISSED_MEAL: (len(claimed), len(members))},
         {lever: members if lever is Lever.MISSED_MEAL else () for lever in Lever},
         {lever: claimed if lever is Lever.MISSED_MEAL else frozenset()
          for lever in Lever},
@@ -69,8 +70,13 @@ def _preparation():
     )
 
 
+def _zero_attribution_preparation():
+    return _preparation(zero_attribution=True)
+
+
 def payload():
     prepared = _preparation()
+    zero_prepared = _zero_attribution_preparation()
     members = prepared.members[Lever.MISSED_MEAL]
     case = prepared.case("finding:missed_meal", "event", None)
     announced_id = case["projection"]["cohorts"][1]["occurrence_ids"][0]
@@ -78,6 +84,7 @@ def payload():
         "_generated_by": "scripts/gen_missed_meal_comparison_fixtures.py",
         "_note": "SYNTHETIC. Fixed invented Highs and boluses; no personal data.",
         "payload": case,
+        "zero_payload": zero_prepared.case("finding:missed_meal", "event", None),
         "selected_missed": prepared.case("finding:missed_meal", "event", members[0].id),
         "selected_announced": prepared.case("finding:missed_meal", "event", announced_id),
         "clock_after_announced": prepared.case(

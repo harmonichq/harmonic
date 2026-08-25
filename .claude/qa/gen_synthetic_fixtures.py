@@ -26,6 +26,7 @@ import random
 import sys
 import time
 from copy import deepcopy
+from dataclasses import replace
 from datetime import datetime, timedelta
 
 from ciq_autotune.explore_exposures import build_exposures as build_endpoint_exposures
@@ -495,18 +496,16 @@ def build_case_file_capture():
                               + event['projection']['cohorts'][1]['occurrence_ids'])
         empty_event = None
         if lever is Lever.MISSED_MEAL:
-            empty_event = deepcopy(event)
-            for row in empty_event['occurrences']:
-                row['attributed'] = False
-                row['comparison_anchor'] = None
-            empty_event['summary']['claimed'] = 0
-            missed = empty_event['projection']['cohorts'][0]
-            missed['occurrence_ids'] = []
-            missed['routed_count'] = 0
-            missed['usable_count'] = 0
-            empty_event['projection']['counts']['missed'] = 0
-            empty_event['projection']['counts']['not_comparable'] = \
-                empty_event['summary']['denominator']
+            zero_findings = deepcopy(findings)
+            next(row for row in zero_findings['rows']
+                 if row['id'] == finding_id)['episodes'] = 0
+            zero_recurrence = recurrence | {lever: (0, len(all_members[lever]))}
+            zero_associations = associations | {lever: frozenset()}
+            zero_prepared = replace(
+                prepared, findings=zero_findings, recurrence=zero_recurrence,
+                associations=zero_associations,
+            )
+            empty_event = zero_prepared.case(finding_id, 'event', None)
         cases[finding_id] = {
             'clock': prepared.case(finding_id, 'clock', None),
             'event': event,

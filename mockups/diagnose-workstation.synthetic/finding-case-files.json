@@ -291518,7 +291518,7 @@
         {
          "median": null,
          "minute": -60,
-         "n": 1,
+         "n": 0,
          "p25": null,
          "p75": null,
          "support": "withheld"
@@ -291566,7 +291566,7 @@
         {
          "median": null,
          "minute": -30,
-         "n": 1,
+         "n": 0,
          "p25": null,
          "p75": null,
          "support": "withheld"
@@ -291614,7 +291614,7 @@
         {
          "median": null,
          "minute": 0,
-         "n": 1,
+         "n": 0,
          "p25": null,
          "p75": null,
          "support": "withheld"
@@ -291662,7 +291662,7 @@
         {
          "median": null,
          "minute": 30,
-         "n": 1,
+         "n": 0,
          "p25": null,
          "p75": null,
          "support": "withheld"
@@ -291710,7 +291710,7 @@
         {
          "median": null,
          "minute": 60,
-         "n": 1,
+         "n": 0,
          "p25": null,
          "p75": null,
          "support": "withheld"
@@ -291758,7 +291758,7 @@
         {
          "median": null,
          "minute": 90,
-         "n": 1,
+         "n": 0,
          "p25": null,
          "p75": null,
          "support": "withheld"
@@ -291806,7 +291806,7 @@
         {
          "median": null,
          "minute": 120,
-         "n": 1,
+         "n": 0,
          "p25": null,
          "p75": null,
          "support": "withheld"
@@ -291854,7 +291854,7 @@
         {
          "median": null,
          "minute": 150,
-         "n": 1,
+         "n": 0,
          "p25": null,
          "p75": null,
          "support": "withheld"
@@ -291902,7 +291902,7 @@
         {
          "median": null,
          "minute": 180,
-         "n": 1,
+         "n": 0,
          "p25": null,
          "p75": null,
          "support": "withheld"
@@ -291950,7 +291950,7 @@
         {
          "median": null,
          "minute": 210,
-         "n": 1,
+         "n": 0,
          "p25": null,
          "p75": null,
          "support": "withheld"
@@ -291998,7 +291998,7 @@
         {
          "median": null,
          "minute": 240,
-         "n": 1,
+         "n": 0,
          "p25": null,
          "p75": null,
          "support": "withheld"
@@ -292046,7 +292046,7 @@
         {
          "median": null,
          "minute": 270,
-         "n": 1,
+         "n": 0,
          "p25": null,
          "p75": null,
          "support": "withheld"
@@ -292094,7 +292094,7 @@
         {
          "median": null,
          "minute": 300,
-         "n": 1,
+         "n": 0,
          "p25": null,
          "p75": null,
          "support": "withheld"

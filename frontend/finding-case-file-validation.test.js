@@ -21,6 +21,7 @@ const missedMealFixture = JSON.parse(await readFile(new URL(
 const independent = (value) => JSON.parse(JSON.stringify(value));
 const eventCase = () => independent(capture.cases['finding:meal_over_delivery'].event);
 const missedMealCase = () => independent(capture.cases['finding:missed_meal'].event);
+const zeroMissedMealCase = () => independent(missedMealFixture.zero_payload);
 
 test('accepts a preparation carrying the current v2 findings projection', () => {
   const preparation = independent(capture.preparation);
@@ -138,6 +139,42 @@ test('accepts the two-cohort fixed-axis missed-meal comparison', () => {
   assert.deepEqual(caseFile.projection.cohorts.map((cohort) => cohort.key),
     ['missed', 'announced']);
   assert.equal(validFindingCaseFile(caseFile), true);
+});
+
+test('rejects missed-meal aggregate points that exceed their usable cohort', () => {
+  const caseFile = missedMealCase();
+  caseFile.projection.cohorts[0].usable_count = 0;
+  assert.equal(validFindingCaseFile(caseFile), false);
+});
+
+test('rejects a declared zero missed cohort that retains drawable aggregate points', () => {
+  const caseFile = missedMealCase();
+  const missed = caseFile.projection.cohorts[0];
+  for (const row of caseFile.occurrences) {
+    row.attributed = false;
+    row.comparison_anchor = null;
+  }
+  caseFile.summary.claimed = 0;
+  missed.occurrence_ids = [];
+  missed.routed_count = 0;
+  missed.usable_count = 0;
+  caseFile.projection.counts.missed = 0;
+  caseFile.projection.counts.not_comparable = caseFile.summary.denominator;
+  assert.equal(caseFile.projection.cohorts[0].usable_count, 0);
+  assert.equal(validFindingCaseFile(caseFile), false);
+});
+
+test('accepts the exact generator-authored zero-attribution response', () => {
+  const caseFile = zeroMissedMealCase();
+  const missed = caseFile.projection.cohorts[0];
+  assert.equal(missed.routed_count, 0);
+  assert.equal(missed.usable_count, 0);
+  assert.ok(missed.points.every((point) => point.n === 0
+    && point.support === 'withheld'
+    && point.median === null && point.p25 === null && point.p75 === null));
+  assert.equal(validFindingCaseFile(caseFile), true);
+  missed.episodes = [{}];
+  assert.equal(validFindingCaseFile(caseFile), false);
 });
 
 test('rejects a missed-meal comparison with a widened or roster-mismatched axis', () => {

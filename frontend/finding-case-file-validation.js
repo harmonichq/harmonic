@@ -17,17 +17,30 @@ const ANNOUNCED_MEAL_ID = /^m_[0-9a-f]{32}$/;
 
 const validCount = (value) => Number.isInteger(value) && value >= 0;
 const validNumberOrNull = (value) => value === null || Number.isFinite(value);
+const expectedSupport = (count, usableCount) => {
+  if (count <= 1) return 'withheld';
+  if (count < 5) return 'limited';
+  return count * 2 >= usableCount ? 'supported' : 'limited';
+};
 const validAnchor = (anchor) => typeof anchor?.t === 'string'
   && typeof anchor.kind === 'string' && typeof anchor.label === 'string'
   && validNumberOrNull(anchor.bg);
 const validCohort = (cohort, identity) => validCount(cohort?.routed_count)
   && validCount(cohort.usable_count) && cohort.usable_count <= cohort.routed_count
+  && cohort.support === expectedSupport(cohort.usable_count, cohort.usable_count)
   && Array.isArray(cohort.occurrence_ids)
   && cohort.routed_count === cohort.occurrence_ids.length
   && cohort.occurrence_ids.every(identity) && Array.isArray(cohort.points)
   && cohort.points.every((point) => Number.isFinite(point?.minute) && validCount(point.n)
-    && typeof point.support === 'string' && validNumberOrNull(point.median)
-    && validNumberOrNull(point.p25) && validNumberOrNull(point.p75));
+    && point.n <= cohort.usable_count
+    && point.support === expectedSupport(point.n, cohort.usable_count)
+    && (point.support === 'withheld'
+      ? point.median === null && point.p25 === null && point.p75 === null
+      : Number.isFinite(point.median) && Number.isFinite(point.p25)
+        && Number.isFinite(point.p75) && point.p25 <= point.median
+        && point.median <= point.p75))
+  && (cohort.routed_count !== 0 || cohort.episodes === undefined
+    || (Array.isArray(cohort.episodes) && cohort.episodes.length === 0));
 const fixedMinutes = (window) => Array.from(
   { length: ((window[1] - window[0]) / 5) + 1 }, (_, index) => window[0] + (index * 5),
 );

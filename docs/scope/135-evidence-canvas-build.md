@@ -100,6 +100,36 @@ The map-level ledger for this whole workstream is `docs/scope/evidence-canvas.md
 
 (none open)
 
+## Review rounds
+
+Round 1 — author's grounding-and-consistency pass (NOT a cold panel: this session
+authored the order and is under an instruction not to spawn subagents, so the
+cold-reviewer step of `/plan-review` was not run and is the one gap in this review).
+Every load-bearing path and line reference in the order was opened and verified.
+
+5 objections, **5 authoring, 0 injected**:
+
+1. **blocks** — Sequencing defect. The composition chunk ran first but claimed "the
+   five arrangements are reachable by pinning alone" with no chart registered until
+   the next chunk, so its acceptance was unsatisfiable standalone. Fixed by swapping:
+   the registry ships first as pure, node-testable modules; composition second.
+2. **blocks** — The carb-ratio block feed's contract was absent from the order. It
+   requires `block_id` and `analysis_generation` and answers 409
+   `analysis_generation_mismatch` (`ciq_autotune/api.py:888-919`). Partially REFUTED
+   on reproduction in a useful direction: the frontend already threads that discipline
+   (`frontend/data.js:272`, `frontend/diagnose-workstation.js:1187/1261/1310/1345`), so
+   the order now says reuse it rather than invent handling, and the risk contract
+   carries the recovery.
+3. **blocks** — Two tests assert on LITERAL SOURCE shapes that this work rewrites
+   (`frontend/diagnose-high-causes-have-no-alignment.test.js:84-96`). Unnamed, they are
+   surprise fast-gate failures. Now named in both affected chunks with an instruction
+   not to weaken them into tautologies.
+4. **blocks** — The evidence chunk could deadlock: told to return failing stories to
+   the coordinator with no stated resolution path. Now names the dispatch-and-re-run
+   path explicitly.
+5. **note** — "the eight generator --check steps" is a hand-typed count this ticket
+   itself changes. Replaced with a self-maintaining phrasing.
+
 ## Spawned tasks
 
 (none yet)

@@ -13,7 +13,7 @@ what moved in the vocabulary the single-setting entries already use, for example
 Verify never names which setting moved an outcome. A change that moved several
 settings presents each changed setting's evidence and lets the reader judge,
 without an attribution verdict or a co-changed caveat line. The evidence-view
-unit is each affected part of the day, not each setting: a carb-ratio change that
+unit is each affected part of the day, not each setting: an I:C change that
 touches morning and evening produces two charts and two verdicts. This supplies
 the per-block response shape ADR 24 left open while preserving its rulings that
 each block matures and is judged independently, a multi-setting change runs the

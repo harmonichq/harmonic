@@ -113,14 +113,26 @@ test('entries build different alignments simultaneously with one optical spine',
   assert.deepEqual(icEvent.grid, comparison.grid);
 });
 
-test('basal event alignment shows directional support against the eight-night floor', () => {
+test('basal event treatment follows the analyzer verdict, not the support count', () => {
   const basal = fixture('./__fixtures__/basal-night-evidence.json').expected;
   const entry = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'basal');
-  const option = entry.option('event', { data: basal });
+  const held = entry.option('event', { data: {
+    ...basal,
+    directional_support_count: 12,
+    asserts_move: false,
+    safety_status: 'insufficient evidence',
+  } });
+  const moving = entry.option('event', { data: {
+    ...basal,
+    directional_support_count: 12,
+    asserts_move: true,
+    safety_status: 'lower',
+  } });
 
-  assert.equal(option.series[0].type, 'bar');
-  assert.deepEqual(option.series[0].data, [basal.directional_support_count]);
-  assert.deepEqual(option.series[0].markLine.data, [{ yAxis: 8, name: 'Eight-night floor' }]);
+  assert.equal(held.series[0].type, 'bar');
+  assert.deepEqual(held.series[0].data, [12]);
+  assert.notEqual(held.series[0].itemStyle.color, moving.series[0].itemStyle.color);
+  assert.deepEqual(held.legend.data, ['insufficient evidence']);
 });
 
 test('every multi-series evidence form carries an on-chart legend', () => {

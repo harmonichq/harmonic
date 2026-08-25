@@ -13,13 +13,11 @@ const MONO = 'ui-monospace, SFMono-Regular, Menlo, monospace';
 const FONT = 'Inter, system-ui, sans-serif';
 const FALLBACK_COLORS = {
   signal: '#3f5a3b', basal: '#5d7368', programmed: '#4d5c53',
-  line: '#c3bfb4', text: '#141a15', muted: '#3d5848', warning: '#8d3c17',
-  excluded: '#6b7169',
+  line: '#c3bfb4', text: '#141a15', muted: '#3d5848', excluded: '#6b7169',
 };
 const COLOR_TOKENS = {
   signal: '--in-range', basal: '--basal', programmed: '--secondary',
-  line: '--line', text: '--text', muted: '--muted', warning: '--warn',
-  excluded: '--notindata',
+  line: '--line', text: '--text', muted: '--muted', excluded: '--notindata',
 };
 const chartColors = () => {
   if (typeof document === 'undefined' || typeof getComputedStyle === 'undefined') {
@@ -102,23 +100,19 @@ function basalOption(mode, { data, mini = false } = {}) {
   const description = `${data?.roster_count ?? 0} nights of steady data; ${data?.directional_support_count ?? 0} directional support.`;
   if (mode === 'event') {
     const support = data?.directional_support_count ?? 0;
+    const assertsMove = data?.asserts_move === true;
+    const verdict = data?.safety_status ?? 'Analyzer verdict unavailable';
     const label = hhmm((data?.slot ?? 0) * 30);
     return {
       ...chartBase(description, mini, colors),
-      legend: chartLegend(['Directional support', 'Eight-night floor'], colors),
+      legend: chartLegend([verdict], colors),
       xAxis: { type: 'category', data: [label], ...axis(colors, mini),
         splitLine: { show: false } },
       yAxis: { type: 'value', min: 0, name: 'nights', ...axis(colors, mini) },
       series: [
-        { name: 'Directional support', type: 'bar', data: [support], animation: false,
-          barCategoryGap: '25%', itemStyle: { color: support >= 8
-            ? colors.basal : colors.excluded },
-          markLine: { silent: true, symbol: 'none', label: { show: false },
-            lineStyle: { color: colors.warning, width: 1, type: 'dashed' },
-            data: [{ yAxis: 8, name: 'Eight-night floor' }] } },
-        { name: 'Eight-night floor', type: 'line', symbol: 'none', data: [],
-          animation: false, lineStyle: { color: colors.warning, width: 1,
-            type: 'dashed' } },
+        { name: verdict, type: 'bar', data: [support], animation: false,
+          barCategoryGap: '25%', itemStyle: { color: assertsMove
+            ? colors.basal : colors.excluded } },
       ],
     };
   }
@@ -261,7 +255,7 @@ const entries = [
     name: 'Basal · nights of steady data',
     modes: ['clock', 'event'],
     meta: (mode) => mode === 'clock'
-      ? 'delivered vs programmed by night' : 'nights of steady data · floor 8',
+      ? 'delivered vs programmed by night' : 'directional support · analyzer verdict',
     option: basalOption,
     thumbnail: (data) => thumbnail('BASAL · STEADY NIGHTS',
       `${data?.roster_count ?? 0} / ${data?.directional_support_count ?? 0}`,

@@ -663,7 +663,7 @@ function renderCaseSelection(host, caseFile, onDay) {
         ? caseFile.projection.counts[detail.comparison_cohort] : caseFile.verdict_counts[detail.verdict]}<i class="keyhint">↑ ↓</i></span>` : ''}</div>
     <div class="occ-nums">${detail.anchor.bg == null ? '—' : Math.round(detail.anchor.bg)}
       <span>at ${detail.anchor.label.toLowerCase()}</span></div>
-    <div class="statline">The canvas shows this Occurrence's server-owned trace and evidence markers.</div>`;
+    <div class="statline">The canvas shows the selected glucose trace and evidence markers.</div>`;
   host.append(box);
   const facts = document.createElement('div'); facts.className = 'ev-detail case-facts';
   facts.innerHTML = `<div class="lab">Evidence facts</div>

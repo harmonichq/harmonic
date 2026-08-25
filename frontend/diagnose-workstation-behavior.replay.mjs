@@ -1479,7 +1479,7 @@ export const D1 = async (page) => {
   const after = await state(page);
   is(after.crumb.length, 2, 'D1 the server selection stays in the standing case');
   is(await page.locator('#level .occ-detail .statline').innerText(),
-    "The canvas shows this Occurrence's server-owned trace and evidence markers.",
+    'The canvas shows the selected glucose trace and evidence markers.',
     'D1 clinical evidence is present without a paint-time fallback fetch');
   ok((await traceSeries(page))?.length > 0, 'D1 the server trace is drawn');
   is(after.chip, setup.chip, 'D1 the same drawn window remains');
@@ -1501,7 +1501,7 @@ export const D2 = async (page) => {
   const after = await state(page);
   is(after.crumb.length, 2, 'D2 at the drilled factor, occurrence selected in place');
   const sentence = await page.evaluate(() => document.querySelector('#level .occ-detail .statline')?.textContent.trim() ?? null);
-  is(sentence, "The canvas shows this Occurrence's server-owned trace and evidence markers.",
+  is(sentence, 'The canvas shows the selected glucose trace and evidence markers.',
     'D2 the case file, not a second timeline request, owns selection evidence');
   ok((await traceSeries(page))?.length > 0, 'D2 the selected server trace remains complete');
   is(after.chip, setup.chip, 'D2 the drawn window is untouched');
@@ -1523,8 +1523,8 @@ export const D3 = async (page) => {
   const after = await state(page);
   is(after.crumb.length, 2, 'D3 remains at the drilled factor');
   const sentence = await page.evaluate(() => document.querySelector('#level .occ-detail .statline')?.textContent.trim() ?? null);
-  is(sentence, "The canvas shows this Occurrence's server-owned trace and evidence markers.",
-    'D3 selection evidence remains server-owned and complete');
+  is(sentence, 'The canvas shows the selected glucose trace and evidence markers.',
+    'D3 selection evidence remains complete');
   ok((await traceSeries(page))?.length > 0, 'D3 the selected trace is not replaced by a fallback');
   is(after.chip, setup.chip, 'D3 the drawn window is unchanged');
   is(after.dock.kind, 'Plan · staged', 'D3 the staged item is unchanged');
@@ -3578,7 +3578,7 @@ export const C44 = async (page) => {
   await page.waitForSelector('#level .case-facts');
   const evidence = await page.locator('#level .case-facts').innerText();
   ok(/\d+ glucose readings/.test(evidence) && /\d+ event markers/.test(evidence),
-    'C44 announced-meal selection retains its server-owned trace and markers');
+    'C44 announced-meal selection retains its trace and markers');
 };
 
 export const C56 = async (page) => {

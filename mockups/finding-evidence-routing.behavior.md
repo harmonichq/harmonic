@@ -1966,13 +1966,22 @@ Implementation sequence, recorded without backdating a green result:
   prompt with plain user language, and adds the composed non-browser
   duplicate-pose regression.
 
-This ledger amendment does not claim a coordinator screenshot or replay result.
-Coordinator-verified evidence slots, if supplied, are:
+Coordinator-supplied and -verified synthetic built-app evidence is recorded at
+the `1440x900` viewport:
 
-- Light: `openspec/changes/missed-meal-comparison/evidence/coordinator/light/`
-- Dark: `openspec/changes/missed-meal-comparison/evidence/coordinator/dark/`
+- Dark before: `openspec/changes/missed-meal-comparison/evidence/coordinator/dark/C44-1440x900-before-dark.png`.
+- Dark after: `openspec/changes/missed-meal-comparison/evidence/coordinator/dark/C44-1440x900-after-dark.png`,
+  `openspec/changes/missed-meal-comparison/evidence/coordinator/dark/C56-1440x900-after-dark.png`, and
+  `openspec/changes/missed-meal-comparison/evidence/coordinator/dark/C57-1440x900-after-dark.png`.
+- Light before: `openspec/changes/missed-meal-comparison/evidence/coordinator/light/C44-1440x900-before-light.png`.
+- Light after: `openspec/changes/missed-meal-comparison/evidence/coordinator/light/C44-1440x900-after-light.png`,
+  `openspec/changes/missed-meal-comparison/evidence/coordinator/light/C56-1440x900-after-light.png`, and
+  `openspec/changes/missed-meal-comparison/evidence/coordinator/light/C57-1440x900-after-light.png`.
 
-Those paths are intentionally unpopulated by this commit.
+The coordinator verified dark C44/C56/C57 plus S32–S39: **11/11**; light
+C44/C56/C57: **3/3**; and the unchanged legacy event stories S3/S7/S8/S9/S13:
+**5/5**. These captures and results were supplied and verified by the
+coordinator; this evidence-recording amendment did not produce them.
 - `C45` visibly distinguishes a successful unavailable selection from failure.
 - `C46` preserves the prior inspector and clock canvas on an active structured
   case error.

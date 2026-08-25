@@ -25,6 +25,12 @@ test('queryState reads Diagnose state from the canonical route query', () => {
   }
 });
 
+test('selected detail describes its glucose trace in product language', () => {
+  const source = readFileSync(new URL('./diagnose-workstation.js', import.meta.url), 'utf8');
+  assert.match(source, /The canvas shows the selected glucose trace and evidence markers\./);
+  assert.doesNotMatch(source, /Occurrence's server-owned trace/);
+});
+
 test('C44/C56 replay poses enter the existing Findings queue once', () => {
   const source = readFileSync(new URL('./diagnose-workstation-behavior.replay.mjs', import.meta.url), 'utf8');
   for (const story of ['C44', 'C56']) {

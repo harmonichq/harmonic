@@ -35,9 +35,28 @@ Canvas lock that consumes this: #135 (triaged, blocked on #188).
   than read from the map body, which still records the block. Why: the map's
   dependency note predates #82 closing. `inline`
 
+- **Changing the history stretch re-scopes charts only.** The ranked findings and
+  every recommended number stay on their fixed 30 days no matter what stretch the
+  reader is looking at. Why: the operator's ruling, "we should not present findings
+  on untested time slices" — a reader-picked stretch feeding a dose recommendation
+  lets a flattering stretch pick the advice. `-> ADR`
+- **Selection is fixed choices plus a free start-and-end date pick**, in the shape
+  of a Grafana time picker (quick ranges beside an absolute range). Why: the
+  operator's ruling. `-> ADR`
+- **"Since my last setting change" is deliberately deferred, and the picker is
+  built to admit it.** Why: the operator expects to want it for Verify later, but
+  it is not MVP; designing the mechanism around a closed set of quick ranges only
+  would make the anchored range a rewrite rather than an addition. `-> ADR`
+- **Quick ranges are relative to now and the absolute range is pinned**, per the
+  Grafana model the operator named. Defaulted, not asked. `inline`
+
 ## Open questions
 
-- Round 1 asked: what re-scopes (Q1), how the range is chosen (Q2).
+- Round 1 settled: what re-scopes (Q1 = charts only), how the range is chosen
+  (Q2 = quick ranges + absolute date pick, anchored ranges deferred).
+- Round 2 asks: where the picker is available (Q3), what a not-yet-computed
+  stretch does (Q4), whether the stretch persists (Q5), how a thin stretch renders
+  (Q6).
 
 ## Spawned tasks
 

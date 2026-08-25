@@ -648,7 +648,6 @@ export function renderCanvas(el, echarts, opts) {
      header and the inspector. The exception is the insufficient-sample notice,
      which is a safety statement and rides with the head wherever it goes. */
   const labelHead = opts.windowLabel || 'SELECTED WINDOW';
-  const labelNote = opts.windowNote || '';
   const tailKey = thin ? 'th' : 'sp';
   const tailText = thin
     ? `INSUFFICIENT SAMPLE — thinnest bin holds ${support.thinnest}`
@@ -661,22 +660,16 @@ export function renderCanvas(el, echarts, opts) {
   const winPx = Math.max(0, xEnd - xStart);
   const capOpts = { caps: true, letterSpacing: 0.5 };
   const headPx = estimateTextPx(labelHead, 10, capOpts);
-  const notePx = labelNote ? estimateTextPx(` · ${labelNote}`, 10, capOpts) : 0;
   const tailPx = tailText ? estimateTextPx(`  ·  ${tailText}`, 9.5) : 0;
   const LABEL_PAD = 10;   // breathing room inside the dashed edges
   const withTail = (base) => `${base}{${tailKey}|  ·  ${tailText}}`;
-  const headNote = `${labelHead}${labelNote ? ` · ${labelNote}` : ''}`;
 
   let labelText = labelHead;
   let labelInside = true;
-  if (tailText && headPx + notePx + tailPx + LABEL_PAD <= winPx) {
-    labelText = withTail(headNote);
-  } else if (labelNote && headPx + notePx + LABEL_PAD <= winPx && !thin) {
-    labelText = headNote;
+  if (tailText && headPx + tailPx + LABEL_PAD <= winPx) {
+    labelText = withTail(labelHead);
   } else if (!thin && headPx + LABEL_PAD <= winPx) {
     labelText = labelHead;
-  } else if (thin && headPx + tailPx + LABEL_PAD <= winPx) {
-    labelText = withTail(labelHead);
   } else {
     labelInside = false;                       // out it goes, one line, one side
     labelText = thin ? withTail(labelHead) : labelHead;

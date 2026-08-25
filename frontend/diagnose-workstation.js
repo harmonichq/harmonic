@@ -373,7 +373,7 @@ const CHIP_LABELS = [['highs', 'Highs'], ['lows', 'Lows'], ['meals', 'Meals'], [
 
 /**
  * The follow chip: ONE slot in the control row that reports whatever non-preset
- * window is in force — "Factor peak 02:00–04:00" or "Window 02:15–04:45". It is
+ * window is in force — "Window 02:15–04:45", a slot, or a block. It is
  * never a sixth preset (it replaces the pressed state, it does not add a pill)
  * and it is the single readout for a custom range, so nothing floats over the
  * plot. `onClear` adds the clear affordance INSIDE the chip.
@@ -1159,11 +1159,11 @@ function boot(root, data, callbacks, signal) {
   let braceGripTop = 48;                            // y of the grip band, set by paintBrace
   let dragDisplayWindow = null;                     // monotonic minutes while a drag is live
   let clockPanOffset = 0;                           // left edge of the unrolled clock display
-  /* An EXPLICIT window choice — a preset press, or a drag — outranks the window
-     a frame would derive (factor peak, occurrence, slot span). It stands until
-     a NEW navigation: drilling a different factor or occurrence hands the window
-     back to the frame. Presets and drawn windows are the same kind of act, so
-     they clear together and reassert together. */
+  /* An EXPLICIT window choice — a preset press or a drag — outranks the window
+     a frame would derive. An explicit preset or drawn window survives factor and
+     occurrence drilling; only the lane scope choice releases it. Presets and
+     drawn windows are the same kind of act, so they clear together and reassert
+     together. */
   let explicitPreset = false;
   let drawn = CFG.drawn ? CFG.drawn.slice() : null; // the custom window, or none
   /* ONE scope, for the canvas and the inspector alike: whatever window is in
@@ -1755,37 +1755,15 @@ function boot(root, data, callbacks, signal) {
     const preset = WINDOWS[canvasPresetKey];
     let win = preset;
     let label = `${preset.label.toUpperCase()} ${winText(preset)}`;
-    let note = '';   // the droppable count tail — shed first when space is tight
     braceless = false;
     if (dragDisplayWindow) {
       const committed = commitWindow(dragDisplayWindow);
       win = { label: committed ? 'Window' : 'Whole day', range: committed || [0, 1440] };
       label = committed ? `WINDOW ${winText(win)}` : 'WHOLE DAY';
-    } else if (f.k === 'factor' && f.caseFile
-      && !(f.eventDiscovery && (drawn || explicitPreset))) {
-      const caseWindow = f.caseFile.window;
-      const clock = f.caseFile.projection.alignment === 'clock'
-        ? f.caseFile.projection.clock : null;
-      if (caseWindow.scoped) {
-        win = { label: 'Window', range: [caseWindow.start_min, caseWindow.end_min] };
-        label = `WINDOW ${winText(win)}`;
-        markWindowSegment(`Window ${winText(win)}`);
-      } else if (clock) {
-        const peak = clock.buckets[clock.peak_bucket_index];
-        win = { label: 'Factor peak', range: [peak.start_min, peak.end_min] };
-        label = `PEAK ${winText(win)}`;
-        note = `${peak.n} of ${clock.total}`;
-        markWindowSegment(`Factor peak ${winText(win)}`);
-      } else {
-        win = WINDOWS.all;
-        label = `${win.label.toUpperCase()} ${winText(win)}`;
-        pressPreset('all');
-      }
     } else if (canvasDrawn) {
       /* USER SCOPE BEATS DERIVED SCOPE, ALWAYS. A drawn window is a persistent
          workspace: drilling a factor or opening an occurrence scopes WITHIN it
-         and never moves the brace. Reported in the chip slot the peak chip
-         already occupies. */
+         and never moves the brace. Reported in the control row's follow chip. */
       win = { label: 'Window', range: canvasDrawn };
       label = `WINDOW ${winText(win)}`;
       markWindowSegment(`Window ${windowSpanText(canvasDrawn)}`,
@@ -1851,7 +1829,7 @@ function boot(root, data, callbacks, signal) {
     paintReadout(null);          // a redraw ends the old hover
     chart = renderCanvas(el('chart'), window.echarts, {
       envelope, markers, colors, occurrences, stats, window: win.range,
-      windowLabel: label, windowNote: note, trace, onHover: paintReadout,
+      windowLabel: label, trace, onHover: paintReadout,
       selectedOcc, displayWindow: dragDisplayWindow, displayOffset: clockPanOffset,
     });
     const chartNode = el('chart');

@@ -25,12 +25,27 @@ The map-level ledger for this whole workstream is `docs/scope/evidence-canvas.md
   packet `canvas-glass-cockpit-v7.html` renders the operator's real data, lives in
   a perishable session scratchpad, and can never be committed. Any term the build
   must honour is transcribed into the work order. `inline` (work order)
+- **Chart registry at ship = the landed feeds only, with the two mock-only charts
+  filed as follow-on.** Ships: basal clean nights (#143), ISF rest windows (#144),
+  one tile per carb-ratio block (#145), and the existing meals/lows event
+  comparison. "Meal starts · vs target" and "Correction burden" appear in the
+  approved mock but have no endpoint; they become a follow-on issue against the
+  chart-registry seam this build creates. Why: keeps #135 a frontend revision over
+  feeds that already exist, instead of folding new backend projections into an
+  already-large UI order. `→ issue`
+- **Narrow-viewport y-range (#98) = fitted, snapped, shared, with a 60–200 mg/dL
+  envelope.** A glucose-valued evidence chart computes its range from the plotted
+  data, snapped to 20 mg/dL steps, and the range always contains 60–200 mg/dL,
+  expanding outward when data falls beyond it. One computed range is shared by
+  every glucose-valued chart in the current arrangement. Traces become continuous
+  lines joined across gaps; the cohort key moves below the plot as a two-column
+  list at narrow widths. Why: the fixed 40–300 axis is why #98's cohorts were
+  unreadable, and a per-chart range would let two glucose charts in one quad read
+  as comparable on different scales — the quiet misread an advisory tool cannot
+  afford. `inline` (work order)
 
 ## Open questions
 
-- Chart registry: which charts the explorer exposes at ship, and whether the
-  mock's six chart forms are adopted verbatim as prose.
-- #98's narrow-viewport settlement: y-range, trace form, cohort-key density.
 - Interim seating rank source while #139 is blocked behind this ticket.
 
 ## Spawned tasks

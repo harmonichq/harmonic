@@ -52,14 +52,27 @@ interlocking design decisions the operator holds, not missing facts.
   that had one), so nothing needs subtracting for them to be disjoint. Why: the
   general rule subsumes the prototype rather than contradicting it. `inline`
 
+- **The subtraction removes only what this factor claimed** (Q4, A). An
+  occurrence some other factor claimed still counts as an ordinary member of the
+  comparison line. Why: removing every claimed occurrence rebuilds the
+  `Does not meet` residue under a new name. `inline`
+- **Every chart carries at most four drawn series, and the same three cohorts**
+  (Q2, operator's set): occurrences this factor matched; occurrences it nearly
+  matched; occurrences where the starting gun fired but this factor did not
+  match. The fourth series is the user's own selected occurrence trace. Why: one
+  taxonomy across every family is what lets the canvas (#135) render every event
+  tile the same way. `inline`
+- **The standalone comparison route moves to the same contract** (Q3, A):
+  `GET /api/diagnose/event-comparison` and its `meals` / `lows` views are bound
+  by this decision and change with it. Why: it carries the same residue baseline,
+  and leaving it means two comparison vocabularies in one app. `inline`
+
 ## Open questions
 
-Carried from round 1, unanswered: whether the served shape is uniform across
-families; whether the standalone comparison route is bound by the same contract.
-
-Round 2 opened by Q1's answer: what exactly comes out of the comparison
-population -- only the events this factor claimed, or every event some factor
-claimed.
+Round 3: whether the three cohorts partition the population (near-misses out of
+the comparison line); where occurrences too sparse to judge go; the comparison
+identity for `meal bolus fell short`; and whether the missed-meal family's
+announced-meal line occupies the third slot.
 
 ## Spawned tasks
 

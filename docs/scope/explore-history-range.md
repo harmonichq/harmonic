@@ -1,7 +1,8 @@
 # Scope ledger — Explore history-range selection (#138)
 
 Map: #133. Sibling decision tickets: #134 (settled), #136 (settled), #137 (open).
-Canvas lock that consumes this: #135 (triaged, blocked on #188).
+Canvas lock that consumes this: #135 (triaged; its #188 blocker closed —
+verified live 2026-08-25).
 
 ## Grounding (verified live, 2026-08-25)
 
@@ -12,7 +13,10 @@ Canvas lock that consumes this: #135 (triaged, blocked on #188).
 - The sidecar is **exact-match and fixed-coordinate**: a hit requires the Store
   input revision, the complete ResultCache coordinates and the package source
   fingerprint to match. There is no nearest match and no partial-key fallback
-  (ADR 82, `openspec/changes/persist-diagnose-derivations/design.md`).
+  (ADR 82, `openspec/changes/persist-diagnose-derivations/design.md`) — with one
+  deliberate, labeled exception: while an exact key recomputes, the newest
+  prior-revision artifact with identical coordinates and marker may be served
+  carrying its visible age (ADR 124, `derived_artifacts.load_latest_prior`).
 - **No user-facing range control exists today.** Diagnose is fixed at
   `findings_projection.DIAGNOSE_SOURCE_WINDOW_DAYS = 30`;
   `/api/explore/time-of-day` and `/api/explore/exposures` take no window
@@ -94,6 +98,11 @@ Canvas lock that consumes this: #135 (triaged, blocked on #188).
   contract, and it keeps the hold in the backend per the repo's no-frontend-gate
   invariant. Defaulted under the operator's "keep it light" delegation, not
   asked. `-> ADR`
+- **While a stretch recomputes after a pull, Explore serves the prior
+  revision's chart labeled with its age, exactly as Diagnose stale-serves
+  (ADR 124).** Why: defaulted under the same delegation, open to correction —
+  the labeled stale-serve path already exists, Explore is advice-free, and
+  waiting instead would need a new per-surface hold. `-> ADR`
 
 ## Open questions
 
@@ -110,7 +119,8 @@ Canvas lock that consumes this: #135 (triaged, blocked on #188).
   withdrawn as new keying machinery on a false premise).
 - The interface shape and the risk contract were defaulted, not asked, under
   the operator's "keep it light" delegation: range parameter on the chart feeds
-  only, backend-enforced 90-day cap, no range parameter on advice endpoints.
+  only, backend-enforced 90-day cap, no range parameter on advice endpoints,
+  and recompute-in-progress served as ADR 124 labeled stale rather than a wait.
 - Nothing remains open. The interview is complete.
 
 ## Spawned tasks

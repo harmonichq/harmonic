@@ -141,6 +141,27 @@ test('accepts the two-cohort fixed-axis missed-meal comparison', () => {
   assert.equal(validFindingCaseFile(caseFile), true);
 });
 
+test('accepts structurally valid server-owned support classifications', () => {
+  const caseFile = missedMealCase();
+  const missed = caseFile.projection.cohorts[0];
+  const point = missed.points.find((candidate) => candidate.n === 1);
+  missed.support = 'supported';
+  point.support = 'limited';
+  point.p25 = 119;
+  point.median = 120;
+  point.p75 = 121;
+  assert.equal(validFindingCaseFile(caseFile), true);
+});
+
+test('rejects support values outside the server contract enum', () => {
+  const cohortCase = missedMealCase();
+  cohortCase.projection.cohorts[0].support = 'plausible';
+  assert.equal(validFindingCaseFile(cohortCase), false);
+  const pointCase = missedMealCase();
+  pointCase.projection.cohorts[0].points[0].support = 'plausible';
+  assert.equal(validFindingCaseFile(pointCase), false);
+});
+
 test('rejects missed-meal aggregate points that exceed their usable cohort', () => {
   const caseFile = missedMealCase();
   caseFile.projection.cohorts[0].usable_count = 0;

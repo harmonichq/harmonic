@@ -43,10 +43,15 @@ The map-level ledger for this whole workstream is `docs/scope/evidence-canvas.md
   unreadable, and a per-chart range would let two glucose charts in one quad read
   as comparable on different scales — the quiet misread an advisory tool cannot
   afford. `inline` (work order)
+- **Seating rank source = the existing server-side findings priority order.** The
+  app seats the chart belonging to the top-ranked finding in the current slice,
+  into unpinned positions only. Why: that ranking already drives the findings
+  queue, so seating agrees with what the queue is telling the user, and #139 then
+  re-prices how rank is explained rather than what rank is. `inline` (work order)
 
 ## Open questions
 
-- Interim seating rank source while #139 is blocked behind this ticket.
+(none open)
 
 ## Spawned tasks
 

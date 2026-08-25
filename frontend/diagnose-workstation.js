@@ -48,7 +48,7 @@ import { watchDockView, paintWatchDock } from './watched-change-dock.js';
    from this module too; the cycle is safe because neither side calls the
    other's import at module-evaluation time, only from inside functions run
    later, after both modules have finished loading. */
-import { renderEventSurface, validEventProjection } from './diagnose-event-comparison.js';
+import { renderEventSurface } from './diagnose-event-comparison.js';
 
 /* VERBATIM from the mock's shared harness chrome. The ported chartColors() calls it, and
    it must read the live stylesheet rather than any restated token (R3). */
@@ -590,26 +590,20 @@ function renderCaseRoster(host, caseFile, verdict, selectedId, onSelect, onMore,
   }
 }
 
-/* The missed-meal comparison is two server-published cohorts, not a High
-   verdict roster. Announced members remain opaque until selection requests
-   their server-owned detail and trace. */
-function renderMissedMealComparisonRoster(host, caseFile, selectedId, onSelect, onMore, shownCount) {
+/* Event comparison is its own served population. Members remain opaque until
+   selection requests their server-owned detail and trace. */
+function renderEventComparisonRoster(host, caseFile, selectedId, onSelect, onMore, shownCount) {
   const { cohorts = [], counts = {} } = caseFile.projection;
-  const missedRows = new Map(caseFile.occurrences.map((row) => [row.id, {
-    ...row, anchor: row.comparison_anchor,
-  }]));
-  host.insertAdjacentHTML('beforeend', `<div class="lvl-cap">Meal comparison
-    <span class="meta">${counts.missed} attributed missed · ${counts.announced} announced
-      · ${counts.not_comparable} not comparable</span></div>`);
+  const roster = new Map(caseFile.occurrences.map((row) => [row.id, row]));
+  host.insertAdjacentHTML('beforeend', `<div class="lvl-cap">Response comparison
+    <span class="meta">${counts.matched} matched · ${counts.nearly_matched} nearly matched
+      · ${counts.comparison} comparison · ${counts.not_comparable} not comparable</span></div>`);
   for (const cohort of cohorts) {
-    const label = cohort.key === 'missed' ? 'Attributed missed meals' : 'Announced meals';
-    const rows = cohort.occurrence_ids.map((id, index) => cohort.key === 'missed'
-      ? missedRows.get(id) : { id, index });
-    host.insertAdjacentHTML('beforeend', `<div class="ev-group"><b>${label}</b>
-      <span class="n">· ${cohort.routed_count} meal${cohort.routed_count === 1 ? '' : 's'}</span></div>`);
+    const rows = cohort.occurrence_ids.map((id, index) => roster.get(id) || { id, index });
+    host.insertAdjacentHTML('beforeend', `<div class="ev-group"><b>${cohort.name}</b>
+      <span class="n">· ${cohort.routed_count} occurrence${cohort.routed_count === 1 ? '' : 's'}</span></div>`);
     if (cohort.routed_count === 0) {
-      host.insertAdjacentHTML('beforeend', `<div class="empty">No ${cohort.key === 'missed'
-        ? 'attributed missed meals' : 'announced meals'} in this window.</div>`);
+      host.insertAdjacentHTML('beforeend', '<div class="empty">No occurrences in this population.</div>');
       continue;
     }
     for (const row of rows.slice(0, shownCount)) {
@@ -619,12 +613,12 @@ function renderMissedMealComparisonRoster(host, caseFile, selectedId, onSelect, 
       button.dataset.comparisonCohort = cohort.key;
       button.setAttribute('aria-pressed', String(row.id === selectedId));
       const when = row.anchor ? `${fmtDate(row.date)} · ${row.anchor.t.slice(11, 16)}`
-        : `Announced meal ${row.index + 1}`;
+        : `${cohort.name} ${row.index + 1}`;
       const detail = row.anchor
         ? `${row.anchor.bg == null ? '—' : Math.round(row.anchor.bg)} · ${row.anchor.label}`
-        : "Select to see this meal's glucose trace";
+        : 'Select to see this occurrence’s glucose trace';
       button.innerHTML = `<span class="when">${when}</span><span class="only">${detail}</span>
-        <span class="tier">${cohort.key === 'missed' ? 'Attributed missed meal' : 'Announced meal'}</span>`;
+        <span class="tier">${cohort.name}</span>`;
       button.addEventListener('click', () => onSelect(row.id));
       host.append(button);
     }
@@ -646,16 +640,15 @@ function renderCaseSelection(host, caseFile, onDay) {
   }
   if (selection.state !== 'selected') return;
   const detail = selection.detail;
-  const comparison = caseFile.finding.lever === 'missed_meal'
-    && caseFile.projection.alignment === 'event';
+  const comparison = caseFile.projection.alignment === 'event';
   const rows = comparison
     ? (caseFile.projection.cohorts.find((cohort) => cohort.key === detail.comparison_cohort)
       ?.occurrence_ids.map((id) => ({ id })) || [])
     : caseFile.occurrences.filter((row) => row.verdict === detail.verdict);
   const at = rows.findIndex((row) => row.id === detail.id);
-  const verdictLabel = detail.comparison_cohort === 'announced' ? 'Announced meal'
-    : detail.comparison_cohort === 'missed' ? 'Attributed missed meal' : VERDICT_BAND_KEY[detail.verdict]
-    || VERDICT_RESIDUE_KEY[detail.verdict] || detail.verdict;
+  const verdictLabel = comparison
+    ? caseFile.projection.cohorts.find((cohort) => cohort.key === detail.comparison_cohort)?.name
+    : VERDICT_BAND_KEY[detail.verdict] || VERDICT_RESIDUE_KEY[detail.verdict] || detail.verdict;
   const box = document.createElement('div'); box.className = 'inner occ-detail';
   box.innerHTML = `<div class="occ-head"><span class="when">${fmtDate(detail.date)} · ${detail.anchor.t.slice(11, 16)}</span>
     <span class="tag">${verdictLabel}</span>${at >= 0 && rows.length > 1
@@ -2331,14 +2324,13 @@ function boot(root, data, callbacks, signal) {
     }
     const caseFile = f.caseFile;
     renderCaseHead(host, caseFile, lane, pickCell, icBlocks, pickBlock);
-    const missedMealComparison = caseFile.finding.lever === 'missed_meal'
-      && caseFile.projection.alignment === 'event';
-    if (missedMealComparison) {
+    const eventComparison = caseFile.projection.alignment === 'event';
+    if (eventComparison) {
       /* The attribution header's verdict accounting and the meal comparison
          describe different server-owned populations. Keep both visible, but
          do not turn this comparison into a verdict-filtered roster. */
       renderVerdictBand(host, caseFile, caseFile.family, null);
-      renderMissedMealComparisonRoster(host, caseFile, f.selectedId, selectOcc,
+      renderEventComparisonRoster(host, caseFile, f.selectedId, selectOcc,
         () => { shownRows = shownRows > EVIDENCE_CAP ? EVIDENCE_CAP : Infinity; paint(); },
         shownRows);
     } else {
@@ -2762,9 +2754,8 @@ function boot(root, data, callbacks, signal) {
     if (f.k !== 'factor' || !f.selectedId
       || (ev.key !== 'ArrowUp' && ev.key !== 'ArrowDown')) return;
     if (ev.target instanceof Element && ev.target.closest('#ec-chart')) return;
-    const missedMealComparison = f.caseFile.finding.lever === 'missed_meal'
-      && f.caseFile.projection.alignment === 'event';
-    const siblings = missedMealComparison
+    const eventComparison = f.caseFile.projection.alignment === 'event';
+    const siblings = eventComparison
       ? (f.caseFile.projection.cohorts.find((cohort) => cohort.key
         === f.caseFile.selection.detail?.comparison_cohort)?.occurrence_ids.map((id) => ({ id })) || [])
       : f.caseFile.occurrences.filter((row) => row.verdict === (f.bandVerdict || 'fired'));

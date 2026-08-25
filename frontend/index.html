@@ -2342,7 +2342,6 @@ html.dark .viz .tie:hover::before { opacity:.13; }
       fetchVerifyTrials as dataFetchVerifyTrials,
       fetchExploreTimeOfDay as dataFetchExploreTimeOfDay,
       fetchExploreExposures as dataFetchExploreExposures,
-      fetchDiagnoseEventComparison as dataFetchDiagnoseEventComparison,
       fetchDiagnoseFindings as dataFetchDiagnoseFindings,
       fetchDiagnoseCarbRatioHistoryEvents as dataFetchDiagnoseCarbRatioHistoryEvents,
       fetchDiagnoseFindingCasePreparation as dataFetchDiagnoseFindingCasePreparation,
@@ -2413,7 +2412,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
     } from '/assets/diagnose-workspaces.js';
     // #654: the Diagnose surface is the locked mock's own module, ported. The
     // #636 surface it replaces predates the behaviour contract.
-    import { createDiagnoseEventComparison } from '/assets/diagnose-event-comparison.js';
+    import { createDiagnoseWorkstation } from '/assets/diagnose-workstation.js';
 
     // #660: the ported Verify workstation (locked mock + frozen ledger).
     import { createVerifyWorkstation } from '/assets/verify-workstation.js';
@@ -5444,7 +5443,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         // for the success path, unchanged.
         function diagnoseEnsureView() {
           if (!diagnoseRoot.value) return null;
-          if (!diagnoseView) diagnoseView = createDiagnoseEventComparison({ root: diagnoseRoot.value,
+          if (!diagnoseView) diagnoseView = createDiagnoseWorkstation({ root: diagnoseRoot.value,
             callbacks: { stage: diagnoseStage, isStaged: diagnoseIsStaged,
               day: (occurrence) => goToMoment(occurrence.t || occurrence.anchor?.t,
                 occurrence.text || occurrence.anchor?.label,
@@ -5458,10 +5457,6 @@ html.dark .viz .tie:hover::before { opacity:.13; }
               // drilled depth, drawn window and staged Plan items), not a full
               // refresh() that remounts the whole surface back to opening depth.
               onDayLoaded: () => diagnoseView?.repaintDay(),
-              loadProjection: (coordinates) => enqueue(() =>
-                dataFetchDiagnoseEventComparison(coordinates).then((payload) => {
-                  return recordDiagnoseAge(diagnoseAges.value, 'event_comparison', payload);
-                })),
               // #735: a pressed preset and a drawn brace both ask the server for
               // that window's rows (lock terms 37/40) — the frontend re-scopes
               // nothing itself.

@@ -15,10 +15,9 @@
    shipped 42px moved the panes, both pane headers and every number in them 6px
    down the moment the reader switched from Glucose to Meals. */
 .ec-surface {
-  --ec-fired: var(--mk-primary);
-  --ec-near: var(--mk-warn);
-  --ec-neutral: var(--mk-muted);
-  --ec-other: var(--mk-accent);
+  --ec-matched: var(--mk-primary);
+  --ec-nearly-matched: var(--mk-warn);
+  --ec-comparison: var(--mk-accent);
   --ec-focus: var(--mk-text);
   height: 100%;
   display: grid;
@@ -148,12 +147,12 @@
   border-left: 1px solid currentColor;
 }
 
-.ec-key-item[data-cohort="fired"] .ec-key-mark { color: var(--ec-fired); }
-.ec-key-item[data-cohort="near_rule"] .ec-key-mark { color: var(--ec-near); }
-.ec-key-item[data-cohort="near_rule"] .ec-key-mark::before { border-top-style: dashed; }
-.ec-key-item[data-cohort="neutral"] .ec-key-mark::before { border-top-style: dotted; }
-.ec-key-item[data-cohort="another_factor"] .ec-key-mark { color: var(--ec-other); }
-.ec-key-item[data-cohort="another_factor"] .ec-key-mark::before { border-top-style: dashed; }
+.ec-key-item[data-cohort="matched"] .ec-key-mark { color: var(--ec-matched); }
+.ec-key-item[data-cohort="nearly_matched"] .ec-key-mark { color: var(--ec-nearly-matched); }
+.ec-key-item[data-cohort="nearly_matched"] .ec-key-mark::before { border-top-style: dashed; }
+.ec-key-item[data-cohort="comparison"] .ec-key-mark { color: var(--ec-comparison); }
+.ec-key-item[data-cohort="comparison"] .ec-key-mark::before { border-top-style: dotted; }
+.ec-comparison-unavailable { grid-column: 1 / -1; color: var(--mk-muted); }
 
 .ec-key-item[data-support="limited"] .ec-key-mark::before {
   border-top-width: 1px;

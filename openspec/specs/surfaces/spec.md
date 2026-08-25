@@ -50,11 +50,11 @@ stale and offers one explicit Retry instead of clearing or mixing evidence.
 
 Diagnose loads the server-owned case-file preparation and renders its exact rows.
 Opening any visible behavioral Finding, changing its clock window or alignment,
-or selecting an Occurrence sends the retained `projection_id` and opaque
-coordinates to the case-file endpoint. The Inspector renders the returned header,
-authoritative counts, full roster, 12-bucket clock, five event cohorts, selection,
-and selected trace without mapping titles to Exposure families, joining a second
-population, recounting cohorts, or falling back from event to clock alignment.
+or selecting an Occurrence sends the preparation identity and opaque coordinates to
+the case-file endpoint. The Inspector renders the returned header, verdict account,
+full roster, 12-bucket clock or three server-named event cohorts, comparison state,
+selection, and selected trace without mapping titles to Exposure families, joining a
+second population, recounting cohorts, or falling back from event to clock alignment.
 
 An active failed request preserves the last internally consistent queue,
 Inspector, and canvas while showing the structured error. On `stale_projection`,

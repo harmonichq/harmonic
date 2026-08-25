@@ -61,6 +61,22 @@ The map-level ledger for this whole workstream is `docs/scope/evidence-canvas.md
   explicit pin outranks any recommendation, and without this rule a finding
   seating more charts than there are free positions has no defined behavior.
   `inline` (work order)
+- **Explore is entered from a two-position control in the canvas head**
+  (Findings | Explore). Why: the mode stays legible in a still frame, which the
+  drill-provenance requirement needs, and a mode change never becomes a side
+  effect of browsing the drawer. Cheap to re-litigate later. `inline` (work order)
+- **Global ALIGN is retired by this work.** The ticket's per-chart axis toggle
+  ("never a global mode") replaces it, so `renderAlign`, the `seg-align` control
+  and the single `align-canvas` host come out and the retirement is recorded as a
+  permanent behavior-ledger entry, in the manner of P44. `inline` (work order)
+- **Narrow viewport gets the cheapest correct thing and nothing more.** The tile
+  field linearizes at the shipped breakpoint by CSS alone — strip on top, then
+  focal, then each pinned chart in pin order, one per row, vertically scrolled —
+  with pin state, the layout miniature, fullscreen and the drawer unchanged. No
+  narrow-specific tuning beyond what #98's settled y-range, trace-form and
+  cohort-key rules already give. Why: operator ruling — mobile-first behavior is a
+  separate epic once the UI has settled, and option A is pure CSS where the
+  alternatives need new JS state. `inline` (work order)
 
 ## Open questions
 

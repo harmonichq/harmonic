@@ -361,3 +361,19 @@ def rebuild_ic_history(value):
             or any(not isinstance(series, list) for series in value["series"].values())):
         raise ValueError("invalid I:C history artifact")
     return IcHistoryEventProjection(_catalog=tuple(value["catalog"]), _series={k: tuple(v) for k, v in value["series"].items()})
+
+
+def dump_ic_block_evidence(value):
+    return {"blocks": list(value._blocks), "series": value._series}
+
+
+def rebuild_ic_block_evidence(value):
+    from .ic_block_evidence import IcBlockEvidenceProjection
+    if (not isinstance(value, dict) or not isinstance(value.get("blocks"), list)
+            or not isinstance(value.get("series"), dict)
+            or any(not isinstance(series, list) for series in value["series"].values())):
+        raise ValueError("invalid I:C block evidence artifact")
+    return IcBlockEvidenceProjection(
+        _blocks=tuple(value["blocks"]),
+        _series={int(key): tuple(rows) for key, rows in value["series"].items()},
+    )

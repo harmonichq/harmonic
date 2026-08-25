@@ -50,14 +50,16 @@ from .ic_history_events import (
     UnknownHistoryRunId,
     prepare_ic_history_events,
 )
+from .ic_block_evidence import UnknownIcBlockId, prepare_ic_block_evidence
 from .window_membership import WindowQuery
 from .result import SCHEMA_VERSION
 from .result_cache import ResultCache
 from .derived_artifacts import (
     discard_artifact, dump_event_comparison, dump_findings, dump_ic_history,
-    FixedResult, InputRevisionChanged, is_sidecar_rebuilt,
+    dump_ic_block_evidence, FixedResult, InputRevisionChanged, is_sidecar_rebuilt,
     load_latest_prior, load_or_compute,
     rebuild_event_comparison, rebuild_findings, rebuild_ic_history,
+    rebuild_ic_block_evidence,
 )
 from .store import Store
 
@@ -279,6 +281,26 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         generation, result = cache.stable_read(
             key, build_snapshot, validate=current_fixed_result)
         return generation, result.value
+
+    def ic_block_evidence_preparation():
+        """One current I:C meal-run preparation per cache generation."""
+        key = ("ic-block-evidence-preparation",)
+        def compute(store):
+            analysis, _exposures, _scenarios = findings_products(
+                findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS,
+            )
+            return prepare_ic_block_evidence(store, analysis)
+        return fixed(key, "ic-block-evidence-v1", compute,
+                     dump=dump_ic_block_evidence,
+                     rebuild=rebuild_ic_block_evidence,
+                     serve_stale=False)
+
+    def ic_block_evidence_snapshot():
+        """Publish one current-block preparation with its matching generation."""
+        return cache.stable_read(
+            ("ic-block-evidence-snapshot",), ic_block_evidence_preparation,
+            validate=current_fixed_result,
+        )
 
     def _case_error(status, code, message):
         return JSONResponse(
@@ -795,6 +817,40 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             raise HTTPException(status_code=404, detail={
                 "code": "history_not_found",
                 "message": "Past-setting evidence was not found.",
+            }) from error
+        except ResultCache.GenerationChanged as error:
+            raise HTTPException(status_code=409, detail={
+                "code": "analysis_generation_mismatch",
+                "message": "Evidence changed. Refresh findings.",
+            }) from error
+
+    @app.get("/api/diagnose/carb-ratio-block-evidence")
+    def diagnose_ic_block_evidence_endpoint(
+        block_id: Optional[str] = None,
+        analysis_generation: Optional[str] = None,
+        _: None = Depends(require_token),
+    ) -> dict:
+        """Exact current-block meal-run roster and analyzer-bounded CGM series."""
+        if block_id is None or not block_id.isdecimal():
+            raise HTTPException(status_code=400, detail={
+                "code": "invalid_block_id", "message": "block_id must be a decimal minute"})
+        if analysis_generation is None:
+            raise HTTPException(status_code=400, detail={
+                "code": "analysis_generation_required",
+                "message": "analysis_generation is required"})
+        try:
+            generation, result = ic_block_evidence_snapshot()
+            if analysis_generation != generation:
+                raise HTTPException(status_code=409, detail={
+                    "code": "analysis_generation_mismatch",
+                    "message": "Evidence changed. Refresh findings.",
+                })
+            return fixed_response(result, lambda prepared: prepared.project(
+                int(block_id), analysis_generation=generation,
+            ))
+        except UnknownIcBlockId as error:
+            raise HTTPException(status_code=404, detail={
+                "code": "block_not_found", "message": "Current I:C block was not found.",
             }) from error
         except ResultCache.GenerationChanged as error:
             raise HTTPException(status_code=409, detail={
@@ -1426,6 +1482,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             ("explore-time-of-day", explore_time_of_day_endpoint),
             # Exposures consumes this payload; only coordinate projections stay lazy.
             ("event-comparison-source-catalog", event_comparison_preparation),
+            ("ic-block-evidence-preparation", ic_block_evidence_preparation),
             ("finding-case-file", lambda: finding_case_file_preparation(
                 Request({"type": "http", "query_string": b""}))),
         )

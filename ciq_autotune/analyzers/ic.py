@@ -2561,6 +2561,7 @@ def _analyze_ic_blocks_shared(
                     "prior_action_status": m.prior_action_status,
                 })
         for r in inside:
+            duration = (r.end_t - r.t).total_seconds() / 60.0
             run_rows.append({
                 "run_id": r.t.isoformat(), "t": r.t.isoformat(),
                 "end_t": r.end_t.isoformat(), "n_meals": r.n_meals,
@@ -2569,6 +2570,15 @@ def _analyze_ic_blocks_shared(
                 "bg_outcome_u": r.bg_outcome_u,
                 "directional_only": r.directional_only,
                 "in_pool": id(r) in pool_ids,
+                # The current-block evidence canvas consumes these analyzer-owned
+                # display facts verbatim.  Keep them beside the closed ledger so
+                # no projection has to reconstruct its member chain or horizon.
+                "member_offsets_min": [
+                    (meal.t - r.t).total_seconds() / 60.0 for meal in r.meals
+                ],
+                "cgm_start_min": -float(cfg.bg0_max_gap_min),
+                "cgm_end_min": duration + cfg.post_meal_min,
+                "outcome_min": duration + cfg.outcome_at_min,
             })
 
         block = IcBlock(

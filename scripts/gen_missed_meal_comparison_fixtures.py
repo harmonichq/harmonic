@@ -14,7 +14,7 @@ sys.path.insert(0, str(ROOT))
 
 from ciq_autotune.analyzers.scenario.levers import Exposure, Lever  # noqa: E402
 from ciq_autotune.analyzers.scenario.opportunities import Opportunity  # noqa: E402
-from ciq_autotune.events import BolusEvent, CgmReading  # noqa: E402
+from ciq_autotune.events import BolusEvent, CarbEntry, CgmReading  # noqa: E402
 from ciq_autotune.finding_case_file import Member, PreparedCases  # noqa: E402
 from ciq_autotune.window_membership import WindowQuery  # noqa: E402
 
@@ -46,7 +46,9 @@ def payload():
         {lever: frozenset({members[0].id}) if lever is Lever.MISSED_MEAL else frozenset()
          for lever in Lever},
         {lever: () for lever in Lever}, frozenset(), cgm, (),
-        (announced, cancelled, zero_insulin), (), time.monotonic() + 60,
+        (announced, cancelled, zero_insulin),
+        (CarbEntry(fired.reach_start + timedelta(minutes=10), 15, "exact", "manual"),),
+        time.monotonic() + 60,
     )
     case = prepared.case("finding:missed_meal", "event", None)
     announced_id = case["projection"]["cohorts"][1]["occurrence_ids"][0]
@@ -54,7 +56,11 @@ def payload():
         "_generated_by": "scripts/gen_missed_meal_comparison_fixtures.py",
         "_note": "SYNTHETIC. Fixed invented Highs and boluses; no personal data.",
         "payload": case,
+        "selected_missed": prepared.case("finding:missed_meal", "event", members[0].id),
         "selected_announced": prepared.case("finding:missed_meal", "event", announced_id),
+        "clock_after_announced": prepared.case(
+            "finding:missed_meal", "clock", announced_id,
+        ),
     }
 
 

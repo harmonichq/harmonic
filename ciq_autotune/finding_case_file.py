@@ -120,32 +120,45 @@ class PreparedCases:
             else _event(lever, roster, claimed_ids, self.cgm, self.bolus,
                         self.source_window_days, self.basal)
         )
+        active_ids = {
+            occurrence_id
+            for cohort in projection["cohorts"]
+            for occurrence_id in cohort["occurrence_ids"]
+        } if alignment == "event" else {
+            member.id for member in roster
+        }
         selection = {"state": "none", "requested_id": None, "detail": None}
         if occ is not None:
             selected = next((member for member in roster if member.id == occ), None)
             selection = {"state": "unavailable", "requested_id": occ, "detail": None}
-            if selected is not None and not (lever is Lever.MISSED_MEAL and alignment == "event"
-                                             and selected.id not in claimed_ids):
+            if selected is not None and selected.id in active_ids:
                 selection = {"state": "selected", "requested_id": occ,
-                             "detail": (_missed_detail(selected, self.cgm, self.basal, self.bolus)
+                             "detail": (_missed_detail(
+                                 selected, self.cgm, self.basal, self.bolus, self.carbs,
+                             )
                                         if lever is Lever.MISSED_MEAL and alignment == "event" else _detail(
                                             selected, lever, self.cgm, self.basal,
                                             self.bolus, self.carbs,
                                         ))}
-            elif lever is Lever.MISSED_MEAL:
+            elif lever is Lever.MISSED_MEAL and alignment == "event" and occ in active_ids:
                 announced = next((row for row in _completed_carb_boluses(
                     self.bolus, self.cgm, self.basal, self.source_window_days,
                 ) if _opaque("m_", row.seq_num) == occ), None)
                 if announced is not None:
                     selection = {"state": "selected", "requested_id": occ,
                                  "detail": _announced_detail(announced, self.cgm, self.bolus)}
+        occurrences = (
+            [_missed_occurrence(member, member.id in claimed_ids, self.cgm)
+             for member in roster]
+            if lever is Lever.MISSED_MEAL else [_occurrence(member) for member in roster]
+        )
         return {
             "schema": CASE_SCHEMA, "projection_id": self.projection_id,
             "finding": {"id": finding_id, "lever": lever.value, "title": title(lever)},
             "window": self.query.to_dict(), "family": exposure(lever).value,
             "summary": {"claimed": len(claimed_ids), "denominator": len(roster),
                         "noun": _noun(exposure(lever))},
-            "verdict_counts": counts, "occurrences": [_occurrence(member) for member in roster],
+            "verdict_counts": counts, "occurrences": occurrences,
             "projection": projection, "selection": selection,
         }
 
@@ -379,6 +392,22 @@ def _occurrence(member):
                        "bg": member.opportunity.anchor_bg}, "verdict": member.verdict}
 
 
+def _rise_onset_anchor(member, cgm):
+    onset = member.opportunity.reach_start or member.opportunity.anchor_t
+    reading = next((row for row in cgm if row.t == onset and row.bg is not None), None)
+    if reading is None:
+        raise InconsistentProjection("missing rise-onset EGV")
+    return {"t": onset.strftime(FMT), "kind": "detected_rise_onset",
+            "label": "Detected rise onset", "bg": reading.bg}
+
+
+def _missed_occurrence(member, attributed, cgm):
+    return _occurrence(member) | {
+        "attributed": attributed,
+        "comparison_anchor": _rise_onset_anchor(member, cgm) if attributed else None,
+    }
+
+
 def _clock(roster, claimed_ids):
     buckets = [{"start_min": i * 120, "end_min": (i + 1) * 120, "n": 0,
                 "occurrence_ids": []} for i in range(12)]
@@ -477,28 +506,36 @@ def _missed_meal_comparison(roster, claimed_ids, cgm, bolus, basal=(), source_wi
             "anchor": {"kind": "cohort_specific_meal_start", "label": "Meal start"},
             "window_min": list(_MISSED_MEAL_COMPARISON_WINDOW), "cohorts": cohorts,
             "counts": {"missed": len(missed), "announced": len(announced),
-                       "not_comparable": len(roster) - len(missed)},
-            "attributed_occurrence_ids": [member.id for member in missed], "clock": None}
+                       "not_comparable": len(roster) - len(missed)}, "clock": None}
 
 
-def _missed_detail(member, cgm, basal, bolus):
+def _detail_markers(anchor, lo, hi, basal, bolus, carbs):
+    markers = [{"kind": "bolus", "t": row.t.strftime(FMT),
+                "minute": round((row.t - anchor).total_seconds() / 60, 1),
+                "seq_num": row.seq_num, "insulin": row.insulin, "carbs": row.carbs}
+               for row in bolus if lo <= row.t <= hi]
+    markers.extend({"kind": "rescue_carb", "t": row.t.strftime(FMT),
+                    "minute": round((row.t - anchor).total_seconds() / 60, 1),
+                    "grams": row.grams, "certainty": row.certainty}
+                   for row in carbs if lo <= row.t <= hi)
+    markers.extend({
+        "kind": "suspend", "t": row.t.strftime(FMT),
+        "minute": round((row.t - anchor).total_seconds() / 60, 1),
+        "delivery_type": row.delivery_type, "basal_rate": row.basal_rate,
+        "profile_basal_rate": row.profile_basal_rate,
+    } for row in basal if lo <= row.t <= hi and row.basal_rate == 0)
+    return markers
+
+
+def _missed_detail(member, cgm, basal, bolus, carbs):
     anchor = member.opportunity.reach_start or member.opportunity.anchor_t
+    lo = anchor + timedelta(minutes=_MISSED_MEAL_COMPARISON_WINDOW[0])
+    hi = anchor + timedelta(minutes=_MISSED_MEAL_COMPARISON_WINDOW[1])
     trace = _comparison_trace(member.id, anchor, cgm)["trace"]["cgm"]
     return {"id": member.id, "date": anchor.date().isoformat(),
-            "anchor": {"t": anchor.strftime(FMT), "kind": "detected_rise_onset",
-                       "label": "Detected rise onset", "bg": member.opportunity.anchor_bg},
+            "anchor": _rise_onset_anchor(member, cgm),
             "verdict": member.verdict, "comparison_cohort": "missed", "glucose": trace,
-            "markers": ([{"kind": "bolus", "t": dose.t.strftime(FMT),
-                         "minute": round((dose.t - anchor).total_seconds() / 60, 1),
-                         "seq_num": dose.seq_num, "insulin": dose.insulin, "carbs": dose.carbs}
-                        for dose in bolus if anchor - timedelta(minutes=60) <= dose.t
-                        <= anchor + timedelta(minutes=300)] + [{
-                            "kind": "suspend", "t": row.t.strftime(FMT),
-                            "minute": round((row.t - anchor).total_seconds() / 60, 1),
-                            "delivery_type": row.delivery_type, "basal_rate": row.basal_rate,
-                            "profile_basal_rate": row.profile_basal_rate,
-                        } for row in basal if anchor - timedelta(minutes=60) <= row.t
-                        <= anchor + timedelta(minutes=300) and row.basal_rate == 0]),
+            "markers": _detail_markers(anchor, lo, hi, basal, bolus, carbs),
             "source_corrections": [], "day_target": {"date": anchor.date().isoformat()}}
 
 
@@ -543,22 +580,7 @@ def _event(lever, roster, claimed_ids, cgm, bolus, source_window_days, basal=())
 def _detail(member, lever, cgm, basal, bolus, carbs):
     lo, hi = _trace_bounds(member, lever)
     anchor = member.opportunity.anchor_t
-    markers = [{"kind": "bolus", "t": row.t.strftime(FMT),
-                "minute": round((row.t - anchor).total_seconds() / 60, 1),
-                "seq_num": row.seq_num, "insulin": row.insulin, "carbs": row.carbs}
-               for row in bolus if lo <= row.t <= hi]
-    markers.extend({"kind": "rescue_carb", "t": row.t.strftime(FMT),
-                    "minute": round((row.t - anchor).total_seconds() / 60, 1),
-                    "grams": row.grams, "certainty": row.certainty}
-                   for row in carbs if lo <= row.t <= hi)
-    markers.extend({
-        "kind": "suspend",
-        "t": row.t.strftime(FMT),
-        "minute": round((row.t - anchor).total_seconds() / 60, 1),
-        "delivery_type": row.delivery_type,
-        "basal_rate": row.basal_rate,
-        "profile_basal_rate": row.profile_basal_rate,
-    } for row in basal if lo <= row.t <= hi and row.basal_rate == 0)
+    markers = _detail_markers(anchor, lo, hi, basal, bolus, carbs)
     source = ([{"seq_num": row.seq_num, "t": row.t.strftime(FMT),
                 "insulin": row.insulin} for row in member.opportunity.members]
               if member.opportunity.family is Exposure.CORRECTION_CLUSTERS else [])

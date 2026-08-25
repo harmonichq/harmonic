@@ -1,6 +1,159 @@
 {
  "_generated_by": "scripts/gen_missed_meal_comparison_fixtures.py",
  "_note": "SYNTHETIC. Fixed invented Highs and boluses; no personal data.",
+ "clock_after_announced": {
+  "family": "highs",
+  "finding": {
+   "id": "finding:missed_meal",
+   "lever": "missed_meal",
+   "title": "Missed / unannounced meal"
+  },
+  "occurrences": [
+   {
+    "anchor": {
+     "bg": 260,
+     "kind": "high",
+     "label": "High peak",
+     "t": "2026-01-03 12:00:00"
+    },
+    "attributed": true,
+    "comparison_anchor": {
+     "bg": 110.0,
+     "kind": "detected_rise_onset",
+     "label": "Detected rise onset",
+     "t": "2026-01-03 11:15:00"
+    },
+    "date": "2026-01-03",
+    "id": "o_866511635510128a8bcffd147b23beaa",
+    "verdict": "fired"
+   },
+   {
+    "anchor": {
+     "bg": 250,
+     "kind": "high",
+     "label": "High peak",
+     "t": "2026-01-03 16:00:00"
+    },
+    "attributed": false,
+    "comparison_anchor": null,
+    "date": "2026-01-03",
+    "id": "o_c3c777ba6aceb41ce56d29ed5527a472",
+    "verdict": "outranked"
+   }
+  ],
+  "projection": {
+   "alignment": "clock",
+   "anchor": null,
+   "clock": {
+    "bucket_hours": 2,
+    "buckets": [
+     {
+      "end_min": 120,
+      "n": 0,
+      "occurrence_ids": [],
+      "start_min": 0
+     },
+     {
+      "end_min": 240,
+      "n": 0,
+      "occurrence_ids": [],
+      "start_min": 120
+     },
+     {
+      "end_min": 360,
+      "n": 0,
+      "occurrence_ids": [],
+      "start_min": 240
+     },
+     {
+      "end_min": 480,
+      "n": 0,
+      "occurrence_ids": [],
+      "start_min": 360
+     },
+     {
+      "end_min": 600,
+      "n": 0,
+      "occurrence_ids": [],
+      "start_min": 480
+     },
+     {
+      "end_min": 720,
+      "n": 0,
+      "occurrence_ids": [],
+      "start_min": 600
+     },
+     {
+      "end_min": 840,
+      "n": 1,
+      "occurrence_ids": [
+       "o_866511635510128a8bcffd147b23beaa"
+      ],
+      "start_min": 720
+     },
+     {
+      "end_min": 960,
+      "n": 0,
+      "occurrence_ids": [],
+      "start_min": 840
+     },
+     {
+      "end_min": 1080,
+      "n": 0,
+      "occurrence_ids": [],
+      "start_min": 960
+     },
+     {
+      "end_min": 1200,
+      "n": 0,
+      "occurrence_ids": [],
+      "start_min": 1080
+     },
+     {
+      "end_min": 1320,
+      "n": 0,
+      "occurrence_ids": [],
+      "start_min": 1200
+     },
+     {
+      "end_min": 1440,
+      "n": 0,
+      "occurrence_ids": [],
+      "start_min": 1320
+     }
+    ],
+    "peak_bucket_index": 6,
+    "total": 1
+   },
+   "cohorts": [],
+   "window_min": null
+  },
+  "projection_id": "fp_11111111111111111111111111111111",
+  "schema": "diagnose-finding-case-file-v1",
+  "selection": {
+   "detail": null,
+   "requested_id": "m_4a44dc15364204a80fe80e9039455cc1",
+   "state": "unavailable"
+  },
+  "summary": {
+   "claimed": 1,
+   "denominator": 2,
+   "noun": "highs"
+  },
+  "verdict_counts": {
+   "clean": 0,
+   "fired": 1,
+   "near_miss": 0,
+   "no_data": 0,
+   "outranked": 1
+  },
+  "window": {
+   "end_min": null,
+   "label": null,
+   "scoped": false,
+   "start_min": null
+  }
+ },
  "payload": {
   "family": "highs",
   "finding": {
@@ -16,6 +169,13 @@
      "label": "High peak",
      "t": "2026-01-03 12:00:00"
     },
+    "attributed": true,
+    "comparison_anchor": {
+     "bg": 110.0,
+     "kind": "detected_rise_onset",
+     "label": "Detected rise onset",
+     "t": "2026-01-03 11:15:00"
+    },
     "date": "2026-01-03",
     "id": "o_866511635510128a8bcffd147b23beaa",
     "verdict": "fired"
@@ -27,6 +187,8 @@
      "label": "High peak",
      "t": "2026-01-03 16:00:00"
     },
+    "attributed": false,
+    "comparison_anchor": null,
     "date": "2026-01-03",
     "id": "o_c3c777ba6aceb41ce56d29ed5527a472",
     "verdict": "outranked"
@@ -38,9 +200,6 @@
     "kind": "cohort_specific_meal_start",
     "label": "Meal start"
    },
-   "attributed_occurrence_ids": [
-    "o_866511635510128a8bcffd147b23beaa"
-   ],
    "clock": null,
    "cohorts": [
     {
@@ -1293,6 +1452,13 @@
      "label": "High peak",
      "t": "2026-01-03 12:00:00"
     },
+    "attributed": true,
+    "comparison_anchor": {
+     "bg": 110.0,
+     "kind": "detected_rise_onset",
+     "label": "Detected rise onset",
+     "t": "2026-01-03 11:15:00"
+    },
     "date": "2026-01-03",
     "id": "o_866511635510128a8bcffd147b23beaa",
     "verdict": "fired"
@@ -1304,6 +1470,8 @@
      "label": "High peak",
      "t": "2026-01-03 16:00:00"
     },
+    "attributed": false,
+    "comparison_anchor": null,
     "date": "2026-01-03",
     "id": "o_c3c777ba6aceb41ce56d29ed5527a472",
     "verdict": "outranked"
@@ -1315,9 +1483,6 @@
     "kind": "cohort_specific_meal_start",
     "label": "Meal start"
    },
-   "attributed_occurrence_ids": [
-    "o_866511635510128a8bcffd147b23beaa"
-   ],
    "clock": null,
    "cohorts": [
     {
@@ -2604,6 +2769,1345 @@
     "verdict": "announced"
    },
    "requested_id": "m_4a44dc15364204a80fe80e9039455cc1",
+   "state": "selected"
+  },
+  "summary": {
+   "claimed": 1,
+   "denominator": 2,
+   "noun": "highs"
+  },
+  "verdict_counts": {
+   "clean": 0,
+   "fired": 1,
+   "near_miss": 0,
+   "no_data": 0,
+   "outranked": 1
+  },
+  "window": {
+   "end_min": null,
+   "label": null,
+   "scoped": false,
+   "start_min": null
+  }
+ },
+ "selected_missed": {
+  "family": "highs",
+  "finding": {
+   "id": "finding:missed_meal",
+   "lever": "missed_meal",
+   "title": "Missed / unannounced meal"
+  },
+  "occurrences": [
+   {
+    "anchor": {
+     "bg": 260,
+     "kind": "high",
+     "label": "High peak",
+     "t": "2026-01-03 12:00:00"
+    },
+    "attributed": true,
+    "comparison_anchor": {
+     "bg": 110.0,
+     "kind": "detected_rise_onset",
+     "label": "Detected rise onset",
+     "t": "2026-01-03 11:15:00"
+    },
+    "date": "2026-01-03",
+    "id": "o_866511635510128a8bcffd147b23beaa",
+    "verdict": "fired"
+   },
+   {
+    "anchor": {
+     "bg": 250,
+     "kind": "high",
+     "label": "High peak",
+     "t": "2026-01-03 16:00:00"
+    },
+    "attributed": false,
+    "comparison_anchor": null,
+    "date": "2026-01-03",
+    "id": "o_c3c777ba6aceb41ce56d29ed5527a472",
+    "verdict": "outranked"
+   }
+  ],
+  "projection": {
+   "alignment": "event",
+   "anchor": {
+    "kind": "cohort_specific_meal_start",
+    "label": "Meal start"
+   },
+   "clock": null,
+   "cohorts": [
+    {
+     "anchor": {
+      "kind": "detected_rise_onset",
+      "label": "Detected rise onset"
+     },
+     "key": "missed",
+     "occurrence_ids": [
+      "o_866511635510128a8bcffd147b23beaa"
+     ],
+     "points": [
+      {
+       "median": null,
+       "minute": -60,
+       "n": 1,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -55,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -50,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -45,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -40,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -35,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -30,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -25,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -20,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -15,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -10,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -5,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 0,
+       "n": 1,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 5,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 10,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 15,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 20,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 25,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 30,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 35,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 40,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 45,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 50,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 55,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 60,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 65,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 70,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 75,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 80,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 85,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 90,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 95,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 100,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 105,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 110,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 115,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 120,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 125,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 130,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 135,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 140,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 145,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 150,
+       "n": 1,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 155,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 160,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 165,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 170,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 175,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 180,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 185,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 190,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 195,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 200,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 205,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 210,
+       "n": 1,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 215,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 220,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 225,
+       "n": 1,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 230,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 235,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 240,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 245,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 250,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 255,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 260,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 265,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 270,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 275,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 280,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 285,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 290,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 295,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 300,
+       "n": 1,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      }
+     ],
+     "routed_count": 1,
+     "support": "withheld",
+     "usable_count": 1
+    },
+    {
+     "anchor": {
+      "kind": "completed_carb_bolus",
+      "label": "Completed carb bolus"
+     },
+     "key": "announced",
+     "occurrence_ids": [
+      "m_4a44dc15364204a80fe80e9039455cc1"
+     ],
+     "points": [
+      {
+       "median": null,
+       "minute": -60,
+       "n": 1,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -55,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -50,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -45,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -40,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -35,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -30,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -25,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -20,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -15,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -10,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -5,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 0,
+       "n": 1,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 5,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 10,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 15,
+       "n": 1,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 20,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 25,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 30,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 35,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 40,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 45,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 50,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 55,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 60,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 65,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 70,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 75,
+       "n": 1,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 80,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 85,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 90,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 95,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 100,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 105,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 110,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 115,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 120,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 125,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 130,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 135,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 140,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 145,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 150,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 155,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 160,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 165,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 170,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 175,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 180,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 185,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 190,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 195,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 200,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 205,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 210,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 215,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 220,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 225,
+       "n": 1,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 230,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 235,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 240,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 245,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 250,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 255,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 260,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 265,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 270,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 275,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 280,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 285,
+       "n": 1,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 290,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 295,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 300,
+       "n": 1,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      }
+     ],
+     "routed_count": 1,
+     "support": "withheld",
+     "usable_count": 1
+    }
+   ],
+   "counts": {
+    "announced": 1,
+    "missed": 1,
+    "not_comparable": 1
+   },
+   "window_min": [
+    -60,
+    300
+   ]
+  },
+  "projection_id": "fp_11111111111111111111111111111111",
+  "schema": "diagnose-finding-case-file-v1",
+  "selection": {
+   "detail": {
+    "anchor": {
+     "bg": 110.0,
+     "kind": "detected_rise_onset",
+     "label": "Detected rise onset",
+     "t": "2026-01-03 11:15:00"
+    },
+    "comparison_cohort": "missed",
+    "date": "2026-01-03",
+    "day_target": {
+     "date": "2026-01-03"
+    },
+    "glucose": [
+     {
+      "bg": 104.0,
+      "minute": -60.0,
+      "t": "2026-01-03 10:15:00"
+     },
+     {
+      "bg": 110.0,
+      "minute": 0.0,
+      "t": "2026-01-03 11:15:00"
+     },
+     {
+      "bg": 140.0,
+      "minute": 300.0,
+      "t": "2026-01-03 16:15:00"
+     },
+     {
+      "bg": 104.0,
+      "minute": 150.0,
+      "t": "2026-01-03 13:45:00"
+     },
+     {
+      "bg": 110.0,
+      "minute": 210.0,
+      "t": "2026-01-03 14:45:00"
+     },
+     {
+      "bg": 140.0,
+      "minute": 225.0,
+      "t": "2026-01-03 15:00:00"
+     }
+    ],
+    "id": "o_866511635510128a8bcffd147b23beaa",
+    "markers": [
+     {
+      "certainty": "exact",
+      "grams": 15,
+      "kind": "rescue_carb",
+      "minute": 10.0,
+      "t": "2026-01-03 11:25:00"
+     }
+    ],
+    "source_corrections": [],
+    "verdict": "fired"
+   },
+   "requested_id": "o_866511635510128a8bcffd147b23beaa",
    "state": "selected"
   },
   "summary": {

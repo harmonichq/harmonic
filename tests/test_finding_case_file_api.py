@@ -774,6 +774,64 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
             "missed": 4, "announced": 4, "not_comparable": 0,
         })
 
+    def test_published_announced_meal_selects_by_event_and_clears_on_clock(self):
+        cgm = []
+        bolus = []
+        for day in range(1, 5):
+            cgm.extend(_ramp(day, 15, 0, 130, 2.2, 100))
+            cgm.extend(_ramp(day, 8, 0, 120, 0.3, 90))
+            bolus.append((100 + day, datetime(2026, 6, day, 8), 8.0, 40.0))
+
+        with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
+            _seed_events(database.name, cgm, bolus)
+            with TestClient(create_app(
+                    db_path=database.name, token=None, enable_fetch_loop=False)) as client:
+                prepared = client.get("/api/diagnose/finding-case-file-preparation").json()
+                coordinates = {
+                    "projection_id": prepared["projection_id"],
+                    "finding_id": "finding:missed_meal",
+                }
+                event = client.get("/api/diagnose/finding-case-file", params={
+                    **coordinates, "alignment": "event",
+                })
+                self.assertEqual(event.status_code, 200, event.text)
+                event_case = event.json()
+                announced_id = event_case["projection"]["cohorts"][1]["occurrence_ids"][0]
+
+                selected_announced = client.get("/api/diagnose/finding-case-file", params={
+                    **coordinates, "alignment": "event", "occ": announced_id,
+                })
+                self.assertEqual(selected_announced.status_code, 200, selected_announced.text)
+                self.assertEqual(selected_announced.json()["selection"]["state"], "selected")
+                self.assertEqual(
+                    selected_announced.json()["selection"]["detail"]["comparison_cohort"],
+                    "announced",
+                )
+
+                carried_to_clock = client.get("/api/diagnose/finding-case-file", params={
+                    **coordinates, "alignment": "clock", "occ": announced_id,
+                })
+                self.assertEqual(carried_to_clock.status_code, 200, carried_to_clock.text)
+                self.assertEqual(carried_to_clock.json()["selection"], {
+                    "state": "unavailable", "requested_id": announced_id, "detail": None,
+                })
+
+                missed_id = event_case["projection"]["cohorts"][0]["occurrence_ids"][0]
+                selected_missed = client.get("/api/diagnose/finding-case-file", params={
+                    **coordinates, "alignment": "event", "occ": missed_id,
+                })
+                self.assertEqual(selected_missed.status_code, 200, selected_missed.text)
+                detail = selected_missed.json()["selection"]["detail"]
+                roster_row = next(row for row in event_case["occurrences"]
+                                  if row["id"] == missed_id)
+                self.assertNotEqual(detail["anchor"]["bg"], roster_row["anchor"]["bg"])
+                self.assertEqual(detail["anchor"], roster_row["comparison_anchor"])
+                self.assertEqual(
+                    next(point["bg"] for point in detail["glucose"]
+                         if point["minute"] == 0),
+                    detail["anchor"]["bg"],
+                )
+
     def test_analyzer_built_near_lows_are_withheld_not_relabelled(self):
         readings = [point for day in range(1, 5)
                     for point in _low_rebound(day, nadir=72, rebound=244)]

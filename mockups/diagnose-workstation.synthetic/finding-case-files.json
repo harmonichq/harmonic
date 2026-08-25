@@ -291118,6 +291118,13 @@
        "label": "High peak",
        "t": "2020-03-01 11:00:00"
       },
+      "attributed": true,
+      "comparison_anchor": {
+       "bg": 143.75,
+       "kind": "detected_rise_onset",
+       "label": "Detected rise onset",
+       "t": "2020-03-01 10:30:00"
+      },
       "date": "2020-03-01",
       "id": "o_edb863e2dae2790fa0872e1c050caf40",
       "verdict": "fired"
@@ -291129,6 +291136,8 @@
        "label": "High peak",
        "t": "2020-03-02 14:00:00"
       },
+      "attributed": false,
+      "comparison_anchor": null,
       "date": "2020-03-02",
       "id": "o_f55c5fa197a8f0e2c3f37656d5a1bf87",
       "verdict": "fired"
@@ -291140,6 +291149,8 @@
        "label": "High peak",
        "t": "2020-03-03 17:00:00"
       },
+      "attributed": false,
+      "comparison_anchor": null,
       "date": "2020-03-03",
       "id": "o_32efbc3347c9a0400f37eaf37b1ecc20",
       "verdict": "fired"
@@ -291151,6 +291162,8 @@
        "label": "High peak",
        "t": "2020-03-01 20:00:00"
       },
+      "attributed": false,
+      "comparison_anchor": null,
       "date": "2020-03-01",
       "id": "o_1357958ae48611acd456506b49f7ad14",
       "verdict": "fired"
@@ -291162,6 +291175,8 @@
        "label": "High peak",
        "t": "2020-03-02 23:00:00"
       },
+      "attributed": false,
+      "comparison_anchor": null,
       "date": "2020-03-02",
       "id": "o_c2a8e01bfd94c057a87563d74e4e0385",
       "verdict": "fired"
@@ -291173,6 +291188,8 @@
        "label": "High peak",
        "t": "2020-03-04 02:00:00"
       },
+      "attributed": false,
+      "comparison_anchor": null,
       "date": "2020-03-04",
       "id": "o_d32c89cd72b2df9969d6412b778ccc5e",
       "verdict": "fired"
@@ -291184,6 +291201,8 @@
        "label": "High peak",
        "t": "2020-03-02 05:00:00"
       },
+      "attributed": false,
+      "comparison_anchor": null,
       "date": "2020-03-02",
       "id": "o_08aa77aeb5bb90ea2bc774905c3221f6",
       "verdict": "outranked"
@@ -291195,6 +291214,8 @@
        "label": "High peak",
        "t": "2020-03-03 08:00:00"
       },
+      "attributed": false,
+      "comparison_anchor": null,
       "date": "2020-03-03",
       "id": "o_d57f8a2a275eb373dda2fd7276167274",
       "verdict": "near_miss"
@@ -291206,6 +291227,8 @@
        "label": "High peak",
        "t": "2020-03-04 11:00:00"
       },
+      "attributed": false,
+      "comparison_anchor": null,
       "date": "2020-03-04",
       "id": "o_1c15d79173df9678539e56be3f9414c7",
       "verdict": "no_data"
@@ -291217,6 +291240,8 @@
        "label": "High peak",
        "t": "2020-03-02 14:01:00"
       },
+      "attributed": false,
+      "comparison_anchor": null,
       "date": "2020-03-02",
       "id": "o_5b1b0187114ecc6b4814197f66a91cb1",
       "verdict": "clean"
@@ -291350,6 +291375,13 @@
        "label": "High peak",
        "t": "2020-03-01 11:00:00"
       },
+      "attributed": true,
+      "comparison_anchor": {
+       "bg": 143.75,
+       "kind": "detected_rise_onset",
+       "label": "Detected rise onset",
+       "t": "2020-03-01 10:30:00"
+      },
       "date": "2020-03-01",
       "id": "o_edb863e2dae2790fa0872e1c050caf40",
       "verdict": "fired"
@@ -291361,6 +291393,8 @@
        "label": "High peak",
        "t": "2020-03-02 14:00:00"
       },
+      "attributed": false,
+      "comparison_anchor": null,
       "date": "2020-03-02",
       "id": "o_f55c5fa197a8f0e2c3f37656d5a1bf87",
       "verdict": "fired"
@@ -291372,6 +291406,8 @@
        "label": "High peak",
        "t": "2020-03-03 17:00:00"
       },
+      "attributed": false,
+      "comparison_anchor": null,
       "date": "2020-03-03",
       "id": "o_32efbc3347c9a0400f37eaf37b1ecc20",
       "verdict": "fired"
@@ -291383,6 +291419,8 @@
        "label": "High peak",
        "t": "2020-03-01 20:00:00"
       },
+      "attributed": false,
+      "comparison_anchor": null,
       "date": "2020-03-01",
       "id": "o_1357958ae48611acd456506b49f7ad14",
       "verdict": "fired"
@@ -291394,6 +291432,8 @@
        "label": "High peak",
        "t": "2020-03-02 23:00:00"
       },
+      "attributed": false,
+      "comparison_anchor": null,
       "date": "2020-03-02",
       "id": "o_c2a8e01bfd94c057a87563d74e4e0385",
       "verdict": "fired"
@@ -291405,6 +291445,8 @@
        "label": "High peak",
        "t": "2020-03-04 02:00:00"
       },
+      "attributed": false,
+      "comparison_anchor": null,
       "date": "2020-03-04",
       "id": "o_d32c89cd72b2df9969d6412b778ccc5e",
       "verdict": "fired"
@@ -291416,6 +291458,8 @@
        "label": "High peak",
        "t": "2020-03-02 05:00:00"
       },
+      "attributed": false,
+      "comparison_anchor": null,
       "date": "2020-03-02",
       "id": "o_08aa77aeb5bb90ea2bc774905c3221f6",
       "verdict": "outranked"
@@ -291427,6 +291471,8 @@
        "label": "High peak",
        "t": "2020-03-03 08:00:00"
       },
+      "attributed": false,
+      "comparison_anchor": null,
       "date": "2020-03-03",
       "id": "o_d57f8a2a275eb373dda2fd7276167274",
       "verdict": "near_miss"
@@ -291438,6 +291484,8 @@
        "label": "High peak",
        "t": "2020-03-04 11:00:00"
       },
+      "attributed": false,
+      "comparison_anchor": null,
       "date": "2020-03-04",
       "id": "o_1c15d79173df9678539e56be3f9414c7",
       "verdict": "no_data"
@@ -291449,6 +291497,8 @@
        "label": "High peak",
        "t": "2020-03-02 14:01:00"
       },
+      "attributed": false,
+      "comparison_anchor": null,
       "date": "2020-03-02",
       "id": "o_5b1b0187114ecc6b4814197f66a91cb1",
       "verdict": "clean"
@@ -291460,9 +291510,6 @@
       "kind": "cohort_specific_meal_start",
       "label": "Meal start"
      },
-     "attributed_occurrence_ids": [
-      "o_edb863e2dae2790fa0872e1c050caf40"
-     ],
      "clock": null,
      "cohorts": [
       {
@@ -292725,6 +292772,13 @@
         "label": "High peak",
         "t": "2020-03-01 11:00:00"
        },
+       "attributed": true,
+       "comparison_anchor": {
+        "bg": 143.75,
+        "kind": "detected_rise_onset",
+        "label": "Detected rise onset",
+        "t": "2020-03-01 10:30:00"
+       },
        "date": "2020-03-01",
        "id": "o_edb863e2dae2790fa0872e1c050caf40",
        "verdict": "fired"
@@ -292736,6 +292790,8 @@
         "label": "High peak",
         "t": "2020-03-02 14:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_f55c5fa197a8f0e2c3f37656d5a1bf87",
        "verdict": "fired"
@@ -292747,6 +292803,8 @@
         "label": "High peak",
         "t": "2020-03-03 17:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-03",
        "id": "o_32efbc3347c9a0400f37eaf37b1ecc20",
        "verdict": "fired"
@@ -292758,6 +292816,8 @@
         "label": "High peak",
         "t": "2020-03-01 20:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-01",
        "id": "o_1357958ae48611acd456506b49f7ad14",
        "verdict": "fired"
@@ -292769,6 +292829,8 @@
         "label": "High peak",
         "t": "2020-03-02 23:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_c2a8e01bfd94c057a87563d74e4e0385",
        "verdict": "fired"
@@ -292780,6 +292842,8 @@
         "label": "High peak",
         "t": "2020-03-04 02:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-04",
        "id": "o_d32c89cd72b2df9969d6412b778ccc5e",
        "verdict": "fired"
@@ -292791,6 +292855,8 @@
         "label": "High peak",
         "t": "2020-03-02 05:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_08aa77aeb5bb90ea2bc774905c3221f6",
        "verdict": "outranked"
@@ -292802,6 +292868,8 @@
         "label": "High peak",
         "t": "2020-03-03 08:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-03",
        "id": "o_d57f8a2a275eb373dda2fd7276167274",
        "verdict": "near_miss"
@@ -292813,6 +292881,8 @@
         "label": "High peak",
         "t": "2020-03-04 11:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-04",
        "id": "o_1c15d79173df9678539e56be3f9414c7",
        "verdict": "no_data"
@@ -292824,6 +292894,8 @@
         "label": "High peak",
         "t": "2020-03-02 14:01:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_5b1b0187114ecc6b4814197f66a91cb1",
        "verdict": "clean"
@@ -293154,6 +293226,13 @@
         "label": "High peak",
         "t": "2020-03-01 11:00:00"
        },
+       "attributed": true,
+       "comparison_anchor": {
+        "bg": 143.75,
+        "kind": "detected_rise_onset",
+        "label": "Detected rise onset",
+        "t": "2020-03-01 10:30:00"
+       },
        "date": "2020-03-01",
        "id": "o_edb863e2dae2790fa0872e1c050caf40",
        "verdict": "fired"
@@ -293165,6 +293244,8 @@
         "label": "High peak",
         "t": "2020-03-02 14:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_f55c5fa197a8f0e2c3f37656d5a1bf87",
        "verdict": "fired"
@@ -293176,6 +293257,8 @@
         "label": "High peak",
         "t": "2020-03-03 17:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-03",
        "id": "o_32efbc3347c9a0400f37eaf37b1ecc20",
        "verdict": "fired"
@@ -293187,6 +293270,8 @@
         "label": "High peak",
         "t": "2020-03-01 20:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-01",
        "id": "o_1357958ae48611acd456506b49f7ad14",
        "verdict": "fired"
@@ -293198,6 +293283,8 @@
         "label": "High peak",
         "t": "2020-03-02 23:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_c2a8e01bfd94c057a87563d74e4e0385",
        "verdict": "fired"
@@ -293209,6 +293296,8 @@
         "label": "High peak",
         "t": "2020-03-04 02:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-04",
        "id": "o_d32c89cd72b2df9969d6412b778ccc5e",
        "verdict": "fired"
@@ -293220,6 +293309,8 @@
         "label": "High peak",
         "t": "2020-03-02 05:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_08aa77aeb5bb90ea2bc774905c3221f6",
        "verdict": "outranked"
@@ -293231,6 +293322,8 @@
         "label": "High peak",
         "t": "2020-03-03 08:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-03",
        "id": "o_d57f8a2a275eb373dda2fd7276167274",
        "verdict": "near_miss"
@@ -293242,6 +293335,8 @@
         "label": "High peak",
         "t": "2020-03-04 11:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-04",
        "id": "o_1c15d79173df9678539e56be3f9414c7",
        "verdict": "no_data"
@@ -293253,6 +293348,8 @@
         "label": "High peak",
         "t": "2020-03-02 14:01:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_5b1b0187114ecc6b4814197f66a91cb1",
        "verdict": "clean"
@@ -293583,6 +293680,13 @@
         "label": "High peak",
         "t": "2020-03-01 11:00:00"
        },
+       "attributed": true,
+       "comparison_anchor": {
+        "bg": 143.75,
+        "kind": "detected_rise_onset",
+        "label": "Detected rise onset",
+        "t": "2020-03-01 10:30:00"
+       },
        "date": "2020-03-01",
        "id": "o_edb863e2dae2790fa0872e1c050caf40",
        "verdict": "fired"
@@ -293594,6 +293698,8 @@
         "label": "High peak",
         "t": "2020-03-02 14:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_f55c5fa197a8f0e2c3f37656d5a1bf87",
        "verdict": "fired"
@@ -293605,6 +293711,8 @@
         "label": "High peak",
         "t": "2020-03-03 17:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-03",
        "id": "o_32efbc3347c9a0400f37eaf37b1ecc20",
        "verdict": "fired"
@@ -293616,6 +293724,8 @@
         "label": "High peak",
         "t": "2020-03-01 20:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-01",
        "id": "o_1357958ae48611acd456506b49f7ad14",
        "verdict": "fired"
@@ -293627,6 +293737,8 @@
         "label": "High peak",
         "t": "2020-03-02 23:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_c2a8e01bfd94c057a87563d74e4e0385",
        "verdict": "fired"
@@ -293638,6 +293750,8 @@
         "label": "High peak",
         "t": "2020-03-04 02:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-04",
        "id": "o_d32c89cd72b2df9969d6412b778ccc5e",
        "verdict": "fired"
@@ -293649,6 +293763,8 @@
         "label": "High peak",
         "t": "2020-03-02 05:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_08aa77aeb5bb90ea2bc774905c3221f6",
        "verdict": "outranked"
@@ -293660,6 +293776,8 @@
         "label": "High peak",
         "t": "2020-03-03 08:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-03",
        "id": "o_d57f8a2a275eb373dda2fd7276167274",
        "verdict": "near_miss"
@@ -293671,6 +293789,8 @@
         "label": "High peak",
         "t": "2020-03-04 11:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-04",
        "id": "o_1c15d79173df9678539e56be3f9414c7",
        "verdict": "no_data"
@@ -293682,6 +293802,8 @@
         "label": "High peak",
         "t": "2020-03-02 14:01:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_5b1b0187114ecc6b4814197f66a91cb1",
        "verdict": "clean"
@@ -294012,6 +294134,13 @@
         "label": "High peak",
         "t": "2020-03-01 11:00:00"
        },
+       "attributed": true,
+       "comparison_anchor": {
+        "bg": 143.75,
+        "kind": "detected_rise_onset",
+        "label": "Detected rise onset",
+        "t": "2020-03-01 10:30:00"
+       },
        "date": "2020-03-01",
        "id": "o_edb863e2dae2790fa0872e1c050caf40",
        "verdict": "fired"
@@ -294023,6 +294152,8 @@
         "label": "High peak",
         "t": "2020-03-02 14:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_f55c5fa197a8f0e2c3f37656d5a1bf87",
        "verdict": "fired"
@@ -294034,6 +294165,8 @@
         "label": "High peak",
         "t": "2020-03-03 17:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-03",
        "id": "o_32efbc3347c9a0400f37eaf37b1ecc20",
        "verdict": "fired"
@@ -294045,6 +294178,8 @@
         "label": "High peak",
         "t": "2020-03-01 20:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-01",
        "id": "o_1357958ae48611acd456506b49f7ad14",
        "verdict": "fired"
@@ -294056,6 +294191,8 @@
         "label": "High peak",
         "t": "2020-03-02 23:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_c2a8e01bfd94c057a87563d74e4e0385",
        "verdict": "fired"
@@ -294067,6 +294204,8 @@
         "label": "High peak",
         "t": "2020-03-04 02:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-04",
        "id": "o_d32c89cd72b2df9969d6412b778ccc5e",
        "verdict": "fired"
@@ -294078,6 +294217,8 @@
         "label": "High peak",
         "t": "2020-03-02 05:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_08aa77aeb5bb90ea2bc774905c3221f6",
        "verdict": "outranked"
@@ -294089,6 +294230,8 @@
         "label": "High peak",
         "t": "2020-03-03 08:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-03",
        "id": "o_d57f8a2a275eb373dda2fd7276167274",
        "verdict": "near_miss"
@@ -294100,6 +294243,8 @@
         "label": "High peak",
         "t": "2020-03-04 11:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-04",
        "id": "o_1c15d79173df9678539e56be3f9414c7",
        "verdict": "no_data"
@@ -294111,6 +294256,8 @@
         "label": "High peak",
         "t": "2020-03-02 14:01:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_5b1b0187114ecc6b4814197f66a91cb1",
        "verdict": "clean"
@@ -294441,6 +294588,13 @@
         "label": "High peak",
         "t": "2020-03-01 11:00:00"
        },
+       "attributed": true,
+       "comparison_anchor": {
+        "bg": 143.75,
+        "kind": "detected_rise_onset",
+        "label": "Detected rise onset",
+        "t": "2020-03-01 10:30:00"
+       },
        "date": "2020-03-01",
        "id": "o_edb863e2dae2790fa0872e1c050caf40",
        "verdict": "fired"
@@ -294452,6 +294606,8 @@
         "label": "High peak",
         "t": "2020-03-02 14:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_f55c5fa197a8f0e2c3f37656d5a1bf87",
        "verdict": "fired"
@@ -294463,6 +294619,8 @@
         "label": "High peak",
         "t": "2020-03-03 17:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-03",
        "id": "o_32efbc3347c9a0400f37eaf37b1ecc20",
        "verdict": "fired"
@@ -294474,6 +294632,8 @@
         "label": "High peak",
         "t": "2020-03-01 20:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-01",
        "id": "o_1357958ae48611acd456506b49f7ad14",
        "verdict": "fired"
@@ -294485,6 +294645,8 @@
         "label": "High peak",
         "t": "2020-03-02 23:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_c2a8e01bfd94c057a87563d74e4e0385",
        "verdict": "fired"
@@ -294496,6 +294658,8 @@
         "label": "High peak",
         "t": "2020-03-04 02:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-04",
        "id": "o_d32c89cd72b2df9969d6412b778ccc5e",
        "verdict": "fired"
@@ -294507,6 +294671,8 @@
         "label": "High peak",
         "t": "2020-03-02 05:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_08aa77aeb5bb90ea2bc774905c3221f6",
        "verdict": "outranked"
@@ -294518,6 +294684,8 @@
         "label": "High peak",
         "t": "2020-03-03 08:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-03",
        "id": "o_d57f8a2a275eb373dda2fd7276167274",
        "verdict": "near_miss"
@@ -294529,6 +294697,8 @@
         "label": "High peak",
         "t": "2020-03-04 11:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-04",
        "id": "o_1c15d79173df9678539e56be3f9414c7",
        "verdict": "no_data"
@@ -294540,6 +294710,8 @@
         "label": "High peak",
         "t": "2020-03-02 14:01:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_5b1b0187114ecc6b4814197f66a91cb1",
        "verdict": "clean"
@@ -295003,6 +295175,13 @@
         "label": "High peak",
         "t": "2020-03-01 11:00:00"
        },
+       "attributed": true,
+       "comparison_anchor": {
+        "bg": 143.75,
+        "kind": "detected_rise_onset",
+        "label": "Detected rise onset",
+        "t": "2020-03-01 10:30:00"
+       },
        "date": "2020-03-01",
        "id": "o_edb863e2dae2790fa0872e1c050caf40",
        "verdict": "fired"
@@ -295014,6 +295193,8 @@
         "label": "High peak",
         "t": "2020-03-02 14:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_f55c5fa197a8f0e2c3f37656d5a1bf87",
        "verdict": "fired"
@@ -295025,6 +295206,8 @@
         "label": "High peak",
         "t": "2020-03-03 17:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-03",
        "id": "o_32efbc3347c9a0400f37eaf37b1ecc20",
        "verdict": "fired"
@@ -295036,6 +295219,8 @@
         "label": "High peak",
         "t": "2020-03-01 20:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-01",
        "id": "o_1357958ae48611acd456506b49f7ad14",
        "verdict": "fired"
@@ -295047,6 +295232,8 @@
         "label": "High peak",
         "t": "2020-03-02 23:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_c2a8e01bfd94c057a87563d74e4e0385",
        "verdict": "fired"
@@ -295058,6 +295245,8 @@
         "label": "High peak",
         "t": "2020-03-04 02:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-04",
        "id": "o_d32c89cd72b2df9969d6412b778ccc5e",
        "verdict": "fired"
@@ -295069,6 +295258,8 @@
         "label": "High peak",
         "t": "2020-03-02 05:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_08aa77aeb5bb90ea2bc774905c3221f6",
        "verdict": "outranked"
@@ -295080,6 +295271,8 @@
         "label": "High peak",
         "t": "2020-03-03 08:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-03",
        "id": "o_d57f8a2a275eb373dda2fd7276167274",
        "verdict": "near_miss"
@@ -295091,6 +295284,8 @@
         "label": "High peak",
         "t": "2020-03-04 11:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-04",
        "id": "o_1c15d79173df9678539e56be3f9414c7",
        "verdict": "no_data"
@@ -295102,6 +295297,8 @@
         "label": "High peak",
         "t": "2020-03-02 14:01:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_5b1b0187114ecc6b4814197f66a91cb1",
        "verdict": "clean"
@@ -295432,6 +295629,13 @@
         "label": "High peak",
         "t": "2020-03-01 11:00:00"
        },
+       "attributed": true,
+       "comparison_anchor": {
+        "bg": 143.75,
+        "kind": "detected_rise_onset",
+        "label": "Detected rise onset",
+        "t": "2020-03-01 10:30:00"
+       },
        "date": "2020-03-01",
        "id": "o_edb863e2dae2790fa0872e1c050caf40",
        "verdict": "fired"
@@ -295443,6 +295647,8 @@
         "label": "High peak",
         "t": "2020-03-02 14:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_f55c5fa197a8f0e2c3f37656d5a1bf87",
        "verdict": "fired"
@@ -295454,6 +295660,8 @@
         "label": "High peak",
         "t": "2020-03-03 17:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-03",
        "id": "o_32efbc3347c9a0400f37eaf37b1ecc20",
        "verdict": "fired"
@@ -295465,6 +295673,8 @@
         "label": "High peak",
         "t": "2020-03-01 20:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-01",
        "id": "o_1357958ae48611acd456506b49f7ad14",
        "verdict": "fired"
@@ -295476,6 +295686,8 @@
         "label": "High peak",
         "t": "2020-03-02 23:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_c2a8e01bfd94c057a87563d74e4e0385",
        "verdict": "fired"
@@ -295487,6 +295699,8 @@
         "label": "High peak",
         "t": "2020-03-04 02:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-04",
        "id": "o_d32c89cd72b2df9969d6412b778ccc5e",
        "verdict": "fired"
@@ -295498,6 +295712,8 @@
         "label": "High peak",
         "t": "2020-03-02 05:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_08aa77aeb5bb90ea2bc774905c3221f6",
        "verdict": "outranked"
@@ -295509,6 +295725,8 @@
         "label": "High peak",
         "t": "2020-03-03 08:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-03",
        "id": "o_d57f8a2a275eb373dda2fd7276167274",
        "verdict": "near_miss"
@@ -295520,6 +295738,8 @@
         "label": "High peak",
         "t": "2020-03-04 11:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-04",
        "id": "o_1c15d79173df9678539e56be3f9414c7",
        "verdict": "no_data"
@@ -295531,6 +295751,8 @@
         "label": "High peak",
         "t": "2020-03-02 14:01:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_5b1b0187114ecc6b4814197f66a91cb1",
        "verdict": "clean"
@@ -295861,6 +296083,13 @@
         "label": "High peak",
         "t": "2020-03-01 11:00:00"
        },
+       "attributed": true,
+       "comparison_anchor": {
+        "bg": 143.75,
+        "kind": "detected_rise_onset",
+        "label": "Detected rise onset",
+        "t": "2020-03-01 10:30:00"
+       },
        "date": "2020-03-01",
        "id": "o_edb863e2dae2790fa0872e1c050caf40",
        "verdict": "fired"
@@ -295872,6 +296101,8 @@
         "label": "High peak",
         "t": "2020-03-02 14:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_f55c5fa197a8f0e2c3f37656d5a1bf87",
        "verdict": "fired"
@@ -295883,6 +296114,8 @@
         "label": "High peak",
         "t": "2020-03-03 17:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-03",
        "id": "o_32efbc3347c9a0400f37eaf37b1ecc20",
        "verdict": "fired"
@@ -295894,6 +296127,8 @@
         "label": "High peak",
         "t": "2020-03-01 20:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-01",
        "id": "o_1357958ae48611acd456506b49f7ad14",
        "verdict": "fired"
@@ -295905,6 +296140,8 @@
         "label": "High peak",
         "t": "2020-03-02 23:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_c2a8e01bfd94c057a87563d74e4e0385",
        "verdict": "fired"
@@ -295916,6 +296153,8 @@
         "label": "High peak",
         "t": "2020-03-04 02:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-04",
        "id": "o_d32c89cd72b2df9969d6412b778ccc5e",
        "verdict": "fired"
@@ -295927,6 +296166,8 @@
         "label": "High peak",
         "t": "2020-03-02 05:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_08aa77aeb5bb90ea2bc774905c3221f6",
        "verdict": "outranked"
@@ -295938,6 +296179,8 @@
         "label": "High peak",
         "t": "2020-03-03 08:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-03",
        "id": "o_d57f8a2a275eb373dda2fd7276167274",
        "verdict": "near_miss"
@@ -295949,6 +296192,8 @@
         "label": "High peak",
         "t": "2020-03-04 11:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-04",
        "id": "o_1c15d79173df9678539e56be3f9414c7",
        "verdict": "no_data"
@@ -295960,6 +296205,8 @@
         "label": "High peak",
         "t": "2020-03-02 14:01:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_5b1b0187114ecc6b4814197f66a91cb1",
        "verdict": "clean"
@@ -296290,6 +296537,13 @@
         "label": "High peak",
         "t": "2020-03-01 11:00:00"
        },
+       "attributed": true,
+       "comparison_anchor": {
+        "bg": 143.75,
+        "kind": "detected_rise_onset",
+        "label": "Detected rise onset",
+        "t": "2020-03-01 10:30:00"
+       },
        "date": "2020-03-01",
        "id": "o_edb863e2dae2790fa0872e1c050caf40",
        "verdict": "fired"
@@ -296301,6 +296555,8 @@
         "label": "High peak",
         "t": "2020-03-02 14:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_f55c5fa197a8f0e2c3f37656d5a1bf87",
        "verdict": "fired"
@@ -296312,6 +296568,8 @@
         "label": "High peak",
         "t": "2020-03-03 17:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-03",
        "id": "o_32efbc3347c9a0400f37eaf37b1ecc20",
        "verdict": "fired"
@@ -296323,6 +296581,8 @@
         "label": "High peak",
         "t": "2020-03-01 20:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-01",
        "id": "o_1357958ae48611acd456506b49f7ad14",
        "verdict": "fired"
@@ -296334,6 +296594,8 @@
         "label": "High peak",
         "t": "2020-03-02 23:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_c2a8e01bfd94c057a87563d74e4e0385",
        "verdict": "fired"
@@ -296345,6 +296607,8 @@
         "label": "High peak",
         "t": "2020-03-04 02:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-04",
        "id": "o_d32c89cd72b2df9969d6412b778ccc5e",
        "verdict": "fired"
@@ -296356,6 +296620,8 @@
         "label": "High peak",
         "t": "2020-03-02 05:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_08aa77aeb5bb90ea2bc774905c3221f6",
        "verdict": "outranked"
@@ -296367,6 +296633,8 @@
         "label": "High peak",
         "t": "2020-03-03 08:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-03",
        "id": "o_d57f8a2a275eb373dda2fd7276167274",
        "verdict": "near_miss"
@@ -296378,6 +296646,8 @@
         "label": "High peak",
         "t": "2020-03-04 11:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-04",
        "id": "o_1c15d79173df9678539e56be3f9414c7",
        "verdict": "no_data"
@@ -296389,6 +296659,8 @@
         "label": "High peak",
         "t": "2020-03-02 14:01:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_5b1b0187114ecc6b4814197f66a91cb1",
        "verdict": "clean"
@@ -296719,6 +296991,13 @@
         "label": "High peak",
         "t": "2020-03-01 11:00:00"
        },
+       "attributed": true,
+       "comparison_anchor": {
+        "bg": 143.75,
+        "kind": "detected_rise_onset",
+        "label": "Detected rise onset",
+        "t": "2020-03-01 10:30:00"
+       },
        "date": "2020-03-01",
        "id": "o_edb863e2dae2790fa0872e1c050caf40",
        "verdict": "fired"
@@ -296730,6 +297009,8 @@
         "label": "High peak",
         "t": "2020-03-02 14:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_f55c5fa197a8f0e2c3f37656d5a1bf87",
        "verdict": "fired"
@@ -296741,6 +297022,8 @@
         "label": "High peak",
         "t": "2020-03-03 17:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-03",
        "id": "o_32efbc3347c9a0400f37eaf37b1ecc20",
        "verdict": "fired"
@@ -296752,6 +297035,8 @@
         "label": "High peak",
         "t": "2020-03-01 20:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-01",
        "id": "o_1357958ae48611acd456506b49f7ad14",
        "verdict": "fired"
@@ -296763,6 +297048,8 @@
         "label": "High peak",
         "t": "2020-03-02 23:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_c2a8e01bfd94c057a87563d74e4e0385",
        "verdict": "fired"
@@ -296774,6 +297061,8 @@
         "label": "High peak",
         "t": "2020-03-04 02:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-04",
        "id": "o_d32c89cd72b2df9969d6412b778ccc5e",
        "verdict": "fired"
@@ -296785,6 +297074,8 @@
         "label": "High peak",
         "t": "2020-03-02 05:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_08aa77aeb5bb90ea2bc774905c3221f6",
        "verdict": "outranked"
@@ -296796,6 +297087,8 @@
         "label": "High peak",
         "t": "2020-03-03 08:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-03",
        "id": "o_d57f8a2a275eb373dda2fd7276167274",
        "verdict": "near_miss"
@@ -296807,6 +297100,8 @@
         "label": "High peak",
         "t": "2020-03-04 11:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-04",
        "id": "o_1c15d79173df9678539e56be3f9414c7",
        "verdict": "no_data"
@@ -296818,6 +297113,8 @@
         "label": "High peak",
         "t": "2020-03-02 14:01:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_5b1b0187114ecc6b4814197f66a91cb1",
        "verdict": "clean"
@@ -297319,6 +297616,13 @@
         "label": "High peak",
         "t": "2020-03-01 11:00:00"
        },
+       "attributed": true,
+       "comparison_anchor": {
+        "bg": 143.75,
+        "kind": "detected_rise_onset",
+        "label": "Detected rise onset",
+        "t": "2020-03-01 10:30:00"
+       },
        "date": "2020-03-01",
        "id": "o_edb863e2dae2790fa0872e1c050caf40",
        "verdict": "fired"
@@ -297330,6 +297634,8 @@
         "label": "High peak",
         "t": "2020-03-02 14:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_f55c5fa197a8f0e2c3f37656d5a1bf87",
        "verdict": "fired"
@@ -297341,6 +297647,8 @@
         "label": "High peak",
         "t": "2020-03-03 17:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-03",
        "id": "o_32efbc3347c9a0400f37eaf37b1ecc20",
        "verdict": "fired"
@@ -297352,6 +297660,8 @@
         "label": "High peak",
         "t": "2020-03-01 20:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-01",
        "id": "o_1357958ae48611acd456506b49f7ad14",
        "verdict": "fired"
@@ -297363,6 +297673,8 @@
         "label": "High peak",
         "t": "2020-03-02 23:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_c2a8e01bfd94c057a87563d74e4e0385",
        "verdict": "fired"
@@ -297374,6 +297686,8 @@
         "label": "High peak",
         "t": "2020-03-04 02:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-04",
        "id": "o_d32c89cd72b2df9969d6412b778ccc5e",
        "verdict": "fired"
@@ -297385,6 +297699,8 @@
         "label": "High peak",
         "t": "2020-03-02 05:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_08aa77aeb5bb90ea2bc774905c3221f6",
        "verdict": "outranked"
@@ -297396,6 +297712,8 @@
         "label": "High peak",
         "t": "2020-03-03 08:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-03",
        "id": "o_d57f8a2a275eb373dda2fd7276167274",
        "verdict": "near_miss"
@@ -297407,6 +297725,8 @@
         "label": "High peak",
         "t": "2020-03-04 11:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-04",
        "id": "o_1c15d79173df9678539e56be3f9414c7",
        "verdict": "no_data"
@@ -297418,6 +297738,8 @@
         "label": "High peak",
         "t": "2020-03-02 14:01:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_5b1b0187114ecc6b4814197f66a91cb1",
        "verdict": "clean"
@@ -297429,9 +297751,6 @@
        "kind": "cohort_specific_meal_start",
        "label": "Meal start"
       },
-      "attributed_occurrence_ids": [
-       "o_edb863e2dae2790fa0872e1c050caf40"
-      ],
       "clock": null,
       "cohorts": [
        {
@@ -298693,6 +299012,13 @@
         "label": "High peak",
         "t": "2020-03-01 11:00:00"
        },
+       "attributed": true,
+       "comparison_anchor": {
+        "bg": 143.75,
+        "kind": "detected_rise_onset",
+        "label": "Detected rise onset",
+        "t": "2020-03-01 10:30:00"
+       },
        "date": "2020-03-01",
        "id": "o_edb863e2dae2790fa0872e1c050caf40",
        "verdict": "fired"
@@ -298704,6 +299030,8 @@
         "label": "High peak",
         "t": "2020-03-02 14:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_f55c5fa197a8f0e2c3f37656d5a1bf87",
        "verdict": "fired"
@@ -298715,6 +299043,8 @@
         "label": "High peak",
         "t": "2020-03-03 17:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-03",
        "id": "o_32efbc3347c9a0400f37eaf37b1ecc20",
        "verdict": "fired"
@@ -298726,6 +299056,8 @@
         "label": "High peak",
         "t": "2020-03-01 20:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-01",
        "id": "o_1357958ae48611acd456506b49f7ad14",
        "verdict": "fired"
@@ -298737,6 +299069,8 @@
         "label": "High peak",
         "t": "2020-03-02 23:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_c2a8e01bfd94c057a87563d74e4e0385",
        "verdict": "fired"
@@ -298748,6 +299082,8 @@
         "label": "High peak",
         "t": "2020-03-04 02:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-04",
        "id": "o_d32c89cd72b2df9969d6412b778ccc5e",
        "verdict": "fired"
@@ -298759,6 +299095,8 @@
         "label": "High peak",
         "t": "2020-03-02 05:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_08aa77aeb5bb90ea2bc774905c3221f6",
        "verdict": "outranked"
@@ -298770,6 +299108,8 @@
         "label": "High peak",
         "t": "2020-03-03 08:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-03",
        "id": "o_d57f8a2a275eb373dda2fd7276167274",
        "verdict": "near_miss"
@@ -298781,6 +299121,8 @@
         "label": "High peak",
         "t": "2020-03-04 11:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-04",
        "id": "o_1c15d79173df9678539e56be3f9414c7",
        "verdict": "no_data"
@@ -298792,6 +299134,8 @@
         "label": "High peak",
         "t": "2020-03-02 14:01:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_5b1b0187114ecc6b4814197f66a91cb1",
        "verdict": "clean"
@@ -298803,9 +299147,6 @@
        "kind": "cohort_specific_meal_start",
        "label": "Meal start"
       },
-      "attributed_occurrence_ids": [
-       "o_edb863e2dae2790fa0872e1c050caf40"
-      ],
       "clock": null,
       "cohorts": [
        {
@@ -300067,6 +300408,13 @@
         "label": "High peak",
         "t": "2020-03-01 11:00:00"
        },
+       "attributed": true,
+       "comparison_anchor": {
+        "bg": 143.75,
+        "kind": "detected_rise_onset",
+        "label": "Detected rise onset",
+        "t": "2020-03-01 10:30:00"
+       },
        "date": "2020-03-01",
        "id": "o_edb863e2dae2790fa0872e1c050caf40",
        "verdict": "fired"
@@ -300078,6 +300426,8 @@
         "label": "High peak",
         "t": "2020-03-02 14:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_f55c5fa197a8f0e2c3f37656d5a1bf87",
        "verdict": "fired"
@@ -300089,6 +300439,8 @@
         "label": "High peak",
         "t": "2020-03-03 17:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-03",
        "id": "o_32efbc3347c9a0400f37eaf37b1ecc20",
        "verdict": "fired"
@@ -300100,6 +300452,8 @@
         "label": "High peak",
         "t": "2020-03-01 20:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-01",
        "id": "o_1357958ae48611acd456506b49f7ad14",
        "verdict": "fired"
@@ -300111,6 +300465,8 @@
         "label": "High peak",
         "t": "2020-03-02 23:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_c2a8e01bfd94c057a87563d74e4e0385",
        "verdict": "fired"
@@ -300122,6 +300478,8 @@
         "label": "High peak",
         "t": "2020-03-04 02:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-04",
        "id": "o_d32c89cd72b2df9969d6412b778ccc5e",
        "verdict": "fired"
@@ -300133,6 +300491,8 @@
         "label": "High peak",
         "t": "2020-03-02 05:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_08aa77aeb5bb90ea2bc774905c3221f6",
        "verdict": "outranked"
@@ -300144,6 +300504,8 @@
         "label": "High peak",
         "t": "2020-03-03 08:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-03",
        "id": "o_d57f8a2a275eb373dda2fd7276167274",
        "verdict": "near_miss"
@@ -300155,6 +300517,8 @@
         "label": "High peak",
         "t": "2020-03-04 11:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-04",
        "id": "o_1c15d79173df9678539e56be3f9414c7",
        "verdict": "no_data"
@@ -300166,6 +300530,8 @@
         "label": "High peak",
         "t": "2020-03-02 14:01:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_5b1b0187114ecc6b4814197f66a91cb1",
        "verdict": "clean"
@@ -300177,9 +300543,6 @@
        "kind": "cohort_specific_meal_start",
        "label": "Meal start"
       },
-      "attributed_occurrence_ids": [
-       "o_edb863e2dae2790fa0872e1c050caf40"
-      ],
       "clock": null,
       "cohorts": [
        {
@@ -301441,6 +301804,13 @@
         "label": "High peak",
         "t": "2020-03-01 11:00:00"
        },
+       "attributed": true,
+       "comparison_anchor": {
+        "bg": 143.75,
+        "kind": "detected_rise_onset",
+        "label": "Detected rise onset",
+        "t": "2020-03-01 10:30:00"
+       },
        "date": "2020-03-01",
        "id": "o_edb863e2dae2790fa0872e1c050caf40",
        "verdict": "fired"
@@ -301452,6 +301822,8 @@
         "label": "High peak",
         "t": "2020-03-02 14:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_f55c5fa197a8f0e2c3f37656d5a1bf87",
        "verdict": "fired"
@@ -301463,6 +301835,8 @@
         "label": "High peak",
         "t": "2020-03-03 17:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-03",
        "id": "o_32efbc3347c9a0400f37eaf37b1ecc20",
        "verdict": "fired"
@@ -301474,6 +301848,8 @@
         "label": "High peak",
         "t": "2020-03-01 20:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-01",
        "id": "o_1357958ae48611acd456506b49f7ad14",
        "verdict": "fired"
@@ -301485,6 +301861,8 @@
         "label": "High peak",
         "t": "2020-03-02 23:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_c2a8e01bfd94c057a87563d74e4e0385",
        "verdict": "fired"
@@ -301496,6 +301874,8 @@
         "label": "High peak",
         "t": "2020-03-04 02:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-04",
        "id": "o_d32c89cd72b2df9969d6412b778ccc5e",
        "verdict": "fired"
@@ -301507,6 +301887,8 @@
         "label": "High peak",
         "t": "2020-03-02 05:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_08aa77aeb5bb90ea2bc774905c3221f6",
        "verdict": "outranked"
@@ -301518,6 +301900,8 @@
         "label": "High peak",
         "t": "2020-03-03 08:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-03",
        "id": "o_d57f8a2a275eb373dda2fd7276167274",
        "verdict": "near_miss"
@@ -301529,6 +301913,8 @@
         "label": "High peak",
         "t": "2020-03-04 11:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-04",
        "id": "o_1c15d79173df9678539e56be3f9414c7",
        "verdict": "no_data"
@@ -301540,6 +301926,8 @@
         "label": "High peak",
         "t": "2020-03-02 14:01:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_5b1b0187114ecc6b4814197f66a91cb1",
        "verdict": "clean"
@@ -301551,9 +301939,6 @@
        "kind": "cohort_specific_meal_start",
        "label": "Meal start"
       },
-      "attributed_occurrence_ids": [
-       "o_edb863e2dae2790fa0872e1c050caf40"
-      ],
       "clock": null,
       "cohorts": [
        {
@@ -302815,6 +303200,13 @@
         "label": "High peak",
         "t": "2020-03-01 11:00:00"
        },
+       "attributed": true,
+       "comparison_anchor": {
+        "bg": 143.75,
+        "kind": "detected_rise_onset",
+        "label": "Detected rise onset",
+        "t": "2020-03-01 10:30:00"
+       },
        "date": "2020-03-01",
        "id": "o_edb863e2dae2790fa0872e1c050caf40",
        "verdict": "fired"
@@ -302826,6 +303218,8 @@
         "label": "High peak",
         "t": "2020-03-02 14:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_f55c5fa197a8f0e2c3f37656d5a1bf87",
        "verdict": "fired"
@@ -302837,6 +303231,8 @@
         "label": "High peak",
         "t": "2020-03-03 17:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-03",
        "id": "o_32efbc3347c9a0400f37eaf37b1ecc20",
        "verdict": "fired"
@@ -302848,6 +303244,8 @@
         "label": "High peak",
         "t": "2020-03-01 20:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-01",
        "id": "o_1357958ae48611acd456506b49f7ad14",
        "verdict": "fired"
@@ -302859,6 +303257,8 @@
         "label": "High peak",
         "t": "2020-03-02 23:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_c2a8e01bfd94c057a87563d74e4e0385",
        "verdict": "fired"
@@ -302870,6 +303270,8 @@
         "label": "High peak",
         "t": "2020-03-04 02:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-04",
        "id": "o_d32c89cd72b2df9969d6412b778ccc5e",
        "verdict": "fired"
@@ -302881,6 +303283,8 @@
         "label": "High peak",
         "t": "2020-03-02 05:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_08aa77aeb5bb90ea2bc774905c3221f6",
        "verdict": "outranked"
@@ -302892,6 +303296,8 @@
         "label": "High peak",
         "t": "2020-03-03 08:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-03",
        "id": "o_d57f8a2a275eb373dda2fd7276167274",
        "verdict": "near_miss"
@@ -302903,6 +303309,8 @@
         "label": "High peak",
         "t": "2020-03-04 11:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-04",
        "id": "o_1c15d79173df9678539e56be3f9414c7",
        "verdict": "no_data"
@@ -302914,6 +303322,8 @@
         "label": "High peak",
         "t": "2020-03-02 14:01:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_5b1b0187114ecc6b4814197f66a91cb1",
        "verdict": "clean"
@@ -302925,9 +303335,6 @@
        "kind": "cohort_specific_meal_start",
        "label": "Meal start"
       },
-      "attributed_occurrence_ids": [
-       "o_edb863e2dae2790fa0872e1c050caf40"
-      ],
       "clock": null,
       "cohorts": [
        {
@@ -304189,6 +304596,13 @@
         "label": "High peak",
         "t": "2020-03-01 11:00:00"
        },
+       "attributed": true,
+       "comparison_anchor": {
+        "bg": 143.75,
+        "kind": "detected_rise_onset",
+        "label": "Detected rise onset",
+        "t": "2020-03-01 10:30:00"
+       },
        "date": "2020-03-01",
        "id": "o_edb863e2dae2790fa0872e1c050caf40",
        "verdict": "fired"
@@ -304200,6 +304614,8 @@
         "label": "High peak",
         "t": "2020-03-02 14:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_f55c5fa197a8f0e2c3f37656d5a1bf87",
        "verdict": "fired"
@@ -304211,6 +304627,8 @@
         "label": "High peak",
         "t": "2020-03-03 17:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-03",
        "id": "o_32efbc3347c9a0400f37eaf37b1ecc20",
        "verdict": "fired"
@@ -304222,6 +304640,8 @@
         "label": "High peak",
         "t": "2020-03-01 20:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-01",
        "id": "o_1357958ae48611acd456506b49f7ad14",
        "verdict": "fired"
@@ -304233,6 +304653,8 @@
         "label": "High peak",
         "t": "2020-03-02 23:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_c2a8e01bfd94c057a87563d74e4e0385",
        "verdict": "fired"
@@ -304244,6 +304666,8 @@
         "label": "High peak",
         "t": "2020-03-04 02:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-04",
        "id": "o_d32c89cd72b2df9969d6412b778ccc5e",
        "verdict": "fired"
@@ -304255,6 +304679,8 @@
         "label": "High peak",
         "t": "2020-03-02 05:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_08aa77aeb5bb90ea2bc774905c3221f6",
        "verdict": "outranked"
@@ -304266,6 +304692,8 @@
         "label": "High peak",
         "t": "2020-03-03 08:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-03",
        "id": "o_d57f8a2a275eb373dda2fd7276167274",
        "verdict": "near_miss"
@@ -304277,6 +304705,8 @@
         "label": "High peak",
         "t": "2020-03-04 11:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-04",
        "id": "o_1c15d79173df9678539e56be3f9414c7",
        "verdict": "no_data"
@@ -304288,6 +304718,8 @@
         "label": "High peak",
         "t": "2020-03-02 14:01:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_5b1b0187114ecc6b4814197f66a91cb1",
        "verdict": "clean"
@@ -304299,9 +304731,6 @@
        "kind": "cohort_specific_meal_start",
        "label": "Meal start"
       },
-      "attributed_occurrence_ids": [
-       "o_edb863e2dae2790fa0872e1c050caf40"
-      ],
       "clock": null,
       "cohorts": [
        {
@@ -305563,6 +305992,13 @@
         "label": "High peak",
         "t": "2020-03-01 11:00:00"
        },
+       "attributed": true,
+       "comparison_anchor": {
+        "bg": 143.75,
+        "kind": "detected_rise_onset",
+        "label": "Detected rise onset",
+        "t": "2020-03-01 10:30:00"
+       },
        "date": "2020-03-01",
        "id": "o_edb863e2dae2790fa0872e1c050caf40",
        "verdict": "fired"
@@ -305574,6 +306010,8 @@
         "label": "High peak",
         "t": "2020-03-02 14:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_f55c5fa197a8f0e2c3f37656d5a1bf87",
        "verdict": "fired"
@@ -305585,6 +306023,8 @@
         "label": "High peak",
         "t": "2020-03-03 17:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-03",
        "id": "o_32efbc3347c9a0400f37eaf37b1ecc20",
        "verdict": "fired"
@@ -305596,6 +306036,8 @@
         "label": "High peak",
         "t": "2020-03-01 20:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-01",
        "id": "o_1357958ae48611acd456506b49f7ad14",
        "verdict": "fired"
@@ -305607,6 +306049,8 @@
         "label": "High peak",
         "t": "2020-03-02 23:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_c2a8e01bfd94c057a87563d74e4e0385",
        "verdict": "fired"
@@ -305618,6 +306062,8 @@
         "label": "High peak",
         "t": "2020-03-04 02:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-04",
        "id": "o_d32c89cd72b2df9969d6412b778ccc5e",
        "verdict": "fired"
@@ -305629,6 +306075,8 @@
         "label": "High peak",
         "t": "2020-03-02 05:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_08aa77aeb5bb90ea2bc774905c3221f6",
        "verdict": "outranked"
@@ -305640,6 +306088,8 @@
         "label": "High peak",
         "t": "2020-03-03 08:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-03",
        "id": "o_d57f8a2a275eb373dda2fd7276167274",
        "verdict": "near_miss"
@@ -305651,6 +306101,8 @@
         "label": "High peak",
         "t": "2020-03-04 11:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-04",
        "id": "o_1c15d79173df9678539e56be3f9414c7",
        "verdict": "no_data"
@@ -305662,6 +306114,8 @@
         "label": "High peak",
         "t": "2020-03-02 14:01:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_5b1b0187114ecc6b4814197f66a91cb1",
        "verdict": "clean"
@@ -305673,9 +306127,6 @@
        "kind": "cohort_specific_meal_start",
        "label": "Meal start"
       },
-      "attributed_occurrence_ids": [
-       "o_edb863e2dae2790fa0872e1c050caf40"
-      ],
       "clock": null,
       "cohorts": [
        {
@@ -306937,6 +307388,13 @@
         "label": "High peak",
         "t": "2020-03-01 11:00:00"
        },
+       "attributed": true,
+       "comparison_anchor": {
+        "bg": 143.75,
+        "kind": "detected_rise_onset",
+        "label": "Detected rise onset",
+        "t": "2020-03-01 10:30:00"
+       },
        "date": "2020-03-01",
        "id": "o_edb863e2dae2790fa0872e1c050caf40",
        "verdict": "fired"
@@ -306948,6 +307406,8 @@
         "label": "High peak",
         "t": "2020-03-02 14:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_f55c5fa197a8f0e2c3f37656d5a1bf87",
        "verdict": "fired"
@@ -306959,6 +307419,8 @@
         "label": "High peak",
         "t": "2020-03-03 17:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-03",
        "id": "o_32efbc3347c9a0400f37eaf37b1ecc20",
        "verdict": "fired"
@@ -306970,6 +307432,8 @@
         "label": "High peak",
         "t": "2020-03-01 20:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-01",
        "id": "o_1357958ae48611acd456506b49f7ad14",
        "verdict": "fired"
@@ -306981,6 +307445,8 @@
         "label": "High peak",
         "t": "2020-03-02 23:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_c2a8e01bfd94c057a87563d74e4e0385",
        "verdict": "fired"
@@ -306992,6 +307458,8 @@
         "label": "High peak",
         "t": "2020-03-04 02:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-04",
        "id": "o_d32c89cd72b2df9969d6412b778ccc5e",
        "verdict": "fired"
@@ -307003,6 +307471,8 @@
         "label": "High peak",
         "t": "2020-03-02 05:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_08aa77aeb5bb90ea2bc774905c3221f6",
        "verdict": "outranked"
@@ -307014,6 +307484,8 @@
         "label": "High peak",
         "t": "2020-03-03 08:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-03",
        "id": "o_d57f8a2a275eb373dda2fd7276167274",
        "verdict": "near_miss"
@@ -307025,6 +307497,8 @@
         "label": "High peak",
         "t": "2020-03-04 11:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-04",
        "id": "o_1c15d79173df9678539e56be3f9414c7",
        "verdict": "no_data"
@@ -307036,6 +307510,8 @@
         "label": "High peak",
         "t": "2020-03-02 14:01:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_5b1b0187114ecc6b4814197f66a91cb1",
        "verdict": "clean"
@@ -307047,9 +307523,6 @@
        "kind": "cohort_specific_meal_start",
        "label": "Meal start"
       },
-      "attributed_occurrence_ids": [
-       "o_edb863e2dae2790fa0872e1c050caf40"
-      ],
       "clock": null,
       "cohorts": [
        {
@@ -308311,6 +308784,13 @@
         "label": "High peak",
         "t": "2020-03-01 11:00:00"
        },
+       "attributed": true,
+       "comparison_anchor": {
+        "bg": 143.75,
+        "kind": "detected_rise_onset",
+        "label": "Detected rise onset",
+        "t": "2020-03-01 10:30:00"
+       },
        "date": "2020-03-01",
        "id": "o_edb863e2dae2790fa0872e1c050caf40",
        "verdict": "fired"
@@ -308322,6 +308802,8 @@
         "label": "High peak",
         "t": "2020-03-02 14:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_f55c5fa197a8f0e2c3f37656d5a1bf87",
        "verdict": "fired"
@@ -308333,6 +308815,8 @@
         "label": "High peak",
         "t": "2020-03-03 17:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-03",
        "id": "o_32efbc3347c9a0400f37eaf37b1ecc20",
        "verdict": "fired"
@@ -308344,6 +308828,8 @@
         "label": "High peak",
         "t": "2020-03-01 20:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-01",
        "id": "o_1357958ae48611acd456506b49f7ad14",
        "verdict": "fired"
@@ -308355,6 +308841,8 @@
         "label": "High peak",
         "t": "2020-03-02 23:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_c2a8e01bfd94c057a87563d74e4e0385",
        "verdict": "fired"
@@ -308366,6 +308854,8 @@
         "label": "High peak",
         "t": "2020-03-04 02:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-04",
        "id": "o_d32c89cd72b2df9969d6412b778ccc5e",
        "verdict": "fired"
@@ -308377,6 +308867,8 @@
         "label": "High peak",
         "t": "2020-03-02 05:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_08aa77aeb5bb90ea2bc774905c3221f6",
        "verdict": "outranked"
@@ -308388,6 +308880,8 @@
         "label": "High peak",
         "t": "2020-03-03 08:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-03",
        "id": "o_d57f8a2a275eb373dda2fd7276167274",
        "verdict": "near_miss"
@@ -308399,6 +308893,8 @@
         "label": "High peak",
         "t": "2020-03-04 11:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-04",
        "id": "o_1c15d79173df9678539e56be3f9414c7",
        "verdict": "no_data"
@@ -308410,6 +308906,8 @@
         "label": "High peak",
         "t": "2020-03-02 14:01:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_5b1b0187114ecc6b4814197f66a91cb1",
        "verdict": "clean"
@@ -308421,9 +308919,6 @@
        "kind": "cohort_specific_meal_start",
        "label": "Meal start"
       },
-      "attributed_occurrence_ids": [
-       "o_edb863e2dae2790fa0872e1c050caf40"
-      ],
       "clock": null,
       "cohorts": [
        {
@@ -309649,7 +310144,7 @@
      "selection": {
       "detail": {
        "anchor": {
-        "bg": 265,
+        "bg": 143.75,
         "kind": "detected_rise_onset",
         "label": "Detected rise onset",
         "t": "2020-03-01 10:30:00"
@@ -310027,6 +310522,13 @@
         "label": "High peak",
         "t": "2020-03-01 11:00:00"
        },
+       "attributed": true,
+       "comparison_anchor": {
+        "bg": 143.75,
+        "kind": "detected_rise_onset",
+        "label": "Detected rise onset",
+        "t": "2020-03-01 10:30:00"
+       },
        "date": "2020-03-01",
        "id": "o_edb863e2dae2790fa0872e1c050caf40",
        "verdict": "fired"
@@ -310038,6 +310540,8 @@
         "label": "High peak",
         "t": "2020-03-02 14:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_f55c5fa197a8f0e2c3f37656d5a1bf87",
        "verdict": "fired"
@@ -310049,6 +310553,8 @@
         "label": "High peak",
         "t": "2020-03-03 17:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-03",
        "id": "o_32efbc3347c9a0400f37eaf37b1ecc20",
        "verdict": "fired"
@@ -310060,6 +310566,8 @@
         "label": "High peak",
         "t": "2020-03-01 20:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-01",
        "id": "o_1357958ae48611acd456506b49f7ad14",
        "verdict": "fired"
@@ -310071,6 +310579,8 @@
         "label": "High peak",
         "t": "2020-03-02 23:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_c2a8e01bfd94c057a87563d74e4e0385",
        "verdict": "fired"
@@ -310082,6 +310592,8 @@
         "label": "High peak",
         "t": "2020-03-04 02:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-04",
        "id": "o_d32c89cd72b2df9969d6412b778ccc5e",
        "verdict": "fired"
@@ -310093,6 +310605,8 @@
         "label": "High peak",
         "t": "2020-03-02 05:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_08aa77aeb5bb90ea2bc774905c3221f6",
        "verdict": "outranked"
@@ -310104,6 +310618,8 @@
         "label": "High peak",
         "t": "2020-03-03 08:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-03",
        "id": "o_d57f8a2a275eb373dda2fd7276167274",
        "verdict": "near_miss"
@@ -310115,6 +310631,8 @@
         "label": "High peak",
         "t": "2020-03-04 11:00:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-04",
        "id": "o_1c15d79173df9678539e56be3f9414c7",
        "verdict": "no_data"
@@ -310126,6 +310644,8 @@
         "label": "High peak",
         "t": "2020-03-02 14:01:00"
        },
+       "attributed": false,
+       "comparison_anchor": null,
        "date": "2020-03-02",
        "id": "o_5b1b0187114ecc6b4814197f66a91cb1",
        "verdict": "clean"
@@ -310137,9 +310657,6 @@
        "kind": "cohort_specific_meal_start",
        "label": "Meal start"
       },
-      "attributed_occurrence_ids": [
-       "o_edb863e2dae2790fa0872e1c050caf40"
-      ],
       "clock": null,
       "cohorts": [
        {
@@ -311402,6 +311919,13 @@
        "label": "High peak",
        "t": "2020-03-01 11:00:00"
       },
+      "attributed": true,
+      "comparison_anchor": {
+       "bg": 143.75,
+       "kind": "detected_rise_onset",
+       "label": "Detected rise onset",
+       "t": "2020-03-01 10:30:00"
+      },
       "date": "2020-03-01",
       "id": "o_edb863e2dae2790fa0872e1c050caf40",
       "verdict": "fired"
@@ -311413,6 +311937,8 @@
        "label": "High peak",
        "t": "2020-03-02 14:00:00"
       },
+      "attributed": false,
+      "comparison_anchor": null,
       "date": "2020-03-02",
       "id": "o_f55c5fa197a8f0e2c3f37656d5a1bf87",
       "verdict": "fired"
@@ -311424,6 +311950,8 @@
        "label": "High peak",
        "t": "2020-03-03 17:00:00"
       },
+      "attributed": false,
+      "comparison_anchor": null,
       "date": "2020-03-03",
       "id": "o_32efbc3347c9a0400f37eaf37b1ecc20",
       "verdict": "fired"
@@ -311435,6 +311963,8 @@
        "label": "High peak",
        "t": "2020-03-01 20:00:00"
       },
+      "attributed": false,
+      "comparison_anchor": null,
       "date": "2020-03-01",
       "id": "o_1357958ae48611acd456506b49f7ad14",
       "verdict": "fired"
@@ -311446,6 +311976,8 @@
        "label": "High peak",
        "t": "2020-03-02 23:00:00"
       },
+      "attributed": false,
+      "comparison_anchor": null,
       "date": "2020-03-02",
       "id": "o_c2a8e01bfd94c057a87563d74e4e0385",
       "verdict": "fired"
@@ -311457,6 +311989,8 @@
        "label": "High peak",
        "t": "2020-03-04 02:00:00"
       },
+      "attributed": false,
+      "comparison_anchor": null,
       "date": "2020-03-04",
       "id": "o_d32c89cd72b2df9969d6412b778ccc5e",
       "verdict": "fired"
@@ -311468,6 +312002,8 @@
        "label": "High peak",
        "t": "2020-03-02 05:00:00"
       },
+      "attributed": false,
+      "comparison_anchor": null,
       "date": "2020-03-02",
       "id": "o_08aa77aeb5bb90ea2bc774905c3221f6",
       "verdict": "outranked"
@@ -311479,6 +312015,8 @@
        "label": "High peak",
        "t": "2020-03-03 08:00:00"
       },
+      "attributed": false,
+      "comparison_anchor": null,
       "date": "2020-03-03",
       "id": "o_d57f8a2a275eb373dda2fd7276167274",
       "verdict": "near_miss"
@@ -311490,6 +312028,8 @@
        "label": "High peak",
        "t": "2020-03-04 11:00:00"
       },
+      "attributed": false,
+      "comparison_anchor": null,
       "date": "2020-03-04",
       "id": "o_1c15d79173df9678539e56be3f9414c7",
       "verdict": "no_data"
@@ -311501,6 +312041,8 @@
        "label": "High peak",
        "t": "2020-03-02 14:01:00"
       },
+      "attributed": false,
+      "comparison_anchor": null,
       "date": "2020-03-02",
       "id": "o_5b1b0187114ecc6b4814197f66a91cb1",
       "verdict": "clean"
@@ -311634,6 +312176,13 @@
        "label": "High peak",
        "t": "2020-03-01 11:00:00"
       },
+      "attributed": true,
+      "comparison_anchor": {
+       "bg": 143.75,
+       "kind": "detected_rise_onset",
+       "label": "Detected rise onset",
+       "t": "2020-03-01 10:30:00"
+      },
       "date": "2020-03-01",
       "id": "o_edb863e2dae2790fa0872e1c050caf40",
       "verdict": "fired"
@@ -311645,6 +312194,8 @@
        "label": "High peak",
        "t": "2020-03-02 14:00:00"
       },
+      "attributed": false,
+      "comparison_anchor": null,
       "date": "2020-03-02",
       "id": "o_f55c5fa197a8f0e2c3f37656d5a1bf87",
       "verdict": "fired"
@@ -311656,6 +312207,8 @@
        "label": "High peak",
        "t": "2020-03-03 17:00:00"
       },
+      "attributed": false,
+      "comparison_anchor": null,
       "date": "2020-03-03",
       "id": "o_32efbc3347c9a0400f37eaf37b1ecc20",
       "verdict": "fired"
@@ -311667,6 +312220,8 @@
        "label": "High peak",
        "t": "2020-03-01 20:00:00"
       },
+      "attributed": false,
+      "comparison_anchor": null,
       "date": "2020-03-01",
       "id": "o_1357958ae48611acd456506b49f7ad14",
       "verdict": "fired"
@@ -311678,6 +312233,8 @@
        "label": "High peak",
        "t": "2020-03-02 23:00:00"
       },
+      "attributed": false,
+      "comparison_anchor": null,
       "date": "2020-03-02",
       "id": "o_c2a8e01bfd94c057a87563d74e4e0385",
       "verdict": "fired"
@@ -311689,6 +312246,8 @@
        "label": "High peak",
        "t": "2020-03-04 02:00:00"
       },
+      "attributed": false,
+      "comparison_anchor": null,
       "date": "2020-03-04",
       "id": "o_d32c89cd72b2df9969d6412b778ccc5e",
       "verdict": "fired"
@@ -311700,6 +312259,8 @@
        "label": "High peak",
        "t": "2020-03-02 05:00:00"
       },
+      "attributed": false,
+      "comparison_anchor": null,
       "date": "2020-03-02",
       "id": "o_08aa77aeb5bb90ea2bc774905c3221f6",
       "verdict": "outranked"
@@ -311711,6 +312272,8 @@
        "label": "High peak",
        "t": "2020-03-03 08:00:00"
       },
+      "attributed": false,
+      "comparison_anchor": null,
       "date": "2020-03-03",
       "id": "o_d57f8a2a275eb373dda2fd7276167274",
       "verdict": "near_miss"
@@ -311722,6 +312285,8 @@
        "label": "High peak",
        "t": "2020-03-04 11:00:00"
       },
+      "attributed": false,
+      "comparison_anchor": null,
       "date": "2020-03-04",
       "id": "o_1c15d79173df9678539e56be3f9414c7",
       "verdict": "no_data"
@@ -311733,6 +312298,8 @@
        "label": "High peak",
        "t": "2020-03-02 14:01:00"
       },
+      "attributed": false,
+      "comparison_anchor": null,
       "date": "2020-03-02",
       "id": "o_5b1b0187114ecc6b4814197f66a91cb1",
       "verdict": "clean"
@@ -311744,9 +312311,6 @@
       "kind": "cohort_specific_meal_start",
       "label": "Meal start"
      },
-     "attributed_occurrence_ids": [
-      "o_edb863e2dae2790fa0872e1c050caf40"
-     ],
      "clock": null,
      "cohorts": [
       {

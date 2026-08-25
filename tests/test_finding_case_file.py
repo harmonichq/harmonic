@@ -12,7 +12,7 @@ import pytest
 from ciq_autotune import event_comparison, finding_case_file, findings_projection
 from ciq_autotune.analyzers.scenario.levers import Exposure, Lever, exposure
 from ciq_autotune.analyzers.scenario.opportunities import Opportunity
-from ciq_autotune.events import BasalEvent, BolusEvent, CgmReading
+from ciq_autotune.events import BasalEvent, BolusEvent, CarbEntry, CgmReading
 from ciq_autotune.finding_case_file import (
     InconsistentProjection, Member, PreparedCases, wrap,
 )
@@ -54,9 +54,12 @@ def _prepared(lever, members=None, claimed=None, *, query=None, findings=None,
     opportunity = _opportunity(lever)
     members = tuple(members or (Member(opportunity, opportunity.anchor_t, "fired"),))
     claimed = frozenset({members[0].id}) if claimed is None else claimed
-    cgm = tuple(CgmReading(t=opportunity.anchor_t + timedelta(minutes=minute),
-                           bg=120 + minute, type="EGV")
-                for minute in (-60, -5, 0, 5, 120, 300))
+    times = {opportunity.anchor_t + timedelta(minutes=minute)
+             for minute in (-60, -5, 0, 5, 120, 300)}
+    if lever is Lever.MISSED_MEAL:
+        times.add(opportunity.reach_start)
+    cgm = tuple(CgmReading(t=t, bg=120 + (t - opportunity.anchor_t).total_seconds() / 60,
+                           type="EGV") for t in sorted(times))
     return PreparedCases(
         "fp_" + "1" * 32, 0, query or WindowQuery.whole_day(),
         findings or _findings(lever),
@@ -352,12 +355,19 @@ def test_selected_high_retains_upstream_suspend_evidence():
         t=anchor - timedelta(minutes=60), delivery_type="suspended",
         basal_rate=0, profile_basal_rate=0.8,
     ),)
+    prepared.carbs = (CarbEntry(
+        t=anchor - timedelta(minutes=20), grams=15, certainty="exact", source="manual",
+    ),)
     occurrence_id = prepared.members[Lever.MISSED_MEAL][0].id
     case = prepared.case("finding:missed_meal", "event", occurrence_id)
     suspend = next(marker for marker in case["selection"]["detail"]["markers"]
                    if marker["kind"] == "suspend")
     assert suspend["minute"] == -30
     assert suspend["profile_basal_rate"] == 0.8
+    rescue = next(marker for marker in case["selection"]["detail"]["markers"]
+                  if marker["kind"] == "rescue_carb")
+    assert rescue["minute"] == 10
+    assert rescue["grams"] == 15
 
 
 def test_missed_meal_comparison_uses_attribution_winners_and_completed_meals():
@@ -399,6 +409,57 @@ def test_missed_meal_comparison_uses_attribution_winners_and_completed_meals():
     selected = prepared.case("finding:missed_meal", "event", baseline["occurrence_ids"][0])
     assert selected["selection"]["state"] == "selected"
     assert selected["selection"]["detail"]["comparison_cohort"] == "announced"
+
+
+def test_missed_meal_selection_uses_truthful_onset_bg_and_cross_midnight_date():
+    peak = datetime(2026, 8, 2, 0, 30)
+    opportunity = _opportunity(Lever.MISSED_MEAL, anchor=peak)
+    opportunity = Opportunity(
+        opportunity.family, opportunity.source_key, opportunity.anchor_t,
+        opportunity.anchor_kind, 280, reach_start=datetime(2026, 8, 1, 23, 45),
+    )
+    member = Member(opportunity, peak, "fired")
+    prepared = _prepared(Lever.MISSED_MEAL, (member,), frozenset({member.id}))
+    prepared.cgm = (
+        CgmReading(datetime(2026, 8, 1, 23, 45), 145, "EGV"),
+        CgmReading(peak, 280, "EGV"),
+    )
+
+    case = prepared.case("finding:missed_meal", "event", member.id)
+    roster_row = case["occurrences"][0]
+    detail = case["selection"]["detail"]
+
+    assert roster_row["date"] == "2026-08-02"
+    assert roster_row["anchor"]["bg"] == 280
+    assert roster_row["comparison_anchor"]["bg"] == 145
+    assert detail["anchor"] == roster_row["comparison_anchor"]
+    assert detail["date"] == detail["day_target"]["date"] == "2026-08-01"
+    assert next(point for point in detail["glucose"] if point["minute"] == 0)["bg"] == 145
+
+
+def test_missed_meal_fixed_axis_ignores_heterogeneous_onset_to_peak_durations():
+    peak = datetime(2026, 8, 2, 12)
+    opportunities = tuple(
+        Opportunity(Exposure.HIGHS, (f"high-{duration}",), peak + timedelta(hours=index * 8),
+                    "high", 280 + index,
+                    reach_start=peak + timedelta(hours=index * 8, minutes=-duration))
+        for index, duration in enumerate((15, 120))
+    )
+    members = tuple(Member(row, row.anchor_t, "fired") for row in opportunities)
+    prepared = _prepared(Lever.MISSED_MEAL, members, frozenset(row.id for row in members))
+    prepared.findings = _findings(Lever.MISSED_MEAL, episodes=2)
+    prepared.recurrence[Lever.MISSED_MEAL] = (2, 2)
+    prepared.cgm = tuple(
+        CgmReading(row.reach_start + timedelta(minutes=minute), 140 + minute / 10, "EGV")
+        for row in opportunities for minute in (-60, 0, 300)
+    )
+
+    case = prepared.case("finding:missed_meal", "event", None)
+
+    assert case["projection"]["window_min"] == [-60, 300]
+    assert [point["minute"] for point in case["projection"]["cohorts"][0]["points"]] == list(
+        range(-60, 301, 5)
+    )
 
 
 def test_missed_meal_comparison_explicitly_serves_an_empty_attributed_cohort():

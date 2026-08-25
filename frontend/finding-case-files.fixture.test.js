@@ -73,7 +73,17 @@ test('missed-meal fixture pins attributed membership and the unconditioned basel
   assert.deepEqual(payload.projection.window_min, [-60, 300]);
   assert.equal(missed.anchor.kind, 'detected_rise_onset');
   assert.equal(announced.anchor.kind, 'completed_carb_bolus');
+  assert.equal(validFindingCaseFile(missedMealFixture.selected_missed), true);
+  const missedDetail = missedMealFixture.selected_missed.selection.detail;
+  const missedRoster = missedMealFixture.selected_missed.occurrences.find(
+    (row) => row.id === missedDetail.id,
+  );
+  assert.deepEqual(missedDetail.anchor, missedRoster.comparison_anchor);
+  assert.notEqual(missedDetail.anchor.bg, missedRoster.anchor.bg);
+  assert.ok(missedDetail.markers.some((marker) => marker.kind === 'rescue_carb'));
   assert.equal(validFindingCaseFile(missedMealFixture.selected_announced), true);
   assert.equal(missedMealFixture.selected_announced.selection.detail.comparison_cohort,
     'announced');
+  assert.equal(validFindingCaseFile(missedMealFixture.clock_after_announced), true);
+  assert.equal(missedMealFixture.clock_after_announced.selection.state, 'unavailable');
 });

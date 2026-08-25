@@ -166,9 +166,49 @@ test('rejects a forged selected announced-meal detail', () => {
 
 test('rejects replacing an attributed missed winner with another fired High', () => {
   const caseFile = missedMealCase();
+  const attributed = caseFile.occurrences.find((row) => row.attributed);
   const replacement = caseFile.occurrences.find((row) => row.id
-    !== caseFile.projection.attributed_occurrence_ids[0] && row.verdict === 'fired');
+    !== attributed.id && row.verdict === 'fired');
   if (!replacement) return;
   caseFile.projection.cohorts[0].occurrence_ids[0] = replacement.id;
   assert.equal(validFindingCaseFile(caseFile), false);
+});
+
+test('rejects synchronized fabricated missed-meal identities', () => {
+  const caseFile = missedMealCase();
+  const fabricated = 'o_ffffffffffffffffffffffffffffffff';
+  caseFile.projection.cohorts[0].occurrence_ids[0] = fabricated;
+  caseFile.projection.attributed_occurrence_ids = [fabricated];
+  assert.equal(validFindingCaseFile(caseFile), false);
+});
+
+test('rejects retired High-peak selected detail for a missed meal', () => {
+  const caseFile = independent(missedMealFixture.selected_missed);
+  const rosterRow = caseFile.occurrences.find(
+    (row) => row.id === caseFile.selection.requested_id,
+  );
+  caseFile.selection.detail.anchor = independent(rosterRow.anchor);
+  caseFile.selection.detail.date = rosterRow.date;
+  caseFile.selection.detail.day_target.date = rosterRow.date;
+  assert.equal(validFindingCaseFile(caseFile), false);
+});
+
+test('rejects missed-meal selected traces outside the fixed comparison window', () => {
+  const caseFile = independent(missedMealFixture.selected_missed);
+  caseFile.selection.detail.glucose.push({
+    t: '2026-01-03 05:45:00', minute: -61, bg: 109,
+  });
+  assert.equal(validFindingCaseFile(caseFile), false);
+});
+
+test('fails closed when selected missed-meal marker families are malformed', () => {
+  const caseFile = independent(missedMealFixture.selected_missed);
+  delete caseFile.selection.detail.markers;
+  assert.equal(validFindingCaseFile(caseFile), false);
+});
+
+test('accepts event-to-clock transition with an unavailable announced selection', () => {
+  const caseFile = independent(missedMealFixture.clock_after_announced);
+  assert.equal(caseFile.selection.state, 'unavailable');
+  assert.equal(validFindingCaseFile(caseFile), true);
 });

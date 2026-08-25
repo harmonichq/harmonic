@@ -69,10 +69,11 @@ ENTRIES = [
             "python3 .claude/qa/gen_synthetic_fixtures.py "
             "mockups/diagnose-workstation.synthetic"
         ),
-        # Owned and byte-checked by scripts/gen_ic_history_event_fixtures.py.
-        # Excluding this exact file keeps the legacy demo generator from becoming
-        # a second writer while preserving closed-set checking for every other file.
-        "externally_generated": ["ic-history-events.capture.json"],
+        # These exact files have their own generator + CI drift check. Excluding
+        # them keeps the legacy demo generator from becoming a second writer while
+        # preserving closed-set checking for every other file.
+        "externally_generated": ["ic-history-events.capture.json",
+                                 "ic-block-evidence.capture.json"],
     },
 ]
 

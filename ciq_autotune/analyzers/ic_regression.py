@@ -186,7 +186,7 @@ def _regression_block_fits(
 
     fitted = _run_pool(admitted)
     shares_by_run: Dict[RunIdentity, Dict[int, float]] = {}
-    for run in fitted:
+    for run in runs:
         if run.carbs_covered <= 0:
             continue
         shares = {bid: 0.0 for bid in block_ids}
@@ -199,7 +199,8 @@ def _regression_block_fits(
         shares_by_run[RunIdentity(run.t)] = shares
     active_ids = [
         bid for bid in block_ids
-        if any(shares.get(bid, 0.0) > 0.0 for shares in shares_by_run.values())
+        if any(shares_by_run.get(RunIdentity(run.t), {}).get(bid, 0.0) > 0.0
+               for run in fitted)
     ]
     row_by_run = {
         RunIdentity(run.t): (
@@ -241,6 +242,10 @@ def _regression_block_fits(
     )
     fits: Dict[int, _IcBlockFit] = {}
     for bid in block_ids:
+        roster = [
+            run for run in runs
+            if shares_by_run.get(RunIdentity(run.t), {}).get(bid, 0.0) > 0.0
+        ]
         pool = [] if bid not in active_ids else [
             run for run in fitted
             if shares_by_run.get(RunIdentity(run.t), {}).get(bid, 0.0) > 0.0
@@ -265,6 +270,11 @@ def _regression_block_fits(
             estimate=estimate,
             eligible_runs=tuple(pool),
             pool_runs=tuple(pool),
+            roster_runs=tuple(roster),
+            ownership_by_run={
+                RunIdentity(run.t): shares_by_run[RunIdentity(run.t)][bid]
+                for run in roster
+            },
             effective_run_count=whole + fractional,
             whole_runs=whole,
             fractional_run_ownership=fractional,

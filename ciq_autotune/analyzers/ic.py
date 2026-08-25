@@ -2012,6 +2012,8 @@ class _IcBlockFit:
     estimate: Estimate
     eligible_runs: Tuple[MealRun, ...]
     pool_runs: Tuple[MealRun, ...]
+    roster_runs: Tuple[MealRun, ...]
+    ownership_by_run: Dict[RunIdentity, float]
     effective_run_count: float
     whole_runs: int
     fractional_run_ownership: float
@@ -2059,6 +2061,8 @@ def _incumbent_block_fits(
             estimate=estimate,
             eligible_runs=tuple(inside),
             pool_runs=tuple(pool),
+            roster_runs=tuple(inside),
+            ownership_by_run={RunIdentity(run.t): 1.0 for run in inside},
             effective_run_count=float(len(pool)),
             whole_runs=len(pool),
             fractional_run_ownership=0.0,
@@ -2415,6 +2419,7 @@ def _analyze_ic_blocks_shared(
                           if _block_of(_tod(m.t), groups) == bid]
         fit = block_fits[bid]
         inside = list(fit.eligible_runs)
+        roster = list(fit.roster_runs)
         pool = list(fit.pool_runs)
         pool_ids = {id(r) for r in pool}
         est = fit.estimate
@@ -2560,7 +2565,8 @@ def _analyze_ic_blocks_shared(
                     "prior_meal_action_u": m.prior_meal_action_u,
                     "prior_action_status": m.prior_action_status,
                 })
-        for r in inside:
+        for r in roster:
+            duration = (r.end_t - r.t).total_seconds() / 60.0
             run_rows.append({
                 "run_id": r.t.isoformat(), "t": r.t.isoformat(),
                 "end_t": r.end_t.isoformat(), "n_meals": r.n_meals,
@@ -2569,6 +2575,16 @@ def _analyze_ic_blocks_shared(
                 "bg_outcome_u": r.bg_outcome_u,
                 "directional_only": r.directional_only,
                 "in_pool": id(r) in pool_ids,
+                "ownership": fit.ownership_by_run[RunIdentity(r.t)],
+                # The current-block evidence canvas consumes these analyzer-owned
+                # display facts verbatim.  Keep them beside the closed ledger so
+                # no projection has to reconstruct its member chain or horizon.
+                "member_offsets_min": [
+                    (meal.t - r.t).total_seconds() / 60.0 for meal in r.meals
+                ],
+                "cgm_start_min": -float(cfg.bg0_max_gap_min),
+                "cgm_end_min": duration + cfg.post_meal_min,
+                "outcome_min": duration + cfg.outcome_at_min,
             })
 
         block = IcBlock(
@@ -2601,6 +2617,10 @@ def _analyze_ic_blocks_shared(
                     "window_days": BLOCK_WINDOW_DAYS,
                 },
                 "n_runs_touching": len(touching),
+                # The roster includes every analyzer-examined run. Keep its rejected
+                # count separate from support: a rejected run is evidence that was
+                # examined, never evidence that did not exist.
+                "n_runs_excluded": len(roster) - len(pool),
                 "points": meal_points,
                 "runs": run_rows,
             },

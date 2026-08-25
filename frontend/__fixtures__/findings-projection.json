@@ -6212,6 +6212,7 @@
        "carbs": 1440,
        "window_days": 90
       },
+      "n_runs_excluded": 0,
       "n_runs_touching": 24,
       "points": [
        {
@@ -6520,12 +6521,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-20T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-20T09:00:00",
         "start_bg": null,
         "t": "2026-05-20T09:00:00",
@@ -6534,12 +6542,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-21T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-21T09:00:00",
         "start_bg": null,
         "t": "2026-05-21T09:00:00",
@@ -6548,12 +6563,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-22T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-22T09:00:00",
         "start_bg": null,
         "t": "2026-05-22T09:00:00",
@@ -6562,12 +6584,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-23T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-23T09:00:00",
         "start_bg": null,
         "t": "2026-05-23T09:00:00",
@@ -6576,12 +6605,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-24T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-24T09:00:00",
         "start_bg": null,
         "t": "2026-05-24T09:00:00",
@@ -6590,12 +6626,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-25T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-25T09:00:00",
         "start_bg": null,
         "t": "2026-05-25T09:00:00",
@@ -6604,12 +6647,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-26T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-26T09:00:00",
         "start_bg": null,
         "t": "2026-05-26T09:00:00",
@@ -6618,12 +6668,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-27T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-27T09:00:00",
         "start_bg": null,
         "t": "2026-05-27T09:00:00",
@@ -6632,12 +6689,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-28T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-28T09:00:00",
         "start_bg": null,
         "t": "2026-05-28T09:00:00",
@@ -6646,12 +6710,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-29T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-29T09:00:00",
         "start_bg": null,
         "t": "2026-05-29T09:00:00",
@@ -6660,12 +6731,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-30T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-30T09:00:00",
         "start_bg": null,
         "t": "2026-05-30T09:00:00",
@@ -6674,12 +6752,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-31T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-31T09:00:00",
         "start_bg": null,
         "t": "2026-05-31T09:00:00",
@@ -6688,12 +6773,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-01T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-01T09:00:00",
         "start_bg": null,
         "t": "2026-06-01T09:00:00",
@@ -6702,12 +6794,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-02T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-02T09:00:00",
         "start_bg": null,
         "t": "2026-06-02T09:00:00",
@@ -6716,12 +6815,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-03T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-03T09:00:00",
         "start_bg": null,
         "t": "2026-06-03T09:00:00",
@@ -6730,12 +6836,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-04T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-04T09:00:00",
         "start_bg": null,
         "t": "2026-06-04T09:00:00",
@@ -6744,12 +6857,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-05T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-05T09:00:00",
         "start_bg": null,
         "t": "2026-06-05T09:00:00",
@@ -6758,12 +6878,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-06T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-06T09:00:00",
         "start_bg": null,
         "t": "2026-06-06T09:00:00",
@@ -6772,12 +6899,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-07T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-07T09:00:00",
         "start_bg": null,
         "t": "2026-06-07T09:00:00",
@@ -6786,12 +6920,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-08T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-08T09:00:00",
         "start_bg": null,
         "t": "2026-06-08T09:00:00",
@@ -6800,12 +6941,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-09T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-09T09:00:00",
         "start_bg": null,
         "t": "2026-06-09T09:00:00",
@@ -6814,12 +6962,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-10T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-10T09:00:00",
         "start_bg": null,
         "t": "2026-06-10T09:00:00",
@@ -6828,12 +6983,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-11T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-11T09:00:00",
         "start_bg": null,
         "t": "2026-06-11T09:00:00",
@@ -6842,12 +7004,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-12T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-12T09:00:00",
         "start_bg": null,
         "t": "2026-06-12T09:00:00",
@@ -6921,6 +7090,7 @@
        "carbs": 1440,
        "window_days": 90
       },
+      "n_runs_excluded": 0,
       "n_runs_touching": 24,
       "points": [
        {
@@ -7229,12 +7399,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-20T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-20T19:00:00",
         "start_bg": null,
         "t": "2026-05-20T19:00:00",
@@ -7243,12 +7420,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-21T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-21T19:00:00",
         "start_bg": null,
         "t": "2026-05-21T19:00:00",
@@ -7257,12 +7441,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-22T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-22T19:00:00",
         "start_bg": null,
         "t": "2026-05-22T19:00:00",
@@ -7271,12 +7462,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-23T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-23T19:00:00",
         "start_bg": null,
         "t": "2026-05-23T19:00:00",
@@ -7285,12 +7483,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-24T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-24T19:00:00",
         "start_bg": null,
         "t": "2026-05-24T19:00:00",
@@ -7299,12 +7504,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-25T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-25T19:00:00",
         "start_bg": null,
         "t": "2026-05-25T19:00:00",
@@ -7313,12 +7525,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-26T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-26T19:00:00",
         "start_bg": null,
         "t": "2026-05-26T19:00:00",
@@ -7327,12 +7546,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-27T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-27T19:00:00",
         "start_bg": null,
         "t": "2026-05-27T19:00:00",
@@ -7341,12 +7567,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-28T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-28T19:00:00",
         "start_bg": null,
         "t": "2026-05-28T19:00:00",
@@ -7355,12 +7588,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-29T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-29T19:00:00",
         "start_bg": null,
         "t": "2026-05-29T19:00:00",
@@ -7369,12 +7609,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-30T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-30T19:00:00",
         "start_bg": null,
         "t": "2026-05-30T19:00:00",
@@ -7383,12 +7630,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-31T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-31T19:00:00",
         "start_bg": null,
         "t": "2026-05-31T19:00:00",
@@ -7397,12 +7651,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-01T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-01T19:00:00",
         "start_bg": null,
         "t": "2026-06-01T19:00:00",
@@ -7411,12 +7672,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-02T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-02T19:00:00",
         "start_bg": null,
         "t": "2026-06-02T19:00:00",
@@ -7425,12 +7693,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-03T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-03T19:00:00",
         "start_bg": null,
         "t": "2026-06-03T19:00:00",
@@ -7439,12 +7714,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-04T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-04T19:00:00",
         "start_bg": null,
         "t": "2026-06-04T19:00:00",
@@ -7453,12 +7735,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-05T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-05T19:00:00",
         "start_bg": null,
         "t": "2026-06-05T19:00:00",
@@ -7467,12 +7756,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-06T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-06T19:00:00",
         "start_bg": null,
         "t": "2026-06-06T19:00:00",
@@ -7481,12 +7777,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-07T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-07T19:00:00",
         "start_bg": null,
         "t": "2026-06-07T19:00:00",
@@ -7495,12 +7798,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-08T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-08T19:00:00",
         "start_bg": null,
         "t": "2026-06-08T19:00:00",
@@ -7509,12 +7819,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-09T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-09T19:00:00",
         "start_bg": null,
         "t": "2026-06-09T19:00:00",
@@ -7523,12 +7840,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-10T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-10T19:00:00",
         "start_bg": null,
         "t": "2026-06-10T19:00:00",
@@ -7537,12 +7861,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-11T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-11T19:00:00",
         "start_bg": null,
         "t": "2026-06-11T19:00:00",
@@ -7551,12 +7882,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-12T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-12T19:00:00",
         "start_bg": null,
         "t": "2026-06-12T19:00:00",
@@ -16276,6 +16614,7 @@
        "carbs": 1440,
        "window_days": 90
       },
+      "n_runs_excluded": 0,
       "n_runs_touching": 24,
       "points": [
        {
@@ -16584,12 +16923,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-20T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-20T09:00:00",
         "start_bg": null,
         "t": "2026-05-20T09:00:00",
@@ -16598,12 +16944,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-21T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-21T09:00:00",
         "start_bg": null,
         "t": "2026-05-21T09:00:00",
@@ -16612,12 +16965,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-22T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-22T09:00:00",
         "start_bg": null,
         "t": "2026-05-22T09:00:00",
@@ -16626,12 +16986,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-23T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-23T09:00:00",
         "start_bg": null,
         "t": "2026-05-23T09:00:00",
@@ -16640,12 +17007,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-24T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-24T09:00:00",
         "start_bg": null,
         "t": "2026-05-24T09:00:00",
@@ -16654,12 +17028,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-25T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-25T09:00:00",
         "start_bg": null,
         "t": "2026-05-25T09:00:00",
@@ -16668,12 +17049,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-26T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-26T09:00:00",
         "start_bg": null,
         "t": "2026-05-26T09:00:00",
@@ -16682,12 +17070,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-27T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-27T09:00:00",
         "start_bg": null,
         "t": "2026-05-27T09:00:00",
@@ -16696,12 +17091,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-28T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-28T09:00:00",
         "start_bg": null,
         "t": "2026-05-28T09:00:00",
@@ -16710,12 +17112,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-29T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-29T09:00:00",
         "start_bg": null,
         "t": "2026-05-29T09:00:00",
@@ -16724,12 +17133,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-30T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-30T09:00:00",
         "start_bg": null,
         "t": "2026-05-30T09:00:00",
@@ -16738,12 +17154,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-31T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-31T09:00:00",
         "start_bg": null,
         "t": "2026-05-31T09:00:00",
@@ -16752,12 +17175,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-01T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-01T09:00:00",
         "start_bg": null,
         "t": "2026-06-01T09:00:00",
@@ -16766,12 +17196,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-02T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-02T09:00:00",
         "start_bg": null,
         "t": "2026-06-02T09:00:00",
@@ -16780,12 +17217,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-03T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-03T09:00:00",
         "start_bg": null,
         "t": "2026-06-03T09:00:00",
@@ -16794,12 +17238,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-04T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-04T09:00:00",
         "start_bg": null,
         "t": "2026-06-04T09:00:00",
@@ -16808,12 +17259,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-05T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-05T09:00:00",
         "start_bg": null,
         "t": "2026-06-05T09:00:00",
@@ -16822,12 +17280,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-06T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-06T09:00:00",
         "start_bg": null,
         "t": "2026-06-06T09:00:00",
@@ -16836,12 +17301,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-07T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-07T09:00:00",
         "start_bg": null,
         "t": "2026-06-07T09:00:00",
@@ -16850,12 +17322,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-08T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-08T09:00:00",
         "start_bg": null,
         "t": "2026-06-08T09:00:00",
@@ -16864,12 +17343,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-09T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-09T09:00:00",
         "start_bg": null,
         "t": "2026-06-09T09:00:00",
@@ -16878,12 +17364,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-10T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-10T09:00:00",
         "start_bg": null,
         "t": "2026-06-10T09:00:00",
@@ -16892,12 +17385,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-11T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-11T09:00:00",
         "start_bg": null,
         "t": "2026-06-11T09:00:00",
@@ -16906,12 +17406,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-12T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-12T09:00:00",
         "start_bg": null,
         "t": "2026-06-12T09:00:00",
@@ -16985,6 +17492,7 @@
        "carbs": 1440,
        "window_days": 90
       },
+      "n_runs_excluded": 0,
       "n_runs_touching": 24,
       "points": [
        {
@@ -17293,12 +17801,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-20T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-20T19:00:00",
         "start_bg": null,
         "t": "2026-05-20T19:00:00",
@@ -17307,12 +17822,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-21T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-21T19:00:00",
         "start_bg": null,
         "t": "2026-05-21T19:00:00",
@@ -17321,12 +17843,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-22T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-22T19:00:00",
         "start_bg": null,
         "t": "2026-05-22T19:00:00",
@@ -17335,12 +17864,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-23T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-23T19:00:00",
         "start_bg": null,
         "t": "2026-05-23T19:00:00",
@@ -17349,12 +17885,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-24T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-24T19:00:00",
         "start_bg": null,
         "t": "2026-05-24T19:00:00",
@@ -17363,12 +17906,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-25T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-25T19:00:00",
         "start_bg": null,
         "t": "2026-05-25T19:00:00",
@@ -17377,12 +17927,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-26T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-26T19:00:00",
         "start_bg": null,
         "t": "2026-05-26T19:00:00",
@@ -17391,12 +17948,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-27T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-27T19:00:00",
         "start_bg": null,
         "t": "2026-05-27T19:00:00",
@@ -17405,12 +17969,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-28T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-28T19:00:00",
         "start_bg": null,
         "t": "2026-05-28T19:00:00",
@@ -17419,12 +17990,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-29T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-29T19:00:00",
         "start_bg": null,
         "t": "2026-05-29T19:00:00",
@@ -17433,12 +18011,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-30T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-30T19:00:00",
         "start_bg": null,
         "t": "2026-05-30T19:00:00",
@@ -17447,12 +18032,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-31T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-31T19:00:00",
         "start_bg": null,
         "t": "2026-05-31T19:00:00",
@@ -17461,12 +18053,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-01T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-01T19:00:00",
         "start_bg": null,
         "t": "2026-06-01T19:00:00",
@@ -17475,12 +18074,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-02T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-02T19:00:00",
         "start_bg": null,
         "t": "2026-06-02T19:00:00",
@@ -17489,12 +18095,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-03T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-03T19:00:00",
         "start_bg": null,
         "t": "2026-06-03T19:00:00",
@@ -17503,12 +18116,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-04T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-04T19:00:00",
         "start_bg": null,
         "t": "2026-06-04T19:00:00",
@@ -17517,12 +18137,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-05T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-05T19:00:00",
         "start_bg": null,
         "t": "2026-06-05T19:00:00",
@@ -17531,12 +18158,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-06T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-06T19:00:00",
         "start_bg": null,
         "t": "2026-06-06T19:00:00",
@@ -17545,12 +18179,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-07T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-07T19:00:00",
         "start_bg": null,
         "t": "2026-06-07T19:00:00",
@@ -17559,12 +18200,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-08T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-08T19:00:00",
         "start_bg": null,
         "t": "2026-06-08T19:00:00",
@@ -17573,12 +18221,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-09T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-09T19:00:00",
         "start_bg": null,
         "t": "2026-06-09T19:00:00",
@@ -17587,12 +18242,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-10T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-10T19:00:00",
         "start_bg": null,
         "t": "2026-06-10T19:00:00",
@@ -17601,12 +18263,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-11T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-11T19:00:00",
         "start_bg": null,
         "t": "2026-06-11T19:00:00",
@@ -17615,12 +18284,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-12T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-12T19:00:00",
         "start_bg": null,
         "t": "2026-06-12T19:00:00",
@@ -23465,6 +24141,7 @@
        "carbs": 1440,
        "window_days": 90
       },
+      "n_runs_excluded": 0,
       "n_runs_touching": 24,
       "points": [
        {
@@ -23773,12 +24450,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-20T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-20T09:00:00",
         "start_bg": null,
         "t": "2026-05-20T09:00:00",
@@ -23787,12 +24471,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-21T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-21T09:00:00",
         "start_bg": null,
         "t": "2026-05-21T09:00:00",
@@ -23801,12 +24492,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-22T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-22T09:00:00",
         "start_bg": null,
         "t": "2026-05-22T09:00:00",
@@ -23815,12 +24513,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-23T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-23T09:00:00",
         "start_bg": null,
         "t": "2026-05-23T09:00:00",
@@ -23829,12 +24534,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-24T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-24T09:00:00",
         "start_bg": null,
         "t": "2026-05-24T09:00:00",
@@ -23843,12 +24555,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-25T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-25T09:00:00",
         "start_bg": null,
         "t": "2026-05-25T09:00:00",
@@ -23857,12 +24576,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-26T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-26T09:00:00",
         "start_bg": null,
         "t": "2026-05-26T09:00:00",
@@ -23871,12 +24597,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-27T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-27T09:00:00",
         "start_bg": null,
         "t": "2026-05-27T09:00:00",
@@ -23885,12 +24618,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-28T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-28T09:00:00",
         "start_bg": null,
         "t": "2026-05-28T09:00:00",
@@ -23899,12 +24639,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-29T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-29T09:00:00",
         "start_bg": null,
         "t": "2026-05-29T09:00:00",
@@ -23913,12 +24660,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-30T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-30T09:00:00",
         "start_bg": null,
         "t": "2026-05-30T09:00:00",
@@ -23927,12 +24681,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-31T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-31T09:00:00",
         "start_bg": null,
         "t": "2026-05-31T09:00:00",
@@ -23941,12 +24702,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-01T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-01T09:00:00",
         "start_bg": null,
         "t": "2026-06-01T09:00:00",
@@ -23955,12 +24723,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-02T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-02T09:00:00",
         "start_bg": null,
         "t": "2026-06-02T09:00:00",
@@ -23969,12 +24744,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-03T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-03T09:00:00",
         "start_bg": null,
         "t": "2026-06-03T09:00:00",
@@ -23983,12 +24765,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-04T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-04T09:00:00",
         "start_bg": null,
         "t": "2026-06-04T09:00:00",
@@ -23997,12 +24786,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-05T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-05T09:00:00",
         "start_bg": null,
         "t": "2026-06-05T09:00:00",
@@ -24011,12 +24807,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-06T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-06T09:00:00",
         "start_bg": null,
         "t": "2026-06-06T09:00:00",
@@ -24025,12 +24828,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-07T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-07T09:00:00",
         "start_bg": null,
         "t": "2026-06-07T09:00:00",
@@ -24039,12 +24849,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-08T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-08T09:00:00",
         "start_bg": null,
         "t": "2026-06-08T09:00:00",
@@ -24053,12 +24870,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-09T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-09T09:00:00",
         "start_bg": null,
         "t": "2026-06-09T09:00:00",
@@ -24067,12 +24891,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-10T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-10T09:00:00",
         "start_bg": null,
         "t": "2026-06-10T09:00:00",
@@ -24081,12 +24912,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-11T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-11T09:00:00",
         "start_bg": null,
         "t": "2026-06-11T09:00:00",
@@ -24095,12 +24933,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-12T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-12T09:00:00",
         "start_bg": null,
         "t": "2026-06-12T09:00:00",
@@ -24174,6 +25019,7 @@
        "carbs": 1440,
        "window_days": 90
       },
+      "n_runs_excluded": 0,
       "n_runs_touching": 24,
       "points": [
        {
@@ -24482,12 +25328,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-20T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-20T19:00:00",
         "start_bg": null,
         "t": "2026-05-20T19:00:00",
@@ -24496,12 +25349,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-21T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-21T19:00:00",
         "start_bg": null,
         "t": "2026-05-21T19:00:00",
@@ -24510,12 +25370,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-22T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-22T19:00:00",
         "start_bg": null,
         "t": "2026-05-22T19:00:00",
@@ -24524,12 +25391,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-23T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-23T19:00:00",
         "start_bg": null,
         "t": "2026-05-23T19:00:00",
@@ -24538,12 +25412,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-24T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-24T19:00:00",
         "start_bg": null,
         "t": "2026-05-24T19:00:00",
@@ -24552,12 +25433,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-25T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-25T19:00:00",
         "start_bg": null,
         "t": "2026-05-25T19:00:00",
@@ -24566,12 +25454,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-26T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-26T19:00:00",
         "start_bg": null,
         "t": "2026-05-26T19:00:00",
@@ -24580,12 +25475,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-27T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-27T19:00:00",
         "start_bg": null,
         "t": "2026-05-27T19:00:00",
@@ -24594,12 +25496,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-28T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-28T19:00:00",
         "start_bg": null,
         "t": "2026-05-28T19:00:00",
@@ -24608,12 +25517,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-29T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-29T19:00:00",
         "start_bg": null,
         "t": "2026-05-29T19:00:00",
@@ -24622,12 +25538,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-30T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-30T19:00:00",
         "start_bg": null,
         "t": "2026-05-30T19:00:00",
@@ -24636,12 +25559,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-31T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-31T19:00:00",
         "start_bg": null,
         "t": "2026-05-31T19:00:00",
@@ -24650,12 +25580,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-01T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-01T19:00:00",
         "start_bg": null,
         "t": "2026-06-01T19:00:00",
@@ -24664,12 +25601,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-02T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-02T19:00:00",
         "start_bg": null,
         "t": "2026-06-02T19:00:00",
@@ -24678,12 +25622,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-03T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-03T19:00:00",
         "start_bg": null,
         "t": "2026-06-03T19:00:00",
@@ -24692,12 +25643,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-04T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-04T19:00:00",
         "start_bg": null,
         "t": "2026-06-04T19:00:00",
@@ -24706,12 +25664,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-05T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-05T19:00:00",
         "start_bg": null,
         "t": "2026-06-05T19:00:00",
@@ -24720,12 +25685,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-06T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-06T19:00:00",
         "start_bg": null,
         "t": "2026-06-06T19:00:00",
@@ -24734,12 +25706,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-07T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-07T19:00:00",
         "start_bg": null,
         "t": "2026-06-07T19:00:00",
@@ -24748,12 +25727,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-08T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-08T19:00:00",
         "start_bg": null,
         "t": "2026-06-08T19:00:00",
@@ -24762,12 +25748,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-09T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-09T19:00:00",
         "start_bg": null,
         "t": "2026-06-09T19:00:00",
@@ -24776,12 +25769,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-10T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-10T19:00:00",
         "start_bg": null,
         "t": "2026-06-10T19:00:00",
@@ -24790,12 +25790,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-11T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-11T19:00:00",
         "start_bg": null,
         "t": "2026-06-11T19:00:00",
@@ -24804,12 +25811,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-12T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-12T19:00:00",
         "start_bg": null,
         "t": "2026-06-12T19:00:00",
@@ -30699,6 +31713,7 @@
        "carbs": 1440,
        "window_days": 90
       },
+      "n_runs_excluded": 0,
       "n_runs_touching": 24,
       "points": [
        {
@@ -31007,12 +32022,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-20T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-20T09:00:00",
         "start_bg": null,
         "t": "2026-05-20T09:00:00",
@@ -31021,12 +32043,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-21T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-21T09:00:00",
         "start_bg": null,
         "t": "2026-05-21T09:00:00",
@@ -31035,12 +32064,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-22T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-22T09:00:00",
         "start_bg": null,
         "t": "2026-05-22T09:00:00",
@@ -31049,12 +32085,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-23T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-23T09:00:00",
         "start_bg": null,
         "t": "2026-05-23T09:00:00",
@@ -31063,12 +32106,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-24T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-24T09:00:00",
         "start_bg": null,
         "t": "2026-05-24T09:00:00",
@@ -31077,12 +32127,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-25T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-25T09:00:00",
         "start_bg": null,
         "t": "2026-05-25T09:00:00",
@@ -31091,12 +32148,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-26T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-26T09:00:00",
         "start_bg": null,
         "t": "2026-05-26T09:00:00",
@@ -31105,12 +32169,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-27T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-27T09:00:00",
         "start_bg": null,
         "t": "2026-05-27T09:00:00",
@@ -31119,12 +32190,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-28T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-28T09:00:00",
         "start_bg": null,
         "t": "2026-05-28T09:00:00",
@@ -31133,12 +32211,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-29T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-29T09:00:00",
         "start_bg": null,
         "t": "2026-05-29T09:00:00",
@@ -31147,12 +32232,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-30T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-30T09:00:00",
         "start_bg": null,
         "t": "2026-05-30T09:00:00",
@@ -31161,12 +32253,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-31T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-31T09:00:00",
         "start_bg": null,
         "t": "2026-05-31T09:00:00",
@@ -31175,12 +32274,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-01T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-01T09:00:00",
         "start_bg": null,
         "t": "2026-06-01T09:00:00",
@@ -31189,12 +32295,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-02T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-02T09:00:00",
         "start_bg": null,
         "t": "2026-06-02T09:00:00",
@@ -31203,12 +32316,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-03T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-03T09:00:00",
         "start_bg": null,
         "t": "2026-06-03T09:00:00",
@@ -31217,12 +32337,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-04T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-04T09:00:00",
         "start_bg": null,
         "t": "2026-06-04T09:00:00",
@@ -31231,12 +32358,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-05T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-05T09:00:00",
         "start_bg": null,
         "t": "2026-06-05T09:00:00",
@@ -31245,12 +32379,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-06T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-06T09:00:00",
         "start_bg": null,
         "t": "2026-06-06T09:00:00",
@@ -31259,12 +32400,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-07T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-07T09:00:00",
         "start_bg": null,
         "t": "2026-06-07T09:00:00",
@@ -31273,12 +32421,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-08T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-08T09:00:00",
         "start_bg": null,
         "t": "2026-06-08T09:00:00",
@@ -31287,12 +32442,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-09T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-09T09:00:00",
         "start_bg": null,
         "t": "2026-06-09T09:00:00",
@@ -31301,12 +32463,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-10T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-10T09:00:00",
         "start_bg": null,
         "t": "2026-06-10T09:00:00",
@@ -31315,12 +32484,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-11T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-11T09:00:00",
         "start_bg": null,
         "t": "2026-06-11T09:00:00",
@@ -31329,12 +32505,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-12T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-12T09:00:00",
         "start_bg": null,
         "t": "2026-06-12T09:00:00",
@@ -31408,6 +32591,7 @@
        "carbs": 1440,
        "window_days": 90
       },
+      "n_runs_excluded": 0,
       "n_runs_touching": 24,
       "points": [
        {
@@ -31716,12 +32900,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-20T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-20T19:00:00",
         "start_bg": null,
         "t": "2026-05-20T19:00:00",
@@ -31730,12 +32921,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-21T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-21T19:00:00",
         "start_bg": null,
         "t": "2026-05-21T19:00:00",
@@ -31744,12 +32942,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-22T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-22T19:00:00",
         "start_bg": null,
         "t": "2026-05-22T19:00:00",
@@ -31758,12 +32963,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-23T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-23T19:00:00",
         "start_bg": null,
         "t": "2026-05-23T19:00:00",
@@ -31772,12 +32984,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-24T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-24T19:00:00",
         "start_bg": null,
         "t": "2026-05-24T19:00:00",
@@ -31786,12 +33005,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-25T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-25T19:00:00",
         "start_bg": null,
         "t": "2026-05-25T19:00:00",
@@ -31800,12 +33026,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-26T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-26T19:00:00",
         "start_bg": null,
         "t": "2026-05-26T19:00:00",
@@ -31814,12 +33047,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-27T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-27T19:00:00",
         "start_bg": null,
         "t": "2026-05-27T19:00:00",
@@ -31828,12 +33068,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-28T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-28T19:00:00",
         "start_bg": null,
         "t": "2026-05-28T19:00:00",
@@ -31842,12 +33089,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-29T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-29T19:00:00",
         "start_bg": null,
         "t": "2026-05-29T19:00:00",
@@ -31856,12 +33110,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-30T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-30T19:00:00",
         "start_bg": null,
         "t": "2026-05-30T19:00:00",
@@ -31870,12 +33131,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-31T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-31T19:00:00",
         "start_bg": null,
         "t": "2026-05-31T19:00:00",
@@ -31884,12 +33152,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-01T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-01T19:00:00",
         "start_bg": null,
         "t": "2026-06-01T19:00:00",
@@ -31898,12 +33173,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-02T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-02T19:00:00",
         "start_bg": null,
         "t": "2026-06-02T19:00:00",
@@ -31912,12 +33194,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-03T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-03T19:00:00",
         "start_bg": null,
         "t": "2026-06-03T19:00:00",
@@ -31926,12 +33215,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-04T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-04T19:00:00",
         "start_bg": null,
         "t": "2026-06-04T19:00:00",
@@ -31940,12 +33236,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-05T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-05T19:00:00",
         "start_bg": null,
         "t": "2026-06-05T19:00:00",
@@ -31954,12 +33257,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-06T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-06T19:00:00",
         "start_bg": null,
         "t": "2026-06-06T19:00:00",
@@ -31968,12 +33278,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-07T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-07T19:00:00",
         "start_bg": null,
         "t": "2026-06-07T19:00:00",
@@ -31982,12 +33299,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-08T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-08T19:00:00",
         "start_bg": null,
         "t": "2026-06-08T19:00:00",
@@ -31996,12 +33320,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-09T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-09T19:00:00",
         "start_bg": null,
         "t": "2026-06-09T19:00:00",
@@ -32010,12 +33341,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-10T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-10T19:00:00",
         "start_bg": null,
         "t": "2026-06-10T19:00:00",
@@ -32024,12 +33362,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-11T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-11T19:00:00",
         "start_bg": null,
         "t": "2026-06-11T19:00:00",
@@ -32038,12 +33383,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-12T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-12T19:00:00",
         "start_bg": null,
         "t": "2026-06-12T19:00:00",
@@ -37933,6 +39285,7 @@
        "carbs": 1440,
        "window_days": 90
       },
+      "n_runs_excluded": 0,
       "n_runs_touching": 24,
       "points": [
        {
@@ -38241,12 +39594,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-20T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-20T09:00:00",
         "start_bg": null,
         "t": "2026-05-20T09:00:00",
@@ -38255,12 +39615,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-21T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-21T09:00:00",
         "start_bg": null,
         "t": "2026-05-21T09:00:00",
@@ -38269,12 +39636,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-22T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-22T09:00:00",
         "start_bg": null,
         "t": "2026-05-22T09:00:00",
@@ -38283,12 +39657,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-23T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-23T09:00:00",
         "start_bg": null,
         "t": "2026-05-23T09:00:00",
@@ -38297,12 +39678,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-24T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-24T09:00:00",
         "start_bg": null,
         "t": "2026-05-24T09:00:00",
@@ -38311,12 +39699,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-25T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-25T09:00:00",
         "start_bg": null,
         "t": "2026-05-25T09:00:00",
@@ -38325,12 +39720,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-26T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-26T09:00:00",
         "start_bg": null,
         "t": "2026-05-26T09:00:00",
@@ -38339,12 +39741,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-27T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-27T09:00:00",
         "start_bg": null,
         "t": "2026-05-27T09:00:00",
@@ -38353,12 +39762,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-28T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-28T09:00:00",
         "start_bg": null,
         "t": "2026-05-28T09:00:00",
@@ -38367,12 +39783,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-29T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-29T09:00:00",
         "start_bg": null,
         "t": "2026-05-29T09:00:00",
@@ -38381,12 +39804,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-30T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-30T09:00:00",
         "start_bg": null,
         "t": "2026-05-30T09:00:00",
@@ -38395,12 +39825,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-05-31T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-31T09:00:00",
         "start_bg": null,
         "t": "2026-05-31T09:00:00",
@@ -38409,12 +39846,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-01T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-01T09:00:00",
         "start_bg": null,
         "t": "2026-06-01T09:00:00",
@@ -38423,12 +39867,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-02T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-02T09:00:00",
         "start_bg": null,
         "t": "2026-06-02T09:00:00",
@@ -38437,12 +39888,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-03T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-03T09:00:00",
         "start_bg": null,
         "t": "2026-06-03T09:00:00",
@@ -38451,12 +39909,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-04T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-04T09:00:00",
         "start_bg": null,
         "t": "2026-06-04T09:00:00",
@@ -38465,12 +39930,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-05T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-05T09:00:00",
         "start_bg": null,
         "t": "2026-06-05T09:00:00",
@@ -38479,12 +39951,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-06T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-06T09:00:00",
         "start_bg": null,
         "t": "2026-06-06T09:00:00",
@@ -38493,12 +39972,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-07T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-07T09:00:00",
         "start_bg": null,
         "t": "2026-06-07T09:00:00",
@@ -38507,12 +39993,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-08T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-08T09:00:00",
         "start_bg": null,
         "t": "2026-06-08T09:00:00",
@@ -38521,12 +40014,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-09T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-09T09:00:00",
         "start_bg": null,
         "t": "2026-06-09T09:00:00",
@@ -38535,12 +40035,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-10T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-10T09:00:00",
         "start_bg": null,
         "t": "2026-06-10T09:00:00",
@@ -38549,12 +40056,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-11T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-11T09:00:00",
         "start_bg": null,
         "t": "2026-06-11T09:00:00",
@@ -38563,12 +40077,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 12.0,
         "end_t": "2026-06-12T09:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-12T09:00:00",
         "start_bg": null,
         "t": "2026-06-12T09:00:00",
@@ -38642,6 +40163,7 @@
        "carbs": 1440,
        "window_days": 90
       },
+      "n_runs_excluded": 0,
       "n_runs_touching": 24,
       "points": [
        {
@@ -38950,12 +40472,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-20T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-20T19:00:00",
         "start_bg": null,
         "t": "2026-05-20T19:00:00",
@@ -38964,12 +40493,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-21T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-21T19:00:00",
         "start_bg": null,
         "t": "2026-05-21T19:00:00",
@@ -38978,12 +40514,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-22T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-22T19:00:00",
         "start_bg": null,
         "t": "2026-05-22T19:00:00",
@@ -38992,12 +40535,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-23T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-23T19:00:00",
         "start_bg": null,
         "t": "2026-05-23T19:00:00",
@@ -39006,12 +40556,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-24T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-24T19:00:00",
         "start_bg": null,
         "t": "2026-05-24T19:00:00",
@@ -39020,12 +40577,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-25T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-25T19:00:00",
         "start_bg": null,
         "t": "2026-05-25T19:00:00",
@@ -39034,12 +40598,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-26T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-26T19:00:00",
         "start_bg": null,
         "t": "2026-05-26T19:00:00",
@@ -39048,12 +40619,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-27T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-27T19:00:00",
         "start_bg": null,
         "t": "2026-05-27T19:00:00",
@@ -39062,12 +40640,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-28T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-28T19:00:00",
         "start_bg": null,
         "t": "2026-05-28T19:00:00",
@@ -39076,12 +40661,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-29T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-29T19:00:00",
         "start_bg": null,
         "t": "2026-05-29T19:00:00",
@@ -39090,12 +40682,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-30T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-30T19:00:00",
         "start_bg": null,
         "t": "2026-05-30T19:00:00",
@@ -39104,12 +40703,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-05-31T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-05-31T19:00:00",
         "start_bg": null,
         "t": "2026-05-31T19:00:00",
@@ -39118,12 +40724,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-01T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-01T19:00:00",
         "start_bg": null,
         "t": "2026-06-01T19:00:00",
@@ -39132,12 +40745,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-02T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-02T19:00:00",
         "start_bg": null,
         "t": "2026-06-02T19:00:00",
@@ -39146,12 +40766,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-03T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-03T19:00:00",
         "start_bg": null,
         "t": "2026-06-03T19:00:00",
@@ -39160,12 +40787,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-04T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-04T19:00:00",
         "start_bg": null,
         "t": "2026-06-04T19:00:00",
@@ -39174,12 +40808,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-05T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-05T19:00:00",
         "start_bg": null,
         "t": "2026-06-05T19:00:00",
@@ -39188,12 +40829,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-06T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-06T19:00:00",
         "start_bg": null,
         "t": "2026-06-06T19:00:00",
@@ -39202,12 +40850,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-07T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-07T19:00:00",
         "start_bg": null,
         "t": "2026-06-07T19:00:00",
@@ -39216,12 +40871,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-08T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-08T19:00:00",
         "start_bg": null,
         "t": "2026-06-08T19:00:00",
@@ -39230,12 +40892,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-09T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-09T19:00:00",
         "start_bg": null,
         "t": "2026-06-09T19:00:00",
@@ -39244,12 +40913,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-10T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-10T19:00:00",
         "start_bg": null,
         "t": "2026-06-10T19:00:00",
@@ -39258,12 +40934,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-11T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-11T19:00:00",
         "start_bg": null,
         "t": "2026-06-11T19:00:00",
@@ -39272,12 +40955,19 @@
        {
         "bg_outcome_u": null,
         "carbs": 60.0,
+        "cgm_end_min": 315.0,
+        "cgm_start_min": -10.0,
         "directional_only": false,
         "effective_insulin": 14.0,
         "end_t": "2026-06-12T19:00:00",
         "in_pool": true,
+        "member_offsets_min": [
+         0.0
+        ],
         "n_meals": 1,
         "outcome_bg": null,
+        "outcome_min": 300.0,
+        "ownership": 1.0,
         "run_id": "2026-06-12T19:00:00",
         "start_bg": null,
         "t": "2026-06-12T19:00:00",

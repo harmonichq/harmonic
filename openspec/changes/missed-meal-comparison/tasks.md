@@ -14,7 +14,7 @@
 ## Definitive post-origin/main verification
 
 - [x] Backend suite: 2,093 passed, 1 skipped.
-- [x] Frontend suite: 467 passed.
+- [x] Frontend suite: 470 passed.
 - [x] ADR, owned-identifier, and public-allowlist policy guards passed.
 - [x] Every declared drift check was current, including the missed-meal
       generator.

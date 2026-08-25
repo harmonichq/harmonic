@@ -28,6 +28,13 @@ The comparison account is independent of the five-way High verdict account. The
 High roster, attribution winner, verdict counts, and High denominator remain
 High-only; the announced cohort is a comparison population outside that roster.
 
+The cross-process validation boundary is explicit: server support classifications
+are an opaque closed enum, and the frontend derives no support floor. The client
+checks only threshold-free schema coherence: a point's `n` cannot exceed its
+cohort `usable_count`; `n = 0` has null aggregates; finite ordered aggregates
+require `n > 0`; withheld aggregates are null; and an exact zero cohort has no
+drawable evidence or episodes.
+
 ### Alternatives rejected
 
 - A High-only clean baseline was rejected because conditioning the baseline on a

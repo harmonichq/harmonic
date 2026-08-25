@@ -239,13 +239,38 @@ rather than derived: **how a chart is identified and wired**.
    one-implementation rule; importing an export added later makes chunk 1's standalone
    gate unsatisfiable.
 
-### Stopped at the cap
+### Settled — chart identity, and the two ownership questions that followed
 
-Drafting stopped here per the review rules: objections still arriving at the third
-panel mean an unsettled decision. The chart-identity model goes to the operator; the
-two ownership questions follow mechanically once it is settled. Nothing posted to the
-ticket.
+- **The canvas reads its chart list from the live findings payload, never from the
+  registry.** The registry holds one entry per chart KIND (basal, ISF, carb-ratio,
+  event comparison) plus a `coordinateSchema`; which blocks and slots the reader
+  actually has is a live fact of the active analysis, already published as queue rows.
+  One tile per row. Changing pump settings, or a re-run analysis, arrives on the next
+  read — which is also all the stale-generation recovery has to do. Why: one list that
+  cannot disagree with itself; a second list would drift exactly where drift is
+  invisible, leaving a pinned chart showing evidence for a block the reader no longer
+  has. `inline` (work order)
+- **Chunk 2 owns the client bridge in `frontend/index.html`** — the imports and the
+  `enqueue` callback injection (lines 2345, 5461) — so no chunk opens a second
+  direct-transport path around the shipped seam. `inline` (work order)
+- **Chunk 1 owns exporting the event-comparison option adapter** from
+  `frontend/diagnose-event-comparison.js:519`, including its range parameter, so its
+  registry entry reuses the shipped chart instead of copying it. Chunk 2 owns only
+  `renderCanvas`'s range injection. Every shared file now has exactly one owner.
+  `inline` (work order)
+
+### Posted
+
+Work order posted to #135 as comment 5414027248 and verified locatable by the tracker
+contract's scan. Ticket moved to triaged. Blocked by #188.
 
 ## Spawned tasks
 
-(none yet)
+- **#188 filed** — reconcile the Diagnose behavior ledger against its replay (header
+  claims 99 executable entries; the replay exports 108) and add the parity check that
+  would have caught it. Stamped a blocking predecessor on #135's order. Discharges the
+  `→ issue` disposition on the stale-baseline decision.
+- **Follow-on, not yet filed:** widening the per-finding `event_chart` coordinate into
+  an ordered multi-chart `seats` list; and the two mock-only charts ("Meal starts vs
+  target", "Correction burden") which have no feed. Both are named in the order's
+  Boundaries as out of scope. `→ issue` — OPEN

@@ -240,6 +240,61 @@ realism). The order was rewritten clean rather than patched, per the
 rewrite-clean rule; one `injected` blocker in round 1's own fix is what that rule
 exists for.
 
+**Round 2 re-check — both reviewers re-read the rewritten order. 3 blocking,
+5 notes. ALL 3 blockers `injected` by round 2's own fixes.** Both independently
+confirmed the P17 refutation; one wrote that it had "bound a verdict line to a
+block header 72 lines earlier without checking the intervening fence."
+
+Blocking, all injected:
+
+1. **The rewrite pointed the frozen-ledger edit at the wrong line.** Step 7a said
+   "flip P20's verdict line (:577)"; `:577` is P20's `mock:` line and its verdict
+   is `:580`. An agent following the cite literally would rewrite the `mock:`
+   line and leave `verdict: kept` standing — a frozen contract asserting the
+   seizure is still kept while the code no longer does it. Nothing catches that:
+   the ledger is prose, and none of the three policy guards reads it. The
+   previous draft carried no line number here and was right by omission; the
+   rewrite introduced the error while adding precision. Both reviewers flagged
+   it; only one had the correct replacement.
+2. **Step 2's own chart-module surgery leaves dead code, while citing the
+   dead-code rule as its rationale.** Removing `notePx` from
+   `frontend/diagnose-workstation-chart.js:672` makes the `thin` shedding branch
+   at `:678-679` unreachable: `thin` guarantees a non-empty `tailText`
+   (`:653-655`), so branch 1's condition subsumes it. That branch was reachable
+   only through a non-empty `labelNote` inflating branch 1's sum — exactly what
+   step 2 deletes. Worse, the step's closing sentence instructed the agent to
+   leave the shedding order intact, forbidding the fix. Found independently by
+   both reviewers; they disagreed by one line on where it sits, and the file says
+   `:678-679`.
+3. The same-round cite corrections: P21's `sanction:` form is `:594`, not `:597`
+   (a closing fence); S36 is exported at `:2991` with a doc comment from `:2986`,
+   not `:2988`; P17's `source:` is `:499-500`, and `:501` is a frozen `mock:`
+   line an over-wide replacement range would clobber; S36 keeps five other
+   assertions, not three; and Done-when still carried the hard literal `109` that
+   the Expectation had just been hedged away from, which would have defeated the
+   #178 guard at the acceptance gate.
+
+Notes adopted: "the only other `renderCanvas` caller" is wrong a second way —
+`frontend/diagnose-workstation-chart.test.js` calls it seven times (passing
+`windowNote` in none), so the order now says PRODUCTION caller and tells the
+agent to re-grep rather than trust the enumeration.
+
+Cleared on re-check: the new story is genuinely red on this base, verified
+through the mechanism — `markWindowSegment` assigns `follow.textContent`
+(`:391`), destroying the `<i class="x">` child, and re-appends it only
+`if (onClear)` (`:392-399`), so the count goes 1 → 0 after a drill today and
+1 → 1 after the change. One reviewer also swept the other CI legs unprompted:
+`frontend/diagnose-workstation.browser.test.mjs` reads the chip at `:666`,
+`:736` and `:761` but never with a factor frame open, and `chipIs` (`:290`) is
+called only from a level-1 drag helper, so no further gate moves.
+
+**Injected-blocker trend: 1 → 3.** Every round-2 blocker was introduced by
+round-1's or round-2's own fixes rather than present in the original draft. Each
+was a fact error with an exact, reproduced counterpart, applied surgically and
+re-verified by opening the file and printing the line, rather than answered with
+a third rewrite that would mint fresh surface. No unsettled decision was blocking
+at any point.
+
 **Cross-ticket collision found while the panel ran, and guarded rather than
 sequenced.** Ticket #178 is in flight against the same replay file and the same
 behaviour ledger: both tickets add a story at the next free id, and both amend a

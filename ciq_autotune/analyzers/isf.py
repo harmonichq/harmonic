@@ -684,6 +684,7 @@ def analyze_isf(
     correction_rescue_days: int = 0,
     prior_strengthen_signal: bool = False,
     rescue_observation: Optional[RescueObservation] = None,
+    fasting_evidence_sink=None,
 ) -> List[SegmentEstimate]:
     """A single fasting ISF measured vs programmed, with a CI and an advisory move.
 
@@ -715,6 +716,8 @@ def analyze_isf(
     )
     rest_windows = list(fasting_evidence.rest_windows)
     steps = list(fasting_evidence.steps)
+    if fasting_evidence_sink is not None:
+        fasting_evidence_sink(fasting_evidence)
     # ISF = -slope of ΔBG on insulin_acted; negate the slope estimate (flipping
     # and swapping its CI bounds) so the reported number is in ISF units. The CI
     # resamples whole nights (each step's containing rest window), not individual

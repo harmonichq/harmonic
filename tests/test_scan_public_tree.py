@@ -562,7 +562,7 @@ class ShippedConfigTest(unittest.TestCase):
                 f"mockups/diagnose-workstation.synthetic/{name}.capture.json"
                 for name in (
                     "explore-day", "explore-exposures", "ic-blocks",
-                    "ic-blocks-asserting", "isf-rest-window-evidence", "settings-audit",
+                    "ic-blocks-asserting", "settings-audit",
                 )
             ),
         )

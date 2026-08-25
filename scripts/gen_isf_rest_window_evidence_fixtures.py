@@ -5,39 +5,42 @@ import argparse
 import json
 import pathlib
 import sys
+import tempfile
 from datetime import datetime, timedelta
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from ciq_autotune.events import BasalEvent, CgmReading  # noqa: E402
+from ciq_autotune.analyze import analyze  # noqa: E402
 from ciq_autotune.isf_rest_window_evidence import prepare_isf_rest_window_evidence  # noqa: E402
+from ciq_autotune.store import Store  # noqa: E402
 
 OUT = ROOT / "mockups" / "diagnose-workstation.synthetic" / "isf-rest-window-evidence.capture.json"
 
 
-class Store:
-    def __init__(self):
-        self.cgm, self.basal = [], []
+def payload():
+    with tempfile.NamedTemporaryFile(suffix=".db") as db:
+        cgm, basal = [], []
         for night in range(2):
             start = datetime(2026, 6, 1 + night, 22)
             for point in range(121):
                 at = start + timedelta(minutes=5 * point)
-                self.cgm.append(CgmReading(at, 110, "synthetic"))
-                self.basal.append(BasalEvent(at, "algorithmDelivery", 5, .8, .8))
-    def latest_cgm_or_basal_timestamp(self): return max(row.t for row in self.cgm)
-    def cgm_readings(self, start=None, end=None):
-        return [row for row in self.cgm if (start is None or start <= row.t)
-                and (end is None or row.t <= end)]
-    def basal_events(self, start=None, end=None):
-        return [row for row in self.basal if (start is None or start <= row.t)
-                and (end is None or row.t <= end)]
-    def bolus_events(self, start=None, end=None): return []
-    def carb_entries(self, start=None, end=None): return []
-
-
-def payload():
-    prepared = prepare_isf_rest_window_evidence(Store(), {"isf": []}, window_days=30)
+                cgm.append({"EventDateTime": at.isoformat(), "Readings (CGM / BGM)": 110,
+                            "Description": "EGV"})
+                basal.append({"seq_num": int(at.strftime("%Y%m%d%H%M%S")),
+                              "time": at.strftime("%Y-%m-%d %H:%M:%S"),
+                              "delivery_type": "algorithmDelivery", "duration_mins": 5,
+                              "basal_rate": .8, "profile_basal_rate": .8})
+        with Store.open(db.name) as store:
+            store.upsert_cgm(cgm)
+            store.upsert_basal(basal)
+        captured = []
+        with Store.open_queryonly(db.name) as store:
+            analysis = analyze(store, pool_agreeing_basal_regimes=True,
+                               carb_entries=store.carb_entries(),
+                               prompt_responses=store.prompt_responses(),
+                               isf_fasting_evidence_sink=captured.append).to_dict()
+        prepared = prepare_isf_rest_window_evidence(analysis, captured[0])
     return {"_generated_by": "scripts/gen_isf_rest_window_evidence_fixtures.py",
             "_note": "SYNTHETIC. Generated analyzer-owned rest-window evidence.",
             "payload": prepared.project()}

@@ -87,7 +87,7 @@ class Estimate:
         return half > _WIDE_REL_HALFWIDTH * ref
 
     def to_dict(self) -> dict:
-        return {
+        out = {
             "value": self.value,
             "lo": self.lo,
             "hi": self.hi,
@@ -96,6 +96,9 @@ class Estimate:
             "method": self.method,
             "wide": self.wide,
         }
+        if self.n_clusters is not None:
+            out["n_clusters"] = self.n_clusters
+        return out
 
 
 def wilson(k: int, n: int, z: float = _FINDING_Z) -> Tuple[float, float, float]:

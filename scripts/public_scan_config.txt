@@ -126,7 +126,6 @@ authorized-synthetic mockups/diagnose-workstation.synthetic/explore-exposures.ca
 authorized-synthetic mockups/diagnose-workstation.synthetic/ic-blocks.capture.json | seeded-PRNG demo capture, regenerated and byte-compared in CI
 authorized-synthetic mockups/diagnose-workstation.synthetic/ic-blocks-asserting.capture.json | seeded-PRNG demo capture, regenerated and byte-compared in CI
 authorized-synthetic mockups/diagnose-workstation.synthetic/settings-audit.capture.json | seeded-PRNG demo capture, regenerated and byte-compared in CI
-authorized-synthetic mockups/diagnose-workstation.synthetic/isf-rest-window-evidence.capture.json | generated analyzer-owned synthetic rest-window evidence
 
 # --- The acknowledged rule5-dose-ratio set (§0.5.5.3, #728) --------------
 # Rule 5's dose/ratio term is broad by design and CANNOT reach zero: prose in

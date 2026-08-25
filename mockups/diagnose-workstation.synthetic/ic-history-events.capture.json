@@ -2294,6 +2294,7 @@
      "lo": 6.0,
      "method": "bootstrap-pooled-ratio-clustered",
      "n": 3,
+     "n_clusters": 3,
      "value": 6.0,
      "wide": false
     },

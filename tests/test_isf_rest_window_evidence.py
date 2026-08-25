@@ -12,7 +12,6 @@ except ImportError:  # pragma: no cover
     _HAS_FASTAPI = False
 
 from ciq_autotune.events import CarbEntry
-from ciq_autotune.isf_rest_window_evidence import prepare_isf_rest_window_evidence
 from ciq_autotune.store import Store
 
 
@@ -55,17 +54,30 @@ class IsfRestWindowEvidenceApiTest(unittest.TestCase):
         response = self.client.get("/api/diagnose/isf-rest-window-evidence")
         self.assertEqual(response.status_code, 200, response.text)
         body = response.json()
+        analysis = self.client.get("/api/analyze", params={"pool": True}).json()
+        analyzer_row = analysis["isf"][0]
+        analyzer_evidence = analyzer_row["evidence"]
         self.assertEqual(body["schema"], "diagnose-isf-rest-window-evidence-v1")
         self.assertGreater(body["counts"]["detected_windows"], 0)
         self.assertGreater(body["counts"]["qualifying_windows"], 0)
         self.assertEqual(body["counts"]["qualifying_steps"], len(body["steps"]))
+        self.assertEqual(body["counts"]["qualifying_steps"], analyzer_row["estimate"]["n"])
+        self.assertEqual(body["counts"]["qualifying_windows"],
+                         analyzer_row["estimate"]["n_clusters"])
+        self.assertEqual(body["counts"]["detected_windows"],
+                         len(analyzer_evidence["rest_windows"]))
+        self.assertEqual(
+            [{key: window[key] for key in ("date", "start", "end")} for window in body["windows"]],
+            analyzer_evidence["rest_windows"],
+        )
         window_ids = {window["id"] for window in body["windows"]}
         self.assertTrue(body["steps"])
         self.assertTrue(all(step["window_id"] in window_ids for step in body["steps"]))
-        with Store.open_queryonly(self.tmp.name) as store:
-            prepared = prepare_isf_rest_window_evidence(store, {"isf": []}, window_days=30)
-        self.assertEqual(body["windows"], prepared.project()["windows"])
-        self.assertEqual(body["steps"], prepared.project()["steps"])
+        self.assertTrue(all("t" not in step for step in body["steps"]))
+        self.assertEqual(body["finding"], {
+            "asserts_move": analyzer_row["asserts_move"],
+            "direction": analyzer_evidence["direction"],
+        })
 
     def test_detected_windows_without_qualifying_steps_stays_distinct(self):
         blocked = tempfile.NamedTemporaryFile(suffix=".db")

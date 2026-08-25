@@ -329,8 +329,16 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         """One complete fasting-step population for the fixed Diagnose window."""
         key = ("isf-rest-window-evidence", window)
         def compute(store):
-            analysis, _exposures, _scenarios = findings_products(window)
-            return prepare_isf_rest_window_evidence(store, analysis, window_days=window)
+            captured = []
+            analysis = analyze(
+                store, window_days=window, ignore_setting_changes=False,
+                pool_agreeing_basal_regimes=True, carb_entries=store.carb_entries(),
+                prompt_responses=store.prompt_responses(),
+                isf_fasting_evidence_sink=captured.append,
+            ).to_dict()
+            if len(captured) != 1:
+                raise ValueError("ISF analyzer did not retain fasting evidence")
+            return prepare_isf_rest_window_evidence(analysis, captured[0])
         return fixed(key, "isf-rest-window-evidence-v1", compute, serve_stale=False)
 
     def _case_error(status, code, message):

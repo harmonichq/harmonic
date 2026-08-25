@@ -968,6 +968,7 @@
       "lo": 4.2857,
       "method": "bootstrap-inverse-ratio-wls-clustered",
       "n": 24,
+      "n_clusters": 24,
       "value": 4.2857,
       "wide": false
      },
@@ -1847,6 +1848,7 @@
       "lo": 3.0,
       "method": "bootstrap-inverse-ratio-wls-clustered",
       "n": 24,
+      "n_clusters": 24,
       "value": 3.0,
       "wide": false
      },
@@ -2727,6 +2729,7 @@
       "lo": null,
       "method": "none",
       "n": 0,
+      "n_clusters": 0,
       "value": null,
       "wide": true
      },
@@ -3677,6 +3680,7 @@
       "lo": 5.0,
       "method": "bootstrap-inverse-ratio-wls-clustered",
       "n": 24,
+      "n_clusters": 24,
       "value": 5.0,
       "wide": false
      },
@@ -4554,6 +4558,7 @@
       "lo": 6.0,
       "method": "bootstrap-inverse-ratio-wls-clustered",
       "n": 24,
+      "n_clusters": 24,
       "value": 6.0,
       "wide": false
      },
@@ -5627,6 +5632,7 @@
       "lo": null,
       "method": "none",
       "n": 0,
+      "n_clusters": 0,
       "value": null,
       "wide": true
      },
@@ -5701,6 +5707,7 @@
       "lo": null,
       "method": "none",
       "n": 0,
+      "n_clusters": 0,
       "value": null,
       "wide": true
      },
@@ -5776,6 +5783,7 @@
       "lo": null,
       "method": "none",
       "n": 0,
+      "n_clusters": 0,
       "value": null,
       "wide": true
      },
@@ -6742,6 +6750,7 @@
       "lo": 5.0,
       "method": "bootstrap-inverse-ratio-wls-clustered",
       "n": 24,
+      "n_clusters": 24,
       "value": 5.0,
       "wide": false
      },
@@ -7619,6 +7628,7 @@
       "lo": 5.0625,
       "method": "bootstrap-inverse-ratio-wls-clustered",
       "n": 25,
+      "n_clusters": 25,
       "value": 5.1207,
       "wide": false
      },
@@ -9408,6 +9418,7 @@
        "lo": 4.1613,
        "method": "bootstrap-inverse-ratio-wls-clustered",
        "n": 48,
+       "n_clusters": 48,
        "value": 4.2,
        "wide": false
       },
@@ -11967,6 +11978,7 @@
        "lo": 4.0,
        "method": "bootstrap-inverse-ratio-wls-clustered",
        "n": 24,
+       "n_clusters": 24,
        "value": 4.0,
        "wide": false
       },
@@ -12846,6 +12858,7 @@
        "lo": 4.5,
        "method": "bootstrap-inverse-ratio-wls-clustered",
        "n": 24,
+       "n_clusters": 24,
        "value": 4.5,
        "wide": false
       },
@@ -14473,6 +14486,7 @@
       "lo": 5.0,
       "method": "bootstrap-inverse-ratio-wls-clustered",
       "n": 12,
+      "n_clusters": 12,
       "value": 5.0,
       "wide": false
      },
@@ -14971,6 +14985,7 @@
       "lo": 3.0,
       "method": "bootstrap-inverse-ratio-wls-clustered",
       "n": 24,
+      "n_clusters": 24,
       "value": 3.0,
       "wide": false
      },
@@ -15865,6 +15880,7 @@
       "lo": 5.0,
       "method": "bootstrap-inverse-ratio-wls-clustered",
       "n": 8,
+      "n_clusters": 8,
       "value": 5.0,
       "wide": false
      },
@@ -16220,6 +16236,7 @@
       "lo": null,
       "method": "none",
       "n": 0,
+      "n_clusters": 0,
       "value": null,
       "wide": true
      },
@@ -17259,6 +17276,7 @@
       "lo": 4.2857,
       "method": "bootstrap-inverse-ratio-wls-clustered",
       "n": 24,
+      "n_clusters": 24,
       "value": 4.2857,
       "wide": false
      },
@@ -18139,6 +18157,7 @@
       "lo": 3.0,
       "method": "bootstrap-inverse-ratio-wls-clustered",
       "n": 24,
+      "n_clusters": 24,
       "value": 3.0,
       "wide": false
      },
@@ -19021,6 +19040,7 @@
       "lo": null,
       "method": "none",
       "n": 0,
+      "n_clusters": 0,
       "value": null,
       "wide": true
      },

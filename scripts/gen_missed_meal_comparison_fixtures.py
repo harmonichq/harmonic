@@ -89,7 +89,7 @@ def payload():
     zero_prepared = _zero_attribution_preparation()
     members = prepared.members[Lever.MISSED_MEAL]
     case = prepared.case("finding:missed_meal", "event", None)
-    announced_id = case["projection"]["cohorts"][1]["occurrence_ids"][0]
+    announced_id = case["projection"]["cohorts"][2]["occurrence_ids"][0]
     return {
         "_generated_by": "scripts/gen_missed_meal_comparison_fixtures.py",
         "_note": "SYNTHETIC. Fixed invented Highs and boluses; no personal data.",

@@ -244,7 +244,8 @@
       "kind": "detected_rise_onset",
       "label": "Detected rise onset"
      },
-     "key": "missed",
+     "key": "matched",
+     "name": "Matched",
      "occurrence_ids": [
       "o_c281816958d35a86706fd0017f599a2d",
       "o_318cbbb3a65cdec87252cb3cd3dfbf38"
@@ -841,3575 +842,11 @@
     },
     {
      "anchor": {
-      "kind": "completed_carb_bolus",
-      "label": "Completed carb bolus"
-     },
-     "key": "announced",
-     "occurrence_ids": [
-      "m_4a44dc15364204a80fe80e9039455cc1"
-     ],
-     "points": [
-      {
-       "median": null,
-       "minute": -60,
-       "n": 1,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -55,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -50,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -45,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -40,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -35,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -30,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -25,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -20,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -15,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -10,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -5,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 0,
-       "n": 1,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 5,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 10,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 15,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 20,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 25,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 30,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 35,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 40,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 45,
-       "n": 1,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 50,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 55,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 60,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 65,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 70,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 75,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 80,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 85,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 90,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 95,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 100,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 105,
-       "n": 1,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 110,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 115,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 120,
-       "n": 1,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 125,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 130,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 135,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 140,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 145,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 150,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 155,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 160,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 165,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 170,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 175,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 180,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 185,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 190,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 195,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 200,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 205,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 210,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 215,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 220,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 225,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 230,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 235,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 240,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 245,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 250,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 255,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 260,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 265,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 270,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 275,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 280,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 285,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 290,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 295,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 300,
-       "n": 1,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      }
-     ],
-     "routed_count": 1,
-     "support": "withheld",
-     "usable_count": 1
-    }
-   ],
-   "counts": {
-    "announced": 1,
-    "missed": 2,
-    "not_comparable": 1
-   },
-   "window_min": [
-    -60,
-    300
-   ]
-  },
-  "projection_id": "fp_11111111111111111111111111111111",
-  "schema": "diagnose-finding-case-file-v1",
-  "selection": {
-   "detail": null,
-   "requested_id": null,
-   "state": "none"
-  },
-  "summary": {
-   "claimed": 2,
-   "denominator": 3,
-   "noun": "highs"
-  },
-  "verdict_counts": {
-   "clean": 0,
-   "fired": 2,
-   "near_miss": 0,
-   "no_data": 0,
-   "outranked": 1
-  },
-  "window": {
-   "end_min": null,
-   "label": null,
-   "scoped": false,
-   "start_min": null
-  }
- },
- "preparation": {
-  "behavioral_case_headers": {
-   "finding:missed_meal": {
-    "event_chart": {
-     "lever": "missed_meal",
-     "window": {
-      "end_min": null,
-      "label": null,
-      "scoped": false,
-      "start_min": null
-     }
-    },
-    "family": "highs",
-    "finding_id": "finding:missed_meal",
-    "inspectability": "ready",
-    "lever": "missed_meal",
-    "summary": {
-     "claimed": 2,
-     "denominator": 3,
-     "noun": "highs"
-    },
-    "title": "Missed / unannounced meal",
-    "verdict_counts": {
-     "clean": 0,
-     "fired": 2,
-     "near_miss": 0,
-     "no_data": 0,
-     "outranked": 1
-    }
-   }
-  },
-  "coordinates": {
-   "source_window_days": 30,
-   "window": {
-    "end_min": null,
-    "label": null,
-    "scoped": false,
-    "start_min": null
-   }
-  },
-  "findings": {
-   "analysis_generation": "synthetic:178",
-   "chip_counts": {
-    "corrections": 0,
-    "highs": 1,
-    "lows": 0,
-    "meals": 0
-   },
-   "counts": {
-    "assert": 0,
-    "blind": 0,
-    "finding": 1,
-    "held": 0,
-    "history": 0
-   },
-   "findings_window": {
-    "days": 30,
-    "end": null,
-    "start": null
-   },
-   "rows": [
-    {
-     "episodes": 2,
-     "id": "finding:missed_meal",
-     "register": "finding"
-    }
-   ],
-   "schema": "diagnose-findings-v2",
-   "selection": null,
-   "uncaused_highs": {
-    "count": 0,
-    "text": "None"
-   },
-   "window": {
-    "end_min": null,
-    "label": null,
-    "scoped": false,
-    "start_min": null
-   }
-  },
-  "projection_id": "fp_11111111111111111111111111111111",
-  "rendered_rows": [
-   {
-    "appearances": [
-     {
-      "family": "highs",
-      "m": 3,
-      "n": 2,
-      "noun": "highs"
-     }
-    ],
-    "case_header": {
-     "event_chart": {
-      "lever": "missed_meal",
-      "window": {
-       "end_min": null,
-       "label": null,
-       "scoped": false,
-       "start_min": null
-      }
-     },
-     "family": "highs",
-     "finding_id": "finding:missed_meal",
-     "inspectability": "ready",
-     "lever": "missed_meal",
-     "summary": {
-      "claimed": 2,
-      "denominator": 3,
-      "noun": "highs"
-     },
-     "title": "Missed / unannounced meal",
-     "verdict_counts": {
-      "clean": 0,
-      "fired": 2,
-      "near_miss": 0,
-      "no_data": 0,
-      "outranked": 1
-     }
-    },
-    "episodes": 2,
-    "event_chart": {
-     "lever": "missed_meal",
-     "window": {
-      "end_min": null,
-      "label": null,
-      "scoped": false,
-      "start_min": null
-     }
-    },
-    "evidence": null,
-    "id": "finding:missed_meal",
-    "register": "finding",
-    "verdict_counts": {
-     "clean": 0,
-     "fired": 2,
-     "near_miss": 0,
-     "no_data": 0,
-     "outranked": 1
-    },
-    "verdict_counts_by_family": {
-     "highs": {
-      "clean": 0,
-      "fired": 2,
-      "near_miss": 0,
-      "no_data": 0,
-      "outranked": 1
-     }
-    }
-   }
-  ],
-  "schema": "diagnose-finding-case-file-preparation-v1",
-  "withheld_findings": []
- },
- "selected_announced": {
-  "family": "highs",
-  "finding": {
-   "id": "finding:missed_meal",
-   "lever": "missed_meal",
-   "title": "Missed / unannounced meal"
-  },
-  "occurrences": [
-   {
-    "anchor": {
-     "bg": 260,
-     "kind": "high",
-     "label": "High peak",
-     "t": "2026-01-03 12:00:00"
-    },
-    "attributed": true,
-    "comparison_anchor": {
-     "bg": 110,
-     "kind": "detected_rise_onset",
-     "label": "Detected rise onset",
-     "t": "2026-01-03 11:45:00"
-    },
-    "date": "2026-01-03",
-    "id": "o_c281816958d35a86706fd0017f599a2d",
-    "verdict": "fired"
-   },
-   {
-    "anchor": {
-     "bg": 275,
-     "kind": "high",
-     "label": "High peak",
-     "t": "2026-01-04 12:00:00"
-    },
-    "attributed": true,
-    "comparison_anchor": {
-     "bg": 110,
-     "kind": "detected_rise_onset",
-     "label": "Detected rise onset",
-     "t": "2026-01-04 10:00:00"
-    },
-    "date": "2026-01-04",
-    "id": "o_318cbbb3a65cdec87252cb3cd3dfbf38",
-    "verdict": "fired"
-   },
-   {
-    "anchor": {
-     "bg": 250,
-     "kind": "high",
-     "label": "High peak",
-     "t": "2026-01-05 12:00:00"
-    },
-    "attributed": false,
-    "comparison_anchor": null,
-    "date": "2026-01-05",
-    "id": "o_c3c777ba6aceb41ce56d29ed5527a472",
-    "verdict": "outranked"
-   }
-  ],
-  "projection": {
-   "alignment": "event",
-   "anchor": {
-    "kind": "cohort_specific_meal_start",
-    "label": "Meal start"
-   },
-   "clock": null,
-   "cohorts": [
-    {
-     "anchor": {
       "kind": "detected_rise_onset",
       "label": "Detected rise onset"
      },
-     "key": "missed",
-     "occurrence_ids": [
-      "o_c281816958d35a86706fd0017f599a2d",
-      "o_318cbbb3a65cdec87252cb3cd3dfbf38"
-     ],
-     "points": [
-      {
-       "median": 105.0,
-       "minute": -60,
-       "n": 2,
-       "p25": 105.0,
-       "p75": 105.0,
-       "support": "limited"
-      },
-      {
-       "median": null,
-       "minute": -55,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -50,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -45,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -40,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -35,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -30,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -25,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -20,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -15,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -10,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -5,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": 110.0,
-       "minute": 0,
-       "n": 2,
-       "p25": 110.0,
-       "p75": 110.0,
-       "support": "limited"
-      },
-      {
-       "median": null,
-       "minute": 5,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 10,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 15,
-       "n": 1,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 20,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 25,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 30,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 35,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 40,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 45,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 50,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 55,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 60,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 65,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 70,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 75,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 80,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 85,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 90,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 95,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 100,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 105,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 110,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 115,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 120,
-       "n": 1,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 125,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 130,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 135,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 140,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 145,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 150,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 155,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 160,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 165,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 170,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 175,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 180,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 185,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 190,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 195,
-       "n": 1,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 200,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 205,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 210,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 215,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 220,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 225,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 230,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 235,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 240,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 245,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 250,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 255,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 260,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 265,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 270,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 275,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 280,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 285,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 290,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 295,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": 145.0,
-       "minute": 300,
-       "n": 2,
-       "p25": 145.0,
-       "p75": 145.0,
-       "support": "limited"
-      }
-     ],
-     "routed_count": 2,
-     "support": "limited",
-     "usable_count": 2
-    },
-    {
-     "anchor": {
-      "kind": "completed_carb_bolus",
-      "label": "Completed carb bolus"
-     },
-     "key": "announced",
-     "occurrence_ids": [
-      "m_4a44dc15364204a80fe80e9039455cc1"
-     ],
-     "points": [
-      {
-       "median": null,
-       "minute": -60,
-       "n": 1,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -55,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -50,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -45,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -40,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -35,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -30,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -25,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -20,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -15,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -10,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -5,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 0,
-       "n": 1,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 5,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 10,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 15,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 20,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 25,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 30,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 35,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 40,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 45,
-       "n": 1,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 50,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 55,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 60,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 65,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 70,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 75,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 80,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 85,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 90,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 95,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 100,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 105,
-       "n": 1,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 110,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 115,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 120,
-       "n": 1,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 125,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 130,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 135,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 140,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 145,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 150,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 155,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 160,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 165,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 170,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 175,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 180,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 185,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 190,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 195,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 200,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 205,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 210,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 215,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 220,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 225,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 230,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 235,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 240,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 245,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 250,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 255,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 260,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 265,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 270,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 275,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 280,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 285,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 290,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 295,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 300,
-       "n": 1,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      }
-     ],
-     "routed_count": 1,
-     "support": "withheld",
-     "usable_count": 1
-    }
-   ],
-   "counts": {
-    "announced": 1,
-    "missed": 2,
-    "not_comparable": 1
-   },
-   "window_min": [
-    -60,
-    300
-   ]
-  },
-  "projection_id": "fp_11111111111111111111111111111111",
-  "schema": "diagnose-finding-case-file-v1",
-  "selection": {
-   "detail": {
-    "anchor": {
-     "bg": null,
-     "kind": "completed_carb_bolus",
-     "label": "Completed carb bolus",
-     "t": "2026-01-03 10:00:00"
-    },
-    "comparison_cohort": "announced",
-    "date": "2026-01-03",
-    "day_target": {
-     "date": "2026-01-03"
-    },
-    "glucose": [
-     {
-      "bg": 109.0,
-      "minute": -60.0,
-      "t": "2026-01-03 09:00:00"
-     },
-     {
-      "bg": 115.0,
-      "minute": 0.0,
-      "t": "2026-01-03 10:00:00"
-     },
-     {
-      "bg": 105,
-      "minute": 45.0,
-      "t": "2026-01-03 10:45:00"
-     },
-     {
-      "bg": 110,
-      "minute": 105.0,
-      "t": "2026-01-03 11:45:00"
-     },
-     {
-      "bg": 260,
-      "minute": 120.0,
-      "t": "2026-01-03 12:00:00"
-     },
-     {
-      "bg": 145.0,
-      "minute": 300.0,
-      "t": "2026-01-03 15:00:00"
-     }
-    ],
-    "id": "m_4a44dc15364204a80fe80e9039455cc1",
-    "markers": [
-     {
-      "carbs": 40,
-      "insulin": 4,
-      "kind": "bolus",
-      "minute": 0.0,
-      "seq_num": 10,
-      "t": "2026-01-03 10:00:00"
-     },
-     {
-      "carbs": 40,
-      "insulin": 4,
-      "kind": "bolus",
-      "minute": -60.0,
-      "seq_num": 11,
-      "t": "2026-01-03 09:00:00"
-     }
-    ],
-    "source_corrections": [],
-    "verdict": "announced"
-   },
-   "requested_id": "m_4a44dc15364204a80fe80e9039455cc1",
-   "state": "selected"
-  },
-  "summary": {
-   "claimed": 2,
-   "denominator": 3,
-   "noun": "highs"
-  },
-  "verdict_counts": {
-   "clean": 0,
-   "fired": 2,
-   "near_miss": 0,
-   "no_data": 0,
-   "outranked": 1
-  },
-  "window": {
-   "end_min": null,
-   "label": null,
-   "scoped": false,
-   "start_min": null
-  }
- },
- "selected_missed": {
-  "family": "highs",
-  "finding": {
-   "id": "finding:missed_meal",
-   "lever": "missed_meal",
-   "title": "Missed / unannounced meal"
-  },
-  "occurrences": [
-   {
-    "anchor": {
-     "bg": 260,
-     "kind": "high",
-     "label": "High peak",
-     "t": "2026-01-03 12:00:00"
-    },
-    "attributed": true,
-    "comparison_anchor": {
-     "bg": 110,
-     "kind": "detected_rise_onset",
-     "label": "Detected rise onset",
-     "t": "2026-01-03 11:45:00"
-    },
-    "date": "2026-01-03",
-    "id": "o_c281816958d35a86706fd0017f599a2d",
-    "verdict": "fired"
-   },
-   {
-    "anchor": {
-     "bg": 275,
-     "kind": "high",
-     "label": "High peak",
-     "t": "2026-01-04 12:00:00"
-    },
-    "attributed": true,
-    "comparison_anchor": {
-     "bg": 110,
-     "kind": "detected_rise_onset",
-     "label": "Detected rise onset",
-     "t": "2026-01-04 10:00:00"
-    },
-    "date": "2026-01-04",
-    "id": "o_318cbbb3a65cdec87252cb3cd3dfbf38",
-    "verdict": "fired"
-   },
-   {
-    "anchor": {
-     "bg": 250,
-     "kind": "high",
-     "label": "High peak",
-     "t": "2026-01-05 12:00:00"
-    },
-    "attributed": false,
-    "comparison_anchor": null,
-    "date": "2026-01-05",
-    "id": "o_c3c777ba6aceb41ce56d29ed5527a472",
-    "verdict": "outranked"
-   }
-  ],
-  "projection": {
-   "alignment": "event",
-   "anchor": {
-    "kind": "cohort_specific_meal_start",
-    "label": "Meal start"
-   },
-   "clock": null,
-   "cohorts": [
-    {
-     "anchor": {
-      "kind": "detected_rise_onset",
-      "label": "Detected rise onset"
-     },
-     "key": "missed",
-     "occurrence_ids": [
-      "o_c281816958d35a86706fd0017f599a2d",
-      "o_318cbbb3a65cdec87252cb3cd3dfbf38"
-     ],
-     "points": [
-      {
-       "median": 105.0,
-       "minute": -60,
-       "n": 2,
-       "p25": 105.0,
-       "p75": 105.0,
-       "support": "limited"
-      },
-      {
-       "median": null,
-       "minute": -55,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -50,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -45,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -40,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -35,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -30,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -25,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -20,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -15,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -10,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -5,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": 110.0,
-       "minute": 0,
-       "n": 2,
-       "p25": 110.0,
-       "p75": 110.0,
-       "support": "limited"
-      },
-      {
-       "median": null,
-       "minute": 5,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 10,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 15,
-       "n": 1,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 20,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 25,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 30,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 35,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 40,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 45,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 50,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 55,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 60,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 65,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 70,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 75,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 80,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 85,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 90,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 95,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 100,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 105,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 110,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 115,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 120,
-       "n": 1,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 125,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 130,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 135,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 140,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 145,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 150,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 155,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 160,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 165,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 170,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 175,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 180,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 185,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 190,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 195,
-       "n": 1,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 200,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 205,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 210,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 215,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 220,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 225,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 230,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 235,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 240,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 245,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 250,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 255,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 260,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 265,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 270,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 275,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 280,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 285,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 290,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 295,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": 145.0,
-       "minute": 300,
-       "n": 2,
-       "p25": 145.0,
-       "p75": 145.0,
-       "support": "limited"
-      }
-     ],
-     "routed_count": 2,
-     "support": "limited",
-     "usable_count": 2
-    },
-    {
-     "anchor": {
-      "kind": "completed_carb_bolus",
-      "label": "Completed carb bolus"
-     },
-     "key": "announced",
-     "occurrence_ids": [
-      "m_4a44dc15364204a80fe80e9039455cc1"
-     ],
-     "points": [
-      {
-       "median": null,
-       "minute": -60,
-       "n": 1,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -55,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -50,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -45,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -40,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -35,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -30,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -25,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -20,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -15,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -10,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": -5,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 0,
-       "n": 1,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 5,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 10,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 15,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 20,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 25,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 30,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 35,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 40,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 45,
-       "n": 1,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 50,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 55,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 60,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 65,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 70,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 75,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 80,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 85,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 90,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 95,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 100,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 105,
-       "n": 1,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 110,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 115,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 120,
-       "n": 1,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 125,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 130,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 135,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 140,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 145,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 150,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 155,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 160,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 165,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 170,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 175,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 180,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 185,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 190,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 195,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 200,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 205,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 210,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 215,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 220,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 225,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 230,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 235,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 240,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 245,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 250,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 255,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 260,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 265,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 270,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 275,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 280,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 285,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 290,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 295,
-       "n": 0,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      },
-      {
-       "median": null,
-       "minute": 300,
-       "n": 1,
-       "p25": null,
-       "p75": null,
-       "support": "withheld"
-      }
-     ],
-     "routed_count": 1,
-     "support": "withheld",
-     "usable_count": 1
-    }
-   ],
-   "counts": {
-    "announced": 1,
-    "missed": 2,
-    "not_comparable": 1
-   },
-   "window_min": [
-    -60,
-    300
-   ]
-  },
-  "projection_id": "fp_11111111111111111111111111111111",
-  "schema": "diagnose-finding-case-file-v1",
-  "selection": {
-   "detail": {
-    "anchor": {
-     "bg": 110,
-     "kind": "detected_rise_onset",
-     "label": "Detected rise onset",
-     "t": "2026-01-03 11:45:00"
-    },
-    "comparison_cohort": "missed",
-    "date": "2026-01-03",
-    "day_target": {
-     "date": "2026-01-03"
-    },
-    "glucose": [
-     {
-      "bg": 105,
-      "minute": -60.0,
-      "t": "2026-01-03 10:45:00"
-     },
-     {
-      "bg": 110,
-      "minute": 0.0,
-      "t": "2026-01-03 11:45:00"
-     },
-     {
-      "bg": 260,
-      "minute": 15.0,
-      "t": "2026-01-03 12:00:00"
-     },
-     {
-      "bg": 145.0,
-      "minute": 195.0,
-      "t": "2026-01-03 15:00:00"
-     },
-     {
-      "bg": 145,
-      "minute": 300.0,
-      "t": "2026-01-03 16:45:00"
-     }
-    ],
-    "id": "o_c281816958d35a86706fd0017f599a2d",
-    "markers": [
-     {
-      "certainty": "exact",
-      "grams": 15,
-      "kind": "rescue_carb",
-      "minute": 10.0,
-      "t": "2026-01-03 11:55:00"
-     }
-    ],
-    "source_corrections": [],
-    "verdict": "fired"
-   },
-   "requested_id": "o_c281816958d35a86706fd0017f599a2d",
-   "state": "selected"
-  },
-  "summary": {
-   "claimed": 2,
-   "denominator": 3,
-   "noun": "highs"
-  },
-  "verdict_counts": {
-   "clean": 0,
-   "fired": 2,
-   "near_miss": 0,
-   "no_data": 0,
-   "outranked": 1
-  },
-  "window": {
-   "end_min": null,
-   "label": null,
-   "scoped": false,
-   "start_min": null
-  }
- },
- "zero_payload": {
-  "family": "highs",
-  "finding": {
-   "id": "finding:missed_meal",
-   "lever": "missed_meal",
-   "title": "Missed / unannounced meal"
-  },
-  "occurrences": [
-   {
-    "anchor": {
-     "bg": 260,
-     "kind": "high",
-     "label": "High peak",
-     "t": "2026-01-03 12:00:00"
-    },
-    "attributed": false,
-    "comparison_anchor": null,
-    "date": "2026-01-03",
-    "id": "o_c281816958d35a86706fd0017f599a2d",
-    "verdict": "fired"
-   },
-   {
-    "anchor": {
-     "bg": 275,
-     "kind": "high",
-     "label": "High peak",
-     "t": "2026-01-04 12:00:00"
-    },
-    "attributed": false,
-    "comparison_anchor": null,
-    "date": "2026-01-04",
-    "id": "o_318cbbb3a65cdec87252cb3cd3dfbf38",
-    "verdict": "fired"
-   },
-   {
-    "anchor": {
-     "bg": 250,
-     "kind": "high",
-     "label": "High peak",
-     "t": "2026-01-05 12:00:00"
-    },
-    "attributed": false,
-    "comparison_anchor": null,
-    "date": "2026-01-05",
-    "id": "o_c3c777ba6aceb41ce56d29ed5527a472",
-    "verdict": "outranked"
-   }
-  ],
-  "projection": {
-   "alignment": "event",
-   "anchor": {
-    "kind": "cohort_specific_meal_start",
-    "label": "Meal start"
-   },
-   "clock": null,
-   "cohorts": [
-    {
-     "anchor": {
-      "kind": "detected_rise_onset",
-      "label": "Detected rise onset"
-     },
-     "key": "missed",
+     "key": "nearly_matched",
+     "name": "Nearly matched",
      "occurrence_ids": [],
      "points": [
       {
@@ -5006,7 +1443,8 @@
       "kind": "completed_carb_bolus",
       "label": "Completed carb bolus"
      },
-     "key": "announced",
+     "key": "comparison",
+     "name": "Completed carb-bolus meals",
      "occurrence_ids": [
       "m_4a44dc15364204a80fe80e9039455cc1"
      ],
@@ -5601,9 +2039,5991 @@
      "usable_count": 1
     }
    ],
+   "comparison": {
+    "name": "Completed carb-bolus meals",
+    "state": "unavailable"
+   },
    "counts": {
-    "announced": 1,
-    "missed": 0,
+    "comparison": 1,
+    "matched": 2,
+    "nearly_matched": 0,
+    "not_comparable": 1
+   },
+   "window_min": [
+    -60,
+    300
+   ]
+  },
+  "projection_id": "fp_11111111111111111111111111111111",
+  "schema": "diagnose-finding-case-file-v1",
+  "selection": {
+   "detail": null,
+   "requested_id": null,
+   "state": "none"
+  },
+  "summary": {
+   "claimed": 2,
+   "denominator": 3,
+   "noun": "highs"
+  },
+  "verdict_counts": {
+   "clean": 0,
+   "fired": 2,
+   "near_miss": 0,
+   "no_data": 0,
+   "outranked": 1
+  },
+  "window": {
+   "end_min": null,
+   "label": null,
+   "scoped": false,
+   "start_min": null
+  }
+ },
+ "preparation": {
+  "behavioral_case_headers": {
+   "finding:missed_meal": {
+    "event_chart": {
+     "lever": "missed_meal",
+     "window": {
+      "end_min": null,
+      "label": null,
+      "scoped": false,
+      "start_min": null
+     }
+    },
+    "family": "highs",
+    "finding_id": "finding:missed_meal",
+    "inspectability": "ready",
+    "lever": "missed_meal",
+    "summary": {
+     "claimed": 2,
+     "denominator": 3,
+     "noun": "highs"
+    },
+    "title": "Missed / unannounced meal",
+    "verdict_counts": {
+     "clean": 0,
+     "fired": 2,
+     "near_miss": 0,
+     "no_data": 0,
+     "outranked": 1
+    }
+   }
+  },
+  "coordinates": {
+   "source_window_days": 30,
+   "window": {
+    "end_min": null,
+    "label": null,
+    "scoped": false,
+    "start_min": null
+   }
+  },
+  "findings": {
+   "analysis_generation": "synthetic:178",
+   "chip_counts": {
+    "corrections": 0,
+    "highs": 1,
+    "lows": 0,
+    "meals": 0
+   },
+   "counts": {
+    "assert": 0,
+    "blind": 0,
+    "finding": 1,
+    "held": 0,
+    "history": 0
+   },
+   "findings_window": {
+    "days": 30,
+    "end": null,
+    "start": null
+   },
+   "rows": [
+    {
+     "episodes": 2,
+     "id": "finding:missed_meal",
+     "register": "finding"
+    }
+   ],
+   "schema": "diagnose-findings-v2",
+   "selection": null,
+   "uncaused_highs": {
+    "count": 0,
+    "text": "None"
+   },
+   "window": {
+    "end_min": null,
+    "label": null,
+    "scoped": false,
+    "start_min": null
+   }
+  },
+  "projection_id": "fp_11111111111111111111111111111111",
+  "rendered_rows": [
+   {
+    "appearances": [
+     {
+      "family": "highs",
+      "m": 3,
+      "n": 2,
+      "noun": "highs"
+     }
+    ],
+    "case_header": {
+     "event_chart": {
+      "lever": "missed_meal",
+      "window": {
+       "end_min": null,
+       "label": null,
+       "scoped": false,
+       "start_min": null
+      }
+     },
+     "family": "highs",
+     "finding_id": "finding:missed_meal",
+     "inspectability": "ready",
+     "lever": "missed_meal",
+     "summary": {
+      "claimed": 2,
+      "denominator": 3,
+      "noun": "highs"
+     },
+     "title": "Missed / unannounced meal",
+     "verdict_counts": {
+      "clean": 0,
+      "fired": 2,
+      "near_miss": 0,
+      "no_data": 0,
+      "outranked": 1
+     }
+    },
+    "episodes": 2,
+    "event_chart": {
+     "lever": "missed_meal",
+     "window": {
+      "end_min": null,
+      "label": null,
+      "scoped": false,
+      "start_min": null
+     }
+    },
+    "evidence": null,
+    "id": "finding:missed_meal",
+    "register": "finding",
+    "verdict_counts": {
+     "clean": 0,
+     "fired": 2,
+     "near_miss": 0,
+     "no_data": 0,
+     "outranked": 1
+    },
+    "verdict_counts_by_family": {
+     "highs": {
+      "clean": 0,
+      "fired": 2,
+      "near_miss": 0,
+      "no_data": 0,
+      "outranked": 1
+     }
+    }
+   }
+  ],
+  "schema": "diagnose-finding-case-file-preparation-v1",
+  "withheld_findings": []
+ },
+ "selected_announced": {
+  "family": "highs",
+  "finding": {
+   "id": "finding:missed_meal",
+   "lever": "missed_meal",
+   "title": "Missed / unannounced meal"
+  },
+  "occurrences": [
+   {
+    "anchor": {
+     "bg": 260,
+     "kind": "high",
+     "label": "High peak",
+     "t": "2026-01-03 12:00:00"
+    },
+    "attributed": true,
+    "comparison_anchor": {
+     "bg": 110,
+     "kind": "detected_rise_onset",
+     "label": "Detected rise onset",
+     "t": "2026-01-03 11:45:00"
+    },
+    "date": "2026-01-03",
+    "id": "o_c281816958d35a86706fd0017f599a2d",
+    "verdict": "fired"
+   },
+   {
+    "anchor": {
+     "bg": 275,
+     "kind": "high",
+     "label": "High peak",
+     "t": "2026-01-04 12:00:00"
+    },
+    "attributed": true,
+    "comparison_anchor": {
+     "bg": 110,
+     "kind": "detected_rise_onset",
+     "label": "Detected rise onset",
+     "t": "2026-01-04 10:00:00"
+    },
+    "date": "2026-01-04",
+    "id": "o_318cbbb3a65cdec87252cb3cd3dfbf38",
+    "verdict": "fired"
+   },
+   {
+    "anchor": {
+     "bg": 250,
+     "kind": "high",
+     "label": "High peak",
+     "t": "2026-01-05 12:00:00"
+    },
+    "attributed": false,
+    "comparison_anchor": null,
+    "date": "2026-01-05",
+    "id": "o_c3c777ba6aceb41ce56d29ed5527a472",
+    "verdict": "outranked"
+   }
+  ],
+  "projection": {
+   "alignment": "event",
+   "anchor": {
+    "kind": "cohort_specific_meal_start",
+    "label": "Meal start"
+   },
+   "clock": null,
+   "cohorts": [
+    {
+     "anchor": {
+      "kind": "detected_rise_onset",
+      "label": "Detected rise onset"
+     },
+     "key": "matched",
+     "name": "Matched",
+     "occurrence_ids": [
+      "o_c281816958d35a86706fd0017f599a2d",
+      "o_318cbbb3a65cdec87252cb3cd3dfbf38"
+     ],
+     "points": [
+      {
+       "median": 105.0,
+       "minute": -60,
+       "n": 2,
+       "p25": 105.0,
+       "p75": 105.0,
+       "support": "limited"
+      },
+      {
+       "median": null,
+       "minute": -55,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -50,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -45,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -40,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -35,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -30,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -25,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -20,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -15,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -10,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -5,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": 110.0,
+       "minute": 0,
+       "n": 2,
+       "p25": 110.0,
+       "p75": 110.0,
+       "support": "limited"
+      },
+      {
+       "median": null,
+       "minute": 5,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 10,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 15,
+       "n": 1,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 20,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 25,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 30,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 35,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 40,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 45,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 50,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 55,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 60,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 65,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 70,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 75,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 80,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 85,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 90,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 95,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 100,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 105,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 110,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 115,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 120,
+       "n": 1,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 125,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 130,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 135,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 140,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 145,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 150,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 155,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 160,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 165,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 170,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 175,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 180,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 185,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 190,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 195,
+       "n": 1,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 200,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 205,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 210,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 215,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 220,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 225,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 230,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 235,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 240,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 245,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 250,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 255,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 260,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 265,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 270,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 275,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 280,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 285,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 290,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 295,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": 145.0,
+       "minute": 300,
+       "n": 2,
+       "p25": 145.0,
+       "p75": 145.0,
+       "support": "limited"
+      }
+     ],
+     "routed_count": 2,
+     "support": "limited",
+     "usable_count": 2
+    },
+    {
+     "anchor": {
+      "kind": "detected_rise_onset",
+      "label": "Detected rise onset"
+     },
+     "key": "nearly_matched",
+     "name": "Nearly matched",
+     "occurrence_ids": [],
+     "points": [
+      {
+       "median": null,
+       "minute": -60,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -55,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -50,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -45,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -40,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -35,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -30,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -25,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -20,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -15,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -10,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -5,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 0,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 5,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 10,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 15,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 20,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 25,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 30,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 35,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 40,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 45,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 50,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 55,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 60,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 65,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 70,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 75,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 80,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 85,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 90,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 95,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 100,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 105,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 110,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 115,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 120,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 125,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 130,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 135,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 140,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 145,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 150,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 155,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 160,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 165,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 170,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 175,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 180,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 185,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 190,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 195,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 200,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 205,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 210,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 215,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 220,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 225,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 230,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 235,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 240,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 245,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 250,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 255,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 260,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 265,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 270,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 275,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 280,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 285,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 290,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 295,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 300,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      }
+     ],
+     "routed_count": 0,
+     "support": "withheld",
+     "usable_count": 0
+    },
+    {
+     "anchor": {
+      "kind": "completed_carb_bolus",
+      "label": "Completed carb bolus"
+     },
+     "key": "comparison",
+     "name": "Completed carb-bolus meals",
+     "occurrence_ids": [
+      "m_4a44dc15364204a80fe80e9039455cc1"
+     ],
+     "points": [
+      {
+       "median": null,
+       "minute": -60,
+       "n": 1,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -55,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -50,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -45,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -40,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -35,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -30,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -25,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -20,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -15,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -10,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -5,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 0,
+       "n": 1,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 5,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 10,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 15,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 20,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 25,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 30,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 35,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 40,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 45,
+       "n": 1,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 50,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 55,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 60,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 65,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 70,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 75,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 80,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 85,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 90,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 95,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 100,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 105,
+       "n": 1,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 110,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 115,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 120,
+       "n": 1,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 125,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 130,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 135,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 140,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 145,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 150,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 155,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 160,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 165,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 170,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 175,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 180,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 185,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 190,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 195,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 200,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 205,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 210,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 215,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 220,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 225,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 230,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 235,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 240,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 245,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 250,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 255,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 260,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 265,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 270,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 275,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 280,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 285,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 290,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 295,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 300,
+       "n": 1,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      }
+     ],
+     "routed_count": 1,
+     "support": "withheld",
+     "usable_count": 1
+    }
+   ],
+   "comparison": {
+    "name": "Completed carb-bolus meals",
+    "state": "unavailable"
+   },
+   "counts": {
+    "comparison": 1,
+    "matched": 2,
+    "nearly_matched": 0,
+    "not_comparable": 1
+   },
+   "window_min": [
+    -60,
+    300
+   ]
+  },
+  "projection_id": "fp_11111111111111111111111111111111",
+  "schema": "diagnose-finding-case-file-v1",
+  "selection": {
+   "detail": {
+    "anchor": {
+     "bg": null,
+     "kind": "completed_carb_bolus",
+     "label": "Completed carb bolus",
+     "t": "2026-01-03 10:00:00"
+    },
+    "comparison_cohort": "comparison",
+    "date": "2026-01-03",
+    "day_target": {
+     "date": "2026-01-03"
+    },
+    "glucose": [
+     {
+      "bg": 109.0,
+      "minute": -60.0,
+      "t": "2026-01-03 09:00:00"
+     },
+     {
+      "bg": 115.0,
+      "minute": 0.0,
+      "t": "2026-01-03 10:00:00"
+     },
+     {
+      "bg": 105,
+      "minute": 45.0,
+      "t": "2026-01-03 10:45:00"
+     },
+     {
+      "bg": 110,
+      "minute": 105.0,
+      "t": "2026-01-03 11:45:00"
+     },
+     {
+      "bg": 260,
+      "minute": 120.0,
+      "t": "2026-01-03 12:00:00"
+     },
+     {
+      "bg": 145.0,
+      "minute": 300.0,
+      "t": "2026-01-03 15:00:00"
+     }
+    ],
+    "id": "m_4a44dc15364204a80fe80e9039455cc1",
+    "markers": [
+     {
+      "carbs": 40,
+      "insulin": 4,
+      "kind": "bolus",
+      "minute": 0.0,
+      "seq_num": 10,
+      "t": "2026-01-03 10:00:00"
+     },
+     {
+      "carbs": 40,
+      "insulin": 4,
+      "kind": "bolus",
+      "minute": -60.0,
+      "seq_num": 11,
+      "t": "2026-01-03 09:00:00"
+     }
+    ],
+    "source_corrections": [],
+    "verdict": "comparison"
+   },
+   "requested_id": "m_4a44dc15364204a80fe80e9039455cc1",
+   "state": "selected"
+  },
+  "summary": {
+   "claimed": 2,
+   "denominator": 3,
+   "noun": "highs"
+  },
+  "verdict_counts": {
+   "clean": 0,
+   "fired": 2,
+   "near_miss": 0,
+   "no_data": 0,
+   "outranked": 1
+  },
+  "window": {
+   "end_min": null,
+   "label": null,
+   "scoped": false,
+   "start_min": null
+  }
+ },
+ "selected_missed": {
+  "family": "highs",
+  "finding": {
+   "id": "finding:missed_meal",
+   "lever": "missed_meal",
+   "title": "Missed / unannounced meal"
+  },
+  "occurrences": [
+   {
+    "anchor": {
+     "bg": 260,
+     "kind": "high",
+     "label": "High peak",
+     "t": "2026-01-03 12:00:00"
+    },
+    "attributed": true,
+    "comparison_anchor": {
+     "bg": 110,
+     "kind": "detected_rise_onset",
+     "label": "Detected rise onset",
+     "t": "2026-01-03 11:45:00"
+    },
+    "date": "2026-01-03",
+    "id": "o_c281816958d35a86706fd0017f599a2d",
+    "verdict": "fired"
+   },
+   {
+    "anchor": {
+     "bg": 275,
+     "kind": "high",
+     "label": "High peak",
+     "t": "2026-01-04 12:00:00"
+    },
+    "attributed": true,
+    "comparison_anchor": {
+     "bg": 110,
+     "kind": "detected_rise_onset",
+     "label": "Detected rise onset",
+     "t": "2026-01-04 10:00:00"
+    },
+    "date": "2026-01-04",
+    "id": "o_318cbbb3a65cdec87252cb3cd3dfbf38",
+    "verdict": "fired"
+   },
+   {
+    "anchor": {
+     "bg": 250,
+     "kind": "high",
+     "label": "High peak",
+     "t": "2026-01-05 12:00:00"
+    },
+    "attributed": false,
+    "comparison_anchor": null,
+    "date": "2026-01-05",
+    "id": "o_c3c777ba6aceb41ce56d29ed5527a472",
+    "verdict": "outranked"
+   }
+  ],
+  "projection": {
+   "alignment": "event",
+   "anchor": {
+    "kind": "cohort_specific_meal_start",
+    "label": "Meal start"
+   },
+   "clock": null,
+   "cohorts": [
+    {
+     "anchor": {
+      "kind": "detected_rise_onset",
+      "label": "Detected rise onset"
+     },
+     "key": "matched",
+     "name": "Matched",
+     "occurrence_ids": [
+      "o_c281816958d35a86706fd0017f599a2d",
+      "o_318cbbb3a65cdec87252cb3cd3dfbf38"
+     ],
+     "points": [
+      {
+       "median": 105.0,
+       "minute": -60,
+       "n": 2,
+       "p25": 105.0,
+       "p75": 105.0,
+       "support": "limited"
+      },
+      {
+       "median": null,
+       "minute": -55,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -50,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -45,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -40,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -35,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -30,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -25,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -20,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -15,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -10,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -5,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": 110.0,
+       "minute": 0,
+       "n": 2,
+       "p25": 110.0,
+       "p75": 110.0,
+       "support": "limited"
+      },
+      {
+       "median": null,
+       "minute": 5,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 10,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 15,
+       "n": 1,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 20,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 25,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 30,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 35,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 40,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 45,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 50,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 55,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 60,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 65,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 70,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 75,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 80,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 85,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 90,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 95,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 100,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 105,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 110,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 115,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 120,
+       "n": 1,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 125,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 130,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 135,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 140,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 145,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 150,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 155,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 160,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 165,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 170,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 175,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 180,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 185,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 190,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 195,
+       "n": 1,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 200,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 205,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 210,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 215,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 220,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 225,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 230,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 235,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 240,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 245,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 250,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 255,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 260,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 265,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 270,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 275,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 280,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 285,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 290,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 295,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": 145.0,
+       "minute": 300,
+       "n": 2,
+       "p25": 145.0,
+       "p75": 145.0,
+       "support": "limited"
+      }
+     ],
+     "routed_count": 2,
+     "support": "limited",
+     "usable_count": 2
+    },
+    {
+     "anchor": {
+      "kind": "detected_rise_onset",
+      "label": "Detected rise onset"
+     },
+     "key": "nearly_matched",
+     "name": "Nearly matched",
+     "occurrence_ids": [],
+     "points": [
+      {
+       "median": null,
+       "minute": -60,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -55,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -50,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -45,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -40,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -35,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -30,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -25,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -20,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -15,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -10,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -5,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 0,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 5,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 10,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 15,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 20,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 25,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 30,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 35,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 40,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 45,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 50,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 55,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 60,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 65,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 70,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 75,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 80,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 85,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 90,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 95,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 100,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 105,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 110,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 115,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 120,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 125,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 130,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 135,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 140,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 145,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 150,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 155,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 160,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 165,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 170,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 175,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 180,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 185,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 190,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 195,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 200,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 205,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 210,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 215,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 220,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 225,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 230,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 235,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 240,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 245,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 250,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 255,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 260,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 265,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 270,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 275,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 280,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 285,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 290,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 295,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 300,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      }
+     ],
+     "routed_count": 0,
+     "support": "withheld",
+     "usable_count": 0
+    },
+    {
+     "anchor": {
+      "kind": "completed_carb_bolus",
+      "label": "Completed carb bolus"
+     },
+     "key": "comparison",
+     "name": "Completed carb-bolus meals",
+     "occurrence_ids": [
+      "m_4a44dc15364204a80fe80e9039455cc1"
+     ],
+     "points": [
+      {
+       "median": null,
+       "minute": -60,
+       "n": 1,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -55,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -50,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -45,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -40,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -35,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -30,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -25,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -20,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -15,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -10,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -5,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 0,
+       "n": 1,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 5,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 10,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 15,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 20,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 25,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 30,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 35,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 40,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 45,
+       "n": 1,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 50,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 55,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 60,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 65,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 70,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 75,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 80,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 85,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 90,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 95,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 100,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 105,
+       "n": 1,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 110,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 115,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 120,
+       "n": 1,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 125,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 130,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 135,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 140,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 145,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 150,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 155,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 160,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 165,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 170,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 175,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 180,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 185,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 190,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 195,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 200,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 205,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 210,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 215,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 220,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 225,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 230,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 235,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 240,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 245,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 250,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 255,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 260,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 265,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 270,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 275,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 280,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 285,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 290,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 295,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 300,
+       "n": 1,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      }
+     ],
+     "routed_count": 1,
+     "support": "withheld",
+     "usable_count": 1
+    }
+   ],
+   "comparison": {
+    "name": "Completed carb-bolus meals",
+    "state": "unavailable"
+   },
+   "counts": {
+    "comparison": 1,
+    "matched": 2,
+    "nearly_matched": 0,
+    "not_comparable": 1
+   },
+   "window_min": [
+    -60,
+    300
+   ]
+  },
+  "projection_id": "fp_11111111111111111111111111111111",
+  "schema": "diagnose-finding-case-file-v1",
+  "selection": {
+   "detail": {
+    "anchor": {
+     "bg": 110,
+     "kind": "detected_rise_onset",
+     "label": "Detected rise onset",
+     "t": "2026-01-03 11:45:00"
+    },
+    "comparison_cohort": "matched",
+    "date": "2026-01-03",
+    "day_target": {
+     "date": "2026-01-03"
+    },
+    "glucose": [
+     {
+      "bg": 105,
+      "minute": -60.0,
+      "t": "2026-01-03 10:45:00"
+     },
+     {
+      "bg": 110,
+      "minute": 0.0,
+      "t": "2026-01-03 11:45:00"
+     },
+     {
+      "bg": 260,
+      "minute": 15.0,
+      "t": "2026-01-03 12:00:00"
+     },
+     {
+      "bg": 145.0,
+      "minute": 195.0,
+      "t": "2026-01-03 15:00:00"
+     },
+     {
+      "bg": 145,
+      "minute": 300.0,
+      "t": "2026-01-03 16:45:00"
+     }
+    ],
+    "id": "o_c281816958d35a86706fd0017f599a2d",
+    "markers": [
+     {
+      "certainty": "exact",
+      "grams": 15,
+      "kind": "rescue_carb",
+      "minute": 10.0,
+      "t": "2026-01-03 11:55:00"
+     }
+    ],
+    "source_corrections": [],
+    "verdict": "fired"
+   },
+   "requested_id": "o_c281816958d35a86706fd0017f599a2d",
+   "state": "selected"
+  },
+  "summary": {
+   "claimed": 2,
+   "denominator": 3,
+   "noun": "highs"
+  },
+  "verdict_counts": {
+   "clean": 0,
+   "fired": 2,
+   "near_miss": 0,
+   "no_data": 0,
+   "outranked": 1
+  },
+  "window": {
+   "end_min": null,
+   "label": null,
+   "scoped": false,
+   "start_min": null
+  }
+ },
+ "zero_payload": {
+  "family": "highs",
+  "finding": {
+   "id": "finding:missed_meal",
+   "lever": "missed_meal",
+   "title": "Missed / unannounced meal"
+  },
+  "occurrences": [
+   {
+    "anchor": {
+     "bg": 260,
+     "kind": "high",
+     "label": "High peak",
+     "t": "2026-01-03 12:00:00"
+    },
+    "attributed": false,
+    "comparison_anchor": null,
+    "date": "2026-01-03",
+    "id": "o_c281816958d35a86706fd0017f599a2d",
+    "verdict": "fired"
+   },
+   {
+    "anchor": {
+     "bg": 275,
+     "kind": "high",
+     "label": "High peak",
+     "t": "2026-01-04 12:00:00"
+    },
+    "attributed": false,
+    "comparison_anchor": null,
+    "date": "2026-01-04",
+    "id": "o_318cbbb3a65cdec87252cb3cd3dfbf38",
+    "verdict": "fired"
+   },
+   {
+    "anchor": {
+     "bg": 250,
+     "kind": "high",
+     "label": "High peak",
+     "t": "2026-01-05 12:00:00"
+    },
+    "attributed": false,
+    "comparison_anchor": null,
+    "date": "2026-01-05",
+    "id": "o_c3c777ba6aceb41ce56d29ed5527a472",
+    "verdict": "outranked"
+   }
+  ],
+  "projection": {
+   "alignment": "event",
+   "anchor": {
+    "kind": "cohort_specific_meal_start",
+    "label": "Meal start"
+   },
+   "clock": null,
+   "cohorts": [
+    {
+     "anchor": {
+      "kind": "detected_rise_onset",
+      "label": "Detected rise onset"
+     },
+     "key": "matched",
+     "name": "Matched",
+     "occurrence_ids": [],
+     "points": [
+      {
+       "median": null,
+       "minute": -60,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -55,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -50,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -45,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -40,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -35,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -30,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -25,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -20,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -15,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -10,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -5,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 0,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 5,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 10,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 15,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 20,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 25,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 30,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 35,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 40,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 45,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 50,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 55,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 60,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 65,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 70,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 75,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 80,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 85,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 90,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 95,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 100,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 105,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 110,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 115,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 120,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 125,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 130,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 135,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 140,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 145,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 150,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 155,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 160,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 165,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 170,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 175,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 180,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 185,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 190,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 195,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 200,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 205,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 210,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 215,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 220,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 225,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 230,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 235,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 240,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 245,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 250,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 255,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 260,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 265,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 270,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 275,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 280,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 285,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 290,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 295,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 300,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      }
+     ],
+     "routed_count": 0,
+     "support": "withheld",
+     "usable_count": 0
+    },
+    {
+     "anchor": {
+      "kind": "detected_rise_onset",
+      "label": "Detected rise onset"
+     },
+     "key": "nearly_matched",
+     "name": "Nearly matched",
+     "occurrence_ids": [],
+     "points": [
+      {
+       "median": null,
+       "minute": -60,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -55,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -50,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -45,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -40,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -35,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -30,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -25,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -20,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -15,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -10,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -5,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 0,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 5,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 10,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 15,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 20,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 25,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 30,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 35,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 40,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 45,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 50,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 55,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 60,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 65,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 70,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 75,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 80,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 85,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 90,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 95,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 100,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 105,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 110,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 115,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 120,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 125,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 130,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 135,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 140,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 145,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 150,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 155,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 160,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 165,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 170,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 175,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 180,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 185,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 190,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 195,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 200,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 205,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 210,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 215,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 220,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 225,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 230,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 235,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 240,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 245,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 250,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 255,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 260,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 265,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 270,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 275,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 280,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 285,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 290,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 295,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 300,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      }
+     ],
+     "routed_count": 0,
+     "support": "withheld",
+     "usable_count": 0
+    },
+    {
+     "anchor": {
+      "kind": "completed_carb_bolus",
+      "label": "Completed carb bolus"
+     },
+     "key": "comparison",
+     "name": "Completed carb-bolus meals",
+     "occurrence_ids": [
+      "m_4a44dc15364204a80fe80e9039455cc1"
+     ],
+     "points": [
+      {
+       "median": null,
+       "minute": -60,
+       "n": 1,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -55,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -50,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -45,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -40,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -35,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -30,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -25,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -20,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -15,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -10,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": -5,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 0,
+       "n": 1,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 5,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 10,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 15,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 20,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 25,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 30,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 35,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 40,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 45,
+       "n": 1,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 50,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 55,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 60,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 65,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 70,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 75,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 80,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 85,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 90,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 95,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 100,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 105,
+       "n": 1,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 110,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 115,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 120,
+       "n": 1,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 125,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 130,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 135,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 140,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 145,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 150,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 155,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 160,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 165,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 170,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 175,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 180,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 185,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 190,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 195,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 200,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 205,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 210,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 215,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 220,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 225,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 230,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 235,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 240,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 245,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 250,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 255,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 260,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 265,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 270,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 275,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 280,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 285,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 290,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 295,
+       "n": 0,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      },
+      {
+       "median": null,
+       "minute": 300,
+       "n": 1,
+       "p25": null,
+       "p75": null,
+       "support": "withheld"
+      }
+     ],
+     "routed_count": 1,
+     "support": "withheld",
+     "usable_count": 1
+    }
+   ],
+   "comparison": {
+    "name": "Completed carb-bolus meals",
+    "state": "unavailable"
+   },
+   "counts": {
+    "comparison": 1,
+    "matched": 0,
+    "nearly_matched": 0,
     "not_comparable": 3
    },
    "window_min": [

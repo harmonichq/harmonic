@@ -271,18 +271,20 @@ class FindingCaseFileRouteTest(unittest.TestCase):
         self.assertEqual(response.json(), frozen)
 
         case = response.json()
-        missed, announced = case["projection"]["cohorts"]
+        missed, near, announced = case["projection"]["cohorts"]
         self.assertEqual(case["schema"], "diagnose-finding-case-file-v1")
         self.assertEqual(case["summary"], {
             "claimed": 0, "denominator": 3, "noun": "highs",
         })
         self.assertEqual(case["projection"]["window_min"], [-60, 300])
         self.assertEqual(case["projection"]["counts"], {
-            "missed": 0, "announced": 1, "not_comparable": 3,
+            "matched": 0, "nearly_matched": 0, "comparison": 1,
+            "not_comparable": 3,
         })
         self.assertEqual(missed["occurrence_ids"], [])
         self.assertEqual(missed["routed_count"], missed["usable_count"])
         self.assertEqual(missed["usable_count"], 0)
+        self.assertEqual(near["routed_count"], 0)
         expected_points = [{
             "minute": minute, "n": 0, "support": "withheld",
             "median": None, "p25": None, "p75": None,
@@ -541,16 +543,20 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
                 }
                 self.assertEqual(cohort_ids, {row["id"] for row in case["occurrences"]})
                 self.assertEqual(
-                    {
-                        cohort["key"]: set(cohort["occurrence_ids"])
-                        for cohort in case["projection"]["cohorts"]
-                    },
-                    {
-                        state: {row["id"] for row in case["occurrences"]
-                                if row["verdict"] == state}
-                        for state in expected
-                    },
+                    [cohort["key"] for cohort in case["projection"]["cohorts"]],
+                    ["matched", "nearly_matched", "comparison"],
                 )
+                matched, near, comparison = case["projection"]["cohorts"]
+                self.assertEqual(set(matched["occurrence_ids"]), {
+                    row["id"] for row in case["occurrences"] if row["verdict"] == "fired"
+                })
+                self.assertEqual(set(near["occurrence_ids"]), {
+                    row["id"] for row in case["occurrences"] if row["verdict"] == "near_miss"
+                })
+                self.assertEqual(set(comparison["occurrence_ids"]), {
+                    row["id"] for row in case["occurrences"]
+                    if row["verdict"] not in {"fired", "near_miss"}
+                })
 
                 selected_id = next(row["id"] for row in case["occurrences"]
                                    if row["verdict"] == "outranked")
@@ -617,21 +623,25 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
             self.assertEqual(set(occurrence), {"id", "date", "anchor", "verdict"})
             self.assertEqual(set(occurrence["anchor"]), {"t", "kind", "label", "bg"})
         projection = case["projection"]
-        self.assertEqual(set(projection), {
-            "alignment", "anchor", "window_min", "cohorts", "clock",
-        })
         if projection["alignment"] == "event":
+            self.assertEqual(set(projection), {
+                "alignment", "anchor", "window_min", "cohorts", "counts",
+                "comparison", "clock",
+            })
             self.assertEqual(set(projection["anchor"]), {"kind", "label"})
             for cohort in projection["cohorts"]:
                 self.assertEqual(set(cohort), {
                     "key", "routed_count", "usable_count", "support",
-                    "occurrence_ids", "points",
+                    "occurrence_ids", "points", "name", "anchor",
                 })
                 for point in cohort["points"]:
                     self.assertEqual(set(point), {
                         "minute", "n", "support", "median", "p25", "p75",
                     })
         else:
+            self.assertEqual(set(projection), {
+                "alignment", "anchor", "window_min", "cohorts", "clock",
+            })
             self.assertEqual(set(projection["clock"]), {
                 "bucket_hours", "total", "peak_bucket_index", "buckets",
             })
@@ -845,11 +855,12 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
         self.assertTrue(all(row["anchor"]["t"].endswith("16:40:00")
                             for row in high_case["occurrences"]))
         self.assertEqual(high_case["projection"]["window_min"], [-60, 300])
-        missed, announced = high_case["projection"]["cohorts"]
+        missed, near, announced = high_case["projection"]["cohorts"]
         self.assertEqual(missed["anchor"]["kind"], "detected_rise_onset")
         self.assertEqual(announced["anchor"]["kind"], "completed_carb_bolus")
         self.assertEqual(high_case["projection"]["counts"], {
-            "missed": 4, "announced": 4, "not_comparable": 0,
+            "matched": 4, "nearly_matched": 0, "comparison": 4,
+            "not_comparable": 0,
         })
 
     def test_published_announced_meal_selects_by_event_and_clears_on_clock(self):
@@ -874,7 +885,7 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
                 })
                 self.assertEqual(event.status_code, 200, event.text)
                 event_case = event.json()
-                announced_id = event_case["projection"]["cohorts"][1]["occurrence_ids"][0]
+                announced_id = event_case["projection"]["cohorts"][2]["occurrence_ids"][0]
 
                 selected_announced = client.get("/api/diagnose/finding-case-file", params={
                     **coordinates, "alignment": "event", "occ": announced_id,
@@ -883,7 +894,7 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
                 self.assertEqual(selected_announced.json()["selection"]["state"], "selected")
                 self.assertEqual(
                     selected_announced.json()["selection"]["detail"]["comparison_cohort"],
-                    "announced",
+                    "comparison",
                 )
 
                 carried_to_clock = client.get("/api/diagnose/finding-case-file", params={

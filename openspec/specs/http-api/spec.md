@@ -96,6 +96,15 @@ malformed coordinates return `400 invalid_request`; an unavailable Finding or
 Occurrence returns the contract's explicit unavailable state. These routes do not
 widen or replace `/api/diagnose/findings`, `/api/explore/exposures`, or the event-
 comparison endpoint.
+
+For the Missed / unannounced meal Finding's event projection, the server owns two
+separate comparison cohorts: Highs attributed to Missed / unannounced meal and
+all completed carb-bolus announced meals, regardless of outcome. It anchors the
+first at detected rise onset and the second at completed carb-bolus time, using
+the fixed `[-60, +300]` minute window, and publishes missed, announced, and
+not-comparable counts, including an explicit zero state. This comparison account
+is independent of the Finding's five-way High verdict denominator and does not
+replace the High roster or attribution account.
 ### Requirement: Every write path MUST invalidate the cache
 
 Invalidation is coarse and global: a single `bump` clears the whole map and advances

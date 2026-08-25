@@ -23,8 +23,9 @@ current origin/main this session; verification report restated in #178's body.
   `mockups/finding-evidence-routing.behavior.md`; replays
   `frontend/diagnose-workstation-behavior.replay.mjs` (C44 family, S32–S39) and
   `frontend/diagnose-event-comparison-behavior.replay.mjs` (S3, S7–S9, S13).
-  missed_meal has no event lens today, so the event view is new coverage plus
-  amendments where cohort labels/axis semantics move. `inline`
+  The ticket replaces the existing High-peak/union-axis lens for
+  `missed_meal`; the event view is revised coverage plus amendments where
+  cohort labels and axis semantics move. `inline`
 
 ### Risk contract
 
@@ -57,4 +58,9 @@ current origin/main this session; verification report restated in #178's body.
 
 ## Spawned tasks
 
-- (none yet)
+- **Serial sub-order 1 — server contract and synthetic evidence:** completed.
+  Served the two cohorts with fixed anchors/window, independent counts, and
+  public API/fixture coverage.
+- **Serial sub-order 2 — Diagnose rendering and replay evidence:** completed.
+  Added cohort rendering, explicit zero state, opaque selection, replay stories,
+  and coordinator-supplied evidence.

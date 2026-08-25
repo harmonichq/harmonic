@@ -64,6 +64,15 @@ coordinates are discarded by generation and projection/Finding identity. Initial
 load failure, queue-level refresh failure, case failure after refresh, and a valid
 unavailable selection remain distinct visible states.
 
+For Missed / unannounced meal, the event view renders the server's attributed-
+missed and all-completed-carb-bolus announced cohorts as separate populations.
+It displays their independent missed, announced, and not-comparable counts,
+anchors missed rows at detected rise onset and announced rows at completed
+carb-bolus time, and uses the fixed `[-60, +300]` axis. A zero attributed-missed
+cohort is an explicit empty state, not a fallback to High verdict membership;
+announced rows remain selectable through their server-owned Occurrence identity.
+The five-way High verdict band and its denominator remain a separate account.
+
 ### Requirement: Plan surface asks "what will I program into my pump?"
 
 The Plan surface holds a unified ≤16-segment pump-ready schedule built from the user's currently-active profile plus any accepted Diagnose recommendations and hand-edits. It shows the active profile as a reference, lists the accepted changes with provenance, and renders the editable deliverable. Plan reconciliation compares the deliverable to the latest detected pump profile to confirm it matches or flag keying errors. Users cannot stage changes directly on Plan; they stage from Diagnose and edit the deliverable here.

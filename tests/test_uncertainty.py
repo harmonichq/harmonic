@@ -128,7 +128,15 @@ class EstimateSlopeClusteredTest(unittest.TestCase):
         e = estimate_slope_clustered([(1.0, 2.0)], ["a"])
         self.assertIsNone(e.value)
         self.assertEqual(e.n, 1)
+        self.assertEqual(e.n_clusters, 1)
+        self.assertEqual(e.to_dict()["n_clusters"], 1)
         self.assertEqual(e.method, "none")
+
+    def test_zero_variance_keeps_cluster_population_without_a_fit(self):
+        e = estimate_slope_clustered([(0.0, 2.0), (0.0, 3.0)], ["a", "b"])
+        self.assertIsNone(e.value)
+        self.assertEqual(e.n_clusters, 2)
+        self.assertEqual(e.to_dict()["n_clusters"], 2)
 
     def test_records_the_number_of_distinct_clusters(self):
         pairs, cluster_ids = self._clustered_pairs()  # five nights

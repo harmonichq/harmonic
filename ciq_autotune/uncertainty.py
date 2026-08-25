@@ -96,6 +96,8 @@ class Estimate:
             "method": self.method,
             "wide": self.wide,
         }
+        # Clustered estimators retain this observed-population count even when
+        # their slope cannot fit; non-clustered estimates have no such concept.
         if self.n_clusters is not None:
             out["n_clusters"] = self.n_clusters
         return out
@@ -430,17 +432,17 @@ def estimate_slope_clustered(pairs: Sequence[Tuple[float, float]],
     ran over every step); a single cluster collapses the band to the point.
     """
     pts = [(float(x), float(y)) for x, y in pairs]
+    groups: Dict[Hashable, List[Tuple[float, float]]] = {}
+    for pair, cid in zip(pts, cluster_ids):
+        groups.setdefault(cid, []).append(pair)
     if len(pts) < 2:
         return Estimate(value=None, lo=None, hi=None, n=len(pts),
-                        confidence=confidence, method="none")
+                        n_clusters=len(groups), confidence=confidence, method="none")
     try:
         point = round(_ols_slope(pts), 4)
     except ZeroDivisionError:
         return Estimate(value=None, lo=None, hi=None, n=len(pts),
-                        confidence=confidence, method="none")
-    groups: Dict[Hashable, List[Tuple[float, float]]] = {}
-    for pair, cid in zip(pts, cluster_ids):
-        groups.setdefault(cid, []).append(pair)
+                        n_clusters=len(groups), confidence=confidence, method="none")
     lo, hi = _bootstrap_ci_clusters(list(groups.values()), _ols_slope, confidence)
     return Estimate(value=point, lo=lo, hi=hi, n=len(pts), n_clusters=len(groups),
                     confidence=confidence, method="bootstrap-slope-clustered")

@@ -9,7 +9,8 @@
   },
   "finding": {
    "asserts_move": false,
-   "direction": null
+   "direction": null,
+   "state": "present"
   },
   "schema": "diagnose-isf-rest-window-evidence-v1",
   "steps": [

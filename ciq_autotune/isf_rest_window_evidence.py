@@ -22,7 +22,11 @@ class IsfRestWindowEvidence:
 
 def prepare_isf_rest_window_evidence(analysis: dict) -> IsfRestWindowEvidence:
     """Copy published analyzer evidence plus its retained step-to-window mapping."""
-    row = next((row for row in analysis.get("isf", []) if row.get("parameter") == "isf"), {})
+    row = next((row for row in analysis.get("isf", []) if row.get("parameter") == "isf"), None)
+    if row is None:
+        return IsfRestWindowEvidence((), (), {
+            "detected_windows": 0, "qualifying_windows": 0, "qualifying_steps": 0,
+        }, {"state": "absent", "asserts_move": None, "direction": None})
     evidence = row.get("evidence") or {}
     published_windows = tuple(evidence.get("rest_windows") or ())
     steps = tuple(analysis.get("_isf_rest_window_steps") or ())
@@ -36,5 +40,6 @@ def prepare_isf_rest_window_evidence(analysis: dict) -> IsfRestWindowEvidence:
     windows = tuple({"id": f"rest:{window['date']}", **window} for window in published_windows)
     return IsfRestWindowEvidence(
         windows, steps, counts,
-        {"asserts_move": row.get("asserts_move"), "direction": evidence.get("direction")},
+        {"state": "present", "asserts_move": row.get("asserts_move"),
+         "direction": evidence.get("direction")},
     )

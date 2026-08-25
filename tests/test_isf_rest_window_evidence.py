@@ -12,10 +12,11 @@ except ImportError:  # pragma: no cover
     _HAS_FASTAPI = False
 
 from ciq_autotune.events import CarbEntry
+from ciq_autotune.isf_rest_window_evidence import prepare_isf_rest_window_evidence
 from ciq_autotune.store import Store
 
 
-def _seed(path, *, mask=False):
+def _seed(path, *, mask=False, basal=True):
     with Store.open(path) as store:
         cgm, basal = [], []
         for night in range(2):
@@ -24,10 +25,11 @@ def _seed(path, *, mask=False):
                 at = start + timedelta(minutes=5 * point)
                 cgm.append({"EventDateTime": at.isoformat(),
                             "Readings (CGM / BGM)": 110, "Description": "EGV"})
-                basal.append({"seq_num": int(at.strftime("%Y%m%d%H%M%S")),
-                              "time": at.strftime("%Y-%m-%d %H:%M:%S"),
-                              "delivery_type": "algorithmDelivery", "duration_mins": 5,
-                              "basal_rate": 0.8, "profile_basal_rate": 0.8})
+                if basal:
+                    basal.append({"seq_num": int(at.strftime("%Y%m%d%H%M%S")),
+                                  "time": at.strftime("%Y-%m-%d %H:%M:%S"),
+                                  "delivery_type": "algorithmDelivery", "duration_mins": 5,
+                                  "basal_rate": 0.8, "profile_basal_rate": 0.8})
         store.upsert_cgm(cgm)
         store.upsert_basal(basal)
         if mask:
@@ -75,9 +77,29 @@ class IsfRestWindowEvidenceApiTest(unittest.TestCase):
         self.assertTrue(all(step["window_id"] in window_ids for step in body["steps"]))
         self.assertTrue(all("t" not in step for step in body["steps"]))
         self.assertEqual(body["finding"], {
+            "state": "present",
             "asserts_move": analyzer_row["asserts_move"],
             "direction": analyzer_evidence["direction"],
         })
+
+    def test_windows_and_steps_survive_a_no_fit_clustered_estimate(self):
+        no_fit = tempfile.NamedTemporaryFile(suffix=".db")
+        self.addCleanup(no_fit.close)
+        _seed(no_fit.name, basal=False)
+        from ciq_autotune.api import create_app
+        client = TestClient(create_app(db_path=no_fit.name, token=None,
+                                       enable_fetch_loop=False))
+        body = client.get("/api/diagnose/isf-rest-window-evidence").json()
+        analysis = client.get("/api/analyze", params={"pool": True}).json()
+        estimate = analysis["isf"][0]["estimate"]
+        self.assertEqual(estimate["method"], "none")
+        self.assertEqual(body["counts"]["qualifying_steps"], estimate["n"])
+        self.assertEqual(body["counts"]["qualifying_windows"], estimate["n_clusters"])
+        self.assertGreater(body["counts"]["qualifying_windows"], 0)
+
+    def test_absent_isf_row_is_explicit(self):
+        body = prepare_isf_rest_window_evidence({"isf": []}).project()
+        self.assertEqual(body["finding"]["state"], "absent")
 
     def test_detected_windows_without_qualifying_steps_stays_distinct(self):
         blocked = tempfile.NamedTemporaryFile(suffix=".db")

@@ -241,6 +241,10 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             ).to_dict()
             if len(captured) != 1:
                 raise ValueError("ISF analyzer did not retain fasting evidence")
+            # The retained rows are an internal fixed-artifact adjunct: only the
+            # ISF evidence projection reads them, and /api/analyze strips them.
+            # Findings ignores the private key, so its public payload remains the
+            # analyzer schema unchanged while both consumers share one analyzer run.
             payload["_isf_rest_window_steps"] = [
                 {"insulin_acted": round(step.insulin_acted, 4),
                  "dbg": round(step.dbg, 2),

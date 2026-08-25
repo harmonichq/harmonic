@@ -1022,9 +1022,9 @@ export const S08 = async (page) => {
   is(after.pressed.length, 1, 'S08 a preset is restored');
 };
 
-/** S09 · Drilling a factor pushes level 2: the canvas follows the factor's peak,
-    the count declares its window, and the coincidence line prints BOTH the
-    basal slot and the I:C block, basal first, each with its own route. */
+/** S09 · Drilling a factor pushes level 2 without replacing the reader's 24 h
+    window, and the coincidence line prints BOTH the basal slot and the I:C
+    block, basal first, each with its own route. */
 // LOCK:diagnose-workstation:4 LOCK:diagnose-workstation:9 LOCK:diagnose-workstation:17 LOCK:diagnose-workstation:18 LOCK:diagnose-workstation:22 LOCK:diagnose-workstation:33
 export const S09 = async (page) => {
   await page.getByRole('button', { name: '24 h', exact: true }).click();
@@ -1034,7 +1034,8 @@ export const S09 = async (page) => {
   const s = await state(page);
   is(s.crumb.length, 2, 'S09 one level pushed');
   is(s.crumb[0], 'Findings', 'S09 the root ancestor stays in the trail');
-  ok(/^Factor peak \d\d:\d\d–\d\d:\d\d$/.test(s.chip || ''), `S09 the canvas follows the factor peak (${s.chip})`);
+  is(s.chip, null, 'S09 drilling a factor adds no derived window chip');
+  is(s.pressed, ['24 h'], 'S09 drilling a factor keeps the 24 h preset pressed');
   ok(/^\d+ of \d+ · /.test(s.crumbMeta || ''), `S09 the count declares its window (${s.crumbMeta})`);
   ok(s.slotLink !== null, 'S09 the coincidence line prints');
   is(s.linkBtns, ['View slot', 'View segment'], 'S09 both routes print, basal first');
@@ -2148,6 +2149,19 @@ export const S90 = async (page) => {
     'S90 meal offsets read as rounded whole minutes');
 };
 
+/** S91 · A drawn window keeps its clear affordance when a finding opens.
+    S21 owns window identity across the drill; this story owns the control that
+    lets the reader clear that unchanged window. */
+// STORY:finding-evidence-routing:S91
+export const S91 = async (page) => {
+  is(await page.locator('#seg-window [data-follow] .x').count(), 1,
+    'S91 precondition: the drawn window can be cleared');
+  await page.click('#level .qrow[data-state="finding"]');
+  await settle(page, 450);
+  is(await page.locator('#seg-window [data-follow] .x').count(), 1,
+    'S91 drilling a finding keeps the drawn window clear affordance');
+};
+
 // STORY:finding-evidence-routing:S53
 export const S53 = async (page) => {
   await openHistoryCase(page);
@@ -2996,7 +3010,8 @@ export const S36 = async (page) => {
   await page.click('#seg-window button:nth-child(1)');   // Overnight
   await settle(page, 900);
   const narrowed = await state(page);
-  is(narrowed.pressed, ['Window 00:00–06:00'], 'S36 the server case owns the narrowed window');
+  is(narrowed.pressed, ['Overnight'], 'S36 the server case keeps the narrowed preset pressed');
+  is(narrowed.chip, null, 'S36 the narrowed preset needs no follow chip');
   is(narrowed.crumb[narrowed.crumb.length - 1], 'Late bolus', 'S36 the reader stays on the finding');
   ok(/meal responses in 00:00–06:00/.test(narrowed.levelStat || ''),
     `S36 the replacement case and inspector share the server window (${narrowed.levelStat})`);
@@ -3987,6 +4002,7 @@ export const STORIES = [
       })),
     }),
   }] }],
+  ['S91', S91, 'drawn'],
   ['C41', C41, 'typical', { caseScenario: {
     preparation: generatedFindingPose('finding:meal_over_delivery'),
   } }], ['C42', C42, 'typical'],

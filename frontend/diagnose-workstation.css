@@ -158,9 +158,8 @@ html.dark .dw {
   border: 0; background: transparent; color: var(--mk-secondary);
   padding: 4px 9px; border-radius: 5px; cursor: pointer; font-size: 11.5px; font-weight: 550;
 }
-/* The follow chip reports a LIVE value, so it is sized once for the longest
-   string it can ever hold ("Factor peak 00:00–24:00", longer than the drag's
-   own "Window 00:00–24:00 ×") and never resizes again. */
+/* The follow chip reports a LIVE value. Its 172px width deliberately keeps the
+   shipped slack around "Window 00:00–24:00 ×" rather than resizing the control. */
 .seg button[data-follow] {
   display: inline-flex; align-items: center; width: 172px;
   font-variant-numeric: tabular-nums; text-align: left;

@@ -91,7 +91,7 @@ for one the same way every other surface does.
 - The `another factor applies` cohort and its request coordinate disappear with
   the retired vocabulary.
 - The attribution equations that assume a Finding's claim
-  (`finding_case_file.py:110-118`) must be scoped to Finding-keyed requests, so a
+  (`finding_case_file.py:110-116`) must be scoped to Finding-keyed requests, so a
   lever-and-window request is not measured against a claim it does not carry.
 - The retired schema's fixtures, mirrors and drift checks retire or move with it,
   every existing `--check` obligation preserved.

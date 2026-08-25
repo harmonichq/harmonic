@@ -37,8 +37,10 @@ recommendation this decision settled, not a completed plan.
 
 ## 4. Fold into the baseline
 
-- [ ] Update the two capability statements that assert the five event cohorts —
-      `openspec/specs/surfaces/spec.md:55-57` and
-      `openspec/specs/behavioral-layer/spec.md:39` — in the pull request that
-      makes them false. Both are accurate until then, which is why the decision
-      record alone does not touch them.
+- [ ] Update the two capability statements that assert five event cohorts, in
+      the pull request that makes them false. Both are accurate until then,
+      which is why the decision record alone does not touch them. Find them by
+      their text, not by line number: the surfaces capability requires
+      "authoritative counts, full roster, 12-bucket clock, five event cohorts,
+      selection", and the behavioral-layer capability requires the drill-down to
+      read "the five server-declared cohorts".

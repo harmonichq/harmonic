@@ -1,4 +1,4 @@
-# Scope ledger — baseline population for every event chart family (#180)
+# Scope ledger — the comparison population for every By-event chart (#180)
 
 Session origin: `/ticket triage 180` (2026-08-25). Map: #133. Prototype: #178.
 Branch `codex/180-baseline-population-event-charts`.
@@ -30,10 +30,10 @@ interlocking design decisions the operator holds, not missing facts.
   (`analyzers/scenario/opportunities.py`): Meals = completed carb boluses at or
   above the meal-carb floor; Lows = excursion nadirs; correction clusters =
   adjacent user-correction pairs; Highs = high excursions.
-- #178 settled the missed-meal lever only, and its baseline is *cross-family*
+- #178 settled the missed-meal lever only, and its baseline is *cross-Exposure*
   (highs versus announced meals), so the nesting question never arose there.
   `not_comparable` does not exist in the tree yet; #178 introduces it.
-- Decision 6 in `openspec/changes/diagnose-finding-case-files/design.md:85-105`
+- Decision 6 in `openspec/changes/diagnose-finding-case-files/design.md:86-102`
   pins today's five-verdict cohorts and the per-Exposure anchors and horizons. Any
   generalization amends it explicitly.
 - Basal clean-night (#143), ISF rest-window (#144) and current I:C meal-run

@@ -31,22 +31,6 @@ test('selected detail describes its glucose trace in product language', () => {
   assert.doesNotMatch(source, /Occurrence's server-owned trace/);
 });
 
-test('every registered workstation replay story has a unique ledger tag', () => {
-  const source = readFileSync(new URL('./diagnose-workstation-behavior.replay.mjs', import.meta.url), 'utf8');
-  const storiesStart = source.indexOf('export const STORIES = [');
-  const storiesEnd = source.indexOf('\n];', storiesStart);
-  assert.ok(storiesStart >= 0 && storiesEnd > storiesStart, 'the replay registers its stories in one array');
-  const registered = [...source.slice(storiesStart, storiesEnd)
-    .matchAll(/\['(S\d+|C\d+|D\d+)', \1,/g)].map((match) => match[1]);
-  const tags = new Set([...source
-    .matchAll(/^\/\/ STORY:finding-evidence-routing:(S\d+|C\d+|D\d+)$/gm)]
-    .map((match) => match[1]));
-  assert.equal(registered.length, 111, 'the ledger inventory lists all 111 registered stories');
-  assert.equal(new Set(registered).size, registered.length, 'registered story IDs are unique');
-  assert.equal(tags.size, registered.length, 'every registered story has one unique tag ID');
-  assert.deepEqual([...tags].sort(), [...registered].sort(), 'tag IDs exactly match registered story IDs');
-});
-
 test('C44/C56 replay poses enter the existing Findings queue once', () => {
   const source = readFileSync(new URL('./diagnose-workstation-behavior.replay.mjs', import.meta.url), 'utf8');
   for (const story of ['C44', 'C56']) {

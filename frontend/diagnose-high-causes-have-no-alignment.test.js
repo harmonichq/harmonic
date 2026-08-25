@@ -23,13 +23,13 @@ test('#181 · eligible rows publish their own lever and server window', () => {
   }
 });
 
-test('#83 · settings and unsupported Findings publish explicit null', () => {
+test('#83 · settings publish null and a High-family Missed meal publishes its coordinate', () => {
   const settings = fixture.windows.global.rows.filter((row) => row.register !== 'finding');
   assert.ok(settings.length > 0, 'the generated contract exercises settings rows');
   assert.ok(settings.every((row) => Object.hasOwn(row, 'event_chart')));
   assert.ok(settings.every((row) => row.event_chart === null));
 
-  const unsupported = projectFindings({
+  const missedMeal = projectFindings({
     analysis: { window_days: 30, basal: [], isf: [], ic_blocks: [] },
     exposures: { exposures: { highs: { occurrences: [{
       t: '2026-08-17 09:00:00', date: '2026-08-17', kind: 'high',
@@ -38,7 +38,10 @@ test('#83 · settings and unsupported Findings publish explicit null', () => {
     }] } } },
     scenarios: { patterns: [], low_confidence: [] },
   }, null).rows[0];
-  assert.equal(unsupported.event_chart, null);
+  assert.deepEqual(missedMeal.event_chart, {
+    lever: 'missed_meal',
+    window: { scoped: false, start_min: null, end_min: null, label: null },
+  });
 });
 
 test('#83 · compatibility without the canonical family publishes null', () => {

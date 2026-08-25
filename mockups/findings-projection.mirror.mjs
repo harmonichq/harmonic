@@ -384,6 +384,7 @@ function patternPriorities(scenarios) {
 
 const EVENT_CHART_FAMILIES = {
   carb_undercount: 'meals', late_bolus: 'meals', meal_over_delivery: 'meals',
+  missed_meal: 'highs',
   over_treated_low: 'lows', correction_on_iob: 'lows', correction_stacking: 'lows',
 };
 

@@ -6,6 +6,7 @@ import { buildCapture } from '../mockups/diagnose-event-comparison.synthetic/gen
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 import { populateFindingCasePreparation } from './browser-fixture-population.js';
 import { assertMatchingFindingCasePreparation } from './finding-case-file-validation.js';
+import { queueMeta, queueRows } from './diagnose-findings-queue.js';
 
 const here = (path) => fileURLToPath(new URL(path, import.meta.url));
 const payload = JSON.parse(readFileSync(
@@ -87,6 +88,25 @@ test('the cockpit exposure population produces its event-comparison Finding row'
     scenarios: payload.scenarios,
   });
   assert.ok(projection.rows.some(({ id }) => id === 'finding:late_bolus'));
+});
+
+test('the Afternoon Event charts fixture retains all four published Findings', () => {
+  const projection = projectFindings({
+    analysis: payload.analyze,
+    exposures: payload.exposures,
+    scenarios: payload.scenarios,
+  }, { start_min: 720, end_min: 1080 });
+  const selected = new Set(['highs', 'meals', 'corrections']);
+  const shown = queueRows(projection, selected, true)
+    .filter((row) => !row.hidden && !row.collapsed);
+
+  assert.deepEqual(shown.map(({ id }) => id), [
+    'finding:over_treated_low',
+    'finding:correction_on_iob',
+    'finding:late_bolus',
+    'finding:missed_meal',
+  ]);
+  assert.equal(queueMeta(projection, selected, true), '4 in this window');
 });
 
 test('comparison keeps plan-local outcomes and verdicts when workstation attribution changes', () => {

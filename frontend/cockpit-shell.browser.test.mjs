@@ -369,7 +369,9 @@ async function routeApp(page, options = {}) {
       return route.fulfill({ status: finding ? 200 : 404, body: JSON.stringify(served),
         contentType: 'application/json' });
     }
-    if (url.pathname === '/api/analyze') return route.fulfill({ json: fixed(analyze) });
+    if (url.pathname === '/api/analyze') {
+      return route.fulfill({ json: fixed(findingsInput.analysis) });
+    }
     // #735: level 1 IS the findings queue, and the workstation fails closed without
     // it — an unserved projection renders "Diagnose is unavailable.", which is an
     // empty body for every scenario that lands on the default Diagnose tab. Project
@@ -384,9 +386,11 @@ async function routeApp(page, options = {}) {
         url.searchParams.get('selected_id')) });
     }
     if (url.pathname === '/api/explore/exposures') {
-      return route.fulfill({ json: options.exposuresInput || {} });
+      return route.fulfill({ json: options.exposuresInput ?? findingsInput.exposures });
     }
-    if (url.pathname === '/api/scenarios') return route.fulfill({ json: scenarios });
+    if (url.pathname === '/api/scenarios') {
+      return route.fulfill({ json: findingsInput.scenarios });
+    }
     if (url.pathname === '/api/audit/dismissals') return route.fulfill({ json: { dismissals: {} } });
     if (url.pathname === '/api/outcomes/trend') return route.fulfill({ json: {} });
     if (url.pathname === '/api/catalog') return route.fulfill({ json: options.catalog || {} });

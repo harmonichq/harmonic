@@ -1854,9 +1854,13 @@ export const densityHistoryInputs = async () => {
     testing the wrong population. */
 const clickQueueRow = async (page, title) => {
   await page.waitForFunction(() => document.getElementById('level')?.dataset.loading !== 'true');
-  const at = await page.evaluate((want) => [...document.querySelectorAll('#level .qrow')]
-    .findIndex((row) => row.querySelector('.lab')?.textContent.trim() === want), title);
-  if (at < 0) fail(`the queue holds no row titled ${title}`);
+  const queue = await page.evaluate(() => [...document.querySelectorAll('#level .qrow')]
+    .map((row) => row.querySelector('.lab')?.textContent.trim()).filter(Boolean));
+  const at = queue.indexOf(title);
+  if (at < 0) {
+    const detail = await page.evaluate(() => document.getElementById('level')?.innerText.replace(/\s+/g, ' ').trim());
+    fail(`the queue holds no row titled ${title}; saw ${queue.join(', ') || '(none)'}; level ${detail || '(empty)'}`);
+  }
   await page.locator('#level .qrow').nth(at).click();
   await settle(page, 500);
 };
@@ -3542,7 +3546,6 @@ export const C43 = async (page) => {
 
 export const C44 = async (page) => {
   await openWholeDay(page);
-  await page.getByRole('button', { name: 'Findings', exact: true }).click();
   await clickQueueRow(page, 'Missed / unannounced meal');
   await page.waitForSelector('#level .who');
   is(await page.locator('#level .who').innerText(), 'Missed / unannounced meal · highs',
@@ -3567,7 +3570,6 @@ export const C44 = async (page) => {
 
 export const C56 = async (page) => {
   await openWholeDay(page);
-  await page.getByRole('button', { name: 'Findings', exact: true }).click();
   await clickQueueRow(page, 'Missed / unannounced meal');
   await page.getByRole('button', { name: 'By event', exact: true }).click();
   await page.waitForSelector('#ec-chart');
@@ -3581,7 +3583,7 @@ export const C56 = async (page) => {
 
 /* The ordinary generated projection withholds some case-file rows. A story may
  * pose one generated production-shaped row without changing that roster policy. */
-const generatedFindingPose = (findingId) => ({ preparation, caseFiles }) => {
+export const generatedFindingPreparation = (preparation, caseFiles, findingId) => {
   const sourceRow = caseFiles.preparation.findings.rows.find((row) => row.id === findingId);
   const sourceRendered = caseFiles.preparation.rendered_rows.find((row) => row.id === findingId);
   const sourceHeader = caseFiles.preparation.behavioral_case_headers[findingId];
@@ -3589,18 +3591,32 @@ const generatedFindingPose = (findingId) => ({ preparation, caseFiles }) => {
     fail(`generated case-file fixture has no ${findingId} pose`);
   }
   const next = structuredClone(preparation);
-  next.findings.rows.push(structuredClone(sourceRow));
+  /* A replay can pose a row through both the queue projection and preparation.
+     The preparation is a validated server contract, where duplicate ready ids
+     are invalid; preserve the projected row when it is already present. */
+  if (!next.findings.rows.some((row) => row.id === findingId)) {
+    next.findings.rows.push(structuredClone(sourceRow));
+  }
   next.findings.counts = { ...next.findings.counts, total: next.findings.rows.length };
-  next.rendered_rows.push(structuredClone(sourceRendered));
+  if (!next.rendered_rows.some((row) => row.id === findingId)) {
+    next.rendered_rows.push(structuredClone(sourceRendered));
+  }
   next.behavioral_case_headers[findingId] = structuredClone(sourceHeader);
-  return { body: next };
+  return next;
 };
 
-const generatedFindingProjection = (findingId) => (projected, caseFiles) => ({
-  ...projected,
-  rows: [...projected.rows, structuredClone(caseFiles.preparation.rendered_rows
-    .find((row) => row.id === findingId))],
+const generatedFindingPose = (findingId) => ({ preparation, caseFiles }) => ({
+  body: generatedFindingPreparation(preparation, caseFiles, findingId),
 });
+
+export const generatedFindingProjection = (findingId) => (projected, caseFiles) => {
+  if (projected.rows.some((row) => row.id === findingId)) return projected;
+  return {
+    ...projected,
+    rows: [...projected.rows, structuredClone(caseFiles.preparation.rendered_rows
+      .find((row) => row.id === findingId))],
+  };
+};
 
 export const C45 = async (page) => {
   await openWholeDay(page);
@@ -4099,9 +4115,9 @@ export const STORIES = [
       return { body: preparation };
     },
   } }],
-  ['C56', C56, 'typical', { caseScenario: {
+  ['C56', C56, 'typical', { findingsProjectionInputs: generatedFindingProjection('finding:missed_meal'),
+    caseScenario: {
     preparation: generatedFindingPose('finding:missed_meal'),
-    findingsProjectionInputs: generatedFindingProjection('finding:missed_meal'),
     case: async ({ url, body, caseFiles }) => !url.searchParams.get('occ')
       ? { body: structuredClone(caseFiles.cases['finding:missed_meal'].empty_event) } : { body },
   } }],

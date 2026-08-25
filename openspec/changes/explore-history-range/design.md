@@ -56,7 +56,7 @@ the fastest chart never waits for the slowest one.
 Every result retains ADR 123's exact key on the Store's global input-data
 revision and complete shape coordinates. After an hourly pull, a previously
 viewed range therefore misses and recomputes when it is requested again. During
-that recompute, Explore follows ADR 124: it may serve the newest prior-revision
+that recompute, Explore follows ADR 124: it serves the newest prior-revision
 chart with the age of its inputs visible.
 
 **Why.** Warming three fixed-size ranges on mode entry makes switching among the

@@ -31,7 +31,7 @@ verified live 2026-08-25).
   no ranking, no staging, no recommendation wording.
 - Support floors that a shortened range would collide with:
   `safety._MIN_SUPPORTED_NIGHTS = 8` (basal) and `_MIN_SUPPORTED_BLOCK_RUNS = 8`
-  (carb ratio).
+  (I:C).
 
 ## Decisions
 

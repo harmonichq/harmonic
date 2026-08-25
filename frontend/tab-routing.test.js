@@ -32,8 +32,9 @@ test('the parse reports whether the address named a page, so a bare arrival can 
   for (const page of ['day', 'diagnose', 'verify', 'plan', 'settings', 'guide']) {
     assert.equal(parseRoute({ pathname: `/${page}`, search: '' }).pageNamed, true);
   }
-  // Retired standalone-comparison keys do not name a route.
-  assert.equal(parseRoute({ pathname: '/', search: '?view=lows' }).pageNamed, false);
+  // `view` remains a Diagnose compatibility coordinate; the case file, not the
+  // address, owns the event comparison it can render.
+  assert.equal(parseRoute({ pathname: '/', search: '?view=glucose' }).pageNamed, true);
   // #94: the retired `#/<page>?...` grammar is not read, so a saved hash link
   // names nothing — it is the bare `/` it literally is, and is treated as one.
   const stale = parseRoute({ pathname: '/', hash: '#/verify', search: '' });
@@ -74,26 +75,26 @@ test('Day date and Guide article restore from their page route and leave with th
   assert.deepEqual(writes, ['/day?date=2026-08-22', '/guide?article=reading-day']);
 });
 
-test('retired comparison coordinates do not enter the Diagnose route', () => {
+test('the stable glucose route keeps only its compatibility view state', () => {
   const route = parseRoute({ pathname: '/', search: '?view=lows&factor=correction_stacking&start_min=0&end_min=120&another=1&occ=low-7' });
-  assert.deepEqual(route, { page: 'diagnose', pageNamed: false, mode: null });
-  assert.equal(serializeRoute(route), '/diagnose');
+  assert.deepEqual(route, { page: 'diagnose', pageNamed: true, view: 'lows', mode: null });
+  assert.equal(serializeRoute(route), '/diagnose?view=lows');
 
   // The parsed route replaces the address in place with its canonical form, and
   // a stale fragment does not survive that replacement — #94 retired the
   // `#/<page>?...` grammar outright, so no fragment may linger in the address.
-  const carried = parseRoute({ pathname: '/diagnose', search: '?mode=drawn' });
+  const carried = parseRoute({ pathname: '/diagnose', search: '?view=glucose&mode=drawn' });
   const replacements = [];
   writeRoute(carried, {
-    location: { pathname: '/diagnose', hash: '#/diagnose?factor=late_bolus', search: '?mode=drawn' },
+    location: { pathname: '/diagnose', hash: '#/diagnose?factor=late_bolus', search: '?view=glucose&mode=drawn' },
     history: { replaceState: (_state, _title, address) => replacements.push(address) },
     replace: true,
   });
-  assert.deepEqual(replacements, ['/diagnose?mode=drawn']);
+  assert.deepEqual(replacements, ['/diagnose?view=glucose&mode=drawn']);
 
   const listeners = new Map();
   const browser = {
-    location: { hash: '', search: '?mode=drawn', pathname: '/diagnose' },
+    location: { hash: '', search: '?view=glucose&mode=drawn', pathname: '/diagnose' },
     addEventListener(type, listener) { listeners.set(type, listener); },
     removeEventListener() {},
   };
@@ -101,5 +102,5 @@ test('retired comparison coordinates do not enter the Diagnose route', () => {
   const unsubscribe = subscribeRoute((next) => seen.push(next), browser);
   listeners.get('popstate')();
   unsubscribe();
-  assert.deepEqual(seen, [{ page: 'diagnose', pageNamed: true, mode: 'drawn' }]);
+  assert.deepEqual(seen, [{ page: 'diagnose', pageNamed: true, view: 'glucose', mode: 'drawn' }]);
 });

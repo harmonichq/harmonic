@@ -2412,7 +2412,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
     } from '/assets/diagnose-workspaces.js';
     // #654: the Diagnose surface is the locked mock's own module, ported. The
     // #636 surface it replaces predates the behaviour contract.
-    import { createDiagnoseWorkstation } from '/assets/diagnose-workstation.js';
+    import { createDiagnoseEventComparison } from '/assets/diagnose-event-comparison.js';
 
     // #660: the ported Verify workstation (locked mock + frozen ledger).
     import { createVerifyWorkstation } from '/assets/verify-workstation.js';
@@ -5443,7 +5443,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         // for the success path, unchanged.
         function diagnoseEnsureView() {
           if (!diagnoseRoot.value) return null;
-          if (!diagnoseView) diagnoseView = createDiagnoseWorkstation({ root: diagnoseRoot.value,
+          if (!diagnoseView) diagnoseView = createDiagnoseEventComparison({ root: diagnoseRoot.value,
             callbacks: { stage: diagnoseStage, isStaged: diagnoseIsStaged,
               day: (occurrence) => goToMoment(occurrence.t || occurrence.anchor?.t,
                 occurrence.text || occurrence.anchor?.label,

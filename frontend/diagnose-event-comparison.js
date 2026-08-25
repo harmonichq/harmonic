@@ -8,6 +8,8 @@ const STYLE = {
   comparison: { color: '--ec-comparison', lineType: 'dotted' },
 };
 
+import { createDiagnoseWorkstation } from './diagnose-workstation.js';
+
 const css = (element, name) => getComputedStyle(element).getPropertyValue(name).trim();
 const rounded = (value) => value == null ? '—' : String(Math.round(value));
 const dateLabel = (date) => new Date(`${date}T00:00:00`).toLocaleDateString(
@@ -142,4 +144,21 @@ export function renderEventSurface(surface, caseFile, { headerHost = null } = {}
     aggregates: Object.fromEntries(caseFile.projection.cohorts.map((cohort) => [cohort.key, cohort.points])) };
   window.__diagnoseEventComparison = rendered;
   return rendered;
+}
+
+/* Compatibility shell: `view=glucose` remains a stable Diagnose route and the
+ * browser lifecycle marker, but all evidence requests flow through case files. */
+export function createDiagnoseEventComparison({ root, callbacks = {} }) {
+  const host = document.createElement('div');
+  host.className = 'ec-host';
+  host.dataset.eventView = 'glucose';
+  root.replaceChildren(host);
+  const workstation = createDiagnoseWorkstation({ root: host, callbacks });
+  return {
+    setData: (payload) => workstation.setData(payload),
+    setError: (message) => workstation.setError(message),
+    refresh: () => workstation.refresh(),
+    repaintDay: () => workstation.repaintDay(),
+    gotoState: (state) => workstation.gotoState(state),
+  };
 }

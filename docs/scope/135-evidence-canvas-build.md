@@ -215,6 +215,37 @@ replay stories added; and the sanitized derivative made a dispatch precondition
 confirmed by the operator, since no machine should unilaterally certify that a file no
 longer holds someone's health data.
 
+Round 3 — fresh cold pass (Terra), the skill's HARD CAP. Three blocking objections,
+all reproduced. All three trace to ONE unsettled design decision that I invented
+rather than derived: **how a chart is identified and wired**.
+
+1. **The registry cannot be static.** It is required to hold one entry per current
+   I:C block, but the set of blocks is a runtime analysis fact —
+   `findings_projection._ic_rows` enumerates `self._analysis["ic_blocks"]`
+   (`findings_projection.py:348`) — and the feed rejects a request lacking both
+   `block_id` and `analysis_generation` (`api.py:895`). A stateless entry with
+   declared coordinates cannot express that, so an agent would hard-code fixture
+   coordinates or invent catalog mutation during the 409 refresh, leaving pinned-tile
+   recovery undefined.
+2. **The feed clients have no owned bridge into the mount.** `frontend/index.html`
+   imports the `data.js` clients (line 2345) and injects them into Diagnose through an
+   `enqueue` callback seam (line 5461). No chunk owns `index.html`, so chunk 2 would
+   have to call absent callbacks or open a second direct-transport path around the
+   existing serial-gated seam.
+3. **The event-comparison registry entry is unbuildable as scoped.** `chartOption` is
+   module-private in `frontend/diagnose-event-comparison.js:519`, called only by its
+   mounting renderer at 647. Chunk 1 owns every registry `option` but may not edit that
+   file; chunk 2 may touch it only for range injection. Copying it violates the
+   one-implementation rule; importing an export added later makes chunk 1's standalone
+   gate unsatisfiable.
+
+### Stopped at the cap
+
+Drafting stopped here per the review rules: objections still arriving at the third
+panel mean an unsettled decision. The chart-identity model goes to the operator; the
+two ownership questions follow mechanically once it is settled. Nothing posted to the
+ticket.
+
 ## Spawned tasks
 
 (none yet)

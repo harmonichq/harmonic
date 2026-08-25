@@ -158,8 +158,95 @@ Notes, both adopted:
    load-bearing precedence rule in this ledger, so the order now sanctions
    correcting that one cite in the same revision section.
 
-No round 2: the three fixes are fact corrections with exact, reproduced
-counterparts rather than decisions, and the order names no unsettled decision.
+**Round 2 — the cold panel, two fresh reviewers with no context from this
+session. 2 blocking (both found independently by both reviewers), 6 notes.
+7 `authoring`, 1 `injected`.** Run at the operator's explicit request after
+round 1 was disclosed as degraded.
+
+Blocking:
+
+1. `authoring`. **Deleting the branch retires a SECOND pinned assertion the order
+   never named, and CI would have gone red on it.** The branch has two
+   load-bearing arms, not one. Besides the peak arm, the `caseWindow.scoped` arm
+   (`frontend/diagnose-workstation.js:1711-1714`) reports a sub-day window by
+   calling `markWindowSegment`, which unpresses every preset and installs a
+   `Window HH:MM–HH:MM` follow chip (`:383`, `:400`). Frozen story S36
+   (`frontend/diagnose-workstation-behavior.replay.mjs:2988-3004`) drills
+   `Late bolus` and then presses Overnight, and asserts that output verbatim at
+   `:2999`: `is(narrowed.pressed, ['Window 00:00–06:00'], …)`. After the deletion
+   it reads `['Overnight']` with `chip` null. The round-1 "closed inventory"
+   grepped for `Factor peak` / `PEAK ` / `peak_bucket_index`, none of which occur
+   in S36, so it was structurally incapable of finding this — the inventory was
+   closed over the wrong term set. Fixed as step 5, with a sweep instruction for
+   any further assertion read on a factor frame under a sub-day window, and the
+   §132 literal-move precedent (`:2285-2288`) for recording it.
+2. `authoring`. **The new story, as round 1 specified it, passes on the defective
+   base** — the silent-incorrect-success outcome this ledger's own risk contract
+   names as must-prevent. Existing story S21 (`:1339-1352`, registered
+   `['S21', S21, 'drawn']`) already asserts
+   `is(drilled.chip, start.chip, 'S21 drilling a factor does not move the user
+   window')` and passes today, because the deleted scoped arm emits the same
+   `Window HH:MM–HH:MM` text and `state()` strips the `×` glyph at `:86`. So the
+   drawn-window half of P17 is already enforced and already gated, and a
+   chip/pressed equality story would have been a duplicate that could never fail.
+   What genuinely changes for a drawn window is the CLEAR AFFORDANCE: the deleted
+   arm passes no `onClear`, so the `×` vanishes after a drill today, while the
+   `canvasDrawn` fall-through passes `clearDrawn` (`:1733-1734`) and it survives.
+   The new story now asserts that element directly, the way S08 reaches it at
+   `:1018`.
+
+Refuted, and NOT carried into the fix round:
+
+3. One reviewer reported P17's verdict as `amended · issue #81 · 2026-08-21`,
+   which would have falsified the "two stories, one ruling date" framing that
+   justifies the retirement. Reproduced and refuted: P17's block opens at `:495`
+   and its own verdict line is `:503`, reading
+   `kept          operator-ruled: Connor Griffin · 2026-08-19`. The line quoted
+   at `:567` is P19b's verdict, a different block. Command:
+   `awk 'NR>=493 && NR<=570' mockups/finding-evidence-routing.behavior.md |
+   grep -n -E "P1[789] ·|verdict:"`. Had this reached the fix round it would have
+   been written into ADR 179 as permanent false provenance.
+
+Notes, all adopted:
+
+4. `authoring`. Two further prose sites describe the retired behavior beyond the
+   two named: the surviving `canvasDrawn` branch comment (`:1729-1730`,
+   "Reported in the chip slot the peak chip already occupies") and
+   `frontend/diagnose-workstation.css:161-163`, which justifies the follow chip's
+   `width: 172px` as sized for `"Factor peak 00:00–24:00"` — a string that can no
+   longer render. Step 3 now enumerates four sites and forbids re-measuring the
+   width, which would be an unrequested visual change.
+5. `injected`. Round 1's step 2 named three dependents of `labelNote`; there are
+   four. `notePx` is consumed at `frontend/diagnose-workstation-chart.js:672` as
+   well as `:674`, and `:672` sits inside the block round 1 simultaneously told
+   the agent to leave intact. Behavior-identical to drop (it is 0 whenever
+   `labelNote` is empty), but the contradiction was introduced by round 1's own
+   fix.
+6. `authoring`. "One production caller" for `renderCanvas` is wrong — 
+   `mockups/finding-evidence-routing.exploration/pooled.js:243` is a second. The
+   conclusion holds for the true reason: no caller anywhere passes `windowNote`.
+7. `authoring`. The order's verification enumerated AGENTS.md's eight backend
+   drift checks; `.github/workflows/ci.yml:35-74` runs eleven, plus
+   `node --test scripts/screenshots.local.test.mjs` (`:132`). AGENTS.md is stale
+   against its own CI. Verification now points at `ci.yml` and names the gap.
+8. `authoring`. Round 1's step 6e told the agent to correct P17's `source:` cite
+   and supplied the pre-change line numbers while also saying they move again —
+   without saying which set to write. Now: write the post-change numbers, read
+   off the agent's own diff.
+
+Both reviewers verified independently and agreed on blockers 1 and 2, reaching
+them by different routes (rubric grounding pass and step-by-step execution
+realism). The order was rewritten clean rather than patched, per the
+rewrite-clean rule; one `injected` blocker in round 1's own fix is what that rule
+exists for.
+
+**Cross-ticket collision found while the panel ran, and guarded rather than
+sequenced.** Ticket #178 is in flight against the same replay file and the same
+behaviour ledger: both tickets add a story at the next free id, and both amend a
+header that counts itself. The order now instructs the agent to re-derive the id
+and every count rather than trust the triage-time literals, and states the
+expectation as "exactly one more passing story than the branch point, all green"
+rather than the bare number 109.
 
 ## Open questions
 

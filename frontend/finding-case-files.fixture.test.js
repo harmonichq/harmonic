@@ -43,6 +43,14 @@ test('ADR 79 fixture pins claimed < fired and near-low aggregate withholding', (
   assert.equal(meal.summary.claimed, 1);
   assert.equal(meal.verdict_counts.fired, 6);
   assert.ok(meal.summary.claimed < meal.verdict_counts.fired);
+  assert.deepEqual(
+    ['fired', 'near_miss', 'clean'].map((key) => meal.verdict_counts[key]),
+    [6, 1, 1],
+    'the three labeled verdict controls are one exact semantic band set');
+  assert.deepEqual(
+    ['outranked', 'no_data'].map((key) => meal.verdict_counts[key]),
+    [1, 1],
+    'the two residue verdict bands complete the published partition');
   const low = fixture.cases['finding:over_treated_low'].event;
   assert.equal(low.projection.cohorts.find((cohort) => cohort.key === 'near_miss').support,
     'withheld');

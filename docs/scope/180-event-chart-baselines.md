@@ -114,6 +114,24 @@ interlocking design decisions the operator holds, not missing facts.
   cohorts. Why: a visible gap is safer than a chart that quietly changes what it
   compares. `inline`
 
+- **The standalone comparison feed is retired, not kept beside the case files**
+  (Q12, C). A case file becomes reachable by factor and window rather than only
+  by a finding that fired, and the By-event view asks for one the same way every
+  other surface does. Why: the operator's ruling, built right rather than built
+  twice; #135's Explore mode forces the same generalization on its own terms.
+  Consequences carried into the build: the `another factor applies` cohort and
+  its coordinate disappear with the retired vocabulary; the attribution
+  equations that assume a finding's claim must be scoped to finding-keyed
+  requests; the retired schema's fixtures, mirrors and drift checks retire or
+  move with it. `inline`
+- **Work splits by layer, not by surface** (Q13, operator delegated the call):
+  (1) case files reachable by factor and window, retiring the standalone
+  projection; (2) the shared three-cohort comparison with its per-factor
+  identities, labels, counts and both cross-family anchors; (3) rendering,
+  labels, ledger amendment, replay and fixtures. Why: one builder serves both
+  entry points, so a per-surface split would have two tickets editing one
+  module. Handed off as a single issue for `/epic` to map. `→ issue`
+
 ### Risk contract
 
 - **Must prevent:** a chart whose drawn comparison line is not the population its
@@ -137,8 +155,7 @@ Disposition: copied into the work order at admission.
 
 ## Open questions
 
-Round 5: where the comparison lives after this (one module for both surfaces, or
-two shapes sharing a vocabulary); and the build shape that follows.
+(none -- frontier empty)
 
 ## Spawned tasks
 

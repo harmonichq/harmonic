@@ -35,7 +35,7 @@ import { DIAGNOSE_EVIDENCE_CHARTS, glucoseRange } from './diagnose-evidence-char
 import {
   PIN_CAP, arrangementRange, createCanvasLayout, descriptorsFromFindings,
   focusSwap, optionForDescriptor, pinChart, placeSeats,
-  recoverStaleGeneration, refreshStillCurrent, seatCountFor,
+  seatCountFor,
   tileStatePresentation, unpinChart,
 } from './diagnose-canvas-layout.js';
 import {
@@ -1217,6 +1217,32 @@ function boot(root, data, callbacks, signal) {
     return next;
   };
 
+  /* ONE GENERATION AUTHORITY. Adopting a fresh findings generation is the same
+     act for a history pair and for a tile whose evidence request came back
+     `analysis_generation_mismatch`: ask the server, drop the answer if the
+     reader has moved on, and otherwise make it the surface's findings. Both
+     callers go through this pair; a second generation check would be one fact
+     with two implementations. What each caller re-derives afterwards — a
+     history frame, or the tile field via `reconcileTileDescriptors` — is its
+     own, and nothing here restores a layout captured before the refresh. */
+  const adoptFindings = (next, key) => {
+    findings = next;
+    loadedKey = key;
+    pendingKey = null;
+    failedKey = null;
+    return next;
+  };
+
+  async function requestFindingsGeneration({ selectedHistoryId = null, still }) {
+    const key = currentFindingsKey();
+    const next = await refreshFindingsGeneration(selectedHistoryId);
+    // `still` is the CALLER's currency: a history frame is current while it is
+    // still on top of its own request, a tile recovery while the reader has not
+    // moved the window out from under it.
+    if (!still(key)) return null;
+    return { next, key };
+  }
+
   async function refreshFindingsGeneration(selectedHistoryId = null) {
     const window = requestWindow();
     const refresh = findingsRefreshTail.then(() => callbacks.loadFindings?.(
@@ -1283,8 +1309,14 @@ function boot(root, data, callbacks, signal) {
         && canvasLayout.pins.includes(seed.chartId);
       const sameRequest = prior && prior.kind === seed.kind
         && descriptorCoordinatesKey(prior) === descriptorCoordinatesKey(seed);
+      /* The runtime object is KEPT, not copied. A fetch in flight holds the
+         tile's runtime and writes its answer there; reconciling to a copy left
+         the answer on an orphan and the tile read "Loading evidence…" forever
+         while its state said ok. */
+      const carried = oldRuntime.get(seed.chartId);
+      if (sameRequest || heldRequest) carried.current = true;
       nextRuntime.set(seed.chartId, sameRequest || heldRequest
-        ? { ...oldRuntime.get(seed.chartId), current: true }
+        ? carried
         : { current: true, pending: false, message: null, request: 0 });
       return sameRequest || heldRequest ? prior : seed;
     });
@@ -1292,7 +1324,9 @@ function boot(root, data, callbacks, signal) {
       for (const pinnedId of canvasLayout.pins) {
         if (!generatedIds.has(pinnedId) && old.has(pinnedId)) {
           next.push(old.get(pinnedId));
-          nextRuntime.set(pinnedId, { ...oldRuntime.get(pinnedId), current: false });
+          const held = oldRuntime.get(pinnedId);
+          held.current = false;
+          nextRuntime.set(pinnedId, held);
         }
       }
     }
@@ -1314,70 +1348,73 @@ function boot(root, data, callbacks, signal) {
     }
   }
 
+  /* STALE GENERATION — the recovery IS the shared generation refresh. The
+     server answered this tile's evidence request with
+     `analysis_generation_mismatch`, so the tile names that state with the
+     server's own wording, the surface adopts the current findings generation
+     through the one primitive above, and `reconcileTileDescriptors` — the sole
+     authority on what the canvas holds — re-derives the tile field from the new
+     rows. Nothing restores a layout captured before the refresh.
+
+     A PINNED CHART WHOSE ROW THE NEW GENERATION NO LONGER PUBLISHES is dropped
+     by that reconciliation: the pin comes off cleanly and the tile leaves the
+     field. It is never seated without a descriptor, which is how a pin outliving
+     its row used to crash the repaint. */
+  function markTileStale(chartId, message, { pending = false } = {}) {
+    const descriptor = tileDescriptors.find((item) => item.chartId === chartId);
+    if (!descriptor) return null;
+    descriptor.state = 'stale-generation';
+    descriptor.data = null;
+    const runtime = tileRuntime.get(chartId);
+    runtime.message = message;
+    runtime.pending = pending;
+    paintTiles();
+    return descriptor;
+  }
+
   async function recoverStaleTile(chartId, staleResult) {
+    if (staleResult?.stale !== true || typeof staleResult.message !== 'string') {
+      throw new TypeError('stale recovery needs the typed generation-mismatch result');
+    }
     const recovery = (tileRecoveryGenerations.get(chartId) || 0) + 1;
     tileRecoveryGenerations.set(chartId, recovery);
     const currentRecovery = () => tileRecoveryGenerations.get(chartId) === recovery;
-    const recoveryKey = currentFindingsKey();
+    if (!markTileStale(chartId, staleResult.message, { pending: true })) return;
     try {
-      const stale = tileDescriptors.find((item) => item.chartId === chartId);
-      if (!stale) return;
-      await recoverStaleGeneration(stale, canvasLayout, {
-        stale: staleResult,
-        refresh: async () => {
-          const next = await refreshFindingsGeneration();
-          if (!currentRecovery()
-              || !refreshStillCurrent(recoveryKey, currentFindingsKey())) return null;
-          findings = next;
-          loadedKey = currentFindingsKey();
-          pendingKey = null;
-          failedKey = null;
-          reconcileTileDescriptors({ skipLoadIds: new Set([chartId]) });
-          const descriptor = tileDescriptors.find((item) => item.chartId === chartId);
-          if (descriptor) {
-            descriptor.state = 'stale-generation';
-            descriptor.data = null;
-            const runtime = tileRuntime.get(chartId);
-            runtime.message = staleResult.message;
-            runtime.pending = true;
-            paintTiles();
-          }
-          return descriptor || null;
-        },
-        reload: (descriptor) => descriptorLoader(descriptor)(descriptor.coordinates),
-        hasData: descriptorHasData,
-        redraw: (result) => {
-          if (!currentRecovery()) return;
-          canvasLayout = result.layout;
-          const descriptor = tileDescriptors.find((item) => item.chartId === chartId);
-          if (!descriptor) return;
-          Object.assign(descriptor, result.descriptor);
-          const runtime = tileRuntime.get(chartId);
-          runtime.pending = false;
-          runtime.message = result.message;
-          paintTiles();
-          paintChart();
-          paintBrace();
-        },
+      const adopted = await requestFindingsGeneration({
+        still: (key) => currentRecovery() && key === currentFindingsKey(),
       });
-      if (!currentRecovery()) return;
+      if (!adopted) {
+        markTileStale(chartId, staleResult.message);
+        return;
+      }
+      adoptFindings(adopted.next, adopted.key);
+      reconcileTileDescriptors({ skipLoadIds: new Set([chartId]) });
+      const descriptor = tileDescriptors.find((item) => item.chartId === chartId);
+      if (!descriptor) {
+        // the row is gone from the new generation: a clean unpin, not a crash
+        paintTiles();
+        paintChart();
+        paintBrace();
+        return;
+      }
+      markTileStale(chartId, staleResult.message, { pending: true });
+      await fetchTile(descriptor, { recover: false });
     } catch {
       if (!currentRecovery()) return;
-      const descriptor = tileDescriptors.find((item) => item.chartId === chartId);
-      if (descriptor) {
-        descriptor.state = 'stale-generation';
-        const runtime = tileRuntime.get(chartId);
-        runtime.message = staleResult.message;
-        runtime.pending = false;
-        paintTiles();
-      }
+      markTileStale(chartId, staleResult.message);
     }
   }
 
-  async function fetchTile(descriptor) {
+  async function fetchTile(descriptor, { recover = true } = {}) {
     const load = descriptorLoader(descriptor);
-    const runtime = tileRuntime.get(descriptor.chartId);
+    /* The tile's runtime is read back by chart id on every hop, never captured:
+       reconciliation can replace the entry under an in-flight fetch, and an
+       answer written to a runtime the field no longer reads is a tile that
+       never stops loading. */
+    const runtimeNow = () => tileRuntime.get(descriptor.chartId);
     if (!load) {
+      const runtime = runtimeNow();
       runtime.pending = false;
       descriptor.state = 'error';
       runtime.message = 'Evidence request is unavailable.';
@@ -1385,28 +1422,31 @@ function boot(root, data, callbacks, signal) {
       return;
     }
     const request = ++tileRequestGeneration;
-    runtime.request = request;
-    runtime.pending = true;
+    runtimeNow().request = request;
+    runtimeNow().pending = true;
     paintTiles();
+    const superseded = () => runtimeNow()?.request !== request
+      || !tileDescriptors.includes(descriptor);
     try {
       const data = await load(descriptor.coordinates);
-      if (runtime.request !== request || !tileDescriptors.includes(descriptor)) return;
-      runtime.pending = false;
+      if (superseded()) return;
+      runtimeNow().pending = false;
       if (data?.stale === true) {
-        await recoverStaleTile(descriptor.chartId, data);
+        if (recover) await recoverStaleTile(descriptor.chartId, data);
+        else markTileStale(descriptor.chartId, data.message);
         return;
       }
       descriptor.data = data;
       descriptor.state = descriptorHasData(descriptor) ? 'ok' : 'empty';
-      runtime.message = descriptor.state === 'empty' ? 'No evidence in this request.' : null;
+      runtimeNow().message = descriptor.state === 'empty' ? 'No evidence in this request.' : null;
       paintTiles();
       paintChart();
       paintBrace();
     } catch (error) {
-      if (runtime.request !== request || !tileDescriptors.includes(descriptor)) return;
-      runtime.pending = false;
+      if (superseded()) return;
+      runtimeNow().pending = false;
       descriptor.state = 'error';
-      runtime.message = error?.message || 'Evidence request failed.';
+      runtimeNow().message = error?.message || 'Evidence request failed.';
       paintTiles();
     }
   }
@@ -1475,18 +1515,17 @@ function boot(root, data, callbacks, signal) {
     frame.stale = false;
     paint();
     try {
-      const next = await refreshFindingsGeneration(frame.id);
-      if (request !== historyRequestGeneration || top() !== frame) return;
+      const adopted = await requestFindingsGeneration({ selectedHistoryId: frame.id,
+        still: () => request === historyRequestGeneration && top() === frame });
+      if (!adopted) return;
+      const next = adopted.next;
       const selection = validateHistorySelection(next, frame);
       if (['aged_out', 'unavailable'].includes(selection.disposition)) {
         historyRetired(frame, selection.message, next);
         return;
       }
       if (selection.disposition === 'out_of_scope') {
-        findings = next;
-        loadedKey = key;
-        pendingKey = null;
-        failedKey = null;
+        adoptFindings(next, key);
         Object.assign(frame, { pending: false, stale: false, notice: selection.message });
         paint();
         return;
@@ -1513,10 +1552,7 @@ function boot(root, data, callbacks, signal) {
         });
       }
       if (request !== historyRequestGeneration || top() !== frame) return;
-      findings = next;
-      loadedKey = key;
-      pendingKey = null;
-      failedKey = null;
+      adoptFindings(next, key);
       Object.assign(frame, {
         row, generation: next.analysis_generation, events,
         selectedRunId: selectedRunId || null,
@@ -2054,19 +2090,36 @@ function boot(root, data, callbacks, signal) {
       `pooled from ${envelope.days} captured CGM days · ±${envelope.pool} min`;
   }
 
+  /* THE SCHEMATIC IS A MIRROR OF THE FIELD. It draws the CURRENT arrangement's
+     own cell count — the same geometry the tile field is laid out on — with
+     every occupied cell filled: accent pinned, neutral seated. Exactly one cell
+     is the dashed hollow one, and it marks where the NEXT pin lands:
+
+       · while the arrangement still has a free cell (the focal arrangement,
+         which seats fewer charts than it holds), that free cell is it;
+       · once every cell of the arrangement is held by a pin, the next pin grows
+         the arrangement, so the hollow cell is appended — it is the cell the
+         next arrangement adds, and it is the only way to reach the denser
+         arrangements from a fully pinned field;
+       · at the cap there is no hollow cell at all.
+
+     A cell already holding a chart is never drawn hollow: a chart on the field
+     is pinned from its own tile, not from this schematic. */
   function paintPinCap(seats) {
     const host = el('tile-schematic');
     host.dataset.arrangement = canvasLayout.arrangement;
     host.innerHTML = '';
     const candidates = currentTileCandidates();
     const nextChartId = candidates.find((chartId) => !canvasLayout.pins.includes(chartId));
-    const cellCount = Math.max(seats.length + (canvasLayout.pins.length < PIN_CAP ? 1 : 0),
-      seatCountFor(canvasLayout.arrangement));
+    const arrangementCells = seatCountFor(canvasLayout.arrangement);
+    const belowCap = canvasLayout.pins.length < PIN_CAP;
+    const fullyPinned = canvasLayout.pins.length >= arrangementCells;
+    const cellCount = arrangementCells + (belowCap && fullyPinned ? 1 : 0);
+    const nextIndex = belowCap ? seats.length : -1;
     for (let index = 0; index < cellCount; index += 1) {
-      const isNext = !seats[index] && canvasLayout.pins.length < PIN_CAP
-        && index === Math.min(seats.length, cellCount - 1);
-      const cell = document.createElement(isNext ? 'button' : 'i');
       const seat = seats[index];
+      const isNext = !seat && index === nextIndex;
+      const cell = document.createElement(isNext ? 'button' : 'i');
       if (seat) cell.className = seat.pinned ? 'pinned' : 'seated';
       else if (isNext) {
         cell.type = 'button';
@@ -2083,7 +2136,7 @@ function boot(root, data, callbacks, signal) {
           paintChart();
           paintBrace();
         };
-      }
+      } else cell.className = 'free';
       host.append(cell);
     }
     el('pin-count').textContent = `${canvasLayout.pins.length}/${PIN_CAP} pinned`;
@@ -2093,9 +2146,15 @@ function boot(root, data, callbacks, signal) {
     const host = el('tile-field');
     if (!host) return;
     disposeTiles();
-    const seats = placeSeats(currentTileCandidates(), canvasLayout);
     const byId = new Map(tileDescriptors.map((descriptor) => [descriptor.chartId, descriptor]));
-    const displayed = seats.map(({ chartId }) => byId.get(chartId)).filter(Boolean);
+    /* A SEAT WITHOUT A DESCRIPTOR IS NOT A TILE. Placement is mechanical and
+       knows only chart ids, so a chart id that outlived its descriptor — a pin
+       whose row the current generation stopped publishing — would otherwise be
+       seated and painted from nothing. It is dropped here instead, which is the
+       same clean unpin reconciliation performs. */
+    const seats = placeSeats(currentTileCandidates(), canvasLayout)
+      .filter(({ chartId }) => byId.has(chartId));
+    const displayed = seats.map(({ chartId }) => byId.get(chartId));
     sharedGlucoseRange = arrangementRange(displayed, DIAGNOSE_EVIDENCE_CHARTS, glucoseRange);
     host.dataset.arrangement = canvasLayout.arrangement;
     host.innerHTML = '';
@@ -2195,9 +2254,14 @@ function boot(root, data, callbacks, signal) {
         chartHost.className = 'tile-chart';
         body.append(chartHost);
         try {
+          /* A SLOT TILE IS A MINIATURE INSTRUMENT. At slot size the full axis
+             furniture cannot be read — its labels run together into a single
+             smear — so every seat but the focal one draws in the registry's
+             `mini` treatment: the tight grid and the small label rank. Only the
+             focal chart is read at full size, and only it gets full furniture. */
           const option = optionForDescriptor(
             descriptor, DIAGNOSE_EVIDENCE_CHARTS, sharedGlucoseRange, {
-            explore: false, mini: false, window: scopeWindow(),
+            explore: false, mini: seat.seat !== 'focal', window: scopeWindow(),
             },
           );
           const evidenceChart = window.echarts.init(chartHost, null, { renderer: 'canvas' });
@@ -3045,21 +3109,12 @@ function boot(root, data, callbacks, signal) {
     ev.stopImmediatePropagation();
     closeFilter({ restoreFocus: true });
   }, { capture: true, signal });
-  let canvasWasHidden = false;
-  const sessionMonitor = window.setInterval(() => {
-    const hidden = !root.isConnected || root.getClientRects().length === 0;
-    if (hidden && !canvasWasHidden) {
-      canvasLayout = createCanvasLayout();
-      canvasWasHidden = true;
-    } else if (!hidden && canvasWasHidden) {
-      canvasWasHidden = false;
-      reconcileTileDescriptors();
-      paintTiles();
-      paintChart();
-      paintBrace();
-    }
-  }, 100);
-  signal.addEventListener('abort', () => window.clearInterval(sessionMonitor), { once: true });
+  /* ARRANGEMENTS DO NOT SURVIVE THE SESSION. Leaving Diagnose drops the pins
+     and the focus, and nothing about them is persisted. The surface is told it
+     is being left through the app's own navigation seam rather than inferring
+     it from geometry: a poll that watched the root for visibility missed a
+     fast leave-and-return entirely, and the reader came back to a canvas
+     holding the previous visit's pins. */
   const initialFrame = top();
   if (initialFrame.k === 'factor') requestCase(initialFrame, 'clock');
   else paint();
@@ -3074,7 +3129,13 @@ function boot(root, data, callbacks, signal) {
      level and chart off the SAME frame stack, drawn window and staged sets.
      It reuses `paint()`, so the reader's depth and workspace survive; it does
      NOT re-run boot() or reassign the root MARKUP (#666). */
-  return { destroy() { chart = null; disposeTiles(); }, repaintDay: paint };
+  function leaveSurface() {
+    canvasLayout = createCanvasLayout();
+    reconcileTileDescriptors();
+    paintTiles();
+  }
+
+  return { destroy() { chart = null; disposeTiles(); }, repaintDay: paint, leaveSurface };
 }
 
 /* ---------------------------------------------------------------------------
@@ -3101,6 +3162,7 @@ export function createDiagnoseWorkstation({ root, callbacks = {}, railLead = nul
   let captures = null;
   let teardown = null;
   let repaintDay = null;
+  let leaveSurface = null;
   let aborter = null;
 
   /* PORT DEVIATION (#654): shared by the public `setError` below and the
@@ -3111,6 +3173,7 @@ export function createDiagnoseWorkstation({ root, callbacks = {}, railLead = nul
     if (aborter) { aborter.abort(); aborter = null; }
     teardown = null;
     repaintDay = null;
+    leaveSurface = null;
     root.className = 'dw dw-error';
     root.textContent = message;
   }
@@ -3118,6 +3181,7 @@ export function createDiagnoseWorkstation({ root, callbacks = {}, railLead = nul
   function render() {
     if (teardown) { teardown(); teardown = null; }
     repaintDay = null;
+    leaveSurface = null;
     if (aborter) { aborter.abort(); aborter = null; }
     if (!payload) return;
     state = queryState('typical');
@@ -3159,6 +3223,7 @@ export function createDiagnoseWorkstation({ root, callbacks = {}, railLead = nul
     const booted = boot(root, captures, callbacks, aborter.signal);
     teardown = booted.destroy;
     repaintDay = booted.repaintDay;
+    leaveSurface = booted.leaveSurface;
   }
 
   /* State addressability. The mock is driven by `?mode=`; so is the build, and
@@ -3181,6 +3246,9 @@ export function createDiagnoseWorkstation({ root, callbacks = {}, railLead = nul
        preserving navigation state. No-op if the surface is unmounted or in its
        error state (#666). */
     repaintDay() { repaintDay?.(); },
+    /* The reader navigated away from Diagnose. Pins and focus are session
+       state, so they are dropped here rather than on a timer. */
+    leaveSurface() { leaveSurface?.(); },
     gotoState,
   };
 }

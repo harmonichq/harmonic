@@ -104,10 +104,14 @@
   --ck-canvas-gap: 8px;
   --ck-trench: color-mix(in srgb, var(--mk-bg) 70%, #000);
   --ck-tile-edge: color-mix(in srgb, var(--mk-line) 72%, transparent);
-  --ck-tile-top: color-mix(in srgb, var(--mk-text) 15%, transparent);
+  /* A TOP-EDGE HIGHLIGHT IS LIGHT IN BOTH THEMES. Deriving it from the text ink
+     made it near-black on the bone panel — a shadow along the top edge, which
+     reads as the panel sinking rather than catching the light. */
+  --ck-tile-top: color-mix(in srgb, #fff 70%, transparent);
   --ck-tile-shadow: 0 7px 15px -11px rgba(0, 0, 0, .72);
 }
 html.dark .dw {
+  --ck-tile-top: color-mix(in srgb, var(--mk-text) 15%, transparent);
   --ck-inset: #101215;
   --ck-bar: var(--mk-bg);
   --ck-rail: #191c1f;
@@ -174,6 +178,9 @@ html.dark .dw {
   appearance: none; padding: 0; border: 1px dashed var(--mk-muted);
   background: transparent; cursor: pointer;
 }
+/* a cell the arrangement holds but nothing is seated in, past the one the next
+   pin lands in: present, so the schematic mirrors the geometry, and silent */
+.tile-schematic .free { background: color-mix(in srgb, var(--mk-muted) 22%, transparent); }
 .tile-schematic .next:disabled { cursor: default; opacity: .45; }
 .tile-schematic .next:focus-visible { outline: 1px solid var(--ck-accent); outline-offset: 1px; }
 /* ---- 3. pane grid --------------------------------------------------- */
@@ -190,10 +197,34 @@ html.dark .dw {
 .pane {
   display: grid; grid-template-rows: auto minmax(0, 1fr); min-height: 0; min-width: 0;
   background: var(--ck-rail); border-radius: 2px;
+}
+.pane.inspector { border-radius: 0; }
+
+/* ---- the depth idiom (#135), authored to OUTRANK theme.css ------------
+   theme.css loads after this sheet and owns the docked-workspace roles:
+   `:is(.dw, .vw) .panes` flattens the gutters and `:is(.dw, .vw) .pane` states
+   `box-shadow: none; border-radius: 0` — the shipped flush dock this canvas
+   revises. Restating the idiom at plain `.pane` rank lost every time, silently:
+   the edge ring and the pooled shadow were never on screen in either theme.
+   These rules carry `.dw:has(.tile-field)` so they outrank the role rules by
+   SPECIFICITY rather than by load order, and so they bind to this canvas alone
+   — Verify's `.vw` dock and any `.dw` with no tile field keep the flush dock.
+   The GROUNDS stay theme.css's own: the idiom adds an edge, a top highlight and
+   a pooled shadow, and lifts no surface's value. */
+.main-content .dw:has(.tile-field) .panes {
+  gap: var(--ck-canvas-gap); padding: var(--ck-canvas-gap);
+  background: var(--ck-trench); border-top: 0;
+}
+.main-content .dw:has(.tile-field) .panes > .pane {
+  border: 0; border-radius: 2px;
   box-shadow: inset 0 0 0 1px var(--ck-tile-edge),
     inset 0 1px 0 var(--ck-tile-top), var(--ck-tile-shadow);
 }
-.pane.inspector { border-radius: 0; }
+/* the inspector stays flush — no radius, and no seam to draw now that the
+   gutter itself is the separation */
+.main-content .dw:has(.tile-field) .panes > .pane.inspector {
+  border-radius: 0; border-left: 0;
+}
 /* ONE SPINE PER COLUMN. The inspector's is --ck-pad; the chart's is the
    plot's own left edge (--ck-grid-left), so the panel title, the provenance,
    the mg/dL caption, the basal lane and the lane key all start on the same

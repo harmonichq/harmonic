@@ -4123,6 +4123,10 @@ html.dark .viz .tie:hover::before { opacity:.13; }
 
         function setTab(t) {
           t = resolveTab(t);
+          // #135: the evidence canvas's pins and focus are session state and do
+          // not survive leaving Diagnose. This is the navigation path itself,
+          // so a fast leave-and-return cannot slip past it.
+          if (tab.value === 'diagnose' && t !== 'diagnose') diagnoseView?.leaveSurface?.();
           tab.value = t;
           // #99: Plan reads the latest pump snapshot for its active-profile
           // reference + Confirmation-B on-pump detection; load it lazily.

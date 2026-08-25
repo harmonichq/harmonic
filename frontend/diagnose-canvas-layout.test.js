@@ -12,8 +12,6 @@ import {
   optionForDescriptor,
   pinChart,
   placeSeats,
-  recoverStaleGeneration,
-  refreshStillCurrent,
   seatCountFor,
   tileStatePresentation,
 } from './diagnose-canvas-layout.js';
@@ -140,61 +138,37 @@ test('all four per-request states render their own name', () => {
     'Evidence changed. Refresh findings.');
 });
 
-test('a slicer change rejects an older stale-generation findings refresh', () => {
-  assert.equal(refreshStillCurrent('0-360', '0-360'), true);
-  assert.equal(refreshStillCurrent('0-360', '360-720'), false);
+/* THE STALE-GENERATION RECOVERY IS NOT LAYOUT. It is the surface's one
+   findings-generation authority, so it lives beside that primitive in
+   frontend/diagnose-workstation.js and is driven end to end — typed 409 in,
+   recovery run, tile redrawn, pin intact — by
+   frontend/diagnose-canvas-composition.browser.test.mjs. A second copy of it
+   here, over hand-made callbacks, is what let a recovery that restored a stale
+   layout look correct. */
+
+test('the layout module owns no findings-generation check of its own', () => {
+  const layout = readFileSync(new URL('./diagnose-canvas-layout.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(layout, /refreshStillCurrent|recoverStaleGeneration/,
+    'generation currency belongs to the workstation primitive, not to layout state');
   const workstation = readFileSync(new URL('./diagnose-workstation.js', import.meta.url), 'utf8');
-  assert.match(workstation,
-    /!refreshStillCurrent\(recoveryKey, currentFindingsKey\(\)\)\) return null/,
-    'the composed recovery rejects a refreshed generation after its slicer request is superseded');
+  assert.equal(workstation.match(/await refreshFindingsGeneration\(/g)?.length, 2,
+    'one findings-generation fetch, reached through requestFindingsGeneration and the retirement path');
 });
 
-test('a typed stale result refreshes, redraws, and keeps the chart pinned', async () => {
-  const layout = createCanvasLayout({ focalId: 'ic:660', pins: ['ic:660'] });
-  const stale = { chartId: 'ic:660', kind: 'carb-ratio', mode: 'event',
-    coordinates: { block_id: 660, analysis_generation: 'process:7' },
-    data: null, state: 'stale-generation' };
-  const calls = [];
-  const redraws = [];
-  const result = await recoverStaleGeneration(stale, layout, {
-    stale: { stale: true, message: 'Evidence changed. Refresh findings.' },
-    refresh: async (descriptor) => {
-      calls.push('findings');
-      return { ...descriptor, coordinates: { ...descriptor.coordinates,
-        analysis_generation: 'process:8' } };
-    },
-    reload: async (descriptor) => {
-      calls.push(descriptor.coordinates.analysis_generation);
-      return { runs: [{ run_id: 'run-1' }] };
-    },
-    hasData: (descriptor) => descriptor.data.runs.length > 0,
-    redraw: (next) => { redraws.push(next); },
-  });
-  assert.deepEqual(calls, ['findings', 'process:8']);
-  assert.equal(result.descriptor.state, 'ok');
-  assert.deepEqual(result.layout.pins, ['ic:660']);
-  assert.deepEqual(redraws.map(({ descriptor }) => descriptor.state),
-    ['stale-generation', 'ok']);
-  assert.equal(redraws[0].message, 'Evidence changed. Refresh findings.');
-  assert.deepEqual(redraws[1].layout.pins, ['ic:660']);
+test('pinning holds and layers a chart without moving focus', () => {
+  let layout = createCanvasLayout({ focalId: 'focal-chart' });
+  for (const chartId of ['slot-a', 'slot-b', 'slot-c']) {
+    layout = pinChart(layout, chartId).layout;
+    assert.equal(layout.focalId, 'focal-chart',
+      `pinning ${chartId} leaves the focal chart where the reader put it`);
+  }
+  assert.deepEqual(layout.pins, ['slot-a', 'slot-b', 'slot-c']);
 });
 
-test('a superseded stale refresh keeps the server wording and the pin', async () => {
-  const layout = createCanvasLayout({ focalId: 'basal:14', pins: ['basal:14'] });
-  const descriptor = { chartId: 'basal:14', kind: 'basal', mode: 'clock',
-    coordinates: { slot: 14, analysis_generation: 'process:7' },
-    data: null, state: 'stale-generation' };
-  const redraws = [];
-  const result = await recoverStaleGeneration(descriptor, layout, {
-    stale: { stale: true, message: 'Evidence changed. Refresh findings.' },
-    refresh: async () => null,
-    reload: async () => { throw new Error('superseded recovery must not reload'); },
-    hasData: () => false,
-    redraw: (next) => { redraws.push(next); },
-  });
-  assert.equal(result.message, 'Evidence changed. Refresh findings.');
-  assert.deepEqual(result.layout.pins, ['basal:14']);
-  assert.deepEqual(redraws.map(({ message }) => message), [
-    'Evidence changed. Refresh findings.', 'Evidence changed. Refresh findings.',
+test('a pinned focal chart keeps the focal seat whatever order it was pinned in', () => {
+  const layout = createCanvasLayout({ focalId: 'second', pins: ['first', 'second'] });
+  assert.deepEqual(placeSeats(['first', 'second'], layout), [
+    { chartId: 'second', seat: 'focal', pinned: true },
+    { chartId: 'first', seat: 'slot-1', pinned: true },
   ]);
 });

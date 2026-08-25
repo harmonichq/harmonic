@@ -27,13 +27,17 @@ export function createCanvasLayout({ focalId = null, pins = [] } = {}) {
   return { focalId, pins: [...pins], arrangement: arrangementFor(pins.length) };
 }
 
+/* PINNING HOLDS AND LAYERS — it never moves focus. A pin is one verb: it holds
+   a chart against the slicer and layers it into view, and the arrangement is
+   derived from the pin count. Focus changes on a click on a slot chart and on
+   nothing else, so pinning a second chart must leave the focal chart where the
+   reader put it. */
 export function pinChart(layout, chartId) {
   if (layout.pins.includes(chartId)) return { accepted: true, layout };
   if (layout.pins.length === PIN_CAP) return { accepted: false, layout };
-  const pins = [...layout.pins, chartId];
   return { accepted: true, layout: createCanvasLayout({
-    focalId: pins.length >= 2 ? pins[0] : layout.focalId,
-    pins,
+    focalId: layout.focalId,
+    pins: [...layout.pins, chartId],
   }) };
 }
 
@@ -71,8 +75,11 @@ export function placeSeats(candidateIds, layout) {
   const pins = [...layout.pins];
   const focal = layout.focalId && candidates.includes(layout.focalId)
     ? layout.focalId : candidates.find((id) => !pins.includes(id));
+  /* From two pins on, the field IS the pins — but WHICH of them takes the focal
+     seat is still the reader's, not the order they were pinned in. A pinned
+     focal chart keeps the focal seat; only a click on another chart moves it. */
   const ordered = pins.length >= 2
-    ? [...pins]
+    ? [...(pins.includes(focal) ? [focal] : []), ...pins]
     : [focal, ...pins, ...candidates].filter(Boolean);
   const chartIds = [...new Set(ordered)].slice(0, capacity);
   return chartIds.map((chartId, index) => ({
@@ -91,6 +98,13 @@ const coordinateValue = (name, row, findings, window) => {
   return row[name];
 };
 
+/* THE LIVE CHART LIST IS THE FINDINGS PAYLOAD'S — one tile per basal slot and
+   per carb-ratio block THE READER CURRENTLY HAS, read off the rows the server
+   published for this window. A `history` row is not one of those: it is a
+   change the reader already made, a past record the history register carries so
+   the inspector can replay it, not a parameter currently in force with evidence
+   to plot. So the register filter stays; the live list is still the payload's
+   and there is no second chart list. */
 export function descriptorsFromFindings(findings, registry, window = null) {
   const byKind = new Map(registry.map((entry) => [entry.kind, entry]));
   return (findings?.rows || []).flatMap((row) => {
@@ -144,35 +158,4 @@ export function tileStatePresentation(descriptor, pending = false, message = nul
     name: descriptor.state,
     message: pending ? 'Loading evidence…' : message || fallback,
   };
-}
-
-export function refreshStillCurrent(requestKey, currentKey) {
-  return requestKey === currentKey;
-}
-
-export async function recoverStaleGeneration(descriptor, layout, {
-  stale, refresh, reload, hasData, redraw = () => {},
-}) {
-  if (stale?.stale !== true || typeof stale.message !== 'string') {
-    throw new TypeError('stale recovery needs the typed generation-mismatch result');
-  }
-  redraw({ descriptor: { ...descriptor, data: null, state: 'stale-generation' },
-    layout, message: stale.message });
-  const refreshed = await refresh(descriptor);
-  if (!refreshed) {
-    const result = { descriptor, layout, message: stale.message };
-    redraw(result);
-    return result;
-  }
-  const data = await reload(refreshed);
-  if (data?.stale === true) {
-    const result = { descriptor: { ...refreshed, data: null, state: 'stale-generation' },
-      layout, message: data.message };
-    redraw(result);
-    return result;
-  }
-  const result = { descriptor: { ...refreshed, data,
-    state: hasData({ ...refreshed, data }) ? 'ok' : 'empty' }, layout, message: null };
-  redraw(result);
-  return result;
 }

@@ -18,7 +18,6 @@ from __future__ import annotations
 import argparse
 import json
 import pathlib
-import random
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 HERE = pathlib.Path(__file__).resolve().parent
@@ -35,27 +34,67 @@ def read(name: str) -> dict:
     return json.loads((ROOT / name).read_text())
 
 
+def synthetic_jitter_milli(seed: int, count: int, scale: int) -> list:
+    """Return uncorrelated-looking render noise as integer millipoints.
+
+    This is a single xorshift stream, never a fresh generator for each mark.
+    Summing six bytes produces a clustered synthetic distribution without a
+    platform math-library transform or the visible ramps consecutive LCG seeds
+    made in the prior implementation. ``scale`` is millipoints per byte from
+    the centered sum; values remain integral until serialization.
+    """
+    if not 0 < seed <= 0xFFFFFFFF:
+        raise ValueError("seed must be a non-zero 32-bit integer")
+    state = seed
+    offsets = []
+    for _ in range(count):
+        total = 0
+        for _ in range(6):
+            state ^= (state << 13) & 0xFFFFFFFF
+            state ^= state >> 17
+            state ^= (state << 5) & 0xFFFFFFFF
+            state &= 0xFFFFFFFF
+            total += state & 0xFF
+        offsets.append((total - 765) * scale)
+    return offsets
+
+
+def rounded_fraction(numerator: int, denominator: int) -> int:
+    """Round a rational value half away from zero using only integers."""
+    assert denominator > 0
+    if numerator < 0:
+        return -rounded_fraction(-numerator, denominator)
+    return (2 * numerator + denominator) // (2 * denominator)
+
+
 def isf_scatter(steps: list) -> list:
     """Rest-window steps as (insulin acted, delta BG) pairs, with a drawable y.
 
-    The x values are the capture's own. The y values are invented under a fixed
-    seed: the committed capture holds every synthetic reading at one glucose
-    value, so its ``dbg`` is uniformly 0.0 and a scatter drawn from it collapses
-    to a flat line under a slope-0 fit. These are marks for a design render, not
-    a measurement — the README and the page's own sheet note both say so.
+    The x values are the capture's own. The y values are invented from a fixed
+    integer sequence: the committed capture holds every synthetic reading at one
+    glucose value, so its ``dbg`` is uniformly 0.0 and a scatter drawn from it
+    collapses to a flat line under a slope-0 fit. These are marks for a design
+    render, not a measurement — the README and the page's own sheet note both
+    say so.
     """
-    rng = random.Random(135)
-    return [[s["insulin_acted"], 32 - 720 * s["insulin_acted"] + rng.gauss(0, 7)]
-            for s in steps]
+    jitter = synthetic_jitter_milli(135, len(steps), 39)
+    x_units = [int(round(step["insulin_acted"] * 10_000)) for step in steps]
+    return [(x, 32_000 - 72 * x + noise) for x, noise in zip(x_units, jitter)]
 
 
-def fit(points: list) -> tuple:
-    """Ordinary least squares over the drawn points, so the fit line matches them."""
-    x_bar = sum(x for x, _ in points) / len(points)
-    y_bar = sum(y for _, y in points) / len(points)
-    slope = (sum((x - x_bar) * (y - y_bar) for x, y in points)
-             / sum((x - x_bar) ** 2 for x, _ in points))
-    return slope, y_bar - slope * x_bar
+def fit_milli(points: list) -> tuple:
+    """Fit fixed-point (x: 1e-4, y: 1e-3) points at a 1e-3 boundary."""
+    count = len(points)
+    sum_x = sum(x for x, _ in points)
+    sum_y = sum(y for _, y in points)
+    numerator = count * sum(x * y for x, y in points) - sum_x * sum_y
+    denominator = count * sum(x * x for x, _ in points) - sum_x * sum_x
+    slope_milli = rounded_fraction(10_000 * numerator, denominator)
+    intercept_milli = rounded_fraction(
+        sum_y * denominator - numerator * sum_x,
+        count * denominator,
+    )
+    return slope_milli, intercept_milli
 
 
 def payload() -> dict:
@@ -75,12 +114,13 @@ def payload() -> dict:
              for s in app["analyze"]["basal"]]
 
     isf = app["analyze"]["isf"][0]
-    points = isf_scatter(isf_capture["payload"]["steps"])
-    slope, intercept = fit(points)
+    points_milli = isf_scatter(isf_capture["payload"]["steps"])
+    slope_milli, intercept_milli = fit_milli(points_milli)
     # Same reason as the scatter: the capture's per-night fits cycle through three
     # values, which draws as a repeating sawtooth rather than a distribution.
-    nights = [[str(i + 1), 42 + random.Random(420 + i).gauss(0, 12)]
-              for i, _ in enumerate(isf["evidence"]["night_fits"])]
+    night_jitter = synthetic_jitter_milli(420, len(isf["evidence"]["night_fits"]), 66)
+    nights = [[str(i + 1), (42_000 + noise) / 1_000]
+              for i, noise in enumerate(night_jitter)]
 
     blocks = {b["block_id"]: b for b in app["analyze"]["ic_blocks"]}
 
@@ -99,8 +139,9 @@ def payload() -> dict:
     return {
         "strip": {"bins": bins, "meals": meals, "days": days},
         "basal": basal,
-        "isf": {"pts": points, "nights": nights, "programmed": isf["current"],
-                "slope": slope, "intercept": intercept},
+        "isf": {"pts": [[x / 10_000, y / 1_000] for x, y in points_milli],
+                "nights": nights, "programmed": isf["current"],
+                "slope": slope_milli / 1_000, "intercept": intercept_milli / 1_000},
         "ic660": block(660, EVENING_CASE),
         "ic420": block(420, MORNING_CASE),
         "window": {"days": days},

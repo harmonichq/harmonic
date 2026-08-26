@@ -520,10 +520,11 @@ class FindingsProjection:
                     "n": len(group_ids),
                     "m": (pattern.get("confidence") or {}).get("n", 0),
                 }]
-                entry["episodes"] = {
-                    episode_id for group_id in group_ids
-                    for episode_id in groups[group_id].get("member_episode_ids") or []
-                }
+                # This lever's recurrence identity is the eligible meal event, not
+                # each high episode it can produce.  The policy-owned groups retain
+                # their member episodes in the scenario payload; this served row
+                # counts the same occurrences its denominator and case file use.
+                entry["episodes"] = group_ids
             entry["appearances"].sort(key=lambda a: a["family"])
             evidence, verdict_counts, verdict_counts_by_family = _lever_evidence(
                 lever, entry["families"], in_window,

@@ -61,11 +61,35 @@
          10) — a green-black ground under a green line reads as phosphor — and
          structure recedes by LIGHTNESS rather than by hue, so the frame holds
          one warm hue family (term 12) across a real 7%-69% tonal range (term
-         13), descending chrome -> rail -> header -> field without banding. */
+         13), descending chrome -> rail -> header -> field without banding.
+
+         #215 — ONE HUE, HELD DELIBERATELY LOW. The grounds honoured term 12 in
+         name only: measured, they sat at OKLCH chroma .003-.009 with the hue
+         wandering 48deg to 78deg, so the family was incoherent as well as
+         nearly achromatic. Every ground and rule below is re-derived at ONE hue
+         (60deg) with chroma .005 at the deepest rising to .015 at the strongest
+         rule, holding each value's ORIGINAL lightness to three decimals.
+
+         The ceiling on that chroma is a review finding, not caution. Warmth was
+         taken up to the light theme's own ground register first (80deg, .011 to
+         .028) and the desk read as pumpkin, because at that chroma it shares
+         the burnt-orange signal's own family. Stepping the hue off orange to
+         110deg made it olive — term 10's phosphor warning arriving from the
+         ground rather than from the line. A cool slate at 265deg fixed both and
+         was rejected as a bigger identity change than this canvas is entitled
+         to make. What is left is the one thing all three attempts agreed on:
+         the family must be COHERENT; how much chroma it carries is a small
+         dial, and the setting that survives review is a low one.
+
+         Depth is made of lightness steps, the top highlight and the pooled
+         shadow, so nothing about the tonal range or the stacking order moved;
+         every ink/ground contrast ratio in this file and theme.css holds to
+         within .05, re-measured. Term 11 is intact — grounds keep their warmth
+         and give up their saturation. */
       color-scheme: dark;
-      --wk-canvas:#0e0d0c; --wk-surface:#262220; --wk-surface-rail:#2e2926; --wk-surface-sunken:#524a40;
+      --wk-canvas:#0f0d0b; --wk-surface:#26221f; --wk-surface-rail:#2d2926; --wk-surface-sunken:#504a45;
       --wk-ink:#f5ece0; --wk-ink-body:#dbcfbc; --wk-ink-meta:#a3968a; --wk-ink-nav:#bfb3a1;
-      --wk-rule:#4f4640; --wk-rule-strong:#7a6d61; --wk-hairline:1px; --wk-radius:5px;
+      --wk-rule:#4d4742; --wk-rule-strong:#776e68; --wk-hairline:1px; --wk-radius:5px;
       --wk-shadow:0 1px 2px rgba(0,0,0,.5), 0 16px 34px -16px rgba(0,0,0,.8);
       --wk-elevation:0 16px 34px -16px rgba(0,0,0,.88);
       --wk-signal:#d2743e; --wk-signal-well:#40291b;

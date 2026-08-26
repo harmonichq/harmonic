@@ -351,11 +351,11 @@ test('chart options resolve live light and dark theme tokens', () => {
       // the comparison draws on the cockpit's own token names
       '--mk-muted': '#3d5848', '--mk-line': '#c3bfb4', '--mk-ok': '#5d7368' });
     const dark = build({ '--text': '#f5ece0', '--muted': '#a3968a',
-      '--line': '#4f4640', '--in-range': '#86ad78', '--basal': '#a89a85',
+      '--line': '#4d4742', '--in-range': '#86ad78', '--basal': '#a89a85',
       '--secondary': '#a89a85', '--warn': '#c98a4e', '--notindata': '#8d8579',
-      '--surface': '#262220', '--primary': '#e07f3f', '--accent': '#d08150',
+      '--surface': '#26221f', '--primary': '#e07f3f', '--accent': '#d08150',
       '--ok': '#9aada1', '--danger': '#ec6f55', '--manual-carb': '#d2743e',
-      '--mk-muted': '#a3968a', '--mk-line': '#4f4640', '--mk-ok': '#9aada1' });
+      '--mk-muted': '#a3968a', '--mk-line': '#4d4742', '--mk-ok': '#9aada1' });
     assert.equal(light.basal.yAxis.axisLabel.color, '#3d5848');
     assert.equal(dark.basal.yAxis.axisLabel.color, '#a3968a');
     assert.equal(light.basal.series[1].lineStyle.color, '#5d7368');
@@ -369,7 +369,7 @@ test('chart options resolve live light and dark theme tokens', () => {
     assert.equal(light.thumbnail.graphic[0].style.fill, '#3d5848');
     assert.equal(dark.thumbnail.graphic[0].style.fill, '#a3968a');
     assert.ok(contrast('#3d5848', '#faf8f4') >= 4.5);
-    assert.ok(contrast('#a3968a', '#262220') >= 4.5);
+    assert.ok(contrast('#a3968a', '#26221f') >= 4.5);
   } finally {
     globalThis.document = prior.document;
     globalThis.getComputedStyle = prior.getComputedStyle;

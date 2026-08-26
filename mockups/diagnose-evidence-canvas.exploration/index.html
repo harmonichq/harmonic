@@ -7,9 +7,9 @@
 <style>
 /* ── app tokens, verbatim from frontend/index.html html.dark + theme.css ───── */
 :root{
-  --wk-canvas:#0e0d0c; --wk-surface:#262220; --wk-surface-rail:#2e2926; --wk-surface-sunken:#524a40;
+  --wk-canvas:#0f0d0b; --wk-surface:#26221f; --wk-surface-rail:#2d2926; --wk-surface-sunken:#504a45;
   --wk-ink:#f5ece0; --wk-ink-body:#dbcfbc; --wk-ink-meta:#a3968a;
-  --wk-rule:#4f4640; --wk-rule-strong:#7a6d61;
+  --wk-rule:#4d4742; --wk-rule-strong:#776e68;
   --primary:#e07f3f; --primary-600:#ef9459; --primary-100:#40291b;
   --secondary:#a89a85; --warn:#c98a4e; --danger:#ec6f55; --low:#ec6f55; --high:#e07f3f;
   --in-range:#86ad78; --on-target:#86ad78; --on-target-soft:#2f3a2c;
@@ -17,14 +17,14 @@
   --mk-primary:#86ad78; --mk-primary-600:#c3b49c; --mk-primary-soft:#2f3a2c;
   --mk-accent:#e07f3f; --mk-ok:#a89a85; --mk-line:#322e29;
   /* chrome bar, theme.css html.dark .cockpit-topbar */
-  --ck-ground:#161413; --ck-panel:#2b241d; --ck-text:#efe5d4; --ck-body:#d3c7b4; --ck-meta:#a19484;
-  --ck-rule:#4c4238; --ck-bar-signal:#dc7b42; --ck-bar-on-signal:#161413;
+  --ck-ground:#171412; --ck-panel:#292522; --ck-text:#efe5d4; --ck-body:#d3c7b4; --ck-meta:#a19484;
+  --ck-rule:#48433e; --ck-bar-signal:#dc7b42; --ck-bar-on-signal:#171412;
   /* docked workspace grounds, theme.css html.dark :is(.dw,.vw) */
-  --field:#151311; --pane-head:#1a1815; --rail:#1f1b18; --hair:#322c27; --seam:#574a3f;
-  --seg-line:#3d362f; --seg-bg:#171412; --seg-on:#352e28;
+  --field:#161311; --pane-head:#1b1816; --rail:#1e1b19; --hair:#302c29; --seam:#524c47;
+  --seg-line:#3b3632; --seg-bg:#171412; --seg-on:#332e2b;
   /* the gutter substrate. Lifted from #0a0908 so the ambient shadow beneath the
      tiles has room to read; still the darkest value on screen — below the tile
-     field (#151311) and below the app ground (#161413). */
+     field (#161311) and below the app ground (#171412). */
   --trench:#100e0d;
   --label-ink:#c6b7a2;
   --ck-label:10px; --ck-micro:11px; --ck-data:12px; --ck-emphasis:13px; --ck-track:.08em;
@@ -199,7 +199,7 @@ body{margin:0;background:#08090a;color:var(--wk-ink);font-family:var(--ui);
   display:grid;grid-template-rows:24px minmax(0,1fr);padding:0 12px 10px;min-height:0}
 .drawer-head{display:flex;align-items:center;gap:10px;height:24px}
 .drawer-head .hint{margin-left:auto;font-family:var(--ui);font-size:var(--ck-label);font-weight:650;
-  letter-spacing:var(--ck-track);text-transform:uppercase;color:#6b5f53}
+  letter-spacing:var(--ck-track);text-transform:uppercase;color:#68605a}
 .kbd{display:inline-block;padding:0 4px;border:1px solid var(--seg-line);border-radius:3px;background:var(--seg-bg);
   font-family:var(--ck-mono);font-size:10px;color:var(--wk-ink-body);line-height:15px}
 /* ── the explorer's cells are miniature INSTRUMENTS, not file icons ────────
@@ -222,12 +222,12 @@ body{margin:0;background:#08090a;color:var(--wk-ink);font-family:var(--ui);
   font-variant-numeric:tabular-nums}
 /* seated: the pin tell verbatim — the same warmed ring and the same stronger
    top highlight the pinned tiles carry, over an identical ground */
-.thumb[data-seated]{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--primary) 44%,#2b2622),
+.thumb[data-seated]{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--primary) 44%,#2a2623),
   inset 0 1px 0 rgba(245,236,224,.10)}
 /* the 1–6 affordance survives as a quiet per-cell ordinal, which is what let
    the tmux-style legend go */
 .thumb .key{position:absolute;top:4px;right:6px;font-family:var(--ck-mono);font-size:9px;
-  color:#6b5f53;font-variant-numeric:tabular-nums}
+  color:#68605a;font-variant-numeric:tabular-nums}
 
 /* ── inspector ────────────────────────────────────────────────────────────── */
 .insp-head{display:flex;align-items:center;gap:8px;padding:0 12px;background:var(--pane-head);
@@ -269,7 +269,7 @@ body{margin:0;background:#08090a;color:var(--wk-ink);font-family:var(--ui);
   box-shadow:
     0 1px 2px rgba(0,0,0,.6),               /* contact */
     0 8px 16px -8px rgba(0,0,0,.85),        /* ambient, settled in the gutter */
-    inset 0 0 0 1px #2b2622,                /* the machined edge */
+    inset 0 0 0 1px #2a2623,                /* the machined edge */
     inset 0 1px 0 rgba(245,236,224,.055);   /* light from above */
 }
 /* THE PIN TELL — the machined ring that is already there simply lights warmer,
@@ -282,7 +282,7 @@ body{margin:0;background:#08090a;color:var(--wk-ink);font-family:var(--ui);
   box-shadow:
     0 1px 2px rgba(0,0,0,.6),
     0 8px 16px -8px rgba(0,0,0,.85),
-    inset 0 0 0 1px color-mix(in srgb, var(--primary) 44%, #2b2622),
+    inset 0 0 0 1px color-mix(in srgb, var(--primary) 44%, #2a2623),
     inset 0 1px 0 rgba(245,236,224,.10);
 }
 /* the filament rides the rounded corner rather than overhanging it */
@@ -293,7 +293,7 @@ body{margin:0;background:#08090a;color:var(--wk-ink);font-family:var(--ui);
   box-shadow:
     0 2px 3px rgba(0,0,0,.5),
     0 12px 22px -12px rgba(0,0,0,.9),
-    inset 0 0 0 1px #2b2622,
+    inset 0 0 0 1px #2a2623,
     inset 0 1px 0 rgba(245,236,224,.05);
 }
 .instruments{ box-shadow:inset 0 1px 0 rgba(245,236,224,.04); }
@@ -302,7 +302,7 @@ body{margin:0;background:#08090a;color:var(--wk-ink);font-family:var(--ui);
 .drawer{
   box-shadow:
     0 -16px 34px -16px rgba(0,0,0,.88),
-    inset 0 0 0 1px #2b2622,
+    inset 0 0 0 1px #2a2623,
     inset 0 1px 0 rgba(245,236,224,.05);
 }
 /* the inspector is a flush pane, so it takes the edge light without a radius */
@@ -346,8 +346,8 @@ const D = {"basal":[["00:00",0.8,0.86,0.5,1.24,3],["00:30",0.833,0.833,0.783,0.8
 
 /* ── palette handles ─────────────────────────────────────────────────────── */
 const C = {
-  field:'#151311', hair:'#322c27', line:'#322e29', ink:'#f5ece0', body:'#dbcfbc', meta:'#a3968a',
-  rule:'#4f4640', ruleStrong:'#7a6d61', signal:'#86ad78', median:'#c3b49c', soft:'#2f3a2c',
+  field:'#161311', hair:'#302c29', line:'#322e29', ink:'#f5ece0', body:'#dbcfbc', meta:'#a3968a',
+  rule:'#4d4742', ruleStrong:'#776e68', signal:'#86ad78', median:'#c3b49c', soft:'#2f3a2c',
   accent:'#e07f3f', warn:'#c98a4e', low:'#ec6f55', ok:'#a89a85', label:'#c6b7a2'
 };
 const MONO = 'ui-monospace, SF Mono, Menlo, monospace';

@@ -188,7 +188,7 @@ html.dark .dw {
 .tile-schematic .next:focus-visible { outline: 1px solid var(--ck-accent); outline-offset: 1px; }
 /* ---- 3. pane grid --------------------------------------------------- */
 .main-content .dw .panes {
-  display: grid; gap: var(--ck-canvas-gap); padding: var(--ck-canvas-gap); min-height: 0;
+  display: grid; gap: 0; padding: 0; min-height: 0;
   grid-template-columns: minmax(0, 1fr) var(--side, 430px);
   background: var(--ck-trench);
   transition: grid-template-columns .18s ease;
@@ -199,9 +199,8 @@ html.dark .dw {
 
 .pane {
   display: grid; grid-template-rows: auto minmax(0, 1fr); min-height: 0; min-width: 0;
-  background: var(--ck-rail); border-radius: 2px;
+  background: var(--ck-rail); border-radius: 0;
 }
-.pane.inspector { border-radius: 0; }
 
 /* ---- the depth idiom (#135), authored to OUTRANK theme.css ------------
    theme.css loads after this sheet and owns the docked-workspace roles:
@@ -213,20 +212,25 @@ html.dark .dw {
    SPECIFICITY rather than by load order, and so they bind to this canvas alone
    — Verify's `.vw` dock and any `.dw` with no tile field keep the flush dock.
    The GROUNDS stay theme.css's own: the idiom adds an edge, a top highlight and
-   a pooled shadow, and lifts no surface's value. */
+   a pooled shadow, and lifts no surface's value.
+
+   #215 — the idiom moved DOWN one level. Giving the two panes the machined edge
+   made them peers of the tiles they contain, and floating them on a gutter of
+   trench made the whole canvas one depth. The strip and the Findings pane are
+   ANCHORS: they bleed to the canvas edges, carry no ring, radius or shadow, and
+   are divided by theme.css's own hairline rather than by a gutter. The machined
+   edge now belongs to the tile field and its tiles alone, which is what makes
+   the field read as seated beneath the anchors instead of beside them. */
 .main-content .dw:has(.tile-field) .panes {
-  gap: var(--ck-canvas-gap); padding: var(--ck-canvas-gap);
+  gap: 0; padding: 0;
   background: var(--ck-trench); border-top: 0;
 }
+/* The seam the gutter used to draw. With the anchors abutting, theme.css's own
+   `.panes > .pane + .pane` hairline is the divider — so this block states no
+   `border` at all, and that rule survives the cascade instead of being zeroed
+   by a higher-specificity shorthand. */
 .main-content .dw:has(.tile-field) .panes > .pane {
-  border: 0; border-radius: 2px;
-  box-shadow: inset 0 0 0 1px var(--ck-tile-edge),
-    inset 0 1px 0 var(--ck-tile-top), var(--ck-tile-shadow);
-}
-/* the inspector stays flush — no radius, and no seam to draw now that the
-   gutter itself is the separation */
-.main-content .dw:has(.tile-field) .panes > .pane.inspector {
-  border-radius: 0; border-left: 0;
+  border-radius: 0; box-shadow: none;
 }
 /* ONE SPINE PER COLUMN. The inspector's is --ck-pad; the chart's is the
    plot's own left edge (--ck-grid-left), so the panel title, the provenance,
@@ -329,10 +333,29 @@ html.dark .dw {
    time — there is simply nothing to reflow. Behaviour-ledger Q3 (#651). */
 #chart { min-height: 0; min-width: 0; cursor: crosshair; }
 
+/* THE ONE INSET SURFACE ON THE CANVAS (#215). Its padding is the only gap
+   standing between a panel and a canvas edge now, so the field reads as a
+   recess cut below the strip: trench substrate darkest, and an inset shadow
+   under the strip's edge so the step is lit rather than merely darker. The
+   tiles keep the machined edge, pooled in this field's own gutters. */
 .tile-field {
   display: grid; gap: var(--ck-canvas-gap); padding: var(--ck-canvas-gap);
   min-width: 0; min-height: 0; overflow: hidden; background: var(--ck-trench);
+  box-shadow: inset 0 6px 10px -8px rgba(0, 0, 0, .55);
 }
+/* Dark's settled `--wk-surface-sunken` is LIGHTER than the panel it recesses
+   into (#504a45 against #26221f) — a well lit warmer, which is right for the
+   rail's schematic cells and the Charts drawer but wrong for the one surface
+   the anchors now sit above: seated tiles on a lighter tray read raised. In
+   dark the field is cut through the anchor down to the shell's own canvas
+   ground, one step BELOW the panel it sits in, so the substrate is the darkest
+   thing here and no colour is restated. `--wk-canvas` is dark-only on purpose:
+   in light it is the shell's deep green, which is exactly the trench bug the
+   note at `--ck-trench` records. This is scoped to the field alone rather than
+   re-pointing `--ck-trench`, which also grounds the instrument rail and the
+   drawer and mixes their ink (`--ck-trench-quiet`). Light needs no such step:
+   its trench is already the darker of the two. */
+html.dark .tile-field { background: var(--wk-canvas); }
 .tile-field[data-arrangement="focal"] {
   grid-template: minmax(0, 1fr) 145px / repeat(3, minmax(0, 1fr));
 }

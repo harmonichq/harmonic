@@ -31,7 +31,11 @@ import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { openApp } from './diagnose-workstation-behavior.replay.mjs';
+import {
+  generatedFindingPose,
+  generatedFindingProjection,
+  openApp,
+} from './diagnose-workstation-behavior.replay.mjs';
 import { PIN_CAP, arrangementFor, seatCountFor } from './diagnose-canvas-layout.js';
 
 const require = createRequire(import.meta.url);
@@ -189,6 +193,53 @@ test('pinning holds and layers a chart; it never moves the focal chart', async (
       'a second pin leaves the focal chart where the reader put it');
     assert.equal(field.tiles.filter((tile) => tile.pinned).length, 2, 'both charts are held');
     assert.deepEqual(errors, []);
+  } finally {
+    await page.close();
+  }
+});
+
+test('an occurrence selection reaches the compact event-comparison tile', async () => {
+  const browser = await runner.browser();
+  const findingId = 'finding:missed_meal';
+  const { page, errors } = await openCanvas(browser, {
+    findingsProjectionInputs: (projected, caseFiles) => {
+      const posed = generatedFindingProjection(findingId)(projected, caseFiles);
+      return { ...posed, rows: posed.rows.filter((row) => row.id === findingId) };
+    },
+    caseScenario: { preparation: generatedFindingPose(findingId) },
+  });
+  try {
+    const tile = page.locator(`.evidence-tile[data-chart-id="${findingId}"]`);
+    await tile.waitFor({ state: 'visible' });
+    await tile.locator('.tile-fullscreen').click();
+    await page.waitForSelector('#tile-field #ec-chart', { state: 'attached' });
+    await page.locator('[data-comparison-cohort="matched"]').first().click();
+    await page.waitForSelector('[data-comparison-cohort="matched"][aria-pressed="true"]');
+
+    const matchedLegendSelected = await page.locator(
+      '.ec-key-item[data-cohort="matched"]',
+    ).getAttribute('data-selected-cohort');
+    await tile.locator('.tile-fullscreen').click();
+    await tile.locator('.tile-chart canvas').waitFor({ state: 'visible' });
+
+    const compact = await tile.evaluate((element) => {
+      const host = element.querySelector('.tile-chart');
+      const option = window.echarts.getInstanceByDom(host).getOption();
+      return option.series.filter((series) => series.id).map((series) => ({
+        id: series.id,
+        points: series.data.length,
+        opacity: series.lineStyle?.opacity ?? 1,
+      }));
+    });
+    const selected = compact.find((series) => series.id === 'selected:trace');
+    const cohortLines = compact.filter((series) => /:line:/.test(series.id));
+    assert.ok(selected?.points > 0, 'the compact tile draws the selected Occurrence trace');
+    assert.ok(cohortLines.length > 0
+      && cohortLines.every((series) => series.opacity < selected.opacity),
+    'the compact tile dims non-selected cohort lines beneath the selected trace');
+    assert.equal(matchedLegendSelected, 'true',
+      'the fullscreen legend marks the selected Matched cohort');
+    assert.deepEqual(errors, [], 'selection and compact redraw produce no page error');
   } finally {
     await page.close();
   }

@@ -82,8 +82,8 @@ export function eventChartCoordinate(row) {
  * restated either: the follow chip and the chart's own window label already print
  * the hours, and a third copy one line apart is noise.
  */
-export function queueMeta(projection, selected = null, eventChartsOnly = false) {
-  const rows = queueRows(projection, selected, eventChartsOnly)
+export function queueMeta(projection, selected = null) {
+  const rows = queueRows(projection, selected)
     .filter((row) => !row.hidden && !row.collapsed);
   const days = projection?.findings_window?.days;
   const dayWord = days === 1 ? 'day' : 'days';
@@ -149,7 +149,7 @@ function assertDetail(row) {
  * server's row facts to place existing markup; it does not classify or infer the
  * row's published tier.
  */
-export function queueRows(projection, selected = null, eventChartsOnly = false) {
+export function queueRows(projection, selected = null) {
   const rows = projection?.rows || [];
   const sifting = selected !== null;
   const filtered = rows.map((row) => {
@@ -159,8 +159,8 @@ export function queueRows(projection, selected = null, eventChartsOnly = false) 
     // Watching reads remain reachable through their disclosure rather than
     // competing with actionable findings.
     const siftedOut = chips.length > 0 && sifting && !chips.some((chip) => selected.has(chip));
-    const hidden = siftedOut || (eventChartsOnly && eventChartCoordinate(row) === null);
-    const collapsed = !eventChartsOnly && watching;
+    const hidden = siftedOut;
+    const collapsed = watching;
     return { row, hidden, collapsed };
   });
   let pricedSeen = false;
@@ -261,12 +261,11 @@ function paintDetail(node, detail) {
  */
 export function renderFindingsQueue(host, projection, onDrill, view = null) {
   /* `view` is workstation-owned UX state:
-     { selected: Set<string>|null, eventChartsOnly: boolean, collapsedExpanded: boolean,
+     { selected: Set<string>|null, collapsedExpanded: boolean,
        onToggleCollapsed: () => void }. Null selection means no sift. */
   const selected = view?.selected ?? null;
-  const eventChartsOnly = view?.eventChartsOnly === true;
-  const filtering = selected !== null || eventChartsOnly;
-  const rows = queueRows(projection, selected, eventChartsOnly);
+  const filtering = selected !== null;
+  const rows = queueRows(projection, selected);
   if (!rows.length) {
     const line = document.createElement('p');
     line.className = 'quiet-line';

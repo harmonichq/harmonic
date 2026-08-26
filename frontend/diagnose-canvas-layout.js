@@ -159,6 +159,7 @@ export function tileStatePresentation(descriptor, pending = false, message = nul
         ? 'Evidence changed. Refresh findings.' : '';
   return {
     name: descriptor.state,
-    message: pending ? 'Loading evidence…' : message || fallback,
+    message: pending && descriptor.state !== 'stale-generation'
+      ? 'Loading evidence…' : message || fallback,
   };
 }

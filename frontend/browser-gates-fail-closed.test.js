@@ -1,4 +1,4 @@
-// #672: regression guard for the fail-closed preflight in the two
+// #672: regression guard for the fail-closed preflight in the three
 // `*.browser.test.mjs` suites. Those suites are excluded from the
 // `frontend/**/*.test.js` glob (that's the point — they need real browser
 // infrastructure this dependency-free gate does not have), so nothing else in
@@ -23,14 +23,16 @@ const FRONTEND = fileURLToPath(new URL('.', import.meta.url));
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 
 const SUITES = [
-  'cockpit-shell.browser.test.mjs',
-  'diagnose-workstation.browser.test.mjs',
+  { file: 'cockpit-shell.browser.test.mjs', payload: false },
+  { file: 'diagnose-workstation.browser.test.mjs', payload: false },
+  { file: 'diagnose-canvas-composition.browser.test.mjs', payload: true },
 ];
 
 function spawnSuite(suite, envOverrides) {
   const env = { ...process.env };
   delete env.PLAYWRIGHT_MODULE;
   delete env.VENDOR_DIR;
+  delete env.PAYLOAD;
   // node:test detects that it is already running under `node --test` (via an
   // inherited internal env var) and treats a nested `--test` invocation as a
   // no-op recursive call. Spawning `node <file>` directly (no `--test` flag)
@@ -43,12 +45,13 @@ function spawnSuite(suite, envOverrides) {
   return { status: result.status, output: `${result.stdout}\n${result.stderr}` };
 }
 
-for (const suite of SUITES) {
-  test(`${suite} fails closed and names both missing prerequisites with no env`, () => {
+for (const { file: suite, payload } of SUITES) {
+  test(`${suite} fails closed and names missing prerequisites with no env`, () => {
     const { status, output } = spawnSuite(suite, {});
     assert.notEqual(status, 0, `${suite} must exit nonzero when prerequisites are absent`);
     assert.match(output, /PLAYWRIGHT_MODULE/, `${suite} must name PLAYWRIGHT_MODULE as missing`);
     assert.match(output, /VENDOR_DIR/, `${suite} must name VENDOR_DIR as missing`);
+    if (payload) assert.match(output, /PAYLOAD/, `${suite} must name PAYLOAD as missing`);
   });
 
   test(`${suite} fails closed and names the missing vendored assets when VENDOR_DIR is empty`, () => {

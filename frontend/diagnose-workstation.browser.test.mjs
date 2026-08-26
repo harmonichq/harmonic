@@ -216,81 +216,71 @@ test('an explicit fixture opener ignores a hostile ambient app-source override',
   }
 });
 
-test(`#96 · Align keeps keyboard focus and stays two Tab stops — RETIRED — ${P27_SANCTION}`, async () => {
+test('#135 · the chart explorer shortcut focuses a live chart and closes the drawer', async () => {
   const browser = await runner.browser();
-  const cases = [
-    { name: 'case file', options: { state: 'drawn', appSource: 'fixture' }, row: 'finding:over_treated_low' },
-    { name: 'I:C history', options: { state: 'typical', history: true, appSource: 'fixture' }, row: 'ich1_WzAsNzIwLCI2Il0' },
-  ];
-  for (const scenario of cases) {
-    const before = openerProblems().length;
-    const page = await openApp(browser, scenario.options);
-    try {
-      if (scenario.options.history) await expandWatching(page);
-      const row = page.locator(`#level .qrow[data-id="${scenario.row}"]`);
-      assert.equal(await row.count(), 1, `${scenario.name} exposes the finding to drill`);
-      await row.click();
-      await page.locator('#seg-align button').first().waitFor();
-      await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false');
-      assert.equal(await page.locator('.ev-row[aria-pressed="true"], .history-run[aria-pressed="true"]').count(), 0,
-        `${scenario.name} has no selected occurrence before testing Align keys`);
-
-      await page.locator('#seg-window button:last-of-type').evaluate((button) => button.focus());
-      await page.keyboard.press('Tab');
-      const focused = page.locator('#seg-align button[aria-pressed="true"]');
-      assert.equal(await page.evaluate(() => document.activeElement?.closest('#seg-align') !== null), true,
-        `${scenario.name} reaches Align by a real Tab`);
-      assert.equal(await focused.innerText(), 'By clock', `${scenario.name} begins with By clock pressed`);
-      await page.keyboard.press('Tab');
-      assert.equal(await page.evaluate(() => document.activeElement?.textContent.trim()), 'By event',
-        `${scenario.name} Tabs to the other Align choice before activating it`);
-
-      const pressedBeforeArrows = await page.locator('#seg-align button').evaluateAll((buttons) =>
-        buttons.map((button) => button.getAttribute('aria-pressed')));
-      const activeBeforeArrows = await page.evaluate(() => document.activeElement?.textContent.trim());
-      await page.keyboard.press('ArrowRight');
-      await page.keyboard.press('ArrowLeft');
-      assert.equal(await page.evaluate(() => document.activeElement?.textContent.trim()), activeBeforeArrows,
-        `${scenario.name} Arrow keys leave focus on Align`);
-      assert.deepEqual(await page.locator('#seg-align button').evaluateAll((buttons) =>
-        buttons.map((button) => button.getAttribute('aria-pressed'))), pressedBeforeArrows,
-      `${scenario.name} Arrow keys do not move Align's pressed choice`);
-
-      const requests = [];
-      page.on('request', (request) => {
-        if (new URL(request.url()).pathname.startsWith('/api/diagnose/')) requests.push(request.url());
-      });
-      await page.keyboard.press('Enter');
-      await settle(page, 450);
-      assert.equal(await page.evaluate(() => document.activeElement?.textContent.trim()), 'By event',
-        `${scenario.name} Enter activates the other Align choice without moving focus`);
-      assert.deepEqual(await page.locator('#seg-align button').evaluateAll((buttons) =>
-        buttons.map((button) => [button.textContent.trim(), button.getAttribute('aria-pressed')])),
-      [['By clock', 'false'], ['By event', 'true']], `${scenario.name} moves the pressed state to By event`);
-      assert.deepEqual(await page.evaluate(() => {
-        const style = getComputedStyle(document.activeElement);
-        return [style.outlineWidth, style.outlineStyle, style.outlineOffset];
-      }), ['2px', 'solid', '-2px'], `${scenario.name} draws the inward app focus ring`);
-      assert.equal(requests.length, 1, `${scenario.name} Enter makes exactly one Diagnose request`);
-      requests.length = 0;
-      await page.keyboard.press('Shift+Tab');
-      assert.equal(await page.evaluate(() => document.activeElement?.textContent.trim()), 'By clock',
-        `${scenario.name} returns to By clock by keyboard before reactivating it`);
-      await page.keyboard.press('Enter');
-      await settle(page, 450);
-      assert.equal(await page.evaluate(() => document.activeElement?.textContent.trim()), 'By clock',
-        `${scenario.name} Enter restores By clock without moving focus`);
-      assert.deepEqual(await page.locator('#seg-align button').evaluateAll((buttons) =>
-        buttons.map((button) => [button.textContent.trim(), button.getAttribute('aria-pressed')])),
-      [['By clock', 'true'], ['By event', 'false']], `${scenario.name} moves the pressed state back to By clock`);
-      assert.equal(requests.length, scenario.options.history ? 0 : 1,
-        `${scenario.name} restores By clock through its one callback path`);
-    } finally {
-      await page.close();
-    }
-    assert.deepEqual(openerProblems().slice(before), [],
-      `no opener problems while exercising ${scenario.name} Align keyboard focus`);
+  const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
+  try {
+    await page.getByRole('button', { name: '24 h', exact: true }).click();
+    await page.getByRole('button', { name: 'Charts', exact: true }).click();
+    const thumbnails = page.locator('.explorer-thumbnail');
+    assert.ok(await thumbnails.count() >= 2, 'the generated findings publish a live chart list');
+    await page.keyboard.press('1');
+    assert.equal(await page.locator('#explorer-drawer').isHidden(), true,
+      'the numeric focus shortcut closes the explorer drawer');
+    assert.match((await page.locator('#drill-provenance').textContent()).trim(), /^Drilled chart · \S/,
+      'the inspector names the chart selected by the shortcut as a drilled chart');
+    assert.equal(await page.locator('.evidence-tile[data-drilled]').count(), 1,
+      'the selected chart is visibly marked in the field');
+  } finally {
+    await page.close();
   }
+});
+
+test('#135 · Escape dismisses fullscreen and restores the exact canvas arrangement', async () => {
+  const browser = await runner.browser();
+  const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
+  try {
+    await page.getByRole('button', { name: '24 h', exact: true }).click();
+    for (let count = 0; count < 3; count += 1) {
+      const tile = page.locator('.evidence-tile .tile-pin[aria-pressed="false"]:not([disabled])');
+      const next = page.locator('#tile-schematic .next:not([disabled])');
+      if (await tile.count()) await tile.first().click();
+      else await next.first().click();
+    }
+    const read = () => page.evaluate(() => ({
+      arrangement: document.querySelector('#tile-field').dataset.arrangement,
+      tiles: [...document.querySelectorAll('.evidence-tile')].map((tile) => ({
+        id: tile.dataset.chartId, seat: tile.dataset.seat,
+        pinned: tile.hasAttribute('data-pinned'),
+      })),
+    }));
+    const before = await read();
+    await page.locator('.evidence-tile').nth(1).locator('.tile-fullscreen').click();
+    assert.equal(await page.locator('.dw').getAttribute('data-fullscreen'), '',
+      'the chart enters temporary fullscreen');
+    await page.keyboard.press('Escape');
+    assert.deepEqual(await read(), before,
+      'Escape restores the exact prior arrangement, seats and pins');
+  } finally {
+    await page.close();
+  }
+});
+
+test(`#96 · global Align is permanently absent and alignment belongs to each tile — RETIRED — ${P27_SANCTION}`, async () => {
+  const browser = await runner.browser();
+  const before = openerProblems().length;
+  const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
+  try {
+    await page.getByRole('button', { name: '24 h', exact: true }).click();
+    assert.equal(await page.locator('#seg-align, #align-canvas').count(), 0,
+      'the retired global Align host cannot return');
+    assert.ok(await page.locator('.evidence-tile .tile-modes').count() > 0,
+      'each eligible chart tile owns its alignment control');
+  } finally {
+    await page.close();
+  }
+  assert.deepEqual(openerProblems().slice(before), [],
+    'no opener problems while proving the global Align retirement');
 });
 
 test('#100 · Enter on a finding row focuses the opened detail container', async () => {
@@ -327,7 +317,7 @@ test('#100 · the Findings crumb restores focus to the drilled finding row', asy
       'the finding row intended for crumb restoration is present in the queue');
     await findingRow.focus();
     await page.keyboard.press('Enter');
-    await page.getByRole('button', { name: 'Findings', exact: true }).focus();
+    await page.getByLabel(/Findings›Carb undercount/).getByRole('button', { name: 'Findings', exact: true }).focus();
     await page.keyboard.press('Enter');
     assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('data-id') || document.activeElement?.tagName), findingId,
       'the Findings crumb returns focus to the drilled finding row');
@@ -418,8 +408,8 @@ for (const [name, probe, options] of [
 
 for (const [name, probe, options] of [
   ['header and Filter ownership', issue86HeaderFilter, { state: 'drawn' }],
-  ['Event charts and Sift intersection', issue86FilteredRoot, { state: 'typical' }],
-  ['direct event entry and root restoration', issue86DirectEntryRestoration, { state: 'typical' }],
+  ['Sift intersection', issue86FilteredRoot, { state: 'typical' }],
+  ['direct event-chart seating and root restoration', issue86DirectEntryRestoration, { state: 'typical' }],
   ['malformed event evidence recovery', issue86MalformedRecovery, {
     state: 'typical', caseScenario: { case: async ({ url, body }) =>
       url.searchParams.get('alignment') === 'event' ? { body: {
@@ -738,11 +728,11 @@ test('#83 · Filter is a roving ARIA menu and Escape wins over the drawn window'
       await page.waitForFunction(() => document.activeElement?.getAttribute('aria-label')?.startsWith('Highs '));
       assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('aria-label')?.startsWith('Highs ')), true);
       await page.keyboard.press('ArrowUp');
-      assert.equal(await page.evaluate(() => document.activeElement?.textContent.trim()), 'Event charts');
+      assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('aria-label')?.startsWith('Corrections ')), true);
       await page.keyboard.press('Home');
       assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('aria-label')?.startsWith('Highs ')), true);
       await page.keyboard.press('End');
-      assert.equal(await page.evaluate(() => document.activeElement?.textContent.trim()), 'Event charts');
+      assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('aria-label')?.startsWith('Corrections ')), true);
       await page.keyboard.press('ArrowDown');
       assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('aria-label')?.startsWith('Highs ')), true);
       await page.keyboard.press(' ');
@@ -750,11 +740,14 @@ test('#83 · Filter is a roving ARIA menu and Escape wins over the drawn window'
         'Space changes a Sift choice without closing the menu');
       assert.equal(await trigger.innerText(), 'Filter 1');
       await page.waitForFunction(() => document.activeElement?.getAttribute('aria-label')?.startsWith('Highs '));
-      await page.keyboard.press('End');
+      await page.keyboard.press('ArrowDown');
+      assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('aria-label')?.startsWith('Lows ')), true);
       await page.keyboard.press('Enter');
       assert.equal(await page.getByRole('menu').isVisible(), true,
-        'Enter changes View without closing the menu');
-      assert.equal(await trigger.innerText(), 'Filter 2');
+        'Enter changes a second Sift choice without closing the menu');
+      assert.equal(await page.getByRole('menuitemcheckbox', { name: /^Highs / }).getAttribute('aria-checked'), 'false');
+      assert.equal(await page.getByRole('menuitemcheckbox', { name: /^Lows / }).getAttribute('aria-checked'), 'false');
+      assert.equal(await trigger.innerText(), 'Filter 1');
       await page.keyboard.press('Escape');
       assert.equal(await page.getByRole('menu').isVisible(), false);
       assert.equal(await page.evaluate(() => document.activeElement?.id), 'filter-trigger');
@@ -787,7 +780,7 @@ test('#83 · Filter is a roving ARIA menu and Escape wins over the drawn window'
     } finally { /* browser stays open; closed once in after() */ }
   });
 
-test('#83 · Event charts opens By event and return restores the root filters', async () => {
+test('#83 · the retired Event charts root filter and global canvas stay absent', async () => {
     const browser = await runner.browser();
     try {
       const before = openerProblems().length;
@@ -796,31 +789,13 @@ test('#83 · Event charts opens By event and return restores the root filters', 
       await settle(page, 450);
       const trigger = page.getByRole('button', { name: /Filter/ });
       await trigger.click();
-      await page.getByRole('menuitemradio', { name: 'Event charts', exact: true }).click();
-      assert.equal(await trigger.innerText(), 'Filter 1');
-      assert.ok(await page.locator('#level .qrow').count() > 0);
-      assert.equal(await page.locator('#level .qrow .tag.setting').count(), 0,
-        'Event charts renders only server-eligible behavioral Findings');
-      await page.keyboard.press('Escape');
-      await page.locator('#level .qrow').first().click();
-      await page.waitForFunction(() => document.querySelector('#seg-align button[aria-pressed="true"]')?.textContent.trim() === 'By event');
-      await page.locator('#align-canvas:not([hidden])').waitFor();
-      assert.equal(await page.locator('#filter-wrap').isHidden(), true,
-        'Filter is root-only');
-
-      await page.getByRole('button', { name: 'By clock', exact: true }).click();
-      await page.waitForFunction(() => document.querySelector('#seg-align button[aria-pressed="true"]')?.textContent.trim() === 'By clock');
-      await page.locator('#chart:not([hidden])').waitFor();
-      assert.equal(await page.locator('#chart').isVisible(), true);
-      await page.keyboard.press('Backspace');
-      await page.locator('#level .qrow').first().waitFor();
-      assert.equal(await trigger.innerText(), 'Filter 1');
-      await trigger.click();
-      assert.equal(await page.getByRole('menuitemradio', { name: 'Event charts' }).getAttribute('aria-checked'), 'true');
-      assert.equal(await page.getByRole('menuitemcheckbox', { name: /^Highs / }).getAttribute('aria-checked'), 'true');
+      assert.equal(await page.getByRole('menuitemradio', { name: 'Event charts', exact: true }).count(), 0,
+        'the root menu cannot restore the retired Event charts filter');
+      assert.equal(await page.locator('#seg-align, #align-canvas').count(), 0,
+        'the mutually exclusive global event canvas cannot return');
       await page.close();
       assert.deepEqual(openerProblems().slice(before), [],
-        'no opener problems through Event charts entry, switching, and return');
+        'no opener problems while proving the Event charts retirement');
     } finally { /* browser stays open; closed once in after() */ }
   });
 

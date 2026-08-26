@@ -62,62 +62,74 @@ const cases = [
 ];
 
 async function facts(page) {
-  return page.evaluate(() => {
-    const exposed = window.__diagnoseEventComparison;
-    const option = exposed.chart.getOption();
-    const ids = option.series.map((series) => series.id).filter(Boolean);
-    const served = exposed.projection.projection;
-    const lineSeries = option.series.filter((series) => /:line:/.test(series.id || ''));
-    /* The rule the whole audit exists for: a drawn point may only appear on the
-       line graded for the support the SERVER gave that point. */
-    const invalidLinePoints = [];
-    for (const series of lineSeries) {
-      const [cohort, , support] = series.id.split(':');
-      const expected = new Map(exposed.aggregates[cohort].map((row) => [row.minute, row.support]));
-      for (const [minute, value] of series.data) {
-        if (value != null && expected.get(minute) !== support) {
-          invalidLinePoints.push({ id: series.id, minute, support: expected.get(minute) });
-        }
+  const caseFile = page.__selectedComparison
+    || page.__comparisonServedByFinding.get(page.__comparisonFindingId);
+  const served = caseFile.projection;
+  const compact = page.__compactComparison;
+  const ids = compact.ids;
+  const lineSeries = compact.series.filter((series) => /:line:/.test(series.id || ''));
+  /* The rule the whole audit exists for: a drawn point may only appear on the
+     line graded for the support the SERVER gave that point. */
+  const invalidLinePoints = [];
+  for (const series of lineSeries) {
+    const [cohort, , support] = series.id.split(':');
+    const expected = new Map(served.cohorts.find((entry) => entry.key === cohort)
+      .points.map((row) => [row.minute, row.support]));
+    for (const [minute, value] of series.data) {
+      if (value != null && expected.get(minute) !== support) {
+        invalidLinePoints.push({ id: series.id, minute, support: expected.get(minute) });
       }
     }
-    const selectedCohort = exposed.selected?.cohort ?? null;
-    const opacity = (predicate) => Math.max(0, ...lineSeries
-      .filter((series) => predicate(series.id.split(':')[0]))
-      .map((series) => series.lineStyle?.opacity || 0));
+  }
+  const dom = await page.evaluate(() => {
+    const selectedRow = document.querySelector('[data-comparison-cohort][aria-pressed="true"]');
     return {
-      serverOwned: exposed.projection.schema === 'diagnose-finding-case-file-v1'
-        && served.alignment === 'event',
-      cohorts: served.cohorts.map((cohort) => ({
-        key: cohort.key,
-        name: cohort.name,
-        support: cohort.support,
-        routed: cohort.routed_count,
-        usable: cohort.usable_count,
-        episodes: (cohort.episodes || []).length,
-        series: ids.filter((id) => id.startsWith(`${cohort.key}:`)),
-        maxSpread: Math.max(0, ...cohort.points
-          .filter((point) => point.p25 != null && point.p75 != null)
-          .map((point) => point.p75 - point.p25)),
-      })),
-      comparison: served.comparison,
-      ids,
-      invalidLinePoints,
-      selected: exposed.selected?.id ?? null,
-      selectedCohort,
-      selectedOpacity: selectedCohort ? opacity((key) => key === selectedCohort) : 0,
-      otherOpacity: selectedCohort ? opacity((key) => key !== selectedCohort) : 0,
-      selectedTrace: option.series.some((series) => series.name === 'Selected trace'),
-      legend: [...document.querySelectorAll('.ec-key-item')].map((item) => ({
-        cohort: item.dataset.cohort,
-        support: item.dataset.support || null,
-        selected: item.dataset.selectedCohort || null,
-        detail: item.querySelector('small')?.textContent.replace(/\s+/g, ' ').trim(),
-        text: item.textContent.replace(/\s+/g, ' ').trim(),
-      })),
-      chartLabel: document.querySelector('#ec-chart')?.getAttribute('aria-label') || '',
+      selected: selectedRow?.dataset.occurrenceId ?? null,
+      selectedCohort: selectedRow?.dataset.comparisonCohort ?? null,
       overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
     };
   });
+  const fullscreen = page.__fullscreenComparison || await page.evaluate(() => ({
+    legend: [...document.querySelectorAll('.ec-key-item')].map((item) => ({
+      cohort: item.dataset.cohort,
+      support: item.dataset.support || null,
+      selected: item.dataset.selectedCohort || null,
+      detail: item.querySelector('small')?.textContent.replace(/\s+/g, ' ').trim(),
+      text: item.textContent.replace(/\s+/g, ' ').trim(),
+    })),
+    chartLabel: document.querySelector('#ec-chart')?.getAttribute('aria-label') || '',
+  }));
+  const selectedTrace = compact.series.find((series) => series.id === 'selected:trace');
+  return {
+    serverOwned: caseFile.schema === 'diagnose-finding-case-file-v1'
+      && served.alignment === 'event',
+    cohorts: served.cohorts.map((cohort) => ({
+      key: cohort.key,
+      name: cohort.name,
+      support: cohort.support,
+      routed: cohort.routed_count,
+      usable: cohort.usable_count,
+      episodes: (cohort.episodes || []).length,
+      series: ids.filter((id) => id.startsWith(`${cohort.key}:`)),
+      maxSpread: Math.max(0, ...cohort.points
+        .filter((point) => point.p25 != null && point.p75 != null)
+        .map((point) => point.p75 - point.p25)),
+    })),
+    comparison: served.comparison,
+    ids,
+    invalidLinePoints,
+    selected: dom.selected,
+    selectedCohort: dom.selectedCohort,
+    selectedTracePoints: selectedTrace?.data.length || 0,
+    selectedTraceExpected: caseFile.selection.state === 'selected'
+      ? caseFile.selection.detail.glucose.length : 0,
+    selectedOpacity: selectedTrace?.opacity ?? null,
+    otherOpacities: compact.series.filter((series) => /:line:/.test(series.id))
+      .map((series) => series.opacity),
+    legend: fullscreen.legend,
+    chartLabel: fullscreen.chartLabel,
+    overflow: dom.overflow,
+  };
 }
 
 if (out) await mkdir(out, { recursive: true });
@@ -178,8 +190,7 @@ try {
           /limited support$/,
           `${check.name}: limited cohort detail does not say limited support`);
         // A withheld point states that it has no value, and no cohort-level fact.
-        await page.locator('#ec-chart').focus();
-        await page.keyboard.press('End');
+        await page.locator('#ec-chart').dispatchEvent('keydown', { key: 'End' });
         const inspected = await page.locator('#ec-chart').getAttribute('aria-label');
         assert.match(inspected, /unavailable/i,
           `${check.name}: withheld point does not state that it has no value`);
@@ -195,13 +206,22 @@ try {
       if (check.name === 'selected-withheld-light') {
         assert.equal(got.selectedCohort, 'matched', `${check.name}: selected cohort`);
         assert.equal(got.cohorts[0].support, 'withheld', `${check.name}: cohort support`);
-        assert.ok(got.selectedTrace, `${check.name}: exact trace missing`);
+        const selectedLegend = got.legend.find((item) => item.cohort === 'matched');
+        assert.ok(got.selectedTracePoints > 0,
+          `${check.name}: compact exact trace missing; opacity=${got.selectedOpacity}; `
+            + `other=${got.otherOpacities}; legend=${JSON.stringify(selectedLegend)}`);
+        assert.equal(got.selectedTracePoints, got.selectedTraceExpected,
+          `${check.name}: compact exact trace dropped served glucose points`);
+        assert.ok(got.otherOpacities.length > 0
+          && got.otherOpacities.every((opacity) => got.selectedOpacity > opacity),
+        `${check.name}: selected trace opacity ${got.selectedOpacity} does not lead ${got.otherOpacities}`);
         assert.deepEqual(got.cohorts[0].series, [],
           `${check.name}: selection promoted a Withheld aggregate`);
-        assert.equal(got.legend.find((item) => item.cohort === 'matched').selected, 'true',
-          `${check.name}: legend does not identify the selected population`);
-        assert.ok(got.selectedOpacity === 0 || got.selectedOpacity > got.otherOpacity,
-          `${check.name}: a drawn selected cohort is not emphasized`);
+        assert.ok(got.selected != null, `${check.name}: the selected occurrence has no identity`);
+        assert.equal(selectedLegend?.selected, 'true',
+          `${check.name}: selected cohort has no legend marker`);
+        assert.match(selectedLegend?.detail || '', /selected cohort/,
+          `${check.name}: selected cohort legend does not name its selection`);
       }
       if (check.name === 'served-downgrade-light') {
         assert.equal(got.cohorts[0].support, 'limited',

@@ -54,6 +54,8 @@ export function validFindingCaseFile(caseFile) {
   const occurrences = caseFile?.occurrences;
   const projection = caseFile?.projection;
   const selection = caseFile?.selection;
+  const recurrenceIdentity = ANNOUNCED_MEAL_ID.test(occurrences?.[0]?.id || '')
+    ? ANNOUNCED_MEAL_ID : OCCURRENCE_ID;
   if (!caseFile?.finding || typeof caseFile.finding.lever !== 'string'
     || typeof caseFile.finding.title !== 'string' || typeof caseFile.family !== 'string'
     || typeof caseFile.cross_population !== 'boolean' || typeof caseFile.population !== 'string'
@@ -64,7 +66,7 @@ export function validFindingCaseFile(caseFile) {
     || FINDING_VERDICTS.reduce((sum, key) => sum + counts[key], 0)
       !== caseFile.summary.denominator
     || !Array.isArray(occurrences) || occurrences.length !== caseFile.summary.denominator
-    || !occurrences.every((row) => OCCURRENCE_ID.test(row?.id || '')
+    || !occurrences.every((row) => recurrenceIdentity.test(row?.id || '')
       && typeof row.date === 'string' && FINDING_VERDICTS.includes(row.verdict)
       && validAnchor(row.anchor))) return false;
 
@@ -118,9 +120,9 @@ export function validFindingCaseFile(caseFile) {
       || near?.name !== 'Nearly matched' || typeof comparison?.name !== 'string'
       || projection?.comparison?.name !== comparison.name
       || !['available', 'unavailable'].includes(projection?.comparison?.state)
-      || !validCohort(matched, (id) => OCCURRENCE_ID.test(id))
-      || !validCohort(near, (id) => OCCURRENCE_ID.test(id))
-      || !validCohort(comparison, (id) => OCCURRENCE_ID.test(id)
+      || !validCohort(matched, (id) => recurrenceIdentity.test(id))
+      || !validCohort(near, (id) => recurrenceIdentity.test(id))
+      || !validCohort(comparison, (id) => recurrenceIdentity.test(id)
         || (crossPopulation && caseFile.population === 'highs' && ANNOUNCED_MEAL_ID.test(id)))
       || !validCount(counts?.matched) || !validCount(counts.nearly_matched)
       || !validCount(counts.comparison) || !validCount(counts.not_comparable)

@@ -18,6 +18,7 @@ to hold, and each has its own axis here:
 import unittest
 from datetime import datetime, timedelta
 
+from ciq_autotune import event_comparison
 from ciq_autotune.analyzers.classifiers import EvidenceTier, SilenceReason
 from ciq_autotune.analyzers.classifiers.context_gate import CIQ_SUSPEND_TYPE
 from ciq_autotune.analyzers.classifiers.meal_bolus_short import classify_meal_bolus_short
@@ -172,6 +173,21 @@ class TaxonomySeparationTest(unittest.TestCase):
                          cfg.missed_meal_rise_slope_mgdl_min)
         self.assertEqual(cfg.meal_bolus_short_slope_lookback_min,
                          cfg.missed_meal_slope_lookback_min)
+
+    def test_classifier_and_event_comparison_share_the_configured_meal_population(self):
+        config = ScenarioConfig(anchor_meal_min_carbs=50.0)
+        bolus = [meal_bolus(12, 0, carbs=45.0), correction(13, 10)]
+
+        verdict = classify_meal_bolus_short(
+            ANCHOR, RISING, bolus, scenario_config=config,
+        )
+        comparison = event_comparison.completed_carb_boluses(
+            bolus, scenario_config=config,
+        )
+
+        self.assertFalse(verdict.matched)
+        self.assertEqual(verdict.silence_reason, SilenceReason.NO_TRIGGER)
+        self.assertEqual(comparison, ())
 
     def test_no_verdict_copy_implies_a_carb_count(self):
         # Carb undercount owns the quantified-shortfall claim. Every detail this

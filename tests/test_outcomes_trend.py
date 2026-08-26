@@ -507,6 +507,38 @@ class HonestDenominatorTest(unittest.TestCase):
         # Newest window carries all four corrections → 3 pairs.
         self.assertEqual(stacking.series[-1].exposure_n, 3)
 
+    def test_custom_meal_floor_is_shared_by_attribution_and_trend_denominator(self):
+        now = datetime(2026, 7, 2, 12, 0, 0)
+        meal = BolusEvent(
+            now - timedelta(hours=2), insulin=1.0, carbs=7.0,
+            completion="Completed", seq_num=71,
+        )
+        config = ScenarioConfig(anchor_meal_min_carbs=5.0)
+        counts = {family: 0 for family in Exposure}
+
+        with mock.patch(
+            "ciq_autotune.outcomes_trend.tally_attributions",
+            return_value=(counts, {Lever.MEAL_BOLUS_SHORT: 1}),
+        ):
+            trend = summarize_trend(
+                _FakeStore(
+                    cgm=[CgmReading(now - timedelta(hours=3), 120.0)],
+                    bolus=[meal],
+                ),
+                window_days=14,
+                now=now,
+                scenario_config=config,
+            )
+
+        behavior = next(
+            item for item in trend.behaviors
+            if item.lever == Lever.MEAL_BOLUS_SHORT.value
+        )
+        self.assertEqual(
+            (behavior.series[-1].attributed, behavior.series[-1].exposure_n),
+            (1, 1),
+        )
+
 
 def _meal_at(t, *, bg=None):
     return BolusEvent(t, insulin=5.0, carbs=50.0, bg=bg)

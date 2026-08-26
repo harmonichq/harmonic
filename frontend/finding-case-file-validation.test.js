@@ -116,6 +116,12 @@ test('accepts the current valid event case-file cohort partition', () => {
   assert.equal(validFindingCaseFile(eventCase()), true);
 });
 
+test('accepts the policy-owned meal identity for Meal bolus fell short', () => {
+  const caseFile = mealBolusShortCase();
+  assert.ok(caseFile.occurrences.every((row) => /^m_[0-9a-f]{32}$/.test(row.id)));
+  assert.equal(validFindingCaseFile(caseFile), true);
+});
+
 test('rejects a cross-population identity for Meal bolus fell short', () => {
   const caseFile = mealBolusShortCase();
   assert.equal(caseFile.cross_population, false);

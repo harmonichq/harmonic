@@ -117,7 +117,12 @@ def _recurrence_counts(bolus, cgm, basal, *, scenario_config=ScenarioConfig()):
     families = opportunities.build_opportunities(
         bolus, cgm, basal, scenario_config=scenario_config,
     )
-    return {lever: recurrence_count(lever, families, bolus) for lever in Lever}
+    return {
+        lever: recurrence_count(
+            lever, families, bolus, scenario_config=scenario_config,
+        )
+        for lever in Lever
+    }
 
 
 def tally_attributions(
@@ -186,6 +191,7 @@ def tally_attributions(
             policy = policy_for(attr.lever)
             occurrence_id = policy.occurrence_for_episode(
                 "", bolus_events, attr.steps[0].t,
+                scenario_config=scenario_config,
             )
             if occurrence_id in seen_occurrences.setdefault(attr.lever, set()):
                 continue
@@ -587,6 +593,7 @@ def assemble(
         by_lever.setdefault(lever, []).append(episode)
         occurrence_ids[episode.id] = policy_for(lever).occurrence_for_episode(
             episode.id, bolus_events, episode.steps[0].t,
+            scenario_config=scenario_config,
         )
 
     # Build a scored pattern per lever with >= _MIN_OCCURRENCES episodes. Over-treated

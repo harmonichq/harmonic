@@ -983,7 +983,9 @@ def summarize_trend(
             exp = LEVER_EXPOSURE[lever]
             n = exposure_counts.get(exp, 0)
             if policy.recurrence_family is None:
-                n = sum(1 for item in w_bolus if policy.recurrence_members(item))
+                n = len(policy.recurrence_population(
+                    {}, w_bolus, scenario_config=scenario_config,
+                ))
             if lever is Lever.CORRECTION_STACKING:
                 k = min(cs_behavior, n)
                 point = BehaviorPoint(

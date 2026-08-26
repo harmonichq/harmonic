@@ -33,10 +33,11 @@ from ciq_autotune.explore_exposures import build_exposures as build_endpoint_exp
 from ciq_autotune.explore_time_of_day import build_time_of_day
 from ciq_autotune.analyzers.scenario import build_scenarios
 from ciq_autotune.analyzers.isf import isf_asserts_move
+from ciq_autotune.analyzers.scenario.evidence_population import policy_for
 from ciq_autotune.analyzers.scenario.levers import Exposure, Lever, exposure, title as lever_title
 from ciq_autotune.analyzers.scenario.opportunities import Opportunity
 from ciq_autotune.events import BasalEvent, BolusEvent, CarbEntry, CgmReading
-from ciq_autotune.finding_case_file import Member, PreparedCases, wrap
+from ciq_autotune.finding_case_file import Member, PreparedCases, _opaque, wrap
 from ciq_autotune.store import Store
 from ciq_autotune.window_membership import WindowQuery
 
@@ -436,13 +437,33 @@ def build_case_file_capture():
             rows.append(row)
         families[family] = tuple(rows)
 
+    opportunities = tuple(item for family in Exposure for item in families[family])
+    bolus = tuple(sorted((dose for item in opportunities for dose in item.members),
+                         key=lambda dose: dose.seq_num))
+    meal_opportunities = {
+        item.members[0].seq_num: item for item in families[Exposure.MEALS]
+    }
+
     all_members, associations, recurrence = {}, {}, {}
     rows = []
     for priority, lever in enumerate(Lever, start=1):
-        opportunities = families[exposure(lever)]
-        members = tuple(Member(item,
-            item.anchor_t + (timedelta(minutes=180) if lever is Lever.OVER_TREATED_LOW else timedelta()),
-            verdict) for item, verdict in zip(opportunities, verdicts))
+        policy = policy_for(lever)
+        population = policy.recurrence_population(families, bolus)
+        if policy.recurrence_family is None:
+            roster = tuple(meal_opportunities[item.seq_num] for item in population)
+            occurrence_ids = tuple(
+                _opaque('m_', policy.occurrence_id(item)) for item in population
+            )
+        else:
+            roster = population
+            occurrence_ids = (None,) * len(roster)
+        members = tuple(Member(
+            item,
+            item.anchor_t + (timedelta(minutes=180)
+                             if lever is Lever.OVER_TREATED_LOW else timedelta()),
+            verdict,
+            occurrence_id,
+        ) for item, verdict, occurrence_id in zip(roster, verdicts, occurrence_ids))
         # Meal over-delivery deliberately proves claimed < fired.
         claimed = frozenset({members[0].id})
         all_members[lever] = members
@@ -460,14 +481,11 @@ def build_case_file_capture():
                       else exposure(lever).value], 'window_scope': 'window',
         })
 
-    opportunities = tuple(item for family in Exposure for item in families[family])
     cgm = []
     for item in opportunities:
         for minute in range(-300, 301, 30):
             cgm.append(CgmReading(item.anchor_t + timedelta(minutes=minute),
                                   max(45, min(295, 125 + minute / 8)), 'EGV'))
-    bolus = tuple(sorted((dose for item in opportunities for dose in item.members),
-                         key=lambda dose: dose.seq_num))
     basal = tuple(BasalEvent(item.anchor_t + timedelta(minutes=20), 'suspended',
                              basal_rate=0, profile_basal_rate=0.9)
                   for item in families[Exposure.LOWS])

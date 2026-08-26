@@ -311,6 +311,32 @@ class WilsonSupportTest(unittest.TestCase):
             self.assertEqual(group["hero_episode"], group["member_episode_ids"][0])
             self.assertIn("meal-", group["id"])
 
+    def test_custom_meal_floor_denominates_the_same_meals_the_classifier_attributes(self):
+        from dataclasses import replace
+        from ciq_autotune.analyzers.scenario_config import ScenarioConfig
+        from ciq_autotune.analyzers.scenario.engine import assemble
+
+        bolus = [
+            replace(item, carbs=7.0, carb_ratio=1.0)
+            if item.carbs is not None else item
+            for item in RECURRING_BOLUS
+        ]
+        config = ScenarioConfig(
+            anchor_meal_min_carbs=5.0,
+            meal_bolus_short_min_carbs=5.0,
+            missed_meal_min_carbs=5.0,
+        )
+
+        report = assemble(
+            bolus, RECURRING_CGM, [], isf=45.0, scenario_config=config,
+        )
+
+        pattern = next(
+            item for item in [*report.patterns, *report.low_confidence]
+            if item.lever is Lever.MEAL_BOLUS_SHORT
+        )
+        self.assertEqual((pattern.confidence.k, pattern.confidence.n), (2, 2))
+
     def test_two_unequal_highs_from_one_meal_are_one_worst_episode_occurrence(self):
         from ciq_autotune.analyzers.scenario_config import ScenarioConfig
         from ciq_autotune.analyzers.scenario.engine import assemble

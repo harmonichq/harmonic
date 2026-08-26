@@ -22,3 +22,17 @@ zero-dose, or too-small-carb row cannot enter one surface but not another.
 Outcome-family consumers may retain `LEVER_EXPOSURE` where they answer where an
 episode landed (for example Focus's outcome series). Recurrence consumers use this
 policy seam; a family is not silently treated as a finding denominator.
+
+| Consumer | disposition |
+| --- | --- |
+| `scenario/__init__.py` | exports the legacy outcome-family taxonomy; policy remains importable at its own seam. |
+| `scenario/levers.py` | retains `LEVER_EXPOSURE` solely for outcome-family classification. |
+| `api.py` | `/api/outcomes` serializes the flat account after policy-owned tallying. |
+| `explore_exposures.py` | stamps `cause_occurrence_id` from the policy, so projections do not rediscover a meal. |
+| `finding_case_file.py` | deferred to chunk 2; its comparison policy is superseded by this seam. |
+| `findings_projection.py` | deferred to chunk 2; consumes the serialized occurrence groups. |
+| `outcomes.py` | retains exposure rows as an outcome-family account; calls policy to make that separation explicit. |
+| `outcomes_trend.py` | reads policy recurrence membership for meal-bolus-short instead of applying the old min clamp. |
+| `watched_change.py` | retains outcome-kind Focus selection; policy distinction is explicit at the call site. |
+| `window_membership.py` | retains outcome-anchor membership, never recurrence membership. |
+| `guide.py` | emits policy-owned recurrence noun as the server-owned measured label. |

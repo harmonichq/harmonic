@@ -615,6 +615,8 @@ def _focus_meta(lever: str) -> tuple:
     if lever == OVERRIDE_LEVER:
         return OVERRIDE_TITLE, "tbr"  # an override-up's harm is a lows story
     lv = Lever(lever)
+    from .analyzers.scenario.evidence_population import policy_for
+    policy_for(lv)  # outcome series remains a consequence read, not recurrence.
     return lever_title(lv), _FOCUS_OUTCOME.get(lever_exposure(lv), "tir")
 
 

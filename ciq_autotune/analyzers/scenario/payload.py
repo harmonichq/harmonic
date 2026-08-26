@@ -186,6 +186,7 @@ class Pattern:
     recommendation: str
     hero_episode: str
     occurrences: List[str]
+    occurrence_groups: List[Dict] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         c = self.confidence
@@ -212,6 +213,7 @@ class Pattern:
             "recommendation": self.recommendation,
             "hero_episode": self.hero_episode,
             "occurrences": list(self.occurrences),
+            "occurrence_groups": [dict(group) for group in self.occurrence_groups],
         }
 
 

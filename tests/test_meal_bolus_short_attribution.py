@@ -283,9 +283,8 @@ class WilsonSupportTest(unittest.TestCase):
         surfaced = [p.lever for p in report.patterns]
         self.assertNotIn(Lever.MEAL_BOLUS_SHORT, surfaced)
 
-    def test_its_confidence_is_denominated_on_every_high_in_the_window(self):
-        # Exposure-denominated, not episode-denominated: `n` is the opportunity
-        # count, so a lever that fires on one of many highs reads as rare.
+    def test_its_confidence_is_denominated_on_completed_meals_in_the_window(self):
+        # The recurrence population is eligible completed meals, not high outcomes.
         report = self._assembled(RECURRING_BOLUS, RECURRING_CGM)
         found = [p for p in list(report.patterns) + list(report.low_confidence)
                  if p.lever is Lever.MEAL_BOLUS_SHORT]
@@ -293,6 +292,11 @@ class WilsonSupportTest(unittest.TestCase):
         confidence = found[0].confidence
         self.assertEqual(confidence.k, 2)
         self.assertGreaterEqual(confidence.n, confidence.k)
+        groups = found[0].to_dict()["occurrence_groups"]
+        self.assertEqual(len(groups), confidence.k)
+        for group in groups:
+            self.assertEqual(group["hero_episode"], group["member_episode_ids"][0])
+            self.assertIn("meal-", group["id"])
 
     def test_it_uses_no_floor_of_its_own(self):
         # `safety.py` owns the basal and I:C support floors. A scenario lever that

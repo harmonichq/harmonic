@@ -3,25 +3,28 @@
 import unittest
 
 from ciq_autotune.analyzers.scenario.levers import Lever
+from ciq_autotune.analyzers.scenario.levers import Exposure
 from ciq_autotune.analyzers.scenario.evidence_population import policy_for
 
 
 class EvidencePopulationPolicyContractTest(unittest.TestCase):
     def test_every_lever_declares_its_complete_evidence_population_contract(self):
-        rows = {lever: policy_for(lever) for lever in Lever}
-        self.assertEqual(set(rows), set(Lever))
-        for row in rows.values():
-            self.assertTrue(row.recurrence_noun)
-            self.assertTrue(row.comparison_name)
-            self.assertTrue(row.comparison_anchor_kind)
-            self.assertIsNotNone(row.comparison_window)
-            self.assertTrue(callable(row.recurrence_members))
-            self.assertTrue(callable(row.occurrence_id))
-        meal_short = rows[Lever.MEAL_BOLUS_SHORT]
-        self.assertEqual(meal_short.recurrence_noun, "meals")
-        self.assertEqual(meal_short.comparison_anchor_kind, "completed_carb_bolus")
-        self.assertFalse(meal_short.cross_population)
-        self.assertTrue(rows[Lever.MISSED_MEAL].cross_population)
+        expected = {
+            Lever.CARB_UNDERCOUNT: (Exposure.MEALS, "meals", "Other completed carb-bolus meals", "completed_carb_bolus", False),
+            Lever.LATE_BOLUS: (Exposure.MEALS, "meals", "Other completed carb-bolus meals", "completed_carb_bolus", False),
+            Lever.MEAL_OVER_DELIVERY: (Exposure.MEALS, "meals", "Other completed carb-bolus meals", "completed_carb_bolus", False),
+            Lever.OVER_TREATED_LOW: (Exposure.LOWS, "lows", "Other low excursions", "excursion_nadir", False),
+            Lever.CORRECTION_ON_IOB: (Exposure.LOWS, "lows", "Other low excursions", "excursion_nadir", False),
+            Lever.CORRECTION_STACKING: (Exposure.CORRECTION_CLUSTERS, "correction_clusters", "Other back-to-back correction pairs", "correction_pair", False),
+            Lever.MISSED_MEAL: (Exposure.HIGHS, "highs", "Completed carb-bolus meals", "completed_carb_bolus", True),
+            Lever.MEAL_BOLUS_SHORT: (None, "meals", "Other completed carb-bolus meals", "completed_carb_bolus", False),
+        }
+        self.assertEqual(set(expected), set(Lever))
+        for lever, values in expected.items():
+            row = policy_for(lever)
+            self.assertEqual((row.recurrence_family, row.recurrence_noun,
+                              row.comparison_name, row.comparison_anchor_kind,
+                              row.cross_population), values)
 
 
 if __name__ == "__main__":

@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
 from .analyzers.scenario.levers import outcome_kind
+from .analyzers.scenario.evidence_population import policy_for
 
 DAY_MINUTES = 1440
 
@@ -101,6 +102,10 @@ def _episode_anchors(families: dict) -> Dict[str, List[Tuple[int, str]]]:
 
 
 def _outcome_minute(occurrence: dict, anchors: Dict[str, List[Tuple[int, str]]]) -> int:
+    # Outcome membership remains outcome-kind based; policy supplies the closed
+    # lever identity so recurrence membership is never inferred from this view.
+    if occurrence.get("cause_lever") is not None:
+        policy_for(occurrence["cause_lever"])
     kind = outcome_kind(occurrence.get("cause_lever"))
     if kind is not None:
         landings = [minute for minute, anchor_kind

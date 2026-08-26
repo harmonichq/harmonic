@@ -734,7 +734,9 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     def outcomes_endpoint(window: int = 14, _: None = Depends(require_token)) -> dict:
         """The outcome summary (#113): the 2019 consensus / AGP glycemic panel plus
         the derived per-exposure clean rates (ADR 0007), over one flat user-selected
-        window (14 default; 30/90 via ``window``). A second versioned result, its own
+        window (14 default; 30/90 via ``window``). Recurrence denominators are
+        resolved in the scenario evidence-population policy before this flat
+        outcome-family account is serialized. A second versioned result, its own
         renderer — not a field on the AnalysisResult."""
         from .outcomes import summarize_outcomes
 

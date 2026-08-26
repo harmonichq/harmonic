@@ -165,6 +165,7 @@ def tally_attributions(
     )
 
     attributed: Dict[Lever, int] = {}
+    seen_occurrences: Dict[Lever, set] = {}
     for ep_anchors in ep_anchor_groups:
         start = ep_anchors.start
         end = ep_anchors.end
@@ -181,6 +182,15 @@ def tally_attributions(
         )
         if attr.lever is None:
             continue
+        if attr.lever is Lever.MEAL_BOLUS_SHORT:
+            policy = policy_for(attr.lever)
+            meals = [item for item in bolus_events
+                     if policy.recurrence_members(item) and item.t < start]
+            if meals:
+                occurrence_id = policy.occurrence_id(max(meals, key=lambda item: item.t))
+                if occurrence_id in seen_occurrences.setdefault(attr.lever, set()):
+                    continue
+                seen_occurrences[attr.lever].add(occurrence_id)
         attributed[attr.lever] = attributed.get(attr.lever, 0) + 1
     return exposure_counts, attributed
 
@@ -637,6 +647,15 @@ def assemble(
     for pending, out in ((surfaced_pending, surfaced), (low_pending, low_conf)):
         pending.sort(key=lambda t: t[0], reverse=True)
         for rank, (_sev, conf, lever, hero, occ_ids) in enumerate(pending, start=1):
+            groups = []
+            for occurrence_id in dict.fromkeys(
+                occurrence_ids[episode_id] for episode_id in occ_ids
+            ):
+                members = [episode for episode in by_lever[lever]
+                           if occurrence_ids.get(episode.id) == occurrence_id]
+                representative = max(members, key=lambda episode: episode.severity)
+                groups.append({"id": occurrence_id, "member_episode_ids": [episode.id for episode in members],
+                               "severity": representative.severity, "hero_episode": representative.id})
             out.append(
                 Pattern(
                     lever=lever,
@@ -645,6 +664,7 @@ def assemble(
                     recommendation=recommendation(lever),
                     hero_episode=hero,
                     occurrences=occ_ids,
+                    occurrence_groups=groups,
                 )
             )
 

@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from .analyzers.scenario.attribute import attribute, split_caused_over_treatments
 from .analyzers.scenario.engine import _effective_isf, low_prompt_answers
 from .analyzers.scenario.levers import Lever, title
+from .analyzers.scenario.evidence_population import policy_for
 from .analyzers.scenario.model_view import _CONTEXT_PAD_MIN, _build_episode_view, _is_driver
 from .analyzers.scenario.anchors import collect_anchors
 from .analyzers.scenario.segment import segment, split_double_humps, split_low_rebounds
@@ -138,6 +139,16 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
             if attribution.lever is None:
                 uncaused[_FAMILY_FOR_KIND[anchor["kind"]]] += 1
             lever = episode["lever"] if attributed else None
+            cause_occurrence_id = None
+            if lever is not None:
+                policy = policy_for(lever)
+                if Lever(lever) is Lever.MEAL_BOLUS_SHORT:
+                    meals = [item for item in window_bolus
+                             if policy.recurrence_members(item) and item.t < source_anchor.t]
+                    if meals:
+                        cause_occurrence_id = policy.occurrence_id(max(meals, key=lambda item: item.t))
+                else:
+                    cause_occurrence_id = episode["id"]
             cause_title = title(Lever(lever)) if lever is not None else None
             occurrence = {
                 "t": anchor["t"],
@@ -149,6 +160,7 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
                 "state": anchor["state"],
                 "attributed": attributed,
                 "cause_lever": lever,
+                "cause_occurrence_id": cause_occurrence_id,
                 "cause_title": cause_title,
                 "text": episode["steps"][0]["text"] if attributed else "",
                 "verdicts": [

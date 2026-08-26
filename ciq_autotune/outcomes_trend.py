@@ -66,6 +66,7 @@ from .analyzers.scenario import (
 from .analyzers.scenario.anchors import _is_meal
 from .false_low import drop_readings, false_low_spans
 from .analyzers.scenario.levers import recommendation, title
+from .analyzers.scenario.evidence_population import policy_for
 from .analyzers.scenario.preempted import is_preempted_low_entry
 from .model import _CgmSeries
 from .outcomes import TBR_L1, _EXPECTED_PER_DAY, compute_metrics
@@ -978,8 +979,11 @@ def summarize_trend(
             w_bolus, ctx_bolus, ctx_cgm, ctx_basal
         )
         for lever in _BEHAVIOR_ORDER:
+            policy = policy_for(lever)
             exp = LEVER_EXPOSURE[lever]
             n = exposure_counts.get(exp, 0)
+            if policy.recurrence_family is None:
+                n = sum(1 for item in w_bolus if policy.recurrence_members(item))
             if lever is Lever.CORRECTION_STACKING:
                 k = min(cs_behavior, n)
                 point = BehaviorPoint(
@@ -989,7 +993,7 @@ def summarize_trend(
                     harm=min(cs_harm, k),
                 )
             else:
-                k = min(attributed.get(lever, 0), n)
+                k = attributed.get(lever, 0)
                 point = BehaviorPoint(
                     attributed=k, exposure_n=n, problem_rate=(k / n) if n else 0.0
                 )

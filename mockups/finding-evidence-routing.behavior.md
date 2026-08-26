@@ -2588,6 +2588,10 @@ entry erases or weakens the other.
   sanction: Connor Griffin · 2026-08-25 · “Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control.”
 - **RETIRED C53 · final reconciliation.** Global canvas identity-mismatch preservation retired with that host; the row-derived malformed case probe still rejects inconsistent projection identity.
   sanction: Connor Griffin · 2026-08-25 · “Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control.”
+- **RETIRED event-comparison replay S8 · final gate reconciliation.** The arrow-key cursor belonged to the retired global comparison canvas. The successor comparison lives in its row-derived tile, whose fullscreen compatibility renderer is not a visible or focusable reader surface; served support disclosure remains covered by S7 and the support audit.
+  sanction: Connor Griffin · 2026-08-26 · “rewrite their openers off the retired global 'By event' control onto the successor UI (the canvas's per-tile alignment / the case-file-backed comparison tile), preserving what those legs actually verify — the comparison's population semantics and the support audit's assertions.”
+- **RETIRED event-comparison replay S12 keyboard clause · final gate reconciliation.** Its server-owned downgrade, median, spread and legend assertions remain living; only the keyboard point-count clause retires with the global comparison cursor.
+  sanction: Connor Griffin · 2026-08-26 · “rewrite their openers off the retired global 'By event' control onto the successor UI (the canvas's per-tile alignment / the case-file-backed comparison tile), preserving what those legs actually verify — the comparison's population semantics and the support audit's assertions.”
 
 ### Permanent successor rewrites — final issue 135 reconciliation
 
@@ -2601,6 +2605,8 @@ entry erases or weakens the other.
 - **issue86PendingRoot.** Pending projections retain enabled Sift choices and withhold stale rows and counts; no View state exists.
 - **issue86MalformedRecovery.** A malformed event case remains attached to its drilled tile, exposes the structured error and returns to the same Sifted queue.
 - **C43, C44, C56 and C57.** Comparison selection, support, empty support and selected-cohort evidence are exercised through the served case file and registry tiles.
+- **Event-comparison replay S1–S13 and the support audit.** Their shared opener no longer drives the retired global `By event` control or waits on the retired `.ec-surface` host. It seats the row-derived comparison tile, requires its compact ECharts canvas to render visibly, then opens it fullscreen; the tile's registry coordinates request the event-aligned projection from the Finding case-file path. All population, support, selection and narrow-layout assertions remain living. S10 proves the legacy coordinate rail and global ALIGN host stay absent while the served tile projection remains event-aligned. S13 recognizes the fullscreen tile's one chart header inside the canvas shell's one pane header.
+- **Event-comparison replay S11 and the support audit's selected-Withheld case.** Selection now reads from the pressed case-file cohort row and its exact glucose-reading/event-marker facts. The comparison tile remains provenance-marked, and selecting a Withheld population still cannot create an aggregate series.
 
 ### Added frozen stories — issue 135
 

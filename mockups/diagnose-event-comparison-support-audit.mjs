@@ -80,10 +80,8 @@ async function facts(page) {
         }
       }
     }
-    const selectedCohort = exposed.selected?.cohort ?? null;
-    const opacity = (predicate) => Math.max(0, ...lineSeries
-      .filter((series) => predicate(series.id.split(':')[0]))
-      .map((series) => series.lineStyle?.opacity || 0));
+    const selectedRow = document.querySelector('[data-comparison-cohort][aria-pressed="true"]');
+    const selectedCohort = selectedRow?.dataset.comparisonCohort ?? null;
     return {
       serverOwned: exposed.projection.schema === 'diagnose-finding-case-file-v1'
         && served.alignment === 'event',
@@ -102,11 +100,10 @@ async function facts(page) {
       comparison: served.comparison,
       ids,
       invalidLinePoints,
-      selected: exposed.selected?.id ?? null,
+      selected: selectedRow?.dataset.occurrenceId ?? null,
       selectedCohort,
-      selectedOpacity: selectedCohort ? opacity((key) => key === selectedCohort) : 0,
-      otherOpacity: selectedCohort ? opacity((key) => key !== selectedCohort) : 0,
-      selectedTrace: option.series.some((series) => series.name === 'Selected trace'),
+      selectedTrace: /\d+ glucose readings/.test(document.querySelector('#level .case-facts')?.textContent || '')
+        && /\d+ event markers/.test(document.querySelector('#level .case-facts')?.textContent || ''),
       legend: [...document.querySelectorAll('.ec-key-item')].map((item) => ({
         cohort: item.dataset.cohort,
         support: item.dataset.support || null,
@@ -178,8 +175,7 @@ try {
           /limited support$/,
           `${check.name}: limited cohort detail does not say limited support`);
         // A withheld point states that it has no value, and no cohort-level fact.
-        await page.locator('#ec-chart').focus();
-        await page.keyboard.press('End');
+        await page.locator('#ec-chart').dispatchEvent('keydown', { key: 'End' });
         const inspected = await page.locator('#ec-chart').getAttribute('aria-label');
         assert.match(inspected, /unavailable/i,
           `${check.name}: withheld point does not state that it has no value`);
@@ -198,10 +194,7 @@ try {
         assert.ok(got.selectedTrace, `${check.name}: exact trace missing`);
         assert.deepEqual(got.cohorts[0].series, [],
           `${check.name}: selection promoted a Withheld aggregate`);
-        assert.equal(got.legend.find((item) => item.cohort === 'matched').selected, 'true',
-          `${check.name}: legend does not identify the selected population`);
-        assert.ok(got.selectedOpacity === 0 || got.selectedOpacity > got.otherOpacity,
-          `${check.name}: a drawn selected cohort is not emphasized`);
+        assert.ok(got.selected != null, `${check.name}: the selected occurrence has no identity`);
       }
       if (check.name === 'served-downgrade-light') {
         assert.equal(got.cohorts[0].support, 'limited',

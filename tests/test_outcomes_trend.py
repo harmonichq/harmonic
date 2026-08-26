@@ -540,6 +540,39 @@ class HonestDenominatorTest(unittest.TestCase):
         )
 
 
+    def test_the_trend_attributes_on_the_same_meal_floor_it_denominates_on(self):
+        """k and n must be measured against one carb floor, not two.
+
+        The denominator reads the caller's config; attribution used to fall back
+        to ``tally_attributions``' default, so a raised floor could count a meal
+        into k that n had already excluded — and the structural guard turns that
+        into a raise on a served path rather than a number.
+        """
+        now = datetime(2026, 7, 2, 12, 0, 0)
+        config = ScenarioConfig(anchor_meal_min_carbs=15.0)
+        seen = []
+
+        def _spy(bolus, cgm_, basal, *, scenario_config=None, **kw):
+            seen.append(scenario_config)
+            return ({family: 0 for family in Exposure}, {})
+
+        with mock.patch(
+            "ciq_autotune.outcomes_trend.tally_attributions", side_effect=_spy
+        ):
+            summarize_trend(
+                _FakeStore(
+                    cgm=[CgmReading(now - timedelta(hours=3), 120.0)],
+                    bolus=[BolusEvent(now - timedelta(hours=2), insulin=1.0,
+                                      carbs=12.0, completion="Completed", seq_num=71)],
+                ),
+                window_days=14, now=now, scenario_config=config,
+            )
+
+        self.assertTrue(seen)
+        for forwarded in seen:
+            self.assertEqual(forwarded.anchor_meal_min_carbs, 15.0)
+
+
 def _meal_at(t, *, bg=None):
     return BolusEvent(t, insulin=5.0, carbs=50.0, bg=bg)
 

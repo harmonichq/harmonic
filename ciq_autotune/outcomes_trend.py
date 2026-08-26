@@ -971,6 +971,7 @@ def summarize_trend(
                      or (a.answered_at or a.anchor_t) <= end]
         exposure_counts, attributed = tally_attributions(
             w_bolus, w_cgm, w_basal, isf=profile_isf,
+            scenario_config=scenario_config,
             low_answers=w_answers,
         )
         # correction_stacking's two numerators (behavior / harm) over its shared

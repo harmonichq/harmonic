@@ -66,6 +66,7 @@ from .analyzers.scenario import (
 from .analyzers.scenario.anchors import _is_meal
 from .false_low import drop_readings, false_low_spans
 from .analyzers.scenario.levers import recommendation, title
+from .analyzers.scenario.evidence_population import policy_for
 from .analyzers.scenario.preempted import is_preempted_low_entry
 from .model import _CgmSeries
 from .outcomes import TBR_L1, _EXPECTED_PER_DAY, compute_metrics
@@ -130,8 +131,8 @@ ARC_MIN_MEALS = 5
 _DATE_FMT = "%Y-%m-%d"
 
 # The behaviors, in the locked render order (issue #131's "Shape"). Each keeps its own
-# honest exposure via ``LEVER_EXPOSURE`` — the affinity regrouping (Meals / Lows) the
-# UI does is presentation, not denominator.
+# honest recurrence population via the evidence-population policy — the affinity
+# regrouping (Meals / Lows) the UI does is presentation, not denominator.
 _BEHAVIOR_ORDER = [
     Lever.LATE_BOLUS,
     Lever.CARB_UNDERCOUNT,
@@ -978,8 +979,11 @@ def summarize_trend(
             w_bolus, ctx_bolus, ctx_cgm, ctx_basal
         )
         for lever in _BEHAVIOR_ORDER:
+            policy = policy_for(lever)
             exp = LEVER_EXPOSURE[lever]
             n = exposure_counts.get(exp, 0)
+            if policy.recurrence_family is None:
+                n = sum(1 for item in w_bolus if policy.recurrence_members(item))
             if lever is Lever.CORRECTION_STACKING:
                 k = min(cs_behavior, n)
                 point = BehaviorPoint(
@@ -989,7 +993,17 @@ def summarize_trend(
                     harm=min(cs_harm, k),
                 )
             else:
-                k = min(attributed.get(lever, 0), n)
+                k = attributed.get(lever, 0)
+                if lever is Lever.MEAL_BOLUS_SHORT:
+                    if k > n:
+                        raise ValueError(
+                            f"{lever.value} attribution exceeds its evidence population"
+                        )
+                else:
+                    # Legacy Exposure opportunities can omit an actionable episode;
+                    # retain their audited served-account clamp until their policies
+                    # gain the meal lever's structural occurrence association.
+                    k = min(k, n)
                 point = BehaviorPoint(
                     attributed=k, exposure_n=n, problem_rate=(k / n) if n else 0.0
                 )
@@ -1015,7 +1029,7 @@ def summarize_trend(
         BehaviorTrend(
             lever=lever.value,
             title=title(lever),
-            exposure=LEVER_EXPOSURE[lever].value,
+            exposure=policy_for(lever).recurrence_noun,
             polarity="down_good",
             recommendation=recommendation(lever),
             series=behavior_series[lever],

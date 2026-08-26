@@ -78,9 +78,16 @@ def _most_recent_meal_in_window(
     Excludes the anchor itself for the same reason missed-meal does: a bolus at the
     rise onset has not had time to be the dose that fell short.
     """
+    # Local import keeps classifiers dependency-low when their package is imported
+    # before scenario.__init__, which eagerly exposes the engine.
+    from ..scenario.evidence_population import completed_carb_bolus
+
     best: Optional[BolusEvent] = None
     for b in bolus_events:
-        if b.carbs is None or b.carbs < min_carbs:
+        # The recurrence policy owns the eligible meal identity.  Keep the
+        # classifier on that same population so a cancelled or zero-dose row can
+        # neither attribute a high nor enter the denominator.
+        if not completed_carb_bolus(b, scenario_config=ScenarioConfig(anchor_meal_min_carbs=min_carbs)):
             continue
         if window_start <= b.t < anchor and (best is None or b.t > best.t):
             best = b

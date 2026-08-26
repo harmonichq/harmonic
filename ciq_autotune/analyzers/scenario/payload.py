@@ -7,7 +7,9 @@ layer can build or consume it. Every piece is JSON-serializable via ``to_dict``.
 Shapes (verbatim from #70 §5):
 
     Pattern { lever, confidence(rate, lo, hi, score, wide), rank,
-              recommendation, hero_episode, occurrences:[episode_ref…] }
+              recommendation, hero_episode, occurrences:[episode_ref…],
+              occurrence_groups:[{id, member_episode_ids, severity,
+                                  hero_episode}…] }
     Episode { id, start, end, trigger, lever, severity,
               steps:[ {t, text, evidence_tier, cited_event_refs} … ],
               window:{cgm, boluses, basal, pump_events, sleep_windows} }
@@ -46,6 +48,9 @@ from .priority import behavioral_priority
 # v6 (#467): adds ``preempted_lows.observation`` — how many of the window's days the
 # manual rescue log was actually recording, plus the recorded prompt-answer states, so
 # the count is read against its real observed coverage instead of assumed silence.
+# #202 adds policy-owned occurrence groups additively for the next projection chunk.
+# The generated scenario fixtures belong to that chunk, so this isolated contract
+# change does not advance their envelope version ahead of their coordinated rewrite.
 SCENARIO_SCHEMA_VERSION = 6
 
 # Mirror of ``ScenarioConfig.priority_active_threshold`` (ADR 0032) for direct
@@ -169,7 +174,7 @@ class Pattern:
     """A lever faced by a hero episode, scored and ranked (#70 §3, §5).
 
     * ``confidence`` — the #58 :class:`~ciq_autotune.uncertainty.Confidence` for
-      this lever: ``k`` episodes gone bad this way out of ``n`` exposure
+      this lever: ``k`` policy occurrences gone bad this way out of ``n`` recurrence
       opportunities, times the typical-severity ``effect``. Its ``rate`` is the
       recurrence line ("recurs in ~28% of your meals"); ``score`` ranks it;
       ``wide`` (thin/soft) collapses it behind the low-confidence expander.
@@ -178,6 +183,8 @@ class Pattern:
       pattern's face.
     * ``occurrences`` — sibling episode ids (all episodes attributed to this lever,
       hero first).
+    * ``occurrence_groups`` — stable policy occurrences with their member episode ids,
+      worst severity, and representative episode id.
     """
 
     lever: Lever
@@ -186,6 +193,7 @@ class Pattern:
     recommendation: str
     hero_episode: str
     occurrences: List[str]
+    occurrence_groups: List[Dict] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         c = self.confidence
@@ -212,6 +220,7 @@ class Pattern:
             "recommendation": self.recommendation,
             "hero_episode": self.hero_episode,
             "occurrences": list(self.occurrences),
+            "occurrence_groups": [dict(group) for group in self.occurrence_groups],
         }
 
 

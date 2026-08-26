@@ -293,11 +293,16 @@ test('a pinned tile visibly names a stale generation before the real pipeline re
   }
 });
 
-test('a wrapping slicer drag re-reads a pinned chart before mouse-up', async () => {
+test('a wrapping slicer drag coalesces pinned-chart re-reads before mouse-up', async () => {
   const browser = await runner.browser();
   const preparationWindows = [];
   const caseProjectionIds = [];
   let heldBehavioralRow = null;
+  let holdNextPreparation = false;
+  let markFirstPreparationHeld;
+  const firstPreparationHeld = new Promise((resolve) => { markFirstPreparationHeld = resolve; });
+  let releaseFirstPreparation;
+  const firstPreparationReleased = new Promise((resolve) => { releaseFirstPreparation = resolve; });
   const { page, errors } = await openCanvas(browser, {
     findingsProjectionInputs: (projected) => {
       if (!projected.window?.scoped) {
@@ -309,6 +314,13 @@ test('a wrapping slicer drag re-reads a pinned chart before mouse-up', async () 
         return projected;
       }
       return { ...projected, rows: [...projected.rows, structuredClone(heldBehavioralRow)] };
+    },
+    findingsResponseBarrier: async ({ url }) => {
+      if (!holdNextPreparation
+          || url.pathname !== '/api/diagnose/finding-case-file-preparation') return;
+      holdNextPreparation = false;
+      markFirstPreparationHeld();
+      await firstPreparationReleased;
     },
   });
   page.on('request', (request) => {
@@ -323,12 +335,33 @@ test('a wrapping slicer drag re-reads a pinned chart before mouse-up', async () 
   try {
     const behavioral = page.locator('.evidence-tile[data-chart-id^="finding:"]').first();
     assert.equal(await behavioral.count(), 1, 'the field offers a behavioral chart to hold');
-    await behavioral.locator('.tile-pin').click();
     await page.getByRole('button', { name: 'Overnight', exact: true }).click();
     await page.waitForTimeout(1200);
 
+    const beforeUnpinnedDrag = preparationWindows.length;
+    const unpinnedGripA = await page.locator('#grip-a').boundingBox();
+    const unpinnedGripB = await page.locator('#grip-b').boundingBox();
+    assert.ok(unpinnedGripA && unpinnedGripB, 'the unpinned canvas exposes the Overnight brace');
+    const unpinnedY = unpinnedGripA.y + unpinnedGripA.height / 2;
+    const unpinnedMiddle = (unpinnedGripA.x + unpinnedGripB.x + unpinnedGripB.width) / 2;
+    await page.mouse.move(unpinnedMiddle, unpinnedY);
+    await page.mouse.down();
+    await page.mouse.move(unpinnedMiddle - 10, unpinnedY);
+    await page.waitForFunction(() => !document.querySelector('#brace-readout')?.hidden);
+    await page.waitForTimeout(200);
+    assert.equal(preparationWindows.length, beforeUnpinnedDrag,
+      'a held drag with no pinned charts performs no evidence re-read');
+    await page.mouse.up();
+    await page.getByRole('button', { name: '24 h', exact: true }).click();
+    await page.waitForTimeout(1200);
+
+    await behavioral.locator('.tile-pin').click();
     const beforeWindows = preparationWindows.length;
     const beforeCases = caseProjectionIds.length;
+    holdNextPreparation = true;
+    await page.getByRole('button', { name: 'Overnight', exact: true }).click();
+    await firstPreparationHeld;
+
     const gripA = await page.locator('#grip-a').boundingBox();
     const gripB = await page.locator('#grip-b').boundingBox();
     assert.ok(gripA && gripB, 'the Overnight window exposes both brace grips');
@@ -336,18 +369,50 @@ test('a wrapping slicer drag re-reads a pinned chart before mouse-up', async () 
     const middle = (gripA.x + gripB.x + gripB.width) / 2;
     await page.mouse.move(middle, y);
     await page.mouse.down();
-    await page.mouse.move(gripA.x - 120, y, { steps: 8 });
-    await page.waitForTimeout(900);
+    await page.mouse.move(middle - 10, y);
+    await page.waitForFunction(() => !document.querySelector('#brace-readout')?.hidden);
+    const firstReadout = await page.locator('#brace-readout').textContent();
+    await page.mouse.move(middle - 20, y);
+    await page.waitForFunction((previous) => document.querySelector('#brace-readout')?.textContent !== previous,
+      firstReadout);
+    const penultimateReadout = await page.locator('#brace-readout').textContent();
+    await page.mouse.move(middle - 30, y);
+    await page.waitForFunction((previous) => document.querySelector('#brace-readout')?.textContent !== previous,
+      penultimateReadout);
+    const finalReadout = await page.locator('#brace-readout').textContent();
+    const toMinute = (clock) => {
+      const [hour, minute] = clock.split(':').map(Number);
+      return hour * 60 + minute;
+    };
+    const finalWindow = finalReadout.split('–').map(toMinute);
 
-    assert.ok(preparationWindows.length > beforeWindows,
-      'a changed preparation request begins while the drag is still held');
-    assert.ok(preparationWindows.slice(beforeWindows).some(([start, end]) => Number(start) > Number(end)),
-      'the intermediate request preserves the midnight-wrapping window');
+    assert.equal(preparationWindows.length, beforeWindows + 1,
+      'changed positions collapse behind the one held preparation request');
+    releaseFirstPreparation();
+    await page.waitForFunction((count) => performance.getEntriesByType('resource')
+      .filter((entry) => new URL(entry.name).pathname
+        === '/api/diagnose/finding-case-file-preparation').length >= count,
+    beforeWindows + 2);
+    await page.waitForTimeout(500);
+
+    const issued = preparationWindows.slice(beforeWindows);
+    assert.ok(issued.length <= 2,
+      `the drag issues at most the in-flight and latest requests (issued ${JSON.stringify(issued)})`);
+    const [finalStart, finalEnd] = issued.at(-1).map(Number);
+    assert.deepEqual([finalStart, finalEnd], finalWindow,
+      'the final request matches the independently rendered final brace position');
+    assert.ok(finalStart > finalEnd,
+      'the latest request preserves the final midnight-wrapping position');
+    const identity = `${finalStart.toString(16).padStart(4, '0')}${finalEnd.toString(16).padStart(4, '0')}`
+      .repeat(4);
+    assert.equal(caseProjectionIds.at(-1), `fp_${identity}`,
+      'the pinned behavioral tile paints the final drag position before release');
     assert.ok(caseProjectionIds.length > beforeCases,
-      'the pinned behavioral tile re-reads against the intermediate projection before release');
+      'the final coalesced position reaches the real tile pipeline');
     await page.mouse.up();
     assert.deepEqual(errors, []);
   } finally {
+    releaseFirstPreparation();
     await page.mouse.up().catch(() => {});
     await page.close();
   }

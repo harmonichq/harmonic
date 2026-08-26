@@ -1281,6 +1281,9 @@ function boot(root, data, callbacks, signal) {
   const currentFindingsKey = () => windowKey(findingsWindow());
   const currentPreparationKey = () => windowKey(findingsWindow());
   let preparationGeneration = 0;
+  let preparationInFlight = null;
+  let dragPreparationWait = null;
+  let dragPreparationWantedKey = null;
   const settled = () => loadedKey === currentFindingsKey()
     && pendingKey === null && failedKey === null;
   const historyFrame = () => top()?.k === 'history' ? top() : null;
@@ -1816,6 +1819,49 @@ function boot(root, data, callbacks, signal) {
       });
   }
 
+  /* Dragging can cross several 15-minute positions before one evidence
+     preparation returns. Keep one request in flight and one replaceable slot
+     for the newest position; intermediate positions have no tile to paint. */
+  function ensurePinnedDragPreparation() {
+    if (canvasLayout.pins.length === 0) {
+      dragPreparationWantedKey = null;
+      return;
+    }
+    dragPreparationWantedKey = currentPreparationKey();
+    if (dragPreparationWait) return;
+
+    const waitFor = (request, requestedKey) => {
+      dragPreparationWait = request;
+      request.then(() => {
+        if (dragPreparationWait !== request) return;
+        dragPreparationWait = null;
+        const wantedKey = dragPreparationWantedKey;
+        dragPreparationWantedKey = null;
+        if (wantedKey !== null && wantedKey !== requestedKey) {
+          dragPreparationWantedKey = wantedKey;
+          issueLatest();
+        }
+      });
+    };
+
+    const issueLatest = () => {
+      if (canvasLayout.pins.length === 0 || dragPreparationWantedKey === null) {
+        dragPreparationWantedKey = null;
+        return;
+      }
+      if (preparationInFlight) {
+        waitFor(preparationInFlight, pendingKey);
+        return;
+      }
+      const requestedKey = dragPreparationWantedKey;
+      dragPreparationWantedKey = null;
+      const request = ensurePreparation();
+      if (!request) return;
+      waitFor(request, requestedKey);
+    };
+    issueLatest();
+  }
+
   function refreshQueueAfterUnavailable(frame, generation, originalError) {
     const w = findingsWindow();
     const requested = w ? { start_min: w[0], end_min: w[1] } : null;
@@ -1901,7 +1947,7 @@ function boot(root, data, callbacks, signal) {
     const generation = ++preparationGeneration;
     const frame = top().k === 'factor' ? top() : null;
     if (frame) frame.loading = true;
-    Promise.resolve(callbacks.loadPreparation?.(requested))
+    const request = Promise.resolve(callbacks.loadPreparation?.(requested))
       .then((response) => {
         if (generation !== preparationGeneration || currentPreparationKey() !== key) return null;
         const next = matchingPreparation(response, requested);
@@ -1951,6 +1997,11 @@ function boot(root, data, callbacks, signal) {
         activeCaseError = caseErrorFrom(error);
         paint();
       });
+    preparationInFlight = request;
+    request.then(() => {
+      if (preparationInFlight === request) preparationInFlight = null;
+    });
+    return request;
   }
 
   /** A queue row's drill target — keyed on the projection's own row id, never
@@ -3132,10 +3183,9 @@ function boot(root, data, callbacks, signal) {
           : mode);
       markWindowSegment(drawn
         ? `Window ${windowSpanText(drawn)}` : 'Whole day', clearDrawn);
-      /* A pin holds chart identity, not stale evidence. Re-use the workstation's
-         preparation request authority while the gesture is live; its generation
-         and window-key checks make intermediate positions latest-wins. */
-      ensurePreparation();
+      /* A pin holds chart identity, not stale evidence. The drag coordinator
+         keeps one request live and one latest position queued behind it. */
+      ensurePinnedDragPreparation();
     }
 
     function liveRepaint() {

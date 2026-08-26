@@ -129,7 +129,7 @@ def tally_attributions(
     scenario_config: ScenarioConfig = ScenarioConfig(),
     low_answers: Sequence[LowPromptAnswer] = (),
 ) -> Tuple[Dict[Exposure, int], Dict[Lever, int]]:
-    """Exposure counts (``n``) and attributed-episode counts (``k`` per lever), no narration.
+    """Exposure counts (``n``) and unique occurrence counts (``k``), no narration.
 
     The **tally-only** path behind the outcome-summary clean rates (ADR 0007,
     #113). It runs the same anchor → segment → split → attribute pipeline
@@ -140,9 +140,9 @@ def tally_attributions(
     payload, no ``Episode`` objects. It returns just the two tallies the clean
     rates need: ``(exposure_counts, attributed_by_lever)``.
 
-    ``clean_rate(exposure) = 1 − (Σ attributed episodes whose lever rolls up to
-    this exposure) / exposure_counts[exposure]`` — the arithmetic complement the
-    Pattern rates are the other side of.
+    The flat clean-rate consumer assigns each ``k`` to the account named by the
+    lever's recurrence policy. Meal bolus fell short is unique-meal counted here;
+    ordinary levers retain episode identity.
     """
     anchors = collect_anchors(
         bolus_events, cgm_readings, basal_events, scenario_config=scenario_config

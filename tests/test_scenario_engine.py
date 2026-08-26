@@ -2057,69 +2057,44 @@ class EvidencePopulationStructuralCountTest(unittest.TestCase):
                                      payload["confidence"]["n"])
 
     def test_all_behavioral_levers_leave_staging_verdict_bytes_unchanged(self):
+        """Behavioral patterns cannot stage; pin invariance at the basal seam.
+
+        The eight per-lever scenario fixtures below prove that every behavioral
+        classifier runs, but scenario findings do not own an ``asserts_move``
+        predicate. A separate synthetic basal analyzer fixture therefore supplies
+        real staging verdicts without hand-setting them or touching the predicate.
+        """
         import json
-        import tempfile
 
-        from ciq_autotune.analyze import analyze
-        from ciq_autotune.store import Store
+        from ciq_autotune.analyzers.basal import analyze_basal
 
-        bolus, cgm, basal = [], [], []
         for lever in Lever:
-            case_bolus, case_cgm, case_basal, _isf = self._events(lever)
-            bolus.extend(case_bolus)
-            cgm.extend(case_cgm)
-            basal.extend(case_basal)
             self.assertIn(
                 lever,
                 {episode.lever for episode in self._report(lever).episodes.values()},
             )
 
-        with tempfile.NamedTemporaryFile(suffix=".db") as db:
-            with Store.open(db.name) as store:
-                store.upsert_cgm([
-                    {"EventDateTime": row.t.strftime("%Y-%m-%dT%H:%M:%S"),
-                     "Readings (CGM / BGM)": row.bg, "Description": "EGV"}
-                    for row in cgm
-                ])
-                store.upsert_bolus([
-                    {"seq_num": index,
-                     "request_time": row.t.strftime("%Y-%m-%d %H:%M:%S"),
-                     "description": "Bolus", "completion": row.completion,
-                     "carbs": row.carbs, "insulin": row.insulin,
-                     "carb_ratio": row.carb_ratio}
-                    for index, row in enumerate(bolus, start=1)
-                ])
-                store.upsert_basal([
-                    {"seq_num": 10_000 + index,
-                     "time": row.t.strftime("%Y-%m-%d %H:%M:%S"),
-                     "delivery_type": row.delivery_type, "duration_mins": 5,
-                     "basal_rate": row.basal_rate,
-                     "profile_basal_rate": row.profile_basal_rate}
-                    for index, row in enumerate(basal)
-                ])
-                result = analyze(
-                    store, pool_agreeing_basal_regimes=True,
-                    carb_entries=[], prompt_responses=[],
-                ).to_dict()
-
-        verdicts = []
-
-        def collect(value):
-            if isinstance(value, dict):
-                if "safety_status" in value or "asserts_move" in value:
-                    verdicts.append(
-                        [value.get("safety_status"), value.get("asserts_move")]
-                    )
-                for child in value.values():
-                    collect(child)
-            elif isinstance(value, list):
-                for child in value:
-                    collect(child)
-
-        collect(result)
+        basal, cgm = [], []
+        for day in range(1, 13):
+            start = datetime(2022, 6, day)
+            basal.append(BasalEvent(
+                t=start, delivery_type="algorithmDelivery", duration_mins=360,
+                basal_rate=0.48, profile_basal_rate=0.6,
+            ))
+            cgm.extend(
+                CgmReading(t=start + timedelta(minutes=5 * offset), bg=120,
+                           type="EGV")
+                for offset in range(73)
+            )
+        slots = analyze_basal(basal, cgm, [], [])
+        verdicts = [
+            [slot.status.value if slot.status is not None else None,
+             slot.asserts_move]
+            for slot in slots
+        ]
         actual = json.dumps(verdicts, separators=(",", ":")).encode()
         expected = json.dumps(
-            [["no data", False]] * 48 + [[None, False], [None, False]],
+            [["lower", True]] * 12 + [["no data", False]] * 36,
             separators=(",", ":"),
         ).encode()
         self.assertEqual(actual, expected)

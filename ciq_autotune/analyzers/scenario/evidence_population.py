@@ -82,7 +82,7 @@ def _ordinary(lever: Lever) -> EvidencePopulationPolicy:
         comparison_family=family,
         comparison_members=_family_member(family),
         comparison_name={
-            Exposure.MEALS: "Other completed carb-bolus meals", Exposure.LOWS: "Other low excursions",
+            Exposure.MEALS: "Other meal opportunities", Exposure.LOWS: "Other low excursions",
             Exposure.CORRECTION_CLUSTERS: "Other back-to-back correction pairs", Exposure.HIGHS: "Other highs",
         }[family],
         comparison_anchor_kind={Exposure.MEALS: "completed_carb_bolus", Exposure.LOWS: "excursion_nadir",

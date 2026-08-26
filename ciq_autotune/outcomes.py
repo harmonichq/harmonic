@@ -22,9 +22,10 @@ Two layers, per ADR 0007:
 * **Clean rates** — the "wins", **derived, not detected** (ADR 0007). For each
   :class:`~ciq_autotune.analyzers.scenario.levers.Exposure`
   (meals / lows / correction clusters / highs), ``clean_rate = 1 − (attributed
-  episodes / exposure count)``. It rides the existing #58 Wilson machinery
+  occurrences / population count)``. It rides the existing #58 Wilson machinery
   (:class:`~ciq_autotune.uncertainty.Confidence`): ``n`` = exposure count, ``k`` =
-  attributed episodes, so a thin exposure shows a **wide** interval, never a blank.
+  attributed occurrences, so a thin population shows a **wide** interval, never a
+  blank.
   It reuses the scenario engine's tally-only path
   (:func:`~ciq_autotune.analyzers.scenario.tally_attributions`) — exposure counts +
   lever attribution, **skipping** the expensive per-episode narration / window
@@ -42,11 +43,11 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
 from .analyzers.scenario import (
-    LEVER_EXPOSURE,
     Exposure,
     low_prompt_answers,
     tally_attributions,
 )
+from .analyzers.scenario.evidence_population import policy_for
 from .false_low import drop_readings, false_low_spans
 from .uncertainty import Confidence
 
@@ -305,16 +306,18 @@ def compute_clean_rates(
 
     ``exposure_counts`` (``n`` per exposure) and ``attributed_by_lever`` (``k`` per
     lever) come from :func:`~ciq_autotune.analyzers.scenario.tally_attributions`.
-    Attributed episodes are rolled up to their exposure via ``LEVER_EXPOSURE`` (both
-    meal levers → MEALS, etc.), then ``clean = 1 − wilson_rate(k, n)`` with the
-    interval flipped (``clean_lo = 1 − hi``). Rides #58's Wilson so a thin exposure
-    is wide, never blank.
+    Attributed occurrences are rolled up through each lever's recurrence-population
+    policy. Custom populations use their policy noun to select the matching flat
+    account, so Meal bolus fell short is charged to meals rather than highs. Then
+    ``clean = 1 − wilson_rate(k, n)`` with the interval flipped
+    (``clean_lo = 1 − hi``). Rides #58's Wilson so a thin exposure is wide, never
+    blank.
     """
     attributed_by_exposure: Dict[Exposure, int] = {e: 0 for e in _EXPOSURE_ORDER}
     for lever, k in attributed_by_lever.items():
-        exp = LEVER_EXPOSURE.get(lever)
-        if exp is not None:
-            attributed_by_exposure[exp] = attributed_by_exposure.get(exp, 0) + k
+        policy = policy_for(lever)
+        exp = policy.recurrence_family or Exposure(policy.recurrence_noun)
+        attributed_by_exposure[exp] = attributed_by_exposure.get(exp, 0) + k
 
     out: List[CleanRate] = []
     for exp in _EXPOSURE_ORDER:

@@ -18,6 +18,7 @@ import unittest
 from datetime import datetime, timedelta
 from unittest import mock
 
+from ciq_autotune.analyzers.scenario import tally_attributions
 from ciq_autotune.analyzers.scenario.levers import Exposure, Lever
 from ciq_autotune.events import CgmReading
 from ciq_autotune.outcomes import (
@@ -31,7 +32,14 @@ from ciq_autotune.outcomes import (
     markdown_outcomes,
     summarize_outcomes,
 )
-from tests.test_scenario_engine import ISF, dose_stamped_ic_fixture
+from tests.test_scenario_engine import (
+    ISF,
+    cgm_flat,
+    cgm_ramp,
+    corr,
+    dose_stamped_ic_fixture,
+    meal,
+)
 
 try:
     from fastapi.testclient import TestClient
@@ -118,6 +126,25 @@ class CoverageGateTest(unittest.TestCase):
 
 
 class CleanRateTest(unittest.TestCase):
+    def test_meal_bolus_short_is_charged_to_its_meals_recurrence_population(self):
+        cgm = (
+            cgm_flat(30, 9, 0, 110, 180)
+            + cgm_ramp(30, 12, 0, 112, 2.4, 65)
+            + cgm_ramp(30, 13, 5, 268, -1.5, 100)
+        )
+        exposure, attributed = tally_attributions(
+            [meal(30, 12, 0, carbs=85, dose=5), corr(30, 13, 20, 2.5)],
+            cgm,
+            [],
+            isf=45,
+        )
+        rates = {
+            rate.exposure: rate
+            for rate in compute_clean_rates(exposure, attributed)
+        }
+        self.assertEqual(rates["meals"].attributed, 1)
+        self.assertEqual(rates["highs"].attributed, 0)
+
     def test_derivation_is_one_minus_rate(self):
         # 100 meals, 4 attributed to a meal lever → clean point ≈ 0.96.
         exposure = {Exposure.MEALS: 100, Exposure.LOWS: 0,

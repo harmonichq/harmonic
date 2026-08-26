@@ -1,0 +1,8 @@
+# Generator-authored fixtures: committed deliberately (the drift checks pin
+# them to their producers), but machine-written — collapse them in PR review
+# and keep them out of diff stats. Regenerate through the committed generator,
+# never by hand.
+frontend/__fixtures__/*.json linguist-generated=true
+mockups/*.synthetic/*.json linguist-generated=true
+mockups/finding-evidence-routing.exploration/data.json linguist-generated=true
+mockups/finding-evidence-routing.exploration/*.extracted.* linguist-generated=true

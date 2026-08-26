@@ -51,9 +51,9 @@ python3 scripts/check_owned_identifiers.py # product-name guard
 python3 scripts/check_public_allowlist.py  # publishable-tree guard
 ```
 
-The backend job also runs thirteen **drift checks**, so a committed
+The backend job also runs twelve **drift checks**, so a committed
 generator-authored artifact can never silently diverge from its generator.
-Twelve are listed below; the thirteenth is the evidence-canvas exploration's
+Eleven are listed below; the twelfth is the evidence-canvas exploration's
 generator — a private design artifact the public tree excludes, so its
 `--check` command lives in `.github/workflows/ci.yml`:
 
@@ -68,7 +68,6 @@ uv run python scripts/gen_ic_history_event_fixtures.py --check
 uv run python scripts/gen_ic_block_evidence_fixtures.py --check
 uv run python scripts/gen_basal_night_evidence_fixtures.py --check
 uv run python scripts/gen_isf_rest_window_evidence_fixtures.py --check
-uv run python scripts/gen_event_comparison_mirror_fixtures.py --check
 uv run python scripts/gen_missed_meal_comparison_fixtures.py --check
 ```
 

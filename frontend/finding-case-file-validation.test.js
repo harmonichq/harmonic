@@ -24,13 +24,23 @@ const missedMealCase = () => independent(capture.cases['finding:missed_meal'].ev
 const zeroMissedMealCase = () => independent(missedMealFixture.zero_payload);
 
 test('accepts a preparation carrying the current v2 findings projection', () => {
-  const preparation = independent(capture.preparation);
+  const preparation = independent(missedMealFixture.preparation);
   preparation.findings = projectFindings(projectionFixture.inputs);
   assert.equal(preparation.findings.schema, 'diagnose-findings-v2');
   assert.equal(
     assertMatchingFindingCasePreparation(preparation, null),
     preparation,
   );
+});
+
+test('accepts the generator-owned missed-meal preparation coordinate', () => {
+  const preparation = independent(missedMealFixture.preparation);
+  const header = preparation.behavioral_case_headers['finding:missed_meal'];
+  assert.deepEqual(header.event_chart, {
+    lever: header.lever,
+    window: preparation.coordinates.window,
+  });
+  assert.equal(assertMatchingFindingCasePreparation(preparation, null), preparation);
 });
 
 test('rejects a preparation whose rendered case header diverges from its header map', () => {
@@ -43,7 +53,7 @@ test('rejects a preparation whose rendered case header diverges from its header 
 });
 
 test('accepts matching headers independent of JSON object key order', () => {
-  const preparation = independent(capture.preparation);
+  const preparation = independent(missedMealFixture.preparation);
   const [id, header] = Object.entries(preparation.behavioral_case_headers)[0];
   preparation.behavioral_case_headers[id] = Object.fromEntries(
     Object.entries(header).reverse(),
@@ -55,7 +65,7 @@ test('accepts matching headers independent of JSON object key order', () => {
 });
 
 test('rejects a header that has no rendered Finding', () => {
-  const preparation = independent(capture.preparation);
+  const preparation = independent(missedMealFixture.preparation);
   preparation.behavioral_case_headers['finding:not-rendered'] = {
     ...independent(Object.values(preparation.behavioral_case_headers)[0]),
     finding_id: 'finding:not-rendered',
@@ -67,8 +77,17 @@ test('rejects a header that has no rendered Finding', () => {
 });
 
 test('rejects a rendered coordinate that diverges from the server case header', () => {
-  const preparation = independent(capture.preparation);
-  preparation.rendered_rows[0].event_chart.view = 'lows';
+  const preparation = independent(missedMealFixture.preparation);
+  preparation.rendered_rows[0].event_chart.lever = 'late_bolus';
+  assert.throws(
+    () => assertMatchingFindingCasePreparation(preparation, null),
+    (error) => error.detail?.code === 'inconsistent_projection',
+  );
+});
+
+test('rejects a rendered coordinate whose label diverges from the server case header', () => {
+  const preparation = independent(missedMealFixture.preparation);
+  preparation.rendered_rows[0].event_chart.window.label = 'forged';
   assert.throws(
     () => assertMatchingFindingCasePreparation(preparation, null),
     (error) => error.detail?.code === 'inconsistent_projection',
@@ -76,7 +95,7 @@ test('rejects a rendered coordinate that diverges from the server case header', 
 });
 
 test('rejects a malformed server case-header coordinate without throwing TypeError', () => {
-  const preparation = independent(capture.preparation);
+  const preparation = independent(missedMealFixture.preparation);
   delete preparation.rendered_rows[0].case_header.event_chart;
   assert.throws(
     () => assertMatchingFindingCasePreparation(preparation, null),
@@ -85,7 +104,7 @@ test('rejects a malformed server case-header coordinate without throwing TypeErr
 });
 
 test('rejects a preparation projected for a different requested window', () => {
-  const preparation = independent(capture.preparation);
+  const preparation = independent(missedMealFixture.preparation);
   assert.throws(
     () => assertMatchingFindingCasePreparation(preparation, { start_min: 0, end_min: 360 }),
     (error) => error.detail?.code === 'inconsistent_projection',
@@ -96,9 +115,9 @@ test('accepts the current valid event case-file cohort partition', () => {
   assert.equal(validFindingCaseFile(eventCase()), true);
 });
 
-test('rejects an event case without the five exact ADR 79 cohorts', () => {
+test('rejects an event case without the three exact ADR 180 cohorts', () => {
   const caseFile = eventCase();
-  caseFile.projection.cohorts[4].key = 'not_a_verdict';
+  caseFile.projection.cohorts[2].key = 'not_a_cohort';
   assert.equal(validFindingCaseFile(caseFile), false);
 });
 
@@ -111,20 +130,17 @@ test('rejects a cohort occurrence outside the canonical response roster', () => 
 
 test('rejects duplicated cohort membership even when each cohort count still matches', () => {
   const caseFile = eventCase();
-  const fired = caseFile.projection.cohorts.find((cohort) => cohort.key === 'fired');
-  const clean = caseFile.projection.cohorts.find((cohort) => cohort.key === 'clean');
-  clean.occurrence_ids[0] = fired.occurrence_ids[0];
+  const matched = caseFile.projection.cohorts.find((cohort) => cohort.key === 'matched');
+  const comparison = caseFile.projection.cohorts.find((cohort) => cohort.key === 'comparison');
+  comparison.occurrence_ids[0] = matched.occurrence_ids[0];
   assert.equal(validFindingCaseFile(caseFile), false);
 });
 
-test('rejects cohort membership that diverges from the roster verdict', () => {
+test('rejects a nearly-matched cohort whose member is not nearly matched', () => {
   const caseFile = eventCase();
-  const fired = caseFile.projection.cohorts.find((cohort) => cohort.key === 'fired');
-  const clean = caseFile.projection.cohorts.find((cohort) => cohort.key === 'clean');
-  const cleanId = clean.occurrence_ids[0];
-  const firedId = fired.occurrence_ids[0];
-  fired.occurrence_ids[0] = cleanId;
-  clean.occurrence_ids[0] = firedId;
+  const matched = caseFile.projection.cohorts.find((cohort) => cohort.key === 'matched');
+  const near = caseFile.projection.cohorts.find((cohort) => cohort.key === 'nearly_matched');
+  near.occurrence_ids[0] = matched.occurrence_ids[0];
   assert.equal(validFindingCaseFile(caseFile), false);
 });
 
@@ -134,10 +150,10 @@ test('rejects routed-count and denominator equations that do not reconcile', () 
   assert.equal(validFindingCaseFile(caseFile), false);
 });
 
-test('accepts the two-cohort fixed-axis missed-meal comparison', () => {
+test('accepts the three-cohort fixed-axis missed-meal comparison', () => {
   const caseFile = missedMealCase();
   assert.deepEqual(caseFile.projection.cohorts.map((cohort) => cohort.key),
-    ['missed', 'announced']);
+    ['matched', 'nearly_matched', 'comparison']);
   assert.equal(validFindingCaseFile(caseFile), true);
 });
 
@@ -191,7 +207,7 @@ test('rejects a declared zero missed cohort that retains drawable aggregate poin
   missed.occurrence_ids = [];
   missed.routed_count = 0;
   missed.usable_count = 0;
-  caseFile.projection.counts.missed = 0;
+  caseFile.projection.counts.matched = 0;
   caseFile.projection.counts.not_comparable = caseFile.summary.denominator;
   assert.equal(caseFile.projection.cohorts[0].usable_count, 0);
   assert.equal(validFindingCaseFile(caseFile), false);
@@ -217,14 +233,14 @@ test('rejects a missed-meal comparison with a widened or roster-mismatched axis'
   const mismatched = missedMealCase();
   mismatched.projection.cohorts[0].occurrence_ids.pop();
   mismatched.projection.cohorts[0].routed_count -= 1;
-  mismatched.projection.counts.missed -= 1;
+  mismatched.projection.counts.matched -= 1;
   mismatched.projection.counts.not_comparable += 1;
   assert.equal(validFindingCaseFile(mismatched), false);
 });
 
 test('rejects a missed-meal comparison with a malformed cohort anchor', () => {
   const caseFile = missedMealCase();
-  caseFile.projection.cohorts[1].anchor.label = 7;
+  caseFile.projection.cohorts[0].anchor.label = 7;
   assert.equal(validFindingCaseFile(caseFile), false);
 });
 

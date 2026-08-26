@@ -15,8 +15,8 @@ import { timeOfDay } from '../mockups/explore-investigation.fixture.js';
 // restating its grammar — a restatement would be the third page registry ADR 94
 // forbids, and would drift the moment a page gained state.
 import { TABS as ROUTER_TABS, parseRoute, serializeRoute } from './tab-routing.js';
-import { projectSyntheticCapture } from '../mockups/diagnose-event-comparison.synthetic/project.mjs';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
+import { populateFindingCasePreparation } from './browser-fixture-population.js';
 
 const require = createRequire(import.meta.url);
 // #672: fail closed. A missing prerequisite must exit nonzero, never `skip` —
@@ -63,8 +63,6 @@ const APP_ROOT = process.env.COCKPIT_APP_ROOT || ROOT;
 const FRONTEND = join(APP_ROOT, 'frontend');
 const DIAGNOSE_PAYLOAD = JSON.parse(await readFile(
   join(ROOT, 'mockups/diagnose-workstation.synthetic/payload.json'), 'utf8'));
-const EVENT_COMPARISON = JSON.parse(await readFile(
-  join(ROOT, 'mockups/diagnose-event-comparison.synthetic/capture.json'), 'utf8'));
 const FINDINGS_PROJECTION = JSON.parse(await readFile(
   join(FRONTEND, '__fixtures__/findings-projection.json'), 'utf8'));
 const FINDING_CASE_FILES = JSON.parse(await readFile(
@@ -291,7 +289,12 @@ const scenarios = {
 
 async function routeApp(page, options = {}) {
   const { promptCount = 0, planDraftItems = [], verifyTrials = [maturing, complete] } = options;
-  const findingsInput = options.findingsInput || { analysis: analyze, scenarios };
+  const findingsInput = options.findingsInput || {
+    analysis: analyze,
+    exposures: DIAGNOSE_PAYLOAD.exposures,
+    scenarios,
+  };
+  const preparedWindows = new Map();
   await page.route('**/*', async (route) => {
     const fixed = (payload) => options.inputDataAge
       ? { ...payload, input_data_age: options.inputDataAge } : payload;
@@ -340,27 +343,8 @@ async function routeApp(page, options = {}) {
       } : null;
       const projected = projectFindings(findingsInput, window,
         url.searchParams.get('selected_id'));
-      const readyRows = new Map(preparedBody.rendered_rows
-        .filter((row) => row.case_header?.inspectability === 'ready')
-        .map((row) => [row.id, row]));
-      preparedBody.findings = structuredClone(projected);
-      preparedBody.rendered_rows = structuredClone(projected.rows).flatMap((row) => {
-        if (row.register !== 'finding') return [row];
-        const ready = readyRows.get(row.id);
-        if (!ready) return [];
-        return [{ ...row,
-          appearances: ready.appearances,
-          episodes: ready.episodes,
-          evidence: ready.evidence,
-          verdict_counts: ready.verdict_counts,
-          verdict_counts_by_family: ready.verdict_counts_by_family,
-          case_header: ready.case_header }];
-      });
-      preparedBody.behavioral_case_headers = Object.fromEntries(
-        preparedBody.rendered_rows
-          .filter((row) => row.case_header?.inspectability === 'ready')
-          .map((row) => [row.id, row.case_header]),
-      );
+      populateFindingCasePreparation(preparedBody, projected);
+      preparedWindows.set(preparedBody.projection_id, preparedBody.coordinates.window);
       return route.fulfill({ body: JSON.stringify(preparedBody),
         contentType: 'application/json' });
     }
@@ -374,32 +358,20 @@ async function routeApp(page, options = {}) {
           ? (finding[`selected_${alignment}`][occurrence]
             || finding[`unavailable_${alignment}`])
           : finding[alignment];
-      return route.fulfill({ status: finding ? 200 : 404, body: JSON.stringify(body),
+      const response = structuredClone(body);
+      const projectionId = url.searchParams.get('projection_id');
+      if (finding && preparedWindows.has(projectionId)) {
+        response.projection_id = projectionId;
+        response.window = structuredClone(preparedWindows.get(projectionId));
+      }
+      const served = options.caseFileResponse
+        ? options.caseFileResponse(response, url) : response;
+      return route.fulfill({ status: finding ? 200 : 404, body: JSON.stringify(served),
         contentType: 'application/json' });
     }
-    if (url.pathname === '/api/diagnose/event-comparison') {
-      const project = options.eventProjection || ((requestUrl, capture) =>
-        projectSyntheticCapture(capture, {
-          view: ['meals', 'lows'].includes(requestUrl.searchParams.get('view'))
-            ? requestUrl.searchParams.get('view') : 'meals',
-          factor: requestUrl.searchParams.get('factor') || undefined,
-          window: requestUrl.searchParams.get('start_min') === null ? null : {
-            start_min: Number(requestUrl.searchParams.get('start_min')),
-            end_min: Number(requestUrl.searchParams.get('end_min')),
-          },
-          another: requestUrl.searchParams.get('another') === '1',
-          occurrenceId: requestUrl.searchParams.get('occ') || undefined,
-        }));
-      // A deferred entry may be rejected to stand for a request that fails on the
-      // wire. Surface that as a failed request rather than letting the rejection
-      // escape the route handler, where it would abort the test instead of
-      // exercising the surface's own error branch.
-      let projected;
-      try { projected = await project(url, EVENT_COMPARISON); }
-      catch { return route.abort('failed'); }
-      return route.fulfill({ json: projected });
+    if (url.pathname === '/api/analyze') {
+      return route.fulfill({ json: fixed(findingsInput.analysis) });
     }
-    if (url.pathname === '/api/analyze') return route.fulfill({ json: fixed(analyze) });
     // #735: level 1 IS the findings queue, and the workstation fails closed without
     // it — an unserved projection renders "Diagnose is unavailable.", which is an
     // empty body for every scenario that lands on the default Diagnose tab. Project
@@ -414,9 +386,11 @@ async function routeApp(page, options = {}) {
         url.searchParams.get('selected_id')) });
     }
     if (url.pathname === '/api/explore/exposures') {
-      return route.fulfill({ json: options.exposuresInput || {} });
+      return route.fulfill({ json: options.exposuresInput ?? findingsInput.exposures });
     }
-    if (url.pathname === '/api/scenarios') return route.fulfill({ json: scenarios });
+    if (url.pathname === '/api/scenarios') {
+      return route.fulfill({ json: findingsInput.scenarios });
+    }
     if (url.pathname === '/api/audit/dismissals') return route.fulfill({ json: { dismissals: {} } });
     if (url.pathname === '/api/outcomes/trend') return route.fulfill({ json: {} });
     if (url.pathname === '/api/catalog') return route.fulfill({ json: options.catalog || {} });
@@ -467,12 +441,9 @@ async function openApp(browser, options = {}) {
   const pagePath = `/${options.tab || 'diagnose'}?${query}`;
   await page.goto(initialHash ? `http://ciq.local/?${query}${initialHash}` : `http://ciq.local${pagePath}`);
   await page.locator('.cockpit-shell').waitFor();
-  if (['meals', 'lows'].includes(options.eventView)) {
-    await page.locator(options.expectEventError ? '.ec-error' : '.ec-surface').waitFor();
-  }
   // index.html only mounts the Diagnose workstation (root class `.dw`) when the
   // active tab is `diagnose`, so this wait is scoped to that default path.
-  if ((options.tab || 'diagnose') === 'diagnose' && !['meals', 'lows'].includes(options.eventView)) {
+  if ((options.tab || 'diagnose') === 'diagnose') {
     await page.locator('.dw').waitFor();
   }
   return page;
@@ -1588,42 +1559,23 @@ test('retired occurrence route evidence covers both desktop sizes and themes',
   }
 });
 
-// RETIRED (issue #41) — this story asserted the newest-response race guard
-// across View, Factor, the retired anchor-time block, Other factors and
-// all driven through controls that no longer exist. ADR 31 part 3 folds
-// View's function into the workstation's own ALIGN instrument and deletes
-// View; the rest retire under P52, sanctioned:
-//   owner ruling, 2026-08-19 (see the behavior ledger) · "Decided in a ruling
-//   session on 2026-08-19."
-// Failed first against the new build with the OLD assertion: a real 30s
-// Playwright timeout, `waiting for locator('.ec-view-seg [data-view="lows"]')`
-// — that control, and every other one this story drove, is gone. Replaced
-// with a loud absence assertion (the S26 pattern): every retired control is
-// confirmed gone from the lens, and the lens is confirmed to still be exactly
-// canvas + legend + readout — the P52 ruling ("the lens becomes canvas-only")
-// checked on the live surface, not just read off the diff.
-test('event comparisons: View, Factor, the retired anchor-time block, Other factors, the occurrence select and Clear trace are gone; the lens is canvas-only',
+// The evidence reaches the event chart only through a drillable Finding case
+// file. The standalone controls remain permanently absent, while the rendered
+// chart proves the server's three cohort names and counts survived the route.
+test('event comparisons render the served case-file cohorts and retain no standalone controls',
   async () => {
-  const eventProjection = (url, capture) => {
-    const view = ['meals', 'lows'].includes(url.searchParams.get('view'))
-      ? url.searchParams.get('view') : 'meals';
-    return projectSyntheticCapture(capture, {
-      view,
-      factor: url.searchParams.get('factor') || undefined,
-      window: url.searchParams.get('start_min') === null ? null : {
-        start_min: Number(url.searchParams.get('start_min')),
-        end_min: Number(url.searchParams.get('end_min')),
-      },
-      another: url.searchParams.get('another') === '1',
-      occurrenceId: url.searchParams.get('occ') || undefined,
-    });
-  };
   const browser = await launch();
   let page;
   try {
-    page = await openApp(browser, { eventView: 'meals', eventProjection });
-    await page.waitForFunction(() =>
-      window.__diagnoseEventComparison?.projection?.coordinates?.view === 'meals');
+    page = await openApp(browser);
+    // The workstation opens at its Overnight preset, and that scope is a real
+    // window: a dinner-time habit has no occurrences in it, so it is correctly
+    // absent from the queue. 24 h is the unscoped global queue (term 38) — the
+    // one place every Finding the window holds is listed.
+    await page.locator('#seg-window button', { hasText: '24 h' }).click();
+    await page.locator('#level .qrow[data-id="finding:late_bolus"]').click();
+    await page.getByRole('button', { name: 'By event', exact: true }).click();
+    await page.locator('.ec-surface').waitFor();
 
     for (const selector of [
       '.ec-view-seg', '#ec-factor', '.ec-block-seg', '#ec-another',
@@ -1631,36 +1583,39 @@ test('event comparisons: View, Factor, the retired anchor-time block, Other fact
     ]) {
       assert.equal(await page.locator(selector).count(), 0, `${selector} did not retire`);
     }
-    // What remains: the canvas, its legend and its hover readout — populated,
-    // not merely absent-of-error.
+    // The case file owns all three names and counts; the browser only proves
+    // they were rendered from that response.
     assert.ok(await page.locator('#ec-chart').isVisible(), 'the canvas itself did not render');
-    assert.ok((await page.locator('.ec-key-item').count()) > 0, 'the cohort legend did not render');
-    assert.equal(await page.locator('.ec-error').count(), 0);
+    assert.deepEqual(await page.locator('.ec-key-item[data-cohort]').evaluateAll((items) =>
+      items.map((item) => item.querySelector('strong')?.textContent)),
+    ['Matched', 'Nearly matched', 'Other completed carb-bolus meals']);
+    assert.deepEqual(await page.locator('.ec-key-item[data-cohort] small').evaluateAll((items) =>
+      items.map((item) => item.textContent.trim())),
+    ['6 occurrences', '1 occurrence · unavailable for an average',
+      '3 occurrences · limited support']);
+    assert.equal(await page.locator('.case-file-error').count(), 0);
   } finally { if (page) await page.close(); }
 });
 
-test('event comparisons fail closed when a nested server projection is malformed',
+test('event comparisons fail closed when the served case file is malformed',
   async () => {
-  const eventProjection = (url, capture) => {
-    const projection = projectSyntheticCapture(capture, {
-      view: url.searchParams.get('view') || 'meals',
-    });
-    return {
-      ...projection,
-      cohorts: projection.cohorts.map((cohort, index) => index === 0
-        ? { ...cohort, support: 'unknown' } : cohort),
-    };
-  };
   const browser = await launch();
   let page;
   try {
-    page = await openApp(browser, {
-      eventView: 'meals', eventProjection, expectEventError: true,
-    });
-    const error = page.locator('.ec-error');
+    page = await openApp(browser, { caseFileResponse: (caseFile, url) =>
+      url.searchParams.get('alignment') !== 'event' ? caseFile : {
+        ...caseFile,
+        projection: { ...caseFile.projection,
+          cohorts: caseFile.projection.cohorts.map((cohort, index) => index === 0
+            ? { ...cohort, support: 'unknown' } : cohort) },
+      } });
+    await page.locator('#seg-window button', { hasText: '24 h' }).click();
+    await page.locator('#level .qrow[data-id="finding:late_bolus"]').click();
+    await page.getByRole('button', { name: 'By event', exact: true }).click();
+    const error = page.locator('.case-file-error');
     await error.waitFor();
-    assert.equal(await error.innerText(), 'Diagnose event comparison data is unavailable.');
-    assert.equal(await page.locator('.ec-surface').count(), 0,
+    assert.match(await error.innerText(), /Finding case file did not match/);
+    assert.equal(await page.locator('.ec-surface:visible').count(), 0,
       'a malformed projection must not partially render an evidence lens');
   } finally { if (page) await page.close(); }
 });

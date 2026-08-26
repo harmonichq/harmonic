@@ -1,5 +1,5 @@
 {
-  "schema": "issue-677-event-comparison-capture-v2",
+  "schema": "finding-case-file-event-capture-v1",
   "fixture": "labeled-synthetic",
   "source_window": {
     "end": "2020-03-03",

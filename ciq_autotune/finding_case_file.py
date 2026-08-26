@@ -9,7 +9,7 @@ import math
 import time
 import uuid
 
-from .analyzers.classifiers import classify_correction_stacking
+from .analyzers.classifiers import classify_correction_stacking, classify_meal_bolus_short
 from .analyzers.scenario.anchors import Anchor, AnchorKind, collect_anchors
 from .analyzers.scenario.attribute import attribute, split_caused_over_treatments
 from .analyzers.scenario.engine import _effective_isf, low_prompt_answers
@@ -92,26 +92,38 @@ class PreparedCases:
     def _authoritative_row(self, finding_id):
         return next((row for row in self.findings["rows"] if row.get("id") == finding_id), None)
 
-    def case(self, finding_id, alignment, occ):
-        lever = Lever(finding_id.removeprefix("finding:"))
-        if finding_id != f"finding:{lever.value}" or lever in self.withheld:
+    def case(self, finding_id, alignment, occ, *, lever=None):
+        """Project a Finding claim or a claim-free lever/window case file.
+
+        Lever requests retain the same roster and event inputs, but do not borrow
+        a Finding's attribution equation merely to make a case-shaped response.
+        """
+        finding_keyed = finding_id is not None
+        if finding_keyed:
+            lever = Lever(finding_id.removeprefix("finding:"))
+        elif not isinstance(lever, Lever):
             return None
-        row = self._authoritative_row(finding_id)
-        if row is None:
+        if ((finding_keyed and finding_id != f"finding:{lever.value}")
+                or lever in self.withheld):
+            return None
+        row = self._authoritative_row(finding_id) if finding_keyed else None
+        if finding_keyed and row is None:
             return None
         roster = self._roster(lever)
-        claimed_ids = self.associations[lever].intersection(member.id for member in roster)
-        if not claimed_ids and (lever is not Lever.MISSED_MEAL or row.get("episodes") != 0):
+        claimed_ids = (self.associations[lever].intersection(member.id for member in roster)
+                       if finding_keyed else frozenset())
+        if (finding_keyed and not claimed_ids
+                and (lever is not Lever.MISSED_MEAL or row.get("episodes") != 0)):
             return None
         counts = {
             key: sum(member.verdict == key for member in roster)
             for key in findings_projection.FINDING_VERDICTS
         }
         if (len(roster) != sum(counts.values()) or len(claimed_ids) > counts["fired"]
-                or row.get("episodes") != len(claimed_ids)):
+                or (finding_keyed and row.get("episodes") != len(claimed_ids))):
             raise InconsistentProjection("inconsistent_projection")
         pattern = self.recurrence.get(lever)
-        if (not self.query.scoped and pattern is not None
+        if (finding_keyed and not self.query.scoped and pattern is not None
                 and pattern != (len(claimed_ids), len(roster))):
             raise InconsistentProjection("inconsistent_projection")
         projection = (
@@ -133,14 +145,14 @@ class PreparedCases:
             selection = {"state": "unavailable", "requested_id": occ, "detail": None}
             if selected is not None and selected.id in active_ids:
                 selection = {"state": "selected", "requested_id": occ,
-                             "detail": (_missed_detail(
-                                 selected, self.cgm, self.basal, self.bolus, self.carbs,
-                             )
-                                        if lever is Lever.MISSED_MEAL and alignment == "event" else _detail(
-                                            selected, lever, self.cgm, self.basal,
-                                            self.bolus, self.carbs,
-                                        ))}
-            elif lever is Lever.MISSED_MEAL and alignment == "event" and occ in active_ids:
+                             "detail": (_missed_detail(selected, self.cgm, self.basal,
+                                                        self.bolus, self.carbs,
+                                                        "matched" if selected.id in claimed_ids
+                                                        else "nearly_matched")
+                                        if lever is Lever.MISSED_MEAL and alignment == "event"
+                                        else _detail(selected, lever, self.cgm, self.basal,
+                                                     self.bolus, self.carbs))}
+            elif alignment == "event" and occ in active_ids:
                 announced = next((row for row in _completed_carb_boluses(
                     self.bolus, self.cgm, self.basal, self.source_window_days,
                 ) if _opaque("m_", row.seq_num) == occ), None)
@@ -343,8 +355,14 @@ def wrap(prepared):
             continue
         header = {"finding_id": finding_id, "lever": case["finding"]["lever"],
                   "title": case["finding"]["title"], "family": case["family"],
-                  "event_chart": {"view": case["family"],
-                                  "factor": case["finding"]["lever"]},
+                  # A prepared case IS its own event-chart coordinate: the case
+                  # file projects an event comparison for every lever it holds.
+                  # Gating this on the queue projection's family map published
+                  # `null` for a case the server serves — correction stacking is
+                  # counted in correction clusters, not the lows that map names —
+                  # leaving the reader no By-event path into it.
+                  "event_chart": {"lever": case["finding"]["lever"],
+                                  "window": prepared.query.to_dict()},
                   "summary": case["summary"], "verdict_counts": case["verdict_counts"],
                   "inspectability": "ready"}
         changed = deepcopy(row)
@@ -458,11 +476,22 @@ def _trace(member, lever, cgm):
         for row in cgm if lo <= row.t <= hi and row.bg is not None]}}
 
 
-_MISSED_MEAL_COMPARISON_WINDOW = (-60, 300)
+_MEAL_COMPARISON_WINDOW = (-60, 300)
+
+_COMPARISON_NAMES = {
+    Lever.CARB_UNDERCOUNT: "Other completed carb-bolus meals",
+    Lever.LATE_BOLUS: "Other completed carb-bolus meals",
+    Lever.MEAL_OVER_DELIVERY: "Other completed carb-bolus meals",
+    Lever.OVER_TREATED_LOW: "Other low excursions",
+    Lever.CORRECTION_ON_IOB: "Other low excursions",
+    Lever.CORRECTION_STACKING: "Other back-to-back correction pairs",
+    Lever.MISSED_MEAL: "Completed carb-bolus meals",
+    Lever.MEAL_BOLUS_SHORT: "Completed carb-bolus meals",
+}
 
 
-def _comparison_trace(occurrence_id, anchor, cgm):
-    before, after = _MISSED_MEAL_COMPARISON_WINDOW
+def _comparison_trace(occurrence_id, anchor, cgm, window=_MEAL_COMPARISON_WINDOW):
+    before, after = window
     lo = anchor + timedelta(minutes=before)
     hi = anchor + timedelta(minutes=after)
     return {"id": occurrence_id, "trace": {"cgm": [
@@ -482,31 +511,98 @@ def _completed_carb_boluses(bolus, cgm, basal, source_window_days):
                  if start <= row.t <= end)
 
 
-def _missed_meal_comparison(roster, claimed_ids, cgm, bolus, basal=(), source_window_days=0):
-    missed = [member for member in roster if member.id in claimed_ids]
-    missed_traces = [
-        _comparison_trace(member.id, member.opportunity.reach_start or member.opportunity.anchor_t, cgm)
-        for member in missed
-    ]
-    announced = _completed_carb_boluses(bolus, cgm, basal, source_window_days)
-    announced_traces = [
-        _comparison_trace(_opaque("m_", row.seq_num), row.t, cgm)
-        for row in announced
-    ]
-    # ADR 79's roster equations remain closed over High occurrences only. The
-    # announced-meal baseline is a separate comparison population, never a High
-    # roster member and therefore never part of its verdict-count denominator.
-    cohorts = [
-        event_comparison.project_cohort("missed", missed_traces, _MISSED_MEAL_COMPARISON_WINDOW)
-        | {"anchor": {"kind": "detected_rise_onset", "label": "Detected rise onset"}},
-        event_comparison.project_cohort("announced", announced_traces, _MISSED_MEAL_COMPARISON_WINDOW)
-        | {"anchor": {"kind": "completed_carb_bolus", "label": "Completed carb bolus"}},
-    ]
-    return {"alignment": "event",
-            "anchor": {"kind": "cohort_specific_meal_start", "label": "Meal start"},
-            "window_min": list(_MISSED_MEAL_COMPARISON_WINDOW), "cohorts": cohorts,
-            "counts": {"missed": len(missed), "announced": len(announced),
-                       "not_comparable": len(roster) - len(missed)}, "clock": None}
+def _comparison_anchor(member, lever, cgm, bolus, basal):
+    """Return the sole chart anchor for a member of this lever's matched line."""
+    if lever is Lever.MISSED_MEAL:
+        return member.opportunity.reach_start or member.opportunity.anchor_t
+    if lever is Lever.MEAL_BOLUS_SHORT:
+        onset = member.opportunity.reach_start or member.opportunity.anchor_t
+        verdict = classify_meal_bolus_short(onset, cgm, bolus, basal)
+        if verdict.meal_t is not None:
+            return verdict.meal_t
+        # The case-file fixture builds its retained roster directly rather than
+        # through an analyzer verdict.  Its fired synthetic rows still need the
+        # same real carb-bolus coordinate as production rows.
+        meals = [row for row in _completed_carb_boluses(bolus, cgm, basal, 30)
+                 if onset - timedelta(minutes=ScenarioConfig().meal_bolus_short_digestion_lookback_min)
+                 <= row.t < onset]
+        if meals:
+            return meals[-1].t
+        raise InconsistentProjection("missing meal-dose anchor")
+    return member.opportunity.anchor_t
+
+
+def _comparison_window(lever, roster):
+    if lever in (Lever.MISSED_MEAL, Lever.MEAL_BOLUS_SHORT):
+        return _MEAL_COMPARISON_WINDOW
+    bounds = [((lo - member.opportunity.anchor_t).total_seconds() / 60,
+               (hi - member.opportunity.anchor_t).total_seconds() / 60)
+              for member in roster for lo, hi in [_trace_bounds(member, lever)]]
+    return (int(math.floor(min(row[0] for row in bounds) / 5) * 5),
+            int(math.ceil(max(row[1] for row in bounds) / 5) * 5))
+
+
+def _event(lever, roster, claimed_ids, cgm, bolus, source_window_days, basal=()):
+    """Build ADR 180's one server-owned three-cohort event comparison.
+
+    Verdict accounting remains on the case file; this builder deliberately uses
+    only the requested lever's matched and nearly-matched statuses.  Other
+    lever claims therefore remain ordinary comparison members.
+    """
+    window = _comparison_window(lever, roster)
+    matched = ([member for member in roster if member.id in claimed_ids]
+               if lever is Lever.MISSED_MEAL else
+               [member for member in roster if member.verdict == "fired"])
+    near = [member for member in roster if member.verdict == "near_miss"]
+    matched_ids = {member.id for member in matched}
+    near = [member for member in near if member.id not in matched_ids]
+    cross_exposure = lever in (Lever.MISSED_MEAL, Lever.MEAL_BOLUS_SHORT)
+    if cross_exposure:
+        comparison_rows = _completed_carb_boluses(bolus, cgm, basal, source_window_days)
+        comparison_traces = [_comparison_trace(_opaque("m_", row.seq_num), row.t, cgm, window)
+                             for row in comparison_rows]
+    else:
+        comparison = [member for member in roster
+                      if member.id not in matched_ids
+                      and member.id not in {item.id for item in near}]
+        comparison_traces = [_comparison_trace(member.id, member.opportunity.anchor_t, cgm, window)
+                             for member in comparison]
+    matched_traces = [_comparison_trace(member.id,
+                                        _comparison_anchor(member, lever, cgm, bolus, basal),
+                                        cgm, window) for member in matched]
+    near_traces = [_comparison_trace(member.id,
+                                     _comparison_anchor(member, lever, cgm, bolus, basal),
+                                     cgm, window) for member in near]
+    matched_cohort = event_comparison.project_cohort("matched", matched_traces, window)
+    near_cohort = event_comparison.project_cohort("nearly_matched", near_traces, window)
+    comparison_cohort = event_comparison.project_cohort("comparison", comparison_traces, window)
+    matched_cohort["name"] = "Matched"
+    near_cohort["name"] = "Nearly matched"
+    comparison_cohort["name"] = _COMPARISON_NAMES[lever]
+    if lever is Lever.MISSED_MEAL:
+        matched_cohort["anchor"] = {"kind": "detected_rise_onset", "label": "Detected rise onset"}
+        near_cohort["anchor"] = {"kind": "detected_rise_onset", "label": "Detected rise onset"}
+        comparison_cohort["anchor"] = {"kind": "completed_carb_bolus", "label": "Completed carb bolus"}
+        anchor = {"kind": "cohort_specific_meal_start", "label": "Meal start"}
+    elif lever is Lever.MEAL_BOLUS_SHORT:
+        for cohort in (matched_cohort, near_cohort, comparison_cohort):
+            cohort["anchor"] = {"kind": "completed_carb_bolus", "label": "Completed carb bolus"}
+        anchor = {"kind": "completed_carb_bolus", "label": "Completed carb bolus"}
+    else:
+        kind, label = _event_anchor(exposure(lever))
+        for cohort in (matched_cohort, near_cohort, comparison_cohort):
+            cohort["anchor"] = {"kind": kind, "label": label}
+        anchor = {"kind": kind, "label": label}
+    not_comparable = len(roster) - len(matched) - len(near)
+    return {"alignment": "event", "anchor": anchor, "window_min": list(window),
+            "cohorts": [matched_cohort, near_cohort, comparison_cohort],
+            "counts": {"matched": len(matched), "nearly_matched": len(near),
+                       "comparison": len(comparison_traces),
+                       "not_comparable": not_comparable},
+            "comparison": {"name": _COMPARISON_NAMES[lever],
+                           "state": ("unavailable" if comparison_cohort["support"] == "withheld"
+                                     else "available")},
+            "clock": None}
 
 
 def _detail_markers(anchor, lo, hi, basal, bolus, carbs):
@@ -527,14 +623,14 @@ def _detail_markers(anchor, lo, hi, basal, bolus, carbs):
     return markers
 
 
-def _missed_detail(member, cgm, basal, bolus, carbs):
+def _missed_detail(member, cgm, basal, bolus, carbs, cohort="matched"):
     anchor = member.opportunity.reach_start or member.opportunity.anchor_t
-    lo = anchor + timedelta(minutes=_MISSED_MEAL_COMPARISON_WINDOW[0])
-    hi = anchor + timedelta(minutes=_MISSED_MEAL_COMPARISON_WINDOW[1])
+    lo = anchor + timedelta(minutes=_MEAL_COMPARISON_WINDOW[0])
+    hi = anchor + timedelta(minutes=_MEAL_COMPARISON_WINDOW[1])
     trace = _comparison_trace(member.id, anchor, cgm)["trace"]["cgm"]
     return {"id": member.id, "date": anchor.date().isoformat(),
             "anchor": _rise_onset_anchor(member, cgm),
-            "verdict": member.verdict, "comparison_cohort": "missed", "glucose": trace,
+            "verdict": member.verdict, "comparison_cohort": cohort, "glucose": trace,
             "markers": _detail_markers(anchor, lo, hi, basal, bolus, carbs),
             "source_corrections": [], "day_target": {"date": anchor.date().isoformat()}}
 
@@ -545,36 +641,13 @@ def _announced_detail(row, cgm, bolus):
     return {"id": _opaque("m_", row.seq_num), "date": anchor.date().isoformat(),
             "anchor": {"t": anchor.strftime(FMT), "kind": "completed_carb_bolus",
                        "label": "Completed carb bolus", "bg": row.bg},
-            "verdict": "announced", "comparison_cohort": "announced", "glucose": trace,
+            "verdict": "comparison", "comparison_cohort": "comparison", "glucose": trace,
             "markers": [{"kind": "bolus", "t": dose.t.strftime(FMT),
                          "minute": round((dose.t - anchor).total_seconds() / 60, 1),
                          "seq_num": dose.seq_num, "insulin": dose.insulin, "carbs": dose.carbs}
                         for dose in bolus if anchor - timedelta(minutes=60) <= dose.t
                         <= anchor + timedelta(minutes=300)],
             "source_corrections": [], "day_target": {"date": anchor.date().isoformat()}}
-
-
-def _event(lever, roster, claimed_ids, cgm, bolus, source_window_days, basal=()):
-    if lever is Lever.MISSED_MEAL:
-        return _missed_meal_comparison(roster, claimed_ids, cgm, bolus, basal, source_window_days)
-    traces = [_trace(member, lever, cgm) for member in roster]
-    bounds = [((lo - member.opportunity.anchor_t).total_seconds() / 60,
-               (hi - member.opportunity.anchor_t).total_seconds() / 60)
-              for member in roster for lo, hi in [_trace_bounds(member, lever)]]
-    start = int(math.floor(min(row[0] for row in bounds) / 5) * 5)
-    end = int(math.ceil(max(row[1] for row in bounds) / 5) * 5)
-    by_id = {member.id: member for member in roster}
-    cohorts = [
-        event_comparison.project_cohort(
-            key,
-            [trace for trace in traces if by_id[trace["id"]].verdict == key],
-            (start, end),
-        )
-        for key in findings_projection.FINDING_VERDICTS
-    ]
-    kind, label = _event_anchor(exposure(lever))
-    return {"alignment": "event", "anchor": {"kind": kind, "label": label},
-            "window_min": [start, end], "cohorts": cohorts, "clock": None}
 
 
 def _detail(member, lever, cgm, basal, bolus, carbs):

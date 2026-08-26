@@ -255,8 +255,13 @@
      "episodes": 1,
      "estimate": null,
      "event_chart": {
-      "factor": "over_treated_low",
-      "view": "lows"
+      "lever": "over_treated_low",
+      "window": {
+       "end_min": null,
+       "label": null,
+       "scoped": false,
+       "start_min": null
+      }
      },
      "evidence": [
       {
@@ -363,8 +368,13 @@
      "episodes": 2,
      "estimate": null,
      "event_chart": {
-      "factor": "carb_undercount",
-      "view": "meals"
+      "lever": "carb_undercount",
+      "window": {
+       "end_min": null,
+       "label": null,
+       "scoped": false,
+       "start_min": null
+      }
      },
      "evidence": [
       {
@@ -487,8 +497,13 @@
      "episodes": 1,
      "estimate": null,
      "event_chart": {
-      "factor": "correction_on_iob",
-      "view": "lows"
+      "lever": "correction_on_iob",
+      "window": {
+       "end_min": null,
+       "label": null,
+       "scoped": false,
+       "start_min": null
+      }
      },
      "evidence": [
       {
@@ -588,7 +603,15 @@
      "direction": null,
      "episodes": 1,
      "estimate": null,
-     "event_chart": null,
+     "event_chart": {
+      "lever": "correction_stacking",
+      "window": {
+       "end_min": null,
+       "label": null,
+       "scoped": false,
+       "start_min": null
+      }
+     },
      "evidence": [
       {
        "date": "2026-08-17",

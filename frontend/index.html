@@ -2342,7 +2342,6 @@ html.dark .viz .tie:hover::before { opacity:.13; }
       fetchVerifyTrials as dataFetchVerifyTrials,
       fetchExploreTimeOfDay as dataFetchExploreTimeOfDay,
       fetchExploreExposures as dataFetchExploreExposures,
-      fetchDiagnoseEventComparison as dataFetchDiagnoseEventComparison,
       fetchDiagnoseBasalNightEvidence as dataFetchDiagnoseBasalNightEvidence,
       fetchDiagnoseIsfRestWindowEvidence as dataFetchDiagnoseIsfRestWindowEvidence,
       fetchDiagnoseCarbRatioBlockEvidence as dataFetchDiagnoseCarbRatioBlockEvidence,
@@ -5465,10 +5464,6 @@ html.dark .viz .tie:hover::before { opacity:.13; }
               // drilled depth, drawn window and staged Plan items), not a full
               // refresh() that remounts the whole surface back to opening depth.
               onDayLoaded: () => diagnoseView?.repaintDay(),
-              loadProjection: (coordinates) => enqueue(() =>
-                dataFetchDiagnoseEventComparison(coordinates).then((payload) => {
-                  return recordDiagnoseAge(diagnoseAges.value, 'event_comparison', payload);
-                })),
               loadBasalEvidence: (coordinates) => enqueue(() =>
                 dataFetchDiagnoseBasalNightEvidence(coordinates)),
               loadIsfEvidence: (coordinates) => enqueue(() =>

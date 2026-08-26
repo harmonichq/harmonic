@@ -319,24 +319,6 @@ def load_latest_prior(db_path: str, coordinates: tuple, *, shape_marker: str,
         return None
 
 
-# PreparedCases intentionally has no adapter: it retains domain objects and
-# non-plain collections, and its recomputation is acceptable (#122 pre-warms it).
-def dump_event_comparison(value):
-    return {"exposures": value._exposures, "catalog": value._catalog}
-
-
-def rebuild_event_comparison(value):
-    from .event_comparison import EventComparisonPreparation
-    if not _event_comparison_shape(value):
-        raise ValueError("invalid event-comparison artifact")
-    return EventComparisonPreparation(_exposures=value["exposures"], _catalog=value["catalog"])
-
-
-def _event_comparison_shape(value: Any) -> bool:
-    return (isinstance(value, dict) and isinstance(value.get("exposures"), dict)
-            and isinstance(value.get("catalog"), dict))
-
-
 def dump_findings(value):
     return {"analysis": value._analysis, "exposures": value._exposures, "scenarios": value._scenarios}
 

@@ -39,9 +39,8 @@ Recomputing the analysis from the store costs tens of seconds, so the expensive
 reads — the analysis result, scenarios, backtest, outcomes, the outcomes trend, the
 per-day model view, the day navigator, the pattern sweep, the time-of-day evidence
 feed, and the lever catalog — answer through a cache keyed by endpoint name plus
-the parameters that change the answer. The event-comparison endpoints share one
-cached preparation and project each request's coordinates from it, so the shared
-source is computed once per data version while the projections stay per-request.
+the parameters that change the answer. Finding case-file preparation is cached once
+per data version and projects each request's coordinates from that prepared source.
 Caching is opt-in per endpoint: the cheap store reads (status, timeline, pump
 settings, carb entries, prompts, the Plan draft and its history, Focus, dismissals)
 read the store directly on every request and are never cached.
@@ -77,17 +76,18 @@ series without recomputing membership. Missing or malformed inputs are structure
 versus `unavailable` are distinct structured 410 outcomes. Bearer authentication is
 checked before any of those validation or data responses.
 
-Neither endpoint changes `/api/diagnose/event-comparison`, and neither projection may
+Neither endpoint changes the Finding case-file contract, and neither projection may
 infer schedule membership, lifecycle, support, or actionability. Selecting a run
 changes only the echoed selection; it does not filter `run_ids` or `series`.
 ### Requirement: Finding case files are bound to one snapshot preparation.
 
 `GET /api/diagnose/finding-case-file-preparation` builds the active Findings queue and
 its case-file population inside one SQLite read snapshot. It returns an opaque,
-versioned `projection_id` beside server-rendered rows. `GET
-/api/diagnose/finding-case-file` requires that id, a stable Finding id, an alignment,
- and an optional Occurrence coordinate; it projects only from the
-retained preparation rather than recomputing against a newer population.
+versioned preparation identity beside server-rendered rows. `GET
+/api/diagnose/finding-case-file` requires that preparation identity, the published
+lever-and-window Finding coordinate, an alignment, and an optional Occurrence
+coordinate; it projects only from the retained preparation rather than recomputing
+against a newer population.
 
 The preparation registry is bounded, expiring, lock-coupled, and single-flight.
 A data-version bump prevents an in-flight older preparation from becoming newly
@@ -188,9 +188,9 @@ because recording the outcome advances that revision itself and would otherwise
 report every failed fetch as a write.
 
 The warm pass covers exactly the fixed shapes the initial Diagnose load requests,
-plus the shared event-comparison preparation. Anything keyed on a date, a month, or
-a user-chosen window stays lazy, so an hourly warm cannot grow without bound; the
-event-comparison projections likewise stay lazy behind their warmed shared source.
+plus the Finding case-file preparation. Anything keyed on a date, a month, or a
+user-chosen window stays lazy, so an hourly warm cannot grow without bound; selected
+case-file projections likewise stay lazy behind their warmed prepared source.
 Warming runs in the fetch loop's worker thread rather than the event loop, and one
 shape failing to warm is logged and skipped rather than aborting the pass or the
 loop.

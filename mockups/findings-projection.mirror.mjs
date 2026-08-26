@@ -382,7 +382,23 @@ function patternPriorities(scenarios) {
   return priced;
 }
 
-function findingRows(exposures, scenarios, eventCharts, window) {
+const EVENT_CHART_FAMILIES = {
+  carb_undercount: 'meals', late_bolus: 'meals', meal_over_delivery: 'meals',
+  missed_meal: 'highs',
+  over_treated_low: 'lows', correction_on_iob: 'lows',
+  // Counted in correction clusters, never in lows — the same note sits beside
+  // `_EVENT_CHART_FAMILIES` in ciq_autotune/findings_projection.py, which this
+  // mirror transcribes and never re-decides.
+  correction_stacking: 'correction_clusters',
+};
+
+function eventChartCoordinate(lever, query, families) {
+  return EVENT_CHART_FAMILIES[lever] && families.includes(EVENT_CHART_FAMILIES[lever])
+    ? { lever, window: { ...query.dict } } : null;
+}
+
+function findingRows(exposures, scenarios, query) {
+  const window = query.pieces;
   const families = exposures.exposures || {};
   const anchors = episodeAnchors(families);
   const inWindow = new Map();
@@ -415,7 +431,6 @@ function findingRows(exposures, scenarios, eventCharts, window) {
   const rows = [];
   for (const [lever, entry] of byLever) {
     entry.appearances.sort((a, b) => (a.family < b.family ? -1 : a.family > b.family ? 1 : 0));
-    const coordinate = eventCharts[lever] || null;
     const { evidence, counts, countsByFamily } = leverEvidence(lever, entry.families, inWindow);
     rows.push(stampedRow({
       id: `finding:${lever}`,
@@ -434,8 +449,7 @@ function findingRows(exposures, scenarios, eventCharts, window) {
       evidence,
       verdict_counts: counts,
       verdict_counts_by_family: countsByFamily,
-      event_chart: coordinate && entry.families.includes(coordinate.view)
-        ? { ...coordinate } : null,
+      event_chart: eventChartCoordinate(lever, query, entry.families),
     }));
   }
   return rows;
@@ -517,14 +531,13 @@ export function projectFindings(inputs, bounds = null, selectedId = null) {
   const analysis = inputs.analysis || {};
   const exposures = inputs.exposures || {};
   const scenarios = inputs.scenarios || {};
-  const eventCharts = inputs.event_charts || {};
   const query = windowQuery(bounds);
   let rows = [...basalRows(analysis, query.pieces), ...icRows(analysis, query.pieces),
     ...isfRows(analysis)];
   // the GLOBAL queue is asserting-only: a quiet parameter is never listed and never
   // named (term 38)
   if (!query.scoped) rows = rows.filter((r) => r.register === 'assert');
-  rows = [...rows, ...findingRows(exposures, scenarios, eventCharts, query.pieces),
+  rows = [...rows, ...findingRows(exposures, scenarios, query),
     ...historyRows(analysis, query)];
   rows.sort(compare);
   for (const row of rows) {

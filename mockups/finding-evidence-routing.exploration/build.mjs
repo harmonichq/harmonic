@@ -134,11 +134,11 @@ const readJson = async (path) => JSON.parse(await readFile(join(ROOT, path), 'ut
 async function shippedInstruments() {
   const ec = await readFile(join(ROOT, 'frontend/diagnose-event-comparison.js'), 'utf8');
   const dw = await readFile(join(ROOT, 'frontend/diagnose-workstation.js'), 'utf8');
-  const viewList = ec.match(/const VIEWS = \[([^\]]+)\]/);
-  if (!viewList) throw new Error('diagnose-event-comparison.js no longer declares `const VIEWS = [...]`');
-  const viewKeys = [...viewList[1].matchAll(/'([a-z]+)'/g)].map((m) => m[1]);
-  if (!viewKeys.length) throw new Error('diagnose-event-comparison.js `VIEWS` carries no view keys');
-  if (!viewKeys.includes(VIEW)) throw new Error(`diagnose-event-comparison.js \`VIEWS\` has no "${VIEW}" view`);
+  const servedCohorts = ec.match(/const STYLE = \{([\s\S]*?)\n\};/);
+  if (!servedCohorts) throw new Error('diagnose-event-comparison.js no longer declares served cohort styles');
+  for (const key of ['matched', 'nearly_matched', 'comparison']) {
+    if (!servedCohorts[1].includes(`${key}:`)) throw new Error(`diagnose-event-comparison.js has no "${key}" cohort`);
+  }
   const winBlock = dw.match(/const WINDOWS = \{([\s\S]*?)\n\};/);
   if (!winBlock) throw new Error('diagnose-workstation.js no longer declares `const WINDOWS = {...}`');
   const winOptions = [...winBlock[1].matchAll(/(\w+): \{ label: '([^']+)'/g)]

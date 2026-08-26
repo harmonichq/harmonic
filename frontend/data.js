@@ -223,27 +223,6 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
    *  classifier's verdict; the Diagnose inspector's own feed (#654). */
   function fetchExploreExposures() { return api('/api/explore/exposures'); }
 
-  /**
-   * GET /api/diagnose/event-comparison — one bounded, server-projected Meals or
-   * Lows comparison. Coordinates are interaction state, never browser policy.
-   * @param {{ view: 'meals'|'lows', factor?: string,
-   *            window?: {start_min: number, end_min: number}|null,
-   *            another?: boolean, occurrenceId?: string }} coordinates
-   */
-  function fetchDiagnoseEventComparison({ view, factor, window = null, another = false,
-                                          occurrenceId } = {}) {
-    const params = new URLSearchParams();
-    if (view) params.set('view', view);
-    if (factor) params.set('factor', factor);
-    if (window) {
-      params.set('start_min', window.start_min);
-      params.set('end_min', window.end_min);
-    }
-    if (another) params.set('another', '1');
-    if (occurrenceId) params.set('occ', occurrenceId);
-    const query = params.toString();
-    return api('/api/diagnose/event-comparison' + (query ? '?' + query : ''));
-  }
   /** Analyzer-owned delivered-versus-programmed evidence for one basal slot. */
   function fetchDiagnoseBasalNightEvidence({ slot } = {}) {
     const params = new URLSearchParams();
@@ -486,7 +465,6 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
     fetchVerifyTrials,
     fetchExploreTimeOfDay,
     fetchExploreExposures,
-    fetchDiagnoseEventComparison,
     fetchDiagnoseBasalNightEvidence,
     fetchDiagnoseIsfRestWindowEvidence,
     fetchDiagnoseCarbRatioBlockEvidence,
@@ -535,7 +513,6 @@ export const fetchOutcomesTrend = _defaults.fetchOutcomesTrend;
 export const fetchVerifyTrials = _defaults.fetchVerifyTrials;
 export const fetchExploreTimeOfDay = _defaults.fetchExploreTimeOfDay;
 export const fetchExploreExposures = _defaults.fetchExploreExposures;
-export const fetchDiagnoseEventComparison = _defaults.fetchDiagnoseEventComparison;
 export const fetchDiagnoseBasalNightEvidence = _defaults.fetchDiagnoseBasalNightEvidence;
 export const fetchDiagnoseIsfRestWindowEvidence = _defaults.fetchDiagnoseIsfRestWindowEvidence;
 export const fetchDiagnoseCarbRatioBlockEvidence =

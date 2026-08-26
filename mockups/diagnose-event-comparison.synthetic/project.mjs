@@ -179,7 +179,7 @@ function summary(occurrence, config, factor) {
   };
 }
 
-/** Return one faithful v3 response for a replay coordinate set. */
+/** Exploration-only synthetic projection. Shipped/browser evidence uses case files. */
 export function projectSyntheticCapture(capture, {
   view = 'meals', factor, window = null, another = false, occurrenceId,
   state = 'dense',
@@ -263,7 +263,7 @@ export function projectSyntheticCapture(capture, {
     selection = { state: 'selected', requested_id: resolvedId, detail };
   }
   return {
-    schema: 'diagnose-event-comparison-v3',
+    schema: 'finding-case-file-event-capture-v1',
     coordinates: { view, factor: chosenFactor, window: windowWire(window), another: Boolean(another),
       source_window: capture.source_window, anchor: { kind: config.anchor, label: config.label },
       alignment_window_min: config.window, factor_options: source.factors.map((key) => ({ key, label: labels[key] })) },

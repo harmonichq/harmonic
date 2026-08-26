@@ -15,7 +15,7 @@ sys.path.insert(0, str(ROOT))
 from ciq_autotune.analyzers.scenario.levers import Exposure, Lever  # noqa: E402
 from ciq_autotune.analyzers.scenario.opportunities import Opportunity  # noqa: E402
 from ciq_autotune.events import BolusEvent, CarbEntry, CgmReading  # noqa: E402
-from ciq_autotune.finding_case_file import Member, PreparedCases  # noqa: E402
+from ciq_autotune.finding_case_file import Member, PreparedCases, wrap  # noqa: E402
 from ciq_autotune.window_membership import WindowQuery  # noqa: E402
 
 OUT = ROOT / "frontend" / "__fixtures__" / "missed-meal-comparison.json"
@@ -54,7 +54,17 @@ def _preparation(*, zero_attribution=False):
                           "synthetic") for minute in (-60, 0, 300))
     claimed = (frozenset() if zero_attribution
                else frozenset(member.id for member in members[:2]))
-    findings = {"rows": [{"id": "finding:missed_meal", "episodes": len(claimed)}]}
+    findings = {
+        "schema": "diagnose-findings-v2", "analysis_generation": "synthetic:178",
+        "window": WindowQuery.whole_day().to_dict(),
+        "findings_window": {"days": 30, "start": None, "end": None},
+        "rows": [{"id": "finding:missed_meal", "register": "finding",
+                  "episodes": len(claimed)}],
+        "selection": None,
+        "counts": {"assert": 0, "held": 0, "blind": 0, "finding": 1, "history": 0},
+        "chip_counts": {"highs": 1, "lows": 0, "meals": 0, "corrections": 0},
+        "uncaused_highs": {"count": 0, "text": "None"},
+    }
     return PreparedCases(
         "fp_" + "1" * 32, 178, WindowQuery.whole_day(), findings,
         {Lever.MISSED_MEAL: (len(claimed), len(members))},
@@ -79,11 +89,12 @@ def payload():
     zero_prepared = _zero_attribution_preparation()
     members = prepared.members[Lever.MISSED_MEAL]
     case = prepared.case("finding:missed_meal", "event", None)
-    announced_id = case["projection"]["cohorts"][1]["occurrence_ids"][0]
+    announced_id = case["projection"]["cohorts"][2]["occurrence_ids"][0]
     return {
         "_generated_by": "scripts/gen_missed_meal_comparison_fixtures.py",
         "_note": "SYNTHETIC. Fixed invented Highs and boluses; no personal data.",
         "payload": case,
+        "preparation": wrap(prepared),
         "zero_payload": zero_prepared.case("finding:missed_meal", "event", None),
         "selected_missed": prepared.case("finding:missed_meal", "event", members[0].id),
         "selected_announced": prepared.case("finding:missed_meal", "event", announced_id),

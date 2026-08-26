@@ -8,9 +8,9 @@
       the pin-cap miniature, named per-tile states with stale-generation
       recovery through one generation authority, the depth idiom in both
       themes, the global-ALIGN retirement, and narrow linearization.
-- [ ] Chunk 3: Explore mode, seating policy, the explorer drawer, fullscreen,
+- [x] Chunk 3: Explore mode, seating policy, the explorer drawer, fullscreen,
       drill provenance, and the un-trace fix.
-- [ ] Chunk 4: the behavior-ledger amendment with every recorded retirement,
+- [x] Chunk 4: the behavior-ledger amendment with every recorded retirement,
       the replay stories, the cockpit-gate stubs, the arrangement renders, and
       all nine browser gate legs green.
 - [ ] Coordinator: fold `docs/scope/135-behavior-retirements.md` handling,

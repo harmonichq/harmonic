@@ -1,17 +1,16 @@
 // Behaviour replay for the Diagnose workstation — the executable half of the
-// behaviour ledger frozen with the Diagnose workstation lock.
+// frozen behaviour ledger for the shipped Diagnose workstation.
 //
-// WHY THIS EXISTS: the lock manifest says what the surface LOOKS like. It does
-// not say that an edge is grabbable down its whole height, that a press which
-// never moves must change nothing, or that a hovered dot latches the docked
-// readout. Those lived in the mock's code when this ledger was written; the
-// mock has since been archived (#722), and the app is now the sole contract
+// WHY THIS EXISTS: the ledger records behavior that a still frame cannot prove:
+// that an edge is grabbable down its whole height, that a press which never
+// moves must change nothing, or that a hovered dot latches the docked readout.
+// The mock has since been archived (#722), and the app is now the sole contract
 // artifact for these behaviours. Each story below is one exported function
 // that performs the behaviour for real against the built app and asserts what
-// it actually does.
+// it actually does. Shipped surfaces under revise have no lock manifest.
 //
 //   PLAYWRIGHT_MODULE=<playwright> VENDOR_DIR=<vendored echarts+vue> \
-//   BASE_URL=http://127.0.0.1:8766 TARGET=app PAYLOAD=<snapshot.json> \
+//   BASE_URL=http://127.0.0.1:8765 TARGET=app PAYLOAD=<snapshot.json> \
 //   [ONLY=S01,S07] \
 //   node frontend/diagnose-workstation-behavior.replay.mjs
 //
@@ -41,6 +40,12 @@ const FINDINGS_PROJECTION = JSON.parse(await readFile(
   join(ROOT, 'frontend/__fixtures__/findings-projection.json'), 'utf8'));
 const MISSED_MEAL_COMPARISON = JSON.parse(await readFile(
   join(ROOT, 'frontend/__fixtures__/missed-meal-comparison.json'), 'utf8'));
+const BASAL_NIGHT_EVIDENCE = JSON.parse(await readFile(
+  join(ROOT, 'frontend/__fixtures__/basal-night-evidence.json'), 'utf8'));
+const ISF_REST_WINDOW_EVIDENCE = JSON.parse(await readFile(
+  join(ROOT, 'mockups/diagnose-workstation.synthetic/isf-rest-window-evidence.capture.json'), 'utf8'));
+const CARB_RATIO_BLOCK_EVIDENCE = JSON.parse(await readFile(
+  join(ROOT, 'mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json'), 'utf8'));
 
 const evidenceDir = process.env.DIAGNOSE_EVIDENCE_DIR || null;
 const evidenceViewport = () => process.env.VIEWPORT || '1440x900';
@@ -483,7 +488,8 @@ export async function openApp(browser, {
   findingsDelayMs = 0, findingsDelays = {}, findingsFailures = {}, findingsResponseBarrier = null,
   appSource = 'server',
   history = false, selectedFindingsResponses = [], historyResponses = [], stageProbe = false,
-  caseScenario = null, frontendRoot = join(ROOT, 'frontend'), fixtureBaseUrl = null,
+  caseScenario = null, evidenceScenario = null,
+  frontendRoot = join(ROOT, 'frontend'), fixtureBaseUrl = null,
 } = {}) {
   const payloadPath = process.env.PAYLOAD || fail('PAYLOAD is required for TARGET=app');
   /* Source selection belongs to the caller. Standalone replay pins `server`
@@ -576,6 +582,7 @@ export async function openApp(browser, {
   const page = await browser.newPage({ viewport });
   let preparationRequests = 0;
   let caseRequests = 0;
+  const evidenceRequests = new Map();
   const preparedWindows = new Map();
   page.on('pageerror', (e) => problems.push(`pageerror(app ${want}): ${e}`));
   page.on('response', (response) => {
@@ -721,6 +728,22 @@ export async function openApp(browser, {
       }
       return route.fulfill({ status: finding ? 200 : 404, contentType: 'application/json',
         body: JSON.stringify(body) });
+    }
+    const evidenceBodies = {
+      '/api/diagnose/basal-night-evidence': BASAL_NIGHT_EVIDENCE.expected,
+      '/api/diagnose/isf-rest-window-evidence': ISF_REST_WINDOW_EVIDENCE.payload,
+      '/api/diagnose/carb-ratio-block-evidence': CARB_RATIO_BLOCK_EVIDENCE.cases.cross_midnight,
+    };
+    if (Object.hasOwn(evidenceBodies, path)) {
+      const request = (evidenceRequests.get(path) || 0) + 1;
+      evidenceRequests.set(path, request);
+      const response = evidenceScenario
+        ? await evidenceScenario({ path, url, request, body: independent(evidenceBodies[path]) })
+        : { body: evidenceBodies[path] };
+      const status = response?.status || 200;
+      if (status >= 400) expectResponse(page, new RegExp(`^${path}$`), status);
+      return route.fulfill({ status, contentType: 'application/json',
+        body: JSON.stringify(response?.body ?? evidenceBodies[path]) });
     }
     const planned = path === '/api/diagnose/findings' && url.searchParams.has('selected_id')
       ? selectedFindingsResponses.shift()
@@ -3926,6 +3949,352 @@ const queueProjection = (projected) => ({
   findings_window: projected.findings_window,
   window: projected.window,
 });
+const withSecondBasal = (projected) => {
+  const basal = projected.rows.find((row) => row.parameter === 'basal_rate');
+  if (!basal) return projected;
+  const second = structuredClone(basal);
+  second.id = 'basal:450-480';
+  second.title = 'Basal 07:30 · raise';
+  second.label = '07:30';
+  second.span = { ...second.span, start_min: 450, end_min: 480, label: '07:30' };
+  second.members = second.members?.map((member) => ({ ...member, start_min: 450 }));
+  return { ...projected, rows: [...projected.rows, second] };
+};
+const withGeneratedCarbRatio = (projected) => {
+  const source = FINDINGS_PROJECTION.windows.global.rows
+    .find((row) => row.parameter === 'carb_ratio');
+  return source && !projected.rows.some((row) => row.id === source.id)
+    ? { ...projected, rows: [...projected.rows, structuredClone(source)] } : projected;
+};
+
+const canvasSnapshot = (page) => page.evaluate(() => ({
+  arrangement: document.querySelector('#tile-field')?.dataset.arrangement || null,
+  fullscreen: document.querySelector('.dw')?.hasAttribute('data-fullscreen') || false,
+  mode: document.querySelector('.dw')?.dataset.canvasMode || null,
+  pinCount: document.querySelector('#pin-count')?.textContent || null,
+  tiles: [...document.querySelectorAll('.evidence-tile')].map((tile) => ({
+    id: tile.dataset.chartId, seat: tile.dataset.seat, state: tile.dataset.state,
+    pinned: tile.hasAttribute('data-pinned'), drilled: tile.hasAttribute('data-drilled'),
+    title: tile.querySelector('h3')?.textContent.trim() || null,
+    message: tile.querySelector('.tile-state span')?.textContent.trim() || null,
+    modes: [...tile.querySelectorAll('.tile-modes button')].map((button) => ({
+      label: button.textContent.trim(), pressed: button.getAttribute('aria-pressed'),
+    })),
+  })),
+}));
+
+const openCanvas = async (page) => {
+  await page.getByRole('button', { name: '24 h', exact: true }).click();
+  await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false');
+  await page.waitForTimeout(700);
+};
+
+const pinNext = async (page) => {
+  const tile = page.locator('.evidence-tile .tile-pin[aria-pressed="false"]:not([disabled])');
+  const next = page.locator('#tile-schematic .next:not([disabled])');
+  if (await tile.count()) await tile.first().click();
+  else if (await next.count()) await next.first().click();
+  else return false;
+  await page.waitForTimeout(300);
+  return true;
+};
+
+const reachPinCount = async (page, count) => {
+  await openCanvas(page);
+  for (let pins = 0; pins < count; pins += 1) {
+    ok(await pinNext(page), `pin control reaches ${pins + 1} pins`);
+  }
+};
+
+// STORY:finding-evidence-routing:S92
+export const S92 = async (page) => {
+  await openCanvas(page);
+  const before = await canvasSnapshot(page);
+  const focal = before.tiles.find((tile) => tile.seat === 'focal');
+  const destination = before.tiles.find((tile) => tile.seat !== 'focal');
+  ok(focal && destination, 'S92 opens with a focal chart and a destination seat');
+  await page.locator(`.evidence-tile[data-chart-id="${destination.id}"] .tile-body`).click();
+  await settle(page);
+  const forward = await canvasSnapshot(page);
+  is(forward.tiles.find((tile) => tile.id === destination.id)?.seat, 'focal',
+    'S92 focus moves to the chosen chart');
+  is(forward.tiles.find((tile) => tile.id === focal.id)?.seat, destination.seat,
+    'S92 the demoted chart lands in the chosen chart’s former seat');
+  await captureEvidence(page, 'S92-focus-swap-forward');
+  await page.locator(`.evidence-tile[data-chart-id="${focal.id}"] .tile-body`).click();
+  await settle(page);
+  const reverse = await canvasSnapshot(page);
+  is(reverse.tiles.find((tile) => tile.id === focal.id)?.seat, 'focal',
+    'S92 reverse focus restores the original chart');
+  is(reverse.tiles.find((tile) => tile.id === destination.id)?.seat, destination.seat,
+    'S92 reverse focus returns the demoted chart to the same destination');
+  await captureEvidence(page, 'S92-focus-swap-reverse');
+};
+
+const arrangementStory = (id, pinCount, arrangement) => async (page) => {
+  await reachPinCount(page, pinCount);
+  const field = await canvasSnapshot(page);
+  is(field.arrangement, arrangement, `${id} ${pinCount} pins derive ${arrangement}`);
+  is(field.pinCount, `${pinCount}/4 pinned`, `${id} prints the exact pin count`);
+};
+
+// STORY:finding-evidence-routing:S93
+export const S93 = arrangementStory('S93', 0, 'focal');
+// STORY:finding-evidence-routing:S94
+export const S94 = arrangementStory('S94', 1, 'split');
+// STORY:finding-evidence-routing:S95
+export const S95 = arrangementStory('S95', 2, 'pair');
+// STORY:finding-evidence-routing:S96
+export const S96 = arrangementStory('S96', 3, 'onetwo');
+// STORY:finding-evidence-routing:S97
+export const S97 = arrangementStory('S97', 4, 'quad');
+
+// STORY:finding-evidence-routing:S98
+export const S98 = async (page) => {
+  await reachPinCount(page, 4);
+  const before = await canvasSnapshot(page);
+  is(await pinNext(page), false, 'S98 the fifth pin is refused at the control');
+  const after = await canvasSnapshot(page);
+  is(after.pinCount, '4/4 pinned', 'S98 the cap remains four');
+  is(after.tiles.filter((tile) => tile.pinned).map((tile) => tile.id),
+    before.tiles.filter((tile) => tile.pinned).map((tile) => tile.id),
+    'S98 refusing a fifth pin evicts nothing');
+};
+
+// STORY:finding-evidence-routing:S99
+export const S99 = async (page) => {
+  await reachPinCount(page, 0);
+  const field = await canvasSnapshot(page);
+  ok(field.tiles.length > 1, 'S99 the focal arrangement seats unpinned candidates');
+  is(field.tiles.filter((tile) => tile.pinned).length, 0, 'S99 seating is not pinning');
+  ok(field.tiles.some((tile) => tile.seat.startsWith('slot-')),
+    'S99 unpinned charts occupy the available slot positions');
+};
+
+// STORY:finding-evidence-routing:S100
+export const S100 = async (page) => {
+  await reachPinCount(page, 2);
+  await page.getByRole('button', { name: 'Charts', exact: true }).click();
+  const live = await page.locator('.explorer-thumbnail').count();
+  const field = await canvasSnapshot(page);
+  ok(live > field.tiles.length, 'S100 live surplus candidates remain available in the explorer');
+  is(field.tiles.length, 2, 'S100 the pair drops surplus candidates from the field');
+  is(field.tiles.filter((tile) => tile.pinned).length, 2, 'S100 both reader pins remain seated');
+};
+
+// STORY:finding-evidence-routing:S101
+export const S101 = async (page) => {
+  await reachPinCount(page, 4);
+  const eventTiles = page.locator('.evidence-tile:has(.tile-modes)');
+  ok(await eventTiles.count() >= 2, 'S101 two independently alignable charts are seated');
+  await eventTiles.nth(0).locator('button', { hasText: 'Clock' }).click();
+  await eventTiles.nth(1).locator('button', { hasText: 'Event' }).click();
+  const field = await canvasSnapshot(page);
+  const aligned = field.tiles.filter((tile) => tile.modes.length).slice(0, 2);
+  is(aligned[0].modes.find((mode) => mode.pressed === 'true')?.label, 'Clock',
+    'S101 the first chart keeps clock alignment');
+  is(aligned[1].modes.find((mode) => mode.pressed === 'true')?.label, 'Event',
+    'S101 the second chart keeps event alignment');
+};
+
+// STORY:finding-evidence-routing:S102
+export const S102 = async (page) => {
+  await reachPinCount(page, 4);
+  const ranges = await page.evaluate(() => [...document.querySelectorAll('.evidence-tile .tile-chart')]
+    .flatMap((host) => {
+      const option = window.echarts.getInstanceByDom(host)?.getOption?.();
+      const axis = Array.isArray(option?.yAxis) ? option.yAxis[0] : option?.yAxis;
+      return Number.isFinite(axis?.min) && Number.isFinite(axis?.max) ? [[axis.min, axis.max]] : [];
+    }));
+  ok(ranges.length >= 2, 'S102 at least two seated charts expose glucose axes');
+  is(new Set(ranges.map((range) => JSON.stringify(range))).size, 1,
+    'S102 every chart in the arrangement shares one glucose range');
+};
+
+// STORY:finding-evidence-routing:S103
+export const S103 = async (page) => {
+  await openCanvas(page);
+  ok((await canvasSnapshot(page)).tiles.some((tile) => tile.state === 'ok'),
+    'S103 a successful evidence request names the ok tile state');
+};
+
+// STORY:finding-evidence-routing:S104
+export const S104 = async (page) => {
+  await openCanvas(page);
+  const empty = (await canvasSnapshot(page)).tiles.find((tile) => tile.state === 'empty');
+  ok(empty, 'S104 absent evidence names the empty tile state');
+  ok(Boolean(empty.message), 'S104 the empty state explains the absence');
+};
+
+// STORY:finding-evidence-routing:S105
+export const S105 = async (page) => {
+  await openCanvas(page);
+  await page.getByRole('button', { name: 'Charts', exact: true }).click();
+  await page.getByRole('button', { name: 'Focus Carb ratio · meal runs' }).click();
+  await page.waitForFunction(() => [...document.querySelectorAll('.evidence-tile')]
+    .some((tile) => tile.dataset.state === 'error'));
+  const failed = (await canvasSnapshot(page)).tiles.find((tile) => tile.state === 'error');
+  ok(failed?.message, 'S105 a failed evidence request names and explains the error state');
+};
+
+// STORY:finding-evidence-routing:S106
+export const S106 = async (page) => {
+  await openCanvas(page);
+  const pattern = '**/api/diagnose/carb-ratio-block-evidence*';
+  const staleRoute = async (route) => {
+    const url = new URL(route.request().url());
+    if (url.searchParams.get('block_id') !== '720') return route.fallback();
+    return route.fulfill({ status: 409,
+      contentType: 'application/json', body: JSON.stringify({ detail: {
+        code: 'analysis_generation_mismatch', message: 'Evidence changed. Refresh findings.',
+      } }) });
+  };
+  let preparationRequests = 0;
+  let releaseRecovery;
+  const recoveryBarrier = new Promise((resolve) => { releaseRecovery = resolve; });
+  const preparationPattern = '**/api/diagnose/finding-case-file-preparation*';
+  const delayRecovery = async (route) => {
+    preparationRequests += 1;
+    if (preparationRequests > 1) await recoveryBarrier;
+    return route.fallback();
+  };
+  expectResponse(page, /^\/api\/diagnose\/carb-ratio-block-evidence$/, 409);
+  await page.route(pattern, staleRoute);
+  await page.route(preparationPattern, delayRecovery);
+  await page.getByRole('button', { name: 'Morning', exact: true }).click();
+  try {
+    await page.waitForFunction(() => [...document.querySelectorAll('.evidence-tile')]
+      .some((tile) => tile.dataset.state === 'stale-generation'), null, { timeout: 5000 });
+  } catch {
+    await page.unroute(pattern, staleRoute);
+    releaseRecovery();
+    await page.unroute(preparationPattern, delayRecovery);
+    fail('S106 typed 409 never renders the required stale-generation tile state before recovery');
+  }
+  const stale = (await canvasSnapshot(page)).tiles.find((tile) => tile.state === 'stale-generation');
+  is(stale?.message, 'Evidence changed. Refresh findings.',
+    'S106 the 409 renders the named stale-generation state');
+  await page.unroute(pattern, staleRoute);
+  releaseRecovery();
+  await page.unroute(preparationPattern, delayRecovery);
+  await page.waitForFunction(() => [...document.querySelectorAll('.evidence-tile')]
+    .some((tile) => tile.dataset.chartId.startsWith('ic:') && tile.dataset.state === 'ok'),
+  null, { timeout: 5000 });
+  ok((await canvasSnapshot(page)).tiles.some((tile) => tile.id.startsWith('ic:') && tile.state === 'ok'),
+    'S106 refreshed findings re-request and recover the stale tile');
+};
+
+// STORY:finding-evidence-routing:S107
+export const S107 = async (page) => {
+  await openCanvas(page);
+  const held = page.locator('.evidence-tile[data-chart-id^="finding:"]').first();
+  await held.locator('.tile-pin').click();
+  const requests = [];
+  const observe = (request) => {
+    if (new URL(request.url()).pathname === '/api/diagnose/finding-case-file') requests.push(request.url());
+  };
+  const waitForRead = async (count, label) => {
+    for (let attempt = 0; attempt < 100 && requests.length <= count; attempt += 1) {
+      await page.waitForTimeout(50);
+    }
+    ok(requests.length > count, label);
+  };
+  page.on('request', observe);
+  const box = await plot(page); const y = box.y + box.h * .45;
+  let before = requests.length;
+  await page.mouse.move(chartXAt(box, 420), y); await page.mouse.down();
+  await page.mouse.move(chartXAt(box, 780), y, { steps: 6 });
+  await waitForRead(before, 'S107 the pinned chart re-reads before the ordinary drag releases');
+  await page.mouse.up(); await settle(page, 500);
+
+  await beginFreshDraw(page); before = requests.length;
+  const unrolled = await plot(page);
+  await shoveToBoundary(page, { x: chartXAt(unrolled, 1320), y }, 'right');
+  await page.waitForFunction(() => Math.abs(Number(document.getElementById('chart')
+    .parentElement.dataset.clockPan || 0)) >= 60, null, { timeout: 7000 });
+  await waitForRead(before, 'S107 the pinned chart re-reads before release across midnight unroll');
+  await page.mouse.move(unrolled.x + unrolled.w / 2, y); await page.mouse.up();
+  page.off('request', observe);
+};
+
+// STORY:finding-evidence-routing:S108
+export const S108 = async (page) => {
+  await reachPinCount(page, 3);
+  const before = await canvasSnapshot(page);
+  await page.locator('.evidence-tile').nth(1).locator('.tile-fullscreen').click();
+  is((await canvasSnapshot(page)).fullscreen, true, 'S108 fullscreen opens one chart');
+  await page.locator('.evidence-tile .tile-fullscreen').click();
+  const after = await canvasSnapshot(page);
+  is(after.arrangement, before.arrangement, 'S108 dismissal restores the exact arrangement');
+  is(after.tiles.map(({ id, seat, pinned }) => ({ id, seat, pinned })),
+    before.tiles.map(({ id, seat, pinned }) => ({ id, seat, pinned })),
+    'S108 dismissal restores every prior seat and pin');
+};
+
+// STORY:finding-evidence-routing:S109
+export const S109 = async (page) => {
+  await reachPinCount(page, 1);
+  const pinnedId = (await canvasSnapshot(page)).tiles.find((tile) => tile.pinned).id;
+  await page.getByRole('button', { name: 'Explore', exact: true }).click();
+  const presentation = await page.evaluate(() => ({
+    lane: document.querySelector('.lane-wrap')?.getClientRects().length || 0,
+    watch: document.querySelector('.inspector > .watch')?.getClientRects().length || 0,
+    filter: document.querySelector('.filter-wrap')?.getClientRects().length || 0,
+    verdict: document.querySelector('.vband')?.getClientRects().length || 0,
+  }));
+  is(presentation, { lane: 0, watch: 0, filter: 0, verdict: 0 },
+    'S109 Explore extinguishes every advisory layer');
+  const pin = (await canvasSnapshot(page)).tiles.find((tile) => tile.id === pinnedId);
+  is(pin?.pinned, true, 'S109 the reader pin keeps its accent state');
+};
+
+// STORY:finding-evidence-routing:S110
+export const S110 = async (page) => {
+  await openCanvas(page);
+  const tile = page.locator('.evidence-tile[data-chart-id^="finding:"]').first();
+  const id = await tile.getAttribute('data-chart-id');
+  await tile.locator('.tile-body').click(); await settle(page, 500);
+  const findingsName = (await page.locator('#drill-provenance').textContent()).trim();
+  ok(findingsName.length > 0, 'S110 Findings names the chart provenance');
+  is(await page.locator(`.evidence-tile[data-chart-id="${id}"]`).getAttribute('data-drilled'), '',
+    'S110 Findings marks the chart that owns the drill');
+  await page.getByRole('button', { name: 'Explore', exact: true }).click();
+  is((await page.locator('#drill-provenance').textContent()).trim(), findingsName,
+    'S110 Explore retains the same provenance name');
+  is(await page.locator(`.evidence-tile[data-chart-id="${id}"]`).getAttribute('data-drilled'), '',
+    'S110 Explore retains the chart mark');
+};
+
+// STORY:finding-evidence-routing:S111
+export const S111 = async (page) => {
+  await openCanvas(page);
+  await page.locator('.evidence-tile[data-chart-id^="finding:"]').first().locator('.tile-body').click();
+  await page.locator('#level .case-occurrence').first().click();
+  await page.locator('#level .clear-trace').waitFor();
+  const crumb = (await state(page)).crumb;
+  await page.locator('#level .clear-trace').click();
+  await page.waitForFunction(() => !document.querySelector('#level .clear-trace'));
+  is((await state(page)).crumb, crumb, 'S111 Clear trace returns to the same untraced case view');
+  ok(await page.locator('.evidence-tile[data-drilled]').count() === 1,
+    'S111 un-trace keeps the owning chart drilled');
+};
+
+// STORY:finding-evidence-routing:S112
+export const S112 = async (page) => {
+  await openCanvas(page);
+  const narrow = await page.evaluate(() => {
+    const field = document.querySelector('#tile-field');
+    const style = getComputedStyle(field);
+    return { display: style.display, direction: style.flexDirection,
+      visible: [...field.querySelectorAll('.evidence-tile')]
+        .filter((tile) => tile.getClientRects().length).map((tile) => tile.dataset.seat) };
+  });
+  is(narrow.display, 'flex', 'S112 narrow canvas linearizes with flex');
+  is(narrow.direction, 'column', 'S112 narrow charts stack in one column');
+  ok(narrow.visible.includes('focal'), 'S112 the focal chart remains first and visible');
+  ok(narrow.visible.every((seat) => seat === 'focal'),
+    'S112 unpinned slot charts leave the narrow reading order');
+};
 
 export const STORIES = [
   ['S01', S01, 'drawn'], ['S02', S02, 'typical'], ['S03', S03, 'drawn'],
@@ -4076,6 +4445,22 @@ export const STORIES = [
     }),
   }] }],
   ['S91', S91, 'drawn'],
+  ['S92', S92, 'typical'], ['S93', S93, 'typical'], ['S94', S94, 'typical'],
+  ['S95', S95, 'typical'], ['S96', S96, 'typical'], ['S97', S97, 'typical'],
+  ['S98', S98, 'typical'], ['S99', S99, 'typical'], ['S100', S100, 'typical'],
+  ['S101', S101, 'typical', { findingsProjectionInputs: withSecondBasal }],
+  ['S102', S102, 'typical'], ['S103', S103, 'typical'],
+  ['S104', S104, 'typical', { evidenceScenario: async ({ path, body }) => ({
+    body: path === '/api/diagnose/basal-night-evidence' ? { ...body, nights: [] } : body,
+  }) }],
+  ['S105', S105, 'typical', { findingsProjectionInputs: withGeneratedCarbRatio,
+    evidenceScenario: async ({ path, body }) => path === '/api/diagnose/carb-ratio-block-evidence'
+      ? structured(500, 'synthetic_evidence_failure', 'Synthetic evidence request failed.')
+      : { body } }],
+  ['S106', S106, 'typical', { findingsProjectionInputs: withGeneratedCarbRatio }],
+  ['S107', S107, 'typical'], ['S108', S108, 'typical'], ['S109', S109, 'typical'],
+  ['S110', S110, 'typical'], ['S111', S111, 'typical'],
+  ['S112', S112, 'typical', { viewport: { width: 390, height: 844 } }],
   ['C41', C41, 'typical', { caseScenario: {
     preparation: generatedFindingPose('finding:meal_over_delivery'),
   } }], ['C42', C42, 'typical'],

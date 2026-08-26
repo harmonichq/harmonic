@@ -130,9 +130,10 @@ npx --prefix "$PW" playwright install --with-deps chromium
 curl -fsSL https://unpkg.com/vue@3/dist/vue.esm-browser.js -o "$VENDOR/vue.esm-browser.js"
 curl -fsSL https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js -o "$VENDOR/echarts.min.js"
 
-# The nine gate legs, as CI runs them.
+# The ten gate legs, as CI runs them.
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" node frontend/day-surface.browser.mjs
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" VENDOR_DIR="$VENDOR" PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node --test frontend/diagnose-workstation.browser.test.mjs
+PLAYWRIGHT_MODULE="$PW/node_modules/playwright" VENDOR_DIR="$VENDOR" PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node --test frontend/diagnose-canvas-composition.browser.test.mjs
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" VENDOR_DIR="$VENDOR" node --test frontend/cockpit-shell.browser.test.mjs
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" node --test frontend/browser-runner.browser.test.mjs
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" node frontend/plan-first-match.browser.mjs
@@ -144,7 +145,7 @@ PLAYWRIGHT_MODULE="$PW/node_modules/playwright" VENDOR_DIR="$VENDOR" TARGET=app 
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" VENDOR_DIR="$VENDOR" TARGET=app PAYLOAD=mockups/verify-660-story.synthetic/payload.json node frontend/verify-660-story-behavior.replay.mjs
 ```
 
-All nine **fail closed**: a missing driver, vendored asset or fixture exits
+All ten **fail closed**: a missing driver, vendored asset or fixture exits
 nonzero, naming what is absent, rather than skipping. A green step that
 silently ran zero assertions is the exact failure mode that design guards
 against, and `frontend/browser-gates-fail-closed.test.js` is a

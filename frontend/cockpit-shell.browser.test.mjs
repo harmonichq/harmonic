@@ -67,6 +67,12 @@ const FINDINGS_PROJECTION = JSON.parse(await readFile(
   join(FRONTEND, '__fixtures__/findings-projection.json'), 'utf8'));
 const FINDING_CASE_FILES = JSON.parse(await readFile(
   join(ROOT, 'mockups/diagnose-workstation.synthetic/finding-case-files.json'), 'utf8'));
+const BASAL_NIGHT_EVIDENCE = JSON.parse(await readFile(
+  join(FRONTEND, '__fixtures__/basal-night-evidence.json'), 'utf8'));
+const ISF_REST_WINDOW_EVIDENCE = JSON.parse(await readFile(
+  join(ROOT, 'mockups/diagnose-workstation.synthetic/isf-rest-window-evidence.capture.json'), 'utf8'));
+const CARB_RATIO_BLOCK_EVIDENCE = JSON.parse(await readFile(
+  join(ROOT, 'mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json'), 'utf8'));
 const COCKPIT_LEDGER = await readFile(join(ROOT, 'mockups/cockpit-shell.behavior.md'), 'utf8');
 const REPLAY_SOURCE = await readFile(fileURLToPath(import.meta.url), 'utf8');
 const SHOTS = process.env.COCKPIT_SHOTS;
@@ -295,6 +301,7 @@ async function routeApp(page, options = {}) {
     scenarios,
   };
   const preparedWindows = new Map();
+  let staleCarbRatioEvidence = true;
   await page.route('**/*', async (route) => {
     const fixed = (payload) => options.inputDataAge
       ? { ...payload, input_data_age: options.inputDataAge } : payload;
@@ -368,6 +375,22 @@ async function routeApp(page, options = {}) {
         ? options.caseFileResponse(response, url) : response;
       return route.fulfill({ status: finding ? 200 : 404, body: JSON.stringify(served),
         contentType: 'application/json' });
+    }
+    if (url.pathname === '/api/diagnose/basal-night-evidence') {
+      return route.fulfill({ json: BASAL_NIGHT_EVIDENCE.expected });
+    }
+    if (url.pathname === '/api/diagnose/isf-rest-window-evidence') {
+      return route.fulfill({ json: ISF_REST_WINDOW_EVIDENCE.payload });
+    }
+    if (url.pathname === '/api/diagnose/carb-ratio-block-evidence') {
+      if (staleCarbRatioEvidence) {
+        staleCarbRatioEvidence = false;
+        return route.fulfill({ status: 409, contentType: 'application/json', body: JSON.stringify({
+          detail: { code: 'analysis_generation_mismatch',
+            message: 'Evidence changed. Refresh findings.' },
+        }) });
+      }
+      return route.fulfill({ json: CARB_RATIO_BLOCK_EVIDENCE.cases.cross_midnight });
     }
     if (url.pathname === '/api/analyze') {
       return route.fulfill({ json: fixed(findingsInput.analysis) });

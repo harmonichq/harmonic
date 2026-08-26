@@ -1064,3 +1064,113 @@ html.dark .dw {
 }
 /* Idle is quiet, not absent — the slot holds its height in every state. */
 :is(.dw, .vw) .inspector > .watch[data-state="idle"] .what { color: var(--mk-muted); font-weight: 500; }
+
+/* ---- #135 mode, explorer and temporary fullscreen ------------------ */
+.canvas-pane > header.canvas-head {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+.canvas-controls { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.canvas-mode { display: flex; border-bottom: 1px solid var(--ck-hair); }
+.canvas-mode button, .explorer-trigger, .tile-fullscreen {
+  border: 0; background: transparent; color: var(--mk-muted); cursor: pointer;
+  padding: 3px 6px; font-size: var(--ck-micro); font-weight: 650;
+}
+.canvas-mode button[aria-pressed="true"] {
+  color: var(--mk-text); box-shadow: inset 0 -2px 0 var(--ck-accent);
+}
+.canvas-mode button:focus-visible, .explorer-trigger:focus-visible,
+.tile-fullscreen:focus-visible, .explorer-thumbnail:focus-visible {
+  outline: 2px solid var(--ck-accent); outline-offset: 1px;
+}
+.explorer-trigger { border: 1px solid var(--ck-hair); border-radius: 2px; }
+.advice-state {
+  min-width: 52px; color: var(--mk-muted); font-family: var(--ck-mono);
+  font-size: 9px; text-transform: uppercase; white-space: nowrap;
+}
+
+.canvas-pane:has(.explorer-drawer:not([hidden])) {
+  grid-template-rows: auto 210px minmax(0, 1fr) 150px;
+}
+.explorer-drawer {
+  display: grid; grid-template-rows: 25px minmax(0, 1fr); min-height: 0;
+  padding: 0 var(--ck-canvas-gap) var(--ck-canvas-gap); background: var(--ck-trench);
+}
+.explorer-drawer[hidden] { display: none; }
+.explorer-drawer > header {
+  display: flex; align-items: center; gap: 10px; padding: 0 6px;
+  color: var(--mk-secondary); font-size: var(--ck-micro); font-weight: 700;
+  letter-spacing: var(--ck-track); text-transform: uppercase;
+}
+.drawer-meta { color: var(--mk-muted); font-family: var(--ck-mono); font-weight: 500; }
+.drawer-escape { margin-left: auto; color: var(--mk-muted); font-family: var(--ck-mono); font-weight: 500; }
+.explorer-thumbnails {
+  display: grid; grid-auto-flow: column; grid-auto-columns: minmax(128px, 1fr);
+  gap: var(--ck-canvas-gap); min-width: 0; min-height: 0; overflow-x: auto;
+}
+.explorer-thumbnail {
+  display: grid; grid-template-rows: 17px minmax(0, 1fr); position: relative;
+  min-width: 0; min-height: 0; padding: 4px 5px; border: 0; border-radius: 2px;
+  background: transparent; color: inherit; cursor: pointer; text-align: left;
+}
+.explorer-thumbnail[data-seated] {
+  background: var(--ck-rail);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ck-accent) 72%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--ck-accent) 76%, var(--mk-text));
+}
+.thumbnail-name {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--mk-secondary); font-size: 9px; font-weight: 700;
+  letter-spacing: .04em; text-transform: uppercase;
+}
+.thumbnail-ordinal {
+  position: absolute; inset: 4px 6px auto auto; color: var(--mk-muted);
+  font: 9px var(--ck-mono); font-variant-numeric: tabular-nums;
+}
+.thumbnail-chart { min-width: 0; min-height: 0; }
+
+.evidence-tile { position: relative; }
+.evidence-tile[data-drilled] {
+  outline: 1px solid var(--mk-text); outline-offset: -2px;
+}
+.tile-fullscreen { border: 1px solid var(--ck-hair); border-radius: 1px; padding: 2px 5px; }
+.drill-provenance {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--mk-text);
+  font-size: 9px; font-weight: 650; letter-spacing: .03em; text-transform: uppercase;
+}
+.chart-evidence-readout {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px; margin-top: 10px; background: var(--ck-hair);
+}
+.chart-evidence-readout > div { display: grid; gap: 3px; padding: 7px; background: var(--ck-rail); }
+.chart-evidence-readout span { color: var(--mk-muted); font-size: var(--ck-micro); }
+.chart-evidence-readout b { color: var(--mk-text); font: 700 var(--ck-data) var(--ck-mono); }
+.chart-evidence-roster { display: grid; gap: 1px; margin-top: 10px; background: var(--ck-hair); }
+.chart-evidence-roster > div {
+  display: flex; justify-content: space-between; gap: 12px; padding: 6px 8px;
+  background: var(--ck-rail); color: var(--mk-muted); font: var(--ck-micro) var(--ck-mono);
+}
+.occ-foot { display: flex; justify-content: space-between; }
+
+/* Explore removes the complete advisory layer. Reader-owned pins retain the
+   same accent ring, and chart series retain their measured-signal colours. */
+.dw[data-canvas-mode="explore"] .lane-wrap,
+.dw[data-canvas-mode="explore"] .inspector > .watch,
+.dw[data-canvas-mode="explore"] .filter-wrap,
+.dw[data-canvas-mode="explore"] .vband,
+.dw[data-canvas-mode="explore"] .vband-foot { display: none; }
+
+/* Fullscreen is temporary canvas state. The clock strip, its title and its
+   drawer leave the composition; the one selected chart receives the field. */
+.dw[data-fullscreen] .canvas-pane { grid-template-rows: auto minmax(0, 1fr); }
+.dw[data-fullscreen] .canvas-pane > .body,
+.dw[data-fullscreen] .canvas-head > .head-swap,
+.dw[data-fullscreen] .canvas-head > .persist,
+.dw[data-fullscreen] .explorer-drawer { display: none; }
+.dw[data-fullscreen] .canvas-head { grid-template-columns: 1fr auto; }
+.dw[data-fullscreen] .canvas-controls { grid-column: 2; }
+.dw[data-fullscreen] .tile-field[data-arrangement="focal"] {
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+}
+.dw[data-fullscreen] .tile-field[data-arrangement="focal"] > .evidence-tile:first-child {
+  grid-column: 1;
+}

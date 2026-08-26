@@ -39,3 +39,5 @@ S11 — the selected comparison trace is the case file's served selection detail
 S13 — a withheld cohort's episode traces are the case file's served episodes, drawn by the shipped episode series — coordinator/181-reconcile
 S32 — comparison selection now arrives inside the served Finding case file rather than from a projection request the tile makes — coordinator/181-reconcile
 S37 — event evidence no longer receives the standing clock window as tile coordinates; the tile quotes the case file's projection id, finding id and alignment, and the served case file carries its own window — coordinator/181-reconcile
+P52 — Clear trace returns in the shared drilled-chart inspector and removes only the selected trace, leaving the chart drill open — chunk 3
+issue86DirectEntryRestoration — every behavioral chart drill now follows its row's published event-chart coordinate, independent of the retired Event charts root filter — chunk 3

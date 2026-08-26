@@ -58,6 +58,13 @@ const chartLegend = (data, colors) => ({
   data,
 });
 const finite = (value) => typeof value === 'number' && Number.isFinite(value);
+const showsAdvice = (presentation) => !presentation || [
+  presentation.rankFilament,
+  presentation.rankChips,
+  presentation.tallies,
+  presentation.staging,
+  presentation.recommendationCopy,
+].every((visible) => visible !== false);
 const hhmm = (minute) => {
   const normalized = ((minute % 1440) + 1440) % 1440;
   return `${String(Math.floor(normalized / 60)).padStart(2, '0')}:${String(normalized % 60).padStart(2, '0')}`;
@@ -94,14 +101,19 @@ function thumbnail(name, count, series = []) {
   };
 }
 
-function basalOption(mode, { data, mini = false } = {}) {
+function basalOption(mode, { data, mini = false, presentation } = {}) {
   const colors = chartColors();
   const nights = data?.nights || [];
-  const description = `${data?.roster_count ?? 0} nights of steady data; ${data?.directional_support_count ?? 0} directional support.`;
+  const advice = showsAdvice(presentation);
+  const description = advice
+    ? `${data?.roster_count ?? 0} nights of steady data; ${data?.directional_support_count ?? 0} directional support.`
+    : `${data?.roster_count ?? 0} nights of steady data.`;
   if (mode === 'event') {
-    const support = data?.directional_support_count ?? 0;
-    const assertsMove = data?.asserts_move === true;
-    const verdict = data?.safety_status ?? 'Analyzer verdict unavailable';
+    const support = advice
+      ? data?.directional_support_count ?? 0 : data?.roster_count ?? 0;
+    const assertsMove = advice && data?.asserts_move === true;
+    const verdict = advice
+      ? data?.safety_status ?? 'Analyzer verdict unavailable' : 'Nights of steady data';
     const label = hhmm((data?.slot ?? 0) * 30);
     return {
       ...chartBase(description, mini, colors),
@@ -111,8 +123,8 @@ function basalOption(mode, { data, mini = false } = {}) {
       yAxis: { type: 'value', min: 0, name: 'nights', ...axis(colors, mini) },
       series: [
         { name: verdict, type: 'bar', data: [support], animation: false,
-          barCategoryGap: '25%', itemStyle: { color: assertsMove
-            ? colors.basal : colors.excluded } },
+          barCategoryGap: '25%', itemStyle: { color: advice
+            ? (assertsMove ? colors.basal : colors.excluded) : colors.basal } },
       ],
     };
   }
@@ -167,34 +179,41 @@ function isfOption(mode, { data, mini = false } = {}) {
   };
 }
 
-function carbRatioOption(mode, { data, range, mini = false, window } = {}) {
+function carbRatioOption(mode, { data, range, mini = false, window, presentation } = {}) {
   const colors = chartColors();
   const block = data?.block || {};
   const runs = data?.runs || [];
-  const description = `${block.examined_runs ?? 0} examined meal runs; ${block.support ?? 0} support; ${block.excluded_runs ?? 0} excluded. Support uses solid traces and filled diamonds; directional-only evidence uses dashed traces and open diamonds.`;
+  const advice = showsAdvice(presentation);
+  const description = advice
+    ? `${block.examined_runs ?? 0} examined meal runs; ${block.support ?? 0} support; ${block.excluded_runs ?? 0} excluded. Support uses solid traces and filled diamonds; directional-only evidence uses dashed traces and open diamonds.`
+    : `${block.examined_runs ?? 0} measured meal runs.`;
   if (mode === 'clock') {
     const frame = clockFrame(window || [block.start_min ?? 0, block.end_min ?? 1440]);
     const points = (inPool) => runs.filter((run) => run.in_pool === inPool && finite(run.true_ic))
       .map((run) => [frame.map(minuteOfDay(run.t)), run.true_ic]);
+    const measuredPoints = () => runs.filter((run) => finite(run.true_ic))
+      .map((run) => [frame.map(minuteOfDay(run.t)), run.true_ic]);
     return {
       ...chartBase(description, mini, colors),
-      legend: chartLegend([
+      legend: chartLegend(advice ? [
         { name: 'Support run', icon: 'circle' },
         { name: 'Directional-only run', icon: 'emptyCircle' },
-      ], colors),
+      ] : [{ name: 'Measured meal run', icon: 'circle' }], colors),
       xAxis: { type: 'value', min: 0, max: frame.span, name: 'meal start',
         ...axis(colors, mini),
         axisLabel: { ...axis(colors, mini).axisLabel, formatter: frame.label },
         splitLine: { show: false } },
       yAxis: { type: 'value', min: 0, name: 'Carb ratio (g/U)', ...axis(colors, mini) },
-      series: [
+      series: advice ? [
         { name: 'Directional-only run', type: 'scatter', symbol: 'emptyCircle',
           symbolSize: mini ? 3 : 6, data: points(false),
           itemStyle: { color: colors.excluded, opacity: .72 } },
         { name: 'Support run', type: 'scatter', symbol: 'circle',
           symbolSize: mini ? 4 : 8, data: points(true),
           itemStyle: { color: colors.signal, opacity: .88 } },
-      ],
+      ] : [{ name: 'Measured meal run', type: 'scatter', symbol: 'circle',
+        symbolSize: mini ? 4 : 8, data: measuredPoints(),
+        itemStyle: { color: colors.signal, opacity: .88 } }],
     };
   }
   if (!Array.isArray(range) || range.length !== 2
@@ -208,15 +227,15 @@ function carbRatioOption(mode, { data, range, mini = false, window } = {}) {
   })), range[0] + 4).map((marker) => ({
     ...marker,
     inPool: Boolean(runById.get(marker.runId)?.in_pool),
-    itemStyle: { color: runById.get(marker.runId)?.in_pool
-      ? colors.signal : colors.excluded },
+    itemStyle: { color: advice && !runById.get(marker.runId)?.in_pool
+      ? colors.excluded : colors.signal },
   }));
   return {
     ...chartBase(description, mini, colors),
-    legend: chartLegend([
+    legend: chartLegend(advice ? [
       { name: 'Support run', icon: 'diamond' },
       { name: 'Directional-only run', icon: 'emptyDiamond' },
-    ], colors),
+    ] : [{ name: 'Measured meal run', icon: 'diamond' }], colors),
     xAxis: { type: 'value', name: 'minutes from first meal', ...axis(colors, mini),
       splitLine: { show: false } },
     yAxis: { type: 'value', min: range[0], max: range[1], name: 'mg/dL',
@@ -226,20 +245,26 @@ function carbRatioOption(mode, { data, range, mini = false, window } = {}) {
         markArea: { silent: true, itemStyle: { color: colors.target },
           data: [[{ yAxis: 70, name: 'target 70–180' }, { yAxis: 180 }]] } },
       ...(data?.series || []).map((series) => ({
-        name: runById.get(series.run_id)?.in_pool ? 'Support run' : 'Directional-only run',
+        name: advice
+          ? (runById.get(series.run_id)?.in_pool ? 'Support run' : 'Directional-only run')
+          : 'Measured meal run',
         type: 'line', symbol: 'none', connectNulls: true, animation: false,
         data: series.points.map((point) => [point.minute, point.bg]),
-        lineStyle: { color: runById.get(series.run_id)?.in_pool
-          ? colors.signal : colors.excluded, width: mini ? .8 : 1.2,
-        opacity: runById.get(series.run_id)?.in_pool ? .48 : .28,
-        type: runById.get(series.run_id)?.in_pool ? 'solid' : 'dashed' },
+        lineStyle: { color: advice && !runById.get(series.run_id)?.in_pool
+          ? colors.excluded : colors.signal, width: mini ? .8 : 1.2,
+        opacity: advice && !runById.get(series.run_id)?.in_pool ? .28 : .48,
+        type: advice && !runById.get(series.run_id)?.in_pool ? 'dashed' : 'solid' },
       })),
-      { name: 'Support run', type: 'scatter', symbol: 'diamond',
-        symbolSize: mini ? 3 : 7, data: members.filter(({ inPool }) => inPool),
-        animation: false, emphasis: { disabled: true }, z: 8 },
-      { name: 'Directional-only run', type: 'scatter', symbol: 'emptyDiamond',
-        symbolSize: mini ? 3 : 7, data: members.filter(({ inPool }) => !inPool),
-        animation: false, emphasis: { disabled: true }, z: 8 },
+      ...(advice ? [
+        { name: 'Support run', type: 'scatter', symbol: 'diamond',
+          symbolSize: mini ? 3 : 7, data: members.filter(({ inPool }) => inPool),
+          animation: false, emphasis: { disabled: true }, z: 8 },
+        { name: 'Directional-only run', type: 'scatter', symbol: 'emptyDiamond',
+          symbolSize: mini ? 3 : 7, data: members.filter(({ inPool }) => !inPool),
+          animation: false, emphasis: { disabled: true }, z: 8 },
+      ] : [{ name: 'Measured meal run', type: 'scatter', symbol: 'diamond',
+        symbolSize: mini ? 3 : 7, data: members,
+        animation: false, emphasis: { disabled: true }, z: 8 }]),
     ],
   };
 }

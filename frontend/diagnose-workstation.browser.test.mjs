@@ -73,7 +73,8 @@ import {
   withoutIsfProjectionVerdict, twoFamilyInputs,
   densityHistoryInputs,
   issue81PendingProjection, issue81FailedProjection, issue81SlicedProjection,
-  issue86HeaderFilter, issue86FilteredRoot, issue86PendingRoot,
+  issue86HeaderFilter, issue86FilteredRoot, issue86DirectEntryRestoration,
+  issue86PendingRoot, issue86MalformedRecovery,
 } from './diagnose-workstation-behavior.replay.mjs';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 
@@ -407,7 +408,17 @@ for (const [name, probe, options] of [
 
 for (const [name, probe, options] of [
   ['header and Filter ownership', issue86HeaderFilter, { state: 'drawn' }],
-  ['Event charts and Sift intersection', issue86FilteredRoot, { state: 'typical' }],
+  ['Sift intersection', issue86FilteredRoot, { state: 'typical' }],
+  ['direct event-chart seating and root restoration', issue86DirectEntryRestoration, { state: 'typical' }],
+  ['malformed event evidence recovery', issue86MalformedRecovery, {
+    state: 'typical', caseScenario: { case: async ({ url, body }) =>
+      url.searchParams.get('alignment') === 'event' ? { body: {
+        schema: 'malformed-finding-case-file',
+        projection_id: body.projection_id,
+        finding: body.finding,
+        projection: null,
+      } } : { body } },
+  }],
 ]) {
   test(`#86 issue-scoped probe · ${name}`, async () => {
     const browser = await runner.browser();
@@ -717,11 +728,11 @@ test('#83 · Filter is a roving ARIA menu and Escape wins over the drawn window'
       await page.waitForFunction(() => document.activeElement?.getAttribute('aria-label')?.startsWith('Highs '));
       assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('aria-label')?.startsWith('Highs ')), true);
       await page.keyboard.press('ArrowUp');
-      assert.equal(await page.evaluate(() => document.activeElement?.textContent.trim()), 'Event charts');
+      assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('aria-label')?.startsWith('Corrections ')), true);
       await page.keyboard.press('Home');
       assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('aria-label')?.startsWith('Highs ')), true);
       await page.keyboard.press('End');
-      assert.equal(await page.evaluate(() => document.activeElement?.textContent.trim()), 'Event charts');
+      assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('aria-label')?.startsWith('Corrections ')), true);
       await page.keyboard.press('ArrowDown');
       assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('aria-label')?.startsWith('Highs ')), true);
       await page.keyboard.press(' ');
@@ -729,11 +740,14 @@ test('#83 · Filter is a roving ARIA menu and Escape wins over the drawn window'
         'Space changes a Sift choice without closing the menu');
       assert.equal(await trigger.innerText(), 'Filter 1');
       await page.waitForFunction(() => document.activeElement?.getAttribute('aria-label')?.startsWith('Highs '));
-      await page.keyboard.press('End');
+      await page.keyboard.press('ArrowDown');
+      assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('aria-label')?.startsWith('Lows ')), true);
       await page.keyboard.press('Enter');
       assert.equal(await page.getByRole('menu').isVisible(), true,
-        'Enter changes View without closing the menu');
-      assert.equal(await trigger.innerText(), 'Filter 2');
+        'Enter changes a second Sift choice without closing the menu');
+      assert.equal(await page.getByRole('menuitemcheckbox', { name: /^Highs / }).getAttribute('aria-checked'), 'false');
+      assert.equal(await page.getByRole('menuitemcheckbox', { name: /^Lows / }).getAttribute('aria-checked'), 'false');
+      assert.equal(await trigger.innerText(), 'Filter 1');
       await page.keyboard.press('Escape');
       assert.equal(await page.getByRole('menu').isVisible(), false);
       assert.equal(await page.evaluate(() => document.activeElement?.id), 'filter-trigger');

@@ -15,6 +15,10 @@ The app-only replay is
 **Active executable IDs:** all issued
 **Retired executable IDs:** none
 
+Retired *behaviors* keep their executable IDs permanently: each such replay is
+an attributed absence check and prints its sanction. `Retired executable IDs`
+would count only IDs removed from execution, which this ledger forbids.
+
 All are opened through the real no-fetch server and tagged
 `STORY:finding-evidence-routing:<id>`. Static HTML, CSS and JavaScript come from
 that server; deterministic API reads come from
@@ -2548,6 +2552,55 @@ entry erases or weakens the other.
   reason: `P52 — Clear trace returns in the shared drilled-chart inspector and removes only the selected trace, leaving the chart drill open — chunk 3`
 - **RETIRED issue86DirectEntryRestoration · chunk 3.** Behavioral drills follow their row's published event-chart coordinate independently of the retired root filter.
   reason: `issue86DirectEntryRestoration — every behavioral chart drill now follows its row's published event-chart coordinate, independent of the retired Event charts root filter — chunk 3`
+- **RETIRED issue86HeaderFilter · fix1.** Filter now contains Sift only; the retired root View group no longer renders.
+  reason: `issue86HeaderFilter — Filter now contains Sift only; the retired root View group no longer renders — fix1`
+- **RETIRED issue86FilteredRoot · fix1.** The Event charts-only findings projection retires with its root option.
+  reason: `issue86FilteredRoot — the Event charts-only findings projection is retired with its root option — fix1`
+- **RETIRED issue86DirectEntryRestoration · fix1.** Returning from a behavioral chart no longer restores a retired root View.
+  reason: `issue86DirectEntryRestoration — returning from a behavioral chart no longer restores a retired root View — fix1`
+- **RETIRED issue86PendingRoot · fix1.** Pending findings retain Sift only; there is no root View selection to preserve.
+  reason: `issue86PendingRoot — pending findings retain Sift only; there is no root View selection to preserve — fix1`
+- **RETIRED issue86MalformedRecovery · fix1.** Malformed case recovery returns to the findings root without a retired Event charts View.
+  reason: `issue86MalformedRecovery — malformed case recovery returns to the findings root without a retired Event charts View — fix1`
+- **RETIRED S34 · fix1.** Event-comparison failure remains a named tile error and carries no Event charts root View.
+  reason: `S34 — event-comparison failure remains a named tile error and no longer carries an Event charts root View — fix1`
+- **RETIRED S38 · fix1.** Behavioral-chart reachability comes from the live tile field rather than an Event charts root filter.
+  reason: `S38 — behavioral-chart reachability comes from the live tile field, not an Event charts root filter — fix1`
+- **RETIRED S57 · final reconciliation.** The history-event 410 path was reachable only through the retired global event canvas; stale tile recovery is owned by S106.
+  sanction: Connor Griffin · 2026-08-25 · “Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control.”
+- **RETIRED S58 · final reconciliation.** The history-event mapping-loss path was reachable only through the retired global event canvas; tile recovery is the successor contract.
+  sanction: Connor Griffin · 2026-08-25 · “Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control.”
+- **RETIRED S90 · final reconciliation.** Meal-offset rendering belonged to the retired global history event canvas and has no successor chart tile.
+  sanction: Connor Griffin · 2026-08-25 · “Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control.”
+- **RETIRED C46 · final reconciliation.** The active-case failure story depended on preserving the retired global clock/event canvas pair; structured case-file failure remains covered by the row-derived malformed recovery probe.
+  sanction: Connor Griffin · 2026-08-25 · “Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control.”
+- **RETIRED C47 · final reconciliation.** The two-shadow-leg atomic swap belonged to the retired global event canvas; visible stale-generation refresh is now the per-tile S106 contract.
+  sanction: Connor Griffin · 2026-08-25 · “Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control.”
+- **RETIRED C48 · final reconciliation.** The queue-refresh and event-canvas shadow pair retired with the global event canvas; active projection failure remains covered by C54.
+  sanction: Connor Griffin · 2026-08-25 · “Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control.”
+- **RETIRED C49 · final reconciliation.** The refreshed shadow-case failure path belonged to the retired global event canvas; malformed row-derived case recovery remains live.
+  sanction: Connor Griffin · 2026-08-25 · “Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control.”
+- **RETIRED C50 · final reconciliation.** Superseding a stale global preparation leg retired with the global event canvas; newer row-derived selection supersession remains covered by C55.
+  sanction: Connor Griffin · 2026-08-25 · “Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control.”
+- **RETIRED C51 · final reconciliation.** Superseding a stale global shadow-case leg retired with the global event canvas; per-tile request coalescing and live reread are covered by S107.
+  sanction: Connor Griffin · 2026-08-25 · “Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control.”
+- **RETIRED C52 · final reconciliation.** Global Finding-unavailable recovery preserved a retired inspector/canvas pair; the successor tile field drops surplus and unavailable candidates through S100.
+  sanction: Connor Griffin · 2026-08-25 · “Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control.”
+- **RETIRED C53 · final reconciliation.** Global canvas identity-mismatch preservation retired with that host; the row-derived malformed case probe still rejects inconsistent projection identity.
+  sanction: Connor Griffin · 2026-08-25 · “Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control.”
+
+### Permanent successor rewrites — final issue 135 reconciliation
+
+- **S32 and S40.** Occurrence selection is driven through the Sifted case file or its seated row-derived comparison tile; the pressed opaque Occurrence id, selected evidence and provenance remain joined.
+- **S09, S10 and S11.** Drilling keeps the standing window and breadcrumb depth while the owning chart is marked; the served roster remains readable without the already-retired counter-example split, and selection reveals the served case-file facts.
+- **S78.** Enter activates the focused row in the vertical Occurrence roster while preserving the Finding breadcrumb and standing window.
+- **S76, S89, C41, C42 and C45.** Breadcrumb focus restoration is scoped to the crumb, the full-day slide waits on its rendered stop, and served verdict/unavailable cases are asserted through their current public markup.
+- **issue86HeaderFilter.** Keyboard traversal wraps across the four Sift checks; Escape restores Filter focus and the retired View group remains absent.
+- **issue86FilteredRoot.** Sift alone intersects published row fields, preserves server order and names a settled empty result.
+- **issue86DirectEntryRestoration.** The seated behavioral tile opens its case directly; Backspace restores the Sifted queue, scroll and window without a root View.
+- **issue86PendingRoot.** Pending projections retain enabled Sift choices and withhold stale rows and counts; no View state exists.
+- **issue86MalformedRecovery.** A malformed event case remains attached to its drilled tile, exposes the structured error and returns to the same Sifted queue.
+- **C43, C44, C56 and C57.** Comparison selection, support, empty support and selected-cohort evidence are exercised through the served case file and registry tiles.
 
 ### Added frozen stories — issue 135
 

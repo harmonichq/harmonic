@@ -107,35 +107,63 @@ function option(surface, caseFile, selected) {
     yAxis: { type: 'value', min: 40, max: 300, interval: 60, name: 'mg/dL', nameLocation: 'end', axisLine: { show: false }, axisTick: { show: false }, splitLine: { show: true, lineStyle: { color: css(surface, '--mk-line'), opacity: .58 } }, axisLabel: { color: css(surface, '--mk-muted'), fontSize: 10 } }, series };
 }
 
+/* The canvas header, rest line and docked readout together. The readout is the
+   same shape the clock canvas docks into this header, so the two alignments
+   swap inside one rectangle instead of stacking a second header beside it. */
+function headMarkup(caseFile) {
+  return `<div class="head-swap"><div class="head-line head-rest"><h2>${caseFile.finding.title} response comparison</h2><span class="meta persist">${caseFile.projection.anchor.label}</span></div><div class="head-line head-live" id="ec-readout" aria-hidden="true"></div></div>`;
+}
+
 function markup(caseFile, headerHost) {
   const title = `${caseFile.finding.title} response comparison`;
   const body = `<div class="body ec-event-body"><div id="ec-chart" class="ec-chart" role="img" tabindex="0" aria-label="${title}. Use left and right arrow keys to inspect five-minute points."></div><div id="ec-chart-key" class="ec-chart-key" aria-label="Comparison legend"></div></div>`;
   if (headerHost) return body;
-  return `<main class="panes ec-panes"><section class="pane canvas-pane ec-canvas" aria-label="${title}"><header class="canvas-head" id="ec-canvas-head" data-hover="0"><h2>${title}</h2><span class="meta persist">${caseFile.projection.anchor.label}</span></header>${body}</section></main>`;
+  return `<main class="panes ec-panes"><section class="pane canvas-pane ec-canvas" aria-label="${title}"><header class="canvas-head" id="ec-canvas-head" data-hover="0">${headMarkup(caseFile)}</header>${body}</section></main>`;
 }
 
 export function renderEventSurface(surface, caseFile, { headerHost = null } = {}) {
   if (caseFile?.schema !== 'diagnose-finding-case-file-v1' || caseFile?.projection?.alignment !== 'event') throw new Error('Finding case file is not event-aligned.');
   const selected = selection(caseFile);
   const previousHeader = headerHost && { html: headerHost.innerHTML, hover: headerHost.dataset.hover };
-  if (headerHost) { headerHost.innerHTML = `<div class="head-line"><h2>${caseFile.finding.title} response comparison</h2><span class="meta persist">${caseFile.projection.anchor.label}</span></div>`; headerHost.dataset.hover = '0'; }
+  if (headerHost) { headerHost.innerHTML = headMarkup(caseFile); headerHost.dataset.hover = '0'; }
   surface.innerHTML = markup(caseFile, headerHost);
   legend(surface, caseFile, selected);
   const chartElement = surface.querySelector('#ec-chart');
   const chart = window.echarts.init(chartElement, null, { renderer: 'canvas' });
   chart.setOption(option(surface, caseFile, selected));
+  const head = headerHost || surface.querySelector('#ec-canvas-head');
+  const [windowStart, windowEnd] = caseFile.projection.window_min;
+  /* One reading of the served points, feeding both disclosures — the keyboard
+     label and the pointer readout say the same server-owned thing. */
+  const readingsAt = (at) => caseFile.projection.cohorts.map((cohort) => {
+    const point = cohort.points.find((row) => row.minute === at);
+    return { name: cohort.name, withheld: point?.support === 'withheld' || !point,
+      median: point?.median ?? null, n: point?.n ?? 0 };
+  });
   let minute = 0;
+  const inspect = (at) => {
+    minute = at;
+    const readings = readingsAt(at);
+    chartElement.setAttribute('aria-label', `${caseFile.finding.title} response comparison. ${axisLabel(at, caseFile.projection.anchor.label)}. ${readings.map((reading) => `${reading.name} ${reading.withheld ? 'unavailable' : rounded(reading.median)}`).join('. ')}.`);
+    const readout = head?.querySelector('#ec-readout');
+    if (!readout) return;
+    readout.innerHTML = `<span class="rd-time">${axisLabel(at, caseFile.projection.anchor.label)}</span>${readings.map((reading) => `<span class="rd-pair"><span class="k">${reading.name}</span><span class="v">${reading.withheld ? 'unavailable' : `${rounded(reading.median)} · n${reading.n}`}</span></span>`).join('')}`;
+    head.dataset.hover = '1';
+  };
   chartElement.addEventListener('keydown', (event) => {
     if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
     event.preventDefault();
-    const [start, end] = caseFile.projection.window_min;
-    minute = event.key === 'Home' ? start : event.key === 'End' ? end : Math.max(start, Math.min(end, minute + (event.key === 'ArrowRight' ? 5 : -5)));
-    const readings = caseFile.projection.cohorts.map((cohort) => {
-      const point = cohort.points.find((row) => row.minute === minute);
-      return `${cohort.name} ${point?.support === 'withheld' ? 'unavailable' : rounded(point?.median)}`;
-    }).join('. ');
-    chartElement.setAttribute('aria-label', `${caseFile.finding.title} response comparison. ${axisLabel(minute, caseFile.projection.anchor.label)}. ${readings}.`);
+    inspect(event.key === 'Home' ? windowStart : event.key === 'End' ? windowEnd
+      : Math.max(windowStart, Math.min(windowEnd, minute + (event.key === 'ArrowRight' ? 5 : -5))));
   });
+  chartElement.addEventListener('mousemove', (event) => {
+    const at = chart.convertFromPixel({ gridIndex: 0 }, [event.offsetX, event.offsetY])?.[0];
+    if (!Number.isFinite(at)) return;
+    inspect(Math.max(windowStart, Math.min(windowEnd, Math.round(at / 5) * 5)));
+  });
+  const rest = () => { if (head) head.dataset.hover = '0'; };
+  chartElement.addEventListener('mouseleave', rest);
+  chartElement.addEventListener('blur', rest);
   const observer = new ResizeObserver(() => chart.resize());
   observer.observe(chartElement);
   const restoreHeader = () => { if (previousHeader) { headerHost.innerHTML = previousHeader.html; headerHost.dataset.hover = previousHeader.hover; } };

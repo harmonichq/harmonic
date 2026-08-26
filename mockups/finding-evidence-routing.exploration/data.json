@@ -603,7 +603,15 @@
      "direction": null,
      "episodes": 1,
      "estimate": null,
-     "event_chart": null,
+     "event_chart": {
+      "lever": "correction_stacking",
+      "window": {
+       "end_min": null,
+       "label": null,
+       "scoped": false,
+       "start_min": null
+      }
+     },
      "evidence": [
       {
        "date": "2026-08-17",

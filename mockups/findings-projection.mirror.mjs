@@ -385,7 +385,11 @@ function patternPriorities(scenarios) {
 const EVENT_CHART_FAMILIES = {
   carb_undercount: 'meals', late_bolus: 'meals', meal_over_delivery: 'meals',
   missed_meal: 'highs',
-  over_treated_low: 'lows', correction_on_iob: 'lows', correction_stacking: 'lows',
+  over_treated_low: 'lows', correction_on_iob: 'lows',
+  // Counted in correction clusters, never in lows — the same note sits beside
+  // `_EVENT_CHART_FAMILIES` in ciq_autotune/findings_projection.py, which this
+  // mirror transcribes and never re-decides.
+  correction_stacking: 'correction_clusters',
 };
 
 function eventChartCoordinate(lever, query, families) {

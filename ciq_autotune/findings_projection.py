@@ -92,7 +92,11 @@ _EVENT_CHART_FAMILIES = {
     "missed_meal": "highs",
     "over_treated_low": "lows",
     "correction_on_iob": "lows",
-    "correction_stacking": "lows",
+    # Correction stacking is counted in correction clusters, never in lows. The
+    # retired standalone route filed it under its "lows" VIEW; carrying that view
+    # name over as a family published `null` for every correction-stacking
+    # Finding, leaving the queue no By-event path into a case the server serves.
+    "correction_stacking": "correction_clusters",
 }
 
 

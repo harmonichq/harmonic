@@ -22,11 +22,12 @@ except ImportError:  # pragma: no cover
 from ciq_autotune.analyzers.isf import analyze_isf
 from ciq_autotune.analyzers.scenario.levers import Lever, outcome_kind
 from ciq_autotune.findings_projection import (
+    _EVENT_CHART_FAMILIES,
     FindingsProjection,
     WindowQuery,
     prepare_findings_projection,
 )
-from ciq_autotune.event_comparison import FACTOR_LABELS, VIEW_CONFIG
+from ciq_autotune.event_comparison import FACTOR_LABELS
 from ciq_autotune.harm import HarmArm, HarmConfig, PrintedLow
 from ciq_autotune.safety import Status
 from ciq_autotune.ic_history import (
@@ -427,17 +428,25 @@ class ChipProjectionTest(unittest.TestCase):
 
 class EventChartProjectionTest(unittest.TestCase):
     def test_canonical_factors_publish_their_coordinates_when_the_family_is_present(self):
+        # The families come from the projection's OWN mapping, not the retired
+        # standalone route's VIEW_CONFIG: that route filed correction stacking
+        # under its "lows" view, while the exposure it is counted in is
+        # correction clusters. Reading the view names here is what let the
+        # mismatch publish `null` for a whole lever unnoticed.
         exposures = {}
         expected = {}
-        for hour, (view, config) in enumerate(VIEW_CONFIG.items()):
+        by_family: dict[str, list[str]] = {}
+        for lever, family in _EVENT_CHART_FAMILIES.items():
+            by_family.setdefault(family, []).append(lever)
+        for hour, (family, levers) in enumerate(by_family.items()):
             occurrences = []
-            for offset, factor in enumerate(config["factors"]):
+            for offset, factor in enumerate(levers):
                 occurrences.append({
                     "t": f"2026-08-17 {hour * 6 + offset:02d}:00:00",
                     "date": "2026-08-17",
-                    "kind": view,
+                    "kind": family,
                     "cause_lever": factor,
-                    "cause_title": FACTOR_LABELS[factor],
+                    "cause_title": FACTOR_LABELS.get(factor, factor),
                     "ep_id": factor,
                     "verdicts": [],
                 })
@@ -445,7 +454,7 @@ class EventChartProjectionTest(unittest.TestCase):
                     "lever": factor,
                     "window": WindowQuery.whole_day().to_dict(),
                 }
-            exposures[view] = {"occurrences": occurrences}
+            exposures[family] = {"occurrences": occurrences}
 
         rows = FindingsProjection(
             _analysis={"window_days": 30},

@@ -1879,9 +1879,15 @@ function boot(root, data, callbacks, signal) {
     const isCase = f.k === 'factor';
     const isHistory = f.k === 'history';
     const liveRow = isCase && settled() ? findingRowFor(f) : null;
-    const mappedCase = liveRow && (f.eventDiscovery
-      ? eventChartCoordinate(liveRow)
-      : caseAlignmentIn(preparation, f) ? { caseFile: true } : null);
+    /* #181 — the SERVED preparation decides whether this case is reachable by
+       lever and window, for a frame entered through Event charts no less than
+       one entered from the queue. The findings projection is a separate answer
+       over a separate population: a replacement window can drop the Finding's
+       canonical event family there while the retained case preparation still
+       holds its coordinate, and ALIGN follows the preparation, not that loss. */
+    const mappedCase = liveRow && (caseAlignmentIn(preparation, f)
+      || (f.eventDiscovery ? eventChartCoordinate(liveRow) : null))
+      ? { caseFile: true } : null;
     el('align-group').hidden = !mappedCase && !isHistory;
     if (!mappedCase && !isHistory) {
       disposeAlign();

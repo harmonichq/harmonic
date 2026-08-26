@@ -1998,6 +1998,31 @@ Finding counted in a family the queue projection's own map does not name, such a
 correction stacking in correction clusters — leaving no By-event path into it. A
 prepared case now publishes its own lever-and-window coordinate.
 
+Four stories the chunk-3 pass left red (`S33`, `S34`, `S38`, `C43`) were then
+fixed in the app rather than amended, since each named a capability the stories
+still require:
+
+- The queue projection filed **correction stacking** under the retired route's
+  `lows` VIEW while the Finding is counted in **correction clusters**, so it
+  published no event coordinate at all and offered no By-event path (`S34`,
+  `C43`). The family map now names the exposure the lever is counted in, in
+  `ciq_autotune/findings_projection.py` and its transcription in
+  `mockups/findings-projection.mirror.mjs`.
+- The browser harness adapter took the **queue row's** coordinate as the
+  preparation's, which is the reverse of what the endpoint does — `wrap` stamps
+  the row FROM the case header, restamped to the preparation's own window.
+- **ALIGN availability** now follows the served preparation for a frame entered
+  through Event charts as well as one entered from the queue: a replacement
+  window may drop the family from the separate findings projection while the
+  retained case file still holds its coordinate (`S38`, and the ticket's
+  "reachable by lever and window").
+- The By-event canvas **docked readout** was restored on the shared canvas header
+  (`S33`). Pointer and keyboard now disclose the same served facts through one
+  reading of the case file's own points — cohort names, medians, per-point `n`,
+  and `unavailable` where the server withheld the point. Nothing is graded,
+  binned or labelled in the browser.
+
+
 ## Revision amendment — 2026-08-25 (missed-meal comparison)
 
 C44 retires its prior Meal bolus fell short High-roster assertion. It now pins

@@ -15,13 +15,24 @@ export function populateFindingCasePreparation(preparation, projection) {
     if (row.register !== 'finding') return [row];
     const ready = readyRows.get(row.id);
     if (!ready) return [];
+    /* The preparation owns its own event coordinate: `finding_case_file.wrap`
+       stamps the row's `event_chart` FROM the case header, never from the
+       separate findings projection. Taking the queue row's coordinate here made
+       the harness publish `null` for a case the preparation holds — and a
+       replacement window whose projection drops the family would strip the
+       retained case file's By-event path, which the real endpoint never does. */
+    const coordinate = ready.case_header.event_chart && {
+      lever: ready.case_header.event_chart.lever,
+      window: structuredClone(preparation.coordinates.window),
+    };
     return [{ ...row,
       appearances: ready.appearances,
       episodes: ready.episodes,
       evidence: ready.evidence,
       verdict_counts: ready.verdict_counts,
       verdict_counts_by_family: ready.verdict_counts_by_family,
-      case_header: { ...ready.case_header, event_chart: row.event_chart },
+      event_chart: coordinate,
+      case_header: { ...ready.case_header, event_chart: coordinate },
     }];
   });
   preparation.behavioral_case_headers = Object.fromEntries(

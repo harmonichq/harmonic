@@ -459,9 +459,11 @@ class FindingsProjection:
         # that outcome lands inside the window. The family denominator is filtered
         # by the same anchor, so it can never be smaller than what it denominates.
         in_window: Dict[str, List[dict]] = {}
+        all_occurrences: Dict[str, List[dict]] = {}
         for family, payload in families.items():
+            all_occurrences[family] = list(payload.get("occurrences") or [])
             kept = [
-                occurrence for occurrence in payload.get("occurrences") or []
+                occurrence for occurrence in all_occurrences[family]
                 if query.contains(outcome_minute(occurrence, self._exposures))
             ]
             in_window[family] = kept
@@ -503,28 +505,22 @@ class FindingsProjection:
         rows = []
         for lever, entry in by_lever.items():
             policy = policy_for(lever)
-            if policy.recurrence_family is None:
-                pattern = patterns.get(lever) or {}
-                group_ids = {
-                    hit.get("cause_occurrence_id") for hit in in_window.get("highs", [])
-                    if hit.get("cause_lever") == lever
-                }
-                groups = {
-                    group.get("id"): group
-                    for group in pattern.get("occurrence_groups") or []
-                }
-                group_ids.intersection_update(groups)
+            recurrence_account = policy.projected_recurrence_account(
+                lever, in_window, all_occurrences, patterns.get(lever) or {},
+            )
+            if recurrence_account is not None:
+                occurrence_ids, denominator = recurrence_account
                 entry["appearances"] = [{
                     "family": policy.recurrence_noun,
                     "noun": policy.recurrence_noun,
-                    "n": len(group_ids),
-                    "m": (pattern.get("confidence") or {}).get("n", 0),
+                    "n": len(occurrence_ids),
+                    "m": denominator,
                 }]
                 # This lever's recurrence identity is the eligible meal event, not
                 # each high episode it can produce.  The policy-owned groups retain
                 # their member episodes in the scenario payload; this served row
                 # counts the same occurrences its denominator and case file use.
-                entry["episodes"] = group_ids
+                entry["episodes"] = occurrence_ids
             entry["appearances"].sort(key=lambda a: a["family"])
             evidence, verdict_counts, verdict_counts_by_family = _lever_evidence(
                 lever, entry["families"], in_window,

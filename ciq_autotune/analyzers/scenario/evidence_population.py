@@ -33,7 +33,7 @@ def _episode_identity(item) -> str:
 
 
 def _family_member(family: Exposure) -> Callable:
-    return lambda item: getattr(item, "family", None) is family
+    return lambda item, *, scenario_config: getattr(item, "family", None) is family
 
 
 @dataclass(frozen=True)
@@ -49,23 +49,97 @@ class EvidencePopulationPolicy:
     cross_population: bool
     occurrence_id: Callable
 
-    def recurrence_population(self, families: dict, bolus: Sequence) -> tuple:
+    def recurrence_population(
+        self,
+        families: dict,
+        bolus: Sequence,
+        *,
+        scenario_config: ScenarioConfig = ScenarioConfig(),
+    ) -> tuple:
         if self.recurrence_family is None:
-            return tuple(item for item in bolus if self.recurrence_members(item))
+            return tuple(
+                item for item in bolus
+                if self.recurrence_members(item, scenario_config=scenario_config)
+            )
         return tuple(item for item in families.get(self.recurrence_family, ())
-                     if self.recurrence_members(item))
+                     if self.recurrence_members(
+                         item, scenario_config=scenario_config,
+                     ))
 
     def occurrence_for_episode(
-        self, episode_id: str, bolus: Sequence, before: datetime,
+        self,
+        episode_id: str,
+        bolus: Sequence,
+        before: datetime,
+        *,
+        scenario_config: ScenarioConfig = ScenarioConfig(),
     ) -> str:
         """Return the policy's stable occurrence id for an attributed episode."""
         if self.recurrence_family is not None:
             return episode_id
         members = [item for item in bolus
-                   if item.t < before and self.recurrence_members(item)]
+                   if item.t < before and self.recurrence_members(
+                       item, scenario_config=scenario_config,
+                   )]
         if not members:
             raise ValueError("attributed episode has no recurrence-population occurrence")
         return self.occurrence_id(max(members, key=lambda item: item.t))
+
+    def comparison_population(
+        self,
+        roster: Sequence,
+        bolus: Sequence,
+        *,
+        scenario_config: ScenarioConfig = ScenarioConfig(),
+    ) -> tuple:
+        """Return the candidates eligible for this lever's comparison cohort."""
+        if self.cross_population:
+            return tuple(
+                item for item in bolus
+                if self.comparison_members(item, scenario_config=scenario_config)
+            )
+
+        def eligible(member) -> bool:
+            opportunity = member.opportunity
+            if self.comparison_family is not None:
+                return self.comparison_members(
+                    opportunity, scenario_config=scenario_config,
+                )
+            return any(
+                self.comparison_members(item, scenario_config=scenario_config)
+                for item in opportunity.members
+            )
+
+        return tuple(member for member in roster if eligible(member))
+
+    def projected_recurrence_account(
+        self,
+        lever: str,
+        attributed_families: dict[str, Sequence[dict]],
+        recurrence_families: dict[str, Sequence[dict]],
+        pattern: dict,
+    ) -> tuple[frozenset[str], int] | None:
+        """Project a custom recurrence population from serialized evidence."""
+        if self.recurrence_family is not None:
+            return None
+        occurrence_ids = frozenset(
+            occurrence_id
+            for occurrences in attributed_families.values()
+            for item in occurrences
+            if item.get("cause_lever") == lever
+            if (occurrence_id := item.get("cause_occurrence_id")) is not None
+        )
+        group_ids = {
+            group.get("id")
+            for group in pattern.get("occurrence_groups") or ()
+        }
+        if group_ids and not occurrence_ids.issubset(group_ids):
+            raise ValueError(
+                f"{lever} serialized recurrence identity differs from its pattern"
+            )
+        return occurrence_ids, len(
+            recurrence_families.get(self.recurrence_noun, ())
+        )
 
 
 _WINDOWS = {
@@ -109,5 +183,13 @@ def policy_for(lever: Lever | str) -> EvidencePopulationPolicy:
     return _POLICIES[Lever(lever)]
 
 
-def recurrence_count(lever: Lever | str, families: dict, bolus: Sequence) -> int:
-    return len(policy_for(lever).recurrence_population(families, bolus))
+def recurrence_count(
+    lever: Lever | str,
+    families: dict,
+    bolus: Sequence,
+    *,
+    scenario_config: ScenarioConfig = ScenarioConfig(),
+) -> int:
+    return len(policy_for(lever).recurrence_population(
+        families, bolus, scenario_config=scenario_config,
+    ))

@@ -277,6 +277,7 @@ def _population(
         if policy.recurrence_family is None:
             occurrence_id = policy.occurrence_for_episode(
                 str(index), filtered_bolus, attr.driver_anchor.t,
+                scenario_config=config,
             )
             served_id = _opaque("m_", occurrence_id)
             associations[attr.lever].add(served_id)
@@ -329,7 +330,9 @@ def _population(
                        outcomes[lever].get(_opaque("m_", policy.occurrence_id(item)), item.t),
                        "fired" if _opaque("m_", policy.occurrence_id(item)) in associations[lever]
                        else "clean", _opaque("m_", policy.occurrence_id(item)))
-                for item in policy.recurrence_population(opportunity_families, filtered_bolus)
+                for item in policy.recurrence_population(
+                    opportunity_families, filtered_bolus, scenario_config=config,
+                )
                 if item.seq_num in meals
             )
             continue
@@ -547,12 +550,19 @@ def _event(lever, roster, claimed_ids, cgm, bolus, source_window_days, basal=())
     matched_ids = {member.id for member in matched}
     near = [member for member in near if member.id not in matched_ids]
     cross_exposure = policy.cross_population
+    comparison_population = policy.comparison_population(roster, bolus)
     if cross_exposure:
-        comparison_rows = _completed_carb_boluses(bolus, cgm, basal, source_window_days)
+        times = [row.t for row in basal] + [row.t for row in cgm]
+        end = max(times) if times else None
+        start = end - timedelta(days=source_window_days) if end is not None else None
+        comparison_rows = (
+            tuple(row for row in comparison_population if start <= row.t <= end)
+            if start is not None else ()
+        )
         comparison_traces = [_comparison_trace(_opaque("m_", row.seq_num), row.t, cgm, window)
                              for row in comparison_rows]
     else:
-        comparison = [member for member in roster
+        comparison = [member for member in comparison_population
                       if member.id not in matched_ids
                       and member.id not in {item.id for item in near}]
         comparison_traces = [_comparison_trace(member.id, member.opportunity.anchor_t, cgm, window)

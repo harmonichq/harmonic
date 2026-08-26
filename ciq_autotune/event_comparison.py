@@ -149,23 +149,32 @@ def _late_near(verdict) -> dict | None:
     }
 
 
-def _completed_meal_at(bolus, anchor: datetime, ordinal: int = 0):
+def _completed_meal_at(
+    bolus,
+    anchor: datetime,
+    ordinal: int = 0,
+    *,
+    scenario_config: ScenarioConfig = CONFIG,
+):
     """The ADR 679 comparison identity at one timestamp and stable ordinal."""
     candidates = [
         item
         for item in bolus
-        if item.t == anchor and completed_carb_bolus(item, scenario_config=CONFIG)
+        if item.t == anchor
+        and completed_carb_bolus(item, scenario_config=scenario_config)
     ]
     candidates.sort(key=lambda item: item.seq_num)
     return candidates[ordinal] if ordinal < len(candidates) else None
 
 
-def completed_carb_boluses(bolus):
+def completed_carb_boluses(bolus, *, scenario_config: ScenarioConfig = CONFIG):
     """Return the ADR 679 completed carb-bolus population in stable order."""
     meals = []
     for anchor in sorted({item.t for item in bolus}):
         ordinal = 0
-        while (meal := _completed_meal_at(bolus, anchor, ordinal)) is not None:
+        while (meal := _completed_meal_at(
+            bolus, anchor, ordinal, scenario_config=scenario_config,
+        )) is not None:
             meals.append(meal)
             ordinal += 1
     return tuple(meals)

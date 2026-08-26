@@ -391,6 +391,35 @@ class ChipProjectionTest(unittest.TestCase):
 
 
 class MealBolusShortPopulationProjectionTest(unittest.TestCase):
+    def test_one_off_keeps_its_attributed_meal_occurrence_below_the_pattern_gate(self):
+        from tests.test_meal_bolus_short_attribution import (
+            UNDERDOSED_BOLUS, UNDERDOSED_CGM, _projection, _seed,
+        )
+
+        with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
+            with Store.open(database.name) as store:
+                _seed(store, UNDERDOSED_BOLUS, UNDERDOSED_CGM)
+                projection = _projection(store)
+                rows = projection.project(WindowQuery.whole_day())["rows"]
+                scoped_rows = projection.project(WindowQuery.clock(810, 900))["rows"]
+
+        row = next(
+            item for item in rows
+            if item["lever"] == Lever.MEAL_BOLUS_SHORT.value
+        )
+        self.assertEqual(row["appearances"], [{
+            "family": "meals", "noun": "meals", "n": 1, "m": 1,
+        }])
+        self.assertEqual(row["episodes"], 1)
+        scoped = next(
+            item for item in scoped_rows
+            if item["lever"] == Lever.MEAL_BOLUS_SHORT.value
+        )
+        self.assertEqual(scoped["appearances"], [{
+            "family": "meals", "noun": "meals", "n": 1, "m": 1,
+        }])
+        self.assertEqual(scoped["episodes"], 1)
+
     def test_two_highs_from_one_meal_count_as_one_served_meal_occurrence(self):
         from tests.test_meal_bolus_short_attribution import (
             DOUBLE_HIGH_BOLUS, DOUBLE_HIGH_CGM, _projection, _seed, next_day,

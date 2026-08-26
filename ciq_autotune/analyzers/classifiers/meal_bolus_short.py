@@ -71,7 +71,7 @@ def _most_recent_meal_in_window(
     bolus_events: Sequence[BolusEvent],
     window_start: datetime,
     anchor: datetime,
-    min_carbs: float,
+    scenario_config: ScenarioConfig,
 ) -> Optional[BolusEvent]:
     """Most recent carb-tagged bolus in ``[window_start, anchor)``, or ``None``.
 
@@ -87,7 +87,7 @@ def _most_recent_meal_in_window(
         # The recurrence policy owns the eligible meal identity.  Keep the
         # classifier on that same population so a cancelled or zero-dose row can
         # neither attribute a high nor enter the denominator.
-        if not completed_carb_bolus(b, scenario_config=ScenarioConfig(anchor_meal_min_carbs=min_carbs)):
+        if not completed_carb_bolus(b, scenario_config=scenario_config):
             continue
         if window_start <= b.t < anchor and (best is None or b.t > best.t):
             best = b
@@ -205,7 +205,7 @@ def classify_meal_bolus_short(
 
     digestion_window_start = anchor - timedelta(minutes=digestion_lookback_min)
     meal = _most_recent_meal_in_window(
-        bolus_events, digestion_window_start, anchor, meal_min_carbs
+        bolus_events, digestion_window_start, anchor, scenario_config
     )
     if meal is None:
         return MealBolusShortVerdict(

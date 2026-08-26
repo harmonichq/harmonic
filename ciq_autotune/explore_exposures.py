@@ -144,6 +144,7 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
                 policy = policy_for(lever)
                 cause_occurrence_id = policy.occurrence_for_episode(
                     episode["id"], window_bolus, source_anchor.t,
+                    scenario_config=scenario_config,
                 )
             cause_title = title(Lever(lever)) if lever is not None else None
             occurrence = {

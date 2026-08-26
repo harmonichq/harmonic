@@ -12,7 +12,7 @@
       drill provenance, and the un-trace fix.
 - [x] Chunk 4: the behavior-ledger amendment with every recorded retirement,
       the replay stories, the cockpit-gate stubs, the arrangement renders, and
-      all nine browser gate legs green.
+      all ten browser gate legs green.
 - [ ] Coordinator: fold `docs/scope/135-behavior-retirements.md` handling,
       the surface-ledger row in `mockups/INDEX.md`, the repo-rules audit
       (including the dead dark-ground line in `diagnose-workstation.css`),

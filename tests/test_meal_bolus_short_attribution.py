@@ -25,6 +25,7 @@ import tempfile
 import unittest
 from datetime import datetime, timedelta
 
+from ciq_autotune.analyzers.classifiers.meal_bolus_short import classify_meal_bolus_short
 from ciq_autotune.analyzers.scenario.anchors import collect_anchors
 from ciq_autotune.analyzers.scenario.attribute import attribute
 from ciq_autotune.analyzers.scenario.levers import (
@@ -34,6 +35,7 @@ from ciq_autotune.analyzers.scenario.segment import (
     EpisodeAnchors, segment, split_double_humps,
 )
 from ciq_autotune.events import BolusEvent, CgmReading
+from ciq_autotune.explore_exposures import build_exposures
 from ciq_autotune.findings_projection import (
     UNCAUSED_HIGHS_COPY, FindingsProjection, WindowQuery,
 )
@@ -116,6 +118,22 @@ DOUBLE_HIGH_BOLUS = [
     BolusEvent(t=at(12), completion="Completed", insulin=5.0, carbs=85.0,
                carb_ratio=12.0, seq_num=7001),
     BolusEvent(t=at(13, 20), insulin=2.5, carbs=None, seq_num=7002),
+]
+
+
+# A SECOND eligible meal between the rise onset and the peak. The high run crosses
+# 250 at 13:20 and does not peak until 15:10, and a 25 g meal lands at 14:00 — inside
+# that span. The classifier judges the ONSET, so the meal it names is the 12:00 dose
+# (13:20 minus the 150-min digestion lookback reaches back to 10:50 and no further);
+# the 14:00 meal is not in the window it looked at. Anything keying the occurrence off
+# the peak instead names 14:00, and the recurrence identity then disagrees with the
+# engine's — the closed equation that fails every finding case-file preparation.
+LATE_SECOND_MEAL_CGM = trace([(9, 0, 110), (12, 0, 112), (12, 20, 130), (13, 20, 252),
+                              (15, 10, 300), (16, 10, 240), (18, 0, 150), (20, 0, 120)])
+LATE_SECOND_MEAL_BOLUS = [
+    BolusEvent(t=at(12), completion="Completed", insulin=8.0, carbs=45.0, carb_ratio=12.0),
+    BolusEvent(t=at(13, 45), completion="Completed", insulin=2.5, carbs=None),
+    BolusEvent(t=at(14), completion="Completed", insulin=4.5, carbs=25.0, carb_ratio=12.0),
 ]
 
 
@@ -434,6 +452,98 @@ class UncausedHighsTest(unittest.TestCase):
             _scenarios={"patterns": [], "low_confidence": []})
         self.assertEqual(empty.project(WindowQuery.whole_day())["uncaused_highs"],
                          {"count": 0, "text": None})
+
+
+
+class OccurrenceIdentityTest(unittest.TestCase):
+    """One occurrence identity: the meal the classifier judged (#63).
+
+    The lever's occurrence is the implicated MEAL, not the high it produced, and the
+    classifier picks that meal out of the digestion window ahead of the rise ONSET.
+    Three places re-derive it — the engine's occurrence groups, the exposures
+    projection's `cause_occurrence_id`, and the case file's associations — and ADR 679
+    closes the equation between them. Key any of them off the driver anchor's peak
+    instead and a meal eaten mid-excursion wins, which is both the wrong meal to put in
+    front of a reader and a 500 on the whole preparation.
+    """
+
+    def _recurring(self):
+        return (LATE_SECOND_MEAL_BOLUS + next_day(LATE_SECOND_MEAL_BOLUS),
+                LATE_SECOND_MEAL_CGM + next_day(LATE_SECOND_MEAL_CGM))
+
+    def test_the_classifier_judges_the_onset_and_names_the_earlier_meal(self):
+        # Read off the classifier, so the rest of this class has an authority to
+        # agree with rather than a second opinion.
+        attrs = [a for a in attributions(LATE_SECOND_MEAL_BOLUS, LATE_SECOND_MEAL_CGM)
+                 if a.lever is Lever.MEAL_BOLUS_SHORT]
+        self.assertEqual(len(attrs), 1)
+        self.assertEqual(attrs[0].trigger_t, at(13, 20))
+        self.assertEqual(attrs[0].driver_anchor.t, at(15, 10))
+        verdict = classify_meal_bolus_short(
+            attrs[0].trigger_t, LATE_SECOND_MEAL_CGM, LATE_SECOND_MEAL_BOLUS, [],
+        )
+        self.assertTrue(verdict.matched)
+        self.assertEqual(verdict.meal_t, at(12))
+
+    def test_the_exposure_occurrence_is_that_meal_not_the_one_before_the_peak(self):
+        bolus, cgm = self._recurring()
+        with tempfile.NamedTemporaryFile(suffix=".db") as db:
+            with Store.open(db.name) as store:
+                _seed(store, bolus, cgm)
+                highs = build_exposures(store)["exposures"]["highs"]
+        # `_seed` numbers the boluses in order, so the 12:00 meals are 1 and 4 and the
+        # 14:00 meals — the ones that only precede the peak — are 3 and 6.
+        self.assertEqual(
+            sorted({o["cause_occurrence_id"] for o in highs["occurrences"]
+                    if o.get("cause_lever") == Lever.MEAL_BOLUS_SHORT.value}),
+            ["meal-1", "meal-4"])
+
+    def test_the_projection_and_the_engine_agree_on_the_same_two_meals(self):
+        from ciq_autotune.analyzers.scenario import build_scenarios
+
+        bolus, cgm = self._recurring()
+        with tempfile.NamedTemporaryFile(suffix=".db") as db:
+            with Store.open(db.name) as store:
+                _seed(store, bolus, cgm)
+                # Raises ValueError when the two identities disagree — the failure the
+                # API reports as `inconsistent_projection`.
+                rows = _projection(store).project(WindowQuery.whole_day())["rows"]
+                scenarios = build_scenarios(store).to_dict()
+        groups = [group["id"]
+                  for pattern in scenarios["patterns"] + scenarios["low_confidence"]
+                  if pattern["lever"] == Lever.MEAL_BOLUS_SHORT.value
+                  for group in pattern["occurrence_groups"]]
+        self.assertEqual(sorted(groups), ["meal-1", "meal-4"])
+        row = next(r for r in rows if r.get("lever") == Lever.MEAL_BOLUS_SHORT.value)
+        # Two of the window's four eligible completed carb-bolus meals.
+        self.assertEqual(row["episodes"], 2)
+        self.assertEqual(row["appearances"],
+                         [{"family": "meals", "noun": "meals", "n": 2, "m": 4}])
+
+    def test_the_case_file_claims_the_same_two_meals(self):
+        from ciq_autotune.analyze import analyze
+        from ciq_autotune.analyzers.scenario import build_scenarios
+        from ciq_autotune import finding_case_file
+
+        bolus, cgm = self._recurring()
+        with tempfile.NamedTemporaryFile(suffix=".db") as db:
+            with Store.open(db.name) as store:
+                _seed(store, bolus, cgm)
+                prepared = finding_case_file.prepare(
+                    store, query=WindowQuery.whole_day(), version=0,
+                    analysis=analyze(
+                        store, pool_agreeing_basal_regimes=True,
+                        carb_entries=store.carb_entries(),
+                        prompt_responses=store.prompt_responses(),
+                    ).to_dict(),
+                    exposures=build_exposures(store),
+                    scenarios=build_scenarios(store).to_dict(),
+                )
+        # Raises InconsistentProjection when the case file's associations were keyed
+        # off a different meal than the row's episode count.
+        case = prepared.case(f"finding:{Lever.MEAL_BOLUS_SHORT.value}", "clock", None)
+        self.assertEqual(case["summary"]["claimed"], 2)
+        self.assertEqual(case["summary"]["denominator"], 4)
 
 
 if __name__ == "__main__":

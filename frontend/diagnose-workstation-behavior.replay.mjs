@@ -3571,32 +3571,74 @@ export const S106 = async (page) => {
 export const S107 = async (page) => {
   await openCanvas(page);
   const held = page.locator('.evidence-tile[data-chart-id^="finding:"]').first();
+  const heldFindingId = await held.getAttribute('data-chart-id');
+  ok(Boolean(heldFindingId), 'S107 the held chart has no Finding identity');
   await held.locator('.tile-pin').click();
-  const requests = [];
+  const preparations = [];
+  const cases = [];
   const observe = (request) => {
-    if (new URL(request.url()).pathname === '/api/diagnose/finding-case-file') requests.push(request.url());
+    const url = new URL(request.url());
+    if (url.pathname === '/api/diagnose/finding-case-file-preparation') {
+      preparations.push({
+        start: Number(url.searchParams.get('start_min')),
+        end: Number(url.searchParams.get('end_min')),
+      });
+    }
+    if (url.pathname === '/api/diagnose/finding-case-file') {
+      cases.push({
+        projection: url.searchParams.get('projection_id'),
+        finding: url.searchParams.get('finding_id'),
+        alignment: url.searchParams.get('alignment'),
+        occurrence: url.searchParams.get('occ'),
+      });
+    }
   };
-  const waitForRead = async (count, label) => {
-    for (let attempt = 0; attempt < 100 && requests.length <= count; attempt += 1) {
+  const chipWindow = async (label) => {
+    const chip = (await state(page)).chip || '';
+    const match = /^Window (\d\d):(\d\d)–(\d\d):(\d\d)$/.exec(chip);
+    ok(Boolean(match), `${label} did not expose a live drawn window: ${chip}`);
+    return [Number(match[1]) * 60 + Number(match[2]),
+      Number(match[3]) * 60 + Number(match[4])];
+  };
+  const projectionFor = ([start, end]) => {
+    if (start === 0 && end === 360) return `fp_${'8'.repeat(32)}`;
+    return `fp_${`${start.toString(16).padStart(4, '0')}${end.toString(16).padStart(4, '0')}`.repeat(4)}`;
+  };
+  const waitForPinnedRead = async (window, since, label) => {
+    const projection = projectionFor(window);
+    const observed = () => preparations.slice(since.preparations)
+      .some(({ start, end }) => start === window[0] && end === window[1])
+      && cases.slice(since.cases).some((request) => request.projection === projection
+        && request.finding === heldFindingId && request.alignment === 'event'
+        && request.occurrence === null);
+    for (let attempt = 0; attempt < 100 && !observed(); attempt += 1) {
       await page.waitForTimeout(50);
     }
-    ok(requests.length > count, label);
+    ok(observed(), `${label}: expected ${heldFindingId} / ${projection} / event / no occurrence; `
+      + `preparations=${JSON.stringify(preparations.slice(since.preparations))} `
+      + `cases=${JSON.stringify(cases.slice(since.cases))}`);
   };
   page.on('request', observe);
   const box = await plot(page); const y = box.y + box.h * .45;
-  let before = requests.length;
+  let before = { preparations: preparations.length, cases: cases.length };
   await page.mouse.move(chartXAt(box, 420), y); await page.mouse.down();
   await page.mouse.move(chartXAt(box, 780), y, { steps: 6 });
-  await waitForRead(before, 'S107 the pinned chart re-reads before the ordinary drag releases');
+  const ordinary = await chipWindow('S107 ordinary drag');
+  await waitForPinnedRead(ordinary, before,
+    'S107 the pinned chart re-reads its intermediate ordinary window before release');
   await page.mouse.up(); await settle(page, 500);
 
-  await beginFreshDraw(page); before = requests.length;
+  await beginFreshDraw(page);
+  before = { preparations: preparations.length, cases: cases.length };
   const unrolled = await plot(page);
-  await shoveToBoundary(page, { x: chartXAt(unrolled, 1320), y }, 'right');
-  await page.waitForFunction(() => Math.abs(Number(document.getElementById('chart')
-    .parentElement.dataset.clockPan || 0)) >= 60, null, { timeout: 7000 });
-  await waitForRead(before, 'S107 the pinned chart re-reads before release across midnight unroll');
-  await page.mouse.move(unrolled.x + unrolled.w / 2, y); await page.mouse.up();
+  const during = await panThenAim(page, { x: chartXAt(unrolled, 22 * 60) }, 'right',
+    { past: 180, aim: 26 * 60 });
+  ok(during.panOffset > 0, 'S107 midnight re-read did not travel through the unrolled day');
+  const wrapped = await chipWindow('S107 midnight drag');
+  ok(wrapped[0] > wrapped[1], `S107 midnight window did not wrap: ${wrapped}`);
+  await waitForPinnedRead(wrapped, before,
+    'S107 the pinned chart re-reads its wrapped intermediate window before release');
+  await page.mouse.up();
   page.off('request', observe);
 };
 

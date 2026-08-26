@@ -47,6 +47,7 @@ async function vendored(name) {
 export async function openApp(browser, options = {}) {
   const viewport = options.viewport || { width: 1280, height: 720 };
   const page = await browser.newPage({ viewport });
+  const servedByFinding = new Map();
   const payload = JSON.parse(await readFile(BASE_PAYLOAD, 'utf8'));
   const caseFiles = JSON.parse(await readFile(
     join(ROOT, 'mockups/diagnose-workstation.synthetic/finding-case-files.json'), 'utf8'));
@@ -56,7 +57,8 @@ export async function openApp(browser, options = {}) {
     [apiPattern('/diagnose/finding-case-file-preparation'), () =>
       JSON.parse(JSON.stringify(caseFiles.preparation))],
     [apiPattern('/diagnose/finding-case-file$'), (url) => {
-      const finding = caseFiles.cases[url.searchParams.get('finding_id')];
+      const findingId = url.searchParams.get('finding_id');
+      const finding = caseFiles.cases[findingId];
       const alignment = url.searchParams.get('alignment');
       const occ = url.searchParams.get('occ');
       const served = JSON.parse(JSON.stringify(!occ ? finding[alignment]
@@ -69,7 +71,9 @@ export async function openApp(browser, options = {}) {
            for itself — the case a fail-closed surface must refuse whole. */
         served.projection.cohorts[0].support = 'unknown';
       }
-      return options.caseFile ? options.caseFile(served, url) : served;
+      const response = options.caseFile ? options.caseFile(served, url) : served;
+      servedByFinding.set(findingId, response);
+      return response;
     }],
     /* #735: the app's Diagnose loader now also asks for the server-owned findings
        queue (ADR 730). It is not this surface's subject, but a rejected fetch there
@@ -148,6 +152,8 @@ export async function openApp(browser, options = {}) {
      Finding in the window is listed. */
   await page.locator('#seg-window button', { hasText: '24 h' }).click();
   const findingId = options.finding || FINDINGS[0];
+  page.__comparisonFindingId = findingId;
+  page.__comparisonServedByFinding = servedByFinding;
   const queueIndex = await page.locator('#level .qrow').evaluateAll((rows, id) =>
     rows.findIndex((row) => row.dataset.id === id), findingId);
   ok(queueIndex >= 0, `${findingId} is absent from the unscoped findings queue`);
@@ -179,6 +185,7 @@ export async function openApp(browser, options = {}) {
     ));
     fail(`${findingId} did not visibly render its successor tile canvas: ${JSON.stringify(boxes)}`);
   }
+  page.__compactComparison = await compactRendered(page, findingId);
   await tile.locator('.tile-fullscreen').click();
   await page.waitForSelector('#tile-field #ec-chart', { state: 'attached', timeout: 15000 });
   await settle(page, 700);
@@ -187,6 +194,11 @@ export async function openApp(browser, options = {}) {
     await page.locator(`[data-comparison-cohort="${options.selectCohort}"]`).first().click();
     await page.waitForSelector('#level .case-facts', { timeout: 15000 });
     await settle(page, 500);
+    page.__selectedComparison = servedByFinding.get(findingId);
+    page.__fullscreenComparison = await fullscreenRendered(page);
+    await tile.locator('.tile-fullscreen').click();
+    await tile.locator('.tile-chart canvas').waitFor({ state: 'visible', timeout: 15000 });
+    page.__compactComparison = await compactRendered(page, findingId);
   }
   return page;
 }
@@ -196,21 +208,61 @@ async function use(open, browser, options, fn) {
   try { await fn(page); } finally { await page.close(); }
 }
 
-/* Reading the surface. Everything a story asserts about membership, names,
-   counts or support is read back off the SERVED case file the canvas rendered
-   from, never recomputed here — the browser derives none of it, and neither
-   does this ledger. */
-const rendered = (page) => page.evaluate(() => {
-  const exposed = window.__diagnoseEventComparison;
-  const option = exposed.chart.getOption();
-  const ids = option.series.map((series) => series.id).filter(Boolean);
-  const { projection } = exposed.projection;
+/* The compact registry tile is the successor surface. Read its own ECharts
+   instance before fullscreen replaces it; fullscreen remains an additional
+   view for its title, accessible legend and keyboard semantics. */
+const compactRendered = (page, findingId) => page.locator(
+  `.evidence-tile[data-chart-id="${findingId}"]`,
+).evaluate((tile) => {
+  const host = tile.querySelector('.tile-chart');
+  const chart = host && window.echarts.getInstanceByDom(host);
+  if (!chart) return null;
+  const option = chart.getOption();
   return {
-    schema: exposed.projection.schema,
+    chartId: tile.dataset.chartId,
+    state: tile.dataset.state,
+    visible: Boolean(host.getClientRects().length && host.querySelector('canvas')),
+    axis: [option.xAxis[0].min, option.xAxis[0].max],
+    ids: option.series.map((series) => series.id).filter(Boolean),
+    series: option.series.filter((series) => series.id).map((series) => ({
+      id: series.id,
+      name: series.name,
+      data: series.data,
+      opacity: series.lineStyle?.opacity ?? 1,
+    })),
+  };
+});
+
+const fullscreenRendered = (page) => page.evaluate(() => ({
+  legend: [...document.querySelectorAll('.ec-key-item')].map((item) => ({
+    cohort: item.dataset.cohort, support: item.dataset.support || null,
+    selected: item.dataset.selectedCohort || null,
+    name: item.querySelector('strong')?.textContent ?? null,
+    detail: item.querySelector('small')?.textContent.replace(/\s+/g, ' ').trim() ?? null,
+  })),
+  title: document.querySelector('#tile-field #ec-canvas-head h2')?.textContent ?? null,
+  chartLabel: document.querySelector('#ec-chart')?.getAttribute('aria-label') || '',
+}));
+
+/* Membership, counts and grades are server-owned, so compare the served case
+   file with what the compact option actually drew. Never use fullscreen's
+   global chart hook as the proof of the successor tile. */
+const rendered = async (page) => {
+  const compact = page.__compactComparison;
+  const served = page.__selectedComparison
+    || page.__comparisonServedByFinding.get(page.__comparisonFindingId);
+  ok(compact?.visible && compact.chartId === page.__comparisonFindingId,
+    `the compact registry tile did not expose its own ECharts option: ${JSON.stringify(compact)}`);
+  const ids = compact.ids;
+  const { projection } = served;
+  const fullscreen = page.__fullscreenComparison || await fullscreenRendered(page);
+  return {
+    compact,
+    schema: served.schema,
     alignment: projection.alignment,
     anchor: projection.anchor,
     window: projection.window_min,
-    axis: [option.xAxis[0].min, option.xAxis[0].max],
+    axis: compact.axis,
     comparison: projection.comparison,
     counts: projection.counts,
     cohorts: projection.cohorts.map((cohort) => ({
@@ -220,15 +272,11 @@ const rendered = (page) => page.evaluate(() => {
       pointStates: [...new Set(cohort.points.map((point) => point.support))].sort(),
       series: ids.filter((id) => id.startsWith(`${cohort.key}:`)),
     })),
-    legend: [...document.querySelectorAll('.ec-key-item')].map((item) => ({
-      cohort: item.dataset.cohort, support: item.dataset.support || null,
-      selected: item.dataset.selectedCohort || null,
-      name: item.querySelector('strong')?.textContent ?? null,
-      detail: item.querySelector('small')?.textContent.replace(/\s+/g, ' ').trim() ?? null,
-    })),
-    title: document.querySelector('#tile-field #ec-canvas-head h2')?.textContent ?? null,
+    selected: served.selection,
+    legend: fullscreen.legend,
+    title: fullscreen.title,
   };
-});
+};
 
 // AMENDED (issue #181) — the standalone lens route is retired with its own
 // chrome, so the "shipped chrome siblings" half now reads the cockpit the
@@ -396,10 +444,13 @@ export const S9 = async (open, browser) => {
     for (const theme of ['light', 'dark']) {
       const statePage = await open(browser, { finding, theme });
       try {
+        const state = await rendered(statePage);
         ok(await statePage.locator(`.evidence-tile[data-chart-id="${finding}"]`).isVisible(),
           `${finding}/${theme} did not keep its comparison tile visible`);
+        ok(state.compact.visible && state.compact.ids.length > 0,
+          `${finding}/${theme} mounted no populated compact comparison canvas`);
         ok(await statePage.locator('#tile-field #ec-chart canvas').count() > 0,
-          `${finding}/${theme} mounted no comparison canvas`);
+          `${finding}/${theme} mounted no additional fullscreen comparison canvas`);
       } finally { await statePage.close(); }
     }
   }
@@ -447,9 +498,18 @@ export const S11 = async (open, browser) => use(open, browser, {
     'the roster selection did not land in the withheld cohort');
   ok(cohort.support === 'withheld', `the selected cohort is not Withheld: ${cohort.support}`);
   ok(cohort.series.length === 0, 'selection promoted a Withheld cohort aggregate');
-  const facts = await page.locator('#level .case-facts').innerText();
-  ok(/\d+ glucose readings/.test(facts) && /\d+ event markers/.test(facts),
-    'the Withheld cohort lost its exact selected trace and markers');
+  const selected = state.compact.series.find((series) => series.id === 'selected:trace');
+  const marker = state.legend.find((item) => item.cohort === 'matched');
+  ok(selected?.data.length > 0,
+    `the compact tile drew no selected ECharts trace points: ids=${state.compact.ids}; `
+      + `selected legend=${JSON.stringify(marker)}`);
+  ok(selected.data.length === state.selected.detail.glucose.length,
+    `the compact tile drew ${selected.data.length} of ${state.selected.detail.glucose.length} served selected glucose points`);
+  const otherLines = state.compact.series.filter((series) => /:line:/.test(series.id));
+  ok(otherLines.length > 0 && otherLines.every((series) => selected.opacity > series.opacity),
+    `the selected trace is not stronger than the other compact lines: selected=${selected.opacity}, others=${otherLines.map((series) => series.opacity)}`);
+  ok(marker?.selected === 'true' && /selected cohort/.test(marker.detail),
+    `the additional fullscreen legend did not mark the selected cohort: ${JSON.stringify(marker)}`);
   ok(await page.locator('.evidence-tile[data-chart-id="finding:missed_meal"][data-drilled]').count() === 1,
     'the comparison tile does not identify the selected cohort as its provenance');
 });
@@ -473,16 +533,11 @@ export const S12 = async (open, browser) => {
     return caseFile;
   };
   await use(open, browser, { caseFile: posed }, async (page) => {
-    const drawn = await page.evaluate(() => {
-      const option = window.__diagnoseEventComparison.chart.getOption();
-      const line = option.series.find((series) => series.id === 'matched:line:limited');
-      const spread = option.series.find((series) => series.id === 'matched:spread:limited');
-      return {
-        ids: option.series.map((series) => series.id).filter(Boolean),
-        medians: line.data.filter(([, value]) => value != null),
-        spread: spread.data,
-      };
-    });
+    const state = await rendered(page);
+    const line = state.compact.series.find((series) => series.id === 'matched:line:limited');
+    const spread = state.compact.series.find((series) => series.id === 'matched:spread:limited');
+    const drawn = { ids: state.compact.ids,
+      medians: line.data.filter(([, value]) => value != null), spread: spread.data };
     ok(JSON.stringify(drawn.medians) === JSON.stringify([[0, 105]]),
       `the canvas did not draw exactly the served median: ${JSON.stringify(drawn.medians)}`);
     ok(JSON.stringify(drawn.spread) === JSON.stringify([[0, 102.5, 107.5]]),

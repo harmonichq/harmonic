@@ -9,8 +9,8 @@ Each lever owns:
 
 * a stable ``value`` (the payload string a frontend keys off),
 * a human ``title`` (for narrative / pattern headers),
-* the ``exposure`` denominator its #58 ``Confidence`` rate is scored against
-  (all meals, all lows, …) — see :mod:`.engine`,
+* the outcome ``exposure`` family the episode belongs to (the recurrence population
+  is owned separately by :mod:`.evidence_population`),
 * a specific ``recommendation`` (the closed set's promise: one lever → one
   action), and
 * a plain-language ``meaning`` — what the lever says *happened*, in the user's
@@ -31,12 +31,7 @@ from typing import Optional
 
 
 class Exposure(str, Enum):
-    """The denominator an episode counts against when scoring a pattern's rate.
-
-    A lever's Wilson ``n`` (#58) is the number of *opportunities* of this kind in
-    the window, not the number of episodes — so "ran away high in ~28% of your
-    meals" reads against all meals, a low-treatment lever against all lows, etc.
-    """
+    """The canonical event family an episode outcome belongs to."""
 
     MEALS = "meals"
     LOWS = "lows"
@@ -61,7 +56,7 @@ class Lever(str, Enum):
     MEAL_BOLUS_SHORT = "meal_bolus_short"
 
 
-# Per-lever metadata: title, the exposure denominator it scores against, the
+# Per-lever metadata: title, the outcome Exposure it belongs to, the
 # single recommendation the closed set promises, and the plain-language meaning
 # (#157). Keep these in lock-step with the taxonomy table in #70 §2.
 _META = {
@@ -184,7 +179,7 @@ def outcome_kind(lever) -> Optional[str]:
 
 
 def exposure(lever: "Lever") -> Exposure:
-    """The exposure denominator a lever's pattern rate is scored against (#58 ``n``)."""
+    """The canonical outcome Exposure family for a lever."""
     return _META[lever][1]
 
 

@@ -20,15 +20,44 @@ Both flavors compose Priority identically as `100 · √(impact · recurrence)`,
 
 ### Requirement: Exposure and Cause are different lists; the layer names both.
 
-Exposure is the denominator an episode counts against — "all meals," "all lows," "all correction pairs," "all highs" — paired to each lever by its nature (a meal lever like carb undercount exposes against meals; a low lever like over-treated low exposes against lows). A Pattern groups episodes by their attributed Lever and scores against that lever's exposure. Cause is an internal construct for attribution — the early driver logic that picks the one lever each episode will carry — but a Cause is never surfaced as something a user changes. The recommendation always flows from the attributed Lever, never from the internal cause reasoning.
+Exposure is the outcome family an episode lands in — "all meals," "all lows," "all correction pairs," "all highs" — paired to each lever by its nature (a meal lever like carb undercount exposes against meals; a low lever like over-treated low exposes against lows). A Pattern groups episodes by their attributed Lever and scores against that lever's recurrence population, which the evidence-population policy below owns and which is the same as its Exposure family for every lever but one. Cause is an internal construct for attribution — the early driver logic that picks the one lever each episode will carry — but a Cause is never surfaced as something a user changes. The recommendation always flows from the attributed Lever, never from the internal cause reasoning.
+
+### Requirement: One policy owns each lever's complete evidence populations.
+
+A single backend policy declares, per behavioral lever, the population its
+recurrence is denominated on and the noun that names it, the population its event
+comparison baselines against and that population's served name, the
+occurrence-to-comparison anchor and comparison window, whether the comparison
+crosses populations, and the lever's unique-occurrence identity. Recurrence and
+comparison are distinct concepts and the policy keeps them distinct; for ordinary
+levers both derive from the same Exposure opportunities.
+
+A lever's recurrence population is therefore a policy-owned concept rather than
+its Exposure family. "Meal bolus fell short" recurs over eligible completed
+carb-bolus meals — completion Completed, insulin above zero, carbs at or above the
+anchor minimum — because its claim is about a meal dose, not about the high that
+followed. Only such a meal can implicate it, so its attributed count is a subset
+of its denominator by construction rather than by a clamp, and several highs
+implicating one meal count once at the pattern gate, in the occurrence list, in
+the attributed count and in ranking, represented by their worst episode.
+
+"Missed / unannounced meal" is the only lever whose comparison crosses
+populations: it recurs over highs and compares against completed carb-bolus
+meals. Every other lever compares within its own population, and the three
+ordinary meal levers name theirs "other meal opportunities" because that
+population admits any carb-tagged bolus over the carb minimum, cancelled and
+insulin-free rows included.
+
+The served case file publishes the recurrence population's noun and the
+cross-population flag, so no consumer infers either from a lever's name.
 
 ### Requirement: One canonical opportunity population owns every Finding case file.
 
 The layer builds identity-bearing opportunities for the four declared Exposure
 families: meals, sub-70 runs, adjacent correction pairs, and >250 runs. Exposure
 counts and Finding case files consume those same opportunity objects. Every
-attributed Lever instance must associate with one opportunity in its declared
-Exposure; a caused-low split associates its rebound High back to the source Low.
+attributed Lever instance must associate with one opportunity in the population
+its policy declares; a caused-low split associates its rebound High back to the source Low.
 If an attribution cannot be associated without inventing membership, that Finding
 is withheld rather than published as inspectable.
 

@@ -1588,7 +1588,7 @@ test('event comparisons render the served case-file cohorts and retain no standa
     assert.ok(await page.locator('#ec-chart').isVisible(), 'the canvas itself did not render');
     assert.deepEqual(await page.locator('.ec-key-item[data-cohort]').evaluateAll((items) =>
       items.map((item) => item.querySelector('strong')?.textContent)),
-    ['Matched', 'Nearly matched', 'Other completed carb-bolus meals']);
+    ['Matched', 'Nearly matched', 'Other meal opportunities']);
     assert.deepEqual(await page.locator('.ec-key-item[data-cohort] small').evaluateAll((items) =>
       items.map((item) => item.textContent.trim())),
     ['6 occurrences', '1 occurrence · unavailable for an average',

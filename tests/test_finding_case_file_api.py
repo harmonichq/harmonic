@@ -236,7 +236,8 @@ class FindingCaseFileRouteTest(unittest.TestCase):
         frozen = json.loads((
             root / "frontend/__fixtures__/missed-meal-comparison.json"
         ).read_text())["payload"]
-        self.assertEqual(response.json(), frozen)
+        served = response.json()
+        self.assertEqual(served, frozen)
 
         case = response.json()
         attributed = [row for row in case["occurrences"] if row["attributed"]]
@@ -268,7 +269,8 @@ class FindingCaseFileRouteTest(unittest.TestCase):
         frozen = json.loads((
             root / "frontend/__fixtures__/missed-meal-comparison.json"
         ).read_text())["zero_payload"]
-        self.assertEqual(response.json(), frozen)
+        served = response.json()
+        self.assertEqual(served, frozen)
 
         case = response.json()
         missed, near, announced = case["projection"]["cohorts"]
@@ -611,7 +613,8 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
     def assert_case_tree(self, case):
         self.assertEqual(set(case), {
             "schema", "projection_id", "finding", "window", "family", "summary",
-            "verdict_counts", "occurrences", "projection", "selection",
+            "population", "cross_population", "verdict_counts", "occurrences",
+            "projection", "selection",
         })
         self.assertEqual(set(case["finding"]), {"id", "lever", "title"})
         self.assert_window_tree(case["window"])
@@ -827,7 +830,7 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
         source_times = [datetime.strptime(row["t"], "%Y-%m-%d %H:%M:%S")
                         for row in sources]
         self.assertGreater((source_times[1] - source_times[0]).total_seconds(), 20 * 3600)
-        self.assertEqual(far_case["projection"]["window_min"], [-90, 240])
+        self.assertEqual(far_case["projection"]["window_min"], [-300, 180])
         self.assertNotIn(
             sources[0]["seq_num"],
             [marker.get("seq_num") for marker

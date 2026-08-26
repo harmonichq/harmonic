@@ -50,6 +50,15 @@ selection-bias rule).
 | Missed / unannounced meal | Completed carb-bolus meals (cross-Exposure, #178) |
 | Meal bolus fell short | Completed carb-bolus meals (cross-Exposure) |
 
+> Superseded in part by `ADR 202` (`openspec/changes/meal-bolus-denominator/design.md`).
+> The three ordinary meal levers' comparison population is now named **Other meal
+> opportunities**, because it is built from `Exposure.MEALS`, which admits any
+> carb-tagged bolus over the carb minimum — including cancelled and zero-insulin
+> rows — so the "completed carb-bolus" wording above overstated it. Meal bolus fell
+> short also ceased to be cross-Exposure: it now recurs over eligible completed
+> carb-bolus meals and shares one occurrence-ID namespace with its comparison,
+> leaving Missed / unannounced meal as the only cross-population lever.
+
 The two `HIGHS` levers are cross-Exposure because both make a claim about a meal
 dose, so meals are the population their claims rest on. Their near-miss line
 stays with their own Exposure, keeping all eight levers on one three-line shape.

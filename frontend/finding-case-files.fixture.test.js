@@ -68,6 +68,10 @@ test('ADR 79 fixture pins rebound clock membership, correction pairs, and High e
   const high = Object.values(
     fixture.cases['finding:meal_bolus_short'].selected_event)
     .find((entry) => entry.selection.state === 'selected');
+  assert.deepEqual(
+    [high.cross_population, high.population],
+    [false, 'meals'],
+  );
   assert.ok(high.selection.detail.glucose.length > 0);
   assert.ok(high.selection.detail.markers.some((marker) => marker.kind === 'bolus'));
 });

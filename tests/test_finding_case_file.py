@@ -1,6 +1,7 @@
 """Deep public projection contract for ADR 79 Finding case files."""
 
 from copy import deepcopy
+from dataclasses import replace
 from datetime import datetime, timedelta
 import json
 import tempfile
@@ -11,6 +12,8 @@ import pytest
 
 from ciq_autotune import event_comparison, finding_case_file, findings_projection
 from ciq_autotune.analyzers.scenario.levers import Exposure, Lever, exposure
+from ciq_autotune.analyzers.scenario.evidence_population import policy_for
+from ciq_autotune.analyzers.scenario import evidence_population
 from ciq_autotune.analyzers.scenario.opportunities import Opportunity
 from ciq_autotune.events import BasalEvent, BolusEvent, CarbEntry, CgmReading
 from ciq_autotune.finding_case_file import (
@@ -75,15 +78,53 @@ def _prepared(lever, members=None, claimed=None, *, query=None, findings=None,
     )
 
 
+def _analyzer_prepared_meal_bolus_short():
+    from ciq_autotune.analyze import analyze
+    from ciq_autotune.analyzers.scenario import build_scenarios
+    from ciq_autotune.explore_exposures import build_exposures
+    from tests.test_meal_bolus_short_attribution import (
+        DOUBLE_HIGH_BOLUS, DOUBLE_HIGH_CGM, _seed, next_day,
+    )
+
+    database = tempfile.NamedTemporaryFile(suffix=".sqlite")
+    with Store.open(database.name) as store:
+        _seed(
+            store,
+            DOUBLE_HIGH_BOLUS + next_day(DOUBLE_HIGH_BOLUS),
+            DOUBLE_HIGH_CGM + next_day(DOUBLE_HIGH_CGM),
+        )
+        prepared = finding_case_file.prepare(
+            store,
+            query=WindowQuery.whole_day(),
+            version=0,
+            analysis=analyze(
+                store,
+                pool_agreeing_basal_regimes=True,
+                carb_entries=store.carb_entries(),
+                prompt_responses=store.prompt_responses(),
+            ).to_dict(),
+            exposures=build_exposures(store),
+            scenarios=build_scenarios(store).to_dict(),
+        )
+    database.close()
+    return prepared
+
+
 @pytest.mark.parametrize("lever", list(Lever))
 def test_all_eight_levers_publish_one_exact_case_file_population(lever):
     prepared = _prepared(lever)
     case = prepared.case(f"finding:{lever.value}", "event", None)
 
+    policy = policy_for(lever)
     assert set(case) == {"schema", "projection_id", "finding", "window", "family",
                          "summary", "verdict_counts", "occurrences", "projection",
-                         "selection"}
+                         "selection", "population", "cross_population"}
     assert case["schema"] == "diagnose-finding-case-file-v1"
+    assert case["family"] == case["population"] == policy.recurrence_noun
+    expected_noun = (policy.recurrence_noun if policy.recurrence_family is None
+                     else finding_case_file._noun(policy.recurrence_family))
+    assert case["summary"]["noun"] == expected_noun
+    assert case["cross_population"] is policy.cross_population
     assert case["summary"]["claimed"] == 1
     assert case["summary"]["denominator"] == len(case["occurrences"]) == 1
     assert sum(case["verdict_counts"].values()) == 1
@@ -91,9 +132,70 @@ def test_all_eight_levers_publish_one_exact_case_file_population(lever):
     assert case["projection"]["clock"] is None
     expected_cohorts = ["matched", "nearly_matched", "comparison"]
     assert [cohort["key"] for cohort in case["projection"]["cohorts"]] == expected_cohorts
+    assert case["projection"]["comparison"]["name"] == policy.comparison_name
     assert sum(case["projection"]["counts"][key]
                for key in ("matched", "nearly_matched", "not_comparable")) == 1
     assert case["selection"] == {"state": "none", "requested_id": None, "detail": None}
+
+
+@pytest.mark.parametrize(("lever", "family", "noun", "denominator", "comparison_name",
+                          "cross_population"), [
+    (Lever.CARB_UNDERCOUNT, "meals", "meals", 1, "Other meal opportunities", False),
+    (Lever.LATE_BOLUS, "meals", "meals", 1, "Other meal opportunities", False),
+    (Lever.MEAL_OVER_DELIVERY, "meals", "meals", 1, "Other meal opportunities", False),
+    (Lever.OVER_TREATED_LOW, "lows", "lows", 1, "Other low excursions", False),
+    (Lever.CORRECTION_ON_IOB, "lows", "lows", 1, "Other low excursions", False),
+    (Lever.CORRECTION_STACKING, "correction_clusters", "correction clusters", 1,
+     "Other back-to-back correction pairs", False),
+    (Lever.MISSED_MEAL, "highs", "highs", 1, "Completed carb-bolus meals", True),
+    (Lever.MEAL_BOLUS_SHORT, "meals", "meals", 2,
+     "Other completed carb-bolus meals", False),
+])
+def test_served_case_shape_matches_the_eight_lever_audit_table(
+    lever, family, noun, denominator, comparison_name, cross_population,
+):
+    prepared = (
+        _analyzer_prepared_meal_bolus_short()
+        if lever is Lever.MEAL_BOLUS_SHORT else _prepared(lever)
+    )
+    case = prepared.case(f"finding:{lever.value}", "event", None)
+
+    assert (case["family"], case["summary"]["noun"],
+            case["summary"]["denominator"],
+            case["projection"]["comparison"]["name"],
+            case["cross_population"]) == (
+                family, noun, denominator, comparison_name, cross_population,
+            )
+
+
+def test_event_comparison_consumes_the_policy_membership_predicate():
+    lever = Lever.LATE_BOLUS
+    first = _opportunity(lever)
+    second_anchor = first.anchor_t + timedelta(hours=3)
+    second_bolus = BolusEvent(
+        t=second_anchor, insulin=4, carbs=40, seq_num=12,
+        completion="Completed",
+    )
+    second = Opportunity(
+        Exposure.MEALS, (12,), second_anchor, "meal", members=(second_bolus,),
+    )
+    members = (
+        Member(first, first.anchor_t, "fired"),
+        Member(second, second.anchor_t, "clean"),
+    )
+    original = policy_for(lever)
+    policy = replace(
+        original,
+        comparison_members=lambda item, *, scenario_config: False,
+    )
+
+    with pytest.MonkeyPatch.context() as monkeypatch:
+        monkeypatch.setitem(evidence_population._POLICIES, lever, policy)
+        case = _prepared(
+            lever, members=members, claimed=frozenset({members[0].id}),
+        ).case(f"finding:{lever.value}", "event", None)
+
+    assert case["projection"]["counts"]["comparison"] == 0
 
 
 def test_case_file_consumes_the_authoritative_verdict_order(monkeypatch):
@@ -229,7 +331,7 @@ def test_meal_and_low_event_facts_come_from_legacy_authority(monkeypatch, lever,
     assert case["projection"]["anchor"] == {
         "kind": "mutated_anchor", "label": "Mutated anchor",
     }
-    assert case["projection"]["window_min"] == [-5, 10]
+    assert case["projection"]["window_min"] == list(policy_for(lever).comparison_window)
 
 
 def test_factor_specific_event_horizons_and_far_pair_selected_evidence():
@@ -239,7 +341,7 @@ def test_factor_specific_event_horizons_and_far_pair_selected_evidence():
         Lever.MEAL_OVER_DELIVERY: [-60, 300],
         Lever.OVER_TREATED_LOW: [-300, 120],
         Lever.CORRECTION_ON_IOB: [-300, 120],
-        Lever.CORRECTION_STACKING: [-90, 240],
+        Lever.CORRECTION_STACKING: [-300, 180],
         Lever.MISSED_MEAL: [-60, 300],
         Lever.MEAL_BOLUS_SHORT: [-60, 300],
     }

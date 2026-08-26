@@ -11,9 +11,9 @@ import {
   enterFullscreen,
   popInspector,
   reconcileTileDescriptors,
-  seatCanvas,
   untraceDrill,
 } from './diagnose-canvas-mode.js';
+import { placeSeats } from './diagnose-canvas-layout.js';
 
 const registry = [
   { kind: 'basal' },
@@ -96,7 +96,9 @@ test('seating policy delegates placement and never evicts a pin', () => {
     window: { scoped: false, start_min: null, end_min: null },
   } }] };
   const layout = createCanvasLayout({ focalId: 'finding:meal', pins: ['basal:0-30'] });
-  assert.deepEqual(seatCanvas('findings', findings, descriptors, registry, layout), [
+  assert.deepEqual(placeSeats(
+    candidateIdsForMode('findings', findings, descriptors, registry), layout,
+  ), [
     { chartId: 'finding:meal', seat: 'focal', pinned: false },
     { chartId: 'basal:0-30', seat: 'slot-1', pinned: true },
   ]);

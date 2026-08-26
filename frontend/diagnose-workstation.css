@@ -72,7 +72,6 @@
   /* TWO SURFACES ONLY — ground and panel — both reused existing values.
      Chrome (top bar, instrument row, status) is ground; the two cards are
      panel. The old --ck-bar third value is gone: it now IS ground. */
-  --ck-bar: var(--mk-bg);
   --ck-rail: var(--mk-surface);
   --ck-hair: var(--mk-line);
   --ck-inset: color-mix(in srgb, var(--mk-bg) 82%, #000);
@@ -112,7 +111,6 @@
 }
 html.dark .dw {
   --ck-tile-top: color-mix(in srgb, var(--mk-text) 15%, transparent);
-  --ck-bar: var(--mk-bg);
   --ck-manual: #D9B568;
   --ck-manual-soft: #332C1B;
 }
@@ -122,10 +120,14 @@ html.dark .dw {
 /* Window remains the strip's slicer; the retired global alignment seat is now
    the live pin-cap schematic. Alignment belongs to each evidence tile. */
 .instruments {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center; gap: 0; padding: 0;
   background: var(--mk-bg);
 }
+/* The mode control rides the instrument rail beside Window (#135 fix round):
+   same 22px optical row, same cap label, and it keeps the underline treatment
+   it wore on the canvas head so the pressed position still reads at a glance. */
+.mode-instrument { gap: 8px; padding-right: 14px; }
 .instruments > .instrument:first-child { padding-left: 14px; }
 .pin-cap { padding-right: 14px; gap: 8px; }
 .instrument { display: flex; align-items: center; gap: 7px; min-width: 0; }
@@ -502,10 +504,15 @@ html.dark .dw {
 }
 /* THREE INK RANKS. Current: full ink, medium, and deliberately inert — the
    ABSENCE of hover is what says "you are here". */
-/* Root and current never lose a character: they do not shrink and they do not
-   ellipsize. Overflow is resolved by dropping the MIDDLE (see paintCrumb),
-   which is the only thing the path can afford to lose. */
-.crumb .trail .here { color: var(--mk-text); font-weight: 550; flex: 0 0 auto; }
+/* The root never loses a character. THE CURRENT ITEM NOW DOES (#135 fix round,
+   operator ruling): a published finding title is arbitrary length, and when the
+   path is two deep there is no middle left to drop, so "never ellipsize" meant
+   "overflow the header instead". It ellipsizes, which is the one way the title
+   can be said once and still fit its line. */
+.crumb .trail .here {
+  color: var(--mk-text); font-weight: 550; flex: 0 1 auto;
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 /* Ancestor: 55% ink, regular; brightens and underlines on hover, and pops. */
 .crumb .trail button {
   border: 0; background: none; padding: 0; font: inherit; font-weight: 400;
@@ -986,9 +993,11 @@ html.dark .dw {
     padding-inline: 8px; gap: 12px;
   }
   .instruments > .instrument:first-child { padding-left: 0; }
-  .pin-cap { padding-right: 0; }
+  .pin-cap, .mode-instrument { padding-right: 0; }
   .instrument { flex: 0 0 auto; }
-  .seg button { min-width: 44px; min-height: 44px; padding-inline: 8px; }
+  .seg button, .mode-instrument .canvas-mode button {
+    min-width: 44px; min-height: 44px; padding-inline: 8px;
+  }
   .main-content .dw .panes {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(250px, 42%) minmax(0, 1fr);
@@ -1013,7 +1022,6 @@ html.dark .dw {
     display: flex; flex-direction: column; overflow: visible; min-height: auto;
   }
   .tile-field > .evidence-tile { flex: 0 0 280px; order: 0; }
-  .tile-field > .evidence-tile[data-pinned] { order: var(--pin-order, 1); }
   .tile-field > .evidence-tile:not([data-seat="focal"]):not([data-pinned]) { display: none; }
 }
 
@@ -1103,13 +1111,23 @@ html.dark .dw {
   padding: 0 var(--ck-canvas-gap) var(--ck-canvas-gap); background: var(--ck-trench);
 }
 .explorer-drawer[hidden] { display: none; }
+/* THE DRAWER'S QUIET RANK IS MIXED AGAINST THE TRENCH, NOT THE PAGE. --mk-muted
+   and --mk-secondary are both settled to clear 4.5:1 against --mk-bg; the trench
+   is a darker well cut into that ground, and at 9-10px those two landed at
+   3.2:1 and 3.5:1 on it. Mixing the body ink toward the trench keeps a visible
+   second rank while the ratio is computed against the surface the text is
+   actually on. */
+.explorer-drawer { --ck-trench-quiet: color-mix(in srgb, var(--mk-text) 82%, var(--ck-trench)); }
 .explorer-drawer > header {
   display: flex; align-items: center; gap: 10px; padding: 0 6px;
-  color: var(--mk-secondary); font-size: var(--ck-micro); font-weight: 700;
+  color: var(--mk-text); font-size: var(--ck-micro); font-weight: 700;
   letter-spacing: var(--ck-track); text-transform: uppercase;
 }
-.drawer-meta { color: var(--mk-muted); font-family: var(--ck-mono); font-weight: 500; }
-.drawer-escape { margin-left: auto; color: var(--mk-muted); font-family: var(--ck-mono); font-weight: 500; }
+.drawer-meta { color: var(--ck-trench-quiet); font-family: var(--ck-mono); font-weight: 500; }
+.drawer-escape {
+  margin-left: auto; color: var(--ck-trench-quiet);
+  font-family: var(--ck-mono); font-weight: 500;
+}
 .explorer-thumbnails {
   display: grid; grid-auto-flow: column; grid-auto-columns: minmax(128px, 1fr);
   gap: var(--ck-canvas-gap); min-width: 0; min-height: 0; overflow-x: auto;
@@ -1126,18 +1144,27 @@ html.dark .dw {
 }
 .thumbnail-name {
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  color: var(--mk-secondary); font-size: 9px; font-weight: 700;
+  color: var(--mk-text); font-size: 9px; font-weight: 700;
   letter-spacing: .04em; text-transform: uppercase;
 }
 .thumbnail-ordinal {
-  position: absolute; inset: 4px 6px auto auto; color: var(--mk-muted);
+  position: absolute; inset: 4px 6px auto auto; color: var(--ck-trench-quiet);
   font: 9px var(--ck-mono); font-variant-numeric: tabular-nums;
 }
 .thumbnail-chart { min-width: 0; min-height: 0; }
 
 .evidence-tile { position: relative; }
+/* A 1px inset hairline was not a mark: at tile size the reader could not see
+   which chart the inspector was reading. The ring is the interaction accent at
+   2px, and the head carries the word beside it (Color-Never-Alone). */
 .evidence-tile[data-drilled] {
-  outline: 1px solid var(--mk-text); outline-offset: -2px;
+  outline: 2px solid var(--ck-accent); outline-offset: -2px;
+}
+.tile-drilled-mark {
+  flex: 0 0 auto; padding: 1px 5px; border-radius: 2px;
+  background: var(--ck-sel); color: var(--mk-text);
+  font-size: 9px; font-weight: 700; letter-spacing: var(--ck-track);
+  text-transform: uppercase; white-space: nowrap;
 }
 .tile-fullscreen { border: 1px solid var(--ck-hair); border-radius: 1px; padding: 2px 5px; }
 .drill-provenance {

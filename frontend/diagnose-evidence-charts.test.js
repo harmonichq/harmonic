@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 
 import { makeDeps } from './data.js';
 import { renderEventSurface } from './diagnose-event-comparison.js';
+import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 
 import {
   DIAGNOSE_EVIDENCE_CHARTS,
@@ -17,6 +18,22 @@ const fixture = (path) => JSON.parse(readFileSync(new URL(path, import.meta.url)
    inspector's own drill reads (#181/#135), never a second projection. */
 const caseFiles = () => fixture('../mockups/diagnose-workstation.synthetic/finding-case-files.json');
 const eventCase = () => caseFiles().cases['finding:carb_undercount'].event;
+/* The projection's own frozen inputs, re-projected through the mirror the
+   browser gates serve from (#735) — so the rows these names are built from are
+   the rows the app is handed, not rows written here. */
+const projectionFixture = fixture('./__fixtures__/findings-projection.json');
+/* The generator's own window table, re-declared as the request each frozen
+   answer was made for — the same list `findings-projection-mirror.test.js`
+   holds the mirror to. */
+const PROJECTED_WINDOWS = {
+  global: null,
+  morning: { start_min: 270, end_min: 480 },
+  low_block: { start_min: 720, end_min: 840 },
+  rebound: { start_min: 840, end_min: 960 },
+  afternoon: { start_min: 840, end_min: 1260 },
+  overnight: { start_min: 1320, end_min: 120 },
+  quiet: { start_min: 180, end_min: 240 },
+};
 
 function fakeFetch(body = {}) {
   const calls = [];
@@ -80,12 +97,104 @@ test('the registry declares four stateless chart kinds and their request coordin
   ]);
   assert.deepEqual(DIAGNOSE_EVIDENCE_CHARTS.map(({ coordinateSchema }) => coordinateSchema), [
     ['slot'], [], ['block_id', 'analysis_generation'],
-    ['projection_id', 'finding_id', 'alignment'],
+    ['projection_id', 'finding_id', 'alignment', 'factor', 'view'],
   ]);
   assert.deepEqual(DIAGNOSE_EVIDENCE_CHARTS.map(({ modes }) => modes), [
     ['clock', 'event'], ['event', 'clock'], ['event', 'clock'], null,
   ]);
-  assert.ok(DIAGNOSE_EVIDENCE_CHARTS.every((entry) => !Object.hasOwn(entry, 'coordinates')));
+  assert.ok(DIAGNOSE_EVIDENCE_CHARTS.every((entry) => typeof entry.matches === 'function'));
+  assert.ok(DIAGNOSE_EVIDENCE_CHARTS.every((entry) => typeof entry.coordinates === 'function'));
+});
+
+test('every entry produces exactly the coordinates it declares', () => {
+  const findings = { analysis_generation: 'process:7', projection_id: 'fp_7' };
+  const rows = {
+    basal: { id: 'basal:30-60', parameter: 'basal_rate', span: { start_min: 30, end_min: 60 } },
+    isf: { id: 'isf', parameter: 'isf' },
+    'carb-ratio': { id: 'ic:720', parameter: 'carb_ratio', span: { start_min: 720, end_min: 1440 } },
+    'event-comparison': { id: 'finding:missed_meal', title: 'Missed meal',
+      appearances: [{ family: 'highs', noun: 'highs' }],
+      event_chart: { lever: 'missed_meal', window: { scoped: false } } },
+  };
+  for (const entry of DIAGNOSE_EVIDENCE_CHARTS) {
+    const row = rows[entry.kind];
+    assert.ok(entry.matches(row), `${entry.kind} matches its own row`);
+    assert.deepEqual(Object.keys(entry.coordinates(row, findings)), [...entry.coordinateSchema],
+      `${entry.kind} produces its declared request coordinates`);
+    for (const other of DIAGNOSE_EVIDENCE_CHARTS) {
+      if (other !== entry) {
+        assert.ok(!other.matches(row), `${other.kind} does not claim the ${entry.kind} row`);
+      }
+    }
+  }
+  const named = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'event-comparison');
+  assert.deepEqual(named.nameFor(rows['event-comparison']), {
+    title: 'Missed meal', meta: 'highs aligned to each event',
+  });
+});
+
+/* THE LIVE REPRO: two basal slots in one window seated two tiles both reading
+   `Basal · nights of steady data`, so the reader could not tell which slot
+   either answered — and the canvas suite's distinct-name assertion caught it.
+   Every kind a window can publish more than one of names each tile from its own
+   row. Built from projection rows, never from a hand-set title. */
+test('every kind a window publishes more than once names each tile from its own row', () => {
+  const byKind = Object.fromEntries(DIAGNOSE_EVIDENCE_CHARTS.map((entry) => [entry.kind, entry]));
+  const EVIDENCE = { basal: 'nights of steady data', 'carb-ratio': 'meal runs' };
+  const most = { basal: 0, 'carb-ratio': 0 };
+
+  const projected = Object.entries(PROJECTED_WINDOWS).map(([name, bounds]) => [
+    name, projectFindings(projectionFixture.inputs, bounds).rows,
+  ]);
+  // the one frozen answer carrying two carb-ratio blocks at once, projected by
+  // the server itself rather than posed here
+  projected.push(['carb_ratio_raise', projectionFixture.settings_cases.carb_ratio_raise.rows]);
+
+  for (const [name, published] of projected) {
+    const rows = published.filter((row) => row.register !== 'history');
+    const titles = [];
+    for (const [kind, evidence] of Object.entries(EVIDENCE)) {
+      const own = rows.filter((row) => byKind[kind].matches(row));
+      most[kind] = Math.max(most[kind], own.length);
+      for (const row of own) {
+        const { title } = byKind[kind].nameFor(row);
+        assert.ok(title.includes(row.span.label),
+          `${title} carries its own row's published span in ${name}`);
+        assert.ok(title.endsWith(` · ${evidence}`), `${title} keeps the ${kind} evidence phrase`);
+        assert.doesNotMatch(title, /I:C/);
+        titles.push(title);
+      }
+    }
+    assert.equal(new Set(titles).size, titles.length,
+      `no two parameter tiles in ${name} share a name (${titles})`);
+  }
+  assert.ok(most.basal >= 2, 'a frozen window publishes several basal slots at once');
+  assert.ok(most['carb-ratio'] >= 2, 'a frozen window publishes several carb-ratio blocks at once');
+});
+
+test('a parameter row arriving without a span keeps the standing kind name', () => {
+  const byKind = Object.fromEntries(DIAGNOSE_EVIDENCE_CHARTS.map((entry) => [entry.kind, entry]));
+  assert.equal(byKind.basal.nameFor({ id: 'basal:0-30', parameter: 'basal_rate' }).title,
+    'Basal · nights of steady data');
+  assert.equal(byKind['carb-ratio'].nameFor({ id: 'ic:0', parameter: 'carb_ratio' }).title,
+    'Carb ratio · meal runs');
+});
+
+/* The drawer prints the descriptor's name above the mini chart AND inside it;
+   both come from the tile's one name, so a second slot cannot wear the first
+   slot's caption. */
+test('a parameter thumbnail captions itself with the tile name it was given', () => {
+  const basal = fixture('./__fixtures__/basal-night-evidence.json').expected;
+  const ic = fixture('../mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json')
+    .cases.cross_midnight;
+  const byKind = Object.fromEntries(DIAGNOSE_EVIDENCE_CHARTS.map((entry) => [entry.kind, entry]));
+
+  assert.equal(byKind.basal.thumbnail(basal, 'Basal 05:30 · nights of steady data')
+    .graphic[0].style.text, 'BASAL 05:30 · NIGHTS OF STEADY DATA');
+  assert.equal(byKind['carb-ratio'].thumbnail(ic, 'Carb ratio 12:00 to 24:00 · meal runs')
+    .graphic[0].style.text, 'CARB RATIO 12:00 TO 24:00 · MEAL RUNS');
+  assert.equal(byKind.basal.thumbnail(basal).graphic[0].style.text,
+    'BASAL · NIGHTS OF STEADY DATA');
 });
 
 test('entries build different alignments simultaneously with one optical spine', () => {
@@ -120,7 +229,7 @@ test('entries build different alignments simultaneously with one optical spine',
     'the comparison shares the other kinds\' plot insets');
 });
 
-test('basal event treatment follows the analyzer verdict, not the support count', () => {
+test('basal event treatment follows the backend verdict in product language', () => {
   const basal = fixture('./__fixtures__/basal-night-evidence.json').expected;
   const entry = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'basal');
   const held = entry.option('event', { data: {
@@ -139,7 +248,16 @@ test('basal event treatment follows the analyzer verdict, not the support count'
   assert.equal(held.series[0].type, 'bar');
   assert.deepEqual(held.series[0].data, [12]);
   assert.notEqual(held.series[0].itemStyle.color, moving.series[0].itemStyle.color);
-  assert.deepEqual(held.legend.data, ['insufficient evidence']);
+  const gated = entry.option('event', { data: {
+    ...basal, asserts_move: false, safety_status: 'held (recurring-low gate)',
+  } });
+  assert.deepEqual(held.legend.data, ['Insufficient evidence']);
+  assert.deepEqual(moving.legend.data, ['Supported']);
+  assert.deepEqual(gated.legend.data, ['Held'],
+    'a withheld raise reads as the shipped result state, not the engine string');
+  assert.doesNotMatch(
+    JSON.stringify({ held, moving, gated, meta: entry.meta('event') }),
+    /directional support|analyzer verdict|recurring-low gate/i);
 });
 
 test('every multi-series evidence form carries an on-chart legend', () => {
@@ -275,7 +393,7 @@ test('payload counts stay distinct in chart and thumbnail presentation', () => {
   const byKind = Object.fromEntries(DIAGNOSE_EVIDENCE_CHARTS.map((entry) => [entry.kind, entry]));
 
   assert.match(byKind.basal.option('clock', { data: basal, mini: false }).aria.description,
-    /19 nights.*3 directional/);
+    /19 nights.*3 support this reading/);
   assert.match(byKind.isf.option('event', { data: isf, mini: false }).aria.description,
     /7 detected.*2 qualifying windows.*41 qualifying steps/);
   assert.match(byKind['carb-ratio'].option('clock', { data: ic, mini: false,

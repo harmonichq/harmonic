@@ -3,6 +3,18 @@ export const PIN_CAP = 4;
 const ARRANGEMENTS = Object.freeze(['focal', 'split', 'pair', 'onetwo', 'quad']);
 const SEAT_COUNTS = Object.freeze({ focal: 4, split: 2, pair: 2, onetwo: 3, quad: 4 });
 const TILE_STATES = Object.freeze(['ok', 'empty', 'error', 'stale-generation']);
+/* WHAT THE READER IS TOLD ABOUT A TILE, never the request state's own name.
+   `ok` says the evidence is drawn and NOT that the reading is supported: whether
+   a parameter's evidence supports a move is the analyzer's verdict, which the
+   chart's own legend carries for the one kind that has one. A tile head that
+   said "Supported" over every drawn chart would assert a safety fact this state
+   does not know. */
+const TILE_STATE_NAMES = Object.freeze({
+  ok: 'Evidence shown',
+  empty: 'Insufficient evidence',
+  error: 'Evidence unavailable',
+  'stale-generation': 'Evidence changed',
+});
 
 export function arrangementFor(pinCount) {
   if (!Number.isInteger(pinCount) || pinCount < 0) {
@@ -89,18 +101,6 @@ export function placeSeats(candidateIds, layout) {
   }));
 }
 
-const coordinateValue = (name, row, findings) => {
-  if (name === 'slot') return row.slot ?? Math.floor((row.span?.start_min ?? 0) / 30);
-  if (name === 'block_id') return row.block_id ?? row.span?.start_min;
-  if (name === 'analysis_generation') return findings.analysis_generation;
-  /* The case-file coordinates are opaque transport values: the served
-     generation, the row's own id, and the alignment this tile draws. */
-  if (name === 'projection_id') return findings.projection_id;
-  if (name === 'finding_id') return row.id;
-  if (name === 'alignment') return 'event';
-  return row[name];
-};
-
 /* THE LIVE CHART LIST IS THE FINDINGS PAYLOAD'S — one tile per basal slot and
    per carb-ratio block THE READER CURRENTLY HAS, read off the rows the server
    published for this window. A `history` row is not one of those: it is a
@@ -109,24 +109,22 @@ const coordinateValue = (name, row, findings) => {
    to plot. So the register filter stays; the live list is still the payload's
    and there is no second chart list. */
 export function descriptorsFromFindings(findings, registry) {
-  const byKind = new Map(registry.map((entry) => [entry.kind, entry]));
   return (findings?.rows || []).flatMap((row) => {
     if (row.register === 'history') return [];
-    const kind = row.event_chart
-      ? 'event-comparison'
-      : row.parameter === 'basal_rate' ? 'basal'
-        : row.parameter === 'isf' ? 'isf'
-          : row.parameter === 'carb_ratio' ? 'carb-ratio' : null;
-    const entry = byKind.get(kind);
+    const entry = registry.find((candidate) => candidate.matches(row));
     if (!entry) return [];
-    const coordinates = Object.fromEntries(entry.coordinateSchema.map((name) => [
-      name, coordinateValue(name, row, findings),
-    ]));
+    /* A kind that can publish several tiles in one window names each one from
+       its own row; every other kind is one tile and keeps the registry's
+       standing name. Either way the name is the ENTRY's, so no consumer of a
+       descriptor has to know which kind it is holding. */
+    const named = entry.nameFor ? entry.nameFor(row) : null;
     return [{
       chartId: row.id,
-      kind,
+      kind: entry.kind,
+      title: named?.title ?? entry.name,
+      meta: named?.meta ?? null,
       mode: entry.modes?.[0] ?? null,
-      coordinates,
+      coordinates: entry.coordinates(row, findings),
       data: null,
       state: 'empty',
     }];
@@ -158,7 +156,8 @@ export function tileStatePresentation(descriptor, pending = false, message = nul
       : descriptor.state === 'stale-generation'
         ? 'Evidence changed. Refresh findings.' : '';
   return {
-    name: descriptor.state,
+    name: pending && descriptor.state !== 'stale-generation'
+      ? 'Loading evidence' : TILE_STATE_NAMES[descriptor.state],
     message: pending && descriptor.state !== 'stale-generation'
       ? 'Loading evidence…' : message || fallback,
   };

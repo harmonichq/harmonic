@@ -1,4 +1,4 @@
-import { createCanvasLayout, placeSeats } from './diagnose-canvas-layout.js';
+import { createCanvasLayout } from './diagnose-canvas-layout.js';
 import { eventChartCoordinate } from './diagnose-findings-queue.js';
 
 const CANVAS_MODES = Object.freeze(['findings', 'explore']);
@@ -38,10 +38,6 @@ export function candidateIdsForMode(mode, findings, descriptors, registry) {
     && descriptors.find((descriptor) => descriptor.chartId === first.id
       && descriptor.kind === 'event-comparison')?.chartId;
   return recommended ? [recommended, ...natural.filter((id) => id !== recommended)] : natural;
-}
-
-export function seatCanvas(mode, findings, descriptors, registry, layout) {
-  return placeSeats(candidateIdsForMode(mode, findings, descriptors, registry), layout);
 }
 
 export function reconcileTileDescriptors(

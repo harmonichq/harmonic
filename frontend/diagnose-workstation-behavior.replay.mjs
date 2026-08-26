@@ -591,7 +591,7 @@ export async function openApp(browser, {
         && (path === '/' || PAGE_PATHS.has(path) || /\.(js|css|svg|html)$/.test(path))) {
       if (stageProbe && path === '/assets/diagnose-workstation.js') {
         const source = await readFile(join(ROOT, 'frontend/diagnose-workstation.js'), 'utf8');
-        const seam = 'export function createDiagnoseWorkstation({ root, callbacks = {}, railLead = null }) {';
+        const seam = 'export function createDiagnoseWorkstation({ root, callbacks = {} }) {';
         if (source.split(seam).length !== 2) fail('S71 staging seam must occur exactly once');
         const instrumented = source.replace(seam, `${seam}
   /* Replay-only wrapper: preserve the real callback and arguments while making
@@ -837,13 +837,16 @@ export const S01 = async (page) => {
   is(after.crumbMeta, `${after.queue.length} in this window`,
     `S01 inspector re-scoped to the preset (${after.crumbMeta})`);
   ok(after.crumbMeta.endsWith('in this window'), 'S01 the inspector uses the scoped meta form');
-  // Both counts are printed with toLocaleString, so a capture wide enough to
-  // pass 1,000 readings carries a thousands separator. The 3-day fixture this
-  // was written against topped out at 941 and never showed one; the 30-day
-  // capture #649 commissioned does, on every state. Separator allowed.
-  ok(/^window [\d,]+ of [\d,]+ readings$/.test(after.scope),
-    `S01 canvas count declares its window (${after.scope})`);
-  ok(after.scope !== before.scope, 'S01 canvas count recomputed');
+  /* AMENDED #135 fix round (operator ruling): the strip header's
+     `window N of M readings` count is retired. It priced the strip in a unit no
+     decision here is made in, at data weight, next to the title. The story's
+     subject is unchanged — a preset re-scopes the canvas as well as the
+     inspector — and is now read through the lane, which is the scope the reader
+     acts on. The header stays silent unless it has the ADR 62 part 9 sentence
+     to say. */
+  is(after.scope, '', `S01 the strip header prints no reading count (${after.scope})`);
+  ok(after.pool.includes('captured CGM days'),
+    `S01 the pooled-days phrasing survives the count's retirement (${after.pool})`);
   ok(after.laneOutside > 0, 'S01 slots outside the window are dimmed, not removed');
 };
 
@@ -956,7 +959,9 @@ export const S06 = async (page) => {
   const after = await state(page);
   is(after.chip, before.chip, 'S06 a click in the plot mints no window');
   is(after.pressed, before.pressed, 'S06 a click in the plot unpresses nothing');
-  is(after.scope, before.scope, 'S06 nothing re-scoped');
+  // AMENDED #135 fix round: the strip header's reading count is retired, so the
+  // scope witness is the lane's own dimming — the scope the reader acts on.
+  is(after.laneOutside, before.laneOutside, 'S06 nothing re-scoped');
 };
 
 /** S07 · Esc belongs to the WINDOW: it clears the drawn one and restores the
@@ -1297,7 +1302,9 @@ export const S21 = async (page) => {
   const drilled = await state(page);
   is(drilled.chip, start.chip, 'S21 drilling a factor does not move the user window');
   near(drilled.gripA, start.gripA, 1, 'S21 the brace stayed put');
-  is(drilled.scope, start.scope, 'S21 the canvas stayed on the user window');
+  // AMENDED #135 fix round, with S06: the retired reading count is replaced as
+  // this story's canvas witness by the lane dimming the same window produces.
+  is(drilled.laneOutside, start.laneOutside, 'S21 the canvas stayed on the user window');
   await page.click('#level .ev-row');
   await settle(page, 450);
   is((await state(page)).chip, start.chip, 'S21 opening an occurrence does not move it either');
@@ -3375,8 +3382,8 @@ export const S92 = async (page) => {
   await openCanvas(page);
   const before = await canvasSnapshot(page);
   const focal = before.tiles.find((tile) => tile.seat === 'focal');
-  const destination = before.tiles.find((tile) => tile.seat !== 'focal');
-  ok(focal && destination, 'S92 opens with a focal chart and a destination seat');
+  const destination = before.tiles.find((tile) => tile.seat === 'slot-3');
+  ok(focal && destination, 'S92 opens with a focal chart and the non-first destination seat');
   await page.locator(`.evidence-tile[data-chart-id="${destination.id}"] .tile-body`).click();
   await settle(page);
   const forward = await canvasSnapshot(page);
@@ -3704,21 +3711,89 @@ export const S111 = async (page) => {
     'S111 un-trace keeps the owning chart drilled');
 };
 
+/* STRENGTHENED #135 fix round. The story used to open on ONE chart and assert
+   the focal tile was the only thing the narrow field showed — which the old
+   pin-ordered CSS satisfied by accident, because with nothing else on screen
+   pin order and reading order cannot disagree. Two pins is the case that
+   separates them: focus the LATER-pinned chart and the reading order must still
+   lead with it. The pinning is done at desk width because a narrow field hides
+   every unpinned chart, so the second pin has no visible control there. */
 // STORY:finding-evidence-routing:S112
 export const S112 = async (page) => {
-  await openCanvas(page);
+  const narrowViewport = page.viewportSize();
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await reachPinCount(page, 2);
+  const seated = await canvasSnapshot(page);
+  const first = seated.tiles.find((tile) => tile.seat === 'focal');
+  const second = seated.tiles.find((tile) => tile.pinned && tile.seat !== 'focal');
+  ok(first?.pinned && second, 'S112 two pins seat a first and a later-pinned chart');
+  await page.locator(`.evidence-tile[data-chart-id="${second.id}"] .tile-body`).click();
+  await settle(page);
+  await page.setViewportSize(narrowViewport);
+  await settle(page, 350);
+
   const narrow = await page.evaluate(() => {
     const field = document.querySelector('#tile-field');
     const style = getComputedStyle(field);
     return { display: style.display, direction: style.flexDirection,
       visible: [...field.querySelectorAll('.evidence-tile')]
-        .filter((tile) => tile.getClientRects().length).map((tile) => tile.dataset.seat) };
+        .filter((tile) => tile.getClientRects().length)
+        .sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top)
+        .map((tile) => ({ id: tile.dataset.chartId, seat: tile.dataset.seat })) };
   });
   is(narrow.display, 'flex', 'S112 narrow canvas linearizes with flex');
   is(narrow.direction, 'column', 'S112 narrow charts stack in one column');
-  ok(narrow.visible.includes('focal'), 'S112 the focal chart remains first and visible');
-  ok(narrow.visible.every((seat) => seat === 'focal'),
-    'S112 unpinned slot charts leave the narrow reading order');
+  is(narrow.visible.length, 2, 'S112 both pinned charts stay in the narrow field');
+  is(narrow.visible[0]?.id, second.id,
+    'S112 the focused later-pinned chart leads the narrow reading order');
+  is(narrow.visible[0]?.seat, 'focal', 'S112 and it leads because it is the focal tile');
+  is(narrow.visible[1]?.id, first.id, 'S112 the earlier pin follows it');
+};
+
+/* S113 · A behavioural drill seats its OWN comparison. Filed from a live repro
+   in the #135 fix round: over the 24 h window the field showed several
+   look-alike comparison tiles, none naming the factor it answered, and drilling
+   the top-ranked finding left the inspector reading one factor while the field
+   was seated on another. Three things are pinned here — the drilled finding's
+   comparison takes the focal seat, the chart that owns the drill is marked in
+   words, and no two live tiles carry the same name. The fourth is the crumb:
+   drilling twice must not print the title twice. */
+// STORY:finding-evidence-routing:S113
+export const S113 = async (page) => {
+  await openCanvas(page);
+  const rows = await page.locator('#level .qrow[data-id^="finding:"]')
+    .evaluateAll((nodes) => nodes.map((node) => node.dataset.id));
+  ok(rows.length >= 2,
+    `S113 the 24 h window publishes more than one behavioural finding (${rows.length})`);
+
+  const before = await canvasSnapshot(page);
+  is(new Set(before.tiles.map((tile) => tile.title)).size, before.tiles.length,
+    `S113 no two seated tiles are identically named (${JSON.stringify(before.tiles.map((t) => t.title))})`);
+
+  const target = rows[rows.length - 1];
+  ok(before.tiles.find((tile) => tile.id === target)?.seat !== 'focal',
+    'S113 precondition: the drill target is not already the focal chart');
+  await page.locator(`#level .qrow[data-id="${target}"]`).click();
+  await settle(page, 600);
+
+  const after = await canvasSnapshot(page);
+  const seated = after.tiles.find((tile) => tile.id === target);
+  is(seated?.seat, 'focal', 'S113 the drilled finding seats its own comparison focal');
+  is(seated?.drilled, true, 'S113 the owning chart carries the drill mark');
+  is(await page.locator(`.evidence-tile[data-chart-id="${target}"] .tile-drilled-mark`).count(), 1,
+    'S113 the mark is a word on the chart, not a hairline alone');
+  is(await page.locator('.evidence-tile[data-drilled]').count(), 1,
+    'S113 exactly one chart claims the drill');
+  is(new Set(after.tiles.map((tile) => tile.title)).size, after.tiles.length,
+    `S113 the field holds no duplicate comparison tiles (${JSON.stringify(after.tiles.map((t) => t.title))})`);
+  ok((await page.locator('#drill-provenance').textContent()).includes(seated.title),
+    'S113 the header names the chart the inspector is reading');
+
+  const depth = (await state(page)).crumb.length;
+  await page.locator(`.evidence-tile[data-chart-id="${target}"] .tile-body`).click();
+  await settle(page, 400);
+  is((await state(page)).crumb.length, depth,
+    'S113 re-drilling the same finding does not deepen the path or repeat its title');
 };
 
 export const STORIES = [
@@ -3879,6 +3954,7 @@ export const STORIES = [
   ['S107', S107, 'typical'], ['S108', S108, 'typical'], ['S109', S109, 'typical'],
   ['S110', S110, 'typical'], ['S111', S111, 'typical'],
   ['S112', S112, 'typical', { viewport: { width: 390, height: 844 } }],
+  ['S113', S113, 'typical'],
   ['C41', C41, 'typical', { caseScenario: {
     preparation: generatedFindingPose('finding:meal_over_delivery'),
   } }], ['C42', C42, 'typical'],

@@ -34,7 +34,7 @@ import { toCaptures, isfVerdict } from './diagnose-workstation-data.js';
 import { DIAGNOSE_EVIDENCE_CHARTS, glucoseRange } from './diagnose-evidence-charts.js';
 import {
   PIN_CAP, arrangementRange, createCanvasLayout, descriptorsFromFindings,
-  focusSwap, optionForDescriptor, pinChart,
+  focusSwap, optionForDescriptor, pinChart, placeSeats,
   seatCountFor,
   tileStatePresentation, unpinChart,
 } from './diagnose-canvas-layout.js';
@@ -42,7 +42,7 @@ import {
   advisoryPresentation, candidateIdsForMode, dismissFullscreen,
   drilledChartIdForFrame, enterFullscreen, inspectorStackForMode,
   popInspector, reconcileTileDescriptors as reconcileCanvasDescriptors,
-  seatCanvas, untraceDrill,
+  untraceDrill,
 } from './diagnose-canvas-mode.js';
 import {
   assertMatchingFindingCasePreparation,
@@ -85,6 +85,18 @@ const MARKUP = `
       <span class="cap">Window</span>
       <div class="seg" id="seg-window" role="group" aria-label="Clock window"></div>
     </div>
+    <!-- The two-position mode control is an INSTRUMENT, not canvas chrome: it
+         re-scopes the whole surface the way Window does, so it belongs in the
+         same optical row as the window buttons rather than over one pane's
+         header. The Charts trigger stays on the canvas head for now — it opens
+         that pane's own drawer. -->
+    <div class="instrument mode-instrument">
+      <span class="cap">Show</span>
+      <div class="canvas-mode" role="group" aria-label="Canvas mode">
+        <button type="button" data-canvas-mode="findings" aria-pressed="true">Findings</button>
+        <button type="button" data-canvas-mode="explore" aria-pressed="false">Explore</button>
+      </div>
+    </div>
     <div class="instrument pin-cap" aria-label="Pinned evidence charts">
       <span class="tile-schematic" id="tile-schematic" role="group"
         aria-label="Evidence tile arrangement and next pin"></span>
@@ -111,10 +123,6 @@ const MARKUP = `
         </div>
         <span class="meta persist" id="canvas-pool">—</span>
         <div class="canvas-controls">
-          <div class="canvas-mode" role="group" aria-label="Canvas mode">
-            <button type="button" data-canvas-mode="findings" aria-pressed="true">Findings</button>
-            <button type="button" data-canvas-mode="explore" aria-pressed="false">Explore</button>
-          </div>
           <button class="explorer-trigger" id="explorer-trigger" type="button"
             aria-expanded="false" aria-controls="explorer-drawer">Charts</button>
           <span class="advice-state" id="advice-state"></span>
@@ -1212,6 +1220,7 @@ function boot(root, data, callbacks, signal) {
   let shownRows = EVIDENCE_CAP;
   let dir = 'push';
   let canvasLayout = createCanvasLayout();
+  let tileCandidateOrder = [];
   let tileDescriptors = [];
   let tileRuntime = new Map();
   let tileMounts = [];
@@ -1314,6 +1323,7 @@ function boot(root, data, callbacks, signal) {
      history frame, or the tile field via `reconcileTileDescriptors` — is its
      own, and nothing here restores a layout captured before the refresh. */
   const adoptFindings = (next, key) => {
+    if (key !== currentFindingsKey()) return null;
     findings = next;
     loadedKey = key;
     pendingKey = null;
@@ -1327,7 +1337,7 @@ function boot(root, data, callbacks, signal) {
     // `still` is the CALLER's currency: a history frame is current while it is
     // still on top of its own request, a tile recovery while the reader has not
     // moved the window out from under it.
-    if (!still(key)) return null;
+    if (key !== currentFindingsKey() || !still(key)) return null;
     return { next, key };
   }
 
@@ -1385,9 +1395,21 @@ function boot(root, data, callbacks, signal) {
   }
 
   function currentTileCandidates() {
-    return candidateIdsForMode(
+    const natural = candidateIdsForMode(
       canvasMode, findings, currentTileDescriptors(), DIAGNOSE_EVIDENCE_CHARTS,
     );
+    const available = new Set(natural);
+    return [...tileCandidateOrder.filter((chartId) => available.has(chartId)),
+      ...natural.filter((chartId) => !tileCandidateOrder.includes(chartId))];
+  }
+
+  /* A focus swap produces BOTH a layout and a reordered candidate list, and the
+     seat the demoted chart lands in comes from the list. Every focus change goes
+     through here so neither half can be dropped. */
+  function focusChart(chartId) {
+    const swapped = focusSwap(currentTileCandidates(), canvasLayout, chartId);
+    tileCandidateOrder = swapped.candidates;
+    canvasLayout = swapped.layout;
   }
 
   function explorerDescriptors() {
@@ -1448,6 +1470,14 @@ function boot(root, data, callbacks, signal) {
     tileDescriptors = next;
     tileRuntime = nextRuntime;
     tileAnalysisGeneration = generation;
+    /* THE SEAT ORDER IS READER STATE AND IT SURVIVES A RECONCILE. A focus swap
+       exchanges two candidates, and dropping the reordered list on the next
+       paint is what landed every demoted focal chart in slot 1 instead of the
+       seat the reader took the new one from. A seating-policy change — a new
+       window, mode or analysis generation — is the one thing that returns the
+       field to the published order. */
+    if (policyChanged) tileCandidateOrder = [];
+    tileCandidateOrder = currentTileCandidates();
     const available = new Set(tileDescriptors.map(({ chartId }) => chartId));
     canvasLayout = createCanvasLayout({
       focalId: available.has(canvasLayout.focalId)
@@ -1567,16 +1597,14 @@ function boot(root, data, callbacks, signal) {
     }
   }
 
-  function historyRetired(frame, message, nextFindings = null) {
+  function historyRetired(frame, message, nextFindings, key) {
+    if (!adoptFindings(nextFindings, key)) return false;
     ++historyRequestGeneration;
-    if (nextFindings) findings = nextFindings;
-    pendingKey = null;
-    failedKey = null;
-    loadedKey = currentFindingsKey();
     retirementNotice = message;
     stack.length = 1;
     dir = 'pop';
     paint();
+    return true;
   }
 
   const typedRetirement = (error) => error?.status === 410
@@ -1604,13 +1632,26 @@ function boot(root, data, callbacks, signal) {
 
   async function refreshHistoryRetirement(frame, request) {
     try {
-      const next = await refreshFindingsGeneration(frame.id);
-      if (request !== historyRequestGeneration || top() !== frame) return;
+      const adopted = await requestFindingsGeneration({ selectedHistoryId: frame.id,
+        still: () => request === historyRequestGeneration && top() === frame });
+      if (!adopted) {
+        if (request === historyRequestGeneration && top() === frame) {
+          pendingKey = null;
+          frame.pending = false;
+          paint();
+        }
+        return;
+      }
+      const next = adopted.next;
       const selection = validateHistorySelection(next, frame);
       if (!['aged_out', 'unavailable'].includes(selection.disposition)) {
         throw new Error('Retired history did not have a matching findings disposition.');
       }
-      historyRetired(frame, selection.message, next);
+      if (!historyRetired(frame, selection.message, next, adopted.key)) {
+        pendingKey = null;
+        frame.pending = false;
+        paint();
+      }
     } catch {
       if (request !== historyRequestGeneration || top() !== frame) return;
       pendingKey = null;
@@ -1625,23 +1666,33 @@ function boot(root, data, callbacks, signal) {
     attempt = 0, request = ++historyRequestGeneration,
   } = {}) {
     if (top() !== frame) return;
-    const key = currentFindingsKey();
-    pendingKey = key;
+    pendingKey = currentFindingsKey();
     frame.pending = true;
     frame.stale = false;
     paint();
     try {
       const adopted = await requestFindingsGeneration({ selectedHistoryId: frame.id,
         still: () => request === historyRequestGeneration && top() === frame });
-      if (!adopted) return;
+      if (!adopted) {
+        if (request === historyRequestGeneration && top() === frame) {
+          pendingKey = null;
+          frame.pending = false;
+          paint();
+        }
+        return;
+      }
       const next = adopted.next;
       const selection = validateHistorySelection(next, frame);
       if (['aged_out', 'unavailable'].includes(selection.disposition)) {
-        historyRetired(frame, selection.message, next);
+        if (!historyRetired(frame, selection.message, next, adopted.key)) {
+          pendingKey = null;
+          frame.pending = false;
+          paint();
+        }
         return;
       }
       if (selection.disposition === 'out_of_scope') {
-        adoptFindings(next, key);
+        if (!adoptFindings(next, adopted.key)) return;
         Object.assign(frame, { pending: false, stale: false, notice: selection.message });
         paint();
         return;
@@ -1668,7 +1719,12 @@ function boot(root, data, callbacks, signal) {
         });
       }
       if (request !== historyRequestGeneration || top() !== frame) return;
-      adoptFindings(next, key);
+      if (!adoptFindings(next, adopted.key)) {
+        pendingKey = null;
+        frame.pending = false;
+        paint();
+        return;
+      }
       Object.assign(frame, {
         row, generation: next.analysis_generation, events,
         selectedRunId: selectedRunId || null,
@@ -1781,6 +1837,7 @@ function boot(root, data, callbacks, signal) {
 
   function recoverCase(frame, alignment, occ, generation) {
     const w = findingsWindow();
+    const key = windowKey(w);
     const requested = w ? { start_min: w[0], end_min: w[1] } : null;
     Promise.resolve(callbacks.loadPreparation?.(requested))
       .then((response) => {
@@ -1798,10 +1855,8 @@ function boot(root, data, callbacks, signal) {
       })
       .then((shadow) => {
         if (!shadow || !isCurrentCaseRequest(generation, frame)) return;
+        if (!adoptFindings(findingsFromPreparation(shadow.shadowPreparation), key)) return;
         preparation = shadow.shadowPreparation;
-        findings = findingsFromPreparation(preparation);
-        loadedKey = windowKey(findingsWindow());
-        pendingKey = null;
         frame.caseFile = shadow.shadowCase;
         frame.requestedAlignment = shadow.shadowCase.projection.alignment;
         frame.selectedId = shadow.shadowCase.selection.state === 'selected'
@@ -1864,14 +1919,14 @@ function boot(root, data, callbacks, signal) {
 
   function refreshQueueAfterUnavailable(frame, generation, originalError) {
     const w = findingsWindow();
+    const key = windowKey(w);
     const requested = w ? { start_min: w[0], end_min: w[1] } : null;
     Promise.resolve(callbacks.loadPreparation?.(requested))
       .then((response) => {
         if (!isCurrentCaseRequest(generation, frame)) return;
         const next = matchingPreparation(response, requested);
+        if (!adoptFindings(findingsFromPreparation(next), key)) return;
         preparation = next;
-        findings = findingsFromPreparation(next);
-        loadedKey = windowKey(findingsWindow());
         frame.loading = false;
         activeCaseError = caseErrorFrom(originalError);
         paint();
@@ -1952,11 +2007,8 @@ function boot(root, data, callbacks, signal) {
         if (generation !== preparationGeneration || currentPreparationKey() !== key) return null;
         const next = matchingPreparation(response, requested);
         if (!frame) {
+          if (!adoptFindings(findingsFromPreparation(next), key)) return null;
           preparation = next;
-          findings = findingsFromPreparation(next);
-          pendingKey = null;
-          loadedKey = key;
-          failedKey = null;
           paint();
           return null;
         }
@@ -1975,16 +2027,13 @@ function boot(root, data, callbacks, signal) {
       .then((shadow) => {
         if (!shadow || generation !== preparationGeneration
           || currentPreparationKey() !== key || top() !== frame) return;
+        if (!adoptFindings(findingsFromPreparation(shadow.next), key)) return;
         preparation = shadow.next;
-        findings = findingsFromPreparation(shadow.next);
         frame.caseFile = shadow.shadowCase;
         frame.pendingCaseRequest = null;
         frame.loading = false;
         frame.selectedId = shadow.shadowCase.selection.state === 'selected'
           ? shadow.shadowCase.selection.requested_id : null;
-        pendingKey = null;
-        loadedKey = key;
-        failedKey = null;
         activeCaseError = null;
         paint();
       })
@@ -2051,8 +2100,19 @@ function boot(root, data, callbacks, signal) {
     filterOpen = false;
     pendingFocus = 'level';
     dir = 'push'; stack.push(frame);
-    drilledChartId = drilledChartIdForFrame(frame, currentTileDescriptors());
+    seatDrill(drilledChartIdForFrame(frame, currentTileDescriptors()));
     shownRows = EVIDENCE_CAP; paint();
+  };
+  /* A DRILL SEATS ITS OWN EVIDENCE. Ruled by the operator after the fix round's
+     live repro: drilling the top-ranked behavioural finding left three
+     look-alike comparison tiles up and the drilled finding's own response
+     comparison unseated, so the inspector was reading one factor while the
+     field showed another. The drilled chart takes the focal seat and wears the
+     drill mark; pinning is still the only other thing that moves the field, and
+     it still never moves focus. */
+  const seatDrill = (chartId) => {
+    drilledChartId = chartId;
+    if (chartId && !fullscreen) focusChart(chartId);
   };
   const popTo = (i) => {
     ++caseGeneration;
@@ -2062,7 +2122,7 @@ function boot(root, data, callbacks, signal) {
     pendingFocus = pendingRowFocus(stack[1]);
     const popped = popInspector(stack, i, currentTileDescriptors());
     stack.splice(0, stack.length, ...popped.stack);
-    drilledChartId = popped.drilledChartId;
+    seatDrill(popped.drilledChartId);
     dir = 'pop'; paint();
   };
 
@@ -2091,10 +2151,25 @@ function boot(root, data, callbacks, signal) {
       ? frame.caseFile : descriptor.data;
   };
 
+  /* A CHART CLICK IS ONE LEVEL, ALWAYS THE SAME ONE. The `chart` branch already
+     swapped in place; the behavioural branch pushed unconditionally, so every
+     click on a behavioural tile deepened the path — clicking one twice printed
+     its title twice in the crumb and each new finding stacked under the last,
+     which is the repeating, overflowing breadcrumb the fix round reported. A
+     chart the inspector is already standing on is a no-op; any other chart
+     replaces the standing level-2 frame rather than sitting on top of it. */
   function showChartInspector(descriptor) {
     if (!descriptor) return;
-    drilledChartId = descriptor.chartId;
-    if (descriptor.kind === 'event-comparison') {
+    seatDrill(descriptor.chartId);
+    const standing = top();
+    const LEVEL_TWO = ['factor', 'chart'];
+    if (LEVEL_TWO.includes(standing.k) && standing.rowId === descriptor.chartId) {
+      paint();
+      return;
+    }
+    const behavioral = descriptor.kind === 'event-comparison';
+    if (standing.k === 'factor' || (standing.k === 'chart' && behavioral)) popTo(0);
+    if (behavioral) {
       const row = (findings?.rows || []).find((item) => item.id === descriptor.chartId);
       if (!row?.lever) {
         push({ k: 'chart', chartId: descriptor.chartId, rowId: descriptor.chartId,
@@ -2315,16 +2390,15 @@ function boot(root, data, callbacks, signal) {
       delete chartNode.dataset.analysisGeneration;
       delete chartNode.dataset.selectedRunId;
     }
-    /* The count is the WINDOW's, and the days are the CGM capture's own — not a
-       coverage claim for the app. The basal run is a different, longer run and
-       names itself separately in the slot panel and the status bar. */
-    /* A finding the current window no longer holds has no population to count,
-       so the canvas states that rather than printing a reading count under a
-       panel that is listing nothing (ADR 62 part 9). */
+    /* THE READING COUNT IS GONE (#135 fix round, operator ruling). "window 216
+       of 864 readings" priced the strip in a unit no decision on this surface is
+       made in, at data weight, right beside the title — and the pooled-days
+       chip below already says how much history the strip drew from. The one
+       thing the strip header still has to say is when the drilled finding has
+       no population in the window (ADR 62 part 9), so that stays. */
     el('canvas-scope').textContent =
       f.k === 'factor' && settled() && !f.caseFile
-        ? 'No findings in the selected window'
-        : `window ${stats.readings.toLocaleString()} of ${envelope.readings.toLocaleString()} readings`;
+        ? 'No findings in the selected window' : '';
     el('canvas-pool').textContent =
       `pooled from ${envelope.days} captured CGM days · ±${envelope.pool} min`;
   }
@@ -2392,8 +2466,7 @@ function boot(root, data, callbacks, signal) {
     const seats = (fullscreen
       ? [{ chartId: fullscreen.chartId, seat: 'focal',
         pinned: canvasLayout.pins.includes(fullscreen.chartId) }]
-      : seatCanvas(canvasMode, findings, currentTileDescriptors(),
-        DIAGNOSE_EVIDENCE_CHARTS, canvasLayout))
+      : placeSeats(currentTileCandidates(), canvasLayout))
       .filter(({ chartId }) => byId.has(chartId));
     const displayed = seats.map(({ chartId }) => byId.get(chartId));
     sharedGlucoseRange = arrangementRange(displayed.map((descriptor) => ({
@@ -2417,30 +2490,45 @@ function boot(root, data, callbacks, signal) {
       tile.dataset.state = descriptor.state;
       tile.toggleAttribute('data-pinned', seat.pinned);
       tile.toggleAttribute('data-drilled', descriptor.chartId === drilledChartId);
-      tile.style.order = String(seat.pinned ? canvasLayout.pins.indexOf(descriptor.chartId) + 1 : 0);
+      tile.style.order = String(seat.seat === 'focal' ? 0
+        : seat.pinned ? canvasLayout.pins.indexOf(descriptor.chartId) + 1 : 0);
+      const runtime = tileRuntime.get(descriptor.chartId);
+      const presentation = tileStatePresentation(
+        descriptor, runtime.pending, runtime.message,
+      );
 
       const head = document.createElement('header');
       head.className = 'tile-head';
       const title = document.createElement('h3');
-      title.textContent = entry.name;
+      title.textContent = descriptor.title;
       const meta = document.createElement('span');
       meta.className = 'tile-meta';
-      meta.textContent = canvasMode === 'explore' ? 'measured evidence' : entry.meta(descriptor.mode);
+      meta.textContent = canvasMode === 'explore' ? 'measured evidence'
+        : descriptor.meta || entry.meta(descriptor.mode);
       const state = document.createElement('span');
       state.className = 'tile-state-name';
-      state.textContent = descriptor.state;
+      state.textContent = presentation.name;
       head.append(title, meta, state);
+      /* THE DRILL MARK IS A WORD, NOT A HAIRLINE. The inset outline this used to
+         rely on alone was invisible at tile size, so the reader had no way to
+         tell which chart the inspector beside it was reading. */
+      if (descriptor.chartId === drilledChartId) {
+        const mark = document.createElement('span');
+        mark.className = 'tile-drilled-mark';
+        mark.textContent = 'Open in inspector';
+        head.append(mark);
+      }
 
       if (entry.modes) {
         const modes = document.createElement('span');
         modes.className = 'tile-modes';
         modes.setAttribute('role', 'group');
-        modes.setAttribute('aria-label', `${entry.name} alignment`);
+        modes.setAttribute('aria-label', `${descriptor.title} alignment`);
         for (const mode of entry.modes) {
           const button = document.createElement('button');
           button.type = 'button';
           button.textContent = mode === 'clock' ? 'Clock' : 'Event';
-          button.setAttribute('aria-label', `Align ${entry.name} by ${mode}`);
+          button.setAttribute('aria-label', `Align ${descriptor.title} by ${mode}`);
           button.setAttribute('aria-pressed', String(mode === descriptor.mode));
           button.onclick = (event) => {
             event.stopPropagation();
@@ -2479,7 +2567,7 @@ function boot(root, data, callbacks, signal) {
       full.className = 'tile-fullscreen';
       full.textContent = fullscreen ? 'Dismiss' : 'Full';
       full.setAttribute('aria-label', fullscreen
-        ? `Dismiss fullscreen ${entry.name}` : `Show ${entry.name} fullscreen`);
+        ? `Dismiss fullscreen ${descriptor.title}` : `Show ${descriptor.title} fullscreen`);
       full.onclick = (event) => {
         event.stopPropagation();
         if (fullscreen) dismissChartFullscreen();
@@ -2495,10 +2583,6 @@ function boot(root, data, callbacks, signal) {
 
       const body = document.createElement('div');
       body.className = 'tile-body';
-      const runtime = tileRuntime.get(descriptor.chartId);
-      const presentation = tileStatePresentation(
-        descriptor, runtime.pending, runtime.message,
-      );
       if (runtime.pending) {
         body.innerHTML = `<div class="tile-state"><strong>${presentation.name}</strong><span>${presentation.message}</span></div>`;
       } else if (descriptor.state !== 'ok') {
@@ -2541,12 +2625,12 @@ function boot(root, data, callbacks, signal) {
           descriptor.state = 'error';
           runtime.message = error?.message || 'Evidence chart could not be drawn.';
           tile.dataset.state = descriptor.state;
-          state.textContent = descriptor.state;
+          state.textContent = tileStatePresentation(descriptor).name;
           body.innerHTML = '';
           const named = document.createElement('div');
           named.className = 'tile-state';
           const strong = document.createElement('strong');
-          strong.textContent = 'error';
+          strong.textContent = tileStatePresentation(descriptor).name;
           const message = document.createElement('span');
           message.textContent = runtime.message;
           named.append(strong, message);
@@ -2556,11 +2640,6 @@ function boot(root, data, callbacks, signal) {
       tile.append(body);
       tile.onclick = () => {
         showChartInspector(descriptor);
-        if (seat.seat !== 'focal' && !fullscreen) {
-          const ids = currentTileCandidates();
-          const swapped = focusSwap(ids, canvasLayout, descriptor.chartId);
-          canvasLayout = swapped.layout;
-        }
         paintTiles();
         paintChart();
         paintBrace();
@@ -2599,21 +2678,19 @@ function boot(root, data, callbacks, signal) {
       button.className = 'explorer-thumbnail';
       button.toggleAttribute('data-seated', seated.has(descriptor.chartId));
       button.toggleAttribute('data-drilled', descriptor.chartId === drilledChartId);
-      button.setAttribute('aria-label', `Focus ${entry.name}`);
-      button.innerHTML = `<span class="thumbnail-name">${entry.name}</span>
+      button.setAttribute('aria-label', `Focus ${descriptor.title}`);
+      button.innerHTML = `<span class="thumbnail-name">${descriptor.title}</span>
         <span class="thumbnail-ordinal">${index + 1}</span><span class="thumbnail-chart"></span>`;
       button.onclick = () => {
         drawerOpen = false;
         showChartInspector(descriptor);
-        const swapped = focusSwap(currentTileCandidates(), canvasLayout, descriptor.chartId);
-        canvasLayout = swapped.layout;
         paint();
       };
       host.append(button);
       const chartHost = button.querySelector('.thumbnail-chart');
       if (descriptor.state === 'ok') {
         const thumb = window.echarts.init(chartHost, null, { renderer: 'canvas' });
-        thumb.setOption(entry.thumbnail(descriptor.data), true);
+        thumb.setOption(entry.thumbnail(descriptor.data, descriptor.title), true);
         drawerMounts.push({ chart: thumb, observer: observeResize(chartHost, () => thumb) });
       }
     });
@@ -2794,7 +2871,7 @@ function boot(root, data, callbacks, signal) {
     if (frame.k === 'slot') return `${frame.cell.label} slot`;
     if (frame.k === 'block') return `${frame.cell.label} block`;
     if (frame.k === 'history') return frame.row.label;
-    if (frame.k === 'chart') return chartEntry(chartDescriptor(frame.chartId))?.name || 'Chart';
+    if (frame.k === 'chart') return chartDescriptor(frame.chartId)?.title || 'Chart';
     if (frame.k === 'explore') return 'Explore';
     // 'isf' is the last frame kind: select-in-place (P35 retired) never adds a
     // crumb level, so no frame ever reaches an `occ` branch here.
@@ -2847,12 +2924,10 @@ function boot(root, data, callbacks, signal) {
     }
     const f = top();
     const drilledDescriptor = chartDescriptor(drilledChartId);
-    const drilled = chartEntry(drilledDescriptor);
-    const drilledRow = (findings?.rows || []).find((row) => row.id === drilledChartId);
     const provenance = el('drill-provenance');
-    provenance.hidden = !drilled;
-    provenance.textContent = drilled
-      ? `Drilled chart · ${drilledRow?.title || drilled.name}` : '';
+    provenance.hidden = !drilledDescriptor;
+    provenance.textContent = drilledDescriptor
+      ? `Drilled chart · ${drilledDescriptor.title}` : '';
     /* TERM 45 — at level 1 the meta is the queue's own copy and nothing else:
        `N findings · 30 days` global, `N in this window` scoped, `30 days` empty.
        No sort language (the order already shows the mechanism) and no window range
@@ -3483,8 +3558,6 @@ function boot(root, data, callbacks, signal) {
     if (!descriptor) return;
     ev.preventDefault();
     drawerOpen = false;
-    const swapped = focusSwap(currentTileCandidates(), canvasLayout, descriptor.chartId);
-    canvasLayout = swapped.layout;
     showChartInspector(descriptor);
   }, { capture: true, signal });
   document.addEventListener('pointerdown', (ev) => {
@@ -3519,6 +3592,7 @@ function boot(root, data, callbacks, signal) {
   function leaveSurface() {
     canvasMode = 'findings';
     canvasLayout = createCanvasLayout();
+    tileCandidateOrder = [];
     fullscreen = null;
     drawerOpen = false;
     drilledChartId = null;
@@ -3544,13 +3618,7 @@ function boot(root, data, callbacks, signal) {
  * the live stylesheet), `setError` replaces the surface with a message. The
  * behaviour behind it is the locked mock's, unedited.
  */
-/* `railLead` (#677 re-settle, term 3): optional markup for one leading
-   instrument in the rail, plus a hook to wire it after each render. The event
-   comparison passes the View selector through it so Glucose carries the same
-   lens control Meals and Lows do, in the same optical row. `render()` rewrites
-   the whole root, and the surface calls it on its own state changes, so the
-   lead has to be re-injected here rather than once by the caller. */
-export function createDiagnoseWorkstation({ root, callbacks = {}, railLead = null }) {
+export function createDiagnoseWorkstation({ root, callbacks = {} }) {
   let payload = null;
   let captures = null;
   let teardown = null;
@@ -3608,10 +3676,6 @@ export function createDiagnoseWorkstation({ root, callbacks = {}, railLead = nul
     root.dataset.state = state;
     root.className = 'dw';
     root.innerHTML = MARKUP;
-    if (railLead) {
-      root.querySelector('.instruments').insertAdjacentHTML('afterbegin', railLead.markup);
-      railLead.install(root.querySelector('.instruments'));
-    }
     aborter = new AbortController();
     const booted = boot(root, captures, callbacks, aborter.signal);
     teardown = booted.destroy;

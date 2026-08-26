@@ -16,6 +16,35 @@ the operator (2026-08-25) over the strictly literal miniature: the preview is
 the affordance a future pin-placement picker will reuse, so it must not
 disappear exactly when the arrangement fills.
 
+## ADR 135 — A drill seats its own evidence, and the field's order is the reader's
+
+Amends the layout ADR above on one term only. "Focus changes on a click on a
+slot chart and on nothing else" was written when the field held one chart per
+parameter and the only way to change what you were reading was to click it.
+A behavioural window publishes one comparison per finding, and the live repro
+that opened this fix round showed the cost: with the 24 h window and a
+behavioural finding top-ranked, the field carried several look-alike comparison
+tiles, the drilled finding's own comparison was not among the seated ones, and
+the inspector was reading one factor while the field showed another. Ruled by
+the operator (2026-08-26): **drilling seats.** Whatever the inspector is reading
+takes the focal seat and wears a visible drill mark. Pinning is unchanged and
+still never moves focus.
+
+Two consequences make the seat honest rather than merely occupied. The seat
+ORDER is now persistent reader state, not a value re-derived per paint: a focus
+swap returns the reordered candidate list and the surface keeps it, so the
+demoted chart lands in the seat the reader took the new one from — every source
+slot, not slot 1. And at the narrow breakpoint the reading order leads with the
+focal tile and only then follows pin order, because a linearized field whose
+first chart is not the one being read is the same defect in one column.
+
+The registry entry, not the layout module, decides which findings row it draws
+and what that tile is called. A second hard-coded kind list in the layout module
+meant a fifth registry entry with a matching row produced no descriptor at all,
+and one static name per kind meant several behavioural tiles were indistinguish-
+able. Both are one hook on the entry now, so layout iterates entries and never
+names a kind.
+
 ## ADR 135 — One shared glucose range per arrangement
 
 Every glucose-valued chart in one arrangement receives the identical y-range:

@@ -21,6 +21,7 @@ const missedMealFixture = JSON.parse(await readFile(new URL(
 const independent = (value) => JSON.parse(JSON.stringify(value));
 const eventCase = () => independent(capture.cases['finding:meal_over_delivery'].event);
 const missedMealCase = () => independent(capture.cases['finding:missed_meal'].event);
+const mealBolusShortCase = () => independent(capture.cases['finding:meal_bolus_short'].event);
 const zeroMissedMealCase = () => independent(missedMealFixture.zero_payload);
 
 test('accepts a preparation carrying the current v2 findings projection', () => {
@@ -113,6 +114,14 @@ test('rejects a preparation projected for a different requested window', () => {
 
 test('accepts the current valid event case-file cohort partition', () => {
   assert.equal(validFindingCaseFile(eventCase()), true);
+});
+
+test('rejects a cross-population identity for Meal bolus fell short', () => {
+  const caseFile = mealBolusShortCase();
+  assert.equal(caseFile.cross_population, false);
+  assert.equal(caseFile.population, 'meals');
+  caseFile.projection.cohorts[2].occurrence_ids[0] = 'm_ffffffffffffffffffffffffffffffff';
+  assert.equal(validFindingCaseFile(caseFile), false);
 });
 
 test('rejects an event case without the three exact ADR 180 cohorts', () => {

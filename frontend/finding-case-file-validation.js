@@ -56,6 +56,7 @@ export function validFindingCaseFile(caseFile) {
   const selection = caseFile?.selection;
   if (!caseFile?.finding || typeof caseFile.finding.lever !== 'string'
     || typeof caseFile.finding.title !== 'string' || typeof caseFile.family !== 'string'
+    || typeof caseFile.cross_population !== 'boolean' || typeof caseFile.population !== 'string'
     || !validCount(caseFile?.summary?.claimed) || !validCount(caseFile?.summary?.denominator)
     || caseFile.summary.claimed > caseFile.summary.denominator
     || typeof caseFile.summary.noun !== 'string'
@@ -107,7 +108,7 @@ export function validFindingCaseFile(caseFile) {
 
     const [matched, near, comparison] = cohorts;
     const counts = projection.counts;
-    const crossExposure = missedMeal || caseFile.finding.lever === 'meal_bolus_short';
+    const crossPopulation = caseFile.cross_population;
     const expectedMinutes = JSON.stringify(fixedMinutes(projection.window_min));
     const hasSharedAxis = cohorts.every((cohort) => (
       JSON.stringify(cohort.points.map((point) => point.minute)) === expectedMinutes
@@ -120,7 +121,7 @@ export function validFindingCaseFile(caseFile) {
       || !validCohort(matched, (id) => OCCURRENCE_ID.test(id))
       || !validCohort(near, (id) => OCCURRENCE_ID.test(id))
       || !validCohort(comparison, (id) => OCCURRENCE_ID.test(id)
-        || (crossExposure && ANNOUNCED_MEAL_ID.test(id)))
+        || (crossPopulation && caseFile.population === 'highs' && ANNOUNCED_MEAL_ID.test(id)))
       || !validCount(counts?.matched) || !validCount(counts.nearly_matched)
       || !validCount(counts.comparison) || !validCount(counts.not_comparable)
       || counts.matched !== matched.routed_count || counts.nearly_matched !== near.routed_count
@@ -142,7 +143,7 @@ export function validFindingCaseFile(caseFile) {
       || near.anchor?.label !== 'Detected rise onset'
       || comparison.anchor?.kind !== 'completed_carb_bolus'
       || comparison.anchor?.label !== 'Completed carb bolus')) return false;
-    if (!crossExposure) {
+    if (!crossPopulation) {
       const partition = new Set([...memberIds, ...comparison.occurrence_ids]);
       if (partition.size !== caseFile.summary.denominator
         || [...partition].some((id) => !roster.has(id))) return false;

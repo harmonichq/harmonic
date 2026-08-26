@@ -237,11 +237,7 @@ class FindingCaseFileRouteTest(unittest.TestCase):
             root / "frontend/__fixtures__/missed-meal-comparison.json"
         ).read_text())["payload"]
         served = response.json()
-        self.assertEqual(
-            {key: value for key, value in served.items()
-             if key not in {"population", "cross_population"}},
-            frozen,
-        )
+        self.assertEqual(served, frozen)
 
         case = response.json()
         attributed = [row for row in case["occurrences"] if row["attributed"]]
@@ -274,11 +270,7 @@ class FindingCaseFileRouteTest(unittest.TestCase):
             root / "frontend/__fixtures__/missed-meal-comparison.json"
         ).read_text())["zero_payload"]
         served = response.json()
-        self.assertEqual(
-            {key: value for key, value in served.items()
-             if key not in {"population", "cross_population"}},
-            frozen,
-        )
+        self.assertEqual(served, frozen)
 
         case = response.json()
         missed, near, announced = case["projection"]["cohorts"]

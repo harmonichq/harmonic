@@ -3501,7 +3501,7 @@ export const S104 = async (page) => {
 export const S105 = async (page) => {
   await openCanvas(page);
   await page.getByRole('button', { name: 'Charts', exact: true }).click();
-  await page.getByRole('button', { name: 'Focus Carb ratio · meal runs' }).click();
+  await page.getByRole('button', { name: /^Focus Carb ratio .+ · meal runs$/ }).click();
   await page.waitForFunction(() => [...document.querySelectorAll('.evidence-tile')]
     .some((tile) => tile.dataset.state === 'error'));
   const failed = (await canvasSnapshot(page)).tiles.find((tile) => tile.state === 'error');

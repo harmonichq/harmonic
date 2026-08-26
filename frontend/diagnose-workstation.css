@@ -101,7 +101,10 @@
   --ck-grid-left: 52px;
   --ck-grid-right: 52px;   /* must track GRID in shell-cockpit-chart.js */
   --ck-canvas-gap: 8px;
-  --ck-trench: color-mix(in srgb, var(--mk-bg) 70%, #000);
+  /* The explorer's well is a pane material, not the outer desk. `--bg` is the
+     dark shell canvas in both themes, so deriving from it gave light the dark
+     trench too. The locked theme already owns this inset pane ground. */
+  --ck-trench: var(--wk-surface-sunken);
   --ck-tile-edge: color-mix(in srgb, var(--mk-line) 72%, transparent);
   /* A TOP-EDGE HIGHLIGHT IS LIGHT IN BOTH THEMES. Deriving it from the text ink
      made it near-black on the bone panel — a shadow along the top edge, which

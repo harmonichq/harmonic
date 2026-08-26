@@ -73,8 +73,13 @@ const { createBrowserRunner } = require('./browser-runner.js');
 const runner = createBrowserRunner(() => chromium.launch({ executablePath: EXEC || undefined }));
 after(() => runner.close());
 
-const FINDINGS_INPUTS = JSON.parse(await readFile(
-  join(ROOT, 'frontend/__fixtures__/findings-projection.json'), 'utf8')).inputs;
+const FINDINGS_FIXTURE = JSON.parse(await readFile(
+  join(ROOT, 'frontend/__fixtures__/findings-projection.json'), 'utf8'));
+const FINDINGS_INPUTS = FINDINGS_FIXTURE.inputs;
+/* The frozen per-window projections are the ground truth for "whose rows are on
+   screen": the mirror the browser gates answer from is deep-compared against
+   them window for window by findings-projection-mirror.test.js. */
+const windowRowIds = (name) => FINDINGS_FIXTURE.windows[name].rows.map((row) => row.id);
 
 /* #181/#135: the comparison tile has no endpoint of its own. Its evidence is
    the Finding case file the driver already serves from the committed synthetic
@@ -110,8 +115,14 @@ const readField = (page) => page.evaluate(() => ({
   tiles: [...document.querySelectorAll('.evidence-tile')].map((tile) => ({
     chartId: tile.dataset.chartId, seat: tile.dataset.seat, state: tile.dataset.state,
     pinned: tile.hasAttribute('data-pinned'),
+    drilled: tile.hasAttribute('data-drilled'),
+    title: tile.querySelector('.tile-head h3')?.textContent || null,
+    meta: tile.querySelector('.tile-meta')?.textContent || null,
+    mark: tile.querySelector('.tile-drilled-mark')?.textContent || null,
     body: tile.querySelector('.tile-state span')?.textContent || null,
   })),
+  drawer: [...document.querySelectorAll('.explorer-thumbnail .thumbnail-name')]
+    .map((name) => name.textContent),
   cells: [...document.querySelectorAll('.tile-schematic > *')].map((cell) => cell.className),
   pinCount: document.querySelector('#pin-count')?.textContent || null,
   focal: document.querySelector('.evidence-tile[data-seat="focal"]')?.dataset.chartId || null,
@@ -193,6 +204,74 @@ test('pinning holds and layers a chart; it never moves the focal chart', async (
       'a second pin leaves the focal chart where the reader put it');
     assert.equal(field.tiles.filter((tile) => tile.pinned).length, 2, 'both charts are held');
     assert.deepEqual(errors, []);
+  } finally {
+    await page.close();
+  }
+});
+
+test('focusing from every source slot exchanges that slot with the focal chart', async () => {
+  const browser = await runner.browser();
+  for (const sourceSeat of ['slot-1', 'slot-2', 'slot-3']) {
+    const { page, errors } = await openCanvas(browser);
+    try {
+      const opening = await readField(page);
+      const focal = opening.tiles.find((tile) => tile.seat === 'focal');
+      const source = opening.tiles.find((tile) => tile.seat === sourceSeat);
+      assert.ok(focal && source, `the focal arrangement exposes ${sourceSeat}`);
+
+      await page.locator(`.evidence-tile[data-chart-id="${source.chartId}"] .tile-body`).click();
+      await page.waitForTimeout(350);
+      const focused = await readField(page);
+      assert.equal(focused.tiles.find((tile) => tile.chartId === source.chartId)?.seat, 'focal',
+        `${sourceSeat} becomes focal`);
+      assert.equal(focused.tiles.find((tile) => tile.chartId === focal.chartId)?.seat, sourceSeat,
+        `the demoted focal chart returns to ${sourceSeat}`);
+      assert.deepEqual(errors, [], `${sourceSeat} focus throws no page error`);
+    } finally {
+      await page.close();
+    }
+  }
+});
+
+test('drilling a behavioural finding seats that finding\'s own comparison, marked', async () => {
+  const browser = await runner.browser();
+  const { page, errors } = await openCanvas(browser);
+  try {
+    /* THE LIVE REPRO THIS EXISTS FOR: with several behavioural rows in one
+       window the field showed look-alike comparison tiles, none naming its own
+       factor, and drilling one of them left the field seated on a different
+       chart entirely. Every behavioural chart now carries its own row's name,
+       and the drilled one takes the focal seat wearing a visible mark. */
+    await page.getByRole('button', { name: 'Charts', exact: true }).click();
+    await page.waitForTimeout(350);
+    const opening = await readField(page);
+    assert.ok(opening.drawer.length >= 5,
+      `the 24 h window publishes behavioural charts beside the parameter ones (${JSON.stringify(opening.drawer)})`);
+    assert.equal(new Set(opening.drawer).size, opening.drawer.length,
+      `no two live charts share a name (${JSON.stringify(opening.drawer)})`);
+    await page.getByRole('button', { name: 'Charts', exact: true }).click();
+    await page.waitForTimeout(350);
+
+    const target = await page.locator('#level .qrow[data-id^="finding:"]').last()
+      .getAttribute('data-id');
+    assert.ok(target, 'the queue lists a behavioural finding to drill');
+    assert.notEqual(opening.focal, target,
+      'the drill target is not already focal, so seating is what is being measured');
+
+    await page.locator(`#level .qrow[data-id="${target}"]`).click();
+    await page.waitForTimeout(900);
+
+    const drilled = await readField(page);
+    assert.equal(drilled.focal, target, 'the drilled finding takes the focal seat');
+    const seated = drilled.tiles.find((tile) => tile.chartId === target);
+    assert.equal(seated?.drilled, true, 'the seated tile is the drilled chart');
+    assert.equal(seated?.mark, 'Open in inspector',
+      'the drill mark is a word on the owning chart, not a hairline');
+    assert.equal(drilled.tiles.filter((tile) => tile.drilled).length, 1,
+      'exactly one chart claims the drill');
+    assert.equal(new Set(drilled.tiles.map((tile) => tile.title)).size, drilled.tiles.length,
+      `no two seated tiles are identically named (${JSON.stringify(drilled.tiles.map((tile) => tile.title))})`);
+    assert.deepEqual(errors, [], 'the drill throws no page error');
   } finally {
     await page.close();
   }
@@ -340,6 +419,65 @@ test('a pinned tile visibly names a stale generation before the real pipeline re
     assert.deepEqual(errors, [], 'the 409 path throws nothing into the page');
   } finally {
     releaseRefresh();
+    await page.close();
+  }
+});
+
+test('an in-flight history refresh cannot adopt findings for a window the reader left', async () => {
+  const browser = await runner.browser();
+  const requested = [];
+  let holdMorning = false;
+  let releaseMorning;
+  const morningReleased = new Promise((resolve) => { releaseMorning = resolve; });
+  let markMorningHeld;
+  const morningHeld = new Promise((resolve) => { markMorningHeld = resolve; });
+  let markAfternoonRequested;
+  const afternoonRequested = new Promise((resolve) => { markAfternoonRequested = resolve; });
+  const page = await openApp(browser, {
+    appSource: 'fixture', theme: 'dark', history: true, findingsInputs: FINDINGS_INPUTS,
+    findingsResponseBarrier: async ({ url }) => {
+      if (url.pathname !== '/api/diagnose/findings') return;
+      const window = [url.searchParams.get('start_min'), url.searchParams.get('end_min')];
+      requested.push(window);
+      if (window[0] === '720' && window[1] === '1080') markAfternoonRequested();
+      if (holdMorning && window[0] === '360' && window[1] === '720') {
+        markMorningHeld();
+        await morningReleased;
+      }
+    },
+  });
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  try {
+    const watching = page.locator('#level .qcollapse');
+    if (await watching.getAttribute('aria-expanded') !== 'true') await watching.click();
+    const history = page.locator('#level .qrow[data-state="history"]').first();
+    await history.waitFor({ state: 'visible' });
+    await history.click();
+
+    holdMorning = true;
+    await page.getByRole('button', { name: 'Morning', exact: true }).click();
+    await morningHeld;
+    await page.getByRole('button', { name: 'Afternoon', exact: true }).click();
+    releaseMorning();
+
+    await afternoonRequested;
+    await page.waitForFunction(() => !document.querySelector('.history-pending'));
+    assert.ok(requested.some(([start, end]) => start === '720' && end === '1080'),
+      'dropping the Morning response starts the current Afternoon history refresh');
+    /* THE DEFECT, STATED AS EVIDENCE: the held Morning answer lands after the
+       reader has pressed Afternoon. If any adoption path takes it, the field
+       draws Morning's rows while every instrument reads Afternoon. */
+    const seated = await page.locator('.evidence-tile')
+      .evaluateAll((tiles) => tiles.map((tile) => tile.dataset.chartId));
+    const afternoon = windowRowIds('afternoon');
+    const morningOnly = windowRowIds('morning').filter((id) => !afternoon.includes(id));
+    assert.ok(seated.length > 0, 'the field is drawn');
+    assert.deepEqual(seated.filter((id) => morningOnly.includes(id)), [],
+      `no chart from the window the reader left is seated (${JSON.stringify(seated)})`);
+    assert.deepEqual(errors, [], 'the interleaved refresh throws no page error');
+  } finally {
+    releaseMorning();
     await page.close();
   }
 });

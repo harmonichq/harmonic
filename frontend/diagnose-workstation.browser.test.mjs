@@ -575,6 +575,47 @@ test('populated Diagnose renders readable theme-specific ink and chart marks', a
   }
 });
 
+/* The drawer is cut into the TRENCH, a darker well than the page ground every
+   other ink rank on this surface was settled against — and its text runs at
+   9–10px, where the floor bites hardest. An unseated thumbnail is the case that
+   inherits the trench directly: a seated one paints itself the rail. */
+test('the chart drawer clears the text contrast floor against the trench in both themes', async () => {
+  for (const theme of ['light', 'dark']) {
+    const browser = await runner.browser();
+    const page = await openApp(browser, { state: 'typical', theme, appSource: 'fixture' });
+    try {
+      await page.locator('.evidence-tile .tile-pin').first().click();
+      await page.getByRole('button', { name: 'Charts', exact: true }).click();
+      await page.locator('.explorer-thumbnail:not([data-seated])').first()
+        .waitFor({ state: 'visible' });
+      const colors = await page.locator('.explorer-drawer').evaluate((drawer) => {
+        const color = (selector) => {
+          const node = drawer.querySelector(selector);
+          if (!node) throw new Error(`the drawer has no ${selector} to measure`);
+          return getComputedStyle(node).color;
+        };
+        return {
+          trench: getComputedStyle(drawer).backgroundColor,
+          header: color('header'),
+          meta: color('.drawer-meta'),
+          escape: color('.drawer-escape'),
+          name: color('.explorer-thumbnail:not([data-seated]) .thumbnail-name'),
+          ordinal: color('.explorer-thumbnail:not([data-seated]) .thumbnail-ordinal'),
+        };
+      });
+      assert.match(colors.trench, /^rgba?\(/,
+        `${theme} drawer paints its own trench rather than borrowing a ground`);
+      for (const role of ['header', 'meta', 'escape', 'name', 'ordinal']) {
+        const ratio = contrastRatio(colors[role], colors.trench);
+        assert.ok(ratio >= 4.5,
+          `${theme} drawer ${role} ink meets WCAG AA against the trench (${ratio.toFixed(2)}:1)`);
+      }
+    } finally {
+      await page.close();
+    }
+  }
+});
+
 /* LOCK:diagnose-workstation:1 — no page scroll at both required viewports (a
    narrower slice of term 1 than story S22 already owns: S22 covers it for
    the full "every state" contract; this only opens 'typical'). The

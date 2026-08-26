@@ -80,12 +80,40 @@ test('the registry declares four stateless chart kinds and their request coordin
   ]);
   assert.deepEqual(DIAGNOSE_EVIDENCE_CHARTS.map(({ coordinateSchema }) => coordinateSchema), [
     ['slot'], [], ['block_id', 'analysis_generation'],
-    ['projection_id', 'finding_id', 'alignment'],
+    ['projection_id', 'finding_id', 'alignment', 'factor', 'view'],
   ]);
   assert.deepEqual(DIAGNOSE_EVIDENCE_CHARTS.map(({ modes }) => modes), [
     ['clock', 'event'], ['event', 'clock'], ['event', 'clock'], null,
   ]);
-  assert.ok(DIAGNOSE_EVIDENCE_CHARTS.every((entry) => !Object.hasOwn(entry, 'coordinates')));
+  assert.ok(DIAGNOSE_EVIDENCE_CHARTS.every((entry) => typeof entry.matches === 'function'));
+  assert.ok(DIAGNOSE_EVIDENCE_CHARTS.every((entry) => typeof entry.coordinates === 'function'));
+});
+
+test('every entry produces exactly the coordinates it declares', () => {
+  const findings = { analysis_generation: 'process:7', projection_id: 'fp_7' };
+  const rows = {
+    basal: { id: 'basal:30-60', parameter: 'basal_rate', span: { start_min: 30, end_min: 60 } },
+    isf: { id: 'isf', parameter: 'isf' },
+    'carb-ratio': { id: 'ic:720', parameter: 'carb_ratio', span: { start_min: 720, end_min: 1440 } },
+    'event-comparison': { id: 'finding:missed_meal', title: 'Missed meal',
+      appearances: [{ family: 'highs', noun: 'highs' }],
+      event_chart: { lever: 'missed_meal', window: { scoped: false } } },
+  };
+  for (const entry of DIAGNOSE_EVIDENCE_CHARTS) {
+    const row = rows[entry.kind];
+    assert.ok(entry.matches(row), `${entry.kind} matches its own row`);
+    assert.deepEqual(Object.keys(entry.coordinates(row, findings)), [...entry.coordinateSchema],
+      `${entry.kind} produces its declared request coordinates`);
+    for (const other of DIAGNOSE_EVIDENCE_CHARTS) {
+      if (other !== entry) {
+        assert.ok(!other.matches(row), `${other.kind} does not claim the ${entry.kind} row`);
+      }
+    }
+  }
+  const named = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'event-comparison');
+  assert.deepEqual(named.nameFor(rows['event-comparison']), {
+    title: 'Missed meal', meta: 'highs aligned to each event',
+  });
 });
 
 test('entries build different alignments simultaneously with one optical spine', () => {
@@ -120,7 +148,7 @@ test('entries build different alignments simultaneously with one optical spine',
     'the comparison shares the other kinds\' plot insets');
 });
 
-test('basal event treatment follows the analyzer verdict, not the support count', () => {
+test('basal event treatment follows the backend verdict in product language', () => {
   const basal = fixture('./__fixtures__/basal-night-evidence.json').expected;
   const entry = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'basal');
   const held = entry.option('event', { data: {
@@ -139,7 +167,16 @@ test('basal event treatment follows the analyzer verdict, not the support count'
   assert.equal(held.series[0].type, 'bar');
   assert.deepEqual(held.series[0].data, [12]);
   assert.notEqual(held.series[0].itemStyle.color, moving.series[0].itemStyle.color);
-  assert.deepEqual(held.legend.data, ['insufficient evidence']);
+  const gated = entry.option('event', { data: {
+    ...basal, asserts_move: false, safety_status: 'held (recurring-low gate)',
+  } });
+  assert.deepEqual(held.legend.data, ['Insufficient evidence']);
+  assert.deepEqual(moving.legend.data, ['Supported']);
+  assert.deepEqual(gated.legend.data, ['Held'],
+    'a withheld raise reads as the shipped result state, not the engine string');
+  assert.doesNotMatch(
+    JSON.stringify({ held, moving, gated, meta: entry.meta('event') }),
+    /directional support|analyzer verdict|recurring-low gate/i);
 });
 
 test('every multi-series evidence form carries an on-chart legend', () => {
@@ -275,7 +312,7 @@ test('payload counts stay distinct in chart and thumbnail presentation', () => {
   const byKind = Object.fromEntries(DIAGNOSE_EVIDENCE_CHARTS.map((entry) => [entry.kind, entry]));
 
   assert.match(byKind.basal.option('clock', { data: basal, mini: false }).aria.description,
-    /19 nights.*3 directional/);
+    /19 nights.*3 support this reading/);
   assert.match(byKind.isf.option('event', { data: isf, mini: false }).aria.description,
     /7 detected.*2 qualifying windows.*41 qualifying steps/);
   assert.match(byKind['carb-ratio'].option('clock', { data: ic, mini: false,

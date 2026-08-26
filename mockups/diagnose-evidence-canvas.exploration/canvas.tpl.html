@@ -268,7 +268,7 @@ body{margin:0;background:#08090a;color:var(--wk-ink);font-family:var(--ui);
   border-radius:2px;
   box-shadow:
     0 1px 2px rgba(0,0,0,.6),               /* contact */
-    0 8px 16px -8px rgba(0,0,0,.85),        /* ambient, pooled in the gutter */
+    0 8px 16px -8px rgba(0,0,0,.85),        /* ambient, settled in the gutter */
     inset 0 0 0 1px #2b2622,                /* the machined edge */
     inset 0 1px 0 rgba(245,236,224,.055);   /* light from above */
 }
@@ -334,8 +334,8 @@ body{margin:0;background:#08090a;color:var(--wk-ink);font-family:var(--ui);
   by-clock / by-event switch at top-right. <b>Pins are bright tick brackets</b> at the chart’s corners; layout is
   always derived from pin state. Findings mode adds a <b>thin amber rank filament</b> along the seated chart’s top
   edge; Explore mode extinguishes every advisory colour. All four frames are 1440×900 and draw one committed fixture
-  set — the Diagnose workstation payload, its ISF rest-window capture and its I:C block-evidence capture. One
-  exception: the ISF chart’s delta-BG values are <b>invented for legibility</b> under a fixed seed, because the
+  set — the Diagnose workstation payload, its Correction factor rest-window capture and its Carb ratio block-evidence capture. One
+  exception: the Correction factor chart’s delta-BG values are <b>invented for legibility</b> under a fixed seed, because the
   committed capture holds every reading at a single glucose value and so carries no spread to draw.</p>
 </div>
 
@@ -420,7 +420,7 @@ function stripStats(win){
   const b = D.strip.bins.filter(x => inWin(x[0]));
   const med = b.reduce((s,x)=>s+x[1],0)/b.length;
   const p25 = b.reduce((s,x)=>s+x[2],0)/b.length, p75 = b.reduce((s,x)=>s+x[3],0)/b.length;
-  /* raw_n, not the pooled n: the 45-minute pool overlaps, so summing n would
+  /* raw_n, not the overlapping-window n: the 45-minute window overlaps, so summing n would
      count a reading three times and print a number the data never contained */
   const n   = b.reduce((s,x)=>s+x[7],0);
   const onT = b.filter(x=>x[1]>=70 && x[1]<=180).length;
@@ -484,7 +484,7 @@ const CHARTS = {
     }
   },
   isf: {
-    name:'ISF · rest windows', key:'2', modes:['event','clock'],
+    name:'Correction factor · rest windows', key:'2', modes:['event','clock'],
     meta:(m)=> m==='event' ? D.isf.pts.length+' steps · dose acted → ΔBG, fit' : D.isf.nights.length+' nights · per-night fit',
     foot:D.isf.nights.length+' nights',
     option(m, explore, mini, win){
@@ -517,13 +517,13 @@ const CHARTS = {
   },
   ic660: {
     name:'Carb ratio · evening runs', key:'3', modes:['event','clock'],
-    meta:(m)=> m==='event' ? D.ic660.scatter.length+' pooled runs · CGM from meal start' : 'measured I:C per run, in the gate',
+    meta:(m)=> m==='event' ? D.ic660.scatter.length+' meal runs · CGM from meal start' : 'measured Carb ratio per run, in the gate',
     foot:D.ic660.scatter.length+' support runs',
     option(m, explore, mini, win){ return icOption(D.ic660, m, explore, mini, win); }
   },
   ic420: {
     name:'Carb ratio · morning runs', key:'4', modes:['event','clock'],
-    meta:(m)=> m==='event' ? D.ic420.scatter.length+' pooled runs · CGM from meal start' : 'measured I:C per run, in the gate',
+    meta:(m)=> m==='event' ? D.ic420.scatter.length+' meal runs · CGM from meal start' : 'measured Carb ratio per run, in the gate',
     foot:D.ic420.scatter.length+' support runs',
     option(m, explore, mini, win){ return icOption(D.ic420, m, explore, mini, win); }
   },
@@ -695,7 +695,7 @@ function frame(cfg){
       ${inspector(cfg)}
     </div></div>
     <div class="footer">
-      <span class="facts">ISF ${D.isf.programmed} mg/dL/U · I:C ${D.ic660.current} g/U · basal ${(D.basal.reduce((n,s)=>n+s[1],0)/2).toFixed(1)} U/day</span>
+      <span class="facts">Correction factor 1 U : ${D.isf.programmed} mg/dL · Carb ratio 1 U : ${D.ic660.current} g · basal ${(D.basal.reduce((n,s)=>n+s[1],0)/2).toFixed(1)} U/day</span>
       <span class="adv">Advisory only — not medical advice.</span>
       <span class="utils"><span>Theme</span><span>Export</span><span>Settings</span></span>
     </div>

@@ -11,7 +11,7 @@ S41-S71.
 The app-only replay is
 `frontend/diagnose-workstation-behavior.replay.mjs`.
 
-**132 issued executable IDs:** S01–S112, C41–C57, and D1–D3
+**133 issued executable IDs:** S01–S113, C41–C57, and D1–D3
 **Active executable IDs:** all issued
 **Retired executable IDs:** none
 
@@ -2630,4 +2630,29 @@ S108 · Dismissing temporary fullscreen restores the exact prior focal chart, se
 S109 · Explore extinguishes rankings, recommendations, verdict marks and staging while reader-owned pins retain their accent. Evidence: replay S109.
 S110 · A drill names and marks its owning chart in Findings and Explore. Evidence: replay S110.
 S111 · Clear trace returns to the untraced case view without closing the owning chart drill. Evidence: replay S111.
-S112 · At the narrow viewport the canvas linearizes into one column, keeps the focal chart first, and removes unpinned slot charts from reading order. Evidence: replay S112.
+S112 · At the narrow viewport the canvas linearizes into one column, leads the reading order with the FOCAL tile whichever pin it is, and removes unpinned slot charts from reading order. Evidence: replay S112.
+S113 · Drilling a behavioural finding seats that finding's own response comparison in the focal seat, marks the owning chart in words, leaves no two live charts identically named, and does not deepen the path when the same finding is drilled again. Evidence: replay S113.
+
+### AMENDED — S112, the narrow reading order (#135 fix round, 2026-08-26)
+
+S112 read "keeps the focal chart first" against a field holding ONE chart, where
+pin order and reading order cannot disagree, and the narrow rule ordered tiles by
+pin order alone. Two pins separate them: focus the later-pinned chart and the
+earlier pin still led. The story now pins two charts, focuses the second, and
+asserts the focal tile is FIRST — the spec order being strip, then focal, then
+pins in pin order. The old single-chart assertion is proven weaker by that same
+field: it passes on both the broken and the fixed rule.
+
+### RETIRED — the strip header's reading count (#135 fix round, 2026-08-26)
+
+`window N of M readings` is retired from the canvas head by operator ruling. It
+priced the strip in a unit no decision on this surface is made in, at data
+weight, beside the title. The pooled-days chip (`pooled from N captured CGM days
+· ±M min`) stays and is unchanged. The header still prints the ADR 62 part 9
+sentence — `No findings in the selected window` — because that one names a real
+absence.
+
+Three stories carried the count as a witness and are amended, not retired: S01
+now reads the empty header plus the surviving pooled-days phrasing, and S06 and
+S21 read the lane's own dimming, which is the scope the reader acts on. Every
+one of the three keeps its original subject.

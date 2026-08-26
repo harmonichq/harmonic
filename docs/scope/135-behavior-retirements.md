@@ -48,3 +48,14 @@ issue86PendingRoot — pending findings retain Sift only; there is no root View 
 issue86MalformedRecovery — malformed case recovery returns to the findings root without a retired Event charts View — fix1
 S34 — event-comparison failure remains a named tile error and no longer carries an Event charts root View — fix1
 S38 — behavioral-chart reachability comes from the live tile field, not an Event charts root filter — fix1
+S01 — the strip header's `window N of M readings` count is retired; the story reads the empty header and the surviving pooled-days phrasing — fix3
+S06 — the retired reading count is replaced as this story's scope witness by the lane's own dimming — fix3
+S21 — same replacement: the canvas witness for a surviving user window is the lane dimming, not the retired count — fix3
+S92 — the demoted focal chart lands in the SELECTED chart's former seat from every source slot, not always slot 1; the story now selects a non-first slot — fix3
+S110 — the drilled chart's mark is a word in the tile head beside a 2px accent ring, no longer a 1px inset hairline alone — fix3
+S112 — the narrow reading order leads with the FOCAL tile rather than following pin order; the story now pins two charts and focuses the second — fix3
+tile state names — the four per-request state names (`ok`, `empty`, `error`, `stale-generation`) no longer reach the reader; the tile head prints product language — fix3
+basal event legend — `directional support` and `analyzer verdict` are retired from the basal event chart; the legend prints the analyzer's verdict as Supported / Held / Insufficient evidence — fix3
+canvas-head mode control — the Findings | Explore two-position control leaves the canvas head for the instrument rail beside Window; the Charts trigger stays on the canvas head — fix3
+behavioral tile naming — one static registry name for every behavioral tile is retired; each names itself from its own findings row — fix3
+factor-frame stacking — a click on a behavioral chart no longer pushes a new level-2 frame under the standing one; it replaces it, so the crumb never repeats a finding title — fix3

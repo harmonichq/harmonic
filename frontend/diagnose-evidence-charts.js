@@ -101,19 +101,32 @@ function thumbnail(name, count, series = []) {
   };
 }
 
+/* The analyzer's verdict, said in the reader's words. `safety_status` is the
+   engine's own closed display set (`Status` in `ciq_autotune/safety.py`), so the
+   chart renames the verdict it was handed rather than re-deriving one — the
+   staging predicate stays the backend's `asserts_move`, and these two names are
+   the only thing the tile adds. A status outside the set reads as insufficient,
+   which is the safe reading of a verdict this surface does not recognise. */
+const BASAL_HELD_STATUSES = Object.freeze(new Set([
+  'no change', 'held (recurring-low gate)',
+]));
+const basalVerdict = (data) => {
+  if (data?.asserts_move === true) return 'Supported';
+  return BASAL_HELD_STATUSES.has(data?.safety_status) ? 'Held' : 'Insufficient evidence';
+};
+
 function basalOption(mode, { data, mini = false, presentation } = {}) {
   const colors = chartColors();
   const nights = data?.nights || [];
   const advice = showsAdvice(presentation);
   const description = advice
-    ? `${data?.roster_count ?? 0} nights of steady data; ${data?.directional_support_count ?? 0} directional support.`
+    ? `${data?.roster_count ?? 0} nights of steady data; ${data?.directional_support_count ?? 0} support this reading.`
     : `${data?.roster_count ?? 0} nights of steady data.`;
   if (mode === 'event') {
     const support = advice
       ? data?.directional_support_count ?? 0 : data?.roster_count ?? 0;
     const assertsMove = advice && data?.asserts_move === true;
-    const verdict = advice
-      ? data?.safety_status ?? 'Analyzer verdict unavailable' : 'Nights of steady data';
+    const verdict = advice ? basalVerdict(data) : 'Nights of steady data';
     const label = hhmm((data?.slot ?? 0) * 30);
     return {
       ...chartBase(description, mini, colors),
@@ -280,13 +293,17 @@ const entries = [
     name: 'Basal · nights of steady data',
     modes: ['clock', 'event'],
     meta: (mode) => mode === 'clock'
-      ? 'delivered vs programmed by night' : 'directional support · analyzer verdict',
+      ? 'delivered vs programmed by night' : 'supported vs insufficient evidence',
     option: basalOption,
     thumbnail: (data) => thumbnail('BASAL · STEADY NIGHTS',
       `${data?.roster_count ?? 0} / ${data?.directional_support_count ?? 0}`,
       [{ type: 'line', symbol: 'none', data: (data?.nights || []).map((night) => night.delivered_rate),
         lineStyle: { color: chartColors().basal, width: 1 } }]),
     coordinateSchema: ['slot'],
+    matches: (row) => !row.event_chart && row.parameter === 'basal_rate',
+    coordinates: (row) => ({
+      slot: row.slot ?? Math.floor((row.span?.start_min ?? 0) / 30),
+    }),
     glucoseValues: null,
   },
   {
@@ -302,6 +319,8 @@ const entries = [
         data: (data?.steps || []).slice(0, 24).map((step) => [step.insulin_acted, step.dbg]),
         itemStyle: { color: chartColors().signal } }]),
     coordinateSchema: [],
+    matches: (row) => !row.event_chart && row.parameter === 'isf',
+    coordinates: () => ({}),
     glucoseValues: null,
   },
   {
@@ -317,24 +336,51 @@ const entries = [
         data: data?.series?.[0]?.points?.map((point) => point.bg) || [],
         lineStyle: { color: chartColors().signal, width: 1 } }]),
     coordinateSchema: ['block_id', 'analysis_generation'],
+    matches: (row) => !row.event_chart && row.parameter === 'carb_ratio',
+    coordinates: (row, findings) => ({
+      block_id: row.block_id ?? row.span?.start_min,
+      analysis_generation: findings.analysis_generation,
+    }),
     glucoseValues: carbRatioGlucoseValues,
   },
   {
     kind: 'event-comparison',
-    name: 'Meals / lows · event comparison',
+    /* ONE TILE PER BEHAVIOURAL ROW, AND EACH ONE SAYS WHOSE IT IS. This kind is
+       the only one a window can publish several of at once, so a single static
+       name printed three identical-looking tiles and the reader could not tell
+       which finding any of them answered. The name is the row's own published
+       title and the caption its own published exposure noun; `nameFor` is what
+       keeps the tile field free of a second copy of either. */
+    name: 'Response comparison',
     modes: null,
-    meta: () => 'served cohorts aligned to their event',
+    meta: () => 'responses aligned to each event',
+    nameFor: (row) => ({
+      title: row.title || 'Response comparison',
+      meta: `${row.appearances?.[0]?.noun || 'responses'} aligned to each event`,
+    }),
     option: (_mode, { data, range, caseFile = data } = {}) =>
       eventComparisonChartOption(caseFile, range),
-    thumbnail: (data) => thumbnail('MEALS / LOWS · COMPARISON',
+    thumbnail: (data, title) => thumbnail((title || 'Response comparison').toUpperCase(),
       data?.summary?.denominator ?? 0,
       [{ type: 'line', symbol: 'none', connectNulls: true,
         data: data?.projection?.cohorts?.[0]?.points?.map((point) => point.median) || [],
         lineStyle: { color: chartColors().signal, width: 1 } }]),
-    /* The retired standalone comparison endpoint's view/factor/window are gone
-       with it (#181): this tile asks the finding-case-file path for the same
-       event-aligned projection the inspector reads. */
-    coordinateSchema: ['projection_id', 'finding_id', 'alignment'],
+    /* The retired standalone comparison endpoint's window is gone with it
+       (#181): this tile asks the finding-case-file path for the same
+       event-aligned projection the inspector reads. Its factor and view come
+       back from the row's own `event_chart`, so two behavioural tiles in one
+       window can never share a request. */
+    coordinateSchema: ['projection_id', 'finding_id', 'alignment', 'factor', 'view'],
+    matches: (row) => Boolean(row.event_chart),
+    /* The case-file coordinates are opaque transport values: the served
+       projection, the row's own id, and the alignment this tile draws. */
+    coordinates: (row, findings) => ({
+      projection_id: findings.projection_id,
+      finding_id: row.id,
+      alignment: 'event',
+      factor: row.event_chart.lever,
+      view: row.appearances?.[0]?.family ?? null,
+    }),
     glucoseValues: eventComparisonGlucoseValues,
   },
 ];

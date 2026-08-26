@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from .analyzers.scenario.attribute import attribute, split_caused_over_treatments
 from .analyzers.scenario.engine import _effective_isf, low_prompt_answers
 from .analyzers.scenario.levers import Lever, title
+from .analyzers.scenario.evidence_population import policy_for
 from .analyzers.scenario.model_view import _CONTEXT_PAD_MIN, _build_episode_view, _is_driver
 from .analyzers.scenario.anchors import collect_anchors
 from .analyzers.scenario.segment import segment, split_double_humps, split_low_rebounds
@@ -138,6 +139,13 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
             if attribution.lever is None:
                 uncaused[_FAMILY_FOR_KIND[anchor["kind"]]] += 1
             lever = episode["lever"] if attributed else None
+            cause_occurrence_id = None
+            if lever == Lever.MEAL_BOLUS_SHORT.value:
+                policy = policy_for(lever)
+                cause_occurrence_id = policy.occurrence_for_episode(
+                    episode["id"], window_bolus, source_anchor.t,
+                    scenario_config=scenario_config,
+                )
             cause_title = title(Lever(lever)) if lever is not None else None
             occurrence = {
                 "t": anchor["t"],
@@ -156,6 +164,8 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
                 ],
                 "ep_id": episode["id"],
             }
+            if cause_occurrence_id is not None:
+                occurrence["cause_occurrence_id"] = cause_occurrence_id
             family["occurrences"].append(occurrence)
 
     for name, family in families.items():

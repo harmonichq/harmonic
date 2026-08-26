@@ -30,6 +30,7 @@ from ciq_autotune.findings_projection import (
 from ciq_autotune.event_comparison import FACTOR_LABELS
 from ciq_autotune.harm import HarmArm, HarmConfig, PrintedLow
 from ciq_autotune.safety import Status
+from ciq_autotune.store import Store
 from ciq_autotune.ic_history import (
     HistoryIdentity, RunIdentity, encode_history_id, encode_run_id,
 )
@@ -383,7 +384,74 @@ class ChipProjectionTest(unittest.TestCase):
         self.assertEqual(len(rows), len(Lever))
         for row in rows:
             expected = "highs" if outcome_kind(row["lever"]) == "high" else "lows"
-            self.assertEqual(row["chips"], [expected], row["lever"])
+            if row["lever"] == Lever.MEAL_BOLUS_SHORT.value:
+                self.assertEqual(row["chips"], ["highs", "meals"], row["lever"])
+            else:
+                self.assertEqual(row["chips"], [expected], row["lever"])
+
+
+class MealBolusShortPopulationProjectionTest(unittest.TestCase):
+    def test_one_off_keeps_its_attributed_meal_occurrence_below_the_pattern_gate(self):
+        from tests.test_meal_bolus_short_attribution import (
+            UNDERDOSED_BOLUS, UNDERDOSED_CGM, _projection, _seed,
+        )
+
+        with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
+            with Store.open(database.name) as store:
+                _seed(store, UNDERDOSED_BOLUS, UNDERDOSED_CGM)
+                projection = _projection(store)
+                rows = projection.project(WindowQuery.whole_day())["rows"]
+                scoped_rows = projection.project(WindowQuery.clock(810, 900))["rows"]
+
+        row = next(
+            item for item in rows
+            if item["lever"] == Lever.MEAL_BOLUS_SHORT.value
+        )
+        self.assertEqual(row["appearances"], [{
+            "family": "meals", "noun": "meals", "n": 1, "m": 1,
+        }])
+        self.assertEqual(row["episodes"], 1)
+        scoped = next(
+            item for item in scoped_rows
+            if item["lever"] == Lever.MEAL_BOLUS_SHORT.value
+        )
+        self.assertEqual(scoped["appearances"], [{
+            "family": "meals", "noun": "meals", "n": 1, "m": 1,
+        }])
+        self.assertEqual(scoped["episodes"], 1)
+
+    def test_two_highs_from_one_meal_count_as_one_served_meal_occurrence(self):
+        from tests.test_meal_bolus_short_attribution import (
+            DOUBLE_HIGH_BOLUS, DOUBLE_HIGH_CGM, _projection, _seed, next_day,
+        )
+        from ciq_autotune import finding_case_file
+        from ciq_autotune.analyze import analyze
+        from ciq_autotune.analyzers.scenario import build_scenarios
+        from ciq_autotune.explore_exposures import build_exposures
+
+        with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
+            with Store.open(database.name) as store:
+                bolus = DOUBLE_HIGH_BOLUS + next_day(DOUBLE_HIGH_BOLUS)
+                cgm = DOUBLE_HIGH_CGM + next_day(DOUBLE_HIGH_CGM)
+                _seed(store, bolus, cgm)
+                rows = _projection(store).project(WindowQuery.whole_day())["rows"]
+                prepared = finding_case_file.prepare(
+                    store, query=WindowQuery.whole_day(), version=0,
+                    analysis=analyze(
+                        store, pool_agreeing_basal_regimes=True,
+                        carb_entries=store.carb_entries(),
+                        prompt_responses=store.prompt_responses(),
+                    ).to_dict(),
+                    exposures=build_exposures(store), scenarios=build_scenarios(store).to_dict(),
+                )
+
+        row = next(item for item in rows if item["lever"] == Lever.MEAL_BOLUS_SHORT.value)
+        self.assertEqual(row["appearances"], [{
+            "family": "meals", "noun": "meals", "n": 2, "m": 2,
+        }])
+        self.assertEqual(row["episodes"], 2)
+        case = prepared.case("finding:meal_bolus_short", "event", None)
+        self.assertIsNotNone(case)
 
     def test_settings_direction_mapping_is_published_through_each_row_builder(self):
         cases = (

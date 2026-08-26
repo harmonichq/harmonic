@@ -491,6 +491,7 @@ class HonestDenominatorTest(unittest.TestCase):
         )
         self.assertEqual(by_lever["over_treated_low"], Exposure.LOWS.value)
         self.assertEqual(by_lever["late_bolus"], Exposure.MEALS.value)
+        self.assertEqual(by_lever["meal_bolus_short"], Exposure.MEALS.value)
 
     def test_correction_pairs_denominate_stacking(self):
         now = datetime(2026, 7, 2, 12, 0, 0)
@@ -505,6 +506,71 @@ class HonestDenominatorTest(unittest.TestCase):
         stacking = next(b for b in trend.behaviors if b.lever == "correction_stacking")
         # Newest window carries all four corrections → 3 pairs.
         self.assertEqual(stacking.series[-1].exposure_n, 3)
+
+    def test_custom_meal_floor_is_shared_by_attribution_and_trend_denominator(self):
+        now = datetime(2026, 7, 2, 12, 0, 0)
+        meal = BolusEvent(
+            now - timedelta(hours=2), insulin=1.0, carbs=7.0,
+            completion="Completed", seq_num=71,
+        )
+        config = ScenarioConfig(anchor_meal_min_carbs=5.0)
+        counts = {family: 0 for family in Exposure}
+
+        with mock.patch(
+            "ciq_autotune.outcomes_trend.tally_attributions",
+            return_value=(counts, {Lever.MEAL_BOLUS_SHORT: 1}),
+        ):
+            trend = summarize_trend(
+                _FakeStore(
+                    cgm=[CgmReading(now - timedelta(hours=3), 120.0)],
+                    bolus=[meal],
+                ),
+                window_days=14,
+                now=now,
+                scenario_config=config,
+            )
+
+        behavior = next(
+            item for item in trend.behaviors
+            if item.lever == Lever.MEAL_BOLUS_SHORT.value
+        )
+        self.assertEqual(
+            (behavior.series[-1].attributed, behavior.series[-1].exposure_n),
+            (1, 1),
+        )
+
+
+    def test_the_trend_attributes_on_the_same_meal_floor_it_denominates_on(self):
+        """k and n must be measured against one carb floor, not two.
+
+        The denominator reads the caller's config; attribution used to fall back
+        to ``tally_attributions``' default, so a raised floor could count a meal
+        into k that n had already excluded — and the structural guard turns that
+        into a raise on a served path rather than a number.
+        """
+        now = datetime(2026, 7, 2, 12, 0, 0)
+        config = ScenarioConfig(anchor_meal_min_carbs=15.0)
+        seen = []
+
+        def _spy(bolus, cgm_, basal, *, scenario_config=None, **kw):
+            seen.append(scenario_config)
+            return ({family: 0 for family in Exposure}, {})
+
+        with mock.patch(
+            "ciq_autotune.outcomes_trend.tally_attributions", side_effect=_spy
+        ):
+            summarize_trend(
+                _FakeStore(
+                    cgm=[CgmReading(now - timedelta(hours=3), 120.0)],
+                    bolus=[BolusEvent(now - timedelta(hours=2), insulin=1.0,
+                                      carbs=12.0, completion="Completed", seq_num=71)],
+                ),
+                window_days=14, now=now, scenario_config=config,
+            )
+
+        self.assertTrue(seen)
+        for forwarded in seen:
+            self.assertEqual(forwarded.anchor_meal_min_carbs, 15.0)
 
 
 def _meal_at(t, *, bg=None):

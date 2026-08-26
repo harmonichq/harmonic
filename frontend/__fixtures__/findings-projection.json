@@ -8540,6 +8540,7 @@
      "hero_episode": "2026-08-13-ep0",
      "impact": 0.62,
      "lever": "over_treated_low",
+     "occurrence_groups": [],
      "occurrences": [
       "2026-08-13-ep0"
      ],
@@ -8564,6 +8565,7 @@
      "hero_episode": "ep2",
      "impact": 0.44,
      "lever": "carb_undercount",
+     "occurrence_groups": [],
      "occurrences": [
       "ep2"
      ],

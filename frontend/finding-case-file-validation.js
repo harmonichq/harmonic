@@ -54,8 +54,11 @@ export function validFindingCaseFile(caseFile) {
   const occurrences = caseFile?.occurrences;
   const projection = caseFile?.projection;
   const selection = caseFile?.selection;
+  const recurrenceIdentity = ANNOUNCED_MEAL_ID.test(occurrences?.[0]?.id || '')
+    ? ANNOUNCED_MEAL_ID : OCCURRENCE_ID;
   if (!caseFile?.finding || typeof caseFile.finding.lever !== 'string'
     || typeof caseFile.finding.title !== 'string' || typeof caseFile.family !== 'string'
+    || typeof caseFile.cross_population !== 'boolean' || typeof caseFile.population !== 'string'
     || !validCount(caseFile?.summary?.claimed) || !validCount(caseFile?.summary?.denominator)
     || caseFile.summary.claimed > caseFile.summary.denominator
     || typeof caseFile.summary.noun !== 'string'
@@ -63,7 +66,7 @@ export function validFindingCaseFile(caseFile) {
     || FINDING_VERDICTS.reduce((sum, key) => sum + counts[key], 0)
       !== caseFile.summary.denominator
     || !Array.isArray(occurrences) || occurrences.length !== caseFile.summary.denominator
-    || !occurrences.every((row) => OCCURRENCE_ID.test(row?.id || '')
+    || !occurrences.every((row) => recurrenceIdentity.test(row?.id || '')
       && typeof row.date === 'string' && FINDING_VERDICTS.includes(row.verdict)
       && validAnchor(row.anchor))) return false;
 
@@ -107,7 +110,7 @@ export function validFindingCaseFile(caseFile) {
 
     const [matched, near, comparison] = cohorts;
     const counts = projection.counts;
-    const crossExposure = missedMeal || caseFile.finding.lever === 'meal_bolus_short';
+    const crossPopulation = caseFile.cross_population;
     const expectedMinutes = JSON.stringify(fixedMinutes(projection.window_min));
     const hasSharedAxis = cohorts.every((cohort) => (
       JSON.stringify(cohort.points.map((point) => point.minute)) === expectedMinutes
@@ -117,10 +120,10 @@ export function validFindingCaseFile(caseFile) {
       || near?.name !== 'Nearly matched' || typeof comparison?.name !== 'string'
       || projection?.comparison?.name !== comparison.name
       || !['available', 'unavailable'].includes(projection?.comparison?.state)
-      || !validCohort(matched, (id) => OCCURRENCE_ID.test(id))
-      || !validCohort(near, (id) => OCCURRENCE_ID.test(id))
-      || !validCohort(comparison, (id) => OCCURRENCE_ID.test(id)
-        || (crossExposure && ANNOUNCED_MEAL_ID.test(id)))
+      || !validCohort(matched, (id) => recurrenceIdentity.test(id))
+      || !validCohort(near, (id) => recurrenceIdentity.test(id))
+      || !validCohort(comparison, (id) => recurrenceIdentity.test(id)
+        || (crossPopulation && caseFile.population === 'highs' && ANNOUNCED_MEAL_ID.test(id)))
       || !validCount(counts?.matched) || !validCount(counts.nearly_matched)
       || !validCount(counts.comparison) || !validCount(counts.not_comparable)
       || counts.matched !== matched.routed_count || counts.nearly_matched !== near.routed_count
@@ -142,7 +145,7 @@ export function validFindingCaseFile(caseFile) {
       || near.anchor?.label !== 'Detected rise onset'
       || comparison.anchor?.kind !== 'completed_carb_bolus'
       || comparison.anchor?.label !== 'Completed carb bolus')) return false;
-    if (!crossExposure) {
+    if (!crossPopulation) {
       const partition = new Set([...memberIds, ...comparison.occurrence_ids]);
       if (partition.size !== caseFile.summary.denominator
         || [...partition].some((id) => !roster.has(id))) return false;

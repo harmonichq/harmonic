@@ -1350,7 +1350,7 @@ class OverTreatedLowPromptAnswerTest(unittest.TestCase):
 
     # --- payload contract --------------------------------------------------
 
-    def test_schema_version_bumped_to_6(self):
+    def test_schema_version_remains_6_until_the_projection_fixture_chunk(self):
         cgm = self._low_rebound(24, 14, 0, nadir=48.0, rebound=200.0)
         report = assemble([], cgm, [], isf=ISF)
         self.assertEqual(report.schema_version, 6)
@@ -1990,6 +1990,114 @@ class OverTreatedCausedLowSplitTest(unittest.TestCase):
         report = assemble(bolus, cgm, [], isf=ISF)
         levers = {e.lever for e in report.episodes.values()}
         self.assertIn(Lever.OVER_TREATED_LOW, levers)
+
+
+class EvidencePopulationStructuralCountTest(unittest.TestCase):
+    """Every behavioral analyzer output preserves its served ``k <= n`` contract."""
+
+    def _events(self, lever):
+        if lever is Lever.CARB_UNDERCOUNT:
+            bolus, cgm = dose_stamped_ic_fixture()
+            return bolus, cgm, [], ISF
+        if lever is Lever.LATE_BOLUS:
+            cgm = (cgm_flat(24, 11, 40, 120, 30)
+                   + cgm_ramp(24, 12, 10, 120, 2.0, 60)
+                   + cgm_ramp(24, 13, 10, 240, -1.0, 80))
+            return [meal(24, 12, 40, carbs=85, dose=10)], cgm, [], None
+        if lever is Lever.MEAL_OVER_DELIVERY:
+            bolus = [meal(25, 11, 45, carbs=50, dose=5)]
+            cgm = cgm_flat(25, 11, 30, 110, 105) + [
+                CgmReading(t=datetime(2026, 6, 25, 13, 15), bg=68, type="EGV")
+            ]
+            return bolus, cgm, suspend_run(25, 12, 0, rows=12), None
+        if lever is Lever.OVER_TREATED_LOW:
+            cgm = OverTreatedLowTest()._low_rebound(26, 11, 30)
+            return [], cgm, [], ISF
+        if lever is Lever.CORRECTION_ON_IOB:
+            cgm = (cgm_flat(27, 18, 40, 120, 20)
+                   + cgm_ramp(27, 19, 0, 120, 1.75, 40)
+                   + cgm_ramp(27, 19, 40, 190, -1.0, 140))
+            bolus = [meal(27, 19, 0, carbs=40, dose=6), corr(27, 20, 0, 4)]
+            return bolus, cgm, [], ISF
+        if lever is Lever.CORRECTION_STACKING:
+            cgm = (cgm_ramp(28, 10, 0, 160, -0.8, 60)
+                   + cgm_ramp(28, 11, 5, 108, -1.2, 60))
+            bolus = [corr(28, 10, 10, 3), corr(28, 10, 40, 3)]
+            return bolus, cgm, [], ISF
+        if lever is Lever.MISSED_MEAL:
+            return [], cgm_ramp(29, 15, 0, 130, 2.2, 100), [], ISF
+        if lever is Lever.MEAL_BOLUS_SHORT:
+            cgm = (cgm_flat(30, 9, 0, 110, 180)
+                   + cgm_ramp(30, 12, 0, 112, 2.4, 65)
+                   + cgm_ramp(30, 13, 5, 268, -1.5, 100))
+            bolus = [meal(30, 12, 0, carbs=85, dose=5), corr(30, 13, 20, 2.5)]
+            return bolus, cgm, [], 45
+        self.fail(f"missing synthetic analyzer fixture for {lever.value}")
+
+    def _report(self, lever):
+        from ciq_autotune.analyzers.scenario_config import ScenarioConfig
+        bolus, cgm, basal, isf = self._events(lever)
+        return assemble(
+            bolus, cgm, basal, isf=isf,
+            scenario_config=ScenarioConfig(engine_min_occurrences=1),
+        )
+
+    def test_every_behavioral_lever_serves_a_structural_count(self):
+        self.assertEqual(len(Lever), 8)
+        for lever in Lever:
+            with self.subTest(lever=lever.value):
+                report = self._report(lever)
+                self.assertIn(lever, {episode.lever for episode in report.episodes.values()})
+                pattern = next(
+                    item for item in [*report.patterns, *report.low_confidence]
+                    if item.lever is lever
+                )
+                payload = pattern.to_dict()
+                self.assertLessEqual(payload["confidence"]["k"],
+                                     payload["confidence"]["n"])
+
+    def test_all_behavioral_levers_leave_staging_verdict_bytes_unchanged(self):
+        """Behavioral patterns cannot stage; pin invariance at the basal seam.
+
+        The eight per-lever scenario fixtures below prove that every behavioral
+        classifier runs, but scenario findings do not own an ``asserts_move``
+        predicate. A separate synthetic basal analyzer fixture therefore supplies
+        real staging verdicts without hand-setting them or touching the predicate.
+        """
+        import json
+
+        from ciq_autotune.analyzers.basal import analyze_basal
+
+        for lever in Lever:
+            self.assertIn(
+                lever,
+                {episode.lever for episode in self._report(lever).episodes.values()},
+            )
+
+        basal, cgm = [], []
+        for day in range(1, 13):
+            start = datetime(2022, 6, day)
+            basal.append(BasalEvent(
+                t=start, delivery_type="algorithmDelivery", duration_mins=360,
+                basal_rate=0.48, profile_basal_rate=0.6,
+            ))
+            cgm.extend(
+                CgmReading(t=start + timedelta(minutes=5 * offset), bg=120,
+                           type="EGV")
+                for offset in range(73)
+            )
+        slots = analyze_basal(basal, cgm, [], [])
+        verdicts = [
+            [slot.status.value if slot.status is not None else None,
+             slot.asserts_move]
+            for slot in slots
+        ]
+        actual = json.dumps(verdicts, separators=(",", ":")).encode()
+        expected = json.dumps(
+            [["lower", True]] * 12 + [["no data", False]] * 36,
+            separators=(",", ":"),
+        ).encode()
+        self.assertEqual(actual, expected)
 
 
 if __name__ == "__main__":

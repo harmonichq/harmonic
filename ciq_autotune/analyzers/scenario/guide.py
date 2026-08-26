@@ -296,14 +296,16 @@ def _exposure_entry(exp: Exposure) -> dict:
 
 
 def _lever_entry(lever: Lever) -> dict:
-    exp = levers.exposure(lever)
+    from .evidence_population import policy_for
+    exp = levers.exposure(lever)  # outcome-family catalog grouping
+    policy = policy_for(lever)
     return {
         "value": lever.value,
         "title": levers.title(lever),
         "exposure": exp.value,
         "meaning": levers.meaning(lever),
         "recommendation": levers.recommendation(lever),
-        "measured": _EXPOSURE_META[exp][1],
+        "measured": policy.recurrence_noun,
     }
 
 

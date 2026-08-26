@@ -6,10 +6,10 @@ The public face of epic #70's layer 3. It:
    :mod:`.anchors`);
 2. **attributes** a single lever per episode, root-cause-by-time
    (:mod:`.attribute`) — the dedup that collapses co-occurring flags;
-3. **groups** episodes into patterns by lever;
+3. **groups** episodes into policy-owned occurrences and patterns by lever;
 4. **scores** each pattern with #58 :class:`~ciq_autotune.uncertainty.Confidence`
-   at episode level — ``n`` = exposure (all meals / all lows / …), ``k`` = episodes
-   that went bad this way, ``effect`` = typical hypo-weighted severity
+   — ``n`` = recurrence population, ``k`` = unique occurrences that went bad this
+   way, ``effect`` = typical hypo-weighted occurrence severity
    (:mod:`.severity`) — selects a **hero** (highest-severity credible episode), and
    **ranks** patterns by aggregate severity (#77);
 5. emits the :class:`~.payload.ScenarioReport` (#70 §5): patterns without confident
@@ -51,6 +51,7 @@ from .anchors import (
 )
 from .attribute import LowPromptAnswer, attribute, split_caused_over_treatments
 from .levers import Exposure, Lever, exposure, recommendation
+from .evidence_population import policy_for, recurrence_count
 from . import opportunities
 from .narrate import narrate
 from .preempted import compute_preempted_lows
@@ -107,6 +108,23 @@ def _exposure_counts(
     return {family: len(items) for family, items in families.items()}
 
 
+def _recurrence_counts(bolus, cgm, basal, *, scenario_config=ScenarioConfig()):
+    """The policy-owned recurrence denominator for every lever.
+
+    Exposure counts remain available for outcome-family reporting; a lever's
+    finding confidence must instead read its own evidence population.
+    """
+    families = opportunities.build_opportunities(
+        bolus, cgm, basal, scenario_config=scenario_config,
+    )
+    return {
+        lever: recurrence_count(
+            lever, families, bolus, scenario_config=scenario_config,
+        )
+        for lever in Lever
+    }
+
+
 def tally_attributions(
     bolus_events: Sequence[BolusEvent],
     cgm_readings: Sequence[CgmReading],
@@ -116,7 +134,7 @@ def tally_attributions(
     scenario_config: ScenarioConfig = ScenarioConfig(),
     low_answers: Sequence[LowPromptAnswer] = (),
 ) -> Tuple[Dict[Exposure, int], Dict[Lever, int]]:
-    """Exposure counts (``n``) and attributed-episode counts (``k`` per lever), no narration.
+    """Exposure counts (``n``) and unique occurrence counts (``k``), no narration.
 
     The **tally-only** path behind the outcome-summary clean rates (ADR 0007,
     #113). It runs the same anchor → segment → split → attribute pipeline
@@ -127,9 +145,9 @@ def tally_attributions(
     payload, no ``Episode`` objects. It returns just the two tallies the clean
     rates need: ``(exposure_counts, attributed_by_lever)``.
 
-    ``clean_rate(exposure) = 1 − (Σ attributed episodes whose lever rolls up to
-    this exposure) / exposure_counts[exposure]`` — the arithmetic complement the
-    Pattern rates are the other side of.
+    The flat clean-rate consumer assigns each ``k`` to the account named by the
+    lever's recurrence policy. Meal bolus fell short is unique-meal counted here;
+    ordinary levers retain episode identity.
     """
     anchors = collect_anchors(
         bolus_events, cgm_readings, basal_events, scenario_config=scenario_config
@@ -152,6 +170,7 @@ def tally_attributions(
     )
 
     attributed: Dict[Lever, int] = {}
+    seen_occurrences: Dict[Lever, set] = {}
     for ep_anchors in ep_anchor_groups:
         start = ep_anchors.start
         end = ep_anchors.end
@@ -168,6 +187,15 @@ def tally_attributions(
         )
         if attr.lever is None:
             continue
+        if attr.lever is Lever.MEAL_BOLUS_SHORT:
+            policy = policy_for(attr.lever)
+            occurrence_id = policy.occurrence_for_episode(
+                "", bolus_events, attr.steps[0].t,
+                scenario_config=scenario_config,
+            )
+            if occurrence_id in seen_occurrences.setdefault(attr.lever, set()):
+                continue
+            seen_occurrences[attr.lever].add(occurrence_id)
         attributed[attr.lever] = attributed.get(attr.lever, 0) + 1
     return exposure_counts, attributed
 
@@ -438,19 +466,29 @@ def _resolve_end(
 def _score_pattern(
     lever: Lever,
     episodes: List[Episode],
-    exposure_counts: Dict[Exposure, int],
+    recurrence_counts: Dict[Lever, int],
     *,
     scenario_config: ScenarioConfig = ScenarioConfig(),
 ) -> Confidence:
     """The #58 :class:`Confidence` for a lever's pattern.
 
-    ``k`` = episodes attributed to this lever; ``n`` = the lever's exposure
-    denominator (never below ``k`` — an episode is always one opportunity);
-    ``effect`` = mean normalized hypo-weighted severity across the lever's episodes
+    ``k`` = unique policy occurrences attributed to this lever; ``n`` = the lever's
+    recurrence population (never below ``k`` in served output);
+    ``effect`` = mean normalized hypo-weighted severity across occurrence heroes
     (the "typical severity" that feeds both scoring and the recurrence line).
     """
     k = len(episodes)
-    n = max(k, exposure_counts.get(exposure(lever), k))
+    n = recurrence_counts[lever]
+    if lever is Lever.MEAL_BOLUS_SHORT:
+        if k > n:
+            raise ValueError(
+                f"{lever.value} attribution exceeds its evidence population"
+            )
+    else:
+        # Near-low rebound episodes can be actionable even where no sub-70 anchor was
+        # emitted. Those legacy Exposure populations still need this compatibility
+        # clamp; ADR 202 records the audited exception explicitly.
+        n = max(n, k)
     effects = [
         normalized_severity(ep.severity, scenario_config=scenario_config)
         for ep in episodes
@@ -511,7 +549,7 @@ def assemble(
         scenario_config=scenario_config,
         low_answers=low_answers,
     )
-    exposure_counts = _exposure_counts(
+    recurrence_counts = _recurrence_counts(
         bolus_events, cgm_readings, basal_events, scenario_config=scenario_config
     )
 
@@ -527,6 +565,7 @@ def assemble(
 
     episodes: Dict[str, Episode] = {}
     by_lever: Dict[Lever, List[Episode]] = {}
+    occurrence_ids: Dict[str, str] = {}
     for idx, ep_anchors in enumerate(ep_anchor_groups):
         # Every episode's forward reach is bounded by the next group's start, so no two
         # episodes overlap in time (the non-overlap invariant, #80) — unchanged.
@@ -552,6 +591,10 @@ def assemble(
         episode, lever = built
         episodes[episode.id] = episode
         by_lever.setdefault(lever, []).append(episode)
+        occurrence_ids[episode.id] = policy_for(lever).occurrence_for_episode(
+            episode.id, bolus_events, episode.steps[0].t,
+            scenario_config=scenario_config,
+        )
 
     # Build a scored pattern per lever with >= _MIN_OCCURRENCES episodes. Over-treated
     # lows are exempt from the one-off gate (#104): each is a discrete, dangerous event
@@ -559,10 +602,19 @@ def assemble(
     # (it still rides the low-confidence expander below unless it recurs / is severe).
     scored: List[Tuple[Confidence, Lever, List[Episode]]] = []
     for lever, eps in by_lever.items():
-        if lever is not Lever.OVER_TREATED_LOW and len(eps) < scenario_config.engine_min_occurrences:
+        # Severity, hero, effect, ranking, and the occurrence gate all apply to the
+        # policy's unique occurrence.  For meal-bolus-short that is the implicated
+        # meal, represented by its worst associated episode.
+        unique = {}
+        for episode in eps:
+            key = occurrence_ids[episode.id]
+            if key not in unique or episode.severity > unique[key].severity:
+                unique[key] = episode
+        occurrence_eps = list(unique.values())
+        if lever is not Lever.OVER_TREATED_LOW and len(occurrence_eps) < scenario_config.engine_min_occurrences:
             continue
-        conf = _score_pattern(lever, eps, exposure_counts, scenario_config=scenario_config)
-        scored.append((conf, lever, eps))
+        conf = _score_pattern(lever, occurrence_eps, recurrence_counts, scenario_config=scenario_config)
+        scored.append((conf, lever, occurrence_eps))
 
     # Split into surfaced vs low-confidence by a rate-signal gate. `wide` does NOT
     # hide a pattern here (scenario-scoped, #77) — over a realistic window low-base-
@@ -596,6 +648,15 @@ def assemble(
     for pending, out in ((surfaced_pending, surfaced), (low_pending, low_conf)):
         pending.sort(key=lambda t: t[0], reverse=True)
         for rank, (_sev, conf, lever, hero, occ_ids) in enumerate(pending, start=1):
+            groups = []
+            for occurrence_id in dict.fromkeys(
+                occurrence_ids[episode_id] for episode_id in occ_ids
+            ):
+                members = [episode for episode in by_lever[lever]
+                           if occurrence_ids.get(episode.id) == occurrence_id]
+                representative = max(members, key=lambda episode: episode.severity)
+                groups.append({"id": occurrence_id, "member_episode_ids": [episode.id for episode in members],
+                               "severity": representative.severity, "hero_episode": representative.id})
             out.append(
                 Pattern(
                     lever=lever,
@@ -604,6 +665,7 @@ def assemble(
                     recommendation=recommendation(lever),
                     hero_episode=hero,
                     occurrences=occ_ids,
+                    occurrence_groups=groups,
                 )
             )
 

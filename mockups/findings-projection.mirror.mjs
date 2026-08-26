@@ -48,6 +48,11 @@ const OUTCOME_KIND = {
   over_treated_low: 'high', correction_stacking: 'low', correction_on_iob: 'low',
   missed_meal: 'high', meal_bolus_short: 'high',
 };
+// evidence_population.policy_for — Meal bolus fell short recurs over eligible
+// meal groups even though each member episode lands in the Highs family.
+const RECURRENCE_GROUP_POLICY = {
+  meal_bolus_short: { noun: 'meals' },
+};
 // Carb ratio is grams per unit, so raising it removes insulin and answers lows.
 const SETTINGS_CHIPS = {
   basal_rate: { raise: ['highs'], lower: ['lows'] },
@@ -401,6 +406,10 @@ function findingRows(exposures, scenarios, query) {
   const window = query.pieces;
   const families = exposures.exposures || {};
   const anchors = episodeAnchors(families);
+  const patterns = Object.fromEntries(
+    [...(scenarios.patterns || []), ...(scenarios.low_confidence || [])]
+      .map((pattern) => [pattern.lever, pattern]),
+  );
   const inWindow = new Map();
   const byLever = new Map();
   for (const [family, payload] of Object.entries(families)) {
@@ -430,6 +439,25 @@ function findingRows(exposures, scenarios, query) {
   const priced = patternPriorities(scenarios);
   const rows = [];
   for (const [lever, entry] of byLever) {
+    const recurrence = RECURRENCE_GROUP_POLICY[lever];
+    if (recurrence) {
+      const groupIds = new Set(
+        (inWindow.get('highs') || [])
+          .filter((hit) => hit.cause_lever === lever)
+          .map((hit) => hit.cause_occurrence_id),
+      );
+      const groups = new Map(
+        ((patterns[lever] || {}).occurrence_groups || []).map((group) => [group.id, group]),
+      );
+      for (const groupId of groupIds) if (!groups.has(groupId)) groupIds.delete(groupId);
+      entry.appearances = [{
+        family: recurrence.noun,
+        noun: recurrence.noun,
+        n: groupIds.size,
+        m: ((patterns[lever] || {}).confidence || {}).n || 0,
+      }];
+      entry.episodes = groupIds;
+    }
     entry.appearances.sort((a, b) => (a.family < b.family ? -1 : a.family > b.family ? 1 : 0));
     const { evidence, counts, countsByFamily } = leverEvidence(lever, entry.families, inWindow);
     rows.push(stampedRow({

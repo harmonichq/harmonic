@@ -1951,19 +1951,52 @@ The app replay adds these closed stories:
   source corrections.
 - `C44` uses one story-scoped generated preparation pose for **Missed /
   unannounced meal**, then opens its server-owned event coordinate. It renders
-  the attribution header and its five-way verdict accounting, then renders
-  attributed missed meals and announced meals as separate cohorts. The verdict
-  band keeps the High-case denominator; the comparison separately prints its
-  served attributed-missed, announced, and not-comparable counts. It also
-  selects an announced-meal row for its trace and markers. An empty attributed-
-  missed cohort remains an explicit empty state rather than a fallback to High
-  verdict membership.
-- `C56` serves that same Finding with an empty attributed-missed cohort and
-  asserts the explicit empty state, no High-roster fallback, and the retained
-  announced-meal baseline.
-- `C57` selects an attributed missed meal through its opaque server ID. The
-  served `missed` comparison cohort, rather than its `fired` verdict, owns the
-  comparison emphasis; the exact selected trace remains visible.
+  the attribution header and its five-way verdict accounting, then renders the
+  served `matched`, `nearly_matched` and named comparison populations as
+  separate cohorts. The verdict band keeps the High-case denominator; the
+  comparison separately prints its served matched, nearly-matched, comparison
+  and not-comparable counts. It also selects a comparison-population row for its
+  trace and markers. An empty matched cohort remains an explicit empty state
+  rather than a fallback to High verdict membership.
+- `C56` serves that same Finding with an empty matched cohort and asserts the
+  explicit empty state, no High-roster fallback, and the retained named
+  comparison baseline.
+- `C57` selects a matched-cohort occurrence through its opaque server ID. The
+  served `matched` comparison cohort, rather than its `fired` verdict, owns the
+  comparison emphasis; the exact selected trace remains visible, and the
+  withheld comparison population is never given an aggregate.
+
+## Revision amendment — #181 chunk 3 (evidence artifacts re-settled)
+
+The three chunk-3 evidence artifacts carried pre-#181 vocabulary and were
+re-settled against the served case-file contract, changing assertions only where
+they named a retired cohort, control or route:
+
+- `C44`, `C56` and `C57` name the served `matched` / `nearly_matched` /
+  `comparison` populations in place of the retired `missed` / `announced` pair.
+  `C57` additionally awaits its case-file request together with the click that
+  issues it, so a click that never lands fails one story instead of taking the
+  whole replay down with an unhandled rejection.
+- `S32`, `S40` and `S33` follow the surviving names: the selected occurrence
+  draws as the `Selected trace` series, and the shared canvas header's served
+  anchor caption replaces the retired `.ec-title-context` finding label.
+- `frontend/diagnose-event-comparison-behavior.replay.mjs` opens all thirteen of
+  its stories through the drill path — unscoped queue, Finding case file, **By
+  event** — instead of the retired standalone route, and poses shapes by
+  changing what the SERVER said rather than what the browser derived. Stories
+  that checked retired controls stay as loud absence checks; the docked-readout
+  clauses of `S7` and `S8` are retired with the lens's own header, their
+  disclosure claim moving to the canvas's accessible label.
+- `mockups/diagnose-event-comparison-support-audit.mjs` makes the same move and
+  tightens its central rule: a case file publishes no episodes for a withheld
+  population, so a withheld population must now draw **nothing at all** and say
+  why in the legend, rather than drawing one episode per usable occurrence.
+
+One app defect surfaced and was fixed rather than asserted around: the case-file
+preparation published `event_chart: null` for a case the server serves — a
+Finding counted in a family the queue projection's own map does not name, such as
+correction stacking in correction clusters — leaving no By-event path into it. A
+prepared case now publishes its own lever-and-window coordinate.
 
 ## Revision amendment — 2026-08-25 (missed-meal comparison)
 

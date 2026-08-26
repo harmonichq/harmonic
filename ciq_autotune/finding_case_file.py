@@ -355,8 +355,14 @@ def wrap(prepared):
             continue
         header = {"finding_id": finding_id, "lever": case["finding"]["lever"],
                   "title": case["finding"]["title"], "family": case["family"],
-                  "event_chart": findings_projection.event_chart_coordinate(
-                      case["finding"]["lever"], prepared.query, [case["family"]]),
+                  # A prepared case IS its own event-chart coordinate: the case
+                  # file projects an event comparison for every lever it holds.
+                  # Gating this on the queue projection's family map published
+                  # `null` for a case the server serves — correction stacking is
+                  # counted in correction clusters, not the lows that map names —
+                  # leaving the reader no By-event path into it.
+                  "event_chart": {"lever": case["finding"]["lever"],
+                                  "window": prepared.query.to_dict()},
                   "summary": case["summary"], "verdict_counts": case["verdict_counts"],
                   "inspectability": "ready"}
         changed = deepcopy(row)

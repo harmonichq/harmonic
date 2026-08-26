@@ -20,9 +20,11 @@ const MIME = {
   '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css',
   '.html': 'text/html', '.json': 'application/json', '.svg': 'image/svg+xml',
 };
-const VALID_STATES = [
-  'dense', 'sparse', 'zero-fired', 'another-factor-visible', 'selected-occurrence',
-];
+/* #181 — the standalone lens route is retired. Every By-event surface in this
+   ledger is now reached the way a reader reaches it: open the unscoped queue,
+   drill a Finding case file, press "By event". These are the drillable Findings
+   whose served case files carry the shapes the stories need. */
+const FINDINGS = ['finding:late_bolus', 'finding:over_treated_low', 'finding:missed_meal'];
 
 export class ReplayError extends Error {}
 const fail = (message) => { throw new ReplayError(message); };
@@ -40,29 +42,9 @@ async function vendored(name) {
     ?? fail('VENDOR_DIR is required (echarts.min.js, vue.esm-browser.js)');
   return readFile(join(dir, name));
 }
-/* `view: null` opens with no view param at all, which is how a reader reaches
-   Diagnose from the tab bar — the case that must land on Glucose. */
-const query = ({
-  state = 'dense', theme = 'light', view = 'meals', factor, startMin, endMin, another, occ,
-}) => {
-  const search = new URLSearchParams({ state, theme });
-  if (view !== null) search.set('view', view);
-  if (factor) search.set('factor', factor);
-  /* #62 — the clock window replaced the six-hour anchor-time block. Both bounds
-     travel or neither does; the whole day is the absence of them. */
-  if (startMin != null) search.set('start_min', String(startMin));
-  if (endMin != null) search.set('end_min', String(endMin));
-  if (another) search.set('another', String(another));
-  if (occ) search.set('occ', occ);
-  return `?${search}`;
-};
-const landsOnGlucose = (options) => options.view === 'glucose' || options.view === null;
-
 export async function openApp(browser, options = {}) {
   const viewport = options.viewport || { width: 1280, height: 720 };
   const page = await browser.newPage({ viewport });
-  const capture = options.invalidComparison ? {} : options.capture ?? JSON.parse(
-    await readFile(process.env.CAPTURE || SYNTHETIC, 'utf8'));
   const payload = JSON.parse(await readFile(BASE_PAYLOAD, 'utf8'));
   const caseFiles = JSON.parse(await readFile(
     join(ROOT, 'mockups/diagnose-workstation.synthetic/finding-case-files.json'), 'utf8'));
@@ -75,8 +57,17 @@ export async function openApp(browser, options = {}) {
       const finding = caseFiles.cases[url.searchParams.get('finding_id')];
       const alignment = url.searchParams.get('alignment');
       const occ = url.searchParams.get('occ');
-      return JSON.parse(JSON.stringify(!occ ? finding[alignment]
+      const served = JSON.parse(JSON.stringify(!occ ? finding[alignment]
         : finding[`selected_${alignment}`][occ] || finding[`unavailable_${alignment}`]));
+      /* A story poses a SERVED shape here and nowhere else. The browser owns no
+         membership, count or support, so the only honest way to pose one is to
+         change what the server said. */
+      if (options.invalidComparison && alignment === 'event') {
+        /* An unknown support grade is a served fact the browser cannot grade
+           for itself — the case a fail-closed surface must refuse whole. */
+        served.projection.cohorts[0].support = 'unknown';
+      }
+      return options.caseFile ? options.caseFile(served, url) : served;
     }],
     /* #735: the app's Diagnose loader now also asks for the server-owned findings
        queue (ADR 730). It is not this surface's subject, but a rejected fetch there
@@ -142,12 +133,31 @@ export async function openApp(browser, options = {}) {
     problems.push(`unstubbed ${route.request().method()} ${path} (app)`);
     return route.fulfill({ status: 404, body: JSON.stringify({ detail: 'not stubbed' }) });
   });
-  await page.goto(`http://app.local/${query(options)}`);
-  await page.waitForSelector(options.invalidComparison
-    ? '.ec-error' : landsOnGlucose(options) ? '[data-event-view="glucose"] .dw' : '.ec-surface',
-    { timeout: 15000 });
+  await page.goto('http://app.local/');
+  await page.waitForSelector('[data-event-view="glucose"] #level', { timeout: 15000 });
+  await settle(page, 500);
+  /* `drill: false` is how a reader reaches Diagnose from the tab bar — the case
+     that must land on Glucose, the recommendation surface, and not on any
+     evidence lens. */
+  if (options.drill === false) return page;
+  /* The workstation opens at its Overnight preset, and that scope is a real
+     window: a finding with no occurrences in it is correctly absent from the
+     queue. 24 h is the unscoped global queue (term 38) — the one place every
+     Finding in the window is listed. */
+  await page.locator('#seg-window button', { hasText: '24 h' }).click();
+  await page.locator(`#level .qrow[data-id="${options.finding || FINDINGS[0]}"]`).click();
+  await page.getByRole('button', { name: 'By event', exact: true }).click();
+  if (options.invalidComparison) {
+    await page.waitForSelector('.case-file-error', { timeout: 15000 });
+    return page;
+  }
+  await page.waitForSelector('.ec-surface:not([hidden]) #ec-chart', { timeout: 15000 });
   await settle(page, 700);
-  if (options.invalidComparison) return page;
+  if (options.selectCohort) {
+    await page.locator(`[data-comparison-cohort="${options.selectCohort}"]`).first().click();
+    await page.waitForSelector('#level .case-facts', { timeout: 15000 });
+    await settle(page, 500);
+  }
   return page;
 }
 
@@ -156,37 +166,76 @@ async function use(open, browser, options, fn) {
   try { await fn(page); } finally { await page.close(); }
 }
 
-// RETIRED (issue #41) — ADR 31 part 3: View is deleted, its function folded
-// into the workstation's own ALIGN instrument (a different surface entirely,
-// covered by the workstation's own replay). Sanctioned under P52's
-// "ruled-elsewhere" note (#31 resolution §4), same wording:
-//   owner ruling, 2026-08-19 (see the behavior ledger) · "Decided in a ruling
-//   session on 2026-08-19."
-// Failed first against the new build with the OLD assertions: a real 30s
-// timeout, `waiting for locator('[data-view="glucose"]')` — that control does
-// not exist anywhere any more. What survives is folded in as a loud absence
-// check, plus the three assertions that never depended on View: the shipped
-// chrome siblings, default routing on a bare open, and the fail-closed path
-// on a missing comparison — none of which click anything retired.
+/* Reading the surface. Everything a story asserts about membership, names,
+   counts or support is read back off the SERVED case file the canvas rendered
+   from, never recomputed here — the browser derives none of it, and neither
+   does this ledger. */
+const rendered = (page) => page.evaluate(() => {
+  const exposed = window.__diagnoseEventComparison;
+  const option = exposed.chart.getOption();
+  const ids = option.series.map((series) => series.id).filter(Boolean);
+  const { projection } = exposed.projection;
+  return {
+    schema: exposed.projection.schema,
+    alignment: projection.alignment,
+    anchor: projection.anchor,
+    window: projection.window_min,
+    axis: [option.xAxis[0].min, option.xAxis[0].max],
+    comparison: projection.comparison,
+    counts: projection.counts,
+    cohorts: projection.cohorts.map((cohort) => ({
+      key: cohort.key, name: cohort.name, support: cohort.support,
+      routed: cohort.routed_count, usable: cohort.usable_count,
+      episodes: (cohort.episodes || []).length,
+      pointStates: [...new Set(cohort.points.map((point) => point.support))].sort(),
+      series: ids.filter((id) => id.startsWith(`${cohort.key}:`)),
+    })),
+    selected: exposed.selected
+      ? { id: exposed.selected.id, cohort: exposed.selected.cohort } : null,
+    selectedTrace: option.series.find((series) => series.name === 'Selected trace')?.data ?? null,
+    legend: [...document.querySelectorAll('.ec-key-item')].map((item) => ({
+      cohort: item.dataset.cohort, support: item.dataset.support || null,
+      selected: item.dataset.selectedCohort || null,
+      name: item.querySelector('strong')?.textContent ?? null,
+      detail: item.querySelector('small')?.textContent.replace(/\s+/g, ' ').trim() ?? null,
+    })),
+    title: document.querySelector('#canvas-head h2')?.textContent ?? null,
+    anchorCaption: document.querySelector('#canvas-head .meta.persist')?.textContent ?? null,
+  };
+});
+
+// AMENDED (issue #181) — the standalone lens route is retired with its own
+// chrome, so the "shipped chrome siblings" half now reads the cockpit the
+// drilled case file lives inside, and the fail-closed half poses a malformed
+// SERVED case file rather than a missing capture. The three claims are
+// unchanged: the surface sits inside the shipped shell, a bare Diagnose open
+// lands on Glucose rather than an evidence lens, and a case file the browser
+// cannot grade for itself is refused whole and says so.
 export const S1 = async (open, browser) => use(open, browser, {}, async (page) => {
   ok(await page.locator('.cockpit-topbar').isVisible(), 'shipped cockpit sibling is missing');
   ok(await page.locator('.cockpit-footer').isVisible(), 'shipped footer sibling is missing');
-  for (const selector of ['.ec-view-seg', '.ec-view-coordinate', '[data-view]']) {
+  for (const selector of ['.ec-view-seg', '.ec-view-coordinate', '[data-view]',
+    '#ec-factor', '#ec-another', '.ec-inspector', '#ec-occurrence']) {
     ok(await page.locator(selector).count() === 0, `${selector} did not retire`);
   }
-  /* No view param — how Diagnose is reached from the tab bar — opens Glucose,
-     the recommendation surface, not an evidence lens. Read off the root
-     dataset the workstation itself stamps, not a View control. */
-  const bare = await open(browser, { view: null });
+  /* No drill — how Diagnose is reached from the tab bar — opens Glucose, the
+     recommendation surface, not an evidence lens. Read off the root dataset the
+     workstation itself stamps, not a View control. */
+  const bare = await open(browser, { drill: false });
   try {
     ok((await bare.locator('[data-event-view="glucose"]').count()) > 0,
       'a bare Diagnose open did not land on Glucose');
+    ok((await bare.locator('.ec-surface:not([hidden])').count()) === 0,
+      'a bare Diagnose open mounted an evidence lens');
   } finally { await bare.close(); }
   const invalid = await open(browser, { invalidComparison: true });
   try {
-    ok(await invalid.locator('.ec-error').isVisible(), 'missing comparison did not fail visibly');
-    ok(/unavailable|Unexpected token|fetch/i.test(await invalid.locator('.ec-error').innerText()),
-      'missing comparison failure did not explain itself');
+    ok(await invalid.locator('.case-file-error').isVisible(),
+      'an ungradable served case file did not fail visibly');
+    ok(/did not match|unavailable/i.test(await invalid.locator('.case-file-error').innerText()),
+      'the refused case file did not explain itself');
+    ok(await invalid.locator('.ec-surface:not([hidden])').count() === 0,
+      'a refused case file still partially drew an evidence lens');
   } finally { await invalid.close(); }
 });
 
@@ -196,289 +245,261 @@ export const S2 = async (open, browser) => use(open, browser, {}, async (page) =
   ok(await page.locator('.ec-view-seg').count() === 0, '.ec-view-seg did not retire');
 });
 
-// AMENDED (issue #41) — P52 retires the inspector and the Factor select; ADR
-// 31 part 3 retires View. What this story checked THROUGH those controls —
-// meal identity, and the no-match copy's tone — is still true and still
-// checkable on the surviving canvas + legend, reached by URL coordinates
-// (P53 keeps the read path) instead of a click. The factor re-render and
-// occurrence-retention assertions, which lived entirely in the retired
-// inspector, do not survive.
+// AMENDED (issue #41, again at #181) — P52 retired the inspector and the Factor
+// select; #181 retires the `factor` coordinate itself. What this story checked
+// THROUGH those controls — the compared occurrences share one declared identity,
+// the no-match copy claims nothing about correctness, and changing what is being
+// compared re-renders the canvas — survives on the served case file: the anchor
+// every cohort is aligned on is the server's, and a second Finding drilled from
+// the same queue draws its own comparison.
 export const S3 = async (open, browser) => use(open, browser, {}, async (page) => {
-  const identity = await page.evaluate(() => {
-    const rendered = window.__diagnoseEventComparison || window.__issue677ReducedBands;
-    if (rendered.projection) {
-      return rendered.projection.coordinates.anchor.kind === 'completed_carb_bolus'
-        && rendered.projection.occurrences.every((occurrence) =>
-          occurrence.identity.kind === 'meal'
-          && occurrence.anchor.kind === 'completed_carb_bolus');
-    }
-    return rendered.capture.views.meals.occurrences.every((occurrence) => {
-      const anchor = occurrence.anchor_bolus;
-      const rows = occurrence.trace.boluses.filter((row) => row.minute === 0
-        && row.completion === 'Completed' && row.insulin > 0 && row.carbs >= 10
-        && row.seq_num === anchor.seq_num);
-      return rows.length === 1;
-    });
-  });
-  ok(identity, 'a comparison Meal is not one atomic completed >=10g bolus');
-  const judgmentCopy = await page.locator('.ec-key-item[data-cohort="neutral"] strong').innerText();
-  ok(!/normal|correct behavior|behaved correctly/i.test(judgmentCopy),
-    'no-match copy makes a normal/correct claim');
-  const before = await page.locator('.ec-title-context').innerText();
-  const late = await open(browser, { factor: 'late_bolus' });
+  const state = await rendered(page);
+  ok(state.anchor.kind === 'completed_carb_bolus',
+    `a meal comparison is not anchored on a completed carb bolus: ${state.anchor.kind}`);
+  ok(state.cohorts.every((cohort) => cohort.name && typeof cohort.name === 'string'),
+    'a cohort reached the canvas without the name the server gave it');
+  const baseline = state.legend.find((item) => item.cohort === 'comparison');
+  ok(!/normal|correct behavior|behaved correctly/i.test(`${baseline.name} ${baseline.detail}`),
+    'the comparison population copy makes a normal/correct claim');
+  const other = await open(browser, { finding: 'finding:over_treated_low' });
   try {
-    const after = await late.locator('.ec-title-context').innerText();
-    ok(before !== after && /Late bolus/i.test(after), 'factor coordinate did not re-render the canvas');
-  } finally { await late.close(); }
+    const after = await rendered(other);
+    ok(after.title !== state.title && /Over-treated low/i.test(after.title),
+      `drilling another Finding did not re-render the canvas: ${after.title}`);
+    ok(after.anchor.kind === 'excursion_nadir',
+      `the low comparison did not carry its own served anchor: ${after.anchor.kind}`);
+  } finally { await other.close(); }
 });
 
 // RETIRED (issue #41) — the anchor-time Block seg. P52 retires it with the
-// rest of the lens's own instrument row. The coordinate it addressed retired
-// too (issue #62): the clock window replaced it, and S13 below exercises the
-// re-scoping behaviour itself through the SAME URL read path S3 uses. Same
-// sanction as S1.
+// rest of the lens's own instrument row, and #181 retires the whole coordinate
+// row with the route. Same sanction as S1.
 export const S4 = async (open, browser) => use(open, browser, {}, async (page) => {
   ok(await page.locator('.ec-block-seg').count() === 0, '.ec-block-seg did not retire');
 });
 
-// RETIRED (issue #41) — the near-rule disclosure sentence and the Other
-// factors checkbox both lived in the retired inspector (P52); the sentence
-// has no surviving home, and `another` is reachable only by URL now. Same
-// sanction as S1.
+// AMENDED (issue #41, again at #181) — the near-rule disclosure sentence and the
+// Other factors checkbox lived in the retired inspector; the `another`
+// coordinate they addressed is retired with the route. The population it once
+// exposed is now a SERVED cohort: the case file names a third, comparison
+// population and the canvas prints that name.
 export const S5 = async (open, browser) => use(open, browser, {}, async (page) => {
   for (const selector of ['.ec-boundary-note', '#ec-another']) {
     ok(await page.locator(selector).count() === 0, `${selector} did not retire`);
   }
-  // the coordinate still routes by URL (P53) — the cohort itself still shows
-  const withAnother = await open(browser, { another: 1 });
-  try {
-    ok(await withAnother.locator('.ec-key-item[data-cohort="another_factor"]').count() === 1,
-      'another-factor cohort did not appear via the URL coordinate');
-  } finally { await withAnother.close(); }
+  const state = await rendered(page);
+  ok(state.cohorts.map((cohort) => cohort.key).join(',') === 'matched,nearly_matched,comparison',
+    `the served cohorts are not the three case-file populations: ${state.cohorts.map((c) => c.key)}`);
+  const baseline = state.legend.find((item) => item.cohort === 'comparison');
+  ok(baseline && baseline.name === state.comparison.name,
+    `the canvas renamed the served comparison population: ${baseline?.name}`);
 });
 
 // RETIRED (issue #41) — the occurrence select, the rescue sentence, the Day
 // link and Clear trace all lived in the retired inspector (P52); there is no
-// surviving affordance to reach an occurrence, read its rescue carbs, or
-// clear one. What is canvas-level (the selected-cohort legend item, the
-// selected trace's chart emphasis) is exercised through the URL `occ`
-// coordinate by S11, which never depended on any of these controls. Same
-// sanction as S1.
-export const S6 = async (open, browser) => use(open, browser, { view: 'lows' }, async (page) => {
-  for (const selector of ['#ec-occurrence', '#ec-occ-detail', '#ec-rescue', '#ec-day-link', '#ec-clear']) {
-    ok(await page.locator(selector).count() === 0, `${selector} did not retire`);
-  }
-});
+// surviving affordance of the lens's own to reach an occurrence. Selection now
+// happens on the case file's roster and is exercised by S11.
+export const S6 = async (open, browser) => use(open, browser,
+  { finding: 'finding:over_treated_low' }, async (page) => {
+    for (const selector of ['#ec-occurrence', '#ec-occ-detail', '#ec-rescue', '#ec-day-link', '#ec-clear']) {
+      ok(await page.locator(selector).count() === 0, `${selector} did not retire`);
+    }
+  });
 
 // LOCK:diagnose-event-comparison:12 LOCK:diagnose-event-comparison:13
 // LOCK:diagnose-event-comparison:24 LOCK:diagnose-event-comparison:25
 // LOCK:diagnose-event-comparison:21
-export const S7 = async (open, browser) => use(open, browser, { another: 1 }, async (page) => {
-  const authority = await page.evaluate(() => {
-    const state = window.__diagnoseEventComparison || window.__issue677ReducedBands;
-    const fired = state.aggregates?.fired || [];
-    const ids = state.chart.getOption().series.map((series) => series.id).filter(Boolean);
-    const cohorts = state.cohorts || state.support?.cohorts || {};
-    return {
-      serverOwned: state.projection?.schema === 'diagnose-event-comparison-v3'
-        || state.support?.server_owned === true,
-      firedStates: [...new Set(fired.map((row) => row.support))].sort(),
-      nearState: cohorts.near_rule?.support,
-      withheldHasAggregate: ids.some((id) => /^another_factor:(?:line|spread):/.test(id)),
-    };
-  });
-  ok(authority.serverOwned, 'browser did not consume server-owned support facts');
-  ok(JSON.stringify(authority.firedStates) === JSON.stringify(['limited', 'supported', 'withheld']),
-    `fixture does not change point membership/support: ${authority.firedStates}`);
-  ok(authority.nearState === 'limited', 'dispersed thin cohort is not Limited');
-  ok(!authority.withheldHasAggregate, 'Withheld cohort exposed an aggregate series');
-  const box = await page.locator('#ec-chart').boundingBox();
-  await page.mouse.move(box.x + box.width * .45, box.y + box.height * .5);
-  await settle(page);
-  ok(await page.locator('#ec-canvas-head').getAttribute('data-hover') === '1',
-    'pointer did not open docked readout');
-  ok(/Supported|Limited|Withheld/.test(await page.locator('#ec-readout').innerText()),
-    'docked readout did not disclose point support');
-  ok(/n\d+/.test(await page.locator('#ec-readout').innerText()),
-    'docked readout did not disclose exact point n');
+// AMENDED (issue #181) — support is still the thing that decides what draws,
+// and it is still entirely the server's. What changed is where it arrives: the
+// case-file schema in place of the retired comparison schema, and three served
+// cohorts in place of the browser-owned five. The docked readout half of this
+// story is retired with the lens's own header — the case file's canvas
+// discloses per-point support through the chart's accessible label instead,
+// which S8 drives.
+export const S7 = async (open, browser) => use(open, browser, {}, async (page) => {
+  const state = await rendered(page);
+  ok(state.schema === 'diagnose-finding-case-file-v1',
+    `browser did not consume a server-owned case file: ${state.schema}`);
+  const supports = state.cohorts.map((cohort) => cohort.support).sort();
+  ok(JSON.stringify(supports) === JSON.stringify(['limited', 'supported', 'withheld']),
+    `fixture does not carry changing cohort support: ${supports}`);
+  const matched = state.cohorts.find((cohort) => cohort.key === 'matched');
+  ok(matched.pointStates.includes('supported') && matched.pointStates.includes('withheld'),
+    `the supported cohort has no changing point membership: ${matched.pointStates}`);
+  for (const cohort of state.cohorts) {
+    if (cohort.support === 'withheld') {
+      ok(cohort.series.length === 0,
+        `Withheld cohort ${cohort.key} exposed ${cohort.series.join(', ')}`);
+    } else {
+      ok(cohort.series.some((id) => id.startsWith(`${cohort.key}:line:${cohort.support}`)),
+        `${cohort.support} cohort ${cohort.key} drew no aggregate at its own grade`);
+    }
+  }
+  ok(!state.cohorts.some((cohort) => cohort.series.some((id) => /:(?:line|spread):withheld$/.test(id))),
+    'a withheld aggregate series was drawn');
+  for (const item of state.legend) {
+    const cohort = state.cohorts.find((entry) => entry.key === item.cohort);
+    ok(item.support === cohort.support,
+      `${item.cohort} legend mark does not match served support: ${item.support}`);
+    ok(item.detail.startsWith(`${cohort.routed} occurrence`),
+      `${item.cohort} legend does not print the served count: ${item.detail}`);
+  }
   ok(await page.locator('.echarts-tooltip').count() === 0, 'floating tooltip appeared');
-  await page.mouse.move(1, 1);
-  await settle(page);
-  ok(await page.locator('#ec-canvas-head').getAttribute('data-hover') === '0',
-    'leaving chart did not restore title');
 });
 
 // LOCK:diagnose-event-comparison:6 LOCK:diagnose-event-comparison:7 LOCK:diagnose-event-comparison:21
+// AMENDED (issue #181) — the docked readout retired with the lens's own header.
+// The keyboard inspection it disclosed survives on the canvas's accessible
+// label, which is where a keyboard reader gets the value now; Escape had
+// nothing left to clear once the readout went, so that clause is retired.
 export const S8 = async (open, browser) => use(open, browser, {}, async (page) => {
   const chart = page.locator('#ec-chart');
+  const state = await rendered(page);
   await chart.focus();
   await page.keyboard.press('End');
-  ok(/\+5 h/.test(await page.locator('.ec-rd-time').innerText()), 'End did not inspect +5 h');
-  ok(/300 milligrams/.test(await chart.getAttribute('aria-label')) || /\+5 h/.test(await chart.getAttribute('aria-label')),
-    'accessible chart label did not follow inspection');
+  const end = await chart.getAttribute('aria-label');
+  ok(/\+5 h/.test(end), `End did not inspect the served window end: ${end}`);
+  for (const cohort of state.cohorts) {
+    ok(end.includes(cohort.name), `the inspected label omits the served cohort ${cohort.name}`);
+  }
   await page.keyboard.press('Home');
-  ok(/−1 h/.test(await page.locator('.ec-rd-time').innerText()), 'Home did not inspect −1 h');
-  await page.keyboard.press('Escape');
-  ok(await page.locator('#ec-canvas-head').getAttribute('data-hover') === '0',
-    'Escape did not clear readout');
+  const home = await chart.getAttribute('aria-label');
+  ok(/−1 h/.test(home), `Home did not inspect the served window start: ${home}`);
+  ok(/unavailable|\d/.test(home), 'the inspected label states no value at all');
 });
 
 // LOCK:diagnose-event-comparison:3 LOCK:diagnose-event-comparison:19
 // LOCK:diagnose-event-comparison:20
+// AMENDED (issue #181) — the five capture states were the standalone route's
+// own coordinates. The rendering matrix is now the served case files a reader
+// can actually drill, in both themes.
 export const S9 = async (open, browser) => {
-  for (const stateName of VALID_STATES) {
+  for (const finding of FINDINGS) {
     for (const theme of ['light', 'dark']) {
-      const statePage = await open(browser, { state: stateName, theme,
-        view: stateName === 'selected-occurrence' ? 'lows' : 'meals' });
+      const statePage = await open(browser, { finding, theme });
       try {
         ok(await statePage.locator('.ec-surface').isVisible(),
-          `${stateName}/${theme} did not render from the shared capture`);
+          `${finding}/${theme} did not render its served case file`);
+        ok(await statePage.locator('#ec-chart').isVisible(),
+          `${finding}/${theme} rendered no canvas`);
       } finally { await statePage.close(); }
     }
   }
-  // AMENDED (issue #41) — the coordinate row and the inspector this story
-  // checked the narrow-width stacking of are retired (P52; ADR 31 part 3
-  // moves View into the workstation's own ALIGN instrument). What remains at
-  // narrow width is the canvas alone: no overflow, and the one pane fills the
-  // viewport rather than stacking against a sibling that no longer exists.
+  // What remains at narrow width is the canvas alone: no overflow, and the
+  // chart still draws.
   await use(open, browser, { viewport: { width: 390, height: 844 } }, async (page) => {
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth
       - document.documentElement.clientWidth);
     ok(overflow <= 1, `narrow page overflows by ${overflow}px`);
-    const width = await page.locator('.ec-panes').evaluate((el) => el.getBoundingClientRect().width);
-    const canvasWidth = await page.locator('.ec-canvas').evaluate((el) => el.getBoundingClientRect().width);
-    ok(Math.abs(width - canvasWidth) < 2, `the single pane did not take the full column: ${width} vs ${canvasWidth}`);
     ok(await page.locator('#ec-chart').isVisible(), 'the canvas did not render at narrow width');
   });
 };
 
-// RETIRED (issue #41) — this story's whole premise was that Meals/Lows shared
-// one optical rail row with Glucose (the View instrument, one-row-for-all
-// under #677 re-settle term 3). P52 makes the lens canvas-only: the
-// `?view=meals`/`lows` route now renders no rail at all — no `.instruments`,
-// no `.ec-coordinates` — so there is no rail left to compare against
-// Glucose's. That is the intended shape of "the lens becomes canvas-only",
-// not a regression this story should keep failing on. What the story's
-// hover-stability half checked (the canvas header does not reflow on hover)
-// is still true and is exercised on the surviving canvas by S7. Sanctioned
-// under P52's "ruled-elsewhere" note (#31 resolution §4), same wording as S1.
-export const S10 = async (open, browser) => use(open, browser, { view: 'meals' }, async (page) => {
-  for (const selector of ['.instruments', '.ec-coordinates']) {
+// RETIRED (issue #41), re-settled at #181 — this story's premise was that the
+// lens carried a rail of its own beside Glucose's. It carries none: the only
+// instrument row on screen is the workstation's, and the By-event surface is a
+// pane inside it rather than a route beside it. Sanctioned under P52's
+// "ruled-elsewhere" note (#31 resolution §4), same wording as S1.
+export const S10 = async (open, browser) => use(open, browser, {}, async (page) => {
+  for (const selector of ['.ec-coordinates', '.ec-panes']) {
     ok(await page.locator(selector).count() === 0,
       `${selector} did not retire — the lens rail should be gone entirely`);
   }
+  ok(await page.locator('#seg-align button[aria-pressed="true"]').innerText() === 'By event',
+    'the workstation instrument does not own the By-event switch');
 });
 
 // LOCK:diagnose-event-comparison:16 LOCK:diagnose-event-comparison:25
+// AMENDED (issue #181) — the `occ` coordinate is retired; a reader selects an
+// occurrence from the case file's own roster. The claim is unchanged: selecting
+// inside a Withheld population draws that exact trace and still refuses to
+// build the population an average.
 export const S11 = async (open, browser) => use(open, browser, {
-  view: 'meals', state: 'selected-occurrence', another: 1, occ: 'meals-synthetic-18',
+  finding: 'finding:missed_meal', selectCohort: 'matched',
 }, async (page) => {
-  const facts = await page.evaluate(() => {
-    const state = window.__diagnoseEventComparison || window.__issue677ReducedBands;
-    const ids = state.chart.getOption().series.map((series) => series.id).filter(Boolean);
-    const selected = state.selected;
-    const cohorts = state.cohorts || state.support?.cohorts || {};
-    return {
-      selected: selected?.identity?.id || selected?.id,
-      support: cohorts.another_factor?.support,
-      aggregate: ids.some((id) => /^another_factor:(?:line|spread):/.test(id)),
-      selectedTrace: state.chart.getOption().series.some((series) => series.name === 'Selected occurrence'),
-    };
-  });
-  ok(facts.selected === 'meals-synthetic-18', 'one-event occurrence was not selected');
-  ok(facts.support === 'withheld', 'one-event cohort was not Withheld');
-  ok(!facts.aggregate, 'selection promoted a Withheld cohort aggregate');
-  ok(facts.selectedTrace, 'Withheld cohort lost its exact selected trace');
-  ok(await page.locator('.ec-key-item[data-cohort="another_factor"][data-support="withheld"][data-selected-cohort="true"]').count() === 1,
+  const state = await rendered(page);
+  const cohort = state.cohorts.find((entry) => entry.key === 'matched');
+  ok(state.selected && state.selected.cohort === 'matched',
+    `the roster selection did not land in the withheld cohort: ${JSON.stringify(state.selected)}`);
+  ok(cohort.support === 'withheld', `the selected cohort is not Withheld: ${cohort.support}`);
+  ok(cohort.series.length === 0, 'selection promoted a Withheld cohort aggregate');
+  ok(Array.isArray(state.selectedTrace) && state.selectedTrace.length > 0,
+    'the Withheld cohort lost its exact selected trace');
+  ok(await page.locator('.ec-key-item[data-cohort="matched"][data-support="withheld"][data-selected-cohort="true"]').count() === 1,
     'legend does not identify the selected Withheld cohort');
 });
 
-/* Production regression #689: the public comparison interface must ignore
-   malformed glucose values before it bins a cohort. The fixture also proves
-   that a jittered second reading from one event does not count twice.
-   Only 2 of the 4 rewritten occurrences carry any finite reading at all
-   (occurrence-1 and occurrence-4; occurrence-2 is all-null and occurrence-3's
-   only reading is a string), so the fired cohort's own usable_count drops to
-   2 and reads Limited, not Supported — #711 made the app leg derive support
-   from these very occurrences instead of echoing the capture's now-stale
-   `visual_support` stamp (computed before the rewrite, over 7 occurrences). */
+/* Production regression #689, re-settled at #181: the surface renders the
+   support the server published and never re-grades it. The case file now owns
+   binning, so the fixture poses the SERVED grade — a matched population the
+   server downgraded to a single limited point — and the canvas has to draw
+   exactly that and nothing more. Before #181 the browser derived this from the
+   occurrences; a surface that still did would resurrect the aggregate the
+   server withheld. */
 export const S12 = async (open, browser) => {
-  const capture = JSON.parse(await readFile(SYNTHETIC, 'utf8'));
-  const occurrences = capture.views.meals.occurrences.slice(0, 4);
-  const traces = [
-    [{ minute: 0, bg: 100 }, { minute: 1, bg: 140 }, { minute: 5, bg: null }],
-    [{ minute: 0, bg: null }, { minute: 5, bg: null }],
-    [{ minute: 0, bg: '105' }, { minute: 5, bg: null }],
-    [{ minute: 0, bg: 110 }, { minute: 5, bg: 'missing' }],
-  ];
-  occurrences.forEach((occurrence, index) => { occurrence.trace.cgm = traces[index]; });
-  capture.views.meals.occurrences = occurrences;
-
-  await use(open, browser, { capture }, async (page) => {
-    const aggregate = await page.evaluate(() => {
-      const chart = window.__diagnoseEventComparison.chart.getOption();
-      const line = chart.series.find((series) => series.id === 'fired:line:limited');
-      const spread = chart.series.find((series) => series.id === 'fired:spread:limited');
+  const posed = (caseFile, url) => {
+    if (url.searchParams.get('alignment') !== 'event') return caseFile;
+    const matched = caseFile.projection.cohorts[0];
+    matched.support = 'limited';
+    matched.usable_count = 2;
+    matched.points = matched.points.map((point) => point.minute === 0
+      ? { ...point, n: 2, support: 'limited', median: 105, p25: 102.5, p75: 107.5 }
+      : { ...point, n: 0, support: 'withheld', median: null, p25: null, p75: null });
+    return caseFile;
+  };
+  await use(open, browser, { caseFile: posed }, async (page) => {
+    const drawn = await page.evaluate(() => {
+      const option = window.__diagnoseEventComparison.chart.getOption();
+      const line = option.series.find((series) => series.id === 'matched:line:limited');
+      const spread = option.series.find((series) => series.id === 'matched:spread:limited');
       return {
-        medians: line.data.filter(([minute]) => minute === 0 || minute === 5),
-        spread: spread.data.filter(([minute]) => minute === 0 || minute === 5),
+        ids: option.series.map((series) => series.id).filter(Boolean),
+        medians: line.data.filter(([, value]) => value != null),
+        spread: spread.data,
       };
     });
-    ok(JSON.stringify(aggregate.medians) === JSON.stringify([[0, 105], [5, null]]),
-      `invalid readings or duplicate five-minute readings changed rendered medians: ${JSON.stringify(aggregate.medians)}`);
-    ok(JSON.stringify(aggregate.spread) === JSON.stringify([[0, 102.5, 107.5]]),
-      `valid rendered percentile band is wrong: ${JSON.stringify(aggregate.spread)}`);
-    // The port moved per-point n from the legend to the docked readout; the
-    // transferred assertion inspects the meal anchor's bin from the keyboard.
+    ok(JSON.stringify(drawn.medians) === JSON.stringify([[0, 105]]),
+      `the canvas did not draw exactly the served median: ${JSON.stringify(drawn.medians)}`);
+    ok(JSON.stringify(drawn.spread) === JSON.stringify([[0, 102.5, 107.5]]),
+      `the canvas did not draw exactly the served spread: ${JSON.stringify(drawn.spread)}`);
+    ok(!drawn.ids.some((id) => id.startsWith('matched:line:supported')),
+      'the canvas restored a Supported aggregate the server downgraded');
+    const detail = await page.locator('.ec-key-item[data-cohort="matched"] small').innerText();
+    ok(/limited support/.test(detail), `the legend did not print the served grade: ${detail}`);
+    // The point count the server published is what the keyboard reader hears.
     await page.locator('#ec-chart').focus();
     await page.keyboard.press('Home');
     for (let step = 0; step < 12; step += 1) await page.keyboard.press('ArrowRight');
-    const readout = await page.locator('#ec-readout .ec-rd-value').first().innerText();
-    ok(/n2\b/.test(readout),
-      `rendered support does not show the valid-bin count: ${readout}`);
+    const label = await page.locator('#ec-chart').getAttribute('aria-label');
+    ok(/Matched 105/.test(label), `the inspected label does not carry the served median: ${label}`);
   });
 };
 
-/** The meal bolused at 13:00 whose high landed at 14:35 — trigger outside the
-    window, consequence inside it. The workstation replay's S37 shows the same
-    episode reaching both panes. */
-const EARLY_TRIGGER = { ep_id: '2020-03-03-ep71', t: '2020-03-03 13:00:00' };
-
-/* S13 · The clock window is the lens's only time coordinate (issue #62), it is
-   outcome-anchored, and a cohort too thin for an aggregate draws its own
-   episodes. 14:00-16:00 holds three total meal occurrences in this capture;
-   another_factor still holds exactly the one bolused at 13:00 whose high landed
-   at 14:35, an hour outside the window it belongs to. That one cohort occurrence
-   never becomes a median, so it is drawn as itself. */
-export const S13 = async (open, browser) => use(open, browser, {
-  factor: 'late_bolus', startMin: 840, endMin: 960, another: 1,
-}, async (page) => {
-  const drawn = await page.evaluate(() => {
-    const exposed = window.__diagnoseEventComparison;
-    const cohort = exposed.projection.cohorts.find((c) => c.key === 'another_factor');
-    const ids = exposed.chart.getOption().series.map((series) => series.id).filter(Boolean);
-    return {
-      window: exposed.projection.coordinates.window,
-      denominator: exposed.projection.population.denominator,
-      support: cohort.support,
-      episodes: (cohort.episodes || []).map((e) => `${e.identity.ep_id}@${e.identity.t}`),
-      episodeSeries: ids.filter((id) => /^another_factor:episode:/.test(id)).length,
-      aggregateSeries: ids.filter((id) => /^another_factor:(?:line|spread):/.test(id)).length,
-      caption: document.querySelector('.ec-window-context')?.textContent.trim() ?? null,
-    };
+/* S13 · The window the canvas draws is the served one. The case file publishes
+   `window_min` for its own anchor; the axis is that window and nothing wider,
+   and a population the server withheld draws neither a median nor episodes of
+   its own — the case file publishes no episodes for a withheld cohort, so
+   "drawn as itself" is the server's decision too. */
+export const S13 = async (open, browser) => use(open, browser,
+  { finding: 'finding:over_treated_low' }, async (page) => {
+    const state = await rendered(page);
+    ok(JSON.stringify(state.axis) === JSON.stringify(state.window),
+      `the canvas drew a window the case file did not publish: ${state.axis} vs ${state.window}`);
+    ok(state.window[0] === -300 && state.window[1] === 120,
+      `the low comparison lost its served window: ${state.window}`);
+    const withheld = state.cohorts.filter((cohort) => cohort.support === 'withheld');
+    ok(withheld.length > 0, 'the fixture holds no withheld population to check');
+    for (const cohort of withheld) {
+      ok(cohort.episodes === 0 && cohort.series.length === 0,
+        `${cohort.key} drew ${cohort.series.length} series for a withheld population`);
+      const detail = state.legend.find((item) => item.cohort === cohort.key).detail;
+      ok(/unavailable/.test(detail), `${cohort.key} does not say why it draws nothing: ${detail}`);
+    }
+    ok(await page.locator('#canvas-head').count() === 1,
+      'the drilled comparison does not own exactly one canvas header');
+    ok(await page.locator('#ec-canvas-head').count() === 0,
+      'the retired standalone lens header came back');
   });
-  ok(drawn.window.scoped === true, 'the projection did not answer for a scoped clock window');
-  ok(drawn.window.label === '14:00\u201316:00',
-    `the canvas does not name the window it counted in: ${drawn.window.label}`);
-  ok(drawn.denominator === 3, `the window should hold exactly three total occurrences, got ${drawn.denominator}`);
-  ok(drawn.support === 'withheld', `one occurrence must be withheld from an aggregate, got ${drawn.support}`);
-  ok(drawn.episodes.length === 1 && drawn.episodes[0] === `${EARLY_TRIGGER.ep_id}@${EARLY_TRIGGER.t}`,
-    `the drawn episode is not the one whose consequence landed in the window: ${JSON.stringify(drawn.episodes)}`);
-  ok(drawn.episodeSeries === 1, 'the thin cohort did not draw its own episode');
-  ok(drawn.aggregateSeries === 0, 'a median was built from one occurrence');
-  ok(await page.locator('#ec-canvas-head').count() === 1, 'the standalone lens does not own exactly one header');
-  ok(drawn.caption == null, "S13 RETIRED 2026-08-20 Connor Griffin: Drop all that shit. It's a chart.");
-});
 
 export const STORIES = { S1, S2, S3, S4, S5, S6, S7, S8, S9, S10, S11, S12, S13 };
 

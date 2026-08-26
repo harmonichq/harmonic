@@ -90,14 +90,14 @@ test('the cockpit exposure population produces its event-comparison Finding row'
   assert.ok(projection.rows.some(({ id }) => id === 'finding:late_bolus'));
 });
 
-test('the Afternoon Event charts fixture retains all four published Findings', () => {
+test('the Afternoon fixture retains all four published behavioral Findings', () => {
   const projection = projectFindings({
     analysis: payload.analyze,
     exposures: payload.exposures,
     scenarios: payload.scenarios,
   }, { start_min: 720, end_min: 1080 });
   const selected = new Set(['highs', 'meals', 'corrections']);
-  const shown = queueRows(projection, selected, true)
+  const shown = queueRows(projection, selected)
     .filter((row) => !row.hidden && !row.collapsed);
 
   assert.deepEqual(shown.map(({ id }) => id), [

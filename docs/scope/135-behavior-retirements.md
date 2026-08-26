@@ -41,3 +41,10 @@ S32 — comparison selection now arrives inside the served Finding case file rat
 S37 — event evidence no longer receives the standing clock window as tile coordinates; the tile quotes the case file's projection id, finding id and alignment, and the served case file carries its own window — coordinator/181-reconcile
 P52 — Clear trace returns in the shared drilled-chart inspector and removes only the selected trace, leaving the chart drill open — chunk 3
 issue86DirectEntryRestoration — every behavioral chart drill now follows its row's published event-chart coordinate, independent of the retired Event charts root filter — chunk 3
+issue86HeaderFilter — Filter now contains Sift only; the retired root View group no longer renders — fix1
+issue86FilteredRoot — the Event charts-only findings projection is retired with its root option — fix1
+issue86DirectEntryRestoration — returning from a behavioral chart no longer restores a retired root View — fix1
+issue86PendingRoot — pending findings retain Sift only; there is no root View selection to preserve — fix1
+issue86MalformedRecovery — malformed case recovery returns to the findings root without a retired Event charts View — fix1
+S34 — event-comparison failure remains a named tile error and no longer carries an Event charts root View — fix1
+S38 — behavioral-chart reachability comes from the live tile field, not an Event charts root filter — fix1

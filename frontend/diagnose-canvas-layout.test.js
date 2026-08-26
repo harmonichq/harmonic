@@ -142,6 +142,9 @@ test('all four per-request states render their own name', () => {
   assert.equal(tileStatePresentation({ state: 'empty' }, true).message, 'Loading evidence…');
   assert.equal(tileStatePresentation({ state: 'stale-generation' }).message,
     'Evidence changed. Refresh findings.');
+  assert.equal(tileStatePresentation({ state: 'stale-generation' }, true,
+    'Server says this generation changed.').message, 'Server says this generation changed.',
+    'the stale state stays visible while its recovery request is pending');
 });
 
 /* THE STALE-GENERATION RECOVERY IS NOT LAYOUT. It is the surface's one

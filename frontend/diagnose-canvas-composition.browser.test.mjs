@@ -221,20 +221,39 @@ test('the pin-cap schematic mirrors the current arrangement, and never marks a s
   }
 });
 
-test('a stale generation recovers through the real tile pipeline, and the pin holds after', async () => {
+test('a pinned tile visibly names a stale generation before the real pipeline recovers', async () => {
   const browser = await runner.browser();
   /* The typed `{ stale: true }` result the block-evidence client returns for a
      409 `analysis_generation_mismatch` is answered on the carb-ratio tile's own
      request, so the recovery runs through the real pipeline: named state, one
      findings-generation refresh, re-request, redraw. */
   const answered = [];
-  let stale = true;
+  let staleArmed = false;
+  let staleSent = false;
+  let releaseRefresh;
+  const refreshReleased = new Promise((resolve) => { releaseRefresh = resolve; });
+  let markRefreshHeld;
+  const refreshHeld = new Promise((resolve) => { markRefreshHeld = resolve; });
   const { page, errors } = await openCanvas(browser, {
+    findingsProjectionInputs: (projected) => projected.window?.start_min === 720
+      ? { ...projected, analysis_generation: `${projected.analysis_generation}-afternoon` }
+      : projected,
+    findingsResponseBarrier: async ({ url }) => {
+      if (url.pathname === '/api/diagnose/findings'
+          && url.searchParams.get('start_min') === '720'
+          && url.searchParams.get('end_min') === '1080') {
+        markRefreshHeld();
+        await refreshReleased;
+      }
+    },
     routes: async (target) => {
       await target.route('**/api/diagnose/carb-ratio-block-evidence*', async (route) => {
-        answered.push(stale ? 409 : 200);
+        const url = new URL(route.request().url());
+        const observed = url.searchParams.get('block_id') === '720';
+        const stale = observed && staleArmed && !staleSent;
+        if (stale) staleSent = true;
+        if (observed) answered.push(stale ? 409 : 200);
         if (stale) {
-          stale = false;   // the recovery's own re-request is answered, not re-staled
           return route.fulfill({ status: 409, contentType: 'application/json',
             body: JSON.stringify({ detail: { code: 'analysis_generation_mismatch',
               message: 'Evidence changed. Refresh findings.' } }) });
@@ -245,34 +264,91 @@ test('a stale generation recovers through the real tile pipeline, and the pin ho
     },
   });
   try {
-    assert.ok(answered.includes(409),
-      `the carb-ratio evidence request met the generation mismatch (answers: ${answered.join(',')})`);
-    assert.ok(answered.filter((status) => status === 200).length >= 1,
-      'the recovery re-requested the evidence after adopting the current generation');
-
     const carbRatio = (await readField(page)).tiles
       .find((tile) => tile.chartId.startsWith('ic:'));
-    assert.ok(carbRatio, 'the recovered chart is on the field, not dropped by the recovery');
-    assert.ok(['ok', 'empty', 'stale-generation'].includes(carbRatio.state),
-      `the recovered tile carries a named state, got ${carbRatio.state}`);
-    if (carbRatio.state === 'stale-generation') {
-      assert.equal(carbRatio.body, 'Evidence changed. Refresh findings.',
-        "the server's own wording is what the reader is shown");
-    }
-
-    // and the recovered chart is still a first-class tile: it can be pinned, and
-    // the pin HOLDS it against the slicer through a window change
+    assert.ok(carbRatio, 'the carb-ratio chart is on the field before recovery');
     await page.locator(`.evidence-tile[data-chart-id="${carbRatio.chartId}"] .tile-pin`).click();
     await page.waitForTimeout(300);
     assert.equal((await readField(page)).tiles
-      .find((tile) => tile.chartId === carbRatio.chartId).pinned, true, 'the recovered chart pins');
-    await page.getByRole('button', { name: 'Morning' }).click();
+      .find((tile) => tile.chartId === carbRatio.chartId).pinned, true, 'the chart is pinned before the 409');
+    staleArmed = true;
+    await page.getByRole('button', { name: 'Afternoon', exact: true }).click();
+    await refreshHeld;
+    const staleTile = (await readField(page)).tiles.find((tile) => tile.chartId === carbRatio.chartId);
+    assert.equal(staleTile.state, 'stale-generation', 'the typed 409 visibly enters its named state');
+    assert.equal(staleTile.body, 'Evidence changed. Refresh findings.',
+      "the pinned tile renders the server's wording while recovery is in flight");
+
+    releaseRefresh();
     await page.waitForTimeout(1500);
+    assert.deepEqual(answered.slice(0, 3), [200, 409, 200],
+      'the real pipeline loaded, met the 409, then re-requested after recovery');
     const held = (await readField(page)).tiles.find((tile) => tile.chartId === carbRatio.chartId);
-    assert.ok(held, 'the pinned chart is held against the slicer across a window change');
+    assert.ok(held, 'the recovered chart remains on the field');
     assert.equal(held.pinned, true, 'and it is still pinned');
     assert.deepEqual(errors, [], 'the 409 path throws nothing into the page');
   } finally {
+    releaseRefresh();
+    await page.close();
+  }
+});
+
+test('a wrapping slicer drag re-reads a pinned chart before mouse-up', async () => {
+  const browser = await runner.browser();
+  const preparationWindows = [];
+  const caseProjectionIds = [];
+  let heldBehavioralRow = null;
+  const { page, errors } = await openCanvas(browser, {
+    findingsProjectionInputs: (projected) => {
+      if (!projected.window?.scoped) {
+        heldBehavioralRow = structuredClone(
+          projected.rows.find((row) => row.register === 'finding' && row.event_chart),
+        );
+      }
+      if (!heldBehavioralRow || projected.rows.some((row) => row.id === heldBehavioralRow.id)) {
+        return projected;
+      }
+      return { ...projected, rows: [...projected.rows, structuredClone(heldBehavioralRow)] };
+    },
+  });
+  page.on('request', (request) => {
+    const url = new URL(request.url());
+    if (url.pathname === '/api/diagnose/finding-case-file-preparation') {
+      preparationWindows.push([url.searchParams.get('start_min'), url.searchParams.get('end_min')]);
+    }
+    if (url.pathname === '/api/diagnose/finding-case-file') {
+      caseProjectionIds.push(url.searchParams.get('projection_id'));
+    }
+  });
+  try {
+    const behavioral = page.locator('.evidence-tile[data-chart-id^="finding:"]').first();
+    assert.equal(await behavioral.count(), 1, 'the field offers a behavioral chart to hold');
+    await behavioral.locator('.tile-pin').click();
+    await page.getByRole('button', { name: 'Overnight', exact: true }).click();
+    await page.waitForTimeout(1200);
+
+    const beforeWindows = preparationWindows.length;
+    const beforeCases = caseProjectionIds.length;
+    const gripA = await page.locator('#grip-a').boundingBox();
+    const gripB = await page.locator('#grip-b').boundingBox();
+    assert.ok(gripA && gripB, 'the Overnight window exposes both brace grips');
+    const y = gripA.y + gripA.height / 2;
+    const middle = (gripA.x + gripB.x + gripB.width) / 2;
+    await page.mouse.move(middle, y);
+    await page.mouse.down();
+    await page.mouse.move(gripA.x - 120, y, { steps: 8 });
+    await page.waitForTimeout(900);
+
+    assert.ok(preparationWindows.length > beforeWindows,
+      'a changed preparation request begins while the drag is still held');
+    assert.ok(preparationWindows.slice(beforeWindows).some(([start, end]) => Number(start) > Number(end)),
+      'the intermediate request preserves the midnight-wrapping window');
+    assert.ok(caseProjectionIds.length > beforeCases,
+      'the pinned behavioral tile re-reads against the intermediate projection before release');
+    await page.mouse.up();
+    assert.deepEqual(errors, []);
+  } finally {
+    await page.mouse.up().catch(() => {});
     await page.close();
   }
 });

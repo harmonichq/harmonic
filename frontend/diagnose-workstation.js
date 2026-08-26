@@ -1122,7 +1122,6 @@ function boot(root, data, callbacks, signal) {
   let historyRequestGeneration = 0;
   // Null is the all-active resting state; a Set exists only while a chip is off.
   let selectedChips = null;
-  let eventChartsOnly = false;
   let canvasMode = 'findings';
   let drawerOpen = false;
   let fullscreen = null;
@@ -1427,23 +1426,21 @@ function boot(root, data, callbacks, signal) {
         nextRuntime.set(seed.chartId, retained);
         return seed;
       }
-      const heldRequest = prior && !generationChanged
-        && canvasLayout.pins.includes(seed.chartId);
-      const sameRequest = prior && prior.kind === seed.kind
+      const sameRequest = prior && !generationChanged && prior.kind === seed.kind
         && descriptorCoordinatesKey(prior) === descriptorCoordinatesKey(seed);
       /* The runtime object is KEPT, not copied. A fetch in flight holds the
          tile's runtime and writes its answer there; reconciling to a copy left
          the answer on an orphan and the tile read "Loading evidence…" forever
          while its state said ok. */
       const carried = oldRuntime.get(seed.chartId);
-      if (sameRequest || heldRequest) {
+      if (sameRequest) {
         carried.current = true;
         carried.retained = false;
       }
-      nextRuntime.set(seed.chartId, sameRequest || heldRequest
+      nextRuntime.set(seed.chartId, sameRequest
         ? carried
         : { current: true, pending: false, message: null, request: 0, retained: false });
-      return sameRequest || heldRequest ? prior : seed;
+      return sameRequest ? prior : seed;
     });
     tileDescriptors = next;
     tileRuntime = nextRuntime;
@@ -2609,7 +2606,7 @@ function boot(root, data, callbacks, signal) {
       (to) => callbacks.go?.(to));
   }
 
-  const filterActiveGroups = () => Number(selectedChips !== null) + Number(eventChartsOnly);
+  const filterActiveGroups = () => Number(selectedChips !== null);
 
   function toggleChip(key) {
     const next = new Set(selectedChips || CHIP_LABELS.map(([name]) => name));
@@ -2624,9 +2621,8 @@ function boot(root, data, callbacks, signal) {
     if (restoreFocus) el('filter-trigger')?.focus();
   }
 
-  /** Root-only ARIA menu. Sift and View compose browser-owned selection over
-      fields the findings projection already published; neither group requests
-      a new population or derives event eligibility. */
+  /** Root-only ARIA menu. Sift composes browser-owned selection over fields the
+      findings projection already published; it requests no new population. */
   function paintFilter() {
     const wrap = el('filter-wrap');
     const trigger = el('filter-trigger');
@@ -2701,12 +2697,6 @@ function boot(root, data, callbacks, signal) {
       checked: selectedChips === null || selectedChips.has(key),
       activate: () => toggleChip(key),
     })));
-    addGroup('View', [
-      { label: 'All findings', role: 'menuitemradio', checked: !eventChartsOnly,
-        activate: () => { eventChartsOnly = false; collapsedFindingsExpanded = false; } },
-      { label: 'Event charts', role: 'menuitemradio', checked: eventChartsOnly,
-        activate: () => { eventChartsOnly = true; collapsedFindingsExpanded = false; } },
-    ]);
     filterFocus = Math.max(0, Math.min(filterFocus, items.length - 1));
     items.forEach((item, index) => item.tabIndex = index === filterFocus ? 0 : -1);
     menu.onkeydown = (ev) => {
@@ -2809,7 +2799,7 @@ function boot(root, data, callbacks, signal) {
       || (f.k !== 'factors' && f.k !== 'factor' && !parameterRowFor(f))
       ? scopeLabel()
       : f.k === 'factors'
-      ? queueMeta(findings, selectedChips, eventChartsOnly)
+      ? queueMeta(findings, selectedChips)
       : f.k === 'history' ? `${f.row.support} meal run${f.row.support === 1 ? '' : 's'}`
       : f.k === 'explore' ? 'Advice off'
       : f.k === 'chart' ? ({
@@ -2907,7 +2897,6 @@ function boot(root, data, callbacks, signal) {
          the copy that used to sit here would now write it twice. */
       renderFindingsQueue(host, findings, drillFinding, {
         selected: selectedChips,
-        eventChartsOnly,
         collapsedExpanded: collapsedFindingsExpanded,
         onToggleCollapsed: () => { collapsedFindingsExpanded = !collapsedFindingsExpanded; paint(); },
       });
@@ -3143,6 +3132,10 @@ function boot(root, data, callbacks, signal) {
           : mode);
       markWindowSegment(drawn
         ? `Window ${windowSpanText(drawn)}` : 'Whole day', clearDrawn);
+      /* A pin holds chart identity, not stale evidence. Re-use the workstation's
+         preparation request authority while the gesture is live; its generation
+         and window-key checks make intermediate positions latest-wins. */
+      ensurePreparation();
     }
 
     function liveRepaint() {

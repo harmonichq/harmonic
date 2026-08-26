@@ -38,7 +38,6 @@ from typing import Optional, Sequence
 from ...events import BasalEvent, BolusEvent, CgmReading
 from ...model import _CgmSeries
 from ..scenario_config import ScenarioConfig
-from ..scenario.evidence_population import completed_carb_bolus
 from .context_gate import GateResult, upstream_cause
 from .evidence import EvidenceTier, SilenceReason, Verdict
 
@@ -79,6 +78,10 @@ def _most_recent_meal_in_window(
     Excludes the anchor itself for the same reason missed-meal does: a bolus at the
     rise onset has not had time to be the dose that fell short.
     """
+    # Local import keeps classifiers dependency-low when their package is imported
+    # before scenario.__init__, which eagerly exposes the engine.
+    from ..scenario.evidence_population import completed_carb_bolus
+
     best: Optional[BolusEvent] = None
     for b in bolus_events:
         # The recurrence policy owns the eligible meal identity.  Keep the

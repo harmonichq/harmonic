@@ -140,15 +140,11 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
                 uncaused[_FAMILY_FOR_KIND[anchor["kind"]]] += 1
             lever = episode["lever"] if attributed else None
             cause_occurrence_id = None
-            if lever is not None:
+            if lever == Lever.MEAL_BOLUS_SHORT.value:
                 policy = policy_for(lever)
-                if Lever(lever) is Lever.MEAL_BOLUS_SHORT:
-                    meals = [item for item in window_bolus
-                             if policy.recurrence_members(item) and item.t < source_anchor.t]
-                    if meals:
-                        cause_occurrence_id = policy.occurrence_id(max(meals, key=lambda item: item.t))
-                else:
-                    cause_occurrence_id = episode["id"]
+                cause_occurrence_id = policy.occurrence_for_episode(
+                    episode["id"], window_bolus, source_anchor.t,
+                )
             cause_title = title(Lever(lever)) if lever is not None else None
             occurrence = {
                 "t": anchor["t"],
@@ -160,7 +156,6 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
                 "state": anchor["state"],
                 "attributed": attributed,
                 "cause_lever": lever,
-                "cause_occurrence_id": cause_occurrence_id,
                 "cause_title": cause_title,
                 "text": episode["steps"][0]["text"] if attributed else "",
                 "verdicts": [
@@ -168,6 +163,8 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
                 ],
                 "ep_id": episode["id"],
             }
+            if cause_occurrence_id is not None:
+                occurrence["cause_occurrence_id"] = cause_occurrence_id
             family["occurrences"].append(occurrence)
 
     for name, family in families.items():

@@ -105,6 +105,19 @@ def next_day(events):
 RECURRING_CGM = UNDERDOSED_CGM + next_day(UNDERDOSED_CGM)
 RECURRING_BOLUS = UNDERDOSED_BOLUS + next_day(UNDERDOSED_BOLUS)
 
+# One eligible meal followed by two distinct highs. The first returns fully to range
+# before the second starts, so segmentation emits two episodes; their different peaks
+# make the representative choice observable instead of relying on input order.
+DOUBLE_HIGH_CGM = trace([
+    (9, 0, 110), (12, 0, 112), (12, 20, 120), (13, 0, 255),
+    (13, 35, 120), (13, 50, 120), (14, 35, 305), (15, 30, 145),
+])
+DOUBLE_HIGH_BOLUS = [
+    BolusEvent(t=at(12), completion="Completed", insulin=5.0, carbs=85.0,
+               carb_ratio=12.0, seq_num=7001),
+    BolusEvent(t=at(13, 20), insulin=2.5, carbs=None, seq_num=7002),
+]
+
 
 def episodes_of(bolus, cgm):
     return split_double_humps(segment(collect_anchors(bolus, cgm, [])), cgm)
@@ -298,6 +311,31 @@ class WilsonSupportTest(unittest.TestCase):
             self.assertEqual(group["hero_episode"], group["member_episode_ids"][0])
             self.assertIn("meal-", group["id"])
 
+    def test_two_unequal_highs_from_one_meal_are_one_worst_episode_occurrence(self):
+        from ciq_autotune.analyzers.scenario_config import ScenarioConfig
+        from ciq_autotune.analyzers.scenario.engine import assemble
+        report = assemble(
+            DOUBLE_HIGH_BOLUS, DOUBLE_HIGH_CGM, [], isf=45.0,
+            scenario_config=ScenarioConfig(engine_min_occurrences=1),
+        )
+        episodes = [episode for episode in report.episodes.values()
+                    if episode.lever is Lever.MEAL_BOLUS_SHORT]
+        self.assertEqual(len(episodes), 2)
+        pattern = next(
+            item for item in [*report.patterns, *report.low_confidence]
+            if item.lever is Lever.MEAL_BOLUS_SHORT
+        )
+        self.assertEqual((pattern.confidence.k, pattern.confidence.n), (1, 1))
+        self.assertEqual(len(pattern.occurrence_groups), 1)
+        group = pattern.occurrence_groups[0]
+        worst = max(episodes, key=lambda episode: episode.severity)
+        self.assertEqual(group["id"], "meal-7001")
+        self.assertEqual(set(group["member_episode_ids"]),
+                         {episode.id for episode in episodes})
+        self.assertEqual(group["severity"], worst.severity)
+        self.assertEqual(group["hero_episode"], worst.id)
+        self.assertEqual(pattern.hero_episode, worst.id)
+
     def test_it_uses_no_floor_of_its_own(self):
         # `safety.py` owns the basal and I:C support floors. A scenario lever that
         # invented a third one would be a second source of truth for support.
@@ -321,6 +359,7 @@ class UncausedHighsTest(unittest.TestCase):
         self.assertEqual(highs["n"], 1)
         self.assertEqual(highs["attributed"], 1)
         self.assertEqual(highs["uncaused"], 0)
+        self.assertEqual(highs["occurrences"][0]["cause_occurrence_id"], "meal-1")
 
     def test_removing_the_evidence_makes_the_same_high_uncaused(self):
         # The identical high, minus the correction that evidenced the shortfall:

@@ -47,7 +47,6 @@ from .analyzers.scenario import (
     low_prompt_answers,
     tally_attributions,
 )
-from .analyzers.scenario.evidence_population import policy_for
 from .false_low import drop_readings, false_low_spans
 from .uncertainty import Confidence
 
@@ -313,10 +312,6 @@ def compute_clean_rates(
     """
     attributed_by_exposure: Dict[Exposure, int] = {e: 0 for e in _EXPOSURE_ORDER}
     for lever, k in attributed_by_lever.items():
-        # Flat Outcomes is an outcome-family account.  The policy call makes its
-        # deliberate exception explicit: meal-bolus-short's recurrence is meals,
-        # while this roll-up still reports the high outcome family.
-        policy_for(lever)
         exp = LEVER_EXPOSURE.get(lever)
         if exp is not None:
             attributed_by_exposure[exp] = attributed_by_exposure.get(exp, 0) + k

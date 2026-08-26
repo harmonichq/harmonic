@@ -6,10 +6,10 @@ The public face of epic #70's layer 3. It:
    :mod:`.anchors`);
 2. **attributes** a single lever per episode, root-cause-by-time
    (:mod:`.attribute`) — the dedup that collapses co-occurring flags;
-3. **groups** episodes into patterns by lever;
+3. **groups** episodes into policy-owned occurrences and patterns by lever;
 4. **scores** each pattern with #58 :class:`~ciq_autotune.uncertainty.Confidence`
-   at episode level — ``n`` = exposure (all meals / all lows / …), ``k`` = episodes
-   that went bad this way, ``effect`` = typical hypo-weighted severity
+   — ``n`` = recurrence population, ``k`` = unique occurrences that went bad this
+   way, ``effect`` = typical hypo-weighted occurrence severity
    (:mod:`.severity`) — selects a **hero** (highest-severity credible episode), and
    **ranks** patterns by aggregate severity (#77);
 5. emits the :class:`~.payload.ScenarioReport` (#70 §5): patterns without confident
@@ -184,13 +184,12 @@ def tally_attributions(
             continue
         if attr.lever is Lever.MEAL_BOLUS_SHORT:
             policy = policy_for(attr.lever)
-            meals = [item for item in bolus_events
-                     if policy.recurrence_members(item) and item.t < start]
-            if meals:
-                occurrence_id = policy.occurrence_id(max(meals, key=lambda item: item.t))
-                if occurrence_id in seen_occurrences.setdefault(attr.lever, set()):
-                    continue
-                seen_occurrences[attr.lever].add(occurrence_id)
+            occurrence_id = policy.occurrence_for_episode(
+                "", bolus_events, attr.steps[0].t,
+            )
+            if occurrence_id in seen_occurrences.setdefault(attr.lever, set()):
+                continue
+            seen_occurrences[attr.lever].add(occurrence_id)
         attributed[attr.lever] = attributed.get(attr.lever, 0) + 1
     return exposure_counts, attributed
 
@@ -467,19 +466,23 @@ def _score_pattern(
 ) -> Confidence:
     """The #58 :class:`Confidence` for a lever's pattern.
 
-    ``k`` = episodes attributed to this lever; ``n`` = the lever's exposure
-    denominator (never below ``k`` — an episode is always one opportunity);
-    ``effect`` = mean normalized hypo-weighted severity across the lever's episodes
+    ``k`` = unique policy occurrences attributed to this lever; ``n`` = the lever's
+    recurrence population (never below ``k`` in served output);
+    ``effect`` = mean normalized hypo-weighted severity across occurrence heroes
     (the "typical severity" that feeds both scoring and the recurrence line).
     """
     k = len(episodes)
     n = recurrence_counts[lever]
-    if lever is Lever.MEAL_BOLUS_SHORT and k > n:
-        raise ValueError(f"{lever.value} attribution exceeds its evidence population")
-    # Near-low rebound episodes can be actionable even where no sub-70 anchor was
-    # emitted. Those legacy low-family semantics remain explicitly audited outside
-    # the meal-occurrence policy, rather than becoming a meal-bolus-short clamp.
-    n = max(n, k)
+    if lever is Lever.MEAL_BOLUS_SHORT:
+        if k > n:
+            raise ValueError(
+                f"{lever.value} attribution exceeds its evidence population"
+            )
+    else:
+        # Near-low rebound episodes can be actionable even where no sub-70 anchor was
+        # emitted. Those legacy Exposure populations still need this compatibility
+        # clamp; ADR 202 records the audited exception explicitly.
+        n = max(n, k)
     effects = [
         normalized_severity(ep.severity, scenario_config=scenario_config)
         for ep in episodes
@@ -582,18 +585,9 @@ def assemble(
         episode, lever = built
         episodes[episode.id] = episode
         by_lever.setdefault(lever, []).append(episode)
-        if lever is Lever.MEAL_BOLUS_SHORT:
-            candidates = [item for item in bolus_events
-                          if policy_for(lever).recurrence_members(item)
-                          and item.t < episode.start]
-            if candidates:
-                occurrence_ids[episode.id] = policy_for(lever).occurrence_id(
-                    max(candidates, key=lambda item: item.t)
-                )
-            else:
-                occurrence_ids[episode.id] = episode.id
-        else:
-            occurrence_ids[episode.id] = episode.id
+        occurrence_ids[episode.id] = policy_for(lever).occurrence_for_episode(
+            episode.id, bolus_events, episode.steps[0].t,
+        )
 
     # Build a scored pattern per lever with >= _MIN_OCCURRENCES episodes. Over-treated
     # lows are exempt from the one-off gate (#104): each is a discrete, dangerous event

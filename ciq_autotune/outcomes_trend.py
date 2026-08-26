@@ -131,8 +131,8 @@ ARC_MIN_MEALS = 5
 _DATE_FMT = "%Y-%m-%d"
 
 # The behaviors, in the locked render order (issue #131's "Shape"). Each keeps its own
-# honest exposure via ``LEVER_EXPOSURE`` — the affinity regrouping (Meals / Lows) the
-# UI does is presentation, not denominator.
+# honest recurrence population via the evidence-population policy — the affinity
+# regrouping (Meals / Lows) the UI does is presentation, not denominator.
 _BEHAVIOR_ORDER = [
     Lever.LATE_BOLUS,
     Lever.CARB_UNDERCOUNT,
@@ -994,6 +994,16 @@ def summarize_trend(
                 )
             else:
                 k = attributed.get(lever, 0)
+                if lever is Lever.MEAL_BOLUS_SHORT:
+                    if k > n:
+                        raise ValueError(
+                            f"{lever.value} attribution exceeds its evidence population"
+                        )
+                else:
+                    # Legacy Exposure opportunities can omit an actionable episode;
+                    # retain their audited served-account clamp until their policies
+                    # gain the meal lever's structural occurrence association.
+                    k = min(k, n)
                 point = BehaviorPoint(
                     attributed=k, exposure_n=n, problem_rate=(k / n) if n else 0.0
                 )
@@ -1019,7 +1029,7 @@ def summarize_trend(
         BehaviorTrend(
             lever=lever.value,
             title=title(lever),
-            exposure=LEVER_EXPOSURE[lever].value,
+            exposure=policy_for(lever).recurrence_noun,
             polarity="down_good",
             recommendation=recommendation(lever),
             series=behavior_series[lever],

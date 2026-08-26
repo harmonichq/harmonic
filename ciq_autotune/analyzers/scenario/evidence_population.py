@@ -8,7 +8,7 @@ comparison mean for the lever's claim.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import datetime
 from typing import Callable, Sequence
 
 from ..scenario_config import ScenarioConfig
@@ -32,11 +32,17 @@ def _episode_identity(item) -> str:
     return item.id
 
 
+def _family_member(family: Exposure) -> Callable:
+    return lambda item: getattr(item, "family", None) is family
+
+
 @dataclass(frozen=True)
 class EvidencePopulationPolicy:
     recurrence_family: Exposure | None
     recurrence_noun: str
     recurrence_members: Callable
+    comparison_family: Exposure | None
+    comparison_members: Callable
     comparison_name: str
     comparison_anchor_kind: str
     comparison_window: tuple[int, int]
@@ -46,7 +52,20 @@ class EvidencePopulationPolicy:
     def recurrence_population(self, families: dict, bolus: Sequence) -> tuple:
         if self.recurrence_family is None:
             return tuple(item for item in bolus if self.recurrence_members(item))
-        return tuple(families.get(self.recurrence_family, ()))
+        return tuple(item for item in families.get(self.recurrence_family, ())
+                     if self.recurrence_members(item))
+
+    def occurrence_for_episode(
+        self, episode_id: str, bolus: Sequence, before: datetime,
+    ) -> str:
+        """Return the policy's stable occurrence id for an attributed episode."""
+        if self.recurrence_family is not None:
+            return episode_id
+        members = [item for item in bolus
+                   if item.t < before and self.recurrence_members(item)]
+        if not members:
+            raise ValueError("attributed episode has no recurrence-population occurrence")
+        return self.occurrence_id(max(members, key=lambda item: item.t))
 
 
 _WINDOWS = {
@@ -59,7 +78,9 @@ def _ordinary(lever: Lever) -> EvidencePopulationPolicy:
     family = exposure(lever)
     return EvidencePopulationPolicy(
         recurrence_family=family, recurrence_noun=family.value,
-        recurrence_members=lambda _item: True,
+        recurrence_members=_family_member(family),
+        comparison_family=family,
+        comparison_members=_family_member(family),
         comparison_name={
             Exposure.MEALS: "Other completed carb-bolus meals", Exposure.LOWS: "Other low excursions",
             Exposure.CORRECTION_CLUSTERS: "Other back-to-back correction pairs", Exposure.HIGHS: "Other highs",
@@ -72,11 +93,13 @@ def _ordinary(lever: Lever) -> EvidencePopulationPolicy:
 
 _POLICIES = {lever: _ordinary(lever) for lever in Lever}
 _POLICIES[Lever.MISSED_MEAL] = EvidencePopulationPolicy(
-    Exposure.HIGHS, "highs", lambda _item: True, "Completed carb-bolus meals",
+    Exposure.HIGHS, "highs", _family_member(Exposure.HIGHS), None,
+    completed_carb_bolus, "Completed carb-bolus meals",
     "completed_carb_bolus", (-60, 300), True, _episode_identity,
 )
 _POLICIES[Lever.MEAL_BOLUS_SHORT] = EvidencePopulationPolicy(
-    None, "meals", completed_carb_bolus, "Other completed carb-bolus meals",
+    None, "meals", completed_carb_bolus, None, completed_carb_bolus,
+    "Other completed carb-bolus meals",
     "completed_carb_bolus", (-60, 300), False, _event_identity,
 )
 

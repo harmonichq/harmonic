@@ -491,6 +491,7 @@ class HonestDenominatorTest(unittest.TestCase):
         )
         self.assertEqual(by_lever["over_treated_low"], Exposure.LOWS.value)
         self.assertEqual(by_lever["late_bolus"], Exposure.MEALS.value)
+        self.assertEqual(by_lever["meal_bolus_short"], Exposure.MEALS.value)
 
     def test_correction_pairs_denominate_stacking(self):
         now = datetime(2026, 7, 2, 12, 0, 0)

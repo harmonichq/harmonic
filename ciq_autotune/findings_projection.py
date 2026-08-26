@@ -62,6 +62,7 @@ from .ic_history import decode_history_id
 # on. `window_membership` asks the same question for the same reason, so this is
 # one definition read twice, never a second copy of the mapping.
 from .analyzers.scenario.levers import outcome_kind
+from .analyzers.scenario.evidence_population import policy_for
 from .safety import Status
 from .window_membership import DAY_MINUTES, WindowQuery, outcome_minute
 
@@ -494,8 +495,35 @@ class FindingsProjection:
                 entry["families"].append(family)
 
         priced = _pattern_priorities(self._scenarios)
+        patterns = {
+            row.get("lever"): row
+            for row in ((self._scenarios.get("patterns") or [])
+                        + (self._scenarios.get("low_confidence") or []))
+        }
         rows = []
         for lever, entry in by_lever.items():
+            policy = policy_for(lever)
+            if policy.recurrence_family is None:
+                pattern = patterns.get(lever) or {}
+                group_ids = {
+                    hit.get("cause_occurrence_id") for hit in in_window.get("highs", [])
+                    if hit.get("cause_lever") == lever
+                }
+                groups = {
+                    group.get("id"): group
+                    for group in pattern.get("occurrence_groups") or []
+                }
+                group_ids.intersection_update(groups)
+                entry["appearances"] = [{
+                    "family": policy.recurrence_noun,
+                    "noun": policy.recurrence_noun,
+                    "n": len(group_ids),
+                    "m": (pattern.get("confidence") or {}).get("n", 0),
+                }]
+                entry["episodes"] = {
+                    episode_id for group_id in group_ids
+                    for episode_id in groups[group_id].get("member_episode_ids") or []
+                }
             entry["appearances"].sort(key=lambda a: a["family"])
             evidence, verdict_counts, verdict_counts_by_family = _lever_evidence(
                 lever, entry["families"], in_window,

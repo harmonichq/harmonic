@@ -5,15 +5,15 @@ from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from hashlib import sha256
-import math
 import time
 import uuid
 
-from .analyzers.classifiers import classify_correction_stacking, classify_meal_bolus_short
+from .analyzers.classifiers import classify_correction_stacking
 from .analyzers.scenario.anchors import Anchor, AnchorKind, collect_anchors
 from .analyzers.scenario.attribute import attribute, split_caused_over_treatments
 from .analyzers.scenario.engine import _effective_isf, low_prompt_answers
 from .analyzers.scenario.levers import Exposure, Lever, exposure, outcome_kind, title
+from .analyzers.scenario.evidence_population import policy_for
 from .analyzers.scenario.model_view import _CONTEXT_PAD_MIN, _build_episode_view
 from .analyzers.scenario import opportunities
 from .analyzers.scenario.segment import segment, split_double_humps, split_low_rebounds
@@ -50,9 +50,12 @@ class Member:
     opportunity: opportunities.Opportunity
     outcome_t: datetime
     verdict: str
+    occurrence_id: str | None = None
 
     @property
     def id(self):
+        if self.occurrence_id is not None:
+            return self.occurrence_id
         return _opaque("o_", self.opportunity.family.value, *self.opportunity.source_key)
 
 
@@ -110,6 +113,7 @@ class PreparedCases:
         if finding_keyed and row is None:
             return None
         roster = self._roster(lever)
+        policy = policy_for(lever)
         claimed_ids = (self.associations[lever].intersection(member.id for member in roster)
                        if finding_keyed else frozenset())
         if (finding_keyed and not claimed_ids
@@ -167,9 +171,11 @@ class PreparedCases:
         return {
             "schema": CASE_SCHEMA, "projection_id": self.projection_id,
             "finding": {"id": finding_id, "lever": lever.value, "title": title(lever)},
-            "window": self.query.to_dict(), "family": exposure(lever).value,
+            "window": self.query.to_dict(), "family": policy.recurrence_noun,
+            "population": policy.recurrence_noun,
+            "cross_population": policy.cross_population,
             "summary": {"claimed": len(claimed_ids), "denominator": len(roster),
-                        "noun": _noun(exposure(lever))},
+                        "noun": _population_noun(policy)},
             "verdict_counts": counts, "occurrences": occurrences,
             "projection": projection, "selection": selection,
         }
@@ -267,6 +273,17 @@ def _population(
                     )
         if attr.lever is None:
             continue
+        policy = policy_for(attr.lever)
+        if policy.recurrence_family is None:
+            occurrence_id = policy.occurrence_for_episode(
+                str(index), filtered_bolus, attr.driver_anchor.t,
+            )
+            served_id = _opaque("m_", occurrence_id)
+            associations[attr.lever].add(served_id)
+            outcomes[attr.lever][served_id] = max(
+                outcomes[attr.lever].get(served_id, episode.end), episode.end,
+            )
+            continue
         association = _association(attr, episode, by_family)
         if association is None:
             withheld.add(attr.lever)
@@ -303,7 +320,20 @@ def _population(
 
     members = {}
     for lever in Lever:
-        family = exposure(lever)
+        policy = policy_for(lever)
+        if policy.recurrence_family is None:
+            meals = {item.members[0].seq_num: item
+                     for item in opportunity_families[Exposure.MEALS]}
+            members[lever] = tuple(
+                Member(meals[item.seq_num],
+                       outcomes[lever].get(_opaque("m_", policy.occurrence_id(item)), item.t),
+                       "fired" if _opaque("m_", policy.occurrence_id(item)) in associations[lever]
+                       else "clean", _opaque("m_", policy.occurrence_id(item)))
+                for item in policy.recurrence_population(opportunity_families, filtered_bolus)
+                if item.seq_num in meals
+            )
+            continue
+        family = policy.recurrence_family
         members[lever] = tuple(Member(item, outcomes[lever].get(key, item.anchor_t),
                                      states[lever].get(key, "clean"))
                                for key, item in by_family[family].items())
@@ -389,6 +419,11 @@ def _noun(family):
     return "correction clusters" if family is Exposure.CORRECTION_CLUSTERS else family.value
 
 
+def _population_noun(policy):
+    return (policy.recurrence_noun if policy.recurrence_family is None
+            else _noun(policy.recurrence_family))
+
+
 _CASE_ANCHORS = {
     Exposure.CORRECTION_CLUSTERS: ("second_correction", "Second correction"),
     Exposure.HIGHS: ("high_peak", "High peak"),
@@ -400,6 +435,14 @@ def _event_anchor(family):
     if legacy is not None:
         return legacy["anchor_kind"], legacy["anchor_label"]
     return _CASE_ANCHORS[family]
+
+
+_ANCHOR_LABELS = {
+    "completed_carb_bolus": "Completed carb bolus",
+    "excursion_nadir": "Excursion nadir",
+    "correction_pair": "Correction pair",
+    "high_peak": "High peak",
+}
 
 
 def _occurrence(member):
@@ -442,29 +485,9 @@ def _clock(roster, claimed_ids):
 
 
 def _trace_bounds(member, lever):
-    item, config = member.opportunity, ScenarioConfig()
-    if item.family is Exposure.MEALS:
-        before, after = event_comparison.VIEW_CONFIG["meals"]["window"]
-        return (item.anchor_t + timedelta(minutes=before),
-                item.anchor_t + timedelta(minutes=after))
-    if item.family is Exposure.LOWS:
-        before, after = event_comparison.VIEW_CONFIG["lows"]["window"]
-        return (item.anchor_t + timedelta(minutes=before),
-                item.anchor_t + timedelta(minutes=after))
-    if item.family is Exposure.CORRECTION_CLUSTERS:
-        before = max(config.stacking_window_min, config.stacking_slope_lookback_min,
-                     config.gate_lookback_min)
-        return item.anchor_t - timedelta(minutes=before), item.anchor_t + timedelta(
-            minutes=config.stacking_low_lookahead_min)
-    onset = item.reach_start or item.anchor_t
-    if lever is Lever.MISSED_MEAL:
-        before = max(config.missed_meal_slope_lookback_min,
-                     config.missed_meal_digestion_lookback_min, config.gate_lookback_min)
-        return onset - timedelta(minutes=before), max(onset, item.anchor_t)
-    before = max(config.meal_bolus_short_slope_lookback_min,
-                 config.meal_bolus_short_digestion_lookback_min, config.gate_lookback_min)
-    return onset - timedelta(minutes=before), max(
-        item.anchor_t, onset + timedelta(minutes=config.meal_bolus_short_correction_horizon_min))
+    before, after = policy_for(lever).comparison_window
+    return (member.opportunity.anchor_t + timedelta(minutes=before),
+            member.opportunity.anchor_t + timedelta(minutes=after))
 
 
 def _trace(member, lever, cgm):
@@ -476,21 +499,7 @@ def _trace(member, lever, cgm):
         for row in cgm if lo <= row.t <= hi and row.bg is not None]}}
 
 
-_MEAL_COMPARISON_WINDOW = (-60, 300)
-
-_COMPARISON_NAMES = {
-    Lever.CARB_UNDERCOUNT: "Other completed carb-bolus meals",
-    Lever.LATE_BOLUS: "Other completed carb-bolus meals",
-    Lever.MEAL_OVER_DELIVERY: "Other completed carb-bolus meals",
-    Lever.OVER_TREATED_LOW: "Other low excursions",
-    Lever.CORRECTION_ON_IOB: "Other low excursions",
-    Lever.CORRECTION_STACKING: "Other back-to-back correction pairs",
-    Lever.MISSED_MEAL: "Completed carb-bolus meals",
-    Lever.MEAL_BOLUS_SHORT: "Completed carb-bolus meals",
-}
-
-
-def _comparison_trace(occurrence_id, anchor, cgm, window=_MEAL_COMPARISON_WINDOW):
+def _comparison_trace(occurrence_id, anchor, cgm, window):
     before, after = window
     lo = anchor + timedelta(minutes=before)
     hi = anchor + timedelta(minutes=after)
@@ -511,35 +520,15 @@ def _completed_carb_boluses(bolus, cgm, basal, source_window_days):
                  if start <= row.t <= end)
 
 
-def _comparison_anchor(member, lever, cgm, bolus, basal):
+def _comparison_anchor(member, lever):
     """Return the sole chart anchor for a member of this lever's matched line."""
-    if lever is Lever.MISSED_MEAL:
+    if policy_for(lever).cross_population:
         return member.opportunity.reach_start or member.opportunity.anchor_t
-    if lever is Lever.MEAL_BOLUS_SHORT:
-        onset = member.opportunity.reach_start or member.opportunity.anchor_t
-        verdict = classify_meal_bolus_short(onset, cgm, bolus, basal)
-        if verdict.meal_t is not None:
-            return verdict.meal_t
-        # The case-file fixture builds its retained roster directly rather than
-        # through an analyzer verdict.  Its fired synthetic rows still need the
-        # same real carb-bolus coordinate as production rows.
-        meals = [row for row in _completed_carb_boluses(bolus, cgm, basal, 30)
-                 if onset - timedelta(minutes=ScenarioConfig().meal_bolus_short_digestion_lookback_min)
-                 <= row.t < onset]
-        if meals:
-            return meals[-1].t
-        raise InconsistentProjection("missing meal-dose anchor")
     return member.opportunity.anchor_t
 
 
 def _comparison_window(lever, roster):
-    if lever in (Lever.MISSED_MEAL, Lever.MEAL_BOLUS_SHORT):
-        return _MEAL_COMPARISON_WINDOW
-    bounds = [((lo - member.opportunity.anchor_t).total_seconds() / 60,
-               (hi - member.opportunity.anchor_t).total_seconds() / 60)
-              for member in roster for lo, hi in [_trace_bounds(member, lever)]]
-    return (int(math.floor(min(row[0] for row in bounds) / 5) * 5),
-            int(math.ceil(max(row[1] for row in bounds) / 5) * 5))
+    return policy_for(lever).comparison_window
 
 
 def _event(lever, roster, claimed_ids, cgm, bolus, source_window_days, basal=()):
@@ -556,7 +545,8 @@ def _event(lever, roster, claimed_ids, cgm, bolus, source_window_days, basal=())
     near = [member for member in roster if member.verdict == "near_miss"]
     matched_ids = {member.id for member in matched}
     near = [member for member in near if member.id not in matched_ids]
-    cross_exposure = lever in (Lever.MISSED_MEAL, Lever.MEAL_BOLUS_SHORT)
+    policy = policy_for(lever)
+    cross_exposure = policy.cross_population
     if cross_exposure:
         comparison_rows = _completed_carb_boluses(bolus, cgm, basal, source_window_days)
         comparison_traces = [_comparison_trace(_opaque("m_", row.seq_num), row.t, cgm, window)
@@ -568,28 +558,28 @@ def _event(lever, roster, claimed_ids, cgm, bolus, source_window_days, basal=())
         comparison_traces = [_comparison_trace(member.id, member.opportunity.anchor_t, cgm, window)
                              for member in comparison]
     matched_traces = [_comparison_trace(member.id,
-                                        _comparison_anchor(member, lever, cgm, bolus, basal),
+                                        _comparison_anchor(member, lever),
                                         cgm, window) for member in matched]
     near_traces = [_comparison_trace(member.id,
-                                     _comparison_anchor(member, lever, cgm, bolus, basal),
+                                     _comparison_anchor(member, lever),
                                      cgm, window) for member in near]
     matched_cohort = event_comparison.project_cohort("matched", matched_traces, window)
     near_cohort = event_comparison.project_cohort("nearly_matched", near_traces, window)
     comparison_cohort = event_comparison.project_cohort("comparison", comparison_traces, window)
     matched_cohort["name"] = "Matched"
     near_cohort["name"] = "Nearly matched"
-    comparison_cohort["name"] = _COMPARISON_NAMES[lever]
-    if lever is Lever.MISSED_MEAL:
+    comparison_cohort["name"] = policy.comparison_name
+    if policy.cross_population:
         matched_cohort["anchor"] = {"kind": "detected_rise_onset", "label": "Detected rise onset"}
         near_cohort["anchor"] = {"kind": "detected_rise_onset", "label": "Detected rise onset"}
         comparison_cohort["anchor"] = {"kind": "completed_carb_bolus", "label": "Completed carb bolus"}
         anchor = {"kind": "cohort_specific_meal_start", "label": "Meal start"}
-    elif lever is Lever.MEAL_BOLUS_SHORT:
-        for cohort in (matched_cohort, near_cohort, comparison_cohort):
-            cohort["anchor"] = {"kind": "completed_carb_bolus", "label": "Completed carb bolus"}
-        anchor = {"kind": "completed_carb_bolus", "label": "Completed carb bolus"}
     else:
-        kind, label = _event_anchor(exposure(lever))
+        if policy.recurrence_family is None:
+            kind, label = (policy.comparison_anchor_kind,
+                           _ANCHOR_LABELS[policy.comparison_anchor_kind])
+        else:
+            kind, label = _event_anchor(policy.recurrence_family)
         for cohort in (matched_cohort, near_cohort, comparison_cohort):
             cohort["anchor"] = {"kind": kind, "label": label}
         anchor = {"kind": kind, "label": label}
@@ -599,7 +589,7 @@ def _event(lever, roster, claimed_ids, cgm, bolus, source_window_days, basal=())
             "counts": {"matched": len(matched), "nearly_matched": len(near),
                        "comparison": len(comparison_traces),
                        "not_comparable": not_comparable},
-            "comparison": {"name": _COMPARISON_NAMES[lever],
+            "comparison": {"name": policy.comparison_name,
                            "state": ("unavailable" if comparison_cohort["support"] == "withheld"
                                      else "available")},
             "clock": None}
@@ -625,9 +615,12 @@ def _detail_markers(anchor, lo, hi, basal, bolus, carbs):
 
 def _missed_detail(member, cgm, basal, bolus, carbs, cohort="matched"):
     anchor = member.opportunity.reach_start or member.opportunity.anchor_t
-    lo = anchor + timedelta(minutes=_MEAL_COMPARISON_WINDOW[0])
-    hi = anchor + timedelta(minutes=_MEAL_COMPARISON_WINDOW[1])
-    trace = _comparison_trace(member.id, anchor, cgm)["trace"]["cgm"]
+    before, after = policy_for(Lever.MISSED_MEAL).comparison_window
+    lo = anchor + timedelta(minutes=before)
+    hi = anchor + timedelta(minutes=after)
+    trace = _comparison_trace(
+        member.id, anchor, cgm, policy_for(Lever.MISSED_MEAL).comparison_window,
+    )["trace"]["cgm"]
     return {"id": member.id, "date": anchor.date().isoformat(),
             "anchor": _rise_onset_anchor(member, cgm),
             "verdict": member.verdict, "comparison_cohort": cohort, "glucose": trace,
@@ -637,7 +630,10 @@ def _missed_detail(member, cgm, basal, bolus, carbs, cohort="matched"):
 
 def _announced_detail(row, cgm, bolus):
     anchor = row.t
-    trace = _comparison_trace(_opaque("m_", row.seq_num), anchor, cgm)["trace"]["cgm"]
+    trace = _comparison_trace(
+        _opaque("m_", row.seq_num), anchor, cgm,
+        policy_for(Lever.MISSED_MEAL).comparison_window,
+    )["trace"]["cgm"]
     return {"id": _opaque("m_", row.seq_num), "date": anchor.date().isoformat(),
             "anchor": {"t": anchor.strftime(FMT), "kind": "completed_carb_bolus",
                        "label": "Completed carb bolus", "bg": row.bg},

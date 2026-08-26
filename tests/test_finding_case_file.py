@@ -11,6 +11,7 @@ import pytest
 
 from ciq_autotune import event_comparison, finding_case_file, findings_projection
 from ciq_autotune.analyzers.scenario.levers import Exposure, Lever, exposure
+from ciq_autotune.analyzers.scenario.evidence_population import policy_for
 from ciq_autotune.analyzers.scenario.opportunities import Opportunity
 from ciq_autotune.events import BasalEvent, BolusEvent, CarbEntry, CgmReading
 from ciq_autotune.finding_case_file import (
@@ -80,10 +81,16 @@ def test_all_eight_levers_publish_one_exact_case_file_population(lever):
     prepared = _prepared(lever)
     case = prepared.case(f"finding:{lever.value}", "event", None)
 
+    policy = policy_for(lever)
     assert set(case) == {"schema", "projection_id", "finding", "window", "family",
                          "summary", "verdict_counts", "occurrences", "projection",
-                         "selection"}
+                         "selection", "population", "cross_population"}
     assert case["schema"] == "diagnose-finding-case-file-v1"
+    assert case["family"] == case["population"] == policy.recurrence_noun
+    expected_noun = (policy.recurrence_noun if policy.recurrence_family is None
+                     else finding_case_file._noun(policy.recurrence_family))
+    assert case["summary"]["noun"] == expected_noun
+    assert case["cross_population"] is policy.cross_population
     assert case["summary"]["claimed"] == 1
     assert case["summary"]["denominator"] == len(case["occurrences"]) == 1
     assert sum(case["verdict_counts"].values()) == 1
@@ -91,6 +98,7 @@ def test_all_eight_levers_publish_one_exact_case_file_population(lever):
     assert case["projection"]["clock"] is None
     expected_cohorts = ["matched", "nearly_matched", "comparison"]
     assert [cohort["key"] for cohort in case["projection"]["cohorts"]] == expected_cohorts
+    assert case["projection"]["comparison"]["name"] == policy.comparison_name
     assert sum(case["projection"]["counts"][key]
                for key in ("matched", "nearly_matched", "not_comparable")) == 1
     assert case["selection"] == {"state": "none", "requested_id": None, "detail": None}
@@ -229,7 +237,7 @@ def test_meal_and_low_event_facts_come_from_legacy_authority(monkeypatch, lever,
     assert case["projection"]["anchor"] == {
         "kind": "mutated_anchor", "label": "Mutated anchor",
     }
-    assert case["projection"]["window_min"] == [-5, 10]
+    assert case["projection"]["window_min"] == list(policy_for(lever).comparison_window)
 
 
 def test_factor_specific_event_horizons_and_far_pair_selected_evidence():
@@ -239,7 +247,7 @@ def test_factor_specific_event_horizons_and_far_pair_selected_evidence():
         Lever.MEAL_OVER_DELIVERY: [-60, 300],
         Lever.OVER_TREATED_LOW: [-300, 120],
         Lever.CORRECTION_ON_IOB: [-300, 120],
-        Lever.CORRECTION_STACKING: [-90, 240],
+        Lever.CORRECTION_STACKING: [-300, 180],
         Lever.MISSED_MEAL: [-60, 300],
         Lever.MEAL_BOLUS_SHORT: [-60, 300],
     }

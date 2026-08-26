@@ -41,6 +41,30 @@ copies for one context.
 - [x] Switch the browser validator off its lever-name derivation onto the served
       `cross_population` / `population` fields.
 
+## Whole-diff review
+
+Reviewing each chunk against its own slice missed defects that only the merged
+result showed.
+
+- [x] Source the demo fixture generator's rosters from the policy. It built each
+      lever's roster from its Exposure family, so the shipped demo served Meal
+      bolus fell short as ten meals over a roster of ten highs — the very defect
+      this change exists to remove, reproduced in a generator.
+- [x] Thread the scenario config through the policy, so the classifier and the
+      trend account cannot measure membership against different carb thresholds
+      and drive the structural guard into raising on a served path.
+- [x] Consume the policy's comparison population in the case-file builder,
+      rather than declaring comparison fields the code never read.
+- [x] Move the meal recurrence identity and counting into the policy instead of
+      an inline special case in the projection.
+- [x] Restore the one-off shortfall to `1 of 1 meals`. Building the row only
+      from occurrence groups had silently dropped it to `0 of 0`, because a
+      single occurrence never reaches the pattern gate.
+- [x] Prove the classifier and the event comparison admit the same rows, at a
+      non-default meal floor.
+- [x] Derive at least one lever's served shape from analyzer output built from
+      synthetic events, rather than from injected members.
+
 ## Closing out
 
 - [x] Compare the served case JSON whole against the regenerated fixtures,

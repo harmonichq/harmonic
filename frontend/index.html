@@ -2342,7 +2342,6 @@ html.dark .viz .tie:hover::before { opacity:.13; }
       fetchVerifyTrials as dataFetchVerifyTrials,
       fetchExploreTimeOfDay as dataFetchExploreTimeOfDay,
       fetchExploreExposures as dataFetchExploreExposures,
-      fetchDiagnoseEventComparison as dataFetchDiagnoseEventComparison,
       fetchDiagnoseFindings as dataFetchDiagnoseFindings,
       fetchDiagnoseCarbRatioHistoryEvents as dataFetchDiagnoseCarbRatioHistoryEvents,
       fetchDiagnoseFindingCasePreparation as dataFetchDiagnoseFindingCasePreparation,
@@ -5458,10 +5457,6 @@ html.dark .viz .tie:hover::before { opacity:.13; }
               // drilled depth, drawn window and staged Plan items), not a full
               // refresh() that remounts the whole surface back to opening depth.
               onDayLoaded: () => diagnoseView?.repaintDay(),
-              loadProjection: (coordinates) => enqueue(() =>
-                dataFetchDiagnoseEventComparison(coordinates).then((payload) => {
-                  return recordDiagnoseAge(diagnoseAges.value, 'event_comparison', payload);
-                })),
               // #735: a pressed preset and a drawn brace both ask the server for
               // that window's rows (lock terms 37/40) — the frontend re-scopes
               // nothing itself.

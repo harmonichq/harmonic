@@ -58,6 +58,10 @@ def _prepared(lever, members=None, claimed=None, *, query=None, findings=None,
              for minute in (-60, -5, 0, 5, 120, 300)}
     if lever is Lever.MISSED_MEAL:
         times.add(opportunity.reach_start)
+    bolus = tuple(opportunity.members)
+    if lever is Lever.MEAL_BOLUS_SHORT:
+        bolus += (BolusEvent(t=opportunity.reach_start - timedelta(minutes=60),
+                             insulin=4, carbs=40, completion="Completed", seq_num=99),)
     cgm = tuple(CgmReading(t=t, bg=120 + (t - opportunity.anchor_t).total_seconds() / 60,
                            type="EGV") for t in sorted(times))
     return PreparedCases(
@@ -67,7 +71,7 @@ def _prepared(lever, members=None, claimed=None, *, query=None, findings=None,
         {item: members if item is lever else () for item in Lever},
         {item: claimed if item is lever else frozenset() for item in Lever},
         {item: () for item in Lever},
-        withheld, cgm, (), tuple(opportunity.members), (), time.monotonic() + 60,
+        withheld, cgm, (), bolus, (), time.monotonic() + 60,
     )
 
 
@@ -85,10 +89,10 @@ def test_all_eight_levers_publish_one_exact_case_file_population(lever):
     assert sum(case["verdict_counts"].values()) == 1
     assert case["projection"]["alignment"] == "event"
     assert case["projection"]["clock"] is None
-    expected_cohorts = (['missed', 'announced'] if lever is Lever.MISSED_MEAL else [
-        "fired", "outranked", "near_miss", "no_data", "clean",
-    ])
+    expected_cohorts = ["matched", "nearly_matched", "comparison"]
     assert [cohort["key"] for cohort in case["projection"]["cohorts"]] == expected_cohorts
+    assert sum(case["projection"]["counts"][key]
+               for key in ("matched", "nearly_matched", "not_comparable")) == 1
     assert case["selection"] == {"state": "none", "requested_id": None, "detail": None}
 
 
@@ -103,7 +107,9 @@ def test_case_file_consumes_the_authoritative_verdict_order(monkeypatch):
 
     assert tuple(authoritative_counts) == reordered
     assert tuple(case["verdict_counts"]) == reordered
-    assert tuple(cohort["key"] for cohort in case["projection"]["cohorts"]) == reordered
+    assert tuple(cohort["key"] for cohort in case["projection"]["cohorts"]) == (
+        "matched", "nearly_matched", "comparison",
+    )
 
 
 def test_case_file_consumes_the_authoritative_diagnose_window(monkeypatch):
@@ -235,7 +241,7 @@ def test_factor_specific_event_horizons_and_far_pair_selected_evidence():
         Lever.CORRECTION_ON_IOB: [-300, 120],
         Lever.CORRECTION_STACKING: [-90, 240],
         Lever.MISSED_MEAL: [-60, 300],
-        Lever.MEAL_BOLUS_SHORT: [-180, 150],
+        Lever.MEAL_BOLUS_SHORT: [-60, 300],
     }
     for lever, window in expected.items():
         prepared = _prepared(lever)
@@ -394,13 +400,15 @@ def test_missed_meal_comparison_uses_attribution_winners_and_completed_meals():
     )
 
     case = prepared.case("finding:missed_meal", "event", None)
-    missed, baseline = case["projection"]["cohorts"]
+    missed, near, baseline = case["projection"]["cohorts"]
 
     assert missed["occurrence_ids"] == [members[0].id]
+    assert near["routed_count"] == 0
     assert baseline["routed_count"] == 1
     assert baseline["occurrence_ids"][0].startswith("m_")
     assert case["projection"]["counts"] == {
-        "missed": 1, "announced": 1, "not_comparable": 1,
+        "matched": 1, "nearly_matched": 0, "comparison": 1,
+        "not_comparable": 1,
     }
     assert missed["points"][0]["minute"] == -60
     assert missed["points"][-1]["minute"] == 300
@@ -408,7 +416,7 @@ def test_missed_meal_comparison_uses_attribution_winners_and_completed_meals():
     assert missed["points"][0]["n"] == 1
     selected = prepared.case("finding:missed_meal", "event", baseline["occurrence_ids"][0])
     assert selected["selection"]["state"] == "selected"
-    assert selected["selection"]["detail"]["comparison_cohort"] == "announced"
+    assert selected["selection"]["detail"]["comparison_cohort"] == "comparison"
 
 
 def test_missed_meal_selection_uses_truthful_onset_bg_and_cross_midnight_date():

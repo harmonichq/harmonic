@@ -492,8 +492,11 @@ def build_case_file_capture():
         event = prepared.case(finding_id, 'event', None)
         event_ids = tuple(member.id for member in all_members[lever])
         if lever is Lever.MISSED_MEAL:
-            event_ids = tuple(event['projection']['cohorts'][0]['occurrence_ids']
-                              + event['projection']['cohorts'][1]['occurrence_ids'])
+            # Ticket 181: every served comparison cohort is selectable — the
+            # named baseline population no less than the two matched ones.
+            event_ids = tuple(occurrence_id
+                              for cohort in event['projection']['cohorts']
+                              for occurrence_id in cohort['occurrence_ids'])
         empty_event = None
         if lever is Lever.MISSED_MEAL:
             zero_findings = deepcopy(findings)

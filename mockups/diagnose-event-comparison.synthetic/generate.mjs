@@ -311,7 +311,7 @@ export function buildCapture(workstationExposures) {
   const meals = sourceRows(workstationExposures, 'meals');
   const lows = sourceRows(workstationExposures, 'lows');
   return {
-    schema: 'issue-677-event-comparison-capture-v2',
+    schema: 'finding-case-file-event-capture-v1',
     fixture: 'labeled-synthetic',
     source_window: structuredClone(workstationExposures.window),
     views: {

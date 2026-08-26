@@ -2,7 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { parseRoute, resolveTab, serializeRoute, subscribeRoute, writeRoute } from './tab-routing.js';
-import { createDiagnoseEventComparison } from './diagnose-event-comparison.js';
 
 test('resolveTab preserves current and legacy routes, then falls back to Diagnose', () => {
   for (const tab of ['day', 'diagnose', 'verify', 'plan', 'settings', 'guide']) {
@@ -33,9 +32,9 @@ test('the parse reports whether the address named a page, so a bare arrival can 
   for (const page of ['day', 'diagnose', 'verify', 'plan', 'settings', 'guide']) {
     assert.equal(parseRoute({ pathname: `/${page}`, search: '' }).pageNamed, true);
   }
-  // A query carrying Diagnose's own state names Diagnose even from `/`, so an
-  // address that already says where it is is never promoted away from it.
-  assert.equal(parseRoute({ pathname: '/', search: '?view=lows' }).pageNamed, true);
+  // `view` remains a Diagnose compatibility coordinate; the case file, not the
+  // address, owns the event comparison it can render.
+  assert.equal(parseRoute({ pathname: '/', search: '?view=glucose' }).pageNamed, true);
   // #94: the retired `#/<page>?...` grammar is not read, so a saved hash link
   // names nothing — it is the bare `/` it literally is, and is treated as one.
   const stale = parseRoute({ pathname: '/', hash: '#/verify', search: '' });
@@ -76,29 +75,26 @@ test('Day date and Guide article restore from their page route and leave with th
   assert.deepEqual(writes, ['/day?date=2026-08-22', '/guide?article=reading-day']);
 });
 
-test('P53 coordinates move from the split query into the Diagnose route and restore once', () => {
+test('the stable glucose route keeps only its compatibility view state', () => {
   const route = parseRoute({ pathname: '/', search: '?view=lows&factor=correction_stacking&start_min=0&end_min=120&another=1&occ=low-7' });
-  assert.deepEqual(route, {
-    page: 'diagnose', pageNamed: true, view: 'lows', factor: 'correction_stacking',
-    start_min: '0', end_min: '120', another: '1', occ: 'low-7', mode: null,
-  });
-  assert.equal(serializeRoute(route), '/diagnose?view=lows&factor=correction_stacking&start_min=0&end_min=120&another=1&occ=low-7');
+  assert.deepEqual(route, { page: 'diagnose', pageNamed: true, view: 'lows', mode: null });
+  assert.equal(serializeRoute(route), '/diagnose?view=lows');
 
   // The parsed route replaces the address in place with its canonical form, and
   // a stale fragment does not survive that replacement — #94 retired the
   // `#/<page>?...` grammar outright, so no fragment may linger in the address.
-  const carried = parseRoute({ pathname: '/diagnose', search: '?view=lows&factor=carb_undercount' });
+  const carried = parseRoute({ pathname: '/diagnose', search: '?view=glucose&mode=drawn' });
   const replacements = [];
   writeRoute(carried, {
-    location: { pathname: '/diagnose', hash: '#/diagnose?factor=late_bolus', search: '?view=lows&factor=carb_undercount' },
+    location: { pathname: '/diagnose', hash: '#/diagnose?factor=late_bolus', search: '?view=glucose&mode=drawn' },
     history: { replaceState: (_state, _title, address) => replacements.push(address) },
     replace: true,
   });
-  assert.deepEqual(replacements, ['/diagnose?view=lows&factor=carb_undercount']);
+  assert.deepEqual(replacements, ['/diagnose?view=glucose&mode=drawn']);
 
   const listeners = new Map();
   const browser = {
-    location: { hash: '', search: '?view=meals', pathname: '/diagnose' },
+    location: { hash: '', search: '?view=glucose&mode=drawn', pathname: '/diagnose' },
     addEventListener(type, listener) { listeners.set(type, listener); },
     removeEventListener() {},
   };
@@ -106,36 +102,5 @@ test('P53 coordinates move from the split query into the Diagnose route and rest
   const unsubscribe = subscribeRoute((next) => seen.push(next), browser);
   listeners.get('popstate')();
   unsubscribe();
-  assert.deepEqual(seen, [{ page: 'diagnose', pageNamed: true, view: 'meals', factor: null, start_min: null, end_min: null, another: null, occ: null, mode: null }]);
-});
-
-test('P53 restoration re-requests and an older projection response stays rejected', async () => {
-  const original = { window: globalThis.window, location: globalThis.location, history: globalThis.history };
-  const listeners = new Map();
-  globalThis.location = { pathname: '/diagnose', hash: '', search: '?view=meals&factor=late_bolus' };
-  globalThis.history = { pushState() {} };
-  globalThis.window = { location, history, addEventListener(type, listener) { listeners.set(type, listener); }, removeEventListener() {} };
-  const requests = [];
-  let resolveOld;
-  let rejectNew;
-  const root = { classList: { remove() {} }, replaceChildren() {} };
-  const view = createDiagnoseEventComparison({ root, callbacks: { loadProjection(coordinates) {
-    requests.push(coordinates);
-    return new Promise((resolve, reject) => {
-      if (requests.length === 1) resolveOld = resolve;
-      else rejectNew = reject;
-    });
-  } } });
-  view.setData({});
-  view.applyChanges({ factor: 'carb_undercount' });
-  rejectNew(new Error('newest response'));
-  await new Promise(setImmediate);
-  assert.equal(root.textContent, 'newest response');
-  resolveOld({});
-  await new Promise(setImmediate);
-  assert.equal(requests.length, 2);
-  assert.equal(requests[1].factor, 'carb_undercount');
-  assert.equal(root.textContent, 'newest response');
-  view.destroy();
-  Object.assign(globalThis, original);
+  assert.deepEqual(seen, [{ page: 'diagnose', pageNamed: true, view: 'glucose', mode: 'drawn' }]);
 });

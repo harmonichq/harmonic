@@ -35,10 +35,10 @@ is withheld rather than published as inspectable.
 A case-file population owns its denominator, attributed count, verdict counts,
 complete Occurrence roster, clock membership, selection, and event projection.
 Clock membership uses the Finding-relative outcome time, including the linked
-rebound time for a caused Low. Event alignment reprojects that exact roster into
-the five server-declared cohorts; it never substitutes the broader Explore feed.
-Correction-cluster and High projections use this same contract without changing
-classifier thresholds, support floors, or the legacy event-comparison contract.
+rebound time for a caused Low. Event alignment publishes matched, nearly-matched,
+and named comparison populations from the same prepared case file; it never
+substitutes the broader Explore feed. Correction-cluster and High projections use
+this same contract without changing classifier thresholds or support floors.
 
 For an eligible Low, one projection-facing rebound judgment owns the guarded
 scan, tiered firing bar, and 20 mg/dL near floor used by both Findings and Event
@@ -46,10 +46,10 @@ comparison. A fired rebound is matched; a rebound inside the near band is under
 threshold; an observed rebound below the near floor is no trigger; and an absent
 guarded peak is insufficient data. Findings maps that judgment row-relatively to
 fired, near miss, clean or no data, with a competing attributed Lever producing
-outranked. Event comparison consumes the same judgment under its own cross-factor
-precedence, yielding fired, near rule, neutral, another factor or excluded. The
-five Finding counts and five comparison counts each reconcile to their owning
-population denominator.
+outranked. The case file preserves its five Finding verdict counts independently
+from its three-population event comparison. The comparison names matched,
+nearly-matched, comparison, and not-comparable counts without recasting the
+Finding verdict account.
 
 ### Requirement: The layer refuses to assert on insufficient evidence and surfaces why.
 

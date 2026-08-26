@@ -1230,11 +1230,8 @@ test('a rejected first-load fetch shows the failure message, not an uncaught err
     const payloadPath = process.env.PAYLOAD;
     assert.ok(payloadPath, 'PAYLOAD is required (backs the endpoints that do not fail)');
     const payload = JSON.parse(await readFile(payloadPath, 'utf8'));
-    const comparison = JSON.parse(await readFile(
-      join(ROOT, 'mockups/diagnose-event-comparison.synthetic/capture.json'), 'utf8'));
     const apiPattern = (path) => new RegExp(`^/api${path}`);
     const STUBS = [
-      [apiPattern('/diagnose/event-comparison'), () => ({ comparison, exposures: payload.exposures })],
       [apiPattern('/scenarios'), () => payload.scenarios],
       [apiPattern('/explore/time'), () => payload.evidence],
       [apiPattern('/status'), () => ({ ok: true, last_fetch: payload.analyze.generated_at, counts: payload.analyze.data_quality?.counts || {} })],

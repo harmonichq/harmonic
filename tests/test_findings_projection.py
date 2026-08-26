@@ -22,11 +22,12 @@ except ImportError:  # pragma: no cover
 from ciq_autotune.analyzers.isf import analyze_isf
 from ciq_autotune.analyzers.scenario.levers import Lever, outcome_kind
 from ciq_autotune.findings_projection import (
+    _EVENT_CHART_FAMILIES,
     FindingsProjection,
     WindowQuery,
     prepare_findings_projection,
 )
-from ciq_autotune.event_comparison import FACTOR_LABELS, VIEW_CONFIG
+from ciq_autotune.event_comparison import FACTOR_LABELS
 from ciq_autotune.harm import HarmArm, HarmConfig, PrintedLow
 from ciq_autotune.safety import Status
 from ciq_autotune.ic_history import (
@@ -427,22 +428,33 @@ class ChipProjectionTest(unittest.TestCase):
 
 class EventChartProjectionTest(unittest.TestCase):
     def test_canonical_factors_publish_their_coordinates_when_the_family_is_present(self):
+        # The families come from the projection's OWN mapping, not the retired
+        # standalone route's VIEW_CONFIG: that route filed correction stacking
+        # under its "lows" view, while the exposure it is counted in is
+        # correction clusters. Reading the view names here is what let the
+        # mismatch publish `null` for a whole lever unnoticed.
         exposures = {}
         expected = {}
-        for hour, (view, config) in enumerate(VIEW_CONFIG.items()):
+        by_family: dict[str, list[str]] = {}
+        for lever, family in _EVENT_CHART_FAMILIES.items():
+            by_family.setdefault(family, []).append(lever)
+        for hour, (family, levers) in enumerate(by_family.items()):
             occurrences = []
-            for offset, factor in enumerate(config["factors"]):
+            for offset, factor in enumerate(levers):
                 occurrences.append({
                     "t": f"2026-08-17 {hour * 6 + offset:02d}:00:00",
                     "date": "2026-08-17",
-                    "kind": view,
+                    "kind": family,
                     "cause_lever": factor,
-                    "cause_title": FACTOR_LABELS[factor],
+                    "cause_title": FACTOR_LABELS.get(factor, factor),
                     "ep_id": factor,
                     "verdicts": [],
                 })
-                expected[factor] = {"view": view, "factor": factor}
-            exposures[view] = {"occurrences": occurrences}
+                expected[factor] = {
+                    "lever": factor,
+                    "window": WindowQuery.whole_day().to_dict(),
+                }
+            exposures[family] = {"occurrences": occurrences}
 
         rows = FindingsProjection(
             _analysis={"window_days": 30},
@@ -474,12 +486,12 @@ class EventChartProjectionTest(unittest.TestCase):
             _scenarios={"patterns": [], "low_confidence": []},
         ).project(WindowQuery.whole_day())["rows"][0]
 
-        rows = [*settings, unsupported]
-        self.assertTrue(all("event_chart" in row for row in rows))
-        self.assertTrue(all(
-            row["event_chart"] is None
-            for row in rows
-        ))
+        self.assertTrue(all("event_chart" in row for row in settings))
+        self.assertTrue(all(row["event_chart"] is None for row in settings))
+        self.assertEqual(unsupported["event_chart"], {
+            "lever": "missed_meal",
+            "window": WindowQuery.whole_day().to_dict(),
+        })
 
     def test_a_compatible_factor_without_its_event_family_publishes_null(self):
         projection = FindingsProjection(
@@ -858,12 +870,10 @@ class FindingsEndpointTest(unittest.TestCase):
                 self.assertEqual(response.json()["detail"],
                                  {"code": code, "message": message})
 
-    def test_behavioral_event_comparison_contract_is_unchanged(self):
+    def test_retired_behavioral_event_comparison_route_is_not_served(self):
         response = self.client.get(
             "/api/diagnose/event-comparison", params={"view": "meals"})
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["schema"], "diagnose-event-comparison-v3")
-        self.assertNotIn("analysis_generation", response.json())
+        self.assertEqual(response.status_code, 404)
 
     def test_process_restart_rejects_a_prior_generation(self):
         from ciq_autotune.api import create_app

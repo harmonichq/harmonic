@@ -2080,6 +2080,16 @@ function boot(root, data, callbacks, signal) {
   const chartDescriptor = (chartId) => tileDescriptors.find((item) => item.chartId === chartId);
   const chartEntry = (descriptor) => DIAGNOSE_EVIDENCE_CHARTS
     .find((entry) => entry.kind === descriptor?.kind);
+  /* Selection belongs to the standing case file, while descriptor data belongs
+     to the tile's selection-free request. Present the active case without
+     mutating fetch-owned state that an in-flight tile response can replace. */
+  const tileCaseFile = (descriptor) => {
+    const frame = top();
+    return descriptor.kind === 'event-comparison'
+      && frame.k === 'factor' && frame.rowId === descriptor.chartId
+      && frame.caseFile?.projection?.alignment === 'event'
+      ? frame.caseFile : descriptor.data;
+  };
 
   function showChartInspector(descriptor) {
     if (!descriptor) return;
@@ -2386,7 +2396,9 @@ function boot(root, data, callbacks, signal) {
         DIAGNOSE_EVIDENCE_CHARTS, canvasLayout))
       .filter(({ chartId }) => byId.has(chartId));
     const displayed = seats.map(({ chartId }) => byId.get(chartId));
-    sharedGlucoseRange = arrangementRange(displayed, DIAGNOSE_EVIDENCE_CHARTS, glucoseRange);
+    sharedGlucoseRange = arrangementRange(displayed.map((descriptor) => ({
+      ...descriptor, data: tileCaseFile(descriptor),
+    })), DIAGNOSE_EVIDENCE_CHARTS, glucoseRange);
     host.dataset.arrangement = fullscreen ? 'focal' : canvasLayout.arrangement;
     host.innerHTML = '';
     paintPinCap(seats);
@@ -2503,20 +2515,22 @@ function boot(root, data, callbacks, signal) {
         chartHost.className = 'tile-chart';
         body.append(chartHost);
         try {
+          const caseFile = tileCaseFile(descriptor);
           /* A SLOT TILE IS A MINIATURE INSTRUMENT. At slot size the full axis
              furniture cannot be read — its labels run together into a single
              smear — so every seat but the focal one draws in the registry's
              `mini` treatment: the tight grid and the small label rank. Only the
              focal chart is read at full size, and only it gets full furniture. */
           if (fullscreen && descriptor.kind === 'event-comparison') {
-            const mounted = renderBehavioralFullscreen(chartHost, { caseFile: descriptor.data });
+            const mounted = renderBehavioralFullscreen(chartHost, { caseFile });
             tileMounts.push(mounted);
           } else {
             const option = optionForDescriptor(
               descriptor, DIAGNOSE_EVIDENCE_CHARTS, sharedGlucoseRange, {
               mini: seat.seat !== 'focal', window: scopeWindow(),
               presentation: advisoryPresentation(canvasMode),
-              },
+              caseFile,
+            },
             );
             const evidenceChart = window.echarts.init(chartHost, null, { renderer: 'canvas' });
             evidenceChart.setOption(option, true);

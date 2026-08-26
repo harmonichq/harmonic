@@ -324,7 +324,8 @@ const entries = [
     name: 'Meals / lows · event comparison',
     modes: null,
     meta: () => 'served cohorts aligned to their event',
-    option: (_mode, { data, range } = {}) => eventComparisonChartOption(data, range),
+    option: (_mode, { data, range, caseFile = data } = {}) =>
+      eventComparisonChartOption(caseFile, range),
     thumbnail: (data) => thumbnail('MEALS / LOWS · COMPARISON',
       data?.summary?.denominator ?? 0,
       [{ type: 'line', symbol: 'none', connectNulls: true,

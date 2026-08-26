@@ -67,7 +67,7 @@ def trace(points):
 UNDERDOSED_CGM = trace([(9, 0, 110), (12, 0, 112), (12, 20, 120),
                         (14, 0, 265), (16, 0, 150)])
 UNDERDOSED_BOLUS = [
-    BolusEvent(t=at(12), insulin=5.0, carbs=85.0, carb_ratio=12.0),
+    BolusEvent(t=at(12), completion="Completed", insulin=5.0, carbs=85.0, carb_ratio=12.0),
     BolusEvent(t=at(13, 40), insulin=2.5, carbs=None),
 ]
 
@@ -87,8 +87,8 @@ CHAINED_BOLUS = UNDERDOSED_BOLUS + [
 # nothing at all and IS uncaused; the 11:50 hump's high is merely not the driver.
 GAP_CGM = trace([(6, 0, 110), (8, 0, 112), (8, 20, 125), (9, 30, 255),
                  (11, 0, 118), (11, 30, 120), (13, 30, 265), (15, 30, 140)])
-GAP_BOLUS = [BolusEvent(t=at(8), insulin=6.0, carbs=85.0, carb_ratio=12.0),
-             BolusEvent(t=at(11, 50), insulin=5.0, carbs=70.0, carb_ratio=12.0),
+GAP_BOLUS = [BolusEvent(t=at(8), completion="Completed", insulin=6.0, carbs=85.0, carb_ratio=12.0),
+             BolusEvent(t=at(11, 50), completion="Completed", insulin=5.0, carbs=70.0, carb_ratio=12.0),
              BolusEvent(t=at(13), insulin=2.5, carbs=None)]
 
 
@@ -124,7 +124,7 @@ class AttributionTest(unittest.TestCase):
     def test_a_matching_carb_undercount_keeps_precedence(self):
         # Same evening, same correction — only the logged carbs change, so carb
         # undercount now fires on the EARLIER meal anchor and owns the episode.
-        bolus = [BolusEvent(t=at(12), insulin=5.0, carbs=60.0, carb_ratio=12.0),
+        bolus = [BolusEvent(t=at(12), completion="Completed", insulin=5.0, carbs=60.0, carb_ratio=12.0),
                  BolusEvent(t=at(13, 40), insulin=2.5, carbs=None)]
         attrs = attributions(bolus, UNDERDOSED_CGM)
         self.assertEqual([a.lever for a in attrs], [Lever.CARB_UNDERCOUNT])
@@ -135,8 +135,8 @@ class AttributionTest(unittest.TestCase):
         # anchor's own judgment still matches. One driver, the rest as consequence.
         cgm = trace([(6, 0, 110), (8, 0, 112), (8, 20, 125), (9, 30, 255),
                      (11, 0, 118), (11, 30, 120), (13, 30, 265), (15, 30, 140)])
-        bolus = [BolusEvent(t=at(8), insulin=6.0, carbs=85.0, carb_ratio=12.0),
-                 BolusEvent(t=at(11, 50), insulin=5.0, carbs=70.0, carb_ratio=12.0),
+        bolus = [BolusEvent(t=at(8), completion="Completed", insulin=6.0, carbs=85.0, carb_ratio=12.0),
+                 BolusEvent(t=at(11, 50), completion="Completed", insulin=5.0, carbs=70.0, carb_ratio=12.0),
                  BolusEvent(t=at(13), insulin=2.5, carbs=None)]
         second = attributions(bolus, cgm)[1]
         self.assertEqual(second.lever, Lever.LATE_BOLUS)
@@ -250,7 +250,7 @@ def _seed(store, bolus, cgm):
          "Readings (CGM / BGM)": r.bg, "Description": "EGV"} for r in cgm])
     store.upsert_bolus([
         {"seq_num": i, "request_time": b.t.strftime("%Y-%m-%d %H:%M:%S"),
-         "description": "Bolus", "carbs": b.carbs, "insulin": b.insulin,
+         "description": "Bolus", "completion": b.completion, "carbs": b.carbs, "insulin": b.insulin,
          "carb_ratio": b.carb_ratio} for i, b in enumerate(bolus, start=1)])
 
 

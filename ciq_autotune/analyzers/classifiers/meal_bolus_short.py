@@ -38,6 +38,7 @@ from typing import Optional, Sequence
 from ...events import BasalEvent, BolusEvent, CgmReading
 from ...model import _CgmSeries
 from ..scenario_config import ScenarioConfig
+from ..scenario.evidence_population import completed_carb_bolus
 from .context_gate import GateResult, upstream_cause
 from .evidence import EvidenceTier, SilenceReason, Verdict
 
@@ -80,7 +81,10 @@ def _most_recent_meal_in_window(
     """
     best: Optional[BolusEvent] = None
     for b in bolus_events:
-        if b.carbs is None or b.carbs < min_carbs:
+        # The recurrence policy owns the eligible meal identity.  Keep the
+        # classifier on that same population so a cancelled or zero-dose row can
+        # neither attribute a high nor enter the denominator.
+        if not completed_carb_bolus(b, scenario_config=ScenarioConfig(anchor_meal_min_carbs=min_carbs)):
             continue
         if window_start <= b.t < anchor and (best is None or b.t > best.t):
             best = b

@@ -42,7 +42,8 @@ def cgm_ramp(start_h, start_min, start_bg, slope_per_min, minutes):
 
 
 def meal_bolus(hh, mm, carbs=45.0, dose=4.0):
-    return BolusEvent(t=datetime(2026, 6, DAY, hh, mm, 0), insulin=dose, carbs=carbs)
+    return BolusEvent(t=datetime(2026, 6, DAY, hh, mm, 0), completion="Completed",
+                      insulin=dose, carbs=carbs)
 
 
 def correction(hh, mm, dose=2.0):

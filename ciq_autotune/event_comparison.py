@@ -25,6 +25,7 @@ from .analyzers.scenario.meal_suspend import (
     classify_meal_owned_suspend,
 )
 from .analyzers.scenario_config import ScenarioConfig
+from .analyzers.scenario.evidence_population import completed_carb_bolus
 from .insulin import ACCOUNTING_DIA_MIN
 from .window_membership import WindowQuery, outcome_minute
 
@@ -153,12 +154,7 @@ def _completed_meal_at(bolus, anchor: datetime, ordinal: int = 0):
     candidates = [
         item
         for item in bolus
-        if item.t == anchor
-        and item.completion == "Completed"
-        and item.insulin is not None
-        and item.insulin > 0
-        and item.carbs is not None
-        and item.carbs >= CONFIG.anchor_meal_min_carbs
+        if item.t == anchor and completed_carb_bolus(item, scenario_config=CONFIG)
     ]
     candidates.sort(key=lambda item: item.seq_num)
     return candidates[ordinal] if ordinal < len(candidates) else None

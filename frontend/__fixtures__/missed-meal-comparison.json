@@ -2,6 +2,7 @@
  "_generated_by": "scripts/gen_missed_meal_comparison_fixtures.py",
  "_note": "SYNTHETIC. Fixed invented Highs and boluses; no personal data.",
  "clock_after_announced": {
+  "cross_population": true,
   "family": "highs",
   "finding": {
    "id": "finding:missed_meal",
@@ -59,6 +60,7 @@
     "verdict": "outranked"
    }
   ],
+  "population": "highs",
   "projection": {
    "alignment": "clock",
    "anchor": null,
@@ -174,6 +176,7 @@
   }
  },
  "payload": {
+  "cross_population": true,
   "family": "highs",
   "finding": {
    "id": "finding:missed_meal",
@@ -231,6 +234,7 @@
     "verdict": "outranked"
    }
   ],
+  "population": "highs",
   "projection": {
    "alignment": "event",
    "anchor": {
@@ -2234,6 +2238,7 @@
   "withheld_findings": []
  },
  "selected_announced": {
+  "cross_population": true,
   "family": "highs",
   "finding": {
    "id": "finding:missed_meal",
@@ -2291,6 +2296,7 @@
     "verdict": "outranked"
    }
   ],
+  "population": "highs",
   "projection": {
    "alignment": "event",
    "anchor": {
@@ -4206,6 +4212,7 @@
   }
  },
  "selected_missed": {
+  "cross_population": true,
   "family": "highs",
   "finding": {
    "id": "finding:missed_meal",
@@ -4263,6 +4270,7 @@
     "verdict": "outranked"
    }
   ],
+  "population": "highs",
   "projection": {
    "alignment": "event",
    "anchor": {
@@ -6164,6 +6172,7 @@
   }
  },
  "zero_payload": {
+  "cross_population": true,
   "family": "highs",
   "finding": {
    "id": "finding:missed_meal",
@@ -6211,6 +6220,7 @@
     "verdict": "outranked"
    }
   ],
+  "population": "highs",
   "projection": {
    "alignment": "event",
    "anchor": {

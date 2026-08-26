@@ -287,15 +287,32 @@ export function carbRatioGlucoseValues(data) {
     .map((point) => point.bg).filter(finite);
 }
 
+/* A PARAMETER TILE CARRIES ITS OWN ROW'S EXTENT, in the queue's words. Basal
+   slots and carb-ratio blocks are published several to a window, so a standing
+   kind name printed look-alike tiles the reader could not tell apart — the same
+   defect the behavioural kind was fixed for. The extent is the row's OWN
+   published `span.label`, the very string the queue's row title is built on
+   (`_span_label` in `ciq_autotune/findings_projection.py`), never a clock span
+   formatted a second time here. The evidence phrase stays the kind's. A row
+   arriving off the wire without one keeps the standing name rather than
+   printing a hole. */
+const spanNamed = (parameter, evidence) => (row) => ({
+  title: row.span?.label
+    ? `${parameter} ${row.span.label} · ${evidence}`
+    : `${parameter} · ${evidence}`,
+  meta: null,
+});
+
 const entries = [
   {
     kind: 'basal',
     name: 'Basal · nights of steady data',
+    nameFor: spanNamed('Basal', 'nights of steady data'),
     modes: ['clock', 'event'],
     meta: (mode) => mode === 'clock'
       ? 'delivered vs programmed by night' : 'supported vs insufficient evidence',
     option: basalOption,
-    thumbnail: (data) => thumbnail('BASAL · STEADY NIGHTS',
+    thumbnail: (data, title) => thumbnail((title || 'Basal · nights of steady data').toUpperCase(),
       `${data?.roster_count ?? 0} / ${data?.directional_support_count ?? 0}`,
       [{ type: 'line', symbol: 'none', data: (data?.nights || []).map((night) => night.delivered_rate),
         lineStyle: { color: chartColors().basal, width: 1 } }]),
@@ -326,11 +343,12 @@ const entries = [
   {
     kind: 'carb-ratio',
     name: 'Carb ratio · meal runs',
+    nameFor: spanNamed('Carb ratio', 'meal runs'),
     modes: ['event', 'clock'],
     meta: (mode) => mode === 'event'
       ? 'CGM from first meal' : 'Carb ratio by meal start',
     option: carbRatioOption,
-    thumbnail: (data) => thumbnail('CARB RATIO · MEAL RUNS',
+    thumbnail: (data, title) => thumbnail((title || 'Carb ratio · meal runs').toUpperCase(),
       `${data?.block?.examined_runs ?? 0} / ${data?.block?.support ?? 0}`,
       [{ type: 'line', symbol: 'none', connectNulls: true,
         data: data?.series?.[0]?.points?.map((point) => point.bg) || [],

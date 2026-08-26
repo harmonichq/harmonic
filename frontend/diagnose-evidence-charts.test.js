@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 
 import { makeDeps } from './data.js';
 import { renderEventSurface } from './diagnose-event-comparison.js';
+import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 
 import {
   DIAGNOSE_EVIDENCE_CHARTS,
@@ -17,6 +18,22 @@ const fixture = (path) => JSON.parse(readFileSync(new URL(path, import.meta.url)
    inspector's own drill reads (#181/#135), never a second projection. */
 const caseFiles = () => fixture('../mockups/diagnose-workstation.synthetic/finding-case-files.json');
 const eventCase = () => caseFiles().cases['finding:carb_undercount'].event;
+/* The projection's own frozen inputs, re-projected through the mirror the
+   browser gates serve from (#735) — so the rows these names are built from are
+   the rows the app is handed, not rows written here. */
+const projectionFixture = fixture('./__fixtures__/findings-projection.json');
+/* The generator's own window table, re-declared as the request each frozen
+   answer was made for — the same list `findings-projection-mirror.test.js`
+   holds the mirror to. */
+const PROJECTED_WINDOWS = {
+  global: null,
+  morning: { start_min: 270, end_min: 480 },
+  low_block: { start_min: 720, end_min: 840 },
+  rebound: { start_min: 840, end_min: 960 },
+  afternoon: { start_min: 840, end_min: 1260 },
+  overnight: { start_min: 1320, end_min: 120 },
+  quiet: { start_min: 180, end_min: 240 },
+};
 
 function fakeFetch(body = {}) {
   const calls = [];
@@ -114,6 +131,70 @@ test('every entry produces exactly the coordinates it declares', () => {
   assert.deepEqual(named.nameFor(rows['event-comparison']), {
     title: 'Missed meal', meta: 'highs aligned to each event',
   });
+});
+
+/* THE LIVE REPRO: two basal slots in one window seated two tiles both reading
+   `Basal · nights of steady data`, so the reader could not tell which slot
+   either answered — and the canvas suite's distinct-name assertion caught it.
+   Every kind a window can publish more than one of names each tile from its own
+   row. Built from projection rows, never from a hand-set title. */
+test('every kind a window publishes more than once names each tile from its own row', () => {
+  const byKind = Object.fromEntries(DIAGNOSE_EVIDENCE_CHARTS.map((entry) => [entry.kind, entry]));
+  const EVIDENCE = { basal: 'nights of steady data', 'carb-ratio': 'meal runs' };
+  const most = { basal: 0, 'carb-ratio': 0 };
+
+  const projected = Object.entries(PROJECTED_WINDOWS).map(([name, bounds]) => [
+    name, projectFindings(projectionFixture.inputs, bounds).rows,
+  ]);
+  // the one frozen answer carrying two carb-ratio blocks at once, projected by
+  // the server itself rather than posed here
+  projected.push(['carb_ratio_raise', projectionFixture.settings_cases.carb_ratio_raise.rows]);
+
+  for (const [name, published] of projected) {
+    const rows = published.filter((row) => row.register !== 'history');
+    const titles = [];
+    for (const [kind, evidence] of Object.entries(EVIDENCE)) {
+      const own = rows.filter((row) => byKind[kind].matches(row));
+      most[kind] = Math.max(most[kind], own.length);
+      for (const row of own) {
+        const { title } = byKind[kind].nameFor(row);
+        assert.ok(title.includes(row.span.label),
+          `${title} carries its own row's published span in ${name}`);
+        assert.ok(title.endsWith(` · ${evidence}`), `${title} keeps the ${kind} evidence phrase`);
+        assert.doesNotMatch(title, /I:C/);
+        titles.push(title);
+      }
+    }
+    assert.equal(new Set(titles).size, titles.length,
+      `no two parameter tiles in ${name} share a name (${titles})`);
+  }
+  assert.ok(most.basal >= 2, 'a frozen window publishes several basal slots at once');
+  assert.ok(most['carb-ratio'] >= 2, 'a frozen window publishes several carb-ratio blocks at once');
+});
+
+test('a parameter row arriving without a span keeps the standing kind name', () => {
+  const byKind = Object.fromEntries(DIAGNOSE_EVIDENCE_CHARTS.map((entry) => [entry.kind, entry]));
+  assert.equal(byKind.basal.nameFor({ id: 'basal:0-30', parameter: 'basal_rate' }).title,
+    'Basal · nights of steady data');
+  assert.equal(byKind['carb-ratio'].nameFor({ id: 'ic:0', parameter: 'carb_ratio' }).title,
+    'Carb ratio · meal runs');
+});
+
+/* The drawer prints the descriptor's name above the mini chart AND inside it;
+   both come from the tile's one name, so a second slot cannot wear the first
+   slot's caption. */
+test('a parameter thumbnail captions itself with the tile name it was given', () => {
+  const basal = fixture('./__fixtures__/basal-night-evidence.json').expected;
+  const ic = fixture('../mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json')
+    .cases.cross_midnight;
+  const byKind = Object.fromEntries(DIAGNOSE_EVIDENCE_CHARTS.map((entry) => [entry.kind, entry]));
+
+  assert.equal(byKind.basal.thumbnail(basal, 'Basal 05:30 · nights of steady data')
+    .graphic[0].style.text, 'BASAL 05:30 · NIGHTS OF STEADY DATA');
+  assert.equal(byKind['carb-ratio'].thumbnail(ic, 'Carb ratio 12:00 to 24:00 · meal runs')
+    .graphic[0].style.text, 'CARB RATIO 12:00 TO 24:00 · MEAL RUNS');
+  assert.equal(byKind.basal.thumbnail(basal).graphic[0].style.text,
+    'BASAL · NIGHTS OF STEADY DATA');
 });
 
 test('entries build different alignments simultaneously with one optical spine', () => {

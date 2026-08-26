@@ -1260,14 +1260,16 @@ function boot(root, data, callbacks, signal) {
     if (descriptor.kind === 'carb-ratio') {
       return (data.runs || []).length > 0 || (data.series || []).length > 0;
     }
-    return (data.cohorts || []).some((cohort) => (cohort.points || []).length > 0);
+    return (data.projection?.cohorts || []).some((cohort) => (cohort.points || []).length > 0);
   };
 
   function descriptorLoader(descriptor) {
     if (descriptor.kind === 'basal') return callbacks.loadBasalEvidence;
     if (descriptor.kind === 'isf') return callbacks.loadIsfEvidence;
     if (descriptor.kind === 'carb-ratio') return callbacks.loadCarbRatioEvidence;
-    return callbacks.loadProjection;
+    /* #181 retired the standalone comparison endpoint: the meals/lows tile asks
+       for the same Finding case file the inspector's own drill asks for. */
+    return callbacks.loadCase;
   }
 
   function disposeTiles() {
@@ -1285,8 +1287,12 @@ function boot(root, data, callbacks, signal) {
 
   function reconcileTileDescriptors({ skipLoadIds = new Set() } = {}) {
     const generation = findings?.analysis_generation || null;
+    /* The comparison tile's request quotes the same opaque projection id the
+       inspector's own case-file drill quotes, and the preparation is where that
+       id lives — the findings queue carries rows, not the served generation. */
     const generated = descriptorsFromFindings(
-      findings, DIAGNOSE_EVIDENCE_CHARTS, requestWindow(),
+      findings && { ...findings, projection_id: preparation?.projection_id },
+      DIAGNOSE_EVIDENCE_CHARTS,
     );
     const generatedIds = new Set(generated.map(({ chartId }) => chartId));
     const generationChanged = tileAnalysisGeneration !== null

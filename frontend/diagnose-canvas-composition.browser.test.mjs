@@ -72,12 +72,9 @@ after(() => runner.close());
 const FINDINGS_INPUTS = JSON.parse(await readFile(
   join(ROOT, 'frontend/__fixtures__/findings-projection.json'), 'utf8')).inputs;
 
-/* The event-comparison stub projects one synthetic capture, which does not
-   carry every view the findings fixture's rows name. The canvas asks for one
-   projection per event-charted row, so those coordinates are answered with an
-   empty — but well-formed — projection: this suite is about the composition,
-   not about that endpoint's contents. */
-const EMPTY_COMPARISON = { coordinates: { view: 'meals' }, cohorts: [] };
+/* #181/#135: the comparison tile has no endpoint of its own. Its evidence is
+   the Finding case file the driver already serves from the committed synthetic
+   set, so this suite adds no stub for it. */
 
 /* One synthetic carb-ratio block payload, in the shape the registry's own
    carb-ratio chart reads, so a recovered tile draws rather than falling into
@@ -92,7 +89,7 @@ const RECOVERED_CARB_RATIO = {
 async function openCanvas(browser, { routes = null, ...options } = {}) {
   const page = await openApp(browser, {
     appSource: 'fixture', theme: 'dark', findingsInputs: FINDINGS_INPUTS,
-    comparisonProjection: EMPTY_COMPARISON, ...options,
+    ...options,
   });
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));

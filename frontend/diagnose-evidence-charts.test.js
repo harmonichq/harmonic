@@ -13,6 +13,10 @@ import {
 } from './diagnose-evidence-charts.js';
 
 const fixture = (path) => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'));
+/* The comparison kind reads a served Finding case file — the same payload the
+   inspector's own drill reads (#181/#135), never a second projection. */
+const caseFiles = () => fixture('../mockups/diagnose-workstation.synthetic/finding-case-files.json');
+const eventCase = () => caseFiles().cases['finding:carb_undercount'].event;
 
 function fakeFetch(body = {}) {
   const calls = [];
@@ -75,7 +79,8 @@ test('the registry declares four stateless chart kinds and their request coordin
     'basal', 'isf', 'carb-ratio', 'event-comparison',
   ]);
   assert.deepEqual(DIAGNOSE_EVIDENCE_CHARTS.map(({ coordinateSchema }) => coordinateSchema), [
-    ['slot'], [], ['block_id', 'analysis_generation'], ['view', 'factor', 'window'],
+    ['slot'], [], ['block_id', 'analysis_generation'],
+    ['projection_id', 'finding_id', 'alignment'],
   ]);
   assert.deepEqual(DIAGNOSE_EVIDENCE_CHARTS.map(({ modes }) => modes), [
     ['clock', 'event'], ['event', 'clock'], ['event', 'clock'], null,
@@ -99,7 +104,7 @@ test('entries build different alignments simultaneously with one optical spine',
   const icEvent = byKind['carb-ratio'].option('event', {
     data: ic, range: [80, 220], explore: false, mini: false, window: [1320, 120],
   });
-  const event = fixture('./__fixtures__/event-comparison-mirror.json').windows.meals_default;
+  const event = eventCase();
   const comparison = byKind['event-comparison'].option(null, {
     data: event, range: [80, 220], explore: false, mini: false, window: [1320, 120],
   });
@@ -110,7 +115,9 @@ test('entries build different alignments simultaneously with one optical spine',
   assert.deepEqual(icEvent.yAxis.max, 220);
   assert.deepEqual(basalClock.grid, isfEvent.grid);
   assert.deepEqual(isfEvent.grid, icEvent.grid);
-  assert.deepEqual(icEvent.grid, comparison.grid);
+  const { containLabel, ...icPlot } = icEvent.grid;
+  assert.deepEqual(icPlot, comparison.grid,
+    'the comparison shares the other kinds\' plot insets');
 });
 
 test('basal event treatment follows the analyzer verdict, not the support count', () => {
@@ -192,7 +199,7 @@ test('chart options resolve live light and dark theme tokens', () => {
   const isf = fixture('../mockups/diagnose-workstation.synthetic/isf-rest-window-evidence.capture.json').payload;
   const ic = fixture('../mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json')
     .cases.directional_only;
-  const event = fixture('./__fixtures__/event-comparison-mirror.json').windows.meals_default;
+  const event = eventCase();
   const byKind = Object.fromEntries(DIAGNOSE_EVIDENCE_CHARTS.map((entry) => [entry.kind, entry]));
   const build = (tokens) => {
     globalThis.document = { documentElement: {} };
@@ -222,12 +229,15 @@ test('chart options resolve live light and dark theme tokens', () => {
       '--line': '#c3bfb4', '--in-range': '#3f5a3b', '--basal': '#5d7368',
       '--secondary': '#4d5c53', '--warn': '#8d3c17', '--notindata': '#6b7169',
       '--surface': '#faf8f4', '--primary': '#a94f21', '--accent': '#a94f21',
-      '--ok': '#5d7368', '--danger': '#9d3018', '--manual-carb': '#a94f21' });
+      '--ok': '#5d7368', '--danger': '#9d3018', '--manual-carb': '#a94f21',
+      // the comparison draws on the cockpit's own token names
+      '--mk-muted': '#3d5848', '--mk-line': '#c3bfb4', '--mk-ok': '#5d7368' });
     const dark = build({ '--text': '#f5ece0', '--muted': '#a3968a',
       '--line': '#4f4640', '--in-range': '#86ad78', '--basal': '#a89a85',
       '--secondary': '#a89a85', '--warn': '#c98a4e', '--notindata': '#8d8579',
       '--surface': '#262220', '--primary': '#e07f3f', '--accent': '#d08150',
-      '--ok': '#9aada1', '--danger': '#ec6f55', '--manual-carb': '#d2743e' });
+      '--ok': '#9aada1', '--danger': '#ec6f55', '--manual-carb': '#d2743e',
+      '--mk-muted': '#a3968a', '--mk-line': '#4f4640', '--mk-ok': '#9aada1' });
     assert.equal(light.basal.yAxis.axisLabel.color, '#3d5848');
     assert.equal(dark.basal.yAxis.axisLabel.color, '#a3968a');
     assert.equal(light.basal.series[1].lineStyle.color, '#5d7368');
@@ -278,13 +288,16 @@ test('payload counts stay distinct in chart and thumbnail presentation', () => {
 test('glucose projections expose served values and thumbnails have no axis furniture', () => {
   const ic = fixture('../mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json')
     .cases.below_floor;
-  const event = fixture('./__fixtures__/event-comparison-mirror.json').windows.meals_default;
+  const event = eventCase();
   const byKind = Object.fromEntries(DIAGNOSE_EVIDENCE_CHARTS.map((entry) => [entry.kind, entry]));
 
   assert.equal(byKind.basal.glucoseValues, null);
   assert.equal(byKind.isf.glucoseValues, null);
   assert.ok(byKind['carb-ratio'].glucoseValues(ic).includes(220));
-  assert.ok(byKind['event-comparison'].glucoseValues(event).includes(237));
+  const servedMedian = event.projection.cohorts
+    .flatMap((cohort) => cohort.points).find((point) => point.median !== null).median;
+  assert.ok(byKind['event-comparison'].glucoseValues(event).includes(servedMedian),
+    'the comparison reports the medians the case file serves');
   for (const entry of DIAGNOSE_EVIDENCE_CHARTS) {
     const thumbData = entry.kind === 'basal' ? { roster_count: 0, directional_support_count: 0, nights: [] }
       : entry.kind === 'isf' ? { counts: { detected_windows: 0, qualifying_windows: 0,
@@ -299,18 +312,28 @@ test('glucose projections expose served values and thumbnails have no axis furni
   }
 });
 
-test('the event-comparison entry reuses continuous shipped traces with the injected range', () => {
-  const event = fixture('./__fixtures__/event-comparison-mirror.json').windows.meals_default;
+test('the event-comparison entry draws the shipped cohort series at the injected range', () => {
+  const event = eventCase();
   const entry = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'event-comparison');
   const option = entry.option(null, { data: event, range: [80, 240] });
 
   assert.equal(option.yAxis.min, 80);
   assert.equal(option.yAxis.max, 240);
-  const traces = option.series.filter((series) => series.type === 'line' && series.data.length);
-  assert.ok(traces.length > 0);
-  assert.ok(traces.every((series) => series.connectNulls === true));
-  assert.equal(option.legend.length, 2, 'the option carries a two-column cohort key');
-  assert.ok(option.legend.every(({ orient, bottom }) => orient === 'vertical' && bottom === 0));
+  assert.deepEqual([option.xAxis.min, option.xAxis.max], event.projection.window_min,
+    'the event window is the served one');
+  /* The tile is the same draw as the shipped mount: one median line and one
+     spread per served cohort support, keyed by the cohort the server named. */
+  const supported = event.projection.cohorts
+    .filter((cohort) => cohort.points.some((point) => point.support === 'supported'));
+  assert.ok(supported.length > 0, 'the fixture serves at least one supported cohort');
+  for (const cohort of supported) {
+    const line = option.series.find((series) => series.id === `${cohort.key}:line:supported`);
+    assert.equal(line.name, cohort.name);
+    assert.equal(line.data.length, cohort.points.length);
+    assert.ok(option.series.some((series) => series.id === `${cohort.key}:spread:supported`));
+  }
+  assert.ok(option.series.some((series) => series.name === 'Target range'),
+    'the target band rides with the traces');
 });
 
 test('the shipped event-comparison mount derives its axis from rendered cohort glucose', () => {
@@ -334,9 +357,20 @@ test('the shipped event-comparison mount derives its axis from rendered cohort g
   globalThis.ResizeObserver = class { observe() {} };
   globalThis.getComputedStyle = () => ({ getPropertyValue: () => '#3d5848' });
   try {
-    const event = fixture('./__fixtures__/event-comparison-mirror.json').windows.meals_default;
+    const event = eventCase();
     renderEventSurface(surface, event);
-    assert.deepEqual([mountedOption.yAxis.min, mountedOption.yAxis.max], [60, 240]);
+    assert.deepEqual([mountedOption.yAxis.min, mountedOption.yAxis.max], GLUCOSE_ENVELOPE,
+      'served values inside the envelope leave the resting axis alone');
+
+    /* One cohort median above the envelope must widen the mount's own axis —
+       the axis is read off what this surface draws, not off a constant. */
+    const widened = JSON.parse(JSON.stringify(event));
+    const point = widened.projection.cohorts
+      .flatMap((cohort) => cohort.points).find((row) => row.median !== null);
+    point.median = 265;
+    renderEventSurface(surface, widened);
+    assert.deepEqual([mountedOption.yAxis.min, mountedOption.yAxis.max],
+      [GLUCOSE_ENVELOPE[0], 280]);
   } finally {
     globalThis.window = prior.window;
     globalThis.ResizeObserver = prior.ResizeObserver;
@@ -344,14 +378,28 @@ test('the shipped event-comparison mount derives its axis from rendered cohort g
   }
 });
 
-test('selected and thin-cohort event traces also join across missing samples', () => {
-  const windows = fixture('./__fixtures__/event-comparison-mirror.json').windows;
+test('a selected occurrence and a withheld cohort keep their own shipped series', () => {
+  const cases = caseFiles().cases['finding:carb_undercount'];
   const entry = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'event-comparison');
-  for (const payload of [windows.selection, windows.wrapping]) {
-    const traces = entry.option(null, { data: payload, range: [60, 240] }).series
-      .filter((series) => series.type === 'line' && series.data.length);
-    assert.ok(traces.length > 0);
-    assert.ok(traces.every((series) => series.connectNulls === true));
+  const [selectedId] = Object.keys(cases.selected_event);
+  const selected = cases.selected_event[selectedId];
+
+  const withoutSelection = entry.option(null, { data: cases.event, range: [60, 240] });
+  assert.ok(!withoutSelection.series.some((series) => series.id === 'selected:trace'),
+    'an unselected case file draws no focus trace');
+
+  const withSelection = entry.option(null, { data: selected, range: [60, 240] });
+  const trace = withSelection.series.find((series) => series.id === 'selected:trace');
+  assert.equal(trace.data.length, selected.selection.detail.glucose.length);
+
+  /* A withheld cohort has no average to draw, so it contributes no median line
+     — the server's withholding is carried, never averaged around. */
+  const withheld = cases.event.projection.cohorts
+    .filter((cohort) => cohort.support === 'withheld');
+  assert.ok(withheld.length > 0, 'the fixture serves a withheld cohort');
+  for (const cohort of withheld) {
+    assert.ok(!withoutSelection.series.some((series) =>
+      series.id === `${cohort.key}:line:supported`));
   }
 });
 
@@ -383,7 +431,7 @@ test('current I:C event options render every published meal member', () => {
 test('glucose chart options fail closed without one injected arrangement range', () => {
   const ic = fixture('../mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json')
     .cases.below_floor;
-  const event = fixture('./__fixtures__/event-comparison-mirror.json').windows.meals_default;
+  const event = eventCase();
   const byKind = Object.fromEntries(DIAGNOSE_EVIDENCE_CHARTS.map((entry) => [entry.kind, entry]));
 
   assert.throws(() => byKind['carb-ratio'].option('event', { data: ic }),

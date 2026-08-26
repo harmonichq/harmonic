@@ -87,18 +87,24 @@ test('the live descriptor list follows findings rows without a second chart list
     { kind: 'isf', modes: ['event', 'clock'], coordinateSchema: [] },
     { kind: 'carb-ratio', modes: ['event', 'clock'],
       coordinateSchema: ['block_id', 'analysis_generation'] },
-    { kind: 'event-comparison', modes: null, coordinateSchema: ['view', 'factor', 'window'] },
+    { kind: 'event-comparison', modes: null,
+      coordinateSchema: ['projection_id', 'finding_id', 'alignment'] },
   ];
-  const findings = { analysis_generation: 'process:7', rows: [
+  const findings = { analysis_generation: 'process:7', projection_id: 'fp_7', rows: [
     { id: 'basal:30-60', register: 'assert', parameter: 'basal_rate',
       span: { start_min: 30, end_min: 60 } },
     { id: 'ic:720', register: 'assert', parameter: 'carb_ratio',
       span: { start_min: 720, end_min: 1440 } },
+    { id: 'finding:missed_meal', register: 'finding',
+      event_chart: { lever: 'carb_ratio', window: { scoped: false } } },
   ] };
   assert.deepEqual(descriptorsFromFindings(findings, registry).map(({ chartId, coordinates }) =>
     [chartId, coordinates]), [
     ['basal:30-60', { slot: 1 }],
     ['ic:720', { block_id: 720, analysis_generation: 'process:7' }],
+    // the comparison tile asks the case-file path for this row's event alignment
+    ['finding:missed_meal', { projection_id: 'fp_7',
+      finding_id: 'finding:missed_meal', alignment: 'event' }],
   ]);
   assert.deepEqual(Object.keys(descriptorsFromFindings(findings, registry)[0]).sort(),
     ['chartId', 'coordinates', 'data', 'kind', 'mode', 'state']);

@@ -301,11 +301,14 @@ const entries = [
     meta: () => 'served cohorts aligned to their event',
     option: (_mode, { data, range } = {}) => eventComparisonChartOption(data, range),
     thumbnail: (data) => thumbnail('MEALS / LOWS · COMPARISON',
-      data?.population?.denominator ?? 0,
+      data?.summary?.denominator ?? 0,
       [{ type: 'line', symbol: 'none', connectNulls: true,
-        data: data?.cohorts?.[0]?.points?.map((point) => point.median) || [],
+        data: data?.projection?.cohorts?.[0]?.points?.map((point) => point.median) || [],
         lineStyle: { color: chartColors().signal, width: 1 } }]),
-    coordinateSchema: ['view', 'factor', 'window'],
+    /* The retired standalone comparison endpoint's view/factor/window are gone
+       with it (#181): this tile asks the finding-case-file path for the same
+       event-aligned projection the inspector reads. */
+    coordinateSchema: ['projection_id', 'finding_id', 'alignment'],
     glucoseValues: eventComparisonGlucoseValues,
   },
 ];

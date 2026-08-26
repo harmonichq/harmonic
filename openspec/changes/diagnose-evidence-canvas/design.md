@@ -26,3 +26,23 @@ from the executed spike). Option builders never fetch and never compute a
 range, which is what makes two charts in one quad incapable of sitting on
 different scales. This closes #98's measured defect, where a 40–300 axis hid
 cohorts spanning 100–160.
+
+## ADR 135 — The comparison tile is a presentation adapter over the Finding case file
+
+Issue #181 retired the standalone `/api/diagnose/event-comparison` route this
+registry kind was first specified against; the meals/lows comparison now rides
+the Finding case-file path exclusively. Ruled by the operator (2026-08-25): the
+registry's `event-comparison` kind ADAPTS to the case-file projection rather
+than keeping a client, endpoint or transport of its own. One authority for the
+fact, and the tile is a pure presentation adapter over it — which is what makes
+the case-file payload's seam real, the tile being its second consumer beside
+the inspector's own drill.
+
+Concretely: `eventComparisonChartOption(caseFile, range, surface)` is exported
+from `frontend/diagnose-event-comparison.js` and calls the same series builders
+the shipped mount calls, so there is one implementation of this draw. The tile
+is handed its arrangement's glucose range; the shipped mount, alone on its own
+surface, computes that range from the cohort values it is about to draw. The
+tile's request coordinates are the case file's own — `projection_id`,
+`finding_id`, `alignment` — fetched through the `loadCase` callback the
+inspector already uses, never a second client.

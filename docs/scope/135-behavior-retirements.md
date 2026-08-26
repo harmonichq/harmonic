@@ -34,3 +34,8 @@ C43 — event comparison selection is mounted in the tile field rather than the 
 C44 — missed-meal comparison is mounted as a registry tile rather than through global ALIGN — chunk 2
 C56 — missed-meal comparison support renders in its tile state — chunk 2
 C57 — missed-meal comparison evidence renders in its tile state — chunk 2
+S7 — aggregate cohort traces are drawn by the shipped per-support series builders again, so continuity is the shipped renderer's contract rather than the registry's own — coordinator/181-reconcile
+S11 — the selected comparison trace is the case file's served selection detail, drawn by the shipped focus series — coordinator/181-reconcile
+S13 — a withheld cohort's episode traces are the case file's served episodes, drawn by the shipped episode series — coordinator/181-reconcile
+S32 — comparison selection now arrives inside the served Finding case file rather than from a projection request the tile makes — coordinator/181-reconcile
+S37 — event evidence no longer receives the standing clock window as tile coordinates; the tile quotes the case file's projection id, finding id and alignment, and the served case file carries its own window — coordinator/181-reconcile

@@ -89,12 +89,15 @@ export function placeSeats(candidateIds, layout) {
   }));
 }
 
-const coordinateValue = (name, row, findings, window) => {
+const coordinateValue = (name, row, findings) => {
   if (name === 'slot') return row.slot ?? Math.floor((row.span?.start_min ?? 0) / 30);
   if (name === 'block_id') return row.block_id ?? row.span?.start_min;
   if (name === 'analysis_generation') return findings.analysis_generation;
-  if (name === 'view' || name === 'factor') return row.event_chart?.[name];
-  if (name === 'window') return window;
+  /* The case-file coordinates are opaque transport values: the served
+     generation, the row's own id, and the alignment this tile draws. */
+  if (name === 'projection_id') return findings.projection_id;
+  if (name === 'finding_id') return row.id;
+  if (name === 'alignment') return 'event';
   return row[name];
 };
 
@@ -105,7 +108,7 @@ const coordinateValue = (name, row, findings, window) => {
    the inspector can replay it, not a parameter currently in force with evidence
    to plot. So the register filter stays; the live list is still the payload's
    and there is no second chart list. */
-export function descriptorsFromFindings(findings, registry, window = null) {
+export function descriptorsFromFindings(findings, registry) {
   const byKind = new Map(registry.map((entry) => [entry.kind, entry]));
   return (findings?.rows || []).flatMap((row) => {
     if (row.register === 'history') return [];
@@ -117,7 +120,7 @@ export function descriptorsFromFindings(findings, registry, window = null) {
     const entry = byKind.get(kind);
     if (!entry) return [];
     const coordinates = Object.fromEntries(entry.coordinateSchema.map((name) => [
-      name, coordinateValue(name, row, findings, window),
+      name, coordinateValue(name, row, findings),
     ]));
     return [{
       chartId: row.id,

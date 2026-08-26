@@ -112,9 +112,7 @@
 }
 html.dark .dw {
   --ck-tile-top: color-mix(in srgb, var(--mk-text) 15%, transparent);
-  --ck-inset: #101215;
   --ck-bar: var(--mk-bg);
-  --ck-rail: #191c1f;
   --ck-manual: #D9B568;
   --ck-manual-soft: #332C1B;
 }

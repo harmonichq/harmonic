@@ -1075,6 +1075,13 @@ html.dark .dw {
   border: 0; background: transparent; color: var(--mk-muted); cursor: pointer;
   padding: 3px 6px; font-size: var(--ck-micro); font-weight: 650;
 }
+/* the canvas-head rail is 30px with 4px pads (theme.css .pane > header): the
+   controls must fit the 22px content box, or the canvas header sits 2px proud
+   of the inspector crumb and breaks the cockpit gate's one-seam assertion. */
+.canvas-head .canvas-controls { max-height: 22px; }
+.canvas-head .canvas-mode button, .canvas-head .explorer-trigger {
+  padding-top: 2px; padding-bottom: 2px; line-height: 14px;
+}
 .canvas-mode button[aria-pressed="true"] {
   color: var(--mk-text); box-shadow: inset 0 -2px 0 var(--ck-accent);
 }

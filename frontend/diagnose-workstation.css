@@ -1,4 +1,4 @@
-/* Diagnose workstation — PORTED from the locked mock, not authored here.
+/* Diagnose workstation — based on the shipped locked workstation port.
  *
  * Source: the archived ★ LOCKED cockpit mock (the fork that executes lock terms
  * 31-33). Lines 258-298 (tokens) and 393-939 (instrument row, pane grid, brace,
@@ -11,8 +11,8 @@
  * chrome rules on top would double-declare and fight it. The mock's `.mockbar`
  * is harness chrome and is excluded from the contract by the behaviour ledger.
  *
- * Keep the ported rules synchronized with the mock. Any deviation needs a
- * behavior-ledger amendment; P44 is the recorded retirement for the omitted lane.
+ * Issue #135 deliberately revises the canvas composition, tile geometry, and
+ * pane depth below; its behavior retirements are recorded with the issue scope.
  */
 
 /* ---- token adapter (NEW — the seam between the app's design system and the
@@ -72,7 +72,6 @@
   /* TWO SURFACES ONLY — ground and panel — both reused existing values.
      Chrome (top bar, instrument row, status) is ground; the two cards are
      panel. The old --ck-bar third value is gone: it now IS ground. */
-  --ck-bar: var(--mk-bg);
   --ck-rail: var(--mk-surface);
   --ck-hair: var(--mk-line);
   --ck-inset: color-mix(in srgb, var(--mk-bg) 82%, #000);
@@ -101,48 +100,39 @@
   --ck-body: 12.5px;
   --ck-grid-left: 52px;
   --ck-grid-right: 52px;   /* must track GRID in shell-cockpit-chart.js */
+  --ck-canvas-gap: 8px;
+  /* The explorer's well is a pane material, not the outer desk. `--bg` is the
+     dark shell canvas in both themes, so deriving from it gave light the dark
+     trench too. The locked theme already owns this inset pane ground. */
+  --ck-trench: var(--wk-surface-sunken);
+  --ck-tile-edge: color-mix(in srgb, var(--mk-line) 72%, transparent);
+  /* A TOP-EDGE HIGHLIGHT IS LIGHT IN BOTH THEMES. Deriving it from the text ink
+     made it near-black on the bone panel — a shadow along the top edge, which
+     reads as the panel sinking rather than catching the light. */
+  --ck-tile-top: color-mix(in srgb, #fff 70%, transparent);
+  --ck-tile-shadow: 0 7px 15px -11px rgba(0, 0, 0, .72);
 }
 html.dark .dw {
-  --ck-inset: #101215;
-  --ck-bar: var(--mk-bg);
-  --ck-rail: #191c1f;
+  --ck-tile-top: color-mix(in srgb, var(--mk-text) 15%, transparent);
   --ck-manual: #D9B568;
   --ck-manual-soft: #332C1B;
 }
 
-/* ---- mock 393-939 — VERBATIM (one line rescoped, marked inline) ---- */
+/* ---- shipped workstation rules, with #135 canvas revisions ---- */
 /* ---- 2. instrument row ---------------------------------------------- */
-/* DEVIATION from the ported mock (owner ruling, 2026-08-19, see the behavior
-   ledger: "I want this to
-   maintain a consistent position on the screen … visually aligned nicely
-   with something, probably directly above the inspector"). The mock's row
-   was a flex row, so ALIGN's position slid with whatever sat before it in
-   flow. `.instruments` now mirrors `.panes`' ACTUAL rendered geometry — its
-   `.panes` base rule in the mock port is itself overridden by
-   `theme.css`'s ":is(.dw, .vw) .panes { gap: 0; padding: 0; }" (the "docked
-   workspace" pane rule, term 1), so the real column boundary is a bare
-   `100% - var(--side)` with no gap or padding to account for. Zero gap and
-   zero padding here reproduce that exactly, so the SECOND column starts at
-   the identical x as the inspector pane — reserved space directly above it
-   whether or not `#align-group` is hidden, since WINDOW (column 1) can never
-   push a sibling grid track. `#align-group` gets its own left inset instead
-   of the row's, matching `.pane > header`'s own content padding
-   (`--ck-pad`), so ALIGN's label lines up with the inspector's own header
-   text, not just its bare left edge. See the behaviour ledger's amendment
-   for the deviation this records. Between #68 and #86, an extra `auto` track
-   held the global Sift instrument #68 added; #86 removed Sift and left its track,
-   pushing ALIGN out of the reserved column until #106 removed it. This row's track
-   count must always equal its instrument count, `var(--side, 430px)` must stay the
-   last track with ALIGN the last child, and any addition or removal must change the
-   track list in the same commit; `createDiagnoseWorkstation`'s uncalled `railLead`
-   can prepend an instrument, and S77—not this comment—enforces the invariant. */
+/* Window remains the strip's slicer; the retired global alignment seat is now
+   the live pin-cap schematic. Alignment belongs to each evidence tile. */
 .instruments {
-  display: grid; grid-template-columns: minmax(0, 1fr) var(--side, 430px);
+  display: grid; grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center; gap: 0; padding: 0;
   background: var(--mk-bg);
 }
+/* The mode control rides the instrument rail beside Window (#135 fix round):
+   same 22px optical row, same cap label, and it keeps the underline treatment
+   it wore on the canvas head so the pressed position still reads at a glance. */
+.mode-instrument { gap: 8px; padding-right: 14px; }
 .instruments > .instrument:first-child { padding-left: 14px; }
-#align-group { padding-left: var(--ck-pad); }
+.pin-cap { padding-right: 14px; gap: 8px; }
 .instrument { display: flex; align-items: center; gap: 7px; min-width: 0; }
 .instrument[hidden] { display: none; }
 .instrument > .cap {
@@ -173,11 +163,34 @@ html.dark .dw {
   background: var(--mk-surface); color: var(--mk-text);
   box-shadow: 0 1px 2px rgba(0,0,0,.28), inset 0 0 0 1px color-mix(in srgb, var(--ck-accent) 34%, transparent);
 }
-#seg-align button:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: -2px; }
+.tile-schematic {
+  display: grid; width: 38px; height: 24px; gap: 2px; padding: 2px;
+  border: 1px solid var(--ck-hair); border-radius: 1px; background: var(--ck-trench);
+}
+.tile-schematic[data-arrangement="focal"] { grid-template: 2fr 1fr / repeat(3, 1fr); }
+.tile-schematic[data-arrangement="focal"] > :first-child { grid-column: 1 / -1; }
+.tile-schematic[data-arrangement="split"] { grid-template-columns: repeat(2, 1fr); }
+.tile-schematic[data-arrangement="pair"] { grid-template-rows: repeat(2, 1fr); }
+.tile-schematic[data-arrangement="onetwo"] { grid-template: repeat(2, 1fr) / 1.32fr 1fr; }
+.tile-schematic[data-arrangement="onetwo"] > :first-child { grid-row: 1 / -1; }
+.tile-schematic[data-arrangement="quad"] { grid-template: repeat(2, 1fr) / repeat(2, 1fr); }
+.tile-schematic > * { min-width: 0; min-height: 0; border-radius: 1px; }
+.tile-schematic .seated { background: var(--mk-secondary); }
+.tile-schematic .pinned { background: var(--ck-accent); }
+.tile-schematic .next {
+  appearance: none; padding: 0; border: 1px dashed var(--mk-muted);
+  background: transparent; cursor: pointer;
+}
+/* a cell the arrangement holds but nothing is seated in, past the one the next
+   pin lands in: present, so the schematic mirrors the geometry, and silent */
+.tile-schematic .free { background: color-mix(in srgb, var(--mk-muted) 22%, transparent); }
+.tile-schematic .next:disabled { cursor: default; opacity: .45; }
+.tile-schematic .next:focus-visible { outline: 1px solid var(--ck-accent); outline-offset: 1px; }
 /* ---- 3. pane grid --------------------------------------------------- */
-.panes {
-  display: grid; gap: var(--ck-gap); padding: var(--ck-gap) 12px; min-height: 0;
+.main-content .dw .panes {
+  display: grid; gap: var(--ck-canvas-gap); padding: var(--ck-canvas-gap); min-height: 0;
   grid-template-columns: minmax(0, 1fr) var(--side, 430px);
+  background: var(--ck-trench);
   transition: grid-template-columns .18s ease;
 }
 /* one fixed inspector width in every state — a per-state width made the canvas
@@ -186,7 +199,34 @@ html.dark .dw {
 
 .pane {
   display: grid; grid-template-rows: auto minmax(0, 1fr); min-height: 0; min-width: 0;
-  background: var(--ck-rail); border-radius: var(--ck-r);
+  background: var(--ck-rail); border-radius: 2px;
+}
+.pane.inspector { border-radius: 0; }
+
+/* ---- the depth idiom (#135), authored to OUTRANK theme.css ------------
+   theme.css loads after this sheet and owns the docked-workspace roles:
+   `:is(.dw, .vw) .panes` flattens the gutters and `:is(.dw, .vw) .pane` states
+   `box-shadow: none; border-radius: 0` — the shipped flush dock this canvas
+   revises. Restating the idiom at plain `.pane` rank lost every time, silently:
+   the edge ring and the pooled shadow were never on screen in either theme.
+   These rules carry `.dw:has(.tile-field)` so they outrank the role rules by
+   SPECIFICITY rather than by load order, and so they bind to this canvas alone
+   — Verify's `.vw` dock and any `.dw` with no tile field keep the flush dock.
+   The GROUNDS stay theme.css's own: the idiom adds an edge, a top highlight and
+   a pooled shadow, and lifts no surface's value. */
+.main-content .dw:has(.tile-field) .panes {
+  gap: var(--ck-canvas-gap); padding: var(--ck-canvas-gap);
+  background: var(--ck-trench); border-top: 0;
+}
+.main-content .dw:has(.tile-field) .panes > .pane {
+  border: 0; border-radius: 2px;
+  box-shadow: inset 0 0 0 1px var(--ck-tile-edge),
+    inset 0 1px 0 var(--ck-tile-top), var(--ck-tile-shadow);
+}
+/* the inspector stays flush — no radius, and no seam to draw now that the
+   gutter itself is the separation */
+.main-content .dw:has(.tile-field) .panes > .pane.inspector {
+  border-radius: 0; border-left: 0;
 }
 /* ONE SPINE PER COLUMN. The inspector's is --ck-pad; the chart's is the
    plot's own left edge (--ck-grid-left), so the panel title, the provenance,
@@ -274,6 +314,7 @@ html.dark .dw {
 }
 
 /* canvas pane */
+.canvas-pane { grid-template-rows: auto 210px minmax(0, 1fr); }
 .canvas-pane > .body {
   display: grid; grid-template-rows: minmax(0, 1fr) auto; overflow: hidden; min-height: 0;
   position: relative;   /* the brace overlay is measured against this box */
@@ -288,10 +329,72 @@ html.dark .dw {
    time — there is simply nothing to reflow. Behaviour-ledger Q3 (#651). */
 #chart { min-height: 0; min-width: 0; cursor: crosshair; }
 
-/* ALIGN's "By event" pane (ADR 31 part 3, issue #41) — spans the whole canvas
-   body (both grid rows), the same footprint `#chart` + `.lane-wrap` cover
-   together, so it replaces them rather than adding a third row underneath. */
-#align-canvas { grid-row: 1 / -1; grid-column: 1; min-height: 0; }
+.tile-field {
+  display: grid; gap: var(--ck-canvas-gap); padding: var(--ck-canvas-gap);
+  min-width: 0; min-height: 0; overflow: hidden; background: var(--ck-trench);
+}
+.tile-field[data-arrangement="focal"] {
+  grid-template: minmax(0, 1fr) 145px / repeat(3, minmax(0, 1fr));
+}
+.tile-field[data-arrangement="focal"] > .evidence-tile:first-child { grid-column: 1 / -1; }
+.tile-field[data-arrangement="split"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.tile-field[data-arrangement="pair"] { grid-template-rows: repeat(2, minmax(0, 1fr)); }
+.tile-field[data-arrangement="onetwo"] {
+  grid-template: repeat(2, minmax(0, 1fr)) / 1.32fr minmax(0, 1fr);
+}
+.tile-field[data-arrangement="onetwo"] > .evidence-tile:first-child { grid-row: 1 / -1; }
+.tile-field[data-arrangement="quad"] {
+  grid-template: repeat(2, minmax(0, 1fr)) / repeat(2, minmax(0, 1fr));
+}
+.evidence-tile {
+  display: grid; grid-template-rows: 28px minmax(0, 1fr); min-width: 0; min-height: 0;
+  margin: 0; overflow: hidden; background: var(--ck-rail); border-radius: 2px;
+  box-shadow: inset 0 0 0 1px var(--ck-tile-edge),
+    inset 0 1px 0 var(--ck-tile-top), var(--ck-tile-shadow);
+}
+.evidence-tile[data-pinned] {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ck-accent) 72%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--ck-accent) 76%, var(--mk-text)),
+    var(--ck-tile-shadow);
+}
+.tile-head {
+  display: flex; align-items: center; gap: 8px; min-width: 0; padding: 4px 7px 3px;
+}
+.tile-head h3 {
+  margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--mk-secondary); font-size: var(--ck-micro); font-weight: 700;
+  letter-spacing: var(--ck-track); text-transform: uppercase;
+}
+.tile-meta {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--mk-muted); font-family: var(--ck-mono); font-size: var(--ck-micro);
+}
+.tile-state-name {
+  color: var(--mk-muted); font-family: var(--ck-mono); font-size: 9px;
+  text-transform: uppercase;
+}
+.tile-modes { display: flex; margin-left: auto; gap: 2px; }
+.tile-modes button, .tile-pin {
+  border: 1px solid var(--ck-hair); border-radius: 1px; background: transparent;
+  color: var(--mk-muted); padding: 2px 5px; font-size: 9px; line-height: 1.2; cursor: pointer;
+}
+.tile-modes button[aria-pressed="true"], .tile-pin[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--ck-accent) 62%, var(--ck-hair));
+  color: var(--mk-text);
+}
+.tile-modes button:focus-visible, .tile-pin:focus-visible {
+  outline: 2px solid var(--ck-accent); outline-offset: 1px;
+}
+.tile-pin:disabled { opacity: .55; cursor: not-allowed; }
+.tile-body, .tile-chart { min-width: 0; min-height: 0; height: 100%; }
+.tile-state, .tile-field-empty {
+  display: grid; place-content: center; gap: 4px; height: 100%; padding: 12px;
+  color: var(--mk-muted); font-size: 11px; text-align: center;
+}
+.tile-state strong {
+  color: var(--mk-secondary); font-family: var(--ck-mono); font-size: var(--ck-micro);
+  letter-spacing: var(--ck-track); text-transform: uppercase;
+}
 
 /* ---- drawn-window brace ---------------------------------------------
    Two dashed edges on the SAME optical spine as the plot and the lane —
@@ -404,10 +507,15 @@ html.dark .dw {
 }
 /* THREE INK RANKS. Current: full ink, medium, and deliberately inert — the
    ABSENCE of hover is what says "you are here". */
-/* Root and current never lose a character: they do not shrink and they do not
-   ellipsize. Overflow is resolved by dropping the MIDDLE (see paintCrumb),
-   which is the only thing the path can afford to lose. */
-.crumb .trail .here { color: var(--mk-text); font-weight: 550; flex: 0 0 auto; }
+/* The root never loses a character. THE CURRENT ITEM NOW DOES (#135 fix round,
+   operator ruling): a published finding title is arbitrary length, and when the
+   path is two deep there is no middle left to drop, so "never ellipsize" meant
+   "overflow the header instead". It ellipsizes, which is the one way the title
+   can be said once and still fit its line. */
+.crumb .trail .here {
+  color: var(--mk-text); font-weight: 550; flex: 0 1 auto;
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 /* Ancestor: 55% ink, regular; brightens and underlines on hover, and pops. */
 .crumb .trail button {
   border: 0; background: none; padding: 0; font: inherit; font-weight: 400;
@@ -881,8 +989,6 @@ html.dark .dw {
   background: color-mix(in srgb, var(--mk-surface) 94%, transparent);
   color: var(--mk-secondary); font-size: 11.5px;
 }
-#align-canvas[data-history-id] { min-width: 0; }
-
 @media (max-width: 760px) {
   .dw { grid-template-rows: auto minmax(0, 1fr); }
   .instruments {
@@ -890,10 +996,12 @@ html.dark .dw {
     padding-inline: 8px; gap: 12px;
   }
   .instruments > .instrument:first-child { padding-left: 0; }
-  #align-group { padding-left: 0; }
+  .pin-cap, .mode-instrument { padding-right: 0; }
   .instrument { flex: 0 0 auto; }
-  .seg button { min-width: 44px; min-height: 44px; padding-inline: 8px; }
-  .panes {
+  .seg button, .mode-instrument .canvas-mode button {
+    min-width: 44px; min-height: 44px; padding-inline: 8px;
+  }
+  .main-content .dw .panes {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(250px, 42%) minmax(0, 1fr);
   }
@@ -911,6 +1019,13 @@ html.dark .dw {
   .history-run small, .history-canvas-notice { font-size: 14px; }
   .history-retry { min-height: 44px; }
   .history-canvas-notice { inset-inline: 12px; }
+  .canvas-pane { overflow-y: auto; }
+  .canvas-pane > .body { height: 210px; min-height: 210px; }
+  .tile-field {
+    display: flex; flex-direction: column; overflow: visible; min-height: auto;
+  }
+  .tile-field > .evidence-tile { flex: 0 0 280px; order: 0; }
+  .tile-field > .evidence-tile:not([data-seat="focal"]):not([data-pinned]) { display: none; }
 }
 
 /* ---- terms 46–49 · the watched-change dock ---------------------------
@@ -960,3 +1075,139 @@ html.dark .dw {
 }
 /* Idle is quiet, not absent — the slot holds its height in every state. */
 :is(.dw, .vw) .inspector > .watch[data-state="idle"] .what { color: var(--mk-muted); font-weight: 500; }
+
+/* ---- #135 mode, explorer and temporary fullscreen ------------------ */
+.canvas-pane > header.canvas-head {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+.canvas-controls { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.canvas-mode { display: flex; border-bottom: 1px solid var(--ck-hair); }
+.canvas-mode button, .explorer-trigger, .tile-fullscreen {
+  border: 0; background: transparent; color: var(--mk-muted); cursor: pointer;
+  padding: 3px 6px; font-size: var(--ck-micro); font-weight: 650;
+}
+/* the canvas-head rail is 30px with 4px pads (theme.css .pane > header): the
+   controls must fit the 22px content box, or the canvas header sits 2px proud
+   of the inspector crumb and breaks the cockpit gate's one-seam assertion. */
+.canvas-head .canvas-controls { max-height: 22px; }
+.canvas-head .canvas-mode button, .canvas-head .explorer-trigger {
+  padding-top: 2px; padding-bottom: 2px; line-height: 14px;
+}
+.canvas-mode button[aria-pressed="true"] {
+  color: var(--mk-text); box-shadow: inset 0 -2px 0 var(--ck-accent);
+}
+.canvas-mode button:focus-visible, .explorer-trigger:focus-visible,
+.tile-fullscreen:focus-visible, .explorer-thumbnail:focus-visible {
+  outline: 2px solid var(--ck-accent); outline-offset: 1px;
+}
+.explorer-trigger { border: 1px solid var(--ck-hair); border-radius: 2px; }
+.advice-state {
+  min-width: 52px; color: var(--mk-muted); font-family: var(--ck-mono);
+  font-size: 9px; text-transform: uppercase; white-space: nowrap;
+}
+
+.canvas-pane:has(.explorer-drawer:not([hidden])) {
+  grid-template-rows: auto 210px minmax(0, 1fr) 150px;
+}
+.explorer-drawer {
+  display: grid; grid-template-rows: 25px minmax(0, 1fr); min-height: 0;
+  padding: 0 var(--ck-canvas-gap) var(--ck-canvas-gap); background: var(--ck-trench);
+}
+.explorer-drawer[hidden] { display: none; }
+/* THE DRAWER'S QUIET RANK IS MIXED AGAINST THE TRENCH, NOT THE PAGE. --mk-muted
+   and --mk-secondary are both settled to clear 4.5:1 against --mk-bg; the trench
+   is a darker well cut into that ground, and at 9-10px those two landed at
+   3.2:1 and 3.5:1 on it. Mixing the body ink toward the trench keeps a visible
+   second rank while the ratio is computed against the surface the text is
+   actually on. */
+.explorer-drawer { --ck-trench-quiet: color-mix(in srgb, var(--mk-text) 82%, var(--ck-trench)); }
+.explorer-drawer > header {
+  display: flex; align-items: center; gap: 10px; padding: 0 6px;
+  color: var(--mk-text); font-size: var(--ck-micro); font-weight: 700;
+  letter-spacing: var(--ck-track); text-transform: uppercase;
+}
+.drawer-meta { color: var(--ck-trench-quiet); font-family: var(--ck-mono); font-weight: 500; }
+.drawer-escape {
+  margin-left: auto; color: var(--ck-trench-quiet);
+  font-family: var(--ck-mono); font-weight: 500;
+}
+.explorer-thumbnails {
+  display: grid; grid-auto-flow: column; grid-auto-columns: minmax(128px, 1fr);
+  gap: var(--ck-canvas-gap); min-width: 0; min-height: 0; overflow-x: auto;
+}
+.explorer-thumbnail {
+  display: grid; grid-template-rows: 17px minmax(0, 1fr); position: relative;
+  min-width: 0; min-height: 0; padding: 4px 5px; border: 0; border-radius: 2px;
+  background: transparent; color: inherit; cursor: pointer; text-align: left;
+}
+.explorer-thumbnail[data-seated] {
+  background: var(--ck-rail);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ck-accent) 72%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--ck-accent) 76%, var(--mk-text));
+}
+.thumbnail-name {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--mk-text); font-size: 9px; font-weight: 700;
+  letter-spacing: .04em; text-transform: uppercase;
+}
+.thumbnail-ordinal {
+  position: absolute; inset: 4px 6px auto auto; color: var(--ck-trench-quiet);
+  font: 9px var(--ck-mono); font-variant-numeric: tabular-nums;
+}
+.thumbnail-chart { min-width: 0; min-height: 0; }
+
+.evidence-tile { position: relative; }
+/* A 1px inset hairline was not a mark: at tile size the reader could not see
+   which chart the inspector was reading. The ring is the interaction accent at
+   2px, and the head carries the word beside it (Color-Never-Alone). */
+.evidence-tile[data-drilled] {
+  outline: 2px solid var(--ck-accent); outline-offset: -2px;
+}
+.tile-drilled-mark {
+  flex: 0 0 auto; padding: 1px 5px; border-radius: 2px;
+  background: var(--ck-sel); color: var(--mk-text);
+  font-size: 9px; font-weight: 700; letter-spacing: var(--ck-track);
+  text-transform: uppercase; white-space: nowrap;
+}
+.tile-fullscreen { border: 1px solid var(--ck-hair); border-radius: 1px; padding: 2px 5px; }
+.drill-provenance {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--mk-text);
+  font-size: 9px; font-weight: 650; letter-spacing: .03em; text-transform: uppercase;
+}
+.chart-evidence-readout {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px; margin-top: 10px; background: var(--ck-hair);
+}
+.chart-evidence-readout > div { display: grid; gap: 3px; padding: 7px; background: var(--ck-rail); }
+.chart-evidence-readout span { color: var(--mk-muted); font-size: var(--ck-micro); }
+.chart-evidence-readout b { color: var(--mk-text); font: 700 var(--ck-data) var(--ck-mono); }
+.chart-evidence-roster { display: grid; gap: 1px; margin-top: 10px; background: var(--ck-hair); }
+.chart-evidence-roster > div {
+  display: flex; justify-content: space-between; gap: 12px; padding: 6px 8px;
+  background: var(--ck-rail); color: var(--mk-muted); font: var(--ck-micro) var(--ck-mono);
+}
+.occ-foot { display: flex; justify-content: space-between; }
+
+/* Explore removes the complete advisory layer. Reader-owned pins retain the
+   same accent ring, and chart series retain their measured-signal colours. */
+.dw[data-canvas-mode="explore"] .lane-wrap,
+.dw[data-canvas-mode="explore"] .inspector > .watch,
+.dw[data-canvas-mode="explore"] .filter-wrap,
+.dw[data-canvas-mode="explore"] .vband,
+.dw[data-canvas-mode="explore"] .vband-foot { display: none; }
+
+/* Fullscreen is temporary canvas state. The clock strip, its title and its
+   drawer leave the composition; the one selected chart receives the field. */
+.dw[data-fullscreen] .canvas-pane { grid-template-rows: auto minmax(0, 1fr); }
+.dw[data-fullscreen] .canvas-pane > .body,
+.dw[data-fullscreen] .canvas-head > .head-swap,
+.dw[data-fullscreen] .canvas-head > .persist,
+.dw[data-fullscreen] .explorer-drawer { display: none; }
+.dw[data-fullscreen] .canvas-head { grid-template-columns: 1fr auto; }
+.dw[data-fullscreen] .canvas-controls { grid-column: 2; }
+.dw[data-fullscreen] .tile-field[data-arrangement="focal"] {
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+}
+.dw[data-fullscreen] .tile-field[data-arrangement="focal"] > .evidence-tile:first-child {
+  grid-column: 1;
+}

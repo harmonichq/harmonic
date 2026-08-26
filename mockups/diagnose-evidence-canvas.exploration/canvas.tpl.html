@@ -1,0 +1,747 @@
+<!doctype html>
+<html class="dark" lang="en">
+<head>
+<meta charset="utf-8">
+<title>Evidence canvas — synthetic derivative</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+/* ── app tokens, verbatim from frontend/index.html html.dark + theme.css ───── */
+:root{
+  --wk-canvas:#0e0d0c; --wk-surface:#262220; --wk-surface-rail:#2e2926; --wk-surface-sunken:#524a40;
+  --wk-ink:#f5ece0; --wk-ink-body:#dbcfbc; --wk-ink-meta:#a3968a;
+  --wk-rule:#4f4640; --wk-rule-strong:#7a6d61;
+  --primary:#e07f3f; --primary-600:#ef9459; --primary-100:#40291b;
+  --secondary:#a89a85; --warn:#c98a4e; --danger:#ec6f55; --low:#ec6f55; --high:#e07f3f;
+  --in-range:#86ad78; --on-target:#86ad78; --on-target-soft:#2f3a2c;
+  --wk-status-incomplete:#d7a75c; --wk-status-adverse:#d97f71; --wk-status-favorable:#7cae8d;
+  --mk-primary:#86ad78; --mk-primary-600:#c3b49c; --mk-primary-soft:#2f3a2c;
+  --mk-accent:#e07f3f; --mk-ok:#a89a85; --mk-line:#322e29;
+  /* chrome bar, theme.css html.dark .cockpit-topbar */
+  --ck-ground:#161413; --ck-panel:#2b241d; --ck-text:#efe5d4; --ck-body:#d3c7b4; --ck-meta:#a19484;
+  --ck-rule:#4c4238; --ck-bar-signal:#dc7b42; --ck-bar-on-signal:#161413;
+  /* docked workspace grounds, theme.css html.dark :is(.dw,.vw) */
+  --field:#151311; --pane-head:#1a1815; --rail:#1f1b18; --hair:#322c27; --seam:#574a3f;
+  --seg-line:#3d362f; --seg-bg:#171412; --seg-on:#352e28;
+  /* the gutter substrate. Lifted from #0a0908 so the ambient shadow beneath the
+     tiles has room to read; still the darkest value on screen — below the tile
+     field (#151311) and below the app ground (#161413). */
+  --trench:#100e0d;
+  --label-ink:#c6b7a2;
+  --ck-label:10px; --ck-micro:11px; --ck-data:12px; --ck-emphasis:13px; --ck-track:.08em;
+  --ck-mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,monospace;
+  --ui:Inter,system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#08090a;color:var(--wk-ink);font-family:var(--ui);
+  -webkit-font-smoothing:antialiased}
+
+/* ── page scaffold (design-time only, not part of the concept) ─────────────── */
+.sheetnote{max-width:1440px;margin:28px auto 0;padding:0 4px;color:#8d8579;font-size:12px;line-height:1.55}
+.sheetnote h1{margin:0 0 6px;color:#e8ded0;font-size:17px;font-weight:650;letter-spacing:.01em}
+.sheetnote b{color:#c6b7a2;font-weight:600}
+.statehead{max-width:1440px;margin:34px auto 8px;padding:0 4px;display:flex;align-items:baseline;gap:12px}
+.statehead .k{font-family:var(--ck-mono);font-size:11px;color:var(--primary);letter-spacing:.1em}
+.statehead h2{margin:0;font-size:13px;font-weight:600;color:#e8ded0}
+.statehead p{margin:0;font-size:11.5px;color:#8d8579}
+.frame{width:1440px;height:900px;margin:0 auto;position:relative;overflow:hidden;
+  box-shadow:0 0 0 1px #241f1b, 0 24px 60px -30px #000}
+
+/* ── cockpit shell (shell.css values) ─────────────────────────────────────── */
+.ck{display:grid;grid-template-rows:42px minmax(0,1fr) 26px;width:100%;height:100%;
+  background:var(--ck-ground);color:var(--ck-text);overflow:hidden}
+.topbar,.footer{background:var(--ck-ground);white-space:nowrap;overflow:hidden}
+.topbar{display:flex;align-items:center;gap:16px;padding:0 16px;font-size:var(--ck-data)}
+.identity{display:flex;align-items:center;gap:8px;font-size:var(--ck-emphasis);font-weight:700;letter-spacing:.02em}
+.mark{display:grid;width:20px;height:20px;place-items:center;border-radius:5px;background:#b35b2e;
+  color:#fffaf3;font-size:12px;font-weight:650;line-height:1;letter-spacing:-.025em}
+.identity small{color:var(--ck-meta);font-size:var(--ck-label);font-weight:500;letter-spacing:.1em;text-transform:uppercase}
+.flow{display:flex;align-items:center;gap:2px}
+.step{display:inline-flex;align-items:center;gap:7px;padding:4px 10px 4px 6px;border:1px solid transparent;
+  border-radius:7px;color:var(--ck-meta);font-size:var(--ck-data);font-weight:550}
+.step[aria-current]{border-color:color-mix(in srgb,var(--ck-bar-signal) 75%,#f5f1e9);color:#fff8f1}
+.stepn{display:grid;width:17px;height:17px;place-items:center;border:1px solid color-mix(in srgb,var(--ck-meta) 55%,transparent);
+  border-radius:50%;color:var(--ck-meta);font-family:var(--ck-mono);font-size:var(--ck-label);font-weight:700}
+.step[aria-current] .stepn{border-color:#f5f1e9;background:var(--ck-bar-signal);color:var(--ck-bar-on-signal)}
+.sep{color:color-mix(in srgb,var(--ck-meta) 60%,transparent)}
+.gap{flex:1 1 auto}
+.scope{display:flex;align-items:center;gap:8px;padding:4px 10px;border:1px solid var(--ck-rule);border-radius:7px;
+  background:var(--ck-panel);font-family:var(--ck-mono);font-size:var(--ck-data);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.035)}
+.scope-label{color:var(--ck-meta);font-family:var(--ui);font-size:var(--ck-label);font-weight:650;
+  letter-spacing:var(--ck-track);text-transform:uppercase}
+.scope-dot{width:5px;height:5px;border-radius:50%;background:var(--wk-status-favorable)}
+.logcarbs{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border:1px solid var(--ck-rule);
+  border-radius:7px;background:var(--ck-panel);color:var(--ck-text);font-size:var(--ck-data);font-weight:600}
+.logcarbs .plus{color:var(--ck-bar-signal);font-weight:700}
+.footer{display:flex;align-items:center;gap:14px;padding:0 10px;color:var(--ck-meta);font-size:var(--ck-label);
+  letter-spacing:.04em;font-variant-numeric:tabular-nums}
+.footer .facts{color:var(--ck-body);font-family:var(--ck-mono);font-size:var(--ck-data);letter-spacing:0}
+.footer .adv{color:var(--ck-body);font-size:var(--ck-label);font-weight:550}
+.footer .utils{margin-left:auto;display:flex;gap:16px}
+
+/* ── docked workspace ─────────────────────────────────────────────────────── */
+.stage{min-height:0;overflow:hidden;background:var(--ck-ground)}
+.panes{display:grid;grid-template-columns:minmax(0,1fr) 320px;height:100%;
+  background:var(--field);border-top:1px solid var(--wk-rule-strong)}
+.canvas-pane{display:grid;grid-template-rows:34px 240px minmax(0,1fr);min-width:0;min-height:0;
+  background:var(--field);position:relative}
+.inspector{border-left:1px solid var(--seam);background:var(--wk-surface);display:grid;
+  grid-template-rows:30px minmax(0,1fr);min-height:0}
+
+/* instrument rail — all slicing controls live here (theme.css instrument role) */
+.instruments{display:flex;align-items:center;gap:14px;padding:0 12px;background:var(--rail);
+  border-bottom:1px solid var(--hair);min-width:0}
+.instrument{display:flex;align-items:center;gap:7px;min-width:0}
+.cap{color:var(--label-ink);font-family:var(--ui);font-size:var(--ck-label);font-weight:650;
+  letter-spacing:var(--ck-track);text-transform:uppercase}
+.seg{display:flex;border:1px solid var(--seg-line);border-radius:5px;background:var(--seg-bg);overflow:hidden}
+.seg button{padding:2px 8px;border:0;background:transparent;color:#cabfae;font-family:var(--ui);
+  font-size:var(--ck-micro);font-weight:550;line-height:18px}
+.seg button[aria-pressed="true"]{background:var(--seg-on);color:#f5ece0;
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--primary) 62%,transparent)}
+.railnote{color:var(--wk-ink-meta);font-family:var(--ck-mono);font-size:var(--ck-micro);
+  font-variant-numeric:tabular-nums}
+.railnote b{color:var(--wk-ink-body);font-weight:600}
+.pincap{margin-left:auto;display:flex;align-items:center;gap:8px}
+.mini{display:grid;width:36px;height:22px;gap:2px;padding:2px;border:1px solid var(--seg-line);background:var(--trench)}
+.mini[data-arr="focal"]{grid-template-columns:repeat(3,1fr);grid-template-rows:2fr 1fr}
+.mini[data-arr="focal"] i:first-child{grid-column:1/4}
+.mini[data-arr="pair"]{grid-template-rows:1fr 1fr}
+.mini[data-arr="quad"]{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr}
+.mini[data-arr="onetwo"]{grid-template-columns:1.3fr 1fr;grid-template-rows:1fr 1fr}
+.mini[data-arr="onetwo"] i:first-child{grid-row:1/3}
+.mini i{display:block;background:var(--seam)}
+.mini i.pin{background:var(--primary)}
+.mini i.next{background:transparent;border:1px dashed var(--wk-ink-meta)}
+/* a pinned cell keeps the selection hue in Explore — see the pin/advice note below */
+.pincount{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border:1px solid var(--seg-line);
+  border-radius:5px;background:var(--seg-bg);font-family:var(--ck-mono);font-size:var(--ck-micro);
+  color:var(--wk-ink-body);font-variant-numeric:tabular-nums}
+.pincount i{width:5px;height:5px;border-radius:1px;background:var(--seam);display:inline-block}
+.pincount i.on{background:var(--primary)}
+.pincount.full{border-color:color-mix(in srgb,var(--primary) 55%,transparent);color:#f0e0cd}
+
+/* ── the horizon instrument: glucose-by-clock strip ───────────────────────── */
+.strip{position:relative;border-bottom:1px solid var(--hair);background:var(--field)}
+.strip-plot{position:absolute;inset:0 188px 0 0}
+.strip-etch{position:absolute;top:0;right:0;bottom:0;width:188px;padding:10px 14px 8px 16px;
+  display:flex;flex-direction:column;gap:0;
+  border-left:1px solid var(--hair)}
+.etch-cap{color:var(--label-ink);font-size:var(--ck-label);font-weight:650;letter-spacing:var(--ck-track);
+  text-transform:uppercase;margin-bottom:2px}
+.etch-win{font-family:var(--ck-mono);font-size:16px;font-weight:600;color:var(--wk-ink);
+  font-variant-numeric:tabular-nums;letter-spacing:-.01em;line-height:1.3}
+.etch-sub{font-size:var(--ck-micro);color:var(--wk-ink-meta);margin-bottom:9px}
+.etch-row{display:flex;align-items:baseline;justify-content:space-between;padding:3.5px 0;
+  border-top:1px solid var(--hair)}
+.etch-row .k{font-size:var(--ck-micro);color:var(--wk-ink-meta)}
+.etch-row .v{font-family:var(--ck-mono);font-size:var(--ck-data);color:var(--wk-ink-body);
+  font-variant-numeric:tabular-nums;font-weight:600}
+.etch-row .v.hi{color:var(--warn)}
+.etch-row .v.ok{color:var(--in-range)}
+.explore-on .etch-row .v.hi{color:var(--wk-ink-body)}
+.etch-foot{margin-top:auto;font-size:var(--ck-label);color:var(--wk-ink-meta);letter-spacing:.04em;
+  text-transform:uppercase}
+.etch-foot.advisory-off{color:var(--wk-rule-strong)}
+
+/* ── evidence tiles: edge to edge, hairlines only, no cards ───────────────── */
+.tiles{display:grid;gap:8px;background:var(--trench);padding:8px;min-height:0;min-width:0}
+.tiles[data-arr="focal"]{grid-template-rows:minmax(0,1fr) 150px;grid-template-columns:repeat(3,1fr)}
+.tiles[data-arr="focal"] > .tile:first-child{grid-column:1/4}
+.tiles[data-arr="pair"]{grid-template-rows:1fr 1fr}
+.tiles[data-arr="quad"]{grid-template-rows:1fr 1fr;grid-template-columns:1fr 1fr}
+.tiles[data-arr="onetwo"]{grid-template-rows:1fr 1fr;grid-template-columns:1.32fr 1fr}
+.tiles[data-arr="onetwo"] > .tile:first-child{grid-row:1/3}
+
+.tile{position:relative;display:grid;grid-template-rows:22px minmax(0,1fr);background:var(--field);
+  margin:0;min-width:0;min-height:0;padding:6px 10px 4px}
+.tile-head{display:flex;align-items:center;gap:9px;min-width:0;height:22px}
+.engrave{color:var(--label-ink);font-family:var(--ui);font-size:var(--ck-label);font-weight:650;
+  letter-spacing:var(--ck-track);text-transform:uppercase;white-space:nowrap;
+  text-shadow:0 1px 0 #0b0a09}
+.tile-meta{color:var(--wk-ink-meta);font-family:var(--ck-mono);font-size:var(--ck-micro);
+  font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.tile-tools{margin-left:auto;display:flex;align-items:center;gap:6px;flex:0 0 auto}
+.switch{display:flex;border:1px solid var(--seg-line);border-radius:4px;background:var(--seg-bg);overflow:hidden}
+.switch button{padding:0 6px;height:16px;border:0;background:transparent;color:#a19484;
+  font-family:var(--ui);font-size:9.5px;font-weight:650;letter-spacing:.06em;text-transform:uppercase}
+.switch button[aria-pressed="true"]{background:var(--seg-on);color:#f5ece0;
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--primary) 62%,transparent)}
+.pinbtn{width:16px;height:16px;display:grid;place-items:center;border:1px solid var(--seg-line);
+  border-radius:4px;background:var(--seg-bg);color:#8d8579;font-size:9px;line-height:1}
+.tile[data-pin] .pinbtn{border-color:color-mix(in srgb,var(--primary) 55%,transparent);color:var(--primary)}
+/* PINS ARE NOT ADVICE. Explore extinguishes the advisory layer — the rank
+   filament, the rank chips — but a pin is the user's own selection state, and
+   orange in this packet means selection and staging. So the pinned ground lift,
+   this button's active state and the miniature's pinned cells all keep their
+   accent in Explore exactly as in findings mode. */
+.plot{min-width:0;min-height:0}
+
+/* pins: one continuous tell — the pinned tile's machined ring warms to the
+   accent (see THE PIN TELL in the depth block below). Its GROUND is deliberately
+   identical to an unpinned tile's: the grey ground lift this rule used to carry
+   is gone, and no ground lift remains anywhere in the packet. */
+.brk{display:none}
+
+/* findings mode: a thin amber rank filament on the seated tile's top edge */
+.filament{position:absolute;top:0;left:0;height:2px;background:var(--warn);
+  box-shadow:0 0 6px -1px color-mix(in srgb,var(--warn) 70%,transparent)}
+.rankchip{font-family:var(--ck-mono);font-size:9.5px;font-weight:700;color:var(--warn);
+  border:1px solid color-mix(in srgb,var(--warn) 45%,transparent);border-radius:3px;padding:0 4px;line-height:14px}
+.explore-on .filament,.explore-on .rankchip{display:none}
+
+/* ── explorer: summonable bottom drawer of miniature instruments ──────────── */
+/* summoned, the explorer claims a row of its own — it never occludes a plot,
+   because a chart cut off mid-plot reads as a defect rather than as a layer */
+.canvas-pane.has-drawer{grid-template-rows:34px 240px minmax(0,1fr) 158px}
+.drawer{background:var(--rail);
+  border-top:1px solid var(--seam);box-shadow:0 -16px 34px -16px rgba(0,0,0,.88);
+  display:grid;grid-template-rows:24px minmax(0,1fr);padding:0 12px 10px;min-height:0}
+.drawer-head{display:flex;align-items:center;gap:10px;height:24px}
+.drawer-head .hint{margin-left:auto;font-family:var(--ui);font-size:var(--ck-label);font-weight:650;
+  letter-spacing:var(--ck-track);text-transform:uppercase;color:#6b5f53}
+.kbd{display:inline-block;padding:0 4px;border:1px solid var(--seg-line);border-radius:3px;background:var(--seg-bg);
+  font-family:var(--ck-mono);font-size:10px;color:var(--wk-ink-body);line-height:15px}
+/* ── the explorer's cells are miniature INSTRUMENTS, not file icons ────────
+   v5 drew six bordered cells on a 1px hairline grid, which is most of what made
+   this read as a terminal panel. The cells now sit in the SAME trench at the
+   SAME 8px rhythm as the tile field above them — no cell border anywhere — and
+   a seated chart is marked with the tile field's own ground-lift-plus-edge, the
+   language a pinned tile already speaks, rather than with an accent frame. */
+.thumbs{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;background:var(--trench);
+  padding:6px;min-height:0}
+.thumb{background:transparent;display:grid;grid-template-rows:15px minmax(0,1fr) 13px;
+  padding:4px 5px;position:relative;border-radius:2px}
+/* the name takes the tiles' engraved-label role, at label weight */
+.thumb .tname{color:var(--label-ink);font-family:var(--ui);font-size:var(--ck-label);font-weight:650;
+  letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;text-shadow:0 1px 0 #100e0c}
+.thumb .tmini{min-height:0}
+/* the support count is a reading, so it takes the data role */
+.thumb .tfoot{font-family:var(--ck-mono);font-size:10px;color:var(--wk-ink-meta);
+  font-variant-numeric:tabular-nums}
+/* seated: the pin tell verbatim — the same warmed ring and the same stronger
+   top highlight the pinned tiles carry, over an identical ground */
+.thumb[data-seated]{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--primary) 44%,#2b2622),
+  inset 0 1px 0 rgba(245,236,224,.10)}
+/* the 1–6 affordance survives as a quiet per-cell ordinal, which is what let
+   the tmux-style legend go */
+.thumb .key{position:absolute;top:4px;right:6px;font-family:var(--ck-mono);font-size:9px;
+  color:#6b5f53;font-variant-numeric:tabular-nums}
+
+/* ── inspector ────────────────────────────────────────────────────────────── */
+.insp-head{display:flex;align-items:center;gap:8px;padding:0 12px;background:var(--pane-head);
+  border-bottom:1px solid var(--wk-rule)}
+.insp-head h2{margin:0;color:var(--label-ink);font-size:var(--ck-micro);font-weight:650;
+  letter-spacing:var(--ck-track);text-transform:uppercase}
+.insp-head .meta{margin-left:auto;color:var(--wk-ink-meta);font-size:var(--ck-label);font-variant-numeric:tabular-nums}
+.insp-body{overflow:hidden;padding:10px 12px}
+.qrow{display:grid;grid-template-columns:14px minmax(0,1fr);gap:8px;padding:8px 0;border-bottom:1px solid var(--wk-rule)}
+.qrow .n{font-family:var(--ck-mono);font-size:var(--ck-micro);color:var(--wk-ink-meta);padding-top:1px}
+.qrow[data-seated] .n{color:var(--warn);font-weight:700}
+.explore-on .qrow[data-seated] .n{color:var(--wk-ink-meta);font-weight:400}
+.qrow .t{font-size:var(--ck-data);color:var(--wk-ink);font-weight:600;line-height:1.3}
+.qrow .d{font-size:var(--ck-micro);color:var(--wk-ink-meta);line-height:1.45;margin-top:2px}
+.qrow .tag{font-size:9.5px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:#b3a48d}
+.den{font-family:var(--ck-mono);font-size:var(--ck-micro);color:#bdb1a0;font-variant-numeric:tabular-nums}
+.den .v{color:#f0e6d6}
+.insp-note{font-size:var(--ck-micro);color:var(--wk-ink-meta);line-height:1.5;padding-top:8px}
+.readout{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--wk-rule);margin-bottom:10px}
+.readout div{background:var(--wk-surface);padding:6px 8px}
+.readout .k{font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--wk-ink-meta)}
+.readout .v{font-family:var(--ck-mono);font-size:var(--ck-emphasis);color:var(--wk-ink);font-variant-numeric:tabular-nums}
+.disc{margin-top:10px;padding-top:8px;border-top:1px solid var(--wk-rule);font-size:9.5px;
+  color:var(--wk-rule-strong);line-height:1.5;letter-spacing:.03em}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   DEPTH — machined edge over ambient under-lighting (variants B + A composed).
+   Everything above is v4 verbatim. Every rule here is light only: each edge is
+   an INSET ring rather than a real border, so no element grows by a pixel and
+   the v4 tile geometry and shared plot spine are bit-identical.
+
+   The edge is the PRIMARY cue and the shadow is under-lighting beneath it —
+   tuned to darken the 8px gutter at a glance without letting a tile read as a
+   card floating over the surface. Light is overhead: the top edge catches it,
+   the ring below stays dark, and the shadow pools downward.
+   ══════════════════════════════════════════════════════════════════════════ */
+.tile{
+  border-radius:2px;
+  box-shadow:
+    0 1px 2px rgba(0,0,0,.6),               /* contact */
+    0 8px 16px -8px rgba(0,0,0,.85),        /* ambient, settled in the gutter */
+    inset 0 0 0 1px #2b2622,                /* the machined edge */
+    inset 0 1px 0 rgba(245,236,224,.055);   /* light from above */
+}
+/* THE PIN TELL — the machined ring that is already there simply lights warmer,
+   and the top highlight comes up a step. Ground, shadow and geometry stay
+   identical to an unpinned tile, so being held reads as a property of the panel
+   rather than as an object stuck onto it. Orange means selection in this packet,
+   which is exactly why this ring stays warm in Explore while the advisory marks
+   go dark around it. */
+.tile[data-pin]{
+  box-shadow:
+    0 1px 2px rgba(0,0,0,.6),
+    0 8px 16px -8px rgba(0,0,0,.85),
+    inset 0 0 0 1px color-mix(in srgb, var(--primary) 44%, #2b2622),
+    inset 0 1px 0 rgba(245,236,224,.10);
+}
+/* the filament rides the rounded corner rather than overhanging it */
+.filament{border-top-left-radius:2px}
+
+.strip{
+  border-radius:2px;
+  box-shadow:
+    0 2px 3px rgba(0,0,0,.5),
+    0 12px 22px -12px rgba(0,0,0,.9),
+    inset 0 0 0 1px #2b2622,
+    inset 0 1px 0 rgba(245,236,224,.05);
+}
+.instruments{ box-shadow:inset 0 1px 0 rgba(245,236,224,.04); }
+
+/* the drawer keeps v4's own lift and gains the same edge */
+.drawer{
+  box-shadow:
+    0 -16px 34px -16px rgba(0,0,0,.88),
+    inset 0 0 0 1px #2b2622,
+    inset 0 1px 0 rgba(245,236,224,.05);
+}
+/* the inspector is a flush pane, so it takes the edge light without a radius */
+.inspector{
+  box-shadow:
+    -12px 0 24px -16px rgba(0,0,0,.95),
+    inset 0 1px 0 rgba(245,236,224,.045);
+}
+</style>
+</head>
+<body>
+
+<div class="sheetnote">
+  <h1>Evidence canvas — synthetic derivative</h1>
+  <p>The <b>committed, synthetic-data derivative</b> of the approved glass-cockpit v7 reference mock for issue 135.
+  The reference renders one person’s own pump history and stays local-only; this file reproduces its composition from
+  committed fixtures so the design can be reviewed, diffed and regenerated in the open. It is generated — run
+  <b>generate.py</b> to rebuild and <b>generate.py --check</b> to fail on drift. Never hand-edit <b>index.html</b>.</p>
+  <p><b>Depth idiom.</b> Each instrument carries a 1px machined edge at a 2px radius with a faint top-edge highlight —
+  light from above — over a soft ambient shadow that pools in the 8px gutters. The trench sits at rgb 16,14,13 so that
+  shadow has something to darken, and it remains the darkest value on screen. The edge is the primary depth cue; the
+  shadow is under-lighting, not float.</p>
+  <hr style="border:0;border-top:1px solid #241f1b;margin:14px 0">
+  <h1 style="font-size:13px">Direction B, “Glass Cockpit”</h1>
+  <p>Avionics primary-flight-display idiom. The glucose-by-clock strip is the horizon instrument: the slice window is
+  a <b>bright gate on a dimmed 24-hour band</b>, and the window’s own statistics are <b>etched into the strip’s right
+  margin</b> rather than floated in a panel. Beneath it, evidence charts sit <b>edge to edge, separated only by
+  hairlines</b> — no cards, no borders, no shadows; each chart carries an engraved label at top-left and its
+  by-clock / by-event switch at top-right. <b>Pins are bright tick brackets</b> at the chart’s corners; layout is
+  always derived from pin state. Findings mode adds a <b>thin amber rank filament</b> along the seated chart’s top
+  edge; Explore mode extinguishes every advisory colour. All four frames are 1440×900 and draw one committed fixture
+  set — the Diagnose workstation payload, its Correction factor rest-window capture and its Carb ratio block-evidence capture. One
+  exception: the Correction factor chart’s delta-BG values are <b>invented for legibility</b> under a fixed seed, because the
+  committed capture holds every reading at a single glucose value and so carries no spread to draw.</p>
+</div>
+
+<div id="states"></div>
+
+<script>
+/*__DATA__*/
+
+/* ── palette handles ─────────────────────────────────────────────────────── */
+const C = {
+  field:'#151311', hair:'#322c27', line:'#322e29', ink:'#f5ece0', body:'#dbcfbc', meta:'#a3968a',
+  rule:'#4f4640', ruleStrong:'#7a6d61', signal:'#86ad78', median:'#c3b49c', soft:'#2f3a2c',
+  accent:'#e07f3f', warn:'#c98a4e', low:'#ec6f55', ok:'#a89a85', label:'#c6b7a2'
+};
+const MONO = 'ui-monospace, SF Mono, Menlo, monospace';
+const hhmm = m => String(Math.floor(((m%1440)+1440)%1440/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
+const dim = (hex,a) => { const n=parseInt(hex.slice(1),16);
+  return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`; };
+
+const axisBase = {
+  axisLine:{show:false}, axisTick:{show:false},
+  axisLabel:{color:C.meta, fontSize:10, fontFamily:MONO},
+  splitLine:{lineStyle:{color:C.line, width:1}}
+};
+
+/* ══ 1. the horizon instrument ═══════════════════════════════════════════════
+   Pooled glucose by clock: p10–p90 and p25–p75 envelopes under a median line.
+   Outside the slice window everything is dimmed; inside, the same marks run at
+   full value — one instrument, one gate. */
+function stripOption(win, unroll, explore){
+  const shift = unroll ? 1080 : 0;                       // unroll pivots the axis to 18:00
+  const rot = m => ((m - shift) % 1440 + 1440) % 1440;
+  const bins = D.strip.bins.slice().map(b => [rot(b[0]), b[1], b[2], b[3], b[4], b[5], b[6]])
+                             .sort((a,b) => a[0]-b[0]);
+  const inWin = m0 => {                                  // m0 is a rotated coordinate
+    const abs = (m0 + shift) % 1440;
+    return win[0] <= win[1] ? (abs>=win[0] && abs<=win[1]) : (abs>=win[0] || abs<=win[1]);
+  };
+  const x   = bins.map(b => b[0]);
+  /* a boundary bin belongs to BOTH sides, so the gate edge is a step in value,
+     never a one-bin hole that would read as missing data */
+  const onSide = (i, gate) => inWin(bins[i][0]) === gate
+    || (bins[i-1] && inWin(bins[i-1][0]) === gate) || (bins[i+1] && inWin(bins[i+1][0]) === gate);
+  const cut = (idx, gate) => bins.map((b,i) => (onSide(i,gate) ? b[idx] : null));
+  const band = (loI, hiI, gate, color) => ([
+    { type:'line', data:cut(loI,gate), stack:'b'+loI+gate, lineStyle:{opacity:0}, symbol:'none',
+      areaStyle:{opacity:0}, silent:true, animation:false },
+    { type:'line', data:bins.map((b,i)=> (onSide(i,gate) ? b[hiI]-b[loI] : null)),
+      stack:'b'+loI+gate, lineStyle:{opacity:0}, symbol:'none',
+      areaStyle:{color}, silent:true, animation:false }
+  ]);
+  const sig = C.signal;   /* the measured signal is data, and survives Explore */
+  const series = [
+    ...band(4,5,false, dim(sig,.07)), ...band(2,3,false, dim(sig,.13)),
+    ...band(4,5,true,  dim(sig,.20)), ...band(2,3,true,  dim(sig,.38)),
+    { type:'line', data:cut(1,false), symbol:'none', smooth:.25, animation:false,
+      lineStyle:{color:dim(C.median,.30), width:1.5} },
+    { type:'line', data:cut(1,true), symbol:'none', smooth:.25, animation:false,
+      lineStyle:{color:C.median, width:2.2} },
+    { type:'scatter', data:D.strip.meals.map(m=>[rot(m[0]), 50]), symbol:'rect',
+      symbolSize:(v,p)=>[2, 4 + Math.min(10, D.strip.meals[p.dataIndex][1]*2)], animation:false,
+      itemStyle:{color: dim(C.median,.7)},
+      /* the gate posts: bone, never the interaction hue — orange stays out of the plot */
+      markLine:{ silent:true, symbol:'none', animation:false,
+        label:{show:false}, lineStyle:{color:C.median, width:1.5, type:'solid', opacity:.85},
+        data: (win[0]===0 && win[1]>=1439) ? [] :
+          [{xAxis: x.indexOf(rot(win[0]))}, {xAxis: x.indexOf(rot(win[1]))}] } }
+  ];
+  return {
+    animation:false, backgroundColor:'transparent',
+    grid:{left:44, right:14, top:12, bottom:22},
+    xAxis:{ type:'category', data:x, boundaryGap:false, ...axisBase,
+      axisLabel:{...axisBase.axisLabel, interval:(i)=> x[i]%180===0, formatter:(v)=>hhmm((+v+shift)%1440)},
+      splitLine:{show:true, lineStyle:{color:C.line}} },
+    yAxis:{ type:'value', min:40, max:280, interval:60, ...axisBase,
+      splitLine:{lineStyle:{color:C.line}} },
+    series
+  };
+}
+function stripStats(win){
+  const inWin = m => win[0] <= win[1] ? (m>=win[0] && m<=win[1]) : (m>=win[0] || m<=win[1]);
+  const b = D.strip.bins.filter(x => inWin(x[0]));
+  const med = b.reduce((s,x)=>s+x[1],0)/b.length;
+  const p25 = b.reduce((s,x)=>s+x[2],0)/b.length, p75 = b.reduce((s,x)=>s+x[3],0)/b.length;
+  /* raw_n, not the overlapping-window n: the 45-minute window overlaps, so summing n would
+     count a reading three times and print a number the data never contained */
+  const n   = b.reduce((s,x)=>s+x[7],0);
+  const onT = b.filter(x=>x[1]>=70 && x[1]<=180).length;
+  const meals = D.strip.meals.filter(m => inWin(m[0])).reduce((s,m)=>s+m[1],0);
+  return { med:med.toFixed(0), iqr:p25.toFixed(0)+'–'+p75.toFixed(0), n,
+           onT:onT+'/'+b.length, onTfull:onT===b.length, meals };
+}
+
+/* A chart aligned BY CLOCK is governed by the gate: its x axis is the slice
+   itself, re-based at the window's start so a window crossing midnight reads
+   contiguously. By-event charts are unaffected — that is the point of the
+   per-chart switch. */
+function clockFrame(win){
+  const full = (win[0]===0 && win[1]>=1439);
+  const span = full ? 1440 : (((win[1]-win[0])%1440)+1440)%1440 || 1440;
+  const map  = m => (((m - win[0])%1440)+1440)%1440;
+  return { full, span, map,
+    axis:{ min:0, max:span, interval: span/(span>=720?6:3),
+           formatter:v => hhmm((v + win[0])%1440) } };
+}
+
+/* ══ 2. the evidence charts ══════════════════════════════════════════════════ */
+const CHARTS = {
+  basal: {
+    name:'Basal · clean nights', key:'1', modes:['clock','event'],
+    meta:(m)=> m==='clock' ? 'median delivered vs programmed, 80% CI' : 'informative nights per slot · floor 8',
+    foot:D.basal.length+' slots · '+D.window.days+' d',
+    option(m, explore, mini, win){
+      const cf = clockFrame(win);
+      /* slots are a wall-clock schedule, so the gate selects them and the
+         window's start orders them — a wrapping slice reads contiguously */
+      const slots = D.basal.map((s,i)=>({s, k:cf.map(i*30)})).filter(o=>o.k<=cf.span)
+                           .sort((a,b)=>a.k-b.k).map(o=>o.s);
+      const lab = slots.map(s=>s[0]);
+      if (m==='event'){
+        return { animation:false, grid:mini?{left:22,right:6,top:6,bottom:14}:{left:44,right:14,top:10,bottom:22},
+          xAxis:{type:'category', data:lab, ...axisBase,
+            axisLabel:{...axisBase.axisLabel, interval:(i)=>i%8===0, fontSize:mini?8:10}, splitLine:{show:false}},
+          yAxis:{type:'value', ...axisBase, axisLabel:{...axisBase.axisLabel, fontSize:mini?8:10}},
+          series:[
+            {type:'bar', data:slots.map(s=>s[5]), animation:false, barCategoryGap:'25%',
+             itemStyle:{color:(p)=> p.value>=8 ? dim(C.signal,.75) : dim(C.ruleStrong,.6)}},
+            {type:'line', data:slots.map(()=>8), symbol:'none', animation:false,
+             lineStyle:{color: explore?C.ruleStrong:C.warn, width:1, type:'dashed'}}
+          ]};
+      }
+      const lo = slots.map(s=>s[3]), hi = slots.map(s=>s[4]);
+      return { animation:false, grid:mini?{left:22,right:6,top:6,bottom:14}:{left:44,right:14,top:10,bottom:22},
+        xAxis:{type:'category', data:lab, boundaryGap:false, ...axisBase,
+          axisLabel:{...axisBase.axisLabel, interval:(i)=>i%8===0, fontSize:mini?8:10}, splitLine:{show:false}},
+        yAxis:{type:'value', min:0.3, max:1.4, ...axisBase, axisLabel:{...axisBase.axisLabel, fontSize:mini?8:10}},
+        series:[
+          {type:'line', data:lo, stack:'ci', symbol:'none', lineStyle:{opacity:0}, silent:true, animation:false},
+          {type:'line', data:hi.map((h,i)=>h-lo[i]), stack:'ci', symbol:'none', lineStyle:{opacity:0},
+           areaStyle:{color:dim(C.signal,.20)}, silent:true, animation:false},
+          {type:'line', data:slots.map(s=>s[1]), step:'end', symbol:'none', animation:false,
+           lineStyle:{color:C.median, width:1.6, type:'dashed'}},
+          {type:'line', data:slots.map(s=>s[2]), symbol:'none', smooth:.2, animation:false,
+           lineStyle:{color:C.signal, width:mini?1.2:2}}
+        ]};
+    }
+  },
+  isf: {
+    name:'Correction factor · rest windows', key:'2', modes:['event','clock'],
+    meta:(m)=> m==='event' ? D.isf.pts.length+' steps · dose acted → ΔBG, fit' : D.isf.nights.length+' nights · per-night fit',
+    foot:D.isf.nights.length+' nights',
+    option(m, explore, mini, win){
+      if (m==='clock'){
+        return { animation:false, grid:mini?{left:22,right:6,top:6,bottom:14}:{left:44,right:14,top:10,bottom:22},
+          xAxis:{type:'category', data:D.isf.nights.map(n=>n[0]), ...axisBase,
+            axisLabel:{...axisBase.axisLabel, interval:(i)=>i%6===0, fontSize:mini?8:10}, splitLine:{show:false}},
+          yAxis:{type:'value', min:-40, max:120, ...axisBase, axisLabel:{...axisBase.axisLabel, fontSize:mini?8:10}},
+          series:[
+            {type:'bar', data:D.isf.nights.map(n=>n[1]), animation:false,
+             itemStyle:{color:(p)=> p.value<0 ? dim(explore?C.ok:C.low,.7) : dim(C.signal,.7)}},
+            {type:'line', data:D.isf.nights.map(()=>D.isf.programmed), symbol:'none', animation:false,
+             lineStyle:{color:C.median, width:1.4, type:'dashed'}}
+          ]};
+      }
+      const xs = D.isf.pts.map(p=>p[0]);
+      const x0 = Math.min(...xs), x1 = Math.max(...xs);
+      const fit = [[x0, D.isf.intercept + D.isf.slope*x0],[x1, D.isf.intercept + D.isf.slope*x1]];
+      return { animation:false, grid:mini?{left:22,right:6,top:6,bottom:14}:{left:44,right:14,top:10,bottom:22},
+        xAxis:{type:'value', min:0, ...axisBase, splitLine:{show:false},
+          axisLabel:{...axisBase.axisLabel, fontSize:mini?8:10, formatter:v=>v.toFixed(1)}},
+        yAxis:{type:'value', ...axisBase, axisLabel:{...axisBase.axisLabel, fontSize:mini?8:10}},
+        series:[
+          {type:'scatter', data:D.isf.pts, symbolSize:mini?2.5:5, animation:false,
+           itemStyle:{color:dim(C.signal,.5)}},
+          {type:'line', data:fit, symbol:'none', animation:false,
+           lineStyle:{color: explore ? C.median : C.warn, width:mini?1.2:2}}
+        ]};
+    }
+  },
+  ic660: {
+    name:'Carb ratio · evening runs', key:'3', modes:['event','clock'],
+    meta:(m)=> m==='event' ? D.ic660.scatter.length+' meal runs · CGM from meal start' : 'measured Carb ratio per run, in the gate',
+    foot:D.ic660.scatter.length+' support runs',
+    option(m, explore, mini, win){ return icOption(D.ic660, m, explore, mini, win); }
+  },
+  ic420: {
+    name:'Carb ratio · morning runs', key:'4', modes:['event','clock'],
+    meta:(m)=> m==='event' ? D.ic420.scatter.length+' meal runs · CGM from meal start' : 'measured Carb ratio per run, in the gate',
+    foot:D.ic420.scatter.length+' support runs',
+    option(m, explore, mini, win){ return icOption(D.ic420, m, explore, mini, win); }
+  },
+};
+function icOption(blk, m, explore, mini, win){
+  const cf = clockFrame(win);
+  if (m==='clock'){
+    return { animation:false, grid:mini?{left:22,right:6,top:6,bottom:14}:{left:44,right:14,top:10,bottom:22},
+      xAxis:{type:'value', ...cf.axis, ...axisBase, splitLine:{show:false},
+        min:cf.axis.min, max:cf.axis.max, interval:cf.axis.interval,
+        axisLabel:{...axisBase.axisLabel, fontSize:mini?8:10, formatter:cf.axis.formatter}},
+      yAxis:{type:'value', min:0, max:22, ...axisBase, axisLabel:{...axisBase.axisLabel, fontSize:mini?8:10}},
+      series:[
+        {type:'scatter', data:blk.scatter.filter(r=>!r[3]).map(r=>[cf.map(r[0]),r[1]]), symbolSize:mini?2.5:5,
+         animation:false, itemStyle:{color:dim(C.ruleStrong,.55)}},
+        {type:'scatter', data:blk.scatter.filter(r=>r[3]).map(r=>[cf.map(r[0]),r[1]]), symbolSize:mini?3.5:8,
+         animation:false, itemStyle:{color:dim(C.signal,.85)}},
+        {type:'line', data:[[0,blk.current],[cf.span,blk.current]], symbol:'none', animation:false,
+         lineStyle:{color:C.median, width:1.2, type:'dashed'}}
+      ]};
+  }
+  return { animation:false, grid:mini?{left:22,right:6,top:6,bottom:14}:{left:44,right:14,top:10,bottom:22},
+    xAxis:{type:'value', min:-15, max:300, interval:60, ...axisBase, splitLine:{show:false},
+      axisLabel:{...axisBase.axisLabel, fontSize:mini?8:10, formatter:v=>v+'′'}},
+    yAxis:{type:'value', min:40, max:320, ...axisBase, axisLabel:{...axisBase.axisLabel, fontSize:mini?8:10}},
+    series:[
+      ...blk.series.map(s=>({type:'line', data:s.pts, symbol:'none', smooth:.2, animation:false,
+        lineStyle:{color:dim(C.signal,.42), width:mini?.8:1.2}})),
+      {type:'line', data:[[-15,180],[300,180]], symbol:'none', animation:false,
+       lineStyle:{color:dim(C.median,.5), width:1, type:'dashed'}},
+      {type:'line', data:[[-15,70],[300,70]], symbol:'none', animation:false,
+       lineStyle:{color:dim(C.median,.5), width:1, type:'dashed'}}
+    ]};
+}
+
+/* ══ 3. frame assembly ══════════════════════════════════════════════════════ */
+const pending = [];
+const q = (opt, cls) => { const id='c'+pending.length; pending.push({id,opt}); return `<div class="${cls}" id="${id}"></div>`; };
+
+function tile(t){
+  const ch = CHARTS[t.id], m = t.mode || (ch.modes ? ch.modes[0] : null);
+  const sw = ch.modes ? `<div class="switch">${ch.modes.map(x=>
+      `<button aria-pressed="${x===m}">${x==='clock'?'clock':'event'}</button>`).join('')}</div>` : '';
+  const fil = (t.rank && !t.explore)
+    ? `<i class="filament" style="width:${t.rank===1?100:t.rank===2?62:38}%"></i>` : '';
+  const rank = (t.rank && !t.explore) ? `<span class="rankchip">R${t.rank}</span>` : '';
+  return `<figure class="tile"${t.pin?' data-pin="1"':''}>
+    ${fil}
+    <div class="tile-head">
+      <span class="engrave">${ch.name}</span>${rank}
+      <span class="tile-meta">${ch.meta(m)}</span>
+      <span class="tile-tools">${sw}<span class="pinbtn">${t.pin?'▚':'▘'}</span></span>
+    </div>
+    ${q(ch.option(m, t.explore, false, t.win), 'plot')}
+    <span class="brk tl"></span><span class="brk tr"></span><span class="brk bl"></span><span class="brk br"></span>
+  </figure>`;
+}
+
+function miniaturize(o){
+  o.grid = {left:3, right:3, top:3, bottom:3};
+  ['xAxis','yAxis'].forEach(k=>{
+    o[k] = {...o[k], axisLabel:{show:false}, axisLine:{show:false}, axisTick:{show:false},
+            splitLine:{show:false}};
+  });
+  return o;
+}
+function drawer(seatedIds, explore){
+  return `<div class="drawer">
+    <div class="drawer-head">
+      <span class="cap">Chart explorer</span>
+      <span class="railnote">${Object.keys(CHARTS).length} registered · <b>${seatedIds.length}</b> seated</span>
+      <span class="hint">Esc</span>
+    </div>
+    <div class="thumbs">${Object.keys(CHARTS).map(id=>{
+      const ch = CHARTS[id], m = ch.modes ? ch.modes[0] : null;
+      return `<div class="thumb"${seatedIds.includes(id)?' data-seated="1"':''}>
+        <span class="tname">${ch.name}</span><span class="key">${ch.key}</span>
+        ${q(miniaturize(ch.option(m, explore, true, [0,1439])), 'tmini')}
+        <span class="tfoot">${ch.foot}</span></div>`;
+    }).join('')}</div></div>`;
+}
+
+function inspector(cfg){
+  if (cfg.explore){
+    const s = stripStats(cfg.win);
+    return `<aside class="inspector">
+      <div class="insp-head"><h2>Reading</h2><span class="meta">${hhmm(cfg.win[0])}–${hhmm(cfg.win[1])}</span></div>
+      <div class="insp-body">
+        <div class="readout">
+          <div><div class="k">Median</div><div class="v">${s.med} mg/dL</div></div>
+          <div><div class="k">IQR</div><div class="v">${s.iqr}</div></div>
+          <div><div class="k">Readings</div><div class="v">${s.n}</div></div>
+          <div><div class="k">Meals</div><div class="v">${s.meals}</div></div>
+        </div>
+        <div class="insp-note">Explore is advice-free. No lever is ranked, nothing is staged, and no chart is
+        seated for you — the explorer’s own order stands. Slice the window and read what the data does.</div>
+        <div class="insp-note" style="margin-top:10px">Morning runs sit in the slice with ${D.ic420.scatter.length} supporting runs against a
+        floor of 8, so the block is shown unmeasured rather than estimated.</div>
+        <div class="disc">Advisory surface disabled — Explore mode. Exit returns findings, pins intact.</div>
+      </div></aside>`;
+  }
+  const rows = [
+    {n:3,t:'Evening carb ratio evidence',tag:'setting',d:`${D.ic660.scatter.length} supporting runs are shown from synthetic block evidence.`,den:`runs <span class="v">${D.ic660.scatter.length}</span>`},
+    {n:4,t:'Basal support',tag:'setting',d:`${D.basal.length} slots from synthetic basal analysis remain visible with their intervals.`,den:`slots <span class="v">${D.basal.length}</span> · asserted <span class="v">${D.basal.filter(s=>s[5]>=8).length}</span>`}
+  ];
+  return `<aside class="inspector">
+    <div class="insp-head"><h2>Findings</h2><span class="meta">${rows.length} · ${D.window.days} d</span></div>
+    <div class="insp-body">
+      ${rows.map(r=>`<div class="qrow"${r.seated?' data-seated="1"':''}>
+        <span class="n">${r.n}</span>
+        <div><div class="t">${r.t}</div>
+        <div class="d">${r.d}</div>
+        <div style="margin-top:5px;display:flex;gap:10px;align-items:baseline">
+          <span class="tag">${r.tag}</span><span class="den">${r.den}</span></div></div></div>`).join('')}
+      <div class="disc">Advisory only — not medical advice. Every number is shown with the evidence behind it.</div>
+    </div></aside>`;
+}
+
+function frame(cfg){
+  const st = stripStats(cfg.win);
+  const winLabel = hhmm(cfg.win[0])+'–'+hhmm(cfg.win[1]);
+  const pins = cfg.tiles.filter(t=>t.pin).length;
+  const tilesHtml = cfg.tiles.map(t=>tile({...t, explore:cfg.explore, win:cfg.win})).join('');
+  const seated = cfg.tiles.map(t=>t.id);
+  return `<div class="ck${cfg.explore?' explore-on':''}">
+    <div class="topbar">
+      <span class="identity"><span class="mark">H</span>Harmonic<small>advisory</small></span>
+      <span class="flow">
+        <span class="step"><span class="stepn">1</span>Day</span><span class="sep">›</span>
+        <span class="step" aria-current="step"><span class="stepn">2</span>Diagnose</span><span class="sep">›</span>
+        <span class="step"><span class="stepn">3</span>Plan</span><span class="sep">›</span>
+        <span class="step"><span class="stepn">4</span>Verify</span>
+      </span>
+      <span class="gap"></span>
+      <span class="scope"><span class="scope-label">Scope</span><span class="scope-dot"></span>${D.window.days} days · synthetic 2020 window</span>
+      <span class="logcarbs"><span class="plus">+</span>Log carbs</span>
+    </div>
+    <div class="stage"><div class="panes">
+      <div class="canvas-pane${cfg.drawer?' has-drawer':''}">
+        <div class="instruments">
+          <div class="instrument"><span class="cap">Window</span>
+            <div class="seg">${['Night','Morning','Midday','Evening','24 h'].map(p=>
+              `<button aria-pressed="${p===cfg.preset}">${p}</button>`).join('')}</div></div>
+          <span class="railnote">gate <b>${winLabel}</b> · <b>${st.n}</b> readings · <b>${D.strip.days}</b> days</span>
+          <div class="pincap">
+            <span class="cap">${cfg.explore?'Explore':'Findings'}</span>
+            <span class="mini" data-arr="${cfg.arr}">${Array.from({length:({focal:4,pair:2,quad:4,onetwo:3})[cfg.arr]},(_,i)=>
+              `<i class="${i<pins?'pin':''}"></i>`).join('')}${pins<4&&({focal:4,pair:2,quad:4,onetwo:3})[cfg.arr]<4?'<i class="next"></i>':''}</span>
+            <span class="cap">${pins}/4 pinned</span>
+          </div>
+        </div>
+        <div class="strip">
+          ${q(stripOption(cfg.win, cfg.unroll, cfg.explore), 'strip-plot')}
+          <div class="strip-etch">
+            <div class="etch-cap">Slice</div>
+            <div class="etch-win">${winLabel}</div>
+            <div class="etch-sub">${cfg.presetNote}</div>
+            <div class="etch-row"><span class="k">Median</span><span class="v${+st.med>180?' hi':''}">${st.med} mg/dL</span></div>
+            <div class="etch-row"><span class="k">IQR</span><span class="v">${st.iqr}</span></div>
+            <div class="etch-row"><span class="k">Bins on target</span><span class="v${st.onTfull?' ok':' hi'}">${st.onT}</span></div>
+            <div class="etch-row"><span class="k">Readings</span><span class="v">${st.n}</span></div>
+            <div class="etch-row"><span class="k">Meals</span><span class="v">${st.meals}</span></div>
+            <div class="etch-foot${cfg.explore?' advisory-off':''}">${cfg.explore?'Advisory off':'Findings seated'}</div>
+          </div>
+        </div>
+        <div class="tiles" data-arr="${cfg.arr}">${tilesHtml}</div>
+        ${cfg.drawer ? drawer(seated, cfg.explore) : ''}
+      </div>
+      ${inspector(cfg)}
+    </div></div>
+    <div class="footer">
+      <span class="facts">Correction factor 1 U : ${D.isf.programmed} mg/dL · Carb ratio 1 U : ${D.ic660.current} g · basal ${(D.basal.reduce((n,s)=>n+s[1],0)/2).toFixed(1)} U/day</span>
+      <span class="adv">Advisory only — not medical advice.</span>
+      <span class="utils"><span>Theme</span><span>Export</span><span>Settings</span></span>
+    </div>
+  </div>`;
+}
+
+/* ══ 4. the four states ═════════════════════════════════════════════════════ */
+const STATES = [
+  { k:'A', h:'Findings mode · focal + strip (no pins)',
+    p:'The app seated the top-ranked finding’s evidence in the focal position; three slot charts sit beneath it. The rank filament runs the focal chart’s top edge, longest for rank 1. The midnight-crossing gate renders as one contiguous band per the shipped circular-clock idiom, with no standing axis control.',
+    cfg:{ arr:'focal', preset:'Night', unroll:true, win:[1320,480], presetNote:'rest window, contiguous clock gate',
+      explore:false, drawer:false,
+      tiles:[ {id:'isf', mode:'event', rank:1}, {id:'ic660', mode:'event', rank:2},
+              {id:'ic420', mode:'event', rank:3}, {id:'basal', mode:'clock'} ] } },
+
+  { k:'B', h:'Two pinned · stacked pair',
+    p:'Two pins derive a full-width stacked pair — the layout is the outcome of pin state, never a chosen preset. Both charts hold against the slicer; the corner brackets say which. Each carries its own alignment: the evening runs read by event, the basal evidence reads by clock.',
+    cfg:{ arr:'pair', preset:'Evening', unroll:false, win:[1020,1380], presetNote:'evening block 660',
+      explore:false, drawer:false,
+      tiles:[ {id:'ic660', mode:'event', pin:true, rank:1}, {id:'basal', mode:'clock', pin:true} ] } },
+
+  { k:'C', h:'Four pinned · quad (densest arrangement)',
+    p:'The cap is reached and the pin counter reads full — a fifth pin is refused at the control, not satisfied by evicting one of these. Every plot area in a row shares its top and baseline regardless of label width, so the four read as one instrument cluster.',
+    cfg:{ arr:'quad', preset:'Midday', unroll:false, win:[660,840], presetNote:'morning block 420',
+      explore:false, drawer:false,
+      tiles:[ {id:'ic420', mode:'event', pin:true, rank:1}, {id:'isf', mode:'clock', pin:true},
+              {id:'basal', mode:'clock', pin:true}, {id:'ic660', mode:'event', pin:true} ] } },
+
+  { k:'D', h:'Explore mode · 1 + 2, explorer drawer summoned',
+    p:'Explore extinguishes every advisory colour: no filament, no rank chips, pins fade to bone, the inspector becomes a plain reading and the strip margin states that advice is off. Three pins derive the 1 + 2 arrangement; the drawer is summoned from the keyboard and shows all six registered charts, the seated three outlined.',
+    cfg:{ arr:'onetwo', preset:'24 h', unroll:false, win:[0,1439], presetNote:'whole clock',
+      explore:true, drawer:true,
+      tiles:[ {id:'ic660', mode:'event', pin:true}, {id:'basal', mode:'clock', pin:true},
+              {id:'isf', mode:'event', pin:true} ] } }
+];
+
+document.getElementById('states').innerHTML = STATES.map(s=>`
+  <div class="statehead"><span class="k">STATE ${s.k}</span><h2>${s.h}</h2></div>
+  <div class="statehead" style="margin-top:-4px;margin-bottom:10px"><p>${s.p}</p></div>
+  <div class="frame">${frame(s.cfg)}</div>`).join('');
+
+pending.forEach(p=>{
+  const el = document.getElementById(p.id);
+  if (!el) return;
+  echarts.init(el, null, {renderer:'canvas'}).setOption(p.opt);
+});
+</script>
+</body>
+</html>

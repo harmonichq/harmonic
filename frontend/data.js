@@ -223,6 +223,31 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
    *  classifier's verdict; the Diagnose inspector's own feed (#654). */
   function fetchExploreExposures() { return api('/api/explore/exposures'); }
 
+  /** Analyzer-owned delivered-versus-programmed evidence for one basal slot. */
+  function fetchDiagnoseBasalNightEvidence({ slot } = {}) {
+    const params = new URLSearchParams();
+    if (slot != null) params.set('slot', slot);
+    return api('/api/diagnose/basal-night-evidence?' + params.toString());
+  }
+  /** Analyzer-owned rest windows and qualifying fasting steps. */
+  function fetchDiagnoseIsfRestWindowEvidence() {
+    return api('/api/diagnose/isf-rest-window-evidence');
+  }
+  /** Current I:C block's published meal-run roster and bounded CGM series. */
+  async function fetchDiagnoseCarbRatioBlockEvidence({ block_id, analysis_generation } = {}) {
+    const params = new URLSearchParams();
+    if (block_id != null) params.set('block_id', block_id);
+    if (analysis_generation != null) params.set('analysis_generation', analysis_generation);
+    try {
+      return await api('/api/diagnose/carb-ratio-block-evidence?' + params.toString());
+    } catch (error) {
+      if (error instanceof ApiTransportError && error.status === 409
+          && error.code === 'analysis_generation_mismatch') {
+        return { stale: true, message: error.message };
+      }
+      throw error;
+    }
+  }
   /**
    * GET /api/diagnose/findings — the Diagnose findings queue for one clock window
    * (#730, ADR 730). Omit the window for the global (24 h) queue; send both bounds
@@ -440,6 +465,9 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
     fetchVerifyTrials,
     fetchExploreTimeOfDay,
     fetchExploreExposures,
+    fetchDiagnoseBasalNightEvidence,
+    fetchDiagnoseIsfRestWindowEvidence,
+    fetchDiagnoseCarbRatioBlockEvidence,
     fetchDiagnoseFindings,
     fetchDiagnoseCarbRatioHistoryEvents,
     fetchDiagnoseFindingCasePreparation,
@@ -485,6 +513,10 @@ export const fetchOutcomesTrend = _defaults.fetchOutcomesTrend;
 export const fetchVerifyTrials = _defaults.fetchVerifyTrials;
 export const fetchExploreTimeOfDay = _defaults.fetchExploreTimeOfDay;
 export const fetchExploreExposures = _defaults.fetchExploreExposures;
+export const fetchDiagnoseBasalNightEvidence = _defaults.fetchDiagnoseBasalNightEvidence;
+export const fetchDiagnoseIsfRestWindowEvidence = _defaults.fetchDiagnoseIsfRestWindowEvidence;
+export const fetchDiagnoseCarbRatioBlockEvidence =
+  _defaults.fetchDiagnoseCarbRatioBlockEvidence;
 export const fetchDiagnoseFindings = _defaults.fetchDiagnoseFindings;
 export const fetchDiagnoseCarbRatioHistoryEvents =
   _defaults.fetchDiagnoseCarbRatioHistoryEvents;

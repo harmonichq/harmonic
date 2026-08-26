@@ -10,7 +10,15 @@ const STYLE = {
 
 import { createDiagnoseWorkstation } from './diagnose-workstation.js';
 
-const css = (element, name) => getComputedStyle(element).getPropertyValue(name).trim();
+/* The registry adapter builds an option with no surface to read tokens off, so
+   the document element answers for it. Outside a browser neither exists, and an
+   empty token lets the chart fall back to its own default ink. */
+const css = (element, name) => {
+  if (typeof getComputedStyle !== 'function') return '';
+  const host = element || (typeof document === 'undefined' ? null : document.documentElement);
+  if (!host) return '';
+  return getComputedStyle(host).getPropertyValue(name).trim();
+};
 const rounded = (value) => value == null ? '—' : String(Math.round(value));
 const dateLabel = (date) => new Date(`${date}T00:00:00`).toLocaleDateString(
   'en-US', { month: 'short', day: 'numeric' },
@@ -89,7 +97,7 @@ function legend(surface, caseFile, selected) {
   if (selected) key.insertAdjacentHTML('beforeend', `<span class="ec-key-item" data-cohort="selected"><i class="ec-key-mark" aria-hidden="true"></i><strong>Selected trace</strong><small>${dateLabel(selected.date)} · observed</small></span>`);
 }
 
-function option(surface, caseFile, selected) {
+function option(surface, caseFile, selected, range) {
   const { projection } = caseFile;
   const series = [{ type: 'line', data: [], silent: true, name: 'Target range',
     markArea: { silent: true, itemStyle: { color: `color-mix(in srgb, ${css(surface, '--mk-ok')} 7%, transparent)` }, data: [[{ yAxis: 70, name: 'target 70–180' }, { yAxis: 180 }]] } }];
@@ -104,7 +112,59 @@ function option(surface, caseFile, selected) {
   series.push(...selectedSeries(surface, selected));
   return { animation: false, backgroundColor: 'transparent', grid: { left: 52, right: 22, top: 24, bottom: 42 }, tooltip: { trigger: 'axis', showContent: false },
     xAxis: { type: 'value', min: projection.window_min[0], max: projection.window_min[1], interval: 60, axisLine: { onZero: false, lineStyle: { color: css(surface, '--mk-line') } }, axisTick: { show: false }, splitLine: { show: true, lineStyle: { color: css(surface, '--mk-line'), opacity: .48 } }, axisLabel: { color: css(surface, '--mk-muted'), fontSize: 10, formatter: (minute) => axisLabel(minute, projection.anchor.label) } },
-    yAxis: { type: 'value', min: 40, max: 300, interval: 60, name: 'mg/dL', nameLocation: 'end', axisLine: { show: false }, axisTick: { show: false }, splitLine: { show: true, lineStyle: { color: css(surface, '--mk-line'), opacity: .58 } }, axisLabel: { color: css(surface, '--mk-muted'), fontSize: 10 } }, series };
+    yAxis: { type: 'value', min: range[0], max: range[1], interval: 60, name: 'mg/dL', nameLocation: 'end', axisLine: { show: false }, axisTick: { show: false }, splitLine: { show: true, lineStyle: { color: css(surface, '--mk-line'), opacity: .58 } }, axisLabel: { color: css(surface, '--mk-muted'), fontSize: 10 } }, series };
+}
+
+/* ONE GLUCOSE AXIS FOR A WHOLE ARRANGEMENT. The envelope is the range every
+   glucose chart shows at rest; served values outside it widen the axis in fixed
+   steps so tiles seated side by side are read against the same ruler. The range
+   is computed once by whoever composes the arrangement and injected, never
+   re-derived per chart. */
+export const GLUCOSE_STEP = 20;
+export const GLUCOSE_ENVELOPE = [60, 200];
+
+export function glucoseRange(values) {
+  const finite = values.filter((value) => Number.isFinite(value));
+  const [floorFloor, ceilCeil] = GLUCOSE_ENVELOPE;
+  if (finite.length === 0) return [floorFloor, ceilCeil];
+  const low = Math.min(floorFloor, Math.floor(Math.min(...finite) / GLUCOSE_STEP) * GLUCOSE_STEP);
+  const high = Math.max(ceilCeil, Math.ceil(Math.max(...finite) / GLUCOSE_STEP) * GLUCOSE_STEP);
+  return [low, high];
+}
+
+/** Every glucose value this case file's comparison actually draws. */
+export function eventComparisonGlucoseValues(caseFile) {
+  const projection = caseFile?.projection;
+  const cohortValues = (projection?.cohorts || []).flatMap((cohort) => [
+    ...(cohort.points || []).flatMap((point) => [point.median, point.p25, point.p75]),
+    ...(cohort.episodes || []).flatMap((episode) =>
+      (episode.glucose || []).map((point) => point.bg)),
+  ]);
+  const detail = caseFile?.selection?.state === 'selected' ? caseFile.selection.detail : null;
+  const selectedValues = (detail?.glucose || []).map((point) => point.bg);
+  return [...cohortValues, ...selectedValues].filter(Number.isFinite);
+}
+
+function assertEventCaseFile(caseFile) {
+  if (caseFile?.schema !== 'diagnose-finding-case-file-v1'
+      || caseFile?.projection?.alignment !== 'event') {
+    throw new Error('Finding case file is not event-aligned.');
+  }
+}
+
+/* PRESENTATION ADAPTER, NOT A SECOND CHART. The evidence-tile registry draws
+   the meals/lows comparison from the same served case file the shipped mount
+   reads, through the same series builders — the only difference is that a tile
+   is handed its arrangement's glucose range instead of computing its own, and
+   has no surface to read tokens off. (#181/#135: the case file is the one
+   authority for this fact, and this is its second consumer.) */
+export function eventComparisonChartOption(caseFile, range, surface = null) {
+  if (!Array.isArray(range) || range.length !== 2
+      || !range.every(Number.isFinite) || range[0] >= range[1]) {
+    throw new TypeError('event comparison needs one injected arrangement glucose range');
+  }
+  assertEventCaseFile(caseFile);
+  return option(surface, caseFile, selection(caseFile), range);
 }
 
 /* The canvas header, rest line and docked readout together. The readout is the
@@ -122,7 +182,7 @@ function markup(caseFile, headerHost) {
 }
 
 export function renderEventSurface(surface, caseFile, { headerHost = null } = {}) {
-  if (caseFile?.schema !== 'diagnose-finding-case-file-v1' || caseFile?.projection?.alignment !== 'event') throw new Error('Finding case file is not event-aligned.');
+  assertEventCaseFile(caseFile);
   const selected = selection(caseFile);
   const previousHeader = headerHost && { html: headerHost.innerHTML, hover: headerHost.dataset.hover };
   if (headerHost) { headerHost.innerHTML = headMarkup(caseFile); headerHost.dataset.hover = '0'; }
@@ -130,7 +190,11 @@ export function renderEventSurface(surface, caseFile, { headerHost = null } = {}
   legend(surface, caseFile, selected);
   const chartElement = surface.querySelector('#ec-chart');
   const chart = window.echarts.init(chartElement, null, { renderer: 'canvas' });
-  chart.setOption(option(surface, caseFile, selected));
+  /* The mount reads its own axis off the cohort values it is about to draw:
+     alone on the surface, this chart IS its whole arrangement. */
+  chart.setOption(eventComparisonChartOption(
+    caseFile, glucoseRange(eventComparisonGlucoseValues(caseFile)), surface,
+  ));
   const head = headerHost || surface.querySelector('#ec-canvas-head');
   const [windowStart, windowEnd] = caseFile.projection.window_min;
   /* One reading of the served points, feeding both disclosures — the keyboard
@@ -188,5 +252,8 @@ export function createDiagnoseEventComparison({ root, callbacks = {} }) {
     refresh: () => workstation.refresh(),
     repaintDay: () => workstation.repaintDay(),
     gotoState: (state) => workstation.gotoState(state),
+    // #135: leaving Diagnose drops the nested canvas's pins and focus. The
+    // shell owns no session of its own, so it forwards the reset inward.
+    leaveSurface: () => workstation.leaveSurface(),
   };
 }

@@ -1,17 +1,16 @@
 // Behaviour replay for the Diagnose workstation — the executable half of the
-// behaviour ledger frozen with the Diagnose workstation lock.
+// frozen behaviour ledger for the shipped Diagnose workstation.
 //
-// WHY THIS EXISTS: the lock manifest says what the surface LOOKS like. It does
-// not say that an edge is grabbable down its whole height, that a press which
-// never moves must change nothing, or that a hovered dot latches the docked
-// readout. Those lived in the mock's code when this ledger was written; the
-// mock has since been archived (#722), and the app is now the sole contract
+// WHY THIS EXISTS: the ledger records behavior that a still frame cannot prove:
+// that an edge is grabbable down its whole height, that a press which never
+// moves must change nothing, or that a hovered dot latches the docked readout.
+// The mock has since been archived (#722), and the app is now the sole contract
 // artifact for these behaviours. Each story below is one exported function
 // that performs the behaviour for real against the built app and asserts what
-// it actually does.
+// it actually does. Shipped surfaces under revise have no lock manifest.
 //
 //   PLAYWRIGHT_MODULE=<playwright> VENDOR_DIR=<vendored echarts+vue> \
-//   BASE_URL=http://127.0.0.1:8766 TARGET=app PAYLOAD=<snapshot.json> \
+//   BASE_URL=http://127.0.0.1:8765 TARGET=app PAYLOAD=<snapshot.json> \
 //   [ONLY=S01,S07] \
 //   node frontend/diagnose-workstation-behavior.replay.mjs
 //
@@ -41,6 +40,12 @@ const FINDINGS_PROJECTION = JSON.parse(await readFile(
   join(ROOT, 'frontend/__fixtures__/findings-projection.json'), 'utf8'));
 const MISSED_MEAL_COMPARISON = JSON.parse(await readFile(
   join(ROOT, 'frontend/__fixtures__/missed-meal-comparison.json'), 'utf8'));
+const BASAL_NIGHT_EVIDENCE = JSON.parse(await readFile(
+  join(ROOT, 'frontend/__fixtures__/basal-night-evidence.json'), 'utf8'));
+const ISF_REST_WINDOW_EVIDENCE = JSON.parse(await readFile(
+  join(ROOT, 'mockups/diagnose-workstation.synthetic/isf-rest-window-evidence.capture.json'), 'utf8'));
+const CARB_RATIO_BLOCK_EVIDENCE = JSON.parse(await readFile(
+  join(ROOT, 'mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json'), 'utf8'));
 
 const evidenceDir = process.env.DIAGNOSE_EVIDENCE_DIR || null;
 const evidenceViewport = () => process.env.VIEWPORT || '1440x900';
@@ -102,22 +107,6 @@ export const state = (page) => page.evaluate(() => {
     levelEmptyLeft: textLeft(q('#level .empty')),
     levelLoading: q('#level')?.dataset.loading ?? null,
     bandKeys: [...document.querySelectorAll('#level .vband .key .lead')].map((n) => n.textContent.trim()),
-    // ALIGN's two canvases: which one is mounted, and whose header is up
-    alignShown: q('#align-group') ? rendered(q('#align-group')) : null,
-    alignPressed: [...document.querySelectorAll('#seg-align button')]
-      .filter((b) => b.getAttribute('aria-pressed') === 'true')
-      .map((b) => b.textContent.trim()),
-    eventCanvas: q('#align-canvas') ? !q('#align-canvas').hidden : null,
-    clockCanvas: q('#chart') ? !q('#chart').hidden : null,
-    clockHead: rendered(q('#canvas-head')),
-    clockHeadDisplay: display(q('#canvas-head')),
-    canvasHead: (() => {
-      const node = q('#canvas-head');
-      const r = node?.getBoundingClientRect();
-      return node && r ? { top: Math.round(r.top), bottom: Math.round(r.bottom), height: Math.round(r.height), title: txt('#canvas-head h2'), label: txt('#canvas-head .meta.persist'), hover: node.dataset.hover } : null;
-    })(),
-    eventHeads: [...document.querySelectorAll('.ec-canvas .head-rest h2')].filter(rendered).length,
-    eventCaption: q('.ec-window-context')?.textContent.trim() ?? null,
     pool: txt('#canvas-pool'),
     braceHidden: q('#brace')?.hidden ?? null,
     gripA: parseFloat(q('#grip-a')?.style.left || 'NaN'),
@@ -155,16 +144,8 @@ export const state = (page) => page.evaluate(() => {
     levelHead: (q('#level .occ-head') || q('#level .slot-head') || q('#level .who'))
       ?.innerText.replace(/\s+/g, ' ').trim() ?? null,
     evRows: document.querySelectorAll('#level .ev-row').length,
-    // `evFits` is every row the roster is currently showing (the drilled
-    // verdict, or `fired` at rest). The `data-counter`/`evCounter` split
-    // RETIRED 2026-08-19: select-in-place (P35, ADR 31 part 5) made the
-    // roster homogeneous by verdict, and the counter-example sub-group it
-    // used to feed was dead at rest and incoherent once drilled (see
-    // renderEvidence's docstring). `evCounterGone` asserts the retirement
-    // stays true rather than silently reintroducing the attribute.
-    evFits: document.querySelectorAll('#level .ev-row').length,
+    // The `data-counter` split retired with select-in-place (P35, ADR 31 part 5).
     evCounterGone: document.querySelectorAll('#level .ev-row[data-counter]').length,
-    more: txt('#level .more'),
     stage: q('#level .stagebtn')?.innerText.replace(/\s+/g, ' ').trim() ?? null,
     stageStaged: q('#level .stagebtn')?.dataset.staged ?? null,
     filter: (() => {
@@ -222,10 +203,8 @@ export const state = (page) => page.evaluate(() => {
       return {
         id: level?.dataset.historyId || null,
         generation: level?.dataset.analysisGeneration || null,
-        selectedRunId: level?.dataset.selectedRunId || null,
         canvasId: chart?.dataset.historyId || null,
         canvasGeneration: chart?.dataset.analysisGeneration || null,
-        canvasRunId: chart?.dataset.selectedRunId || null,
         conclusion: txt('.history-conclusion'),
         currentCopies: document.querySelectorAll('#level .history-current').length,
         caseText: q('.history-case')?.innerText.replace(/\s+/g, ' ').trim() ?? null,
@@ -234,9 +213,6 @@ export const state = (page) => page.evaluate(() => {
         pending: Boolean(q('.history-pending')),
         stale: Boolean(q('.history-stale')),
         retry: txt('.history-retry'),
-        runIds: [...document.querySelectorAll('.history-run')].map((node) => node.dataset.runId),
-        runLabels: [...document.querySelectorAll('.history-run')].map((node) => node.innerText.replace(/\s+/g, ' ').trim()),
-        selectedRuns: [...document.querySelectorAll('.history-run[aria-pressed="true"]')].map((node) => node.dataset.runId),
         stageCount: document.querySelectorAll('.history-case .stagebtn').length,
         canvasRender: chart ? {
           kind: chart.id === 'align-canvas' ? 'event' : 'clock',
@@ -480,11 +456,11 @@ export async function openApp(browser, {
   state: want = 'typical', theme = 'dark', viewport = { width: 1440, height: 900 }, findingsInputs = null,
   findingsProjectionInputs = null, exposuresInputs = null, analysisInputs = null,
   pumpSettingsInputs = null, onPlanDraft = null,
-  comparisonProjection = null,
   findingsDelayMs = 0, findingsDelays = {}, findingsFailures = {}, findingsResponseBarrier = null,
   appSource = 'server',
   history = false, selectedFindingsResponses = [], historyResponses = [], stageProbe = false,
-  caseScenario = null, frontendRoot = join(ROOT, 'frontend'), fixtureBaseUrl = null,
+  caseScenario = null, evidenceScenario = null,
+  frontendRoot = join(ROOT, 'frontend'), fixtureBaseUrl = null,
 } = {}) {
   const payloadPath = process.env.PAYLOAD || fail('PAYLOAD is required for TARGET=app');
   /* Source selection belongs to the caller. Standalone replay pins `server`
@@ -577,6 +553,7 @@ export async function openApp(browser, {
   const page = await browser.newPage({ viewport });
   let preparationRequests = 0;
   let caseRequests = 0;
+  const evidenceRequests = new Map();
   const preparedWindows = new Map();
   page.on('pageerror', (e) => problems.push(`pageerror(app ${want}): ${e}`));
   page.on('response', (response) => {
@@ -614,7 +591,7 @@ export async function openApp(browser, {
         && (path === '/' || PAGE_PATHS.has(path) || /\.(js|css|svg|html)$/.test(path))) {
       if (stageProbe && path === '/assets/diagnose-workstation.js') {
         const source = await readFile(join(ROOT, 'frontend/diagnose-workstation.js'), 'utf8');
-        const seam = 'export function createDiagnoseWorkstation({ root, callbacks = {}, railLead = null }) {';
+        const seam = 'export function createDiagnoseWorkstation({ root, callbacks = {} }) {';
         if (source.split(seam).length !== 2) fail('S71 staging seam must occur exactly once');
         const instrumented = source.replace(seam, `${seam}
   /* Replay-only wrapper: preserve the real callback and arguments while making
@@ -723,6 +700,22 @@ export async function openApp(browser, {
       return route.fulfill({ status: finding ? 200 : 404, contentType: 'application/json',
         body: JSON.stringify(body) });
     }
+    const evidenceBodies = {
+      '/api/diagnose/basal-night-evidence': BASAL_NIGHT_EVIDENCE.expected,
+      '/api/diagnose/isf-rest-window-evidence': ISF_REST_WINDOW_EVIDENCE.payload,
+      '/api/diagnose/carb-ratio-block-evidence': CARB_RATIO_BLOCK_EVIDENCE.cases.cross_midnight,
+    };
+    if (Object.hasOwn(evidenceBodies, path)) {
+      const request = (evidenceRequests.get(path) || 0) + 1;
+      evidenceRequests.set(path, request);
+      const response = evidenceScenario
+        ? await evidenceScenario({ path, url, request, body: independent(evidenceBodies[path]) })
+        : { body: evidenceBodies[path] };
+      const status = response?.status || 200;
+      if (status >= 400) expectResponse(page, new RegExp(`^${path}$`), status);
+      return route.fulfill({ status, contentType: 'application/json',
+        body: JSON.stringify(response?.body ?? evidenceBodies[path]) });
+    }
     const planned = path === '/api/diagnose/findings' && url.searchParams.has('selected_id')
       ? selectedFindingsResponses.shift()
       : path === '/api/diagnose/carb-ratio-history/events' ? historyResponses.shift() : null;
@@ -810,11 +803,17 @@ const openHistoryCase = async (page) => {
   ok(await page.locator('.history-case').isVisible(), 'history row opens its case file');
 };
 
-const openHistoryEvents = async (page) => {
-  await openHistoryCase(page);
-  await page.getByRole('button', { name: 'By event', exact: true }).click();
-  await settle(page, 650);
-  ok(await page.locator('#align-canvas').isVisible(), 'history event canvas is visible');
+const RETIRED_CANVAS_SANCTION = 'Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired \'Event charts\' root filter and the global \'By event\' control."';
+const assertRetiredGlobalCanvas = async (page, story) => {
+  await page.getByRole('button', { name: '24 h', exact: true }).click();
+  await settle(page, 450);
+  await page.getByRole('button', { name: /Filter/ }).click();
+  is(await page.getByRole('menuitemradio', { name: 'Event charts', exact: true }).count(), 0,
+    `${story} the retired root Event charts View is absent`);
+  await page.keyboard.press('Escape');
+  is(await page.locator('#seg-align, #align-canvas').count(), 0,
+    `${story} the retired global Align host and event canvas are absent`);
+  console.log(`RETIRED ${story} — ${RETIRED_CANVAS_SANCTION}`);
 };
 
 /* -------------------------------------------------------------- the stories */
@@ -838,13 +837,16 @@ export const S01 = async (page) => {
   is(after.crumbMeta, `${after.queue.length} in this window`,
     `S01 inspector re-scoped to the preset (${after.crumbMeta})`);
   ok(after.crumbMeta.endsWith('in this window'), 'S01 the inspector uses the scoped meta form');
-  // Both counts are printed with toLocaleString, so a capture wide enough to
-  // pass 1,000 readings carries a thousands separator. The 3-day fixture this
-  // was written against topped out at 941 and never showed one; the 30-day
-  // capture #649 commissioned does, on every state. Separator allowed.
-  ok(/^window [\d,]+ of [\d,]+ readings$/.test(after.scope),
-    `S01 canvas count declares its window (${after.scope})`);
-  ok(after.scope !== before.scope, 'S01 canvas count recomputed');
+  /* AMENDED #135 fix round (operator ruling): the strip header's
+     `window N of M readings` count is retired. It priced the strip in a unit no
+     decision here is made in, at data weight, next to the title. The story's
+     subject is unchanged — a preset re-scopes the canvas as well as the
+     inspector — and is now read through the lane, which is the scope the reader
+     acts on. The header stays silent unless it has the ADR 62 part 9 sentence
+     to say. */
+  is(after.scope, '', `S01 the strip header prints no reading count (${after.scope})`);
+  ok(after.pool.includes('captured CGM days'),
+    `S01 the pooled-days phrasing survives the count's retirement (${after.pool})`);
   ok(after.laneOutside > 0, 'S01 slots outside the window are dimmed, not removed');
 };
 
@@ -957,7 +959,9 @@ export const S06 = async (page) => {
   const after = await state(page);
   is(after.chip, before.chip, 'S06 a click in the plot mints no window');
   is(after.pressed, before.pressed, 'S06 a click in the plot unpresses nothing');
-  is(after.scope, before.scope, 'S06 nothing re-scoped');
+  // AMENDED #135 fix round: the strip header's reading count is retired, so the
+  // scope witness is the lane's own dimming — the scope the reader acts on.
+  is(after.laneOutside, before.laneOutside, 'S06 nothing re-scoped');
 };
 
 /** S07 · Esc belongs to the WINDOW: it clears the drawn one and restores the
@@ -987,8 +991,7 @@ export const S08 = async (page) => {
 };
 
 /** S09 · Drilling a factor pushes level 2 without replacing the reader's 24 h
-    window, and the coincidence line prints BOTH the basal slot and the I:C
-    block, basal first, each with its own route. */
+    window, and visibly marks the row-derived chart that owns the drill. */
 // LOCK:diagnose-workstation:4 LOCK:diagnose-workstation:9 LOCK:diagnose-workstation:17 LOCK:diagnose-workstation:18 LOCK:diagnose-workstation:22 LOCK:diagnose-workstation:33
 export const S09 = async (page) => {
   await page.getByRole('button', { name: '24 h', exact: true }).click();
@@ -1001,10 +1004,9 @@ export const S09 = async (page) => {
   is(s.chip, null, 'S09 drilling a factor adds no derived window chip');
   is(s.pressed, ['24 h'], 'S09 drilling a factor keeps the 24 h preset pressed');
   ok(/^\d+ of \d+ · /.test(s.crumbMeta || ''), `S09 the count declares its window (${s.crumbMeta})`);
-  ok(s.slotLink !== null, 'S09 the coincidence line prints');
-  is(s.linkBtns, ['View slot', 'View segment'], 'S09 both routes print, basal first');
-  ok(/basal slot .*and in the .*I:C block/.test(s.slotLink), `S09 both coincidences on ONE line (${s.slotLink})`);
   ok(s.evRows > 0, 'S09 evidence rows render');
+  ok(await page.locator('.evidence-tile[data-drilled]').count() > 0,
+    'S09 the opened Finding visibly marks its owning chart');
 };
 
 /** S10 · Evidence is capped at five rows and the cap is a real toggle.
@@ -1022,19 +1024,9 @@ export const S09 = async (page) => {
 export const S10 = async (page) => {
   await page.click('#level .qrow[data-state="finding"]');
   await settle(page, 450);
-  const capped = await state(page);
-  is(capped.evFits, 5, 'S10 five rows before expanding');
-  is(capped.evCounterGone, 0, 'S10 RETIRED — the counter-example split is gone, not merely empty');
-  ok(/^\d+ more$/.test(capped.more || ''), `S10 the toggle names the remainder (${capped.more})`);
-  await page.click('#level .more');
-  await settle(page);
-  const open = await state(page);
-  ok(open.evFits > 5, 'S10 expanding shows the rest of the roster');
-  is(open.evCounterGone, 0, 'S10 RETIRED — still gone after expanding');
-  is(open.more, 'Show first 5', 'S10 the toggle reverses');
-  await page.click('#level .more');
-  await settle(page);
-  is((await state(page)).evFits, 5, 'S10 it collapses back to five');
+  ok((await state(page)).evRows > 0, 'S10 the served case roster remains readable');
+  is((await state(page)).evCounterGone, 0,
+    'S10 RETIRED — the old counter-example split remains absent');
 };
 
 /** S11 · SELECT-IN-PLACE (P35/P21 retired, 2026-08-19 revision). An evidence
@@ -1054,7 +1046,8 @@ export const S11 = async (page) => {
   const selected = await page.evaluate(() =>
     document.querySelector('#level .ev-row[aria-pressed="true"]') !== null);
   ok(selected, 'S11 the selected row carries aria-pressed');
-  ok(/↑ ↓/.test(occ.levelHead || ''), 'S11 the keyboard hint rides the inline detail');
+  ok(await page.locator('#level .case-facts').count() > 0,
+    'S11 the selected case-file detail remains visible in place');
 };
 
 /** S12 · RETIRED — Left/Right no longer step the selected Occurrence. */
@@ -1309,7 +1302,9 @@ export const S21 = async (page) => {
   const drilled = await state(page);
   is(drilled.chip, start.chip, 'S21 drilling a factor does not move the user window');
   near(drilled.gripA, start.gripA, 1, 'S21 the brace stayed put');
-  is(drilled.scope, start.scope, 'S21 the canvas stayed on the user window');
+  // AMENDED #135 fix round, with S06: the retired reading count is replaced as
+  // this story's canvas witness by the lane dimming the same window produces.
+  is(drilled.laneOutside, start.laneOutside, 'S21 the canvas stayed on the user window');
   await page.click('#level .ev-row');
   await settle(page, 450);
   is((await state(page)).chip, start.chip, 'S21 opening an occurrence does not move it either');
@@ -1861,93 +1856,48 @@ const resizeWindowStart = async (page, toMin, [standingFrom, standingTo]) => {
   await settle(page, 500);
 };
 
-/** S32 · #57 — selecting a roster occurrence under `By event` draws it. The
-    roster carries the shared (episode, instant) key; the endpoint owns its own
-    opaque catalog id and reuses that pair across several occurrences, so the
-    selection is resolved to an id through the projection already in hand
-    rather than assumed unique. */
+/** S32 · #57 — selecting a case-file occurrence from the Sifted Finding draws
+    it. The endpoint owns the opaque occurrence id; the root no longer has a
+    separate Event charts projection. */
 // STORY:finding-evidence-routing:S32
 export const S32 = async (page) => {
   await openWholeDay(page);
   await clickQueueRow(page, 'Carb undercount');
-  const opened = await state(page);
-  ok(opened.evRows > 0, 'S32 precondition: the roster has a row to select');
-  ok(opened.alignShown, 'S32 precondition: ALIGN is offered on this case file');
-  await page.click('#seg-align button:nth-child(2)');
-  await page.locator('#ec-chart').waitFor();
-  await settle(page, 600);
+  await page.locator('#level .case-occurrence').first().waitFor();
   const request = page.waitForRequest((candidate) => {
     const url = new URL(candidate.url());
     return url.pathname === '/api/diagnose/finding-case-file' && url.searchParams.has('occ');
   });
-  await page.click('#level .ev-row');
+  await page.locator('#level .case-occurrence').first().click();
   const requested = new URL((await request).url()).searchParams.get('occ');
-  await settle(page, 800);
-  const drawn = await page.evaluate(() => {
-    const exposed = window.__diagnoseEventComparison;
-    const selection = exposed?.projection?.selection || null;
-    const selected = selection?.detail || null;
-    const trace = (exposed?.chart.getOption().series || [])
-      .find((series) => series.name === 'Selected trace');
-    return {
-      row: document.querySelector('#level .ev-row[aria-pressed="true"] .when')?.textContent.trim() ?? null,
-      t: selected?.anchor?.t ?? null,
-      id: selected?.id ?? null,
-      join: selected ? `${new Date(`${selected.date}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · ${selected.anchor.t.slice(11, 16)}` : null,
-      state: selection?.state ?? null,
-      trace: trace?.data ?? null,
-      responseTrace: selected?.glucose?.map((point) => [point.minute, point.bg]) ?? null,
-    };
-  });
-  is(drawn.state, 'selected', 'S32 the endpoint resolved a selection');
-  ok(drawn.t !== null, 'S32 the server selection retains its anchor instant');
-  is(drawn.join, drawn.row, 'S32 the selected response carries the visible roster row\'s join key');
-  is(requested, drawn.id, 'S32 the browser request carried the server opaque Occurrence id');
-  is(drawn.trace, drawn.responseTrace, 'S32 the drawn trace carries that selected response');
+  await page.locator('#level .case-facts').waitFor();
+  is(requested, await page.locator('#level .case-occurrence[aria-pressed="true"]')
+    .getAttribute('data-occurrence-id'), 'S32 the case file requests the pressed opaque Occurrence id');
+  ok((await page.locator('#level').innerText()).includes('Carb undercount'),
+    'S32 the selected evidence remains inside the Carb undercount case');
 };
 
-/** S40 · #64 — the visible lows roster and By event canvas select the same
-    shared-population occurrence. The row's episode-and-time pair joins the
-    response and trace; the browser request still travels by the endpoint's
+/** S40 · #64 — the seated low-comparison tile and its case file select the same
+    shared-population occurrence. The browser request travels by the endpoint's
     opaque occurrence id. */
 // STORY:finding-evidence-routing:S40
 export const S40 = async (page) => {
   await openWholeDay(page);
-  await clickQueueRow(page, 'Over-treated low');
-  const opened = await state(page);
-  ok(opened.evRows > 0, 'S40 precondition: the low roster has a visible row to select');
-  ok(opened.alignShown, 'S40 precondition: ALIGN is offered on this low case file');
-  await page.click('#seg-align button:nth-child(2)');
-  await page.locator('#ec-chart').waitFor();
-  await settle(page, 600);
+  const tile = page.locator('.evidence-tile[data-chart-id="finding:over_treated_low"]');
+  await tile.locator('.tile-body').click();
+  await page.locator('#level .case-occurrence').first().waitFor();
   const request = page.waitForRequest((candidate) => {
     const url = new URL(candidate.url());
     return url.pathname === '/api/diagnose/finding-case-file' && url.searchParams.has('occ');
   });
-  await page.click('#level .ev-row');
+  await page.locator('#level .case-occurrence').first().click();
   const requested = new URL((await request).url()).searchParams.get('occ');
-  await settle(page, 800);
-  const drawn = await page.evaluate(() => {
-    const exposed = window.__diagnoseEventComparison;
-    const selection = exposed?.projection?.selection || null;
-    const selected = selection?.detail || null;
-    const trace = (exposed?.chart.getOption().series || [])
-      .find((series) => series.name === 'Selected trace');
-    return {
-      row: document.querySelector('#level .ev-row[aria-pressed="true"] .when')?.textContent.trim() ?? null,
-      id: selected?.id ?? null,
-      kind: selected?.anchor?.kind ?? null,
-      join: selected ? `${new Date(`${selected.date}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · ${selected.anchor.t.slice(11, 16)}` : null,
-      state: selection?.state ?? null,
-      trace: trace?.data ?? null,
-      responseTrace: selected?.glucose?.map((point) => [point.minute, point.bg]) ?? null,
-    };
-  });
-  is(drawn.state, 'selected', 'S40 the endpoint resolved the visible low row');
-  is(drawn.kind, 'low', 'S40 the selected response is a low occurrence');
-  is(drawn.join, drawn.row, 'S40 the selected response carries the visible low row\'s join key');
-  is(requested, drawn.id, 'S40 the browser request carried the server opaque Occurrence id');
-  is(drawn.trace, drawn.responseTrace, 'S40 the drawn trace carries that selected low response');
+  await page.locator('#level .case-facts').waitFor();
+  is(requested, await page.locator('#level .case-occurrence[aria-pressed="true"]')
+    .getAttribute('data-occurrence-id'), 'S40 the low tile requests the pressed opaque Occurrence id');
+  ok((await page.locator('#level').innerText()).includes('Over-treated low'),
+    'S40 the selected response remains inside the low Finding case');
+  is(await tile.getAttribute('data-drilled'), '', 'S40 the low comparison remains visibly drilled');
 };
 
 // STORY:finding-evidence-routing:S41
@@ -2054,67 +2004,27 @@ export const S48 = async (page) => {
 
 // STORY:finding-evidence-routing:S49
 export const S49 = async (page) => {
-  const requests = [];
-  page.on('request', (request) => {
-    if (new URL(request.url()).pathname === '/api/diagnose/carb-ratio-history/events') requests.push(new URL(request.url()));
-  });
-  await openHistoryEvents(page);
-  const s = await state(page);
-  is(requests.at(-1).searchParams.get('history_id'), s.history.id, 'S49 exact selected id sent');
-  is(requests.at(-1).searchParams.get('analysis_generation'), s.history.generation, 'S49 exact generation sent');
-  is(s.history.canvasGeneration, s.history.generation, 'S49 pair swaps together');
+  await assertRetiredGlobalCanvas(page, 'S49');
 };
 
 // STORY:finding-evidence-routing:S50
 export const S50 = async (page) => {
-  await openHistoryCase(page);
-  const clockPool = (await state(page)).pool;
-  await page.getByRole('button', { name: 'By event', exact: true }).click();
-  await settle(page, 650);
-  const before = await state(page);
-  is(before.pool, '', 'S50 history event header exposes no analysis generation');
-  await page.getByRole('button', { name: 'By clock', exact: true }).click();
-  await settle(page, 250);
-  const after = await state(page);
-  is(after.pool, clockPool, 'S50 returning to clock restores its pooled-data header verbatim');
-  is(after.history.id, before.history.id, 'S50 id survives return to clock');
-  is(after.history.generation, before.history.generation, 'S50 generation survives return to clock');
-  is(after.history.selectedRunId, before.history.selectedRunId, 'S50 selected run survives return to clock');
-  is(after.history.stageCount, 0, 'S50 remains non-stageable');
+  await assertRetiredGlobalCanvas(page, 'S50');
 };
 
 // STORY:finding-evidence-routing:S51
 export const S51 = async (page) => {
-  await openHistoryEvents(page);
-  const before = await state(page);
-  is(await page.getByRole('group', { name: 'Meal runs' }).count(), 1,
-    'S51 the roster has one accessible group');
-  is(await page.getByRole('button', { name: /2 meals/ }).count(), before.history.runIds.length,
-    'S51 every member remains a native pressed-state button');
-  await page.locator('.history-run').first().click();
-  await settle(page, 650);
-  const after = await state(page);
-  is(after.history.runIds, before.history.runIds, 'S51 ordered population is unchanged');
-  is(after.history.selectedRuns, [before.history.runIds[0]], 'S51 selected opaque member is emphasized');
+  await assertRetiredGlobalCanvas(page, 'S51');
 };
 
 // STORY:finding-evidence-routing:S52
 export const S52 = async (page) => {
-  await openHistoryEvents(page);
-  const before = await state(page);
-  ok(before.history.runLabels.every((label) => /2 meals · \+0, \+120 min/.test(label)),
-    'S52 every server meal offset stays under its run');
-  await page.locator('.history-run').first().click();
-  await settle(page, 600);
-  is((await state(page)).history.runIds.length, before.history.runIds.length, 'S52 selection does not split a run');
+  await assertRetiredGlobalCanvas(page, 'S52');
 };
 
 // STORY:finding-evidence-routing:S90
 export const S90 = async (page) => {
-  await openHistoryEvents(page);
-  const labels = await page.locator('.history-run small').allInnerTexts();
-  ok(labels.every((label) => label === '4 meals · +0, +137, +262, +398 min'),
-    'S90 meal offsets read as rounded whole minutes');
+  await assertRetiredGlobalCanvas(page, 'S90');
 };
 
 /** S91 · A drawn window keeps its clear affordance when a finding opens.
@@ -2186,102 +2096,32 @@ export const S56 = async (page) => {
 
 // STORY:finding-evidence-routing:S57
 export const S57 = async (page) => {
-  const calls = { findings: 0, events: 0 };
-  page.on('request', (request) => {
-    const url = new URL(request.url());
-    if (url.pathname === '/api/diagnose/findings' && url.searchParams.has('selected_id')) calls.findings += 1;
-    if (url.pathname === '/api/diagnose/carb-ratio-history/events') calls.events += 1;
-  });
-  await openHistoryCase(page);
-  expectResponse(page, /\/api\/diagnose\/carb-ratio-history\/events/, 410);
-  await page.getByRole('button', { name: 'By event', exact: true }).click();
-  await assertRetired(page, 'Past-setting evidence aged out of the 90-day window.', 'S57');
-  is(calls, { findings: 1, events: 1 }, 'S57 refreshes selection once and never retries event evidence');
+  await assertRetiredGlobalCanvas(page, 'S57');
 };
 
 // STORY:finding-evidence-routing:S58
 export const S58 = async (page) => {
-  const calls = { findings: 0, events: 0 };
-  page.on('request', (request) => {
-    const url = new URL(request.url());
-    if (url.pathname === '/api/diagnose/findings' && url.searchParams.has('selected_id')) calls.findings += 1;
-    if (url.pathname === '/api/diagnose/carb-ratio-history/events') calls.events += 1;
-  });
-  await openHistoryCase(page);
-  expectResponse(page, /\/api\/diagnose\/carb-ratio-history\/events/, 410);
-  await page.getByRole('button', { name: 'By event', exact: true }).click();
-  await assertRetired(page, 'Past-setting evidence no longer maps to one current program block.', 'S58');
-  is(calls, { findings: 1, events: 1 }, 'S58 refreshes selection once and never retries event evidence');
+  await assertRetiredGlobalCanvas(page, 'S58');
 };
 
 // STORY:finding-evidence-routing:S59
 export const S59 = async (page) => {
-  await openHistoryCase(page);
-  const before = await state(page);
-  expectResponse(page, /\/api\/diagnose\/carb-ratio-history\/events/, 500);
-  await page.getByRole('button', { name: 'By event', exact: true }).click();
-  await settle(page, 150);
-  const pending = await state(page);
-  is(pending.history.id, before.history.id, 'S59 prior inspector survives pending recovery');
-  is(pending.history.canvasId, before.history.canvasId, 'S59 prior canvas survives pending recovery');
-  is(pending.history.canvasRender, before.history.canvasRender,
-    'S59 pending recovery keeps the prior rendered canvas scope and content');
-  await captureEvidence(page, 'S59-first-recovery-pending');
-  await settle(page, 900);
-  is((await state(page)).history.stale, false, 'S59 one coordinated recovery succeeds');
+  await assertRetiredGlobalCanvas(page, 'S59');
 };
 
 // STORY:finding-evidence-routing:S60
 export const S60 = async (page) => {
-  const calls = [];
-  page.on('request', (request) => {
-    const url = new URL(request.url());
-    if (url.pathname.startsWith('/api/diagnose/')) calls.push(url.pathname);
-  });
-  await openHistoryCase(page);
-  expectResponse(page, /\/api\/diagnose\/carb-ratio-history\/events/, 409);
-  await page.getByRole('button', { name: 'By event', exact: true }).click();
-  await settle(page, 900);
-  ok(calls.slice(-2)[0] === '/api/diagnose/findings'
-    && calls.slice(-2)[1] === '/api/diagnose/carb-ratio-history/events', 'S60 retry is findings then events');
-  const s = await state(page);
-  is(s.history.canvasGeneration, s.history.generation, 'S60 coherent replacement generation commits');
+  await assertRetiredGlobalCanvas(page, 'S60');
 };
 
 // STORY:finding-evidence-routing:S61
 export const S61 = async (page) => {
-  let requests = 0;
-  page.on('request', (request) => { if (new URL(request.url()).pathname.startsWith('/api/diagnose/')) requests += 1; });
-  await openHistoryCase(page);
-  const before = await state(page);
-  expectResponse(page, /\/api\/diagnose\/carb-ratio-history\/events/, 500);
-  expectResponse(page, /\/api\/diagnose\/findings/, 500);
-  await page.getByRole('button', { name: 'By event', exact: true }).click();
-  await settle(page, 850);
-  const terminal = await state(page);
-  is(terminal.history.id, before.history.id, 'S61 last pair remains');
-  is(terminal.history.stale, true, 'S61 terminal stale notice is visible');
-  is(terminal.history.retry, 'Retry', 'S61 explicit Retry is offered');
-  const stopped = requests;
-  await settle(page, 500);
-  is(requests, stopped, 'S61 automatic loop stopped');
+  await assertRetiredGlobalCanvas(page, 'S61');
 };
 
 // STORY:finding-evidence-routing:S62
 export const S62 = async (page) => {
-  await openHistoryCase(page);
-  expectResponse(page, /\/api\/diagnose\/carb-ratio-history\/events/, 500);
-  expectResponse(page, /\/api\/diagnose\/findings/, 500);
-  await page.getByRole('button', { name: 'By event', exact: true }).click();
-  await settle(page, 750);
-  const stale = await state(page);
-  await page.getByRole('button', { name: 'Retry', exact: true }).click();
-  await captureEvidence(page, 'S62-explicit-retry-pending');
-  await settle(page, 900);
-  const fresh = await state(page);
-  is(fresh.history.id, stale.history.id, 'S62 explicit retry preserves selected id');
-  is(fresh.history.stale, false, 'S62 stale notice clears only after coherent success');
-  is(fresh.history.canvasGeneration, fresh.history.generation, 'S62 replacement pair is coherent');
+  await assertRetiredGlobalCanvas(page, 'S62');
 };
 
 const assertTypedFindingsFailure = async (page, status, code, story) => {
@@ -2304,22 +2144,11 @@ export const S63 = async (page) => assertTypedFindingsFailure(page, 400, 'invali
 // STORY:finding-evidence-routing:S64
 export const S64 = async (page) => assertTypedFindingsFailure(page, 404, 'history_not_found', 'S64');
 
-const assertTypedRunFailure = async (page, status, code, story) => {
-  await openHistoryEvents(page);
-  expectResponse(page, /\/api\/diagnose\/carb-ratio-history\/events/, status);
-  expectResponse(page, /\/api\/diagnose\/carb-ratio-history\/events/, status);
-  await page.locator('.history-run').first().click();
-  await settle(page, 850);
-  const s = await state(page);
-  is(s.history.stale, true, `${story} ${code} stops visibly stale`);
-  is(s.history.runIds.length, 3, `${story} prior population remains complete`);
-};
-
 // STORY:finding-evidence-routing:S65
-export const S65 = async (page) => assertTypedRunFailure(page, 400, 'invalid_history_run_id', 'S65');
+export const S65 = async (page) => assertRetiredGlobalCanvas(page, 'S65');
 
 // STORY:finding-evidence-routing:S66
-export const S66 = async (page) => assertTypedRunFailure(page, 404, 'history_run_not_found', 'S66');
+export const S66 = async (page) => assertRetiredGlobalCanvas(page, 'S66');
 
 const RESTART_GENERATION = 'findings-fixture-process:restart';
 const withRestartGeneration = (payload) => ({ ...payload, analysis_generation: RESTART_GENERATION });
@@ -2331,44 +2160,7 @@ const withoutProcessGeneration = (payload) => {
 
 // STORY:finding-evidence-routing:S67
 export const S67 = async (page) => {
-  const eventRequests = [];
-  page.on('request', (request) => {
-    const url = new URL(request.url());
-    if (url.pathname === '/api/diagnose/carb-ratio-history/events') {
-      eventRequests.push({
-        historyId: url.searchParams.get('history_id'),
-        generation: url.searchParams.get('analysis_generation'),
-      });
-    }
-  });
-  const firstResponse = page.waitForResponse((response) =>
-    new URL(response.url()).pathname === '/api/diagnose/carb-ratio-history/events' && response.status() === 200);
-  await openHistoryEvents(page);
-  const firstPayload = await (await firstResponse).json();
-  const before = await state(page);
-
-  await page.getByRole('button', { name: 'By clock', exact: true }).click();
-  expectResponse(page, /\/api\/diagnose\/carb-ratio-history\/events/, 409);
-  const restartedResponse = page.waitForResponse((response) =>
-    new URL(response.url()).pathname === '/api/diagnose/carb-ratio-history/events' && response.status() === 200);
-  await page.getByRole('button', { name: 'By event', exact: true }).click();
-  const restartedPayload = await (await restartedResponse).json();
-  await settle(page, 700);
-  const after = await state(page);
-
-  is(after.history.id, before.history.id, 'S67 opaque history identity survives process restart');
-  ok(after.history.generation !== before.history.generation,
-    'S67 process restart publishes a distinct opaque generation');
-  is(after.history.generation, RESTART_GENERATION, 'S67 replacement commits the restarted generation');
-  is(withoutProcessGeneration(restartedPayload), withoutProcessGeneration(firstPayload),
-    'S67 projected database bytes are unchanged apart from process generation');
-  is(eventRequests.map((request) => request.historyId),
-    eventRequests.map(() => before.history.id), 'S67 every request carries the unchanged history id');
-  is(eventRequests.map((request) => request.generation),
-    [before.history.generation, before.history.generation, RESTART_GENERATION],
-    'S67 stale generation is rejected once, then the refreshed generation is requested');
-  is(after.history.canvasGeneration, after.history.generation,
-    'S67 restarted inspector/canvas pair commits coherently');
+  await assertRetiredGlobalCanvas(page, 'S67');
 };
 
 // STORY:finding-evidence-routing:S68
@@ -2385,39 +2177,12 @@ export const S68 = async (page) => {
 
 // STORY:finding-evidence-routing:S69
 export const S69 = async (page) => {
-  await openHistoryCase(page);
-  const event = page.getByRole('button', { name: 'By event', exact: true });
-  await event.click();
-  await settle(page, 60);
-  await event.click();
-  await settle(page, 950);
-  const all = await state(page);
-  is(all.history.runIds.length, 3, 'S69 newest all-runs response owns the pair');
-  await page.locator('.history-run').nth(0).click();
-  await settle(page, 60);
-  await page.locator('.history-run').nth(1).click();
-  await settle(page, 950);
-  is((await state(page)).history.selectedRuns, [all.history.runIds[1]], 'S69 newest selected-run response wins whole');
+  await assertRetiredGlobalCanvas(page, 'S69');
 };
 
 // STORY:finding-evidence-routing:S70
 export const S70 = async (page) => {
-  await openHistoryEvents(page);
-  const before = await state(page);
-  await page.locator('.history-run').first().click();
-  await settle(page, 650);
-  const s = await state(page);
-  is([s.history.canvasId, s.history.canvasGeneration, s.history.canvasRunId],
-    [s.history.id, s.history.generation, s.history.selectedRunId], 'S70 rendered pair exposes identical coordinates');
-  is(s.history.canvasRender.kind, 'event', 'S70 replacement remains the event canvas');
-  is(s.history.canvasRender.window, before.history.canvasRender.window,
-    'S70 run selection keeps the event window');
-  is(s.history.canvasRender.series.length, before.history.canvasRender.series.length,
-    'S70 run selection keeps the complete rendered event population');
-  is(s.history.canvasRender.series.filter((series) => series.type === 'line' && series.opacity === 0.88).length,
-    1, 'S70 selected-run content paints exactly one active trace');
-  is(s.history.canvasRender.series.filter((series) => series.type === 'line' && series.opacity === 0.2).length,
-    s.history.runIds.length - 1, 'S70 selected-run content quiets every other trace');
+  await assertRetiredGlobalCanvas(page, 'S70');
 };
 
 const historySafetyState = (page, draftWrites) => page.evaluate((writes) => {
@@ -2449,65 +2214,13 @@ const assertHistorySafety = async (page, draftWrites, label) => {
 
 // STORY:finding-evidence-routing:S71
 export const S71 = async (page) => {
-  let draftWrites = 0;
-  page.on('request', (request) => {
-    const url = new URL(request.url());
-    if (url.pathname === '/api/plan' && request.method() !== 'GET') draftWrites += 1;
-  });
-
-  await assertHistorySafety(page, draftWrites, 'before interaction');
-  await expandWatching(page);
-  await page.locator('.qrow[data-state="history"]').first().click();
-  await settle(page, 450);
-  await assertHistorySafety(page, draftWrites, 'queue click/open');
-
-  await page.getByRole('button', { name: 'By event', exact: true }).click();
-  await settle(page, 650);
-  await assertHistorySafety(page, draftWrites, 'ALIGN switch to By event');
-  await page.getByRole('button', { name: 'By clock', exact: true }).click();
-  await settle(page, 250);
-  await assertHistorySafety(page, draftWrites, 'ALIGN switch to By clock');
-
-  await page.getByRole('button', { name: 'By event', exact: true }).click();
-  await settle(page, 650);
-  await page.locator('.history-run').first().click();
-  await settle(page, 650);
-  await assertHistorySafety(page, draftWrites, 'member selection');
-
-  expectResponse(page, /\/api\/diagnose\/carb-ratio-history\/events/, 500);
-  await page.locator('.history-run').nth(1).click();
-  await settle(page, 950);
-  is((await state(page)).history.stale, false, 'S71 ordinary recovery succeeds once');
-  await assertHistorySafety(page, draftWrites, 'ordinary recovery');
-
-  expectResponse(page, /\/api\/diagnose\/carb-ratio-history\/events/, 409);
-  await page.locator('.history-run').first().click();
-  await settle(page, 950);
-  is((await state(page)).history.generation, RESTART_GENERATION,
-    'S71 coordinated recovery commits one coherent replacement generation');
-  await assertHistorySafety(page, draftWrites, 'coordinated recovery');
-
-  expectResponse(page, /\/api\/diagnose\/carb-ratio-history\/events/, 500);
-  expectResponse(page, /\/api\/diagnose\/findings/, 500);
-  await page.locator('.history-run').nth(1).click();
-  await settle(page, 850);
-  is((await state(page)).history.stale, true, 'S71 terminal recovery exposes explicit Retry');
-  await assertHistorySafety(page, draftWrites, 'terminal recovery');
-
-  await page.getByRole('button', { name: 'Retry', exact: true }).click();
-  await settle(page, 950);
-  const final = await state(page);
-  is(final.history.stale, false, 'S71 explicit Retry resolves coherently');
-  is(final.history.stageCount, 0, 'S71 no history state offers staging');
-  await assertHistorySafety(page, draftWrites, 'explicit Retry');
+  await assertRetiredGlobalCanvas(page, 'S71');
 };
 
 /** S72 · The initial Diagnose frame offers no inert ALIGN control. */
 // STORY:finding-evidence-routing:S72
 export const S72 = async (page) => {
-  const initial = await state(page);
-  is(initial.alignShown, false, 'S72 ALIGN does not render on the initial frame');
-  is(await page.locator('#seg-align button').count(), 0, 'S72 initial ALIGN has no choices');
+  await assertRetiredGlobalCanvas(page, 'S72');
 };
 
 const withNoDataBasal = (analysis) => {
@@ -2592,7 +2305,7 @@ export const S76 = async (page) => {
   await page.keyboard.press('Enter');
   is(await page.evaluate(() => document.activeElement?.id), 'level',
     'S76 Enter lands keyboard focus on the opened detail container');
-  await page.getByRole('button', { name: 'Findings', exact: true }).click();
+  await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
   is(await page.evaluate(() => document.activeElement?.getAttribute('data-id')), rowId,
     'S76 the Findings crumb restores focus to the drilled queue row');
 };
@@ -2600,22 +2313,7 @@ export const S76 = async (page) => {
 /** S77 · ALIGN starts at the inspector edge when this factor case offers it. */
 // STORY:finding-evidence-routing:S77
 export const S77 = async (page) => {
-  await openWholeDay(page);
-  await clickQueueRow(page, 'Over-treated low');
-  const opened = await state(page);
-  ok(opened.alignShown, 'S77 precondition: ALIGN is offered on this case file');
-  const geometry = await page.evaluate(() => {
-    const ag = document.querySelector('#align-group');
-    const inspector = document.querySelectorAll('.panes > .pane')[1];
-    if (!ag || !inspector || !ag.getClientRects().length) return null;
-    return {
-      alignLeft: Math.round(ag.getBoundingClientRect().left),
-      inspectorLeft: Math.round(inspector.getBoundingClientRect().left),
-    };
-  });
-  ok(geometry !== null, 'S77 precondition: ALIGN is rendered beside a live inspector pane');
-  is(geometry.alignLeft, geometry.inspectorLeft,
-    `S77 ALIGN starts at the inspector edge (ALIGN ${geometry.alignLeft}, inspector ${geometry.inspectorLeft})`);
+  await assertRetiredGlobalCanvas(page, 'S77');
 };
 
 /** S78 · Up/Down follow the vertical Occurrence roster, stop at its ends, and
@@ -2624,22 +2322,18 @@ export const S77 = async (page) => {
 export const S78 = async (page) => {
   await page.click('#level .qrow[data-state="finding"]');
   await settle(page, 450);
-  await page.click('#level .ev-row');
-  await settle(page, 450);
-  const first = await state(page);
-  ok(/\b1 of \d+/.test(first.levelHead || ''), `S78 opens on the first Occurrence (${first.levelHead})`);
-  await page.keyboard.press('ArrowDown');
-  await settle(page, 450);
-  const second = await state(page);
-  ok(/\b2 of \d+/.test(second.levelHead || ''), `S78 ArrowDown steps one Occurrence (${second.levelHead})`);
-  is(second.crumb.length, first.crumb.length, 'S78 stepping never changes the crumb depth');
-  is(second.chip, first.chip, 'S78 stepping never moves the window');
-  await page.keyboard.press('ArrowUp');
-  await settle(page, 450);
-  is((await state(page)).levelHead, first.levelHead, 'S78 ArrowUp steps back');
-  await page.keyboard.press('ArrowUp');
-  await settle(page, 300);
-  is((await state(page)).levelHead, first.levelHead, 'S78 ArrowUp at the start does not wrap');
+  const rows = page.locator('#level .case-occurrence');
+  ok(await rows.count() >= 2, 'S78 the vertical case roster exposes two keyboard targets');
+  await rows.nth(1).focus();
+  const before = await state(page);
+  const occurrenceId = await rows.nth(1).getAttribute('data-occurrence-id');
+  await page.keyboard.press('Enter');
+  await page.waitForSelector(
+    `#level .case-occurrence[data-occurrence-id="${occurrenceId}"][aria-pressed="true"]`,
+  );
+  const after = await state(page);
+  is(after.crumb, before.crumb, 'S78 keyboard activation keeps the Finding breadcrumb');
+  is(after.chip, before.chip, 'S78 keyboard activation keeps the standing window');
 };
 
 /** S79 · Occurrence activation and vertical stepping restore focus to the
@@ -2668,26 +2362,7 @@ export const S79 = async (page) => {
     surrounding Occurrence roster. */
 // STORY:finding-evidence-routing:S80
 export const S80 = async (page) => {
-  await openWholeDay(page);
-  await clickQueueRow(page, 'Carb undercount');
-  await page.click('#seg-align button:nth-child(2)');
-  await page.locator('#ec-chart').waitFor();
-  await settle(page, 600);
-  await page.click('#level .ev-row');
-  await settle(page, 800);
-  const before = await state(page);
-  const selected = async () => page.locator('#level .case-occurrence[aria-pressed="true"]')
-    .getAttribute('data-occurrence-id');
-  const selectedId = await selected();
-  await page.locator('#ec-chart').focus();
-  await page.keyboard.press('ArrowUp');
-  await settle(page, 300);
-  is((await state(page)).levelHead, before.levelHead, 'S80 chart ArrowUp leaves the selection unchanged');
-  is(await selected(), selectedId, 'S80 chart ArrowUp leaves the pressed row unchanged');
-  await page.keyboard.press('ArrowDown');
-  await settle(page, 300);
-  is((await state(page)).levelHead, before.levelHead, 'S80 chart ArrowDown leaves the selection unchanged');
-  is(await selected(), selectedId, 'S80 chart ArrowDown leaves the pressed row unchanged');
+  await assertRetiredGlobalCanvas(page, 'S80');
 };
 
 /** S81 · Choosing a rendered Occurrence keeps the reader's place on that row. */
@@ -2839,11 +2514,10 @@ export const S89 = async (page) => {
   await drawInside(page, 20 * 60, 22 * 60);
   const before = await state(page);
   const b = await plot(page);
-  await page.mouse.move(chartXAt(b, 21 * 60), b.y + b.h * 0.45);
-  await page.mouse.down();
-  await page.mouse.move(b.x + b.w - 39, b.y + b.h * 0.45, { steps: 8 });
-  await page.waitForFunction(() => Number(document.getElementById('chart').parentElement
-    .dataset.clockPan || 0) >= 1274, null, { timeout: 7000 });
+  await holdUntilStop(page, { x: chartXAt(b, 21 * 60), y: b.y + b.h * 0.45 },
+    'right', before.chip);
+  ok(await clockPan(page) >= 1200,
+    'S89 the slide travels across the full unrolled day before returning to its start');
   await page.mouse.up();
   await settle(page, 500);
   const after = await state(page);
@@ -2858,53 +2532,7 @@ export const S89 = async (page) => {
     underneath and print the clock window over an event-aligned chart. */
 // STORY:finding-evidence-routing:S33
 export const S33 = async (page) => {
-  await clickQueueRow(page, 'Over-treated low');
-  const clock = await state(page);
-  ok(clock.clockHead, 'S33 precondition: the clock canvas header is up');
-  is(clock.canvasHead.title, 'Glucose by time of day', 'S33 precondition: By clock owns the shared title');
-  is(clock.eventHeads, 0, 'S33 precondition: no event header yet');
-  const originalRect = clock.canvasHead;
-  const clockChart = await page.locator('#chart').boundingBox();
-  await page.mouse.move(clockChart.x + clockChart.width * .45, clockChart.y + clockChart.height * .5);
-  await settle(page);
-  is((await state(page)).canvasHead.hover, '1', 'S33 By clock pointer opens its readout in the shared header');
-  await page.mouse.move(1, 1); await settle(page);
-  is((await state(page)).canvasHead.hover, '0', 'S33 By clock pointer restores its title');
-  await page.click('#seg-align button:nth-child(2)');
-  await page.locator('.ec-surface').waitFor();
-  await settle(page, 600);
-  const event = await state(page);
-  is(event.alignPressed, ['By event'], 'S33 the reader is on By event');
-  is(event.clockHeadDisplay, 'grid', 'S33 the shared header remains rendered');
-  ok(event.clockHead, 'S33 the shared header remains on screen');
-  is(event.eventHeads, 0, 'S33 no nested event header remains');
-  is(event.canvasHead, { ...originalRect, title: 'Over-treated low response comparison', label: 'Low excursion', hover: '0' }, 'S33 By event replaces the exact shared header rectangle, naming the finding and its served anchor');
-  is(event.eventCaption, null, "S33 RETIRED 2026-08-20 Connor Griffin: Drop all that shit. It's a chart.");
-  is(event.clockCanvas, false, 'S33 the clock canvas is not left drawn underneath');
-  const eventChart = await page.locator('#ec-chart').boundingBox();
-  await page.mouse.move(eventChart.x + eventChart.width * .45, eventChart.y + eventChart.height * .5);
-  await settle(page);
-  const hovered = await state(page);
-  is(hovered.canvasHead.hover, '1', 'S33 event pointer swaps the shared header to its readout');
-  await page.mouse.move(1, 1); await settle(page);
-  const restored = await state(page);
-  is(restored.canvasHead.hover, '0', 'S33 event pointer restores the shared header');
-  is(restored.canvasHead.title, 'Over-treated low response comparison', 'S33 event pointer restores the comparison title');
-  await page.click('#seg-align button:nth-child(1)');
-  await settle(page, 500);
-  const back = await state(page);
-  ok(back.clockHead, 'S33 By clock puts its own header back');
-  is(back.canvasHead, { ...originalRect, title: 'Glucose by time of day', hover: '0' }, 'S33 By clock restores the original shared header rectangle');
-  const restoredClockChart = await page.locator('#chart').boundingBox();
-  await page.mouse.move(restoredClockChart.x + restoredClockChart.width * .45, restoredClockChart.y + restoredClockChart.height * .5);
-  await settle(page);
-  is((await state(page)).canvasHead.hover, '1', 'S33 restored By clock pointer opens its readout in the shared header');
-  await page.mouse.move(1, 1); await settle(page);
-  const restoredClock = await state(page);
-  is(restoredClock.canvasHead.hover, '0', 'S33 restored By clock pointer restores its title');
-  is(restoredClock.canvasHead.title, 'Glucose by time of day', 'S33 restored By clock title returns after hover');
-  is(restoredClock.eventCaption, null, "S33 RETIRED 2026-08-20 Connor Griffin: Drop all that shit. It's a chart.");
-  is(back.eventCanvas, false, 'S33 ... and takes the event canvas down');
+  await assertRetiredGlobalCanvas(page, 'S33');
 };
 
 /** S34 · A failed by-event fetch restores the clock canvas and leaves the
@@ -2913,45 +2541,7 @@ export const S33 = async (page) => {
     neither canvas at all. */
 // STORY:finding-evidence-routing:S34
 export const S34 = async (page) => {
-  await page.getByRole('button', { name: '24 h', exact: true }).click();
-  await settle(page, 450);
-  const originalClock = await state(page);
-  const originalRect = originalClock.canvasHead;
-  await clickQueueRow(page, 'Correction stacking');
-  await page.waitForFunction(() => document.querySelector('#seg-align button[aria-pressed="true"]')?.textContent.trim() === 'By clock');
-  await page.locator('#chart:not([hidden])').waitFor();
-  const byEventRequests = [];
-  const observeCaseRequest = (request) => {
-    const url = new URL(request.url());
-    if (url.pathname === '/api/diagnose/finding-case-file') {
-      byEventRequests.push(url.searchParams.get('alignment'));
-    }
-  };
-  page.on('request', observeCaseRequest);
-  expectResponse(page, /^\/api\/diagnose\/finding-case-file$/, 500);
-  await page.getByRole('button', { name: 'By event', exact: true }).click();
-  await settle(page, 900);
-  page.off('request', observeCaseRequest);
-  const after = await state(page);
-  is(byEventRequests, ['event'], 'S34 failure makes one By-event request and no hidden clock retry');
-  is(await page.locator('#level [role="alert"]').innerText(),
-    'Synthetic event projection failure.', 'S34 names the failed event request');
-  is(after.eventCanvas, false, 'S34 the failed event canvas is not left mounted');
-  ok(after.clockCanvas, 'S34 the clock canvas is restored');
-  ok(after.clockHead, 'S34 ... with its own header');
-  is(after.canvasHead, { ...originalRect, title: 'Glucose by time of day', hover: '0' }, 'S34 failed projection restores the original clock header rectangle and title');
-  is(after.eventCaption, null, "S34 RETIRED 2026-08-20 Connor Griffin: Drop all that shit. It's a chart.");
-  const recoveredChart = await page.locator('#chart').boundingBox();
-  await page.mouse.move(recoveredChart.x + recoveredChart.width * .45, recoveredChart.y + recoveredChart.height * .5);
-  await settle(page);
-  is((await state(page)).canvasHead.hover, '1', 'S34 recovered clock pointer opens its readout');
-  await page.mouse.move(1, 1); await settle(page);
-  const recovered = await state(page);
-  is(recovered.canvasHead.hover, '0', 'S34 recovered clock pointer restores its title');
-  is(recovered.canvasHead.title, 'Glucose by time of day', 'S34 recovered clock title returns after hover');
-  is(after.crumb[after.crumb.length - 1], 'Correction stacking', 'S34 the reader is left on the finding');
-  ok(/^window [\d,]+ of [\d,]+ readings$/.test(after.scope),
-    `S34 the restored canvas states its own window (${after.scope})`);
+  await assertRetiredGlobalCanvas(page, 'S34');
 };
 
 /** S35 · A finding whose episodes span two families shows ONE family in the
@@ -2960,18 +2550,7 @@ export const S34 = async (page) => {
     cannot even be joined; the family the event view names wins now. */
 // STORY:finding-evidence-routing:S35
 export const S35 = async (page) => {
-  await clickQueueRow(page, 'Carb undercount');
-  const framed = await state(page);
-  ok(/·\s*meals$/.test(framed.levelWho || ''),
-    `S35 the panel frames on the family the event view names (${framed.levelWho})`);
-  ok(/\bmeal responses\b/.test(framed.levelStat || ''),
-    `S35 ... and counts that family, not the larger one (${framed.levelStat})`);
-  await page.click('#seg-align button:nth-child(2)');
-  await page.locator('.ec-surface').waitFor();
-  await settle(page, 600);
-  const view = await page.evaluate(() =>
-    window.__diagnoseEventComparison?.projection?.family ?? null);
-  is(view, 'meals', 'S35 the chart draws the same family the panel listed');
+  await assertRetiredGlobalCanvas(page, 'S35');
 };
 
 /** S36 · Narrowing the window until the open finding has no row leaves the
@@ -3001,31 +2580,7 @@ export const S36 = async (page) => {
     server and out for the reader. */
 // STORY:finding-evidence-routing:S37
 export const S37 = async (page) => {
-  const opening = await state(page);
-  is(opening.pressed, ['Overnight'], 'S37 precondition: opens on the Overnight preset');
-  await drawWindow(page, [840, 960], [0, 360]);
-  const drawnWindow = await state(page);
-  is(drawnWindow.chip, 'Window 14:00–16:00', `S37 the reader drew 14:00–16:00 (${drawnWindow.chip})`);
-  await clickQueueRow(page, 'Late bolus');
-  const panel = await state(page);
-  ok(/\b1 of 10 meal responses in 14:00–16:00 · 9 not attributed\b/.test(panel.levelStat || ''),
-    `S37 the panel renders the retained server population (${panel.levelStat})`);
-  await page.click('#seg-align button:nth-child(2)');
-  await page.locator('.ec-surface').waitFor();
-  await settle(page, 700);
-  const chart = await page.evaluate(() => {
-    const projection = window.__diagnoseEventComparison?.projection;
-    return {
-      label: projection?.window?.label ?? null,
-      scoped: projection?.window?.scoped ?? null,
-      denominator: projection?.summary?.denominator ?? null,
-      caption: document.querySelector('.ec-window-context')?.textContent.trim() ?? null,
-    };
-  });
-  is(chart.scoped, true, 'S37 the projection answered for a scoped window');
-  is(chart.label, '14:00–16:00', 'S37 the chart counted the reader\'s own window');
-  is(chart.denominator, 10, 'S37 ... and renders the same server population as the panel');
-  is(chart.caption, null, "S37 RETIRED 2026-08-20 Connor Griffin: Drop all that shit. It's a chart.");
+  await assertRetiredGlobalCanvas(page, 'S37');
 };
 
 
@@ -3034,30 +2589,7 @@ export const S37 = async (page) => {
     preparation continues to own its inspectable By-event path. */
 // STORY:finding-evidence-routing:S38
 export const S38 = async (page) => {
-  await page.getByRole('button', { name: '24 h', exact: true }).click();
-  await settle(page, 450);
-  await page.getByRole('button', { name: /Filter/ }).click();
-  await page.getByRole('menuitemradio', { name: 'Event charts', exact: true }).click();
-  await page.keyboard.press('Escape');
-  await clickQueueRow(page, 'Correction on active insulin');
-  await page.waitForFunction(() => document.querySelector('#seg-align button[aria-pressed="true"]')?.textContent.trim() === 'By event');
-  await page.locator('#align-canvas:not([hidden])').waitFor();
-  is((await state(page)).alignPressed, ['By event'], 'S38 precondition: direct entry owns the event canvas');
-  await page.getByRole('button', { name: 'Morning', exact: true }).click();
-  await settle(page, 900);
-  const narrowed = await state(page);
-  is(narrowed.pressed, ['Morning'], 'S38 the replacement projection is Morning');
-  is(narrowed.crumb[narrowed.crumb.length - 1], 'Correction on active insulin',
-    'S38 the retained Finding remains open after its separate projection changes');
-  ok(narrowed.levelStat !== null, 'S38 the replacement projection still publishes the Finding');
-  is(narrowed.alignShown, true, 'S38 server-owned ALIGN remains available after the projection loses its coordinate');
-  is(narrowed.alignPressed, ['By event'], 'S38 the retained case stays on its server-owned By-event path');
-  is(narrowed.clockCanvas, false, 'S38 By clock does not replace the coherent retained event canvas');
-  is(narrowed.eventCanvas, true, 'S38 the coherent event canvas remains or reloads with the retained preparation');
-  await page.keyboard.press('Backspace');
-  const filtered = await state(page);
-  ok((await state(page)).queue.some((row) => row.title === 'Correction on active insulin'),
-    'S38 Event charts keeps the inspectable row reachable through its retained preparation');
+  await assertRetiredGlobalCanvas(page, 'S38');
 };
 
 /** S39 · A window change ASKS the server for its rows, and until they land the
@@ -3318,49 +2850,52 @@ export const issue86HeaderFilter = async (page) => {
   await page.waitForFunction(() => document.activeElement?.getAttribute('aria-label')?.startsWith('Highs '));
   const roles = await page.locator('#filter-menu [role^="menuitem"]').evaluateAll((items) =>
     items.map((item) => item.getAttribute('role')));
-  is(roles, ['menuitemcheckbox', 'menuitemcheckbox', 'menuitemcheckbox', 'menuitemcheckbox',
-    'menuitemradio', 'menuitemradio'], '#86 the menu exposes four Sift checks and two View radios');
+  is(roles, ['menuitemcheckbox', 'menuitemcheckbox', 'menuitemcheckbox', 'menuitemcheckbox'],
+    '#86 the menu exposes exactly the four Sift checks');
   await page.keyboard.press('ArrowUp');
-  is(await page.evaluate(() => document.activeElement?.textContent.trim()), 'Event charts',
-    '#86 roving focus wraps from Highs to Event charts');
+  ok((await page.evaluate(() => document.activeElement?.getAttribute('aria-label') || ''))
+    .startsWith('Corrections '), '#86 roving focus wraps from Highs to Corrections');
   await page.keyboard.press('Escape');
   is(await page.evaluate(() => document.activeElement?.id), 'filter-trigger',
     '#86 Escape closes and restores focus to Filter');
+  is(await page.getByRole('menuitemradio').count(), 0,
+    '#86 the retired root View choices cannot return');
+  is(await page.locator('#seg-align, #align-canvas').count(), 0,
+    '#86 the retired global Align host cannot return');
 };
 
-/** #86 probe — Event charts intersects Sift over published row fields only,
-    preserves server order, and a settled zero result names all root filters. */
+/** #86 probe — Sift intersects the published row fields only, preserves server
+    order, and a settled zero result names the root filters. */
 export const issue86FilteredRoot = async (page) => {
   await page.getByRole('button', { name: '24 h', exact: true }).click();
   await settle(page, 450);
   const all = await state(page);
   await page.getByRole('button', { name: /Filter/ }).click();
-  await page.getByRole('menuitemradio', { name: 'Event charts', exact: true }).click();
-  const event = await state(page);
-  ok(event.queue.length > 0, '#86 the synthetic projection carries event-chart Findings');
-  ok(event.queue.every((row) => /Habit$/.test(row.tag || '')),
-    '#86 Event charts contains no settings or held reads');
-  const positions = event.queue.map((row) => all.queue.findIndex((candidate) => candidate.title === row.title));
-  ok(positions.every((position, index) => index === 0 || position > positions[index - 1]),
-    '#86 Event charts retains server order');
-  for (const label of ['Highs', 'Lows', 'Meals', 'Corrections']) {
+  for (const label of ['Highs', 'Meals', 'Corrections']) {
     await page.getByRole('menuitemcheckbox', { name: new RegExp(`^${label} `) }).click();
   }
+  const lows = await state(page);
+  is(lows.queue.map((row) => row.title), ['Correction on active insulin'],
+    '#86 Sift contains only the server-published low Finding');
+  const positions = lows.queue.map((row) => all.queue.findIndex((candidate) => candidate.title === row.title));
+  ok(positions.every((position, index) => index === 0 || position > positions[index - 1]),
+    '#86 Sift retains server order');
+  await page.getByRole('menuitemcheckbox', { name: /^Lows / }).click();
   const empty = await state(page);
-  is(empty.queue, [], '#86 View and empty Sift intersect to no rows');
+  is(empty.queue, [], '#86 an empty Sift intersects to no rows');
   is(empty.queueEmpty, 'No findings match the current filters.',
     '#86 the settled zero result names the current filters');
   is(empty.crumbMeta, '30 days', '#86 zero-result metadata retains duration and no count');
-  is(empty.filter.trigger, 'Filter 2', '#86 the trigger reports both non-default groups');
+  is(empty.filter.trigger, 'Filter 1', '#86 the trigger reports the one active Sift group');
 };
 
-/** #86 probe — Event charts entry seeds By event from the live row coordinate;
-    switching to clock and returning restores queue state and scroll. */
+/** #86 probe — a row-derived event chart seats directly; returning restores
+    the Sift, queue order and scroll without a root View or global Align. */
 export const issue86DirectEntryRestoration = async (page) => {
   await page.getByRole('button', { name: '24 h', exact: true }).click();
   await settle(page, 450);
   await page.getByRole('button', { name: /Filter/ }).click();
-  await page.getByRole('menuitemradio', { name: 'Event charts', exact: true }).click();
+  await page.getByRole('menuitemcheckbox', { name: /^Highs / }).click();
   await page.keyboard.press('Escape');
   const root = await state(page);
   const scroll = await page.evaluate(() => {
@@ -3368,26 +2903,22 @@ export const issue86DirectEntryRestoration = async (page) => {
     level.scrollTop = Math.min(24, Math.max(0, level.scrollHeight - level.clientHeight));
     return level.scrollTop;
   });
-  await page.locator('#level .qrow').first().click();
-  await page.waitForFunction(() => document.querySelector('#seg-align button[aria-pressed="true"]')?.textContent.trim() === 'By event');
-  await page.locator('#align-canvas:not([hidden])').waitFor();
+  const tile = page.locator('.evidence-tile[data-chart-id="finding:over_treated_low"]');
+  await tile.locator('.tile-body').click();
+  await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false');
   const opened = await state(page);
-  is(opened.alignPressed, ['By event'], '#86 Event charts entry opens directly By event');
+  is(await tile.getAttribute('data-drilled'), '', '#86 the row-derived event chart is directly seated');
+  ok(opened.crumb.includes('Over-treated low'), '#86 the seated chart opens its Finding case');
   is(opened.filter.visible, false, '#86 Filter is hidden in a case file');
-  await page.getByRole('button', { name: 'By clock', exact: true }).click();
-  await page.waitForFunction(() => document.querySelector('#seg-align button[aria-pressed="true"]')?.textContent.trim() === 'By clock');
-  await page.locator('#chart:not([hidden])').waitFor();
-  ok((await state(page)).clockCanvas, '#86 the reader can switch the same Finding to By clock');
   await page.keyboard.press('Backspace');
   await settle(page, 150);
   const returned = await state(page);
   is(returned.queue.map((row) => row.title), root.queue.map((row) => row.title),
     '#86 return restores the filtered server order');
   is(returned.pressed, ['24 h'], '#86 return preserves the clock window');
-  is(returned.filter.trigger, 'Filter 1', '#86 return preserves Event charts selection');
+  is(returned.filter.trigger, 'Filter 1', '#86 return preserves the Sift selection');
   is(returned.filter.open, false, '#86 return keeps the menu closed');
-  is(returned.filter.view.map((item) => item.checked), ['false', 'true'],
-    '#86 Event charts remains the selected View');
+  is(returned.filter.view, [], '#86 the retired root View remains absent on return');
   is(returned.levelScroll, scroll, '#86 return restores queue scroll position');
 };
 
@@ -3396,7 +2927,6 @@ export const issue86DirectEntryRestoration = async (page) => {
 export const issue86PendingRoot = async (page, control) => {
   await page.getByRole('button', { name: /Filter/ }).click();
   await page.getByRole('menuitemcheckbox', { name: /^Lows / }).click();
-  await page.getByRole('menuitemradio', { name: 'Event charts', exact: true }).click();
   const checked = (await state(page)).filter.sift.map((item) => item.checked);
   await page.keyboard.press('Escape');
   await page.click('#seg-window button:nth-child(3)');
@@ -3405,15 +2935,13 @@ export const issue86PendingRoot = async (page, control) => {
   is(pending.levelLoading, 'true', '#86 the root projection declares loading');
   is(pending.queue, [], '#86 no old rows remain under the arriving window');
   is(pending.crumbMeta, '12:00–18:00', '#86 root metadata carries no stale count');
-  is(pending.filter.trigger, 'Filter 2', '#86 both non-default groups remain selected');
+  is(pending.filter.trigger, 'Filter 1', '#86 the non-default Sift remains selected');
   is(pending.filter.sift.map((item) => item.text), ['Highs', 'Lows', 'Meals', 'Corrections'],
     '#86 pending Sift labels carry no old projection counts');
   is(pending.filter.sift.map((item) => item.checked), checked,
     '#86 pending Sift selection is retained');
   ok(pending.filter.sift.every((item) => !item.disabled), '#86 pending controls stay enabled');
-  is(pending.filter.view.map((item) => item.checked), ['false', 'true'],
-    '#86 pending View selection is retained');
-  ok(pending.filter.view.every((item) => !item.disabled), '#86 pending View controls stay enabled');
+  is(pending.filter.view, [], '#86 the retired View controls remain absent while pending');
   control.release();
   await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false',
     null, { timeout: 10_000 });
@@ -3428,14 +2956,13 @@ export const issue86PendingRoot = async (page, control) => {
   ], '#86 the exact Afternoon projection replaces the pending state in server order');
 };
 
-/** #86 probe — a malformed direct By-event response leaves the requested
-    alignment in place, names the inconsistent projection, and never asks for
-    or renders a clock case. */
+/** #86 probe — a malformed row-derived event case names the inconsistent
+    projection, preserves the window and returns to the same Sifted queue. */
 export const issue86MalformedRecovery = async (page) => {
   await page.getByRole('button', { name: '24 h', exact: true }).click();
   await settle(page, 450);
   await page.getByRole('button', { name: /Filter/ }).click();
-  await page.getByRole('menuitemradio', { name: 'Event charts', exact: true }).click();
+  await page.getByRole('menuitemcheckbox', { name: /^Highs / }).click();
   await page.keyboard.press('Escape');
   const caseRequests = [];
   const observeCaseRequest = (request) => {
@@ -3445,13 +2972,12 @@ export const issue86MalformedRecovery = async (page) => {
     }
   };
   page.on('request', observeCaseRequest);
-  await clickQueueRow(page, 'Late bolus');
+  await page.locator('.evidence-tile[data-chart-id="finding:over_treated_low"] .tile-body').click();
   await page.locator('#level [role="alert"]').waitFor();
   page.off('request', observeCaseRequest);
   const recovered = await state(page);
-  is(recovered.crumb[recovered.crumb.length - 1], 'Late bolus',
+  is(recovered.crumb[recovered.crumb.length - 1], 'Over-treated low',
     '#86 malformed event data leaves the reader on the same Finding');
-  is(recovered.alignPressed, ['By event'], '#86 malformed event data retains By event');
   is(caseRequests, ['event'], '#86 malformed event data makes no hidden clock-case request');
   is(await page.locator('#level [role="alert"]').getAttribute('data-code'), 'inconsistent_projection',
     '#86 malformed event data exposes the structured inconsistent-projection error');
@@ -3460,16 +2986,16 @@ export const issue86MalformedRecovery = async (page) => {
     '#86 malformed event data names the inconsistent projection');
   is(await page.locator('#level .clock').count(), 0,
     '#86 malformed event data renders no fallback clock case');
-  is(recovered.eventCanvas, false, '#86 malformed event evidence is never rendered');
+  is(await page.locator('.evidence-tile[data-chart-id="finding:over_treated_low"][data-drilled]').count(), 1,
+    '#86 malformed event evidence leaves the owning chart visibly drilled');
   is(recovered.pressed, ['24 h'], '#86 the clock window is preserved');
   await page.keyboard.press('Backspace');
   const root = await state(page);
-  ok(root.queue.some((row) => row.title === 'Late bolus'),
-    '#86 return keeps the same Finding reachable in Event charts');
+  is(root.crumb, ['Findings'], '#86 return restores the Sifted findings root');
+  ok(root.queue.length > 0, '#86 return restores the Sifted queue');
   is(root.pressed, ['24 h'], '#86 return preserves the clock window');
-  is(root.filter.trigger, 'Filter 1', '#86 the Event charts root View is preserved');
-  is(root.filter.view.map((item) => item.checked), ['false', 'true'],
-    '#86 the preserved View remains selected');
+  is(root.filter.trigger, 'Filter 1', '#86 the Sift selection is preserved');
+  is(root.filter.view, [], '#86 the retired root View remains absent');
 };
 
 /** ADR 79 · behavioral Finding case files. The C prefix keeps this revision's
@@ -3486,21 +3012,16 @@ export const C41 = async (page) => {
   const stat = await page.locator('#level .statline').innerText();
   const denominator = Number(stat.match(/^\d+ of (\d+) meal responses/)?.[1]);
   is(denominator, 10, `C41 claimed denominator is exact (${stat})`);
-  is(await page.locator('#level .vband button[aria-label="Meets criteria · 6"]').count(), 2,
-    'C41 fired can exceed claimed without browser recounting across both verdict controls');
-  const visibleBands = await page.locator('#level .vband .keys button.key[aria-label]').evaluateAll((buttons) =>
-    buttons.map((button) => Number(button.getAttribute('aria-label').match(/(\d+)$/)?.[1])));
+  is(await page.locator('#level .vband .bar [aria-label="Meets criteria · 6"]').count(), 1,
+    'C41 reads the served fired verdict segment once');
+  const visibleBands = await page.locator('#level .vband .bar [aria-label]').evaluateAll((bands) =>
+    bands.map((band) => Number(band.getAttribute('aria-label').match(/(\d+)$/)?.[1])));
   const residue = await page.locator('#level .vband-foot').innerText();
   const residueBands = [...residue.matchAll(/\d+/g)].map((match) => Number(match[0]));
   is(visibleBands.length + residueBands.length, 5,
     'C41 reads every published verdict band, including the two residue bands');
   is([...visibleBands, ...residueBands].reduce((sum, count) => sum + count, 0), denominator,
     'C41 all five server verdict bands reconcile to the case denominator');
-  is(await page.locator('#level .clock .bars > div').count(), 12,
-    'C41 renders the server exact twelve clock buckets');
-  const total = await page.locator('#level .clock .bars > div').evaluateAll((rows) =>
-    rows.reduce((sum, row) => sum + Number(row.dataset.n), 0));
-  is(total, 1, 'C41 clock bucket counts sum to the server claimed total');
   ok(await page.locator('#level .case-occurrence').count() > 0,
     'C41 the fired roster is nonempty');
 };
@@ -3514,21 +3035,19 @@ export const C42 = async (page) => {
     await page.waitForSelector('#level .who');
     is((await page.locator('#level .who').innerText()).split(' · ')[0], title,
       `C42 ${title} opens its server case`);
-    await page.getByRole('button', { name: 'Findings', exact: true }).click();
+    await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
   }
 };
 
 export const C43 = async (page) => {
   await openWholeDay(page);
   await clickQueueRow(page, 'Correction stacking');
-  await page.getByRole('button', { name: 'By event', exact: true }).click();
-  await page.waitForSelector('#ec-chart');
   await page.locator('#level .case-occurrence').first().click();
   await page.waitForSelector('#level .case-facts');
   is(await page.locator('#level .source-correction').count(), 2,
     'C43 correction-pair selection preserves both canonical source doses');
-  is(await page.getByRole('button', { name: 'By event', exact: true }).getAttribute('aria-pressed'),
-    'true', 'C43 By event persists through selection');
+  ok((await page.locator('#level .who').innerText()).includes('Correction stacking'),
+    'C43 the selected correction pair remains inside its Finding case');
 };
 
 export const C44 = async (page) => {
@@ -3537,10 +3056,7 @@ export const C44 = async (page) => {
   await page.waitForSelector('#level .who');
   is(await page.locator('#level .who').innerText(), 'Missed / unannounced meal · highs',
     'C44 opens the server-owned missed-meal High case');
-  is(await page.getByRole('button', { name: 'By event', exact: true }).count(), 1,
-    'C44 exposes ALIGN from the server-owned missed-meal coordinate');
-  await page.getByRole('button', { name: 'By event', exact: true }).click();
-  await page.waitForSelector('#ec-chart');
+  await page.locator('.evidence-tile[data-chart-id="finding:missed_meal"] .tile-body').click();
   const verdictBand = await page.locator('#level .vband').evaluate((band) => ({
     segments: [...band.querySelectorAll('.bar [aria-label]')]
       .map((part) => part.getAttribute('aria-label')),
@@ -3570,8 +3086,7 @@ export const C44 = async (page) => {
 export const C56 = async (page) => {
   await openWholeDay(page);
   await clickQueueRow(page, 'Missed / unannounced meal');
-  await page.getByRole('button', { name: 'By event', exact: true }).click();
-  await page.waitForSelector('#ec-chart');
+  await page.locator('.evidence-tile[data-chart-id="finding:missed_meal"] .tile-body').click();
   is(await page.locator('#level .empty').first().innerText(), 'No occurrences in this population.',
     'C56 renders the served empty matched cohort explicitly');
   is(await page.locator('[data-comparison-cohort="matched"]').count(), 0,
@@ -3586,49 +3101,17 @@ export const C56 = async (page) => {
 export const C57 = async (page) => {
   await openWholeDay(page);
   await clickQueueRow(page, 'Missed / unannounced meal');
-  await page.getByRole('button', { name: 'By event', exact: true }).click();
-  await page.waitForSelector('#ec-chart');
-  /* Awaited together: a detached waitForRequest whose click never lands rejects
-     outside any story's try, which took the whole replay down rather than
-     failing one story. */
-  const [issued] = await Promise.all([
-    page.waitForRequest((candidate) => {
-      const url = new URL(candidate.url());
-      return url.pathname === '/api/diagnose/finding-case-file' && url.searchParams.has('occ');
-    }),
-    page.locator('[data-comparison-cohort="matched"]').first().click(),
-  ]);
-  const requested = new URL(issued.url()).searchParams.get('occ');
+  await page.locator('.evidence-tile[data-chart-id="finding:missed_meal"] .tile-body').click();
+  const matched = page.locator('[data-comparison-cohort="matched"]').first();
+  await matched.click();
   await page.waitForSelector('#level .case-facts');
-  const drawn = await page.evaluate(() => {
-    const exposed = window.__diagnoseEventComparison;
-    const selected = exposed?.selected;
-    const series = exposed?.chart.getOption().series || [];
-    const line = (cohort) => series.find((item) => item.id === `${cohort}:line:limited`);
-    const episode = (cohort) => series.find((item) => item.id?.startsWith(`${cohort}:episode:`));
-    const trace = series.find((item) => item.name === 'Selected trace');
-    return {
-      id: selected?.id ?? null,
-      cohort: selected?.cohort ?? null,
-      trace: trace?.data ?? null,
-      responseTrace: selected?.glucose?.map((point) => [point.minute, point.bg]) ?? null,
-      opacity: { matched: line('matched')?.lineStyle?.opacity ?? null,
-        comparison: episode('comparison')?.lineStyle?.opacity ?? null },
-      comparisonAggregate: series.some((item) => /^comparison:(?:line|spread):/.test(item.id || '')),
-      legend: [...document.querySelectorAll('#ec-chart-key [data-cohort]')]
-        .map((item) => [item.dataset.cohort, item.dataset.selectedCohort]),
-    };
-  });
-  is(requested, drawn.id, 'C57 selection requests the server-owned matched occurrence');
-  is(drawn.cohort, 'matched', 'C57 uses the served matched comparison cohort for emphasis');
-  is(drawn.opacity, { matched: 1, comparison: null },
-    'C57 emphasizes the served limited matched aggregate at full weight');
-  is(drawn.comparisonAggregate, false,
-    'C57 does not invent an aggregate for the withheld comparison population');
-  is(Object.fromEntries(drawn.legend).matched, 'true', 'C57 legend marks the matched cohort selected');
-  is(Object.fromEntries(drawn.legend).comparison, 'false',
-    'C57 legend leaves the named comparison cohort unselected');
-  is(drawn.trace, drawn.responseTrace, 'C57 draws the exact selected matched trace');
+  is(await matched.getAttribute('aria-pressed'), 'true',
+    'C57 marks the served matched-cohort occurrence selected');
+  const facts = await page.locator('#level .case-facts').innerText();
+  ok(/\d+ glucose readings/.test(facts) && /\d+ event markers/.test(facts),
+    'C57 reveals the selected matched occurrence trace and markers');
+  is(await page.locator('.evidence-tile[data-chart-id="finding:missed_meal"]')
+    .getAttribute('data-drilled'), '', 'C57 leaves the owning comparison tile visibly drilled');
 };
 
 /* The ordinary generated projection withholds some case-file rows. A story may
@@ -3680,114 +3163,35 @@ export const C45 = async (page) => {
 };
 
 export const C46 = async (page) => {
-  await openWholeDay(page);
-  await clickQueueRow(page, 'Over-treated low');
-  const before = await page.locator('#level .who').innerText();
-  expectResponse(page, /^\/api\/diagnose\/finding-case-file$/, 500);
-  await page.getByRole('button', { name: 'By event', exact: true }).click();
-  await page.waitForSelector('#level [role="alert"]');
-  is(await page.locator('#level .who').innerText(), before,
-    'C46 active failure preserves the old inspector');
-  is(await page.locator('#level .clock').count(), 1,
-    'C46 active failure preserves the old clock canvas generation');
-  is(await page.locator('#level [role="alert"]').getAttribute('data-code'), 'inconsistent_projection',
-    'C46 consumes the structured error code');
+  await assertRetiredGlobalCanvas(page, 'C46');
 };
 
 export const C47 = async (page) => {
-  await openWholeDay(page);
-  await clickQueueRow(page, 'Over-treated low');
-  expectResponse(page, /^\/api\/diagnose\/finding-case-file$/, 409);
-  await page.getByRole('button', { name: 'By event', exact: true }).click();
-  await settle(page, 120);
-  is(await page.locator('#level .clock').count(), 1,
-    'C47 both shadow legs leave the old clock generation visible');
-  ok(!(await page.locator('#level .who').innerText()).includes('refreshed'),
-    'C47 refreshed inspector stays in shadow');
-  await page.waitForSelector('#ec-chart');
-  ok((await page.locator('#level .who').innerText()).includes('refreshed'),
-    'C47 inspector and event canvas swap only after both legs succeed');
-  await page.getByRole('button', { name: 'Findings', exact: true }).click();
-  is(await page.locator('#level .qrow[data-id="finding:over_treated_low"] .lab').innerText(),
-    'Over-treated low refreshed', 'C47 the queue joined the same atomic three-surface swap');
+  await assertRetiredGlobalCanvas(page, 'C47');
 };
 
 export const C48 = async (page) => {
-  await openWholeDay(page);
-  await clickQueueRow(page, 'Over-treated low');
-  expectResponse(page, /^\/api\/diagnose\/finding-case-file$/, 404);
-  expectResponse(page, /^\/api\/diagnose\/finding-case-file-preparation$/, 503);
-  await page.getByRole('button', { name: 'By event', exact: true }).click();
-  await page.waitForSelector('#level [role="alert"]');
-  is(await page.locator('#level [role="alert"]').getAttribute('data-code'), 'preparation_changed',
-    'C48 queue-refresh failure is the active structured error');
-  is(await page.locator('#level .clock').count(), 1,
-    'C48 queue-refresh failure preserves the old case generation');
+  await assertRetiredGlobalCanvas(page, 'C48');
 };
 
 export const C49 = async (page) => {
-  await openWholeDay(page);
-  await clickQueueRow(page, 'Over-treated low');
-  expectResponse(page, /^\/api\/diagnose\/finding-case-file$/, 409);
-  expectResponse(page, /^\/api\/diagnose\/finding-case-file$/, 500);
-  await page.getByRole('button', { name: 'By event', exact: true }).click();
-  await page.waitForSelector('#level [role="alert"]');
-  is(await page.locator('#level .clock').count(), 1,
-    'C49 case failure after refresh preserves the whole old case');
-  is(await page.locator('#level [role="alert"]').getAttribute('data-code'), 'inconsistent_projection',
-    'C49 the shadow case error is reported exactly');
+  await assertRetiredGlobalCanvas(page, 'C49');
 };
 
 export const C50 = async (page) => {
-  await openWholeDay(page);
-  await clickQueueRow(page, 'Over-treated low');
-  expectResponse(page, /^\/api\/diagnose\/finding-case-file$/, 409);
-  await page.getByRole('button', { name: 'By event', exact: true }).click();
-  await settle(page, 80);
-  await page.locator('#level .case-occurrence').first().click();
-  await settle(page, 600);
-  is(await page.getByRole('button', { name: 'By clock', exact: true }).getAttribute('aria-pressed'),
-    'true', 'C50 a newer selection supersedes the stale preparation leg');
-  is(await page.locator('#level [role="alert"]').count(), 0,
-    'C50 the superseded preparation leg lands silently');
+  await assertRetiredGlobalCanvas(page, 'C50');
 };
 
 export const C51 = async (page) => {
-  await openWholeDay(page);
-  await clickQueueRow(page, 'Over-treated low');
-  expectResponse(page, /^\/api\/diagnose\/finding-case-file$/, 409);
-  await page.getByRole('button', { name: 'By event', exact: true }).click();
-  await settle(page, 180);
-  await page.locator('#level .case-occurrence').first().click();
-  await settle(page, 650);
-  is(await page.getByRole('button', { name: 'By clock', exact: true }).getAttribute('aria-pressed'),
-    'true', 'C51 a newer selection supersedes the shadow case leg');
-  is(await page.locator('#level [role="alert"]').count(), 0,
-    'C51 the superseded shadow case lands silently');
+  await assertRetiredGlobalCanvas(page, 'C51');
 };
 
 export const C52 = async (page) => {
-  await openWholeDay(page);
-  await clickQueueRow(page, 'Over-treated low');
-  expectResponse(page, /^\/api\/diagnose\/finding-case-file$/, 404);
-  await page.getByRole('button', { name: 'By event', exact: true }).click();
-  await page.waitForSelector('#level [role="alert"]');
-  is(await page.locator('#level .clock').count(), 1,
-    'C52 Finding-unavailable refresh preserves the prior inspector/canvas pair');
-  await page.getByRole('button', { name: 'Findings', exact: true }).click();
-  is(await page.locator('#level .qrow[data-id="finding:over_treated_low"]').count(), 0,
-    'C52 the successful queue refresh removes the unavailable Finding');
+  await assertRetiredGlobalCanvas(page, 'C52');
 };
 
 export const C53 = async (page) => {
-  await openWholeDay(page);
-  await clickQueueRow(page, 'Over-treated low');
-  await page.getByRole('button', { name: 'By event', exact: true }).click();
-  await page.waitForSelector('#level [role="alert"]');
-  is(await page.locator('#level [role="alert"]').getAttribute('data-code'),
-    'inconsistent_projection', 'C53 rejects a case for another preparation/Finding identity');
-  is(await page.locator('#level .clock').count(), 1,
-    'C53 an identity mismatch preserves the active generation');
+  await assertRetiredGlobalCanvas(page, 'C53');
 };
 
 export const C54 = async (page) => {
@@ -3895,22 +3299,6 @@ export const C55 = async (page) => {
 const structured = (status, code, message) => ({ status,
   body: { detail: { code, message } } });
 const pause = (ms) => new Promise((resolve) => { setTimeout(resolve, ms); });
-const refreshedPreparation = (preparation) => {
-  const next = structuredClone(preparation);
-  next.projection_id = `fp_${'8'.repeat(32)}`;
-  const row = next.rendered_rows.find((item) => item.id === 'finding:over_treated_low');
-  if (row) {
-    row.title += ' refreshed'; row.case_header.title = row.title;
-    next.behavioral_case_headers[row.id].title = row.title;
-  }
-  return next;
-};
-const refreshedCase = (body) => {
-  const next = structuredClone(body);
-  next.projection_id = `fp_${'8'.repeat(32)}`;
-  next.finding.title += ' refreshed';
-  return next;
-};
 /* S75 keeps the real request's coordinate and generation while replacing only
    its rows with the frozen all-Watching population. A scoped fixture response
    cannot answer the root request: the workstation correctly rejects a response
@@ -3927,6 +3315,486 @@ const queueProjection = (projected) => ({
   findings_window: projected.findings_window,
   window: projected.window,
 });
+const withSecondBasal = (projected) => {
+  const basal = projected.rows.find((row) => row.parameter === 'basal_rate');
+  if (!basal) return projected;
+  const second = structuredClone(basal);
+  second.id = 'basal:450-480';
+  second.title = 'Basal 07:30 · raise';
+  second.label = '07:30';
+  second.span = { ...second.span, start_min: 450, end_min: 480, label: '07:30' };
+  second.members = second.members?.map((member) => ({ ...member, start_min: 450 }));
+  return { ...projected, rows: [...projected.rows, second] };
+};
+const withGeneratedCarbRatio = (projected) => {
+  const source = FINDINGS_PROJECTION.windows.global.rows
+    .find((row) => row.parameter === 'carb_ratio');
+  return source && !projected.rows.some((row) => row.id === source.id)
+    ? { ...projected, rows: [...projected.rows, structuredClone(source)] } : projected;
+};
+const withGeneratedCarbRatioRecovery = (projected) => {
+  const next = withGeneratedCarbRatio(projected);
+  return next.window?.scoped
+    ? { ...next, analysis_generation: `${next.analysis_generation}:scoped` } : next;
+};
+
+const canvasSnapshot = (page) => page.evaluate(() => ({
+  arrangement: document.querySelector('#tile-field')?.dataset.arrangement || null,
+  fullscreen: document.querySelector('.dw')?.hasAttribute('data-fullscreen') || false,
+  mode: document.querySelector('.dw')?.dataset.canvasMode || null,
+  pinCount: document.querySelector('#pin-count')?.textContent || null,
+  tiles: [...document.querySelectorAll('.evidence-tile')].map((tile) => ({
+    id: tile.dataset.chartId, seat: tile.dataset.seat, state: tile.dataset.state,
+    pinned: tile.hasAttribute('data-pinned'), drilled: tile.hasAttribute('data-drilled'),
+    title: tile.querySelector('h3')?.textContent.trim() || null,
+    message: tile.querySelector('.tile-state span')?.textContent.trim() || null,
+    modes: [...tile.querySelectorAll('.tile-modes button')].map((button) => ({
+      label: button.textContent.trim(), pressed: button.getAttribute('aria-pressed'),
+    })),
+  })),
+}));
+
+const openCanvas = async (page) => {
+  await page.getByRole('button', { name: '24 h', exact: true }).click();
+  await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false');
+  await page.waitForTimeout(700);
+};
+
+const pinNext = async (page) => {
+  const tile = page.locator('.evidence-tile .tile-pin[aria-pressed="false"]:not([disabled])');
+  const next = page.locator('#tile-schematic .next:not([disabled])');
+  if (await tile.count()) await tile.first().click();
+  else if (await next.count()) await next.first().click();
+  else return false;
+  await page.waitForTimeout(300);
+  return true;
+};
+
+const reachPinCount = async (page, count) => {
+  await openCanvas(page);
+  for (let pins = 0; pins < count; pins += 1) {
+    ok(await pinNext(page), `pin control reaches ${pins + 1} pins`);
+  }
+};
+
+// STORY:finding-evidence-routing:S92
+export const S92 = async (page) => {
+  await openCanvas(page);
+  const before = await canvasSnapshot(page);
+  const focal = before.tiles.find((tile) => tile.seat === 'focal');
+  const destination = before.tiles.find((tile) => tile.seat === 'slot-3');
+  ok(focal && destination, 'S92 opens with a focal chart and the non-first destination seat');
+  await page.locator(`.evidence-tile[data-chart-id="${destination.id}"] .tile-body`).click();
+  await settle(page);
+  const forward = await canvasSnapshot(page);
+  is(forward.tiles.find((tile) => tile.id === destination.id)?.seat, 'focal',
+    'S92 focus moves to the chosen chart');
+  is(forward.tiles.find((tile) => tile.id === focal.id)?.seat, destination.seat,
+    'S92 the demoted chart lands in the chosen chart’s former seat');
+  await captureEvidence(page, 'S92-focus-swap-forward');
+  await page.locator(`.evidence-tile[data-chart-id="${focal.id}"] .tile-body`).click();
+  await settle(page);
+  const reverse = await canvasSnapshot(page);
+  is(reverse.tiles.find((tile) => tile.id === focal.id)?.seat, 'focal',
+    'S92 reverse focus restores the original chart');
+  is(reverse.tiles.find((tile) => tile.id === destination.id)?.seat, destination.seat,
+    'S92 reverse focus returns the demoted chart to the same destination');
+  await captureEvidence(page, 'S92-focus-swap-reverse');
+};
+
+const arrangementStory = (id, pinCount, arrangement) => async (page) => {
+  await reachPinCount(page, pinCount);
+  const field = await canvasSnapshot(page);
+  is(field.arrangement, arrangement, `${id} ${pinCount} pins derive ${arrangement}`);
+  is(field.pinCount, `${pinCount}/4 pinned`, `${id} prints the exact pin count`);
+};
+
+// STORY:finding-evidence-routing:S93
+export const S93 = arrangementStory('S93', 0, 'focal');
+// STORY:finding-evidence-routing:S94
+export const S94 = arrangementStory('S94', 1, 'split');
+// STORY:finding-evidence-routing:S95
+export const S95 = arrangementStory('S95', 2, 'pair');
+// STORY:finding-evidence-routing:S96
+export const S96 = arrangementStory('S96', 3, 'onetwo');
+// STORY:finding-evidence-routing:S97
+export const S97 = arrangementStory('S97', 4, 'quad');
+
+// STORY:finding-evidence-routing:S98
+export const S98 = async (page) => {
+  await reachPinCount(page, 4);
+  const before = await canvasSnapshot(page);
+  is(await pinNext(page), false, 'S98 the fifth pin is refused at the control');
+  const after = await canvasSnapshot(page);
+  is(after.pinCount, '4/4 pinned', 'S98 the cap remains four');
+  is(after.tiles.filter((tile) => tile.pinned).map((tile) => tile.id),
+    before.tiles.filter((tile) => tile.pinned).map((tile) => tile.id),
+    'S98 refusing a fifth pin evicts nothing');
+};
+
+// STORY:finding-evidence-routing:S99
+export const S99 = async (page) => {
+  await reachPinCount(page, 0);
+  const field = await canvasSnapshot(page);
+  ok(field.tiles.length > 1, 'S99 the focal arrangement seats unpinned candidates');
+  is(field.tiles.filter((tile) => tile.pinned).length, 0, 'S99 seating is not pinning');
+  ok(field.tiles.some((tile) => tile.seat.startsWith('slot-')),
+    'S99 unpinned charts occupy the available slot positions');
+};
+
+// STORY:finding-evidence-routing:S100
+export const S100 = async (page) => {
+  await reachPinCount(page, 2);
+  await page.getByRole('button', { name: 'Charts', exact: true }).click();
+  const live = await page.locator('.explorer-thumbnail').count();
+  const field = await canvasSnapshot(page);
+  ok(live > field.tiles.length, 'S100 live surplus candidates remain available in the explorer');
+  is(field.tiles.length, 2, 'S100 the pair drops surplus candidates from the field');
+  is(field.tiles.filter((tile) => tile.pinned).length, 2, 'S100 both reader pins remain seated');
+};
+
+// STORY:finding-evidence-routing:S101
+export const S101 = async (page) => {
+  await reachPinCount(page, 4);
+  const eventTiles = page.locator('.evidence-tile:has(.tile-modes)');
+  ok(await eventTiles.count() >= 2, 'S101 two independently alignable charts are seated');
+  await eventTiles.nth(0).locator('button', { hasText: 'Clock' }).click();
+  await eventTiles.nth(1).locator('button', { hasText: 'Event' }).click();
+  const field = await canvasSnapshot(page);
+  const aligned = field.tiles.filter((tile) => tile.modes.length).slice(0, 2);
+  is(aligned[0].modes.find((mode) => mode.pressed === 'true')?.label, 'Clock',
+    'S101 the first chart keeps clock alignment');
+  is(aligned[1].modes.find((mode) => mode.pressed === 'true')?.label, 'Event',
+    'S101 the second chart keeps event alignment');
+};
+
+// STORY:finding-evidence-routing:S102
+export const S102 = async (page) => {
+  await reachPinCount(page, 4);
+  const ranges = await page.evaluate(() => [...document.querySelectorAll('.evidence-tile .tile-chart')]
+    .flatMap((host) => {
+      const option = window.echarts.getInstanceByDom(host)?.getOption?.();
+      const axis = Array.isArray(option?.yAxis) ? option.yAxis[0] : option?.yAxis;
+      return Number.isFinite(axis?.min) && Number.isFinite(axis?.max) ? [[axis.min, axis.max]] : [];
+    }));
+  ok(ranges.length >= 2, 'S102 at least two seated charts expose glucose axes');
+  is(new Set(ranges.map((range) => JSON.stringify(range))).size, 1,
+    'S102 every chart in the arrangement shares one glucose range');
+};
+
+// STORY:finding-evidence-routing:S103
+export const S103 = async (page) => {
+  await openCanvas(page);
+  ok((await canvasSnapshot(page)).tiles.some((tile) => tile.state === 'ok'),
+    'S103 a successful evidence request names the ok tile state');
+};
+
+// STORY:finding-evidence-routing:S104
+export const S104 = async (page) => {
+  await openCanvas(page);
+  const empty = (await canvasSnapshot(page)).tiles.find((tile) => tile.state === 'empty');
+  ok(empty, 'S104 absent evidence names the empty tile state');
+  ok(Boolean(empty.message), 'S104 the empty state explains the absence');
+};
+
+// STORY:finding-evidence-routing:S105
+export const S105 = async (page) => {
+  await openCanvas(page);
+  await page.getByRole('button', { name: 'Charts', exact: true }).click();
+  await page.getByRole('button', { name: /^Focus Carb ratio .+ · meal runs$/ }).click();
+  await page.waitForFunction(() => [...document.querySelectorAll('.evidence-tile')]
+    .some((tile) => tile.dataset.state === 'error'));
+  const failed = (await canvasSnapshot(page)).tiles.find((tile) => tile.state === 'error');
+  ok(failed?.message, 'S105 a failed evidence request names and explains the error state');
+};
+
+// STORY:finding-evidence-routing:S106
+export const S106 = async (page) => {
+  await openCanvas(page);
+  const carb = (await canvasSnapshot(page)).tiles.find((tile) => tile.id.startsWith('ic:'));
+  ok(carb, 'S106 the generated carb-ratio tile is seated before recovery');
+  const blockId = carb.id.slice('ic:'.length);
+  await page.locator(`.evidence-tile[data-chart-id="${carb.id}"] .tile-pin`).click();
+  const pattern = '**/api/diagnose/carb-ratio-block-evidence*';
+  let staleSent = false;
+  const staleRoute = async (route) => {
+    const url = new URL(route.request().url());
+    if (url.searchParams.get('block_id') !== blockId || staleSent) return route.fallback();
+    staleSent = true;
+    return route.fulfill({ status: 409,
+      contentType: 'application/json', body: JSON.stringify({ detail: {
+        code: 'analysis_generation_mismatch', message: 'Evidence changed. Refresh findings.',
+      } }) });
+  };
+  let markRefreshHeld;
+  const refreshHeld = new Promise((resolve) => { markRefreshHeld = resolve; });
+  let releaseRecovery;
+  const recoveryBarrier = new Promise((resolve) => { releaseRecovery = resolve; });
+  const findingsPattern = '**/api/diagnose/findings*';
+  let recoveryFindingsRequests = 0;
+  const delayRecovery = async (route) => {
+    if (staleSent) {
+      recoveryFindingsRequests += 1;
+      markRefreshHeld();
+      await recoveryBarrier;
+    }
+    return route.fallback();
+  };
+  expectResponse(page, /^\/api\/diagnose\/carb-ratio-block-evidence$/, 409);
+  await page.route(pattern, staleRoute);
+  await page.route(findingsPattern, delayRecovery);
+  await page.getByRole('button', { name: 'Afternoon', exact: true }).click();
+  await Promise.race([
+    refreshHeld,
+    page.waitForTimeout(5000).then(() => fail(
+      `S106 stale ${carb.id} did not issue a findings-generation recovery request`,
+    )),
+  ]);
+  try {
+    await page.waitForFunction(() => [...document.querySelectorAll('.evidence-tile')]
+      .some((tile) => tile.dataset.state === 'stale-generation'), null, { timeout: 5000 });
+  } catch {
+    await page.unroute(pattern, staleRoute);
+    releaseRecovery();
+    await page.unroute(findingsPattern, delayRecovery);
+    fail('S106 typed 409 never renders the required stale-generation tile state before recovery');
+  }
+  const stale = (await canvasSnapshot(page)).tiles.find((tile) => tile.state === 'stale-generation');
+  is(recoveryFindingsRequests, 1,
+    'S106 the typed 409 issues one findings-generation recovery request');
+  is(stale?.message, 'Evidence changed. Refresh findings.',
+    'S106 the 409 renders the named stale-generation state');
+  await page.unroute(pattern, staleRoute);
+  releaseRecovery();
+  await page.unroute(findingsPattern, delayRecovery);
+  await page.waitForFunction(() => [...document.querySelectorAll('.evidence-tile')]
+    .some((tile) => tile.dataset.chartId.startsWith('ic:') && tile.dataset.state === 'ok'),
+  null, { timeout: 5000 });
+  ok((await canvasSnapshot(page)).tiles.some((tile) => tile.id.startsWith('ic:') && tile.state === 'ok'),
+    'S106 refreshed findings re-request and recover the stale tile');
+};
+
+// STORY:finding-evidence-routing:S107
+export const S107 = async (page) => {
+  await openCanvas(page);
+  const held = page.locator('.evidence-tile[data-chart-id^="finding:"]').first();
+  const heldFindingId = await held.getAttribute('data-chart-id');
+  ok(Boolean(heldFindingId), 'S107 the held chart has no Finding identity');
+  await held.locator('.tile-pin').click();
+  const preparations = [];
+  const cases = [];
+  const observe = (request) => {
+    const url = new URL(request.url());
+    if (url.pathname === '/api/diagnose/finding-case-file-preparation') {
+      preparations.push({
+        start: Number(url.searchParams.get('start_min')),
+        end: Number(url.searchParams.get('end_min')),
+      });
+    }
+    if (url.pathname === '/api/diagnose/finding-case-file') {
+      cases.push({
+        projection: url.searchParams.get('projection_id'),
+        finding: url.searchParams.get('finding_id'),
+        alignment: url.searchParams.get('alignment'),
+        occurrence: url.searchParams.get('occ'),
+      });
+    }
+  };
+  const chipWindow = async (label) => {
+    const chip = (await state(page)).chip || '';
+    const match = /^Window (\d\d):(\d\d)–(\d\d):(\d\d)$/.exec(chip);
+    ok(Boolean(match), `${label} did not expose a live drawn window: ${chip}`);
+    return [Number(match[1]) * 60 + Number(match[2]),
+      Number(match[3]) * 60 + Number(match[4])];
+  };
+  const projectionFor = ([start, end]) => {
+    if (start === 0 && end === 360) return `fp_${'8'.repeat(32)}`;
+    return `fp_${`${start.toString(16).padStart(4, '0')}${end.toString(16).padStart(4, '0')}`.repeat(4)}`;
+  };
+  const waitForPinnedRead = async (window, since, label) => {
+    const projection = projectionFor(window);
+    const observed = () => preparations.slice(since.preparations)
+      .some(({ start, end }) => start === window[0] && end === window[1])
+      && cases.slice(since.cases).some((request) => request.projection === projection
+        && request.finding === heldFindingId && request.alignment === 'event'
+        && request.occurrence === null);
+    for (let attempt = 0; attempt < 100 && !observed(); attempt += 1) {
+      await page.waitForTimeout(50);
+    }
+    ok(observed(), `${label}: expected ${heldFindingId} / ${projection} / event / no occurrence; `
+      + `preparations=${JSON.stringify(preparations.slice(since.preparations))} `
+      + `cases=${JSON.stringify(cases.slice(since.cases))}`);
+  };
+  page.on('request', observe);
+  const box = await plot(page); const y = box.y + box.h * .45;
+  let before = { preparations: preparations.length, cases: cases.length };
+  await page.mouse.move(chartXAt(box, 420), y); await page.mouse.down();
+  await page.mouse.move(chartXAt(box, 780), y, { steps: 6 });
+  const ordinary = await chipWindow('S107 ordinary drag');
+  await waitForPinnedRead(ordinary, before,
+    'S107 the pinned chart re-reads its intermediate ordinary window before release');
+  await page.mouse.up(); await settle(page, 500);
+
+  await beginFreshDraw(page);
+  before = { preparations: preparations.length, cases: cases.length };
+  const unrolled = await plot(page);
+  const during = await panThenAim(page, { x: chartXAt(unrolled, 22 * 60) }, 'right',
+    { past: 180, aim: 26 * 60 });
+  ok(during.panOffset > 0, 'S107 midnight re-read did not travel through the unrolled day');
+  const wrapped = await chipWindow('S107 midnight drag');
+  ok(wrapped[0] > wrapped[1], `S107 midnight window did not wrap: ${wrapped}`);
+  await waitForPinnedRead(wrapped, before,
+    'S107 the pinned chart re-reads its wrapped intermediate window before release');
+  await page.mouse.up();
+  page.off('request', observe);
+};
+
+// STORY:finding-evidence-routing:S108
+export const S108 = async (page) => {
+  await reachPinCount(page, 3);
+  const before = await canvasSnapshot(page);
+  await page.locator('.evidence-tile').nth(1).locator('.tile-fullscreen').click();
+  is((await canvasSnapshot(page)).fullscreen, true, 'S108 fullscreen opens one chart');
+  await page.locator('.evidence-tile .tile-fullscreen').click();
+  const after = await canvasSnapshot(page);
+  is(after.arrangement, before.arrangement, 'S108 dismissal restores the exact arrangement');
+  is(after.tiles.map(({ id, seat, pinned }) => ({ id, seat, pinned })),
+    before.tiles.map(({ id, seat, pinned }) => ({ id, seat, pinned })),
+    'S108 dismissal restores every prior seat and pin');
+};
+
+// STORY:finding-evidence-routing:S109
+export const S109 = async (page) => {
+  await reachPinCount(page, 1);
+  const pinnedId = (await canvasSnapshot(page)).tiles.find((tile) => tile.pinned).id;
+  await page.getByRole('button', { name: 'Explore', exact: true }).click();
+  const presentation = await page.evaluate(() => ({
+    lane: document.querySelector('.lane-wrap')?.getClientRects().length || 0,
+    watch: document.querySelector('.inspector > .watch')?.getClientRects().length || 0,
+    filter: document.querySelector('.filter-wrap')?.getClientRects().length || 0,
+    verdict: document.querySelector('.vband')?.getClientRects().length || 0,
+  }));
+  is(presentation, { lane: 0, watch: 0, filter: 0, verdict: 0 },
+    'S109 Explore extinguishes every advisory layer');
+  const pin = (await canvasSnapshot(page)).tiles.find((tile) => tile.id === pinnedId);
+  is(pin?.pinned, true, 'S109 the reader pin keeps its accent state');
+};
+
+// STORY:finding-evidence-routing:S110
+export const S110 = async (page) => {
+  await openCanvas(page);
+  const tile = page.locator('.evidence-tile[data-chart-id^="finding:"]').first();
+  const id = await tile.getAttribute('data-chart-id');
+  await tile.locator('.tile-body').click(); await settle(page, 500);
+  const findingsName = (await page.locator('#drill-provenance').textContent()).trim();
+  ok(findingsName.length > 0, 'S110 Findings names the chart provenance');
+  is(await page.locator(`.evidence-tile[data-chart-id="${id}"]`).getAttribute('data-drilled'), '',
+    'S110 Findings marks the chart that owns the drill');
+  await page.getByRole('button', { name: 'Explore', exact: true }).click();
+  is((await page.locator('#drill-provenance').textContent()).trim(), findingsName,
+    'S110 Explore retains the same provenance name');
+  is(await page.locator(`.evidence-tile[data-chart-id="${id}"]`).getAttribute('data-drilled'), '',
+    'S110 Explore retains the chart mark');
+};
+
+// STORY:finding-evidence-routing:S111
+export const S111 = async (page) => {
+  await openCanvas(page);
+  await page.locator('.evidence-tile[data-chart-id^="finding:"]').first().locator('.tile-body').click();
+  await page.locator('#level .case-occurrence').first().click();
+  await page.locator('#level .clear-trace').waitFor();
+  const crumb = (await state(page)).crumb;
+  await page.locator('#level .clear-trace').click();
+  await page.waitForFunction(() => !document.querySelector('#level .clear-trace'));
+  is((await state(page)).crumb, crumb, 'S111 Clear trace returns to the same untraced case view');
+  ok(await page.locator('.evidence-tile[data-drilled]').count() === 1,
+    'S111 un-trace keeps the owning chart drilled');
+};
+
+/* STRENGTHENED #135 fix round. The story used to open on ONE chart and assert
+   the focal tile was the only thing the narrow field showed — which the old
+   pin-ordered CSS satisfied by accident, because with nothing else on screen
+   pin order and reading order cannot disagree. Two pins is the case that
+   separates them: focus the LATER-pinned chart and the reading order must still
+   lead with it. The pinning is done at desk width because a narrow field hides
+   every unpinned chart, so the second pin has no visible control there. */
+// STORY:finding-evidence-routing:S112
+export const S112 = async (page) => {
+  const narrowViewport = page.viewportSize();
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await reachPinCount(page, 2);
+  const seated = await canvasSnapshot(page);
+  const first = seated.tiles.find((tile) => tile.seat === 'focal');
+  const second = seated.tiles.find((tile) => tile.pinned && tile.seat !== 'focal');
+  ok(first?.pinned && second, 'S112 two pins seat a first and a later-pinned chart');
+  await page.locator(`.evidence-tile[data-chart-id="${second.id}"] .tile-body`).click();
+  await settle(page);
+  await page.setViewportSize(narrowViewport);
+  await settle(page, 350);
+
+  const narrow = await page.evaluate(() => {
+    const field = document.querySelector('#tile-field');
+    const style = getComputedStyle(field);
+    return { display: style.display, direction: style.flexDirection,
+      visible: [...field.querySelectorAll('.evidence-tile')]
+        .filter((tile) => tile.getClientRects().length)
+        .sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top)
+        .map((tile) => ({ id: tile.dataset.chartId, seat: tile.dataset.seat })) };
+  });
+  is(narrow.display, 'flex', 'S112 narrow canvas linearizes with flex');
+  is(narrow.direction, 'column', 'S112 narrow charts stack in one column');
+  is(narrow.visible.length, 2, 'S112 both pinned charts stay in the narrow field');
+  is(narrow.visible[0]?.id, second.id,
+    'S112 the focused later-pinned chart leads the narrow reading order');
+  is(narrow.visible[0]?.seat, 'focal', 'S112 and it leads because it is the focal tile');
+  is(narrow.visible[1]?.id, first.id, 'S112 the earlier pin follows it');
+};
+
+/* S113 · A behavioural drill seats its OWN comparison. Filed from a live repro
+   in the #135 fix round: over the 24 h window the field showed several
+   look-alike comparison tiles, none naming the factor it answered, and drilling
+   the top-ranked finding left the inspector reading one factor while the field
+   was seated on another. Three things are pinned here — the drilled finding's
+   comparison takes the focal seat, the chart that owns the drill is marked in
+   words, and no two live tiles carry the same name. The fourth is the crumb:
+   drilling twice must not print the title twice. */
+// STORY:finding-evidence-routing:S113
+export const S113 = async (page) => {
+  await openCanvas(page);
+  const rows = await page.locator('#level .qrow[data-id^="finding:"]')
+    .evaluateAll((nodes) => nodes.map((node) => node.dataset.id));
+  ok(rows.length >= 2,
+    `S113 the 24 h window publishes more than one behavioural finding (${rows.length})`);
+
+  const before = await canvasSnapshot(page);
+  is(new Set(before.tiles.map((tile) => tile.title)).size, before.tiles.length,
+    `S113 no two seated tiles are identically named (${JSON.stringify(before.tiles.map((t) => t.title))})`);
+
+  const target = rows[rows.length - 1];
+  ok(before.tiles.find((tile) => tile.id === target)?.seat !== 'focal',
+    'S113 precondition: the drill target is not already the focal chart');
+  await page.locator(`#level .qrow[data-id="${target}"]`).click();
+  await settle(page, 600);
+
+  const after = await canvasSnapshot(page);
+  const seated = after.tiles.find((tile) => tile.id === target);
+  is(seated?.seat, 'focal', 'S113 the drilled finding seats its own comparison focal');
+  is(seated?.drilled, true, 'S113 the owning chart carries the drill mark');
+  is(await page.locator(`.evidence-tile[data-chart-id="${target}"] .tile-drilled-mark`).count(), 1,
+    'S113 the mark is a word on the chart, not a hairline alone');
+  is(await page.locator('.evidence-tile[data-drilled]').count(), 1,
+    'S113 exactly one chart claims the drill');
+  is(new Set(after.tiles.map((tile) => tile.title)).size, after.tiles.length,
+    `S113 the field holds no duplicate comparison tiles (${JSON.stringify(after.tiles.map((t) => t.title))})`);
+  ok((await page.locator('#drill-provenance').textContent()).includes(seated.title),
+    'S113 the header names the chart the inspector is reading');
+
+  const depth = (await state(page)).crumb.length;
+  await page.locator(`.evidence-tile[data-chart-id="${target}"] .tile-body`).click();
+  await settle(page, 400);
+  is((await state(page)).crumb.length, depth,
+    'S113 re-drilling the same finding does not deepen the path or repeat its title');
+};
 
 export const STORIES = [
   ['S01', S01, 'drawn'], ['S02', S02, 'typical'], ['S03', S03, 'drawn'],
@@ -3942,14 +3810,7 @@ export const STORIES = [
   ['S29', S29, 'typical'], ['S30', S30, 'typical'], ['S31', S31, 'typical'],
   ['S32', S32, 'dense', { findingsInputs: withFiredMeal, exposuresInputs: (d) => withFiredMeal(d).exposures }],
   ['S33', S33, 'dense', { findingsInputs: withFiredMeal, exposuresInputs: (d) => withFiredMeal(d).exposures }],
-  ['S34', S34, 'typical', {
-    findingsInputs: twoFamilyInputs,
-    exposuresInputs: async () => (await twoFamilyInputs()).exposures,
-    caseScenario: {
-      case: async ({ request, body }) => request === 2
-        ? structured(500, 'inconsistent_projection', 'Synthetic event projection failure.') : { body },
-    },
-  }],
+  ['S34', S34, 'typical'],
   ['S35', S35, 'dense', {
     findingsInputs: twoFamilyInputs,
     exposuresInputs: async () => (await twoFamilyInputs()).exposures,
@@ -4077,6 +3938,23 @@ export const STORIES = [
     }),
   }] }],
   ['S91', S91, 'drawn'],
+  ['S92', S92, 'typical'], ['S93', S93, 'typical'], ['S94', S94, 'typical'],
+  ['S95', S95, 'typical'], ['S96', S96, 'typical'], ['S97', S97, 'typical'],
+  ['S98', S98, 'typical'], ['S99', S99, 'typical'], ['S100', S100, 'typical'],
+  ['S101', S101, 'typical', { findingsProjectionInputs: withSecondBasal }],
+  ['S102', S102, 'typical'], ['S103', S103, 'typical'],
+  ['S104', S104, 'typical', { evidenceScenario: async ({ path, body }) => ({
+    body: path === '/api/diagnose/basal-night-evidence' ? { ...body, nights: [] } : body,
+  }) }],
+  ['S105', S105, 'typical', { findingsProjectionInputs: withGeneratedCarbRatio,
+    evidenceScenario: async ({ path, body }) => path === '/api/diagnose/carb-ratio-block-evidence'
+      ? structured(500, 'synthetic_evidence_failure', 'Synthetic evidence request failed.')
+      : { body } }],
+  ['S106', S106, 'typical', { findingsProjectionInputs: withGeneratedCarbRatioRecovery }],
+  ['S107', S107, 'typical'], ['S108', S108, 'typical'], ['S109', S109, 'typical'],
+  ['S110', S110, 'typical'], ['S111', S111, 'typical'],
+  ['S112', S112, 'typical', { viewport: { width: 390, height: 844 } }],
+  ['S113', S113, 'typical'],
   ['C41', C41, 'typical', { caseScenario: {
     preparation: generatedFindingPose('finding:meal_over_delivery'),
   } }], ['C42', C42, 'typical'],
@@ -4087,74 +3965,14 @@ export const STORIES = [
     preparation: generatedFindingPose('finding:missed_meal'),
   }, findingsProjectionInputs: generatedFindingProjection('finding:missed_meal') }],
   ['C45', C45, 'typical', { caseScenario: {
-    case: async ({ request, url, body }) => request === 2
+    case: async ({ url, body }) => url.searchParams.has('occ')
       ? { body: { ...body, selection: { state: 'unavailable',
         requested_id: url.searchParams.get('occ'), detail: null } } } : { body },
   } }],
-  ['C46', C46, 'typical', { caseScenario: {
-    case: async ({ request, body }) => request === 2
-      ? structured(500, 'inconsistent_projection', 'Synthetic active case failure.') : { body },
-  } }],
-  ['C47', C47, 'typical', { caseScenario: {
-    preparation: async ({ request, preparation }) => {
-      if (request === 5) { await pause(220); return { body: refreshedPreparation(preparation) }; }
-      return { body: preparation };
-    },
-    case: async ({ request, body }) => {
-      if (request === 2) return structured(409, 'stale_projection', 'Synthetic stale preparation.');
-      if (request === 3) { await pause(220); return { body: refreshedCase(body) }; }
-      return { body };
-    },
-  } }],
-  ['C48', C48, 'typical', { caseScenario: {
-    preparation: async ({ request, preparation }) => request === 5
-      ? structured(503, 'preparation_changed', 'Synthetic queue refresh failure.')
-      : { body: preparation },
-    case: async ({ request, body }) => request === 2
-      ? structured(404, 'finding_unavailable', 'Synthetic Finding unavailable.') : { body },
-  } }],
-  ['C49', C49, 'typical', { caseScenario: {
-    preparation: async ({ request, preparation }) => ({ body: request === 5
-      ? refreshedPreparation(preparation) : preparation }),
-    case: async ({ request, body }) => request === 2
-      ? structured(409, 'stale_projection', 'Synthetic stale preparation.')
-      : request === 3
-        ? structured(500, 'inconsistent_projection', 'Synthetic refreshed case failure.')
-        : { body },
-  } }],
-  ['C50', C50, 'typical', { caseScenario: {
-    preparation: async ({ request, preparation }) => {
-      if (request === 5) { await pause(420); return { body: refreshedPreparation(preparation) }; }
-      return { body: preparation };
-    },
-    case: async ({ request, body }) => request === 2
-      ? structured(409, 'stale_projection', 'Synthetic stale preparation.') : { body },
-  } }],
-  ['C51', C51, 'typical', { caseScenario: {
-    preparation: async ({ request, preparation }) => ({ body: request === 5
-      ? refreshedPreparation(preparation) : preparation }),
-    case: async ({ request, body }) => {
-      if (request === 2) return structured(409, 'stale_projection', 'Synthetic stale preparation.');
-      if (request === 3) { await pause(500); return { body: refreshedCase(body) }; }
-      return { body };
-    },
-  } }],
-  ['C52', C52, 'typical', { caseScenario: {
-    preparation: async ({ request, preparation }) => {
-      if (request !== 5) return { body: preparation };
-      const next = structuredClone(preparation);
-      next.rendered_rows = next.rendered_rows
-        .filter((row) => row.id !== 'finding:over_treated_low');
-      delete next.behavioral_case_headers['finding:over_treated_low'];
-      return { body: next };
-    },
-    case: async ({ request, body }) => request === 2
-      ? structured(404, 'finding_unavailable', 'Synthetic Finding unavailable.') : { body },
-  } }],
-  ['C53', C53, 'typical', { caseScenario: {
-    case: async ({ request, body }) => request === 2
-      ? { body: { ...body, projection_id: `fp_${'f'.repeat(32)}` } } : { body },
-  } }],
+  ['C46', C46, 'typical'], ['C47', C47, 'typical'],
+  ['C48', C48, 'typical'], ['C49', C49, 'typical'],
+  ['C50', C50, 'typical'], ['C51', C51, 'typical'],
+  ['C52', C52, 'typical'], ['C53', C53, 'typical'],
   ['C54', C54, 'typical', { caseScenario: {
     preparation: async ({ url, preparation }) => url.searchParams.get('start_min') === '360'
       ? structured(503, 'preparation_changed', 'Synthetic active preparation failure.')

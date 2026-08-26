@@ -15,6 +15,15 @@ const fixture = JSON.parse(readFileSync(
   fileURLToPath(new URL('./__fixtures__/findings-projection.json', import.meta.url)), 'utf8'));
 const W = fixture.windows;
 
+test('the root filter has no retired Event charts view or state', () => {
+  const queue = readFileSync(fileURLToPath(
+    new URL('./diagnose-findings-queue.js', import.meta.url)), 'utf8');
+  const workstation = readFileSync(fileURLToPath(
+    new URL('./diagnose-workstation.js', import.meta.url)), 'utf8');
+  assert.doesNotMatch(queue, /eventChartsOnly/);
+  assert.doesNotMatch(workstation, /eventChartsOnly|Event charts/);
+});
+
 test('term 45 · the meta has three forms and no others', () => {
   // Meta counts only the rows a reader can currently see.
   assert.equal(queueMeta(W.global), '7 findings · 30 days');
@@ -43,18 +52,10 @@ test('Watching rows collapse by default, without changing actionable rows', () =
     'quiet has no shown row and takes the empty-copy state');
 });
 
-test('Event charts retain Watching rows, including while sifting', () => {
-  const coordinate = { lever: 'meal_bolus_short',
-    window: { start_min: 0, end_min: 1440, scoped: false } };
-  const history = { id: 'history', register: 'history', kind: 'setting', chips: ['highs'],
-    event_chart: coordinate };
-  const finding = { id: 'finding', register: 'finding', kind: 'habit', chips: ['highs'],
-    event_chart: coordinate };
-  const projection = { rows: [finding, history], window: { scoped: false }, findings_window: { days: 30 } };
-  for (const selected of [null, new Set(['highs'])]) {
-    const rows = queueRows(projection, selected, true);
-    assert.equal(rows.find((row) => row.id === 'history').collapsed, false);
-  }
+test('Watching rows stay in their disclosure while Sift is active', () => {
+  const selected = new Set(['highs']);
+  const rows = queueRows(W.global, selected);
+  assert.ok(rows.filter((row) => row.register === 'history').every((row) => row.collapsed));
 });
 
 test('all-Watching queue keeps its empty line compact above the disclosure', () => {
@@ -304,33 +305,6 @@ test('a null selection is byte-identical to the unsifted queue', () => {
   assert.deepEqual(queueRows(W.global), queueRows(W.global, null));
 });
 
-test('#83 · Event charts intersects Sift using only published row facts', () => {
-  const eventRows = queueRows(W.global, new Set(['highs']), true);
-  const shown = eventRows.filter((row) => !row.hidden && !row.collapsed);
-
-  assert.ok(shown.length > 0, 'the fixture carries an eligible high Finding');
-  assert.ok(shown.every((row) => row.raw.chips.includes('highs')));
-  assert.ok(shown.every((row) => row.raw.event_chart !== null));
-  assert.deepEqual(
-    shown.map((row) => row.id),
-    W.global.rows
-      .filter((row) => row.chips.includes('highs') && row.event_chart !== null)
-      .map((row) => row.id),
-    'the filtered queue retains server order',
-  );
-});
-
-test('#83 · Event charts excludes settings, held reads, and incompatible Findings', () => {
-  const rows = queueRows(W.afternoon, null, true);
-  const shown = rows.filter((row) => !row.hidden && !row.collapsed);
-
-  assert.ok(shown.every((row) => row.flavor === 'habit'));
-  assert.ok(shown.every((row) => row.raw.event_chart !== null));
-  assert.ok(rows.filter((row) => row.raw.event_chart === null).every((row) => row.hidden));
-  assert.equal(rows.some((row) => row.collapsed), false,
-    'Event charts removes held and blind rows instead of offering disclosure');
-});
-
 test('#83 · malformed coordinates never make a row eligible', () => {
   const source = W.global.rows.find((row) => row.event_chart !== null);
   for (const event_chart of [{}, [], { lever: 'late_bolus' },
@@ -339,8 +313,6 @@ test('#83 · malformed coordinates never make a row eligible', () => {
     { lever: 'late_bolus', window: { start_min: 0, end_min: 1440, scoped: false }, extra: true }]) {
     const row = { ...source, event_chart };
     assert.equal(eventChartCoordinate(row), null);
-    const [rendered] = queueRows({ rows: [row] }, null, true);
-    assert.equal(rendered.hidden, true);
   }
 });
 
@@ -351,11 +323,9 @@ test('event-chart eligibility accepts a server-owned lever-and-window coordinate
   assert.deepEqual(eventChartCoordinate(row), row.event_chart);
 });
 
-test('#83 · metadata and empty copy describe the visible root filters', () => {
-  const eligible = W.global.rows.filter((row) => row.event_chart !== null).length;
-  assert.equal(queueMeta(W.global, null, true), `${eligible} findings · 30 days`);
-  assert.equal(queueMeta(W.global, new Set(['meals']), true), '1 finding · 30 days');
-  assert.equal(queueMeta(W.afternoon, new Set(['meals']), true), '30 days');
+test('metadata and empty copy describe Sift, the only root filter', () => {
+  assert.equal(queueMeta(W.global, new Set(['meals'])), '1 finding · 30 days');
+  assert.equal(queueMeta(W.afternoon, new Set(['meals'])), '30 days');
   assert.equal(EMPTY_SIFT_LINE, 'No findings match the current filters.');
 });
 

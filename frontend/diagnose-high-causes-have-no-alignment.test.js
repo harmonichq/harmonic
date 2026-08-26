@@ -76,8 +76,8 @@ test('ADR 79 · roster controls consume the published cohort count', () => {
 });
 
 test('ADR 79 · every visible behavioral row requests its opaque case id', () => {
-  assert.match(source, /if \(row\.register === 'finding'\)[\s\S]*entryAlignment = eventChartsOnly && eventChartCoordinate\(row\)[\s\S]*rowId: row\.id[\s\S]*requestCase\(frame, entryAlignment\)/,
-    'the row identity, not its title, opens the server case');
+  assert.match(source, /if \(row\.register === 'finding'\)[\s\S]*entryAlignment = eventChartCoordinate\(row\) \? 'event' : 'clock'[\s\S]*rowId: row\.id[\s\S]*requestCase\(frame, entryAlignment\)/,
+    'the row identity and its server-published chart coordinate open the server case');
   assert.match(source, /function findingRowFor\(frame\) \{\s*if \(frame\.k !== 'factor'\) return null;\s*return \(findings\?\.rows \|\| \[\]\)\.find\(\(row\) => row\.id === frame\.rowId\) \|\| null;\s*\}/,
     'a standing case resolves its active Finding from the current projection');
   assert.match(source, /renderEventSurface\(host, f\.caseFile/,
@@ -85,12 +85,12 @@ test('ADR 79 · every visible behavioral row requests its opaque case id', () =>
 });
 
 test('ADR 79 · case-file ALIGN follows the active server event coordinate', () => {
-  const alignment = source.match(/const caseAlignmentIn =[\s\S]*?;\n  const availableAlignment/);
-  assert.ok(alignment, 'the case-file alignment predicate exists');
-  assert.match(alignment[0], /const row = source\?\.rendered_rows\?\.find\(\(row\) => row\.id === frame\.rowId\);\s*return eventChartCoordinate\(row\);/,
-    'the active rendered row\'s server coordinate controls ALIGN');
-  assert.doesNotMatch(alignment[0], /case_header|alignments/,
-    'retired case-header alignments do not control ALIGN');
+  const alignment = source.match(/if \(entry\.modes\) \{[\s\S]*?head\.append\(modes\);\n      \}/);
+  assert.ok(alignment, 'each multi-mode chart mounts its own alignment control');
+  assert.match(alignment[0], /for \(const mode of entry\.modes\)[\s\S]*descriptor\.mode = mode/,
+    'each tile reads its registry modes and keeps its own selected alignment');
+  assert.doesNotMatch(source, /renderAlign|seg-align|align-canvas/,
+    'the retired global alignment control and host are absent');
 });
 
 test('ADR 79 · event alignment never falls back to clock at paint time', () => {

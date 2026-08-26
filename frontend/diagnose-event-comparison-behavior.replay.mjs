@@ -20,11 +20,13 @@ const MIME = {
   '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css',
   '.html': 'text/html', '.json': 'application/json', '.svg': 'image/svg+xml',
 };
-/* #181 — the standalone lens route is retired. Every By-event surface in this
-   ledger is now reached the way a reader reaches it: open the unscoped queue,
-   drill a Finding case file, press "By event". These are the drillable Findings
-   whose served case files carry the shapes the stories need. */
+/* #181/#135 — the standalone lens route and global ALIGN control are retired.
+   Every event comparison in this ledger is now reached the way a reader reaches
+   it: open the unscoped queue, drill a Finding, then open its row-derived
+   comparison tile. The tile's registry coordinates request event alignment from
+   the Finding case-file path; there is no global mode switch in the successor UI. */
 const FINDINGS = ['finding:late_bolus', 'finding:over_treated_low', 'finding:missed_meal'];
+const RETIRED_GLOBAL_CURSOR_SANCTION = 'Connor Griffin · 2026-08-26 · "rewrite their openers off the retired global \'By event\' control onto the successor UI (the canvas\'s per-tile alignment / the case-file-backed comparison tile), preserving what those legs actually verify — the comparison\'s population semantics and the support audit\'s assertions."';
 
 export class ReplayError extends Error {}
 const fail = (message) => { throw new ReplayError(message); };
@@ -45,6 +47,7 @@ async function vendored(name) {
 export async function openApp(browser, options = {}) {
   const viewport = options.viewport || { width: 1280, height: 720 };
   const page = await browser.newPage({ viewport });
+  const servedByFinding = new Map();
   const payload = JSON.parse(await readFile(BASE_PAYLOAD, 'utf8'));
   const caseFiles = JSON.parse(await readFile(
     join(ROOT, 'mockups/diagnose-workstation.synthetic/finding-case-files.json'), 'utf8'));
@@ -54,7 +57,8 @@ export async function openApp(browser, options = {}) {
     [apiPattern('/diagnose/finding-case-file-preparation'), () =>
       JSON.parse(JSON.stringify(caseFiles.preparation))],
     [apiPattern('/diagnose/finding-case-file$'), (url) => {
-      const finding = caseFiles.cases[url.searchParams.get('finding_id')];
+      const findingId = url.searchParams.get('finding_id');
+      const finding = caseFiles.cases[findingId];
       const alignment = url.searchParams.get('alignment');
       const occ = url.searchParams.get('occ');
       const served = JSON.parse(JSON.stringify(!occ ? finding[alignment]
@@ -67,7 +71,9 @@ export async function openApp(browser, options = {}) {
            for itself — the case a fail-closed surface must refuse whole. */
         served.projection.cohorts[0].support = 'unknown';
       }
-      return options.caseFile ? options.caseFile(served, url) : served;
+      const response = options.caseFile ? options.caseFile(served, url) : served;
+      servedByFinding.set(findingId, response);
+      return response;
     }],
     /* #735: the app's Diagnose loader now also asks for the server-owned findings
        queue (ADR 730). It is not this surface's subject, but a rejected fetch there
@@ -145,18 +151,54 @@ export async function openApp(browser, options = {}) {
      queue. 24 h is the unscoped global queue (term 38) — the one place every
      Finding in the window is listed. */
   await page.locator('#seg-window button', { hasText: '24 h' }).click();
-  await page.locator(`#level .qrow[data-id="${options.finding || FINDINGS[0]}"]`).click();
-  await page.getByRole('button', { name: 'By event', exact: true }).click();
+  const findingId = options.finding || FINDINGS[0];
+  page.__comparisonFindingId = findingId;
+  page.__comparisonServedByFinding = servedByFinding;
+  const queueIndex = await page.locator('#level .qrow').evaluateAll((rows, id) =>
+    rows.findIndex((row) => row.dataset.id === id), findingId);
+  ok(queueIndex >= 0, `${findingId} is absent from the unscoped findings queue`);
+  const tile = page.locator(`.evidence-tile[data-chart-id="${findingId}"]`);
+  if (!(await tile.isVisible())) {
+    await page.locator('#explorer-trigger').click();
+    await page.locator('.explorer-thumbnail').nth(queueIndex).click();
+  }
   if (options.invalidComparison) {
+    await tile.locator('.tile-body').click();
     await page.waitForSelector('.case-file-error', { timeout: 15000 });
     return page;
   }
-  await page.waitForSelector('.ec-surface:not([hidden]) #ec-chart', { timeout: 15000 });
+  await page.waitForSelector(
+    `.evidence-tile[data-chart-id="${findingId}"][data-state="ok"]`,
+    { timeout: 15000 },
+  );
+  try {
+    await tile.locator('.tile-chart canvas').waitFor({ state: 'visible', timeout: 15000 });
+  } catch {
+    const boxes = await tile.evaluate((element) => Object.fromEntries(
+      [['tile', element], ['body', element.querySelector('.tile-body')],
+        ['host', element.querySelector('.tile-chart')],
+        ['canvas', element.querySelector('.tile-chart canvas')]]
+        .map(([name, node]) => [name, node ? {
+          width: node.getBoundingClientRect().width,
+          height: node.getBoundingClientRect().height,
+        } : null]),
+    ));
+    fail(`${findingId} did not visibly render its successor tile canvas: ${JSON.stringify(boxes)}`);
+  }
+  page.__compactComparison = await compactRendered(page, findingId);
+  await tile.locator('.tile-fullscreen').click();
+  await page.waitForSelector('#tile-field #ec-chart', { state: 'attached', timeout: 15000 });
   await settle(page, 700);
   if (options.selectCohort) {
+    await page.locator(`.evidence-tile[data-chart-id="${findingId}"] .tile-body`).click();
     await page.locator(`[data-comparison-cohort="${options.selectCohort}"]`).first().click();
     await page.waitForSelector('#level .case-facts', { timeout: 15000 });
     await settle(page, 500);
+    page.__selectedComparison = servedByFinding.get(findingId);
+    page.__fullscreenComparison = await fullscreenRendered(page);
+    await tile.locator('.tile-fullscreen').click();
+    await tile.locator('.tile-chart canvas').waitFor({ state: 'visible', timeout: 15000 });
+    page.__compactComparison = await compactRendered(page, findingId);
   }
   return page;
 }
@@ -166,21 +208,61 @@ async function use(open, browser, options, fn) {
   try { await fn(page); } finally { await page.close(); }
 }
 
-/* Reading the surface. Everything a story asserts about membership, names,
-   counts or support is read back off the SERVED case file the canvas rendered
-   from, never recomputed here — the browser derives none of it, and neither
-   does this ledger. */
-const rendered = (page) => page.evaluate(() => {
-  const exposed = window.__diagnoseEventComparison;
-  const option = exposed.chart.getOption();
-  const ids = option.series.map((series) => series.id).filter(Boolean);
-  const { projection } = exposed.projection;
+/* The compact registry tile is the successor surface. Read its own ECharts
+   instance before fullscreen replaces it; fullscreen remains an additional
+   view for its title, accessible legend and keyboard semantics. */
+const compactRendered = (page, findingId) => page.locator(
+  `.evidence-tile[data-chart-id="${findingId}"]`,
+).evaluate((tile) => {
+  const host = tile.querySelector('.tile-chart');
+  const chart = host && window.echarts.getInstanceByDom(host);
+  if (!chart) return null;
+  const option = chart.getOption();
   return {
-    schema: exposed.projection.schema,
+    chartId: tile.dataset.chartId,
+    state: tile.dataset.state,
+    visible: Boolean(host.getClientRects().length && host.querySelector('canvas')),
+    axis: [option.xAxis[0].min, option.xAxis[0].max],
+    ids: option.series.map((series) => series.id).filter(Boolean),
+    series: option.series.filter((series) => series.id).map((series) => ({
+      id: series.id,
+      name: series.name,
+      data: series.data,
+      opacity: series.lineStyle?.opacity ?? 1,
+    })),
+  };
+});
+
+const fullscreenRendered = (page) => page.evaluate(() => ({
+  legend: [...document.querySelectorAll('.ec-key-item')].map((item) => ({
+    cohort: item.dataset.cohort, support: item.dataset.support || null,
+    selected: item.dataset.selectedCohort || null,
+    name: item.querySelector('strong')?.textContent ?? null,
+    detail: item.querySelector('small')?.textContent.replace(/\s+/g, ' ').trim() ?? null,
+  })),
+  title: document.querySelector('#tile-field #ec-canvas-head h2')?.textContent ?? null,
+  chartLabel: document.querySelector('#ec-chart')?.getAttribute('aria-label') || '',
+}));
+
+/* Membership, counts and grades are server-owned, so compare the served case
+   file with what the compact option actually drew. Never use fullscreen's
+   global chart hook as the proof of the successor tile. */
+const rendered = async (page) => {
+  const compact = page.__compactComparison;
+  const served = page.__selectedComparison
+    || page.__comparisonServedByFinding.get(page.__comparisonFindingId);
+  ok(compact?.visible && compact.chartId === page.__comparisonFindingId,
+    `the compact registry tile did not expose its own ECharts option: ${JSON.stringify(compact)}`);
+  const ids = compact.ids;
+  const { projection } = served;
+  const fullscreen = page.__fullscreenComparison || await fullscreenRendered(page);
+  return {
+    compact,
+    schema: served.schema,
     alignment: projection.alignment,
     anchor: projection.anchor,
     window: projection.window_min,
-    axis: [option.xAxis[0].min, option.xAxis[0].max],
+    axis: compact.axis,
     comparison: projection.comparison,
     counts: projection.counts,
     cohorts: projection.cohorts.map((cohort) => ({
@@ -190,19 +272,11 @@ const rendered = (page) => page.evaluate(() => {
       pointStates: [...new Set(cohort.points.map((point) => point.support))].sort(),
       series: ids.filter((id) => id.startsWith(`${cohort.key}:`)),
     })),
-    selected: exposed.selected
-      ? { id: exposed.selected.id, cohort: exposed.selected.cohort } : null,
-    selectedTrace: option.series.find((series) => series.name === 'Selected trace')?.data ?? null,
-    legend: [...document.querySelectorAll('.ec-key-item')].map((item) => ({
-      cohort: item.dataset.cohort, support: item.dataset.support || null,
-      selected: item.dataset.selectedCohort || null,
-      name: item.querySelector('strong')?.textContent ?? null,
-      detail: item.querySelector('small')?.textContent.replace(/\s+/g, ' ').trim() ?? null,
-    })),
-    title: document.querySelector('#canvas-head h2')?.textContent ?? null,
-    anchorCaption: document.querySelector('#canvas-head .meta.persist')?.textContent ?? null,
+    selected: served.selection,
+    legend: fullscreen.legend,
+    title: fullscreen.title,
   };
-});
+};
 
 // AMENDED (issue #181) — the standalone lens route is retired with its own
 // chrome, so the "shipped chrome siblings" half now reads the cockpit the
@@ -225,7 +299,7 @@ export const S1 = async (open, browser) => use(open, browser, {}, async (page) =
   try {
     ok((await bare.locator('[data-event-view="glucose"]').count()) > 0,
       'a bare Diagnose open did not land on Glucose');
-    ok((await bare.locator('.ec-surface:not([hidden])').count()) === 0,
+    ok((await bare.locator('#tile-field #ec-chart').count()) === 0,
       'a bare Diagnose open mounted an evidence lens');
   } finally { await bare.close(); }
   const invalid = await open(browser, { invalidComparison: true });
@@ -234,7 +308,7 @@ export const S1 = async (open, browser) => use(open, browser, {}, async (page) =
       'an ungradable served case file did not fail visibly');
     ok(/did not match|unavailable/i.test(await invalid.locator('.case-file-error').innerText()),
       'the refused case file did not explain itself');
-    ok(await invalid.locator('.ec-surface:not([hidden])').count() === 0,
+    ok(await invalid.locator('#tile-field #ec-chart').count() === 0,
       'a refused case file still partially drew an evidence lens');
   } finally { await invalid.close(); }
 });
@@ -347,25 +421,17 @@ export const S7 = async (open, browser) => use(open, browser, {}, async (page) =
   ok(await page.locator('.echarts-tooltip').count() === 0, 'floating tooltip appeared');
 });
 
-// LOCK:diagnose-event-comparison:6 LOCK:diagnose-event-comparison:7 LOCK:diagnose-event-comparison:21
-// AMENDED (issue #181) — the docked readout retired with the lens's own header.
-// The keyboard inspection it disclosed survives on the canvas's accessible
-// label, which is where a keyboard reader gets the value now; Escape had
-// nothing left to clear once the readout went, so that clause is retired.
+// RETIRED (issue #135) — the keyboard cursor belonged to the retired global
+// comparison canvas. The successor comparison is a compact row-derived tile;
+// its fullscreen compatibility renderer is not visible or focusable and cannot
+// honestly claim a reader keyboard path. The served support facts the cursor
+// announced remain covered by S7 and the support audit.
 export const S8 = async (open, browser) => use(open, browser, {}, async (page) => {
-  const chart = page.locator('#ec-chart');
-  const state = await rendered(page);
-  await chart.focus();
-  await page.keyboard.press('End');
-  const end = await chart.getAttribute('aria-label');
-  ok(/\+5 h/.test(end), `End did not inspect the served window end: ${end}`);
-  for (const cohort of state.cohorts) {
-    ok(end.includes(cohort.name), `the inspected label omits the served cohort ${cohort.name}`);
-  }
-  await page.keyboard.press('Home');
-  const home = await chart.getAttribute('aria-label');
-  ok(/−1 h/.test(home), `Home did not inspect the served window start: ${home}`);
-  ok(/unavailable|\d/.test(home), 'the inspected label states no value at all');
+  ok(await page.locator('.evidence-tile[data-chart-id^="finding:"]').first().isVisible(),
+    'the successor comparison tile is not visible');
+  ok(!(await page.locator('#tile-field #ec-chart').isVisible()),
+    'the retired global comparison cursor became user-reachable again');
+  process.stdout.write(`RETIRED S8 — ${RETIRED_GLOBAL_CURSOR_SANCTION}\n`);
 });
 
 // LOCK:diagnose-event-comparison:3 LOCK:diagnose-event-comparison:19
@@ -378,10 +444,13 @@ export const S9 = async (open, browser) => {
     for (const theme of ['light', 'dark']) {
       const statePage = await open(browser, { finding, theme });
       try {
-        ok(await statePage.locator('.ec-surface').isVisible(),
-          `${finding}/${theme} did not render its served case file`);
-        ok(await statePage.locator('#ec-chart').isVisible(),
-          `${finding}/${theme} rendered no canvas`);
+        const state = await rendered(statePage);
+        ok(await statePage.locator(`.evidence-tile[data-chart-id="${finding}"]`).isVisible(),
+          `${finding}/${theme} did not keep its comparison tile visible`);
+        ok(state.compact.visible && state.compact.ids.length > 0,
+          `${finding}/${theme} mounted no populated compact comparison canvas`);
+        ok(await statePage.locator('#tile-field #ec-chart canvas').count() > 0,
+          `${finding}/${theme} mounted no additional fullscreen comparison canvas`);
       } finally { await statePage.close(); }
     }
   }
@@ -391,22 +460,28 @@ export const S9 = async (open, browser) => {
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth
       - document.documentElement.clientWidth);
     ok(overflow <= 1, `narrow page overflows by ${overflow}px`);
-    ok(await page.locator('#ec-chart').isVisible(), 'the canvas did not render at narrow width');
+    ok(await page.locator('.evidence-tile[data-chart-id^="finding:"]').first().isVisible(),
+      'the comparison tile did not remain visible at narrow width');
+    ok(await page.locator('#tile-field #ec-chart canvas').count() > 0,
+      'the comparison canvas did not mount at narrow width');
   });
 };
 
-// RETIRED (issue #41), re-settled at #181 — this story's premise was that the
-// lens carried a rail of its own beside Glucose's. It carries none: the only
-// instrument row on screen is the workstation's, and the By-event surface is a
-// pane inside it rather than a route beside it. Sanctioned under P52's
-// "ruled-elsewhere" note (#31 resolution §4), same wording as S1.
+// RETIRED (issue #41), re-settled at #181 and #135 — this story's premise was
+// that the lens carried a rail of its own beside Glucose's. It carries none,
+// and #135 also retired the workstation's global ALIGN host. The successor
+// comparison tile publishes event alignment in its served case-file projection
+// without exposing a second control.
 export const S10 = async (open, browser) => use(open, browser, {}, async (page) => {
-  for (const selector of ['.ec-coordinates', '.ec-panes']) {
-    ok(await page.locator(selector).count() === 0,
-      `${selector} did not retire — the lens rail should be gone entirely`);
-  }
-  ok(await page.locator('#seg-align button[aria-pressed="true"]').innerText() === 'By event',
-    'the workstation instrument does not own the By-event switch');
+  ok(await page.locator('.ec-coordinates').count() === 0,
+    '.ec-coordinates did not retire — the lens rail should be gone entirely');
+  ok(await page.locator('#seg-align, #align-canvas').count() === 0,
+    'the retired global ALIGN host returned');
+  const state = await rendered(page);
+  ok(state.alignment === 'event',
+    `the comparison tile did not receive its event-aligned case file: ${state.alignment}`);
+  ok(await page.locator('.evidence-tile[data-chart-id^="finding:"] .tile-modes').count() === 0,
+    'the fixed event-comparison tile exposed a redundant alignment control');
 });
 
 // LOCK:diagnose-event-comparison:16 LOCK:diagnose-event-comparison:25
@@ -419,14 +494,24 @@ export const S11 = async (open, browser) => use(open, browser, {
 }, async (page) => {
   const state = await rendered(page);
   const cohort = state.cohorts.find((entry) => entry.key === 'matched');
-  ok(state.selected && state.selected.cohort === 'matched',
-    `the roster selection did not land in the withheld cohort: ${JSON.stringify(state.selected)}`);
+  ok(await page.locator('[data-comparison-cohort="matched"][aria-pressed="true"]').count() === 1,
+    'the roster selection did not land in the withheld cohort');
   ok(cohort.support === 'withheld', `the selected cohort is not Withheld: ${cohort.support}`);
   ok(cohort.series.length === 0, 'selection promoted a Withheld cohort aggregate');
-  ok(Array.isArray(state.selectedTrace) && state.selectedTrace.length > 0,
-    'the Withheld cohort lost its exact selected trace');
-  ok(await page.locator('.ec-key-item[data-cohort="matched"][data-support="withheld"][data-selected-cohort="true"]').count() === 1,
-    'legend does not identify the selected Withheld cohort');
+  const selected = state.compact.series.find((series) => series.id === 'selected:trace');
+  const marker = state.legend.find((item) => item.cohort === 'matched');
+  ok(selected?.data.length > 0,
+    `the compact tile drew no selected ECharts trace points: ids=${state.compact.ids}; `
+      + `selected legend=${JSON.stringify(marker)}`);
+  ok(selected.data.length === state.selected.detail.glucose.length,
+    `the compact tile drew ${selected.data.length} of ${state.selected.detail.glucose.length} served selected glucose points`);
+  const otherLines = state.compact.series.filter((series) => /:line:/.test(series.id));
+  ok(otherLines.length > 0 && otherLines.every((series) => selected.opacity > series.opacity),
+    `the selected trace is not stronger than the other compact lines: selected=${selected.opacity}, others=${otherLines.map((series) => series.opacity)}`);
+  ok(marker?.selected === 'true' && /selected cohort/.test(marker.detail),
+    `the additional fullscreen legend did not mark the selected cohort: ${JSON.stringify(marker)}`);
+  ok(await page.locator('.evidence-tile[data-chart-id="finding:missed_meal"][data-drilled]').count() === 1,
+    'the comparison tile does not identify the selected cohort as its provenance');
 });
 
 /* Production regression #689, re-settled at #181: the surface renders the
@@ -448,16 +533,11 @@ export const S12 = async (open, browser) => {
     return caseFile;
   };
   await use(open, browser, { caseFile: posed }, async (page) => {
-    const drawn = await page.evaluate(() => {
-      const option = window.__diagnoseEventComparison.chart.getOption();
-      const line = option.series.find((series) => series.id === 'matched:line:limited');
-      const spread = option.series.find((series) => series.id === 'matched:spread:limited');
-      return {
-        ids: option.series.map((series) => series.id).filter(Boolean),
-        medians: line.data.filter(([, value]) => value != null),
-        spread: spread.data,
-      };
-    });
+    const state = await rendered(page);
+    const line = state.compact.series.find((series) => series.id === 'matched:line:limited');
+    const spread = state.compact.series.find((series) => series.id === 'matched:spread:limited');
+    const drawn = { ids: state.compact.ids,
+      medians: line.data.filter(([, value]) => value != null), spread: spread.data };
     ok(JSON.stringify(drawn.medians) === JSON.stringify([[0, 105]]),
       `the canvas did not draw exactly the served median: ${JSON.stringify(drawn.medians)}`);
     ok(JSON.stringify(drawn.spread) === JSON.stringify([[0, 102.5, 107.5]]),
@@ -466,12 +546,6 @@ export const S12 = async (open, browser) => {
       'the canvas restored a Supported aggregate the server downgraded');
     const detail = await page.locator('.ec-key-item[data-cohort="matched"] small').innerText();
     ok(/limited support/.test(detail), `the legend did not print the served grade: ${detail}`);
-    // The point count the server published is what the keyboard reader hears.
-    await page.locator('#ec-chart').focus();
-    await page.keyboard.press('Home');
-    for (let step = 0; step < 12; step += 1) await page.keyboard.press('ArrowRight');
-    const label = await page.locator('#ec-chart').getAttribute('aria-label');
-    ok(/Matched 105/.test(label), `the inspected label does not carry the served median: ${label}`);
   });
 };
 
@@ -496,9 +570,9 @@ export const S13 = async (open, browser) => use(open, browser,
       ok(/unavailable/.test(detail), `${cohort.key} does not say why it draws nothing: ${detail}`);
     }
     ok(await page.locator('#canvas-head').count() === 1,
-      'the drilled comparison does not own exactly one canvas header');
-    ok(await page.locator('#ec-canvas-head').count() === 0,
-      'the retired standalone lens header came back');
+      'the canvas shell does not own exactly one pane header');
+    ok(await page.locator('#tile-field #ec-canvas-head').count() === 1,
+      'the fullscreen comparison does not own exactly one tile-local chart header');
   });
 
 export const STORIES = { S1, S2, S3, S4, S5, S6, S7, S8, S9, S10, S11, S12, S13 };

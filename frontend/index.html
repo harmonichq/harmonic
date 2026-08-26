@@ -2342,6 +2342,9 @@ html.dark .viz .tie:hover::before { opacity:.13; }
       fetchVerifyTrials as dataFetchVerifyTrials,
       fetchExploreTimeOfDay as dataFetchExploreTimeOfDay,
       fetchExploreExposures as dataFetchExploreExposures,
+      fetchDiagnoseBasalNightEvidence as dataFetchDiagnoseBasalNightEvidence,
+      fetchDiagnoseIsfRestWindowEvidence as dataFetchDiagnoseIsfRestWindowEvidence,
+      fetchDiagnoseCarbRatioBlockEvidence as dataFetchDiagnoseCarbRatioBlockEvidence,
       fetchDiagnoseFindings as dataFetchDiagnoseFindings,
       fetchDiagnoseCarbRatioHistoryEvents as dataFetchDiagnoseCarbRatioHistoryEvents,
       fetchDiagnoseFindingCasePreparation as dataFetchDiagnoseFindingCasePreparation,
@@ -4119,6 +4122,10 @@ html.dark .viz .tie:hover::before { opacity:.13; }
 
         function setTab(t) {
           t = resolveTab(t);
+          // #135: the evidence canvas's pins and focus are session state and do
+          // not survive leaving Diagnose. This is the navigation path itself,
+          // so a fast leave-and-return cannot slip past it.
+          if (tab.value === 'diagnose' && t !== 'diagnose') diagnoseView?.leaveSurface?.();
           tab.value = t;
           // #99: Plan reads the latest pump snapshot for its active-profile
           // reference + Confirmation-B on-pump detection; load it lazily.
@@ -5457,6 +5464,12 @@ html.dark .viz .tie:hover::before { opacity:.13; }
               // drilled depth, drawn window and staged Plan items), not a full
               // refresh() that remounts the whole surface back to opening depth.
               onDayLoaded: () => diagnoseView?.repaintDay(),
+              loadBasalEvidence: (coordinates) => enqueue(() =>
+                dataFetchDiagnoseBasalNightEvidence(coordinates)),
+              loadIsfEvidence: (coordinates) => enqueue(() =>
+                dataFetchDiagnoseIsfRestWindowEvidence(coordinates)),
+              loadCarbRatioEvidence: (coordinates) => enqueue(() =>
+                dataFetchDiagnoseCarbRatioBlockEvidence(coordinates)),
               // #735: a pressed preset and a drawn brace both ask the server for
               // that window's rows (lock terms 37/40) — the frontend re-scopes
               // nothing itself.

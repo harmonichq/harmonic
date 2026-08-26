@@ -1,4 +1,4 @@
-/* Diagnose workstation — PORTED from the locked mock, not authored here.
+/* Diagnose workstation — based on the shipped workstation port.
  *
  * Source: the archived ★ LOCKED cockpit mock, the module in its
  * <script type="module"> block, lines 1105-2717. Everything from the readout
@@ -19,8 +19,8 @@
  *   - `CFG` is indexed per mount rather than once at module load, so a state
  *     change can re-derive it without a page reload.
  *
- * Edit this file only to re-sync it with the mock. A change that is not in the
- * mock is a deviation and needs a re-settle against the surface's lock manifest.
+ * Issue #135 deliberately revises the canvas composition below: the clock
+ * canvas is now a strip above a registry-backed evidence tile field.
  */
 import {
   buildEnvelope, buildMealMarkers, renderCanvas, observeResize,
@@ -28,9 +28,22 @@ import {
   BIN_MINUTES, MIN_SUPPORTED_NIGHTS,
   snapMinute, snapWindow, commitWindow, commitSlide, minuteAtX, xAtMinute, plotBox, windowSpans,
   buildDayTrace,
-  renderHistoryEvents, validateHistoryEvents,
+  validateHistoryEvents,
 } from './diagnose-workstation-chart.js';
 import { toCaptures, isfVerdict } from './diagnose-workstation-data.js';
+import { DIAGNOSE_EVIDENCE_CHARTS, glucoseRange } from './diagnose-evidence-charts.js';
+import {
+  PIN_CAP, arrangementRange, createCanvasLayout, descriptorsFromFindings,
+  focusSwap, optionForDescriptor, pinChart, placeSeats,
+  seatCountFor,
+  tileStatePresentation, unpinChart,
+} from './diagnose-canvas-layout.js';
+import {
+  advisoryPresentation, candidateIdsForMode, dismissFullscreen,
+  drilledChartIdForFrame, enterFullscreen, inspectorStackForMode,
+  popInspector, reconcileTileDescriptors as reconcileCanvasDescriptors,
+  untraceDrill,
+} from './diagnose-canvas-mode.js';
 import {
   assertMatchingFindingCasePreparation,
   inconsistentFindingProjection,
@@ -64,23 +77,30 @@ export function queryState(fallback, param = 'mode') {
   return new URLSearchParams(window.location.search).get(param) || fallback;
 }
 
-/* The surface's markup — VERBATIM from the mock's body, lines 1025-1094 (the
-   instrument row and the pane grid). The mock's topbar and status rows are the
-   app shell's, already built to this same lock by #634, so they are not
-   restated here. */
+/* The shipped pane shell, revised by #135 to hold a condensed clock strip and
+   the evidence tile field. The app shell still owns the topbar and status. */
 const MARKUP = `
   <div class="instruments">
     <div class="instrument">
       <span class="cap">Window</span>
       <div class="seg" id="seg-window" role="group" aria-label="Clock window"></div>
     </div>
-    <!-- ADR 31 part 3 (issue #41) — ALIGN, present only where the canvas is
-         showing a factor's events. A switch over already-selected data: it
-         never pushes, and WINDOW keeps filtering by clock under either
-         projection. Absorbs VIEW's function; VIEW itself is deleted. -->
-    <div class="instrument" id="align-group" hidden>
-      <span class="cap">Align</span>
-      <div class="seg" id="seg-align" role="group" aria-label="Alignment"></div>
+    <!-- The two-position mode control is an INSTRUMENT, not canvas chrome: it
+         re-scopes the whole surface the way Window does, so it belongs in the
+         same optical row as the window buttons rather than over one pane's
+         header. The Charts trigger stays on the canvas head for now — it opens
+         that pane's own drawer. -->
+    <div class="instrument mode-instrument">
+      <span class="cap">Show</span>
+      <div class="canvas-mode" role="group" aria-label="Canvas mode">
+        <button type="button" data-canvas-mode="findings" aria-pressed="true">Findings</button>
+        <button type="button" data-canvas-mode="explore" aria-pressed="false">Explore</button>
+      </div>
+    </div>
+    <div class="instrument pin-cap" aria-label="Pinned evidence charts">
+      <span class="tile-schematic" id="tile-schematic" role="group"
+        aria-label="Evidence tile arrangement and next pin"></span>
+      <span class="cap" id="pin-count">0/4 pinned</span>
     </div>
   </div>
 
@@ -102,6 +122,11 @@ const MARKUP = `
           </div>
         </div>
         <span class="meta persist" id="canvas-pool">—</span>
+        <div class="canvas-controls">
+          <button class="explorer-trigger" id="explorer-trigger" type="button"
+            aria-expanded="false" aria-controls="explorer-drawer">Charts</button>
+          <span class="advice-state" id="advice-state"></span>
+        </div>
       </header>
       <div class="body">
         <div id="chart"></div>
@@ -116,13 +141,14 @@ const MARKUP = `
           <div class="lane" id="lane" role="group" aria-label="Basal slot verdicts"></div>
           <div class="lane-key" id="lane-key"></div>
         </div>
-        <!-- ALIGN's "By event" pane (ADR 31 part 3): the event-comparison
-             lens's own canvas-only render, mounted here rather than
-             re-implemented — the same projection, drawn the same way,
-             whether reached through the lens's own read path or through
-             this switch. Hidden and empty under "By clock". -->
-        <div class="ec-surface" id="align-canvas" hidden></div>
       </div>
+      <div class="tile-field" id="tile-field" data-arrangement="focal"
+        aria-label="Evidence charts"></div>
+      <section class="explorer-drawer" id="explorer-drawer" aria-label="Chart explorer" hidden>
+        <header><span>Chart explorer</span><span class="drawer-meta" id="drawer-meta"></span>
+          <span class="drawer-escape">Esc</span></header>
+        <div class="explorer-thumbnails" id="explorer-thumbnails"></div>
+      </section>
     </section>
 
     <section class="pane inspector" aria-labelledby="crumb-trail">
@@ -133,6 +159,7 @@ const MARKUP = `
            behaviour-ledger story S16's header assertion. -->
       <header class="crumb">
         <h2 class="trail" id="crumb-trail"></h2>
+        <span class="drill-provenance" id="drill-provenance" hidden></span>
         <span class="meta" id="crumb-meta"></span>
         <div class="filter-wrap" id="filter-wrap" hidden>
           <button class="filter-trigger" id="filter-trigger" type="button"
@@ -351,24 +378,6 @@ function renderInstruments(winKey, capture, onPreset) {
     navigation — it does not push, and nothing else in the instrument row is a
     function of it. Its fixed choices reconcile from the standing frame's own
     align state, the same way `pressPreset` patches WINDOW from `winKey`. */
-function renderAlign(alignKey, onAlign) {
-  const seg = el('seg-align');
-  const choices = [['clock', 'By clock'], ['event', 'By event']];
-  if (!seg.querySelector('button')) {
-    for (const [, label] of choices) {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.textContent = label;
-      seg.append(b);
-    }
-  }
-  seg.querySelectorAll('button').forEach((b, index) => {
-    const [key] = choices[index];
-    b.setAttribute('aria-pressed', String(key === alignKey));
-    b.onclick = () => onAlign(key);
-  });
-}
-
 const CHIP_LABELS = [['highs', 'Highs'], ['lows', 'Lows'], ['meals', 'Meals'], ['corrections', 'Corrections']];
 
 /**
@@ -631,7 +640,7 @@ function renderEventComparisonRoster(host, caseFile, selectedId, onSelect, onMor
   }
 }
 
-function renderCaseSelection(host, caseFile, onDay) {
+function renderCaseSelection(host, caseFile, onDay, onClearTrace) {
   const { selection } = caseFile;
   if (selection.state === 'unavailable') {
     host.insertAdjacentHTML('beforeend',
@@ -666,9 +675,71 @@ function renderCaseSelection(host, caseFile, onDay) {
       <div>${dose.t.slice(11, 16)} · ${dose.insulin} U correction</div></div>`).join('')}`;
   host.append(facts);
   const foot = document.createElement('div'); foot.className = 'inner occ-foot';
+  const clear = document.createElement('button'); clear.type = 'button'; clear.className = 'linkbtn clear-trace';
+  clear.textContent = 'Clear trace'; clear.addEventListener('click', onClearTrace);
   const day = document.createElement('button'); day.type = 'button'; day.className = 'linkbtn';
   day.textContent = `Open ${fmtDate(detail.date)} in Day`; day.addEventListener('click', () => onDay(detail));
-  foot.append(day); host.append(foot);
+  foot.append(clear, day); host.append(foot);
+}
+
+function renderParameterEvidenceDetail(host, descriptor, entry) {
+  const data = descriptor.data;
+  const box = document.createElement('div');
+  box.className = 'inner chart-evidence-detail';
+  const heading = document.createElement('div');
+  heading.className = 'slot-head';
+  heading.innerHTML = `<span class="time">${entry.name}</span><span class="verdict">Evidence detail</span>`;
+  box.append(heading);
+  if (!data || descriptor.state !== 'ok') {
+    box.insertAdjacentHTML('beforeend', '<div class="empty">Evidence detail is not available yet.</div>');
+    host.append(box);
+    return;
+  }
+  const facts = [];
+  if (descriptor.kind === 'basal') {
+    facts.push(['Nights shown', data.roster_count],
+      ['Directional support', data.directional_support_count],
+      ['Excluded nights', data.excluded_night_count]);
+  } else if (descriptor.kind === 'isf') {
+    facts.push(['Rest windows', data.counts?.detected_windows],
+      ['Qualifying windows', data.counts?.qualifying_windows],
+      ['Qualifying steps', data.counts?.qualifying_steps]);
+  } else {
+    facts.push(['Meal runs examined', data.block?.examined_runs],
+      ['Support runs', data.block?.support],
+      ['Excluded runs', data.block?.excluded_runs]);
+  }
+  const readout = document.createElement('div');
+  readout.className = 'chart-evidence-readout';
+  for (const [label, value] of facts) {
+    readout.insertAdjacentHTML('beforeend', `<div><span>${label}</span><b>${value ?? '—'}</b></div>`);
+  }
+  box.append(readout);
+  const roster = document.createElement('div');
+  roster.className = 'chart-evidence-roster';
+  if (descriptor.kind === 'basal') {
+    roster.innerHTML = (data.nights || []).map((night) => `<div><span>${fmtDate(night.date)}</span>
+      <span>${u(night.delivered_rate)} delivered · ${u(night.programmed_rate)} programmed U/hr</span></div>`).join('');
+  } else if (descriptor.kind === 'isf') {
+    roster.innerHTML = (data.windows || []).map((window) => `<div><span>${fmtDate(window.date)}</span>
+      <span>${window.start?.slice(11, 16) || '—'}–${window.end?.slice(11, 16) || '—'}</span></div>`).join('');
+  } else {
+    roster.innerHTML = (data.runs || []).map((run) => `<div><span>${fmtDate(run.t.slice(0, 10))}</span>
+      <span>${run.n_meals} meal${run.n_meals === 1 ? '' : 's'} · ${u(run.true_ic)} g/U</span></div>`).join('');
+  }
+  if (roster.children.length) box.append(roster);
+  host.append(box);
+}
+
+function renderBehavioralFullscreen(host, f) {
+  const previous = window.__diagnoseEventComparison;
+  const mounted = renderEventSurface(host, f.caseFile);
+  mounted.restoreGlobal = () => {
+    if (window.__diagnoseEventComparison === mounted) {
+      window.__diagnoseEventComparison = previous;
+    }
+  };
+  return mounted;
 }
 
 /**
@@ -1059,7 +1130,10 @@ function boot(root, data, callbacks, signal) {
   let historyRequestGeneration = 0;
   // Null is the all-active resting state; a Set exists only while a chip is off.
   let selectedChips = null;
-  let eventChartsOnly = false;
+  let canvasMode = 'findings';
+  let drawerOpen = false;
+  let fullscreen = null;
+  let drilledChartId = null;
   let filterOpen = false;
   let filterFocus = 0;
   let queueScrollTop = 0;
@@ -1145,8 +1219,18 @@ function boot(root, data, callbacks, signal) {
   let chart = null;
   let shownRows = EVIDENCE_CAP;
   let dir = 'push';
-  /* ALIGN's mounted event-comparison canvas (ADR 31 part 3). */
-  let alignMount = null;
+  let canvasLayout = createCanvasLayout();
+  let tileCandidateOrder = [];
+  let tileDescriptors = [];
+  let tileRuntime = new Map();
+  let tileMounts = [];
+  let drawerMounts = [];
+  let tileAnalysisGeneration = findings?.analysis_generation || null;
+  let seatingPolicyKey = null;
+  let tileRequestGeneration = 0;
+  const tileRecoveryGenerations = new Map();
+  let findingsRefreshTail = Promise.resolve();
+  let sharedGlucoseRange = glucoseRange([]);
   let presetKey = CFG.win;                          // what Esc restores
   let shownRange = null;                            // the window the canvas resolved to
   let braceGripTop = 48;                            // y of the grip band, set by paintBrace
@@ -1206,6 +1290,9 @@ function boot(root, data, callbacks, signal) {
   const currentFindingsKey = () => windowKey(findingsWindow());
   const currentPreparationKey = () => windowKey(findingsWindow());
   let preparationGeneration = 0;
+  let preparationInFlight = null;
+  let dragPreparationWait = null;
+  let dragPreparationWantedKey = null;
   const settled = () => loadedKey === currentFindingsKey()
     && pendingKey === null && failedKey === null;
   const historyFrame = () => top()?.k === 'history' ? top() : null;
@@ -1218,16 +1305,306 @@ function boot(root, data, callbacks, signal) {
     drawn: drawn ? drawn.slice() : null,
   });
 
-  function historyRetired(frame, message, nextFindings = null) {
-    ++historyRequestGeneration;
-    if (nextFindings) findings = nextFindings;
+  const validFindingsGeneration = (next) => {
+    if (next?.schema !== 'diagnose-findings-v2'
+      || typeof next.analysis_generation !== 'string' || !next.analysis_generation
+      || !Array.isArray(next.rows)) {
+      throw new Error('Server did not return one coherent findings generation.');
+    }
+    return next;
+  };
+
+  /* ONE GENERATION AUTHORITY. Adopting a fresh findings generation is the same
+     act for a history pair and for a tile whose evidence request came back
+     `analysis_generation_mismatch`: ask the server, drop the answer if the
+     reader has moved on, and otherwise make it the surface's findings. Both
+     callers go through this pair; a second generation check would be one fact
+     with two implementations. What each caller re-derives afterwards — a
+     history frame, or the tile field via `reconcileTileDescriptors` — is its
+     own, and nothing here restores a layout captured before the refresh. */
+  const adoptFindings = (next, key) => {
+    if (key !== currentFindingsKey()) return null;
+    findings = next;
+    loadedKey = key;
     pendingKey = null;
     failedKey = null;
-    loadedKey = currentFindingsKey();
+    return next;
+  };
+
+  async function requestFindingsGeneration({ selectedHistoryId = null, still }) {
+    const key = currentFindingsKey();
+    const next = await refreshFindingsGeneration(selectedHistoryId);
+    // `still` is the CALLER's currency: a history frame is current while it is
+    // still on top of its own request, a tile recovery while the reader has not
+    // moved the window out from under it.
+    if (key !== currentFindingsKey() || !still(key)) return null;
+    return { next, key };
+  }
+
+  async function refreshFindingsGeneration(selectedHistoryId = null) {
+    const window = requestWindow();
+    const refresh = findingsRefreshTail.then(() => callbacks.loadFindings?.(
+      window, selectedHistoryId,
+    ));
+    findingsRefreshTail = refresh.catch(() => null);
+    return validFindingsGeneration(await refresh);
+  }
+
+  const descriptorCoordinatesKey = (descriptor) => JSON.stringify(descriptor.coordinates);
+  const descriptorHasData = (descriptor) => {
+    const data = descriptor.data;
+    if (!data || data.stale) return false;
+    if (descriptor.kind === 'basal') return (data.nights || []).length > 0;
+    if (descriptor.kind === 'isf') {
+      return (data.windows || []).length > 0 || (data.steps || []).length > 0;
+    }
+    if (descriptor.kind === 'carb-ratio') {
+      return (data.runs || []).length > 0 || (data.series || []).length > 0;
+    }
+    return (data.projection?.cohorts || []).some((cohort) => (cohort.points || []).length > 0);
+  };
+
+  function descriptorLoader(descriptor) {
+    if (descriptor.kind === 'basal') return callbacks.loadBasalEvidence;
+    if (descriptor.kind === 'isf') return callbacks.loadIsfEvidence;
+    if (descriptor.kind === 'carb-ratio') return callbacks.loadCarbRatioEvidence;
+    /* #181 retired the standalone comparison endpoint: the meals/lows tile asks
+       for the same Finding case file the inspector's own drill asks for. */
+    return callbacks.loadCase;
+  }
+
+  function disposeTiles() {
+    for (const mount of tileMounts) {
+      mount.observer?.disconnect();
+      mount.chart?.dispose();
+      mount.restoreGlobal?.();
+    }
+    tileMounts = [];
+  }
+
+  function disposeDrawer() {
+    for (const mount of drawerMounts) {
+      mount.observer?.disconnect();
+      mount.chart?.dispose();
+    }
+    drawerMounts = [];
+  }
+
+  function currentTileDescriptors() {
+    return tileDescriptors.filter((descriptor) => tileRuntime.get(descriptor.chartId)?.current);
+  }
+
+  function currentTileCandidates() {
+    const natural = candidateIdsForMode(
+      canvasMode, findings, currentTileDescriptors(), DIAGNOSE_EVIDENCE_CHARTS,
+    );
+    const available = new Set(natural);
+    return [...tileCandidateOrder.filter((chartId) => available.has(chartId)),
+      ...natural.filter((chartId) => !tileCandidateOrder.includes(chartId))];
+  }
+
+  /* A focus swap produces BOTH a layout and a reordered candidate list, and the
+     seat the demoted chart lands in comes from the list. Every focus change goes
+     through here so neither half can be dropped. */
+  function focusChart(chartId) {
+    const swapped = focusSwap(currentTileCandidates(), canvasLayout, chartId);
+    tileCandidateOrder = swapped.candidates;
+    canvasLayout = swapped.layout;
+  }
+
+  function explorerDescriptors() {
+    return candidateIdsForMode(
+      'explore', findings, currentTileDescriptors(), DIAGNOSE_EVIDENCE_CHARTS,
+    ).map(chartDescriptor).filter(Boolean);
+  }
+
+  function reconcileTileDescriptors({ skipLoadIds = new Set() } = {}) {
+    const generation = findings?.analysis_generation || null;
+    /* The comparison tile's request quotes the same opaque projection id the
+       inspector's own case-file drill quotes, and the preparation is where that
+       id lives — the findings queue carries rows, not the served generation. */
+    const generated = descriptorsFromFindings(
+      findings && { ...findings, projection_id: preparation?.projection_id },
+      DIAGNOSE_EVIDENCE_CHARTS,
+    );
+    const generationChanged = tileAnalysisGeneration !== null
+      && tileAnalysisGeneration !== generation;
+    const old = new Map(tileDescriptors.map((descriptor) => [descriptor.chartId, descriptor]));
+    const oldRuntime = tileRuntime;
+    const nextPolicyKey = settled() ? `${canvasMode}:${loadedKey}:${generation}` : seatingPolicyKey;
+    const policyChanged = nextPolicyKey !== null && nextPolicyKey !== seatingPolicyKey;
+    const reconciled = reconcileCanvasDescriptors(
+      generated, tileDescriptors, canvasLayout, { policyChanged },
+    );
+    const vanishedPinnedIds = new Set(reconciled.vanishedPinnedIds);
+    canvasLayout = reconciled.layout;
+    const nextRuntime = new Map();
+    const next = reconciled.descriptors.map((seed) => {
+      const prior = old.get(seed.chartId);
+      if (vanishedPinnedIds.has(seed.chartId)) {
+        const retained = oldRuntime.get(seed.chartId)
+          || { current: true, pending: false, message: null, request: 0 };
+        retained.current = true;
+        retained.pending = false;
+        retained.message = 'Pinned chart is not in the current findings.';
+        retained.retained = true;
+        nextRuntime.set(seed.chartId, retained);
+        return seed;
+      }
+      const sameRequest = prior && !generationChanged && prior.kind === seed.kind
+        && descriptorCoordinatesKey(prior) === descriptorCoordinatesKey(seed);
+      /* The runtime object is KEPT, not copied. A fetch in flight holds the
+         tile's runtime and writes its answer there; reconciling to a copy left
+         the answer on an orphan and the tile read "Loading evidence…" forever
+         while its state said ok. */
+      const carried = oldRuntime.get(seed.chartId);
+      if (sameRequest) {
+        carried.current = true;
+        carried.retained = false;
+      }
+      nextRuntime.set(seed.chartId, sameRequest
+        ? carried
+        : { current: true, pending: false, message: null, request: 0, retained: false });
+      return sameRequest ? prior : seed;
+    });
+    tileDescriptors = next;
+    tileRuntime = nextRuntime;
+    tileAnalysisGeneration = generation;
+    /* THE SEAT ORDER IS READER STATE AND IT SURVIVES A RECONCILE. A focus swap
+       exchanges two candidates, and dropping the reordered list on the next
+       paint is what landed every demoted focal chart in slot 1 instead of the
+       seat the reader took the new one from. A seating-policy change — a new
+       window, mode or analysis generation — is the one thing that returns the
+       field to the published order. */
+    if (policyChanged) tileCandidateOrder = [];
+    tileCandidateOrder = currentTileCandidates();
+    const available = new Set(tileDescriptors.map(({ chartId }) => chartId));
+    canvasLayout = createCanvasLayout({
+      focalId: available.has(canvasLayout.focalId)
+        ? canvasLayout.focalId : currentTileCandidates()[0] || canvasLayout.pins[0] || null,
+      pins: canvasLayout.pins,
+    });
+    seatingPolicyKey = nextPolicyKey;
+    for (const descriptor of tileDescriptors) {
+      const runtime = tileRuntime.get(descriptor.chartId);
+      if (!runtime.retained && !skipLoadIds.has(descriptor.chartId) && !runtime.pending
+          && descriptor.data === null && descriptor.state === 'empty') {
+        void fetchTile(descriptor);
+      }
+    }
+  }
+
+  /* STALE GENERATION — the recovery IS the shared generation refresh. The
+     server answered this tile's evidence request with
+     `analysis_generation_mismatch`, so the tile names that state with the
+     server's own wording, the surface adopts the current findings generation
+     through the one primitive above, and `reconcileTileDescriptors` — the sole
+     authority on what the canvas holds — re-derives the tile field from the new
+     rows. Nothing restores a layout captured before the refresh.
+
+     A PINNED CHART WHOSE ROW THE NEW GENERATION NO LONGER PUBLISHES keeps its
+     seat as a named empty tile. The retained descriptor has no data and cannot
+     issue an evidence request until a later findings generation publishes its
+     coordinates again. */
+  function markTileStale(chartId, message, { pending = false } = {}) {
+    const descriptor = tileDescriptors.find((item) => item.chartId === chartId);
+    if (!descriptor) return null;
+    descriptor.state = 'stale-generation';
+    descriptor.data = null;
+    const runtime = tileRuntime.get(chartId);
+    runtime.message = message;
+    runtime.pending = pending;
+    paintTiles();
+    return descriptor;
+  }
+
+  async function recoverStaleTile(chartId, staleResult) {
+    if (staleResult?.stale !== true || typeof staleResult.message !== 'string') {
+      throw new TypeError('stale recovery needs the typed generation-mismatch result');
+    }
+    const recovery = (tileRecoveryGenerations.get(chartId) || 0) + 1;
+    tileRecoveryGenerations.set(chartId, recovery);
+    const currentRecovery = () => tileRecoveryGenerations.get(chartId) === recovery;
+    if (!markTileStale(chartId, staleResult.message, { pending: true })) return;
+    try {
+      const adopted = await requestFindingsGeneration({
+        still: (key) => currentRecovery() && key === currentFindingsKey(),
+      });
+      if (!adopted) {
+        markTileStale(chartId, staleResult.message);
+        return;
+      }
+      adoptFindings(adopted.next, adopted.key);
+      reconcileTileDescriptors({ skipLoadIds: new Set([chartId]) });
+      const descriptor = tileDescriptors.find((item) => item.chartId === chartId);
+      if (!descriptor || tileRuntime.get(chartId)?.retained) {
+        // the row is gone from the new generation: retain the named pin state
+        paintTiles();
+        paintChart();
+        paintBrace();
+        return;
+      }
+      markTileStale(chartId, staleResult.message, { pending: true });
+      await fetchTile(descriptor, { recover: false });
+    } catch {
+      if (!currentRecovery()) return;
+      markTileStale(chartId, staleResult.message);
+    }
+  }
+
+  async function fetchTile(descriptor, { recover = true } = {}) {
+    const load = descriptorLoader(descriptor);
+    /* The tile's runtime is read back by chart id on every hop, never captured:
+       reconciliation can replace the entry under an in-flight fetch, and an
+       answer written to a runtime the field no longer reads is a tile that
+       never stops loading. */
+    const runtimeNow = () => tileRuntime.get(descriptor.chartId);
+    if (!load) {
+      const runtime = runtimeNow();
+      runtime.pending = false;
+      descriptor.state = 'error';
+      runtime.message = 'Evidence request is unavailable.';
+      paintTiles();
+      return;
+    }
+    const request = ++tileRequestGeneration;
+    runtimeNow().request = request;
+    runtimeNow().pending = true;
+    paintTiles();
+    const superseded = () => runtimeNow()?.request !== request
+      || !tileDescriptors.includes(descriptor);
+    try {
+      const data = await load(descriptor.coordinates);
+      if (superseded()) return;
+      runtimeNow().pending = false;
+      if (data?.stale === true) {
+        if (recover) await recoverStaleTile(descriptor.chartId, data);
+        else markTileStale(descriptor.chartId, data.message);
+        return;
+      }
+      descriptor.data = data;
+      descriptor.state = descriptorHasData(descriptor) ? 'ok' : 'empty';
+      runtimeNow().message = descriptor.state === 'empty' ? 'No evidence in this request.' : null;
+      paintTiles();
+      paintChart();
+      paintBrace();
+    } catch (error) {
+      if (superseded()) return;
+      runtimeNow().pending = false;
+      descriptor.state = 'error';
+      runtimeNow().message = error?.message || 'Evidence request failed.';
+      paintTiles();
+    }
+  }
+
+  function historyRetired(frame, message, nextFindings, key) {
+    if (!adoptFindings(nextFindings, key)) return false;
+    ++historyRequestGeneration;
     retirementNotice = message;
     stack.length = 1;
     dir = 'pop';
     paint();
+    return true;
   }
 
   const typedRetirement = (error) => error?.status === 410
@@ -1255,13 +1632,26 @@ function boot(root, data, callbacks, signal) {
 
   async function refreshHistoryRetirement(frame, request) {
     try {
-      const next = await callbacks.loadFindings?.(requestWindow(), frame.id);
-      if (request !== historyRequestGeneration || top() !== frame) return;
+      const adopted = await requestFindingsGeneration({ selectedHistoryId: frame.id,
+        still: () => request === historyRequestGeneration && top() === frame });
+      if (!adopted) {
+        if (request === historyRequestGeneration && top() === frame) {
+          pendingKey = null;
+          frame.pending = false;
+          paint();
+        }
+        return;
+      }
+      const next = adopted.next;
       const selection = validateHistorySelection(next, frame);
       if (!['aged_out', 'unavailable'].includes(selection.disposition)) {
         throw new Error('Retired history did not have a matching findings disposition.');
       }
-      historyRetired(frame, selection.message, next);
+      if (!historyRetired(frame, selection.message, next, adopted.key)) {
+        pendingKey = null;
+        frame.pending = false;
+        paint();
+      }
     } catch {
       if (request !== historyRequestGeneration || top() !== frame) return;
       pendingKey = null;
@@ -1276,24 +1666,33 @@ function boot(root, data, callbacks, signal) {
     attempt = 0, request = ++historyRequestGeneration,
   } = {}) {
     if (top() !== frame) return;
-    const key = currentFindingsKey();
-    pendingKey = key;
+    pendingKey = currentFindingsKey();
     frame.pending = true;
     frame.stale = false;
     paint();
     try {
-      const next = await callbacks.loadFindings?.(requestWindow(), frame.id);
-      if (request !== historyRequestGeneration || top() !== frame) return;
+      const adopted = await requestFindingsGeneration({ selectedHistoryId: frame.id,
+        still: () => request === historyRequestGeneration && top() === frame });
+      if (!adopted) {
+        if (request === historyRequestGeneration && top() === frame) {
+          pendingKey = null;
+          frame.pending = false;
+          paint();
+        }
+        return;
+      }
+      const next = adopted.next;
       const selection = validateHistorySelection(next, frame);
       if (['aged_out', 'unavailable'].includes(selection.disposition)) {
-        historyRetired(frame, selection.message, next);
+        if (!historyRetired(frame, selection.message, next, adopted.key)) {
+          pendingKey = null;
+          frame.pending = false;
+          paint();
+        }
         return;
       }
       if (selection.disposition === 'out_of_scope') {
-        findings = next;
-        loadedKey = key;
-        pendingKey = null;
-        failedKey = null;
+        if (!adoptFindings(next, adopted.key)) return;
         Object.assign(frame, { pending: false, stale: false, notice: selection.message });
         paint();
         return;
@@ -1320,10 +1719,12 @@ function boot(root, data, callbacks, signal) {
         });
       }
       if (request !== historyRequestGeneration || top() !== frame) return;
-      findings = next;
-      loadedKey = key;
-      pendingKey = null;
-      failedKey = null;
+      if (!adoptFindings(next, adopted.key)) {
+        pendingKey = null;
+        frame.pending = false;
+        paint();
+        return;
+      }
       Object.assign(frame, {
         row, generation: next.analysis_generation, events,
         selectedRunId: selectedRunId || null,
@@ -1436,6 +1837,7 @@ function boot(root, data, callbacks, signal) {
 
   function recoverCase(frame, alignment, occ, generation) {
     const w = findingsWindow();
+    const key = windowKey(w);
     const requested = w ? { start_min: w[0], end_min: w[1] } : null;
     Promise.resolve(callbacks.loadPreparation?.(requested))
       .then((response) => {
@@ -1453,10 +1855,8 @@ function boot(root, data, callbacks, signal) {
       })
       .then((shadow) => {
         if (!shadow || !isCurrentCaseRequest(generation, frame)) return;
+        if (!adoptFindings(findingsFromPreparation(shadow.shadowPreparation), key)) return;
         preparation = shadow.shadowPreparation;
-        findings = findingsFromPreparation(preparation);
-        loadedKey = windowKey(findingsWindow());
-        pendingKey = null;
         frame.caseFile = shadow.shadowCase;
         frame.requestedAlignment = shadow.shadowCase.projection.alignment;
         frame.selectedId = shadow.shadowCase.selection.state === 'selected'
@@ -1474,16 +1874,59 @@ function boot(root, data, callbacks, signal) {
       });
   }
 
+  /* Dragging can cross several 15-minute positions before one evidence
+     preparation returns. Keep one request in flight and one replaceable slot
+     for the newest position; intermediate positions have no tile to paint. */
+  function ensurePinnedDragPreparation() {
+    if (canvasLayout.pins.length === 0) {
+      dragPreparationWantedKey = null;
+      return;
+    }
+    dragPreparationWantedKey = currentPreparationKey();
+    if (dragPreparationWait) return;
+
+    const waitFor = (request, requestedKey) => {
+      dragPreparationWait = request;
+      request.then(() => {
+        if (dragPreparationWait !== request) return;
+        dragPreparationWait = null;
+        const wantedKey = dragPreparationWantedKey;
+        dragPreparationWantedKey = null;
+        if (wantedKey !== null && wantedKey !== requestedKey) {
+          dragPreparationWantedKey = wantedKey;
+          issueLatest();
+        }
+      });
+    };
+
+    const issueLatest = () => {
+      if (canvasLayout.pins.length === 0 || dragPreparationWantedKey === null) {
+        dragPreparationWantedKey = null;
+        return;
+      }
+      if (preparationInFlight) {
+        waitFor(preparationInFlight, pendingKey);
+        return;
+      }
+      const requestedKey = dragPreparationWantedKey;
+      dragPreparationWantedKey = null;
+      const request = ensurePreparation();
+      if (!request) return;
+      waitFor(request, requestedKey);
+    };
+    issueLatest();
+  }
+
   function refreshQueueAfterUnavailable(frame, generation, originalError) {
     const w = findingsWindow();
+    const key = windowKey(w);
     const requested = w ? { start_min: w[0], end_min: w[1] } : null;
     Promise.resolve(callbacks.loadPreparation?.(requested))
       .then((response) => {
         if (!isCurrentCaseRequest(generation, frame)) return;
         const next = matchingPreparation(response, requested);
+        if (!adoptFindings(findingsFromPreparation(next), key)) return;
         preparation = next;
-        findings = findingsFromPreparation(next);
-        loadedKey = windowKey(findingsWindow());
         frame.loading = false;
         activeCaseError = caseErrorFrom(originalError);
         paint();
@@ -1559,16 +2002,13 @@ function boot(root, data, callbacks, signal) {
     const generation = ++preparationGeneration;
     const frame = top().k === 'factor' ? top() : null;
     if (frame) frame.loading = true;
-    Promise.resolve(callbacks.loadPreparation?.(requested))
+    const request = Promise.resolve(callbacks.loadPreparation?.(requested))
       .then((response) => {
         if (generation !== preparationGeneration || currentPreparationKey() !== key) return null;
         const next = matchingPreparation(response, requested);
         if (!frame) {
+          if (!adoptFindings(findingsFromPreparation(next), key)) return null;
           preparation = next;
-          findings = findingsFromPreparation(next);
-          pendingKey = null;
-          loadedKey = key;
-          failedKey = null;
           paint();
           return null;
         }
@@ -1587,16 +2027,13 @@ function boot(root, data, callbacks, signal) {
       .then((shadow) => {
         if (!shadow || generation !== preparationGeneration
           || currentPreparationKey() !== key || top() !== frame) return;
+        if (!adoptFindings(findingsFromPreparation(shadow.next), key)) return;
         preparation = shadow.next;
-        findings = findingsFromPreparation(shadow.next);
         frame.caseFile = shadow.shadowCase;
         frame.pendingCaseRequest = null;
         frame.loading = false;
         frame.selectedId = shadow.shadowCase.selection.state === 'selected'
           ? shadow.shadowCase.selection.requested_id : null;
-        pendingKey = null;
-        loadedKey = key;
-        failedKey = null;
         activeCaseError = null;
         paint();
       })
@@ -1609,6 +2046,11 @@ function boot(root, data, callbacks, signal) {
         activeCaseError = caseErrorFrom(error);
         paint();
       });
+    preparationInFlight = request;
+    request.then(() => {
+      if (preparationInFlight === request) preparationInFlight = null;
+    });
+    return request;
   }
 
   /** A queue row's drill target — keyed on the projection's own row id, never
@@ -1626,7 +2068,7 @@ function boot(root, data, callbacks, signal) {
       return;
     }
     if (row.register === 'finding') {
-      const entryAlignment = eventChartsOnly && eventChartCoordinate(row) ? 'event' : 'clock';
+      const entryAlignment = eventChartCoordinate(row) ? 'event' : 'clock';
       const frame = { k: 'factor', rowId: row.id, title: row.title,
         caseFile: null, requestedAlignment: entryAlignment, selectedId: null,
         bandVerdict: null, loading: false,
@@ -1657,7 +2099,20 @@ function boot(root, data, callbacks, signal) {
     if (top().k === 'factors') queueScrollTop = el('level').scrollTop;
     filterOpen = false;
     pendingFocus = 'level';
-    dir = 'push'; stack.push(frame); shownRows = EVIDENCE_CAP; paint();
+    dir = 'push'; stack.push(frame);
+    seatDrill(drilledChartIdForFrame(frame, currentTileDescriptors()));
+    shownRows = EVIDENCE_CAP; paint();
+  };
+  /* A DRILL SEATS ITS OWN EVIDENCE. Ruled by the operator after the fix round's
+     live repro: drilling the top-ranked behavioural finding left three
+     look-alike comparison tiles up and the drilled finding's own response
+     comparison unseated, so the inspector was reading one factor while the
+     field showed another. The drilled chart takes the focal seat and wears the
+     drill mark; pinning is still the only other thing that moves the field, and
+     it still never moves focus. */
+  const seatDrill = (chartId) => {
+    drilledChartId = chartId;
+    if (chartId && !fullscreen) focusChart(chartId);
   };
   const popTo = (i) => {
     ++caseGeneration;
@@ -1665,7 +2120,10 @@ function boot(root, data, callbacks, signal) {
     pendingKey = null;
     filterOpen = false;
     pendingFocus = pendingRowFocus(stack[1]);
-    dir = 'pop'; stack.length = i + 1; paint();
+    const popped = popInspector(stack, i, currentTileDescriptors());
+    stack.splice(0, stack.length, ...popped.stack);
+    seatDrill(popped.drilledChartId);
+    dir = 'pop'; paint();
   };
 
   function findingRowFor(frame) {
@@ -1674,8 +2132,84 @@ function boot(root, data, callbacks, signal) {
   }
 
   function parameterRowFor(frame) {
+    if (frame.k === 'chart' || frame.k === 'explore') return true;
     if (!frame.rowId) return true;
     return (findings?.rows || []).find((row) => row.id === frame.rowId) || null;
+  }
+
+  const chartDescriptor = (chartId) => tileDescriptors.find((item) => item.chartId === chartId);
+  const chartEntry = (descriptor) => DIAGNOSE_EVIDENCE_CHARTS
+    .find((entry) => entry.kind === descriptor?.kind);
+  /* Selection belongs to the standing case file, while descriptor data belongs
+     to the tile's selection-free request. Present the active case without
+     mutating fetch-owned state that an in-flight tile response can replace. */
+  const tileCaseFile = (descriptor) => {
+    const frame = top();
+    return descriptor.kind === 'event-comparison'
+      && frame.k === 'factor' && frame.rowId === descriptor.chartId
+      && frame.caseFile?.projection?.alignment === 'event'
+      ? frame.caseFile : descriptor.data;
+  };
+
+  /* A CHART CLICK IS ONE LEVEL, ALWAYS THE SAME ONE. The `chart` branch already
+     swapped in place; the behavioural branch pushed unconditionally, so every
+     click on a behavioural tile deepened the path — clicking one twice printed
+     its title twice in the crumb and each new finding stacked under the last,
+     which is the repeating, overflowing breadcrumb the fix round reported. A
+     chart the inspector is already standing on is a no-op; any other chart
+     replaces the standing level-2 frame rather than sitting on top of it. */
+  function showChartInspector(descriptor) {
+    if (!descriptor) return;
+    seatDrill(descriptor.chartId);
+    const standing = top();
+    const LEVEL_TWO = ['factor', 'chart'];
+    if (LEVEL_TWO.includes(standing.k) && standing.rowId === descriptor.chartId) {
+      paint();
+      return;
+    }
+    const behavioral = descriptor.kind === 'event-comparison';
+    if (standing.k === 'factor' || (standing.k === 'chart' && behavioral)) popTo(0);
+    if (behavioral) {
+      const row = (findings?.rows || []).find((item) => item.id === descriptor.chartId);
+      if (!row?.lever) {
+        push({ k: 'chart', chartId: descriptor.chartId, rowId: descriptor.chartId,
+          placeholder: 'This behavioral chart has no published lever, so its case file is withheld.' });
+        return;
+      }
+      drillFinding(row);
+      return;
+    }
+    if (top().k === 'chart') {
+      Object.assign(top(), { chartId: descriptor.chartId, rowId: descriptor.chartId, placeholder: null });
+      paint();
+      return;
+    }
+    push({ k: 'chart', chartId: descriptor.chartId, rowId: descriptor.chartId });
+  }
+
+  function setCanvasMode(nextMode) {
+    if (nextMode === canvasMode) return;
+    canvasMode = nextMode;
+    drawerOpen = false;
+    if (fullscreen) {
+      canvasLayout = dismissFullscreen(fullscreen);
+      fullscreen = null;
+    }
+    seatingPolicyKey = null;
+    const normalized = inspectorStackForMode(
+      nextMode, stack, drilledChartId, currentTileDescriptors(),
+    );
+    stack.splice(0, stack.length, ...normalized);
+    drilledChartId = drilledChartIdForFrame(top(), currentTileDescriptors());
+    reconcileTileDescriptors();
+    paint();
+  }
+
+  function dismissChartFullscreen() {
+    if (!fullscreen) return;
+    canvasLayout = dismissFullscreen(fullscreen);
+    fullscreen = null;
+    paint();
   }
   /* The lane is a shortcut INTO the slot branch: from level 1 it pushes, from a
      slot frame it swaps in place, so clicking cells never deepens the stack. */
@@ -1738,6 +2272,15 @@ function boot(root, data, callbacks, signal) {
     stack.push({ k: 'block', cell });
   }
   if (CFG.level === 'isf') stack.push({ k: 'isf' });
+
+  for (const button of root.querySelectorAll('[data-canvas-mode]')) {
+    button.addEventListener('click', () => setCanvasMode(button.dataset.canvasMode));
+  }
+  el('explorer-trigger').addEventListener('click', () => {
+    drawerOpen = !drawerOpen;
+    if (drawerOpen && fullscreen) dismissChartFullscreen();
+    else paint();
+  });
 
   function paintChart() {
     const f = top();
@@ -1821,7 +2364,8 @@ function boot(root, data, callbacks, signal) {
     const stats = windowStats(envelope, win.range);
     paintReadout(null);          // a redraw ends the old hover
     chart = renderCanvas(el('chart'), window.echarts, {
-      envelope, markers, colors, occurrences, stats, window: win.range,
+      envelope, markers, colors, occurrences, stats, range: sharedGlucoseRange,
+      window: win.range,
       windowLabel: label, trace, onHover: paintReadout,
       selectedOcc, displayWindow: dragDisplayWindow, displayOffset: clockPanOffset,
     });
@@ -1846,129 +2390,310 @@ function boot(root, data, callbacks, signal) {
       delete chartNode.dataset.analysisGeneration;
       delete chartNode.dataset.selectedRunId;
     }
-    /* The count is the WINDOW's, and the days are the CGM capture's own — not a
-       coverage claim for the app. The basal run is a different, longer run and
-       names itself separately in the slot panel and the status bar. */
-    /* A finding the current window no longer holds has no population to count,
-       so the canvas states that rather than printing a reading count under a
-       panel that is listing nothing (ADR 62 part 9). */
+    /* THE READING COUNT IS GONE (#135 fix round, operator ruling). "window 216
+       of 864 readings" priced the strip in a unit no decision on this surface is
+       made in, at data weight, right beside the title — and the pooled-days
+       chip below already says how much history the strip drew from. The one
+       thing the strip header still has to say is when the drilled finding has
+       no population in the window (ADR 62 part 9), so that stays. */
     el('canvas-scope').textContent =
       f.k === 'factor' && settled() && !f.caseFile
-        ? 'No findings in the selected window'
-        : `window ${stats.readings.toLocaleString()} of ${envelope.readings.toLocaleString()} readings`;
+        ? 'No findings in the selected window' : '';
     el('canvas-pool').textContent =
       `pooled from ${envelope.days} captured CGM days · ±${envelope.pool} min`;
   }
 
-  /** Tear down whatever ALIGN mounted, and restore the clock canvas. */
-  function disposeAlign() {
-    alignMount?.observer?.disconnect();
-    alignMount?.chart?.dispose();
-    alignMount?.restoreHeader?.();
-    alignMount = null;
-    el('align-canvas').innerHTML = '';
-    el('align-canvas').hidden = true;
-    el('chart').hidden = false;
-    el('brace').hidden = braceless || !shownRange;
-    el('lane-wrap').hidden = false;
+  /* THE SCHEMATIC IS A MIRROR OF THE FIELD. It draws the CURRENT arrangement's
+     own cell count — the same geometry the tile field is laid out on — with
+     every occupied cell filled: accent pinned, neutral seated. Exactly one cell
+     is the dashed hollow one, and it marks where the NEXT pin lands:
+
+       · while the arrangement still has a free cell (the focal arrangement,
+         which seats fewer charts than it holds), that free cell is it;
+       · once every cell of the arrangement is held by a pin, the next pin grows
+         the arrangement, so the hollow cell is appended — it is the cell the
+         next arrangement adds, and it is the only way to reach the denser
+         arrangements from a fully pinned field;
+       · at the cap there is no hollow cell at all.
+
+     A cell already holding a chart is never drawn hollow: a chart on the field
+     is pinned from its own tile, not from this schematic. */
+  function paintPinCap(seats) {
+    const host = el('tile-schematic');
+    host.dataset.arrangement = canvasLayout.arrangement;
+    host.innerHTML = '';
+    const candidates = currentTileCandidates();
+    const nextChartId = candidates.find((chartId) => !canvasLayout.pins.includes(chartId));
+    const arrangementCells = seatCountFor(canvasLayout.arrangement);
+    const belowCap = canvasLayout.pins.length < PIN_CAP;
+    const fullyPinned = canvasLayout.pins.length >= arrangementCells;
+    const cellCount = arrangementCells + (belowCap && fullyPinned ? 1 : 0);
+    const nextIndex = belowCap ? seats.length : -1;
+    for (let index = 0; index < cellCount; index += 1) {
+      const seat = seats[index];
+      const isNext = !seat && index === nextIndex;
+      const cell = document.createElement(isNext ? 'button' : 'i');
+      if (seat) cell.className = seat.pinned ? 'pinned' : 'seated';
+      else if (isNext) {
+        cell.type = 'button';
+        cell.className = 'next';
+        cell.disabled = !nextChartId;
+        cell.setAttribute('aria-label', nextChartId
+          ? `Pin next evidence chart (${nextChartId})` : 'No next evidence chart to pin');
+        cell.title = nextChartId ? 'Pin next evidence chart' : 'No next evidence chart';
+        cell.onclick = () => {
+          const result = pinChart(canvasLayout, nextChartId);
+          if (!result.accepted) return;
+          canvasLayout = result.layout;
+          paintTiles();
+          paintChart();
+          paintBrace();
+        };
+      } else cell.className = 'free';
+      host.append(cell);
+    }
+    el('pin-count').textContent = `${canvasLayout.pins.length}/${PIN_CAP} pinned`;
   }
 
-  /** ALIGN owns two explicit projections: behavioral case files and I:C history. */
-  function paintAlign() {
-    const f = top();
-    const isCase = f.k === 'factor';
-    const isHistory = f.k === 'history';
-    const liveRow = isCase && settled() ? findingRowFor(f) : null;
-    /* #181 — the SERVED preparation decides whether this case is reachable by
-       lever and window, for a frame entered through Event charts no less than
-       one entered from the queue. The findings projection is a separate answer
-       over a separate population: a replacement window can drop the Finding's
-       canonical event family there while the retained case preparation still
-       holds its coordinate, and ALIGN follows the preparation, not that loss. */
-    const mappedCase = liveRow && (caseAlignmentIn(preparation, f)
-      || (f.eventDiscovery ? eventChartCoordinate(liveRow) : null))
-      ? { caseFile: true } : null;
-    el('align-group').hidden = !mappedCase && !isHistory;
-    if (!mappedCase && !isHistory) {
-      disposeAlign();
+  function paintTiles() {
+    const host = el('tile-field');
+    if (!host) return;
+    disposeTiles();
+    const byId = new Map(tileDescriptors.map((descriptor) => [descriptor.chartId, descriptor]));
+    /* A SEAT WITHOUT A DESCRIPTOR IS NOT A TILE. Reconciliation gives a pin
+       whose row vanished a named empty descriptor; this last filter only keeps
+       the mechanical placement seam from ever painting an unknown chart id. */
+    const seats = (fullscreen
+      ? [{ chartId: fullscreen.chartId, seat: 'focal',
+        pinned: canvasLayout.pins.includes(fullscreen.chartId) }]
+      : placeSeats(currentTileCandidates(), canvasLayout))
+      .filter(({ chartId }) => byId.has(chartId));
+    const displayed = seats.map(({ chartId }) => byId.get(chartId));
+    sharedGlucoseRange = arrangementRange(displayed.map((descriptor) => ({
+      ...descriptor, data: tileCaseFile(descriptor),
+    })), DIAGNOSE_EVIDENCE_CHARTS, glucoseRange);
+    host.dataset.arrangement = fullscreen ? 'focal' : canvasLayout.arrangement;
+    host.innerHTML = '';
+    paintPinCap(seats);
+    if (!seats.length) {
+      host.innerHTML = '<div class="tile-field-empty">No evidence charts in this window.</div>';
       return;
     }
-    const alignKey = isHistory
-      ? f.align
-      : f.caseFile?.projection?.alignment || f.requestedAlignment || 'clock';
-    renderAlign(alignKey, (key) => {
-      if (alignKey === key || f.loading || (isHistory && f.pending)) return;
-      if (isHistory) {
-        if (key === 'clock') {
-          ++historyRequestGeneration;
-          pendingKey = null;
-          f.pending = false;
-          f.align = 'clock';
-          disposeAlign();
-          paint();
-        } else {
-          requestHistoryEvents(f, f.selectedRunId);
-        }
-        return;
+    const entries = new Map(DIAGNOSE_EVIDENCE_CHARTS.map((entry) => [entry.kind, entry]));
+    for (const seat of seats) {
+      const descriptor = byId.get(seat.chartId);
+      const entry = entries.get(descriptor.kind);
+      const tile = document.createElement('article');
+      tile.className = 'evidence-tile';
+      tile.dataset.chartId = descriptor.chartId;
+      tile.dataset.seat = seat.seat;
+      tile.dataset.state = descriptor.state;
+      tile.toggleAttribute('data-pinned', seat.pinned);
+      tile.toggleAttribute('data-drilled', descriptor.chartId === drilledChartId);
+      tile.style.order = String(seat.seat === 'focal' ? 0
+        : seat.pinned ? canvasLayout.pins.indexOf(descriptor.chartId) + 1 : 0);
+      const runtime = tileRuntime.get(descriptor.chartId);
+      const presentation = tileStatePresentation(
+        descriptor, runtime.pending, runtime.message,
+      );
+
+      const head = document.createElement('header');
+      head.className = 'tile-head';
+      const title = document.createElement('h3');
+      title.textContent = descriptor.title;
+      const meta = document.createElement('span');
+      meta.className = 'tile-meta';
+      meta.textContent = canvasMode === 'explore' ? 'measured evidence'
+        : descriptor.meta || entry.meta(descriptor.mode);
+      const state = document.createElement('span');
+      state.className = 'tile-state-name';
+      state.textContent = presentation.name;
+      head.append(title, meta, state);
+      /* THE DRILL MARK IS A WORD, NOT A HAIRLINE. The inset outline this used to
+         rely on alone was invisible at tile size, so the reader had no way to
+         tell which chart the inspector beside it was reading. */
+      if (descriptor.chartId === drilledChartId) {
+        const mark = document.createElement('span');
+        mark.className = 'tile-drilled-mark';
+        mark.textContent = 'Open in inspector';
+        head.append(mark);
       }
-      requestCase(f, key, f.selectedId);
+
+      if (entry.modes) {
+        const modes = document.createElement('span');
+        modes.className = 'tile-modes';
+        modes.setAttribute('role', 'group');
+        modes.setAttribute('aria-label', `${descriptor.title} alignment`);
+        for (const mode of entry.modes) {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.textContent = mode === 'clock' ? 'Clock' : 'Event';
+          button.setAttribute('aria-label', `Align ${descriptor.title} by ${mode}`);
+          button.setAttribute('aria-pressed', String(mode === descriptor.mode));
+          button.onclick = (event) => {
+            event.stopPropagation();
+            descriptor.mode = mode;
+            paintTiles();
+          };
+          modes.append(button);
+        }
+        head.append(modes);
+      }
+
+      const pin = document.createElement('button');
+      pin.type = 'button';
+      pin.className = 'tile-pin';
+      pin.textContent = seat.pinned ? 'Unpin' : 'Pin';
+      pin.setAttribute('aria-pressed', String(seat.pinned));
+      pin.disabled = !seat.pinned && canvasLayout.pins.length === PIN_CAP;
+      pin.title = pin.disabled ? `Pin cap reached (${PIN_CAP})` : pin.textContent;
+      pin.onclick = (event) => {
+        event.stopPropagation();
+        if (seat.pinned) {
+          canvasLayout = unpinChart(canvasLayout, descriptor.chartId);
+          reconcileTileDescriptors();
+        } else {
+          const result = pinChart(canvasLayout, descriptor.chartId);
+          if (!result.accepted) return;
+          canvasLayout = result.layout;
+        }
+        paintTiles();
+        paintChart();
+        paintBrace();
+      };
+      head.append(pin);
+      const full = document.createElement('button');
+      full.type = 'button';
+      full.className = 'tile-fullscreen';
+      full.textContent = fullscreen ? 'Dismiss' : 'Full';
+      full.setAttribute('aria-label', fullscreen
+        ? `Dismiss fullscreen ${descriptor.title}` : `Show ${descriptor.title} fullscreen`);
+      full.onclick = (event) => {
+        event.stopPropagation();
+        if (fullscreen) dismissChartFullscreen();
+        else {
+          fullscreen = enterFullscreen(canvasLayout, descriptor.chartId);
+          drawerOpen = false;
+          showChartInspector(descriptor);
+          paint();
+        }
+      };
+      head.append(full);
+      tile.append(head);
+
+      const body = document.createElement('div');
+      body.className = 'tile-body';
+      if (runtime.pending) {
+        body.innerHTML = `<div class="tile-state"><strong>${presentation.name}</strong><span>${presentation.message}</span></div>`;
+      } else if (descriptor.state !== 'ok') {
+        const named = document.createElement('div');
+        named.className = 'tile-state';
+        const strong = document.createElement('strong');
+        strong.textContent = presentation.name;
+        const message = document.createElement('span');
+        message.textContent = presentation.message;
+        named.append(strong, message);
+        body.append(named);
+      } else {
+        const chartHost = document.createElement('div');
+        chartHost.className = 'tile-chart';
+        body.append(chartHost);
+        try {
+          const caseFile = tileCaseFile(descriptor);
+          /* A SLOT TILE IS A MINIATURE INSTRUMENT. At slot size the full axis
+             furniture cannot be read — its labels run together into a single
+             smear — so every seat but the focal one draws in the registry's
+             `mini` treatment: the tight grid and the small label rank. Only the
+             focal chart is read at full size, and only it gets full furniture. */
+          if (fullscreen && descriptor.kind === 'event-comparison') {
+            const mounted = renderBehavioralFullscreen(chartHost, { caseFile });
+            tileMounts.push(mounted);
+          } else {
+            const option = optionForDescriptor(
+              descriptor, DIAGNOSE_EVIDENCE_CHARTS, sharedGlucoseRange, {
+              mini: seat.seat !== 'focal', window: scopeWindow(),
+              presentation: advisoryPresentation(canvasMode),
+              caseFile,
+            },
+            );
+            const evidenceChart = window.echarts.init(chartHost, null, { renderer: 'canvas' });
+            evidenceChart.setOption(option, true);
+            tileMounts.push({ chart: evidenceChart,
+              observer: observeResize(chartHost, () => evidenceChart) });
+          }
+        } catch (error) {
+          descriptor.state = 'error';
+          runtime.message = error?.message || 'Evidence chart could not be drawn.';
+          tile.dataset.state = descriptor.state;
+          state.textContent = tileStatePresentation(descriptor).name;
+          body.innerHTML = '';
+          const named = document.createElement('div');
+          named.className = 'tile-state';
+          const strong = document.createElement('strong');
+          strong.textContent = tileStatePresentation(descriptor).name;
+          const message = document.createElement('span');
+          message.textContent = runtime.message;
+          named.append(strong, message);
+          body.append(named);
+        }
+      }
+      tile.append(body);
+      tile.onclick = () => {
+        showChartInspector(descriptor);
+        paintTiles();
+        paintChart();
+        paintBrace();
+      };
+      host.append(tile);
+    }
+    paintDrawer(seats);
+  }
+
+  function paintModeChrome() {
+    const presentation = advisoryPresentation(canvasMode);
+    root.dataset.canvasMode = canvasMode;
+    root.toggleAttribute('data-fullscreen', Boolean(fullscreen));
+    for (const button of root.querySelectorAll('[data-canvas-mode]')) {
+      button.setAttribute('aria-pressed', String(button.dataset.canvasMode === canvasMode));
+    }
+    el('advice-state').textContent = presentation.staging ? '' : 'Advice off';
+    const trigger = el('explorer-trigger');
+    trigger.setAttribute('aria-expanded', String(drawerOpen));
+    el('explorer-drawer').hidden = !drawerOpen;
+  }
+
+  function paintDrawer(seats) {
+    disposeDrawer();
+    const drawer = el('explorer-drawer');
+    if (!drawer || !drawerOpen) return;
+    const host = el('explorer-thumbnails');
+    host.innerHTML = '';
+    const seated = new Set(seats.map(({ chartId }) => chartId));
+    const descriptors = explorerDescriptors();
+    el('drawer-meta').textContent = `${descriptors.length} live · ${seated.size} seated`;
+    descriptors.forEach((descriptor, index) => {
+      const entry = chartEntry(descriptor);
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'explorer-thumbnail';
+      button.toggleAttribute('data-seated', seated.has(descriptor.chartId));
+      button.toggleAttribute('data-drilled', descriptor.chartId === drilledChartId);
+      button.setAttribute('aria-label', `Focus ${descriptor.title}`);
+      button.innerHTML = `<span class="thumbnail-name">${descriptor.title}</span>
+        <span class="thumbnail-ordinal">${index + 1}</span><span class="thumbnail-chart"></span>`;
+      button.onclick = () => {
+        drawerOpen = false;
+        showChartInspector(descriptor);
+        paint();
+      };
+      host.append(button);
+      const chartHost = button.querySelector('.thumbnail-chart');
+      if (descriptor.state === 'ok') {
+        const thumb = window.echarts.init(chartHost, null, { renderer: 'canvas' });
+        thumb.setOption(entry.thumbnail(descriptor.data, descriptor.title), true);
+        drawerMounts.push({ chart: thumb, observer: observeResize(chartHost, () => thumb) });
+      }
     });
-    if (alignKey === 'clock') {
-      disposeAlign();
-      return;
-    }
-    if (isHistory) {
-      if (!f.events) return;
-      const mounted = alignMount?.frame === f
-        && alignMount.analysisGeneration === f.generation
-        && alignMount.selectedRunId === (f.selectedRunId || null);
-      if (mounted) return;
-      el('chart').hidden = true;
-      el('brace').hidden = true;
-      el('lane-wrap').hidden = true;
-      const host = el('align-canvas');
-      host.hidden = false;
-      alignMount?.observer?.disconnect();
-      alignMount?.chart?.dispose();
-      alignMount?.restoreHeader?.();
-      const title = el('canvas-head').querySelector('h2');
-      const old = {
-        title: title.textContent,
-        scope: el('canvas-scope').textContent,
-        pool: el('canvas-pool').textContent,
-      };
-      title.textContent = 'Meal runs after the past setting';
-      el('canvas-scope').textContent = `${f.events.run_ids.length} meal runs`;
-      el('canvas-pool').textContent = '';
-      const historyChart = renderHistoryEvents(host, window.echarts, f.events, colors);
-      alignMount = {
-        chart: historyChart,
-        observer: observeResize(host, () => historyChart),
-        restoreHeader: () => {
-          title.textContent = old.title;
-          el('canvas-scope').textContent = old.scope;
-          el('canvas-pool').textContent = old.pool;
-        },
-        frame: f,
-        analysisGeneration: f.generation,
-        selectedRunId: f.selectedRunId || null,
-      };
-      return;
-    }
-    if (!f.caseFile || f.caseFile.projection.alignment !== 'event') return;
-    if (alignMount?.caseFile === f.caseFile) return;
-    el('chart').hidden = true;
-    el('brace').hidden = true;
-    el('lane-wrap').hidden = true;
-    const host = el('align-canvas');
-    host.hidden = false;
-    alignMount?.observer?.disconnect();
-    alignMount?.chart?.dispose();
-    alignMount?.restoreHeader?.();
-    alignMount = {
-      ...renderEventSurface(host, f.caseFile, { headerHost: el('canvas-head') }),
-      frame: f, caseFile: f.caseFile,
-    };
   }
 
   /* The badge counts STAGED PARAMETER ITEMS — a basal slot, an I:C block, the
@@ -2023,7 +2748,7 @@ function boot(root, data, callbacks, signal) {
       (to) => callbacks.go?.(to));
   }
 
-  const filterActiveGroups = () => Number(selectedChips !== null) + Number(eventChartsOnly);
+  const filterActiveGroups = () => Number(selectedChips !== null);
 
   function toggleChip(key) {
     const next = new Set(selectedChips || CHIP_LABELS.map(([name]) => name));
@@ -2038,9 +2763,8 @@ function boot(root, data, callbacks, signal) {
     if (restoreFocus) el('filter-trigger')?.focus();
   }
 
-  /** Root-only ARIA menu. Sift and View compose browser-owned selection over
-      fields the findings projection already published; neither group requests
-      a new population or derives event eligibility. */
+  /** Root-only ARIA menu. Sift composes browser-owned selection over fields the
+      findings projection already published; it requests no new population. */
   function paintFilter() {
     const wrap = el('filter-wrap');
     const trigger = el('filter-trigger');
@@ -2115,12 +2839,6 @@ function boot(root, data, callbacks, signal) {
       checked: selectedChips === null || selectedChips.has(key),
       activate: () => toggleChip(key),
     })));
-    addGroup('View', [
-      { label: 'All findings', role: 'menuitemradio', checked: !eventChartsOnly,
-        activate: () => { eventChartsOnly = false; collapsedFindingsExpanded = false; } },
-      { label: 'Event charts', role: 'menuitemradio', checked: eventChartsOnly,
-        activate: () => { eventChartsOnly = true; collapsedFindingsExpanded = false; } },
-    ]);
     filterFocus = Math.max(0, Math.min(filterFocus, items.length - 1));
     items.forEach((item, index) => item.tabIndex = index === filterFocus ? 0 : -1);
     menu.onkeydown = (ev) => {
@@ -2153,6 +2871,8 @@ function boot(root, data, callbacks, signal) {
     if (frame.k === 'slot') return `${frame.cell.label} slot`;
     if (frame.k === 'block') return `${frame.cell.label} block`;
     if (frame.k === 'history') return frame.row.label;
+    if (frame.k === 'chart') return chartDescriptor(frame.chartId)?.title || 'Chart';
+    if (frame.k === 'explore') return 'Explore';
     // 'isf' is the last frame kind: select-in-place (P35 retired) never adds a
     // crumb level, so no frame ever reaches an `occ` branch here.
     return 'ISF';
@@ -2203,6 +2923,11 @@ function boot(root, data, callbacks, signal) {
       if (trail.scrollWidth > trail.clientWidth) drawTrail([items[0], last]);
     }
     const f = top();
+    const drilledDescriptor = chartDescriptor(drilledChartId);
+    const provenance = el('drill-provenance');
+    provenance.hidden = !drilledDescriptor;
+    provenance.textContent = drilledDescriptor
+      ? `Drilled chart · ${drilledDescriptor.title}` : '';
     /* TERM 45 — at level 1 the meta is the queue's own copy and nothing else:
        `N findings · 30 days` global, `N in this window` scoped, `30 days` empty.
        No sort language (the order already shows the mechanism) and no window range
@@ -2214,8 +2939,15 @@ function boot(root, data, callbacks, signal) {
       || (f.k !== 'factors' && f.k !== 'factor' && !parameterRowFor(f))
       ? scopeLabel()
       : f.k === 'factors'
-      ? queueMeta(findings, selectedChips, eventChartsOnly)
+      ? queueMeta(findings, selectedChips)
       : f.k === 'history' ? `${f.row.support} meal run${f.row.support === 1 ? '' : 's'}`
+      : f.k === 'explore' ? 'Advice off'
+      : f.k === 'chart' ? ({
+        basal: 'Nights of steady data',
+        isf: 'Rest windows',
+        'carb-ratio': 'Meal runs',
+        'event-comparison': 'Response comparison',
+      }[chartDescriptor(f.chartId)?.kind] || 'Measured evidence')
       : f.k === 'factor'
         ? (f.caseFile
           ? `${f.caseFile.summary.claimed} of ${f.caseFile.summary.denominator} · ${f.caseFile.window.label || '24 h'}`
@@ -2246,6 +2978,33 @@ function boot(root, data, callbacks, signal) {
     const f = top();
     // One projection state governs every level before any old row can render.
     host.dataset.loading = String(pendingKey === currentFindingsKey());
+    if (f.k === 'explore') {
+      host.insertAdjacentHTML('beforeend', `<div class="inner explore-reading">
+        <div class="slot-head"><span class="time">Explore</span><span class="verdict">Advice off</span></div>
+        <p>Choose a chart to read its measured evidence. Rankings, recommendations and staging are hidden.</p>
+      </div>`);
+      return;
+    }
+    if (canvasMode === 'explore' && ['slot', 'block', 'isf'].includes(f.k)) {
+      const descriptor = chartDescriptor(
+        drilledChartIdForFrame(f, currentTileDescriptors()),
+      );
+      const entry = chartEntry(descriptor);
+      if (descriptor && entry) renderParameterEvidenceDetail(host, descriptor, entry);
+      else host.insertAdjacentHTML('beforeend', '<div class="empty">Measured evidence is not available in this window.</div>');
+      return;
+    }
+    if (f.k === 'chart') {
+      const descriptor = chartDescriptor(f.chartId);
+      const entry = chartEntry(descriptor);
+      if (f.placeholder) {
+        host.insertAdjacentHTML('beforeend', `<div class="inner chart-evidence-detail">
+          <div class="slot-head"><span class="time">${entry?.name || 'Behavioral chart'}</span>
+          <span class="verdict">Case file withheld</span></div><p>${f.placeholder}</p></div>`);
+      } else if (descriptor && entry) renderParameterEvidenceDetail(host, descriptor, entry);
+      else host.insertAdjacentHTML('beforeend', '<div class="empty">This chart is no longer in the live findings.</div>');
+      return;
+    }
     if (f.k === 'history') {
       renderHistoryLevel(host, f,
         (runId) => requestHistoryEvents(f, runId),
@@ -2278,7 +3037,6 @@ function boot(root, data, callbacks, signal) {
          the copy that used to sit here would now write it twice. */
       renderFindingsQueue(host, findings, drillFinding, {
         selected: selectedChips,
-        eventChartsOnly,
         collapsedExpanded: collapsedFindingsExpanded,
         onToggleCollapsed: () => { collapsedFindingsExpanded = !collapsedFindingsExpanded; paint(); },
       });
@@ -2329,7 +3087,7 @@ function boot(root, data, callbacks, signal) {
       return;
     }
     const caseFile = f.caseFile;
-    renderCaseHead(host, caseFile, lane, pickCell, icBlocks, pickBlock);
+    if (canvasMode === 'findings') renderCaseHead(host, caseFile, lane, pickCell, icBlocks, pickBlock);
     const eventComparison = caseFile.projection.alignment === 'event';
     if (eventComparison) {
       /* The attribution header's verdict accounting and the meal comparison
@@ -2355,7 +3113,12 @@ function boot(root, data, callbacks, signal) {
         () => { shownRows = shownRows > EVIDENCE_CAP ? EVIDENCE_CAP : Infinity; paint(); },
         shownRows);
     }
-    renderCaseSelection(host, caseFile, (detail) => callbacks.day?.(detail));
+    renderCaseSelection(host, caseFile, (detail) => callbacks.day?.(detail), () => {
+      const cleared = untraceDrill(f);
+      Object.assign(f, cleared);
+      occurrenceFocusId = null;
+      requestCase(f, f.requestedAlignment, null);
+    });
     appendCaseError(host);
     if (occurrenceFocusId && !f.loading && f.selectedId === occurrenceFocusId) {
       const row = [...host.querySelectorAll('.case-occurrence')]
@@ -2509,6 +3272,9 @@ function boot(root, data, callbacks, signal) {
           : mode);
       markWindowSegment(drawn
         ? `Window ${windowSpanText(drawn)}` : 'Whole day', clearDrawn);
+      /* A pin holds chart identity, not stale evidence. The drag coordinator
+         keeps one request live and one latest position queued behind it. */
+      ensurePinnedDragPreparation();
     }
 
     function liveRepaint() {
@@ -2679,23 +3445,18 @@ function boot(root, data, callbacks, signal) {
   }
 
   function paint() {
+    paintModeChrome();
     ensurePreparation();
-    const open = top();
-    const ownsAlign = (open.k === 'factor'
-      && open.caseFile?.projection?.alignment === 'event')
-      || (open.k === 'history' && open.align === 'event');
-    if (alignMount && !ownsAlign) disposeAlign();
+    reconcileTileDescriptors();
     paintFilter();
     paintCrumb();
     paintLevel();
     renderLane(lane, top().k === 'slot' ? top().cell : null, staged, pickCell);
     renderLaneKey(lane);
     paintWatch();
-    if (!alignMount) {
-      paintChart();
-      paintBrace();
-    }
-    paintAlign();
+    paintTiles();
+    paintChart();
+    paintBrace();
     const canvasBody = el('chart').parentElement;
     canvasBody.querySelector('.history-canvas-notice')?.remove();
     const history = top().k === 'history' ? top() : null;
@@ -2752,8 +3513,10 @@ function boot(root, data, callbacks, signal) {
       pendingKey = null;
       filterOpen = false;
       pendingFocus = pendingRowFocus(stack[1]);
+      const popped = popInspector(stack, stack.length - 2, currentTileDescriptors());
+      stack.splice(0, stack.length, ...popped.stack);
+      drilledChartId = popped.drilledChartId;
       dir = 'pop';
-      stack.pop();
       paint();
       return;
     }
@@ -2775,6 +3538,28 @@ function boot(root, data, callbacks, signal) {
 
   observeResize(el('chart'), () => chart);
   installDrag();
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape' && fullscreen) {
+      ev.preventDefault();
+      ev.stopImmediatePropagation();
+      dismissChartFullscreen();
+      return;
+    }
+    if (ev.key === 'Escape' && drawerOpen) {
+      ev.preventDefault();
+      ev.stopImmediatePropagation();
+      drawerOpen = false;
+      paint();
+      el('explorer-trigger')?.focus();
+      return;
+    }
+    if (!drawerOpen || ev.metaKey || ev.ctrlKey || ev.altKey || !/^[1-4]$/.test(ev.key)) return;
+    const descriptor = explorerDescriptors()[Number(ev.key) - 1];
+    if (!descriptor) return;
+    ev.preventDefault();
+    drawerOpen = false;
+    showChartInspector(descriptor);
+  }, { capture: true, signal });
   document.addEventListener('pointerdown', (ev) => {
     if (filterOpen && !el('filter-wrap')?.contains(ev.target)) closeFilter();
   }, { signal });
@@ -2784,6 +3569,12 @@ function boot(root, data, callbacks, signal) {
     ev.stopImmediatePropagation();
     closeFilter({ restoreFocus: true });
   }, { capture: true, signal });
+  /* ARRANGEMENTS DO NOT SURVIVE THE SESSION. Leaving Diagnose drops the pins
+     and the focus, and nothing about them is persisted. The surface is told it
+     is being left through the app's own navigation seam rather than inferring
+     it from geometry: a poll that watched the root for visibility missed a
+     fast leave-and-return entirely, and the reader came back to a canvas
+     holding the previous visit's pins. */
   const initialFrame = top();
   if (initialFrame.k === 'factor') requestCase(initialFrame, 'clock');
   else paint();
@@ -2798,7 +3589,20 @@ function boot(root, data, callbacks, signal) {
      level and chart off the SAME frame stack, drawn window and staged sets.
      It reuses `paint()`, so the reader's depth and workspace survive; it does
      NOT re-run boot() or reassign the root MARKUP (#666). */
-  return { destroy() { chart = null; }, repaintDay: paint };
+  function leaveSurface() {
+    canvasMode = 'findings';
+    canvasLayout = createCanvasLayout();
+    tileCandidateOrder = [];
+    fullscreen = null;
+    drawerOpen = false;
+    drilledChartId = null;
+    seatingPolicyKey = null;
+    stack.splice(0, stack.length, { k: 'factors' });
+    reconcileTileDescriptors();
+    paintTiles();
+  }
+
+  return { destroy() { chart = null; disposeTiles(); disposeDrawer(); }, repaintDay: paint, leaveSurface };
 }
 
 /* ---------------------------------------------------------------------------
@@ -2814,17 +3618,12 @@ function boot(root, data, callbacks, signal) {
  * the live stylesheet), `setError` replaces the surface with a message. The
  * behaviour behind it is the locked mock's, unedited.
  */
-/* `railLead` (#677 re-settle, term 3): optional markup for one leading
-   instrument in the rail, plus a hook to wire it after each render. The event
-   comparison passes the View selector through it so Glucose carries the same
-   lens control Meals and Lows do, in the same optical row. `render()` rewrites
-   the whole root, and the surface calls it on its own state changes, so the
-   lead has to be re-injected here rather than once by the caller. */
-export function createDiagnoseWorkstation({ root, callbacks = {}, railLead = null }) {
+export function createDiagnoseWorkstation({ root, callbacks = {} }) {
   let payload = null;
   let captures = null;
   let teardown = null;
   let repaintDay = null;
+  let leaveSurface = null;
   let aborter = null;
 
   /* PORT DEVIATION (#654): shared by the public `setError` below and the
@@ -2835,6 +3634,7 @@ export function createDiagnoseWorkstation({ root, callbacks = {}, railLead = nul
     if (aborter) { aborter.abort(); aborter = null; }
     teardown = null;
     repaintDay = null;
+    leaveSurface = null;
     root.className = 'dw dw-error';
     root.textContent = message;
   }
@@ -2842,6 +3642,7 @@ export function createDiagnoseWorkstation({ root, callbacks = {}, railLead = nul
   function render() {
     if (teardown) { teardown(); teardown = null; }
     repaintDay = null;
+    leaveSurface = null;
     if (aborter) { aborter.abort(); aborter = null; }
     if (!payload) return;
     state = queryState('typical');
@@ -2875,14 +3676,11 @@ export function createDiagnoseWorkstation({ root, callbacks = {}, railLead = nul
     root.dataset.state = state;
     root.className = 'dw';
     root.innerHTML = MARKUP;
-    if (railLead) {
-      root.querySelector('.instruments').insertAdjacentHTML('afterbegin', railLead.markup);
-      railLead.install(root.querySelector('.instruments'));
-    }
     aborter = new AbortController();
     const booted = boot(root, captures, callbacks, aborter.signal);
     teardown = booted.destroy;
     repaintDay = booted.repaintDay;
+    leaveSurface = booted.leaveSurface;
   }
 
   /* State addressability. The mock is driven by `?mode=`; so is the build, and
@@ -2905,6 +3703,9 @@ export function createDiagnoseWorkstation({ root, callbacks = {}, railLead = nul
        preserving navigation state. No-op if the surface is unmounted or in its
        error state (#666). */
     repaintDay() { repaintDay?.(); },
+    /* The reader navigated away from Diagnose. Pins and focus are session
+       state, so they are dropped here rather than on a timer. */
+    leaveSurface() { leaveSurface?.(); },
     gotoState,
   };
 }

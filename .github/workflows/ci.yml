@@ -33,6 +33,8 @@ jobs:
       # new place. This fails the build instead.
       - name: Check the generated I:C block fixtures are current
         run: uv run python scripts/gen_ic_block_fixtures.py --check
+      - name: Check the generated evidence-canvas exploration is current
+        run: uv run python mockups/diagnose-evidence-canvas.exploration/generate.py --check
       # Same drift class, the engine-authored annotation copy the Settings audit
       # renders verbatim (#536).
       - name: Check the generated annotation fixtures are current
@@ -207,6 +209,9 @@ jobs:
           - gate: Diagnose workstation
             vendor: true
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" VENDOR_DIR="$RUNNER_TEMP/ciq-vendor" PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node --test frontend/diagnose-workstation.browser.test.mjs
+          - gate: Diagnose canvas composition
+            vendor: true
+            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" VENDOR_DIR="$RUNNER_TEMP/ciq-vendor" PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node --test frontend/diagnose-canvas-composition.browser.test.mjs
           - gate: Cockpit shell
             vendor: true
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" VENDOR_DIR="$RUNNER_TEMP/ciq-vendor" node --test frontend/cockpit-shell.browser.test.mjs

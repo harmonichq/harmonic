@@ -488,6 +488,21 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         return FileResponse(_FRONTEND_DIR / "diagnose-workstation-data.js",
                             media_type="text/javascript")
 
+    @app.get("/assets/diagnose-evidence-charts.js")
+    def diagnose_evidence_charts_js():
+        return FileResponse(_FRONTEND_DIR / "diagnose-evidence-charts.js",
+                            media_type="text/javascript")
+
+    @app.get("/assets/diagnose-canvas-layout.js")
+    def diagnose_canvas_layout_js():
+        return FileResponse(_FRONTEND_DIR / "diagnose-canvas-layout.js",
+                            media_type="text/javascript")
+
+    @app.get("/assets/diagnose-canvas-mode.js")
+    def diagnose_canvas_mode_js():
+        return FileResponse(_FRONTEND_DIR / "diagnose-canvas-mode.js",
+                            media_type="text/javascript")
+
     @app.get("/assets/finding-case-file-validation.js")
     def finding_case_file_validation_js():
         return FileResponse(_FRONTEND_DIR / "finding-case-file-validation.js",

@@ -51,8 +51,11 @@ python3 scripts/check_owned_identifiers.py # product-name guard
 python3 scripts/check_public_allowlist.py  # publishable-tree guard
 ```
 
-The backend job also runs eleven **drift checks**, so a committed
-generator-authored artifact can never silently diverge from its generator:
+The backend job also runs twelve **drift checks**, so a committed
+generator-authored artifact can never silently diverge from its generator.
+Eleven are listed below; the twelfth is the evidence-canvas exploration's
+generator — a private design artifact the public tree excludes, so its
+`--check` command lives in `.github/workflows/ci.yml`:
 
 ```sh
 uv run python scripts/gen_ic_block_fixtures.py --check
@@ -62,10 +65,10 @@ uv run python scripts/check_demo_fixtures.py   # the committed synthetic demo se
 uv run python scripts/gen_revise_e2e_db.py --check
 uv run python scripts/gen_findings_projection_fixtures.py --check
 uv run python scripts/gen_ic_history_event_fixtures.py --check
-uv run python scripts/gen_missed_meal_comparison_fixtures.py --check
 uv run python scripts/gen_ic_block_evidence_fixtures.py --check
 uv run python scripts/gen_basal_night_evidence_fixtures.py --check
 uv run python scripts/gen_isf_rest_window_evidence_fixtures.py --check
+uv run python scripts/gen_missed_meal_comparison_fixtures.py --check
 ```
 
 The frontend job runs two drift checks in Node: the event-comparison synthetic
@@ -127,9 +130,10 @@ npx --prefix "$PW" playwright install --with-deps chromium
 curl -fsSL https://unpkg.com/vue@3/dist/vue.esm-browser.js -o "$VENDOR/vue.esm-browser.js"
 curl -fsSL https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js -o "$VENDOR/echarts.min.js"
 
-# The nine gate legs, as CI runs them.
+# The ten gate legs, as CI runs them.
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" node frontend/day-surface.browser.mjs
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" VENDOR_DIR="$VENDOR" PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node --test frontend/diagnose-workstation.browser.test.mjs
+PLAYWRIGHT_MODULE="$PW/node_modules/playwright" VENDOR_DIR="$VENDOR" PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node --test frontend/diagnose-canvas-composition.browser.test.mjs
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" VENDOR_DIR="$VENDOR" node --test frontend/cockpit-shell.browser.test.mjs
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" node --test frontend/browser-runner.browser.test.mjs
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" node frontend/plan-first-match.browser.mjs
@@ -141,7 +145,7 @@ PLAYWRIGHT_MODULE="$PW/node_modules/playwright" VENDOR_DIR="$VENDOR" TARGET=app 
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" VENDOR_DIR="$VENDOR" TARGET=app PAYLOAD=mockups/verify-660-story.synthetic/payload.json node frontend/verify-660-story-behavior.replay.mjs
 ```
 
-All nine **fail closed**: a missing driver, vendored asset or fixture exits
+All ten **fail closed**: a missing driver, vendored asset or fixture exits
 nonzero, naming what is absent, rather than skipping. A green step that
 silently ran zero assertions is the exact failure mode that design guards
 against, and `frontend/browser-gates-fail-closed.test.js` is a

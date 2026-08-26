@@ -11,9 +11,13 @@ S41-S71.
 The app-only replay is
 `frontend/diagnose-workstation-behavior.replay.mjs`.
 
-**111 issued executable IDs:** S01–S91, C41–C57, and D1–D3
+**133 issued executable IDs:** S01–S113, C41–C57, and D1–D3
 **Active executable IDs:** all issued
 **Retired executable IDs:** none
+
+Retired *behaviors* keep their executable IDs permanently: each such replay is
+an attributed absence check and prints its sanction. `Retired executable IDs`
+would count only IDs removed from execution, which this ledger forbids.
 
 All are opened through the real no-fetch server and tagged
 `STORY:finding-evidence-routing:<id>`. Static HTML, CSS and JavaScript come from
@@ -2436,3 +2440,219 @@ guard for a drawn window after a drill; S21 continues to own window identity.
 The built revision replay reported `app: 109 of 109 stories passed`, exactly one
 more than the branch point and with S09, S21, S36 and S91 all green. No story
 was renumbered or reinterpreted.
+
+## Revision — 2026-08-25, base 5232ad9f996d3aee4c874fb9780a44eb77dd1f7a (issue 135: the evidence canvas)
+
+The safe-start declaration is `AGENTS.md`. The built-app replay and every render
+in this revision start only this command:
+
+```sh
+uv run harmonic serve --no-fetch --db mockups/revise-e2e.synthetic/harmonic.sqlite
+```
+
+That command reads `mockups/revise-e2e.synthetic/harmonic.sqlite`, generated in
+full by `scripts/gen_revise_e2e_db.py` from fixed seed 620. Deterministic browser
+reads use `mockups/diagnose-workstation.synthetic/payload.json` and the evidence
+captures named by its committed generators. Every source is synthetic and no
+operator or patient data is read. This shipped-surface revision creates no lock
+manifest; the behavior ledger and app-only replay remain the contract.
+
+Connor Griffin sanctioned the permanent entries below on 2026-08-25 through the
+issue 135 serial work order: “Read `docs/scope/135-behavior-retirements.md` and
+record EVERY entry in it as a permanent ledger retirement, each naming what was
+retired and why.” Each `reason` below transcribes that committed retirement input
+verbatim. Duplicate story identities record distinct retired clauses; neither
+entry erases or weakens the other.
+
+### Permanent retirements — issue 135
+
+- **RETIRED S7 · chunk 1.** Aggregate cohort traces join across missing samples.
+  reason: `S7 — aggregate cohort traces join across missing samples — chunk 1`
+- **RETIRED S11 · chunk 1.** The selected comparison trace joins across missing samples.
+  reason: `S11 — the selected comparison trace joins across missing samples — chunk 1`
+- **RETIRED S13 · chunk 1.** Thin-cohort episode traces join across missing samples.
+  reason: `S13 — thin-cohort episode traces join across missing samples — chunk 1`
+- **RETIRED P26 · chunk 2.** The single event canvas becomes a registry chart tile, so its canvas-wide keyboard cursor contract changes.
+  reason: `P26 — the single event canvas becomes a registry chart tile, so its canvas-wide keyboard cursor contract changes — chunk 2`
+- **RETIRED P55 · chunk 2.** The global ALIGN group and its two Tab stops give way to one alignment toggle per chart tile.
+  reason: `P55 — the global ALIGN group and its two Tab stops are retired in favor of one alignment toggle per chart tile — chunk 2`
+- **RETIRED S32 · chunk 2.** Event comparison selection moves from the global canvas projection to the chart-tile composition.
+  reason: `S32 — event comparison selection moves from the global canvas projection to the chart-tile composition — chunk 2`
+- **RETIRED S33 · chunk 2.** The mutually exclusive clock/event canvas and header swap give way to a retained clock strip with evidence tiles.
+  reason: `S33 — the mutually exclusive clock/event canvas and its header swap are retired; the clock strip and evidence tiles render together — chunk 2`
+- **RETIRED S34 · chunk 2.** Event-comparison failure becomes a named tile error and no longer restores a global By-clock canvas.
+  reason: `S34 — event-comparison failure is now a named tile error and no longer restores a global By-clock canvas — chunk 2`
+- **RETIRED S35 · chunk 2.** Event families render in independent chart tiles rather than one global event canvas.
+  reason: `S35 — event families render in independent chart tiles rather than one global event canvas — chunk 2`
+- **RETIRED S36 · chunk 2.** A findings-window change redraws the live tile list beneath the retained strip.
+  reason: `S36 — a findings-window change redraws the live tile list beneath the retained strip — chunk 2`
+- **RETIRED S37 · chunk 2.** Event evidence no longer receives the standing clock window through global ALIGN.
+  reason: `S37 — event evidence receives the standing clock window as tile coordinates rather than through global ALIGN — chunk 2`
+- **RETIRED S38 · chunk 2.** Event-chart availability is the live row-derived tile list rather than a retained global ALIGN control.
+  reason: `S38 — event-chart availability is represented by the live row-derived tile list, not a retained global ALIGN control — chunk 2`
+- **RETIRED S49 · chunk 2.** History no longer switches the whole canvas through global ALIGN.
+  reason: `S49 — history no longer switches the whole canvas to By event through global ALIGN — chunk 2`
+- **RETIRED S50 · chunk 2.** The global By-event to By-clock history switch retires with global ALIGN.
+  reason: `S50 — the global By-event to By-clock history switch is retired with global ALIGN — chunk 2`
+- **RETIRED S51 · chunk 2.** Selected history-run rendering no longer owns the global canvas.
+  reason: `S51 — selected history-run rendering no longer owns the global canvas — chunk 2`
+- **RETIRED S52 · chunk 2.** Multi-meal history-run rendering no longer owns the global canvas.
+  reason: `S52 — multi-meal history-run rendering no longer owns the global canvas — chunk 2`
+- **RETIRED S59 · chunk 2.** History recovery preserves a retained strip above independent tiles rather than a global canvas.
+  reason: `S59 — canvas preservation during history recovery changes because the clock strip now remains mounted above independent tiles — chunk 2`
+- **RETIRED S60 · chunk 2.** Generation-mismatch recovery is shared with stale evidence tiles and redraws refreshed findings.
+  reason: `S60 — generation-mismatch recovery is shared with stale evidence tiles and redraws from refreshed findings — chunk 2`
+- **RETIRED S61 · chunk 2.** Stale evidence has a named stale-generation tile state while the strip stays live.
+  reason: `S61 — stale evidence now has a named stale-generation tile state while the strip remains live — chunk 2`
+- **RETIRED S62 · chunk 2.** Recovery redraws the affected tile without restoring global alignment.
+  reason: `S62 — recovery redraws the affected tile without restoring a global alignment state — chunk 2`
+- **RETIRED S63 · chunk 2.** Malformed history recovery no longer controls a mutually exclusive event canvas.
+  reason: `S63 — malformed history recovery no longer controls a mutually exclusive event canvas — chunk 2`
+- **RETIRED S64 · chunk 2.** Unknown history recovery no longer controls a mutually exclusive event canvas.
+  reason: `S64 — unknown history recovery no longer controls a mutually exclusive event canvas — chunk 2`
+- **RETIRED S65 · chunk 2.** Malformed run recovery no longer controls a mutually exclusive event canvas.
+  reason: `S65 — malformed run recovery no longer controls a mutually exclusive event canvas — chunk 2`
+- **RETIRED S66 · chunk 2.** Nonmember run recovery no longer controls a mutually exclusive event canvas.
+  reason: `S66 — nonmember run recovery no longer controls a mutually exclusive event canvas — chunk 2`
+- **RETIRED S67 · chunk 2.** Restart-generation recovery shares the findings-generation refresh used by evidence tiles.
+  reason: `S67 — restart-generation recovery now shares the findings-generation refresh used by evidence tiles — chunk 2`
+- **RETIRED S68 · chunk 2.** Superseded findings responses cannot replace the row-derived tile generation.
+  reason: `S68 — superseded findings responses cannot replace the row-derived tile generation — chunk 2`
+- **RETIRED S69 · chunk 2.** Superseded evidence responses cannot replace a newer per-tile request state.
+  reason: `S69 — superseded evidence responses cannot replace a newer per-tile request state — chunk 2`
+- **RETIRED S70 · chunk 2.** Coherence is per tile and one shared arrangement range rather than one global canvas pair.
+  reason: `S70 — coherence is exposed per tile and by one shared arrangement range rather than by one global canvas pair — chunk 2`
+- **RETIRED S71 · chunk 2.** Global ALIGN switching gives way to pinning, focus swap and per-chart alignment.
+  reason: `S71 — global ALIGN switching is retired; pinning, focus swap and per-chart alignment are the canvas verbs — chunk 2`
+- **RETIRED S72 · chunk 2.** The empty ALIGN affordance retires because no global ALIGN host remains.
+  reason: `S72 — the conditional empty ALIGN affordance is permanently retired because no global ALIGN host remains — chunk 2`
+- **RETIRED S77 · chunk 2.** ALIGN-to-inspector edge placement retires; the pin-cap schematic occupies the window bar.
+  reason: `S77 — ALIGN-to-inspector edge placement is retired with the global control; the pin-cap schematic occupies the window bar — chunk 2`
+- **RETIRED S80 · chunk 2.** Event-chart cursor focus moves to independently mounted tiles.
+  reason: `S80 — event-chart cursor focus moves from the single global host to independently mounted tiles — chunk 2`
+- **RETIRED C43 · chunk 2.** Event comparison selection mounts in the tile field rather than the global event canvas.
+  reason: `C43 — event comparison selection is mounted in the tile field rather than the global event canvas — chunk 2`
+- **RETIRED C44 · chunk 2.** Missed-meal comparison mounts as a registry tile rather than through global ALIGN.
+  reason: `C44 — missed-meal comparison is mounted as a registry tile rather than through global ALIGN — chunk 2`
+- **RETIRED C56 · chunk 2.** Missed-meal comparison support renders in its tile state.
+  reason: `C56 — missed-meal comparison support renders in its tile state — chunk 2`
+- **RETIRED C57 · chunk 2.** Missed-meal comparison evidence renders in its tile state.
+  reason: `C57 — missed-meal comparison evidence renders in its tile state — chunk 2`
+- **RETIRED S7 · coordinator/181 reconcile.** Aggregate traces return to the shipped per-support series builders, so continuity is their contract rather than the registry's.
+  reason: `S7 — aggregate cohort traces are drawn by the shipped per-support series builders again, so continuity is the shipped renderer's contract rather than the registry's own — coordinator/181-reconcile`
+- **RETIRED S11 · coordinator/181 reconcile.** Selection detail is served by the case file and drawn by the shipped focus series.
+  reason: `S11 — the selected comparison trace is the case file's served selection detail, drawn by the shipped focus series — coordinator/181-reconcile`
+- **RETIRED S13 · coordinator/181 reconcile.** Withheld-cohort episodes are served by the case file and drawn by the shipped episode series.
+  reason: `S13 — a withheld cohort's episode traces are the case file's served episodes, drawn by the shipped episode series — coordinator/181-reconcile`
+- **RETIRED S32 · coordinator/181 reconcile.** Comparison selection arrives inside the served Finding case file rather than a tile projection request.
+  reason: `S32 — comparison selection now arrives inside the served Finding case file rather than from a projection request the tile makes — coordinator/181-reconcile`
+- **RETIRED S37 · coordinator/181 reconcile.** The tile quotes case-file coordinates and the served case owns its window.
+  reason: `S37 — event evidence no longer receives the standing clock window as tile coordinates; the tile quotes the case file's projection id, finding id and alignment, and the served case file carries its own window — coordinator/181-reconcile`
+- **RETIRED P52 · chunk 3.** Clear trace returns in the shared drilled-chart inspector and removes only the selected trace.
+  reason: `P52 — Clear trace returns in the shared drilled-chart inspector and removes only the selected trace, leaving the chart drill open — chunk 3`
+- **RETIRED issue86DirectEntryRestoration · chunk 3.** Behavioral drills follow their row's published event-chart coordinate independently of the retired root filter.
+  reason: `issue86DirectEntryRestoration — every behavioral chart drill now follows its row's published event-chart coordinate, independent of the retired Event charts root filter — chunk 3`
+- **RETIRED issue86HeaderFilter · fix1.** Filter now contains Sift only; the retired root View group no longer renders.
+  reason: `issue86HeaderFilter — Filter now contains Sift only; the retired root View group no longer renders — fix1`
+- **RETIRED issue86FilteredRoot · fix1.** The Event charts-only findings projection retires with its root option.
+  reason: `issue86FilteredRoot — the Event charts-only findings projection is retired with its root option — fix1`
+- **RETIRED issue86DirectEntryRestoration · fix1.** Returning from a behavioral chart no longer restores a retired root View.
+  reason: `issue86DirectEntryRestoration — returning from a behavioral chart no longer restores a retired root View — fix1`
+- **RETIRED issue86PendingRoot · fix1.** Pending findings retain Sift only; there is no root View selection to preserve.
+  reason: `issue86PendingRoot — pending findings retain Sift only; there is no root View selection to preserve — fix1`
+- **RETIRED issue86MalformedRecovery · fix1.** Malformed case recovery returns to the findings root without a retired Event charts View.
+  reason: `issue86MalformedRecovery — malformed case recovery returns to the findings root without a retired Event charts View — fix1`
+- **RETIRED S34 · fix1.** Event-comparison failure remains a named tile error and carries no Event charts root View.
+  reason: `S34 — event-comparison failure remains a named tile error and no longer carries an Event charts root View — fix1`
+- **RETIRED S38 · fix1.** Behavioral-chart reachability comes from the live tile field rather than an Event charts root filter.
+  reason: `S38 — behavioral-chart reachability comes from the live tile field, not an Event charts root filter — fix1`
+- **RETIRED S57 · final reconciliation.** The history-event 410 path was reachable only through the retired global event canvas; stale tile recovery is owned by S106.
+  sanction: Connor Griffin · 2026-08-25 · “Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control.”
+- **RETIRED S58 · final reconciliation.** The history-event mapping-loss path was reachable only through the retired global event canvas; tile recovery is the successor contract.
+  sanction: Connor Griffin · 2026-08-25 · “Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control.”
+- **RETIRED S90 · final reconciliation.** Meal-offset rendering belonged to the retired global history event canvas and has no successor chart tile.
+  sanction: Connor Griffin · 2026-08-25 · “Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control.”
+- **RETIRED C46 · final reconciliation.** The active-case failure story depended on preserving the retired global clock/event canvas pair; structured case-file failure remains covered by the row-derived malformed recovery probe.
+  sanction: Connor Griffin · 2026-08-25 · “Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control.”
+- **RETIRED C47 · final reconciliation.** The two-shadow-leg atomic swap belonged to the retired global event canvas; visible stale-generation refresh is now the per-tile S106 contract.
+  sanction: Connor Griffin · 2026-08-25 · “Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control.”
+- **RETIRED C48 · final reconciliation.** The queue-refresh and event-canvas shadow pair retired with the global event canvas; active projection failure remains covered by C54.
+  sanction: Connor Griffin · 2026-08-25 · “Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control.”
+- **RETIRED C49 · final reconciliation.** The refreshed shadow-case failure path belonged to the retired global event canvas; malformed row-derived case recovery remains live.
+  sanction: Connor Griffin · 2026-08-25 · “Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control.”
+- **RETIRED C50 · final reconciliation.** Superseding a stale global preparation leg retired with the global event canvas; newer row-derived selection supersession remains covered by C55.
+  sanction: Connor Griffin · 2026-08-25 · “Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control.”
+- **RETIRED C51 · final reconciliation.** Superseding a stale global shadow-case leg retired with the global event canvas; per-tile request coalescing and live reread are covered by S107.
+  sanction: Connor Griffin · 2026-08-25 · “Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control.”
+- **RETIRED C52 · final reconciliation.** Global Finding-unavailable recovery preserved a retired inspector/canvas pair; the successor tile field drops surplus and unavailable candidates through S100.
+  sanction: Connor Griffin · 2026-08-25 · “Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control.”
+- **RETIRED C53 · final reconciliation.** Global canvas identity-mismatch preservation retired with that host; the row-derived malformed case probe still rejects inconsistent projection identity.
+  sanction: Connor Griffin · 2026-08-25 · “Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control.”
+- **RETIRED event-comparison replay S8 · final gate reconciliation.** The arrow-key cursor belonged to the retired global comparison canvas. The successor comparison lives in its row-derived tile, whose fullscreen compatibility renderer is not a visible or focusable reader surface; served support disclosure remains covered by S7 and the support audit.
+  sanction: Connor Griffin · 2026-08-26 · “rewrite their openers off the retired global 'By event' control onto the successor UI (the canvas's per-tile alignment / the case-file-backed comparison tile), preserving what those legs actually verify — the comparison's population semantics and the support audit's assertions.”
+- **RETIRED event-comparison replay S12 keyboard clause · final gate reconciliation.** Its server-owned downgrade, median, spread and legend assertions remain living; only the keyboard point-count clause retires with the global comparison cursor.
+  sanction: Connor Griffin · 2026-08-26 · “rewrite their openers off the retired global 'By event' control onto the successor UI (the canvas's per-tile alignment / the case-file-backed comparison tile), preserving what those legs actually verify — the comparison's population semantics and the support audit's assertions.”
+
+### Permanent successor rewrites — final issue 135 reconciliation
+
+- **S32 and S40.** Occurrence selection is driven through the Sifted case file or its seated row-derived comparison tile; the pressed opaque Occurrence id, selected evidence and provenance remain joined.
+- **S09, S10 and S11.** Drilling keeps the standing window and breadcrumb depth while the owning chart is marked; the served roster remains readable without the already-retired counter-example split, and selection reveals the served case-file facts.
+- **S78.** Enter activates the focused row in the vertical Occurrence roster while preserving the Finding breadcrumb and standing window.
+- **S76, S89, C41, C42 and C45.** Breadcrumb focus restoration is scoped to the crumb, the full-day slide waits on its rendered stop, and served verdict/unavailable cases are asserted through their current public markup.
+- **issue86HeaderFilter.** Keyboard traversal wraps across the four Sift checks; Escape restores Filter focus and the retired View group remains absent.
+- **issue86FilteredRoot.** Sift alone intersects published row fields, preserves server order and names a settled empty result.
+- **issue86DirectEntryRestoration.** The seated behavioral tile opens its case directly; Backspace restores the Sifted queue, scroll and window without a root View.
+- **issue86PendingRoot.** Pending projections retain enabled Sift choices and withhold stale rows and counts; no View state exists.
+- **issue86MalformedRecovery.** A malformed event case remains attached to its drilled tile, exposes the structured error and returns to the same Sifted queue.
+- **C43, C44, C56 and C57.** Comparison selection, support, empty support and selected-cohort evidence are exercised through the served case file and registry tiles.
+- **Event-comparison replay S1–S13 and the support audit.** Their shared opener no longer drives the retired global `By event` control or waits on the retired `.ec-surface` host. It seats the row-derived comparison tile and reads the compact tile's own ECharts option as the proof of population, support, served medians, served spread and window; fullscreen is an additional title, legend and accessibility view, never the source of the compact proof. The tile's registry coordinates request the event-aligned projection from the Finding case-file path. S10 proves the legacy coordinate rail and global ALIGN host stay absent while the served tile projection remains event-aligned. S13 recognizes the fullscreen tile's one chart header inside the canvas shell's one pane header.
+- **Event-comparison replay S11 and the support audit's selected-Withheld case.** Selection reads from the pressed case-file cohort row, then the compact tile must draw every served selected glucose point as `selected:trace` at stronger opacity than the other population lines. Fullscreen additionally marks the selected cohort in its legend. The comparison tile remains provenance-marked, and selecting a Withheld population cannot create an aggregate series. Textual glucose/marker counts alone are not evidence that the compact trace rendered.
+
+### Added frozen stories — issue 135
+
+S92 · Focus swaps only on chart selection; the demoted chart lands in the selected chart's former seat, and the reverse swap restores both destinations. Evidence: replay S92 plus both transition renders.
+S93 · Zero pins derives the focal-plus-strip arrangement. Evidence: replay S93.
+S94 · One pin derives the fifty-fifty split arrangement. Evidence: replay S94.
+S95 · Two pins derive the stacked-pair arrangement. Evidence: replay S95.
+S96 · Three pins derive the one-plus-two arrangement. Evidence: replay S96.
+S97 · Four pins derive the quad arrangement. Evidence: replay S97.
+S98 · A fifth pin is refused at the control and all four pins remain intact. Evidence: replay S98.
+S99 · Live unpinned candidates seat into available positions without becoming pins. Evidence: replay S99.
+S100 · Capacity drops a surplus candidate from the field while every reader-owned pin stays seated. Evidence: replay S100.
+S101 · Two chart tiles hold different alignments at the same time. Evidence: replay S101.
+S102 · Every glucose-bearing chart in one arrangement receives one shared glucose range. Evidence: replay S102.
+S103 · A successful evidence read renders the named `ok` tile state. Evidence: replay S103.
+S104 · An evidence read with no plottable values renders the named `empty` tile state and explanation. Evidence: replay S104.
+S105 · A failed evidence read renders the named `error` tile state and server failure. Evidence: replay S105.
+S106 · A typed 409 renders `stale-generation`, refreshes findings, re-reads the tile and returns it to `ok`. Evidence: replay S106.
+S107 · A pinned chart re-reads before a slicer drag releases, both within the day and while the drag unrolls across midnight. The proof joins the live preparation window to the pinned chart's own projection id, Finding id, event alignment and absent Occurrence coordinate; an unpinned tile's request cannot satisfy it. Evidence: replay S107.
+S108 · Dismissing temporary fullscreen restores the exact prior focal chart, seats, pins and arrangement. Evidence: replay S108.
+S109 · Explore extinguishes rankings, recommendations, verdict marks and staging while reader-owned pins retain their accent. Evidence: replay S109.
+S110 · A drill names and marks its owning chart in Findings and Explore. Evidence: replay S110.
+S111 · Clear trace returns to the untraced case view without closing the owning chart drill. Evidence: replay S111.
+S112 · At the narrow viewport the canvas linearizes into one column, leads the reading order with the FOCAL tile whichever pin it is, and removes unpinned slot charts from reading order. Evidence: replay S112.
+S113 · Drilling a behavioural finding seats that finding's own response comparison in the focal seat, marks the owning chart in words, leaves no two live charts identically named, and does not deepen the path when the same finding is drilled again. Evidence: replay S113.
+
+### AMENDED — S112, the narrow reading order (#135 fix round, 2026-08-26)
+
+S112 read "keeps the focal chart first" against a field holding ONE chart, where
+pin order and reading order cannot disagree, and the narrow rule ordered tiles by
+pin order alone. Two pins separate them: focus the later-pinned chart and the
+earlier pin still led. The story now pins two charts, focuses the second, and
+asserts the focal tile is FIRST — the spec order being strip, then focal, then
+pins in pin order. The old single-chart assertion is proven weaker by that same
+field: it passes on both the broken and the fixed rule.
+
+### RETIRED — the strip header's reading count (#135 fix round, 2026-08-26)
+
+`window N of M readings` is retired from the canvas head by operator ruling. It
+priced the strip in a unit no decision on this surface is made in, at data
+weight, beside the title. The pooled-days chip (`pooled from N captured CGM days
+· ±M min`) stays and is unchanged. The header still prints the ADR 62 part 9
+sentence — `No findings in the selected window` — because that one names a real
+absence.
+
+Three stories carried the count as a witness and are amended, not retired: S01
+now reads the empty header plus the surviving pooled-days phrasing, and S06 and
+S21 read the lane's own dimming, which is the scope the reader acts on. Every
+one of the three keeps its original subject.

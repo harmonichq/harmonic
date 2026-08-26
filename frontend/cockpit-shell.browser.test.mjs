@@ -67,6 +67,12 @@ const FINDINGS_PROJECTION = JSON.parse(await readFile(
   join(FRONTEND, '__fixtures__/findings-projection.json'), 'utf8'));
 const FINDING_CASE_FILES = JSON.parse(await readFile(
   join(ROOT, 'mockups/diagnose-workstation.synthetic/finding-case-files.json'), 'utf8'));
+const BASAL_NIGHT_EVIDENCE = JSON.parse(await readFile(
+  join(FRONTEND, '__fixtures__/basal-night-evidence.json'), 'utf8'));
+const ISF_REST_WINDOW_EVIDENCE = JSON.parse(await readFile(
+  join(ROOT, 'mockups/diagnose-workstation.synthetic/isf-rest-window-evidence.capture.json'), 'utf8'));
+const CARB_RATIO_BLOCK_EVIDENCE = JSON.parse(await readFile(
+  join(ROOT, 'mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json'), 'utf8'));
 const COCKPIT_LEDGER = await readFile(join(ROOT, 'mockups/cockpit-shell.behavior.md'), 'utf8');
 const REPLAY_SOURCE = await readFile(fileURLToPath(import.meta.url), 'utf8');
 const SHOTS = process.env.COCKPIT_SHOTS;
@@ -295,6 +301,7 @@ async function routeApp(page, options = {}) {
     scenarios,
   };
   const preparedWindows = new Map();
+  let staleCarbRatioEvidence = true;
   await page.route('**/*', async (route) => {
     const fixed = (payload) => options.inputDataAge
       ? { ...payload, input_data_age: options.inputDataAge } : payload;
@@ -368,6 +375,22 @@ async function routeApp(page, options = {}) {
         ? options.caseFileResponse(response, url) : response;
       return route.fulfill({ status: finding ? 200 : 404, body: JSON.stringify(served),
         contentType: 'application/json' });
+    }
+    if (url.pathname === '/api/diagnose/basal-night-evidence') {
+      return route.fulfill({ json: BASAL_NIGHT_EVIDENCE.expected });
+    }
+    if (url.pathname === '/api/diagnose/isf-rest-window-evidence') {
+      return route.fulfill({ json: ISF_REST_WINDOW_EVIDENCE.payload });
+    }
+    if (url.pathname === '/api/diagnose/carb-ratio-block-evidence') {
+      if (staleCarbRatioEvidence) {
+        staleCarbRatioEvidence = false;
+        return route.fulfill({ status: 409, contentType: 'application/json', body: JSON.stringify({
+          detail: { code: 'analysis_generation_mismatch',
+            message: 'Evidence changed. Refresh findings.' },
+        }) });
+      }
+      return route.fulfill({ json: CARB_RATIO_BLOCK_EVIDENCE.cases.cross_midnight });
     }
     if (url.pathname === '/api/analyze') {
       return route.fulfill({ json: fixed(findingsInput.analysis) });
@@ -1192,7 +1215,7 @@ async function openRetiredOccurrence(browser, options = {}) {
   }
   await assertRetiredOccurrenceRoute(page);
   await row.click();
-  await page.locator('#level .ev-group .n').waitFor();
+  await page.locator('#level .ev-group .n').first().waitFor();
   assert.ok(await page.locator('#level .ev-row').count() > 0,
     'the public finding row must populate occurrence rows in Findings');
   await assertRetiredOccurrenceRoute(page);
@@ -1573,9 +1596,10 @@ test('event comparisons render the served case-file cohorts and retain no standa
     // absent from the queue. 24 h is the unscoped global queue (term 38) — the
     // one place every Finding the window holds is listed.
     await page.locator('#seg-window button', { hasText: '24 h' }).click();
-    await page.locator('#level .qrow[data-id="finding:late_bolus"]').click();
-    await page.getByRole('button', { name: 'By event', exact: true }).click();
-    await page.locator('.ec-surface').waitFor();
+    await page.locator('#level .qrow[data-id="finding:over_treated_low"]').click();
+    const tile = page.locator('.evidence-tile[data-chart-id="finding:over_treated_low"]');
+    await tile.locator('.tile-body').click();
+    await page.locator('[data-comparison-cohort]').first().waitFor();
 
     for (const selector of [
       '.ec-view-seg', '#ec-factor', '.ec-block-seg', '#ec-another',
@@ -1583,16 +1607,14 @@ test('event comparisons render the served case-file cohorts and retain no standa
     ]) {
       assert.equal(await page.locator(selector).count(), 0, `${selector} did not retire`);
     }
-    // The case file owns all three names and counts; the browser only proves
-    // they were rendered from that response.
-    assert.ok(await page.locator('#ec-chart').isVisible(), 'the canvas itself did not render');
-    assert.deepEqual(await page.locator('.ec-key-item[data-cohort]').evaluateAll((items) =>
-      items.map((item) => item.querySelector('strong')?.textContent)),
-    ['Matched', 'Nearly matched', 'Other meal opportunities']);
-    assert.deepEqual(await page.locator('.ec-key-item[data-cohort] small').evaluateAll((items) =>
-      items.map((item) => item.textContent.trim())),
-    ['6 occurrences', '1 occurrence · unavailable for an average',
-      '3 occurrences · limited support']);
+    // The case file owns all three names and counts; the successor UI renders
+    // them in the drilled inspector while its owning registry tile stays drawn.
+    assert.ok(await tile.isVisible(), 'the row-derived tile is not seated');
+    assert.equal(await tile.getAttribute('data-drilled'), '');
+    assert.deepEqual(await page.locator('#level .ev-group b').allTextContents(),
+    ['Matched', 'Nearly matched', 'Other low excursions']);
+    assert.deepEqual(await page.locator('#level .ev-group .n').allTextContents(),
+      ['· 6 occurrences', '· 1 occurrence', '· 3 occurrences']);
     assert.equal(await page.locator('.case-file-error').count(), 0);
   } finally { if (page) await page.close(); }
 });
@@ -1610,12 +1632,14 @@ test('event comparisons fail closed when the served case file is malformed',
             ? { ...cohort, support: 'unknown' } : cohort) },
       } });
     await page.locator('#seg-window button', { hasText: '24 h' }).click();
-    await page.locator('#level .qrow[data-id="finding:late_bolus"]').click();
-    await page.getByRole('button', { name: 'By event', exact: true }).click();
+    await page.locator('#level .qrow[data-id="finding:over_treated_low"]').click();
     const error = page.locator('.case-file-error');
     await error.waitFor();
     assert.match(await error.innerText(), /Finding case file did not match/);
-    assert.equal(await page.locator('.ec-surface:visible').count(), 0,
-      'a malformed projection must not partially render an evidence lens');
+    assert.equal(await page.locator(
+      '.evidence-tile[data-chart-id="finding:over_treated_low"][data-drilled]',
+    ).count(), 1, 'the malformed case remains visibly attached to its owning tile');
+    assert.equal(await page.locator('[data-comparison-cohort]').count(), 0,
+      'a malformed case renders no stale comparison cohort rows');
   } finally { if (page) await page.close(); }
 });

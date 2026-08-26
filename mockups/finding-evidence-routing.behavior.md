@@ -2631,7 +2631,7 @@ S109 · Explore extinguishes rankings, recommendations, verdict marks and stagin
 S110 · A drill names and marks its owning chart in Findings and Explore. Evidence: replay S110.
 S111 · Clear trace returns to the untraced case view without closing the owning chart drill. Evidence: replay S111.
 S112 · At the narrow viewport the canvas linearizes into one column, leads the reading order with the FOCAL tile whichever pin it is, and removes unpinned slot charts from reading order. Evidence: replay S112.
-S113 · Drilling a behavioural finding seats that finding's own response comparison in the focal seat, marks the owning chart in words, leaves no two live charts identically named, and does not deepen the path when the same finding is drilled again. Evidence: replay S113.
+S113 · Drilling a behavioural finding seats that finding's own response comparison in the focal seat, marks the owning chart, leaves no two live charts identically named, and does not deepen the path when the same finding is drilled again. Evidence: replay S113.
 
 ### AMENDED — S112, the narrow reading order (#135 fix round, 2026-08-26)
 
@@ -2656,3 +2656,27 @@ Three stories carried the count as a witness and are amended, not retired: S01
 now reads the empty header plus the surviving pooled-days phrasing, and S06 and
 S21 read the lane's own dimming, which is the scope the reader acts on. Every
 one of the three keeps its original subject.
+
+
+## Revision amendment — 2026-08-26 (the drill mark leaves the header)
+
+**S113's word chip is now applied as a permanent `RETIRED` entry.** The drilled
+tile no longer carries `Open in inspector` in its header. S113 and the
+canvas-composition suite replace that positive assertion with a loud absence
+assertion and print this sanction on every run:
+
+`sanction: Connor Griffin · 2026-08-26 · "The ring and the raised rail mark the drilled tile. The chip was noise."`
+
+**The mark itself is not retired — only the word.** The drilled tile keeps its
+2px ring, now painted in whichever ink reaches rank one on the current ground
+(`--ck-focus-mark`), and gains a second channel that is shape rather than
+colour: its rail stays materialized — recess, inner edge, divider, full-ink
+glyphs — while every other tile on the canvas shows a bare gutter until the
+pointer enters it. That second channel is what the word was there to guarantee
+(Color-Never-Alone), and both replays now assert it directly by comparing the
+drilled tile's computed rail ground against an undrilled tile's, so a
+colour-only regression fails the run. The inspector continues to name the chart
+it is reading in `#drill-provenance`, unchanged.
+
+The old replay failed first with `expected 1, got 0`; the revised replay then
+passed.

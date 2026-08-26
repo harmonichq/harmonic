@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WIREFRAME — pairing the alignment cells</title>
+<style>
+/* WIREFRAME — NO FIDELITY CLAIM — NOT LOCKABLE.
+   Round four, and the last open question. Settled: ghost rail, maximize top
+   right, fill-is-state / stroke-is-action (T3). Open: what says the clock and
+   the flag are two positions of ONE control rather than two separate toggles.
+   Every variant here keeps T3's fill untouched and adds only grouping.
+   Own tokens on purpose; deleted when the change lands. */
+:root {
+  --w-ground: #E7E4DD; --w-panel: #F4F2ED; --w-recess: #D6D2C8;
+  --w-edge: #C3BEB2; --w-hair: #CFCABE;
+  --w-ink: #2B2724; --w-label: #56504A; --w-quiet: #8C857C;
+  --w-live: #C4622C; --w-lift: rgba(255,255,255,.8);
+  --w-drop: 0 6px 14px -10px rgba(0,0,0,.6);
+  color-scheme: light;
+}
+html[data-t="dark"] {
+  --w-ground: #1D1A18; --w-panel: #26221F; --w-recess: #171513;
+  --w-edge: #3A3430; --w-hair: #363029;
+  --w-ink: #EFEAE2; --w-label: #B6ADA2; --w-quiet: #877E74;
+  --w-live: #D9834C; --w-lift: rgba(255,255,255,.10);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 26px 30px 90px; background: var(--w-ground); color: var(--w-ink);
+  font: 13px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+.banner {
+  margin: 0 0 22px; padding: 8px 12px; border: 1px dashed var(--w-quiet);
+  color: var(--w-label); font-size: 11px; letter-spacing: .09em; text-transform: uppercase;
+}
+h1 { margin: 0 0 4px; font-size: 17px; font-weight: 640; letter-spacing: -.01em; }
+.lede { max-width: 80ch; margin: 0 0 10px; color: var(--w-label); font-size: 12.5px; }
+.themebar { position: fixed; top: 14px; right: 18px; display: flex; gap: 6px; z-index: 9; }
+.themebar button {
+  border: 1px solid var(--w-edge); border-radius: 3px; background: var(--w-panel);
+  color: var(--w-label); padding: 4px 10px; font: inherit; font-size: 11px; cursor: pointer;
+}
+.themebar button[aria-pressed="true"] { color: var(--w-ink); border-color: var(--w-live); }
+section { margin: 0 0 30px; padding: 0 0 24px; border-bottom: 1px solid var(--w-hair); }
+section:last-of-type { border-bottom: 0; }
+.opt-head { display: flex; align-items: baseline; gap: 10px; margin: 0 0 3px; }
+.opt-key { color: var(--w-live); font-size: 11px; font-weight: 700; letter-spacing: .12em; }
+.opt-head h2 { margin: 0; font-size: 14.5px; font-weight: 640; }
+.claim { max-width: 80ch; margin: 0 0 16px; color: var(--w-label); font-size: 12px; }
+.claim b { color: var(--w-ink); font-weight: 600; }
+.row { display: flex; align-items: flex-start; gap: 22px; flex-wrap: wrap; }
+.specimens { display: flex; align-items: flex-start; gap: 16px; }
+.spec { display: grid; justify-items: center; gap: 6px; }
+.spec .label {
+  color: var(--w-quiet); font-size: 10px; letter-spacing: .07em; text-transform: uppercase;
+}
+.stagearea {
+  width: 64px; height: 250px; background: var(--w-panel); border-radius: 2px;
+  box-shadow: inset 0 0 0 1px var(--w-edge); overflow: hidden; position: relative;
+}
+.stagearea > .rail {
+  position: absolute; top: 0; right: 0; width: 24px; height: 100px;
+  transform: scale(2.5); transform-origin: 100% 0;
+}
+.tiles { display: grid; gap: 16px; }
+
+/* ---- tile --------------------------------------------------------------- */
+.tile {
+  position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 24px;
+  background: var(--w-panel); border-radius: 2px; overflow: hidden;
+  box-shadow: inset 0 0 0 1px var(--w-edge), inset 0 1px 0 var(--w-lift), var(--w-drop);
+}
+.tile.focal { width: 500px; grid-template-rows: 28px 176px; }
+.tile.quad  { width: 252px; grid-template-rows: 28px 104px; }
+.head { grid-column: 1; display: flex; align-items: center; min-width: 0; padding: 0 8px; }
+.plate { display: flex; align-items: baseline; gap: 7px; min-width: 0; }
+.plate .name {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--w-label); font-size: 10px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; text-shadow: 0 1px 0 var(--w-lift);
+}
+.plate .caption {
+  flex-shrink: 200; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--w-quiet); font-size: 10px;
+}
+.quad .plate .caption { display: none; }
+.body { grid-column: 1; position: relative; padding: 4px 8px 8px; }
+.plot { width: 100%; height: 100%; display: block; }
+.plot path { fill: none; stroke: var(--w-quiet); stroke-width: 1.2; opacity: .75; }
+.plot line { stroke: var(--w-hair); stroke-width: 1; }
+
+/* ---- ghost rail, T3 fill, shared by every variant ------------------------ */
+.rail {
+  grid-column: 2; grid-row: 1 / -1;
+  display: grid; align-content: start; justify-items: center;
+  padding: 4px 0; background: transparent; box-shadow: inset 1px 0 0 transparent;
+  transition: background 160ms, box-shadow 160ms;
+}
+.tile:hover .rail, .tile:focus-within .rail, .rail.open {
+  background: var(--w-recess); box-shadow: inset 1px 0 0 var(--w-edge);
+}
+.rail button {
+  position: relative; display: grid; place-items: center;
+  width: 22px; height: 20px; padding: 0; border: 0; border-radius: 2px;
+  background: transparent; color: var(--w-quiet); cursor: pointer;
+  opacity: .5; transition: opacity 160ms, color 130ms, background 130ms;
+}
+.tile:hover .rail button, .tile:focus-within .rail button, .rail.open button { opacity: 1; }
+.rail button[aria-pressed="true"] { opacity: 1; color: var(--w-live); }
+.rail button:hover { color: var(--w-ink); background: var(--w-panel); }
+.rail button[aria-pressed="true"]:hover { color: var(--w-live); }
+.rail button:focus-visible { outline: 2px solid var(--w-live); outline-offset: -1px; }
+/* THE FILL TRANSFERS. Both faces live in every cell and cross-fade, so pressing
+   one position visibly drains the other — the motion says "one control, two
+   positions" on first use, which no static mark can. */
+.rail button svg {
+  grid-area: 1 / 1; width: 13px; height: 13px; display: block;
+  transition: opacity 170ms ease;
+}
+.rail button .on  { opacity: 0; }
+.rail button .off { opacity: 1; }
+.rail button[aria-pressed="true"] .on  { opacity: 1; }
+.rail button[aria-pressed="true"] .off { opacity: 0; }
+
+/* PROXIMITY IS THE STRUCTURE, and it is in all three variants: the two cells
+   touch, and the actions above sit a clear step away. */
+.rail .action + .action { margin-top: 1px; }
+.rail .pair { display: grid; margin-top: 7px; }
+.rail .sep {
+  width: 12px; height: 0; margin: 3px auto 4px; border: 0;
+  border-top: 1px solid transparent; transition: border-color 160ms;
+}
+.tile:hover .rail .sep, .tile:focus-within .rail .sep, .rail.open .sep {
+  border-top-color: var(--w-edge);
+}
+
+/* ---- G2 · a hairline inside the pair ------------------------------------- */
+.g2 .pair button + button { box-shadow: inset 0 1px 0 var(--w-edge); }
+
+/* ---- G3 · a bracket on the inner edge ------------------------------------ */
+.g3 .pair { position: relative; }
+.g3 .pair::before {
+  content: ''; position: absolute; left: 0; top: 3px; bottom: 3px; width: 1px;
+  background: var(--w-edge);
+}
+.g3 .pair::after {
+  content: ''; position: absolute; left: 0; top: 3px; width: 3px; height: 1px;
+  background: var(--w-edge); box-shadow: 0 31px 0 var(--w-edge);
+}
+</style>
+</head>
+<body>
+
+<div class="themebar">
+  <button type="button" data-theme="light" aria-pressed="true">Light</button>
+  <button type="button" data-theme="dark" aria-pressed="false">Dark</button>
+</div>
+
+<p class="banner">Wireframe — no fidelity claim — not lockable</p>
+
+<h1>Clearing T3's hidden cost</h1>
+<p class="lede">
+  Fill-is-state stays exactly as it is. What is added is the one thing fill could
+  not say on its own: that the clock and the flag are two positions of one
+  control. <b>All three variants share two fixes</b> — the two cells now touch
+  while maximize and pin sit a clear step above them, and the fill <b>transfers</b>
+  on press, the outgoing face draining as the incoming one solidifies. Proximity
+  works at rest; the transfer teaches on the first press. What differs below is
+  only how explicit the grouping is when nothing is moving.
+</p>
+<p class="lede">
+  Specimens are the rail at 2.5×, <b>at rest</b> and <b>held</b> (pinned, aligned
+  by event). Tiles are live — hover, then click a cell and watch the fill move.
+</p>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <g id="i-clock" fill="none" stroke="currentColor" stroke-width="1.3"
+       stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="8" cy="8" r="6"/><path d="M8 4.6V8l2.4 1.6"/>
+    </g>
+    <g id="i-clock-solid" fill="currentColor" stroke="none">
+      <circle cx="8" cy="8" r="6.4"/>
+      <path d="M7.3 4.2h1.4v4.1l2.2 1.5-.8 1.2-2.8-1.9z" fill="var(--w-panel)"/>
+    </g>
+    <g id="i-event" fill="none" stroke="currentColor" stroke-width="1.3"
+       stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4.8 13.6V2.6"/><path d="M4.8 3.1 12.4 5.6 4.8 8.1z"/>
+    </g>
+    <g id="i-event-solid" fill="currentColor" stroke="none">
+      <rect x="4.1" y="2.2" width="1.5" height="11.6" rx=".6"/>
+      <path d="M5.6 2.9 13.2 5.6 5.6 8.3z"/>
+    </g>
+    <g id="i-pin" fill="none" stroke="currentColor" stroke-width="1.3"
+       stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9.6 2.2 13.8 6.4"/><path d="M11 4.6 7.2 6 4.4 8.8l2.8 2.8L10 8.8z"/>
+      <path d="M5.8 10.2 2.6 13.4"/>
+    </g>
+    <g id="i-pin-solid" fill="currentColor" stroke="none">
+      <path d="M9.9 1.7a.75.75 0 0 0-1 1.1l.3.3-2.2.9-3.2 3.2 5.1 5.1 3.2-3.2.9-2.2.3.3a.75.75 0 0 0 1.1-1z"/>
+      <rect x="1.6" y="12.5" width="5.2" height="1.4" rx=".7"
+        transform="rotate(-45 4.2 13.2)"/>
+    </g>
+    <g id="i-full" fill="none" stroke="currentColor" stroke-width="1.3"
+       stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 2.6H2.6V6"/><path d="M10 2.6h3.4V6"/>
+      <path d="M6 13.4H2.6V10"/><path d="M10 13.4h3.4V10"/>
+    </g>
+  </defs>
+</svg>
+
+<template id="plot">
+  <svg class="plot" viewBox="0 0 240 80" preserveAspectRatio="none" aria-hidden="true">
+    <line x1="0" y1="60" x2="240" y2="60"/><line x1="0" y1="30" x2="240" y2="30"/>
+    <path d="M4 52 24 44 44 49 64 33 84 40 104 26 124 35 144 21 164 30 184 18 204 27 224 16"/>
+  </svg>
+</template>
+
+<section id="opt-g1">
+  <div class="opt-head"><span class="opt-key">G1</span><h2>Proximity and transfer only</h2></div>
+  <p class="claim">
+    Nothing drawn at all: the two cells touch, the actions sit a step above them
+    with the rail's own divider between, and the fill moves from one cell to the
+    other on press. <b>Two things that read as one thing are one thing</b> —
+    grouping by distance is the oldest rule there is, and it costs no ink.
+    <b>Cost:</b> it is inference, not statement; a reader who never presses either
+    cell is relying on the spacing alone to tell them.
+  </p>
+  <div class="row"><div class="specimens"></div><div class="tiles"></div></div>
+</section>
+
+<section id="opt-g2">
+  <div class="opt-head"><span class="opt-key">G2</span><h2>A hairline between the cells</h2></div>
+  <p class="claim">
+    The same, plus <b>a single hairline where the two cells meet</b> — a divider
+    inside a control, which is what a two-position control looks like everywhere
+    else in this app. One line, no box, no groove, and it survives at rest when
+    the rail's own material does not. <b>Cost:</b> a divider between two cells is
+    also just a divider — it separates as readily as it joins, and it is one more
+    mark in a margin whose whole point was having none.
+  </p>
+  <div class="row"><div class="specimens"></div><div class="tiles"></div></div>
+</section>
+
+<section id="opt-g3">
+  <div class="opt-head"><span class="opt-key">G3</span><h2>A bracket down the inner edge</h2></div>
+  <p class="claim">
+    The same, plus <b>a bracket on the rail's inner edge spanning exactly the two
+    cells</b> — a hairline with a small return at each end, the way a drawing marks
+    an extent. It states the grouping rather than implying it, and it names which
+    cells belong to the control without dividing them from each other.
+    <b>Cost:</b> the most drawing of the three, and a bracket sitting on the rail's
+    own edge hairline needs that edge to not be there at rest — which, in the
+    ghost rail, it isn't.
+  </p>
+  <div class="row"><div class="specimens"></div><div class="tiles"></div></div>
+</section>
+
+<script>
+const ICON = (id, cls) =>
+  `<svg class="${cls}" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-${id}"/></svg>`;
+/* both faces in every cell, cross-faded by aria-pressed — see .on / .off */
+const FACES = (id) => `${ICON(id, 'off')}${ICON(`${id}-solid`, 'on')}`;
+const PLOT = document.getElementById('plot').innerHTML;
+
+function rail(g, { open = false, held = false, name = 'this chart' } = {}) {
+  const at = held ? 'event' : 'clock';
+  return `<span class="rail ${g}${open ? ' open' : ''}">
+    <button type="button" class="action full" title="Maximize"
+      aria-label="Show ${name} fullscreen">${ICON('full', 'off')}</button>
+    <button type="button" class="action pin" aria-pressed="${held}" title="Pin"
+      aria-label="Pin ${name}">${FACES('pin')}</button>
+    <hr class="sep">
+    <span class="pair" role="group" aria-label="${name} alignment">
+      <button type="button" aria-pressed="${at === 'clock'}" title="Align by clock"
+        aria-label="Align ${name} by clock">${FACES('clock')}</button>
+      <button type="button" aria-pressed="${at === 'event'}" title="Align by event"
+        aria-label="Align ${name} by event">${FACES('event')}</button>
+    </span></span>`;
+}
+
+function tile(g, size, name, caption) {
+  const el = document.createElement('article');
+  el.className = `tile ${size}`;
+  el.innerHTML = `
+    <header class="head"><span class="plate"><span class="name">${name}</span>
+      <span class="caption">${caption}</span></span></header>
+    <div class="body">${PLOT}</div>
+    ${rail(g, { name })}`;
+  return el;
+}
+
+const STATES = [['at rest', {}], ['held', { open: true, held: true }]];
+const SAMPLES = [
+  ['focal', 'Basal 05:30 · nights of steady data', 'delivered vs programmed by night'],
+  ['quad', 'Correction factor · rest windows', 'fasting steps'],
+];
+
+for (const g of ['g1', 'g2', 'g3']) {
+  const specs = document.querySelector(`#opt-${g} .specimens`);
+  for (const [label, opts] of STATES) {
+    const box = document.createElement('div');
+    box.className = 'spec';
+    box.innerHTML = `<span class="stagearea">${rail(g, opts)}</span>
+      <span class="label">${label}</span>`;
+    specs.append(box);
+  }
+  const tiles = document.querySelector(`#opt-${g} .tiles`);
+  for (const [size, name, cap] of SAMPLES) tiles.append(tile(g, size, name, cap));
+}
+
+document.addEventListener('click', (event) => {
+  const cell = event.target.closest('.pair button');
+  if (cell) {
+    for (const b of cell.parentElement.children) {
+      b.setAttribute('aria-pressed', String(b === cell));
+    }
+    return;
+  }
+  const pin = event.target.closest('.pin');
+  if (pin) pin.setAttribute('aria-pressed', String(pin.getAttribute('aria-pressed') !== 'true'));
+});
+
+for (const button of document.querySelectorAll('.themebar button')) {
+  button.onclick = () => {
+    document.documentElement.dataset.t = button.dataset.theme;
+    for (const b of document.querySelectorAll('.themebar button')) {
+      b.setAttribute('aria-pressed', String(b === button));
+    }
+  };
+}
+</script>
+</body>
+</html>

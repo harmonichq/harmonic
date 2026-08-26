@@ -85,7 +85,7 @@ test('ADR 79 · every visible behavioral row requests its opaque case id', () =>
 });
 
 test('ADR 79 · case-file ALIGN follows the active server event coordinate', () => {
-  const alignment = source.match(/if \(entry\.modes\) \{[\s\S]*?head\.append\(modes\);\n      \}/);
+  const alignment = source.match(/if \(entry\.modes\) \{[\s\S]*?\.append\(modes\);\n      \}/);
   assert.ok(alignment, 'each multi-mode chart mounts its own alignment control');
   assert.match(alignment[0], /for \(const mode of entry\.modes\)[\s\S]*descriptor\.mode = mode/,
     'each tile reads its registry modes and keeps its own selected alignment');

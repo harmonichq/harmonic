@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WIREFRAME — evidence-tile controls</title>
+<style>
+/* WIREFRAME — NO FIDELITY CLAIM — NOT LOCKABLE.
+   Its own neutral tokens on purpose: this page must never be read as the app's
+   palette, and it is deleted when the change lands. What it IS asking you to
+   judge is the control idiom — shape, weight, motion, and what the thing tells
+   you at rest. */
+:root {
+  --w-ground: #E7E4DD;
+  --w-panel: #F4F2ED;
+  --w-recess: #D6D2C8;
+  --w-edge: #C3BEB2;
+  --w-hair: #CFCABE;
+  --w-ink: #2B2724;
+  --w-label: #56504A;
+  --w-quiet: #8C857C;
+  --w-live: #C4622C;
+  --w-lift: rgba(255,255,255,.8);
+  --w-drop: 0 6px 14px -10px rgba(0,0,0,.6);
+  color-scheme: light;
+}
+html[data-t="dark"] {
+  --w-ground: #1D1A18;
+  --w-panel: #26221F;
+  --w-recess: #171513;
+  --w-edge: #3A3430;
+  --w-hair: #363029;
+  --w-ink: #EFEAE2;
+  --w-label: #B6ADA2;
+  --w-quiet: #877E74;
+  --w-live: #D9834C;
+  --w-lift: rgba(255,255,255,.10);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 26px 30px 90px;
+  background: var(--w-ground); color: var(--w-ink);
+  font: 13px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+.banner {
+  margin: 0 0 22px; padding: 8px 12px; border: 1px dashed var(--w-quiet);
+  color: var(--w-label); font-size: 11px; letter-spacing: .09em;
+  text-transform: uppercase;
+}
+h1 { margin: 0 0 4px; font-size: 17px; font-weight: 640; letter-spacing: -.01em; }
+.lede { max-width: 78ch; margin: 0 0 24px; color: var(--w-label); font-size: 12.5px; }
+.themebar { position: fixed; top: 14px; right: 18px; display: flex; gap: 6px; z-index: 9; }
+.themebar button {
+  border: 1px solid var(--w-edge); border-radius: 3px; background: var(--w-panel);
+  color: var(--w-label); padding: 4px 10px; font: inherit; font-size: 11px; cursor: pointer;
+}
+.themebar button[aria-pressed="true"] { color: var(--w-ink); border-color: var(--w-live); }
+
+section { margin: 0 0 34px; padding: 0 0 26px; border-bottom: 1px solid var(--w-hair); }
+section:last-of-type { border-bottom: 0; }
+.opt-head { display: flex; align-items: baseline; gap: 10px; margin: 0 0 3px; }
+.opt-key {
+  color: var(--w-live); font-size: 11px; font-weight: 700; letter-spacing: .12em;
+}
+.opt-head h2 { margin: 0; font-size: 14.5px; font-weight: 640; }
+.claim { max-width: 78ch; margin: 0 0 16px; color: var(--w-label); font-size: 12px; }
+.claim b { color: var(--w-ink); font-weight: 600; }
+.row { display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+
+/* ---- the wireframe tile ------------------------------------------------ */
+.tile {
+  position: relative; display: grid; grid-template-rows: 28px 96px;
+  background: var(--w-panel); border-radius: 2px; overflow: hidden;
+  box-shadow: inset 0 0 0 1px var(--w-edge), inset 0 1px 0 var(--w-lift), var(--w-drop);
+}
+.tile.focal { width: 560px; }
+.tile.quad  { width: 252px; }
+.head {
+  display: flex; align-items: center; gap: 10px; min-width: 0; padding: 0 6px 0 8px;
+}
+.plate { display: flex; align-items: baseline; gap: 7px; min-width: 0; flex: 1 1 auto; }
+.plate .name {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--w-label); font-size: 10px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; text-shadow: 0 1px 0 var(--w-lift);
+}
+.plate .cap {
+  flex-shrink: 200; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--w-quiet); font-size: 10px;
+}
+.quad .plate .cap { display: none; }
+.cluster { display: flex; align-items: center; flex: 0 0 auto; gap: 8px; }
+.body { position: relative; padding: 6px 8px 8px; }
+.plot { width: 100%; height: 100%; display: block; }
+.plot path { fill: none; stroke: var(--w-quiet); stroke-width: 1.2; opacity: .75; }
+.plot line { stroke: var(--w-hair); stroke-width: 1; }
+
+/* glyph button — the shared base every option's actions are built from */
+.g {
+  display: grid; place-items: center; width: 20px; height: 18px; padding: 0;
+  border: 0; border-radius: 2px; background: transparent;
+  color: var(--w-quiet); cursor: pointer; transition: color 120ms, background 120ms;
+}
+.g svg { width: 13px; height: 13px; display: block; }
+.g:hover { color: var(--w-ink); background: var(--w-recess); }
+.g:focus-visible { outline: 2px solid var(--w-live); outline-offset: 1px; }
+.g[aria-pressed="true"] { color: var(--w-live); }
+.g[aria-pressed="true"]:hover { background: transparent; }
+
+/* the actions rest quiet and come up when the reader is on the tile — the
+   purpose the words used to carry, carried by attention instead */
+.dim .g { opacity: .45; transition: opacity 140ms; }
+.dim:hover .g, .dim:focus-within .g { opacity: 1; }
+.dim .g[aria-pressed="true"] { opacity: 1; }
+
+/* ---- A · travelling switch --------------------------------------------- */
+.sw {
+  position: relative; display: flex; align-items: center; width: 48px; height: 18px;
+  padding: 0; border: 0; border-radius: 2px; background: var(--w-recess);
+  box-shadow: inset 0 0 0 1px var(--w-edge), inset 0 1px 2px -1px rgba(0,0,0,.45);
+  cursor: pointer;
+}
+.sw:focus-visible { outline: 2px solid var(--w-live); outline-offset: 2px; }
+.sw .thumb {
+  position: absolute; top: 1px; left: 1px; width: 23px; height: 16px; border-radius: 1px;
+  background: var(--w-panel);
+  box-shadow: inset 0 0 0 1px var(--w-edge), inset 0 1px 0 var(--w-lift), 0 1px 2px rgba(0,0,0,.35);
+  transition: transform 170ms cubic-bezier(.22,.9,.3,1);
+}
+.sw[data-at="event"] .thumb { transform: translateX(23px); }
+.sw .face {
+  position: relative; z-index: 1; display: grid; place-items: center;
+  width: 24px; height: 18px; color: var(--w-quiet); transition: color 140ms;
+}
+.sw .face svg { width: 12px; height: 12px; }
+.sw[data-at="clock"] .face:first-of-type,
+.sw[data-at="event"] .face:last-of-type { color: var(--w-ink); }
+
+/* ---- B · lamp pair ------------------------------------------------------ */
+.lamps {
+  display: flex; border-radius: 2px; background: var(--w-recess);
+  box-shadow: inset 0 0 0 1px var(--w-edge), inset 0 1px 2px -1px rgba(0,0,0,.4);
+}
+.lamps button {
+  display: grid; justify-items: center; gap: 2px; width: 24px; padding: 2px 0 3px;
+  border: 0; background: transparent; color: var(--w-quiet); cursor: pointer;
+}
+.lamps button + button { border-left: 1px solid var(--w-edge); }
+.lamps button svg { width: 12px; height: 12px; display: block; }
+.lamps .bulb {
+  width: 12px; height: 2px; border-radius: 1px; background: var(--w-edge);
+}
+.lamps button[aria-pressed="true"] { color: var(--w-ink); }
+.lamps button[aria-pressed="true"] .bulb {
+  background: var(--w-live); box-shadow: 0 0 5px var(--w-live);
+}
+.lamps button:focus-visible { outline: 2px solid var(--w-live); outline-offset: -1px; }
+
+/* ---- C · one glyph, two detents ---------------------------------------- */
+.cycle {
+  display: grid; justify-items: center; gap: 2px; width: 24px; padding: 1px 0 2px;
+  border: 0; border-radius: 2px; background: transparent; color: var(--w-label);
+  cursor: pointer;
+}
+.cycle:hover { color: var(--w-ink); background: var(--w-recess); }
+.cycle:focus-visible { outline: 2px solid var(--w-live); outline-offset: 1px; }
+.cycle svg { width: 13px; height: 13px; display: block; }
+.cycle .detents { display: flex; gap: 3px; }
+.cycle .detents i {
+  width: 3px; height: 3px; border-radius: 50%; background: var(--w-edge);
+  transition: background 140ms;
+}
+.cycle[data-at="clock"] .detents i:first-child,
+.cycle[data-at="event"] .detents i:last-child { background: var(--w-live); }
+
+/* ---- D · corner overlay ------------------------------------------------- */
+.overlay {
+  position: absolute; top: 6px; right: 8px; display: flex; align-items: center; gap: 6px;
+  padding: 2px 4px; border-radius: 3px;
+  background: color-mix(in srgb, var(--w-panel) 88%, transparent);
+  box-shadow: inset 0 0 0 1px var(--w-edge);
+  opacity: .28; transition: opacity 150ms;
+}
+.tile:hover .overlay, .tile:focus-within .overlay { opacity: 1; }
+
+/* ---- E · edge rail ------------------------------------------------------ */
+.tile.railed { grid-template-columns: minmax(0,1fr) 24px; grid-template-rows: 28px 96px; }
+.tile.railed .head { grid-column: 1; }
+.tile.railed .body { grid-column: 1; }
+.rail {
+  grid-column: 2; grid-row: 1 / -1; display: grid; align-content: start; justify-items: center;
+  gap: 2px; padding: 4px 0; background: var(--w-recess);
+  box-shadow: inset 1px 0 0 var(--w-edge);
+}
+.rail hr { width: 12px; height: 0; margin: 3px 0; border: 0; border-top: 1px solid var(--w-edge); }
+.rail .g:hover { background: var(--w-panel); }
+
+.note { margin: 12px 0 0; color: var(--w-quiet); font-size: 11.5px; }
+</style>
+</head>
+<body>
+
+<div class="themebar">
+  <button type="button" data-theme="light" aria-pressed="true">Light</button>
+  <button type="button" data-theme="dark" aria-pressed="false">Dark</button>
+</div>
+
+<p class="banner">Wireframe — no fidelity claim — not lockable</p>
+
+<h1>Evidence-tile controls — five idioms</h1>
+<p class="lede">
+  Three controls live on every tile: <b>alignment</b> (a two-position state — by
+  clock, or by event), <b>pin</b> (a toggle the reader owns) and <b>full</b> (an
+  action). The shipped row spells all three in words. Each option below answers
+  the same question differently: what tells you the alignment at a glance, and
+  what carries pin and full without a label. Hover a tile — the actions are meant
+  to be read at rest and pressed on approach. Both themes are live.
+</p>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <g id="i-clock" fill="none" stroke="currentColor" stroke-width="1.3"
+       stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="8" cy="8" r="6"/><path d="M8 4.6V8l2.4 1.6"/>
+    </g>
+    <g id="i-event" fill="none" stroke="currentColor" stroke-width="1.3"
+       stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4.8 13.6V2.6"/><path d="M4.8 3.1 12.4 5.6 4.8 8.1z" fill="currentColor"/>
+    </g>
+    <g id="i-pin" fill="none" stroke="currentColor" stroke-width="1.3"
+       stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9.6 2.2 13.8 6.4"/><path d="M11 4.6 7.2 6 4.4 8.8l2.8 2.8L10 8.8z"/>
+      <path d="M5.8 10.2 2.6 13.4"/>
+    </g>
+    <g id="i-full" fill="none" stroke="currentColor" stroke-width="1.3"
+       stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 2.6H2.6V6"/><path d="M10 2.6h3.4V6"/>
+      <path d="M6 13.4H2.6V10"/><path d="M10 13.4h3.4V10"/>
+    </g>
+  </defs>
+</svg>
+
+<template id="plot">
+  <svg class="plot" viewBox="0 0 240 80" preserveAspectRatio="none" aria-hidden="true">
+    <line x1="0" y1="60" x2="240" y2="60"/><line x1="0" y1="30" x2="240" y2="30"/>
+    <path d="M4 52 24 44 44 49 64 33 84 40 104 26 124 35 144 21 164 30 184 18 204 27 224 16"/>
+  </svg>
+</template>
+
+<section id="opt-a">
+  <div class="opt-head"><span class="opt-key">A</span><h2>Travelling switch</h2></div>
+  <p class="claim">
+    Alignment becomes one <b>physical two-position switch</b>: a recessed track with a
+    raised thumb that slides, the live face inked and the dead face quiet. One
+    target, one movement, and the state is legible from the thumb's position
+    alone — no reading required. Pin and Full are glyphs that rest at 45% and
+    come up when the pointer enters the tile. <b>Cost:</b> the switch is 48px of
+    header on every tile, and its two faces must be glyphs small enough to sit
+    in 24px.
+  </p>
+  <div class="row"></div>
+  <p class="note">Click the switch. Click a glyph to see its held state.</p>
+</section>
+
+<section id="opt-b">
+  <div class="opt-head"><span class="opt-key">B</span><h2>Lamp pair</h2></div>
+  <p class="claim">
+    Two cells in one recessed bezel, each with a glyph and an <b>indicator lamp
+    beneath it</b>; the live one is lit. This is the instrument answer — the
+    control looks like the panel it sits on, and the lit bar is visible in
+    peripheral vision at tile size. <b>Cost:</b> two targets rather than one, and
+    the lit lamp spends accent on a machine state, not on something the reader
+    chose.
+  </p>
+  <div class="row"></div>
+</section>
+
+<section id="opt-c">
+  <div class="opt-head"><span class="opt-key">C</span><h2>One glyph, two detents</h2></div>
+  <p class="claim">
+    The alignment control is a <b>single button whose glyph is the current
+    alignment</b>, with two detent dots under it showing which of the two positions
+    it is in. The smallest possible footprint — 24px for all of it — and the
+    header stops being a control strip at all. <b>Cost:</b> a reader who has not
+    learned the glyph pair cannot tell what the other position is without
+    pressing; it leans hardest on the tooltip.
+  </p>
+  <div class="row"></div>
+</section>
+
+<section id="opt-d">
+  <div class="opt-head"><span class="opt-key">D</span><h2>Corner overlay</h2></div>
+  <p class="claim">
+    The header is a <b>nameplate and nothing else</b>. All three controls float over
+    the chart's top-right corner on a faint plate, at 28% until the pointer
+    enters the tile. The full header width goes back to the title and caption,
+    and a tile at rest is pure evidence. <b>Cost:</b> the controls sit on the
+    plot, so they cover data in that corner; and a control you cannot see until
+    you hover is a control a keyboard-first or touch reader meets late.
+  </p>
+  <div class="row"></div>
+</section>
+
+<section id="opt-e">
+  <div class="opt-head"><span class="opt-key">E</span><h2>Edge rail</h2></div>
+  <p class="claim">
+    The controls leave the header entirely for a <b>24px recessed rail down the
+    tile's right edge</b> — alignment on top, a hairline, then pin and full, the
+    way switches sit on the side of a rack unit. The header is free, nothing
+    covers the plot, and every tile's controls are in the same place whatever
+    its width. <b>Cost:</b> 24px off every tile's plot width, and the rail
+    repeats four times in a quad arrangement, which is a lot of furniture.
+  </p>
+  <div class="row"></div>
+</section>
+
+<script>
+const ICON = (id, cls) =>
+  `<svg class="${cls || ''}" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-${id}"/></svg>`;
+
+const actions = (label) => `
+  <button type="button" class="g" aria-pressed="false" title="Pin ${label}"
+    aria-label="Pin ${label}">${ICON('pin')}</button>
+  <button type="button" class="g" title="Show ${label} fullscreen"
+    aria-label="Show ${label} fullscreen">${ICON('full')}</button>`;
+
+const align = {
+  a: (label) => `
+    <button type="button" class="sw" data-at="clock" role="switch" aria-checked="false"
+      aria-label="Align ${label} by clock or by event">
+      <span class="thumb"></span>
+      <span class="face">${ICON('clock')}</span>
+      <span class="face">${ICON('event')}</span>
+    </button>`,
+  b: (label) => `
+    <span class="lamps" role="group" aria-label="${label} alignment">
+      <button type="button" aria-pressed="true" title="Align by clock"
+        aria-label="Align ${label} by clock">${ICON('clock')}<i class="bulb"></i></button>
+      <button type="button" aria-pressed="false" title="Align by event"
+        aria-label="Align ${label} by event">${ICON('event')}<i class="bulb"></i></button>
+    </span>`,
+  c: (label) => `
+    <button type="button" class="cycle" data-at="clock" title="Aligned by clock — switch to event"
+      aria-label="Aligned by clock. Switch ${label} to event alignment">
+      ${ICON('clock')}<span class="detents"><i></i><i></i></span>
+    </button>`,
+};
+
+const PLOT = document.getElementById('plot').innerHTML;
+
+function tile(opt, size, name, caption) {
+  const el = document.createElement('article');
+  el.className = `tile ${size}` + (opt === 'e' ? ' railed' : '');
+  const plate = `<span class="plate"><span class="name">${name}</span>
+      <span class="cap">${caption}</span></span>`;
+  if (opt === 'd') {
+    el.innerHTML = `<header class="head">${plate}</header>
+      <div class="body">${PLOT}
+        <span class="overlay dim">${align.b(name)}${actions(name)}</span></div>`;
+  } else if (opt === 'e') {
+    el.innerHTML = `<header class="head">${plate}</header>
+      <div class="body">${PLOT}</div>
+      <span class="rail dim">${align.c(name)}<hr>${actions(name)}</span>`;
+  } else {
+    el.innerHTML = `<header class="head">${plate}
+        <span class="cluster dim">${align[opt](name)}${actions(name)}</span></header>
+      <div class="body">${PLOT}</div>`;
+  }
+  return el;
+}
+
+const SAMPLES = [
+  ['focal', 'Basal 05:30 · nights of steady data', 'delivered vs programmed by night'],
+  ['quad', 'Correction factor · rest windows', 'fasting steps'],
+];
+
+for (const opt of ['a', 'b', 'c', 'd', 'e']) {
+  const row = document.querySelector(`#opt-${opt} .row`);
+  for (const [size, name, cap] of SAMPLES) row.append(tile(opt, size, name, cap));
+}
+
+document.addEventListener('click', (event) => {
+  const sw = event.target.closest('.sw');
+  if (sw) {
+    const next = sw.dataset.at === 'clock' ? 'event' : 'clock';
+    sw.dataset.at = next;
+    sw.setAttribute('aria-checked', String(next === 'event'));
+    return;
+  }
+  const lamp = event.target.closest('.lamps button');
+  if (lamp) {
+    for (const b of lamp.parentElement.children) b.setAttribute('aria-pressed', String(b === lamp));
+    return;
+  }
+  const cycle = event.target.closest('.cycle');
+  if (cycle) {
+    const next = cycle.dataset.at === 'clock' ? 'event' : 'clock';
+    cycle.dataset.at = next;
+    cycle.querySelector('svg use').setAttribute('href', `#i-${next}`);
+    cycle.title = next === 'clock'
+      ? 'Aligned by clock — switch to event' : 'Aligned by event — switch to clock';
+    return;
+  }
+  const glyph = event.target.closest('.g[aria-pressed]');
+  if (glyph) {
+    glyph.setAttribute('aria-pressed', String(glyph.getAttribute('aria-pressed') !== 'true'));
+  }
+});
+
+for (const button of document.querySelectorAll('.themebar button')) {
+  button.onclick = () => {
+    document.documentElement.dataset.t = button.dataset.theme;
+    for (const b of document.querySelectorAll('.themebar button')) {
+      b.setAttribute('aria-pressed', String(b === button));
+    }
+  };
+}
+</script>
+</body>
+</html>

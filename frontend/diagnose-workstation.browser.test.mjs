@@ -683,7 +683,7 @@ test('#130 · a wrapped draw leaves two endpoint edges and dims only the outside
       await page.getByRole('button', { name: '24 h', exact: true }).click();
       await settle(page, 450);
       const chart = await page.locator('#chart').boundingBox();
-      const xAt = (minute) => chart.x + 52 + (minute / 1425) * (chart.width - 104);
+      const xAt = (minute) => chart.x + 34 + (minute / 1425) * (chart.width - 86);
       const y = chart.y + chart.height * 0.45;
       // travel at the right edge, then aim the draw's moving end onto the next
       // day's 02:00 — a held boundary is travel, never a place to release on

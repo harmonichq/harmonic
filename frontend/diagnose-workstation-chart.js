@@ -34,9 +34,16 @@ function windowRenderSpans(window) {
 
 // Shared plot insets. The HTML verdict lane is pinned to these so its cells sit
 // in register with the x-axis ticks.
-// the right margin seats the value tags that ride the median / lowest-median
-// levels, so it is wider than a plain plot inset would be
-export const GRID = { left: 52, right: 52 };
+// LEFT IS THE CANVAS-WIDE SPINE (#215). One number for the strip and for every
+// evidence tile, so titles, y-axis numbers and plot edges land on the same
+// vertical the whole way down the canvas. It is sized as air + the widest label
+// any of these charts draws + the gap to the plot — roughly 8 + 18 + 8 — and
+// deliberately no wider: at 52 the strip carried a third of an inch of nothing
+// beside its numbers. `--ck-grid-left` in diagnose-workstation.css tracks it,
+// and so do FULL_GRID/MINI_GRID in diagnose-evidence-charts.js.
+// The right margin seats the value tags that ride the median / lowest-median
+// levels, so it stays wider than a plain plot inset would be.
+export const GRID = { left: 34, right: 52 };
 
 function minuteOfDay(stamp) {
   const time = stamp.slice(11);

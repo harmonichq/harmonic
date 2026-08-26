@@ -110,6 +110,8 @@ async function openCanvas(browser, { routes = null, ...options } = {}) {
   return { page, errors };
 }
 
+const SANCTION_DRILL_WORD = 'sanction: Connor Griffin · 2026-08-26 · "The ring and the raised rail mark the drilled tile. The chip was noise."';
+
 const readField = (page) => page.evaluate(() => ({
   arrangement: document.querySelector('.tile-field')?.dataset.arrangement || null,
   tiles: [...document.querySelectorAll('.evidence-tile')].map((tile) => ({
@@ -265,8 +267,23 @@ test('drilling a behavioural finding seats that finding\'s own comparison, marke
     assert.equal(drilled.focal, target, 'the drilled finding takes the focal seat');
     const seated = drilled.tiles.find((tile) => tile.chartId === target);
     assert.equal(seated?.drilled, true, 'the seated tile is the drilled chart');
-    assert.equal(seated?.mark, 'Open in inspector',
-      'the drill mark is a word on the owning chart, not a hairline');
+    /* RETIRED — the word chip. Prints its sanction, and asserts what replaced
+       it: the drilled tile's rail stays materialized where an undrilled one is
+       a bare gutter, so the mark is never carried by colour alone. */
+    console.log(SANCTION_DRILL_WORD);
+    assert.equal(seated?.mark, null,
+      `the drill word chip stays retired — ${SANCTION_DRILL_WORD}`);
+    const railGrounds = await page.evaluate((id) => {
+      const ground = (tile) => tile
+        && getComputedStyle(tile.querySelector('.tile-rail')).backgroundColor;
+      return {
+        drilled: ground(document.querySelector(`.evidence-tile[data-chart-id="${id}"]`)),
+        plain: ground(document.querySelector('.evidence-tile:not([data-drilled])')),
+      };
+    }, target);
+    assert.ok(railGrounds.drilled && railGrounds.drilled !== railGrounds.plain,
+      'the drilled tile\'s rail stays materialized where an undrilled one does not '
+      + `(${railGrounds.drilled} vs ${railGrounds.plain})`);
     assert.equal(drilled.tiles.filter((tile) => tile.drilled).length, 1,
       'exactly one chart claims the drill');
     assert.equal(new Set(drilled.tiles.map((tile) => tile.title)).size, drilled.tiles.length,

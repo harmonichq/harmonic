@@ -2455,6 +2455,62 @@ function boot(root, data, callbacks, signal) {
     el('pin-count').textContent = `${canvasLayout.pins.length}/${PIN_CAP} pinned`;
   }
 
+  /* THE RAIL'S GLYPHS, INLINE. Deliberately not a `<use>` sprite: a `use` clone
+     is a shadow tree, so no rule in the stylesheet can reach inside one to fill
+     a face — and fill is this rail's entire vocabulary for "held". The solid
+     clock knocks its hands out with `fill-rule=evenodd` rather than painting
+     them a ground colour, because the ground under a rail glyph changes when
+     the band comes up. */
+  const RAIL_FACES = {
+    full: '<path d="M6 2.6H2.6V6"/><path d="M10 2.6h3.4V6"/>'
+      + '<path d="M6 13.4H2.6V10"/><path d="M10 13.4h3.4V10"/>',
+    dismiss: '<path d="M2.6 6H6V2.6"/><path d="M13.4 6H10V2.6"/>'
+      + '<path d="M2.6 10H6v3.4"/><path d="M13.4 10H10v3.4"/>',
+    pin: '<path d="M9.6 2.2 13.8 6.4"/><path d="M11 4.6 7.2 6 4.4 8.8l2.8 2.8L10 8.8z"/>'
+      + '<path d="M5.8 10.2 2.6 13.4"/>',
+    'pin-on': '<path d="M9.9 1.7a.75.75 0 0 0-1 1.1l.3.3-2.2.9-3.2 3.2 5.1 5.1 3.2-3.2'
+      + '.9-2.2.3.3a.75.75 0 0 0 1.1-1z"/>'
+      + '<rect x="1.6" y="12.5" width="5.2" height="1.4" rx=".7" transform="rotate(-45 4.2 13.2)"/>',
+    clock: '<circle cx="8" cy="8" r="6"/><path d="M8 4.6V8l2.4 1.6"/>',
+    'clock-on': '<path fill-rule="evenodd" d="M8 1.6a6.4 6.4 0 1 0 0 12.8 6.4 6.4 0 0 0 0-12.8z'
+      + 'M7.3 4.2h1.4v4.1l2.2 1.5-.8 1.2-2.8-1.9z"/>',
+    /* The flag's ink is centred on the box, not its pole: drawn from the pole it
+       sat .6 of a unit right of the clock it stacks under, which at 13px is half
+       a pixel of visible drift between two glyphs one above the other. */
+    event: '<path d="M4.2 13.6V2.6"/><path d="M4.2 3.1 11.8 5.6 4.2 8.1z"/>',
+    'event-on': '<rect x="3.5" y="2.2" width="1.5" height="11.6" rx=".6"/>'
+      + '<path d="M5 2.9 12.6 5.6 5 8.3z"/>',
+  };
+
+  function railFace(glyph, face) {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 16 16');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.setAttribute('class', face);
+    svg.innerHTML = RAIL_FACES[glyph];
+    return svg;
+  }
+
+  /* One rail control. A toggle gets both faces and `aria-pressed`, so the fill
+     can cross-fade between them; an action gets the hollow face only and can
+     never fill. The name rides along in a span the stylesheet takes out of the
+     picture — a screen reader still reads it, and the browser suites still
+     locate these buttons by their text. */
+  function railButton({ className, label, glyph, title, held }) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = className;
+    const name = document.createElement('span');
+    name.textContent = label;
+    button.append(railFace(glyph, 'face-off'), name);
+    if (held !== undefined) {
+      button.append(railFace(`${glyph}-on`, 'face-on'));
+      button.setAttribute('aria-pressed', String(held));
+    }
+    button.title = title || label;
+    return button;
+  }
+
   function paintTiles() {
     const host = el('tile-field');
     if (!host) return;
@@ -2499,54 +2555,57 @@ function boot(root, data, callbacks, signal) {
 
       const head = document.createElement('header');
       head.className = 'tile-head';
+      /* THE HEADER IS A NAMEPLATE AND THE RAIL IS THE CONTROLS. Flat in one row
+         the title was priced the same as the state word and four labelled
+         buttons, and on a quad tile the state word won: the title truncated to a
+         single letter. The state name is gone from here entirely — the body
+         still carries `tileStatePresentation()`'s loud copy for every state that
+         has one, and beside a drawn chart "Evidence shown" was only ever a
+         caption on the obvious. */
+      const id = document.createElement('span');
+      id.className = 'tile-id';
       const title = document.createElement('h3');
       title.textContent = descriptor.title;
       const meta = document.createElement('span');
       meta.className = 'tile-meta';
       meta.textContent = canvasMode === 'explore' ? 'measured evidence'
         : descriptor.meta || entry.meta(descriptor.mode);
-      const state = document.createElement('span');
-      state.className = 'tile-state-name';
-      state.textContent = presentation.name;
-      head.append(title, meta, state);
-      /* THE DRILL MARK IS A WORD, NOT A HAIRLINE. The inset outline this used to
-         rely on alone was invisible at tile size, so the reader had no way to
-         tell which chart the inspector beside it was reading. */
-      if (descriptor.chartId === drilledChartId) {
-        const mark = document.createElement('span');
-        mark.className = 'tile-drilled-mark';
-        mark.textContent = 'Open in inspector';
-        head.append(mark);
-      }
+      id.append(title, meta);
+      head.append(id);
+      tile.append(head);
 
-      if (entry.modes) {
-        const modes = document.createElement('span');
-        modes.className = 'tile-modes';
-        modes.setAttribute('role', 'group');
-        modes.setAttribute('aria-label', `${descriptor.title} alignment`);
-        for (const mode of entry.modes) {
-          const button = document.createElement('button');
-          button.type = 'button';
-          button.textContent = mode === 'clock' ? 'Clock' : 'Event';
-          button.setAttribute('aria-label', `Align ${descriptor.title} by ${mode}`);
-          button.setAttribute('aria-pressed', String(mode === descriptor.mode));
-          button.onclick = (event) => {
-            event.stopPropagation();
-            descriptor.mode = mode;
-            paintTiles();
-          };
-          modes.append(button);
+      const rail = document.createElement('span');
+      rail.className = 'tile-rail';
+      const full = railButton({
+        className: 'tile-fullscreen',
+        label: fullscreen ? 'Dismiss' : 'Full',
+        glyph: fullscreen ? 'dismiss' : 'full',
+        title: fullscreen ? 'Dismiss fullscreen' : 'Maximize',
+      });
+      full.setAttribute('aria-label', fullscreen
+        ? `Dismiss fullscreen ${descriptor.title}` : `Show ${descriptor.title} fullscreen`);
+      full.onclick = (event) => {
+        event.stopPropagation();
+        if (fullscreen) dismissChartFullscreen();
+        else {
+          fullscreen = enterFullscreen(canvasLayout, descriptor.chartId);
+          drawerOpen = false;
+          showChartInspector(descriptor);
+          paint();
         }
-        head.append(modes);
-      }
+      };
+      rail.append(full);
 
-      const pin = document.createElement('button');
-      pin.type = 'button';
-      pin.className = 'tile-pin';
-      pin.textContent = seat.pinned ? 'Unpin' : 'Pin';
-      pin.setAttribute('aria-pressed', String(seat.pinned));
+      const pin = railButton({
+        className: 'tile-pin',
+        label: seat.pinned ? 'Unpin' : 'Pin',
+        glyph: 'pin',
+        held: seat.pinned,
+      });
       pin.disabled = !seat.pinned && canvasLayout.pins.length === PIN_CAP;
       pin.title = pin.disabled ? `Pin cap reached (${PIN_CAP})` : pin.textContent;
+      pin.setAttribute('aria-label', seat.pinned
+        ? `Unpin ${descriptor.title}` : `Pin ${descriptor.title}`);
       pin.onclick = (event) => {
         event.stopPropagation();
         if (seat.pinned) {
@@ -2561,25 +2620,33 @@ function boot(root, data, callbacks, signal) {
         paintChart();
         paintBrace();
       };
-      head.append(pin);
-      const full = document.createElement('button');
-      full.type = 'button';
-      full.className = 'tile-fullscreen';
-      full.textContent = fullscreen ? 'Dismiss' : 'Full';
-      full.setAttribute('aria-label', fullscreen
-        ? `Dismiss fullscreen ${descriptor.title}` : `Show ${descriptor.title} fullscreen`);
-      full.onclick = (event) => {
-        event.stopPropagation();
-        if (fullscreen) dismissChartFullscreen();
-        else {
-          fullscreen = enterFullscreen(canvasLayout, descriptor.chartId);
-          drawerOpen = false;
-          showChartInspector(descriptor);
-          paint();
+      rail.append(pin);
+
+      if (entry.modes) {
+        rail.append(document.createElement('hr'));
+        const modes = document.createElement('span');
+        modes.className = 'tile-modes';
+        modes.setAttribute('role', 'group');
+        modes.setAttribute('aria-label', `${descriptor.title} alignment`);
+        for (const mode of entry.modes) {
+          const button = railButton({
+            className: `tile-mode-${mode}`,
+            label: mode === 'clock' ? 'Clock' : 'Event',
+            glyph: mode === 'clock' ? 'clock' : 'event',
+            held: mode === descriptor.mode,
+            title: mode === 'clock' ? 'Align by clock' : 'Align by event',
+          });
+          button.setAttribute('aria-label', `Align ${descriptor.title} by ${mode}`);
+          button.onclick = (event) => {
+            event.stopPropagation();
+            descriptor.mode = mode;
+            paintTiles();
+          };
+          modes.append(button);
         }
-      };
-      head.append(full);
-      tile.append(head);
+        rail.append(modes);
+      }
+      tile.append(rail);
 
       const body = document.createElement('div');
       body.className = 'tile-body';

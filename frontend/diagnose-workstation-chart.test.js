@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {
   BIN_MINUTES, buildMealMarkers, buildSlotLane, slotAssertsMove, snapWindow,
   renderCanvas, renderHistoryEvents, validateHistoryEvents, windowStats, windowSupport,
-  commitSlide, commitWindow, minuteAtX, windowSpans, xAtMinute, windowSpanText,
+  commitSlide, commitWindow, minuteAtX, windowSpans, xAtMinute, windowSpanText, GRID,
 } from './diagnose-workstation-chart.js';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -123,11 +123,15 @@ test('unrolled display windows snap, preserve their anchor, and commit circularl
 
 test('window spans and pointer mapping share the panned display domain', () => {
   assert.deepEqual(windowSpans([1320, 120]), [[1320, 1440], [0, 120]]);
+  /* The two ends of the plot, named by the shared spine rather than by the
+     pixel it happens to sit at — this asserts the round trip, not the inset. */
   const el = { clientWidth: 1054 };
-  assert.equal(minuteAtX(el, 52, -120), -120);
-  assert.equal(minuteAtX(el, 1002, -120), 1305);
-  assert.equal(xAtMinute(el, -120, -120), 52);
-  assert.equal(xAtMinute(el, 1305, -120), 1002);
+  const plotLeft = GRID.left;
+  const plotRight = el.clientWidth - GRID.right;
+  assert.equal(minuteAtX(el, plotLeft, -120), -120);
+  assert.equal(minuteAtX(el, plotRight, -120), 1305);
+  assert.equal(xAtMinute(el, -120, -120), plotLeft);
+  assert.equal(xAtMinute(el, 1305, -120), plotRight);
 });
 
 test('wrapped windows pool both stretches for stats and support', () => {

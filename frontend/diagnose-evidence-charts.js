@@ -5,7 +5,7 @@ import {
   GLUCOSE_STEP,
   glucoseRange,
 } from './diagnose-event-comparison.js';
-import { mealMemberMarkers } from './diagnose-workstation-chart.js';
+import { mealMemberMarkers, GRID } from './diagnose-workstation-chart.js';
 
 export { eventComparisonGlucoseValues, GLUCOSE_ENVELOPE, GLUCOSE_STEP, glucoseRange };
 
@@ -30,19 +30,36 @@ const chartColors = () => {
   ]));
   return { ...colors, target: `color-mix(in srgb, ${colors.signal} 8%, transparent)` };
 };
+/* Both grids open on the canvas-wide spine, so a tile's numbers and its title
+   start where the strip's do. The right inset is not a spine — it is however
+   much of the LAST x-axis label hangs past the final tick, which is half a date
+   at full rank and half a "1,500" at mini. At 22 and 6 those were being cut. */
 const FULL_GRID = Object.freeze({
-  left: 52, right: 22, top: 24, bottom: 42, containLabel: false,
+  left: GRID.left, right: 34, top: 26, bottom: 42, containLabel: false,
 });
 const MINI_GRID = Object.freeze({
-  left: 18, right: 6, top: 8, bottom: 14, containLabel: false,
+  left: GRID.left, right: 14, top: 8, bottom: 20, containLabel: false,
 });
 
 const grid = (mini) => ({ ...(mini ? MINI_GRID : FULL_GRID) });
+/* An axis NAME was left at ECharts' own defaults — 12px in the chart's own font
+   with a 15px gap — so it drew a rank the canvas does not have, and at that gap
+   it sat above the grid's own top and was cut off by the tile ("U/h" losing its
+   head, "mg/dL" floating clear of its plot). It comes down to the caps rank the
+   rest of the metadata uses, and close enough to the axis to belong to it. */
 const axis = (colors, mini = false) => ({
   axisLine: { show: false },
   axisTick: { show: false },
   axisLabel: { color: colors.muted, fontFamily: MONO, fontSize: mini ? 8 : 10 },
+  nameTextStyle: { color: colors.muted, fontFamily: FONT, fontSize: 9 },
+  nameGap: 8,
   splitLine: { show: true, lineStyle: { color: colors.line, width: 1 } },
+  /* AT MINI RANK THERE IS NO AXIS NAME. "glucose change (mg/dL)" is wider than
+     a quad tile's whole plot, so it ran off the left edge; shrinking it only
+     made an unreadable thing that still overhung. The tile's own caption in the
+     header already says what the chart is, and every axis object here spreads
+     this last, so the name it set is dropped rather than restyled. */
+  ...(mini ? { name: undefined } : {}),
 });
 const chartBase = (description, mini, colors) => ({
   animation: false,
@@ -51,8 +68,12 @@ const chartBase = (description, mini, colors) => ({
   aria: { enabled: true, decal: { show: false }, description },
   grid: grid(mini),
 });
-const chartLegend = (data, colors) => ({
-  show: true, left: 52, right: 22, bottom: 0, selectedMode: false,
+/* A MINI TILE CARRIES NO LEGEND. It is a thumbnail, and its question is whether
+   there is a shape here worth opening — not which series is which, at a size
+   where they cannot be told apart anyway. It was spending a third of a ~100px
+   plot naming two series the tile's own caption has already introduced. */
+const chartLegend = (data, colors, mini = false) => (mini ? { show: false } : {
+  show: true, left: GRID.left, right: 22, bottom: 0, selectedMode: false,
   itemWidth: 22, itemHeight: 8, itemGap: 18,
   textStyle: { color: colors.muted, fontFamily: FONT, fontSize: 9 },
   data,
@@ -130,7 +151,7 @@ function basalOption(mode, { data, mini = false, presentation } = {}) {
     const label = hhmm((data?.slot ?? 0) * 30);
     return {
       ...chartBase(description, mini, colors),
-      legend: chartLegend([verdict], colors),
+      legend: chartLegend([verdict], colors, mini),
       xAxis: { type: 'category', data: [label], ...axis(colors, mini),
         splitLine: { show: false } },
       yAxis: { type: 'value', min: 0, name: 'nights', ...axis(colors, mini) },
@@ -143,16 +164,23 @@ function basalOption(mode, { data, mini = false, presentation } = {}) {
   }
   return {
     ...chartBase(description, mini, colors),
-    legend: chartLegend(['Programmed basal', 'Delivered basal'], colors),
+    legend: chartLegend(['Programmed basal', 'Delivered basal'], colors, mini),
     xAxis: { type: 'category', data: nights.map((night) => night.date), ...axis(colors, mini),
       splitLine: { show: false } },
     yAxis: { type: 'value', name: 'U/h', ...axis(colors, mini) },
     series: [
+      /* A LEGEND SWATCH READS `itemStyle`, NOT `lineStyle`. Colour set only on
+         the line left the swatch on ECharts' stock palette — a blue dot and a
+         green dot, neither of which exists anywhere in this app, labelling two
+         lines that are both green and told apart by dash against solid. The
+         icon carries the same distinction the plot does. */
       { name: 'Programmed basal', type: 'line', symbol: 'none', connectNulls: true,
         data: nights.map((night) => night.programmed_rate),
+        itemStyle: { color: colors.programmed },
         lineStyle: { color: colors.programmed, width: 1.4, type: 'dashed' } },
       { name: 'Delivered basal', type: 'line', symbol: 'none', connectNulls: true,
         data: nights.map((night) => night.delivered_rate),
+        itemStyle: { color: colors.basal },
         lineStyle: { color: colors.basal, width: mini ? 1.2 : 2 } },
     ],
   };
@@ -168,7 +196,7 @@ function isfOption(mode, { data, mini = false } = {}) {
     const windowIndex = new Map(windows.map((window, index) => [window.id, index]));
     return {
       ...chartBase(description, mini, colors),
-      legend: chartLegend(['Qualifying fasting steps'], colors),
+      legend: chartLegend(['Qualifying fasting steps'], colors, mini),
       xAxis: { type: 'category', data: windows.map((window) => window.date),
         ...axis(colors, mini),
         splitLine: { show: false } },
@@ -181,7 +209,7 @@ function isfOption(mode, { data, mini = false } = {}) {
   }
   return {
     ...chartBase(description, mini, colors),
-    legend: chartLegend(['Qualifying fasting steps'], colors),
+    legend: chartLegend(['Qualifying fasting steps'], colors, mini),
     xAxis: { type: 'value', min: 0, name: 'insulin acted (U)', ...axis(colors, mini),
       splitLine: { show: false } },
     yAxis: { type: 'value', name: 'glucose change (mg/dL)', ...axis(colors, mini) },
@@ -211,7 +239,7 @@ function carbRatioOption(mode, { data, range, mini = false, window, presentation
       legend: chartLegend(advice ? [
         { name: 'Support run', icon: 'circle' },
         { name: 'Directional-only run', icon: 'emptyCircle' },
-      ] : [{ name: 'Measured meal run', icon: 'circle' }], colors),
+      ] : [{ name: 'Measured meal run', icon: 'circle' }], colors, mini),
       xAxis: { type: 'value', min: 0, max: frame.span, name: 'meal start',
         ...axis(colors, mini),
         axisLabel: { ...axis(colors, mini).axisLabel, formatter: frame.label },
@@ -248,7 +276,7 @@ function carbRatioOption(mode, { data, range, mini = false, window, presentation
     legend: chartLegend(advice ? [
       { name: 'Support run', icon: 'diamond' },
       { name: 'Directional-only run', icon: 'emptyDiamond' },
-    ] : [{ name: 'Measured meal run', icon: 'diamond' }], colors),
+    ] : [{ name: 'Measured meal run', icon: 'diamond' }], colors, mini),
     xAxis: { type: 'value', name: 'minutes from first meal', ...axis(colors, mini),
       splitLine: { show: false } },
     yAxis: { type: 'value', min: range[0], max: range[1], name: 'mg/dL',
@@ -376,8 +404,8 @@ const entries = [
       title: row.title || 'Response comparison',
       meta: `${row.appearances?.[0]?.noun || 'responses'} aligned to each event`,
     }),
-    option: (_mode, { data, range, caseFile = data } = {}) =>
-      eventComparisonChartOption(caseFile, range),
+    option: (_mode, { data, range, caseFile = data, mini = false } = {}) =>
+      eventComparisonChartOption(caseFile, range, null, mini),
     thumbnail: (data, title) => thumbnail((title || 'Response comparison').toUpperCase(),
       data?.summary?.denominator ?? 0,
       [{ type: 'line', symbol: 'none', connectNulls: true,

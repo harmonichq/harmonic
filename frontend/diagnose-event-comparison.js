@@ -9,6 +9,7 @@ const STYLE = {
 };
 
 import { createDiagnoseWorkstation } from './diagnose-workstation.js';
+import { GRID } from './diagnose-workstation-chart.js';
 
 /* The registry adapter builds an option with no surface to read tokens off, so
    the document element answers for it. Outside a browser neither exists, and an
@@ -23,6 +24,11 @@ const rounded = (value) => value == null ? '—' : String(Math.round(value));
 const dateLabel = (date) => new Date(`${date}T00:00:00`).toLocaleDateString(
   'en-US', { month: 'short', day: 'numeric' },
 );
+/* At the anchor the axis prints the event's own name — "Completed carb bolus" —
+   which is most of a quad tile wide and lands on top of "+1 h" beside it. The
+   mini caller passes the empty string there instead: the chart already draws
+   its dashed anchor line and marker at zero, and the tile's title names the
+   finding the events belong to. */
 const axisLabel = (minute, anchor) => {
   if (minute === 0) return anchor;
   return `${minute < 0 ? '−' : '+'}${Math.abs(minute) / 60} h`;
@@ -97,7 +103,7 @@ function legend(surface, caseFile, selected) {
   if (selected) key.insertAdjacentHTML('beforeend', `<span class="ec-key-item" data-cohort="selected"><i class="ec-key-mark" aria-hidden="true"></i><strong>Selected trace</strong><small>${dateLabel(selected.date)} · observed</small></span>`);
 }
 
-function option(surface, caseFile, selected, range) {
+function option(surface, caseFile, selected, range, mini = false) {
   const { projection } = caseFile;
   const series = [{ type: 'line', data: [], silent: true, name: 'Target range',
     markArea: { silent: true, itemStyle: { color: `color-mix(in srgb, ${css(surface, '--mk-ok')} 7%, transparent)` }, data: [[{ yAxis: 70, name: 'target 70–180' }, { yAxis: 180 }]] } }];
@@ -110,9 +116,9 @@ function option(surface, caseFile, selected, range) {
     if (cohort.support === 'withheld') series.push(...episodeSeries(surface, cohort, selected?.cohort));
   }
   series.push(...selectedSeries(surface, selected));
-  return { animation: false, backgroundColor: 'transparent', grid: { left: 52, right: 22, top: 24, bottom: 42 }, tooltip: { trigger: 'axis', showContent: false },
-    xAxis: { type: 'value', min: projection.window_min[0], max: projection.window_min[1], interval: 60, axisLine: { onZero: false, lineStyle: { color: css(surface, '--mk-line') } }, axisTick: { show: false }, splitLine: { show: true, lineStyle: { color: css(surface, '--mk-line'), opacity: .48 } }, axisLabel: { color: css(surface, '--mk-muted'), fontSize: 10, formatter: (minute) => axisLabel(minute, projection.anchor.label) } },
-    yAxis: { type: 'value', min: range[0], max: range[1], interval: 60, name: 'mg/dL', nameLocation: 'end', axisLine: { show: false }, axisTick: { show: false }, splitLine: { show: true, lineStyle: { color: css(surface, '--mk-line'), opacity: .58 } }, axisLabel: { color: css(surface, '--mk-muted'), fontSize: 10 } }, series };
+  return { animation: false, backgroundColor: 'transparent', grid: { left: GRID.left, right: mini ? 14 : 34, top: mini ? 8 : 26, bottom: mini ? 20 : 42 }, tooltip: { trigger: 'axis', showContent: false },
+    xAxis: { type: 'value', min: projection.window_min[0], max: projection.window_min[1], interval: 60, axisLine: { onZero: false, lineStyle: { color: css(surface, '--mk-line') } }, axisTick: { show: false }, splitLine: { show: true, lineStyle: { color: css(surface, '--mk-line'), opacity: .48 } }, axisLabel: { color: css(surface, '--mk-muted'), fontSize: mini ? 8 : 10, formatter: (minute) => (mini && minute === 0 ? '' : axisLabel(minute, projection.anchor.label)) } },
+    yAxis: { type: 'value', min: range[0], max: range[1], interval: 60, name: mini ? undefined : 'mg/dL', nameLocation: 'end', nameTextStyle: { color: css(surface, '--mk-muted'), fontSize: 9 }, nameGap: 8, axisLine: { show: false }, axisTick: { show: false }, splitLine: { show: true, lineStyle: { color: css(surface, '--mk-line'), opacity: .58 } }, axisLabel: { color: css(surface, '--mk-muted'), fontSize: mini ? 8 : 10 } }, series };
 }
 
 /* ONE GLUCOSE AXIS FOR A WHOLE ARRANGEMENT. The envelope is the range every
@@ -158,13 +164,18 @@ function assertEventCaseFile(caseFile) {
    is handed its arrangement's glucose range instead of computing its own, and
    has no surface to read tokens off. (#181/#135: the case file is the one
    authority for this fact, and this is its second consumer.) */
-export function eventComparisonChartOption(caseFile, range, surface = null) {
+/* `mini` is the same rank the other evidence kinds carry: a quad tile gets the
+   tight grid, the small label rank and no axis name. Without it this builder
+   drew full-size furniture inside a 250px tile — a taller top and bottom than
+   its neighbours, so three tiles in a row had plots of different heights, and a
+   right inset sized for the strip's value tags, which nothing here has. */
+export function eventComparisonChartOption(caseFile, range, surface = null, mini = false) {
   if (!Array.isArray(range) || range.length !== 2
       || !range.every(Number.isFinite) || range[0] >= range[1]) {
     throw new TypeError('event comparison needs one injected arrangement glucose range');
   }
   assertEventCaseFile(caseFile);
-  return option(surface, caseFile, selection(caseFile), range);
+  return option(surface, caseFile, selection(caseFile), range, mini);
 }
 
 /* The canvas header, rest line and docked readout together. The readout is the

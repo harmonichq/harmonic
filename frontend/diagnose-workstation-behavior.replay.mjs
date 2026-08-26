@@ -3758,6 +3758,8 @@ export const S112 = async (page) => {
    comparison takes the focal seat, the chart that owns the drill is marked in
    words, and no two live tiles carry the same name. The fourth is the crumb:
    drilling twice must not print the title twice. */
+const SANCTION_DRILL_WORD = 'sanction: Connor Griffin · 2026-08-26 · "The ring and the raised rail mark the drilled tile. The chip was noise."';
+
 // STORY:finding-evidence-routing:S113
 export const S113 = async (page) => {
   await openCanvas(page);
@@ -3780,8 +3782,23 @@ export const S113 = async (page) => {
   const seated = after.tiles.find((tile) => tile.id === target);
   is(seated?.seat, 'focal', 'S113 the drilled finding seats its own comparison focal');
   is(seated?.drilled, true, 'S113 the owning chart carries the drill mark');
-  is(await page.locator(`.evidence-tile[data-chart-id="${target}"] .tile-drilled-mark`).count(), 1,
-    'S113 the mark is a word on the chart, not a hairline alone');
+  /* RETIRED — the word chip. Prints its sanction on every run, and asserts the
+     channel that replaced it: the drilled tile's rail stays materialized while
+     an undrilled tile's is a bare gutter, so the mark is never colour alone. */
+  console.log(`S113 ${SANCTION_DRILL_WORD}`);
+  is(await page.locator(`.evidence-tile[data-chart-id="${target}"] .tile-drilled-mark`).count(), 0,
+    `S113 the drill word chip stays retired — ${SANCTION_DRILL_WORD}`);
+  const railGrounds = await page.evaluate((id) => {
+    const ground = (tile) => tile
+      && getComputedStyle(tile.querySelector('.tile-rail')).backgroundColor;
+    return {
+      drilled: ground(document.querySelector(`.evidence-tile[data-chart-id="${id}"]`)),
+      plain: ground(document.querySelector('.evidence-tile:not([data-drilled])')),
+    };
+  }, target);
+  ok(railGrounds.drilled && railGrounds.drilled !== railGrounds.plain,
+    `S113 the drilled tile's rail stays materialized where an undrilled one does not `
+    + `(${railGrounds.drilled} vs ${railGrounds.plain})`);
   is(await page.locator('.evidence-tile[data-drilled]').count(), 1,
     'S113 exactly one chart claims the drill');
   is(new Set(after.tiles.map((tile) => tile.title)).size, after.tiles.length,

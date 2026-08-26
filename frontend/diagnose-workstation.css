@@ -98,8 +98,12 @@
   --ck-data: 12px;
   --ck-emph: 13px;
   --ck-body: 12.5px;
-  --ck-grid-left: 52px;
-  --ck-grid-right: 52px;   /* must track GRID in shell-cockpit-chart.js */
+  /* ONE SPINE FOR THE WHOLE CANVAS (#215). Tracks GRID in
+     diagnose-workstation-chart.js, which the strip, both evidence-tile grids
+     and the tile headers all open on, so every title, every column of y-axis
+     numbers and every plot edge lands on the same vertical. */
+  --ck-grid-left: 34px;
+  --ck-grid-right: 52px;   /* must track GRID in diagnose-workstation-chart.js */
   --ck-canvas-gap: 8px;
   /* The explorer's well is a pane material, not the outer desk. `--bg` is the
      dark shell canvas in both themes, so deriving from it gave light the dark
@@ -111,8 +115,19 @@
      reads as the panel sinking rather than catching the light. */
   --ck-tile-top: color-mix(in srgb, #fff 70%, transparent);
   --ck-tile-shadow: 0 7px 15px -11px rgba(0, 0, 0, .72);
+  /* RANK, NOT HUE (#215). A role on this canvas owns a rung, not a colour: rank
+     one is the tile the inspector is holding, rank two is a control the reader
+     is holding down. Which paint reaches a rung depends on the ground, so the
+     two themes agree about the ORDER and swap the pigment — over bone nothing
+     out-reaches the burnt orange that theme term 5 already reserves for
+     interaction, and over graphite nothing out-reaches bone-white. Neither
+     token states a colour; both point at ink the theme already settled. */
+  --ck-focus-mark: var(--ck-accent);
+  --ck-held-mark: var(--mk-text);
 }
 html.dark .dw {
+  --ck-focus-mark: var(--mk-text);
+  --ck-held-mark: var(--ck-accent);
   --ck-tile-top: color-mix(in srgb, var(--mk-text) 15%, transparent);
   --ck-manual: #D9B568;
   --ck-manual-soft: #332C1B;
@@ -369,46 +384,131 @@ html.dark .tile-field { background: var(--wk-canvas); }
 .tile-field[data-arrangement="quad"] {
   grid-template: repeat(2, minmax(0, 1fr)) / repeat(2, minmax(0, 1fr));
 }
+/* The rail is a column of the tile, not something floating over the plot: it
+   takes its 24px off the chart's width so nothing is ever drawn on top of
+   evidence. */
 .evidence-tile {
-  display: grid; grid-template-rows: 28px minmax(0, 1fr); min-width: 0; min-height: 0;
+  display: grid; grid-template: 28px minmax(0, 1fr) / minmax(0, 1fr) 24px;
+  min-width: 0; min-height: 0;
   margin: 0; overflow: hidden; background: var(--ck-rail); border-radius: 2px;
   box-shadow: inset 0 0 0 1px var(--ck-tile-edge),
     inset 0 1px 0 var(--ck-tile-top), var(--ck-tile-shadow);
 }
-.evidence-tile[data-pinned] {
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ck-accent) 72%, transparent),
-    inset 0 1px 0 color-mix(in srgb, var(--ck-accent) 76%, var(--mk-text)),
-    var(--ck-tile-shadow);
-}
+/* A PIN IS NO LONGER A RING (#215). The tile-wide accent ring said "you pinned
+   this" in the same pigment the drilled tile needs for "the inspector is
+   holding this", and in a quad both fired at once. Pinned is now the solid
+   pushpin in the rail — held ink, rank two — and the tile keeps its ordinary
+   machined edge. */
+/* THE HEADER IS A NAMEPLATE (#215). Nothing in it can be pressed any more: the
+   controls have gone to the rail, so the whole width belongs to the tile's name
+   and the caption under it. The container is the header alone, never the tile —
+   a container on `.evidence-tile` would make it the containing block for the
+   chart's own absolutely-positioned tooltip and clip it against
+   `overflow: hidden`. */
 .tile-head {
-  display: flex; align-items: center; gap: 8px; min-width: 0; padding: 4px 7px 3px;
+  grid-column: 1; display: flex; align-items: center; gap: 10px; min-width: 0;
+  padding: 4px 7px 3px var(--ck-grid-left); container: tilehead / inline-size;
 }
+.tile-id {
+  display: flex; align-items: baseline; flex: 1 1 auto; gap: 7px; min-width: 0;
+}
+/* ENGRAVED, NOT PRINTED: label ink with a light lower edge under it, catching
+   the same light the tile's own top highlight does. `--ck-tile-top` is derived
+   from white in both themes, so one token carves the label on bone and on
+   graphite alike. */
 .tile-head h3 {
   margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   color: var(--mk-secondary); font-size: var(--ck-micro); font-weight: 700;
   letter-spacing: var(--ck-track); text-transform: uppercase;
+  text-shadow: 0 1px 0 var(--ck-tile-top);
 }
+/* Mono is the data rank — every value, count and time — and the caption is
+   prose, so it leaves the rank it was borrowing for the 10px caps floor. It also
+   yields before the title does: both can ellipsize, and without a weight between
+   them flexbox takes the same fraction off each, so the tile's own name loses
+   letters to a caption that is about to be hidden outright. */
 .tile-meta {
-  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  color: var(--mk-muted); font-family: var(--ck-mono); font-size: var(--ck-micro);
+  flex: 0 1 auto; flex-shrink: 200; min-width: 0; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap; color: var(--mk-muted);
+  font-size: var(--ck-micro);
 }
-.tile-state-name {
-  color: var(--mk-muted); font-family: var(--ck-mono); font-size: 9px;
-  text-transform: uppercase;
+@container tilehead (max-width: 340px) { .tile-meta { display: none; } }
+
+/* ---- the rail — every control the tile has ------------------------------ */
+/* A GHOST: THE GUTTER IS ALWAYS THERE, THE BAND IS NOT. At rest a tile shows
+   four quiet marks in its margin and no furniture at all, so nothing competes
+   with the plot; the recess, its inner edge and its divider come up when the
+   pointer enters the tile or a control takes focus. The glyphs themselves are
+   visible and pressable the whole time — only the material waits for hover, so
+   a touch reader is never hunting for a control that isn't drawn. */
+/* THE TILE OWNS THE ONLY BORDER. The rail used to draw an inner hairline of its
+   own at full `--ck-hair` while the tile's ring on the other side is the same
+   line at 72%, so a control centred between them was flanked by a heavy edge on
+   one side and a light one on the other — measuring dead centre and reading
+   shifted. The rail draws no line now: when it materializes, the tonal step from
+   panel to recess is the separation, which is the machined idiom anyway. Its
+   right padding hands the tile's ring back to the tile, so the rail's interior
+   is the ground the buttons actually centre in. */
+.tile-rail {
+  grid-column: 2; grid-row: 1 / -1;
+  display: grid; align-content: start; justify-items: center;
+  padding: 4px 1px 0 0; background: transparent;
+  transition: background 160ms;
 }
-.tile-modes { display: flex; margin-left: auto; gap: 2px; }
-.tile-modes button, .tile-pin {
-  border: 1px solid var(--ck-hair); border-radius: 1px; background: transparent;
-  color: var(--mk-muted); padding: 2px 5px; font-size: 9px; line-height: 1.2; cursor: pointer;
+.evidence-tile:hover .tile-rail, .evidence-tile:focus-within .tile-rail,
+.evidence-tile[data-drilled] .tile-rail { background: var(--ck-inset); }
+/* 20px IN THE RAIL'S 23px INTERIOR, so a hover fill floats on rail ground with
+   an equal margin on both sides and touches no line at all. */
+.tile-rail button {
+  display: grid; place-items: center; width: 20px; height: 20px; padding: 0;
+  border: 0; border-radius: 2px; background: transparent; color: var(--mk-muted);
+  cursor: pointer; opacity: .5;
+  transition: opacity 160ms, color 130ms, background 130ms;
 }
-.tile-modes button[aria-pressed="true"], .tile-pin[aria-pressed="true"] {
-  border-color: color-mix(in srgb, var(--ck-accent) 62%, var(--ck-hair));
-  color: var(--mk-text);
+.evidence-tile:hover .tile-rail button, .evidence-tile:focus-within .tile-rail button,
+.evidence-tile[data-drilled] .tile-rail button { opacity: 1; }
+.tile-rail button:hover:not(:disabled) { color: var(--mk-text); background: var(--ck-rail); }
+.tile-rail button:focus-visible { outline: 2px solid var(--ck-focus-mark); outline-offset: -1px; }
+.tile-pin:disabled { opacity: .35; cursor: not-allowed; }
+/* FILL IS STATE, STROKE IS ACTION, and it is one rule for the whole rail: a
+   hollow glyph does something, a solid glyph IS something. Maximize can never
+   fill, so a filled glyph is always a held state. A held control keeps full ink
+   at rest too — it is the reader's own, and it should not fade with the rest of
+   the margin. */
+.tile-rail button[aria-pressed="true"] { opacity: 1; color: var(--ck-held-mark); }
+.tile-rail button[aria-pressed="true"]:hover { color: var(--ck-held-mark); }
+.tile-rail svg {
+  grid-area: 1 / 1; width: 13px; height: 13px; display: block;
+  transition: opacity 170ms ease;
 }
-.tile-modes button:focus-visible, .tile-pin:focus-visible {
-  outline: 2px solid var(--ck-accent); outline-offset: 1px;
+.tile-rail .face-off {
+  fill: none; stroke: currentColor; stroke-width: 1.3;
+  stroke-linecap: round; stroke-linejoin: round;
 }
-.tile-pin:disabled { opacity: .55; cursor: not-allowed; }
+.tile-rail .face-on { fill: currentColor; stroke: none; opacity: 0; }
+/* THE FILL TRANSFERS. Both faces live in every toggle and cross-fade, so
+   pressing one alignment cell visibly drains the other — that movement is what
+   says "one control, two positions", which no static mark in a 22px cell can. */
+.tile-rail button[aria-pressed="true"] .face-on { opacity: 1; }
+.tile-rail button[aria-pressed="true"] .face-off { opacity: 0; }
+/* PROXIMITY DOES THE GROUPING. The two alignment cells touch; maximize and pin
+   sit a clear step above them with the rail's own divider between. Two things
+   that read as one thing are one thing, and it costs no ink. */
+.tile-rail .tile-fullscreen + .tile-pin { margin-top: 1px; }
+.tile-modes { display: grid; margin-top: 7px; }
+.tile-rail hr {
+  width: 12px; height: 0; margin: 3px auto 4px; border: 0;
+  border-top: 1px solid transparent; transition: border-color 160ms;
+}
+.evidence-tile:hover .tile-rail hr, .evidence-tile:focus-within .tile-rail hr,
+.evidence-tile[data-drilled] .tile-rail hr { border-top-color: var(--ck-hair); }
+/* The control's name, for a screen reader and for the suites that locate these
+   buttons by their text — kept out of the picture, never out of the DOM. */
+.tile-rail button > span {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip-path: inset(50%); white-space: nowrap;
+}
+.tile-body { grid-column: 1; }
 .tile-body, .tile-chart { min-width: 0; min-height: 0; height: 100%; }
 .tile-state, .tile-field-empty {
   display: grid; place-content: center; gap: 4px; height: 100%; padding: 12px;
@@ -1105,7 +1205,7 @@ html.dark .tile-field { background: var(--wk-canvas); }
 }
 .canvas-controls { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .canvas-mode { display: flex; border-bottom: 1px solid var(--ck-hair); }
-.canvas-mode button, .explorer-trigger, .tile-fullscreen {
+.canvas-mode button, .explorer-trigger {
   border: 0; background: transparent; color: var(--mk-muted); cursor: pointer;
   padding: 3px 6px; font-size: var(--ck-micro); font-weight: 650;
 }
@@ -1120,7 +1220,7 @@ html.dark .tile-field { background: var(--wk-canvas); }
   color: var(--mk-text); box-shadow: inset 0 -2px 0 var(--ck-accent);
 }
 .canvas-mode button:focus-visible, .explorer-trigger:focus-visible,
-.tile-fullscreen:focus-visible, .explorer-thumbnail:focus-visible {
+.explorer-thumbnail:focus-visible {
   outline: 2px solid var(--ck-accent); outline-offset: 1px;
 }
 .explorer-trigger { border: 1px solid var(--ck-hair); border-radius: 2px; }
@@ -1180,19 +1280,16 @@ html.dark .tile-field { background: var(--wk-canvas); }
 .thumbnail-chart { min-width: 0; min-height: 0; }
 
 .evidence-tile { position: relative; }
-/* A 1px inset hairline was not a mark: at tile size the reader could not see
-   which chart the inspector was reading. The ring is the interaction accent at
-   2px, and the head carries the word beside it (Color-Never-Alone). */
+/* THE DRILLED TILE IS RANK ONE, AND IT IS MARKED TWICE (#215). A 1px inset
+   hairline was never a mark at tile size, so this is the 2px ring in whichever
+   ink reaches rank one on this ground — AND the tile's rail stays materialized
+   while every other rail on the canvas is a bare gutter. That second channel is
+   shape, not colour, which is what the retired word chip was there to
+   guarantee (Color-Never-Alone); the rail states it without spending header
+   width or putting a filled label back on the plate. */
 .evidence-tile[data-drilled] {
-  outline: 2px solid var(--ck-accent); outline-offset: -2px;
+  outline: 2px solid var(--ck-focus-mark); outline-offset: -2px;
 }
-.tile-drilled-mark {
-  flex: 0 0 auto; padding: 1px 5px; border-radius: 2px;
-  background: var(--ck-sel); color: var(--mk-text);
-  font-size: 9px; font-weight: 700; letter-spacing: var(--ck-track);
-  text-transform: uppercase; white-space: nowrap;
-}
-.tile-fullscreen { border: 1px solid var(--ck-hair); border-radius: 1px; padding: 2px 5px; }
 .drill-provenance {
   min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--mk-text);
   font-size: 9px; font-weight: 650; letter-spacing: .03em; text-transform: uppercase;

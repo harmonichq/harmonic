@@ -40,7 +40,9 @@ import {
 } from './diagnose-canvas-layout.js';
 import {
   advisoryPresentation, candidateIdsForMode, dismissFullscreen,
-  enterFullscreen, seatCanvas, untraceDrill,
+  drilledChartIdForFrame, enterFullscreen, inspectorStackForMode,
+  popInspector, reconcileTileDescriptors as reconcileCanvasDescriptors,
+  seatCanvas, untraceDrill,
 } from './diagnose-canvas-mode.js';
 import {
   assertMatchingFindingCasePreparation,
@@ -1401,23 +1403,30 @@ function boot(root, data, callbacks, signal) {
       findings && { ...findings, projection_id: preparation?.projection_id },
       DIAGNOSE_EVIDENCE_CHARTS,
     );
-    const generatedIds = new Set(generated.map(({ chartId }) => chartId));
     const generationChanged = tileAnalysisGeneration !== null
       && tileAnalysisGeneration !== generation;
     const old = new Map(tileDescriptors.map((descriptor) => [descriptor.chartId, descriptor]));
     const oldRuntime = tileRuntime;
     const nextPolicyKey = settled() ? `${canvasMode}:${loadedKey}:${generation}` : seatingPolicyKey;
     const policyChanged = nextPolicyKey !== null && nextPolicyKey !== seatingPolicyKey;
-    if (generationChanged || policyChanged) {
-      canvasLayout = createCanvasLayout({
-        focalId: policyChanged ? null
-          : generatedIds.has(canvasLayout.focalId) ? canvasLayout.focalId : null,
-        pins: canvasLayout.pins.filter((id) => generatedIds.has(id)),
-      });
-    }
+    const reconciled = reconcileCanvasDescriptors(
+      generated, tileDescriptors, canvasLayout, { policyChanged },
+    );
+    const vanishedPinnedIds = new Set(reconciled.vanishedPinnedIds);
+    canvasLayout = reconciled.layout;
     const nextRuntime = new Map();
-    const next = generated.map((seed) => {
+    const next = reconciled.descriptors.map((seed) => {
       const prior = old.get(seed.chartId);
+      if (vanishedPinnedIds.has(seed.chartId)) {
+        const retained = oldRuntime.get(seed.chartId)
+          || { current: true, pending: false, message: null, request: 0 };
+        retained.current = true;
+        retained.pending = false;
+        retained.message = 'Pinned chart is not in the current findings.';
+        retained.retained = true;
+        nextRuntime.set(seed.chartId, retained);
+        return seed;
+      }
       const heldRequest = prior && !generationChanged
         && canvasLayout.pins.includes(seed.chartId);
       const sameRequest = prior && prior.kind === seed.kind
@@ -1427,22 +1436,15 @@ function boot(root, data, callbacks, signal) {
          the answer on an orphan and the tile read "Loading evidence…" forever
          while its state said ok. */
       const carried = oldRuntime.get(seed.chartId);
-      if (sameRequest || heldRequest) carried.current = true;
+      if (sameRequest || heldRequest) {
+        carried.current = true;
+        carried.retained = false;
+      }
       nextRuntime.set(seed.chartId, sameRequest || heldRequest
         ? carried
-        : { current: true, pending: false, message: null, request: 0 });
+        : { current: true, pending: false, message: null, request: 0, retained: false });
       return sameRequest || heldRequest ? prior : seed;
     });
-    if (!generationChanged) {
-      for (const pinnedId of canvasLayout.pins) {
-        if (!generatedIds.has(pinnedId) && old.has(pinnedId)) {
-          next.push(old.get(pinnedId));
-          const held = oldRuntime.get(pinnedId);
-          held.current = false;
-          nextRuntime.set(pinnedId, held);
-        }
-      }
-    }
     tileDescriptors = next;
     tileRuntime = nextRuntime;
     tileAnalysisGeneration = generation;
@@ -1450,12 +1452,12 @@ function boot(root, data, callbacks, signal) {
     canvasLayout = createCanvasLayout({
       focalId: available.has(canvasLayout.focalId)
         ? canvasLayout.focalId : currentTileCandidates()[0] || canvasLayout.pins[0] || null,
-      pins: canvasLayout.pins.filter((id) => available.has(id)),
+      pins: canvasLayout.pins,
     });
     seatingPolicyKey = nextPolicyKey;
     for (const descriptor of tileDescriptors) {
       const runtime = tileRuntime.get(descriptor.chartId);
-      if (!skipLoadIds.has(descriptor.chartId) && !runtime.pending
+      if (!runtime.retained && !skipLoadIds.has(descriptor.chartId) && !runtime.pending
           && descriptor.data === null && descriptor.state === 'empty') {
         void fetchTile(descriptor);
       }
@@ -1470,10 +1472,10 @@ function boot(root, data, callbacks, signal) {
      authority on what the canvas holds — re-derives the tile field from the new
      rows. Nothing restores a layout captured before the refresh.
 
-     A PINNED CHART WHOSE ROW THE NEW GENERATION NO LONGER PUBLISHES is dropped
-     by that reconciliation: the pin comes off cleanly and the tile leaves the
-     field. It is never seated without a descriptor, which is how a pin outliving
-     its row used to crash the repaint. */
+     A PINNED CHART WHOSE ROW THE NEW GENERATION NO LONGER PUBLISHES keeps its
+     seat as a named empty tile. The retained descriptor has no data and cannot
+     issue an evidence request until a later findings generation publishes its
+     coordinates again. */
   function markTileStale(chartId, message, { pending = false } = {}) {
     const descriptor = tileDescriptors.find((item) => item.chartId === chartId);
     if (!descriptor) return null;
@@ -1505,8 +1507,8 @@ function boot(root, data, callbacks, signal) {
       adoptFindings(adopted.next, adopted.key);
       reconcileTileDescriptors({ skipLoadIds: new Set([chartId]) });
       const descriptor = tileDescriptors.find((item) => item.chartId === chartId);
-      if (!descriptor) {
-        // the row is gone from the new generation: a clean unpin, not a crash
+      if (!descriptor || tileRuntime.get(chartId)?.retained) {
+        // the row is gone from the new generation: retain the named pin state
         paintTiles();
         paintChart();
         paintBrace();
@@ -2000,7 +2002,9 @@ function boot(root, data, callbacks, signal) {
     if (top().k === 'factors') queueScrollTop = el('level').scrollTop;
     filterOpen = false;
     pendingFocus = 'level';
-    dir = 'push'; stack.push(frame); shownRows = EVIDENCE_CAP; paint();
+    dir = 'push'; stack.push(frame);
+    drilledChartId = drilledChartIdForFrame(frame, currentTileDescriptors());
+    shownRows = EVIDENCE_CAP; paint();
   };
   const popTo = (i) => {
     ++caseGeneration;
@@ -2008,8 +2012,10 @@ function boot(root, data, callbacks, signal) {
     pendingKey = null;
     filterOpen = false;
     pendingFocus = pendingRowFocus(stack[1]);
-    if (i === 0) drilledChartId = null;
-    dir = 'pop'; stack.length = i + 1; paint();
+    const popped = popInspector(stack, i, currentTileDescriptors());
+    stack.splice(0, stack.length, ...popped.stack);
+    drilledChartId = popped.drilledChartId;
+    dir = 'pop'; paint();
   };
 
   function findingRowFor(frame) {
@@ -2057,14 +2063,11 @@ function boot(root, data, callbacks, signal) {
       fullscreen = null;
     }
     seatingPolicyKey = null;
-    if (drilledChartId) {
-      const descriptor = chartDescriptor(drilledChartId);
-      if (!descriptor) drilledChartId = null;
-    }
-    stack[0] = { k: nextMode === 'explore' ? 'explore' : 'factors' };
-    if (!drilledChartId) {
-      stack.splice(1);
-    }
+    const normalized = inspectorStackForMode(
+      nextMode, stack, drilledChartId, currentTileDescriptors(),
+    );
+    stack.splice(0, stack.length, ...normalized);
+    drilledChartId = drilledChartIdForFrame(top(), currentTileDescriptors());
     reconcileTileDescriptors();
     paint();
   }
@@ -2325,11 +2328,9 @@ function boot(root, data, callbacks, signal) {
     if (!host) return;
     disposeTiles();
     const byId = new Map(tileDescriptors.map((descriptor) => [descriptor.chartId, descriptor]));
-    /* A SEAT WITHOUT A DESCRIPTOR IS NOT A TILE. Placement is mechanical and
-       knows only chart ids, so a chart id that outlived its descriptor — a pin
-       whose row the current generation stopped publishing — would otherwise be
-       seated and painted from nothing. It is dropped here instead, which is the
-       same clean unpin reconciliation performs. */
+    /* A SEAT WITHOUT A DESCRIPTOR IS NOT A TILE. Reconciliation gives a pin
+       whose row vanished a named empty descriptor; this last filter only keeps
+       the mechanical placement seam from ever painting an unknown chart id. */
     const seats = (fullscreen
       ? [{ chartId: fullscreen.chartId, seat: 'focal',
         pinned: canvasLayout.pins.includes(fullscreen.chartId) }]
@@ -2364,7 +2365,7 @@ function boot(root, data, callbacks, signal) {
       title.textContent = entry.name;
       const meta = document.createElement('span');
       meta.className = 'tile-meta';
-      meta.textContent = entry.meta(descriptor.mode);
+      meta.textContent = canvasMode === 'explore' ? 'measured evidence' : entry.meta(descriptor.mode);
       const state = document.createElement('span');
       state.className = 'tile-state-name';
       state.textContent = descriptor.state;
@@ -2466,6 +2467,7 @@ function boot(root, data, callbacks, signal) {
             const option = optionForDescriptor(
               descriptor, DIAGNOSE_EVIDENCE_CHARTS, sharedGlucoseRange, {
               mini: seat.seat !== 'focal', window: scopeWindow(),
+              presentation: advisoryPresentation(canvasMode),
               },
             );
             const evidenceChart = window.echarts.init(chartHost, null, { renderer: 'canvas' });
@@ -2810,7 +2812,12 @@ function boot(root, data, callbacks, signal) {
       ? queueMeta(findings, selectedChips, eventChartsOnly)
       : f.k === 'history' ? `${f.row.support} meal run${f.row.support === 1 ? '' : 's'}`
       : f.k === 'explore' ? 'Advice off'
-      : f.k === 'chart' ? 'Evidence endpoint'
+      : f.k === 'chart' ? ({
+        basal: 'Nights of steady data',
+        isf: 'Rest windows',
+        'carb-ratio': 'Meal runs',
+        'event-comparison': 'Response comparison',
+      }[chartDescriptor(f.chartId)?.kind] || 'Measured evidence')
       : f.k === 'factor'
         ? (f.caseFile
           ? `${f.caseFile.summary.claimed} of ${f.caseFile.summary.denominator} · ${f.caseFile.window.label || '24 h'}`
@@ -2846,6 +2853,15 @@ function boot(root, data, callbacks, signal) {
         <div class="slot-head"><span class="time">Explore</span><span class="verdict">Advice off</span></div>
         <p>Choose a chart to read its measured evidence. Rankings, recommendations and staging are hidden.</p>
       </div>`);
+      return;
+    }
+    if (canvasMode === 'explore' && ['slot', 'block', 'isf'].includes(f.k)) {
+      const descriptor = chartDescriptor(
+        drilledChartIdForFrame(f, currentTileDescriptors()),
+      );
+      const entry = chartEntry(descriptor);
+      if (descriptor && entry) renderParameterEvidenceDetail(host, descriptor, entry);
+      else host.insertAdjacentHTML('beforeend', '<div class="empty">Measured evidence is not available in this window.</div>');
       return;
     }
     if (f.k === 'chart') {
@@ -3365,9 +3381,10 @@ function boot(root, data, callbacks, signal) {
       pendingKey = null;
       filterOpen = false;
       pendingFocus = pendingRowFocus(stack[1]);
-      if (stack.length === 2) drilledChartId = null;
+      const popped = popInspector(stack, stack.length - 2, currentTileDescriptors());
+      stack.splice(0, stack.length, ...popped.stack);
+      drilledChartId = popped.drilledChartId;
       dir = 'pop';
-      stack.pop();
       paint();
       return;
     }

@@ -277,7 +277,7 @@ test('a stale generation recovers through the real tile pipeline, and the pin ho
   }
 });
 
-test('a pinned chart whose row a new generation drops leaves the field without crashing', async () => {
+test('reconcileTileDescriptors retains a pinned chart whose next slice drops its row', async () => {
   const browser = await runner.browser();
   let served = 0;
   let droppedId = null;
@@ -310,16 +310,72 @@ test('a pinned chart whose row a new generation drops leaves the field without c
     await page.waitForTimeout(1800);
 
     const field = await readField(page);
-    assert.equal(field.tiles.some((tile) => tile.chartId === victim.chartId), false,
-      'the vanished row leaves the field rather than being seated with no descriptor');
-    assert.equal(field.pinCount, `0/${PIN_CAP} pinned`, 'the pin comes off cleanly');
-    assert.equal(field.arrangement, arrangementFor(0),
-      'the arrangement follows the pin count back down');
+    const retained = field.tiles.find((tile) => tile.chartId === victim.chartId);
+    assert.ok(retained, 'the vanished row keeps its pinned tile through reconciliation');
+    assert.equal(retained.pinned, true, 'the recommendation never evicts the pin');
+    assert.equal(retained.state, 'empty', 'the retained tile names its degraded state');
+    assert.equal(retained.body, 'Pinned chart is not in the current findings.',
+      'the degraded tile explains why its measured evidence is absent');
+    assert.equal(field.pinCount, `1/${PIN_CAP} pinned`, 'the reader-owned pin remains counted');
+    assert.equal(field.arrangement, arrangementFor(1),
+      'the arrangement continues to derive from the retained pin');
     for (const tile of field.tiles) {
       assert.ok(['ok', 'empty', 'error', 'stale-generation'].includes(tile.state),
         `every surviving tile still names its state, got ${tile.state}`);
     }
     assert.deepEqual(errors, [], 'the repaint does not throw');
+  } finally {
+    await page.close();
+  }
+});
+
+test('Explore collapses a drilled parameter slot and exposes no staging path', async () => {
+  const browser = await runner.browser();
+  const { page, errors } = await openCanvas(browser);
+  try {
+    const basal = page.locator('.evidence-tile[data-chart-id^="basal:"]').first();
+    await basal.click();
+    await page.locator('#lane button[data-verdict="up"]').first().click();
+    assert.equal(await page.locator('#level .stagebtn').count(), 1,
+      'the reproducer reaches a live Findings staging control');
+
+    await page.getByRole('button', { name: 'Explore', exact: true }).click();
+    assert.equal(await page.locator('#level .stagebtn').count(), 0,
+      'Explore removes the staging control at the same inspector depth');
+    assert.equal(await page.locator('#level').getByText('Recommended', { exact: true }).count(), 0,
+      'Explore removes recommendation copy from the drilled inspector');
+    assert.equal(await page.locator('#level .chart-evidence-detail').count(), 1,
+      'the drilled parameter chart returns to its measured evidence detail');
+    assert.equal(await page.locator('#crumb-meta').textContent(), 'Nights of steady data',
+      'the inspector names its evidence in domain language');
+    assert.deepEqual(errors, [], 'the mode transition throws nothing into the page');
+  } finally {
+    await page.close();
+  }
+});
+
+test('Backspace return restores provenance to the chart owning the finding frame', async () => {
+  const browser = await runner.browser();
+  const { page, errors } = await openCanvas(browser);
+  try {
+    const behavioral = page.locator('.evidence-tile[data-chart-id^="finding:"]').first();
+    const behavioralId = await behavioral.getAttribute('data-chart-id');
+    await behavioral.click();
+    const behavioralProvenance = await page.locator('#drill-provenance').textContent();
+
+    const basalId = await page.locator('.evidence-tile[data-chart-id^="basal:"]').first()
+      .getAttribute('data-chart-id');
+    const basalSlot = Number(basalId.split(':')[1].split('-')[0]) / 30;
+    await page.locator('#lane button').nth(basalSlot).click();
+    const parameterId = await page.locator('.evidence-tile[data-drilled]').getAttribute('data-chart-id');
+    assert.ok(parameterId?.startsWith('basal:'), 'the slot inspector marks its basal chart');
+
+    await page.keyboard.press('Backspace');
+    assert.equal(await page.locator('#drill-provenance').textContent(), behavioralProvenance,
+      'the returned finding frame restores its own chart name');
+    assert.equal(await page.locator('.evidence-tile[data-drilled]').getAttribute('data-chart-id'),
+      behavioralId, 'the returned finding frame marks its own chart');
+    assert.deepEqual(errors, [], 'breadcrumb return throws nothing into the page');
   } finally {
     await page.close();
   }

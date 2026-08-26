@@ -142,8 +142,13 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
             cause_occurrence_id = None
             if lever == Lever.MEAL_BOLUS_SHORT.value:
                 policy = policy_for(lever)
+                # The implicated meal is the one the classifier judged, and it judged
+                # the rise ONSET (`attribution.trigger_t`), never the peak this anchor
+                # sits at. A second eligible meal can land between the two, and keying
+                # on the anchor then names a meal the classifier's digestion window had
+                # excluded — a different occurrence from the one the engine grouped.
                 cause_occurrence_id = policy.occurrence_for_episode(
-                    episode["id"], window_bolus, source_anchor.t,
+                    episode["id"], window_bolus, attribution.trigger_t,
                     scenario_config=scenario_config,
                 )
             cause_title = title(Lever(lever)) if lever is not None else None

@@ -275,8 +275,11 @@ def _population(
             continue
         policy = policy_for(attr.lever)
         if policy.recurrence_family is None:
+            # The rise onset the classifier judged, not the driver anchor's peak —
+            # see the same note in `explore_exposures`. These associations are checked
+            # against the engine's occurrence groups, so a second key disagrees.
             occurrence_id = policy.occurrence_for_episode(
-                str(index), filtered_bolus, attr.driver_anchor.t,
+                str(index), filtered_bolus, attr.trigger_t,
                 scenario_config=config,
             )
             served_id = _opaque("m_", occurrence_id)

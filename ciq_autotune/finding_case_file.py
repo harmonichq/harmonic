@@ -539,13 +539,13 @@ def _event(lever, roster, claimed_ids, cgm, bolus, source_window_days, basal=())
     lever claims therefore remain ordinary comparison members.
     """
     window = _comparison_window(lever, roster)
+    policy = policy_for(lever)
     matched = ([member for member in roster if member.id in claimed_ids]
-               if lever is Lever.MISSED_MEAL else
+               if policy.cross_population else
                [member for member in roster if member.verdict == "fired"])
     near = [member for member in roster if member.verdict == "near_miss"]
     matched_ids = {member.id for member in matched}
     near = [member for member in near if member.id not in matched_ids]
-    policy = policy_for(lever)
     cross_exposure = policy.cross_population
     if cross_exposure:
         comparison_rows = _completed_carb_boluses(bolus, cgm, basal, source_window_days)

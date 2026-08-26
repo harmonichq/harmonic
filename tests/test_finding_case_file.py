@@ -104,6 +104,32 @@ def test_all_eight_levers_publish_one_exact_case_file_population(lever):
     assert case["selection"] == {"state": "none", "requested_id": None, "detail": None}
 
 
+@pytest.mark.parametrize(("lever", "family", "noun", "denominator", "comparison_name",
+                          "cross_population"), [
+    (Lever.CARB_UNDERCOUNT, "meals", "meals", 1, "Other meal opportunities", False),
+    (Lever.LATE_BOLUS, "meals", "meals", 1, "Other meal opportunities", False),
+    (Lever.MEAL_OVER_DELIVERY, "meals", "meals", 1, "Other meal opportunities", False),
+    (Lever.OVER_TREATED_LOW, "lows", "lows", 1, "Other low excursions", False),
+    (Lever.CORRECTION_ON_IOB, "lows", "lows", 1, "Other low excursions", False),
+    (Lever.CORRECTION_STACKING, "correction_clusters", "correction clusters", 1,
+     "Other back-to-back correction pairs", False),
+    (Lever.MISSED_MEAL, "highs", "highs", 1, "Completed carb-bolus meals", True),
+    (Lever.MEAL_BOLUS_SHORT, "meals", "meals", 1,
+     "Other completed carb-bolus meals", False),
+])
+def test_served_case_shape_matches_the_eight_lever_audit_table(
+    lever, family, noun, denominator, comparison_name, cross_population,
+):
+    case = _prepared(lever).case(f"finding:{lever.value}", "event", None)
+
+    assert (case["family"], case["summary"]["noun"],
+            case["summary"]["denominator"],
+            case["projection"]["comparison"]["name"],
+            case["cross_population"]) == (
+                family, noun, denominator, comparison_name, cross_population,
+            )
+
+
 def test_case_file_consumes_the_authoritative_verdict_order(monkeypatch):
     reordered = tuple(reversed(findings_projection.FINDING_VERDICTS))
     monkeypatch.setattr(findings_projection, "FINDING_VERDICTS", reordered)

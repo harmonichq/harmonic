@@ -7,8 +7,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   DOCK_FLOOR, MINI_FLOOR, SPOTLIGHT_FLOOR, dismissRaisedDock, dockView,
-  isDrilledSpotlight,
+  isDrilledSpotlight, popInspector,
 } from './diagnose-canvas-state.js';
+import { createCanvasLayout, placeSeats } from './diagnose-canvas-layout.js';
 
 test('the dock floor is the room a spotlight and a mini need to sit one above the other', () => {
   assert.equal(DOCK_FLOOR, SPOTLIGHT_FLOOR + MINI_FLOOR + 8);
@@ -57,6 +58,48 @@ test('a drill marks its spotlight but not the dock echo of the same chart', () =
     'the dock may echo the chart without duplicating its drilled mark');
   assert.equal(isDrilledSpotlight({ seat: 'focal' }, 'basal', 'isf'), false);
   assert.equal(isDrilledSpotlight({ seat: 'focal' }, 'isf', null), false);
+});
+
+/* RETURNING FROM A DEEPER DRILL MUST RE-SEAT THE FOCAL CHART, NOT JUST NAME IT.
+   `popInspector` only resolves which chart the returned frame owns; the mark
+   survives only if that chart is ALSO given the focal seat before `placeSeats`
+   runs. A caller that updates the drilled id but leaves a stale focal id in
+   place (the Backspace regression this pins) strands the mark on nothing:
+   the stale focal chart doesn't match the new drilled id, and the newly
+   drilled chart never reaches the focal seat to be checked at all. */
+test('a returned frame keeps its drill mark only when its chart retakes the focal seat', () => {
+  const descriptors = [
+    { chartId: 'finding:over_treated_low', kind: 'event-comparison' },
+    { chartId: 'basal:0-30', kind: 'basal', coordinates: { slot: 0 } },
+  ];
+  const stack = [
+    { k: 'factors' },
+    { k: 'factor', rowId: 'finding:over_treated_low' },
+    { k: 'slot', cell: { i: 0 } },
+  ];
+  const popped = popInspector(stack, 1, descriptors);
+  assert.equal(popped.drilledChartId, 'finding:over_treated_low',
+    'the returned factor frame owns the finding chart, not the slot chart left behind');
+
+  const candidateIds = ['finding:over_treated_low'];
+
+  const staleLayout = createCanvasLayout({ focalId: 'basal:0-30', pins: [] });
+  const stalePlaced = placeSeats([...new Set([...candidateIds, staleLayout.focalId])], staleLayout);
+  const staleMarks = stalePlaced.filter((seat) => isDrilledSpotlight(
+    seat, seat.chartId, popped.drilledChartId,
+  ));
+  assert.deepEqual(staleMarks, [],
+    'a focal id left over from the deeper drill strands the mark on nothing');
+
+  const refocusedLayout = createCanvasLayout({ focalId: popped.drilledChartId, pins: [] });
+  const refocusedPlaced = placeSeats(
+    [...new Set([...candidateIds, refocusedLayout.focalId])], refocusedLayout,
+  );
+  const refocusedMarks = refocusedPlaced.filter((seat) => isDrilledSpotlight(
+    seat, seat.chartId, popped.drilledChartId,
+  ));
+  assert.deepEqual(refocusedMarks.map((seat) => seat.chartId), ['finding:over_treated_low'],
+    're-seating the returned chart as focal restores exactly its own mark');
 });
 
 test('an unknown want is refused rather than silently resolved', () => {

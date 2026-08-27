@@ -3799,16 +3799,7 @@ function boot(root, data, callbacks, signal) {
     const f = top();
     if (ev.key === 'Backspace' && stack.length > 1) {
       ev.preventDefault();
-      ++caseGeneration;
-      ++historyRequestGeneration;
-      pendingKey = null;
-      filterOpen = false;
-      pendingFocus = pendingRowFocus(stack[1]);
-      const popped = popInspector(stack, stack.length - 2, currentTileDescriptors());
-      stack.splice(0, stack.length, ...popped.stack);
-      drilledChartId = popped.drilledChartId;
-      dir = 'pop';
-      paint();
+      popTo(stack.length - 2);
       return;
     }
     if (f.k !== 'factor' || !f.selectedId

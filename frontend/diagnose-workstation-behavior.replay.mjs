@@ -3700,6 +3700,25 @@ const SANCTION_DRILL_WORD = 'sanction: Connor Griffin · 2026-08-26 · "The ring
 // STORY:finding-evidence-routing:S113
 export const S113 = retiredStory('S113');
 
+/* An explicit focus outranks rank-only seating. A Watching chart is not ranked,
+   but selecting its tail cell promotes it to the spotlight without removing the
+   cell the filmstrip uses to keep the current frame in view. */
+// STORY:finding-evidence-routing:S114
+export const S114 = async (page) => {
+  await openCanvas(page);
+  const tail = page.locator('#tile-row .evidence-tile[data-tail-head]').first();
+  const chartId = await tail.getAttribute('data-chart-id');
+  ok(Boolean(chartId), 'S114 the dock publishes a Watching tail chart');
+  await tail.click();
+  await page.locator(`#tile-focal .evidence-tile[data-chart-id="${chartId}"]`).waitFor();
+  is(await page.locator(`#tile-row .evidence-tile[data-chart-id="${chartId}"]`).count(), 1,
+    'S114 the promoted Watching chart keeps one strip cell');
+  is(await page.locator(`#tile-row .evidence-tile[data-chart-id="${chartId}"]`)
+    .getAttribute('data-selected'), '', 'S114 the promoted Watching cell is selected');
+  is(await page.locator('#tile-row .evidence-tile[data-selected]').count(), 1,
+    'S114 the strip has one selected current frame');
+};
+
 export const STORIES = [
   ['S01', S01, 'drawn'], ['S02', S02, 'typical'], ['S03', S03, 'drawn'],
   ['S04', S04, 'drawn'], ['S05', S05, 'drawn'], ['S06', S06, 'typical'],
@@ -3859,6 +3878,7 @@ export const STORIES = [
   ['S110', S110, 'typical'], ['S111', S111, 'typical'],
   ['S112', S112, 'typical', { viewport: { width: 390, height: 844 } }],
   ['S113', S113, 'typical'],
+  ['S114', S114, 'typical'],
   ['C41', C41, 'typical', { caseScenario: {
     preparation: generatedFindingPose('finding:meal_over_delivery'),
   } }], ['C42', C42, 'typical'],

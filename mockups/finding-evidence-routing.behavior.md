@@ -11,7 +11,7 @@ S41-S71.
 The app-only replay is
 `frontend/diagnose-workstation-behavior.replay.mjs`.
 
-**133 issued executable IDs:** S01–S113, C41–C57, and D1–D3
+**134 issued executable IDs:** S01–S114, C41–C57, and D1–D3
 **Active executable IDs:** all issued
 **Retired executable IDs:** none
 
@@ -2689,3 +2689,11 @@ it is reading in `#drill-provenance`, unchanged.
 
 The old replay failed first with `expected 1, got 0`; the revised replay then
 passed.
+
+## Revision amendment — 2026-08-27 (Watching-tail promotion retention)
+
+S114 covers the corrected filmstrip transition. Selecting a Watching-tail chart
+promotes it to the spotlight even though it is not ranked; that promoted chart
+keeps exactly one strip cell, and that cell is the strip's one selected current
+frame. The story drives the tail cell through the shipped canvas and asserts all
+three observations after the promotion.

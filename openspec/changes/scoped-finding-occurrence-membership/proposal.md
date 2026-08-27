@@ -9,8 +9,8 @@ those times cross a window boundary, preparation fails with
 
 ## What changes
 
-- Use the existing Finding-relative outcome rule in the custom recurrence
-  case-file path.
+- Use the latest Finding-relative High outcome across episodes representing the
+  same eligible meal, with the meal time as fallback.
 - Add a synthetic public-endpoint regression for the boundary case.
 - Preserve genuine `inconsistent_projection` failures and all classifier and
   recurrence behavior.

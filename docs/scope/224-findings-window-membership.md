@@ -32,3 +32,10 @@ None.
   then found two further `authoring` test gaps: exercise multiple matching High
   anchors, and require the aggregate probe to clear the nonfatal 08:00–12:00
   mismatch as well as the two failed preparations. Both are now explicit.
+- Round 3 found two `authoring` interface gaps: the regression must compare the
+  separate Findings queue endpoint with the retained case roster, and it must
+  preserve maximum consequence time while several episodes coalesce into one meal
+  occurrence. Both were added to the same regression. A request to append raw
+  snapshot command/output evidence was rejected: the reproducible aggregate probe
+  is tracked, the result is summarized in the order, and private-data evidence
+  remains local.

@@ -184,3 +184,10 @@ export function dockView(fieldHeight, wanted = 'docked') {
     acts: [wanted === 'hidden' ? 'up' : 'hide', 'explore'],
   };
 }
+
+/** Attention leaving a raised dock puts it away; a seated or hidden dock stays
+    in the state the reader chose. Both a spotlight click and a finding drill
+    use this transition (ADR 215). */
+export function dismissRaisedDock(wanted, fieldHeight) {
+  return dockView(fieldHeight, wanted).raised ? 'hidden' : wanted;
+}

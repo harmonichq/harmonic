@@ -6,7 +6,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  DOCK_FLOOR, MINI_FLOOR, SPOTLIGHT_FLOOR, dockView,
+  DOCK_FLOOR, MINI_FLOOR, SPOTLIGHT_FLOOR, dismissRaisedDock, dockView,
 } from './diagnose-canvas-state.js';
 
 test('the dock floor is the room a spotlight and a mini need to sit one above the other', () => {
@@ -42,6 +42,12 @@ test('a dock raised in a short field is marked raised, and never is in a tall on
   assert.equal(dockView(DOCK_FLOOR, 'docked').raised, false);
   assert.equal(dockView(DOCK_FLOOR - 1, 'hidden').raised, false,
     'a hidden dock has nothing to float');
+});
+
+test('moving attention to a drill or the spotlight dismisses only a raised dock', () => {
+  assert.equal(dismissRaisedDock('docked', DOCK_FLOOR - 1), 'hidden');
+  assert.equal(dismissRaisedDock('docked', DOCK_FLOOR), 'docked');
+  assert.equal(dismissRaisedDock('hidden', 150), 'hidden');
 });
 
 test('an unknown want is refused rather than silently resolved', () => {

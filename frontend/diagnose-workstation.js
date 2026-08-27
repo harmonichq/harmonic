@@ -39,7 +39,7 @@ import {
 } from './diagnose-canvas-layout.js';
 import {
   DOCK_FLOOR,
-  dismissFullscreen, dockView, drilledChartIdForFrame,
+  dismissFullscreen, dismissRaisedDock, dockView, drilledChartIdForFrame,
   enterFullscreen, inspectorStack,
   popInspector, reconcileTileDescriptors as reconcileCanvasDescriptors,
   recommendedFocalId, rosterChartIds, seatableChartIds, untraceDrill,
@@ -2064,6 +2064,7 @@ function boot(root, data, callbacks, signal) {
       guessed from a title. A row whose parameter this payload cannot show keeps its
       chevron and simply does not move (the app always carries all three). */
   function drillFinding(row) {
+    dockWant = dismissRaisedDock(dockWant, fieldHeight);
     if (row.register === 'history') {
       retirementNotice = null;
       push({
@@ -2973,7 +2974,7 @@ function boot(root, data, callbacks, signal) {
           focusChart(descriptor.chartId);
           explorerOpen = false;
         } else if (dock.raised && seat.seat === 'focal') {
-          dockWant = 'hidden';
+          dockWant = dismissRaisedDock(dockWant, fieldHeight);
         }
         showChartInspector(descriptor);
         paintTiles();

@@ -2592,6 +2592,26 @@ entry erases or weakens the other.
   sanction: Connor Griffin · 2026-08-26 · “rewrite their openers off the retired global 'By event' control onto the successor UI (the canvas's per-tile alignment / the case-file-backed comparison tile), preserving what those legs actually verify — the comparison's population semantics and the support audit's assertions.”
 - **RETIRED event-comparison replay S12 keyboard clause · final gate reconciliation.** Its server-owned downgrade, median, spread and legend assertions remain living; only the keyboard point-count clause retires with the global comparison cursor.
   sanction: Connor Griffin · 2026-08-26 · “rewrite their openers off the retired global 'By event' control onto the successor UI (the canvas's per-tile alignment / the case-file-backed comparison tile), preserving what those legs actually verify — the comparison's population semantics and the support audit's assertions.”
+- **RETIRED S92 · ADR 215 amendment.** Focus no longer swaps charts through fixed seats; promoting a chart leaves the dock's ordered set sorted.
+  sanction: ADR 215 amendment · 2026-08-26 · “A pin orders the dock; it is not membership of a position.”
+- **RETIRED S93 · ADR 215 amendment.** The zero-pin focal-plus-strip arrangement belonged to the withdrawn five-arrangement map.
+  sanction: ADR 215 amendment · 2026-08-26 · “A pin orders the dock; it is not membership of a position.”
+- **RETIRED S94 · ADR 215 amendment.** The one-pin split arrangement belonged to the withdrawn five-arrangement map.
+  sanction: ADR 215 amendment · 2026-08-26 · “A pin orders the dock; it is not membership of a position.”
+- **RETIRED S95 · ADR 215 amendment.** The two-pin stacked-pair arrangement belonged to the withdrawn five-arrangement map.
+  sanction: ADR 215 amendment · 2026-08-26 · “A pin orders the dock; it is not membership of a position.”
+- **RETIRED S96 · ADR 215 amendment.** The three-pin one-plus-two arrangement belonged to the withdrawn five-arrangement map.
+  sanction: ADR 215 amendment · 2026-08-26 · “A pin orders the dock; it is not membership of a position.”
+- **RETIRED S97 · ADR 215 amendment.** The four-pin quad arrangement belonged to the withdrawn five-arrangement map.
+  sanction: ADR 215 amendment · 2026-08-26 · “A pin orders the dock; it is not membership of a position.”
+- **RETIRED S98 · ADR 215 amendment.** A pin is never refused: the withdrawn cap cannot govern the ordered dock.
+  sanction: ADR 215 amendment · 2026-08-26 · “A pin orders the dock; it is not membership of a position.”
+- **RETIRED S99 · ADR 215 amendment.** Candidates no longer occupy derived available seats; the dock is the whole ordered set.
+  sanction: ADR 215 amendment · 2026-08-26 · “A pin orders the dock; it is not membership of a position.”
+- **RETIRED S101 · ADR 215 amendment.** Independently seated chart alignments belonged to the withdrawn fixed arrangement map.
+  sanction: ADR 215 amendment · 2026-08-26 · “A pin orders the dock; it is not membership of a position.”
+- **RETIRED S113 · ADR 215 amendment.** A chart may appear in both the spotlight and its dock cell; distinct live tile names and focal seating are no longer a contract.
+  sanction: ADR 215 amendment · 2026-08-26 · “The dock is the whole ordered set, spotlight included.”
 
 ### Permanent successor rewrites — final issue 135 reconciliation
 
@@ -2610,16 +2630,7 @@ entry erases or weakens the other.
 
 ### Added frozen stories — issue 135
 
-S92 · Focus swaps only on chart selection; the demoted chart lands in the selected chart's former seat, and the reverse swap restores both destinations. Evidence: replay S92 plus both transition renders.
-S93 · Zero pins derives the focal-plus-strip arrangement. Evidence: replay S93.
-S94 · One pin derives the fifty-fifty split arrangement. Evidence: replay S94.
-S95 · Two pins derive the stacked-pair arrangement. Evidence: replay S95.
-S96 · Three pins derive the one-plus-two arrangement. Evidence: replay S96.
-S97 · Four pins derive the quad arrangement. Evidence: replay S97.
-S98 · A fifth pin is refused at the control and all four pins remain intact. Evidence: replay S98.
-S99 · Live unpinned candidates seat into available positions without becoming pins. Evidence: replay S99.
 S100 · Capacity drops a surplus candidate from the field while every reader-owned pin stays seated. Evidence: replay S100.
-S101 · Two chart tiles hold different alignments at the same time. Evidence: replay S101.
 S102 · Every glucose-bearing chart in one arrangement receives one shared glucose range. Evidence: replay S102.
 S103 · A successful evidence read renders the named `ok` tile state. Evidence: replay S103.
 S104 · An evidence read with no plottable values renders the named `empty` tile state and explanation. Evidence: replay S104.
@@ -2630,8 +2641,6 @@ S108 · Dismissing temporary fullscreen restores the exact prior focal chart, se
 S109 · Explore extinguishes rankings, recommendations, verdict marks and staging while reader-owned pins retain their accent. Evidence: replay S109.
 S110 · A drill names and marks its owning chart in Findings and Explore. Evidence: replay S110.
 S111 · Clear trace returns to the untraced case view without closing the owning chart drill. Evidence: replay S111.
-S112 · At the narrow viewport the canvas linearizes into one column, leads the reading order with the FOCAL tile whichever pin it is, and removes unpinned slot charts from reading order. Evidence: replay S112.
-S113 · Drilling a behavioural finding seats that finding's own response comparison in the focal seat, marks the owning chart, leaves no two live charts identically named, and does not deepen the path when the same finding is drilled again. Evidence: replay S113.
 
 ### AMENDED — S112, the narrow reading order (#135 fix round, 2026-08-26)
 

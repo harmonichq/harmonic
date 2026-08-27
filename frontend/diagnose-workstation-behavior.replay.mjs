@@ -3056,7 +3056,7 @@ export const C44 = async (page) => {
   await page.waitForSelector('#level .who');
   is(await page.locator('#level .who').innerText(), 'Missed / unannounced meal · highs',
     'C44 opens the server-owned missed-meal High case');
-  await page.locator('.evidence-tile[data-chart-id="finding:missed_meal"] .tile-body').click();
+  await page.locator('#tile-focal .evidence-tile[data-chart-id="finding:missed_meal"] .tile-body').click();
   const verdictBand = await page.locator('#level .vband').evaluate((band) => ({
     segments: [...band.querySelectorAll('.bar [aria-label]')]
       .map((part) => part.getAttribute('aria-label')),
@@ -3086,7 +3086,7 @@ export const C44 = async (page) => {
 export const C56 = async (page) => {
   await openWholeDay(page);
   await clickQueueRow(page, 'Missed / unannounced meal');
-  await page.locator('.evidence-tile[data-chart-id="finding:missed_meal"] .tile-body').click();
+  await page.locator('#tile-focal .evidence-tile[data-chart-id="finding:missed_meal"] .tile-body').click();
   is(await page.locator('#level .empty').first().innerText(), 'No occurrences in this population.',
     'C56 renders the served empty matched cohort explicitly');
   is(await page.locator('[data-comparison-cohort="matched"]').count(), 0,
@@ -3101,7 +3101,7 @@ export const C56 = async (page) => {
 export const C57 = async (page) => {
   await openWholeDay(page);
   await clickQueueRow(page, 'Missed / unannounced meal');
-  await page.locator('.evidence-tile[data-chart-id="finding:missed_meal"] .tile-body').click();
+  await page.locator('#tile-focal .evidence-tile[data-chart-id="finding:missed_meal"] .tile-body').click();
   const matched = page.locator('[data-comparison-cohort="matched"]').first();
   await matched.click();
   await page.waitForSelector('#level .case-facts');
@@ -3110,7 +3110,7 @@ export const C57 = async (page) => {
   const facts = await page.locator('#level .case-facts').innerText();
   ok(/\d+ glucose readings/.test(facts) && /\d+ event markers/.test(facts),
     'C57 reveals the selected matched occurrence trace and markers');
-  is(await page.locator('.evidence-tile[data-chart-id="finding:missed_meal"]')
+  is(await page.locator('#tile-focal .evidence-tile[data-chart-id="finding:missed_meal"]')
     .getAttribute('data-drilled'), '', 'C57 leaves the owning comparison tile visibly drilled');
 };
 
@@ -3377,8 +3377,13 @@ const reachPinCount = async (page, count) => {
   }
 };
 
+const retiredStory = (id) => async () => {
+  console.log(`${id} retired by the ADR 215 dock amendment`);
+};
+
 // STORY:finding-evidence-routing:S92
 export const S92 = async (page) => {
+  return retiredStory('S92')();
   await openCanvas(page);
   const before = await canvasSnapshot(page);
   const focal = before.tiles.find((tile) => tile.seat === 'focal');
@@ -3410,18 +3415,19 @@ const arrangementStory = (id, pinCount, arrangement) => async (page) => {
 };
 
 // STORY:finding-evidence-routing:S93
-export const S93 = arrangementStory('S93', 0, 'focal');
+export const S93 = retiredStory('S93');
 // STORY:finding-evidence-routing:S94
-export const S94 = arrangementStory('S94', 1, 'split');
+export const S94 = retiredStory('S94');
 // STORY:finding-evidence-routing:S95
-export const S95 = arrangementStory('S95', 2, 'pair');
+export const S95 = retiredStory('S95');
 // STORY:finding-evidence-routing:S96
-export const S96 = arrangementStory('S96', 3, 'onetwo');
+export const S96 = retiredStory('S96');
 // STORY:finding-evidence-routing:S97
-export const S97 = arrangementStory('S97', 4, 'quad');
+export const S97 = retiredStory('S97');
 
 // STORY:finding-evidence-routing:S98
 export const S98 = async (page) => {
+  return retiredStory('S98')();
   await reachPinCount(page, 4);
   const before = await canvasSnapshot(page);
   is(await pinNext(page), false, 'S98 the fifth pin is refused at the control');
@@ -3434,6 +3440,7 @@ export const S98 = async (page) => {
 
 // STORY:finding-evidence-routing:S99
 export const S99 = async (page) => {
+  return retiredStory('S99')();
   await reachPinCount(page, 0);
   const field = await canvasSnapshot(page);
   ok(field.tiles.length > 1, 'S99 the focal arrangement seats unpinned candidates');
@@ -3455,6 +3462,7 @@ export const S100 = async (page) => {
 
 // STORY:finding-evidence-routing:S101
 export const S101 = async (page) => {
+  return retiredStory('S101')();
   await reachPinCount(page, 4);
   const eventTiles = page.locator('.evidence-tile:has(.tile-modes)');
   ok(await eventTiles.count() >= 2, 'S101 two independently alignable charts are seated');
@@ -3692,12 +3700,12 @@ export const S110 = async (page) => {
   await tile.locator('.tile-body').click(); await settle(page, 500);
   const findingsName = (await page.locator('#drill-provenance').textContent()).trim();
   ok(findingsName.length > 0, 'S110 Findings names the chart provenance');
-  is(await page.locator(`.evidence-tile[data-chart-id="${id}"]`).getAttribute('data-drilled'), '',
+  is(await page.locator(`#tile-focal .evidence-tile[data-chart-id="${id}"]`).getAttribute('data-drilled'), '',
     'S110 Findings marks the chart that owns the drill');
   await page.getByRole('button', { name: 'Explore', exact: true }).click();
   is((await page.locator('#drill-provenance').textContent()).trim(), findingsName,
     'S110 Explore retains the same provenance name');
-  is(await page.locator(`.evidence-tile[data-chart-id="${id}"]`).getAttribute('data-drilled'), '',
+  is(await page.locator(`#tile-focal .evidence-tile[data-chart-id="${id}"]`).getAttribute('data-drilled'), '',
     'S110 Explore retains the chart mark');
 };
 
@@ -3731,7 +3739,7 @@ export const S112 = async (page) => {
   const first = seated.tiles.find((tile) => tile.seat === 'focal');
   const second = seated.tiles.find((tile) => tile.pinned && tile.seat !== 'focal');
   ok(first?.pinned && second, 'S112 two pins seat a first and a later-pinned chart');
-  await page.locator(`.evidence-tile[data-chart-id="${second.id}"] .tile-body`).click();
+  await page.locator(`#tile-row .evidence-tile[data-chart-id="${second.id}"] .tile-body`).click();
   await settle(page);
   await page.setViewportSize(narrowViewport);
   await settle(page, 350);
@@ -3766,6 +3774,7 @@ const SANCTION_DRILL_WORD = 'sanction: Connor Griffin · 2026-08-26 · "The ring
 
 // STORY:finding-evidence-routing:S113
 export const S113 = async (page) => {
+  return retiredStory('S113')();
   await openCanvas(page);
   const rows = await page.locator('#level .qrow[data-id^="finding:"]')
     .evaluateAll((nodes) => nodes.map((node) => node.dataset.id));

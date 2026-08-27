@@ -381,11 +381,9 @@ html.dark .tile-field { background-color: var(--ck-field); }
    a fixed 145px band under it. Nothing derives a grid from a pin count. */
 .tile-field { grid-template-rows: minmax(0, 1fr) 145px; }
 .tile-focal { display: grid; min-width: 0; min-height: 0; }
-/* THE ROW SCROLLS AND THE SLICE IS THE AFFORDANCE. Three minis are legible at
-   rest; the fourth is deliberately cut by the field's edge, which says "there is
-   more here" with no fade, chevron or counter to maintain. `280px` is the floor
-   one mini needs to stay readable and the same figure the pane-width observer
-   drops the row at, so the row never draws a mini it has already judged
+/* THE ROW SCROLLS AS A STABLE THREE-CELL DOCK. `280px` is the floor one mini
+   needs to stay readable and the same figure the pane-width observer uses to
+   drop the row, so the canvas never draws a mini it has already judged
    illegible. */
 .tile-row {
   display: grid; grid-auto-flow: column;
@@ -869,26 +867,13 @@ html.dark .tile-field[data-raised] > .tile-row { background: color-mix(in srgb, 
     inset 0 0 0 1px var(--wk-rule-strong), var(--ck-cell-shadow);
 }
 /* ---- the lip, which is the control ------------------------------------
-   IT IS THE DOCK'S OWN TOP EDGE, not furniture parked near it. The tab this
-   replaces was 148px wide and centred, which put a fifth floating object on a
-   surface that already had too many and centred it on a canvas where every
-   other thing is left-aligned; it was also shaped like a browser tab, so it
-   read as a label rather than as something to take hold of.
+   The lip is the dock's own top edge, not furniture parked near it. It carries
+   the Charts label and its two explicit actions while its remaining width stays
+   the toggle target. In the hidden state that edge is the canvas floor; docked,
+   it sits directly above the filmstrip.
 
-   The lip runs the full width of the field, is knurled at the left where a grip
-   belongs, and carries the word and the act's glyph at either end of that run.
-   It rides the dock's top edge in both states — in the hidden state that edge is
-   the canvas floor — so it is attached to one object and moves because that
-   object moved, never hopping between unrelated edges.
-
-   THE WHOLE LIP IS THE TARGET. The tab was a container of buttons, so its word
-   was inert and only two 44px cells were pressable; a full-width 30px button is
-   a target no finger has to find, which is the tablet requirement the 30px
-   gutter was grown for in the first place.
-
-   IT IS A LIP, SO IT IS LIT LIKE ONE: the channel's own well material, a lit
-   line along its top face and the channel's edge under it. Nothing is drawn
-   over a chart in any state — the gutter is the lip's own height, exactly. */
+   The lip uses the slot-rail material and a crisp lower rule to separate the
+   control from the cells without drawing over either chart state. */
 /* WORDS LEFT, CONTROLS RIGHT — the rails' own convention, and the lip is one of
    the rails. Packed together at the left the cluster was a huddle of unlike
    marks in a field of empty band; split to the two ends they line up with the
@@ -1996,4 +1981,3 @@ html:not(.dark) .dw { --ck-well: var(--wk-surface-sunken); }
 /* Fullscreen is temporary canvas state, not a parallel pane composition. It
    borrows the fullscreen header and body rows above; `data-fullscreen-tile`
    owns only the one-chart field geometry. */
-

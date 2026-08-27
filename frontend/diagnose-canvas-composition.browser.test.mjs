@@ -271,8 +271,8 @@ test('drilling a behavioural finding seats that finding\'s own comparison, marke
       document.querySelector('.evidence-tile:not([data-drilled]) .tile-rail'),
     ).backgroundColor),
     `a rail keeps one ground drilled or not — ${RETIRED_RAIL_WELL_SANCTION}`);
-    assert.ok(drilled.tiles.filter((tile) => tile.drilled).length >= 1,
-      'the current frame is visibly drilled wherever it is rendered');
+    assert.equal(drilled.tiles.filter((tile) => tile.drilled).length, 1,
+      'only the spotlighted current frame carries the drill');
     assert.equal(drilled.tiles.filter((tile) => tile.drilled && tile.chartId !== target).length, 0,
       'no chart besides the current frame claims the drill');
     assert.equal(new Set(drilled.row.map(({ title }) => title)).size, drilled.row.length,

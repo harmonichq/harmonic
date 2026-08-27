@@ -7,6 +7,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   DOCK_FLOOR, MINI_FLOOR, SPOTLIGHT_FLOOR, dismissRaisedDock, dockView,
+  isDrilledSpotlight,
 } from './diagnose-canvas-state.js';
 
 test('the dock floor is the room a spotlight and a mini need to sit one above the other', () => {
@@ -48,6 +49,14 @@ test('moving attention to a drill or the spotlight dismisses only a raised dock'
   assert.equal(dismissRaisedDock('docked', DOCK_FLOOR - 1), 'hidden');
   assert.equal(dismissRaisedDock('docked', DOCK_FLOOR), 'docked');
   assert.equal(dismissRaisedDock('hidden', 150), 'hidden');
+});
+
+test('a drill marks its spotlight but not the dock echo of the same chart', () => {
+  assert.equal(isDrilledSpotlight({ seat: 'focal' }, 'isf', 'isf'), true);
+  assert.equal(isDrilledSpotlight({ seat: 'mini' }, 'isf', 'isf'), false,
+    'the dock may echo the chart without duplicating its drilled mark');
+  assert.equal(isDrilledSpotlight({ seat: 'focal' }, 'basal', 'isf'), false);
+  assert.equal(isDrilledSpotlight({ seat: 'focal' }, 'isf', null), false);
 });
 
 test('an unknown want is refused rather than silently resolved', () => {

@@ -40,7 +40,7 @@ import {
 import {
   DOCK_FLOOR,
   dismissFullscreen, dismissRaisedDock, dockView, drilledChartIdForFrame,
-  enterFullscreen, inspectorStack,
+  enterFullscreen, inspectorStack, isDrilledSpotlight,
   popInspector, reconcileTileDescriptors as reconcileCanvasDescriptors,
   recommendedFocalId, rosterChartIds, seatableChartIds, untraceDrill,
 } from './diagnose-canvas-state.js';
@@ -2753,7 +2753,9 @@ function boot(root, data, callbacks, signal) {
       tile.dataset.seat = seat.seat;
       tile.dataset.state = descriptor.state;
       tile.toggleAttribute('data-pinned', seat.pinned);
-      tile.toggleAttribute('data-drilled', descriptor.chartId === drilledChartId);
+      tile.toggleAttribute('data-drilled', isDrilledSpotlight(
+        seat, descriptor.chartId, drilledChartId,
+      ));
       /* NO `order` PROPERTY. `placeSeats` already emits pins-then-rank and the
          tiles are appended in that order, so a second ordering here can only
          disagree with the first — which is exactly what it did: #135's rule

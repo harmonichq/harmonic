@@ -88,6 +88,12 @@ export function drilledChartIdForFrame(frame, descriptors) {
   return null;
 }
 
+/* The dock repeats the spotlight's chart as a navigable echo. A drill marks
+   the stage, not that echo, so there is one drilled tile per current frame. */
+export function isDrilledSpotlight(seat, chartId, drilledChartId) {
+  return seat?.seat === 'focal' && chartId === drilledChartId;
+}
+
 export function popInspector(stack, index, descriptors) {
   const next = stack.slice(0, index + 1);
   return { stack: next, drilledChartId: drilledChartIdForFrame(next.at(-1), descriptors) };

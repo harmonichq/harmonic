@@ -704,18 +704,25 @@ A visual-only pass, ruled from a handoff written against the rendered app. No
 behaviour changed and the replay held at 124 of 133 stories across it, which is
 the evidence that it is visual-only.
 
-**The three stacked rails are told apart by ROLE, in the theme's own neutrals.**
-The pane header, the focal chart's nameplate and the Charts lip had converged on
-one material and read as three coloured bands. The pane header keeps the
-source-of-truth rail role untouched in theme.css — Verify shares it, and fixing
-Diagnose by moving a sibling's ground would be a cross-surface resettle done
-silently. The focal nameplate takes one restrained step off it toward its own
-chart's ground; the lip takes the sunken role, because it is the only one of the
-three that is a control rather than a caption.
+**There are TWO roles on this canvas, not three, and the pair that share one
+say so by sharing a material.** Three tonal steps was the first attempt and it
+failed twice over: the steps were too fine to read — "the glucose rail and the
+correction factor rail look literally identical" — and, more importantly, a
+tonal ladder says "these are ranked", when what the surface actually holds is
+one permanent thing and one swappable one.
 
-Asking for the ROLE rather than for a luminance is what makes this survive both
-themes: the step is upward in light and downward in dark, because the chart
-ground each rail leans toward differs by theme.
+Operator: "the glucose chart lives forever up at the top. The correction factor
+chart is associated with the overall chart drawer beneath it. And so those two
+things need to tie together somehow."
+
+So the glucose rail keeps the source-of-truth pane-header role — Verify shares
+it, and fixing Diagnose by moving a sibling's ground would be a cross-surface
+resettle done silently — and the focal nameplate and the Charts lip are cut from
+ONE material, because they are two halves of one object: the nameplate names
+whatever chart is currently in the slot, and the lip operates the strip that
+changes it. The chart between them is held by two rails of the same substance,
+which is the relationship stated outright rather than implied by rank. It is one
+token, `--ck-slot-rail`, so the pair cannot drift apart.
 
 **Dark takes the sunken role part way, and that is not a fudge.** theme.css
 records that dark's `--wk-surface-sunken` is lifted for the value tag's plate.
@@ -742,11 +749,20 @@ this rail does not drag — it toggles on click. A mark describing the wrong
 mechanic is worse than no mark, and the word on the text spine already says what
 the rail is. No other decorative grip takes its place.
 
-**The two expand glyphs share one x-centre, and share nothing else.** The focal
-chart's maximize stays in its nameplate and the explorer's opener stays in the
-lip; they keep their separate meanings and their own hit targets. The alignment
-is bought by both rails ending at `--ck-pad` and both buttons being one width —
-no connecting gutter, no vertical rule, no control spine. Measured at 984 on a
-1440 viewport and 824 on a 1280 one, in both themes.
+**Every control at a surface's right edge shares one centre line, and that line
+is the tile rail's.** The focal chart's maximize stays in its nameplate and the
+explorer's opener stays in the lip; they keep their separate meanings and their
+own hit targets, and nothing connects them — no gutter, no vertical rule, no
+control spine. What aligns them is arithmetic: all three surfaces derive their
+right inset from `--ck-rail-col` and `--ck-rail-inset`, the shipped control
+column's own two numbers.
+
+Centred on `--ck-pad` instead, the maximize glyph and the lip's cells sat 13.5px
+inboard of the star, flag and clock directly beneath them — operator: "this
+full-screen thing needs to line up exactly with the other elements. It's bad
+right now." Deriving all of them from one pair of numbers is what keeps them
+aligned when any one of them moves; a second literal is how they came apart.
+Measured at 997.5 for maximize, star, clock and the explorer alike, in both
+themes.
 
 The glucose strip is unchanged and still carries no control of its own.

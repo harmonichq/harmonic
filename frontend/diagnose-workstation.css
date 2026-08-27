@@ -434,15 +434,11 @@ html.dark .tile-field { background-color: var(--wk-canvas); }
      CHART's controls, not the rail's. */
   grid-column: 1 / -1;
   min-height: 30px; align-items: center;
-  padding: 4px var(--ck-pad) 4px var(--ck-grid-left);
-  /* ONE RESTRAINED STEP OFF THE PANE HEADER'S ROLE, toward the chart this rail
-     names. The pane header is the source-of-truth rail and keeps its role
-     untouched in theme.css; leaning the focal nameplate halfway to its own
-     chart's ground is what separates two otherwise identical bands without
-     introducing a fourth material. In light that step is upward and in dark it
-     is downward, because the chart ground it leans toward differs by theme —
-     the direction is the semantics, not the luminance. */
-  background: color-mix(in srgb, var(--wk-surface-rail) 50%, var(--wk-surface));
+  padding: 4px var(--ck-rail-inset) 4px var(--ck-grid-left);
+  /* THE SLOT'S OWN MATERIAL, the same one the lip below is cut from. The pane
+     header keeps its source-of-truth role untouched in theme.css; this rail is
+     not a quieter version of it, it is a different kind of thing. */
+  background: var(--ck-slot-rail);
   border-bottom: 1px solid var(--wk-rule);
 }
 .tile-field:not([data-fullscreen-tile]):not([data-explorer])
@@ -525,7 +521,42 @@ html.dark .tile-field[data-explorer] > .tile-row { background: var(--wk-canvas);
    the channel sits between field and cell; light has no lighter step to take,
    so it steps down. `--ck-well` itself is not re-pointed — it is the hovered
    tile rail's material, where `#E7E4DC` on a `#FAF8F4` tile is correct. */
-.dw { --ck-dock-well: var(--ck-well); }
+/* THE SLOT RAIL — one material for the two rails that belong to the swappable
+   chart (ADR 215 amendment). There are TWO roles on this canvas, not three: the
+   glucose rail is permanent and keeps the pane-header role, while the focal
+   nameplate and the Charts lip are both about the slot between them — one names
+   whatever chart is currently in it, the other operates the strip that changes
+   it. Operator: "the glucose chart lives forever up at the top. The correction
+   factor chart is associated with the overall chart drawer beneath it. And so
+   those two things need to tie together somehow."
+
+   Drawn as three tonal steps they tied to nothing and read as two identical
+   bands and a third: "the glucose rail and the correction factor rail look
+   literally identical, and they behave slightly different." One shared material
+   says the relationship outright, and it is one token so the pair cannot drift.
+
+   Dark takes the sunken role part way. theme.css records that dark's
+   `--wk-surface-sunken` is lifted for the value tag's plate, and borrowing that
+   lift whole made these rails the brightest objects on a near-black canvas —
+   rendered, a stripe across the pane rather than a surface a control sits on. */
+/* THE CONTROL COLUMN, STATED ONCE. Every control on this canvas that sits at a
+   surface's right edge centres on the same line, and that line is the tile
+   rail's — 24px wide with a 1px inset that hands the tile's ring back. The
+   maximize glyph in the focal nameplate and the lip's own cells were centred on
+   `--ck-pad` instead and landed 13.5px inboard of the star, flag and clock
+   directly beneath them. Operator: "this full-screen thing needs to line up
+   exactly with the other elements. It's bad right now."
+
+   Deriving all three from one pair of numbers is what keeps them aligned when
+   any of them moves; a second literal is how they came apart in the first
+   place. */
+.dw {
+  --ck-dock-well: var(--ck-well); --ck-slot-rail: var(--wk-surface-sunken);
+  --ck-rail-col: 24px; --ck-rail-inset: 1px;
+}
+html.dark .dw {
+  --ck-slot-rail: color-mix(in srgb, var(--wk-surface-sunken) 45%, var(--wk-surface-rail));
+}
 html:not(.dark) .dw {
   --ck-dock-well: color-mix(in srgb, var(--wk-surface-sunken) 92%, var(--mk-text));
 }
@@ -775,7 +806,7 @@ html.dark .tile-field[data-raised] > .tile-row { background: var(--wk-canvas); }
 .dock-handle {
   position: absolute; left: 0; right: 0; z-index: 5; height: 30px;
   display: flex; align-items: stretch; gap: 12px;
-  padding: 0 var(--ck-pad) 0 var(--ck-grid-left); cursor: pointer;
+  padding: 0 var(--ck-rail-inset) 0 var(--ck-grid-left); cursor: pointer;
   color: var(--mk-secondary);
   /* THE LIP IS THE MOST SEPARATE OF THE THREE RAILS, because it is the only one
      that is a control rather than a caption: the other two name the chart under
@@ -788,37 +819,28 @@ html.dark .tile-field[data-raised] > .tile-row { background: var(--wk-canvas); }
      Its rules are the separation the retired channel used to shade in: one
      crisp line above and one below, and the strip sits flush against the lower
      one with nothing drawn over it. */
-  background: var(--wk-surface-sunken);
+  background: var(--ck-slot-rail);
   border-top: 1px solid var(--wk-rule); border-bottom: 1px solid var(--wk-rule);
   transition: background 130ms, color 130ms;
-}
-/* DARK TAKES THE ROLE PART WAY, because dark's sunken token is lifted for the
-   value tag's plate — theme.css says so — and borrowing that lift whole makes
-   this rail the brightest object on a near-black canvas. Rendered at full
-   strength it read as a stripe across the pane rather than as the surface a
-   control sits on. The step from the rail's own material toward it is the same
-   ruling, measured against the ground it actually lands on. */
-html.dark .dw .dock-handle {
-  background: color-mix(in srgb, var(--wk-surface-sunken) 45%, var(--wk-surface-rail));
-}
-html.dark .dw .dock-handle:hover {
-  background: color-mix(in srgb, var(--wk-surface-sunken) 60%, var(--wk-surface-rail));
 }
 /* HOVER STEPS AWAY FROM THE CHARTS, NEVER TOWARD THEM. Lifting the lip to
    `--ck-rail` painted it the charts' own ground, so on hover the one edge in
    the stack dissolved into the things it separates. Operator: "the hover makes
    everything run together." It deepens instead — the rail's own material, one
    step toward the ink. */
+/* HOVER DEEPENS THE SLOT'S OWN MATERIAL — never toward the charts' ground,
+   which would dissolve the one edge in the stack into what it separates. */
 .dock-handle:hover {
   color: var(--mk-text);
-  background: color-mix(in srgb, var(--wk-surface-sunken) 93%, var(--mk-text));
+  background: color-mix(in srgb, var(--ck-slot-rail) 93%, var(--mk-text));
 }
 .dock-handle:hover button:hover {
-  background: color-mix(in srgb, var(--wk-surface-sunken) 86%, var(--mk-text));
+  background: color-mix(in srgb, var(--ck-slot-rail) 86%, var(--mk-text));
 }
 .dock-handle[hidden] { display: none; }
 .dock-handle button {
-  flex: 0 0 28px; align-self: center; height: 20px; border: 0; padding: 0;
+  flex: 0 0 calc(var(--ck-rail-col) - var(--ck-rail-inset));
+  align-self: center; height: 20px; border: 0; padding: 0;
   border-radius: 2px; background: transparent; color: inherit;
   cursor: pointer; display: grid; place-items: center;
   transition: color 120ms, background 120ms;
@@ -988,7 +1010,7 @@ html.dark .dw .dock-handle:hover {
 .tile-rail {
   grid-column: 2; grid-row: 1 / -1;
   display: grid; align-content: start; justify-items: center;
-  padding: 4px 1px 0 0; background: transparent;
+  padding: 4px var(--ck-rail-inset) 0 0; background: transparent;
   transition: background 160ms;
 }
 .evidence-tile:hover .tile-rail, .evidence-tile:focus-within .tile-rail,
@@ -1011,11 +1033,12 @@ html:not(.dark) .dw { --ck-well: var(--wk-surface-sunken); }
 /* THE SPOTLIGHT'S RAIL CARRIES THE SAME BUTTON AS THE CONTROL COLUMN, so it
    takes the same box. Lifted into a header it had been an unstyled default
    button, border and all. */
-/* THE SAME BOX AS THE LIP'S CONTROLS, so the two expand glyphs land on one
-   x-centre: both rails end at `--ck-pad` and both buttons are 28 wide, which is
-   the whole of the alignment — no gutter, no spine, no shared container. */
+/* ON THE CONTROL COLUMN'S OWN CENTRE, which is also where the lip's cells sit
+   — the alignment is bought by three surfaces sharing two numbers, not by a
+   gutter, a spine or a shared container. */
 .tile-head > .tile-fullscreen {
-  display: grid; place-items: center; width: 28px; height: 22px; padding: 0;
+  display: grid; place-items: center; height: 22px; padding: 0;
+  width: calc(var(--ck-rail-col) - var(--ck-rail-inset));
   border: 0; border-radius: 2px; background: transparent; color: var(--mk-muted);
   cursor: pointer;
   transition: color 130ms, background 130ms;

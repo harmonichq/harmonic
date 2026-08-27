@@ -629,6 +629,51 @@ test('populated Diagnose renders readable theme-specific ink and chart marks', a
   }
 });
 
+/* The dock is now the canvas filmstrip, and the Charts lip is its control —
+   neither inherits the retired explorer drawer's trench. Both carry compact
+   text, so measure their rendered chrome in each theme rather than a token
+   probe that could remain green after either surface moves. */
+test('the chart dock and its lip clear the text contrast floor in both themes', async () => {
+  for (const theme of ['light', 'dark']) {
+    const browser = await runner.browser();
+    const page = await openApp(browser, { state: 'typical', theme, appSource: 'fixture' });
+    try {
+      await page.getByRole('button', { name: '24 h', exact: true }).click();
+      await page.locator('#tile-row .evidence-tile').first().waitFor({ state: 'visible' });
+      const colors = await page.locator('#tile-field').evaluate((field) => {
+        const color = (node) => {
+          if (!node) throw new Error('the chart dock is missing a text role to measure');
+          return getComputedStyle(node).color;
+        };
+        const ground = (node) => {
+          if (!node) throw new Error('the chart dock is missing chrome to measure');
+          return getComputedStyle(node).backgroundColor;
+        };
+        const cell = field.querySelector('#tile-row .evidence-tile');
+        const lip = field.querySelector('#dock-handle');
+        return {
+          cell: ground(cell),
+          name: color(cell?.querySelector('.tile-head h3')),
+          meta: color(cell?.querySelector('.tile-meta')),
+          lip: ground(lip),
+          label: color(lip?.querySelector('.dock-word')),
+          act: color(lip?.querySelector('button')),
+        };
+      });
+      for (const [role, foreground, background] of [
+        ['name', colors.name, colors.cell], ['meta', colors.meta, colors.cell],
+        ['lip label', colors.label, colors.lip], ['lip act', colors.act, colors.lip],
+      ]) {
+        const ratio = contrastRatio(foreground, background);
+        assert.ok(ratio >= 4.5,
+          `${theme} chart dock ${role} meets WCAG AA on its chrome (${ratio.toFixed(2)}:1)`);
+      }
+    } finally {
+      await page.close();
+    }
+  }
+});
+
 /* LOCK:diagnose-workstation:1 — no page scroll at both required viewports (a
    narrower slice of term 1 than story S22 already owns: S22 covers it for
    the full "every state" contract; this only opens 'typical'). The

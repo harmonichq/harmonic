@@ -216,26 +216,6 @@ test('an explicit fixture opener ignores a hostile ambient app-source override',
   }
 });
 
-test('#135 · the chart explorer shortcut focuses a live chart and closes the drawer', async () => {
-  const browser = await runner.browser();
-  const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
-  try {
-    await page.getByRole('button', { name: '24 h', exact: true }).click();
-    await page.getByRole('button', { name: 'Charts', exact: true }).click();
-    const thumbnails = page.locator('.explorer-thumbnail');
-    assert.ok(await thumbnails.count() >= 2, 'the generated findings publish a live chart list');
-    await page.keyboard.press('1');
-    assert.equal(await page.locator('#explorer-drawer').isHidden(), true,
-      'the numeric focus shortcut closes the explorer drawer');
-    assert.match((await page.locator('#drill-provenance').textContent()).trim(), /^Drilled chart · \S/,
-      'the inspector names the chart selected by the shortcut as a drilled chart');
-    assert.equal(await page.locator('.evidence-tile[data-drilled]').count(), 1,
-      'the selected chart is visibly marked in the field');
-  } finally {
-    await page.close();
-  }
-});
-
 test('#135 · Escape dismisses fullscreen and restores the exact canvas arrangement', async () => {
   const browser = await runner.browser();
   const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
@@ -306,12 +286,14 @@ test('#215 · fullscreen from the docked strip takes the header and draws the ch
       'fullscreen takes the header row the glucose caption vacates');
     assert.equal((await page.locator('#full-title').textContent()).trim(), chartTitle,
       'the shared header names the fullscreen chart');
-    /* THE WAY BACK IS THE ONLY ACT. Mounted is retired, and with it the `hide`
-       cell that sat beside shrink — a second verb on a state whose only job is
-       to end. */
+    /* FULLSCREEN KEEPS THE CHART'S RAIL beside its way back. The tile has no
+       margin of its own to hold controls, so the pin moves into the shared
+       header with Back to the dock; the retired mounted-only hide cell does
+       not return. */
     assert.deepEqual(await page.locator('#dock-headacts button')
       .evaluateAll((buttons) => buttons.map((button) => button.getAttribute('aria-label'))),
-    ['Back to the dock'], 'fullscreen offers one act, and it is the way back');
+    [`Pin ${chartTitle}`, 'Back to the dock'],
+    'fullscreen moves the chart rail and its one way back into the shared header');
     assert.equal(await fullscreen.locator('.tile-fullscreen').count(), 0,
       'fullscreen shrink has one home, in the shared header');
     assert.ok(measured.width > 0 && measured.height > 0
@@ -340,8 +322,14 @@ test(`#96 · global Align is permanently absent and alignment belongs to each ti
     await page.getByRole('button', { name: '24 h', exact: true }).click();
     assert.equal(await page.locator('#seg-align, #align-canvas').count(), 0,
       'the retired global Align host cannot return');
-    assert.ok(await page.locator('.evidence-tile .tile-modes').count() > 0,
-      'each eligible chart tile owns its alignment control');
+    assert.equal(await page.locator('#tile-row .tile-modes').count(), 0,
+      'a strip cell keeps only its pin, never a reading control');
+    const eligible = page.locator('#tile-row .evidence-tile[data-chart-id^="basal:"]').first();
+    assert.equal(await eligible.count(), 1,
+      'the strip publishes a basal chart whose alignment controls can move to the spotlight');
+    await eligible.click();
+    assert.ok(await page.locator('#tile-focal .tile-modes').count() > 0,
+      'the promoted event chart owns its alignment control at the spotlight');
   } finally {
     await page.close();
   }
@@ -638,47 +626,6 @@ test('populated Diagnose renders readable theme-specific ink and chart marks', a
           `${theme} ${mark} clears the non-text contrast floor on the chart surface`);
       }
     } finally { await page.close(); }
-  }
-});
-
-/* The drawer is cut into the TRENCH, a darker well than the page ground every
-   other ink rank on this surface was settled against — and its text runs at
-   9–10px, where the floor bites hardest. An unseated thumbnail is the case that
-   inherits the trench directly: a seated one paints itself the rail. */
-test('the chart drawer clears the text contrast floor against the trench in both themes', async () => {
-  for (const theme of ['light', 'dark']) {
-    const browser = await runner.browser();
-    const page = await openApp(browser, { state: 'typical', theme, appSource: 'fixture' });
-    try {
-      await page.locator('.evidence-tile .tile-pin').first().click();
-      await page.getByRole('button', { name: 'Charts', exact: true }).click();
-      await page.locator('.explorer-thumbnail:not([data-seated])').first()
-        .waitFor({ state: 'visible' });
-      const colors = await page.locator('.explorer-drawer').evaluate((drawer) => {
-        const color = (selector) => {
-          const node = drawer.querySelector(selector);
-          if (!node) throw new Error(`the drawer has no ${selector} to measure`);
-          return getComputedStyle(node).color;
-        };
-        return {
-          trench: getComputedStyle(drawer).backgroundColor,
-          header: color('header'),
-          meta: color('.drawer-meta'),
-          escape: color('.drawer-escape'),
-          name: color('.explorer-thumbnail:not([data-seated]) .thumbnail-name'),
-          ordinal: color('.explorer-thumbnail:not([data-seated]) .thumbnail-ordinal'),
-        };
-      });
-      assert.match(colors.trench, /^rgba?\(/,
-        `${theme} drawer paints its own trench rather than borrowing a ground`);
-      for (const role of ['header', 'meta', 'escape', 'name', 'ordinal']) {
-        const ratio = contrastRatio(colors[role], colors.trench);
-        assert.ok(ratio >= 4.5,
-          `${theme} drawer ${role} ink meets WCAG AA against the trench (${ratio.toFixed(2)}:1)`);
-      }
-    } finally {
-      await page.close();
-    }
   }
 });
 

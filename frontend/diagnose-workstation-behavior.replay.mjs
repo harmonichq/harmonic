@@ -1883,7 +1883,7 @@ export const S32 = async (page) => {
 // STORY:finding-evidence-routing:S40
 export const S40 = async (page) => {
   await openWholeDay(page);
-  const tile = page.locator('.evidence-tile[data-chart-id="finding:over_treated_low"]');
+  const tile = page.locator('#tile-row .evidence-tile[data-chart-id="finding:over_treated_low"]');
   await tile.locator('.tile-body').click();
   await page.locator('#level .case-occurrence').first().waitFor();
   const request = page.waitForRequest((candidate) => {
@@ -2903,7 +2903,7 @@ export const issue86DirectEntryRestoration = async (page) => {
     level.scrollTop = Math.min(24, Math.max(0, level.scrollHeight - level.clientHeight));
     return level.scrollTop;
   });
-  const tile = page.locator('.evidence-tile[data-chart-id="finding:over_treated_low"]');
+  const tile = page.locator('#tile-row .evidence-tile[data-chart-id="finding:over_treated_low"]');
   await tile.locator('.tile-body').click();
   await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false');
   const opened = await state(page);
@@ -2972,7 +2972,7 @@ export const issue86MalformedRecovery = async (page) => {
     }
   };
   page.on('request', observeCaseRequest);
-  await page.locator('.evidence-tile[data-chart-id="finding:over_treated_low"] .tile-body').click();
+  await page.locator('#tile-row .evidence-tile[data-chart-id="finding:over_treated_low"] .tile-body').click();
   await page.locator('#level [role="alert"]').waitFor();
   page.off('request', observeCaseRequest);
   const recovered = await state(page);
@@ -2986,8 +2986,8 @@ export const issue86MalformedRecovery = async (page) => {
     '#86 malformed event data names the inconsistent projection');
   is(await page.locator('#level .clock').count(), 0,
     '#86 malformed event data renders no fallback clock case');
-  is(await page.locator('.evidence-tile[data-chart-id="finding:over_treated_low"][data-drilled]').count(), 1,
-    '#86 malformed event evidence leaves the owning chart visibly drilled');
+  is(await page.locator('#tile-focal .evidence-tile[data-chart-id="finding:over_treated_low"][data-drilled]').count(), 1,
+    '#86 malformed event evidence leaves the spotlighted chart visibly drilled');
   is(recovered.pressed, ['24 h'], '#86 the clock window is preserved');
   await page.keyboard.press('Backspace');
   const root = await state(page);

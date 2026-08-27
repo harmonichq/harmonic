@@ -2684,7 +2684,7 @@ function boot(root, data, callbacks, signal) {
     if (big) {
       el('full-title').textContent = fullscreen
         ? byId.get(fullscreen.chartId).title : 'All charts';
-    }
+    } else el('full-title').textContent = '';
     /* RETIRED — the mounted header's chart count.
        sanction: Connor Griffin · 2026-08-27 · "retire the mount count"
        It sat unlabelled inside the mounted header's control cluster, beside

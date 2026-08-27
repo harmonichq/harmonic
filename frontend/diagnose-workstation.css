@@ -1772,65 +1772,13 @@ html:not(.dark) .dw { --ck-well: var(--wk-surface-sunken); }
 .canvas-mode button[aria-pressed="true"] {
   color: var(--mk-text); box-shadow: inset 0 -2px 0 var(--ck-accent);
 }
-.canvas-mode button:focus-visible, .explorer-trigger:focus-visible,
-.explorer-thumbnail:focus-visible {
+.canvas-mode button:focus-visible {
   outline: 2px solid var(--ck-accent); outline-offset: 1px;
 }
-.explorer-trigger { border: 1px solid var(--ck-hair); border-radius: 2px; }
 .advice-state {
   min-width: 52px; color: var(--mk-muted); font-family: var(--ck-mono);
   font-size: 9px; text-transform: uppercase; white-space: nowrap;
 }
-
-.canvas-pane:has(.explorer-drawer:not([hidden])) {
-  grid-template-rows: auto 210px minmax(0, 1fr) 150px;
-}
-.explorer-drawer {
-  display: grid; grid-template-rows: 25px minmax(0, 1fr); min-height: 0;
-  padding: 0 var(--ck-canvas-gap) var(--ck-canvas-gap); background: var(--ck-trench);
-}
-.explorer-drawer[hidden] { display: none; }
-/* THE DRAWER'S QUIET RANK IS MIXED AGAINST THE TRENCH, NOT THE PAGE. --mk-muted
-   and --mk-secondary are both settled to clear 4.5:1 against --mk-bg; the trench
-   is a darker well cut into that ground, and at 9-10px those two landed at
-   3.2:1 and 3.5:1 on it. Mixing the body ink toward the trench keeps a visible
-   second rank while the ratio is computed against the surface the text is
-   actually on. */
-.explorer-drawer { --ck-trench-quiet: color-mix(in srgb, var(--mk-text) 82%, var(--ck-trench)); }
-.explorer-drawer > header {
-  display: flex; align-items: center; gap: 10px; padding: 0 6px;
-  color: var(--mk-text); font-size: var(--ck-micro); font-weight: 700;
-  letter-spacing: var(--ck-track); text-transform: uppercase;
-}
-.drawer-meta { color: var(--ck-trench-quiet); font-family: var(--ck-mono); font-weight: 500; }
-.drawer-escape {
-  margin-left: auto; color: var(--ck-trench-quiet);
-  font-family: var(--ck-mono); font-weight: 500;
-}
-.explorer-thumbnails {
-  display: grid; grid-auto-flow: column; grid-auto-columns: minmax(128px, 1fr);
-  gap: var(--ck-canvas-gap); min-width: 0; min-height: 0; overflow-x: auto;
-}
-.explorer-thumbnail {
-  display: grid; grid-template-rows: 17px minmax(0, 1fr); position: relative;
-  min-width: 0; min-height: 0; padding: 4px 5px; border: 0; border-radius: 2px;
-  background: transparent; color: inherit; cursor: pointer; text-align: left;
-}
-.explorer-thumbnail[data-seated] {
-  background: var(--ck-rail);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ck-accent) 72%, transparent),
-    inset 0 1px 0 color-mix(in srgb, var(--ck-accent) 76%, var(--mk-text));
-}
-.thumbnail-name {
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  color: var(--mk-text); font-size: 9px; font-weight: 700;
-  letter-spacing: .04em; text-transform: uppercase;
-}
-.thumbnail-ordinal {
-  position: absolute; inset: 4px 6px auto auto; color: var(--ck-trench-quiet);
-  font: 9px var(--ck-mono); font-variant-numeric: tabular-nums;
-}
-.thumbnail-chart { min-width: 0; min-height: 0; }
 
 .evidence-tile { position: relative; }
 /* THE DRILLED TILE IS RANK ONE, AND IT IS MARKED TWICE (#215). A 1px inset

@@ -1597,7 +1597,7 @@ test('event comparisons render the served case-file cohorts and retain no standa
     // one place every Finding the window holds is listed.
     await page.locator('#seg-window button', { hasText: '24 h' }).click();
     await page.locator('#level .qrow[data-id="finding:over_treated_low"]').click();
-    const tile = page.locator('.evidence-tile[data-chart-id="finding:over_treated_low"]');
+    const tile = page.locator('#tile-row .evidence-tile[data-chart-id="finding:over_treated_low"]');
     await tile.locator('.tile-body').click();
     await page.locator('[data-comparison-cohort]').first().waitFor();
 
@@ -1637,7 +1637,7 @@ test('event comparisons fail closed when the served case file is malformed',
     await error.waitFor();
     assert.match(await error.innerText(), /Finding case file did not match/);
     assert.equal(await page.locator(
-      '.evidence-tile[data-chart-id="finding:over_treated_low"][data-drilled]',
+      '#tile-focal .evidence-tile[data-chart-id="finding:over_treated_low"][data-drilled]',
     ).count(), 1, 'the malformed case remains visibly attached to its owning tile');
     assert.equal(await page.locator('[data-comparison-cohort]').count(), 0,
       'a malformed case renders no stale comparison cohort rows');

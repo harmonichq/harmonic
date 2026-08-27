@@ -303,16 +303,20 @@ test('an occurrence selection reaches the compact event-comparison tile', async 
     ).getAttribute('data-selected-cohort');
     await page.locator('#dock-headacts button[aria-label="Back to the dock"]').click();
     await tile.locator('.tile-chart canvas').waitFor({ state: 'visible' });
+    await page.waitForFunction((id) => {
+      const host = document.querySelector(`#tile-row .evidence-tile[data-chart-id="${id}"] .tile-chart`);
+      return Boolean(host && window.echarts.getInstanceByDom(host));
+    }, findingId);
 
-    const compact = await tile.evaluate((element) => {
-      const host = element.querySelector('.tile-chart');
+    const compact = await page.evaluate((id) => {
+      const host = document.querySelector(`#tile-row .evidence-tile[data-chart-id="${id}"] .tile-chart`);
       const option = window.echarts.getInstanceByDom(host).getOption();
       return option.series.filter((series) => series.id).map((series) => ({
         id: series.id,
         points: series.data.length,
         opacity: series.lineStyle?.opacity ?? 1,
       }));
-    });
+    }, findingId);
     const selected = compact.find((series) => series.id === 'selected:trace');
     const cohortLines = compact.filter((series) => /:line:/.test(series.id));
     assert.ok(selected?.points > 0, 'the compact tile draws the selected Occurrence trace');

@@ -16,10 +16,12 @@ fails and the whole preparation is withheld.
 
 ## What changes
 
-- Give the existing evidence-population policy one authoritative answer for the
-  representative outcome time of a recurrence occurrence.
-- Make both the Findings projection and Finding case-file population use that
-  answer before applying scoped clock membership.
+- Make the custom-recurrence case-file path use the existing Finding-relative
+  `outcome_kind` rule before applying scoped clock membership, matching the queue
+  and the ordinary case-file association path.
+- Keep that derivation local to the case-file module unless the fail-first
+  regression proves the existing authority cannot express the observed shape;
+  do not add a second cross-module policy for the same consequence anchor.
 - Add a synthetic, event-built regression through the public preparation endpoint
   whose representative High and episode boundary land in different clock windows.
 - Preserve the deliberate `inconsistent_projection` failure for genuinely

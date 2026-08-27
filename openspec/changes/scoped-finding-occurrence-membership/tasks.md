@@ -3,10 +3,11 @@
 - [ ] Add an event-built, fail-first public-endpoint regression for a scoped Meal
   bolus fell short occurrence whose High outcome and episode boundary straddle the
   requested clock-window edge.
-- [ ] Deepen the existing evidence-population policy to select one representative
-  Finding-relative outcome coordinate per recurrence occurrence.
-- [ ] Route both Findings projection membership and retained case-file membership
-  through that shared answer; keep the closed consistency equation fail-closed.
+- [ ] Make the custom recurrence case-file path select its clock coordinate from
+  the existing Finding-relative `outcome_kind` authority, sharing a local helper
+  with the ordinary association path where that keeps the rule single-sourced.
+- [ ] Keep recurrence identity/population in the existing evidence-population
+  policy and keep the closed consistency equation fail-closed.
 - [ ] Pin whole-day and adjacent scoped behavior so the occurrence is counted once,
   appears in exactly one intended clock window, and no valid window returns
   `inconsistent_projection`.

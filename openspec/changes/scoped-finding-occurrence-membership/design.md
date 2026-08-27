@@ -13,10 +13,18 @@ supersede them.
 
 ## Repair shape
 
-Deepen the existing evidence-population policy so the representative occurrence
-and its Finding-relative outcome coordinate are selected once. The serialized
-Findings projection and the retained case-file builder consume that shared policy
-result instead of independently choosing a clock time.
+The authoritative consequence-anchor mapping already exists as `outcome_kind`.
+The serialized Findings projection reaches it through
+`window_membership.outcome_minute`, and the ordinary case-file association path
+uses it when choosing its `outcome_t`. Only the custom recurrence path substitutes
+the episode boundary.
+
+Keep the repair local to `finding_case_file.py`: one small helper may choose the
+Finding-relative outcome anchor for both the ordinary association and custom
+recurrence paths, with each path retaining its existing fallback. This is the
+second real caller that earns the helper. Do not move clock membership into
+`evidence_population.py`; that module already owns recurrence identity and
+population, while `outcome_kind` owns where the consequence landed.
 
 The public HTTP preparation route remains the regression surface. Its synthetic
 arrangement must put the representative High outcome and the surrounding episode

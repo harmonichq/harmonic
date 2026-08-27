@@ -7,11 +7,12 @@
   returns `inconsistent_projection`; the observed error originates before render.
   **Why:** the fresh read-only snapshot reproduces `InconsistentProjection` inside
   the case-file wrapper. **Disposition:** inline.
-- **Conform to ADR 202 instead of adding a second occurrence rule.** Deepen the
-  existing evidence-population policy so one representative Finding-relative
-  outcome coordinate governs scoped membership in both queue and case-file
-  consumers. **Why:** ADR 202 already owns recurrence identity and requires one
-  worst-episode representative everywhere. **Disposition:** inline.
+- **Reuse the existing Finding-relative outcome rule.** The queue already applies
+  `outcome_kind` through `window_membership.outcome_minute`, and ordinary case-file
+  associations apply the same rule locally; the custom recurrence branch alone
+  substitutes `episode.end`. Repair that bypass without adding a new policy seam.
+  **Why:** ADR 202 owns recurrence identity, while `outcome_kind` already owns the
+  consequence anchor used for clock membership. **Disposition:** inline.
 - **Keep unrelated ordinary-lever association gaps out of #224.** The aggregate
   probe found an Over-treated low row that is withheld rather than made
   inspectable in one scoped window; that does not cause the reported preparation

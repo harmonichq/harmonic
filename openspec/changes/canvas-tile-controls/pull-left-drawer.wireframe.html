@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WIREFRAME — the pull-left drawer</title>
+<style>
+/* WIREFRAME — NO FIDELITY CLAIM — NOT LOCKABLE.
+   Slice 3, redrawn: the chart list is a drawer that pulls LEFT out of the dock
+   and floats over the interface. Neutral tokens; deleted when the change lands.
+
+   EVERY SPECIMEN IS LIVE — press the grips, press the pins, scroll the rows.
+   The point of this round is the drawer's shape and motion, so a still
+   screenshot tells you little. Both grounds drawn throughout. */
+:root {
+  --w-ground: #E7E4DD; --w-panel: #F4F2ED; --w-recess: #D6D2C8;
+  --w-edge: #C3BEB2; --w-hair: #CFCABE; --w-trench: #DAD6CC;
+  --w-ink: #2B2724; --w-label: #56504A; --w-quiet: #8C857C;
+  --w-live: #C4622C; --w-held: #3F3A34; --w-lift: rgba(255,255,255,.8);
+  --w-veil: rgba(20,17,15,.34);
+  color-scheme: light;
+}
+.app[data-t="dark"] {
+  --w-ground: #1D1A18; --w-panel: #26221F; --w-recess: #171513;
+  --w-edge: #3A3430; --w-hair: #363029; --w-trench: #141210;
+  --w-ink: #EFEAE2; --w-label: #B6ADA2; --w-quiet: #877E74;
+  --w-live: #D9834C; --w-held: #E4DDD2; --w-lift: rgba(255,255,255,.10);
+  --w-veil: rgba(0,0,0,.48);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 26px 30px 90px; min-width: 1340px; background: #EDEAE3; color: #2B2724;
+  font: 13px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+.banner { margin: 0 0 22px; padding: 8px 12px; border: 1px dashed #8C857C;
+  color: #56504A; font-size: 11px; letter-spacing: .09em; text-transform: uppercase; }
+h1 { margin: 0 0 4px; font-size: 17px; font-weight: 640; letter-spacing: -.01em; }
+.lede { max-width: 94ch; margin: 0 0 8px; color: #56504A; font-size: 12.5px; }
+.lede b { color: #2B2724; }
+.ruled { max-width: 94ch; margin: 0 0 20px; padding: 9px 12px; background: #E3DFD6;
+  border-left: 3px solid #C4622C; color: #56504A; font-size: 12px; }
+.ruled b { color: #2B2724; }
+h2.q { margin: 32px 0 4px; font-size: 15px; font-weight: 700; }
+section { margin: 0 0 28px; padding: 0 0 22px; border-bottom: 1px solid #CFCABE; }
+.opt-head { display: flex; align-items: baseline; gap: 10px; margin: 16px 0 3px; }
+.opt-key { color: #C4622C; font-size: 11px; font-weight: 700; letter-spacing: .12em; }
+.opt-head h3 { margin: 0; font-size: 14px; font-weight: 640; }
+.kind { color: #8C857C; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+.claim { max-width: 94ch; margin: 0 0 6px; color: #56504A; font-size: 12px; }
+.claim b { color: #2B2724; font-weight: 600; }
+.cost { max-width: 94ch; margin: 6px 0 12px; padding: 7px 11px; font-size: 11.5px;
+  background: #F2E7DE; border-left: 3px solid #C4622C; color: #56504A; }
+.cost b { color: #2B2724; }
+.do { margin: 12px 0 5px; color: #8C857C; font-size: 10.5px;
+  letter-spacing: .09em; text-transform: uppercase; }
+.pair { display: flex; gap: 14px; flex-wrap: wrap; }
+.themed { display: flex; flex-direction: column; gap: 4px; }
+.themed > .t { color: #8C857C; font-size: 10px; letter-spacing: .09em; text-transform: uppercase; }
+
+/* ---- app frame — 0.62x of the measured 1440x900 layout ------------------- */
+.app { background: var(--w-ground); color: var(--w-ink); box-shadow: 0 0 0 1px var(--w-edge);
+  overflow: hidden; width: 636px; user-select: none; }
+.rail { display: flex; align-items: center; height: 26px; padding: 0 10px; gap: 9px;
+  background: var(--w-recess); box-shadow: inset 0 -1px 0 var(--w-edge); }
+.rail .cap { color: var(--w-label); font-size: 9px; font-weight: 650;
+  letter-spacing: .09em; text-transform: uppercase; }
+.panes { position: relative; display: grid; grid-template-columns: minmax(0,1fr) 190px;
+  height: 296px; background: var(--w-trench); overflow: hidden; }
+.pane { min-width: 0; background: var(--w-panel);
+  box-shadow: inset 0 0 0 1px var(--w-edge), inset 0 1px 0 var(--w-lift); }
+.pane.canvas { display: grid; grid-template-rows: 18px 80px minmax(0,1fr); min-height: 0; }
+.plate-cap { padding: 3px 9px 0; color: var(--w-quiet); font-size: 9px;
+  letter-spacing: .09em; text-transform: uppercase; }
+.bigchart { margin: 2px 6px 0; background: var(--w-recess);
+  box-shadow: inset 0 0 0 1px var(--w-edge); }
+.field { display: grid; grid-template-rows: minmax(0,1fr) 90px; gap: 5px;
+  padding: 6px; min-height: 0; background: var(--w-trench);
+  box-shadow: inset 0 6px 10px -8px rgba(0,0,0,.55); }
+.focal { display: grid; min-width: 0; min-height: 0; }
+.row { display: grid; grid-auto-flow: column; gap: 5px; min-width: 0; min-height: 0;
+  grid-auto-columns: max(96px, calc((100% - 10px) / 3.35));
+  overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+.row::-webkit-scrollbar { display: none; }
+.tile { position: relative; display: grid;
+  grid-template: 14px minmax(0,1fr) / minmax(0,1fr) 14px;
+  background: var(--w-recess); box-shadow: inset 0 0 0 1px var(--w-edge);
+  min-width: 0; min-height: 0; overflow: hidden; }
+.tile .nm { grid-column: 1; padding: 2px 3px 0 6px; color: var(--w-label);
+  font-size: 8px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+.tile .plot { grid-column: 1; margin: 2px 6px 5px; background: var(--w-trench);
+  box-shadow: inset 0 0 0 1px var(--w-hair); cursor: pointer; }
+.focal .tile { box-shadow: inset 0 0 0 1px var(--w-live); }
+.trail { grid-column: 2; grid-row: 1 / -1; display: grid; align-content: start;
+  justify-items: center; padding: 2px 0 0; gap: 1px; transition: background 150ms; }
+.tile:hover .trail { background: rgba(0,0,0,.05); }
+.app[data-t="dark"] .tile:hover .trail { background: rgba(255,255,255,.05); }
+.trail button, .rpin { display: grid; place-items: center; width: 12px; height: 12px;
+  padding: 0; border: 0; background: transparent; color: var(--w-quiet); cursor: pointer; }
+.trail button { opacity: .5; }
+.tile:hover .trail button { opacity: 1; }
+.trail button[aria-pressed="true"], .rpin[aria-pressed="true"] {
+  opacity: 1; color: var(--w-held); }
+.trail svg, .rpin svg { grid-area: 1 / 1; width: 9px; height: 9px; display: block; }
+.off { fill: none; stroke: currentColor; stroke-width: 1.5;
+  stroke-linecap: round; stroke-linejoin: round; }
+.on { fill: currentColor; stroke: none; opacity: 0; }
+[aria-pressed="true"] > .on { opacity: 1; }
+[aria-pressed="true"] > .off { opacity: 0; }
+
+/* inspector */
+.pane.insp { position: relative; display: flex; flex-direction: column; min-height: 0; }
+.crumb { display: flex; align-items: baseline; gap: 8px; height: 19px; padding: 0 8px;
+  box-shadow: inset 0 -1px 0 var(--w-hair); }
+.crumb h2 { margin: 0; font-size: 10px; font-weight: 650; color: var(--w-ink); }
+.queue { flex: 1 1 auto; padding: 4px 6px; display: grid; gap: 3px; align-content: start;
+  overflow: hidden; }
+.qrow { display: grid; grid-template-columns: 2px minmax(0,1fr); align-items: center;
+  gap: 6px; padding: 2px 4px; cursor: pointer; }
+.qrow:hover { background: rgba(0,0,0,.05); }
+.app[data-t="dark"] .qrow:hover { background: rgba(255,255,255,.06); }
+.qrow .fil { width: 2px; height: 12px; background: var(--w-live); }
+.qrow .name { color: var(--w-ink); font-size: 9px; font-weight: 600;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.watching { margin: 3px 4px 0; padding: 3px 4px; color: var(--w-quiet); font-size: 8px;
+  letter-spacing: .08em; text-transform: uppercase; border-top: 1px solid var(--w-hair); }
+/* the dock — pane furniture at the inspector's floor, and the drawer's hinge */
+.dock { position: relative; padding: 5px 8px 6px; background: var(--w-trench);
+  box-shadow: inset 0 1px 0 var(--w-hair); display: grid; gap: 2px; }
+.dl { display: flex; align-items: center; gap: 6px; }
+.dk { color: var(--w-quiet); font-size: 7.5px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase; }
+.dv { color: var(--w-ink); font-size: 9px; font-weight: 600;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* THE GRIP — on the dock's LEFT edge, and it pulls left. A vertical knurl,
+   because the direction of the knurl is the direction of the pull. */
+.grip { position: absolute; left: 0; top: 0; bottom: 0; width: 13px; padding: 0;
+  border: 0; cursor: pointer; background: var(--w-recess);
+  box-shadow: inset -1px 0 0 var(--w-hair), inset 1px 0 0 var(--w-hair);
+  display: grid; place-items: center; color: var(--w-quiet); }
+.grip:hover { color: var(--w-ink); background: var(--w-panel); }
+.grip .knurl { width: 5px; height: 22px;
+  background: repeating-linear-gradient(0deg, currentColor 0 1px, transparent 1px 3px); }
+.grip .chev { position: absolute; bottom: 3px; font-size: 7px; line-height: 1; }
+.dock[data-grip] { padding-left: 19px; }
+
+/* ---- the drawer, floating over everything ------------------------------- */
+.veil { position: absolute; inset: 0; z-index: 4; background: var(--w-veil);
+  border: 0; padding: 0; cursor: pointer; }
+.drawer { position: absolute; z-index: 5; background: var(--w-panel);
+  box-shadow: 0 10px 30px -12px rgba(0,0,0,.8), 0 0 0 1px var(--w-edge);
+  display: flex; flex-direction: column; overflow: hidden;
+  animation: slideleft 200ms cubic-bezier(.2,.8,.2,1); }
+@keyframes slideleft { from { transform: translateX(24px); opacity: .2; } }
+.drawer > header { display: flex; align-items: center; gap: 7px; padding: 3px 8px;
+  box-shadow: inset 0 -1px 0 var(--w-hair); color: var(--w-label);
+  font-size: 8px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
+.drawer > header .spring { flex: 1 1 auto; }
+.drawer > header .esc { color: var(--w-quiet); font-family: ui-monospace, monospace; }
+.cells { flex: 1 1 auto; min-height: 0; padding: 6px; }
+/* D1 — one strip, the row extended: scrolls sideways like the row it replaces */
+.cells[data-c="strip"] { display: grid; grid-auto-flow: column;
+  grid-auto-columns: 108px; gap: 5px; overflow-x: auto; overflow-y: hidden; }
+/* D2 — a card: wrapped grid of legible thumbnails */
+.cells[data-c="card"] { display: grid; gap: 5px; overflow-y: auto;
+  grid-template-columns: repeat(4, minmax(0,1fr)); align-content: start; }
+/* D3 — a full-height shelf: a taller wrapped grid */
+.cells[data-c="shelf"] { display: grid; gap: 5px; overflow-y: auto;
+  grid-template-columns: repeat(3, minmax(0,1fr)); align-content: start; }
+.cell { display: grid; grid-template-rows: auto minmax(0,1fr); gap: 2px; padding: 4px 5px;
+  min-width: 0; min-height: 0; background: var(--w-recess);
+  box-shadow: inset 0 0 0 1px var(--w-edge); }
+.cell .top { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.cell .lbl { flex: 1 1 auto; min-width: 0; color: var(--w-ink); font-size: 8px;
+  font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  cursor: pointer; text-align: left; background: none; border: 0; padding: 0;
+  font-family: inherit; }
+.cell .th { background: var(--w-trench); box-shadow: inset 0 0 0 1px var(--w-hair);
+  min-height: 26px; }
+.cell[data-seated] { box-shadow: inset 0 0 0 1px var(--w-live); }
+.cell[data-watching] .lbl { font-style: italic; color: var(--w-label); }
+.sect { grid-column: 1 / -1; padding: 5px 2px 1px; color: var(--w-quiet);
+  font-size: 7.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  border-top: 1px solid var(--w-hair); }
+.cells[data-c="strip"] .sect { grid-column: auto; border-top: 0; border-left: 1px solid var(--w-hair);
+  writing-mode: vertical-rl; padding: 2px 4px; }
+</style>
+</head>
+<body>
+
+<p class="banner">Wireframe — no fidelity claim — not lockable</p>
+
+<h1>The pull-left drawer</h1>
+<p class="lede">
+  Corrected premise: the mini row scrolls sideways because <b>the viewport is
+  too short</b> to stack eleven charts vertically — not to spare anyone a list.
+  And the chart list is not a panel inside the inspector: it is a <b>drawer that
+  pulls left out of the dock and floats over the interface</b>. That lifts the
+  430px ceiling both earlier rounds were drawn against, so thumbnails can be
+  whatever size the drawer chooses to be.
+</p>
+<p class="ruled">
+  Still ruled, not reopening: the row holds ranked findings only, a pin keeps a
+  chart left-most, the row is dropped whole when the pane cannot draw one
+  legible mini, and the scroll affordance is a sliced fourth tile.
+  <b>The grip is the same in all three specimens</b> — a vertical knurl on the
+  dock's left edge, because the knurl's direction is the pull's direction. What
+  differs is what comes out of it.
+</p>
+<p class="ruled">
+  <b>Measured at 1440×900:</b> canvas pane 1010×790, mini 326×145, inspector
+  430 wide, dock 429×98. Specimens are 0.62×, and each option's own measured
+  size and scroll behaviour is stated in its claim — taken from the rendered
+  specimen, not asserted. A thumbnail here is ~150×42, well under the 280px a
+  <i>mini</i> needs, which is fine: a thumbnail is for recognition, a mini is
+  for reading.
+</p>
+
+<section>
+  <div class="opt-head"><span class="opt-key">D1</span><h3>The dock grows a wing</h3>
+    <span class="kind">kind: the row, extended — same band, same height</span></div>
+  <p class="claim">
+    The drawer is the dock's own height and slides left along the bottom of the
+    window, floating over the mini row it extends. Same band, same reading
+    posture, same left-to-right order: <b>it is the row with the lid off</b>, and
+    a reader who has been scrolling the row finds the identical charts in the
+    identical order, all at once.
+  </p>
+  <p class="cost"><b>Cost:</b> measured 1026×100, and it scrolls in <i>both</i>
+    axes at eleven charts — the drawer does not escape the constraint that
+    created it, it reproduces it. It also covers the row, so pinning happens over
+    the thing being reordered.</p>
+  <p class="do">Press the grip. Scroll inside the drawer.</p>
+  <div class="pair" data-spec="D1"></div>
+</section>
+
+<section>
+  <div class="opt-head"><span class="opt-key">D2</span><h3>A floating card</h3>
+    <span class="kind">kind: a panel that takes only the space it needs</span></div>
+  <p class="claim">
+    A card hinged at the dock's top-left corner, sized to its contents and no
+    more. Measured <b>710×368</b>, four columns. It floats over the canvas but
+    leaves the glucose strip showing, so the surface underneath stays legible as
+    context — the only one of the three that keeps the focal chart in view while
+    you pin against it.
+  </p>
+  <p class="cost"><b>Cost — measured, and it sinks the pitch:</b> this was drawn
+    to fit everything without scrolling. It does not. Nine ranked charts in four
+    columns is three rows, plus the Watching header and its two reads makes
+    <b>five</b>, and it still scrolls at 368 tall. I grew it twice and it still
+    scrolls; the height that would fit is about 470, which is D3 lying on its
+    side. Its size is a decision rather than a consequence, and thirty charts
+    needs a rule this option does not have.</p>
+  <p class="do">Press the grip. Pin two charts; dismiss and look at the row.</p>
+  <div class="pair" data-spec="D2"></div>
+</section>
+
+<section>
+  <div class="opt-head"><span class="opt-key">D3</span><h3>The full-height shelf</h3>
+    <span class="kind">kind: a proper drawer — pane height, veiled behind</span></div>
+  <p class="claim">
+    Full pane height, hinged on the dock's left edge, sliding left to a fixed
+    width with the interface veiled behind it. <b>Vertical space is exactly what
+    the row was short of</b>, so this is the one option that answers the actual
+    constraint. Measured <b>532×432</b>: eleven charts in three columns, the
+    Watching group included, <b>with no scrolling at all</b> and room left over —
+    and thirty would scroll down a shelf that is built to be scrolled down.
+  </p>
+  <p class="cost"><b>Cost:</b> the veil makes it a place you go rather than a
+    thing you glance at — closest of the three to the second mode ADR 215 just
+    retired, and the only one that hides the focal chart you are pinning against.</p>
+  <p class="do">Press the grip. Press the veil to dismiss.</p>
+  <div class="pair" data-spec="D3"></div>
+</section>
+
+<script>
+const PIN_OFF = '<path d="M9.6 2.2 13.8 6.4"/><path d="M11 4.6 7.2 6 4.4 8.8l2.8 2.8L10 8.8z"/>'
+  + '<path d="M5.8 10.2 2.6 13.4"/>';
+const PIN_ON = '<path d="M9.9 1.7a.75.75 0 0 0-1 1.1l.3.3-2.2.9-3.2 3.2 5.1 5.1 3.2-3.2'
+  + '.9-2.2.3.3a.75.75 0 0 0 1.1-1z"/>'
+  + '<rect x="1.6" y="12.5" width="5.2" height="1.4" rx=".7" transform="rotate(-45 4.2 13.2)"/>';
+const FULL = '<path d="M6 2.6H2.6V6"/><path d="M10 2.6h3.4V6"/><path d="M6 13.4H2.6V10"/>'
+  + '<path d="M10 13.4h3.4V10"/>';
+const CLOCK_OFF = '<circle cx="8" cy="8" r="6"/><path d="M8 4.6V8l2.4 1.6"/>';
+const CLOCK_ON = '<path fill-rule="evenodd" d="M8 1.6a6.4 6.4 0 1 0 0 12.8 6.4 6.4 0 0 0 0-12.8z'
+  + 'M7.3 4.2h1.4v4.1l2.2 1.5-.8 1.2-2.8-1.9z"/>';
+
+const RANKED = [
+  ['isf', 'Correction factor · rest windows'],
+  ['missed', 'Missed / unannounced meal'],
+  ['lowover', 'Over-treated low'],
+  ['undercnt', 'Carb undercount'],
+  ['stacking', 'Correction stacking'],
+  ['overdel', 'Meal over-delivery'],
+  ['short', 'Meal bolus fell short'],
+  ['late', 'Late bolus'],
+  ['oniob', 'Correction on active insulin'],
+];
+const WATCHING = [
+  ['icb1', 'Carb ratio Morning · held'],
+  ['icb2', 'Basal 22:00 · still collecting'],
+];
+const ALL = [...RANKED, ...WATCHING];
+const RANKED_IDS = RANKED.map(([id]) => id);
+const nameOf = (id) => ALL.find(([k]) => k === id)[1];
+
+function svg(body, cls) {
+  const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  s.setAttribute('viewBox', '0 0 16 16');
+  s.setAttribute('aria-hidden', 'true');
+  s.setAttribute('class', cls);
+  s.innerHTML = body;
+  return s;
+}
+function glyph(cls, off, on, held) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = cls;
+  b.append(svg(off, 'off'));
+  if (on) { b.append(svg(on, 'on')); b.setAttribute('aria-pressed', String(Boolean(held))); }
+  return b;
+}
+function seats(m) {
+  const pins = m.pins.filter((id) => id !== m.focal);
+  const rest = RANKED_IDS.filter((id) => id !== m.focal && !pins.includes(id));
+  return { focal: m.focal, row: [...pins, ...rest] };
+}
+
+function tile(id, m, render) {
+  const t = document.createElement('article');
+  t.className = 'tile';
+  const nm = document.createElement('div');
+  nm.className = 'nm';
+  nm.textContent = nameOf(id);
+  nm.onclick = () => { m.focal = id; render(); };
+  const plot = document.createElement('div');
+  plot.className = 'plot';
+  plot.onclick = () => { m.focal = id; render(); };
+  const rail = document.createElement('span');
+  rail.className = 'trail';
+  rail.append(glyph('', FULL, null));
+  const pin = glyph('', PIN_OFF, PIN_ON, m.pins.includes(id));
+  pin.title = m.pins.includes(id) ? 'Release to findings rank' : 'Keep left-most in the row';
+  pin.onclick = (e) => {
+    e.stopPropagation();
+    m.pins = m.pins.includes(id) ? m.pins.filter((x) => x !== id) : [...m.pins, id];
+    render();
+  };
+  rail.append(pin, glyph('', CLOCK_OFF, CLOCK_ON, true));
+  t.append(nm, rail, plot);
+  return t;
+}
+
+const BOX = {
+  strip: { left: '0', right: '0', top: 'auto', bottom: '0', height: '62px' },
+  card:  { left: 'auto', right: '0', top: '40px', bottom: '0', width: '440px' },
+  shelf: { left: 'auto', right: '0', top: '0', bottom: '0', width: '330px' },
+};
+
+function frame(theme, opts) {
+  const wrap = document.createElement('div');
+  wrap.className = 'themed';
+  const label = document.createElement('span');
+  label.className = 't';
+  label.textContent = theme;
+  const app = document.createElement('div');
+  app.className = 'app';
+  app.dataset.t = theme;
+  wrap.append(label, app);
+  const m = { focal: 'isf', pins: ['undercnt'], open: false };
+
+  function render() {
+    app.innerHTML = '';
+    const s = seats(m);
+
+    const rail = document.createElement('div');
+    rail.className = 'rail';
+    rail.innerHTML = '<span class="cap">Window</span><span class="cap">24 h</span>';
+
+    const panes = document.createElement('div');
+    panes.className = 'panes';
+
+    const canvas = document.createElement('section');
+    canvas.className = 'pane canvas';
+    canvas.innerHTML = '<div class="plate-cap">Glucose by time of day</div>'
+      + '<div class="bigchart"></div>';
+    const field = document.createElement('div');
+    field.className = 'field';
+    const focal = document.createElement('div');
+    focal.className = 'focal';
+    focal.append(tile(s.focal, m, render));
+    const row = document.createElement('div');
+    row.className = 'row';
+    for (const id of s.row) row.append(tile(id, m, render));
+    field.append(focal, row);
+    canvas.append(field);
+
+    const insp = document.createElement('section');
+    insp.className = 'pane insp';
+    const crumb = document.createElement('div');
+    crumb.className = 'crumb';
+    crumb.innerHTML = '<h2>Findings</h2>';
+    const queue = document.createElement('div');
+    queue.className = 'queue';
+    for (const [id] of RANKED.slice(0, 5)) {
+      const r = document.createElement('div');
+      r.className = 'qrow';
+      r.innerHTML = '<i class="fil"></i>';
+      const n = document.createElement('span');
+      n.className = 'name';
+      n.textContent = nameOf(id);
+      r.append(n);
+      r.onclick = () => { m.focal = id; render(); };
+      queue.append(r);
+    }
+    const w = document.createElement('div');
+    w.className = 'watching';
+    w.textContent = 'Watching · 2 reads';
+    queue.append(w);
+
+    const dock = document.createElement('div');
+    dock.className = 'dock';
+    dock.toggleAttribute('data-grip', true);
+    dock.innerHTML = '<div class="dl"><span class="dk">Trial</span>'
+      + '<span class="dv">Carb ratio Evening · maturing</span></div>'
+      + '<div class="dl"><span class="dk">Profile</span>'
+      + '<span class="dv">ISF 42 · I:C 5.4</span></div>';
+    const grip = document.createElement('button');
+    grip.type = 'button';
+    grip.className = 'grip';
+    grip.setAttribute('aria-expanded', String(m.open));
+    grip.setAttribute('aria-label', `${m.open ? 'Close' : 'Open'} all charts (${ALL.length})`);
+    grip.title = grip.getAttribute('aria-label');
+    grip.innerHTML = '<span class="knurl"></span>'
+      + `<span class="chev">${m.open ? '›' : '‹'}</span>`;
+    grip.onclick = () => { m.open = !m.open; render(); };
+    dock.append(grip);
+    insp.append(crumb, queue, dock);
+    panes.append(canvas, insp);
+    app.append(rail, panes);
+
+    if (m.open) {
+      if (opts.veil) {
+        const veil = document.createElement('button');
+        veil.className = 'veil';
+        veil.setAttribute('aria-label', 'Close all charts');
+        veil.onclick = () => { m.open = false; render(); };
+        panes.append(veil);
+      }
+      const drawer = document.createElement('section');
+      drawer.className = 'drawer';
+      Object.assign(drawer.style, BOX[opts.cells]);
+      drawer.innerHTML = '<header><span>All charts</span><span class="spring"></span>'
+        + `<span>${ALL.length} live · ${m.pins.length} pinned</span>`
+        + '<span class="esc">Esc</span></header>';
+      const cells = document.createElement('div');
+      cells.className = 'cells';
+      cells.dataset.c = opts.cells;
+      const seated = new Set([s.focal, ...s.row.slice(0, 3)]);
+      const add = (id, watching) => {
+        const c = document.createElement('div');
+        c.className = 'cell';
+        c.toggleAttribute('data-seated', seated.has(id));
+        c.toggleAttribute('data-watching', Boolean(watching));
+        const top = document.createElement('div');
+        top.className = 'top';
+        const open = document.createElement('button');
+        open.type = 'button';
+        open.className = 'lbl';
+        open.textContent = nameOf(id);
+        open.onclick = () => { m.focal = id; m.open = false; render(); };
+        const pin = glyph('rpin', PIN_OFF, PIN_ON, m.pins.includes(id));
+        pin.setAttribute('aria-label', `Pin ${nameOf(id)}`);
+        pin.onclick = (e) => {
+          e.stopPropagation();
+          m.pins = m.pins.includes(id) ? m.pins.filter((x) => x !== id) : [...m.pins, id];
+          render();
+        };
+        top.append(open, pin);
+        const th = document.createElement('div');
+        th.className = 'th';
+        c.append(top, th);
+        cells.append(c);
+      };
+      for (const [id] of RANKED) add(id, false);
+      const sect = document.createElement('div');
+      sect.className = 'sect';
+      sect.textContent = 'Watching — pin to seat';
+      cells.append(sect);
+      for (const [id] of WATCHING) add(id, true);
+      drawer.append(cells);
+      panes.append(drawer);
+    }
+  }
+  render();
+  return wrap;
+}
+
+const SPECS = {
+  D1: { cells: 'strip', veil: false },
+  D2: { cells: 'card', veil: false },
+  D3: { cells: 'shelf', veil: true },
+};
+for (const host of document.querySelectorAll('[data-spec]')) {
+  const opts = SPECS[host.dataset.spec];
+  host.append(frame('light', opts), frame('dark', opts));
+}
+</script>
+</body>
+</html>

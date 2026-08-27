@@ -1,0 +1,702 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WIREFRAME — the dock's three states</title>
+<style>
+/* WIREFRAME — NO FIDELITY CLAIM — NOT LOCKABLE.
+   Slice 3. ONE drawing of the operator's model, not a menu of alternatives:
+   the dock has three states, and one invariant moves it between them without
+   being asked. The control chrome is deliberately PLAIN and marked as
+   placeholder — choosing it is the next round, and drawing it prettily here
+   would smuggle a decision into a drawing about mechanism.
+
+   THIS SPECIMEN IS LIVE AND THE VIEWPORT IS A SLIDER. Drag the height control
+   to watch the dock auto-hide and come back on its own. Neutral tokens
+   throughout; deleted when the change lands. */
+:root {
+  --w-ground: #E7E4DD; --w-panel: #F4F2ED; --w-recess: #D6D2C8;
+  --w-edge: #C3BEB2; --w-hair: #CFCABE; --w-trench: #DAD6CC;
+  --w-ink: #2B2724; --w-label: #56504A; --w-quiet: #8C857C;
+  --w-live: #C4622C; --w-held: #3F3A34; --w-lift: rgba(255,255,255,.8);
+  color-scheme: light;
+}
+.app[data-t="dark"] {
+  --w-ground: #1D1A18; --w-panel: #26221F; --w-recess: #171513;
+  --w-edge: #3A3430; --w-hair: #363029; --w-trench: #141210;
+  --w-ink: #EFEAE2; --w-label: #B6ADA2; --w-quiet: #877E74;
+  --w-live: #D9834C; --w-held: #E4DDD2; --w-lift: rgba(255,255,255,.10);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 26px 30px 80px; min-width: 1000px; background: #EDEAE3; color: #2B2724;
+  font: 13px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+.banner { margin: 0 0 22px; padding: 8px 12px; border: 1px dashed #8C857C;
+  color: #56504A; font-size: 11px; letter-spacing: .09em; text-transform: uppercase; }
+h1 { margin: 0 0 4px; font-size: 17px; font-weight: 640; letter-spacing: -.01em; }
+.lede { max-width: 96ch; margin: 0 0 8px; color: #56504A; font-size: 12.5px; }
+.lede b { color: #2B2724; }
+.ruled { max-width: 96ch; margin: 0 0 16px; padding: 9px 12px; background: #E3DFD6;
+  border-left: 3px solid #C4622C; color: #56504A; font-size: 12px; }
+.ruled b { color: #2B2724; }
+.placeholder { max-width: 96ch; margin: 0 0 20px; padding: 9px 12px; background: #F2E7DE;
+  border-left: 3px solid #8C857C; color: #56504A; font-size: 12px; }
+.placeholder b { color: #2B2724; }
+h2 { margin: 26px 0 6px; font-size: 14.5px; font-weight: 700; }
+
+/* ---- the bench ---------------------------------------------------------- */
+.bench { display: flex; gap: 22px; align-items: flex-start; flex-wrap: wrap; }
+.stage { display: flex; flex-direction: column; gap: 5px; }
+.stage > .t { color: #8C857C; font-size: 10px; letter-spacing: .09em; text-transform: uppercase; }
+.controls { display: grid; gap: 10px; align-content: start; width: 320px;
+  padding: 12px 14px; background: #E3DFD6; border: 1px solid #CFCABE; }
+.controls h3 { margin: 0; font-size: 11px; font-weight: 700; letter-spacing: .09em;
+  text-transform: uppercase; color: #56504A; }
+.controls label { display: grid; gap: 3px; font-size: 11.5px; color: #56504A; }
+.controls input[type=range] { width: 100%; }
+.readout { padding: 8px 10px; background: #F4F2ED; border: 1px solid #CFCABE;
+  font: 11px ui-monospace, monospace; color: #2B2724; white-space: pre-line; line-height: 1.7; }
+.readout b { color: #C4622C; }
+.log { padding: 8px 10px; background: #F4F2ED; border: 1px solid #CFCABE;
+  font: 10.5px ui-monospace, monospace; color: #56504A; height: 132px; overflow-y: auto; }
+.log div { padding: 1px 0; }
+.log div:first-child { color: #C4622C; font-weight: 700; }
+
+/* ---- app frame ---------------------------------------------------------- */
+.app { background: var(--w-ground); color: var(--w-ink); box-shadow: 0 0 0 1px var(--w-edge);
+  overflow: hidden; width: 660px; user-select: none;
+  /* SCALED BY TRANSFORM, NOT `zoom` — `zoom` corrupts flex/percentage layout
+     here (see the controls wireframe's note). */
+  transform: scale(1.4); transform-origin: top left;
+  transition: height 180ms cubic-bezier(.2,.8,.2,1); }
+.topbar { display: flex; align-items: center; gap: 9px; height: 22px; padding: 0 10px;
+  background: var(--w-panel); box-shadow: inset 0 -1px 0 var(--w-edge);
+  color: var(--w-label); font-size: 9px; }
+.topbar b { color: var(--w-ink); }
+.rail { display: flex; align-items: center; height: 24px; padding: 0 10px; gap: 9px;
+  background: var(--w-recess); box-shadow: inset 0 -1px 0 var(--w-edge); }
+.rail .cap { color: var(--w-label); font-size: 9px; font-weight: 650;
+  letter-spacing: .09em; text-transform: uppercase; }
+.panes { display: grid; grid-template-columns: minmax(0,1fr) 196px;
+  min-height: 0; background: var(--w-trench); }
+.pane { min-width: 0; min-height: 0; background: var(--w-panel);
+  box-shadow: inset 0 0 0 1px var(--w-edge), inset 0 1px 0 var(--w-lift); }
+
+/* THE CANVAS PANE — strip on top, then the field. The field is the only thing
+   the dock's state changes; the strip is the driver and never moves. */
+.pane.canvas { display: grid; grid-template-rows: 16px 62px minmax(0,1fr); min-height: 0; }
+/* FULL-CANVAS TAKES THE GLUCOSE STRIP TOO. On a short viewport the strip is the
+   largest single thing the minis are competing with, and the whole point of
+   mounting the dock is to spend that space on charts — so the state is on the
+   PANE, not on the field. */
+.pane.canvas[data-dock="full"], .pane.canvas[data-fs] { grid-template-rows: minmax(0,1fr); }
+.pane.canvas[data-dock="full"] > .plate-cap,
+.pane.canvas[data-dock="full"] > .strip,
+.pane.canvas[data-fs] > .plate-cap,
+.pane.canvas[data-fs] > .strip { display: none; }
+/* one chart, the whole pane, and its own rail is the way back */
+.field[data-fs] { grid-template-rows: minmax(0,1fr); }
+.field[data-fs] > .dock, .field[data-fs] > .spotlight { display: none; }
+.fs-tile { display: grid; min-width: 0; min-height: 0; }
+.plate-cap { padding: 3px 9px 0; color: var(--w-quiet); font-size: 9px;
+  letter-spacing: .09em; text-transform: uppercase; }
+.strip { margin: 2px 7px 0; background: var(--w-recess); cursor: crosshair;
+  box-shadow: inset 0 0 0 1px var(--w-edge); display: grid; place-items: center;
+  color: var(--w-quiet); font-size: 8px; letter-spacing: .09em; text-transform: uppercase; }
+.field { position: relative; display: grid; gap: 5px; padding: 5px; min-height: 0;
+  background: var(--w-trench); box-shadow: inset 0 6px 10px -8px rgba(0,0,0,.55); }
+/* the three states, as grid templates on one element */
+.field[data-dock="hidden"] { grid-template-rows: minmax(0,1fr); }
+.field[data-dock="docked"] { grid-template-rows: minmax(0,1fr) var(--mini); }
+.field[data-dock="full"]   { grid-template-rows: minmax(0,1fr); }
+/* IT POPS OVER, IT DOES NOT SQUEEZE. Below the floor there is no room to share:
+   splitting the field gave the spotlight 0px at a 150px viewport, which both
+   broke the invariant that hid the dock in the first place and destroyed the
+   one required way out — clicking the spotlight — by leaving nothing to click.
+   Raised here, the dock floats over the spotlight instead, so the spotlight
+   keeps its whole height underneath and stays both readable and clickable. */
+.field[data-over] { grid-template-rows: minmax(0,1fr); }
+.field[data-over] > .dock {
+  position: absolute; left: 5px; right: 5px; bottom: 5px; height: var(--mini);
+  /* CLAMPED TO THE FIELD. Unclamped, a viewport short enough that the field is
+     under one mini tall let the floating dock spill up over the glucose strip —
+     a panel escaping the pane it belongs to. */
+  max-height: calc(100% - 10px);
+  background: var(--w-trench); z-index: 2;
+  box-shadow: 0 -8px 18px -10px rgba(0,0,0,.8), 0 0 0 1px var(--w-edge); }
+.spotlight { display: grid; min-width: 0; min-height: 0; }
+.field[data-dock="full"] .spotlight { display: none; }
+
+/* the dock, in its docked and full forms — ONE element, one tile builder */
+.dock { position: relative; display: grid; min-width: 0; min-height: 0; }
+.dock[data-form="docked"] { grid-auto-flow: column; gap: 5px;
+  grid-auto-columns: max(76px, calc((100% - 10px) / 3.35));
+  overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+.dock[data-form="docked"]::-webkit-scrollbar { display: none; }
+/* RESPONSIVE, NOT THREE. The column count falls out of how many minis fit at
+   their own width, so a wide screen gets more charts rather than bigger ones and
+   a narrow one still gets a legible grid. `--mini-w` is the same width the
+   bottom-docked row gives a mini. */
+.dock[data-form="full"] {
+  grid-template-columns: repeat(auto-fill, minmax(var(--mini-w), 1fr));
+  grid-auto-rows: var(--mini); gap: 5px; overflow-y: auto; overflow-x: hidden;
+  align-content: start; scrollbar-width: thin; }
+
+.tile { position: relative; display: grid;
+  grid-template: 13px minmax(0,1fr) / minmax(0,1fr) 14px;
+  background: var(--w-recess); box-shadow: inset 0 0 0 1px var(--w-edge);
+  min-width: 0; min-height: 0; overflow: hidden; }
+.tile .nm { grid-column: 1; padding: 2px 3px 0 6px; color: var(--w-label);
+  font-size: 7.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+.tile .plot { grid-column: 1; margin: 2px 5px 4px; background: var(--w-trench);
+  box-shadow: inset 0 0 0 1px var(--w-hair); cursor: pointer; }
+.spotlight .tile { box-shadow: inset 0 0 0 1px var(--w-live); }
+.tile[data-watching] .nm { font-style: italic; }
+.trail { grid-column: 2; grid-row: 1 / -1; display: grid; align-content: start;
+  justify-items: center; padding: 2px 0 0; gap: 1px; transition: background 150ms; }
+.tile:hover .trail { background: rgba(0,0,0,.05); }
+.app[data-t="dark"] .tile:hover .trail { background: rgba(255,255,255,.05); }
+.trail button { display: grid; place-items: center; width: 12px; height: 12px; padding: 0;
+  border: 0; background: transparent; color: var(--w-quiet); cursor: pointer; opacity: .5; }
+.tile:hover .trail button { opacity: 1; }
+.trail button[aria-pressed="true"] { opacity: 1; color: var(--w-held); }
+.trail svg { grid-area: 1 / 1; width: 9px; height: 9px; display: block; }
+.off { fill: none; stroke: currentColor; stroke-width: 1.5;
+  stroke-linecap: round; stroke-linejoin: round; }
+.on { fill: currentColor; stroke: none; opacity: 0; }
+[aria-pressed="true"] > .on { opacity: 1; }
+[aria-pressed="true"] > .off { opacity: 0; }
+.watch-mark { grid-column: 1 / -1; padding: 3px 2px 1px; color: var(--w-quiet);
+  font-size: 7px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  border-top: 1px solid var(--w-hair); }
+.dock[data-form="docked"] .watch-mark { grid-column: auto; writing-mode: vertical-rl;
+  border-top: 0; border-left: 1px solid var(--w-hair); width: 14px; padding: 2px; }
+
+/* ---- PLACEHOLDER CHROME. Plain on purpose — this is next round's subject. -- */
+.ph { z-index: 3; display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 5px; background: var(--w-panel); box-shadow: 0 0 0 1px var(--w-quiet);
+  color: var(--w-label); font: 700 8px/1 ui-sans-serif, system-ui;
+  letter-spacing: .08em; text-transform: uppercase; cursor: pointer; border: 0;
+  border-style: dashed; }
+.ph:hover { color: var(--w-ink); box-shadow: 0 0 0 1px var(--w-live); }
+/* the tab that raises a hidden dock — centred on the canvas's bottom edge */
+.ph.tab { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%);
+  border-radius: 2px 2px 0 0; z-index: 4; }
+/* THE CLUSTER IS A CONTAINER, NOT A CONTROL. Its children are ordinary
+   in-flow buttons; giving them `.ph` made them absolute too, which collapsed
+   the cluster to 0x0 and threw the only route to full-canvas outside the
+   field, where it was clipped. It sits INSIDE the field's top-right corner so
+   it cannot leave the box it belongs to. */
+.ph-cluster { position: absolute; right: 6px; top: 6px; z-index: 4;
+  display: flex; align-items: center; gap: 4px; }
+.ph-cluster .ph { position: static; }
+.ph-note { position: absolute; left: 5px; bottom: 3px; z-index: 3; pointer-events: none;
+  color: var(--w-quiet); font: 7px ui-monospace, monospace; letter-spacing: .06em; }
+
+/* inspector */
+.pane.insp { display: flex; flex-direction: column; min-height: 0; }
+.crumb { display: flex; align-items: baseline; gap: 8px; height: 18px; padding: 0 8px;
+  box-shadow: inset 0 -1px 0 var(--w-hair); }
+.crumb h2 { margin: 0; font-size: 10px; font-weight: 650; color: var(--w-ink); }
+.queue { flex: 1 1 auto; padding: 4px 6px; display: grid; gap: 3px; align-content: start;
+  overflow: hidden; }
+.qrow { display: grid; grid-template-columns: 2px minmax(0,1fr); align-items: center;
+  gap: 6px; padding: 2px 4px; cursor: pointer; }
+.qrow:hover { background: rgba(0,0,0,.05); }
+.app[data-t="dark"] .qrow:hover { background: rgba(255,255,255,.06); }
+.qrow .fil { width: 2px; height: 11px; background: var(--w-live); }
+.qrow .name { color: var(--w-ink); font-size: 9px; font-weight: 600;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dockrow { padding: 4px 8px 5px; background: var(--w-trench);
+  box-shadow: inset 0 1px 0 var(--w-hair); display: grid; gap: 2px; }
+.dl { display: flex; align-items: center; gap: 6px; }
+.dk { color: var(--w-quiet); font-size: 7.5px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase; }
+.dv { color: var(--w-ink); font-size: 9px; font-weight: 600;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+</style>
+</head>
+<body>
+
+<p class="banner">Wireframe — no fidelity claim — not lockable</p>
+
+<h1>The dock's three states</h1>
+<p class="lede">
+  One drawing of the ruled model, not a menu. The dock is <b>hidden</b>,
+  <b>bottom-docked</b> or <b>full-canvas</b>, and it is the same tiles with the
+  same rails and the same pins in all three. One invariant moves it without
+  being asked: <b>the spotlight is never shorter than a mini</b> — when the
+  viewport cannot give it that, the dock hides and the spotlight takes the room;
+  when the viewport grows back, the minis return on their own.
+</p>
+<p class="ruled">
+  <b>Drag the viewport-height slider.</b> That is the whole mechanism: watch the
+  dock hide itself on the way down and come back on the way up, and watch the
+  read-out name the state and the reason. The event log records every
+  interaction and whether it dismissed the dock, so the dismissal rules are
+  testable rather than described.
+</p>
+<p class="placeholder">
+  <b>Every dashed control is a placeholder.</b> The tab, and the
+  MOUNT / CLOSE / HIDE cluster, are drawn as plainly as possible on purpose —
+  which control chrome these become is the next round, and drawing them well
+  here would settle it by stealth. Judge the <i>states and the transitions</i>,
+  not the buttons.
+</p>
+
+<div class="bench">
+  <div class="stage">
+    <span class="t">light</span>
+    <div id="mount-light"></div>
+  </div>
+  <div class="stage">
+    <span class="t">dark</span>
+    <div id="mount-dark"></div>
+  </div>
+  <div class="controls">
+    <h3>Viewport</h3>
+    <label>Height — drag me
+      <input type="range" id="vh" min="150" max="420" value="330">
+    </label>
+    <div class="readout" id="readout"></div>
+    <h3>Event log</h3>
+    <div class="log" id="log"></div>
+  </div>
+</div>
+
+<h2>What the drawing asserts</h2>
+<p class="lede">
+  The spotlight's floor is <b>220px</b> and a mini is <b>148px</b> — two separate
+  numbers, deliberately. At the shipped app's 1440×900 the canvas field is
+  <b>550px</b>, so the spotlight has <b>397px</b>, far clear of its floor. The
+  dock auto-hides when the field drops under <b>220 + 148 + 8 = 376px</b>, which
+  at this layout is a browser window about <b>700px</b> tall; above that the
+  minis are not hideable by anyone.
+  <br><br>
+  <b>What the 220 buys:</b> a floating dock covers 148px from the bottom, so at
+  the floor the spotlight still shows <b>72px</b> — its title and a sliver of
+  plot — and stays identifiable and clickable while the dock is up. That holds
+  down to a field of 176px, a window near <b>500px</b> tall. Below that the title
+  is covered too, and the cluster's <span style="font-family:ui-monospace">Hide</span>
+  is the way out.
+</p>
+
+<script>
+const PIN_OFF = '<path d="M9.6 2.2 13.8 6.4"/><path d="M11 4.6 7.2 6 4.4 8.8l2.8 2.8L10 8.8z"/>'
+  + '<path d="M5.8 10.2 2.6 13.4"/>';
+const PIN_ON = '<path d="M9.9 1.7a.75.75 0 0 0-1 1.1l.3.3-2.2.9-3.2 3.2 5.1 5.1 3.2-3.2'
+  + '.9-2.2.3.3a.75.75 0 0 0 1.1-1z"/>'
+  + '<rect x="1.6" y="12.5" width="5.2" height="1.4" rx=".7" transform="rotate(-45 4.2 13.2)"/>';
+const FULL = '<path d="M6 2.6H2.6V6"/><path d="M10 2.6h3.4V6"/><path d="M6 13.4H2.6V10"/>'
+  + '<path d="M10 13.4h3.4V10"/>';
+const CLOCK_OFF = '<circle cx="8" cy="8" r="6"/><path d="M8 4.6V8l2.4 1.6"/>';
+const CLOCK_ON = '<path fill-rule="evenodd" d="M8 1.6a6.4 6.4 0 1 0 0 12.8 6.4 6.4 0 0 0 0-12.8z'
+  + 'M7.3 4.2h1.4v4.1l2.2 1.5-.8 1.2-2.8-1.9z"/>';
+
+const RANKED = [
+  ['isf', 'Correction factor'],
+  ['missed', 'Missed / unannounced meal'],
+  ['lowover', 'Over-treated low'],
+  ['undercnt', 'Carb undercount'],
+  ['stacking', 'Correction stacking'],
+  ['overdel', 'Meal over-delivery'],
+  ['short', 'Meal bolus fell short'],
+  ['late', 'Late bolus'],
+  ['oniob', 'Correction on active insulin'],
+];
+const WATCHING = [['icb1', 'Carb ratio Morning · held'], ['icb2', 'Basal 22:00 · collecting']];
+const ALL = [...RANKED, ...WATCHING];
+const RANKED_IDS = RANKED.map(([id]) => id);
+const nameOf = (id) => ALL.find(([k]) => k === id)[1];
+
+/* THE SPOTLIGHT'S FLOOR IS ITS OWN NUMBER, not the mini's. "As tall as a mini"
+   was the wrong rule: at that floor the floating dock covers the spotlight
+   whole, including its title, so the reader cannot tell what is underneath.
+   220 against a 148 mini leaves 72px — the title and a sliver of plot — showing
+   above a floating dock, which is what makes the spotlight identifiable while
+   the dock is up.
+
+   The specimen is scaled: 46px stands for the app's 148px mini, so one specimen
+   pixel is 3.217 app pixels and every figure below is that same scale. */
+const APP_MINI = 148;
+const APP_SPOTLIGHT_FLOOR = 220;
+const SCALE = 46 / APP_MINI;
+const MINI = 46;                                  // the specimen's mini height
+const MINI_W = 118;                               // and its docked width
+const GAP = 5;
+const APP_TITLE = 28;                             // the tile's nameplate row
+const SPOTLIGHT_FLOOR = Math.round(APP_SPOTLIGHT_FLOOR * SCALE);
+const TITLE = Math.round(APP_TITLE * SCALE);
+const DOCK_FLOOR = SPOTLIGHT_FLOOR + MINI + GAP;  // both, plus the gap between
+/* THE RAISE FLOOR — lower than the dock floor, and a different question. The
+   dock floor asks "is there room to seat both?"; this asks "is bottom-docking
+   worth doing?" A floating dock has to leave the spotlight's nameplate showing,
+   or the reader cannot tell what is underneath or click it to dismiss.
+
+   BELOW IT THE TAB MOUNTS INSTEAD OF DOCKING. The control never disappears and
+   the reader never asks for something the surface cannot honour — the tab just
+   goes where the room actually is. Full-canvas takes the whole pane, so it has
+   no spotlight to leave visible and no floor of its own to clear; at a viewport
+   this short it is the only honest thing the charts can do. */
+const RAISE_FLOOR = MINI + TITLE + GAP;
+
+/* ONE MODEL, SHARED BY BOTH GROUNDS, so the two frames cannot disagree about a
+   state machine that is the entire subject of the drawing. */
+const model = {
+  vh: 330,
+  focal: 'isf',
+  pins: ['undercnt'],
+  /* `wanted` is what the READER last asked for. `state()` is what they get,
+     because the invariant can overrule them — and it never overrules them
+     upward, only into hiding. */
+  wanted: 'docked',
+  /* FULL-SCREEN REMEMBERS ITS DOOR. Backing out returns the reader to the state
+     they entered from — the browser if they were browsing, the docked row if
+     they were not — so full-screening a chart mid-browse is a detour and not an
+     exit. Without this, examining one chart quietly ended the browse. */
+  fullscreen: null,   // { chartId, from }
+  log: [],
+};
+
+function fieldHeight(vh) {
+  // topbar 22 + rail 24 + strip block 78, then the field takes the rest
+  return Math.max(0, vh - 22 - 24 - 78);
+}
+function forcedHidden(vh) { return fieldHeight(vh) < DOCK_FLOOR; }
+/* Can the reader raise it here at all? */
+function canRaise(vh) { return fieldHeight(vh) >= RAISE_FLOOR; }
+/* WHERE THE DOCK RESTS WHEN THE READER IS NOT ASKING FOR ANYTHING. This is the
+   whole of the "no hiding when there is room" rule, in one function: a tall
+   viewport rests docked, a short one rests hidden. */
+function restingState() { return forcedHidden(model.vh) ? 'hidden' : 'docked'; }
+
+function state() {
+  /* FULL-CANVAS IS AVAILABLE AT EVERY SIZE. On a short viewport it is the most
+     valuable state, not the forbidden one — it spends the glucose strip's own
+     space on the minis. */
+  if (model.wanted === 'full') return 'full';
+  if (forcedHidden(model.vh)) {
+    return model.wanted === 'raised' && canRaise(model.vh) ? 'docked' : 'hidden';
+  }
+  return 'docked';
+}
+function why() {
+  const f = Math.round(fieldHeight(model.vh));
+  if (model.wanted === 'full') return 'mounted by hand\nclosing returns to ' + restingState();
+  if (forcedHidden(model.vh)) {
+    const exposed = Math.max(0, f - MINI);
+    if (!canRaise(model.vh)) {
+      return `field ${f} < raise floor ${RAISE_FLOOR}\ntoo short to dock — the tab mounts`;
+    }
+    return model.wanted === 'raised'
+      ? `field ${f} < floor ${DOCK_FLOOR}\nraised — ${exposed}px of spotlight showing`
+      : `field ${f} < floor ${DOCK_FLOOR}\nspotlight floor is ${SPOTLIGHT_FLOOR}`;
+  }
+  return `field ${f} >= floor ${DOCK_FLOOR}\nminis are not hideable here`;
+}
+
+function note(text, dismissed) {
+  model.log.unshift(`${text}${dismissed === undefined ? '' : dismissed ? '  → HID' : '  → kept'}`);
+  model.log = model.log.slice(0, 40);
+}
+/* THE DISMISSAL RULE, in one place: a hand-raised dock in a short viewport is
+   dismissed by attention moving to the spotlight or the findings, and by
+   nothing else. Pin, full-screen and the glucose slider all leave it up. */
+function interact(kind, dismisses) {
+  const raised = forcedHidden(model.vh) && model.wanted === 'raised';
+  if (raised && dismisses) model.wanted = 'hidden';
+  note(kind, raised ? dismisses : undefined);
+}
+
+function svg(body, cls) {
+  const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  s.setAttribute('viewBox', '0 0 16 16');
+  s.setAttribute('aria-hidden', 'true');
+  s.setAttribute('class', cls);
+  s.innerHTML = body;
+  return s;
+}
+function glyph(off, on, held) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.append(svg(off, 'off'));
+  if (on) { b.append(svg(on, 'on')); b.setAttribute('aria-pressed', String(Boolean(held))); }
+  return b;
+}
+function seats() {
+  const pins = model.pins.filter((id) => id !== model.focal);
+  const rest = RANKED_IDS.filter((id) => id !== model.focal && !pins.includes(id));
+  return [...pins, ...rest];
+}
+
+function tile(id, spotlight, watching) {
+  const t = document.createElement('article');
+  t.className = 'tile';
+  t.toggleAttribute('data-watching', Boolean(watching));
+  const nm = document.createElement('div');
+  nm.className = 'nm';
+  nm.textContent = nameOf(id);
+  const open = () => {
+    if (spotlight) { interact('spotlight chart clicked', true); paint(); return; }
+    model.focal = id;
+    if (state() === 'full') {
+      /* CLICKING A CHART IN THE BROWSER TAKES YOU TO IT. Same verb the docked
+         row already has, and it closes the browser on the way — so mount, find
+         it, read it is one gesture. It is also the second way out, for a reader
+         who never finds Close. */
+      const rest = restingState();
+      model.wanted = rest === 'hidden' ? 'hidden' : 'docked';
+      note(`"${nameOf(id)}" → spotlight, browser closed → ${rest}`);
+    } else {
+      interact(`mini "${nameOf(id)}" → spotlight`, true);
+    }
+    paint();
+  };
+  nm.onclick = open;
+  const plot = document.createElement('div');
+  plot.className = 'plot';
+  plot.onclick = open;
+  const rail = document.createElement('span');
+  rail.className = 'trail';
+  const inFullscreen = model.fullscreen?.chartId === id;
+  const full = glyph(FULL, null);
+  full.title = inFullscreen ? 'Back out of full-screen' : 'Full-screen this chart';
+  full.onclick = (e) => {
+    e.stopPropagation();
+    if (inFullscreen) {
+      const back = model.fullscreen.from;
+      model.fullscreen = null;
+      model.wanted = back === 'full' ? 'full' : model.wanted;
+      note(`full-screen dismissed → back to ${back}`);
+    } else {
+      model.fullscreen = { chartId: id, from: state() };
+      interact('chart full-screened', false);
+    }
+    paint();
+  };
+  rail.append(full);
+  const pin = glyph(PIN_OFF, PIN_ON, model.pins.includes(id));
+  pin.title = model.pins.includes(id) ? 'Release to findings rank' : 'Keep left-most';
+  pin.onclick = (e) => {
+    e.stopPropagation();
+    model.pins = model.pins.includes(id)
+      ? model.pins.filter((x) => x !== id) : [...model.pins, id];
+    interact(`chart ${model.pins.includes(id) ? 'pinned' : 'unpinned'}`, false);
+    paint();
+  };
+  rail.append(pin, glyph(CLOCK_OFF, CLOCK_ON, true));
+  t.append(nm, rail, plot);
+  return t;
+}
+
+function ph(cls, label, title, onclick) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = `ph ${cls}`;
+  b.textContent = label;
+  b.title = `PLACEHOLDER CHROME — ${title}`;
+  b.onclick = onclick;
+  return b;
+}
+
+function buildApp(theme) {
+  const app = document.createElement('div');
+  app.className = 'app';
+  app.dataset.t = theme;
+  return app;
+}
+
+function renderInto(app) {
+  const st = state();
+  const short = forcedHidden(model.vh);
+  app.style.height = `${model.vh}px`;
+  app.style.setProperty('--mini', `${MINI}px`);
+  app.style.setProperty('--mini-w', `${MINI_W}px`);
+  app.innerHTML = '';
+
+  const topbar = document.createElement('div');
+  topbar.className = 'topbar';
+  topbar.innerHTML = '<b>Harmonic</b><span>Diagnose</span>';
+
+  const rail = document.createElement('div');
+  rail.className = 'rail';
+  rail.innerHTML = '<span class="cap">Window</span><span class="cap">24 h</span>';
+
+  const panes = document.createElement('div');
+  panes.className = 'panes';
+  panes.style.height = `${model.vh - 22 - 24}px`;
+
+  const canvas = document.createElement('section');
+  canvas.className = 'pane canvas';
+  canvas.dataset.dock = st;
+  const cap = document.createElement('div');
+  cap.className = 'plate-cap';
+  cap.textContent = 'Glucose by time of day';
+  const strip = document.createElement('div');
+  strip.className = 'strip';
+  strip.textContent = 'glucose strip — drag me';
+  /* THE SLIDER NEVER DISMISSES THE DOCK. Re-scoping the window is what the
+     minis are FOR; dismissing them for it would fight the reader. */
+  strip.onclick = () => { interact('glucose slider dragged', false); paint(); };
+
+  const field = document.createElement('div');
+  field.className = 'field';
+  field.dataset.dock = st;
+  /* A raised dock in a short viewport is the ONLY case that floats; everywhere
+     else the field genuinely has the room to give it a row of its own. */
+  if (short && st === 'docked') field.toggleAttribute('data-over', true);
+  if (model.fullscreen) field.toggleAttribute('data-fs', true);
+
+  const spotlight = document.createElement('div');
+  spotlight.className = 'spotlight';
+  spotlight.append(tile(model.focal, true));
+  field.append(spotlight);
+
+  if (model.fullscreen) {
+    const fs = document.createElement('div');
+    fs.className = 'fs-tile';
+    fs.append(tile(model.fullscreen.chartId));
+    const back = document.createElement('div');
+    back.className = 'ph-note';
+    back.textContent = `full-screen · its rail backs out to ${model.fullscreen.from}`;
+    field.append(fs, back);
+    canvas.dataset.fs = '1';
+  } else if (st === 'hidden') {
+    const mounts = !canRaise(model.vh);
+    field.append(ph('tab', mounts ? '▲ charts (full)' : '▲ charts',
+      mounts ? 'too short to dock — the tab mounts instead' : 'raise the dock from hidden',
+      () => {
+        if (mounts) { model.wanted = 'full'; note('tab pressed → full-canvas (too short to dock)'); }
+        else { model.wanted = 'raised'; note('tab pressed → dock raised'); }
+        paint();
+      }));
+  } else if (st !== 'hidden') {
+    const dock = document.createElement('div');
+    dock.className = 'dock';
+    dock.dataset.form = st === 'full' ? 'full' : 'docked';
+    for (const id of seats()) dock.append(tile(id));
+    /* THE WATCHING READS RIDE ALONG IN BOTH DOCK FORMS, past a divider, still
+       reachable only by pinning — they never seat themselves. */
+    const mark = document.createElement('div');
+    mark.className = 'watch-mark';
+    mark.textContent = 'Watching — pin to seat';
+    dock.append(mark);
+    for (const [id] of WATCHING) dock.append(tile(id, false, true));
+    field.append(dock);
+
+    const cluster = document.createElement('div');
+    cluster.className = 'ph-cluster';
+    if (st === 'docked') {
+      /* AVAILABLE AT EVERY SIZE. On a short viewport this is the most valuable
+         control on the surface, not a forbidden one: it spends the glucose
+         strip's own space on the charts. */
+      cluster.append(ph('', 'Mount', 'give the dock the whole canvas pane', () => {
+        model.wanted = 'full'; note('dock → full-canvas'); paint();
+      }));
+    }
+    if (st === 'full') {
+      /* ONE CONTROL, NOT TWO. Where closing lands is the viewport's answer, not
+         the reader's — docked where there is room, hidden where there is not —
+         so there is no Dock/Hide pair to choose between and no way to ask for
+         hidden on a tall viewport. */
+      const rest = restingState();
+      cluster.append(ph('', 'Close', `return the dock to ${rest}`, () => {
+        model.wanted = rest === 'hidden' ? 'hidden' : 'docked';
+        note(`dock → ${rest} (closed)`); paint();
+      }));
+    }
+    if (st === 'docked' && short) {
+      cluster.append(ph('', 'Hide', 'put the dock away again', () => {
+        model.wanted = 'hidden'; note('dock → hidden (by hand)'); paint();
+      }));
+    }
+    if (cluster.children.length) field.append(cluster);
+  }
+
+  const phNote = document.createElement('div');
+  phNote.className = 'ph-note';
+  phNote.textContent = `dock: ${st}${short ? ' · short viewport' : ''}`;
+  field.append(phNote);
+
+  canvas.append(cap, strip, field);
+
+  const insp = document.createElement('section');
+  insp.className = 'pane insp';
+  const crumb = document.createElement('div');
+  crumb.className = 'crumb';
+  crumb.innerHTML = '<h2>Findings</h2>';
+  const queue = document.createElement('div');
+  queue.className = 'queue';
+  for (const [id] of RANKED.slice(0, 5)) {
+    const r = document.createElement('div');
+    r.className = 'qrow';
+    r.innerHTML = '<i class="fil"></i>';
+    const n = document.createElement('span');
+    n.className = 'name';
+    n.textContent = nameOf(id);
+    r.append(n);
+    /* DRILLING A FINDING IS ATTENTION MOVING AWAY, so it dismisses a
+       hand-raised dock — and it always takes the spotlight. */
+    r.onclick = () => {
+      model.focal = id;
+      interact(`finding "${nameOf(id)}" drilled`, true);
+      paint();
+    };
+    queue.append(r);
+  }
+  const dockrow = document.createElement('div');
+  dockrow.className = 'dockrow';
+  dockrow.innerHTML = '<div class="dl"><span class="dk">Trial</span>'
+    + '<span class="dv">Carb ratio Evening · maturing</span></div>'
+    + '<div class="dl"><span class="dk">Profile</span>'
+    + '<span class="dv">ISF 42 · I:C 5.4</span></div>';
+  insp.append(crumb, queue, dockrow);
+
+  panes.append(canvas, insp);
+  app.append(topbar, rail, panes);
+}
+
+const light = buildApp('light');
+const dark = buildApp('dark');
+document.getElementById('mount-light').append(light);
+document.getElementById('mount-dark').append(dark);
+const vhInput = document.getElementById('vh');
+const readout = document.getElementById('readout');
+const logHost = document.getElementById('log');
+
+function paint() {
+  renderInto(light);
+  renderInto(dark);
+  const st = state();
+  readout.innerHTML = `state   <b>${st.toUpperCase()}</b>\n`
+    + `wanted  ${model.wanted}\n`
+    + `${why()}`;
+  logHost.innerHTML = '';
+  for (const line of model.log) {
+    const d = document.createElement('div');
+    d.textContent = line;
+    logHost.append(d);
+  }
+}
+vhInput.oninput = () => {
+  const was = state();
+  model.vh = Number(vhInput.value);
+  /* GROWING BACK RESTORES THE MINIS BY ITSELF. A `wanted` of hidden or raised
+     is a short-viewport answer and has no meaning once there is room, so it is
+     cleared rather than remembered. */
+  if (!forcedHidden(model.vh) && (model.wanted === 'hidden' || model.wanted === 'raised')) {
+    model.wanted = 'docked';
+  }
+  const now = state();
+  if (now !== was) note(`viewport ${model.vh}px — auto ${was} → ${now}`);
+  paint();
+};
+note('ready');
+paint();
+</script>
+</body>
+</html>

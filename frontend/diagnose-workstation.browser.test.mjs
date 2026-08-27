@@ -255,12 +255,78 @@ test('#135 · Escape dismisses fullscreen and restores the exact canvas arrangem
       })),
     }));
     const before = await read();
-    await page.locator('.evidence-tile').nth(1).locator('.tile-fullscreen').click();
+    /* From the stage, which is the only seat that carries the verb. Escape has
+       to restore the seats and pins the promotion itself moved, so this drives
+       fullscreen the way a reader reaches it. */
+    await page.locator('#tile-focal .tile-fullscreen').click();
     assert.equal(await page.locator('.dw').getAttribute('data-fullscreen'), '',
       'the chart enters temporary fullscreen');
     await page.keyboard.press('Escape');
     assert.deepEqual(await read(), before,
       'Escape restores the exact prior arrangement, seats and pins');
+  } finally {
+    await page.close();
+  }
+});
+
+test('#215 · fullscreen from the docked strip takes the header and draws the chart', async () => {
+  const browser = await runner.browser();
+  const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
+  try {
+    await page.getByRole('button', { name: '24 h', exact: true }).click();
+    const tile = page.locator('.tile-row .evidence-tile:has(.tile-chart canvas)').first();
+    const chartId = await tile.getAttribute('data-chart-id');
+    const chartTitle = (await tile.locator('h3').textContent()).trim();
+    const dockedTitle = await page.locator('#full-title').textContent();
+
+    /* A CELL'S ONLY VERB IS "BECOME THE SPOTLIGHT" (ADR 215 amendment), so
+       fullscreen is reached by promoting the cell and expanding from the stage.
+       The strip carries the pin and nothing else. */
+    assert.equal(await tile.locator('.tile-fullscreen').count(), 0,
+      'a cell offers no fullscreen of its own');
+    await tile.click();
+    await page.locator(`#tile-focal .evidence-tile[data-chart-id="${chartId}"]`).waitFor();
+    await page.locator('#tile-focal .tile-fullscreen').click();
+    const fullscreen = page.locator(`.evidence-tile[data-chart-id="${chartId}"]`);
+    const measured = await fullscreen.locator('.tile-chart canvas').first().evaluate((canvas) => {
+      return {
+        width: canvas.getBoundingClientRect().width,
+        height: canvas.getBoundingClientRect().height,
+        backingWidth: canvas.width,
+        backingHeight: canvas.height,
+        tileWidth: canvas.closest('.evidence-tile').getBoundingClientRect().width,
+      };
+    });
+
+    assert.equal(await page.locator('#tile-field').getAttribute('data-dock'), null,
+      'fullscreen does not impersonate a dock state');
+    assert.equal(await page.locator('#tile-field').getAttribute('data-fullscreen-tile'), '',
+      'the field names the temporary one-chart geometry directly');
+    assert.equal(await page.locator('#canvas-head').getAttribute('data-full'), '',
+      'fullscreen takes the header row the glucose caption vacates');
+    assert.equal((await page.locator('#full-title').textContent()).trim(), chartTitle,
+      'the shared header names the fullscreen chart');
+    /* THE WAY BACK IS THE ONLY ACT. Mounted is retired, and with it the `hide`
+       cell that sat beside shrink — a second verb on a state whose only job is
+       to end. */
+    assert.deepEqual(await page.locator('#dock-headacts button')
+      .evaluateAll((buttons) => buttons.map((button) => button.getAttribute('aria-label'))),
+    ['Back to the dock'], 'fullscreen offers one act, and it is the way back');
+    assert.equal(await fullscreen.locator('.tile-fullscreen').count(), 0,
+      'fullscreen shrink has one home, in the shared header');
+    assert.ok(measured.width > 0 && measured.height > 0
+      && measured.backingWidth > 0 && measured.backingHeight > 0,
+    `the fullscreen chart draws at ${measured.width}×${measured.height}`);
+    assert.ok(measured.width > measured.tileWidth * .8,
+      `the fullscreen plot takes its tile (${measured.width} of ${measured.tileWidth}px)`);
+
+    await page.getByRole('button', { name: 'Back to the dock' }).click();
+    assert.equal(await page.locator('.dw').getAttribute('data-fullscreen'), null,
+      'shrink returns through the door it came in');
+    assert.equal(await page.locator('#tile-field').getAttribute('data-dock'), 'docked',
+      'and lands back on the dock state it left');
+    assert.equal(await page.locator('#full-title').textContent(), dockedTitle,
+      'the borrowed header carries no standing title of its own');
   } finally {
     await page.close();
   }

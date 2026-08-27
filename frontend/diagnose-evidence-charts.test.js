@@ -546,14 +546,14 @@ test('current I:C event options render every published meal member', () => {
     ['diamond', 'emptyDiamond']);
 });
 
-test('glucose chart options fail closed without one injected arrangement range', () => {
+test('glucose chart options fail closed without one injected field range', () => {
   const ic = fixture('../mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json')
     .cases.below_floor;
   const event = eventCase();
   const byKind = Object.fromEntries(DIAGNOSE_EVIDENCE_CHARTS.map((entry) => [entry.kind, entry]));
 
   assert.throws(() => byKind['carb-ratio'].option('event', { data: ic }),
-    /arrangement glucose range/);
+    /field glucose range/);
   assert.throws(() => byKind['event-comparison'].option(null, { data: event }),
-    /arrangement glucose range/);
+    /field glucose range/);
 });

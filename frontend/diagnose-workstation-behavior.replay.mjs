@@ -3653,9 +3653,13 @@ export const S107 = async (page) => {
 export const S108 = async (page) => {
   await reachPinCount(page, 3);
   const before = await canvasSnapshot(page);
-  await page.locator('.evidence-tile').nth(1).locator('.tile-fullscreen').click();
+  /* The stage is where a chart is expanded from — a cell's only verb is
+     "become the spotlight" (ADR 215 amendment), so the strip carries the pin
+     and nothing else. */
+  await page.locator('#tile-row .evidence-tile').first().click();
+  await page.locator('#tile-focal .tile-fullscreen').click();
   is((await canvasSnapshot(page)).fullscreen, true, 'S108 fullscreen opens one chart');
-  await page.locator('.evidence-tile .tile-fullscreen').click();
+  await page.locator('#dock-headacts button[aria-label="Back to the dock"]').click();
   const after = await canvasSnapshot(page);
   is(after.arrangement, before.arrangement, 'S108 dismissal restores the exact arrangement');
   is(after.tiles.map(({ id, seat, pinned }) => ({ id, seat, pinned })),

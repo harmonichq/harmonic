@@ -8,14 +8,12 @@
  * opener the workstation's other browser coverage uses — and asserts on the
  * rendered field, never on a helper's return value.
  *
- * Four regressions this file exists to hold, each of which a green fast gate
+ * Three regressions this file exists to hold, each of which a green fast gate
  * missed:
  *   · pinning a second chart silently moved the focal chart (pin state and
  *     focus are separate verbs);
- *   · the pin-cap schematic drew more cells than the arrangement holds, and put
- *     its hollow "next" mark over a chart already seated;
- *   · the arrangements past `pair` were unreachable, because a fully pinned
- *     field offers no tile to pin and the schematic offered no cell either;
+ *   · selecting a filmstrip cell moved that chart left-most instead of leaving
+ *     the dock in its published pins-then-findings order;
  *   · a stale-generation recovery restored a layout captured before the refresh,
  *     so a pin whose row the new generation dropped was seated with no
  *     descriptor and the repaint threw.
@@ -36,7 +34,6 @@ import {
   generatedFindingProjection,
   openApp,
 } from './diagnose-workstation-behavior.replay.mjs';
-import { PIN_CAP, arrangementFor, seatCountFor } from './diagnose-canvas-layout.js';
 
 const require = createRequire(import.meta.url);
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -111,6 +108,7 @@ async function openCanvas(browser, { routes = null, ...options } = {}) {
 }
 
 const SANCTION_DRILL_WORD = 'sanction: Connor Griffin · 2026-08-26 · "The ring and the raised rail mark the drilled tile. The chip was noise."';
+const RETIRED_EXPLORE_MODE_SANCTION = 'sanction: ConnorGriffin · 2026-08-26 · "Diagnose does NOT need to host an explore mode. we\'re building a better version of it right now."';
 
 const readField = (page) => page.evaluate(() => ({
   arrangement: document.querySelector('.tile-field')?.dataset.arrangement || null,
@@ -128,107 +126,94 @@ const readField = (page) => page.evaluate(() => ({
   cells: [...document.querySelectorAll('.tile-schematic > *')].map((cell) => cell.className),
   pinCount: document.querySelector('#pin-count')?.textContent || null,
   focal: document.querySelector('.evidence-tile[data-seat="focal"]')?.dataset.chartId || null,
+  row: [...document.querySelectorAll('#tile-row .evidence-tile')].map((tile) => ({
+    chartId: tile.dataset.chartId,
+    pinned: tile.hasAttribute('data-pinned'),
+    selected: tile.hasAttribute('data-selected'),
+    title: tile.querySelector('.tile-head h3')?.textContent || null,
+  })),
 }));
 
-/** Pin one more chart the way a reader can: a seated tile, else the schematic's
- *  own next-cell. Returns false when the surface offers neither. */
-async function pinOneMore(page) {
-  const tile = page.locator('.evidence-tile .tile-pin[aria-pressed="false"]:not([disabled])');
-  const next = page.locator('.tile-schematic .next:not([disabled])');
-  if (await tile.count()) await tile.first().click();
-  else if (await next.count()) await next.first().click();
-  else return false;
-  await page.waitForTimeout(350);
-  return true;
-}
-
-test('every arrangement is reachable by pinning alone, and the fifth pin is refused', async () => {
+test('five pins remain available and order the dock without moving the spotlight', async () => {
   const browser = await runner.browser();
   const { page, errors } = await openCanvas(browser);
   try {
     const opening = await readField(page);
-    assert.equal(opening.arrangement, arrangementFor(0),
-      'an unpinned canvas opens on the focal arrangement');
-    assert.ok(opening.tiles.length >= 2, 'the live list seats real registry charts');
+    assert.ok(opening.focal, 'the fixed canvas opens with a spotlight');
+    const targets = opening.row.filter(({ pinned }) => !pinned).slice(0, 5);
+    assert.equal(targets.length, 5, 'the filmstrip exposes at least five charts to pin');
 
-    const reached = [opening.arrangement];
-    for (let pins = 1; pins <= PIN_CAP; pins += 1) {
-      assert.ok(await pinOneMore(page),
-        `the surface offers a way to reach ${arrangementFor(pins)} (${pins} pinned)`);
+    const pinned = [];
+    for (const { chartId } of targets) {
+      await page.locator(`#tile-row .evidence-tile[data-chart-id="${chartId}"] .tile-pin`).click();
+      await page.waitForTimeout(350);
+      pinned.push(chartId);
       const field = await readField(page);
-      assert.equal(field.arrangement, arrangementFor(pins),
-        `${pins} pins derive the ${arrangementFor(pins)} arrangement`);
-      assert.equal(field.pinCount, `${pins}/${PIN_CAP} pinned`);
-      reached.push(field.arrangement);
+      assert.equal(field.focal, opening.focal, `pinning ${chartId} leaves the spotlight alone`);
+      assert.deepEqual(field.row.slice(0, pinned.length).map(({ chartId: id }) => id), pinned,
+        'pins stay left-most in the order the reader made them');
     }
-    assert.deepEqual(reached, ['focal', 'split', 'pair', 'onetwo', 'quad'],
-      'all five arrangements are reached by pinning, in order');
-
-    // at the cap: nothing offers a fifth pin, and no pin was evicted to make room
-    assert.equal(await pinOneMore(page), false, 'a fifth pin is refused at the control');
-    const capped = await readField(page);
-    assert.equal(capped.pinCount, `${PIN_CAP}/${PIN_CAP} pinned`);
-    assert.equal(capped.tiles.filter((tile) => tile.pinned).length, PIN_CAP,
-      'every pin survives the refusal');
-    assert.equal(capped.cells.filter((name) => name === 'next').length, 0,
-      'the schematic offers no hollow cell at the cap');
+    assert.ok((await readField(page)).row.slice(0, 5).every(({ pinned: held }) => held),
+      'the fifth pin is accepted without evicting any earlier pin');
     assert.deepEqual(errors, [], 'no page error during the pin sequence');
   } finally {
     await page.close();
   }
 });
 
-test('pinning holds and layers a chart; it never moves the focal chart', async () => {
+test('pinning reorders charts without moving the spotlight', async () => {
   const browser = await runner.browser();
   const { page, errors } = await openCanvas(browser);
   try {
     const opening = await readField(page);
     const focal = opening.focal;
     assert.ok(focal, 'the canvas opens with a focal chart');
-    /* PIN SLOT CHARTS, never the focal one. The regression this holds set the
+    /* PIN A FILMSTRIP CELL, never the spotlight. The regression this holds set the
        focal chart to the FIRST PIN on the second pin, which is invisible when
        the reader pins the focal chart first — so the sequence here is the one
-       that exposed it: two slot charts, focal untouched. */
-    const slot = opening.tiles.find((tile) => tile.seat !== 'focal');
-    assert.ok(slot, 'the opening field seats at least one slot chart');
-    await page.locator(`.evidence-tile[data-chart-id="${slot.chartId}"] .tile-pin`).click();
+       that exposed it: two charts pinned, spotlight untouched. */
+    const mini = opening.row.find(({ chartId }) => chartId !== focal);
+    assert.ok(mini, 'the opening filmstrip exposes a chart beside the spotlight');
+    await page.locator(`#tile-row .evidence-tile[data-chart-id="${mini.chartId}"] .tile-pin`).click();
     await page.waitForTimeout(350);
     let field = await readField(page);
-    assert.equal(field.focal, focal, 'pinning a slot chart does not move focus to it');
-    assert.equal(field.tiles.find((tile) => tile.chartId === slot.chartId)?.pinned, true,
-      'the pinned slot chart is held and layered into view');
+    assert.equal(field.focal, focal, 'pinning a filmstrip chart does not move focus to it');
+    assert.equal(field.row.find(({ chartId }) => chartId === mini.chartId)?.pinned, true,
+      'the pinned chart moves into the left-most group');
 
     // the second pin is the one that used to reassign focus to the first pin
-    await page.locator(`.evidence-tile[data-chart-id="${focal}"] .tile-pin`).click();
+    await page.locator(`#tile-focal .evidence-tile[data-chart-id="${focal}"] .tile-pin`).click();
     await page.waitForTimeout(350);
     field = await readField(page);
     assert.equal(field.focal, focal,
       'a second pin leaves the focal chart where the reader put it');
-    assert.equal(field.tiles.filter((tile) => tile.pinned).length, 2, 'both charts are held');
+    assert.equal(field.row.filter(({ pinned }) => pinned).length, 2,
+      'both charts lead the row in pin order');
     assert.deepEqual(errors, []);
   } finally {
     await page.close();
   }
 });
 
-test('focusing from every source slot exchanges that slot with the focal chart', async () => {
+test('selecting any visible filmstrip cell changes only the spotlight mark', async () => {
   const browser = await runner.browser();
-  for (const sourceSeat of ['slot-1', 'slot-2', 'slot-3']) {
+  for (const sourceIndex of [1, 2, 3]) {
     const { page, errors } = await openCanvas(browser);
     try {
       const opening = await readField(page);
-      const focal = opening.tiles.find((tile) => tile.seat === 'focal');
-      const source = opening.tiles.find((tile) => tile.seat === sourceSeat);
-      assert.ok(focal && source, `the focal arrangement exposes ${sourceSeat}`);
+      const order = opening.row.map(({ chartId }) => chartId);
+      const source = opening.row[sourceIndex];
+      assert.ok(opening.focal && source, `the filmstrip exposes cell ${sourceIndex + 1}`);
 
-      await page.locator(`.evidence-tile[data-chart-id="${source.chartId}"] .tile-body`).click();
+      await page.locator(`#tile-row .evidence-tile[data-chart-id="${source.chartId}"] .tile-body`).click();
       await page.waitForTimeout(350);
       const focused = await readField(page);
-      assert.equal(focused.tiles.find((tile) => tile.chartId === source.chartId)?.seat, 'focal',
-        `${sourceSeat} becomes focal`);
-      assert.equal(focused.tiles.find((tile) => tile.chartId === focal.chartId)?.seat, sourceSeat,
-        `the demoted focal chart returns to ${sourceSeat}`);
-      assert.deepEqual(errors, [], `${sourceSeat} focus throws no page error`);
+      assert.equal(focused.focal, source.chartId, `cell ${sourceIndex + 1} becomes the spotlight`);
+      assert.deepEqual(focused.row.map(({ chartId }) => chartId), order,
+        'selecting a current frame never reorders the filmstrip');
+      assert.deepEqual(focused.row.filter(({ selected }) => selected).map(({ chartId }) => chartId),
+        [source.chartId], 'the selected cell alone marks the current frame');
+      assert.deepEqual(errors, [], `cell ${sourceIndex + 1} focus throws no page error`);
     } finally {
       await page.close();
     }
@@ -244,15 +229,11 @@ test('drilling a behavioural finding seats that finding\'s own comparison, marke
        factor, and drilling one of them left the field seated on a different
        chart entirely. Every behavioural chart now carries its own row's name,
        and the drilled one takes the focal seat wearing a visible mark. */
-    await page.getByRole('button', { name: 'Charts', exact: true }).click();
-    await page.waitForTimeout(350);
     const opening = await readField(page);
-    assert.ok(opening.drawer.length >= 5,
-      `the 24 h window publishes behavioural charts beside the parameter ones (${JSON.stringify(opening.drawer)})`);
-    assert.equal(new Set(opening.drawer).size, opening.drawer.length,
-      `no two live charts share a name (${JSON.stringify(opening.drawer)})`);
-    await page.getByRole('button', { name: 'Charts', exact: true }).click();
-    await page.waitForTimeout(350);
+    assert.ok(opening.row.length >= 5,
+      `the 24 h filmstrip publishes behavioural charts beside the parameter ones (${JSON.stringify(opening.row)})`);
+    assert.equal(new Set(opening.row.map(({ title }) => title)).size, opening.row.length,
+      `no two live charts share a name (${JSON.stringify(opening.row)})`);
 
     const target = await page.locator('#level .qrow[data-id^="finding:"]').last()
       .getAttribute('data-id');
@@ -265,7 +246,7 @@ test('drilling a behavioural finding seats that finding\'s own comparison, marke
 
     const drilled = await readField(page);
     assert.equal(drilled.focal, target, 'the drilled finding takes the focal seat');
-    const seated = drilled.tiles.find((tile) => tile.chartId === target);
+    const seated = drilled.tiles.find((tile) => tile.chartId === target && tile.seat === 'focal');
     assert.equal(seated?.drilled, true, 'the seated tile is the drilled chart');
     /* RETIRED — the word chip. Prints its sanction, and asserts what replaced
        it: the drilled tile's rail stays materialized where an undrilled one is
@@ -284,10 +265,12 @@ test('drilling a behavioural finding seats that finding\'s own comparison, marke
     assert.ok(railGrounds.drilled && railGrounds.drilled !== railGrounds.plain,
       'the drilled tile\'s rail stays materialized where an undrilled one does not '
       + `(${railGrounds.drilled} vs ${railGrounds.plain})`);
-    assert.equal(drilled.tiles.filter((tile) => tile.drilled).length, 1,
-      'exactly one chart claims the drill');
-    assert.equal(new Set(drilled.tiles.map((tile) => tile.title)).size, drilled.tiles.length,
-      `no two seated tiles are identically named (${JSON.stringify(drilled.tiles.map((tile) => tile.title))})`);
+    assert.ok(drilled.tiles.filter((tile) => tile.drilled).length >= 1,
+      'the current frame is visibly drilled wherever it is rendered');
+    assert.equal(drilled.tiles.filter((tile) => tile.drilled && tile.chartId !== target).length, 0,
+      'no chart besides the current frame claims the drill');
+    assert.equal(new Set(drilled.row.map(({ title }) => title)).size, drilled.row.length,
+      `no two filmstrip cells are identically named (${JSON.stringify(drilled.row)})`);
     assert.deepEqual(errors, [], 'the drill throws no page error');
   } finally {
     await page.close();
@@ -305,9 +288,12 @@ test('an occurrence selection reaches the compact event-comparison tile', async 
     caseScenario: { preparation: generatedFindingPose(findingId) },
   });
   try {
-    const tile = page.locator(`.evidence-tile[data-chart-id="${findingId}"]`);
+    const tile = page.locator(`#tile-row .evidence-tile[data-chart-id="${findingId}"]`);
     await tile.waitFor({ state: 'visible' });
-    await tile.locator('.tile-fullscreen').click();
+    /* Promote the cell, then expand from the stage: a cell's only verb is
+       "become the spotlight" (ADR 215 amendment). */
+    await tile.click();
+    await page.locator('#tile-focal .tile-fullscreen').click();
     await page.waitForSelector('#tile-field #ec-chart', { state: 'attached' });
     await page.locator('[data-comparison-cohort="matched"]').first().click();
     await page.waitForSelector('[data-comparison-cohort="matched"][aria-pressed="true"]');
@@ -315,7 +301,7 @@ test('an occurrence selection reaches the compact event-comparison tile', async 
     const matchedLegendSelected = await page.locator(
       '.ec-key-item[data-cohort="matched"]',
     ).getAttribute('data-selected-cohort');
-    await tile.locator('.tile-fullscreen').click();
+    await page.locator('#dock-headacts button[aria-label="Back to the dock"]').click();
     await tile.locator('.tile-chart canvas').waitFor({ state: 'visible' });
 
     const compact = await tile.evaluate((element) => {
@@ -341,27 +327,15 @@ test('an occurrence selection reaches the compact event-comparison tile', async 
   }
 });
 
-test('the pin-cap schematic mirrors the current arrangement, and never marks a seated chart', async () => {
+test('the fixed field exposes no retired arrangement or pin-cap schematic', async () => {
   const browser = await runner.browser();
   const { page, errors } = await openCanvas(browser);
   try {
-    for (let pins = 0; pins <= PIN_CAP; pins += 1) {
-      const field = await readField(page);
-      const arrangement = arrangementFor(pins);
-      const seats = field.tiles.length;
-      const geometry = seatCountFor(arrangement);
-      const hollow = field.cells.filter((name) => name === 'next').length;
-      const grows = pins < PIN_CAP && pins >= geometry;
-      assert.equal(field.cells.length, geometry + (grows ? 1 : 0),
-        `${arrangement} draws its own ${geometry} cells${grows ? ' plus the cell the next pin adds' : ''}`);
-      assert.equal(hollow, pins === PIN_CAP ? 0 : Math.min(1, field.cells.length - seats),
-        `${arrangement} marks the next pin's landing cell, and only a free one`);
-      assert.equal(field.cells.slice(0, seats).filter((name) => name === 'next').length, 0,
-        'no hollow cell is drawn over a chart already seated');
-      assert.equal(field.cells.filter((name) => name === 'pinned').length, pins,
-        'every pinned chart fills exactly one accent cell');
-      if (pins < PIN_CAP) await pinOneMore(page);
-    }
+    const field = await readField(page);
+    assert.equal(field.arrangement, null, 'the fixed field publishes no derived arrangement');
+    assert.equal(field.pinCount, null, 'the uncapped pin model publishes no cap counter');
+    assert.deepEqual(field.cells, [], 'the retired arrangement schematic stays absent');
+    assert.ok(field.row.length >= 5, 'the replacement is the full ordered filmstrip');
     assert.deepEqual(errors, []);
   } finally {
     await page.close();
@@ -414,7 +388,7 @@ test('a pinned tile visibly names a stale generation before the real pipeline re
     const carbRatio = (await readField(page)).tiles
       .find((tile) => tile.chartId.startsWith('ic:'));
     assert.ok(carbRatio, 'the carb-ratio chart is on the field before recovery');
-    await page.locator(`.evidence-tile[data-chart-id="${carbRatio.chartId}"] .tile-pin`).click();
+    await page.locator(`#tile-row .evidence-tile[data-chart-id="${carbRatio.chartId}"] .tile-pin`).click();
     await page.waitForTimeout(300);
     assert.equal((await readField(page)).tiles
       .find((tile) => tile.chartId === carbRatio.chartId).pinned, true, 'the chart is pinned before the 409');
@@ -644,11 +618,11 @@ test('reconcileTileDescriptors retains a pinned chart whose next slice drops its
   });
   try {
     const opening = await readField(page);
-    const victim = opening.tiles.find((tile) => tile.seat !== 'focal') || opening.tiles[0];
+    const victim = opening.row.find(({ selected }) => !selected) || opening.row[0];
     assert.ok(victim, 'a chart is on the field to pin');
     droppedId = victim.chartId;
 
-    await page.locator(`.evidence-tile[data-chart-id="${victim.chartId}"] .tile-pin`).click();
+    await page.locator(`#tile-row .evidence-tile[data-chart-id="${victim.chartId}"] .tile-pin`).click();
     await page.waitForTimeout(300);
     assert.equal((await readField(page)).tiles.find((tile) => tile.chartId === victim.chartId).pinned,
       true, 'the chart is pinned before its row disappears');
@@ -663,9 +637,10 @@ test('reconcileTileDescriptors retains a pinned chart whose next slice drops its
     assert.equal(retained.state, 'empty', 'the retained tile names its degraded state');
     assert.equal(retained.body, 'Pinned chart is not in the current findings.',
       'the degraded tile explains why its measured evidence is absent');
-    assert.equal(field.pinCount, `1/${PIN_CAP} pinned`, 'the reader-owned pin remains counted');
-    assert.equal(field.arrangement, arrangementFor(1),
-      'the arrangement continues to derive from the retained pin');
+    assert.equal(field.row[0]?.chartId, victim.chartId,
+      'the retained pin keeps the vanished chart left-most in the ordered dock');
+    assert.equal(field.pinCount, null, 'the uncapped pin model has no cap counter');
+    assert.equal(field.arrangement, null, 'the field does not revive a derived arrangement');
     for (const tile of field.tiles) {
       assert.ok(['ok', 'empty', 'error', 'stale-generation'].includes(tile.state),
         `every surviving tile still names its state, got ${tile.state}`);
@@ -676,26 +651,14 @@ test('reconcileTileDescriptors retains a pinned chart whose next slice drops its
   }
 });
 
-test('Explore collapses a drilled parameter slot and exposes no staging path', async () => {
+test('Explore mode stays retired — RETIRED', async () => {
+  console.log(`RETIRED — ${RETIRED_EXPLORE_MODE_SANCTION}`);
   const browser = await runner.browser();
   const { page, errors } = await openCanvas(browser);
   try {
-    const basal = page.locator('.evidence-tile[data-chart-id^="basal:"]').first();
-    await basal.click();
-    await page.locator('#lane button[data-verdict="up"]').first().click();
-    assert.equal(await page.locator('#level .stagebtn').count(), 1,
-      'the reproducer reaches a live Findings staging control');
-
-    await page.getByRole('button', { name: 'Explore', exact: true }).click();
-    assert.equal(await page.locator('#level .stagebtn').count(), 0,
-      'Explore removes the staging control at the same inspector depth');
-    assert.equal(await page.locator('#level').getByText('Recommended', { exact: true }).count(), 0,
-      'Explore removes recommendation copy from the drilled inspector');
-    assert.equal(await page.locator('#level .chart-evidence-detail').count(), 1,
-      'the drilled parameter chart returns to its measured evidence detail');
-    assert.equal(await page.locator('#crumb-meta').textContent(), 'Nights of steady data',
-      'the inspector names its evidence in domain language');
-    assert.deepEqual(errors, [], 'the mode transition throws nothing into the page');
+    const modeSwitch = page.getByRole('button', { name: /^(Findings|Explore)$/ });
+    assert.equal(await modeSwitch.count(), 0, `RETIRED — ${RETIRED_EXPLORE_MODE_SANCTION}`);
+    assert.deepEqual(errors, [], 'checking the retired mode throws nothing into the page');
   } finally {
     await page.close();
   }
@@ -714,14 +677,18 @@ test('Backspace return restores provenance to the chart owning the finding frame
       .getAttribute('data-chart-id');
     const basalSlot = Number(basalId.split(':')[1].split('-')[0]) / 30;
     await page.locator('#lane button').nth(basalSlot).click();
-    const parameterId = await page.locator('.evidence-tile[data-drilled]').getAttribute('data-chart-id');
-    assert.ok(parameterId?.startsWith('basal:'), 'the slot inspector marks its basal chart');
+    const parameterIds = await page.locator('.evidence-tile[data-drilled]')
+      .evaluateAll((tiles) => [...new Set(tiles.map((tile) => tile.dataset.chartId))]);
+    assert.equal(parameterIds.length, 1, 'every slot-inspector mark names one chart');
+    assert.ok(parameterIds[0]?.startsWith('basal:'), 'the slot inspector marks its basal chart');
 
     await page.keyboard.press('Backspace');
     assert.equal(await page.locator('#drill-provenance').textContent(), behavioralProvenance,
       'the returned finding frame restores its own chart name');
-    assert.equal(await page.locator('.evidence-tile[data-drilled]').getAttribute('data-chart-id'),
-      behavioralId, 'the returned finding frame marks its own chart');
+    const returnedIds = await page.locator('.evidence-tile[data-drilled]')
+      .evaluateAll((tiles) => [...new Set(tiles.map((tile) => tile.dataset.chartId))]);
+    assert.deepEqual(returnedIds, [behavioralId],
+      'every returned finding-frame mark names its own chart');
     assert.deepEqual(errors, [], 'breadcrumb return throws nothing into the page');
   } finally {
     await page.close();

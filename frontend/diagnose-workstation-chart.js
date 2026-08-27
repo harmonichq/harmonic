@@ -632,7 +632,7 @@ export function renderCanvas(el, echarts, opts) {
   const range = opts.range;
   if (!Array.isArray(range) || range.length !== 2
       || !range.every(Number.isFinite) || range[0] >= range[1]) {
-    throw new TypeError('glucose strip needs one injected arrangement range');
+    throw new TypeError('glucose strip needs one injected field range');
   }
   const stats = opts.stats || null;
   const target = opts.target || [70, 180];

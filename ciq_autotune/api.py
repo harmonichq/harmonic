@@ -498,9 +498,9 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         return FileResponse(_FRONTEND_DIR / "diagnose-canvas-layout.js",
                             media_type="text/javascript")
 
-    @app.get("/assets/diagnose-canvas-mode.js")
-    def diagnose_canvas_mode_js():
-        return FileResponse(_FRONTEND_DIR / "diagnose-canvas-mode.js",
+    @app.get("/assets/diagnose-canvas-state.js")
+    def diagnose_canvas_state_js():
+        return FileResponse(_FRONTEND_DIR / "diagnose-canvas-state.js",
                             media_type="text/javascript")
 
     @app.get("/assets/finding-case-file-validation.js")

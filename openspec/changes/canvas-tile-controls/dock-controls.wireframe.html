@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WIREFRAME — the dock's controls</title>
+<style>
+/* WIREFRAME — NO FIDELITY CLAIM — NOT LOCKABLE.
+   Slice 3, the control-chrome round. The state machine is RULED and identical
+   in all three options — hidden / bottom-docked / full-canvas, the two floors,
+   the dismissal rules. The only thing that differs is what the reader presses
+   and where it lives. Neutral tokens; deleted when the change lands.
+
+   EVERY SPECIMEN IS LIVE. Each option is drawn three times: tall in both
+   grounds, and short in light, because the short viewport is where these
+   controls have to work hardest and where two of them change. */
+:root {
+  --w-ground: #E7E4DD; --w-panel: #F4F2ED; --w-recess: #D6D2C8;
+  --w-edge: #C3BEB2; --w-hair: #CFCABE; --w-trench: #DAD6CC;
+  --w-ink: #2B2724; --w-label: #56504A; --w-quiet: #8C857C;
+  --w-live: #C4622C; --w-held: #3F3A34; --w-lift: rgba(255,255,255,.8);
+  color-scheme: light;
+}
+.app[data-t="dark"] {
+  --w-ground: #1D1A18; --w-panel: #26221F; --w-recess: #171513;
+  --w-edge: #3A3430; --w-hair: #363029; --w-trench: #141210;
+  --w-ink: #EFEAE2; --w-label: #B6ADA2; --w-quiet: #877E74;
+  --w-live: #D9834C; --w-held: #E4DDD2; --w-lift: rgba(255,255,255,.10);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 26px 30px 80px; min-width: 1000px; background: #EDEAE3; color: #2B2724;
+  font: 13px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+.banner { margin: 0 0 22px; padding: 8px 12px; border: 1px dashed #8C857C;
+  color: #56504A; font-size: 11px; letter-spacing: .09em; text-transform: uppercase; }
+h1 { margin: 0 0 4px; font-size: 17px; font-weight: 640; letter-spacing: -.01em; }
+.lede { max-width: 96ch; margin: 0 0 8px; color: #56504A; font-size: 12.5px; }
+.lede b { color: #2B2724; }
+.ruled { max-width: 96ch; margin: 0 0 20px; padding: 9px 12px; background: #E3DFD6;
+  border-left: 3px solid #C4622C; color: #56504A; font-size: 12px; }
+.ruled b { color: #2B2724; }
+/* SCOPED TO THE PAGE'S OWN PROSE. Unscoped, this hit the specimens' panes —
+   they are <section> elements too — giving every pane 28px of padding and a
+   1px border it never asked for. That 29px was the pale band at each pane's
+   floor, and it survived seven layout rewrites because it was never layout. */
+body > section { margin: 0 0 30px; padding: 0 0 24px; border-bottom: 1px solid #CFCABE; }
+.opt-head { display: flex; align-items: baseline; gap: 10px; margin: 16px 0 3px; }
+.opt-key { color: #C4622C; font-size: 11px; font-weight: 700; letter-spacing: .12em; }
+.opt-head h3 { margin: 0; font-size: 14px; font-weight: 640; }
+.kind { color: #8C857C; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+.claim { max-width: 96ch; margin: 0 0 6px; color: #56504A; font-size: 12px; }
+.claim b { color: #2B2724; font-weight: 600; }
+.cost { max-width: 96ch; margin: 6px 0 12px; padding: 7px 11px; font-size: 11.5px;
+  background: #F2E7DE; border-left: 3px solid #C4622C; color: #56504A; }
+.cost b { color: #2B2724; }
+.do { margin: 12px 0 5px; color: #8C857C; font-size: 10.5px;
+  letter-spacing: .09em; text-transform: uppercase; }
+.row3 { display: flex; gap: 26px; flex-wrap: wrap; align-items: flex-start; }
+.themed { display: flex; flex-direction: column; gap: 4px; }
+.themed > .t { color: #8C857C; font-size: 10px; letter-spacing: .09em; text-transform: uppercase; }
+
+/* ---- app frame ---------------------------------------------------------- */
+/* SCALED UP FOR JUDGING. The specimen's internal dimensions are the ratios
+   that matter; at 1:1 they render around 400px wide with 7px type, which is too
+   small to judge a 13px control by. `zoom` scales layout AND hit targets, so the
+   specimen stays genuinely operable rather than becoming a picture. */
+.app { background: var(--w-ground); color: var(--w-ink); box-shadow: 0 0 0 1px var(--w-edge);
+  overflow: hidden; width: 412px; user-select: none;
+  display: flex; flex-direction: column;
+  /* SCALED BY TRANSFORM, NOT `zoom`. `zoom` corrupted layout rather than just
+     magnifying it: the canvas pane measured 220 CSS px by getBoundingClientRect
+     while getComputedStyle reported 250, and the flex child could never claim
+     the difference — the pale band under every frame. A transform is applied
+     after layout, so the box model is untouched and clicks still map through. */
+  transform: scale(1.6); transform-origin: top left; }
+/* the wrapper reserves the scaled footprint, since a transform takes no space */
+.scaled { width: 660px; overflow: hidden; }
+.app > .rail { flex: 0 0 auto; }
+.app > .panes { flex: 1 1 0; }
+.rail { display: flex; align-items: center; height: 22px; padding: 0 9px; gap: 8px;
+  background: var(--w-recess); box-shadow: inset 0 -1px 0 var(--w-edge); }
+.rail .cap { color: var(--w-label); font-size: 8px; font-weight: 650;
+  letter-spacing: .09em; text-transform: uppercase; }
+.rail .spring { flex: 1 1 auto; }
+.panes { display: flex; align-items: stretch; min-height: 0;
+  background: var(--w-trench); }
+.panes > .pane.canvas { flex: 1 1 0; }
+.panes > .pane.insp { flex: 0 0 120px; }
+/* HEIGHT FORCED, NOT INHERITED. As grid items these should stretch to the row
+   and did not — both panes computed 220px inside a 250px track, leaving a 48px
+   dead band under the whole surface in every frame. */
+.pane { min-width: 0; min-height: 0; background: var(--w-panel);
+  box-shadow: inset 0 0 0 1px var(--w-edge), inset 0 1px 0 var(--w-lift); }
+.pane.canvas { display: flex; flex-direction: column; min-height: 0; }
+.pane.canvas > .plate-cap { flex: 0 0 auto; }
+.pane.canvas > .strip { flex: 0 0 46px; }
+/* `flex: 1 1 0` and not `auto`: with an auto basis the field measured its own
+   content first and then failed to claim the remaining 25px, leaving a pale
+   band under the whole canvas. A zero basis makes the free space the field's
+   by definition. */
+.pane.canvas > .field { flex: 1 1 0; min-height: 0; }
+.pane.canvas[data-dock="full"] > .plate-cap,
+.pane.canvas[data-dock="full"] > .strip { display: none; }
+.plate-cap { padding: 2px 8px 0; color: var(--w-quiet); font-size: 8px;
+  letter-spacing: .09em; text-transform: uppercase; }
+.strip { margin: 2px 6px 0; background: var(--w-recess);
+  box-shadow: inset 0 0 0 1px var(--w-edge); display: grid; place-items: center;
+  color: var(--w-quiet); font-size: 7px; letter-spacing: .09em; text-transform: uppercase; }
+.field { position: relative; display: grid; gap: 4px; padding: 4px;
+  min-height: 0; overflow: hidden;
+  background: var(--w-trench); box-shadow: inset 0 6px 10px -8px rgba(0,0,0,.55); }
+.field[data-dock="hidden"], .field[data-dock="full"] { grid-template-rows: minmax(0,1fr); }
+.field[data-dock="docked"] { grid-template-rows: minmax(0,1fr) var(--mini); }
+.field[data-over] { grid-template-rows: minmax(0,1fr); }
+.field[data-over] > .dock { position: absolute; left: 4px; right: 4px; bottom: 4px;
+  height: var(--mini); max-height: calc(100% - 8px); background: var(--w-trench); z-index: 2;
+  box-shadow: 0 -8px 18px -10px rgba(0,0,0,.8), 0 0 0 1px var(--w-edge); }
+.spotlight { display: grid; min-width: 0; min-height: 0; }
+.field[data-dock="full"] .spotlight { display: none; }
+.dock { position: relative; display: grid; min-width: 0; min-height: 0; }
+.dock[data-form="docked"] { grid-auto-flow: column; gap: 4px;
+  grid-auto-columns: max(58px, calc((100% - 8px) / 3.35));
+  overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+.dock[data-form="docked"]::-webkit-scrollbar { display: none; }
+.dock[data-form="full"] { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  grid-auto-rows: var(--mini); gap: 4px; overflow-y: auto; align-content: start;
+  scrollbar-width: thin; }
+.tile { display: grid; grid-template: 11px minmax(0,1fr) / minmax(0,1fr) 11px;
+  background: var(--w-recess); box-shadow: inset 0 0 0 1px var(--w-edge);
+  min-width: 0; min-height: 0; overflow: hidden; }
+.tile .nm { grid-column: 1; padding: 1px 2px 0 4px; color: var(--w-label);
+  font-size: 6.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tile .plot { grid-column: 1; margin: 1px 4px 3px; background: var(--w-trench);
+  box-shadow: inset 0 0 0 1px var(--w-hair); }
+.spotlight .tile { box-shadow: inset 0 0 0 1px var(--w-live); }
+.tile .r { grid-column: 2; grid-row: 1 / -1; display: grid; align-content: start;
+  justify-items: center; gap: 1px; padding: 2px 0 0; }
+.tile .r i { width: 5px; height: 5px; border-radius: 50%;
+  background: color-mix(in srgb, var(--w-quiet) 34%, transparent); }
+/* inspector */
+.pane.insp { display: flex; flex-direction: column; min-height: 0; }
+.crumb { height: 14px; padding: 0 6px; box-shadow: inset 0 -1px 0 var(--w-hair);
+  color: var(--w-ink); font-size: 8px; font-weight: 650; display: flex; align-items: center; }
+.queue { flex: 1 1 auto; min-height: 0; padding: 3px 4px; display: grid; gap: 2px;
+  align-content: start; overflow: hidden; }
+.qrow { display: grid; grid-template-columns: 2px minmax(0,1fr); gap: 4px;
+  align-items: center; padding: 1px 3px; }
+.qrow .fil { width: 2px; height: 8px; background: var(--w-live); }
+.qrow .name { color: var(--w-ink); font-size: 7px; font-weight: 600;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dockrow { padding: 3px 6px 4px; background: var(--w-trench);
+  box-shadow: inset 0 1px 0 var(--w-hair); }
+.dockrow .dk { color: var(--w-quiet); font-size: 6.5px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase; }
+.dockrow .dv { color: var(--w-ink); font-size: 7.5px; font-weight: 600; }
+
+/* ======================================================================== */
+/* C1 — THE GRIP: a knurled control at the dock's right end, where the row   */
+/*      runs off. Grows the dock one state; a second cell shrinks it.        */
+/* ======================================================================== */
+.grip { position: absolute; right: 4px; top: 0; bottom: 0; width: 14px; z-index: 5;
+  display: grid; grid-auto-rows: 1fr; background: var(--w-recess);
+  box-shadow: inset 0 0 0 1px var(--w-hair); }
+.field[data-dock="docked"] .grip { top: auto; height: var(--mini); }
+.grip button { border: 0; background: transparent; cursor: pointer; padding: 0;
+  color: var(--w-quiet); font: 700 8px/1 ui-sans-serif, system-ui;
+  display: grid; place-items: center; }
+.grip button:hover { color: var(--w-ink); background: var(--w-panel); }
+.grip button + button { box-shadow: inset 0 1px 0 var(--w-hair); }
+.grip .knurl { width: 4px; height: 14px;
+  background: repeating-linear-gradient(0deg, currentColor 0 1px, transparent 1px 3px); }
+/* the tab, shared by C1 and C3, on the canvas's bottom edge */
+.tab { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); z-index: 5;
+  display: flex; align-items: center; gap: 4px; padding: 2px 9px; border: 0;
+  border-radius: 3px 3px 0 0; cursor: pointer; background: var(--w-recess);
+  box-shadow: 0 0 0 1px var(--w-hair); color: var(--w-label);
+  font: 700 7.5px/1 ui-sans-serif, system-ui; letter-spacing: .08em; text-transform: uppercase; }
+.tab:hover { color: var(--w-ink); background: var(--w-panel); }
+.tab .knurl { width: 16px; height: 4px;
+  background: repeating-linear-gradient(90deg, currentColor 0 1px, transparent 1px 3px); }
+
+/* ======================================================================== */
+/* C2 — THE HANDLE: one piece of furniture on the dock's TOP edge, in every  */
+/*      state, with an up half and a down half.                              */
+/* ======================================================================== */
+.handle { position: absolute; left: 50%; transform: translateX(-50%); z-index: 5;
+  display: flex; align-items: stretch; height: 13px; border-radius: 3px;
+  background: var(--w-recess); box-shadow: 0 0 0 1px var(--w-hair); overflow: hidden; }
+.field[data-dock="hidden"] .handle { bottom: 0; border-radius: 3px 3px 0 0; }
+.field[data-dock="docked"] .handle { bottom: calc(var(--mini) + 4px); }
+.field[data-dock="full"] .handle { top: 0; border-radius: 0 0 3px 3px; }
+.handle button { border: 0; background: transparent; cursor: pointer;
+  padding: 0 7px; color: var(--w-quiet); font: 700 8px/1 ui-sans-serif, system-ui;
+  display: grid; place-items: center; }
+.handle button:hover:not(:disabled) { color: var(--w-ink); background: var(--w-panel); }
+.handle button:disabled { opacity: .3; cursor: default; }
+.handle .knurl { width: 4px; height: 9px; margin: 0 1px; align-self: center;
+  background: repeating-linear-gradient(0deg, var(--w-quiet) 0 1px, transparent 1px 3px); }
+
+/* ======================================================================== */
+/* C3 — THE INSTRUMENT: a three-position segment in the rail, beside Window. */
+/* ======================================================================== */
+.seg { display: flex; gap: 1px; padding: 1px; border-radius: 4px;
+  background: var(--w-trench); box-shadow: inset 0 0 0 1px var(--w-hair); }
+.seg button { border: 0; background: transparent; cursor: pointer; padding: 2px 6px;
+  border-radius: 3px; color: var(--w-label); font: 650 8px/1.4 ui-sans-serif, system-ui; }
+.seg button[aria-pressed="true"] { background: var(--w-panel); color: var(--w-ink);
+  box-shadow: 0 1px 2px rgba(0,0,0,.25), inset 0 0 0 1px color-mix(in srgb, var(--w-live) 40%, transparent); }
+.seg button:disabled { opacity: .32; cursor: default; }
+.note { margin-top: 2px; color: #8C857C; font: 10.5px ui-monospace, monospace;
+  letter-spacing: .05em; }
+</style>
+</head>
+<body>
+
+<p class="banner">Wireframe — no fidelity claim — not lockable</p>
+
+<h1>The dock's controls</h1>
+<p class="lede">
+  The state machine is ruled and identical in all three: hidden ·
+  bottom-docked · full-canvas, the 220 spotlight floor, the raise floor below
+  which the tab mounts instead of docking, and the dismissal rules. Nothing
+  there reopens. <b>The only question is what the reader presses, and where it
+  lives.</b>
+</p>
+<p class="ruled">
+  <b>Each option is drawn three times</b> — tall in both grounds, and short in
+  light. The short viewport is where these controls work hardest: the dock is
+  hidden by default, the tab is the only way in, and it has to say whether it
+  will dock or mount. Press everything.
+</p>
+
+<section>
+  <div class="opt-head"><span class="opt-key">C1</span><h3>The grip, at the dock's right end</h3>
+    <span class="kind">kind: the control belongs to the thing it moves</span></div>
+  <p class="claim">
+    A knurled column at the right end of the dock — the end the row runs off —
+    split into a grow half and a shrink half. It rides the dock in both docked
+    and mounted states, so <b>the control is always attached to the panel it
+    controls</b> and never has to be found somewhere else. Hidden, the tab on
+    the canvas's bottom edge is the way in.
+  </p>
+  <p class="cost"><b>Cost:</b> two pieces of furniture for one state machine —
+    a grip when the dock is up, a tab when it is down — so the reader learns two
+    controls. The grip also eats 14px off the row's right end, which is exactly
+    where the sliced tile is doing its own job of saying "there is more".</p>
+  <p class="do">Press the grip's halves; press the tab in the short frame.</p>
+  <div class="row3" data-spec="C1"></div>
+</section>
+
+<section>
+  <div class="opt-head"><span class="opt-key">C2</span><h3>One handle, on the dock's top edge</h3>
+    <span class="kind">kind: one piece of furniture, in every state</span></div>
+  <p class="claim">
+    A single small handle centred on whatever edge the dock currently presents:
+    the canvas's bottom edge when hidden, the dock's top edge when docked, the
+    top of the grid when mounted. Up grows, down shrinks, and the halves grey
+    out at the ends of the range. <b>One control, learned once</b>, and its
+    position always says where the dock currently is.
+  </p>
+  <p class="cost"><b>Cost:</b> it moves. A reader who learns it at the canvas's
+    bottom edge finds it somewhere else next time, and the thing it is attached
+    to is a boundary rather than an object. Two arrows in 13px is also the
+    smallest hit target of the three.</p>
+  <p class="do">Press up twice, then down twice, and watch where the handle goes.</p>
+  <div class="row3" data-spec="C2"></div>
+</section>
+
+<section>
+  <div class="opt-head"><span class="opt-key">C3</span><h3>A three-position instrument in the rail</h3>
+    <span class="kind">kind: the state is named, not gestured</span></div>
+  <p class="claim">
+    <span style="letter-spacing:.08em">CHARTS: OFF · DOCK · FULL</span> as a
+    segmented control in the instrument rail, beside Window. The state is
+    <b>named and always visible</b>, every transition is one press with no
+    intermediate stop, and it is the same idiom the rail already uses for the
+    thing that re-scopes the surface.
+  </p>
+  <p class="cost"><b>Cost:</b> it reads as a mode switch, which is the exact
+    thing ADR 215 just retired — and it is a permanent instrument for a state
+    the app is supposed to manage on the reader's behalf. On a tall viewport
+    OFF must be disabled, so the control shows a position it will not honour.</p>
+  <p class="do">Press each position in both the tall and short frames.</p>
+  <div class="row3" data-spec="C3"></div>
+</section>
+
+<script>
+const RANKED = ['Correction factor', 'Missed meal', 'Over-treated low', 'Carb undercount',
+  'Correction stacking', 'Meal over-delivery', 'Bolus fell short', 'Late bolus',
+  'Correction on IOB'];
+const MINI = 34;
+const TALL = 250, SHORT = 150;
+const CHROME = 22 + 14 + 46 + 8;                 // rail + cap + strip + padding
+const APP_MINI = 148, APP_FLOOR = 220, APP_TITLE = 28;
+const SCALE = MINI / APP_MINI;
+const SPOT_FLOOR = Math.round(APP_FLOOR * SCALE);
+const RAISE_FLOOR = MINI + Math.round(APP_TITLE * SCALE) + 4;
+const DOCK_FLOOR = SPOT_FLOOR + MINI + 4;
+
+const fieldH = (vh) => Math.max(0, vh - CHROME);
+const forcedHidden = (vh) => fieldH(vh) < DOCK_FLOOR;
+const canRaise = (vh) => fieldH(vh) >= RAISE_FLOOR;
+const resting = (vh) => (forcedHidden(vh) ? 'hidden' : 'docked');
+
+function stateOf(m) {
+  if (m.wanted === 'full') return 'full';
+  if (forcedHidden(m.vh)) return m.wanted === 'raised' && canRaise(m.vh) ? 'docked' : 'hidden';
+  return 'docked';
+}
+
+function tile(name, spot) {
+  const t = document.createElement('article');
+  t.className = 'tile';
+  const nm = document.createElement('div');
+  nm.className = 'nm';
+  nm.textContent = name;
+  const plot = document.createElement('div');
+  plot.className = 'plot';
+  const r = document.createElement('span');
+  r.className = 'r';
+  r.innerHTML = '<i></i><i></i><i></i>';
+  t.append(nm, r, plot);
+  return t;
+}
+
+/* ---- the three control kits. Each returns nodes and wires the same model. -- */
+function kitGrip(m, st, field, rerender) {
+  if (st === 'hidden') {
+    const mounts = !canRaise(m.vh);
+    const tab = document.createElement('button');
+    tab.type = 'button';
+    tab.className = 'tab';
+    tab.innerHTML = `<span class="knurl"></span>${mounts ? 'Charts — full' : 'Charts'}`;
+    tab.onclick = () => { m.wanted = mounts ? 'full' : 'raised'; rerender(); };
+    field.append(tab);
+    return;
+  }
+  const grip = document.createElement('div');
+  grip.className = 'grip';
+  const grow = document.createElement('button');
+  grow.type = 'button';
+  grow.innerHTML = '<span class="knurl"></span>';
+  grow.title = st === 'docked' ? 'Mount the dock' : 'Already mounted';
+  grow.disabled = st === 'full';
+  grow.onclick = () => { m.wanted = 'full'; rerender(); };
+  const shrink = document.createElement('button');
+  shrink.type = 'button';
+  shrink.textContent = '⌄';
+  /* SHRINKING IS NOT ALWAYS ON OFFER. On a tall viewport the minis are not
+     hideable, so from `docked` this half has nowhere to go — left live it was a
+     control that silently did nothing. */
+  shrink.disabled = st === 'docked' && !forcedHidden(m.vh);
+  shrink.title = st === 'full' ? 'Back to the row'
+    : shrink.disabled ? 'The minis stay while there is room' : 'Put the dock away';
+  shrink.onclick = () => {
+    m.wanted = st === 'full'
+      ? (resting(m.vh) === 'hidden' ? 'hidden' : 'docked') : 'hidden';
+    rerender();
+  };
+  grip.append(grow, shrink);
+  field.append(grip);
+}
+
+function kitHandle(m, st, field, rerender) {
+  const h = document.createElement('div');
+  h.className = 'handle';
+  const up = document.createElement('button');
+  up.type = 'button';
+  up.textContent = '⌃';
+  up.disabled = st === 'full';
+  up.title = st === 'hidden'
+    ? (canRaise(m.vh) ? 'Bring the charts up' : 'Mount the charts') : 'Mount the charts';
+  up.onclick = () => {
+    m.wanted = st === 'hidden' && canRaise(m.vh) ? 'raised' : 'full';
+    rerender();
+  };
+  const knurl = document.createElement('span');
+  knurl.className = 'knurl';
+  const down = document.createElement('button');
+  down.type = 'button';
+  down.textContent = '⌄';
+  down.disabled = st === 'hidden' || (st === 'docked' && !forcedHidden(m.vh));
+  down.title = st === 'full' ? 'Back to the row'
+    : down.disabled ? 'The charts stay while there is room' : 'Put the charts away';
+  down.onclick = () => {
+    m.wanted = st === 'full'
+      ? (resting(m.vh) === 'hidden' ? 'hidden' : 'docked') : 'hidden';
+    rerender();
+  };
+  h.append(up, knurl, down);
+  field.append(h);
+}
+
+function kitInstrument(m, st, field, rerender, rail) {
+  const seg = document.createElement('div');
+  seg.className = 'seg';
+  const cap = document.createElement('span');
+  cap.className = 'cap';
+  cap.textContent = 'Charts';
+  const mk = (label, key, on) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = label;
+    b.setAttribute('aria-pressed', String(st === key));
+    /* On a tall viewport OFF is not a state the surface will honour, so the
+       control has to show a position it refuses — the cost this option pays. */
+    b.disabled = key === 'hidden' && !forcedHidden(m.vh);
+    b.onclick = on;
+    return b;
+  };
+  seg.append(
+    mk('Off', 'hidden', () => { m.wanted = 'hidden'; rerender(); }),
+    mk('Dock', 'docked', () => {
+      m.wanted = forcedHidden(m.vh) ? 'raised' : 'docked'; rerender();
+    }),
+    mk('Full', 'full', () => { m.wanted = 'full'; rerender(); }),
+  );
+  rail.append(cap, seg);
+}
+
+const KITS = { C1: kitGrip, C2: kitHandle, C3: kitInstrument };
+
+function frame(theme, vh, kind) {
+  const wrap = document.createElement('div');
+  wrap.className = 'themed';
+  const label = document.createElement('span');
+  label.className = 't';
+  label.textContent = `${theme} · ${vh === TALL ? 'tall' : 'short'} viewport`;
+  const app = document.createElement('div');
+  app.className = 'app';
+  app.dataset.t = theme;
+  const box = document.createElement('div');
+  box.className = 'scaled';
+  box.append(app);
+  wrap.append(label, box);
+  const m = { vh, wanted: 'docked' };
+
+  function render() {
+    const st = stateOf(m);
+    app.style.setProperty('--mini', `${MINI}px`);
+    app.innerHTML = '';
+
+    const rail = document.createElement('div');
+    rail.className = 'rail';
+    rail.innerHTML = '<span class="cap">Window</span><span class="cap">24 h</span>'
+      + '<span class="spring"></span>';
+
+    /* The APP owns the height and the panes take what is left. Setting a pixel
+       height on the panes instead left 25px that neither pane's growing child
+       ever claimed, which is the pale band under the whole surface. */
+    app.style.height = `${vh + 22}px`;
+    box.style.height = `${(vh + 22) * 1.6}px`;
+    const panes = document.createElement('div');
+    panes.className = 'panes';
+
+    const canvas = document.createElement('section');
+    canvas.className = 'pane canvas';
+    canvas.dataset.dock = st;
+    canvas.innerHTML = '<div class="plate-cap">Glucose by time of day</div>'
+      + '<div class="strip">glucose strip</div>';
+
+    const field = document.createElement('div');
+    field.className = 'field';
+    field.dataset.dock = st;
+    if (forcedHidden(m.vh) && st === 'docked') field.toggleAttribute('data-over', true);
+
+    const spot = document.createElement('div');
+    spot.className = 'spotlight';
+    spot.append(tile(RANKED[0], true));
+    field.append(spot);
+
+    if (st !== 'hidden') {
+      const dock = document.createElement('div');
+      dock.className = 'dock';
+      dock.dataset.form = st === 'full' ? 'full' : 'docked';
+      for (const n of RANKED.slice(1)) dock.append(tile(n));
+      field.append(dock);
+    }
+
+    KITS[kind](m, st, field, render, rail);
+
+    canvas.append(field);
+
+    const insp = document.createElement('section');
+    insp.className = 'pane insp';
+    const crumb = document.createElement('div');
+    crumb.className = 'crumb';
+    crumb.textContent = 'Findings';
+    const queue = document.createElement('div');
+    queue.className = 'queue';
+    for (const n of RANKED.slice(0, 4)) {
+      const q = document.createElement('div');
+      q.className = 'qrow';
+      q.innerHTML = '<i class="fil"></i>';
+      const s = document.createElement('span');
+      s.className = 'name';
+      s.textContent = n;
+      q.append(s);
+      queue.append(q);
+    }
+    const dr = document.createElement('div');
+    dr.className = 'dockrow';
+    dr.innerHTML = '<span class="dk">Trial</span> <span class="dv">Carb ratio · maturing</span>';
+    insp.append(crumb, queue, dr);
+
+    panes.append(canvas, insp);
+    app.append(rail, panes);
+    const note = wrap.querySelector('.note') || document.createElement('div');
+    note.className = 'note';
+    note.textContent = `dock: ${st}${forcedHidden(m.vh) ? '  ·  short viewport' : ''}`;
+    if (!note.isConnected) wrap.append(note);
+  }
+  render();
+  return wrap;
+}
+
+for (const host of document.querySelectorAll('[data-spec]')) {
+  const k = host.dataset.spec;
+  host.append(frame('light', TALL, k), frame('dark', TALL, k), frame('light', SHORT, k));
+}
+</script>
+</body>
+</html>

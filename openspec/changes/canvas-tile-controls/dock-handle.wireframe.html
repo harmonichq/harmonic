@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WIREFRAME — the dock handle</title>
+<style>
+/* WIREFRAME — NO FIDELITY CLAIM — NOT LOCKABLE.
+   Slice 3, control chrome, round three — ONE concept, drawn out.
+   The chrome grows with the space the state can afford: hidden pays one
+   affordance, docked pays three, mounted gets a real header row because it is
+   the only state with room for one. Neutral tokens; deleted when the change
+   lands. Every specimen is live. */
+:root {
+  --w-ground: #E7E4DD; --w-panel: #F4F2ED; --w-recess: #D6D2C8;
+  --w-edge: #C3BEB2; --w-hair: #CFCABE; --w-trench: #DAD6CC;
+  --w-ink: #2B2724; --w-label: #56504A; --w-quiet: #8C857C;
+  --w-live: #C4622C; --w-held: #3F3A34; --w-lift: rgba(255,255,255,.8);
+  color-scheme: light;
+}
+.app[data-t="dark"] {
+  --w-ground: #1D1A18; --w-panel: #26221F; --w-recess: #171513;
+  --w-edge: #3A3430; --w-hair: #363029; --w-trench: #141210;
+  --w-ink: #EFEAE2; --w-label: #B6ADA2; --w-quiet: #877E74;
+  --w-live: #D9834C; --w-held: #E4DDD2; --w-lift: rgba(255,255,255,.10);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 28px 32px 90px; min-width: 980px; background: #EDEAE3; color: #2B2724;
+  font: 13px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+.banner { margin: 0 0 22px; padding: 8px 12px; border: 1px dashed #8C857C;
+  color: #56504A; font-size: 11px; letter-spacing: .09em; text-transform: uppercase; }
+h1 { margin: 0 0 4px; font-size: 18px; font-weight: 640; letter-spacing: -.01em; }
+.lede { max-width: 96ch; margin: 0 0 8px; color: #56504A; font-size: 13px; }
+.lede b { color: #2B2724; }
+.ruled { max-width: 96ch; margin: 0 0 22px; padding: 10px 13px; background: #E3DFD6;
+  border-left: 3px solid #C4622C; color: #56504A; font-size: 12.5px; }
+.ruled b { color: #2B2724; }
+/* SCOPED. Unscoped, this hit the specimens' panes in an earlier wireframe —
+   they were <section> elements too — and gave every pane 28px of padding it
+   never asked for. The panes here are <div>s as well, belt and braces. */
+body > section { margin: 0 0 34px; padding: 0 0 28px; border-bottom: 1px solid #CFCABE; }
+h2 { margin: 20px 0 5px; font-size: 15.5px; font-weight: 640; }
+.claim { max-width: 96ch; margin: 0 0 7px; color: #56504A; font-size: 12.5px; }
+.claim b { color: #2B2724; font-weight: 600; }
+.do { margin: 14px 0 6px; color: #8C857C; font-size: 11px;
+  letter-spacing: .09em; text-transform: uppercase; }
+.stack { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
+.themed { display: flex; flex-direction: column; gap: 5px; }
+.themed > .t { color: #8C857C; font-size: 10.5px; letter-spacing: .09em; text-transform: uppercase; }
+.themed > .note { color: #8C857C; font: 11px ui-monospace, monospace; letter-spacing: .04em; }
+
+/* ---- app frame — authored at size, nothing scaled ----------------------- */
+.app { background: var(--w-ground); color: var(--w-ink); box-shadow: 0 0 0 1px var(--w-edge);
+  overflow: hidden; width: 880px; user-select: none; display: flex; flex-direction: column; }
+.rail { flex: 0 0 34px; display: flex; align-items: center; padding: 0 14px; gap: 12px;
+  background: var(--w-recess); box-shadow: inset 0 -1px 0 var(--w-edge); }
+.rail .cap { color: var(--w-label); font-size: 10.5px; font-weight: 650;
+  letter-spacing: .09em; text-transform: uppercase; }
+.panes { flex: 0 0 auto; min-height: 0; display: grid;
+  grid-template-columns: minmax(0, 1fr) 264px; grid-template-rows: minmax(0, 1fr);
+  background: var(--w-trench); }
+.pane { min-width: 0; min-height: 0; height: 100%; background: var(--w-panel);
+  box-shadow: inset 0 0 0 1px var(--w-edge), inset 0 1px 0 var(--w-lift); }
+.pane.canvas { display: grid; grid-template-rows: 26px 112px minmax(0, 1fr); }
+/* MOUNTED TAKES THE WHOLE LEFT AREA. The glucose strip goes entirely, and the
+   header row it occupied becomes the mounted thing's own header — the same row
+   whether a chart is full-screened or the dock is mounted. */
+.pane.canvas[data-mounted] { grid-template-rows: 26px minmax(0, 1fr); }
+.pane.canvas[data-mounted] > .strip { display: none; }
+.pane.insp { display: grid; grid-template-rows: 28px minmax(0, 1fr) auto; }
+
+/* the header row: a plate cap at rest, a control header when something is mounted */
+.plate-cap { display: flex; align-items: center; gap: 10px; padding: 0 6px 0 14px;
+  color: var(--w-quiet); font-size: 10px; letter-spacing: .09em; text-transform: uppercase; }
+.plate-cap .spring { flex: 1 1 auto; }
+.plate-cap[data-mounted] { color: var(--w-ink); font-weight: 700;
+  box-shadow: inset 0 -1px 0 var(--w-hair); }
+.plate-cap .count { color: var(--w-quiet); font-family: ui-monospace, monospace;
+  font-weight: 500; letter-spacing: .04em; }
+.hdr-btn { display: grid; place-items: center; width: 22px; height: 20px; padding: 0;
+  border: 0; border-radius: 2px; background: transparent; color: var(--w-quiet);
+  cursor: pointer; transition: color 130ms, background 130ms; }
+.hdr-btn:hover { color: var(--w-ink); background: var(--w-recess); }
+.hdr-btn svg { width: 13px; height: 13px; display: block; fill: none;
+  stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+
+.strip { margin: 4px 10px 0; background: var(--w-recess);
+  box-shadow: inset 0 0 0 1px var(--w-edge); display: grid; place-items: center;
+  color: var(--w-quiet); font-size: 10px; letter-spacing: .09em; text-transform: uppercase; }
+.field { min-height: 0; position: relative; display: grid; gap: 8px; padding: 8px;
+  background: var(--w-trench); box-shadow: inset 0 6px 10px -8px rgba(0,0,0,.55);
+  overflow: hidden; }
+.field[data-dock="hidden"], .field[data-dock="full"] { grid-template-rows: minmax(0,1fr); }
+.field[data-dock="docked"] { grid-template-rows: minmax(0,1fr) var(--mini); }
+.field[data-over] { grid-template-rows: minmax(0,1fr); }
+.field[data-over] > .dock { position: absolute; left: 8px; right: 8px; bottom: 8px;
+  height: var(--mini); max-height: calc(100% - 16px); background: var(--w-trench); z-index: 2;
+  box-shadow: 0 -10px 22px -12px rgba(0,0,0,.8), 0 0 0 1px var(--w-edge); }
+.spotlight { min-height: 0; display: grid; }
+.field[data-dock="full"] > .spotlight { display: none; }
+.dock { position: relative; min-width: 0; min-height: 0; display: flex; gap: 8px;
+  overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+.dock::-webkit-scrollbar { display: none; }
+.dock > .tile { flex: 0 0 calc((100% - 16px) / 3.35); }
+.field[data-dock="full"] > .dock { display: grid; overflow-y: auto; overflow-x: hidden;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  grid-auto-rows: var(--mini); align-content: start; scrollbar-width: thin; }
+.field[data-dock="full"] > .dock > .tile { flex: none; }
+
+.tile { position: relative; display: grid;
+  grid-template: 22px minmax(0,1fr) / minmax(0,1fr) 22px;
+  background: var(--w-recess); box-shadow: inset 0 0 0 1px var(--w-edge);
+  min-width: 0; min-height: 0; overflow: hidden; cursor: pointer; }
+.tile .nm { grid-column: 1; padding: 4px 4px 0 9px; color: var(--w-label);
+  font-size: 9.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tile .plot { grid-column: 1; margin: 3px 9px 7px; background: var(--w-trench);
+  box-shadow: inset 0 0 0 1px var(--w-hair); }
+.spotlight .tile { box-shadow: inset 0 0 0 1px var(--w-live); }
+.tile[data-watching] .nm { font-style: italic; }
+.tile .r { grid-column: 2; grid-row: 1 / -1; display: grid; align-content: start;
+  justify-items: center; gap: 3px; padding: 5px 0 0; }
+.tile .r i { width: 7px; height: 7px; border-radius: 50%;
+  background: color-mix(in srgb, var(--w-quiet) 32%, transparent); }
+
+/* ======================================================================== */
+/*  THE HANDLE — one object, riding the dock's top edge in every state it    */
+/*  has one. Hidden, the dock's top edge IS the canvas floor.                */
+/* ======================================================================== */
+.handle { position: absolute; left: 50%; transform: translateX(-50%); z-index: 5;
+  display: flex; align-items: stretch; height: 19px; border-radius: 4px 4px 0 0;
+  background: var(--w-recess); box-shadow: 0 0 0 1px var(--w-hair); overflow: hidden;
+  transition: opacity 140ms; }
+/* hidden: on the canvas floor. ALWAYS DRAWN — quiet, but never invisible: with
+   the dock hidden there is nothing else on screen saying the charts exist, and
+   a hover-only affordance does not exist at all on a touch device. */
+.field[data-dock="hidden"] .handle { bottom: 0; opacity: .72; }
+.field[data-dock="hidden"] .handle:hover { opacity: 1; }
+/* docked: riding the dock's own top edge, and it may ghost — the dock beneath
+   it is its own proof that the charts are there. */
+.field[data-dock="docked"] .handle { bottom: calc(var(--mini) + 8px);
+  border-radius: 4px; opacity: .34; }
+.field:hover .handle, .field:focus-within .handle { opacity: 1; }
+.handle button { border: 0; background: transparent; cursor: pointer; padding: 0 9px;
+  color: var(--w-quiet); display: grid; place-items: center; }
+.handle button:hover { color: var(--w-ink); background: var(--w-panel); }
+.handle button + button { box-shadow: inset 1px 0 0 var(--w-hair); }
+.handle .knurl { width: 18px; height: 5px; align-self: center; margin: 0 8px;
+  background: repeating-linear-gradient(90deg, var(--w-quiet) 0 1px, transparent 1px 3px); }
+.handle svg { width: 12px; height: 12px; display: block; fill: none; stroke: currentColor;
+  stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.handle .lbl { align-self: center; padding: 0 10px 0 2px; color: var(--w-label);
+  font: 700 9px/1 ui-sans-serif, system-ui; letter-spacing: .1em; text-transform: uppercase; }
+</style>
+</head>
+<body>
+
+<p class="banner">Wireframe — no fidelity claim — not lockable</p>
+
+<h1>The dock handle</h1>
+<p class="lede">
+  One concept, drawn out. <b>The chrome grows with the space the state can
+  afford.</b> Hidden pays a single quiet handle; docked pays that same handle
+  plus two controls; mounted gets a real header row, because mounted is the only
+  state with room for one. Nothing overlaps a chart in any state.
+</p>
+<p class="ruled">
+  <b>Mounted takes the whole left area and the glucose strip goes entirely</b>,
+  so the header row the strip's caption occupied becomes the mounted thing's own
+  header — a title, a shrink and an ×. That row is shared: a full-screened chart
+  gets exactly the same treatment with its own name in it, which is why the
+  mounted dock and a mounted chart do not need two different answers.
+</p>
+<p class="ruled">
+  <b>The handle rides the dock's top edge.</b> With the dock hidden, the dock's
+  top edge is the canvas floor, so that is where the handle sits — it does not
+  hop between unrelated edges, it is attached to one object and moves because
+  that object moved. In hidden it is <b>always drawn</b>, quietly: with the dock
+  away there is nothing else on screen saying the charts exist, and a
+  hover-revealed control does not exist at all on a touch device. Docked, it may
+  ghost — the dock underneath it is its own proof.
+</p>
+
+<section>
+  <h2>Tall viewport — hidden is not reachable, so the handle only mounts</h2>
+  <p class="claim">
+    The minis are not hideable while there is room, so docked's handle offers
+    <b>mount alone</b>. Hide is absent rather than disabled: a control that never
+    works is worse than one that is not drawn.
+  </p>
+  <p class="do">Press the handle's mount. Then shrink, and ×, from the header.</p>
+  <div class="stack" data-spec="tall"></div>
+</section>
+
+<section>
+  <h2>Short viewport — the dock hides itself, and hide comes back</h2>
+  <p class="claim">
+    Below the floor the dock hides on its own and the handle sits on the canvas
+    floor at full opacity. Raised, it floats over the spotlight and the handle
+    rides its top edge, now carrying <b>both</b> mount and hide.
+  </p>
+  <p class="do">Press the handle; mount from there; × back out.</p>
+  <div class="stack" data-spec="short"></div>
+</section>
+
+<script>
+const RANKED = ['Correction factor', 'Missed / unannounced meal', 'Over-treated low',
+  'Carb undercount', 'Correction stacking', 'Meal over-delivery', 'Bolus fell short',
+  'Late bolus', 'Correction on active insulin'];
+const WATCHING = ['Carb ratio Morning · held', 'Basal 22:00 · collecting'];
+const MINI = 100, SPOT_FLOOR = 149, GAP = 8;
+const DOCK_FLOOR = SPOT_FLOOR + MINI + GAP;
+const TALL = 520, SHORT = 330;
+const CHROME = 34 + 26 + 112;
+
+const fieldH = (h) => Math.max(0, h - CHROME);
+const forcedHidden = (h) => fieldH(h) < DOCK_FLOOR;
+const resting = (h) => (forcedHidden(h) ? 'hidden' : 'docked');
+
+const ICON = {
+  mount: '<path d="M2.5 2.5h11v11h-11z"/><path d="M2.5 6h11"/>',
+  shrink: '<path d="M2.5 2.5h11v11h-11z"/><path d="M2.5 10h11"/>',
+  hide: '<path d="M3 8h10"/>',
+  close: '<path d="M4 4l8 8"/><path d="M12 4l-8 8"/>',
+};
+function icon(name) {
+  const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  s.setAttribute('viewBox', '0 0 16 16');
+  s.setAttribute('aria-hidden', 'true');
+  s.innerHTML = ICON[name];
+  return s;
+}
+function btn(cls, name, title, onclick) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = cls;
+  b.title = title;
+  b.setAttribute('aria-label', title);
+  b.append(icon(name));
+  b.onclick = onclick;
+  return b;
+}
+function tile(name, opts = {}) {
+  const t = document.createElement('article');
+  t.className = 'tile';
+  if (opts.watching) t.toggleAttribute('data-watching', true);
+  const nm = document.createElement('div');
+  nm.className = 'nm';
+  nm.textContent = name;
+  const plot = document.createElement('div');
+  plot.className = 'plot';
+  const r = document.createElement('span');
+  r.className = 'r';
+  r.innerHTML = '<i></i><i></i><i></i>';
+  t.append(nm, r, plot);
+  if (opts.onclick) t.onclick = opts.onclick;
+  return t;
+}
+
+function frame(theme, h) {
+  const wrap = document.createElement('div');
+  wrap.className = 'themed';
+  const label = document.createElement('span');
+  label.className = 't';
+  label.textContent = `${theme} · ${h === TALL ? 'tall' : 'short'}`;
+  const app = document.createElement('div');
+  app.className = 'app';
+  app.dataset.t = theme;
+  app.style.height = `${h}px`;
+  app.style.setProperty('--mini', `${MINI}px`);
+  const note = document.createElement('div');
+  note.className = 'note';
+  wrap.append(label, app, note);
+  const m = { h, wanted: 'docked', focal: RANKED[0] };
+
+  const stateOf = () => {
+    if (m.wanted === 'full') return 'full';
+    if (forcedHidden(m.h)) return m.wanted === 'raised' ? 'docked' : 'hidden';
+    return 'docked';
+  };
+
+  function render() {
+    const st = stateOf();
+    app.innerHTML = '';
+
+    const rail = document.createElement('div');
+    rail.className = 'rail';
+    rail.innerHTML = '<span class="cap">Window</span><span class="cap">24 h</span>';
+
+    const panes = document.createElement('div');
+    panes.className = 'panes';
+    panes.style.height = `${h - 34}px`;
+
+    const canvas = document.createElement('div');
+    canvas.className = 'pane canvas';
+    if (st === 'full') canvas.toggleAttribute('data-mounted', true);
+
+    /* THE HEADER ROW — a plate cap at rest, the mounted thing's own header when
+       something is mounted. One row, two occupants, never both. */
+    const cap = document.createElement('div');
+    cap.className = 'plate-cap';
+    if (st === 'full') {
+      cap.toggleAttribute('data-mounted', true);
+      const title = document.createElement('span');
+      title.textContent = 'All charts';
+      const count = document.createElement('span');
+      count.className = 'count';
+      count.textContent = `${RANKED.length + WATCHING.length}`;
+      const spring = document.createElement('span');
+      spring.className = 'spring';
+      cap.append(title, count, spring,
+        btn('hdr-btn', 'shrink', 'Back to the dock', () => {
+          m.wanted = 'docked'; render();
+        }));
+      /* × ONLY WHERE IT DIFFERS FROM SHRINK. On a tall viewport the resting
+         state IS docked, so close and shrink would be two buttons doing one
+         thing; on a short one close goes to hidden and shrink to the raised
+         row, which are genuinely different destinations. Same rule that keeps
+         hide off the tall handle. */
+      if (resting(m.h) === 'hidden') {
+        cap.append(btn('hdr-btn', 'close', 'Close — put the charts away', () => {
+          m.wanted = 'hidden'; render();
+        }));
+      }
+    } else {
+      cap.textContent = 'Glucose by time of day';
+    }
+
+    const strip = document.createElement('div');
+    strip.className = 'strip';
+    strip.textContent = 'glucose strip';
+
+    const field = document.createElement('div');
+    field.className = 'field';
+    field.dataset.dock = st;
+    if (forcedHidden(m.h) && st === 'docked') field.toggleAttribute('data-over', true);
+
+    const spot = document.createElement('div');
+    spot.className = 'spotlight';
+    spot.append(tile(m.focal));
+    field.append(spot);
+
+    if (st !== 'hidden') {
+      const dock = document.createElement('div');
+      dock.className = 'dock';
+      for (const n of RANKED.filter((x) => x !== m.focal)) {
+        dock.append(tile(n, { onclick: () => {
+          m.focal = n;
+          /* Choosing is the exit from mounted — the contact-sheet rule, kept. */
+          if (st === 'full') m.wanted = resting(m.h) === 'hidden' ? 'hidden' : 'docked';
+          render();
+        } }));
+      }
+      if (st === 'full') for (const n of WATCHING) dock.append(tile(n, { watching: true }));
+      field.append(dock);
+    }
+
+    /* THE HANDLE — present wherever the dock has a top edge, which is every
+       state but mounted, where the header row has taken the job. */
+    if (st !== 'full') {
+      const handle = document.createElement('div');
+      handle.className = 'handle';
+      const knurl = document.createElement('span');
+      knurl.className = 'knurl';
+      if (st === 'hidden') {
+        const open = document.createElement('button');
+        open.type = 'button';
+        open.title = 'Bring the charts up';
+        open.setAttribute('aria-label', open.title);
+        const lbl = document.createElement('span');
+        lbl.className = 'lbl';
+        lbl.textContent = 'Charts';
+        open.append(icon('mount'));
+        open.onclick = () => { m.wanted = 'raised'; render(); };
+        handle.append(knurl, lbl, open);
+        handle.onclick = (e) => { if (e.target === handle || e.target === knurl || e.target === lbl) {
+          m.wanted = 'raised'; render();
+        } };
+      } else {
+        handle.append(knurl,
+          btn('', 'mount', 'Give the charts the whole canvas', () => {
+            m.wanted = 'full'; render();
+          }));
+        /* HIDE IS ABSENT, NOT DISABLED, WHERE IT CANNOT ACT. The minis are not
+           hideable while there is room, and a control that never works is worse
+           than one that was never drawn. */
+        if (forcedHidden(m.h)) {
+          handle.append(btn('', 'hide', 'Put the charts away', () => {
+            m.wanted = 'hidden'; render();
+          }));
+        }
+      }
+      field.append(handle);
+    }
+
+    canvas.append(cap);
+    if (st !== 'full') canvas.append(strip);
+    canvas.append(field);
+
+    const insp = document.createElement('div');
+    insp.className = 'pane insp';
+    const crumb = document.createElement('div');
+    crumb.className = 'crumb';
+    crumb.style.cssText = 'display:flex;align-items:center;padding:0 12px;'
+      + 'box-shadow:inset 0 -1px 0 var(--w-hair);font-size:12px;font-weight:650;color:var(--w-ink)';
+    crumb.textContent = 'Findings';
+    const queue = document.createElement('div');
+    queue.style.cssText = 'min-height:0;padding:6px 8px;display:flex;flex-direction:column;'
+      + 'gap:4px;overflow:hidden';
+    for (const n of RANKED.slice(0, 5)) {
+      const q = document.createElement('div');
+      q.style.cssText = 'display:flex;align-items:center;gap:8px;padding:3px 6px;cursor:pointer';
+      q.innerHTML = '<i style="flex:0 0 2px;height:15px;background:var(--w-live)"></i>';
+      const s = document.createElement('span');
+      s.style.cssText = 'color:var(--w-ink);font-size:11.5px;font-weight:600;overflow:hidden;'
+        + 'text-overflow:ellipsis;white-space:nowrap';
+      s.textContent = n;
+      q.append(s);
+      q.onclick = () => {
+        m.focal = n;
+        if (forcedHidden(m.h) && m.wanted === 'raised') m.wanted = 'hidden';
+        if (stateOf() === 'full') m.wanted = resting(m.h) === 'hidden' ? 'hidden' : 'docked';
+        render();
+      };
+      queue.append(q);
+    }
+    const dr = document.createElement('div');
+    dr.style.cssText = 'padding:7px 12px 8px;background:var(--w-trench);'
+      + 'box-shadow:inset 0 1px 0 var(--w-hair);display:flex;flex-direction:column;gap:3px';
+    dr.innerHTML = '<span style="color:var(--w-quiet);font-size:9px;font-weight:700;'
+      + 'letter-spacing:.1em;text-transform:uppercase">Trial</span>'
+      + '<span style="color:var(--w-ink);font-size:11.5px;font-weight:600">'
+      + 'Carb ratio Evening · maturing</span>';
+    insp.append(crumb, queue, dr);
+
+    panes.append(canvas, insp);
+    app.append(rail, panes);
+    note.textContent = `dock: ${st}${forcedHidden(m.h) ? '  ·  short viewport' : ''}`;
+  }
+  render();
+  return wrap;
+}
+
+document.querySelector('[data-spec="tall"]')
+  .append(frame('light', TALL), frame('dark', TALL));
+document.querySelector('[data-spec="short"]')
+  .append(frame('light', SHORT), frame('dark', SHORT));
+</script>
+</body>
+</html>

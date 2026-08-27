@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>WIREFRAME — the filmstrip is chrome, not content</title>
+<!-- The shipped sheets, LINKED not copied. Nothing here is extracted, so there
+     is nothing to drift and no --check to owe. The one override block below
+     changes the strip's MATERIAL and its type rank; every colour in it is a
+     token this app already ships, and none is restated. -->
+<!-- Linked in the APP'S OWN ORDER: theme.css loads LAST there, and its own
+     header says it has to, because a theme rule and a surface rule collide at
+     equal specificity and ordering decides. Linked the other way round the
+     workstation adapter's `--mk-primary: var(--primary)` beats theme.css's
+     forest and every trace on the page comes out orange. -->
+<link rel="stylesheet" href="/frontend/diagnose-workstation.css">
+<link rel="stylesheet" href="/frontend/theme.css">
+<style>
+  /* Scoped to `body >` per the trap recorded in the slice handoff: an unscoped
+     `section {}` rule styles the specimen panes themselves. Never CSS `zoom`. */
+  body { margin: 0; background: var(--wk-surface-rail); color: var(--wk-ink);
+    font: 13px/1.55 Inter, system-ui, sans-serif; }
+  body > header { padding: 18px 24px 10px; }
+  body > header h1 { margin: 0 0 6px; font-size: 15px; letter-spacing: .01em; }
+  body > header p { margin: 0 0 8px; color: var(--wk-ink-meta); max-width: 82ch; }
+  body > header p b { color: var(--wk-ink); font-weight: 600; }
+  body > header .mark { display: inline-block; margin-bottom: 10px; padding: 3px 7px;
+    background: var(--wk-signal-well); color: var(--wk-signal);
+    font: 700 10px/1 ui-monospace, Menlo, monospace; letter-spacing: .09em; }
+  body > header button { margin-top: 4px; padding: 5px 11px; cursor: pointer;
+    border: 1px solid var(--wk-rule); border-radius: 4px;
+    background: var(--wk-surface); color: var(--wk-ink); font: inherit; }
+  body > section { padding: 6px 24px 30px; }
+  body > section > h2 { margin: 0 0 8px; font-size: 12px; font-weight: 600;
+    letter-spacing: .06em; text-transform: uppercase; color: var(--wk-ink-meta); }
+
+  /* The specimen is a real `.dw` field at the shipped 145px band. The shell's
+     own `.dw` grid (42px chrome row + body) has nothing to put in it here, so
+     the specimen opts out of the shell and keeps the tokens. The pane height is
+     the only invented number: enough spotlight above the dock for the strip to
+     have something to be beneath. */
+  .spec { display: block; height: auto; max-width: 1120px; }
+  .spec .canvas-pane, .spec .canvas-pane > .body { display: block; height: auto; }
+  .spec .tile-field { height: 420px; }
+  .spec .tile-focal { background: var(--ck-rail); border-radius: 2px;
+    box-shadow: inset 0 0 0 1px var(--ck-tile-edge), inset 0 1px 0 var(--ck-tile-top),
+      var(--ck-tile-shadow); }
+  .spec .tile-focal .plot { width: 100%; height: 100%; display: block; }
+  .spec .tile-chart { width: 100%; height: 100%; }
+  .spec .tile-chart svg { width: 100%; height: 100%; display: block; }
+
+  /* ==== THE STRIP JOINS THE CHROME-BAR ROLE ==============================
+     theme.css themes the shell BY ROLE and names the members of each role in
+     one selector list; its own note says a new surface "either realises a role
+     above, or it is a recorded gap." The proposal is one line of that file: the
+     strip and its handle join `chrome bar`, beside `.cockpit-topbar` and
+     `.cockpit-footer`. In this specimen they realise it the only way a
+     wireframe can without editing frontend/ — by wearing `.cockpit-footer`, so
+     the shipped role rule fires verbatim and every token below (`--ck-ground`,
+     `--ck-panel`, `--ck-text`, `--ck-body`, `--ck-meta`, `--ck-rule`,
+     `--ck-bar-signal`) is the app's own, in both themes, restated nowhere. */
+
+  /* The well is the chrome's ground, and the cut is lit at its lip: the
+     field's own inset lip shadow, plus the bar's `--ck-rule` as the light line
+     the shadow falls away from. In LIGHT this is a ~19:1 step off the bone
+     field where the shipped well is a 1:1 step; in DARK it is the same step
+     the footer already makes against the canvas. One material, both themes. */
+  .tile-field[data-dock="docked"] > .tile-row {
+    background: var(--ck-ground); color: var(--ck-body);
+    border-radius: 2px; padding: var(--ck-canvas-gap);
+    box-shadow: inset 0 8px 12px -8px rgba(0, 0, 0, .85),
+      inset 1px 0 0 rgba(0, 0, 0, .45), inset -1px 0 0 rgba(0, 0, 0, .45),
+      inset 0 -1px 0 color-mix(in srgb, var(--ck-rule) 85%, transparent);
+  }
+
+  /* THE CELL IS NOT A TILE. It gives up the nameplate plate entirely: the name
+     is printed on the chrome, the way the footer prints its own, and the only
+     bright rectangle left is the plot. The caption band drops 28px -> 17px and
+     the rail leaves the plot's flank for the caption's right end, so the frame
+     runs the full width of the cell and the strip is one continuous chrome
+     ground with four windows cut in it. */
+  .tile-field[data-dock="docked"] > .tile-row > .evidence-tile {
+    grid-template: 17px minmax(0, 1fr) / minmax(0, 1fr) 20px;
+    background: none; border-radius: 0; box-shadow: none; overflow: visible;
+  }
+  .tile-field[data-dock="docked"] > .tile-row > .evidence-tile .tile-head {
+    grid-area: 1 / 1; padding: 0 6px 0 1px; gap: 6px; align-items: center;
+  }
+  /* RANK OF TYPE, in the chrome's own channels. The strip's names are labels on
+     an instrument, not headings: the bar's metadata ink, a weight below the
+     nameplate's 700, and no engraving — chrome prints, it does not carve, so
+     the `--ck-tile-top` highlight the nameplate carries goes with the plate. */
+  .tile-field[data-dock="docked"] > .tile-row > .evidence-tile .tile-head h3 {
+    color: var(--ck-meta); font-size: 9px; font-weight: 600;
+    letter-spacing: .07em; text-shadow: none;
+  }
+  /* The subtitle is the spotlight's job. At indicator rank a cell names the
+     chart and says nothing else; the chart on stage carries the full caption
+     eight pixels above. */
+  .tile-field[data-dock="docked"] > .tile-row > .evidence-tile .tile-meta { display: none; }
+
+  /* THE WINDOW. The plot keeps the brightest ground the theme owns, flush to
+     the cell's edges, with the chrome showing between windows as the gutter —
+     a quiet chart is still evidence, and this hands it every pixel the
+     nameplate and the rail were spending. */
+  .tile-field[data-dock="docked"] > .tile-row > .evidence-tile .tile-body {
+    grid-area: 2 / 1 / 3 / -1; background: var(--ck-rail); border-radius: 1px;
+  }
+
+  /* THE RAIL KEEPS ONE CONTROL. A pin is the only act that changes the STRIP —
+     it reorders it — so it is the one the strip carries. Mount, full-screen and
+     the mode cells all act on the chart that is on stage, and the stage has its
+     own rail 300px above. Clicking a cell is what puts a chart there. */
+  .tile-field[data-dock="docked"] > .tile-row > .evidence-tile .tile-rail {
+    grid-area: 1 / 2; align-content: center; justify-items: end; padding: 0;
+    background: none;
+  }
+  /* The control's name, kept out of the picture the way the tile rail's own is
+     — the handle's button never had that rule because it never had a word. */
+  .tile-field[data-dock="docked"] > .dock-handle button > span {
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip-path: inset(50%); white-space: nowrap;
+  }
+  .tile-field[data-dock="docked"] > .tile-row > .evidence-tile .tile-rail button {
+    width: 18px; height: 15px; opacity: .72; color: var(--ck-meta);
+  }
+  .tile-field[data-dock="docked"] > .tile-row > .evidence-tile .tile-rail button:hover {
+    background: var(--ck-panel); color: var(--ck-text);
+  }
+  .tile-field[data-dock="docked"] > .tile-row > .evidence-tile .tile-rail
+    button[aria-pressed="true"] { opacity: 1; color: var(--ck-bar-signal); }
+
+  /* THE MARK IS THE CHROME'S OWN SIGNAL. One hairline along the cell's top edge
+     and the caption stepping up to the bar's brightest ink — nothing else,
+     because the spotlight IS the mark. `--ck-bar-signal` is the one signal
+     theme.css derives FOR THIS GROUND rather than borrowing from the sheet
+     (6.46:1 on it in light, 6.08:1 in dark), which is precisely why the strip
+     must be this ground before it can wear this mark. */
+  .tile-field[data-dock="docked"] > .tile-row > .evidence-tile[data-selected] {
+    box-shadow: inset 0 2px 0 var(--ck-bar-signal);
+  }
+  .tile-field[data-dock="docked"] > .tile-row > .evidence-tile[data-selected] .tile-head h3 {
+    color: var(--ck-text); font-weight: 700;
+  }
+
+  /* THE HANDLE IS THE STRIP'S OWN LIP, in the strip's own material — which is
+     what stops it reading as an abstract mark floating in a gutter. Layout K1:
+     left cell, centred word, right cell. Docked on a tall viewport, put-away
+     cannot act, so its cell is EMPTY rather than disabled, and the empty cell
+     is what keeps the word optically centred. */
+  .tile-field[data-dock="docked"] > .dock-handle {
+    justify-content: space-between; min-width: 118px;
+    background: var(--ck-ground); color: var(--ck-body);
+    border-radius: 2px 2px 0 0;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ck-rule) 60%, transparent),
+      inset 0 1px 0 color-mix(in srgb, var(--ck-rule) 55%, transparent);
+  }
+  .tile-field[data-dock="docked"] > .dock-handle .dock-cell { flex: 0 0 22px; }
+  .tile-field[data-dock="docked"] > .dock-handle .dock-word {
+    flex: 1 1 auto; text-align: center; padding: 0; color: var(--ck-text);
+    text-shadow: none; font-size: 9px; letter-spacing: .1em;
+  }
+  .tile-field[data-dock="docked"] > .dock-handle button { color: var(--ck-meta); }
+  .tile-field[data-dock="docked"] > .dock-handle button:hover {
+    background: var(--ck-panel); color: var(--ck-text);
+  }
+  .tile-field[data-dock="docked"] > .dock-handle button + button,
+  .tile-field[data-dock="docked"] > .dock-handle .dock-cell + button { box-shadow: none; }
+</style>
+</head>
+<body>
+<header>
+  <span class="mark">WIREFRAME — NO FIDELITY CLAIM — NOT LOCKABLE</span>
+  <h1>The chart filmstrip is chrome, not a fourth row of charts</h1>
+  <p><b>The idea.</b> The strip is a navigator — the thing you pick the next chart
+     from — and it has been dressed as four more evidence panels of equal standing,
+     which is why no amount of tinting its well will stop it fighting the
+     spotlight. It joins the app's <b>chrome bar</b> role instead, the one
+     <code>theme.css</code> already gives the top bar and the status bar, and
+     carries its miniature plots as <b>indicators</b>. The recess then costs
+     nothing to state: chrome is a different material from the sheet, so the strip
+     is a band of the app's frame laid into the canvas floor, evergreen against
+     bone in light and the footer's own graphite in dark. The cells give up the
+     nameplate plate, the subtitle and three of their four controls; what is left
+     is a name printed on the chrome and a bright window cut into it.</p>
+  <p><b>The cost.</b> The strip stops being a place a chart can be worked on: with
+     mount, full-screen and the alignment cells gone from the cell, promoting to
+     the spotlight is the only thing a click in the strip does, and a reader who
+     wants a mini full-screen pays two gestures instead of one. It also spends the
+     chrome-bar role's meaning — a third band in the frame's material inside the
+     working surface — so if that role is ever restyled, the canvas floor moves
+     with the top bar, and in light the canvas now carries a saturated evergreen
+     band where it previously carried none.</p>
+  <button type="button" id="theme">Toggle theme</button>
+</header>
+<div id="spec"></div>
+<script>
+/* The root token block lives in the app's own <style>, so it is FETCHED at load
+   rather than copied. A wireframe that restates a token is a wireframe that can
+   disagree with the app about one. */
+const CELLS = [
+  ['Correction factor · rest windows', 'dose acted → glucose change', true, false],
+  ['Carb undercount', 'meals aligned to each event', false, false],
+  ['Correction stacking', 'correction clusters', false, true],
+  ['Meal over-delivery', 'meals aligned to each event', false, false],
+  ['Overnight basal · 00:00–06:00', 'clean nights', false, false],
+];
+const PIN = '<path d="M9.6 2.2 13.8 6.4"/><path d="M11 4.6 7.2 6 4.4 8.8l2.8 2.8L10 8.8z"/>'
+  + '<path d="M5.8 10.2 2.6 13.4"/>';
+const PIN_ON = '<path d="M9.9 1.7a.75.75 0 0 0-1 1.1l.3.3-2.2.9-3.2 3.2 5.1 5.1 3.2-3.2'
+  + '.9-2.2.3.3a.75.75 0 0 0 1.1-1z"/>'
+  + '<rect x="1.6" y="12.5" width="5.2" height="1.4" rx=".7" transform="rotate(-45 4.2 13.2)"/>';
+function trace(seed, w, h) {
+  let y = h * .5, d = '';
+  for (let x = 0; x <= w; x += 4) {
+    y += Math.sin((x + seed * 37) / 17) * (h * .034) + Math.cos((x + seed * 11) / 7) * (h * .016);
+    y = Math.max(h * .11, Math.min(h * .89, y));
+    d += (x ? 'L' : 'M') + x + ' ' + y.toFixed(1);
+  }
+  return d;
+}
+function cell(i) {
+  const [name, meta, pinned, selected] = CELLS[i];
+  return `<article class="evidence-tile" data-seat="mini" data-state="ok"${selected ? ' data-selected' : ''}>
+    <header class="tile-head"><span class="tile-id"><h3>${name}</h3><span class="tile-meta">${meta}</span></span></header>
+    <span class="tile-rail"><button type="button" class="tile-pin"${pinned ? ' aria-pressed="true"' : ''}>
+      <svg viewBox="0 0 16 16" class="face-off" aria-hidden="true">${PIN}</svg>
+      <svg viewBox="0 0 16 16" class="face-on" aria-hidden="true">${PIN_ON}</svg>
+      <span>Pin</span></button></span>
+    <div class="tile-body"><div class="tile-chart"><svg viewBox="0 0 300 106" preserveAspectRatio="none">
+      <rect x="0" y="34" width="300" height="40" fill="color-mix(in srgb, var(--mk-ok) 9%, transparent)"></rect>
+      <path d="${trace(i + 1, 300, 106)}" fill="none" stroke="var(--mk-primary)" stroke-width="1.15"></path>
+    </svg></div></div>
+  </article>`;
+}
+document.getElementById('spec').innerHTML = `
+  <section>
+    <h2>Docked · tall viewport · the third cell is on stage</h2>
+    <div class="dw spec">
+      <div class="canvas-pane"><div class="body">
+        <div class="tile-field" data-dock="docked">
+          <div class="tile-focal"><svg class="plot" viewBox="0 0 1080 240" preserveAspectRatio="none">
+            <rect x="0" y="80" width="1080" height="84" fill="color-mix(in srgb, var(--mk-ok) 9%, transparent)"></rect>
+            <path d="${trace(3, 1080, 240)}" fill="none" stroke="var(--mk-primary)" stroke-width="1.7"></path>
+          </svg></div>
+          <div class="tile-row cockpit-footer">${CELLS.map((_, i) => cell(i)).join('')}</div>
+          <div class="dock-handle cockpit-footer" data-state="docked">
+            <span class="dock-cell"></span>
+            <span class="dock-word">Charts</span>
+            <button type="button" title="All charts">
+              <svg viewBox="0 0 16 16" class="face-off" aria-hidden="true">
+                <path d="M6 2.6H2.6V6"/><path d="M10 2.6h3.4V6"/><path d="M6 13.4H2.6V10"/><path d="M10 13.4h3.4V10"/>
+              </svg><span>All charts</span>
+            </button>
+          </div>
+        </div>
+      </div></div>
+    </div>
+  </section>`;
+
+document.getElementById('theme').onclick = () => document.documentElement.classList.toggle('dark');
+
+fetch('/frontend/index.html').then((r) => r.text()).then((html) => {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const roots = document.createElement('style');
+  roots.textContent = [...doc.querySelectorAll('style')].map((s) => s.textContent).join('\n');
+  document.head.prepend(roots);
+});
+</script>
+</body>
+</html>

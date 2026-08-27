@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WIREFRAME — the row expands</title>
+<style>
+/* WIREFRAME — NO FIDELITY CLAIM — NOT LOCKABLE.
+   Slice 3, redrawn again on the operator's correction: the pull does not open a
+   different view of the charts. It grows THE ROW ITSELF — the same tiles, the
+   same order, the same scroll — until it floats over the focal chart. One
+   representation at two sizes, not two representations.
+
+   EVERY SPECIMEN IS LIVE and the point is the MOTION. Press the grip in each,
+   scroll inside, press it again to collapse. Both grounds drawn throughout. */
+:root {
+  --w-ground: #E7E4DD; --w-panel: #F4F2ED; --w-recess: #D6D2C8;
+  --w-edge: #C3BEB2; --w-hair: #CFCABE; --w-trench: #DAD6CC;
+  --w-ink: #2B2724; --w-label: #56504A; --w-quiet: #8C857C;
+  --w-live: #C4622C; --w-held: #3F3A34; --w-lift: rgba(255,255,255,.8);
+  color-scheme: light;
+}
+.app[data-t="dark"] {
+  --w-ground: #1D1A18; --w-panel: #26221F; --w-recess: #171513;
+  --w-edge: #3A3430; --w-hair: #363029; --w-trench: #141210;
+  --w-ink: #EFEAE2; --w-label: #B6ADA2; --w-quiet: #877E74;
+  --w-live: #D9834C; --w-held: #E4DDD2; --w-lift: rgba(255,255,255,.10);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 26px 30px 90px; min-width: 1340px; background: #EDEAE3; color: #2B2724;
+  font: 13px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+.banner { margin: 0 0 22px; padding: 8px 12px; border: 1px dashed #8C857C;
+  color: #56504A; font-size: 11px; letter-spacing: .09em; text-transform: uppercase; }
+h1 { margin: 0 0 4px; font-size: 17px; font-weight: 640; letter-spacing: -.01em; }
+.lede { max-width: 94ch; margin: 0 0 8px; color: #56504A; font-size: 12.5px; }
+.lede b { color: #2B2724; }
+.ruled { max-width: 94ch; margin: 0 0 20px; padding: 9px 12px; background: #E3DFD6;
+  border-left: 3px solid #C4622C; color: #56504A; font-size: 12px; }
+.ruled b { color: #2B2724; }
+section { margin: 0 0 28px; padding: 0 0 22px; border-bottom: 1px solid #CFCABE; }
+.opt-head { display: flex; align-items: baseline; gap: 10px; margin: 16px 0 3px; }
+.opt-key { color: #C4622C; font-size: 11px; font-weight: 700; letter-spacing: .12em; }
+.opt-head h3 { margin: 0; font-size: 14px; font-weight: 640; }
+.kind { color: #8C857C; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+.claim { max-width: 94ch; margin: 0 0 6px; color: #56504A; font-size: 12px; }
+.claim b { color: #2B2724; font-weight: 600; }
+.cost { max-width: 94ch; margin: 6px 0 12px; padding: 7px 11px; font-size: 11.5px;
+  background: #F2E7DE; border-left: 3px solid #C4622C; color: #56504A; }
+.cost b { color: #2B2724; }
+.do { margin: 12px 0 5px; color: #8C857C; font-size: 10.5px;
+  letter-spacing: .09em; text-transform: uppercase; }
+.pair { display: flex; gap: 14px; flex-wrap: wrap; }
+.themed { display: flex; flex-direction: column; gap: 4px; }
+.themed > .t { color: #8C857C; font-size: 10px; letter-spacing: .09em; text-transform: uppercase; }
+
+/* ---- app frame — 0.62x of the measured 1440x900 layout ------------------- */
+.app { background: var(--w-ground); color: var(--w-ink); box-shadow: 0 0 0 1px var(--w-edge);
+  overflow: hidden; width: 636px; user-select: none; }
+.rail { display: flex; align-items: center; height: 26px; padding: 0 10px; gap: 9px;
+  background: var(--w-recess); box-shadow: inset 0 -1px 0 var(--w-edge); }
+.rail .cap { color: var(--w-label); font-size: 9px; font-weight: 650;
+  letter-spacing: .09em; text-transform: uppercase; }
+.panes { display: grid; grid-template-columns: minmax(0,1fr) 190px;
+  height: 296px; background: var(--w-trench); }
+.pane { min-width: 0; background: var(--w-panel);
+  box-shadow: inset 0 0 0 1px var(--w-edge), inset 0 1px 0 var(--w-lift); }
+.pane.canvas { display: grid; grid-template-rows: 18px 80px minmax(0,1fr); min-height: 0; }
+.plate-cap { padding: 3px 9px 0; color: var(--w-quiet); font-size: 9px;
+  letter-spacing: .09em; text-transform: uppercase; }
+.bigchart { margin: 2px 6px 0; background: var(--w-recess);
+  box-shadow: inset 0 0 0 1px var(--w-edge); }
+
+/* THE FIELD IS THE POSITIONING CONTEXT. The expanded row floats inside it, over
+   the focal chart, and never escapes the canvas pane. */
+.field { position: relative; display: grid; grid-template-rows: minmax(0,1fr) 90px;
+  gap: 5px; padding: 6px; min-height: 0; background: var(--w-trench);
+  box-shadow: inset 0 6px 10px -8px rgba(0,0,0,.55); overflow: hidden; }
+.focal { display: grid; min-width: 0; min-height: 0; }
+
+/* the row band, at rest and expanded. Every variant animates the SAME element,
+   which is the whole claim: one interface, one scroll, two sizes. */
+.band { position: relative; display: grid; grid-template-columns: minmax(0,1fr) 13px;
+  min-width: 0; min-height: 0;
+  transition: height 220ms cubic-bezier(.2,.8,.2,1),
+              width 220ms cubic-bezier(.2,.8,.2,1),
+              top 220ms cubic-bezier(.2,.8,.2,1),
+              box-shadow 200ms; }
+.band[data-open] { position: absolute; z-index: 6; background: var(--w-trench);
+  box-shadow: 0 -10px 26px -12px rgba(0,0,0,.85), 0 0 0 1px var(--w-edge); padding: 5px; }
+.strip { display: grid; grid-auto-flow: column; gap: 5px; min-width: 0; min-height: 0;
+  grid-auto-columns: max(96px, calc((100% - 10px) / 3.35));
+  overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+.strip::-webkit-scrollbar { display: none; }
+/* EXPANDED TILE SIZES ARE PER MODE, because "bigger" means different things in
+   a tall narrow box and a wide short one. At rest a mini is 326x145; every
+   expanded tile below is measured larger than that in at least one axis, which
+   is the whole point of the gesture. */
+.band[data-open][data-m="right"] .strip {
+  grid-auto-columns: max(150px, calc((100% - 5px) / 2.35)); }
+.band[data-open][data-m="up"] .strip {
+  grid-auto-columns: max(150px, calc((100% - 10px) / 3.35)); }
+/* E3 — expanded, the same tiles WRAP instead of running on */
+.band[data-open][data-m="wrap"] .strip { grid-auto-flow: row;
+  grid-template-columns: repeat(3, minmax(0,1fr)); grid-auto-rows: 112px;
+  overflow-x: hidden; overflow-y: auto; }
+
+.tile { position: relative; display: grid;
+  grid-template: 14px minmax(0,1fr) / minmax(0,1fr) 14px;
+  background: var(--w-recess); box-shadow: inset 0 0 0 1px var(--w-edge);
+  min-width: 0; min-height: 0; overflow: hidden; }
+.tile .nm { grid-column: 1; padding: 2px 3px 0 6px; color: var(--w-label);
+  font-size: 8px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+.tile .plot { grid-column: 1; margin: 2px 6px 5px; background: var(--w-trench);
+  box-shadow: inset 0 0 0 1px var(--w-hair); cursor: pointer; }
+.band[data-open] .tile .plot { background: var(--w-panel); }
+.focal .tile { box-shadow: inset 0 0 0 1px var(--w-live); }
+.tile[data-watching] .nm { font-style: italic; }
+.trail { grid-column: 2; grid-row: 1 / -1; display: grid; align-content: start;
+  justify-items: center; padding: 2px 0 0; gap: 1px; transition: background 150ms; }
+.tile:hover .trail { background: rgba(0,0,0,.05); }
+.app[data-t="dark"] .tile:hover .trail { background: rgba(255,255,255,.05); }
+.trail button { display: grid; place-items: center; width: 12px; height: 12px; padding: 0;
+  border: 0; background: transparent; color: var(--w-quiet); cursor: pointer; opacity: .5; }
+.tile:hover .trail button { opacity: 1; }
+.trail button[aria-pressed="true"] { opacity: 1; color: var(--w-held); }
+.trail svg { grid-area: 1 / 1; width: 9px; height: 9px; display: block; }
+.off { fill: none; stroke: currentColor; stroke-width: 1.5;
+  stroke-linecap: round; stroke-linejoin: round; }
+.on { fill: currentColor; stroke: none; opacity: 0; }
+[aria-pressed="true"] > .on { opacity: 1; }
+[aria-pressed="true"] > .off { opacity: 0; }
+
+/* THE GRIP LIVES AT THE ROW'S RIGHT END — the end the row runs off. Vertical
+   knurl, because the knurl's direction is the pull's direction; the chevron
+   turns to say which way it will go this time. */
+.grip { grid-column: 2; align-self: stretch; width: 13px; padding: 0; border: 0;
+  cursor: pointer; background: var(--w-recess); color: var(--w-quiet);
+  box-shadow: inset 1px 0 0 var(--w-hair); display: grid; place-items: center; gap: 3px; }
+.grip:hover { color: var(--w-ink); background: var(--w-panel); }
+.grip .knurl { width: 5px; height: 22px;
+  background: repeating-linear-gradient(0deg, currentColor 0 1px, transparent 1px 3px); }
+.grip .chev { font-size: 8px; line-height: 1; }
+.watch-sep { display: grid; place-items: center; width: 15px; min-height: 0;
+  color: var(--w-quiet); font-size: 7px; letter-spacing: .1em; text-transform: uppercase;
+  writing-mode: vertical-rl; border-left: 1px solid var(--w-hair); }
+.band[data-open][data-m="wrap"] .watch-sep { writing-mode: horizontal-tb; width: auto;
+  grid-column: 1 / -1; border-left: 0; border-top: 1px solid var(--w-hair);
+  justify-content: start; padding: 3px 2px; }
+
+/* inspector */
+.pane.insp { display: flex; flex-direction: column; min-height: 0; }
+.crumb { display: flex; align-items: baseline; gap: 8px; height: 19px; padding: 0 8px;
+  box-shadow: inset 0 -1px 0 var(--w-hair); }
+.crumb h2 { margin: 0; font-size: 10px; font-weight: 650; color: var(--w-ink); }
+.queue { flex: 1 1 auto; padding: 4px 6px; display: grid; gap: 3px; align-content: start;
+  overflow: hidden; }
+.qrow { display: grid; grid-template-columns: 2px minmax(0,1fr); align-items: center;
+  gap: 6px; padding: 2px 4px; cursor: pointer; }
+.qrow:hover { background: rgba(0,0,0,.05); }
+.app[data-t="dark"] .qrow:hover { background: rgba(255,255,255,.06); }
+.qrow .fil { width: 2px; height: 12px; background: var(--w-live); }
+.qrow .name { color: var(--w-ink); font-size: 9px; font-weight: 600;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.watching { margin: 3px 4px 0; padding: 3px 4px; color: var(--w-quiet); font-size: 8px;
+  letter-spacing: .08em; text-transform: uppercase; border-top: 1px solid var(--w-hair); }
+.dock { padding: 5px 8px 6px; background: var(--w-trench);
+  box-shadow: inset 0 1px 0 var(--w-hair); display: grid; gap: 2px; }
+.dl { display: flex; align-items: center; gap: 6px; }
+.dk { color: var(--w-quiet); font-size: 7.5px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase; }
+.dv { color: var(--w-ink); font-size: 9px; font-weight: 600;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+</style>
+</head>
+<body>
+
+<p class="banner">Wireframe — no fidelity claim — not lockable</p>
+
+<h1>The row expands</h1>
+<p class="lede">
+  Corrected again, and this is the version that matters: the pull does not open
+  a roster, a list, or a contact sheet. <b>It grows the row itself.</b> Same
+  tiles, same rail on each, same pins, same order, same sideways scroll — just
+  bigger, floating over the focal chart. One interface at two sizes, so there is
+  no second representation to learn, keep in sync, or name.
+</p>
+<p class="ruled">
+  <b>The grip is the same in all three</b> and it sits at the row's <b>right
+  end</b> — the end the row runs off — as a vertical knurl with a chevron that
+  turns to say which way it will go. The Watching reads sit past a divider at the
+  far right of the expanded row, still reachable only by pinning. Everything
+  ruled earlier holds: ranked findings seat themselves, a pin keeps a chart
+  left-most, the sliced tile is the scroll affordance.
+</p>
+<p class="ruled">
+  <b>Measured in the shipped app at 1440×900:</b> canvas pane 1010×790, the
+  row's band 1010×145, focal tile 994×381, each mini 326×145, and 3.35 minis
+  visible before the slice. <b>The specimens are schematic, not to scale</b> —
+  their inspector is proportionally wider than the real 430px, so read the
+  <i>ratios</i> below, which are measured off the rendered specimens, and not
+  their pixel values as app pixels. Every option's collapsed tile is identical;
+  only the expansion differs.
+</p>
+
+<section>
+  <div class="opt-head"><span class="opt-key">E1</span><h3>It grows out of the right side</h3>
+    <span class="kind">kind: the row unrolls leftward from its grip</span></div>
+  <p class="claim">
+    The band detaches at the grip and grows <b>left and up</b>, becoming a tall
+    panel against the field's right edge, over the focal chart. The tiles get
+    taller, the row still runs sideways, and the grip stays exactly where the
+    hand left it.
+  </p>
+  <p class="cost"><b>Cost, measured:</b> it is the only option that makes the row
+    <i>narrower</i> in exchange for height — tiles grow 1.22× wide and 1.39× tall,
+    but only <b>2.1</b> are visible where 3.35 were before, so expanding shows you
+    fewer charts at once than the collapsed row did. The row also leaves the place
+    it lives: it starts as a band across the bottom and ends as a block on the
+    right, so the gesture is a <i>move</i> as well as a growth.</p>
+  <p class="do">Press the grip. Scroll inside. Press again.</p>
+  <div class="pair" data-spec="E1"></div>
+</section>
+
+<section>
+  <div class="opt-head"><span class="opt-key">E2</span><h3>It comes up from the bottom</h3>
+    <span class="kind">kind: the band rises in place, still one row</span></div>
+  <p class="claim">
+    The band stays exactly where it is and <b>grows upward</b> over the focal
+    chart. Nothing moves sideways, nothing relocates: the tile under your pointer
+    before the press is the tile under it after. Taller tiles, same single row,
+    same sideways scroll, and the grip has not moved a pixel.
+  </p>
+  <p class="cost"><b>Cost, measured:</b> it spends the growth on tile size and
+    almost none of it on reach — 1.22× wider, 1.10× taller, and <b>2.7</b> visible
+    against 3.35 collapsed. It buys legibility and actually costs overview, which
+    may be the opposite of what the pull is for.</p>
+  <p class="do">Press the grip; note that nothing moves sideways.</p>
+  <div class="pair" data-spec="E2"></div>
+</section>
+
+<section>
+  <div class="opt-head"><span class="opt-key">E3</span><h3>It comes up, and wraps</h3>
+    <span class="kind">kind: the band rises and the row becomes rows</span></div>
+  <p class="claim">
+    Same upward growth in the same place, but the tiles <b>wrap</b> instead of
+    running on: three across, as many rows as it takes, scrolling down instead of
+    sideways. The whole set is visible at once — which is the thing the row is
+    short of, because the viewport is too short — and the tiles stay the same
+    width they already were, so nothing has to be re-read at a new size.
+  </p>
+  <p class="cost"><b>Cost:</b> the scroll axis flips under the press. A reader
+    who has scrolled sideways to chart seven presses the grip and their position
+    is meaningless in the new axis, and the sliced tile that said "there is more"
+    is replaced by a different affordance. Measured, it is the only one that pays
+    for its growth: 1.09× wider, 1.25× taller, <b>3.1</b> across per row and every
+    remaining chart one short vertical scroll away rather than seven sideways.</p>
+  <p class="do">Press the grip; scroll down inside; press again.</p>
+  <div class="pair" data-spec="E3"></div>
+</section>
+
+<script>
+const PIN_OFF = '<path d="M9.6 2.2 13.8 6.4"/><path d="M11 4.6 7.2 6 4.4 8.8l2.8 2.8L10 8.8z"/>'
+  + '<path d="M5.8 10.2 2.6 13.4"/>';
+const PIN_ON = '<path d="M9.9 1.7a.75.75 0 0 0-1 1.1l.3.3-2.2.9-3.2 3.2 5.1 5.1 3.2-3.2'
+  + '.9-2.2.3.3a.75.75 0 0 0 1.1-1z"/>'
+  + '<rect x="1.6" y="12.5" width="5.2" height="1.4" rx=".7" transform="rotate(-45 4.2 13.2)"/>';
+const FULL = '<path d="M6 2.6H2.6V6"/><path d="M10 2.6h3.4V6"/><path d="M6 13.4H2.6V10"/>'
+  + '<path d="M10 13.4h3.4V10"/>';
+const CLOCK_OFF = '<circle cx="8" cy="8" r="6"/><path d="M8 4.6V8l2.4 1.6"/>';
+const CLOCK_ON = '<path fill-rule="evenodd" d="M8 1.6a6.4 6.4 0 1 0 0 12.8 6.4 6.4 0 0 0 0-12.8z'
+  + 'M7.3 4.2h1.4v4.1l2.2 1.5-.8 1.2-2.8-1.9z"/>';
+
+const RANKED = [
+  ['isf', 'Correction factor'],
+  ['missed', 'Missed / unannounced meal'],
+  ['lowover', 'Over-treated low'],
+  ['undercnt', 'Carb undercount'],
+  ['stacking', 'Correction stacking'],
+  ['overdel', 'Meal over-delivery'],
+  ['short', 'Meal bolus fell short'],
+  ['late', 'Late bolus'],
+  ['oniob', 'Correction on active insulin'],
+];
+const WATCHING = [
+  ['icb1', 'Carb ratio Morning · held'],
+  ['icb2', 'Basal 22:00 · collecting'],
+];
+const ALL = [...RANKED, ...WATCHING];
+const RANKED_IDS = RANKED.map(([id]) => id);
+const nameOf = (id) => ALL.find(([k]) => k === id)[1];
+
+function svg(body, cls) {
+  const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  s.setAttribute('viewBox', '0 0 16 16');
+  s.setAttribute('aria-hidden', 'true');
+  s.setAttribute('class', cls);
+  s.innerHTML = body;
+  return s;
+}
+function glyph(off, on, held) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.append(svg(off, 'off'));
+  if (on) { b.append(svg(on, 'on')); b.setAttribute('aria-pressed', String(Boolean(held))); }
+  return b;
+}
+function seats(m) {
+  const pins = m.pins.filter((id) => id !== m.focal);
+  const rest = RANKED_IDS.filter((id) => id !== m.focal && !pins.includes(id));
+  return { focal: m.focal, row: [...pins, ...rest] };
+}
+
+/* ONE TILE BUILDER for the band and for the focal seat, because the expanded
+   row is the row — if these needed two builders the claim would be false. */
+function tile(id, m, render, watching) {
+  const t = document.createElement('article');
+  t.className = 'tile';
+  t.toggleAttribute('data-watching', Boolean(watching));
+  const nm = document.createElement('div');
+  nm.className = 'nm';
+  nm.textContent = nameOf(id);
+  nm.onclick = () => { m.focal = id; render(); };
+  const plot = document.createElement('div');
+  plot.className = 'plot';
+  plot.onclick = () => { m.focal = id; render(); };
+  const rail = document.createElement('span');
+  rail.className = 'trail';
+  rail.append(glyph(FULL, null));
+  const pin = glyph(PIN_OFF, PIN_ON, m.pins.includes(id));
+  pin.title = m.pins.includes(id) ? 'Release to findings rank' : 'Keep left-most in the row';
+  pin.onclick = (e) => {
+    e.stopPropagation();
+    m.pins = m.pins.includes(id) ? m.pins.filter((x) => x !== id) : [...m.pins, id];
+    render();
+  };
+  rail.append(pin, glyph(CLOCK_OFF, CLOCK_ON, true));
+  t.append(nm, rail, plot);
+  return t;
+}
+
+/* Where the band sits when it is open. Every value is a box inside the field. */
+const OPEN_BOX = {
+  right: { left: '22%', right: '6px', top: '6px', bottom: '6px' },
+  up:    { left: '6px', right: '6px', top: '22%', bottom: '6px' },
+  wrap:  { left: '6px', right: '6px', top: '6px', bottom: '6px' },
+};
+
+function frame(theme, opts) {
+  const wrap = document.createElement('div');
+  wrap.className = 'themed';
+  const label = document.createElement('span');
+  label.className = 't';
+  label.textContent = theme;
+  const app = document.createElement('div');
+  app.className = 'app';
+  app.dataset.t = theme;
+  wrap.append(label, app);
+  const m = { focal: 'isf', pins: ['undercnt'], open: false };
+
+  function render() {
+    app.innerHTML = '';
+    const s = seats(m);
+
+    const rail = document.createElement('div');
+    rail.className = 'rail';
+    rail.innerHTML = '<span class="cap">Window</span><span class="cap">24 h</span>';
+
+    const panes = document.createElement('div');
+    panes.className = 'panes';
+
+    const canvas = document.createElement('section');
+    canvas.className = 'pane canvas';
+    canvas.innerHTML = '<div class="plate-cap">Glucose by time of day</div>'
+      + '<div class="bigchart"></div>';
+
+    const field = document.createElement('div');
+    field.className = 'field';
+    const focal = document.createElement('div');
+    focal.className = 'focal';
+    focal.append(tile(s.focal, m, render));
+
+    const band = document.createElement('div');
+    band.className = 'band';
+    if (m.open) {
+      band.toggleAttribute('data-open', true);
+      band.dataset.m = opts.mode;
+      Object.assign(band.style, OPEN_BOX[opts.mode]);
+    }
+    const strip = document.createElement('div');
+    strip.className = 'strip';
+    for (const id of s.row) strip.append(tile(id, m, render));
+    /* THE WATCHING READS ARE ONLY IN THE EXPANDED ROW, past a divider — the
+       collapsed row seats ranked findings and nothing else. */
+    if (m.open) {
+      const sep = document.createElement('div');
+      sep.className = 'watch-sep';
+      sep.textContent = 'Watching — pin to seat';
+      strip.append(sep);
+      for (const [id] of WATCHING) strip.append(tile(id, m, render, true));
+    }
+    const grip = document.createElement('button');
+    grip.type = 'button';
+    grip.className = 'grip';
+    grip.setAttribute('aria-expanded', String(m.open));
+    grip.setAttribute('aria-label', `${m.open ? 'Collapse' : 'Expand'} the chart row (${ALL.length})`);
+    grip.title = grip.getAttribute('aria-label');
+    grip.innerHTML = '<span class="knurl"></span>'
+      + `<span class="chev">${m.open ? '⌄' : (opts.mode === 'right' ? '‹' : '⌃')}</span>`;
+    grip.onclick = () => { m.open = !m.open; render(); };
+    band.append(strip, grip);
+    field.append(focal, band);
+    canvas.append(field);
+
+    const insp = document.createElement('section');
+    insp.className = 'pane insp';
+    const crumb = document.createElement('div');
+    crumb.className = 'crumb';
+    crumb.innerHTML = '<h2>Findings</h2>';
+    const queue = document.createElement('div');
+    queue.className = 'queue';
+    for (const [id] of RANKED.slice(0, 5)) {
+      const r = document.createElement('div');
+      r.className = 'qrow';
+      r.innerHTML = '<i class="fil"></i>';
+      const n = document.createElement('span');
+      n.className = 'name';
+      n.textContent = nameOf(id);
+      r.append(n);
+      r.onclick = () => { m.focal = id; render(); };
+      queue.append(r);
+    }
+    const w = document.createElement('div');
+    w.className = 'watching';
+    w.textContent = 'Watching · 2 reads';
+    queue.append(w);
+    const dock = document.createElement('div');
+    dock.className = 'dock';
+    dock.innerHTML = '<div class="dl"><span class="dk">Trial</span>'
+      + '<span class="dv">Carb ratio Evening · maturing</span></div>'
+      + '<div class="dl"><span class="dk">Profile</span>'
+      + '<span class="dv">ISF 42 · I:C 5.4</span></div>';
+    insp.append(crumb, queue, dock);
+    panes.append(canvas, insp);
+    app.append(rail, panes);
+  }
+  render();
+  return wrap;
+}
+
+const SPECS = { E1: { mode: 'right' }, E2: { mode: 'up' }, E3: { mode: 'wrap' } };
+for (const host of document.querySelectorAll('[data-spec]')) {
+  host.append(frame('light', SPECS[host.dataset.spec]), frame('dark', SPECS[host.dataset.spec]));
+}
+</script>
+</body>
+</html>

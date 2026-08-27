@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WIREFRAME — the fixed field</title>
+<style>
+/* WIREFRAME — NO FIDELITY CLAIM — NOT LOCKABLE.
+   Slice 3, the two questions ADR 215 rules the direction of but not the
+   mechanism of. Neutral tokens throughout; deleted when the change lands.
+
+   EVERY SPECIMEN IS LIVE. Press things. Both themes are drawn side by side for
+   every specimen, because half of what separates these options is whether the
+   mark survives on graphite. */
+:root {
+  --w-ground: #E7E4DD; --w-panel: #F4F2ED; --w-recess: #D6D2C8;
+  --w-edge: #C3BEB2; --w-hair: #CFCABE; --w-trench: #DAD6CC;
+  --w-ink: #2B2724; --w-label: #56504A; --w-quiet: #8C857C;
+  --w-live: #C4622C; --w-held: #3F3A34; --w-lift: rgba(255,255,255,.8);
+  color-scheme: light;
+}
+.app[data-t="dark"] {
+  --w-ground: #1D1A18; --w-panel: #26221F; --w-recess: #171513;
+  --w-edge: #3A3430; --w-hair: #363029; --w-trench: #141210;
+  --w-ink: #EFEAE2; --w-label: #B6ADA2; --w-quiet: #877E74;
+  --w-live: #D9834C; --w-held: #E4DDD2; --w-lift: rgba(255,255,255,.10);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 26px 30px 90px; min-width: 1300px; background: #EDEAE3; color: #2B2724;
+  font: 13px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+.banner { margin: 0 0 22px; padding: 8px 12px; border: 1px dashed #8C857C;
+  color: #56504A; font-size: 11px; letter-spacing: .09em; text-transform: uppercase; }
+h1 { margin: 0 0 4px; font-size: 17px; font-weight: 640; letter-spacing: -.01em; }
+.lede { max-width: 92ch; margin: 0 0 8px; color: #56504A; font-size: 12.5px; }
+.lede b { color: #2B2724; }
+.ruled { max-width: 92ch; margin: 0 0 20px; padding: 9px 12px; background: #E3DFD6;
+  border-left: 3px solid #C4622C; color: #56504A; font-size: 12px; }
+.ruled b { color: #2B2724; }
+.measured { max-width: 92ch; margin: 0 0 20px; padding: 9px 12px; background: #E9E6DE;
+  border-left: 3px solid #8C857C; color: #56504A; font-size: 11.5px; }
+.measured b { color: #2B2724; }
+h2.q { margin: 34px 0 4px; font-size: 15px; font-weight: 700; }
+section { margin: 0 0 30px; padding: 0 0 24px; border-bottom: 1px solid #CFCABE; }
+.opt-head { display: flex; align-items: baseline; gap: 10px; margin: 18px 0 3px; }
+.opt-key { color: #C4622C; font-size: 11px; font-weight: 700; letter-spacing: .12em; }
+.opt-head h3 { margin: 0; font-size: 14px; font-weight: 640; }
+.kind { color: #8C857C; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+.claim { max-width: 92ch; margin: 0 0 6px; color: #56504A; font-size: 12px; }
+.claim b { color: #2B2724; font-weight: 600; }
+.cost { max-width: 92ch; margin: 6px 0 12px; padding: 7px 11px; font-size: 11.5px;
+  background: #F2E7DE; border-left: 3px solid #C4622C; color: #56504A; }
+.cost b { color: #2B2724; }
+.do { margin: 12px 0 5px; color: #8C857C; font-size: 10.5px;
+  letter-spacing: .09em; text-transform: uppercase; }
+.pair { display: flex; gap: 14px; flex-wrap: wrap; }
+.themed { display: flex; flex-direction: column; gap: 4px; }
+.themed > .t { color: #8C857C; font-size: 10px; letter-spacing: .09em; text-transform: uppercase; }
+
+/* ---- app frame ----------------------------------------------------------- */
+.app { background: var(--w-ground); color: var(--w-ink); box-shadow: 0 0 0 1px var(--w-edge);
+  overflow: hidden; width: 620px; user-select: none; }
+.rail { display: flex; align-items: center; height: 30px; padding: 0 12px; gap: 10px;
+  background: var(--w-recess); box-shadow: inset 0 -1px 0 var(--w-edge); }
+.rail .cap { color: var(--w-label); font-size: 9.5px; font-weight: 650;
+  letter-spacing: .09em; text-transform: uppercase; }
+.rail .spring { flex: 1 1 auto; }
+.panes { display: grid; grid-template-columns: minmax(0,1fr) 186px; height: 300px;
+  background: var(--w-trench); }
+.pane { min-width: 0; background: var(--w-panel); position: relative;
+  box-shadow: inset 0 0 0 1px var(--w-edge), inset 0 1px 0 var(--w-lift); }
+.pane.canvas { display: grid; grid-template-rows: 20px 84px minmax(0,1fr); min-height: 0; }
+.plate-cap { padding: 4px 10px 0; color: var(--w-quiet); font-size: 9.5px;
+  letter-spacing: .09em; text-transform: uppercase; }
+.bigchart { margin: 2px 6px 0; background: var(--w-recess);
+  box-shadow: inset 0 0 0 1px var(--w-edge); }
+
+/* the fixed field: one focal, three minis. Always. */
+.field { margin: 6px; display: grid; gap: 5px; grid-template: minmax(0,1fr) 52px / repeat(3,minmax(0,1fr));
+  min-height: 0; }
+.tile { position: relative; display: grid; grid-template: 15px minmax(0,1fr) / minmax(0,1fr) 15px;
+  background: var(--w-recess); box-shadow: inset 0 0 0 1px var(--w-edge);
+  min-width: 0; min-height: 0; overflow: hidden; }
+.tile[data-seat="focal"] { grid-column: 1 / -1; }
+.tile .nm { grid-column: 1; padding: 2px 4px 0 6px; color: var(--w-label);
+  font-size: 8.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tile .plot { grid-column: 1; margin: 2px 6px 5px; background: var(--w-trench);
+  box-shadow: inset 0 0 0 1px var(--w-hair); }
+.tile[data-drilled] { box-shadow: inset 0 0 0 1px var(--w-live); }
+
+/* the rail down each tile's right edge — ghost at rest, up on hover */
+.trail { grid-column: 2; grid-row: 1 / -1; display: grid; align-content: start;
+  justify-items: center; padding: 2px 0 0; gap: 1px; background: transparent;
+  transition: background 150ms; }
+.tile:hover .trail { background: rgba(0,0,0,.05); }
+.app[data-t="dark"] .tile:hover .trail { background: rgba(255,255,255,.05); }
+.trail button { display: grid; place-items: center; width: 13px; height: 13px; padding: 0;
+  border: 0; background: transparent; color: var(--w-quiet); cursor: pointer; opacity: .5;
+  transition: opacity 150ms, color 130ms; }
+.tile:hover .trail button { opacity: 1; }
+.trail button[aria-pressed="true"] { opacity: 1; color: var(--w-held); }
+.trail button:disabled { opacity: .22; cursor: not-allowed; }
+.trail svg { grid-area: 1 / 1; width: 10px; height: 10px; display: block; transition: opacity 160ms; }
+.trail .off { fill: none; stroke: currentColor; stroke-width: 1.4;
+  stroke-linecap: round; stroke-linejoin: round; }
+.trail .on { fill: currentColor; stroke: none; opacity: 0; }
+.trail button[aria-pressed="true"] .on { opacity: 1; }
+.trail button[aria-pressed="true"] .off { opacity: 0; }
+
+/* A4's keeper bracket */
+.field[data-keeper] { position: relative; }
+.keeper { grid-column: 1 / -1; grid-row: 2; align-self: end; height: 0;
+  margin: 0 -1px -4px; border-bottom: 1px solid var(--w-hair); pointer-events: none; }
+.keeper-cap { position: absolute; right: 6px; bottom: -1px; color: var(--w-quiet);
+  font-size: 8px; letter-spacing: .1em; text-transform: uppercase;
+  background: var(--w-panel); padding: 0 4px; transform: translateY(50%); }
+
+/* inspector */
+.pane.insp { display: flex; flex-direction: column; }
+.crumb { display: flex; align-items: baseline; gap: 8px; height: 20px; padding: 0 8px;
+  box-shadow: inset 0 -1px 0 var(--w-hair); }
+.crumb .trailh { margin: 0; font-size: 10.5px; font-weight: 650; color: var(--w-ink); }
+.queue { flex: 1 1 auto; padding: 4px 6px; display: grid; gap: 3px; align-content: start;
+  overflow: hidden; }
+.row { display: grid; grid-template-columns: 2px minmax(0,1fr) auto; align-items: center;
+  gap: 6px; padding: 2px 4px; cursor: pointer; }
+.row:hover { background: rgba(0,0,0,.05); }
+.app[data-t="dark"] .row:hover { background: rgba(255,255,255,.06); }
+.row .fil { width: 2px; height: 13px; background: var(--w-live); }
+.row .name { color: var(--w-ink); font-size: 9.5px; font-weight: 600;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row .chip { color: var(--w-quiet); font-size: 8px; font-weight: 700; letter-spacing: .08em; }
+.watching { margin: 4px 4px 0; padding: 3px 4px; color: var(--w-quiet); font-size: 8.5px;
+  letter-spacing: .08em; text-transform: uppercase; border-top: 1px solid var(--w-hair); }
+/* the dock — the inspector's floor, pane furniture */
+.dock { padding: 4px 8px 5px; background: var(--w-trench);
+  box-shadow: inset 0 1px 0 var(--w-hair); display: grid; gap: 2px; }
+.dock .dl { display: flex; align-items: center; gap: 6px; }
+.dock .dk { color: var(--w-quiet); font-size: 8px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase; }
+.dock .dv { color: var(--w-ink); font-size: 9.5px; font-weight: 600;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* the pull that opens the roster, seated ON the dock row */
+.pull { display: flex; align-items: center; justify-content: center; gap: 5px;
+  width: 100%; margin-top: 3px; padding: 2px 0; border: 0; cursor: pointer;
+  background: var(--w-recess); box-shadow: inset 0 0 0 1px var(--w-hair);
+  color: var(--w-label); font: inherit; font-size: 8.5px; font-weight: 700;
+  letter-spacing: .09em; text-transform: uppercase; }
+.pull:hover { color: var(--w-ink); }
+.pull .knurl { display: block; width: 26px; height: 5px;
+  background: repeating-linear-gradient(90deg, var(--w-quiet) 0 1px, transparent 1px 3px); }
+
+/* the roster sheet, in its three extents */
+.sheet { position: absolute; z-index: 5; background: var(--w-panel);
+  box-shadow: 0 -8px 18px -12px rgba(0,0,0,.7), inset 0 0 0 1px var(--w-edge);
+  display: flex; flex-direction: column; overflow: hidden;
+  transition: transform 220ms cubic-bezier(.2,.8,.2,1); }
+.sheet[hidden] { display: none; }
+.sheet > header { display: flex; align-items: center; gap: 8px; padding: 3px 8px;
+  box-shadow: inset 0 -1px 0 var(--w-hair); color: var(--w-label);
+  font-size: 8.5px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
+.sheet > header .spring { flex: 1 1 auto; }
+.sheet > header .esc { color: var(--w-quiet); }
+.roster { flex: 1 1 auto; overflow: auto; }
+/* B1 — a list, because 186px is a list */
+.roster.list { display: grid; gap: 1px; align-content: start; padding: 4px; }
+.roster.list .item { display: grid; grid-template-columns: minmax(0,1fr) 14px;
+  align-items: center; gap: 5px; padding: 2px 4px; }
+.roster.list .item:hover { background: rgba(0,0,0,.05); }
+.app[data-t="dark"] .roster.list .item:hover { background: rgba(255,255,255,.06); }
+.roster.list .item .lbl { color: var(--w-ink); font-size: 9px; font-weight: 600;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+.roster.list .item[data-seated] .lbl { color: var(--w-live); }
+/* B2/B3 — thumbnails, because the field is wide enough for them */
+.roster.grid { display: grid; gap: 6px; grid-template-columns: repeat(4, minmax(0,1fr));
+  align-content: start; padding: 8px; }
+.roster.grid .item { display: grid; grid-template-rows: auto minmax(0,1fr); gap: 2px;
+  padding: 4px; background: var(--w-recess); box-shadow: inset 0 0 0 1px var(--w-edge); }
+.roster.grid .item .top { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.roster.grid .item .lbl { flex: 1 1 auto; color: var(--w-ink); font-size: 8.5px;
+  font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  cursor: pointer; }
+.roster.grid .item[data-seated] .lbl { color: var(--w-live); }
+.roster.grid .item .th { min-height: 30px; background: var(--w-trench);
+  box-shadow: inset 0 0 0 1px var(--w-hair); }
+.rpin { display: grid; place-items: center; width: 14px; height: 14px; padding: 0;
+  border: 0; background: transparent; color: var(--w-quiet); cursor: pointer; }
+.rpin[aria-pressed="true"] { color: var(--w-held); }
+.rpin:disabled { opacity: .25; cursor: not-allowed; }
+.rpin svg { grid-area: 1 / 1; width: 10px; height: 10px; }
+.rpin .off { fill: none; stroke: currentColor; stroke-width: 1.4;
+  stroke-linecap: round; stroke-linejoin: round; }
+.rpin .on { fill: currentColor; stroke: none; opacity: 0; }
+.rpin[aria-pressed="true"] .on { opacity: 1; }
+.rpin[aria-pressed="true"] .off { opacity: 0; }
+.repaint { padding: 3px 8px; background: var(--w-trench); color: var(--w-quiet);
+  font-size: 8px; letter-spacing: .08em; text-transform: uppercase;
+  box-shadow: inset 0 1px 0 var(--w-hair); }
+.repaint b { color: var(--w-live); }
+</style>
+</head>
+<body>
+
+<p class="banner">Wireframe — no fidelity claim — not lockable</p>
+
+<h1>The fixed field — the two mechanisms ADR 215 leaves open</h1>
+<p class="lede">
+  ADR 215 rules the <b>direction</b>: the field is fixed at one focal chart and
+  three minis, a pin is <b>membership of a mini position</b> (cap 3, focal never
+  pinnable), unpinned minis seat by findings rank, and the chart explorer demotes
+  to a view-all slide-out anchored by the dock row. Nothing above reopens. Two
+  mechanisms it does not settle are drawn below, one question each.
+</p>
+<p class="measured">
+  <b>Measured on 8877 at a 1440 viewport, before any change:</b> canvas pane
+  1010&times;790, tile field 1010&times;550, focal tile 994&times;381, each mini
+  326&times;145, inspector pane 430 wide, the dock 429&times;98 sitting on the
+  inspector's floor. The field already renders one focal plus three minis at zero
+  pins, so the fixed geometry is what a reader sees today — this slice removes the
+  machinery that could take it somewhere else, it does not move the default.
+  The specimens below are that layout at roughly 0.6&times;.
+</p>
+<p class="ruled">
+  <b>Both grounds are drawn for every specimen.</b> Held ink in this idiom is a
+  filled glyph at full opacity among ghosted outlines — no hue — so the only way
+  to judge a membership mark is to see it on bone and on graphite at once.
+</p>
+
+<h2 class="q">Q1 — the focal position cannot be held. What does its rail say?</h2>
+<p class="lede">
+  Every mini carries a pushpin: solid means this position is the reader's and
+  re-seating cannot take it. The focal position is <b>never</b> pinnable — a
+  finding click or a mini tab always owns it — so the pushpin on the biggest tile
+  in the field has no job. Four answers, differing in kind.
+  <b>Press the pins.</b> Each specimen opens with mini 1 already pinned.
+</p>
+
+<section>
+  <div class="opt-head"><span class="opt-key">A1</span><h3>The focal rail is shorter</h3>
+    <span class="kind">kind: the control is absent where it is meaningless</span></div>
+  <p class="claim">
+    The pushpin exists on a mini and nowhere else. The focal tile's rail carries
+    maximize and alignment only. <b>A control is drawn where it acts</b>, and a
+    reader never presses a pin that cannot hold.
+  </p>
+  <p class="cost"><b>Cost:</b> the same chart's rail changes shape as it moves.
+    Pin a mini, then tab it into focus: the pin you just set disappears from the
+    tile — the membership survives underneath, but the tile stops saying so, and
+    the only evidence left is the mini that took its place.</p>
+  <p class="do">Pin, then click a mini's name to tab it into focus.</p>
+  <div class="pair" data-spec="A1"></div>
+</section>
+
+<section>
+  <div class="opt-head"><span class="opt-key">A2</span><h3>The pin is a demotion</h3>
+    <span class="kind">kind: the control keeps its glyph and gains a move</span></div>
+  <p class="claim">
+    Pressing the pin on the focal tile <b>sends that chart down into a mini
+    position and holds it there</b>, and the top-ranked mini rises into focus.
+    One verb the whole field understands: pin means "keep this", and keeping
+    something means it stops being the thing you are currently reading.
+  </p>
+  <p class="cost"><b>Cost:</b> one glyph both holds and moves, so a press meant to
+    keep rearranges the field under the reader's eye. It is also the only control
+    on the surface whose effect depends on which position it sits in.</p>
+  <p class="do">Press the focal tile's pin and watch the field.</p>
+  <div class="pair" data-spec="A2"></div>
+</section>
+
+<section>
+  <div class="opt-head"><span class="opt-key">A3</span><h3>Present and dead</h3>
+    <span class="kind">kind: the control is drawn, disabled, and explains itself</span></div>
+  <p class="claim">
+    The rail is identical in all four positions; the focal tile's pin is simply
+    disabled, titled <i>"The focal position always follows your last click."</i>
+    <b>The rail never changes shape</b>, so nothing about a tile moves when the
+    tile does.
+  </p>
+  <p class="cost"><b>Cost:</b> a permanently dead control on the largest tile in
+    the field — the one place a reader looks first. It teaches the rule by
+    refusing, which is the weakest way to teach anything.</p>
+  <p class="do">Hover the focal tile; try its pin.</p>
+  <div class="pair" data-spec="A3"></div>
+</section>
+
+<section>
+  <div class="opt-head"><span class="opt-key">A4</span><h3>Membership belongs to the mini row</h3>
+    <span class="kind">kind: the register is the furniture, not the tile</span></div>
+  <p class="claim">
+    The three minis are drawn as one three-slot register — a hairline under the
+    row, engraved <span style="letter-spacing:.1em">HELD</span> at its right end —
+    and the pushpin lives only inside it. The focal tile sits above the register
+    entirely, so <b>there is no position there to hold</b> and no control missing
+    from it. The rule is drawn once, in the field, instead of four times in four
+    rails.
+  </p>
+  <p class="cost"><b>Cost:</b> new furniture on a field this slice is otherwise
+    stripping — one more line and one more word on a surface that just lost the
+    arrangement schematic. It also only reads as a register while all three minis
+    are present.</p>
+  <p class="do">Pin and unpin the minis; note the focal tile is outside the rule.</p>
+  <div class="pair" data-spec="A4"></div>
+</section>
+
+<h2 class="q">Q2 — the view-all roster is anchored by the dock row. How far does it come up?</h2>
+<p class="lede">
+  The pull sits on the dock row (Trial · Watching · Profile) in all three. What
+  differs is <b>what the sheet covers</b> — and with it whether "opening it must
+  not repaint the seated charts" is true by construction or merely true if the
+  code is careful. Each specimen prints, at its foot, what happens to the four
+  seated charts when the sheet opens. <b>Press the pull.</b>
+</p>
+
+<section>
+  <div class="opt-head"><span class="opt-key">B1</span><h3>Over the inspector only</h3>
+    <span class="kind">kind: the roster is a list at the address it was pulled from</span></div>
+  <p class="claim">
+    The sheet rises over the inspector pane and stops at the crumb. The canvas is
+    <b>never touched</b>: not covered, not resized, not re-laid-out, so no seated
+    chart can repaint no matter what the code does. At 430px the roster is a
+    named list with a pushpin per row, not thumbnails.
+  </p>
+  <p class="cost"><b>Cost:</b> no thumbnails, so "browse every registered chart"
+    is browsing names. It also hides the findings queue — the ranked list the
+    seating you are overriding comes from — for as long as you are browsing.</p>
+  <p class="do">Pull. Pin two rows; watch the field not move.</p>
+  <div class="pair" data-spec="B1"></div>
+</section>
+
+<section>
+  <div class="opt-head"><span class="opt-key">B2</span><h3>Over the tile field</h3>
+    <span class="kind">kind: the roster claims the surface it seats into</span></div>
+  <p class="claim">
+    The sheet rises from the dock row and covers <b>the tile field</b>, leaving
+    the glucose strip and the whole inspector standing. Thumbnails are readable at
+    that width, and you pin into the field while looking at where the chart will
+    land. Seated tiles are covered, not unmounted.
+  </p>
+  <p class="cost"><b>Cost:</b> the pull is on the inspector's floor and the sheet
+    opens on the other pane — the gesture and its effect are 600px apart. And
+    "does not repaint" is now a property of the code (tiles hidden, chart mounts
+    kept) rather than of the geometry, so it needs a test to hold.</p>
+  <p class="do">Pull. Pin two thumbnails; note the field under the sheet.</p>
+  <div class="pair" data-spec="B2"></div>
+</section>
+
+<section>
+  <div class="opt-head"><span class="opt-key">B3</span><h3>Across both panes</h3>
+    <span class="kind">kind: browsing charts is somewhere you go</span></div>
+  <p class="claim">
+    The sheet is hinged on the dock row and comes up across the whole workstation
+    below the glucose strip. The roster gets the full width, the largest
+    thumbnails of the three, and reads as a place rather than a drawer.
+  </p>
+  <p class="cost"><b>Cost:</b> the surface goes away to browse it — queue, dock and
+    field all covered — which is very close to the second mode ADR 215 just
+    retired, wearing different clothes.</p>
+  <p class="do">Pull.</p>
+  <div class="pair" data-spec="B3"></div>
+</section>
+
+<script>
+const PIN_OFF = '<path d="M9.6 2.2 13.8 6.4"/><path d="M11 4.6 7.2 6 4.4 8.8l2.8 2.8L10 8.8z"/>'
+  + '<path d="M5.8 10.2 2.6 13.4"/>';
+const PIN_ON = '<path d="M9.9 1.7a.75.75 0 0 0-1 1.1l.3.3-2.2.9-3.2 3.2 5.1 5.1 3.2-3.2'
+  + '.9-2.2.3.3a.75.75 0 0 0 1.1-1z"/>'
+  + '<rect x="1.6" y="12.5" width="5.2" height="1.4" rx=".7" transform="rotate(-45 4.2 13.2)"/>';
+const FULL = '<path d="M6 2.6H2.6V6"/><path d="M10 2.6h3.4V6"/><path d="M6 13.4H2.6V10"/>'
+  + '<path d="M10 13.4h3.4V10"/>';
+const CLOCK_OFF = '<circle cx="8" cy="8" r="6"/><path d="M8 4.6V8l2.4 1.6"/>';
+const CLOCK_ON = '<path fill-rule="evenodd" d="M8 1.6a6.4 6.4 0 1 0 0 12.8 6.4 6.4 0 0 0 0-12.8z'
+  + 'M7.3 4.2h1.4v4.1l2.2 1.5-.8 1.2-2.8-1.9z"/>';
+
+/* The registered charts: what the roster browses. The four that seat by default
+   are the top-ranked findings rows, in the server's own order. */
+const CHARTS = [
+  { id: 'isf',      name: 'Correction factor · rest windows' },
+  { id: 'missed',   name: 'Missed / unannounced meal' },
+  { id: 'lowover',  name: 'Over-treated low' },
+  { id: 'undercnt', name: 'Carb undercount' },
+  { id: 'stacking', name: 'Correction stacking' },
+  { id: 'overdel',  name: 'Meal over-delivery' },
+  { id: 'short',    name: 'Meal bolus fell short' },
+  { id: 'late',     name: 'Late bolus' },
+  { id: 'oniob',    name: 'Correction on active insulin' },
+  { id: 'basal',    name: 'Basal 05:30 · nights of steady data' },
+  { id: 'ic',       name: 'Carb ratio 11:00–07:00 · meal runs' },
+];
+const RANKED = CHARTS.slice(0, 9).map((c) => c.id);   // findings rank, Watching excluded
+const nameOf = (id) => CHARTS.find((c) => c.id === id).name;
+
+function svg(body, cls) {
+  const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  s.setAttribute('viewBox', '0 0 16 16');
+  s.setAttribute('aria-hidden', 'true');
+  s.setAttribute('class', cls);
+  s.innerHTML = body;
+  return s;
+}
+function glyphButton(cls, off, on, held) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = cls;
+  b.append(svg(off, 'off'));
+  if (on) { b.append(svg(on, 'on')); b.setAttribute('aria-pressed', String(Boolean(held))); }
+  return b;
+}
+
+/* ONE MODEL, EVERY SPECIMEN. Pins are a set capped at three; the focal id is
+   whatever the reader last took; the minis are the pins first, then the ranked
+   charts that are neither pinned nor focal. That IS the ruled seating. */
+function model() {
+  return { focal: RANKED[0], pins: [RANKED[1]], open: false };
+}
+function seats(m) {
+  const minis = [...m.pins];
+  for (const id of RANKED) {
+    if (minis.length >= 3) break;
+    if (id !== m.focal && !minis.includes(id)) minis.push(id);
+  }
+  return { focal: m.focal, minis };
+}
+
+function tile(id, seat, pinned, m, render, opts) {
+  const t = document.createElement('article');
+  t.className = 'tile';
+  t.dataset.seat = seat;
+  if (id === m.focal) t.toggleAttribute('data-drilled', true);
+  const nm = document.createElement('div');
+  nm.className = 'nm';
+  nm.textContent = nameOf(id);
+  nm.style.cursor = 'pointer';
+  nm.onclick = () => { m.focal = id; render(); };
+  const plot = document.createElement('div');
+  plot.className = 'plot';
+  plot.style.cursor = 'pointer';
+  plot.onclick = () => { m.focal = id; render(); };
+  const rail = document.createElement('span');
+  rail.className = 'trail';
+  rail.append(glyphButton('', FULL, null));
+
+  const wantsPin = opts.pinOnFocal || seat !== 'focal';
+  if (wantsPin) {
+    const pin = glyphButton('', PIN_OFF, PIN_ON, pinned);
+    if (seat === 'focal') {
+      if (opts.focalPinDead) {
+        pin.disabled = true;
+        pin.title = 'The focal position always follows your last click.';
+      } else {
+        pin.title = 'Hold this chart in a mini position';
+        pin.onclick = () => {
+          // A2 — the pin demotes: hold it below, and raise the top mini.
+          if (m.pins.length >= 3) return;
+          const rising = seats(m).minis.find((x) => !m.pins.includes(x)) || seats(m).minis[0];
+          m.pins.push(id);
+          m.focal = rising;
+          render();
+        };
+      }
+    } else {
+      pin.title = pinned ? 'Release this position' : 'Hold this position';
+      pin.disabled = !pinned && m.pins.length >= 3;
+      pin.onclick = () => {
+        if (pinned) m.pins = m.pins.filter((x) => x !== id);
+        else if (m.pins.length < 3) m.pins.push(id);
+        render();
+      };
+    }
+    rail.append(pin);
+  }
+  rail.append(glyphButton('', CLOCK_OFF, CLOCK_ON, true));
+  t.append(nm, rail, plot);
+  return t;
+}
+
+function frame(theme, opts) {
+  const wrap = document.createElement('div');
+  wrap.className = 'themed';
+  const label = document.createElement('span');
+  label.className = 't';
+  label.textContent = theme;
+  const app = document.createElement('div');
+  app.className = 'app';
+  app.dataset.t = theme;
+  wrap.append(label, app);
+  const m = model();
+
+  function render() {
+    app.innerHTML = '';
+    const s = seats(m);
+    const rail = document.createElement('div');
+    rail.className = 'rail';
+    rail.innerHTML = '<span class="cap">Window</span><span class="cap">24 h</span>'
+      + '<span class="spring"></span>';
+    const panes = document.createElement('div');
+    panes.className = 'panes';
+
+    const canvas = document.createElement('section');
+    canvas.className = 'pane canvas';
+    canvas.innerHTML = '<div class="plate-cap">Glucose by time of day</div>'
+      + '<div class="bigchart"></div>';
+    const field = document.createElement('div');
+    field.className = 'field';
+    field.append(tile(s.focal, 'focal', false, m, render, opts));
+    for (const id of s.minis) field.append(tile(id, 'mini', m.pins.includes(id), m, render, opts));
+    if (opts.keeper) {
+      const k = document.createElement('div');
+      k.className = 'keeper';
+      const cap = document.createElement('span');
+      cap.className = 'keeper-cap';
+      cap.textContent = 'held';
+      k.append(cap);
+      field.append(k);
+      field.toggleAttribute('data-keeper', true);
+    }
+    canvas.append(field);
+
+    const insp = document.createElement('section');
+    insp.className = 'pane insp';
+    const crumb = document.createElement('div');
+    crumb.className = 'crumb';
+    crumb.innerHTML = '<h2 class="trailh">Findings</h2>';
+    const queue = document.createElement('div');
+    queue.className = 'queue';
+    for (const id of RANKED.slice(0, 6)) {
+      const row = document.createElement('div');
+      row.className = 'row';
+      row.innerHTML = '<i class="fil"></i>';
+      const n = document.createElement('span');
+      n.className = 'name';
+      n.textContent = nameOf(id);
+      const c = document.createElement('span');
+      c.className = 'chip';
+      c.textContent = id === s.focal ? 'SHOWN' : '';
+      row.append(n, c);
+      // A finding click ALWAYS takes the focal position (ADR 215).
+      row.onclick = () => { m.focal = id; render(); };
+      queue.append(row);
+    }
+    const w = document.createElement('div');
+    w.className = 'watching';
+    w.textContent = 'Watching · 2 readings';
+    queue.append(w);
+
+    const dock = document.createElement('div');
+    dock.className = 'dock';
+    dock.innerHTML = '<div class="dl"><span class="dk">Trial</span>'
+      + '<span class="dv">Carb ratio Evening · maturing</span></div>'
+      + '<div class="dl"><span class="dk">Profile</span>'
+      + '<span class="dv">ISF 42 · I:C 5.4</span></div>';
+    if (opts.pull) {
+      const pull = document.createElement('button');
+      pull.type = 'button';
+      pull.className = 'pull';
+      pull.innerHTML = '<span class="knurl"></span>';
+      const t = document.createElement('span');
+      t.textContent = m.open ? 'Close charts' : `All charts · ${CHARTS.length}`;
+      pull.append(t);
+      pull.onclick = () => { m.open = !m.open; render(); };
+      dock.append(pull);
+    }
+    insp.append(crumb, queue, dock);
+    panes.append(canvas, insp);
+    app.append(rail, panes);
+
+    if (opts.pull && m.open) {
+      const sheet = document.createElement('section');
+      sheet.className = 'sheet';
+      sheet.innerHTML = '<header><span>All charts</span><span class="spring"></span>'
+        + '<span class="esc">Esc</span></header>';
+      const roster = document.createElement('div');
+      roster.className = `roster ${opts.extent === 'inspector' ? 'list' : 'grid'}`;
+      for (const c of CHARTS) {
+        const item = document.createElement('div');
+        item.className = 'item';
+        item.toggleAttribute('data-seated', c.id === s.focal || s.minis.includes(c.id));
+        const lbl = document.createElement('span');
+        lbl.className = 'lbl';
+        lbl.textContent = c.name;
+        lbl.onclick = () => { m.focal = c.id; m.open = false; render(); };
+        const pin = glyphButton('rpin', PIN_OFF, PIN_ON, m.pins.includes(c.id));
+        pin.disabled = !m.pins.includes(c.id) && m.pins.length >= 3;
+        pin.onclick = () => {
+          if (m.pins.includes(c.id)) m.pins = m.pins.filter((x) => x !== c.id);
+          else if (m.pins.length < 3) m.pins.push(c.id);
+          render();
+        };
+        if (opts.extent === 'inspector') item.append(lbl, pin);
+        else {
+          const top = document.createElement('div');
+          top.className = 'top';
+          top.append(lbl, pin);
+          const th = document.createElement('div');
+          th.className = 'th';
+          item.append(top, th);
+        }
+        roster.append(item);
+      }
+      const foot = document.createElement('div');
+      foot.className = 'repaint';
+      foot.innerHTML = opts.extent === 'inspector'
+        ? 'seated charts: <b>untouched by geometry</b>'
+        : opts.extent === 'field'
+          ? 'seated charts: <b>covered — kept mounted by code</b>'
+          : 'seated charts: <b>covered — kept mounted by code</b>';
+      sheet.append(roster, foot);
+      const box = { inspector: { left: 'auto', right: '0', width: '186px', top: '20px', bottom: '0' },
+        field: { left: '0', right: 'auto', width: 'calc(100% - 186px)', top: '104px', bottom: '0' },
+        both: { left: '0', right: '0', width: 'auto', top: '104px', bottom: '0' } }[opts.extent];
+      Object.assign(sheet.style, box, { position: 'absolute' });
+      panes.style.position = 'relative';
+      panes.append(sheet);
+    }
+  }
+  render();
+  return wrap;
+}
+
+const SPECS = {
+  A1: { focalPinDead: false, pinOnFocal: false, keeper: false, pull: false },
+  A2: { focalPinDead: false, pinOnFocal: true, keeper: false, pull: false },
+  A3: { focalPinDead: true, pinOnFocal: true, keeper: false, pull: false },
+  A4: { focalPinDead: false, pinOnFocal: false, keeper: true, pull: false },
+  B1: { focalPinDead: false, pinOnFocal: false, keeper: false, pull: true, extent: 'inspector' },
+  B2: { focalPinDead: false, pinOnFocal: false, keeper: false, pull: true, extent: 'field' },
+  B3: { focalPinDead: false, pinOnFocal: false, keeper: false, pull: true, extent: 'both' },
+};
+for (const host of document.querySelectorAll('[data-spec]')) {
+  const opts = SPECS[host.dataset.spec];
+  host.append(frame('light', opts), frame('dark', opts));
+}
+</script>
+</body>
+</html>

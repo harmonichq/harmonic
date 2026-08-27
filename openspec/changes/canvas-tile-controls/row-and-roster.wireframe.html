@@ -1,0 +1,664 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WIREFRAME — the row and the roster</title>
+<style>
+/* WIREFRAME — NO FIDELITY CLAIM — NOT LOCKABLE.
+   Slice 3, the two surfaces the amendment creates and does not draw: the
+   scrolling mini row, and the roster the dock pull opens. Neutral tokens;
+   deleted when the change lands.
+
+   EVERY SPECIMEN IS LIVE — scroll the rows, press the pulls, press the pins.
+   Both grounds are drawn for every specimen. */
+:root {
+  --w-ground: #E7E4DD; --w-panel: #F4F2ED; --w-recess: #D6D2C8;
+  --w-edge: #C3BEB2; --w-hair: #CFCABE; --w-trench: #DAD6CC;
+  --w-ink: #2B2724; --w-label: #56504A; --w-quiet: #8C857C;
+  --w-live: #C4622C; --w-held: #3F3A34; --w-lift: rgba(255,255,255,.8);
+  color-scheme: light;
+}
+.app[data-t="dark"] {
+  --w-ground: #1D1A18; --w-panel: #26221F; --w-recess: #171513;
+  --w-edge: #3A3430; --w-hair: #363029; --w-trench: #141210;
+  --w-ink: #EFEAE2; --w-label: #B6ADA2; --w-quiet: #877E74;
+  --w-live: #D9834C; --w-held: #E4DDD2; --w-lift: rgba(255,255,255,.10);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 26px 30px 90px; min-width: 1320px; background: #EDEAE3; color: #2B2724;
+  font: 13px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+.banner { margin: 0 0 22px; padding: 8px 12px; border: 1px dashed #8C857C;
+  color: #56504A; font-size: 11px; letter-spacing: .09em; text-transform: uppercase; }
+h1 { margin: 0 0 4px; font-size: 17px; font-weight: 640; letter-spacing: -.01em; }
+.lede { max-width: 92ch; margin: 0 0 8px; color: #56504A; font-size: 12.5px; }
+.lede b { color: #2B2724; }
+.ruled { max-width: 92ch; margin: 0 0 20px; padding: 9px 12px; background: #E3DFD6;
+  border-left: 3px solid #C4622C; color: #56504A; font-size: 12px; }
+.ruled b { color: #2B2724; }
+h2.q { margin: 32px 0 4px; font-size: 15px; font-weight: 700; }
+section { margin: 0 0 28px; padding: 0 0 22px; border-bottom: 1px solid #CFCABE; }
+.opt-head { display: flex; align-items: baseline; gap: 10px; margin: 16px 0 3px; }
+.opt-key { color: #C4622C; font-size: 11px; font-weight: 700; letter-spacing: .12em; }
+.opt-head h3 { margin: 0; font-size: 14px; font-weight: 640; }
+.kind { color: #8C857C; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+.claim { max-width: 92ch; margin: 0 0 6px; color: #56504A; font-size: 12px; }
+.claim b { color: #2B2724; font-weight: 600; }
+.cost { max-width: 92ch; margin: 6px 0 12px; padding: 7px 11px; font-size: 11.5px;
+  background: #F2E7DE; border-left: 3px solid #C4622C; color: #56504A; }
+.cost b { color: #2B2724; }
+.do { margin: 12px 0 5px; color: #8C857C; font-size: 10.5px;
+  letter-spacing: .09em; text-transform: uppercase; }
+.pair { display: flex; gap: 14px; flex-wrap: wrap; }
+.themed { display: flex; flex-direction: column; gap: 4px; }
+.themed > .t { color: #8C857C; font-size: 10px; letter-spacing: .09em; text-transform: uppercase; }
+
+/* ---- app frame — 0.62x of the measured 1440 layout ----------------------- */
+.app { background: var(--w-ground); color: var(--w-ink); box-shadow: 0 0 0 1px var(--w-edge);
+  overflow: hidden; width: 636px; user-select: none; }
+.rail { display: flex; align-items: center; height: 26px; padding: 0 10px; gap: 9px;
+  background: var(--w-recess); box-shadow: inset 0 -1px 0 var(--w-edge); }
+.rail .cap { color: var(--w-label); font-size: 9px; font-weight: 650;
+  letter-spacing: .09em; text-transform: uppercase; }
+.panes { position: relative; display: grid; grid-template-columns: minmax(0,1fr) 190px;
+  height: 296px; background: var(--w-trench); }
+.pane { min-width: 0; background: var(--w-panel);
+  box-shadow: inset 0 0 0 1px var(--w-edge), inset 0 1px 0 var(--w-lift); }
+.pane.canvas { display: grid; grid-template-rows: 18px 80px minmax(0,1fr); min-height: 0; }
+.plate-cap { padding: 3px 9px 0; color: var(--w-quiet); font-size: 9px;
+  letter-spacing: .09em; text-transform: uppercase; }
+.bigchart { margin: 2px 6px 0; background: var(--w-recess);
+  box-shadow: inset 0 0 0 1px var(--w-edge); }
+
+/* the field: focal over the row */
+.field { display: grid; grid-template-rows: minmax(0,1fr) 90px; gap: 5px;
+  padding: 6px; min-height: 0; background: var(--w-trench);
+  box-shadow: inset 0 6px 10px -8px rgba(0,0,0,.55); }
+.focal { display: grid; min-width: 0; min-height: 0; }
+.row { display: grid; grid-auto-flow: column; gap: 5px; min-width: 0; min-height: 0;
+  overflow-x: auto; overflow-y: hidden; }
+.tile { position: relative; display: grid;
+  grid-template: 14px minmax(0,1fr) / minmax(0,1fr) 14px;
+  background: var(--w-recess); box-shadow: inset 0 0 0 1px var(--w-edge);
+  min-width: 0; min-height: 0; overflow: hidden; }
+.tile .nm { grid-column: 1; padding: 2px 3px 0 6px; color: var(--w-label);
+  font-size: 8px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+.tile .plot { grid-column: 1; margin: 2px 6px 5px; background: var(--w-trench);
+  box-shadow: inset 0 0 0 1px var(--w-hair); cursor: pointer; }
+.focal .tile { box-shadow: inset 0 0 0 1px var(--w-live); }
+.trail { grid-column: 2; grid-row: 1 / -1; display: grid; align-content: start;
+  justify-items: center; padding: 2px 0 0; gap: 1px; transition: background 150ms; }
+.tile:hover .trail { background: rgba(0,0,0,.05); }
+.app[data-t="dark"] .tile:hover .trail { background: rgba(255,255,255,.05); }
+.trail button { display: grid; place-items: center; width: 12px; height: 12px; padding: 0;
+  border: 0; background: transparent; color: var(--w-quiet); cursor: pointer; opacity: .5; }
+.tile:hover .trail button { opacity: 1; }
+.trail button[aria-pressed="true"] { opacity: 1; color: var(--w-held); }
+.trail svg { grid-area: 1 / 1; width: 9px; height: 9px; display: block; }
+.trail .off { fill: none; stroke: currentColor; stroke-width: 1.5;
+  stroke-linecap: round; stroke-linejoin: round; }
+.trail .on { fill: currentColor; stroke: none; opacity: 0; }
+.trail button[aria-pressed="true"] .on { opacity: 1; }
+.trail button[aria-pressed="true"] .off { opacity: 0; }
+
+/* --- S1 sliced: the row simply overflows and the field's edge cuts it --- */
+.row[data-s="slice"] { grid-auto-columns: max(96px, calc((100% - 10px) / 3.35));
+  scrollbar-width: none; }
+.row[data-s="slice"]::-webkit-scrollbar { display: none; }
+/* --- S2 sliced + a rule under the row that stops where the content does --- */
+.row[data-s="gauge"] { grid-auto-columns: max(96px, calc((100% - 10px) / 3.35));
+  scrollbar-width: none; padding-bottom: 3px; }
+.row[data-s="gauge"]::-webkit-scrollbar { display: none; }
+.gauge { height: 2px; margin: 0 6px; background: var(--w-hair); position: relative; }
+.gauge i { position: absolute; inset: 0 auto 0 0; background: var(--w-label);
+  transition: width 120ms, left 120ms; }
+/* --- S3 sliced + a persistent thin scrollbar --- */
+.row[data-s="bar"] { grid-auto-columns: max(96px, calc((100% - 10px) / 3.35));
+  scrollbar-width: thin; scrollbar-color: var(--w-quiet) transparent; }
+.row[data-s="bar"]::-webkit-scrollbar { height: 5px; }
+.row[data-s="bar"]::-webkit-scrollbar-thumb { background: var(--w-quiet); border-radius: 3px; }
+.row[data-s="bar"]::-webkit-scrollbar-track { background: transparent; }
+
+/* inspector */
+.pane.insp { position: relative; display: flex; flex-direction: column; min-height: 0; }
+.crumb { display: flex; align-items: baseline; gap: 8px; height: 19px; padding: 0 8px;
+  box-shadow: inset 0 -1px 0 var(--w-hair); }
+.crumb h2 { margin: 0; font-size: 10px; font-weight: 650; color: var(--w-ink); }
+.queue { flex: 1 1 auto; padding: 4px 6px; display: grid; gap: 3px; align-content: start;
+  overflow: hidden; }
+.qrow { display: grid; grid-template-columns: 2px minmax(0,1fr); align-items: center;
+  gap: 6px; padding: 2px 4px; cursor: pointer; }
+.qrow:hover { background: rgba(0,0,0,.05); }
+.app[data-t="dark"] .qrow:hover { background: rgba(255,255,255,.06); }
+.qrow .fil { width: 2px; height: 12px; background: var(--w-live); }
+.qrow .name { color: var(--w-ink); font-size: 9px; font-weight: 600;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.watching { margin: 3px 4px 0; padding: 3px 4px; color: var(--w-quiet); font-size: 8px;
+  letter-spacing: .08em; text-transform: uppercase; border-top: 1px solid var(--w-hair); }
+.dock { padding: 4px 8px 0; background: var(--w-trench);
+  box-shadow: inset 0 1px 0 var(--w-hair); display: grid; gap: 2px; }
+.dl { display: flex; align-items: center; gap: 6px; }
+.dk { color: var(--w-quiet); font-size: 7.5px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase; }
+.dv { color: var(--w-ink); font-size: 9px; font-weight: 600;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* --- the pull, in its three treatments --------------------------------- */
+.pull { display: flex; align-items: center; gap: 6px; width: 100%; margin-top: 4px;
+  padding: 3px 6px; border: 0; cursor: pointer; background: transparent;
+  color: var(--w-label); font: inherit; font-size: 8px; font-weight: 700;
+  letter-spacing: .09em; text-transform: uppercase; }
+.pull:hover { color: var(--w-ink); }
+.pull .knurl { flex: 0 0 auto; width: 22px; height: 5px;
+  background: repeating-linear-gradient(90deg, var(--w-quiet) 0 1px, transparent 1px 3px); }
+.pull .cnt { margin-left: auto; font-family: ui-monospace, monospace; font-weight: 500; }
+/* R1 — the pull is a lip: recessed strip, full width, knurled */
+.pull[data-p="lip"] { background: var(--w-recess);
+  box-shadow: inset 0 0 0 1px var(--w-hair); justify-content: center; }
+.pull[data-p="lip"] .cnt { margin-left: 0; }
+/* R2 — the pull is a dock line: reads as the dock's own fourth line */
+.pull[data-p="line"] { box-shadow: inset 0 1px 0 var(--w-hair); }
+.pull[data-p="line"] .knurl { display: none; }
+.pull[data-p="line"]::before { content: 'All charts'; }
+.pull[data-p="line"] .lbl { display: none; }
+/* R3 — the pull is a tab on the dock's top edge */
+.pull[data-p="tab"] { width: auto; margin: -12px 0 0 auto; padding: 2px 8px;
+  background: var(--w-panel); box-shadow: 0 0 0 1px var(--w-hair);
+  border-radius: 2px 2px 0 0; }
+.pull[data-p="tab"] .knurl { width: 14px; }
+
+/* --- the roster sheet, over the inspector only ------------------------- */
+.sheet { position: absolute; inset: 19px 0 0 0; z-index: 5; background: var(--w-panel);
+  box-shadow: -6px 0 14px -10px rgba(0,0,0,.7), inset 0 0 0 1px var(--w-edge);
+  display: flex; flex-direction: column; overflow: hidden; }
+.sheet[hidden] { display: none; }
+.sheet > header { display: flex; align-items: center; gap: 7px; padding: 3px 8px;
+  box-shadow: inset 0 -1px 0 var(--w-hair); color: var(--w-label);
+  font-size: 8px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
+.sheet > header .spring { flex: 1 1 auto; }
+.items { flex: 1 1 auto; overflow-y: auto; padding: 4px; display: grid; gap: 2px;
+  align-content: start; }
+
+/* R1 — named list, no thumbnails */
+.items[data-r="list"] .it { display: grid; grid-template-columns: minmax(0,1fr) 14px;
+  align-items: center; gap: 5px; padding: 3px 5px; }
+.items[data-r="list"] .it .lbl { color: var(--w-ink); font-size: 9px; font-weight: 600;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer;
+  text-align: left; background: none; border: 0; padding: 0; font-family: inherit; }
+/* R2 — name over a wide short thumbnail, one per row */
+.items[data-r="strip"] .it { display: grid; grid-template-columns: minmax(0,1fr) 14px;
+  grid-template-rows: auto 22px; gap: 2px 5px; padding: 4px 5px;
+  background: var(--w-recess); box-shadow: inset 0 0 0 1px var(--w-edge); }
+.items[data-r="strip"] .it .lbl { grid-column: 1; color: var(--w-ink); font-size: 8.5px;
+  font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  cursor: pointer; text-align: left; background: none; border: 0; padding: 0;
+  font-family: inherit; }
+.items[data-r="strip"] .it .th { grid-column: 1 / -1; background: var(--w-trench);
+  box-shadow: inset 0 0 0 1px var(--w-hair); }
+/* R3 — two-column thumbnail grid */
+.items[data-r="grid"] { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 4px; }
+.items[data-r="grid"] .it { display: grid; grid-template-rows: auto 26px; gap: 2px;
+  padding: 3px 4px; background: var(--w-recess); box-shadow: inset 0 0 0 1px var(--w-edge); }
+.items[data-r="grid"] .it .top { display: flex; align-items: center; gap: 3px; min-width: 0; }
+.items[data-r="grid"] .it .lbl { flex: 1 1 auto; color: var(--w-ink); font-size: 8px;
+  font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  cursor: pointer; text-align: left; background: none; border: 0; padding: 0;
+  font-family: inherit; }
+.items[data-r="grid"] .it .th { background: var(--w-trench);
+  box-shadow: inset 0 0 0 1px var(--w-hair); }
+
+.it[data-seated] .lbl { color: var(--w-live); }
+.it[data-watching] .lbl { font-style: italic; }
+.rpin { display: grid; place-items: center; width: 14px; height: 14px; padding: 0;
+  border: 0; background: transparent; color: var(--w-quiet); cursor: pointer; }
+.rpin[aria-pressed="true"] { color: var(--w-held); }
+.rpin svg { grid-area: 1 / 1; width: 9px; height: 9px; }
+.rpin .off { fill: none; stroke: currentColor; stroke-width: 1.5;
+  stroke-linecap: round; stroke-linejoin: round; }
+.rpin .on { fill: currentColor; stroke: none; opacity: 0; }
+.rpin[aria-pressed="true"] .on { opacity: 1; }
+.rpin[aria-pressed="true"] .off { opacity: 0; }
+.sect { padding: 5px 5px 2px; color: var(--w-quiet); font-size: 7.5px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase; }
+</style>
+</head>
+<body>
+
+<p class="banner">Wireframe — no fidelity claim — not lockable</p>
+
+<h1>The row and the roster</h1>
+<p class="lede">
+  The amendment rules the mechanism and leaves two surfaces undrawn. Ruled and
+  not reopening: the row holds ranked findings only, a pin keeps a chart
+  left-most, the row is dropped whole when the pane cannot draw one legible
+  mini, and <b>the scroll affordance is a sliced fourth tile</b> — no fade, no
+  chevron. Everything below is the clothing on that.
+</p>
+<p class="ruled">
+  <b>Measured, at a 1440 viewport:</b> canvas pane 1010px, mini 326×145, inspector
+  430px, dock 429×98. The specimens are that at 0.62×, so the roster's real width
+  is 430px and a row tile's real width is 326px — judge the density there, not at
+  what the screenshot shows.
+</p>
+
+<h2 class="q">Q1 — the roster is 430px of inspector. What is a row of it?</h2>
+<p class="lede">
+  It lists <b>eleven</b> charts here: nine ranked findings and, under them, the two
+  Watching reads the row will not seat on its own. Pinning is the only way one of
+  those reaches the canvas, so the pin has to be reachable on every row.
+  <b>Press a pull, then press pins.</b> Pinned charts turn up left-most in the row
+  behind the sheet — close it and look.
+</p>
+
+<section>
+  <div class="opt-head"><span class="opt-key">R1</span><h3>Named list</h3>
+    <span class="kind">kind: a register you read, not a gallery you browse</span></div>
+  <p class="claim">
+    One line per chart: name, pin. Eleven charts fit without scrolling, so the
+    whole roster is one glance and the Watching group is visible from the top.
+    <b>The name is the identifier</b> — these are findings, and their names are
+    already the words the queue two inches away uses.
+  </p>
+  <p class="cost"><b>Cost:</b> "browse every registered chart" becomes reading a
+    list. A reader who does not recognise a chart by name has to seat it to find
+    out what it draws.</p>
+  <p class="do">Press the pull; pin "Correction on active insulin"; close and look at the row.</p>
+  <div class="pair" data-spec="R1"></div>
+</section>
+
+<section>
+  <div class="opt-head"><span class="opt-key">R2</span><h3>Name over a wide thumbnail</h3>
+    <span class="kind">kind: one chart per row, at reading width</span></div>
+  <p class="claim">
+    Each row is the name and a 400px-wide, 35px-tall slice of the chart under it.
+    At that aspect a glucose trace or a run scatter is <b>actually recognisable</b>
+    — it is the same wide-and-short proportion the mini tiles have — and the
+    roster still reads top to bottom.
+  </p>
+  <p class="cost"><b>Cost:</b> about four rows visible at once, so eleven charts
+    means scrolling a panel opened to avoid scrolling a row. Eleven live ECharts
+    thumbnails also mount on open, where R1 mounts none.</p>
+  <p class="do">Press the pull and scroll the sheet.</p>
+  <div class="pair" data-spec="R2"></div>
+</section>
+
+<section>
+  <div class="opt-head"><span class="opt-key">R3</span><h3>Two-column thumbnails</h3>
+    <span class="kind">kind: a contact sheet</span></div>
+  <p class="claim">
+    Two columns of small thumbnails, six rows. More charts visible at once than
+    R2, and it reads as a <b>gallery</b> — the thing the roster is nominally for.
+  </p>
+  <p class="cost"><b>Cost:</b> at 430px a column is ~205px wide and the thumbnail
+    is ~200×26; that is below the width this very change just declared too narrow
+    for a mini to be legible. A thumbnail nobody can read is R1 with extra ink.</p>
+  <p class="do">Press the pull; try to tell two charts apart by their pictures.</p>
+  <div class="pair" data-spec="R3"></div>
+</section>
+
+<h2 class="q">Q2 — the pull sits on the dock. What is it?</h2>
+<p class="lede">
+  Same roster in all three (R1's list, so only the pull differs). The dock is
+  <b>pane furniture</b> — mounted once, repainted in place, never scrolled away —
+  so whatever the pull is, it inherits that permanence.
+  <b>Press each one.</b>
+</p>
+
+<section>
+  <div class="opt-head"><span class="opt-key">P1</span><h3>A knurled lip</h3>
+    <span class="kind">kind: a drawer pull, and it looks like one</span></div>
+  <p class="claim">
+    A recessed full-width strip under the dock's last line, knurled, centred.
+    <b>It is a handle</b> — the one control on the surface that says "there is
+    something behind this" by looking like something you grip.
+  </p>
+  <p class="cost"><b>Cost:</b> it is the loudest thing in the dock, competing with
+    the Trial line, which is the one object the dock exists to report.</p>
+  <p class="do">Press it.</p>
+  <div class="pair" data-spec="P1"></div>
+</section>
+
+<section>
+  <div class="opt-head"><span class="opt-key">P2</span><h3>The dock's next line</h3>
+    <span class="kind">kind: not furniture — another thing the dock reports</span></div>
+  <p class="claim">
+    Trial · Profile · <b>All charts · 11</b>, in the dock's own line grammar, with
+    its count where the other lines put their value. The dock already reports what
+    is being watched; the roster is one more standing fact about this surface.
+  </p>
+  <p class="cost"><b>Cost:</b> the dock's lines are <i>reports</i> and this one is
+    a <i>control</i>. Nothing distinguishes them but the hover, so a reader may
+    not find it at all.</p>
+  <p class="do">Hover the dock's three lines; only one of them presses.</p>
+  <div class="pair" data-spec="P2"></div>
+</section>
+
+<section>
+  <div class="opt-head"><span class="opt-key">P3</span><h3>A tab on the dock's top edge</h3>
+    <span class="kind">kind: an index tab on a drawer that is already shut</span></div>
+  <p class="claim">
+    A small tab riding the dock's upper edge at the right, the way a filed card
+    stands proud of the box. <b>It reads as a control without taking a dock line</b>,
+    and its position says the sheet comes up from here.
+  </p>
+  <p class="cost"><b>Cost:</b> new furniture in a 22px band, and it overlaps the
+    queue's last row — on a short queue it floats over blank panel, which looks
+    like a mistake.</p>
+  <p class="do">Press the tab.</p>
+  <div class="pair" data-spec="P3"></div>
+</section>
+
+<h2 class="q">Q3 — the sliced fourth tile is ruled. Does anything mark HOW FAR the row runs?</h2>
+<p class="lede">
+  The slice says "there is more". It does not say <b>how much</b> more, or where
+  you are in it. Three answers. <b>Scroll each row.</b>
+</p>
+
+<section>
+  <div class="opt-head"><span class="opt-key">S1</span><h3>The slice alone</h3>
+    <span class="kind">kind: nothing added</span></div>
+  <p class="claim">
+    The row overflows and the field's edge cuts it. No scrollbar, no rule, no
+    count. <b>The cheapest possible answer</b>, and the one the amendment already
+    ruled sufficient.
+  </p>
+  <p class="cost"><b>Cost:</b> with eleven charts a reader has no idea whether the
+    row is four long or forty, and no sense of position after scrolling. On a
+    trackpad-less machine there is also no visible thing to drag.</p>
+  <p class="do">Scroll the row (shift-wheel, or drag on a trackpad).</p>
+  <div class="pair" data-spec="S1"></div>
+</section>
+
+<section>
+  <div class="opt-head"><span class="opt-key">S2</span><h3>A gauge under the row</h3>
+    <span class="kind">kind: extent and position, in one hairline</span></div>
+  <p class="claim">
+    A 2px hairline under the row whose filled length is the visible fraction and
+    whose position is the scroll position. <b>It answers both questions at once</b>
+    in less ink than a scrollbar, and it is machined furniture rather than a
+    browser control.
+  </p>
+  <p class="cost"><b>Cost:</b> a line under the row on a field that just lost the
+    schematic — it is the schematic's ghost, re-earned or not.</p>
+  <p class="do">Scroll the row and watch the gauge.</p>
+  <div class="pair" data-spec="S2"></div>
+</section>
+
+<section>
+  <div class="opt-head"><span class="opt-key">S3</span><h3>A persistent thin scrollbar</h3>
+    <span class="kind">kind: the platform's own answer</span></div>
+  <p class="claim">
+    A 5px scrollbar, always shown rather than overlay-faded. <b>Draggable</b>, which
+    neither other option is, and every reader already knows what it is.
+  </p>
+  <p class="cost"><b>Cost:</b> it is the one piece of un-machined chrome on the
+    canvas, it renders differently on every platform, and it takes 5px off the
+    145px the minis have.</p>
+  <p class="do">Scroll or drag the bar.</p>
+  <div class="pair" data-spec="S3"></div>
+</section>
+
+<script>
+const PIN_OFF = '<path d="M9.6 2.2 13.8 6.4"/><path d="M11 4.6 7.2 6 4.4 8.8l2.8 2.8L10 8.8z"/>'
+  + '<path d="M5.8 10.2 2.6 13.4"/>';
+const PIN_ON = '<path d="M9.9 1.7a.75.75 0 0 0-1 1.1l.3.3-2.2.9-3.2 3.2 5.1 5.1 3.2-3.2'
+  + '.9-2.2.3.3a.75.75 0 0 0 1.1-1z"/>'
+  + '<rect x="1.6" y="12.5" width="5.2" height="1.4" rx=".7" transform="rotate(-45 4.2 13.2)"/>';
+const FULL = '<path d="M6 2.6H2.6V6"/><path d="M10 2.6h3.4V6"/><path d="M6 13.4H2.6V10"/>'
+  + '<path d="M10 13.4h3.4V10"/>';
+const CLOCK_OFF = '<circle cx="8" cy="8" r="6"/><path d="M8 4.6V8l2.4 1.6"/>';
+const CLOCK_ON = '<path fill-rule="evenodd" d="M8 1.6a6.4 6.4 0 1 0 0 12.8 6.4 6.4 0 0 0 0-12.8z'
+  + 'M7.3 4.2h1.4v4.1l2.2 1.5-.8 1.2-2.8-1.9z"/>';
+
+/* The real payload, in the server's own rank order: nine ranked rows, then the
+   two Watching reads the row will not seat on its own. */
+const RANKED = [
+  ['isf', 'Correction factor · rest windows'],
+  ['missed', 'Missed / unannounced meal'],
+  ['lowover', 'Over-treated low'],
+  ['undercnt', 'Carb undercount'],
+  ['stacking', 'Correction stacking'],
+  ['overdel', 'Meal over-delivery'],
+  ['short', 'Meal bolus fell short'],
+  ['late', 'Late bolus'],
+  ['oniob', 'Correction on active insulin'],
+];
+const WATCHING = [
+  ['ich1', 'Carb ratio Evening · past setting'],
+  ['ich2', 'Carb ratio Evening · past setting (2)'],
+];
+const ALL = [...RANKED, ...WATCHING];
+const RANKED_IDS = RANKED.map(([id]) => id);
+const nameOf = (id) => ALL.find(([key]) => key === id)[1];
+
+function svg(body, cls) {
+  const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  s.setAttribute('viewBox', '0 0 16 16');
+  s.setAttribute('aria-hidden', 'true');
+  s.setAttribute('class', cls);
+  s.innerHTML = body;
+  return s;
+}
+function glyph(cls, off, on, held) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = cls;
+  b.append(svg(off, 'off'));
+  if (on) { b.append(svg(on, 'on')); b.setAttribute('aria-pressed', String(Boolean(held))); }
+  return b;
+}
+
+/* The ruled seating: focal is lifted out; the row is pins first, then rank.
+   A Watching chart appears in the row only because it was pinned. */
+function seats(m) {
+  const pins = m.pins.filter((id) => id !== m.focal);
+  const rest = RANKED_IDS.filter((id) => id !== m.focal && !pins.includes(id));
+  return { focal: m.focal, row: [...pins, ...rest] };
+}
+
+function tile(id, isFocal, m, render) {
+  const t = document.createElement('article');
+  t.className = 'tile';
+  const nm = document.createElement('div');
+  nm.className = 'nm';
+  nm.textContent = nameOf(id);
+  nm.onclick = () => { m.focal = id; render(); };
+  const plot = document.createElement('div');
+  plot.className = 'plot';
+  plot.onclick = () => { m.focal = id; render(); };
+  const rail = document.createElement('span');
+  rail.className = 'trail';
+  rail.append(glyph('', FULL, null));
+  const pin = glyph('', PIN_OFF, PIN_ON, m.pins.includes(id));
+  pin.title = m.pins.includes(id) ? 'Release to findings rank' : 'Keep left-most in the row';
+  pin.onclick = (e) => {
+    e.stopPropagation();
+    m.pins = m.pins.includes(id) ? m.pins.filter((x) => x !== id) : [...m.pins, id];
+    render();
+  };
+  rail.append(pin, glyph('', CLOCK_OFF, CLOCK_ON, true));
+  t.append(nm, rail, plot);
+  return t;
+}
+
+function frame(theme, opts) {
+  const wrap = document.createElement('div');
+  wrap.className = 'themed';
+  const label = document.createElement('span');
+  label.className = 't';
+  label.textContent = theme;
+  const app = document.createElement('div');
+  app.className = 'app';
+  app.dataset.t = theme;
+  wrap.append(label, app);
+  const m = { focal: 'isf', pins: ['undercnt'], open: false };
+
+  function render() {
+    app.innerHTML = '';
+    const s = seats(m);
+
+    const rail = document.createElement('div');
+    rail.className = 'rail';
+    rail.innerHTML = '<span class="cap">Window</span><span class="cap">24 h</span>';
+
+    const panes = document.createElement('div');
+    panes.className = 'panes';
+
+    const canvas = document.createElement('section');
+    canvas.className = 'pane canvas';
+    canvas.innerHTML = '<div class="plate-cap">Glucose by time of day</div>'
+      + '<div class="bigchart"></div>';
+    const field = document.createElement('div');
+    field.className = 'field';
+    const focal = document.createElement('div');
+    focal.className = 'focal';
+    focal.append(tile(s.focal, true, m, render));
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.dataset.s = opts.scroll;
+    for (const id of s.row) row.append(tile(id, false, m, render));
+    field.append(focal, row);
+    if (opts.scroll === 'gauge') {
+      const g = document.createElement('div');
+      g.className = 'gauge';
+      const i = document.createElement('i');
+      g.append(i);
+      field.append(g);
+      field.style.gridTemplateRows = 'minmax(0,1fr) 90px auto';
+      const sync = () => {
+        const frac = row.clientWidth / Math.max(row.scrollWidth, 1);
+        i.style.width = `${Math.min(100, frac * 100)}%`;
+        i.style.left = `${(row.scrollLeft / Math.max(row.scrollWidth, 1)) * 100}%`;
+      };
+      row.addEventListener('scroll', sync);
+      requestAnimationFrame(sync);
+    }
+    canvas.append(field);
+
+    const insp = document.createElement('section');
+    insp.className = 'pane insp';
+    const crumb = document.createElement('div');
+    crumb.className = 'crumb';
+    crumb.innerHTML = '<h2>Findings</h2>';
+    const queue = document.createElement('div');
+    queue.className = 'queue';
+    for (const [id] of RANKED.slice(0, 5)) {
+      const r = document.createElement('div');
+      r.className = 'qrow';
+      r.innerHTML = '<i class="fil"></i>';
+      const n = document.createElement('span');
+      n.className = 'name';
+      n.textContent = nameOf(id);
+      r.append(n);
+      r.onclick = () => { m.focal = id; render(); };
+      queue.append(r);
+    }
+    const w = document.createElement('div');
+    w.className = 'watching';
+    w.textContent = 'Watching · 2 reads';
+    queue.append(w);
+
+    const dock = document.createElement('div');
+    dock.className = 'dock';
+    dock.innerHTML = '<div class="dl"><span class="dk">Trial</span>'
+      + '<span class="dv">Carb ratio Evening · maturing</span></div>'
+      + '<div class="dl"><span class="dk">Profile</span>'
+      + '<span class="dv">ISF 42 · I:C 5.4</span></div>';
+    const pull = document.createElement('button');
+    pull.type = 'button';
+    pull.className = 'pull';
+    pull.dataset.p = opts.pull;
+    const knurl = document.createElement('span');
+    knurl.className = 'knurl';
+    const lbl = document.createElement('span');
+    lbl.className = 'lbl';
+    lbl.textContent = m.open ? 'Close charts' : 'All charts';
+    const cnt = document.createElement('span');
+    cnt.className = 'cnt';
+    cnt.textContent = String(ALL.length);
+    pull.append(knurl, lbl, cnt);
+    pull.onclick = () => { m.open = !m.open; render(); };
+    dock.append(pull);
+    dock.style.paddingBottom = opts.pull === 'lip' ? '5px' : '4px';
+    insp.append(crumb, queue, dock);
+    panes.append(canvas, insp);
+    app.append(rail, panes);
+
+    if (m.open) {
+      const sheet = document.createElement('section');
+      sheet.className = 'sheet';
+      sheet.innerHTML = '<header><span>All charts</span><span class="spring"></span>'
+        + `<span>${ALL.length} live · ${m.pins.length} pinned</span></header>`;
+      const items = document.createElement('div');
+      items.className = 'items';
+      items.dataset.r = opts.roster;
+      const seated = new Set([s.focal, ...s.row.slice(0, 3)]);
+      const add = (id, watching) => {
+        const it = document.createElement('div');
+        it.className = 'it';
+        it.toggleAttribute('data-seated', seated.has(id));
+        it.toggleAttribute('data-watching', Boolean(watching));
+        const open = document.createElement('button');
+        open.type = 'button';
+        open.className = 'lbl';
+        open.textContent = nameOf(id);
+        open.onclick = () => { m.focal = id; m.open = false; render(); };
+        const pin = glyph('rpin', PIN_OFF, PIN_ON, m.pins.includes(id));
+        pin.onclick = (e) => {
+          e.stopPropagation();
+          m.pins = m.pins.includes(id) ? m.pins.filter((x) => x !== id) : [...m.pins, id];
+          render();
+        };
+        if (opts.roster === 'grid') {
+          const top = document.createElement('div');
+          top.className = 'top';
+          top.append(open, pin);
+          const th = document.createElement('div');
+          th.className = 'th';
+          it.append(top, th);
+        } else if (opts.roster === 'strip') {
+          const th = document.createElement('div');
+          th.className = 'th';
+          it.append(open, pin, th);
+        } else it.append(open, pin);
+        items.append(it);
+      };
+      for (const [id] of RANKED) add(id, false);
+      const sect = document.createElement('div');
+      sect.className = 'sect';
+      sect.textContent = 'Watching — pin to seat';
+      items.append(sect);
+      for (const [id] of WATCHING) add(id, true);
+      sheet.append(items);
+      panes.style.position = 'relative';
+      sheet.style.left = 'auto';
+      sheet.style.width = '190px';
+      panes.append(sheet);
+    }
+  }
+  render();
+  return wrap;
+}
+
+const SPECS = {
+  R1: { roster: 'list', pull: 'lip', scroll: 'slice' },
+  R2: { roster: 'strip', pull: 'lip', scroll: 'slice' },
+  R3: { roster: 'grid', pull: 'lip', scroll: 'slice' },
+  P1: { roster: 'list', pull: 'lip', scroll: 'slice' },
+  P2: { roster: 'list', pull: 'line', scroll: 'slice' },
+  P3: { roster: 'list', pull: 'tab', scroll: 'slice' },
+  S1: { roster: 'list', pull: 'lip', scroll: 'slice' },
+  S2: { roster: 'list', pull: 'lip', scroll: 'gauge' },
+  S3: { roster: 'list', pull: 'lip', scroll: 'bar' },
+};
+for (const host of document.querySelectorAll('[data-spec]')) {
+  const opts = SPECS[host.dataset.spec];
+  host.append(frame('light', opts), frame('dark', opts));
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>WIREFRAME — raise the stage, not the strip</title>
+<!-- The shipped sheets, LINKED not copied. Nothing here is extracted, so there
+     is nothing to drift and no --check to owe: the specimen below is the app's
+     own markup under the app's own rules, plus one override block. -->
+<link rel="stylesheet" href="/frontend/theme.css">
+<link rel="stylesheet" href="/frontend/diagnose-workstation.css">
+<style>
+  /* Scoped to `body >` per the trap recorded in the slice handoff: an unscoped
+     `section {}` rule styles the specimen panes themselves. Never CSS `zoom`. */
+  body { margin: 0; background: var(--wk-surface-rail); color: var(--wk-ink);
+    font: 13px/1.5 Inter, system-ui, sans-serif; }
+  body > header { padding: 18px 24px 8px; }
+  body > header h1 { margin: 0 0 6px; font-size: 15px; letter-spacing: .01em; }
+  body > header p { margin: 0 0 6px; color: var(--wk-ink-meta); max-width: 84ch; }
+  body > header p b { color: var(--wk-ink); font-weight: 600; }
+  body > header .mark { display: inline-block; margin-bottom: 10px; padding: 3px 7px;
+    background: var(--wk-signal-well); color: var(--wk-signal);
+    font: 700 10px/1 ui-monospace, Menlo, monospace; letter-spacing: .09em; }
+  body > header button { margin-top: 8px; padding: 5px 11px; cursor: pointer;
+    border: 1px solid var(--wk-rule); border-radius: 4px;
+    background: var(--wk-surface); color: var(--wk-ink); font: inherit; }
+  body > section { padding: 12px 24px 30px; }
+  body > section > .ladder { margin: 12px 0 0; color: var(--wk-ink-meta);
+    max-width: 84ch; font-size: 12px; }
+
+  /* The shell's own `.dw` grid (42px chrome row + body) has nothing to put in
+     it here, so the specimen opts out of the shell and keeps the tokens. */
+  .spec { display: block; height: auto; }
+  .spec .canvas-pane, .spec .canvas-pane > .body { display: block; height: auto; }
+  .spec .tile-chart svg, .spec .tile-body svg { width: 100%; height: 100%; display: block; }
+  .spec .tile-chart, .spec .tile-body { min-height: 0; }
+
+  /* ====================================================================
+     RAISE THE STAGE. Every prior round pushed the strip DOWN and ran out of
+     room: in LIGHT the cells already sit on the brightest surface the theme
+     owns, so the well had nowhere to go and resolved to the field's own
+     #E7E4DC. The step that was missing is not below the strip — it is ABOVE
+     it. Three moves, all spent on the spotlight, and the strip's own treatment
+     is then subtraction rather than addition.
+     ==================================================================== */
+
+  /* 1 · THE FIELD BECOMES AN ENCLOSURE, NOT A PAGE. The stage gets air on
+     three sides; the strip runs flush to the field's floor and off its right
+     wall. One object standing in a room, and a floor that continues past the
+     walls — which is also the "there is more" slice, unchanged and unhelped. */
+  .spec .tile-field { height: 448px; padding: 18px 0 0; }
+  .spec .tile-field > .tile-focal { margin: 0 18px; }
+  /* MARGIN, NOT PADDING: the row is a scroll container with snap points, so a
+     left PAD is scrollable content the first snap immediately eats. A margin is
+     the container's own inset and holds. */
+  .spec .tile-field[data-dock="docked"] > .tile-row { padding: 0; margin-left: 18px; }
+
+  /* 2 · FULL BRIGHTNESS IS THE STAGE'S PRIVILEGE. The cells step one notch off
+     the stage's ground — toward the field in each theme, so LIGHT steps down
+     and DARK steps up-from-below. The plot keeps a readable ground either way;
+     a quiet chart is still evidence. This is the whole of the "recess": the
+     strip is not darker than the field, it is darker than the STAGE. */
+  .spec .tile-focal > .evidence-tile { background: var(--ck-rail); }
+  .spec .tile-field[data-dock="docked"] > .tile-row > .evidence-tile {
+    background: color-mix(in srgb, var(--ck-rail) 95%, var(--mk-text));
+  }
+  html.dark .spec .tile-focal > .evidence-tile {
+    background: color-mix(in srgb, var(--ck-rail) 90%, var(--mk-text));
+  }
+  html.dark .spec .tile-field[data-dock="docked"] > .tile-row > .evidence-tile {
+    background: var(--ck-rail);
+  }
+
+  /* 3 · THE PLATE IS LIT AND CASTS ONTO THE FLOOR. `--ck-tile-shadow` is a
+     7px pool that dies inside the tile's own gutter. The stage gets a real
+     directional cast with reach, so the top of the strip is darkened BY THE
+     OBJECT ABOVE IT rather than by a well drawn under it. The ring goes to the
+     full line and the lit top edge stays — the raised vocabulary the canvas
+     already states, spent once, on the one thing that should own it. */
+  .spec .tile-focal > .evidence-tile {
+    border-radius: 3px;
+    box-shadow: inset 0 0 0 1px var(--mk-line), inset 0 1px 0 var(--ck-tile-top),
+      0 9px 12px -8px rgba(0, 0, 0, .5),
+      0 20px 26px -18px rgba(0, 0, 0, .38);
+  }
+  html.dark .spec .tile-focal > .evidence-tile {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--mk-text) 26%, transparent),
+      inset 0 1px 0 color-mix(in srgb, var(--mk-text) 22%, transparent),
+      0 12px 18px -10px rgba(0, 0, 0, .8),
+      0 28px 34px -22px rgba(0, 0, 0, .65);
+  }
+
+  /* THE STRIP'S OWN TREATMENT, WHICH IS NOTHING. The well box goes: no tray
+     ground, no ring, no inset lip, no padding of its own. The cells sit
+     directly on the field with the field's gutter between them, and the only
+     shadow near the strip is the stage's. Specificity is at the level the trap
+     note requires. */
+  .spec .tile-field[data-dock="docked"] > .tile-row {
+    background: none; box-shadow: none; border-radius: 0;
+  }
+  /* The selected frame keeps the shipped mark — one accent line on the cell's
+     top edge and nothing else — but takes it to a true HAIRLINE. At 2px in dark
+     it is bone-white and becomes the brightest object in the strip, which is
+     the same argument the ADR made against a raised selected cell: the
+     spotlight IS the mark, and once the stage is genuinely raised the strip's
+     copy of that fact can afford to be a line rather than a bar. */
+  .spec .tile-field[data-dock="docked"] > .tile-row > .evidence-tile[data-selected] {
+    box-shadow: inset 0 1px 0 var(--ck-focus-mark);
+  }
+
+  /* The field's own top padding is 18px, not the 8px the shipped rule assumes,
+     and the strip is flush to the floor — so the handle's seat is restated
+     against this specimen's geometry rather than inherited wrong. Foot on the
+     strip's top edge, head on the stage's floor, overlapping neither. */
+  .spec .tile-field[data-dock="docked"] > .dock-handle { bottom: 145px; }
+  /* The control's name for a screen reader, kept out of the picture — the same
+     treatment the tile rail's own buttons already get. */
+  .spec .dock-handle button > span {
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip-path: inset(50%); white-space: nowrap;
+  }
+  /* K1 — left cell, centred word, right cell. The left cell is the balance the
+     word is centred against; on a tall viewport the dock can only mount, so
+     mount is the one control drawn and hide and close are absent, not greyed. */
+  .spec .dock-handle { justify-content: space-between; min-width: 128px; }
+  .spec .dock-handle .k-cell { flex: 0 0 22px; }
+  .spec .dock-word { flex: 1 1 auto; text-align: center; padding: 0; }
+</style>
+</head>
+<body>
+<header>
+  <span class="mark">WIREFRAME — NO FIDELITY CLAIM — NOT LOCKABLE</span>
+  <h1>Raise the stage, and the strip stops needing a well</h1>
+  <p><b>The idea.</b> Depth is a relationship, not a property, and every round so
+     far has spent it on the wrong end: in light the cells already sit on the
+     brightest surface the theme owns, so pushing the strip down had nowhere to
+     go and the well resolved to the field's own <code>#E7E4DC</code>. This
+     specimen spends the whole budget above the dock instead — the spotlight
+     stands in the field with air on three sides, takes the only surface at full
+     brightness, and casts a real shadow onto the strip below it; the strip runs
+     flush to the field's floor and off its right wall like the floor of the
+     room the plate is standing in. The strip's own treatment is then
+     subtraction: its tray ground, ring, inset lip and padding are all deleted,
+     and what remains is the shipped cells on the field's own ground with the
+     field's own gutter between them.</p>
+  <p><b>The cost.</b> The cells give up a notch of ground brightness to buy the
+     stage its exclusivity — one step, measured to keep the plot ground readable,
+     but it is the plot's ground and not the chrome's, so a faint trace in a
+     thumbnail is the first thing that suffers; and a composition that rests on a
+     cast shadow rests on something a very short viewport compresses, because
+     when the stage is near its 220px floor there is less plate above the strip
+     for the shadow to fall from.</p>
+  <button type="button" id="theme">Toggle theme</button>
+</header>
+<div id="spec"></div>
+<script>
+/* The root token block lives in the app's own <style>, so it is FETCHED at load
+   rather than copied. A wireframe that restates a token is a wireframe that can
+   disagree with the app about one. */
+const TITLES = [
+  ['Correction factor · rest windows', 'dose acted → glucose change'],
+  ['Carb undercount', 'meals aligned to each event'],
+  ['Correction stacking', 'correction clusters'],
+  ['Meal over-delivery', 'meals aligned to each event'],
+  ['Overnight basal drift', 'nights aligned to midnight'],
+];
+function trace(seed, w, h) {
+  let y = h * 0.5, d = '';
+  for (let x = 0; x <= w; x += w / 65) {
+    y += Math.sin((x + seed * 37) / (w / 15)) * (h * 0.035)
+       + Math.cos((x + seed * 11) / (w / 37)) * (h * 0.016);
+    y = Math.max(h * 0.11, Math.min(h * 0.89, y));
+    d += (d ? 'L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1);
+  }
+  return d;
+}
+function plot(seed, w, h, stroke) {
+  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+    <rect x="0" y="${(h * 0.34).toFixed(1)}" width="${w}" height="${(h * 0.34).toFixed(1)}"
+      fill="color-mix(in srgb, var(--mk-ok) 9%, transparent)"></rect>
+    <path d="${trace(seed, w, h)}" fill="none" stroke="var(--mk-primary)" stroke-width="${stroke}"></path>
+  </svg>`;
+}
+const RAIL_GLYPH = `<svg viewBox="0 0 16 16" class="face-off" aria-hidden="true">
+  <path d="M6 2.6H2.6V6"/><path d="M10 2.6h3.4V6"/><path d="M6 13.4H2.6V10"/><path d="M10 13.4h3.4V10"/></svg>`;
+const PIN_GLYPH = `<svg viewBox="0 0 16 16" class="face-off" aria-hidden="true">
+  <path d="M8 10v3.6"/><path d="M4.6 6.2h6.8l1.2 3.8H3.4z"/><path d="M6.2 6.2V2.6h3.6v3.6"/></svg>`;
+
+function cell(i, selected) {
+  const [name, meta] = TITLES[i];
+  return `<article class="evidence-tile" data-seat="mini" data-state="ok"${selected ? ' data-selected' : ''}>
+    <header class="tile-head"><span class="tile-id"><h3>${name}</h3><span class="tile-meta">${meta}</span></span></header>
+    <span class="tile-rail"></span>
+    <div class="tile-body"><div class="tile-chart">${plot(i + 2, 260, 92, 1.1)}</div></div>
+  </article>`;
+}
+
+document.getElementById('spec').innerHTML = `
+  <section>
+    <div class="dw spec">
+      <div class="canvas-pane"><div class="body">
+        <div class="tile-field" data-dock="docked">
+          <div class="tile-focal">
+            <article class="evidence-tile" data-seat="focal" data-state="ok">
+              <header class="tile-head"><span class="tile-id">
+                <h3>${TITLES[0][0]}</h3><span class="tile-meta">${TITLES[0][1]}</span>
+              </span></header>
+              <span class="tile-rail">
+                <button type="button">${RAIL_GLYPH}<span>Full screen</span></button>
+                <button type="button">${PIN_GLYPH}<span>Pin</span></button>
+              </span>
+              <div class="tile-body"><div class="tile-chart">${plot(2, 900, 220, 1.6)}</div></div>
+            </article>
+          </div>
+          <div class="tile-row">${[0, 1, 2, 3, 4].map((i) => cell(i, i === 0)).join('')}</div>
+          <div class="dock-handle" data-state="docked">
+            <span class="k-cell"></span>
+            <span class="dock-word">Charts</span>
+            <button type="button" class="k-cell">${RAIL_GLYPH}<span>All charts</span></button>
+          </div>
+        </div>
+      </div></div>
+    </div>
+    <p class="ladder">The value ladder this rests on, read off the specimen —
+       LIGHT: field <code>231</code> · cell <code>239</code> ·
+       stage <code>250</code>, the only surface at full brightness.
+       DARK: field <code>15</code> · cell <code>38</code> · stage
+       <code>59</code>. Two evenly stepped ladders with the stage on top of
+       each, where the shipped build has stage and cell on the SAME rung. One rule, two grounds: the stage is the
+       lit thing and everything else is what it is lit against.</p>
+  </section>`;
+
+document.getElementById('theme').onclick = () => document.documentElement.classList.toggle('dark');
+
+fetch('/frontend/index.html').then((r) => r.text()).then((html) => {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const roots = document.createElement('style');
+  roots.textContent = [...doc.querySelectorAll('style')].map((s) => s.textContent).join('\n');
+  document.head.prepend(roots);
+});
+</script>
+</body>
+</html>

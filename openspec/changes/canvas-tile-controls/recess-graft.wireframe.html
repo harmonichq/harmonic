@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>WIREFRAME — the channel's floor</title>
+<link rel="stylesheet" href="/frontend/theme.css">
+<link rel="stylesheet" href="/frontend/diagnose-workstation.css">
+<style>
+  body { margin: 0; background: var(--wk-surface-rail); color: var(--wk-ink);
+    font: 13px/1.5 Inter, system-ui, sans-serif; }
+  body > header { padding: 18px 24px 4px; }
+  body > header h1 { margin: 0 0 5px; font-size: 15px; letter-spacing: .01em; }
+  body > header p { margin: 0 0 5px; color: var(--wk-ink-meta); max-width: 86ch; }
+  body > header p b { color: var(--wk-ink); font-weight: 650; }
+  body > header .mark { display: inline-block; margin-bottom: 10px; padding: 3px 7px;
+    background: var(--wk-signal-well); color: var(--wk-signal);
+    font: 700 10px/1 ui-monospace, Menlo, monospace; letter-spacing: .09em; }
+  body > header button { margin-top: 8px; padding: 5px 11px; cursor: pointer;
+    border: 1px solid var(--wk-rule); border-radius: 4px;
+    background: var(--wk-surface); color: var(--wk-ink); font: inherit; }
+  body > section { padding: 10px 24px 26px; }
+  body > section > h2 { margin: 0 0 6px; font-size: 12px; text-transform: uppercase;
+    letter-spacing: .08em; color: var(--wk-ink-meta); font-weight: 650; }
+  body > section > h2 span { text-transform: none; letter-spacing: 0; font-weight: 400;
+    color: var(--wk-ink-meta); }
+  /* The pane's own floor has to exist for "breathing room below the strip" to
+     be judgeable at all — in the app the field sits above the status bar, and
+     the wireframe was ending at the field's edge. */
+  body .pane-floor { height: 26px; background: var(--wk-surface-rail);
+    box-shadow: inset 0 1px 0 var(--wk-rule); }
+
+  body .spec { display: block; height: auto; }
+  body .spec .canvas-pane, body .spec .canvas-pane > .body { display: block; height: auto; }
+  body .spec .tile-chart, body .spec .tile-body { min-height: 0; }
+  body .spec .tile-chart { width: 100%; height: 100%; }
+  body .spec .tile-chart svg { width: 100%; height: 100%; display: block; }
+
+  /* ====================================================================
+     THE GRAFT — stage's composition, deep's cut drawn OVER its own frames.
+     Settled last round; unchanged here except that the wall is fixed at
+     MEDIUM so this page asks exactly one question: what happens at the
+     bottom of the channel.
+     ==================================================================== */
+  body .spec .tile-field { position: relative; }
+  body .spec .tile-field > .tile-focal { margin: 0 18px; }
+  body .spec .tile-field[data-dock="docked"] > .tile-row {
+    padding: 0; margin-left: 18px; border-radius: 0;
+  }
+  body .spec .tile-focal > .evidence-tile {
+    background: var(--ck-rail); border-radius: 3px;
+    box-shadow: inset 0 0 0 1px var(--mk-line), inset 0 1px 0 var(--ck-tile-top),
+      0 9px 12px -8px rgba(0, 0, 0, .5),
+      0 20px 26px -18px rgba(0, 0, 0, .38);
+  }
+  html.dark body .spec .tile-focal > .evidence-tile {
+    background: color-mix(in srgb, var(--ck-rail) 90%, var(--mk-text));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--mk-text) 26%, transparent),
+      inset 0 1px 0 color-mix(in srgb, var(--mk-text) 22%, transparent),
+      0 12px 18px -10px rgba(0, 0, 0, .8),
+      0 28px 34px -22px rgba(0, 0, 0, .65);
+  }
+  body .spec .tile-field[data-dock="docked"] > .tile-row > .evidence-tile {
+    background: color-mix(in srgb, var(--ck-rail) 95%, var(--mk-text));
+    border-radius: 0; box-shadow: none;
+  }
+  html.dark body .spec .tile-field[data-dock="docked"] > .tile-row > .evidence-tile {
+    background: var(--ck-rail);
+  }
+  body .spec .tile-field[data-dock="docked"] > .tile-row > .evidence-tile[data-selected] {
+    box-shadow: inset 0 1px 0 var(--ck-focus-mark);
+  }
+  body .spec .dock-handle { justify-content: space-between; min-width: 128px; }
+  body .spec .dock-handle .k-cell { flex: 0 0 22px; }
+  body .spec .dock-word { flex: 1 1 auto; text-align: center; padding: 0; }
+  body .spec .dock-handle button > span {
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip-path: inset(50%); white-space: nowrap;
+  }
+
+  /* The wall plate, fixed at MEDIUM. `--floor` is how much channel floor shows
+     below the frames; every rule that has to know about it reads it from here,
+     so the three specimens differ in that one number and its consequences. */
+  body .spec { --k: .68; --floor: 0px; --band: 145px; }
+  html.dark body .spec { --k: 1.35; }
+  body .spec .tile-field { height: calc(222px + 19px + var(--band) + var(--floor) + 18px); padding: 18px 0 0; }
+  body .spec .tile-field[data-dock="docked"] { grid-template-rows: minmax(0, 1fr) var(--band); }
+  body .spec .tile-field[data-dock="docked"] > .tile-row { margin-bottom: var(--floor); }
+  body .spec .tile-field[data-dock="docked"] > .dock-handle {
+    bottom: calc(var(--band) + var(--floor));
+  }
+  body .spec .tile-field[data-dock="docked"]::after {
+    content: ""; position: absolute; pointer-events: none; z-index: 4;
+    left: 18px; right: 0; bottom: 0; height: calc(var(--band) + var(--floor));
+    box-shadow:
+      inset 0 2px 2px -1px rgb(0 0 0 / calc(.34 * var(--k))),
+      inset 0 8px 8px -6px rgb(0 0 0 / calc(.38 * var(--k))),
+      inset 0 24px 22px -18px rgb(0 0 0 / calc(.17 * var(--k))),
+      inset 9px 0 10px -10px rgb(0 0 0 / calc(.30 * var(--k))),
+      /* the far wall — the off-screen read */
+      inset -10px 0 12px -11px rgb(0 0 0 / calc(.40 * var(--k))),
+      inset -24px 0 20px -22px rgb(0 0 0 / calc(.18 * var(--k))),
+      inset 0 1px 0 rgb(0 0 0 / calc(.30 * var(--k)));
+  }
+  /* THE CHANNEL'S FLOOR IS A SURFACE, so where it exists it is lit like one:
+     the frames cast a short shadow down onto it, and the floor catches an
+     overhead light at the very bottom. With `--floor: 0` neither rule has
+     anywhere to draw, which is the flush specimen and costs nothing. */
+  body .spec .tile-field[data-dock="docked"]::before {
+    content: ""; position: absolute; pointer-events: none; z-index: 4;
+    left: 18px; right: 0; bottom: 0; height: var(--floor);
+    box-shadow:
+      inset 0 3px 4px -3px rgb(0 0 0 / calc(.44 * var(--k))),
+      inset 0 -1px 0 color-mix(in srgb, var(--ck-tile-top) 80%, transparent);
+  }
+  /* The floor's own ground, so it is not the frames' ground continuing. */
+  body .spec[data-floor]:not([data-floor="flush"]) .tile-field[data-dock="docked"] {
+    background-image: linear-gradient(to top,
+      color-mix(in srgb, var(--ck-trench) 90%, var(--mk-text)) var(--floor),
+      transparent var(--floor));
+  }
+  html.dark body .spec[data-floor]:not([data-floor="flush"]) .tile-field[data-dock="docked"] {
+    background-image: linear-gradient(to top,
+      color-mix(in srgb, var(--wk-canvas) 94%, var(--mk-text)) var(--floor),
+      transparent var(--floor));
+  }
+
+  /* THE THREE ANSWERS. */
+  body .spec[data-floor="flush"] { --floor: 0px; --band: 145px; }
+  /* The floor is taken OUT of the band: the strip keeps its locked 145px total
+     and the frames give up 10px of plot. Cheapest, and the band stays locked. */
+  body .spec[data-floor="inside"] { --floor: 10px; --band: 135px; }
+  /* The floor is added BELOW the band: frames keep every one of their 145px and
+     the dock grows. Costs 10px of spotlight, which has it to give above 220. */
+  body .spec[data-floor="below"] { --floor: 10px; --band: 145px; }
+</style>
+</head>
+<body>
+<header>
+  <span class="mark">WIREFRAME — NO FIDELITY CLAIM — NOT LOCKABLE</span>
+  <h1>The channel's floor — where the breathing room comes from</h1>
+  <p>The wall is fixed at <b>medium</b> and the composition is last round's
+     graft. Two things were crowding the bottom, and both are fixed here: the
+     placeholder plots now reserve the shipped mini grid's real insets
+     (<code>left 34 · right 14 · top 8 · bottom 20</code>) instead of running a
+     trace to the cell's edge, and the pane below the field is drawn, so
+     "flush to the floor" can actually be judged.</p>
+  <p>The remaining question is only where the 10px comes from: <b>out of the
+     band</b> (frames lose plot, 145px stays locked) or <b>below it</b> (frames
+     keep everything, the dock grows and the spotlight pays).</p>
+  <button type="button" id="theme">Toggle theme</button>
+</header>
+<div id="specs"></div>
+<script>
+const LEVELS = [
+  ['flush', 'Flush — no floor', 'the strip ends where the pane does; last round, with honest plots'],
+  ['inside', 'Floor taken out of the band', 'band stays 145px, frames drop to 135px of cell'],
+  ['below', 'Floor added below the band', 'frames keep 145px, the dock grows by 10px'],
+];
+const TITLES = [
+  ['Correction factor · rest windows', 'dose acted → glucose change'],
+  ['Carb undercount', 'meals aligned to each event'],
+  ['Correction stacking', 'correction clusters'],
+  ['Meal over-delivery', 'meals aligned to each event'],
+  ['Overnight basal drift', 'nights aligned to midnight'],
+];
+/* The shipped grids, so the placeholder spends the same pixels the real chart
+   does. `MINI_GRID`/`FULL_GRID` in frontend/diagnose-evidence-charts.js. */
+const MINI = { left: 34, right: 14, top: 8, bottom: 20 };
+const FULL = { left: 34, right: 34, top: 26, bottom: 42 };
+
+function trace(seed, w, h) {
+  let y = h * 0.5, d = '';
+  for (let x = 0; x <= w; x += w / 65) {
+    y += Math.sin((x + seed * 37) / (w / 15)) * (h * 0.035)
+       + Math.cos((x + seed * 11) / (w / 37)) * (h * 0.016);
+    y = Math.max(h * 0.11, Math.min(h * 0.89, y));
+    d += (d ? 'L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1);
+  }
+  return d;
+}
+function plot(seed, w, h, g, stroke, mini) {
+  const pw = w - g.left - g.right, ph = h - g.top - g.bottom;
+  const fs = mini ? 8 : 10;
+  const ys = [280, 220, 160, 100, 40];
+  const xs = mini ? ['−1 h', '+1 h', '+2 h', '+3 h'] : ['−1 h', '+1 h', '+2 h', '+3 h', '+4 h', '+5 h'];
+  const lines = ys.map((v, i) => {
+    const y = g.top + (ph * i) / (ys.length - 1);
+    return `<line x1="${g.left}" x2="${g.left + pw}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}"
+      stroke="var(--mk-line)" stroke-width="1"/>
+      <text x="${g.left - 5}" y="${(y + fs * 0.36).toFixed(1)}" text-anchor="end"
+        font-family="ui-monospace, Menlo, monospace" font-size="${fs}"
+        fill="var(--mk-muted)">${v}</text>`;
+  }).join('');
+  const ticks = xs.map((t, i) => {
+    const x = g.left + (pw * (i + 0.5)) / xs.length;
+    return `<text x="${x.toFixed(1)}" y="${(h - g.bottom + fs + 4).toFixed(1)}" text-anchor="middle"
+      font-family="ui-monospace, Menlo, monospace" font-size="${fs}"
+      fill="var(--mk-muted)">${t}</text>`;
+  }).join('');
+  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+    <rect x="${g.left}" y="${(g.top + ph * 0.30).toFixed(1)}" width="${pw}"
+      height="${(ph * 0.36).toFixed(1)}" fill="color-mix(in srgb, var(--mk-ok) 9%, transparent)"></rect>
+    ${lines}${ticks}
+    <g transform="translate(${g.left} ${g.top})">
+      <path d="${trace(seed, pw, ph)}" fill="none" stroke="var(--mk-primary)" stroke-width="${stroke}"></path>
+    </g>
+  </svg>`;
+}
+const FULL_GLYPH = `<svg viewBox="0 0 16 16" class="face-off" aria-hidden="true">
+  <path d="M6 2.6H2.6V6"/><path d="M10 2.6h3.4V6"/><path d="M6 13.4H2.6V10"/><path d="M10 13.4h3.4V10"/></svg>`;
+const PIN_GLYPH = `<svg viewBox="0 0 16 16" class="face-off" aria-hidden="true">
+  <path d="M8 10v3.6"/><path d="M4.6 6.2h6.8l1.2 3.8H3.4z"/><path d="M6.2 6.2V2.6h3.6v3.6"/></svg>`;
+
+function cell(i, selected) {
+  const [name, meta] = TITLES[i];
+  return `<article class="evidence-tile" data-seat="mini" data-state="ok"${selected ? ' data-selected' : ''}>
+    <header class="tile-head"><span class="tile-id"><h3>${name}</h3><span class="tile-meta">${meta}</span></span></header>
+    <span class="tile-rail"></span>
+    <div class="tile-body"><div class="tile-chart">${plot(i + 2, 300, 110, MINI, 1.1, true)}</div></div>
+  </article>`;
+}
+
+document.getElementById('specs').innerHTML = LEVELS.map(([k, name, what]) => `
+  <section>
+    <h2>${name} — <span>${what}</span></h2>
+    <div class="dw spec" data-floor="${k}">
+      <div class="canvas-pane"><div class="body">
+        <div class="tile-field" data-dock="docked">
+          <div class="tile-focal">
+            <article class="evidence-tile" data-seat="focal" data-state="ok">
+              <header class="tile-head"><span class="tile-id">
+                <h3>${TITLES[0][0]}</h3><span class="tile-meta">${TITLES[0][1]}</span>
+              </span></header>
+              <span class="tile-rail">
+                <button type="button">${FULL_GLYPH}<span>Full screen</span></button>
+                <button type="button">${PIN_GLYPH}<span>Pin</span></button>
+              </span>
+              <div class="tile-body"><div class="tile-chart">${plot(2, 900, 200, FULL, 1.6, false)}</div></div>
+            </article>
+          </div>
+          <div class="tile-row">${[0, 1, 2, 3, 4].map((i) => cell(i, i === 0)).join('')}</div>
+          <div class="dock-handle" data-state="docked">
+            <span class="k-cell"></span>
+            <span class="dock-word">Charts</span>
+            <button type="button" class="k-cell">${FULL_GLYPH}<span>All charts</span></button>
+          </div>
+        </div>
+      </div></div>
+      <div class="pane-floor"></div>
+    </div>
+  </section>`).join('');
+
+document.getElementById('theme').onclick = () => document.documentElement.classList.toggle('dark');
+
+fetch('/frontend/index.html').then((r) => r.text()).then((html) => {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const roots = document.createElement('style');
+  roots.textContent = [...doc.querySelectorAll('style')].map((s) => s.textContent).join('\n');
+  document.head.prepend(roots);
+});
+</script>
+</body>
+</html>

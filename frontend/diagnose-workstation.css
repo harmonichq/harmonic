@@ -75,6 +75,15 @@
   --ck-rail: var(--mk-surface);
   --ck-hair: var(--mk-line);
   --ck-inset: color-mix(in srgb, var(--mk-bg) 82%, #000);
+  /* A WELL THAT CARRIES MARKS, not just colour. `--ck-inset` is right for the
+     things nothing sits on — the schedule lanes' track, the clock's empty
+     cells, the level meter — but in LIGHT it derives to near-black off
+     `--mk-bg`, which under Harmonic IS the dark desk. theme.css records that
+     trap for the wells that carry WORDS and steps them down into the sheet
+     instead; a well that carries GLYPHS needs the same step and did not get it.
+     Measured on the hovered evidence-tile rail: #3D5848 marks on #131D18 ground
+     at 2.16:1, under the 3:1 floor a graphical object needs. */
+  --ck-well: var(--ck-inset);
   --ck-accent: var(--mk-primary);
   --ck-meal: var(--mk-accent);
   --ck-sel: color-mix(in srgb, var(--mk-primary) 16%, transparent);
@@ -142,12 +151,7 @@ html.dark .dw {
   align-items: center; gap: 0; padding: 0;
   background: var(--mk-bg);
 }
-/* The mode control rides the instrument rail beside Window (#135 fix round):
-   same 22px optical row, same cap label, and it keeps the underline treatment
-   it wore on the canvas head so the pressed position still reads at a glance. */
-.mode-instrument { gap: 8px; padding-right: 14px; }
 .instruments > .instrument:first-child { padding-left: 14px; }
-.pin-cap { padding-right: 14px; gap: 8px; }
 .instrument { display: flex; align-items: center; gap: 7px; min-width: 0; }
 .instrument[hidden] { display: none; }
 .instrument > .cap {
@@ -178,29 +182,6 @@ html.dark .dw {
   background: var(--mk-surface); color: var(--mk-text);
   box-shadow: 0 1px 2px rgba(0,0,0,.28), inset 0 0 0 1px color-mix(in srgb, var(--ck-accent) 34%, transparent);
 }
-.tile-schematic {
-  display: grid; width: 38px; height: 24px; gap: 2px; padding: 2px;
-  border: 1px solid var(--ck-hair); border-radius: 1px; background: var(--ck-trench);
-}
-.tile-schematic[data-arrangement="focal"] { grid-template: 2fr 1fr / repeat(3, 1fr); }
-.tile-schematic[data-arrangement="focal"] > :first-child { grid-column: 1 / -1; }
-.tile-schematic[data-arrangement="split"] { grid-template-columns: repeat(2, 1fr); }
-.tile-schematic[data-arrangement="pair"] { grid-template-rows: repeat(2, 1fr); }
-.tile-schematic[data-arrangement="onetwo"] { grid-template: repeat(2, 1fr) / 1.32fr 1fr; }
-.tile-schematic[data-arrangement="onetwo"] > :first-child { grid-row: 1 / -1; }
-.tile-schematic[data-arrangement="quad"] { grid-template: repeat(2, 1fr) / repeat(2, 1fr); }
-.tile-schematic > * { min-width: 0; min-height: 0; border-radius: 1px; }
-.tile-schematic .seated { background: var(--mk-secondary); }
-.tile-schematic .pinned { background: var(--ck-accent); }
-.tile-schematic .next {
-  appearance: none; padding: 0; border: 1px dashed var(--mk-muted);
-  background: transparent; cursor: pointer;
-}
-/* a cell the arrangement holds but nothing is seated in, past the one the next
-   pin lands in: present, so the schematic mirrors the geometry, and silent */
-.tile-schematic .free { background: color-mix(in srgb, var(--mk-muted) 22%, transparent); }
-.tile-schematic .next:disabled { cursor: default; opacity: .45; }
-.tile-schematic .next:focus-visible { outline: 1px solid var(--ck-accent); outline-offset: 1px; }
 /* ---- 3. pane grid --------------------------------------------------- */
 .main-content .dw .panes {
   display: grid; gap: 0; padding: 0; min-height: 0;
@@ -274,8 +255,11 @@ html.dark .dw {
    that makes every number in the row readable. Both left lines share one grid
    cell, so the header height is identical hovering or not and nothing
    reflows. */
+/* The third column is fullscreen's control cluster. It is `auto` and its
+   element is `hidden` in every other state, so the column collapses to zero and
+   the two-column header this row has always been is unchanged. */
 .canvas-pane > header.canvas-head {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: baseline;
 }
 .canvas-pane > header.canvas-head[hidden] { display: none; }
 .canvas-head > .head-swap { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; }
@@ -353,9 +337,27 @@ html.dark .dw {
    recess cut below the strip: trench substrate darkest, and an inset shadow
    under the strip's edge so the step is lit rather than merely darker. The
    tiles keep the machined edge, pooled in this field's own gutters. */
+/* THE SPOTLIGHT'S NAMEPLATE IS A RAIL, AND THE RAIL IS THE SEAM (ADR 215
+   amendment). A band of the field's own trench was tried first and judged
+   still wrong: "I'm still not sure I'm in love with the visual separation
+   between the glucose chart and the spotlight chart. These kind of all feel
+   like three separate controls to me."
+
+   The boundary was never the problem. The pane stacked a HEADER BAND over the
+   glucose chart and a TILE NAMEPLATE over the spotlight — two different naming
+   constructions — and then separated them with a third treatment again. Three
+   constructions in one column is what reads as three unrelated objects.
+
+   So there is one construction. The spotlight's nameplate takes the pane
+   header's own rail — 30px, the rail ground, the rule beneath it — and the
+   canvas becomes a stack of rails and charts: rail, glucose, rail, spotlight,
+   lip, strip. The lip is the third member of that family and is told apart by
+   its knurl, which is the one thing in the stack that says "this one moves".
+   Nothing is inset, and no band of a fourth material is added to say what a
+   rail already says. */
 .tile-field {
-  display: grid; gap: var(--ck-canvas-gap); padding: var(--ck-canvas-gap);
-  min-width: 0; min-height: 0; overflow: hidden; background: var(--ck-trench);
+  display: grid; gap: var(--ck-canvas-gap); padding: 0;
+  min-width: 0; min-height: 0; overflow: hidden; background-color: var(--ck-trench);
   box-shadow: inset 0 6px 10px -8px rgba(0, 0, 0, .55);
 }
 /* Dark's settled `--wk-surface-sunken` is LIGHTER than the panel it recesses
@@ -370,20 +372,524 @@ html.dark .dw {
    re-pointing `--ck-trench`, which also grounds the instrument rail and the
    drawer and mixes their ink (`--ck-trench-quiet`). Light needs no such step:
    its trench is already the darker of the two. */
-html.dark .tile-field { background: var(--wk-canvas); }
-.tile-field[data-arrangement="focal"] {
-  grid-template: minmax(0, 1fr) 145px / repeat(3, minmax(0, 1fr));
+/* `background-color`, not the shorthand: the docked field paints the channel's
+   ground as a background LAYER, and this rule outspecifies it — a shorthand
+   here resets that layer and the channel loses its floor in dark only. */
+html.dark .tile-field { background-color: var(--wk-canvas); }
+/* ONE GEOMETRY (ADR 215): the focal chart takes the field, and the mini row is
+   a fixed 145px band under it. Nothing derives a grid from a pin count. */
+.tile-field { grid-template-rows: minmax(0, 1fr) 145px; }
+.tile-focal { display: grid; min-width: 0; min-height: 0; }
+/* THE ROW SCROLLS AND THE SLICE IS THE AFFORDANCE. Three minis are legible at
+   rest; the fourth is deliberately cut by the field's edge, which says "there is
+   more here" with no fade, chevron or counter to maintain. `280px` is the floor
+   one mini needs to stay readable and the same figure the pane-width observer
+   drops the row at, so the row never draws a mini it has already judged
+   illegible. */
+.tile-row {
+  display: grid; grid-auto-flow: column;
+  grid-auto-columns: max(280px, calc((100% - 2 * var(--ck-canvas-gap)) / 3.35));
+  gap: var(--ck-canvas-gap); min-width: 0; min-height: 0;
+  overflow-x: auto; overflow-y: hidden; scroll-snap-type: x proximity;
+  scrollbar-width: thin;
 }
-.tile-field[data-arrangement="focal"] > .evidence-tile:first-child { grid-column: 1 / -1; }
-.tile-field[data-arrangement="split"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.tile-field[data-arrangement="pair"] { grid-template-rows: repeat(2, minmax(0, 1fr)); }
-.tile-field[data-arrangement="onetwo"] {
-  grid-template: repeat(2, minmax(0, 1fr)) / 1.32fr minmax(0, 1fr);
+.tile-row > .evidence-tile { scroll-snap-align: start; }
+/* Below the observer's floor the row is not drawn at all, so the focal chart
+   takes the whole field — see the hidden state below, whose geometry it takes. */
+/* Fullscreen is one tile and no row. */
+.tile-field[data-fullscreen-tile] { grid-template-rows: minmax(0, 1fr); }
+.tile-field[data-fullscreen-tile] > .tile-row { display: none; }
+
+/* ---- ONE SURFACE (ADR 215 amendment) ----------------------------------
+   THE BIG STATES ARE THE PANE, NOT A CARD IN IT. Opened fullscreen, a chart
+   was a plated tile with its own ring and its own nameplate, inset inside a
+   pane whose header already carried that same name — the title drawn twice,
+   400px apart, with a frame between them. Operator: "do you see how this chart
+   right now is full-screen, but the titles duplicated? That's not what we
+   want. We want to be able to full-screen things, have the title become part of
+   where findings currently live, and make it render like it's on one surface."
+
+   So the pane header IS the nameplate in both big states, and everything that
+   made the tile a separate object comes off: its plate, its ring, its radius,
+   its own header row, and the drill accent that outlined the whole pane in
+   held ink. The explorer takes the identical treatment — its cells are flat on
+   one ground, told apart by the grout between them, because "all charts" is one
+   surface holding many plots rather than a tray of many cards. The cells keep
+   their own nameplates there for the one reason fullscreen does not: a band
+   cannot carry N names. */
+/* THE SPOTLIGHT'S NAMEPLATE, BUILT AS THE PANE'S OWN HEADER RAIL. Same height,
+   same padding, same ground and same rule — one construction, stated once in
+   theme.css and borrowed here rather than restated. */
+.tile-field:not([data-fullscreen-tile]):not([data-explorer])
+  > .tile-focal > .evidence-tile {
+  grid-template-rows: auto minmax(0, 1fr);
 }
-.tile-field[data-arrangement="onetwo"] > .evidence-tile:first-child { grid-row: 1 / -1; }
-.tile-field[data-arrangement="quad"] {
-  grid-template: repeat(2, minmax(0, 1fr)) / repeat(2, minmax(0, 1fr));
+.tile-field:not([data-fullscreen-tile]):not([data-explorer])
+  > .tile-focal > .evidence-tile > .tile-head {
+  min-height: 30px; align-items: center;
+  padding: 4px var(--ck-pad) 4px var(--ck-grid-left);
+  background: var(--wk-surface-rail);
+  border-bottom: 1px solid var(--wk-rule);
 }
+.tile-field:is([data-fullscreen-tile], [data-explorer]) { padding: 0; }
+.tile-field[data-fullscreen-tile] > .tile-focal > .evidence-tile > .tile-head {
+  display: none;
+}
+.tile-field[data-fullscreen-tile] > .tile-focal > .evidence-tile {
+  grid-template-rows: minmax(0, 1fr);
+}
+.tile-field:is([data-fullscreen-tile], [data-explorer]) .evidence-tile {
+  border-radius: 0; box-shadow: none; background: var(--ck-rail);
+}
+html.dark .tile-field:is([data-fullscreen-tile], [data-explorer]) .evidence-tile {
+  background: color-mix(in srgb, var(--ck-rail) 90%, var(--mk-text));
+}
+/* THE DRILL ACCENT IS OFF IN BOTH. It marks the chart the inspector is holding,
+   which in fullscreen is the only chart there is — so it outlines the pane and
+   states nothing. */
+.tile-field:is([data-fullscreen-tile], [data-explorer]) .evidence-tile[data-drilled] {
+  outline: 0;
+}
+/* THE GROUT IS THE ONLY SEPARATION IN THE EXPLORER, and it is the field's own
+   ground showing between flat cells — the same way the docked strip's cells are
+   told apart. */
+/* THE GROUT IS THE FIELD'S OWN GUTTER. At a hairline the charts read as one
+   crowded sheet — operator: "they're just kind of rendering very, very tightly
+   together" — so the cells get the same air every other pair of tiles on this
+   canvas gets, and the ground between them does the separating. */
+.tile-field[data-explorer] > .tile-row {
+  gap: var(--ck-canvas-gap); background: var(--ck-trench); padding: var(--ck-canvas-gap);
+}
+html.dark .tile-field[data-explorer] > .tile-row { background: var(--wk-canvas); }
+
+/* ---- the dock's three states (ADR 215 amendment) ---------------------
+   HIDDEN · BOTTOM-DOCKED · MOUNTED. Same tiles, same rails, same pins; only the
+   geometry differs. Every floor these rules honour is arithmetic in
+   diagnose-canvas-state.js — nothing here re-derives one, because a threshold
+   with two homes is a threshold that drifts. */
+.tile-field { position: relative; }
+
+/* ---- THE STAGE AND THE CHANNEL (#215, revised) ------------------------
+   Two rounds of pushing the strip DOWN failed for one reason each, and both
+   were measured rather than argued.
+
+   The COLOUR reason: in light the cells already sit on `#FAF8F4`, the brightest
+   ground the theme owns, so a well under them had nowhere to go — and
+   `--ck-well` resolved to `--wk-surface-sunken`, the SAME `#E7E4DC` the field
+   is. The step was not small, it was zero, and the gutters read as page ground.
+
+   The MECHANICAL reason, which no colour would have fixed: `box-shadow: inset`
+   on `.tile-row` paints BEHIND its own children. The lip shadow could only ever
+   appear in the 8px of grout between the cells, and never across the frames —
+   which is exactly where the eye looks. Every round that deepened that inset
+   was deepening something the reader cannot see.
+
+   So the depth is spent where there is room for it. THE SPOTLIGHT IS THE STAGE:
+   it stands in the field with air on three sides, takes the only surface at
+   full brightness, and casts a real directional shadow down onto the strip. The
+   cells step one notch toward the field. That relationship is what makes the
+   strip subordinate, and it is carried by ground values and one cast rather
+   than by a box drawn under the row.
+
+   THE STRIP IS THEN A CHANNEL rather than a pocket: flush left at the stage's
+   own margin, running off the field's right wall, with a floor beneath it. Its
+   walls are drawn on a pointer-inert plate laid OVER the band, which is the
+   only way the top wall's falloff can cross the frames.
+
+   ADR 215 amendment (#215): the far wall is a fade, and the amendment's slice
+   rule says the sliced tile carries the "there is more" read with no fade. The
+   fade does not replace the slice — the frames still run past the field's wall
+   uncut — it is the light on that wall. Ruled by the operator on the rendered
+   comparison; the slice remains the affordance and no chevron, counter or
+   opacity ramp joins it. */
+/* THE GROUT AND THE CHANNEL FLOOR ARE ONE GROUND, and which direction it steps
+   depends on the ground under it. Dark's cells are the lit thing already, so
+   the channel sits between field and cell; light has no lighter step to take,
+   so it steps down. `--ck-well` itself is not re-pointed — it is the hovered
+   tile rail's material, where `#E7E4DC` on a `#FAF8F4` tile is correct. */
+.dw { --ck-dock-well: var(--ck-well); --ck-dock-floor: 10px; }
+html:not(.dark) .dw {
+  --ck-dock-well: color-mix(in srgb, var(--wk-surface-sunken) 92%, var(--mk-text));
+}
+/* HOW HARD THE WALLS THROW. One number per theme, because dark is throwing
+   black onto ground that is already nearly black and needs more of the same
+   shadow to travel the same distance. Every alpha below is a fraction of it, so
+   "quieter" is one edit and not a re-tune of seven shadows. */
+.dw { --ck-wall-k: .68; }
+html.dark .dw { --ck-wall-k: 1.35; }
+
+/* --- the enclosure. The spotlight runs to all three of the field's own walls;
+   only the channel floor is padding, added BELOW the locked 145px band, so the
+   frames keep every pixel of their cell.
+
+   THE STAGE'S AIR IS GONE (ADR 215 amendment). It was 18px on three sides, and
+   with it the spotlight was a panel with ground visible all the way round —
+   which is the same treatment a mini gets, at a larger size, so the eye filed
+   it as one of the cells enlarged and read it as CONTENTS of the field.
+   Operator, on the built canvas: "the spotlight is all inset and ugly despite
+   being the PRIMARY thing on this screen, it's kind of... demoted feeling."
+   Depth marks the subordinate thing, so the fix is subtraction: the chart stops
+   being an object and becomes the ground, and the dock is then the only drawn
+   object on the surface. */
+.tile-field[data-dock="docked"]:not([data-fullscreen-tile]) {
+  padding: 0 0 var(--ck-dock-floor);
+}
+/* MARGIN, NOT PADDING. The row is a snap scroll container, so a left pad is
+   scrollable content that the first snap point immediately eats; a margin is
+   the container's own inset and holds under scroll. */
+/* THE CHANNEL IS NOT PART OF THE CANVAS, so it does not keep the canvas's
+   margin. The strip is the control you pick the next chart from, and a control
+   that lines up with the page's text column reads as more content. It runs wall
+   to wall — off the right edge as the frames always did, and hard against the
+   left one too. */
+.tile-field[data-dock="docked"] > .tile-row {
+  margin-left: 0;
+  background: none; border-radius: 0; padding: 0; box-shadow: none;
+  position: relative; z-index: 1;
+}
+/* The raised dock floats over the stage rather than being cut into the field,
+   so it keeps its own tray and takes none of this. */
+.tile-field[data-raised] > .tile-row {
+  border-radius: 2px; gap: var(--ck-canvas-gap); padding: var(--ck-canvas-gap);
+}
+
+/* --- 1 · the channel's ground, under the frames and between them ---------
+   ONE SURFACE for the whole channel — the 145px band plus the floor below it —
+   so the grout in the gutters and the floor under the frames can never disagree
+   about what material they are. It is a background layer on the field rather
+   than a third box: `::before` and `::after` are both spent below, and the DOM
+   the painter builds does not need an element that carries no information.
+   `background-origin: border-box` is load-bearing — the default padding-box
+   origin would seat the band on the inner edge of the field's own 10px bottom
+   padding, which is exactly the floor this band has to cover. */
+.tile-field[data-dock="docked"]:not([data-fullscreen-tile]) {
+  background-image: linear-gradient(var(--ck-dock-well), var(--ck-dock-well));
+  background-repeat: no-repeat;
+  background-origin: border-box; background-clip: border-box;
+  background-position: left bottom;
+  background-size: 100% calc(145px + var(--ck-dock-floor));
+}
+
+/* --- 2 · the walls, drawn OVER the frames --------------------------------
+   Inert to the pointer and under the handle's own z-index. This plate is the
+   whole reason the cut reads: an inset shadow on the row cannot paint over its
+   own children, and the frames are what the eye is looking at. */
+.tile-field[data-dock="docked"]:not([data-fullscreen-tile])::after {
+  content: ""; position: absolute; pointer-events: none; z-index: 4;
+  left: 0; right: 0; bottom: 0;
+  height: calc(145px + var(--ck-dock-floor));
+  box-shadow:
+    /* THE TOP WALL, in three parts, because one shadow cannot be both an edge
+       and a falloff: a tight junction line, the wall's own body across the
+       grout, and a wide weak falloff that crosses the frames. */
+    inset 0 2px 2px -1px rgb(0 0 0 / calc(.34 * var(--ck-wall-k))),
+    inset 0 8px 8px -6px rgb(0 0 0 / calc(.38 * var(--ck-wall-k))),
+    inset 0 24px 22px -18px rgb(0 0 0 / calc(.17 * var(--ck-wall-k))),
+    /* THE NEAR END is a corner against the field's own left wall, not an
+       event, so it stays soft. */
+    inset 9px 0 10px -10px rgb(0 0 0 / calc(.30 * var(--ck-wall-k))),
+    /* THE FAR END is the off-screen read: the frames run past the field's right
+       wall, and this is the light on that wall. */
+    inset -10px 0 12px -11px rgb(0 0 0 / calc(.40 * var(--ck-wall-k))),
+    inset -24px 0 20px -22px rgb(0 0 0 / calc(.18 * var(--ck-wall-k))),
+    /* THE CUT — one dark line where the field's top face ends. */
+    inset 0 1px 0 rgb(0 0 0 / calc(.30 * var(--ck-wall-k)));
+}
+/* THE FLOOR IS A SURFACE, so it is lit like one: the frames cast a short shadow
+   down onto it, and it catches an overhead light along its own bottom edge.
+   These are a second box rather than two more entries above because their
+   geometry is the FLOOR's height, and every shadow in the wall plate is
+   measured against the CHANNEL's — one box cannot carry both. */
+.tile-field[data-dock="docked"]:not([data-fullscreen-tile])::before {
+  content: ""; position: absolute; pointer-events: none; z-index: 4;
+  left: 0; right: 0; bottom: 0; height: var(--ck-dock-floor);
+  box-shadow: inset 0 3px 4px -3px rgb(0 0 0 / calc(.44 * var(--ck-wall-k))),
+    inset 0 -1px 0 color-mix(in srgb, var(--ck-tile-top) 80%, transparent);
+}
+
+/* --- 3 · the stage GROUND, which is the whole of this rule now. This was the
+   raised plate — ring, lit top edge and a two-stage cast reaching down onto the
+   strip — and every one of those marks was drawing the spotlight as an object.
+   A ring says "this is a thing on a surface", and the thing it framed was the
+   surface. So the plate is subtracted down to the one property that was
+   carrying the read: the brightest ground the theme owns, taken to all four
+   walls with no radius, no edge and no cast.
+
+   The boundary with the strip is not lost by dropping the cast — the channel's
+   own top wall (2 above) is drawn OVER the frames and is a stronger cut than a
+   shadow falling onto them ever was. */
+.tile-field > .tile-focal > .evidence-tile {
+  background: var(--ck-rail); border-radius: 0; box-shadow: none;
+}
+html.dark .tile-field > .tile-focal > .evidence-tile {
+  background: color-mix(in srgb, var(--ck-rail) 90%, var(--mk-text));
+}
+/* --- 4 · the frames. They keep the tile ground, because a quiet chart is still
+   evidence, but step one notch toward the field — toward it in each theme, so
+   light steps down and dark steps up-from-below. They give up the radius, the
+   ring, the lit edge and the shadow: every cue that says "I am a separate
+   object sitting on something". A ring here is what makes a bright box on grey
+   read as a cell in a spreadsheet rather than a frame in a gate. */
+.tile-field[data-dock="docked"] > .tile-row > .evidence-tile {
+  border-radius: 0; box-shadow: none;
+  background: color-mix(in srgb, var(--ck-rail) 95%, var(--mk-text));
+}
+html.dark .tile-field[data-dock="docked"] > .tile-row > .evidence-tile {
+  background: var(--ck-rail);
+}
+.tile-field[data-raised] > .tile-row > .evidence-tile {
+  border-radius: 0; box-shadow: none; background: var(--ck-rail);
+}
+/* THE CURRENT FRAME IS MARKED FAINTLY, BECAUSE THE SPOTLIGHT IS THE MARK. The
+   frame being projected is already accented by the fact that it is on stage at
+   full size directly above; repeating that emphasis in the strip states the
+   same thing twice. A true HAIRLINE, not the 2px bar it was: at 2px in dark the
+   mark is bone-white and becomes the brightest object in the strip, which is
+   the same argument the ADR made against a raised selected cell. Once the stage
+   is genuinely raised, the strip's copy of that fact can afford to be a line. */
+.tile-field:is([data-dock="docked"], [data-raised])
+  > .tile-row > .evidence-tile[data-selected] {
+  box-shadow: inset 0 1px 0 var(--ck-focus-mark);
+}
+/* THE DRILL ACCENT IS OFF INSIDE THE DOCK. It marked the chart the inspector is
+   drilled into, which the spotlight now ALWAYS owns — so on a cell it either
+   duplicates the selected mark or contradicts it, and it never adds a fact. */
+.tile-field > .tile-row > .evidence-tile[data-drilled] { outline: 0; }
+
+/* THE CELLS ARE FURNITURE, NOT PEERS OF THE CHART ABOVE. A mini wore the
+   spotlight's own nameplate — same size, same weight, same ink — so four
+   thumbnails read as four charts of equal standing rather than as the strip a
+   spotlight is drawn FROM. They step back by a rank in each of the three
+   channels the nameplate has, and by nothing else: no new colour, no badge, and
+   the plot itself untouched, because a quiet chart is still evidence. */
+.tile-field:not([data-explorer]) > .tile-row > .evidence-tile .tile-head h3 {
+  color: var(--mk-muted); font-weight: 600;
+}
+/* ...and by GEOMETRY too, which the three ink channels alone could not buy. A
+   cell's nameplate was the spotlight's own 28px band carrying 11px caps over a
+   118px tile — a quarter of the cell spent naming it, at the same size the
+   chart above uses over four times the height. At the caps floor in a 22px band
+   it still reads as the same nameplate, one rank down, and hands the six pixels
+   back to the plot, which is the part a thumbnail is for. */
+.tile-field:not([data-explorer]) > .tile-row > .evidence-tile {
+  grid-template-rows: 22px minmax(0, 1fr);
+}
+.tile-field:not([data-explorer]) > .tile-row > .evidence-tile .tile-head {
+  padding-top: 2px; padding-bottom: 2px;
+}
+.tile-field:not([data-explorer]) > .tile-row > .evidence-tile[data-selected] .tile-head h3 {
+  color: var(--mk-secondary);
+}
+
+/* NOTHING OVERLAPS A CHART IN ANY STATE, and the gutter is the lip's own
+   height. The field's 8px gutter was shorter than the control, so a control on
+   the channel's top edge sat over the spotlight's lower plot — measured in the
+   app. The gutter is 30px because that is what the lip needs to be a touchable
+   control, and the spotlight pays it: nothing is drawn over a chart in any
+   state, which is the invariant, and the lip is reachable, which is the
+   requirement. */
+.tile-field[data-dock="docked"] { row-gap: 30px; }
+
+/* HIDDEN — the spotlight alone, and the lip on the canvas floor. It pays the
+   lip's own height as floor padding, for the same reason the docked state pays
+   it as a gutter: nothing is drawn over a chart in any state, and without it
+   the lip sat across the spotlight's own x-axis. The narrow field takes the
+   same treatment — its row is not drawn either, so its lip is on the floor. */
+.tile-field:is([data-dock="hidden"], [data-narrow]) { grid-template-rows: minmax(0, 1fr); }
+.tile-field:is([data-dock="hidden"], [data-narrow]) > .tile-row { display: none; }
+.tile-field:is([data-dock="hidden"], [data-narrow]):not([data-fullscreen-tile]) {
+  padding-bottom: 30px;
+}
+.tile-field[data-narrow] > .dock-handle { bottom: 0; }
+
+/* RETIRED — the mounted grid. It hid the spotlight and spent the whole pane on
+   a vertically scrolling grid of minis: the pre-spotlight canvas, kept alive
+   only because the handle had grown a control for it.
+   sanction: Connor Griffin · 2026-08-27 · "oh yeah mounted dies"
+   Fullscreen keeps the two rules below, which were always about the PANE the
+   header sits in rather than about the grid. */
+.dw[data-dock-full] .canvas-pane { grid-template-rows: auto minmax(0, 1fr); }
+/* ONLY THE WORKSTATION'S GLUCOSE BODY LEAVES. The behavioral fullscreen
+   renderer carries its own nested `.canvas-pane > .body`; a descendant-scoped
+   hide collapses that chart and its ECharts canvas to exactly 0×0. */
+.dw[data-dock-full] > .panes > .canvas-pane > .body { display: none; }
+
+/* THE EXPLORER — every chart at readable size, over the canvas, as a grid that
+   scrolls VERTICALLY. The column count falls out of how many charts fit at a
+   readable width, so a wider screen gets more charts rather than bigger ones.
+
+   THIS IS NOT THE RETIRED MOUNTED GRID. That drew the strip's own 148px
+   thumbnails, furniture stripped, in the spotlight's place — more of the small
+   thing, which is what made it worth deleting. These are charts at the stage's
+   own rank: full axes, legend, nameplate and rail, at a width where they can be
+   read side by side. 420px is the floor a chart needs to hold its own axis
+   labels, and 240px the height at which its plot is still a plot.
+
+   Its cells keep the tile's own plate, which they inherit from `.evidence-tile`
+   untouched: the docked strip's flattening is scoped to `[data-dock="docked"]`,
+   because a cell in a recess and a chart on the canvas are not the same object
+   at different sizes. */
+.tile-field[data-explorer] { grid-template-rows: minmax(0, 1fr); }
+.tile-field[data-explorer] > .tile-focal { display: none; }
+.tile-field[data-explorer] > .tile-row {
+  grid-auto-flow: row;
+  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  grid-auto-columns: auto; grid-auto-rows: minmax(240px, auto);
+  overflow-x: hidden; overflow-y: auto; align-content: start;
+  scroll-snap-type: none; padding: 0;
+}
+
+/* RAISED — a raised dock FLOATS over the spotlight and never squeezes it.
+   Splitting the field below the dock floor gave the spotlight 0px at a 150px
+   viewport, which destroyed the one required way out by leaving nothing to
+   click. Clamped to the field so it can never spill over the strip. */
+.tile-field[data-raised] { grid-template-rows: minmax(0, 1fr); }
+.tile-field[data-raised] > .tile-row {
+  position: absolute; left: var(--ck-canvas-gap); right: var(--ck-canvas-gap);
+  bottom: var(--ck-canvas-gap); height: 145px;
+  max-height: calc(100% - 2 * var(--ck-canvas-gap)); z-index: 3;
+  background: var(--ck-trench);
+  box-shadow: 0 -10px 22px -12px rgba(0, 0, 0, .8), 0 0 0 1px var(--ck-tile-edge);
+}
+html.dark .tile-field[data-raised] > .tile-row { background: var(--wk-canvas); }
+
+/* THE DIVIDER before the dock's tail, drawn as a MARK on the first tail cell
+   rather than as an element of its own. As a `<span>` child of the row it was
+   flowed like any other cell, and the row sizes every cell it flows to one
+   mini's width — so a 1px hairline was handed a full 404px column and the strip
+   grew a blank frame with no name and no plot between the ranked charts and the
+   Watching reads. A box-shadow costs no cell, and `overflow: hidden` on the
+   tile clips its descendants, never its own cast. */
+.tile-field:not([data-explorer]) > .tile-row > .evidence-tile[data-tail-head] {
+  box-shadow: -5px 0 0 -4px var(--ck-tile-edge);
+}
+/* ---- the lip, which is the control ------------------------------------
+   IT IS THE DOCK'S OWN TOP EDGE, not furniture parked near it. The tab this
+   replaces was 148px wide and centred, which put a fifth floating object on a
+   surface that already had too many and centred it on a canvas where every
+   other thing is left-aligned; it was also shaped like a browser tab, so it
+   read as a label rather than as something to take hold of.
+
+   The lip runs the full width of the field, is knurled at the left where a grip
+   belongs, and carries the word and the act's glyph at either end of that run.
+   It rides the dock's top edge in both states — in the hidden state that edge is
+   the canvas floor — so it is attached to one object and moves because that
+   object moved, never hopping between unrelated edges.
+
+   THE WHOLE LIP IS THE TARGET. The tab was a container of buttons, so its word
+   was inert and only two 44px cells were pressable; a full-width 30px button is
+   a target no finger has to find, which is the tablet requirement the 30px
+   gutter was grown for in the first place.
+
+   IT IS A LIP, SO IT IS LIT LIKE ONE: the channel's own well material, a lit
+   line along its top face and the channel's edge under it. Nothing is drawn
+   over a chart in any state — the gutter is the lip's own height, exactly. */
+.dock-handle {
+  position: absolute; left: 0; right: 0; z-index: 5; height: 30px;
+  display: flex; align-items: stretch; gap: 12px;
+  padding-left: 12px; cursor: pointer;
+  color: var(--mk-secondary);
+  /* THE LIP IS ONE OF THE PANE'S RAILS. Same 30px height, same ground and same
+     rule as the header rails above it, so the canvas reads as a stack of rails
+     and charts rather than three unrelated bands; the knurl is what says this
+     one moves. */
+  background: var(--wk-surface-rail);
+  border-top: 1px solid var(--wk-rule); border-bottom: 1px solid var(--wk-rule);
+  transition: background 130ms, color 130ms;
+}
+/* HOVER STEPS AWAY FROM THE CHARTS, NEVER TOWARD THEM. Lifting the lip to
+   `--ck-rail` painted it the charts' own ground, so on hover the one edge in
+   the stack dissolved into the things it separates. Operator: "the hover makes
+   everything run together." It deepens instead — the rail's own material, one
+   step toward the ink. */
+.dock-handle:hover {
+  color: var(--mk-text);
+  background: color-mix(in srgb, var(--wk-surface-rail) 93%, var(--mk-text));
+}
+.dock-handle:hover button:hover {
+  background: color-mix(in srgb, var(--wk-surface-rail) 86%, var(--mk-text));
+}
+.dock-handle[hidden] { display: none; }
+.dock-handle button {
+  flex: 0 0 40px; border: 0; padding: 0; background: transparent; color: inherit;
+  cursor: pointer; display: grid; place-items: center;
+  transition: color 120ms, background 120ms;
+}
+.dock-handle button:hover { color: var(--mk-text); }
+.dock-handle button:focus-visible {
+  outline: 2px solid var(--ck-focus-mark); outline-offset: -2px;
+}
+/* THE KNURL — the one mark that says "take hold of this". Fine vertical ribs in
+   the lip's own ink, the machined idiom this canvas already uses for a grip. */
+.dock-knurl {
+  flex: 0 0 26px; align-self: center; height: 11px; opacity: .55;
+  background: repeating-linear-gradient(90deg,
+    currentColor 0 1px, transparent 1px 4px);
+}
+/* THE WORD, engraved in the tile nameplates' own manner — caps, tracked, one
+   step below the lip's ink, with a lit line under it so it reads cut into the
+   lip rather than printed on it. */
+.dock-word {
+  flex: 0 1 auto; align-self: center; min-width: 0;
+  overflow: hidden; white-space: nowrap;
+  font-size: var(--ck-micro); font-weight: 700; letter-spacing: var(--ck-track);
+  text-transform: uppercase; text-shadow: 0 1px 0 var(--ck-tile-top);
+}
+/* THE CLUSTER READS LEFT TO RIGHT AS GRIP, NAME, ACTS — one reach, at the
+   canvas's own left margin, with the rest of the lip left as grab surface. */
+/* SEATED ON THE CHANNEL'S LIP, exactly: its foot on the dock's top edge, its
+   head on the spotlight's floor, overlapping neither. */
+.tile-field[data-dock="hidden"] > .dock-handle { bottom: 0; }
+.tile-field[data-dock="docked"] > .dock-handle {
+  bottom: calc(145px + var(--ck-dock-floor));
+}
+.tile-field[data-raised] > .dock-handle { bottom: calc(145px + var(--ck-canvas-gap)); }
+
+.dock-headacts button {
+  flex: 0 0 22px; border: 0; padding: 0; background: transparent; color: inherit;
+  cursor: pointer; display: grid; place-items: center;
+  transition: color 120ms, background 120ms;
+}
+.dock-headacts button:hover {
+  color: var(--mk-text); background: var(--ck-rail);
+}
+.dock-headacts button:focus-visible {
+  outline: 2px solid var(--ck-focus-mark); outline-offset: -2px;
+}
+/* The rail's own face convention, because these are the rail's own marks. The
+   tab's PLATE is not one of them — it is the furniture the marks sit on — so it
+   is excluded here rather than left to out-specify this rule from a distance. */
+.dock-handle svg, .dock-headacts svg {
+  width: 13px; height: 13px; display: block;
+}
+.dock-handle .face-off, .dock-headacts .face-off {
+  fill: none; stroke: currentColor; stroke-width: 1.3;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+
+/* THE FULLSCREEN HEADER — the row the glucose caption vacates, carrying the
+   same two cells in the same order, so a chart taking the pane teaches the
+   reader no new furniture. */
+.canvas-head .head-full { visibility: hidden; opacity: 0; }
+.canvas-head[data-full] .head-rest,
+.canvas-head[data-full] .head-live { visibility: hidden; opacity: 0; }
+.canvas-head[data-full] .head-full { visibility: visible; opacity: 1; }
+.canvas-head[data-full] .persist { display: none; }
+.dock-headacts {
+  display: flex; align-items: center; gap: 2px; margin-left: 10px;
+  color: var(--mk-muted); align-self: center;
+}
+/* THE FULLSCREEN CHART'S OWN VERBS, RIDING THE HEADER. The rail is a column on
+   a tile and a row here, and it keeps none of the tile's recess: on the header
+   band there is no margin to fill and nothing to hover a plate onto. */
+.dock-headacts .tile-rail {
+  display: flex; align-items: center; gap: 2px;
+  grid-column: auto; grid-row: auto; padding: 0; background: none;
+}
+.dock-headacts .tile-rail hr { display: none; }
+.dock-headacts .tile-rail .tile-modes { display: flex; align-items: center; gap: 2px; }
+.dock-headacts .tile-rail button { opacity: 1; }
+.dock-headacts[hidden] { display: none; }
 /* The rail is a column of the tile, not something floating over the plot: it
    takes its 24px off the chart's width so nothing is ever drawn on top of
    evidence. */
@@ -456,7 +962,13 @@ html.dark .tile-field { background: var(--wk-canvas); }
   transition: background 160ms;
 }
 .evidence-tile:hover .tile-rail, .evidence-tile:focus-within .tile-rail,
-.evidence-tile[data-drilled] .tile-rail { background: var(--ck-inset); }
+.evidence-tile[data-drilled] .tile-rail { background: var(--ck-well); }
+/* LIGHT steps down into the sheet, the same material theme.css already sends
+   its word-carrying wells to. DARK is untouched: its `--ck-inset` is stated
+   outright at #191614 and measures fine, while dark's `--wk-surface-sunken` is
+   LIFTED for the value tag's plate, so borrowing it there would invert the
+   recess — the reason recorded at `--ck-trench` and again on `.tile-field`. */
+html:not(.dark) .dw { --ck-well: var(--wk-surface-sunken); }
 /* 20px IN THE RAIL'S 23px INTERIOR, so a hover fill floats on rail ground with
    an equal margin on both sides and touches no line at all. */
 .tile-rail button {
@@ -1304,7 +1816,7 @@ html.dark .tile-field { background: var(--wk-canvas); }
 .chart-evidence-roster { display: grid; gap: 1px; margin-top: 10px; background: var(--ck-hair); }
 .chart-evidence-roster > div {
   display: flex; justify-content: space-between; gap: 12px; padding: 6px 8px;
-  background: var(--ck-rail); color: var(--mk-muted); font: var(--ck-micro) var(--ck-mono);
+  background: var(--ck-rail); color: var(--mk-secondary); font: var(--ck-micro) var(--ck-mono);
 }
 .occ-foot { display: flex; justify-content: space-between; }
 
@@ -1316,18 +1828,6 @@ html.dark .tile-field { background: var(--wk-canvas); }
 .dw[data-canvas-mode="explore"] .vband,
 .dw[data-canvas-mode="explore"] .vband-foot { display: none; }
 
-/* Fullscreen is temporary canvas state. The clock strip, its title and its
-   drawer leave the composition; the one selected chart receives the field. */
-.dw[data-fullscreen] .canvas-pane { grid-template-rows: auto minmax(0, 1fr); }
-.dw[data-fullscreen] .canvas-pane > .body,
-.dw[data-fullscreen] .canvas-head > .head-swap,
-.dw[data-fullscreen] .canvas-head > .persist,
-.dw[data-fullscreen] .explorer-drawer { display: none; }
-.dw[data-fullscreen] .canvas-head { grid-template-columns: 1fr auto; }
-.dw[data-fullscreen] .canvas-controls { grid-column: 2; }
-.dw[data-fullscreen] .tile-field[data-arrangement="focal"] {
-  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
-}
-.dw[data-fullscreen] .tile-field[data-arrangement="focal"] > .evidence-tile:first-child {
-  grid-column: 1;
-}
+/* Fullscreen is temporary canvas state, not a parallel pane composition. It
+   borrows the fullscreen header and body rows above; `data-fullscreen-tile`
+   owns only the one-chart field geometry. */

@@ -186,7 +186,10 @@ export async function openApp(browser, options = {}) {
     fail(`${findingId} did not visibly render its successor tile canvas: ${JSON.stringify(boxes)}`);
   }
   page.__compactComparison = await compactRendered(page, findingId);
-  await tile.locator('.tile-fullscreen').click();
+  /* Promote the cell, then expand from the stage — a cell's only verb is
+     "become the spotlight" (ADR 215 amendment). */
+  await tile.click();
+  await page.locator('#tile-focal .tile-fullscreen').click();
   await page.waitForSelector('#tile-field #ec-chart', { state: 'attached', timeout: 15000 });
   await settle(page, 700);
   if (options.selectCohort) {
@@ -196,7 +199,7 @@ export async function openApp(browser, options = {}) {
     await settle(page, 500);
     page.__selectedComparison = servedByFinding.get(findingId);
     page.__fullscreenComparison = await fullscreenRendered(page);
-    await tile.locator('.tile-fullscreen').click();
+    await page.locator('#dock-headacts button[aria-label="Back to the dock"]').click();
     await tile.locator('.tile-chart canvas').waitFor({ state: 'visible', timeout: 15000 });
     page.__compactComparison = await compactRendered(page, findingId);
   }

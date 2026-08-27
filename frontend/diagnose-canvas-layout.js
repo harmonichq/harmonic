@@ -1,7 +1,3 @@
-export const PIN_CAP = 4;
-
-const ARRANGEMENTS = Object.freeze(['focal', 'split', 'pair', 'onetwo', 'quad']);
-const SEAT_COUNTS = Object.freeze({ focal: 4, split: 2, pair: 2, onetwo: 3, quad: 4 });
 const TILE_STATES = Object.freeze(['ok', 'empty', 'error', 'stale-generation']);
 /* WHAT THE READER IS TOLD ABOUT A TILE, never the request state's own name.
    `ok` says the evidence is drawn and NOT that the reading is supported: whether
@@ -16,41 +12,27 @@ const TILE_STATE_NAMES = Object.freeze({
   'stale-generation': 'Evidence changed',
 });
 
-export function arrangementFor(pinCount) {
-  if (!Number.isInteger(pinCount) || pinCount < 0) {
-    throw new RangeError(`pin count must be a non-negative integer, got ${pinCount}`);
-  }
-  if (pinCount > PIN_CAP) {
-    throw new RangeError(`pin count exceeds the cap of ${PIN_CAP}`);
-  }
-  return ARRANGEMENTS[pinCount];
-}
-
-export function seatCountFor(arrangement) {
-  const count = SEAT_COUNTS[arrangement];
-  if (!count) throw new RangeError(`unknown arrangement ${arrangement}`);
-  return count;
-}
-
+/* THE FIELD IS FIXED (ADR 215): one focal chart, and beneath it a row of minis
+   that scrolls. Nothing derives a geometry from a pin count any more — the
+   five-arrangement map, its seat counts and the pin cap they needed are gone,
+   and with them the miniature that painted them. */
 export function createCanvasLayout({ focalId = null, pins = [] } = {}) {
-  if (!Array.isArray(pins) || new Set(pins).size !== pins.length || pins.length > PIN_CAP) {
-    throw new RangeError(`pins must contain at most ${PIN_CAP} unique chart ids`);
+  if (!Array.isArray(pins) || new Set(pins).size !== pins.length) {
+    throw new RangeError('pins must be a list of unique chart ids');
   }
-  return { focalId, pins: [...pins], arrangement: arrangementFor(pins.length) };
+  return { focalId, pins: [...pins] };
 }
 
-/* PINNING HOLDS AND LAYERS — it never moves focus. A pin is one verb: it holds
-   a chart against the slicer and layers it into view, and the arrangement is
-   derived from the pin count. Focus changes on a click on a slot chart and on
-   nothing else, so pinning a second chart must leave the focal chart where the
-   reader put it. */
+/* A PIN ORDERS THE ROW; IT DOES NOT HOLD A POSITION (ADR 215 amendment). It
+   says "keep this left-most", so it can never be refused: a fourth pin is not
+   rejected, it sits one scroll-tick to the right of the three the row shows at
+   rest. That is why there is no cap here and no `accepted` answer to give — the
+   caller has no refusal to render. */
 export function pinChart(layout, chartId) {
-  if (layout.pins.includes(chartId)) return { accepted: true, layout };
-  if (layout.pins.length === PIN_CAP) return { accepted: false, layout };
-  return { accepted: true, layout: createCanvasLayout({
+  return layout.pins.includes(chartId) ? layout : createCanvasLayout({
     focalId: layout.focalId,
     pins: [...layout.pins, chartId],
-  }) };
+  });
 }
 
 export function unpinChart(layout, chartId) {
@@ -60,45 +42,43 @@ export function unpinChart(layout, chartId) {
   });
 }
 
-export function focusSwap(candidateIds, layout, chartId) {
-  const candidates = [...candidateIds];
-  const current = candidates.indexOf(layout.focalId);
-  const next = candidates.indexOf(chartId);
-  if (next < 0) return { candidates, layout };
-  if (current >= 0 && current !== next) {
-    [candidates[current], candidates[next]] = [candidates[next], candidates[current]];
-  }
-  const pins = [...layout.pins];
-  const pinnedCurrent = pins.indexOf(layout.focalId);
-  const pinnedNext = pins.indexOf(chartId);
-  if (pinnedCurrent >= 0 && pinnedNext >= 0 && pinnedCurrent !== pinnedNext) {
-    [pins[pinnedCurrent], pins[pinnedNext]] = [pins[pinnedNext], pins[pinnedCurrent]];
-  }
-  return {
-    candidates,
-    layout: createCanvasLayout({ focalId: chartId, pins }),
-  };
+/* THE DOCK IS THE WHOLE ORDERED SET, SPOTLIGHT INCLUDED. Lifting the
+   spotlighted chart out left the dock holding the leftovers — whichever charts
+   the reader happened not to be looking at, with its membership changing on
+   every click. A set that re-forms under each interaction cannot read as one
+   object, however it is framed. Keeping every chart in one order and MARKING
+   the one on stage makes the dock a filmstrip with a current frame: clicking a
+   cell moves the stage, it does not change what the row contains.
+
+   The order is the same one `placeSeats` sorts by, derived here without lifting
+   anything, so the two can never disagree about what comes first. */
+export function dockOrder(candidateIds, layout) {
+  const candidates = [...new Set(candidateIds)];
+  const pins = layout.pins.filter((id) => candidates.includes(id));
+  return [...pins, ...candidates.filter((id) => !pins.includes(id))];
 }
 
+/* THE ROW IS A SORTED LIST AND NO INTERACTION SHUFFLES IT. The focal chart is
+   lifted OUT of the row; everything else follows in one order — pins first, in
+   the order they were pinned, then the ranked candidates. Promoting a mini
+   therefore drops the demoted focal back to its own ordered position rather
+   than into the seat the promoted chart vacated, which is #135's rule and is
+   retired with the arrangements: a list that re-sorts itself under every click
+   is a list a reader cannot keep their place in.
+
+   This is also why no candidate-order state survives anywhere. The order is
+   derived from the pins and the published rank on every paint, so there is
+   nothing to carry across a reconcile and nothing to drop. */
 export function placeSeats(candidateIds, layout) {
-  const arrangement = arrangementFor(layout.pins.length);
-  const capacity = seatCountFor(arrangement);
   const candidates = [...new Set(candidateIds)];
-  const pins = [...layout.pins];
   const focal = layout.focalId && candidates.includes(layout.focalId)
-    ? layout.focalId : candidates.find((id) => !pins.includes(id));
-  /* From two pins on, the field IS the pins — but WHICH of them takes the focal
-     seat is still the reader's, not the order they were pinned in. A pinned
-     focal chart keeps the focal seat; only a click on another chart moves it. */
-  const ordered = pins.length >= 2
-    ? [...(pins.includes(focal) ? [focal] : []), ...pins]
-    : [focal, ...pins, ...candidates].filter(Boolean);
-  const chartIds = [...new Set(ordered)].slice(0, capacity);
-  return chartIds.map((chartId, index) => ({
-    chartId,
-    seat: index === 0 ? 'focal' : `slot-${index}`,
-    pinned: pins.includes(chartId),
-  }));
+    ? layout.focalId : candidates[0] || null;
+  const pins = layout.pins.filter((id) => candidates.includes(id) && id !== focal);
+  const row = [...pins, ...candidates.filter((id) => id !== focal && !pins.includes(id))];
+  return [
+    ...(focal ? [{ chartId: focal, seat: 'focal', pinned: layout.pins.includes(focal) }] : []),
+    ...row.map((chartId) => ({ chartId, seat: 'mini', pinned: pins.includes(chartId) })),
+  ];
 }
 
 /* THE LIVE CHART LIST IS THE FINDINGS PAYLOAD'S — one tile per basal slot and
@@ -131,7 +111,12 @@ export function descriptorsFromFindings(findings, registry) {
   });
 }
 
-export function arrangementRange(descriptors, registry, glucoseRange) {
+/* ONE GLUCOSE RANGE ACROSS THE WHOLE FIELD, so two charts drawn side by side
+   are read against the same axis. It spans every chart the field holds, not
+   only the ones currently scrolled into view — a range that changed as the row
+   scrolled would redraw the focal chart's axis under a gesture that was only
+   ever about the row. */
+export function fieldRange(descriptors, registry, glucoseRange) {
   const byKind = new Map(registry.map((entry) => [entry.kind, entry]));
   return glucoseRange(descriptors.flatMap((descriptor) => {
     const values = byKind.get(descriptor.kind)?.glucoseValues;

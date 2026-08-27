@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>WIREFRAME — the filmstrip as a ruled register</title>
+<!-- The shipped sheets, LINKED not copied. Nothing here is extracted, so there
+     is nothing to drift and no --check to owe: the specimen below is the app's
+     own markup under the app's own rules, and the only new bytes are one
+     override block. -->
+<link rel="stylesheet" href="/frontend/theme.css">
+<link rel="stylesheet" href="/frontend/diagnose-workstation.css">
+<style>
+  /* Scoped to `body >` per the trap recorded in the slice handoff: an unscoped
+     `section {}` rule styles the specimen panes themselves. Never CSS `zoom`. */
+  body { margin: 0; background: var(--wk-surface-rail); color: var(--wk-ink);
+    font: 13px/1.5 Inter, system-ui, sans-serif; }
+  body > header { padding: 18px 24px 8px; }
+  body > header h1 { margin: 0 0 6px; font-size: 15px; letter-spacing: .01em; }
+  body > header p { margin: 0 0 8px; color: var(--wk-ink-meta); max-width: 82ch; }
+  body > header .mark { display: inline-block; margin-bottom: 10px; padding: 3px 7px;
+    background: var(--wk-signal-well); color: var(--wk-signal);
+    font: 700 10px/1 ui-monospace, Menlo, monospace; letter-spacing: .09em; }
+  body > header button { margin-top: 4px; padding: 5px 11px; cursor: pointer;
+    border: 1px solid var(--wk-rule); border-radius: 4px;
+    background: var(--wk-surface); color: var(--wk-ink); font: inherit; }
+  body > section { padding: 10px 24px 30px; }
+
+  /* The specimen is a real `.dw` field at the shipped band height. The pane
+     height is the only invented number, and it is set so the spotlight clears its
+     own 220px floor with the 145px band beneath it. The shell's own `.dw`
+     grid (42px chrome row + body) has nothing to put in it here, so the
+     specimen opts out of the shell and keeps the tokens. */
+  .spec { display: block; height: auto; }
+  .spec .canvas-pane, .spec .canvas-pane > .body { display: block; height: auto; }
+  .spec .tile-field { height: 404px; }
+  /* THE SPOTLIGHT IS UNTOUCHED. It keeps the raised plate — ring, lit top edge,
+     pooled shadow — because that plate is the whole comparison. */
+  .spec .tile-focal { background: var(--ck-rail); border-radius: 2px;
+    box-shadow: inset 0 0 0 1px var(--ck-tile-edge), inset 0 1px 0 var(--ck-tile-top),
+      var(--ck-tile-shadow); }
+  .spec .tile-focal .plot { width: 100%; height: 100%; display: block; }
+  .spec .tile-chart { width: 100%; height: 100%; }
+  .spec .tile-chart svg { width: 100%; height: 100%; display: block; }
+
+  /* ====================================================================
+     THE PROPOSAL — the strip is a ruled register, not a well.
+     Every rule below is flat: no inset shadow, no pooled shadow, no lit edge,
+     no simulated light of any kind inside the band. Subordination is bought
+     four ways — full bleed, one continuous ruling, one rank of type, and one
+     shared vertical — and by nothing else.
+     ================================================================== */
+
+  /* 0 · THE RULE'S MATERIAL — one principle, two grounds, and both ends of it
+     are tokens the app already owns. A hairline has to step AWAY from the cell,
+     and which direction that is depends on the ground, exactly as the shipped
+     `--ck-dock-well` note reasons about the well. Measured here: LIGHT runs
+     cell #FAF8F4 against `--ck-hair` #C3BFB4 — the app's own line, and a
+     definite rule. DARK runs cell #262220 against `--ck-hair` #322E29, four
+     values apart and invisible, while the field it is cut into is #0F0D0B —
+     twenty-three values down and the darkest thing on the canvas. So dark rules
+     with the field's own ground and light rules with the app's own line. No new
+     colour is introduced on either ground. */
+  .spec .dw, .spec.dw { --fl-rule: var(--ck-hair); }
+  html.dark .spec.dw, html.dark .spec .dw { --fl-rule: var(--wk-canvas); }
+
+  /* 1 · FULL BLEED. A raised plate floats inside margins; substrate runs off
+     the edge. The strip gives up the field's 8px gutter on three sides and
+     becomes part of the ground the spotlight sits on, rather than a fourth
+     object sitting beside it. The sliced fourth cell is now cut by the field's
+     own edge rather than by a padding box, which is what that affordance
+     always claimed to be. Negative margins on a stretched grid item move the
+     box into the field's padding without resizing it: the locked band is still
+     exactly 145px tall — 8px of top margin against 8px of negative bottom
+     margin — it has simply slid down to sit flush on the field's floor. The
+     gutter it vacates goes to the handle. */
+  .spec .tile-field[data-dock="docked"] > .tile-row {
+    margin: var(--ck-canvas-gap) calc(-1 * var(--ck-canvas-gap))
+            calc(-1 * var(--ck-canvas-gap));
+    padding: 0;
+    /* 2 · ONE CONTINUOUS RULING. The grout is the band's ground showing through
+       1px gaps, so the cells are apertures in one ruled strip and not four
+       plates with air between them. No radius: a squared band cannot be picked
+       up, and that is the point. */
+    gap: 1px; background: var(--fl-rule); border-radius: 0;
+    box-shadow: none;
+    grid-auto-columns: max(280px, calc((100% - 3px) / 3.35));
+    scrollbar-width: none;
+  }
+  .spec .tile-field[data-dock="docked"] > .tile-row::-webkit-scrollbar { display: none; }
+
+  /* The cells keep the brightest plot ground the theme owns — a quiet chart is
+     still evidence — and give up every cue that says "separate object": no
+     radius, no ring, no lit edge, no shadow. What they gain is the band's own
+     top rule, drawn on each cell so it runs unbroken through the grout. */
+  .spec .tile-field[data-dock="docked"] > .tile-row > .evidence-tile {
+    background: var(--ck-rail); border-radius: 0; box-shadow: none;
+  }
+  /* THE SECOND RULE — the register's header line. Every cell's nameplate is the
+     same 22px band, so one hairline per cell at 22px lands as ONE horizontal
+     rule crossing the whole strip, crossed by the vertical grout. That grid is
+     what makes a butted band read as an instrument's register instead of two
+     dense traces touching. It spans the rail column too, so the ruling is the
+     cell's full width and never stops 24px short. */
+  .spec .tile-field[data-dock="docked"] > .tile-row > .evidence-tile::before {
+    content: ""; position: absolute; left: 0; right: 0; top: 0; height: 22px;
+    background: var(--ck-trench); pointer-events: none; z-index: 0;
+    box-shadow: inset 0 1px 0 var(--ck-hair), inset 0 -1px 0 var(--fl-rule);
+  }
+  html.dark .spec .tile-field[data-dock="docked"] > .tile-row > .evidence-tile::before {
+    background: var(--wk-canvas);
+  }
+
+  /* THE NAMEPLATE BAND IS THE REGISTER'S HEADER ROW. Every cell's head is the
+     same 22px, so painting it in the FIELD's own ground — the material the
+     strip is cut from, and nothing new — lays one continuous band across the
+     whole strip, crossed by the grout. It is a flat tonal statement, not a lit
+     one: no gradient, no inset, no edge highlight. It also does the work the
+     ADR's "second-class step may be too quiet" note asks for, in geometry
+     rather than in more ink. It is drawn on the CELL, not on the nameplate, so
+     it spans the rail column too and the band never notches around a control —
+     and so the gate mark below can live in its top rule.
+
+     THE BAND'S TOP EDGE IS THE STRIP'S ONLY EDGE, and it takes `--ck-hair`
+     rather than `--fl-rule`. Measured: in DARK the strip's ground and the field
+     above it are both near-black, so a rule in the field's own ground draws
+     nothing and the strip began at its first word instead of at its edge.
+     `--ck-hair` is #322E29 there — a step UP off the field, and the one line
+     that has to be seen from both sides. */
+  /* 3 · TYPOGRAPHIC RANK, AND NOTHING ENGRAVED. The shipped strip already drops
+     the cell nameplate a rank in ink and weight; what it kept was the tile's
+     engraved lower highlight, which is simulated light. Printed, not carved —
+     the cells are not plates, so nothing on them catches an edge. */
+  .spec .tile-field[data-dock="docked"] > .tile-row > .evidence-tile .tile-head h3 {
+    text-shadow: none;
+  }
+  /* 4 · ONE SHARED VERTICAL. The 34px spine `--ck-grid-left` that every plot
+     edge, y-axis column and tile title already opens on is empty on a mini, so
+     it carries the frame index — mono, muted, at the caps floor. It is the
+     cheapest thing that turns four thumbnails into an ordered set: the strip's
+     order is the published rank and never moves, so numbering it states a fact
+     the strip already guarantees. */
+  .spec .tile-field[data-dock="docked"] > .tile-row { counter-reset: cell; }
+  .spec .tile-field[data-dock="docked"] > .tile-row > .evidence-tile { counter-increment: cell; }
+  .spec .tile-field[data-dock="docked"] > .tile-row > .evidence-tile .tile-head {
+    position: relative;
+  }
+  .spec .tile-field[data-dock="docked"] > .tile-row > .evidence-tile .tile-head::before {
+    content: counter(cell, decimal-leading-zero);
+    position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+    width: var(--ck-grid-left); text-align: center;
+    font: var(--ck-micro) var(--ck-mono); letter-spacing: var(--ck-track);
+    color: var(--mk-muted); opacity: .75;
+  }
+
+  /* THE CURRENT FRAME IS MARKED IN THE RULING ITSELF. The band's top rule turns
+     accent for exactly one cell's width — a gate mark, not a highlight. The
+     spotlight above is still the loud statement of which frame is up; this only
+     says which aperture it came out of. Its index steps to the same ink so the
+     mark reads at the strip's left edge as well as at its top. */
+  .spec .tile-field[data-dock="docked"] > .tile-row > .evidence-tile[data-selected]::before {
+    box-shadow: inset 0 2px 0 var(--ck-focus-mark), inset 0 -1px 0 var(--fl-rule);
+  }
+  .spec .tile-field[data-dock="docked"] > .tile-row > .evidence-tile[data-selected] .tile-head::before {
+    color: var(--ck-focus-mark); opacity: 1;
+  }
+
+  /* THE HANDLE — the same flat ruling, at the same vertical.
+     Layout K1: left cell, centred word, right cell, each cell divided by the
+     band's own hairline. It rides the strip's TOP edge, seated in the 19px
+     gutter with its foot on the band and its head on the spotlight's floor, so
+     it overlaps neither. It is left-aligned to `--ck-grid-left`, which — now
+     that the band is full bleed — is the exact vertical the first frame's title
+     opens on and the spotlight's y-axis column lands on. */
+  .spec .tile-field[data-dock="docked"] > .dock-handle {
+    left: var(--ck-grid-left); bottom: 145px; transform: none;
+    display: grid; grid-auto-flow: column; align-items: stretch;
+    grid-template-columns: 22px auto 22px;
+    border-radius: 0; background: var(--ck-rail); color: var(--mk-secondary);
+    box-shadow: inset 0 0 0 1px var(--fl-rule);
+  }
+  .spec .tile-field[data-dock="docked"] > .dock-handle .dock-word {
+    padding: 0 11px; text-shadow: none; color: var(--mk-secondary);
+    box-shadow: inset 1px 0 0 var(--fl-rule), inset -1px 0 0 var(--fl-rule);
+    display: grid; place-items: center;
+  }
+  .spec .tile-field[data-dock="docked"] > .dock-handle button { box-shadow: none; }
+</style>
+</head>
+<body>
+<header>
+  <span class="mark">WIREFRAME — NO FIDELITY CLAIM — NOT LOCKABLE</span>
+  <h1>The filmstrip stops being a well and becomes a ruled register</h1>
+  <p><strong>The idea.</strong> Depth is the wrong lever here — a well that must
+     be legible on bone and on graphite is two different fictions, and in light
+     there is no darker step available that does not also dim the plots. So the
+     strip claims no depth at all: it runs full bleed off three edges of the
+     field, its cells butt together as apertures in one continuously ruled band,
+     its nameplates align into a single horizontal rule crossing the whole strip,
+     and the 34px canvas spine carries a frame index. Subordination comes from
+     what the strip <em>is</em> — substrate, ruled, ordered, indexed — against a
+     spotlight that is still a raised plate floating inside its margins.</p>
+  <p><strong>The cost.</strong> It spends the canvas's stated depth vocabulary:
+     the strip no longer says raised-or-cut in the language the tiles and the
+     field speak, so a reader who learned that vocabulary elsewhere on the
+     surface gets no answer from the strip, and the whole subordination rests on
+     a reading of geometry that a busy plot butted against its neighbour can
+     blur. It also adds one mark the ADR's "no badge" clause did not sanction —
+     the frame index — and buys the ruled grid by giving every cell a fixed 22px
+     nameplate band it can no longer trade away.</p>
+  <button type="button" id="theme">Toggle theme</button>
+</header>
+<section>
+  <div class="dw spec" id="specimen">
+    <div class="canvas-pane"><div class="body">
+      <div class="tile-field" data-dock="docked">
+        <div class="tile-focal"><svg class="plot" viewBox="0 0 900 220" preserveAspectRatio="none"></svg></div>
+        <div class="tile-row"></div>
+        <div class="dock-handle" data-state="docked">
+          <button type="button" aria-label="Put away">
+            <svg viewBox="0 0 16 16" class="face-off" aria-hidden="true">
+              <path d="M2.6 6V2.6H6"/><path d="M13.4 6V2.6H10"/>
+              <path d="M2.6 13.4V10H6"/><path d="M13.4 13.4V10H10"/>
+            </svg>
+          </button>
+          <span class="dock-word">Charts</span>
+          <button type="button" aria-label="All charts">
+            <svg viewBox="0 0 16 16" class="face-off" aria-hidden="true">
+              <path d="M6 2.6H2.6V6"/><path d="M10 2.6h3.4V6"/>
+              <path d="M6 13.4H2.6V10"/><path d="M10 13.4h3.4V10"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div></div>
+  </div>
+</section>
+<script>
+/* The root token block lives in the app's own <style>, so it is FETCHED at load
+   rather than copied. A wireframe that restates a token is a wireframe that can
+   disagree with the app about one. */
+const TITLES = [
+  ['Correction factor · rest windows', 'dose acted → glucose change'],
+  ['Carb undercount', 'meals aligned to each event'],
+  ['Correction stacking', 'correction clusters'],
+  ['Meal over-delivery', 'meals aligned to each event'],
+  ['Overnight basal drift', 'clean nights by slot'],
+];
+function trace(seed, w, h, span) {
+  let y = h * 0.5, d = '';
+  for (let x = 0; x <= w; x += 4) {
+    y += Math.sin((x + seed * 37) / (17 * span)) * 5.4 * (h / 92) / span
+       + Math.cos((x + seed * 11) / (7 * span)) * 2.6 * (h / 92) / span;
+    y = Math.max(h * 0.14, Math.min(h * 0.9, y));
+    d += (x ? 'L' : 'M') + x + ' ' + y.toFixed(1);
+  }
+  return d;
+}
+function tile(i) {
+  const [name, meta] = TITLES[i];
+  return `<article class="evidence-tile" data-seat="mini" data-state="ok"${i === 1 ? ' data-selected' : ''}>
+    <header class="tile-head"><span class="tile-id"><h3>${name}</h3><span class="tile-meta">${meta}</span></span></header>
+    <span class="tile-rail">
+      <button type="button" class="tile-fullscreen"><svg viewBox="0 0 16 16" class="face-off"><path d="M6 2.6H2.6V6"/><path d="M10 2.6h3.4V6"/><path d="M6 13.4H2.6V10"/><path d="M10 13.4h3.4V10"/></svg><span>Full screen</span></button>
+      <button type="button" class="tile-pin"><svg viewBox="0 0 16 16" class="face-off"><path d="M9.4 2.2 13.8 6.6"/><path d="m10.6 3.4-4 1.4-3.2 3.2 4.6 4.6 3.2-3.2 1.4-4"/><path d="M4.6 11.4 2.2 13.8"/></svg><span>Pin</span></button>
+    </span>
+    <div class="tile-body"><div class="tile-chart"><svg viewBox="0 0 300 96" preserveAspectRatio="none">
+      <rect x="0" y="30" width="300" height="42" fill="color-mix(in srgb, var(--mk-ok) 5%, transparent)"></rect>
+      <path d="${trace(i, 300, 96, 0.42)}" fill="none" stroke="var(--mk-primary)" stroke-width="1.1"></path>
+    </svg></div></div>
+  </article>`;
+}
+document.querySelector('#specimen .tile-row').innerHTML =
+  [0, 1, 2, 3, 4].map((i) => tile(i)).join('');
+document.querySelector('#specimen .tile-focal .plot').innerHTML =
+  `<rect x="0" y="72" width="900" height="76" fill="color-mix(in srgb, var(--mk-ok) 8%, transparent)"></rect>
+   <path d="${trace(1, 900, 220, 2.4)}" fill="none" stroke="var(--mk-primary)" stroke-width="1.6"></path>`;
+
+document.getElementById('theme').onclick = () => document.documentElement.classList.toggle('dark');
+
+fetch('/frontend/index.html').then((r) => r.text()).then((html) => {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const roots = document.createElement('style');
+  roots.textContent = [...doc.querySelectorAll('style')].map((s) => s.textContent).join('\n');
+  document.head.prepend(roots);
+});
+</script>
+</body>
+</html>

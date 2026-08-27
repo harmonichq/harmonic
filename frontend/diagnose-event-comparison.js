@@ -106,7 +106,7 @@ function legend(surface, caseFile, selected) {
 function option(surface, caseFile, selected, range, mini = false) {
   const { projection } = caseFile;
   const series = [{ type: 'line', data: [], silent: true, name: 'Target range',
-    markArea: { silent: true, itemStyle: { color: `color-mix(in srgb, ${css(surface, '--mk-ok')} 7%, transparent)` }, data: [[{ yAxis: 70, name: 'target 70–180' }, { yAxis: 180 }]] } }];
+    markArea: { silent: true, itemStyle: { color: `color-mix(in srgb, ${css(surface, '--mk-ok')} 7%, transparent)` }, data: [[{ yAxis: 70, ...(mini ? {} : { name: 'target 70–180' }) }, { yAxis: 180 }]] } }];
   for (const cohort of projection.cohorts) {
     for (const support of ['supported', 'limited']) {
       if (!cohort.points.some((point) => point.support === support)) continue;
@@ -124,7 +124,7 @@ function option(surface, caseFile, selected, range, mini = false) {
 /* ONE GLUCOSE AXIS FOR A WHOLE ARRANGEMENT. The envelope is the range every
    glucose chart shows at rest; served values outside it widen the axis in fixed
    steps so tiles seated side by side are read against the same ruler. The range
-   is computed once by whoever composes the arrangement and injected, never
+   is computed once by whoever composes the field and injected, never
    re-derived per chart. */
 export const GLUCOSE_STEP = 20;
 export const GLUCOSE_ENVELOPE = [60, 200];
@@ -161,7 +161,7 @@ function assertEventCaseFile(caseFile) {
 /* PRESENTATION ADAPTER, NOT A SECOND CHART. The evidence-tile registry draws
    the meals/lows comparison from the same served case file the shipped mount
    reads, through the same series builders — the only difference is that a tile
-   is handed its arrangement's glucose range instead of computing its own, and
+   is handed the field's glucose range instead of computing its own, and
    has no surface to read tokens off. (#181/#135: the case file is the one
    authority for this fact, and this is its second consumer.) */
 /* `mini` is the same rank the other evidence kinds carry: a quad tile gets the
@@ -172,7 +172,7 @@ function assertEventCaseFile(caseFile) {
 export function eventComparisonChartOption(caseFile, range, surface = null, mini = false) {
   if (!Array.isArray(range) || range.length !== 2
       || !range.every(Number.isFinite) || range[0] >= range[1]) {
-    throw new TypeError('event comparison needs one injected arrangement glucose range');
+    throw new TypeError('event comparison needs one injected field glucose range');
   }
   assertEventCaseFile(caseFile);
   return option(surface, caseFile, selection(caseFile), range, mini);
@@ -202,7 +202,7 @@ export function renderEventSurface(surface, caseFile, { headerHost = null } = {}
   const chartElement = surface.querySelector('#ec-chart');
   const chart = window.echarts.init(chartElement, null, { renderer: 'canvas' });
   /* The mount reads its own axis off the cohort values it is about to draw:
-     alone on the surface, this chart IS its whole arrangement. */
+     alone on the surface, this chart IS the whole field. */
   chart.setOption(eventComparisonChartOption(
     caseFile, glucoseRange(eventComparisonGlucoseValues(caseFile)), surface,
   ));

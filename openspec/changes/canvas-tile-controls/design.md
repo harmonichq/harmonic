@@ -697,3 +697,56 @@ carries one mark.
 `--ck-rail` on hover painted it the charts' own ground, so the one edge in the
 stack dissolved into the things it separates. Operator: "the hover makes
 everything run together." It deepens instead, in the rail's own material.
+
+### Amendment — 2026-08-27 — three rails told apart by role, and the channel retired
+
+A visual-only pass, ruled from a handoff written against the rendered app. No
+behaviour changed and the replay held at 124 of 133 stories across it, which is
+the evidence that it is visual-only.
+
+**The three stacked rails are told apart by ROLE, in the theme's own neutrals.**
+The pane header, the focal chart's nameplate and the Charts lip had converged on
+one material and read as three coloured bands. The pane header keeps the
+source-of-truth rail role untouched in theme.css — Verify shares it, and fixing
+Diagnose by moving a sibling's ground would be a cross-surface resettle done
+silently. The focal nameplate takes one restrained step off it toward its own
+chart's ground; the lip takes the sunken role, because it is the only one of the
+three that is a control rather than a caption.
+
+Asking for the ROLE rather than for a luminance is what makes this survive both
+themes: the step is upward in light and downward in dark, because the chart
+ground each rail leans toward differs by theme.
+
+**Dark takes the sunken role part way, and that is not a fudge.** theme.css
+records that dark's `--wk-surface-sunken` is lifted for the value tag's plate.
+Borrowing that lift whole made the lip the brightest object on a near-black
+canvas — rendered, it was a stripe across the pane rather than a surface a
+control sits on. The lip steps from the rail's own material toward it instead,
+which is the same ruling measured against the ground it actually lands on. This
+is the third time the `--ck-trench` trap has been recorded on this surface: a
+token borrowed for its name rather than for the ground it will be painted on.
+
+**The channel is retired: its ground band, its wall plate and its floor.** The
+strip sits flush beneath the lip with no gutter, tray, recess or padding band.
+The wall plate was drawn OVER the frames deliberately — an inset shadow on the
+row paints behind its own children, so a plate was the only way the top wall's
+falloff could cross them — and crossing them is exactly what made it wrong: the
+falloff landed on the mini nameplates and dimmed the one part of a cell that has
+to be read. A lip of its own material with a rule above and below separates by
+stating a boundary rather than by shading what is on the far side of it, at
+three rules rather than eleven shadows. `--ck-dock-floor` and `--ck-wall-k` go
+with it; nothing else read either.
+
+**The knurl is removed and not replaced.** A grip texture promises a drag, and
+this rail does not drag — it toggles on click. A mark describing the wrong
+mechanic is worse than no mark, and the word on the text spine already says what
+the rail is. No other decorative grip takes its place.
+
+**The two expand glyphs share one x-centre, and share nothing else.** The focal
+chart's maximize stays in its nameplate and the explorer's opener stays in the
+lip; they keep their separate meanings and their own hit targets. The alignment
+is bought by both rails ending at `--ck-pad` and both buttons being one width —
+no connecting gutter, no vertical rule, no control spine. Measured at 984 on a
+1440 viewport and 824 on a 1280 one, in both themes.
+
+The glucose strip is unchanged and still carries no control of its own.

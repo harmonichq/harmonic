@@ -2574,13 +2574,16 @@ function boot(root, data, callbacks, signal) {
        dock's own direction, the other opens the explorer wearing the tile
        rail's `full` mark, which already means "make this big" everywhere else
        here. Same mark, same meaning, one rank up: a chart, or the whole strip. */
-    const knurl = document.createElement('span');
-    knurl.className = 'dock-knurl';
-    knurl.setAttribute('aria-hidden', 'true');
+    /* NO KNURL. A grip texture promises a drag, and this rail does not drag —
+       it toggles on click. A mark that describes the wrong mechanic is worse
+       than no mark, and the word on the text spine already says what the rail
+       is. sanction: handoff · 2026-08-27 · "Remove the knurl completely. The
+       rail toggles on click and does not drag, so a grip texture communicates
+       the wrong mechanic." */
     const word = document.createElement('span');
     word.className = 'dock-word';
     word.textContent = 'Charts';
-    handle.append(knurl, word);
+    handle.append(word);
     /* BOTH ACTS BELONG TO THE LIP, and they can sit together now that they do
        not look alike. Parked in the pane header instead, the explorer's opener
        landed at the right end of the GLUCOSE chart's own rail and read as that

@@ -435,7 +435,14 @@ html.dark .tile-field { background-color: var(--wk-canvas); }
   grid-column: 1 / -1;
   min-height: 30px; align-items: center;
   padding: 4px var(--ck-pad) 4px var(--ck-grid-left);
-  background: var(--wk-surface-rail);
+  /* ONE RESTRAINED STEP OFF THE PANE HEADER'S ROLE, toward the chart this rail
+     names. The pane header is the source-of-truth rail and keeps its role
+     untouched in theme.css; leaning the focal nameplate halfway to its own
+     chart's ground is what separates two otherwise identical bands without
+     introducing a fourth material. In light that step is upward and in dark it
+     is downward, because the chart ground it leans toward differs by theme —
+     the direction is the semantics, not the luminance. */
+  background: color-mix(in srgb, var(--wk-surface-rail) 50%, var(--wk-surface));
   border-bottom: 1px solid var(--wk-rule);
 }
 .tile-field:not([data-fullscreen-tile]):not([data-explorer])
@@ -518,7 +525,7 @@ html.dark .tile-field[data-explorer] > .tile-row { background: var(--wk-canvas);
    the channel sits between field and cell; light has no lighter step to take,
    so it steps down. `--ck-well` itself is not re-pointed — it is the hovered
    tile rail's material, where `#E7E4DC` on a `#FAF8F4` tile is correct. */
-.dw { --ck-dock-well: var(--ck-well); --ck-dock-floor: 10px; }
+.dw { --ck-dock-well: var(--ck-well); }
 html:not(.dark) .dw {
   --ck-dock-well: color-mix(in srgb, var(--wk-surface-sunken) 92%, var(--mk-text));
 }
@@ -526,8 +533,6 @@ html:not(.dark) .dw {
    black onto ground that is already nearly black and needs more of the same
    shadow to travel the same distance. Every alpha below is a fraction of it, so
    "quieter" is one edit and not a re-tune of seven shadows. */
-.dw { --ck-wall-k: .68; }
-html.dark .dw { --ck-wall-k: 1.35; }
 
 /* --- the enclosure. The spotlight runs to all three of the field's own walls;
    only the channel floor is padding, added BELOW the locked 145px band, so the
@@ -543,7 +548,7 @@ html.dark .dw { --ck-wall-k: 1.35; }
    being an object and becomes the ground, and the dock is then the only drawn
    object on the surface. */
 .tile-field[data-dock="docked"]:not([data-fullscreen-tile]) {
-  padding: 0 0 var(--ck-dock-floor);
+  padding: 0;
 }
 /* MARGIN, NOT PADDING. The row is a snap scroll container, so a left pad is
    scrollable content that the first snap point immediately eats; a margin is
@@ -564,59 +569,21 @@ html.dark .dw { --ck-wall-k: 1.35; }
   border-radius: 2px; gap: var(--ck-canvas-gap); padding: var(--ck-canvas-gap);
 }
 
-/* --- 1 · the channel's ground, under the frames and between them ---------
-   ONE SURFACE for the whole channel — the 145px band plus the floor below it —
-   so the grout in the gutters and the floor under the frames can never disagree
-   about what material they are. It is a background layer on the field rather
-   than a third box: `::before` and `::after` are both spent below, and the DOM
-   the painter builds does not need an element that carries no information.
-   `background-origin: border-box` is load-bearing — the default padding-box
-   origin would seat the band on the inner edge of the field's own 10px bottom
-   padding, which is exactly the floor this band has to cover. */
-.tile-field[data-dock="docked"]:not([data-fullscreen-tile]) {
-  background-image: linear-gradient(var(--ck-dock-well), var(--ck-dock-well));
-  background-repeat: no-repeat;
-  background-origin: border-box; background-clip: border-box;
-  background-position: left bottom;
-  background-size: 100% calc(145px + var(--ck-dock-floor));
-}
+/* RETIRED — the channel: its ground band, its wall plate and its floor.
+   sanction: handoff · 2026-08-27 · "Keep the mini charts at their current size
+   and flush directly beneath the Charts rail. Add no gap, gutter, tray, recess,
+   or padding band. Remove the channel's top-wall shadow/falloff where it
+   crosses and dims the mini nameplates. Let the Charts rail's material and one
+   crisp horizontal rule carry the separation."
 
-/* --- 2 · the walls, drawn OVER the frames --------------------------------
-   Inert to the pointer and under the handle's own z-index. This plate is the
-   whole reason the cut reads: an inset shadow on the row cannot paint over its
-   own children, and the frames are what the eye is looking at. */
-.tile-field[data-dock="docked"]:not([data-fullscreen-tile])::after {
-  content: ""; position: absolute; pointer-events: none; z-index: 4;
-  left: 0; right: 0; bottom: 0;
-  height: calc(145px + var(--ck-dock-floor));
-  box-shadow:
-    /* THE TOP WALL, in three parts, because one shadow cannot be both an edge
-       and a falloff: a tight junction line, the wall's own body across the
-       grout, and a wide weak falloff that crosses the frames. */
-    inset 0 2px 2px -1px rgb(0 0 0 / calc(.34 * var(--ck-wall-k))),
-    inset 0 8px 8px -6px rgb(0 0 0 / calc(.38 * var(--ck-wall-k))),
-    inset 0 24px 22px -18px rgb(0 0 0 / calc(.17 * var(--ck-wall-k))),
-    /* THE NEAR END is a corner against the field's own left wall, not an
-       event, so it stays soft. */
-    inset 9px 0 10px -10px rgb(0 0 0 / calc(.30 * var(--ck-wall-k))),
-    /* THE FAR END is the off-screen read: the frames run past the field's right
-       wall, and this is the light on that wall. */
-    inset -10px 0 12px -11px rgb(0 0 0 / calc(.40 * var(--ck-wall-k))),
-    inset -24px 0 20px -22px rgb(0 0 0 / calc(.18 * var(--ck-wall-k))),
-    /* THE CUT — one dark line where the field's top face ends. */
-    inset 0 1px 0 rgb(0 0 0 / calc(.30 * var(--ck-wall-k)));
-}
-/* THE FLOOR IS A SURFACE, so it is lit like one: the frames cast a short shadow
-   down onto it, and it catches an overhead light along its own bottom edge.
-   These are a second box rather than two more entries above because their
-   geometry is the FLOOR's height, and every shadow in the wall plate is
-   measured against the CHANNEL's — one box cannot carry both. */
-.tile-field[data-dock="docked"]:not([data-fullscreen-tile])::before {
-  content: ""; position: absolute; pointer-events: none; z-index: 4;
-  left: 0; right: 0; bottom: 0; height: var(--ck-dock-floor);
-  box-shadow: inset 0 3px 4px -3px rgb(0 0 0 / calc(.44 * var(--ck-wall-k))),
-    inset 0 -1px 0 color-mix(in srgb, var(--ck-tile-top) 80%, transparent);
-}
+   The wall plate was drawn OVER the frames on purpose — that was the only way
+   an inset shadow could cross them at all — and crossing them is exactly what
+   made it wrong: its falloff landed on the mini nameplates and dimmed the one
+   part of a cell that has to be read. A lip of its own material with a rule
+   under it separates by stating a boundary rather than by shading what is on
+   the far side of it, and it costs three rules rather than eleven shadows.
+
+   `--ck-dock-floor` and `--ck-wall-k` go with them; nothing else read either. */
 
 /* --- 3 · the stage GROUND, which is the whole of this rule now. This was the
    raised plate — ring, lit top edge and a two-stage cast reaching down onto the
@@ -810,13 +777,32 @@ html.dark .tile-field[data-raised] > .tile-row { background: var(--wk-canvas); }
   display: flex; align-items: stretch; gap: 12px;
   padding: 0 var(--ck-pad) 0 var(--ck-grid-left); cursor: pointer;
   color: var(--mk-secondary);
-  /* THE LIP IS ONE OF THE PANE'S RAILS. Same 30px height, same ground and same
-     rule as the header rails above it, so the canvas reads as a stack of rails
-     and charts rather than three unrelated bands; the knurl is what says this
-     one moves. */
-  background: var(--wk-surface-rail);
+  /* THE LIP IS THE MOST SEPARATE OF THE THREE RAILS, because it is the only one
+     that is a control rather than a caption: the other two name the chart under
+     them, and this one operates the strip under it. It takes the theme's sunken
+     role for that — which steps DOWN in light and UP in dark, since dark's
+     sunken token is deliberately the lighter one. Both directions read the same
+     way against their own neighbours, which is the point of asking for the role
+     rather than for a luminance.
+
+     Its rules are the separation the retired channel used to shade in: one
+     crisp line above and one below, and the strip sits flush against the lower
+     one with nothing drawn over it. */
+  background: var(--wk-surface-sunken);
   border-top: 1px solid var(--wk-rule); border-bottom: 1px solid var(--wk-rule);
   transition: background 130ms, color 130ms;
+}
+/* DARK TAKES THE ROLE PART WAY, because dark's sunken token is lifted for the
+   value tag's plate — theme.css says so — and borrowing that lift whole makes
+   this rail the brightest object on a near-black canvas. Rendered at full
+   strength it read as a stripe across the pane rather than as the surface a
+   control sits on. The step from the rail's own material toward it is the same
+   ruling, measured against the ground it actually lands on. */
+html.dark .dw .dock-handle {
+  background: color-mix(in srgb, var(--wk-surface-sunken) 45%, var(--wk-surface-rail));
+}
+html.dark .dw .dock-handle:hover {
+  background: color-mix(in srgb, var(--wk-surface-sunken) 60%, var(--wk-surface-rail));
 }
 /* HOVER STEPS AWAY FROM THE CHARTS, NEVER TOWARD THEM. Lifting the lip to
    `--ck-rail` painted it the charts' own ground, so on hover the one edge in
@@ -825,10 +811,10 @@ html.dark .tile-field[data-raised] > .tile-row { background: var(--wk-canvas); }
    step toward the ink. */
 .dock-handle:hover {
   color: var(--mk-text);
-  background: color-mix(in srgb, var(--wk-surface-rail) 93%, var(--mk-text));
+  background: color-mix(in srgb, var(--wk-surface-sunken) 93%, var(--mk-text));
 }
 .dock-handle:hover button:hover {
-  background: color-mix(in srgb, var(--wk-surface-rail) 86%, var(--mk-text));
+  background: color-mix(in srgb, var(--wk-surface-sunken) 86%, var(--mk-text));
 }
 .dock-handle[hidden] { display: none; }
 .dock-handle button {
@@ -840,13 +826,6 @@ html.dark .tile-field[data-raised] > .tile-row { background: var(--wk-canvas); }
 .dock-handle button:hover { color: var(--mk-text); }
 .dock-handle button:focus-visible {
   outline: 2px solid var(--ck-focus-mark); outline-offset: -2px;
-}
-/* THE KNURL — the one mark that says "take hold of this". Fine vertical ribs in
-   the lip's own ink, the machined idiom this canvas already uses for a grip. */
-.dock-knurl {
-  flex: 0 0 26px; align-self: center; height: 11px; opacity: .55;
-  background: repeating-linear-gradient(90deg,
-    currentColor 0 1px, transparent 1px 4px);
 }
 /* THE WORD, engraved in the tile nameplates' own manner — caps, tracked, one
    step below the lip's ink, with a lit line under it so it reads cut into the
@@ -862,9 +841,8 @@ html.dark .tile-field[data-raised] > .tile-row { background: var(--wk-canvas); }
 /* SEATED ON THE CHANNEL'S LIP, exactly: its foot on the dock's top edge, its
    head on the spotlight's floor, overlapping neither. */
 .tile-field[data-dock="hidden"] > .dock-handle { bottom: 0; }
-.tile-field[data-dock="docked"] > .dock-handle {
-  bottom: calc(145px + var(--ck-dock-floor));
-}
+/* SEATED DIRECTLY ON THE STRIP, which starts at the field's own floor. */
+.tile-field[data-dock="docked"] > .dock-handle { bottom: 145px; }
 .tile-field[data-raised] > .dock-handle { bottom: calc(145px + var(--ck-canvas-gap)); }
 
 .dock-headacts button {
@@ -1033,8 +1011,11 @@ html:not(.dark) .dw { --ck-well: var(--wk-surface-sunken); }
 /* THE SPOTLIGHT'S RAIL CARRIES THE SAME BUTTON AS THE CONTROL COLUMN, so it
    takes the same box. Lifted into a header it had been an unstyled default
    button, border and all. */
+/* THE SAME BOX AS THE LIP'S CONTROLS, so the two expand glyphs land on one
+   x-centre: both rails end at `--ck-pad` and both buttons are 28 wide, which is
+   the whole of the alignment — no gutter, no spine, no shared container. */
 .tile-head > .tile-fullscreen {
-  display: grid; place-items: center; width: 20px; height: 20px; padding: 0;
+  display: grid; place-items: center; width: 28px; height: 22px; padding: 0;
   border: 0; border-radius: 2px; background: transparent; color: var(--mk-muted);
   cursor: pointer;
   transition: color 130ms, background 130ms;

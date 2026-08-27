@@ -426,10 +426,21 @@ html.dark .tile-field { background-color: var(--wk-canvas); }
 }
 .tile-field:not([data-fullscreen-tile]):not([data-explorer])
   > .tile-focal > .evidence-tile > .tile-head {
+  /* THE RAIL SPANS THE TILE, RAIL COLUMN INCLUDED. Left in the nameplate's own
+     column it stopped 24px short of the pane's right wall and the tile's
+     control column stood beside it on the chart's ground — a rail with a notch
+     bitten out of its end, which is not what the header rails above it do. The
+     controls drop to the plot's row instead, where they belong: they are the
+     CHART's controls, not the rail's. */
+  grid-column: 1 / -1;
   min-height: 30px; align-items: center;
   padding: 4px var(--ck-pad) 4px var(--ck-grid-left);
   background: var(--wk-surface-rail);
   border-bottom: 1px solid var(--wk-rule);
+}
+.tile-field:not([data-fullscreen-tile]):not([data-explorer])
+  > .tile-focal > .evidence-tile > .tile-rail {
+  grid-row: 2;
 }
 .tile-field:is([data-fullscreen-tile], [data-explorer]) { padding: 0; }
 .tile-field[data-fullscreen-tile] > .tile-focal > .evidence-tile > .tile-head {
@@ -875,20 +886,47 @@ html.dark .tile-field[data-raised] > .tile-row { background: var(--wk-canvas); }
 .canvas-head[data-full] .head-live { visibility: hidden; opacity: 0; }
 .canvas-head[data-full] .head-full { visibility: visible; opacity: 1; }
 .canvas-head[data-full] .persist { display: none; }
+/* THE HEADER'S CONTROL CLUSTER, SPACED BY WHAT THE CONTROLS ARE. Drawn at one
+   2px gap the row was four unlike marks jammed together — a pin, an alignment
+   pair, and the pane's own way out — with nothing saying which belonged with
+   which. The pair stays tight because it IS a pair; the pin and the pane verb
+   take the header's own control spacing, and a hairline separates the chart's
+   verbs from the pane's. */
 .dock-headacts {
-  display: flex; align-items: center; gap: 2px; margin-left: 10px;
+  display: flex; align-items: center; gap: 8px; margin-left: 14px;
   color: var(--mk-muted); align-self: center;
 }
 /* THE FULLSCREEN CHART'S OWN VERBS, RIDING THE HEADER. The rail is a column on
    a tile and a row here, and it keeps none of the tile's recess: on the header
    band there is no margin to fill and nothing to hover a plate onto. */
 .dock-headacts .tile-rail {
-  display: flex; align-items: center; gap: 2px;
+  display: flex; align-items: center; gap: 8px;
   grid-column: auto; grid-row: auto; padding: 0; background: none;
 }
-.dock-headacts .tile-rail hr { display: none; }
+/* The rail's own divider becomes the seam between the chart's verbs and the
+   pane's, drawn as a vertical hairline rather than the horizontal one a column
+   needed. */
+.dock-headacts .tile-rail hr {
+  border: 0; align-self: stretch; width: 1px; margin: 3px 0;
+  background: var(--wk-rule);
+}
+/* ONE HEIGHT AND ONE CENTRE LINE FOR THE WHOLE CLUSTER. The rail is a grid
+   COLUMN on a tile and a row here, and its nested groups kept the column's own
+   block sizing — so the alignment pair sat 3.5px below the pin and the row had
+   two centre lines. Every cell is stated at the button's own 20px and centred
+   on that, so the glyphs share one line whatever nests them. */
+.dock-headacts, .dock-headacts .tile-rail, .dock-headacts .tile-modes {
+  height: 20px; margin-top: 0;
+}
+.dock-headacts .tile-rail > *, .dock-headacts > * { align-self: center; }
 .dock-headacts .tile-rail .tile-modes { display: flex; align-items: center; gap: 2px; }
 .dock-headacts .tile-rail button { opacity: 1; }
+.dock-headacts button { flex: 0 0 20px; height: 20px; border-radius: 2px; }
+.dock-headacts .tile-rail + button { position: relative; }
+.dock-headacts .tile-rail + button::before {
+  content: ""; position: absolute; left: -8px; top: 3px; bottom: 3px;
+  width: 1px; background: var(--wk-rule);
+}
 .dock-headacts[hidden] { display: none; }
 /* The rail is a column of the tile, not something floating over the plot: it
    takes its 24px off the chart's width so nothing is ever drawn on top of
@@ -915,6 +953,9 @@ html.dark .tile-field[data-raised] > .tile-row { background: var(--wk-canvas); }
   grid-column: 1; display: flex; align-items: center; gap: 10px; min-width: 0;
   padding: 4px 7px 3px var(--ck-grid-left); container: tilehead / inline-size;
 }
+/* The one control a rail carries sits at its far end, which is where the pane
+   headers above already put theirs. */
+.tile-head > .tile-fullscreen { margin-left: auto; flex: 0 0 auto; }
 .tile-id {
   display: flex; align-items: baseline; flex: 1 1 auto; gap: 7px; min-width: 0;
 }

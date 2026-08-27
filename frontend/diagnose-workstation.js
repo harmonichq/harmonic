@@ -2394,11 +2394,19 @@ function boot(root, data, callbacks, signal) {
       + '<path d="M6 13.4H2.6V10"/><path d="M10 13.4h3.4V10"/>',
     dismiss: '<path d="M2.6 6H6V2.6"/><path d="M13.4 6H10V2.6"/>'
       + '<path d="M2.6 10H6v3.4"/><path d="M13.4 10H10v3.4"/>',
-    pin: '<path d="M9.6 2.2 13.8 6.4"/><path d="M11 4.6 7.2 6 4.4 8.8l2.8 2.8L10 8.8z"/>'
-      + '<path d="M5.8 10.2 2.6 13.4"/>',
-    'pin-on': '<path d="M9.9 1.7a.75.75 0 0 0-1 1.1l.3.3-2.2.9-3.2 3.2 5.1 5.1 3.2-3.2'
-      + '.9-2.2.3.3a.75.75 0 0 0 1.1-1z"/>'
-      + '<rect x="1.6" y="12.5" width="5.2" height="1.4" rx=".7" transform="rotate(-45 4.2 13.2)"/>',
+    /* A STAR, NOT A PUSHPIN (ADR 215 amendment). A pushpin says "fix this in
+       place", which is not what the control does — it says "keep this one to
+       hand", and on a strip that runs to nine charts on a real history and
+       grows with it, that is a favourite. Operator, on the pushpin: "the pin
+       function is very... confusing to a user at this point."
+
+       Drawn on the same 16 box and the same centre as the other faces: five
+       points from a 6.1 outer radius and a 2.55 inner one, so at 13px it reads
+       as a star rather than as a blob. */
+    pin: '<path d="M8 1.9 9.72 6.02 14.1 6.36 10.76 9.24 11.79 13.6 8 11.28'
+      + ' 4.21 13.6 5.24 9.24 1.9 6.36 6.28 6.02z"/>',
+    'pin-on': '<path fill-rule="evenodd" d="M8 1.9 9.72 6.02 14.1 6.36 10.76 9.24'
+      + ' 11.79 13.6 8 11.28 4.21 13.6 5.24 9.24 1.9 6.36 6.28 6.02z"/>',
     clock: '<circle cx="8" cy="8" r="6"/><path d="M8 4.6V8l2.4 1.6"/>',
     'clock-on': '<path fill-rule="evenodd" d="M8 1.6a6.4 6.4 0 1 0 0 12.8 6.4 6.4 0 0 0 0-12.8z'
       + 'M7.3 4.2h1.4v4.1l2.2 1.5-.8 1.2-2.8-1.9z"/>',
@@ -2774,7 +2782,19 @@ function boot(root, data, callbacks, signal) {
           showChartInspector(descriptor);
           paint();
         };
-        rail.append(full);
+        /* THE SPOTLIGHT'S FULLSCREEN RIDES ITS RAIL, where the glucose chart's
+           does. The spotlight's nameplate IS a pane header rail now, and the
+           chart above it puts the same verb at the right end of the same kind
+           of band — so leaving this one in the tile's control column made two
+           identical charts wear one control in two different places. Operator:
+           "full screen on the spotlight chart should be in its header, same as
+           the blood sugar one."
+
+           The cell seats keep it in the rail: a cell has no header rail to put
+           it on, and in the explorer the cells are the content of one surface
+           rather than panes of their own. */
+        if (seat.seat === 'focal') head.append(full);
+        else rail.append(full);
       }
 
       /* A PIN ORDERS THE ROW (ADR 215 amendment), so it means one thing on

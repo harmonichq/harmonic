@@ -28,5 +28,7 @@ None.
 - Round 2 found two `authoring` gaps: the worktree cleanliness precondition and the
   exact multiple-anchor/fallback rule. Both were added. Requests to add another UI
   story and publish private-snapshot output were refuted against the existing
-  behavior ledger and the repository's private-data boundary. A fresh cold pass
-  remains before posting.
+  behavior ledger and the repository's private-data boundary. Its fresh cold pass
+  then found two further `authoring` test gaps: exercise multiple matching High
+  anchors, and require the aggregate probe to clear the nonfatal 08:00–12:00
+  mismatch as well as the two failed preparations. Both are now explicit.

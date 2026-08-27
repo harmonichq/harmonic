@@ -2436,7 +2436,13 @@ function boot(root, data, callbacks, signal) {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = className;
+    /* THE LABEL IS THE BUTTON'S TEXT ALTERNATIVE, never a caption. It was
+       hidden only by accident — clipped by the rail's 24px column and the
+       tile's own `overflow: hidden` — so the first seat that gave it room drew
+       the word under the glyph in a default-styled box. It is named now, and
+       hidden by one rule wherever the button lands. */
     const name = document.createElement('span');
+    name.className = 'rail-label';
     name.textContent = label;
     button.append(railFace(glyph, 'face-off'), name);
     if (held !== undefined) {
@@ -2461,12 +2467,17 @@ function boot(root, data, callbacks, signal) {
      which is fullscreen's own mark — two doors wearing one glyph, opening onto
      the two different "big" states this surface had. Fullscreen keeps the mark. */
   const DOCK_FACES = {
-    up: '<path d="M6 10.5H2.5v-3.5"/><path d="M10 10.5h3.5v-3.5"/>'
-      + '<path d="M6 4H2.5"/><path d="M10 4h3.5"/>',
+    /* THE DOCK'S TOGGLE IS A CHEVRON, NOT A BRACKET (ADR 215 amendment). It was
+       drawn in the same four-corner language as `full` and `dismiss`, so
+       "put the strip away" and "show every chart" differed only in which way the
+       brackets opened — two marks a hand apart that read as one control drawn
+       twice. Brackets are the SIZE family: they say a thing is about to fill or
+       leave the pane. The dock does neither; it slides down and back up, and a
+       chevron is what says that and shares nothing with the other two. */
+    up: '<path d="M3.6 9.6 8 5.2l4.4 4.4"/>',
+    hide: '<path d="M3.6 6.4 8 10.8l4.4-4.4"/>',
     shrink: RAIL_FACES.dismiss,
     explore: RAIL_FACES.full,
-    hide: '<path d="M6 5.5H2.5v3.5"/><path d="M10 5.5h3.5v3.5"/>'
-      + '<path d="M6 12H2.5"/><path d="M10 12h3.5"/>',
   };
   /* `up` and `hide` are the dock's whole vocabulary, and they are one toggle:
      whichever state the reader is in, the handle offers the other one. `shrink`
@@ -2545,7 +2556,7 @@ function boot(root, data, callbacks, signal) {
     headActs.innerHTML = '';
     handle.dataset.state = view.state;
     handle.hidden = view.state === 'fullscreen';
-    headActs.hidden = false;
+    headActs.hidden = view.state !== 'fullscreen';
     if (view.state === 'fullscreen') {
       for (const act of view.acts) headActs.append(dockButton(act));
       return;
@@ -2570,19 +2581,14 @@ function boot(root, data, callbacks, signal) {
     word.className = 'dock-word';
     word.textContent = 'Charts';
     handle.append(knurl, word);
-    /* ONE ACT ON THE LIP, AND IT IS THE LIP'S OWN. Drawn with both acts here
-       they were two bracket glyphs a hand apart — `hide` and `full` differ only
-       in which way the brackets open, so at a glance the cluster read as one
-       control drawn twice. Operator: "Controls all on the left looks like
-       shit."
-
-       The explorer's opener is not the lip's act anyway. It makes the PANE show
-       every chart, which is the same kind of verb as fullscreen's way back, so
-       it lives where that lives — the pane header's own control column. Nothing
-       is crammed, nothing is duplicated, and the two "big" verbs sit together. */
-    const [toggle, ...paneActs] = view.acts;
-    handle.append(dockButton(toggle));
-    for (const act of paneActs) headActs.append(dockButton(act));
+    /* BOTH ACTS BELONG TO THE LIP, and they can sit together now that they do
+       not look alike. Parked in the pane header instead, the explorer's opener
+       landed at the right end of the GLUCOSE chart's own rail and read as that
+       chart's fullscreen — a verb about the strip, drawn on a chart that has no
+       such verb. Operator, on realising what the glyph was: "Oh shit you're
+       right. That's fucking stupid." The explorer is the strip's view of
+       itself, so it sits with the thing it opens. */
+    for (const act of view.acts) handle.append(dockButton(act));
     /* THE WHOLE LIP IS STILL THE TARGET. The buttons are the explicit, keyboard
        reachable cells; the surface around them carries the toggle so a reader
        who grabs the edge anywhere gets what they reached for. */
@@ -2681,10 +2687,12 @@ function boot(root, data, callbacks, signal) {
     const big = Boolean(fullscreen) || explorer;
     el('canvas-head').toggleAttribute('data-full', big);
     root.toggleAttribute('data-dock-full', big);
-    if (big) {
-      el('full-title').textContent = fullscreen
-        ? byId.get(fullscreen.chartId).title : 'All charts';
-    } else el('full-title').textContent = '';
+    /* AND IT IS CLEARED WHEN IT IS NOT SHOWN. The row is hidden at rest, but a
+       stale name left in it is what the next fullscreen paints over for a frame
+       — and what a reader of the DOM sees claimed about a pane showing nothing
+       of the sort. */
+    el('full-title').textContent = !big ? ''
+      : fullscreen ? byId.get(fullscreen.chartId).title : 'All charts';
     /* RETIRED — the mounted header's chart count.
        sanction: Connor Griffin · 2026-08-27 · "retire the mount count"
        It sat unlabelled inside the mounted header's control cluster, beside

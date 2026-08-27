@@ -795,10 +795,20 @@ html.dark .tile-field[data-raised] > .tile-row { background: var(--wk-canvas); }
    IT IS A LIP, SO IT IS LIT LIKE ONE: the channel's own well material, a lit
    line along its top face and the channel's edge under it. Nothing is drawn
    over a chart in any state — the gutter is the lip's own height, exactly. */
+/* WORDS LEFT, CONTROLS RIGHT — the rails' own convention, and the lip is one of
+   the rails. Packed together at the left the cluster was a huddle of unlike
+   marks in a field of empty band; split to the two ends they line up with the
+   rails above, glyph over glyph in one right-hand column, and the word sits
+   where every other rail's title sits. The travel that made an earlier split
+   feel disjointed is gone with it: the whole lip toggles on click, so the only
+   reason to reach the right end is the explorer itself.
+
+   Its padding is the rails' own, so the columns actually align rather than
+   nearly aligning. */
 .dock-handle {
   position: absolute; left: 0; right: 0; z-index: 5; height: 30px;
   display: flex; align-items: stretch; gap: 12px;
-  padding-left: 12px; cursor: pointer;
+  padding: 0 var(--ck-pad) 0 var(--ck-grid-left); cursor: pointer;
   color: var(--mk-secondary);
   /* THE LIP IS ONE OF THE PANE'S RAILS. Same 30px height, same ground and same
      rule as the header rails above it, so the canvas reads as a stack of rails
@@ -822,7 +832,8 @@ html.dark .tile-field[data-raised] > .tile-row { background: var(--wk-canvas); }
 }
 .dock-handle[hidden] { display: none; }
 .dock-handle button {
-  flex: 0 0 40px; border: 0; padding: 0; background: transparent; color: inherit;
+  flex: 0 0 28px; align-self: center; height: 20px; border: 0; padding: 0;
+  border-radius: 2px; background: transparent; color: inherit;
   cursor: pointer; display: grid; place-items: center;
   transition: color 120ms, background 120ms;
 }
@@ -841,7 +852,7 @@ html.dark .tile-field[data-raised] > .tile-row { background: var(--wk-canvas); }
    step below the lip's ink, with a lit line under it so it reads cut into the
    lip rather than printed on it. */
 .dock-word {
-  flex: 0 1 auto; align-self: center; min-width: 0;
+  flex: 0 1 auto; align-self: center; margin-right: auto; min-width: 0;
   overflow: hidden; white-space: nowrap;
   font-size: var(--ck-micro); font-weight: 700; letter-spacing: var(--ck-track);
   text-transform: uppercase; text-shadow: 0 1px 0 var(--ck-tile-top);
@@ -1012,6 +1023,31 @@ html.dark .tile-field[data-raised] > .tile-row { background: var(--wk-canvas); }
 html:not(.dark) .dw { --ck-well: var(--wk-surface-sunken); }
 /* 20px IN THE RAIL'S 23px INTERIOR, so a hover fill floats on rail ground with
    an equal margin on both sides and touches no line at all. */
+/* A BUTTON IN THIS RAIL IS ITS GLYPH; the label is for a screen reader and the
+   tooltip, and is hidden wherever the button is drawn — the tile's control
+   column, a chart's own rail, or the pane header's cluster. */
+.rail-label {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+}
+/* THE SPOTLIGHT'S RAIL CARRIES THE SAME BUTTON AS THE CONTROL COLUMN, so it
+   takes the same box. Lifted into a header it had been an unstyled default
+   button, border and all. */
+.tile-head > .tile-fullscreen {
+  display: grid; place-items: center; width: 20px; height: 20px; padding: 0;
+  border: 0; border-radius: 2px; background: transparent; color: var(--mk-muted);
+  cursor: pointer;
+  transition: color 130ms, background 130ms;
+}
+.tile-head > .tile-fullscreen:hover { color: var(--mk-text); }
+.tile-head > .tile-fullscreen:focus-visible {
+  outline: 2px solid var(--ck-focus-mark); outline-offset: -1px;
+}
+.tile-head > .tile-fullscreen svg {
+  grid-area: 1 / 1; width: 13px; height: 13px; display: block;
+  fill: none; stroke: currentColor; stroke-width: 1.3;
+  stroke-linecap: round; stroke-linejoin: round;
+}
 .tile-rail button {
   display: grid; place-items: center; width: 20px; height: 20px; padding: 0;
   border: 0; border-radius: 2px; background: transparent; color: var(--mk-muted);

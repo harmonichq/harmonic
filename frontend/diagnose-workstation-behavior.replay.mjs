@@ -2400,6 +2400,17 @@ export const S82 = async (page) => {
   is((await state(page)).chip, 'Window 22:00–02:00', 'S82 draw right commits across midnight');
 };
 
+/* KNOWN PRE-EXISTING FAILURE — S83, S84 and S87, the three LEFTWARD brace
+   drags across midnight. All three time out in `panThenAim`'s wait for the day
+   to travel, and all three fail identically at 8d579a0, the branch tip before
+   the ADR 215 canvas rebuild began — bisected 2026-08-27 with ONLY=S83,S84,S87
+   against a server built from that commit: 0 of 3 passed, same timeout.
+
+   Their RIGHTWARD twins (S82, S86) pass on both trees, so the fault is in the
+   leftward pan and predates every canvas change recorded in ADR 215. They are
+   left failing rather than struck: the contract they assert — a draw, a grip
+   and a slide each cross 00:00 to the left — is live, and striking a live
+   contract to make a suite green is how a real defect becomes invisible. */
 /** S83 · A fresh draw crosses 00:00 to the left. */
 // STORY:finding-evidence-routing:S83
 export const S83 = async (page) => {
@@ -3382,30 +3393,7 @@ const retiredStory = (id) => async () => {
 };
 
 // STORY:finding-evidence-routing:S92
-export const S92 = async (page) => {
-  return retiredStory('S92')();
-  await openCanvas(page);
-  const before = await canvasSnapshot(page);
-  const focal = before.tiles.find((tile) => tile.seat === 'focal');
-  const destination = before.tiles.find((tile) => tile.seat === 'slot-3');
-  ok(focal && destination, 'S92 opens with a focal chart and the non-first destination seat');
-  await page.locator(`.evidence-tile[data-chart-id="${destination.id}"] .tile-body`).click();
-  await settle(page);
-  const forward = await canvasSnapshot(page);
-  is(forward.tiles.find((tile) => tile.id === destination.id)?.seat, 'focal',
-    'S92 focus moves to the chosen chart');
-  is(forward.tiles.find((tile) => tile.id === focal.id)?.seat, destination.seat,
-    'S92 the demoted chart lands in the chosen chart’s former seat');
-  await captureEvidence(page, 'S92-focus-swap-forward');
-  await page.locator(`.evidence-tile[data-chart-id="${focal.id}"] .tile-body`).click();
-  await settle(page);
-  const reverse = await canvasSnapshot(page);
-  is(reverse.tiles.find((tile) => tile.id === focal.id)?.seat, 'focal',
-    'S92 reverse focus restores the original chart');
-  is(reverse.tiles.find((tile) => tile.id === destination.id)?.seat, destination.seat,
-    'S92 reverse focus returns the demoted chart to the same destination');
-  await captureEvidence(page, 'S92-focus-swap-reverse');
-};
+export const S92 = retiredStory('S92');
 
 const arrangementStory = (id, pinCount, arrangement) => async (page) => {
   await reachPinCount(page, pinCount);
@@ -3426,55 +3414,21 @@ export const S96 = retiredStory('S96');
 export const S97 = retiredStory('S97');
 
 // STORY:finding-evidence-routing:S98
-export const S98 = async (page) => {
-  return retiredStory('S98')();
-  await reachPinCount(page, 4);
-  const before = await canvasSnapshot(page);
-  is(await pinNext(page), false, 'S98 the fifth pin is refused at the control');
-  const after = await canvasSnapshot(page);
-  is(after.pinCount, '4/4 pinned', 'S98 the cap remains four');
-  is(after.tiles.filter((tile) => tile.pinned).map((tile) => tile.id),
-    before.tiles.filter((tile) => tile.pinned).map((tile) => tile.id),
-    'S98 refusing a fifth pin evicts nothing');
-};
+export const S98 = retiredStory('S98');
 
 // STORY:finding-evidence-routing:S99
-export const S99 = async (page) => {
-  return retiredStory('S99')();
-  await reachPinCount(page, 0);
-  const field = await canvasSnapshot(page);
-  ok(field.tiles.length > 1, 'S99 the focal arrangement seats unpinned candidates');
-  is(field.tiles.filter((tile) => tile.pinned).length, 0, 'S99 seating is not pinning');
-  ok(field.tiles.some((tile) => tile.seat.startsWith('slot-')),
-    'S99 unpinned charts occupy the available slot positions');
-};
+export const S99 = retiredStory('S99');
 
 // STORY:finding-evidence-routing:S100
-export const S100 = async (page) => {
-  await reachPinCount(page, 2);
-  await page.getByRole('button', { name: 'Charts', exact: true }).click();
-  const live = await page.locator('.explorer-thumbnail').count();
-  const field = await canvasSnapshot(page);
-  ok(live > field.tiles.length, 'S100 live surplus candidates remain available in the explorer');
-  is(field.tiles.length, 2, 'S100 the pair drops surplus candidates from the field');
-  is(field.tiles.filter((tile) => tile.pinned).length, 2, 'S100 both reader pins remain seated');
-};
+/* RETIRED — S100 drove the chart roster's "Charts" opener and asserted the
+   field's CAPACITY: that a two-pin arrangement drops surplus candidates and
+   parks them in the roster's drawer. Both halves are gone. The roster is
+   retired, and ADR 215's fixed field has no capacity to overflow — one
+   spotlight over a strip that scrolls, holding every live chart at once */
+export const S100 = retiredStory('S100');
 
 // STORY:finding-evidence-routing:S101
-export const S101 = async (page) => {
-  return retiredStory('S101')();
-  await reachPinCount(page, 4);
-  const eventTiles = page.locator('.evidence-tile:has(.tile-modes)');
-  ok(await eventTiles.count() >= 2, 'S101 two independently alignable charts are seated');
-  await eventTiles.nth(0).locator('button', { hasText: 'Clock' }).click();
-  await eventTiles.nth(1).locator('button', { hasText: 'Event' }).click();
-  const field = await canvasSnapshot(page);
-  const aligned = field.tiles.filter((tile) => tile.modes.length).slice(0, 2);
-  is(aligned[0].modes.find((mode) => mode.pressed === 'true')?.label, 'Clock',
-    'S101 the first chart keeps clock alignment');
-  is(aligned[1].modes.find((mode) => mode.pressed === 'true')?.label, 'Event',
-    'S101 the second chart keeps event alignment');
-};
+export const S101 = retiredStory('S101');
 
 // STORY:finding-evidence-routing:S102
 export const S102 = async (page) => {
@@ -3506,10 +3460,14 @@ export const S104 = async (page) => {
 };
 
 // STORY:finding-evidence-routing:S105
+/* The assertion here is live and unchanged — a failed evidence request must
+   name and explain its error state. Only its OPENER moved: it reached the chart
+   through the retired roster, and the explorer is the successor route to any
+   chart the strip is not currently showing. */
 export const S105 = async (page) => {
   await openCanvas(page);
-  await page.getByRole('button', { name: 'Charts', exact: true }).click();
-  await page.getByRole('button', { name: /^Focus Carb ratio .+ · meal runs$/ }).click();
+  await page.locator('#dock-handle button[aria-label="Show every chart"]').click();
+  await page.locator('#tile-row .evidence-tile[data-chart-id^="ic:"]').first().click();
   await page.waitForFunction(() => [...document.querySelectorAll('.evidence-tile')]
     .some((tile) => tile.dataset.state === 'error'));
   const failed = (await canvasSnapshot(page)).tiles.find((tile) => tile.state === 'error');
@@ -3676,21 +3634,10 @@ export const S108 = async (page) => {
 };
 
 // STORY:finding-evidence-routing:S109
-export const S109 = async (page) => {
-  await reachPinCount(page, 1);
-  const pinnedId = (await canvasSnapshot(page)).tiles.find((tile) => tile.pinned).id;
-  await page.getByRole('button', { name: 'Explore', exact: true }).click();
-  const presentation = await page.evaluate(() => ({
-    lane: document.querySelector('.lane-wrap')?.getClientRects().length || 0,
-    watch: document.querySelector('.inspector > .watch')?.getClientRects().length || 0,
-    filter: document.querySelector('.filter-wrap')?.getClientRects().length || 0,
-    verdict: document.querySelector('.vband')?.getClientRects().length || 0,
-  }));
-  is(presentation, { lane: 0, watch: 0, filter: 0, verdict: 0 },
-    'S109 Explore extinguishes every advisory layer');
-  const pin = (await canvasSnapshot(page)).tiles.find((tile) => tile.id === pinnedId);
-  is(pin?.pinned, true, 'S109 the reader pin keeps its accent state');
-};
+/* RETIRED — S109 asserted that Explore extinguishes every advisory layer.
+   Explore is retired (ADR 215: "there is one mode"), so the control it presses
+   does not exist and the state it describes cannot be entered */
+export const S109 = retiredStory('S109');
 
 // STORY:finding-evidence-routing:S110
 export const S110 = async (page) => {
@@ -3702,11 +3649,10 @@ export const S110 = async (page) => {
   ok(findingsName.length > 0, 'S110 Findings names the chart provenance');
   is(await page.locator(`#tile-focal .evidence-tile[data-chart-id="${id}"]`).getAttribute('data-drilled'), '',
     'S110 Findings marks the chart that owns the drill');
-  await page.getByRole('button', { name: 'Explore', exact: true }).click();
-  is((await page.locator('#drill-provenance').textContent()).trim(), findingsName,
-    'S110 Explore retains the same provenance name');
-  is(await page.locator(`#tile-focal .evidence-tile[data-chart-id="${id}"]`).getAttribute('data-drilled'), '',
-    'S110 Explore retains the chart mark');
+  /* RETIRED CLAUSE — S110's Explore half. It asserted that the same provenance
+     name and chart mark survive a switch into Explore; Explore is retired (ADR
+     215: "there is one mode"), so there is no second mode to carry them into.
+     The Findings clauses above are untouched and still the story's subject. */
 };
 
 // STORY:finding-evidence-routing:S111
@@ -3719,7 +3665,11 @@ export const S111 = async (page) => {
   await page.locator('#level .clear-trace').click();
   await page.waitForFunction(() => !document.querySelector('#level .clear-trace'));
   is((await state(page)).crumb, crumb, 'S111 Clear trace returns to the same untraced case view');
-  ok(await page.locator('.evidence-tile[data-drilled]').count() === 1,
+  /* THE STAGE IS WHERE THE DRILL IS MARKED. A chart keeps its strip cell while
+     it stands on the stage (ADR 215's filmstrip rule), so an unscoped count of
+     drilled tiles now answers "how many seats does one chart have", not "is the
+     owning chart still drilled". */
+  is(await page.locator('#tile-focal .evidence-tile[data-drilled]').count(), 1,
     'S111 un-trace keeps the owning chart drilled');
 };
 
@@ -3731,36 +3681,11 @@ export const S111 = async (page) => {
    lead with it. The pinning is done at desk width because a narrow field hides
    every unpinned chart, so the second pin has no visible control there. */
 // STORY:finding-evidence-routing:S112
-export const S112 = async (page) => {
-  const narrowViewport = page.viewportSize();
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await reachPinCount(page, 2);
-  const seated = await canvasSnapshot(page);
-  const first = seated.tiles.find((tile) => tile.seat === 'focal');
-  const second = seated.tiles.find((tile) => tile.pinned && tile.seat !== 'focal');
-  ok(first?.pinned && second, 'S112 two pins seat a first and a later-pinned chart');
-  await page.locator(`#tile-row .evidence-tile[data-chart-id="${second.id}"] .tile-body`).click();
-  await settle(page);
-  await page.setViewportSize(narrowViewport);
-  await settle(page, 350);
-
-  const narrow = await page.evaluate(() => {
-    const field = document.querySelector('#tile-field');
-    const style = getComputedStyle(field);
-    return { display: style.display, direction: style.flexDirection,
-      visible: [...field.querySelectorAll('.evidence-tile')]
-        .filter((tile) => tile.getClientRects().length)
-        .sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top)
-        .map((tile) => ({ id: tile.dataset.chartId, seat: tile.dataset.seat })) };
-  });
-  is(narrow.display, 'flex', 'S112 narrow canvas linearizes with flex');
-  is(narrow.direction, 'column', 'S112 narrow charts stack in one column');
-  is(narrow.visible.length, 2, 'S112 both pinned charts stay in the narrow field');
-  is(narrow.visible[0]?.id, second.id,
-    'S112 the focused later-pinned chart leads the narrow reading order');
-  is(narrow.visible[0]?.seat, 'focal', 'S112 and it leads because it is the focal tile');
-  is(narrow.visible[1]?.id, first.id, 'S112 the earlier pin follows it');
-};
+/* RETIRED — S112 asserted the narrow field linearizes into a flex column
+   holding both pinned charts. ADR 215's fixed field draws no row below the
+   observer's floor: the focal chart takes the whole field and the strip is the
+   route to the rest, so there is no second visible tile to lead or follow */
+export const S112 = retiredStory('S112');
 
 /* S113 · A behavioural drill seats its OWN comparison. Filed from a live repro
    in the #135 fix round: over the 24 h window the field showed several
@@ -3773,58 +3698,7 @@ export const S112 = async (page) => {
 const SANCTION_DRILL_WORD = 'sanction: Connor Griffin · 2026-08-26 · "The ring and the raised rail mark the drilled tile. The chip was noise."';
 
 // STORY:finding-evidence-routing:S113
-export const S113 = async (page) => {
-  return retiredStory('S113')();
-  await openCanvas(page);
-  const rows = await page.locator('#level .qrow[data-id^="finding:"]')
-    .evaluateAll((nodes) => nodes.map((node) => node.dataset.id));
-  ok(rows.length >= 2,
-    `S113 the 24 h window publishes more than one behavioural finding (${rows.length})`);
-
-  const before = await canvasSnapshot(page);
-  is(new Set(before.tiles.map((tile) => tile.title)).size, before.tiles.length,
-    `S113 no two seated tiles are identically named (${JSON.stringify(before.tiles.map((t) => t.title))})`);
-
-  const target = rows[rows.length - 1];
-  ok(before.tiles.find((tile) => tile.id === target)?.seat !== 'focal',
-    'S113 precondition: the drill target is not already the focal chart');
-  await page.locator(`#level .qrow[data-id="${target}"]`).click();
-  await settle(page, 600);
-
-  const after = await canvasSnapshot(page);
-  const seated = after.tiles.find((tile) => tile.id === target);
-  is(seated?.seat, 'focal', 'S113 the drilled finding seats its own comparison focal');
-  is(seated?.drilled, true, 'S113 the owning chart carries the drill mark');
-  /* RETIRED — the word chip. Prints its sanction on every run, and asserts the
-     channel that replaced it: the drilled tile's rail stays materialized while
-     an undrilled tile's is a bare gutter, so the mark is never colour alone. */
-  console.log(`S113 ${SANCTION_DRILL_WORD}`);
-  is(await page.locator(`.evidence-tile[data-chart-id="${target}"] .tile-drilled-mark`).count(), 0,
-    `S113 the drill word chip stays retired — ${SANCTION_DRILL_WORD}`);
-  const railGrounds = await page.evaluate((id) => {
-    const ground = (tile) => tile
-      && getComputedStyle(tile.querySelector('.tile-rail')).backgroundColor;
-    return {
-      drilled: ground(document.querySelector(`.evidence-tile[data-chart-id="${id}"]`)),
-      plain: ground(document.querySelector('.evidence-tile:not([data-drilled])')),
-    };
-  }, target);
-  ok(railGrounds.drilled && railGrounds.drilled !== railGrounds.plain,
-    `S113 the drilled tile's rail stays materialized where an undrilled one does not `
-    + `(${railGrounds.drilled} vs ${railGrounds.plain})`);
-  is(await page.locator('.evidence-tile[data-drilled]').count(), 1,
-    'S113 exactly one chart claims the drill');
-  is(new Set(after.tiles.map((tile) => tile.title)).size, after.tiles.length,
-    `S113 the field holds no duplicate comparison tiles (${JSON.stringify(after.tiles.map((t) => t.title))})`);
-  ok((await page.locator('#drill-provenance').textContent()).includes(seated.title),
-    'S113 the header names the chart the inspector is reading');
-
-  const depth = (await state(page)).crumb.length;
-  await page.locator(`.evidence-tile[data-chart-id="${target}"] .tile-body`).click();
-  await settle(page, 400);
-  is((await state(page)).crumb.length, depth,
-    'S113 re-drilling the same finding does not deepen the path or repeat its title');
-};
+export const S113 = retiredStory('S113');
 
 export const STORIES = [
   ['S01', S01, 'drawn'], ['S02', S02, 'typical'], ['S03', S03, 'drawn'],

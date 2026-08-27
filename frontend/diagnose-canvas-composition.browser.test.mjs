@@ -109,6 +109,12 @@ async function openCanvas(browser, { routes = null, ...options } = {}) {
 
 const SANCTION_DRILL_WORD = 'sanction: Connor Griffin · 2026-08-26 · "The ring and the raised rail mark the drilled tile. The chip was noise."';
 const RETIRED_EXPLORE_MODE_SANCTION = 'sanction: ConnorGriffin · 2026-08-26 · "Diagnose does NOT need to host an explore mode. we\'re building a better version of it right now."';
+/* The drilled tile was marked twice — a ring, and a rail that materialized a
+   well plate over the tile's own plot. The ADR 215 amendment of 2026-08-27
+   ("elevation carries hierarchy, the field goes slate, and the accent leaves
+   the dock") retires that plate: the rail's ground no longer changes with
+   drill or hover, and the mark it used to add is carried by elevation. */
+const RETIRED_RAIL_WELL_SANCTION = 'sanction: ADR 215 amendment · 2026-08-27 · "The hover well plate over a tile\'s plot is retired."';
 
 const readField = (page) => page.evaluate(() => ({
   arrangement: document.querySelector('.tile-field')?.dataset.arrangement || null,
@@ -254,17 +260,17 @@ test('drilling a behavioural finding seats that finding\'s own comparison, marke
     console.log(SANCTION_DRILL_WORD);
     assert.equal(seated?.mark, null,
       `the drill word chip stays retired — ${SANCTION_DRILL_WORD}`);
-    const railGrounds = await page.evaluate((id) => {
-      const ground = (tile) => tile
-        && getComputedStyle(tile.querySelector('.tile-rail')).backgroundColor;
-      return {
-        drilled: ground(document.querySelector(`.evidence-tile[data-chart-id="${id}"]`)),
-        plain: ground(document.querySelector('.evidence-tile:not([data-drilled])')),
-      };
-    }, target);
-    assert.ok(railGrounds.drilled && railGrounds.drilled !== railGrounds.plain,
-      'the drilled tile\'s rail stays materialized where an undrilled one does not '
-      + `(${railGrounds.drilled} vs ${railGrounds.plain})`);
+    /* RETIRED — the drilled tile's rail no longer materializes a ground of its
+       own. What replaces it is asserted below and by the drill mark itself:
+       exactly one tile reads as drilled, and it is the one that owns the
+       drill. This clause only ever measured the plate. */
+    console.log(RETIRED_RAIL_WELL_SANCTION);
+    assert.equal(await page.evaluate(() => getComputedStyle(
+      document.querySelector('.evidence-tile[data-drilled] .tile-rail'),
+    ).backgroundColor), await page.evaluate(() => getComputedStyle(
+      document.querySelector('.evidence-tile:not([data-drilled]) .tile-rail'),
+    ).backgroundColor),
+    `a rail keeps one ground drilled or not — ${RETIRED_RAIL_WELL_SANCTION}`);
     assert.ok(drilled.tiles.filter((tile) => tile.drilled).length >= 1,
       'the current frame is visibly drilled wherever it is rendered');
     assert.equal(drilled.tiles.filter((tile) => tile.drilled && tile.chartId !== target).length, 0,

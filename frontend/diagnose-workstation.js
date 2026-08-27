@@ -2615,7 +2615,13 @@ function boot(root, data, callbacks, signal) {
     const placed = (fullscreen
       ? [{ chartId: fullscreen.chartId, seat: 'focal',
         pinned: canvasLayout.pins.includes(fullscreen.chartId) }]
-      : placeSeats(currentTileCandidates(), canvasLayout))
+      /* AN EXPLICIT FOCUS OUTRANKS RANK-ONLY SEATING. The candidates are the
+         ranked charts, so a Watching-tail chart the reader clicked could never
+         reach the stage: focusChart set the layout and placeSeats dropped it.
+         The focused id joins the candidate pool for seating; the strip's own
+         order still comes from rank alone. */
+      : placeSeats([...new Set([...currentTileCandidates(),
+        ...(canvasLayout.focalId ? [canvasLayout.focalId] : [])])], canvasLayout))
       .filter(({ chartId }) => byId.has(chartId));
     /* THE DOCK'S STATE IS RESOLVED, NEVER STORED. `dockWant` is what the reader
        asked for; the measured field decides what that can mean right now, so a
@@ -2634,9 +2640,19 @@ function boot(root, data, callbacks, signal) {
        returns the focal chart FIRST, so feeding its output here hoisted the
        spotlighted chart to the head of the strip — the exact "the chosen chart
        moves left-most" the filmstrip exists to prevent. The candidate list is
-       the published rank, untouched by what is on stage. */
-    const strip = dockOrder(
-      currentTileCandidates().filter((chartId) => byId.has(chartId)), canvasLayout)
+       the published rank, untouched by what is on stage.
+
+       A PROMOTED WATCHING CHART JOINS THE ORDER; IT DOES NOT LEAVE IT. The
+       candidates are the ranked charts, so a Watching read the reader clicked
+       onto the stage held no cell here and vanished from the strip the moment
+       it was picked — which breaks the filmstrip's one rule, that the current
+       frame is MARKED rather than removed. `dockOrder` puts it in rank order
+       like anything else; the seating pool below is the same list, so the strip
+       and the tail can never disagree about what is already drawn. */
+    const stripIds = dockOrder([...new Set([...currentTileCandidates(),
+      ...(focalId ? [focalId] : [])])].filter((chartId) => byId.has(chartId)),
+    canvasLayout);
+    const strip = stripIds
       .map((chartId) => ({
         chartId,
         seat: 'mini',
@@ -2661,10 +2677,17 @@ function boot(root, data, callbacks, signal) {
        server ranked, which is the one list the reader could already see. */
     const tail = fullscreen || (!explorer && (dock.state === 'hidden' || fieldNarrow))
       ? []
-      : dockTailChartIds(placed.map(({ chartId }) => chartId))
+      /* THE TAIL IS WHAT THE STRIP DOES NOT ALREADY HOLD. Excluding only the
+         charts in ROW cells left the focal one unsubtracted, so a spotlighted
+         ranked chart was drawn once by the strip and again by the tail — two
+         cells for one chart, which every seat-scoped selector on this surface
+         then resolved to twice. The strip's own id list is the one exclusion
+         that cannot drift from what was drawn. */
+      : dockTailChartIds(stripIds)
         .filter((chartId) => byId.has(chartId))
         .map((chartId) => ({
           chartId, seat: explorer ? 'grid' : 'mini', pinned: false, tail: true,
+          selected: chartId === focalId,
         }));
     const seats = [...seated, ...tail];
     /* THE RANGE SPANS THE WHOLE ROW, not the part of it currently scrolled into

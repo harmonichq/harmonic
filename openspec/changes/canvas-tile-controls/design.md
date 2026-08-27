@@ -766,3 +766,61 @@ Measured at 997.5 for maximize, star, clock and the explorer alike, in both
 themes.
 
 The glucose strip is unchanged and still carries no control of its own.
+
+### Amendment — 2026-08-27 — elevation carries hierarchy, the field goes slate, and the accent leaves the dock
+
+Ruled by the operator across one live session on the synthetic canvas
+(`codex/215-canvas-polish`, all uncommitted at time of writing). The ledger
+reconciliation for these rulings is owed by this branch; #226 (star means
+keep) carries its own record and is excluded here.
+
+**Elevation replaces drawn boundaries.** The wall-of-flatness round tried a
+stronger rule, an 8px desk band, and a whole-section ground step; each was
+rejected rendered ("Really, your solution was to just put a black bar?"). What
+held: the spotlight floats on the tray it always had — 10px margins, 6px
+radius, one soft layered shadow — and the reference chart above stays flush
+and flat as fixed chrome. Depth states the hierarchy; no new boundary is drawn.
+
+**The dock is a contained panel that owns its children.** The lip is the
+panel's header rail (top corners shared, its own 1px rule below), the cells
+are 4px-radius cards 10px inside the panel walls, and the panel floats 10px
+off the canvas floor in both dock states. The strip sizes cells to exact
+thirds: the sliced-fourth affordance is retired — on a rounded card a slice
+reads as occlusion, not "more here" ("it appears to always look covered").
+
+**The field is slate; everything on it stays bone.** `--ck-field` /
+`--ck-field-deep` (light `#6e7b71` / `#5e6b62`, dark `#202722` / `#2a332c`)
+ground the tile field so the cards separate by hue, not by 4% value steps.
+Two extensions were tried and rejected rendered, and stay rejected: the
+drawer going slate ("the chart drawer shouldn't go with though") and every
+title rail going slate ("look at how unreadable all of this is" — green on
+green). Title rails keep the shipped bone pair; the drawer keeps a
+three-value bone stack (lip darker than its rail-light interior, cells at
+full surface).
+
+**The accent leaves the dock entirely.** The spotlight is never accented —
+being on stage is the mark, so the drill outline on the focal card is off in
+every state. The picked cell is ringed in `--wk-rule-strong`, a neutral ink;
+the earlier signal-ink top bar clipped against the card corners and read as a
+paint defect. The hover well plate over a tile's plot is retired, and glyph
+buttons (maximize, chevrons, lip cells) carry no hover paint — the lip's
+title run keeps its whole-bar hover because it is the click target.
+
+**One toggle module.** The clock/event alignment pair renders as one
+`.tile-modes` well everywhere — spotlight rail, mini rail, explorer cell,
+fullscreen header — a borderless track whose active cell carries a sunken
+plate. Two forked rule sets for the same control are what produced the goofy
+fullscreen render; hosts may set orientation and nothing else.
+
+**Behavior corrected, ledger owed.** An explicit focus outranks rank-only
+seating: clicking a Watching-tail chart now promotes it (it never could — the
+ranked candidate list silently dropped the focus), the promoted tail chart
+keeps its strip cell (tail derivation excludes only row-seated charts), and
+tail cells stamp `selected`. These are behavior changes against the frozen
+ledger and their STORY amendments are owed before this branch lands.
+
+**Out of scope, standing.** The Basal mini's flat-line chart form is the
+separately filed chart-form issue; the theme rethink has a playground at
+`theme-workbench.wireframe.html` in this change directory (operator's, keep);
+the remaining prior-session `*.wireframe.html` here are superseded scratch to
+delete before any PR.

@@ -357,8 +357,9 @@ html.dark .dw {
    rail already says. */
 .tile-field {
   display: grid; gap: var(--ck-canvas-gap); padding: 0;
-  min-width: 0; min-height: 0; overflow: hidden; background-color: var(--ck-trench);
-  box-shadow: inset 0 6px 10px -8px rgba(0, 0, 0, .55);
+  min-width: 0; min-height: 0; overflow: hidden;
+  background-color: var(--ck-field);
+  box-shadow: inset 0 6px 10px -8px rgba(0, 0, 0, .35);
 }
 /* Dark's settled `--wk-surface-sunken` is LIGHTER than the panel it recesses
    into (#504a45 against #26221f) — a well lit warmer, which is right for the
@@ -375,7 +376,7 @@ html.dark .dw {
 /* `background-color`, not the shorthand: the docked field paints the channel's
    ground as a background LAYER, and this rule outspecifies it — a shorthand
    here resets that layer and the channel loses its floor in dark only. */
-html.dark .tile-field { background-color: var(--wk-canvas); }
+html.dark .tile-field { background-color: var(--ck-field); }
 /* ONE GEOMETRY (ADR 215): the focal chart takes the field, and the mini row is
    a fixed 145px band under it. Nothing derives a grid from a pin count. */
 .tile-field { grid-template-rows: minmax(0, 1fr) 145px; }
@@ -388,7 +389,11 @@ html.dark .tile-field { background-color: var(--wk-canvas); }
    illegible. */
 .tile-row {
   display: grid; grid-auto-flow: column;
-  grid-auto-columns: max(280px, calc((100% - 2 * var(--ck-canvas-gap)) / 3.35));
+  /* EXACT THIRDS ("looks covered" round): the deliberate slice affordance
+     predates the rounded cards — a partially cut card reads as occluded, not
+     as "more here". Cells fit the view exactly; overflow waits wholly out of
+     view for the scroll. */
+  grid-auto-columns: max(280px, calc((100% - 2 * var(--ck-canvas-gap)) / 3));
   gap: var(--ck-canvas-gap); min-width: 0; min-height: 0;
   overflow-x: auto; overflow-y: hidden; scroll-snap-type: x proximity;
   scrollbar-width: thin;
@@ -472,9 +477,9 @@ html.dark .tile-field:is([data-fullscreen-tile], [data-explorer]) .evidence-tile
    together" — so the cells get the same air every other pair of tiles on this
    canvas gets, and the ground between them does the separating. */
 .tile-field[data-explorer] > .tile-row {
-  gap: var(--ck-canvas-gap); background: var(--ck-trench); padding: var(--ck-canvas-gap);
+  gap: var(--ck-canvas-gap); background: var(--ck-field); padding: var(--ck-canvas-gap);
 }
-html.dark .tile-field[data-explorer] > .tile-row { background: var(--wk-canvas); }
+html.dark .tile-field[data-explorer] > .tile-row { background: var(--ck-field); }
 
 /* ---- the dock's three states (ADR 215 amendment) ---------------------
    HIDDEN · BOTTOM-DOCKED · MOUNTED. Same tiles, same rails, same pins; only the
@@ -553,9 +558,28 @@ html.dark .tile-field[data-explorer] > .tile-row { background: var(--wk-canvas);
 .dw {
   --ck-dock-well: var(--ck-well); --ck-slot-rail: var(--wk-surface-sunken);
   --ck-rail-col: 24px; --ck-rail-inset: 1px;
+  /* ONE SHADOW PER RANK ("wall of flatness" round). The spotlight's is stated
+     at its own rule; every strip cell shares this quieter one, so the selected
+     mark and the tail divider can append to it without re-tuning it. */
+  --ck-cell-shadow:
+    0 1px 2px rgba(20, 26, 21, .05),
+    0 3px 8px -3px rgba(20, 26, 21, .12),
+    0 0 0 1px rgba(20, 26, 21, .13);
+  /* THE FIELD IS SLATE, NOT A THIRD BONE ("hierarchy through color" round).
+     Every ground on the canvas was one bone family telling rank by 4% value
+     steps; the workbench ground steps out of the family instead — a muted
+     slate green drawn from the chrome's hue, so the bone cards pop by HUE, and
+     rank stops leaning on near-identical values. No text sits on either. */
+  --ck-field: #6e7b71;
+  --ck-field-deep: #5e6b62;
 }
 html.dark .dw {
   --ck-slot-rail: color-mix(in srgb, var(--wk-surface-sunken) 45%, var(--wk-surface-rail));
+  --ck-field: #202722;
+  --ck-field-deep: #2a332c;
+  --ck-cell-shadow:
+    0 0 0 1px rgba(0, 0, 0, .5),
+    0 4px 10px -4px rgba(0, 0, 0, .55);
 }
 html:not(.dark) .dw {
   --ck-dock-well: color-mix(in srgb, var(--wk-surface-sunken) 92%, var(--mk-text));
@@ -590,7 +614,10 @@ html:not(.dark) .dw {
    to wall — off the right edge as the frames always did, and hard against the
    left one too. */
 .tile-field[data-dock="docked"] > .tile-row {
-  margin-left: 0;
+  /* Inside the dock's own panel: 10px in from the panel's walls, which sit on
+     the card's 10px spine — so cells read as cards IN the tray, not on it. The
+     20px floor is the panel's own 10px off the canvas floor plus 10px inside. */
+  margin: 0 20px 20px;
   background: none; border-radius: 0; padding: 0; box-shadow: none;
   position: relative; z-index: 1;
 }
@@ -633,6 +660,32 @@ html:not(.dark) .dw {
 html.dark .tile-field > .tile-focal > .evidence-tile {
   background: color-mix(in srgb, var(--ck-rail) 90%, var(--mk-text));
 }
+/* THE SPOTLIGHT FLOATS ON THE TRAY IT ALWAYS HAD (2026-08-27, "wall of
+   flatness" round). The field's sunken tray ground has been here since #215 —
+   invisible, because the spotlight covered every pixel of it. Margins let the
+   tray show on three sides, and the chart lifts off it with a radius and a
+   soft layered shadow: elevation states the hierarchy the retired ring and
+   the retired desk-band tried to draw as outlines. The reference chart above
+   stays flush and flat — fixed chrome — so the one elevated surface on the
+   canvas is the one swappable thing. Fullscreen and the explorer keep their
+   own flattened treatments untouched. */
+.tile-field:not([data-fullscreen-tile]):not([data-explorer]) > .tile-focal {
+  margin: 10px 10px 0;
+}
+.tile-field:not([data-fullscreen-tile]):not([data-explorer])
+  > .tile-focal > .evidence-tile {
+  border-radius: 6px; overflow: hidden;
+  box-shadow:
+    0 1px 2px rgba(20, 26, 21, .05),
+    0 8px 20px -8px rgba(20, 26, 21, .18),
+    0 0 0 1px rgba(20, 26, 21, .05);
+}
+html.dark .tile-field:not([data-fullscreen-tile]):not([data-explorer])
+  > .tile-focal > .evidence-tile {
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, .5),
+    0 10px 26px -10px rgba(0, 0, 0, .65);
+}
 /* --- 4 · the frames. They keep the tile ground, because a quiet chart is still
    evidence, but step one notch toward the field — toward it in each theme, so
    light steps down and dark steps up-from-below. They give up the radius, the
@@ -640,14 +693,15 @@ html.dark .tile-field > .tile-focal > .evidence-tile {
    object sitting on something". A ring here is what makes a bright box on grey
    read as a cell in a spreadsheet rather than a frame in a gate. */
 .tile-field[data-dock="docked"] > .tile-row > .evidence-tile {
-  border-radius: 0; box-shadow: none;
-  background: color-mix(in srgb, var(--ck-rail) 95%, var(--mk-text));
+  border-radius: 4px; overflow: hidden; box-shadow: var(--ck-cell-shadow);
+  background: var(--ck-rail);
 }
 html.dark .tile-field[data-dock="docked"] > .tile-row > .evidence-tile {
   background: var(--ck-rail);
 }
 .tile-field[data-raised] > .tile-row > .evidence-tile {
-  border-radius: 0; box-shadow: none; background: var(--ck-rail);
+  border-radius: 4px; overflow: hidden; box-shadow: var(--ck-cell-shadow);
+  background: var(--ck-rail);
 }
 /* THE CURRENT FRAME IS MARKED FAINTLY, BECAUSE THE SPOTLIGHT IS THE MARK. The
    frame being projected is already accented by the fact that it is on stage at
@@ -658,12 +712,19 @@ html.dark .tile-field[data-dock="docked"] > .tile-row > .evidence-tile {
    is genuinely raised, the strip's copy of that fact can afford to be a line. */
 .tile-field:is([data-dock="docked"], [data-raised])
   > .tile-row > .evidence-tile[data-selected] {
-  box-shadow: inset 0 1px 0 var(--ck-focus-mark);
+  /* The picked cell is ringed in the strong rule's own ink — definite, and
+     neutral: no signal colour, no partial band. */
+  box-shadow: inset 0 0 0 1px var(--wk-rule-strong), var(--ck-cell-shadow);
 }
+
 /* THE DRILL ACCENT IS OFF INSIDE THE DOCK. It marked the chart the inspector is
    drilled into, which the spotlight now ALWAYS owns — so on a cell it either
    duplicates the selected mark or contradicts it, and it never adds a fact. */
 .tile-field > .tile-row > .evidence-tile[data-drilled] { outline: 0; }
+/* THE SPOTLIGHT IS NEVER ACCENTED (operator, "no longer able to click" round):
+   being on stage at full size IS the mark; the drill outline on the focal card
+   drew a signal ring around the one chart that needs none. */
+.tile-field > .tile-focal > .evidence-tile[data-drilled] { outline: 0; }
 
 /* THE CELLS ARE FURNITURE, NOT PEERS OF THE CHART ABOVE. A mini wore the
    spotlight's own nameplate — same size, same weight, same ink — so four
@@ -697,7 +758,28 @@ html.dark .tile-field[data-dock="docked"] > .tile-row > .evidence-tile {
    control, and the spotlight pays it: nothing is drawn over a chart in any
    state, which is the invariant, and the lip is reachable, which is the
    requirement. */
-.tile-field[data-dock="docked"] { row-gap: 30px; }
+/* The gutter holds the lip PLUS 10px of tray air on each side of it — the
+   same air the card and the cells claim — so nothing in the column sits flush
+   against anything else. */
+.tile-field[data-dock="docked"] { row-gap: 50px; }
+/* THE DOCK OWNS ITS CHILDREN. The lip and the cells floated as unrelated
+   siblings on the tray; this panel is the group that claims them — a sunken
+   rounded surface spanning lip through cells, the lip riding it as its header
+   rail. Sunken, because the dock is the subordinate zone: the spotlight is
+   the one raised surface on the canvas. Spans: lip 30 + air 10 + row 145. */
+.tile-field[data-dock="docked"]::after {
+  content: ""; position: absolute; left: 10px; right: 10px; bottom: 10px;
+  /* The drawer keeps the bone family — only the FIELD went slate — and its
+     interior sits one step LIGHTER than the lip so lip, tray and cells are
+     three values, not one. */
+  height: 175px; z-index: 0; border-radius: 6px;
+  background: var(--wk-surface-rail);
+  box-shadow: inset 0 1px 3px rgba(20, 26, 21, .1), 0 0 0 1px rgba(20, 26, 21, .14);
+}
+html.dark .tile-field[data-dock="docked"]::after {
+  background: color-mix(in srgb, var(--wk-canvas) 88%, var(--mk-text));
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, .5);
+}
 
 /* HIDDEN — the spotlight alone, and the lip on the canvas floor. It pays the
    lip's own height as floor padding, for the same reason the docked state pays
@@ -707,9 +789,9 @@ html.dark .tile-field[data-dock="docked"] > .tile-row > .evidence-tile {
 .tile-field:is([data-dock="hidden"], [data-narrow]) { grid-template-rows: minmax(0, 1fr); }
 .tile-field:is([data-dock="hidden"], [data-narrow]) > .tile-row { display: none; }
 .tile-field:is([data-dock="hidden"], [data-narrow]):not([data-fullscreen-tile]) {
-  padding-bottom: 30px;
+  padding-bottom: 50px;
 }
-.tile-field[data-narrow] > .dock-handle { bottom: 0; }
+.tile-field[data-narrow] > .dock-handle { bottom: 10px; }
 
 /* RETIRED — the mounted grid. It hid the spotlight and spent the whole pane on
    a vertically scrolling grid of minis: the pre-spotlight canvas, kept alive
@@ -745,7 +827,16 @@ html.dark .tile-field[data-dock="docked"] > .tile-row > .evidence-tile {
   grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
   grid-auto-columns: auto; grid-auto-rows: minmax(240px, auto);
   overflow-x: hidden; overflow-y: auto; align-content: start;
-  scroll-snap-type: none; padding: 0;
+  scroll-snap-type: none; padding: 10px; gap: 10px;
+}
+/* THE EXPLORER SPEAKS THE CANVAS'S CARD LANGUAGE ("wall of flatness" round,
+   superseding the flat-cells-and-grout reading above). Every chart on the
+   tray is a rounded card with the shared cell shadow; the explorer's cells
+   are the same objects at a readable size, so they take the same treatment
+   rather than reverting to a flush spreadsheet. Fullscreen stays flat — there
+   the chart IS the pane, not a card on it. */
+.tile-field[data-explorer] .evidence-tile {
+  border-radius: 6px; overflow: hidden; box-shadow: var(--ck-cell-shadow);
 }
 
 /* RAISED — a raised dock FLOATS over the spotlight and never squeezes it.
@@ -757,10 +848,10 @@ html.dark .tile-field[data-dock="docked"] > .tile-row > .evidence-tile {
   position: absolute; left: var(--ck-canvas-gap); right: var(--ck-canvas-gap);
   bottom: var(--ck-canvas-gap); height: 145px;
   max-height: calc(100% - 2 * var(--ck-canvas-gap)); z-index: 3;
-  background: var(--ck-trench);
+  background: var(--wk-surface-sunken);
   box-shadow: 0 -10px 22px -12px rgba(0, 0, 0, .8), 0 0 0 1px var(--ck-tile-edge);
 }
-html.dark .tile-field[data-raised] > .tile-row { background: var(--wk-canvas); }
+html.dark .tile-field[data-raised] > .tile-row { background: color-mix(in srgb, var(--wk-canvas) 88%, var(--mk-text)); }
 
 /* THE DIVIDER before the dock's tail, drawn as a MARK on the first tail cell
    rather than as an element of its own. As a `<span>` child of the row it was
@@ -770,7 +861,12 @@ html.dark .tile-field[data-raised] > .tile-row { background: var(--wk-canvas); }
    Watching reads. A box-shadow costs no cell, and `overflow: hidden` on the
    tile clips its descendants, never its own cast. */
 .tile-field:not([data-explorer]) > .tile-row > .evidence-tile[data-tail-head] {
-  box-shadow: -5px 0 0 -4px var(--ck-tile-edge);
+  box-shadow: -5px 0 0 -4px var(--ck-tile-edge), var(--ck-cell-shadow);
+}
+/* Both marks at once: a picked first-tail cell keeps the divider AND the ring. */
+.tile-field:not([data-explorer]) > .tile-row > .evidence-tile[data-tail-head][data-selected] {
+  box-shadow: -5px 0 0 -4px var(--ck-tile-edge),
+    inset 0 0 0 1px var(--wk-rule-strong), var(--ck-cell-shadow);
 }
 /* ---- the lip, which is the control ------------------------------------
    IT IS THE DOCK'S OWN TOP EDGE, not furniture parked near it. The tab this
@@ -804,10 +900,16 @@ html.dark .tile-field[data-raised] > .tile-row { background: var(--wk-canvas); }
    Its padding is the rails' own, so the columns actually align rather than
    nearly aligning. */
 .dock-handle {
-  position: absolute; left: 0; right: 0; z-index: 5; height: 30px;
+  /* THE LIP FLOATS ON THE SAME SPINE AS THE CARDS ("wall of flatness" round).
+     Full-bleed it was the one square band left in a column of rounded floating
+     surfaces. It takes the cells' own inset, radius and shadow — still the
+     dock's top edge, now drawn as tray furniture like everything else on the
+     tray. */
+  position: absolute; left: 10px; right: 10px; z-index: 5; height: 30px;
   display: flex; align-items: stretch; gap: 12px;
   padding: 0 var(--ck-rail-inset) 0 var(--ck-grid-left); cursor: pointer;
   color: var(--mk-secondary);
+  border-radius: 6px; box-shadow: var(--ck-cell-shadow);
   /* THE LIP IS THE MOST SEPARATE OF THE THREE RAILS, because it is the only one
      that is a control rather than a caption: the other two name the chart under
      them, and this one operates the strip under it. It takes the theme's sunken
@@ -820,7 +922,6 @@ html.dark .tile-field[data-raised] > .tile-row { background: var(--wk-canvas); }
      crisp line above and one below, and the strip sits flush against the lower
      one with nothing drawn over it. */
   background: var(--ck-slot-rail);
-  border-top: 1px solid var(--wk-rule); border-bottom: 1px solid var(--wk-rule);
   transition: background 130ms, color 130ms;
 }
 /* HOVER STEPS AWAY FROM THE CHARTS, NEVER TOWARD THEM. Lifting the lip to
@@ -834,9 +935,7 @@ html.dark .tile-field[data-raised] > .tile-row { background: var(--wk-canvas); }
   color: var(--mk-text);
   background: color-mix(in srgb, var(--ck-slot-rail) 93%, var(--mk-text));
 }
-.dock-handle:hover button:hover {
-  background: color-mix(in srgb, var(--ck-slot-rail) 86%, var(--mk-text));
-}
+
 .dock-handle[hidden] { display: none; }
 .dock-handle button {
   flex: 0 0 calc(var(--ck-rail-col) - var(--ck-rail-inset));
@@ -845,7 +944,7 @@ html.dark .tile-field[data-raised] > .tile-row { background: var(--wk-canvas); }
   cursor: pointer; display: grid; place-items: center;
   transition: color 120ms, background 120ms;
 }
-.dock-handle button:hover { color: var(--mk-text); }
+
 .dock-handle button:focus-visible {
   outline: 2px solid var(--ck-focus-mark); outline-offset: -2px;
 }
@@ -862,9 +961,18 @@ html.dark .tile-field[data-raised] > .tile-row { background: var(--wk-canvas); }
    canvas's own left margin, with the rest of the lip left as grab surface. */
 /* SEATED ON THE CHANNEL'S LIP, exactly: its foot on the dock's top edge, its
    head on the spotlight's floor, overlapping neither. */
-.tile-field[data-dock="hidden"] > .dock-handle { bottom: 0; }
-/* SEATED DIRECTLY ON THE STRIP, which starts at the field's own floor. */
-.tile-field[data-dock="docked"] > .dock-handle { bottom: 145px; }
+.tile-field[data-dock="hidden"] > .dock-handle { bottom: 10px; }
+/* Ten of tray air above the strip's cells, matching the ten below the card.
+   Docked, the lip is the dock panel's own header rail — it takes the panel's
+   top corners and hands its shadow to the panel that carries the group. Hidden
+   has no panel, so the lip keeps its floating-bar look there. */
+.tile-field[data-dock="docked"] > .dock-handle {
+  bottom: calc(145px + 10px);
+  border-radius: 6px 6px 0 0; box-shadow: none;
+  /* The title rail's own rule, so the lip reads as a title bar and a control
+     rather than a loose band of sunken ground. */
+  border-bottom: 1px solid var(--wk-rule);
+}
 .tile-field[data-raised] > .dock-handle { bottom: calc(145px + var(--ck-canvas-gap)); }
 
 .dock-headacts button {
@@ -872,9 +980,7 @@ html.dark .tile-field[data-raised] > .tile-row { background: var(--wk-canvas); }
   cursor: pointer; display: grid; place-items: center;
   transition: color 120ms, background 120ms;
 }
-.dock-headacts button:hover {
-  color: var(--mk-text); background: var(--ck-rail);
-}
+
 .dock-headacts button:focus-visible {
   outline: 2px solid var(--ck-focus-mark); outline-offset: -2px;
 }
@@ -907,6 +1013,13 @@ html.dark .tile-field[data-raised] > .tile-row { background: var(--wk-canvas); }
   display: flex; align-items: center; gap: 8px; margin-left: 14px;
   color: var(--mk-muted); align-self: center;
 }
+/* The header's control cluster is pinned to the header's third column: with
+   the persist chip hidden the cluster auto-placed into column two, and the
+   empty third column still charged its 12px grid gap on the right. The
+   header's own 12px pad then lands the glyph on the carded cells' control
+   column — 10px card inset plus the rail column's centre — with clear air
+   before the Findings divider. */
+.canvas-head > .dock-headacts { grid-column: 3; }
 /* THE FULLSCREEN CHART'S OWN VERBS, RIDING THE HEADER. The rail is a column on
    a tile and a row here, and it keeps none of the tile's recess: on the header
    band there is no margin to fill and nothing to hover a plate onto. */
@@ -930,9 +1043,19 @@ html.dark .tile-field[data-raised] > .tile-row { background: var(--wk-canvas); }
   height: 20px; margin-top: 0;
 }
 .dock-headacts .tile-rail > *, .dock-headacts > * { align-self: center; }
-.dock-headacts .tile-rail .tile-modes { display: flex; align-items: center; gap: 2px; }
+.dock-headacts .tile-rail .tile-modes { display: flex; align-items: center; margin-top: 0; }
+/* The module's own cell size outranks the header's generic 23px button basis —
+   the mismatch drew the plated cell wider than the well. */
+.dock-headacts .tile-modes button { flex: 0 0 18px; width: 18px; height: 18px; }
+/* Reading right to left: the way back, then the star, then the alignment
+   toggle — the pane's own verb outermost, the chart's verbs inside it. */
+.dock-headacts .tile-rail .tile-modes { order: -2; }
+.dock-headacts .tile-rail hr { order: -1; }
 .dock-headacts .tile-rail button { opacity: 1; }
-.dock-headacts button { flex: 0 0 20px; height: 20px; border-radius: 2px; }
+.dock-headacts button {
+  flex: 0 0 calc(var(--ck-rail-col) - var(--ck-rail-inset));
+  height: 20px; border-radius: 2px;
+}
 .dock-headacts .tile-rail + button { position: relative; }
 .dock-headacts .tile-rail + button::before {
   content: ""; position: absolute; left: -8px; top: 3px; bottom: 3px;
@@ -1013,8 +1136,8 @@ html.dark .tile-field[data-raised] > .tile-row { background: var(--wk-canvas); }
   padding: 4px var(--ck-rail-inset) 0 0; background: transparent;
   transition: background 160ms;
 }
-.evidence-tile:hover .tile-rail, .evidence-tile:focus-within .tile-rail,
-.evidence-tile[data-drilled] .tile-rail { background: var(--ck-well); }
+/* The hover well plate is retired ("hover sits over top of it" round): the
+   rail's glyphs surface on hover with no band painted over the plot. */
 /* LIGHT steps down into the sheet, the same material theme.css already sends
    its word-carrying wells to. DARK is untouched: its `--ck-inset` is stated
    outright at #191614 and measures fine, while dark's `--wk-surface-sunken` is
@@ -1043,7 +1166,7 @@ html:not(.dark) .dw { --ck-well: var(--wk-surface-sunken); }
   cursor: pointer;
   transition: color 130ms, background 130ms;
 }
-.tile-head > .tile-fullscreen:hover { color: var(--mk-text); }
+
 .tile-head > .tile-fullscreen:focus-visible {
   outline: 2px solid var(--ck-focus-mark); outline-offset: -1px;
 }
@@ -1060,7 +1183,7 @@ html:not(.dark) .dw { --ck-well: var(--wk-surface-sunken); }
 }
 .evidence-tile:hover .tile-rail button, .evidence-tile:focus-within .tile-rail button,
 .evidence-tile[data-drilled] .tile-rail button { opacity: 1; }
-.tile-rail button:hover:not(:disabled) { color: var(--mk-text); background: var(--ck-rail); }
+.tile-rail button:hover:not(:disabled) { color: var(--mk-text); }
 .tile-rail button:focus-visible { outline: 2px solid var(--ck-focus-mark); outline-offset: -1px; }
 .tile-pin:disabled { opacity: .35; cursor: not-allowed; }
 /* FILL IS STATE, STROKE IS ACTION, and it is one rule for the whole rail: a
@@ -1088,7 +1211,20 @@ html:not(.dark) .dw { --ck-well: var(--wk-surface-sunken); }
    sit a clear step above them with the rail's own divider between. Two things
    that read as one thing are one thing, and it costs no ink. */
 .tile-rail .tile-fullscreen + .tile-pin { margin-top: 1px; }
-.tile-modes { display: grid; margin-top: 7px; }
+/* THE ALIGNMENT TOGGLE IS ONE MODULE. Every rail — the spotlight's, a mini's,
+   an explorer cell's, and the fullscreen header's — renders the same well:
+   sunken track, both cells full-ink, the active cell plated. Orientation is
+   the only thing a host changes. */
+.tile-modes {
+  display: grid; margin-top: 7px; justify-self: center;
+  border-radius: 5px; padding: 0; gap: 1px;
+}
+/* Quiet by default — the toggle must read as a toggle without out-shouting the
+   chart beside it. The active cell's sunken plate is the whole statement. */
+.tile-modes button { opacity: 1; border-radius: 4px; width: 18px; height: 18px; }
+.tile-modes button[aria-pressed="true"] {
+  background: var(--wk-surface-sunken);
+}
 .tile-rail hr {
   width: 12px; height: 0; margin: 3px auto 4px; border: 0;
   border-top: 1px solid transparent; transition: border-color 160ms;
@@ -1860,3 +1996,4 @@ html:not(.dark) .dw { --ck-well: var(--wk-surface-sunken); }
 /* Fullscreen is temporary canvas state, not a parallel pane composition. It
    borrows the fullscreen header and body rows above; `data-fullscreen-tile`
    owns only the one-chart field geometry. */
+

@@ -1,5 +1,14 @@
 # canvas-tile-controls — design
 
+## ADR 229 — Picked occurrences belong to the spotlight
+
+Ruled by live judging, 2026-08-28. A dock mini is a front door to its chart in
+the spotlight, not a second live chart competing for attention. A picked
+Occurrence is therefore spotlight-only: the spotlight draws its selected trace
+and deemphasizes the other cohort lines, while the dock mini remains the static
+cohort view. The frozen event-comparison stories read each fact from the surface
+that owns it and continue to reject a comparison canvas owned by no tile.
+
 ## ADR 215 — Fixed canvas, membership pinning, Explore retired
 
 Ruled by the operator, 2026-08-26, during the #215 polish slices, reversing

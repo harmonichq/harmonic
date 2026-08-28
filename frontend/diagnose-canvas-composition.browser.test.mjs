@@ -116,6 +116,7 @@ const RETIRED_EXPLORE_MODE_SANCTION = 'sanction: ConnorGriffin · 2026-08-26 · 
    drill or hover, and the mark it used to add is carried by elevation. */
 const RETIRED_RAIL_WELL_SANCTION = 'sanction: ADR 215 amendment · 2026-08-27 · "The hover well plate over a tile\'s plot is retired."';
 const RETIRED_MEAL_MARKERS_SANCTION = 'ConnorGriffin · 2026-08-27 · "Please also remove meal markers from the glucose chart."';
+const SPOTLIGHT_OCCURRENCE_SELECTION_SANCTION = 'sanction: live-judging ruling · 2026-08-28 · "A picked occurrence belongs to the spotlight; the dock mini stays static."';
 
 const readField = (page) => page.evaluate(() => ({
   arrangement: document.querySelector('.tile-field')?.dataset.arrangement || null,
@@ -284,7 +285,10 @@ test('drilling a behavioural finding seats that finding\'s own comparison, marke
   }
 });
 
-test('an occurrence selection reaches the compact event-comparison tile', async () => {
+/* AMENDED — live-judging ruling · 2026-08-28. A dock mini is the front door
+   to its spotlight, not a second live chart. The picked Occurrence therefore
+   belongs to the spotlight, while the dock mini keeps its cohort-only view. */
+test('an occurrence selection stays in the spotlight while the dock mini stays static', async () => {
   const browser = await runner.browser();
   const findingId = 'finding:missed_meal';
   const { page, errors } = await openCanvas(browser, {
@@ -311,11 +315,20 @@ test('an occurrence selection reaches the compact event-comparison tile', async 
     await page.locator('#dock-headacts button[aria-label="Back to the dock"]').click();
     await tile.locator('.tile-chart canvas').waitFor({ state: 'visible' });
     await page.waitForFunction((id) => {
-      const host = document.querySelector(`#tile-row .evidence-tile[data-chart-id="${id}"] .tile-chart`);
+      const host = document.querySelector(`#tile-focal .evidence-tile[data-chart-id="${id}"] .tile-chart`);
       return Boolean(host && window.echarts.getInstanceByDom(host));
     }, findingId);
 
-    const compact = await page.evaluate((id) => {
+    const spotlight = await page.evaluate((id) => {
+      const host = document.querySelector(`#tile-focal .evidence-tile[data-chart-id="${id}"] .tile-chart`);
+      const option = window.echarts.getInstanceByDom(host).getOption();
+      return option.series.filter((series) => series.id).map((series) => ({
+        id: series.id,
+        points: series.data.length,
+        opacity: series.lineStyle?.opacity ?? 1,
+      }));
+    }, findingId);
+    const dockMini = await page.evaluate((id) => {
       const host = document.querySelector(`#tile-row .evidence-tile[data-chart-id="${id}"] .tile-chart`);
       const option = window.echarts.getInstanceByDom(host).getOption();
       return option.series.filter((series) => series.id).map((series) => ({
@@ -324,15 +337,19 @@ test('an occurrence selection reaches the compact event-comparison tile', async 
         opacity: series.lineStyle?.opacity ?? 1,
       }));
     }, findingId);
-    const selected = compact.find((series) => series.id === 'selected:trace');
-    const cohortLines = compact.filter((series) => /:line:/.test(series.id));
-    assert.ok(selected?.points > 0, 'the compact tile draws the selected Occurrence trace');
-    assert.ok(cohortLines.length > 0
-      && cohortLines.every((series) => series.opacity < selected.opacity),
-    'the compact tile dims non-selected cohort lines beneath the selected trace');
+    const selected = spotlight.find((series) => series.id === 'selected:trace');
+    const nonSelectedCohortLines = spotlight.filter((series) => /:line:/.test(series.id)
+      && !series.id.startsWith('matched:'));
+    console.log(SPOTLIGHT_OCCURRENCE_SELECTION_SANCTION);
+    assert.ok(selected?.points > 0, 'the spotlight draws the selected Occurrence trace');
+    assert.ok(nonSelectedCohortLines.length > 0
+      && nonSelectedCohortLines.every((series) => series.opacity < selected.opacity),
+    'the spotlight dims non-selected cohort lines beneath the selected trace');
+    assert.equal(dockMini.some((series) => series.id === 'selected:trace'), false,
+      'the dock mini stays static and draws no selected Occurrence trace');
     assert.equal(matchedLegendSelected, 'true',
       'the fullscreen legend marks the selected Matched cohort');
-    assert.deepEqual(errors, [], 'selection and compact redraw produce no page error');
+    assert.deepEqual(errors, [], 'selection redraw produces no page error');
   } finally {
     await page.close();
   }

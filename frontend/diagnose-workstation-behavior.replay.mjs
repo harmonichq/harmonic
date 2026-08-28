@@ -3941,6 +3941,22 @@ const starDockSnapshot = (page) => page.evaluate(() => ({
   })),
 }));
 
+const revealNarrowDockForEvidence = async (page, chartId) => {
+  const bringUp = page.locator('#dock-handle button[aria-label="Bring the charts up"]');
+  if (await bringUp.count()) {
+    await bringUp.click();
+    await settle(page, 350);
+  }
+  await page.locator('#tile-row').evaluate((row, targetId) => {
+    const target = row.querySelector(`[data-chart-id="${CSS.escape(targetId)}"]`);
+    if (target) {
+      const sideContext = Math.max(12, (row.clientWidth - target.offsetWidth) / 2);
+      row.scrollLeft = Math.max(0, target.offsetLeft - sideContext);
+    }
+  }, chartId);
+  await settle(page, 150);
+};
+
 // STORY:finding-evidence-routing:S120
 export const S120 = async (page) => {
   const evidenceViewport = page.viewportSize();
@@ -3968,6 +3984,7 @@ export const S120 = async (page) => {
   const stopTitle = await star.getAttribute('title');
   if (narrowEvidence) await page.setViewportSize(evidenceViewport);
   await settle(page, 350);
+  if (narrowEvidence) await revealNarrowDockForEvidence(page, victimId);
   await captureEvidence(page, 'ranked-star');
   if (narrowEvidence) await page.setViewportSize({ width: 1440, height: 900 });
   await settle(page, 350);
@@ -3978,6 +3995,7 @@ export const S120 = async (page) => {
   const retained = await starDockSnapshot(page);
   if (narrowEvidence) await page.setViewportSize(evidenceViewport);
   await settle(page, 350);
+  if (narrowEvidence) await revealNarrowDockForEvidence(page, victimId);
   await captureEvidence(page, 'unranked-retained-star');
   if (narrowEvidence) await page.setViewportSize({ width: 1440, height: 900 });
   await settle(page, 350);

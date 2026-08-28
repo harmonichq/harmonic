@@ -33,8 +33,9 @@ future ruling changes that.
 
 ## Impact
 
-- New: `package.json`, a lockfile, and a harness directory (locations settled
-  at stage-1 triage). The fast gate remains dependency-free; harness checks run
+- New: `package.json`, a lockfile, and a harness directory (a new top-level
+  `harness/` directory, npm as the package manager, and the lockfile
+  committed). The fast gate remains dependency-free; harness checks run
   in a separate CI job if adopted.
 - Tracker: #213 is superseded (closed not-planned in favor of the stage-1
   build child); #203's ordering note is corrected by comment; #204–#212 and

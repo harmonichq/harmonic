@@ -91,8 +91,8 @@ such entry today.
 - **Accepted failure:** the harness breaks because a pinned dependency no
   longer works with the host Node or browser. It is found the next time the
   harness is opened and repaired by hand then. Pinned harness dependencies go
-  stale; accepted, because they never enter the shipped app and never run in
-  CI.
+  stale, including with known vulnerabilities; accepted, because they never
+  enter the shipped app and never run in CI.
 - **Unsupported:** contributor setup on an unpinned or mismatched Node; any
   use of the harness as a test or gate; running it without a local
   `harmonic serve`.

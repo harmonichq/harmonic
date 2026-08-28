@@ -87,3 +87,20 @@ test('generated missed-meal queue pose does not duplicate a served row', () => {
   assert.doesNotThrow(() => assertMatchingFindingCasePreparation(posed, null),
     'the combined pose remains a valid no-duplicate-ready-id preparation response');
 });
+
+test('#223 · direction-only Correction factor detail leaves evidence ownership with the analyzer', () => {
+  const fixture = JSON.parse(readFileSync(
+    new URL('./__fixtures__/findings-projection.json', import.meta.url), 'utf8',
+  ));
+  const analyzer = fixture.direction_only_inputs.analysis.isf[0];
+  const source = readFileSync(new URL('./diagnose-workstation.js', import.meta.url), 'utf8');
+
+  assert.match(analyzer.annotation, /fasting data agrees with the set factor/i);
+  assert.match(analyzer.annotation, /recurring correction-linked lows call for weaker corrections/i);
+  assert.match(source, /sentence: isf\.annotation,/, 'detail transcribes the analyzer explanation');
+  assert.match(source, /No new number is available, so there is nothing to stage\./,
+    'the extra footer is limited to actionability');
+  assert.doesNotMatch(source,
+    /Corrections look stronger than needed, but recent lows make a new number unsafe to suggest\./,
+    'the frontend does not restate which evidence owns the direction');
+});

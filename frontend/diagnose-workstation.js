@@ -980,7 +980,7 @@ function renderIsfLevel(host, isf, isfStaged, onStage) {
     footNote: roundedNoop
       ? 'The conservative step rounds to the current Correction factor, so there is no settings change to stage.'
       : direction === 'weaken'
-        ? 'Corrections look stronger than needed, but recent lows make a new number unsafe to suggest.'
+        ? 'No new number is available, so there is nothing to stage.'
         : direction === 'strengthen'
           ? 'This result is held, so there is no settings change to stage; the estimate and interval remain visible.'
       : `${e.wide ? 'The interval is wide and no' : 'No'} direction is asserted here, so `

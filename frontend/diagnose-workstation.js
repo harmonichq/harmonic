@@ -2725,7 +2725,7 @@ function boot(root, data, callbacks, signal) {
     el('full-title').textContent = !big ? ''
       : fullscreen ? byId.get(fullscreen.chartId).title : 'All charts';
     /* RETIRED — the mounted header's chart count.
-       sanction: Connor Griffin · 2026-08-27 · "retire the mount count"
+       sanction: live-judging ruling · 2026-08-27 · "retire the mount count"
        It sat unlabelled inside the mounted header's control cluster, beside
        shrink and close, and read as a control rather than as a fact: a bare
        numeral among glyphs is a button until proven otherwise. The number it
@@ -3869,7 +3869,7 @@ function boot(root, data, callbacks, signal) {
     const height = measureFieldHeight();
     if (narrow === fieldNarrow && height === fieldHeight) return;
     /* THE DOCK PUTS ITSELF AWAY WHEN THE SPOTLIGHT RUNS OUT OF ROOM, AND COMES
-       BACK WHEN THE ROOM DOES. Restored on the operator's ruling: "we had a
+       BACK WHEN THE ROOM DOES. Restored by the live-judging ruling: "we had a
        rule in place that said that when the spotlight chart got to a certain
        size, the chart dock would automatically hide. Can we bring that back."
 

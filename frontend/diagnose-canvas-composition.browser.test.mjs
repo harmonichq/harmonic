@@ -107,7 +107,7 @@ async function openCanvas(browser, { routes = null, ...options } = {}) {
   return { page, errors };
 }
 
-const SANCTION_DRILL_WORD = 'sanction: Connor Griffin · 2026-08-26 · "The ring and the raised rail mark the drilled tile. The chip was noise."';
+const SANCTION_DRILL_WORD = 'sanction: live-judging ruling · 2026-08-26 · "The ring and the raised rail mark the drilled tile. The chip was noise."';
 const RETIRED_EXPLORE_MODE_SANCTION = 'sanction: ConnorGriffin · 2026-08-26 · "Diagnose does NOT need to host an explore mode. we\'re building a better version of it right now."';
 /* The drilled tile was marked twice — a ring, and a rail that materialized a
    well plate over the tile's own plot. The ADR 215 amendment of 2026-08-27

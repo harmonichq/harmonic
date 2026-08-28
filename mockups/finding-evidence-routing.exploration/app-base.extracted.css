@@ -259,6 +259,9 @@
 
     .plan-cell { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
     .plan-value { width: 84px; text-align: right; }
+    .plan-value:focus-visible { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--ring); }
+    .plan-diagnose-link { border: 0; padding: 0; background: transparent; color: var(--primary); font: inherit; text-decoration: underline; }
+    .plan-diagnose-link:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
     .tabular-nums { font-variant-numeric: tabular-nums; }
 
     /* #99 Plan tab */
@@ -1092,7 +1095,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
   .dn-col:last-child { border-right:1px solid transparent; }
   .dn-col.pick { cursor:pointer; }
   .dn-col.pick:hover { background:color-mix(in srgb, var(--muted) 12%, transparent); box-shadow:var(--shadow); }
-  .dn-col.pick:focus-visible { outline:none; box-shadow:0 0 0 2px var(--primary) inset; }
+  .dn-col.pick:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
   .dn-col.sel { background:color-mix(in srgb, var(--primary) 12%, transparent); }
   .dn-col.sel .dn-col-lab { border-bottom-color:var(--primary); }
   .dn-col.nodata { cursor:default; }

@@ -810,7 +810,7 @@ html.dark .tile-field[data-dock="docked"]::after {
 /* RETIRED — the mounted grid. It hid the spotlight and spent the whole pane on
    a vertically scrolling grid of minis: the pre-spotlight canvas, kept alive
    only because the handle had grown a control for it.
-   sanction: Connor Griffin · 2026-08-27 · "oh yeah mounted dies"
+   sanction: live-judging ruling · 2026-08-27 · "oh yeah mounted dies"
    Fullscreen keeps the two rules below, which were always about the PANE the
    header sits in rather than about the grid. */
 .dw[data-dock-full] .canvas-pane { grid-template-rows: auto minmax(0, 1fr); }

@@ -9,6 +9,7 @@ wrong).
 
 import importlib.util
 import pathlib
+import random
 import tempfile
 import unittest
 from datetime import datetime, timedelta
@@ -21,6 +22,7 @@ except ImportError:  # pragma: no cover
 
 from ciq_autotune.analyzers.isf import analyze_isf
 from ciq_autotune.analyzers.scenario.levers import Lever, outcome_kind
+from ciq_autotune.analyzers.tuning_priority import build_tuning_levers
 from ciq_autotune.findings_projection import (
     _EVENT_CHART_FAMILIES,
     FindingsProjection,
@@ -28,6 +30,7 @@ from ciq_autotune.findings_projection import (
     prepare_findings_projection,
 )
 from ciq_autotune.event_comparison import FACTOR_LABELS
+from ciq_autotune.events import BolusEvent
 from ciq_autotune.harm import HarmArm, HarmConfig, PrintedLow
 from ciq_autotune.safety import Status
 from ciq_autotune.store import Store
@@ -36,6 +39,7 @@ from ciq_autotune.ic_history import (
 )
 from ciq_autotune.result import IcHistory, IcHistoryRunRecord
 from ciq_autotune.uncertainty import Estimate
+from tests.test_analyzer_isf import ISF_36, rw, synth_night
 
 _GEN_PATH = (pathlib.Path(__file__).resolve().parents[1]
              / "scripts" / "gen_findings_projection_fixtures.py")
@@ -56,6 +60,41 @@ def _titles(rows, register):
 
 def _row(rows, title):
     return next(row for row in rows if row["title"] == title)
+
+
+def _direction_only_isf_analysis(base_analysis=None):
+    rng = random.Random(7)
+    plans = [[(1, 0, 3.0)], [(2, 0, 4.0), (4, 0, 2.0)], [(1, 30, 5.0)],
+             [(3, 0, 3.5)], [(0, 30, 2.0), (3, 30, 4.0)], [(2, 0, 6.0)],
+             [(1, 0, 3.0), (4, 30, 2.5)], [(2, 30, 5.0)]]
+    bolus, basal, cgm, windows = [], [], [], []
+    for index, plan in enumerate(plans):
+        b, ba, c = synth_night(index + 1, 58.0, plan, noise_sd=1.0, rng=rng)
+        bolus += b
+        basal += ba
+        cgm += c
+        windows += rw(index + 1)
+    bolus += [
+        BolusEvent(t=datetime(2026, 6, day, hour), insulin=2.0, bg=220.0)
+        for day in range(1, 31) for hour in (9, 12, 15, 18)
+    ]
+    lows = [PrintedLow(datetime(2026, 6, day, 3), 55.0, 1.2, HarmArm.ISF)
+            for day in (1, 5, 9, 13)]
+    segments = analyze_isf(
+        bolus, basal, cgm, ISF_36, rest_windows=windows,
+        harm_config=HarmConfig(), harm_lows=lows, window_days=30,
+    )
+    lever = next(lever for lever in build_tuning_levers(
+        [], segments, [], slot_minutes=30, robust_daily_insulin_u=42.0,
+    ) if lever.parameter == "isf")
+    analysis = dict(base_analysis or {"window_days": 30})
+    analysis["isf"] = [segment.to_dict() for segment in segments]
+    analysis["tuning_levers"] = [
+        *[item for item in analysis.get("tuning_levers", [])
+          if item["parameter"] != "isf"],
+        lever.to_dict(),
+    ]
+    return analysis, segments[0], lever
 
 
 def _with_history(projection, *, lifecycle="active", start_min=420,
@@ -254,22 +293,14 @@ class GroundedWindowTest(unittest.TestCase):
         self.assertEqual(_row(rows, "Basal 19:30 to 21:00")["reason"],
                          blind_slot["safety_status"])
 
-    def test_isf_register_and_rank_stay_direction_derived_when_staging_is_false(self):
-        lows = [PrintedLow(datetime(2026, 6, day, 3), 55.0, 1.2, HarmArm.ISF)
-                for day in (1, 2, 3, 4)]
-        segment = analyze_isf(
-            [], [], [], [(0, 40.0)], harm_config=HarmConfig(), harm_lows=lows,
-            window_days=30,
-        )[0]
+    def test_isf_register_stays_direction_derived_but_rank_follows_stageability(self):
+        analysis, segment, lever = _direction_only_isf_analysis()
         self.assertEqual(segment.evidence["direction"], "weaken")
         self.assertIs(segment.asserts_move, False)
+        self.assertGreater(lever.priority, 0)
 
         projection = FindingsProjection(
-            _analysis={
-                "window_days": 30,
-                "isf": [segment.to_dict()],
-                "tuning_levers": [{"parameter": "isf", "priority": 73}],
-            },
+            _analysis=analysis,
             _exposures={"exposures": {}},
             _scenarios={"patterns": [], "low_confidence": []},
         )
@@ -277,9 +308,24 @@ class GroundedWindowTest(unittest.TestCase):
 
         self.assertEqual(row["register"], "assert")
         self.assertEqual(row["direction"], "weaken")
-        self.assertEqual(row["priority"], 73)
-        self.assertEqual(row["tier"], "next_in_line")
+        self.assertIsNone(row["priority"])
+        self.assertEqual(row["tier"], "noted")
         self.assertIs(row["asserts_move"], False)
+
+    def test_direction_only_isf_follows_every_actionable_or_priced_row(self):
+        base = gen.projection()
+        analysis, _segment, _lever = _direction_only_isf_analysis(base._analysis)
+        projection = FindingsProjection(analysis, base._exposures, base._scenarios)
+
+        rows = projection.project(WindowQuery.whole_day())["rows"]
+        isf_index = next(index for index, row in enumerate(rows)
+                         if row["parameter"] == "isf")
+        ranked = [index for index, row in enumerate(rows)
+                  if (row["kind"] == "setting" and row["asserts_move"] is True)
+                  or (row["register"] == "finding" and row["priority"] is not None)]
+
+        self.assertTrue(ranked)
+        self.assertTrue(all(index < isf_index for index in ranked))
 
     def test_a_window_can_hold_nothing_at_all(self):
         empty = gen.empty_projection().project(WindowQuery.clock(*MORNING))

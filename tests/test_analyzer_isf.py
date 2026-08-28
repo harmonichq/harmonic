@@ -244,17 +244,21 @@ class RecommendationTest(unittest.TestCase):
         self.assertEqual(direction, "weaken")
         self.assertIsNone(rec)
         self.assertAlmostEqual(priced, 43.2, places=1)
-        self.assertIn("overshooting", ann.lower())
+        self.assertIn("fasting data points toward stronger corrections", ann.lower())
+        self.assertIn("recurring correction-linked lows call for weaker corrections",
+                      ann.lower())
 
-    def test_weaken_says_the_pooled_fit_is_unstable_when_it_disagrees(self):
-        # The pooled band sits entirely on the stronger side (hi 35.2 < 36) while the
-        # lows say weaken: the copy must call the fit unstable and hand the decision
-        # to the lows (#413 §7).
+    def test_weaken_names_both_signals_when_fasting_evidence_disagrees(self):
+        # The fasting band sits entirely on the stronger side (hi 35.2 < 36) while
+        # recurring correction-linked lows say weaken. Both signals remain explicit,
+        # and the lows own the user-facing conclusion.
         _, ann, direction, priced = _recommend(
             36.0, self._est(24.8, 17.7, 35.2),
             self._ch(night_median=57.9, corr_low_days=4), self.cfg)
         self.assertEqual(direction, "weaken")
-        self.assertIn("lows carry the decision", ann.lower())
+        self.assertIn("fasting data points toward stronger corrections", ann.lower())
+        self.assertIn("recurring correction-linked lows call for weaker corrections",
+                      ann.lower())
 
     def test_one_correction_low_blocks_a_strengthen_move(self):
         # A single correction-caused low (below the recurrence bar) does NOT weaken,
@@ -375,11 +379,25 @@ class LowsOwnDirectionTest(unittest.TestCase):
         return [PrintedLow(datetime(2026, 6, d, 3, 0, 0), 60.0, 1.2, HarmArm.ISF)
                 for d in days]
 
-    def test_recurring_lows_override_a_stronger_measurement(self):
+    def test_recurring_lows_own_weaken_when_fasting_evidence_is_flat(self):
+        bolus, basal, cgm, windows = self._nights(36.0)
+        seg = analyze_isf(bolus, basal, cgm, ISF_36, rest_windows=windows,
+                          harm_config=HarmConfig(),
+                          harm_lows=self._isf_lows([1, 5, 9, 13]), window_days=30)[0]
+
+        self.assertTrue(seg.estimate.lo <= 36.0 <= seg.estimate.hi)
+        self.assertEqual(seg.evidence["direction"], "weaken")
+        self.assertIsNone(seg.recommended)
+        self.assertIs(seg.asserts_move, False)
+        self.assertIn("fasting data agrees with the set factor", seg.annotation.lower())
+        self.assertIn("recurring correction-linked lows call for weaker corrections",
+                      seg.annotation.lower())
+
+    def test_recurring_lows_own_weaken_when_fasting_evidence_points_stronger(self):
         # The measurement reads *stronger* (nights at ISF 24, band excludes the
         # programmed 36 on the stronger side) — #410's gate would recommend stronger
-        # corrections. Recurring correction lows must flip it to WEAKEN, and the copy
-        # must say the overnight fit is unstable and the lows carry the decision.
+        # corrections. Recurring correction lows must flip it to WEAKEN while the
+        # explanation keeps both signals distinct.
         bolus, basal, cgm, windows = self._nights(24.0)
         seg = analyze_isf(bolus, basal, cgm, ISF_36, rest_windows=windows,
                           harm_config=HarmConfig(),
@@ -387,7 +405,11 @@ class LowsOwnDirectionTest(unittest.TestCase):
         self.assertLess(seg.estimate.hi, 36.0)          # band excludes on stronger side
         self.assertEqual(seg.evidence["direction"], "weaken")
         self.assertIsNone(seg.recommended)              # no supporting night target
-        self.assertIn("lows carry the decision", seg.annotation.lower())
+        self.assertIs(seg.asserts_move, False)
+        self.assertIn("fasting data points toward stronger corrections",
+                      seg.annotation.lower())
+        self.assertIn("recurring correction-linked lows call for weaker corrections",
+                      seg.annotation.lower())
 
     def test_cap_bound_weaken_recommends_no_number(self):
         # #468 regression. Nights at ISF ~58 → per-night median well above programmed

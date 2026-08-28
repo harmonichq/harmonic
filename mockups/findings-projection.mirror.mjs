@@ -279,7 +279,7 @@ function isfRows(analysis) {
       parameter: 'isf',
       title: title('ISF', register, direction),
       label: entry.label ?? null,
-      priority: direction != null ? leverPriority(analysis, 'isf') : null,
+      priority: entry.asserts_move === true ? leverPriority(analysis, 'isf') : null,
       span: null,
       direction,
       asserts_move: entry.asserts_move ?? null,

@@ -580,13 +580,14 @@ def _recommend(programmed: Optional[float], est: Estimate, ch: IsfChannels,
             # here as the lever's pricing basis only: never `recommended`, never
             # stageable, never programmable.
             priced = _half_gap(programmed, median, cfg)
-        # When the pooled overnight fit disagrees with the lows' direction (its band
-        # sits entirely on the *stronger* side of programmed), say so plainly: the
-        # fit is leverage-fragile and the lows carry the decision (#413 §7).
-        if (est.value is not None and est.hi is not None
-                and est.hi < programmed):
-            ann += (" (the overnight reading points the other way, but it is "
-                    "unsteady and the lows carry the decision)")
+        if (est.lo is not None and est.hi is not None
+                and est.lo <= programmed <= est.hi):
+            ann = ("fasting data agrees with the set factor, but recurring "
+                   "correction-linked lows call for weaker corrections")
+        elif (est.value is not None and est.hi is not None
+              and est.hi < programmed):
+            ann = ("fasting data points toward stronger corrections, but recurring "
+                   "correction-linked lows call for weaker corrections")
         return None, ann, "weaken", priced
 
     # No weaken pattern. Any single correction-caused low (or rescue log) still gates

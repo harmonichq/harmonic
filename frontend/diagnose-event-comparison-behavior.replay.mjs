@@ -26,7 +26,7 @@ const MIME = {
    comparison tile. The tile's registry coordinates request event alignment from
    the Finding case-file path; there is no global mode switch in the successor UI. */
 const FINDINGS = ['finding:late_bolus', 'finding:over_treated_low', 'finding:missed_meal'];
-const RETIRED_GLOBAL_CURSOR_SANCTION = 'Connor Griffin · 2026-08-26 · "rewrite their openers off the retired global \'By event\' control onto the successor UI (the canvas\'s per-tile alignment / the case-file-backed comparison tile), preserving what those legs actually verify — the comparison\'s population semantics and the support audit\'s assertions."';
+const SPOTLIGHT_CURSOR_SANCTION = 'sanction: live-judging ruling · 2026-08-28 · "The visible comparison chart keeps its keyboard cursor; it is the reader\'s keyboard route into comparison evidence."';
 
 export class ReplayError extends Error {}
 const fail = (message) => { throw new ReplayError(message); };
@@ -159,12 +159,12 @@ export async function openApp(browser, options = {}) {
   const findingId = options.finding || FINDINGS[0];
   page.__comparisonFindingId = findingId;
   page.__comparisonServedByFinding = servedByFinding;
-  const queueIndex = await page.locator('#level .qrow').evaluateAll((rows, id) =>
-    rows.findIndex((row) => row.dataset.id === id), findingId);
-  ok(queueIndex >= 0, `${findingId} is absent from the unscoped findings queue`);
+  const findingQueued = await page.locator('#level .qrow').evaluateAll((rows, id) =>
+    rows.some((row) => row.dataset.id === id), findingId);
+  ok(findingQueued, `${findingId} is absent from the unscoped findings queue`);
   if (!(await visibleFindingTile(page, findingId).isVisible())) {
     await page.locator('#explorer-trigger').click();
-    await page.locator('.explorer-thumbnail').nth(queueIndex).click();
+    await page.locator(`${findingTileSelector(findingId)}[data-seat="grid"]`).click();
   }
   if (options.invalidComparison) {
     await visibleFindingTile(page, findingId).locator('.tile-body').click();
@@ -445,18 +445,62 @@ export const S7 = async (open, browser) => use(open, browser, {}, async (page) =
   ok(await page.locator('.echarts-tooltip').count() === 0, 'floating tooltip appeared');
 });
 
-// RETIRED (issue #135), AMENDED — live-judging ruling · 2026-08-28. The
-// keyboard cursor belonged to the retired global comparison canvas. The
-// spotlight legitimately mounts a tile-owned #ec-chart, so the guard now
-// excludes only an ownerless comparison canvas. The served support facts the
-// cursor announced remain covered by S7 and the support audit.
+// AMENDED (issue #135) — live-judging ruling · 2026-08-28. The global
+// comparison canvas remains retired, but its keyboard cursor is un-retired on
+// the visible, focusable comparison chart in the spotlight. It is the reader's
+// keyboard route into the served cohort evidence.
 export const S8 = async (open, browser) => use(open, browser, {}, async (page) => {
-  ok(await page.locator('#tile-focal .evidence-tile[data-chart-id^="finding:"]').isVisible(),
+  const findingId = page.__comparisonFindingId;
+  const chart = page.locator(
+    `#tile-focal .evidence-tile[data-chart-id="${findingId}"] #ec-chart`,
+  );
+  ok(await chart.isVisible(),
     'the successor comparison tile is not visible');
-  ok(await page.locator('#ec-chart').evaluateAll((charts) => charts.every((chart) =>
-    Boolean(chart.closest('.evidence-tile')))),
-  'the retired global comparison cursor became user-reachable again outside a tile');
-  process.stdout.write(`RETIRED S8 — ${RETIRED_GLOBAL_CURSOR_SANCTION}\n`);
+  ok(await chart.getAttribute('tabindex') === '0',
+    'the spotlight comparison chart is not keyboard focusable');
+  await chart.focus();
+  ok(await chart.evaluate((element) => document.activeElement === element),
+    'the spotlight comparison chart did not take keyboard focus');
+
+  const caseFile = page.__comparisonServedByFinding.get(findingId);
+  const cursorMinute = 15;
+  const expected = caseFile.projection.cohorts.map((cohort) => {
+    const point = cohort.points.find((row) => row.minute === cursorMinute);
+    const unavailable = !point || point.support === 'withheld';
+    return {
+      name: cohort.name,
+      label: unavailable ? 'unavailable' : String(Math.round(point.median)),
+      readout: unavailable ? 'unavailable' : `${Math.round(point.median)} · n${point.n}`,
+    };
+  });
+  const restingLabel = await chart.getAttribute('aria-label');
+  for (let step = 0; step < 3; step += 1) {
+    await chart.press('ArrowRight');
+  }
+  const cursorLabel = '+0.25 h';
+  const readout = page.locator('#canvas-head #ec-readout');
+  ok(await readout.isVisible(), 'the keyboard cursor did not reveal its on-screen readout');
+  const shown = await readout.evaluate((element) => ({
+    time: element.querySelector('.rd-time')?.textContent ?? null,
+    cohorts: [...element.querySelectorAll('.rd-pair')].map((pair) => ({
+      name: pair.querySelector('.k')?.textContent ?? null,
+      value: pair.querySelector('.v')?.textContent ?? null,
+    })),
+  }));
+  ok(shown.time === cursorLabel,
+    `the keyboard cursor did not move three five-minute points: ${shown.time}`);
+  ok(JSON.stringify(shown.cohorts) === JSON.stringify(expected.map((row) => ({
+    name: row.name, value: row.readout,
+  }))), `the on-screen cursor readout diverged from served cohort evidence: ${JSON.stringify(shown.cohorts)}`);
+  const expectedLabel = `${caseFile.finding.title} response comparison. ${cursorLabel}. `
+    + `${expected.map((row) => `${row.name} ${row.label}`).join('. ')}.`;
+  const inspectedLabel = await chart.getAttribute('aria-label');
+  ok(inspectedLabel !== restingLabel && inspectedLabel === expectedLabel,
+    `the accessible cursor label diverged from served cohort evidence: ${inspectedLabel}`);
+  ok(await page.locator('#ec-chart').evaluateAll((charts) => charts.length > 0
+    && charts.every((element) => Boolean(element.closest('.evidence-tile')))),
+  'the retired global comparison canvas became user-reachable again outside a tile');
+  process.stdout.write(`UNRETIRED S8 — ${SPOTLIGHT_CURSOR_SANCTION}\n`);
 });
 
 // LOCK:diagnose-event-comparison:3 LOCK:diagnose-event-comparison:19

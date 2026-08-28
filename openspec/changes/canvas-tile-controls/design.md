@@ -15,6 +15,12 @@ asking whether a Finding remains on screen therefore checks its tile across the
 spotlight and the dock; only a story about mini-owned evidence asks the dock,
 after explicitly bringing it back.
 
+The comparison chart's keyboard cursor is un-retired in the spotlight. A reader
+can focus the visible chart, step through five-minute points, and read the same
+served cohort evidence in its on-screen readout and accessible label. The old
+keyboard path was dishonest only while its chart was hidden and unfocusable;
+making the chart visible makes that path real again.
+
 ## ADR 215 — Fixed canvas, membership pinning, Explore retired
 
 Ruled by the operator, 2026-08-26, during the #215 polish slices, reversing

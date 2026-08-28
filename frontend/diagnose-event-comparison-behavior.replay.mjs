@@ -441,7 +441,7 @@ export const S7 = async (open, browser) => use(open, browser, {}, async (page) =
 // excludes only an ownerless comparison canvas. The served support facts the
 // cursor announced remain covered by S7 and the support audit.
 export const S8 = async (open, browser) => use(open, browser, {}, async (page) => {
-  ok(await page.locator('#tile-row .evidence-tile[data-chart-id^="finding:"]').first().isVisible(),
+  ok(await page.locator('#tile-focal .evidence-tile[data-chart-id^="finding:"]').isVisible(),
     'the successor comparison tile is not visible');
   ok(await page.locator('#ec-chart').evaluateAll((charts) => charts.every((chart) =>
     Boolean(chart.closest('.evidence-tile')))),

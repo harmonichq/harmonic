@@ -65,9 +65,9 @@ async function facts(page) {
   const caseFile = page.__selectedComparison
     || page.__comparisonServedByFinding.get(page.__comparisonFindingId);
   const served = caseFile.projection;
-  const compact = page.__compactComparison;
-  const ids = compact.ids;
-  const lineSeries = compact.series.filter((series) => /:line:/.test(series.id || ''));
+  const dockMini = page.__dockMiniComparison;
+  const ids = dockMini.ids;
+  const lineSeries = dockMini.series.filter((series) => /:line:/.test(series.id || ''));
   /* The rule the whole audit exists for: a drawn point may only appear on the
      line graded for the support the SERVER gave that point. */
   const invalidLinePoints = [];
@@ -89,17 +89,25 @@ async function facts(page) {
       overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
     };
   });
-  const fullscreen = page.__fullscreenComparison || await page.evaluate(() => ({
-    legend: [...document.querySelectorAll('.ec-key-item')].map((item) => ({
+  const spotlight = page.__spotlightComparison || await page.evaluate(() => {
+    const chartHost = document.querySelector('#tile-focal #ec-chart');
+    const chart = chartHost && window.echarts.getInstanceByDom(chartHost);
+    const option = chart?.getOption();
+    return {
+    legend: [...document.querySelectorAll('#tile-focal .ec-key-item')].map((item) => ({
       cohort: item.dataset.cohort,
       support: item.dataset.support || null,
       selected: item.dataset.selectedCohort || null,
       detail: item.querySelector('small')?.textContent.replace(/\s+/g, ' ').trim(),
       text: item.textContent.replace(/\s+/g, ' ').trim(),
     })),
-    chartLabel: document.querySelector('#ec-chart')?.getAttribute('aria-label') || '',
-  }));
-  const selectedTrace = compact.series.find((series) => series.id === 'selected:trace');
+    chartLabel: chartHost?.getAttribute('aria-label') || '',
+    series: option?.series.filter((series) => series.id).map((series) => ({
+      id: series.id, data: series.data, opacity: series.lineStyle?.opacity ?? 1,
+    })) || [],
+    };
+  });
+  const selectedTrace = spotlight.series.find((series) => series.id === 'selected:trace');
   return {
     serverOwned: caseFile.schema === 'diagnose-finding-case-file-v1'
       && served.alignment === 'event',
@@ -124,10 +132,10 @@ async function facts(page) {
     selectedTraceExpected: caseFile.selection.state === 'selected'
       ? caseFile.selection.detail.glucose.length : 0,
     selectedOpacity: selectedTrace?.opacity ?? null,
-    otherOpacities: compact.series.filter((series) => /:line:/.test(series.id))
+    otherOpacities: spotlight.series.filter((series) => /:line:/.test(series.id))
       .map((series) => series.opacity),
-    legend: fullscreen.legend,
-    chartLabel: fullscreen.chartLabel,
+    legend: spotlight.legend,
+    chartLabel: spotlight.chartLabel,
     overflow: dom.overflow,
   };
 }
@@ -208,10 +216,10 @@ try {
         assert.equal(got.cohorts[0].support, 'withheld', `${check.name}: cohort support`);
         const selectedLegend = got.legend.find((item) => item.cohort === 'matched');
         assert.ok(got.selectedTracePoints > 0,
-          `${check.name}: compact exact trace missing; opacity=${got.selectedOpacity}; `
+          `${check.name}: spotlight exact trace missing; opacity=${got.selectedOpacity}; `
             + `other=${got.otherOpacities}; legend=${JSON.stringify(selectedLegend)}`);
         assert.equal(got.selectedTracePoints, got.selectedTraceExpected,
-          `${check.name}: compact exact trace dropped served glucose points`);
+          `${check.name}: spotlight exact trace dropped served glucose points`);
         assert.ok(got.otherOpacities.length > 0
           && got.otherOpacities.every((opacity) => got.selectedOpacity > opacity),
         `${check.name}: selected trace opacity ${got.selectedOpacity} does not lead ${got.otherOpacities}`);

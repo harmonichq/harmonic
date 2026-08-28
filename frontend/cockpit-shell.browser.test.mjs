@@ -1597,7 +1597,7 @@ test('event comparisons render the served case-file cohorts and retain no standa
     // one place every Finding the window holds is listed.
     await page.locator('#seg-window button', { hasText: '24 h' }).click();
     await page.locator('#level .qrow[data-id="finding:over_treated_low"]').click();
-    const tile = page.locator('.evidence-tile[data-chart-id="finding:over_treated_low"]');
+    const tile = page.locator('#tile-row .evidence-tile[data-chart-id="finding:over_treated_low"]');
     await tile.locator('.tile-body').click();
     await page.locator('[data-comparison-cohort]').first().waitFor();
 
@@ -1610,7 +1610,13 @@ test('event comparisons render the served case-file cohorts and retain no standa
     // The case file owns all three names and counts; the successor UI renders
     // them in the drilled inspector while its owning registry tile stays drawn.
     assert.ok(await tile.isVisible(), 'the row-derived tile is not seated');
-    assert.equal(await tile.getAttribute('data-drilled'), '');
+    // The stage carries the mark, never the registry echo (operator ruling,
+    // 2026-08-27: "the only chart that needs to be displaying any kind of
+    // drill down ... is the spotlight"). The clicked chart is promoted onto
+    // the stage, so the mark reads off #tile-focal.
+    assert.equal(await page.locator(
+      '#tile-focal .evidence-tile[data-chart-id="finding:over_treated_low"]',
+    ).getAttribute('data-drilled'), '');
     assert.deepEqual(await page.locator('#level .ev-group b').allTextContents(),
     ['Matched', 'Nearly matched', 'Other low excursions']);
     assert.deepEqual(await page.locator('#level .ev-group .n').allTextContents(),
@@ -1637,7 +1643,7 @@ test('event comparisons fail closed when the served case file is malformed',
     await error.waitFor();
     assert.match(await error.innerText(), /Finding case file did not match/);
     assert.equal(await page.locator(
-      '.evidence-tile[data-chart-id="finding:over_treated_low"][data-drilled]',
+      '#tile-focal .evidence-tile[data-chart-id="finding:over_treated_low"][data-drilled]',
     ).count(), 1, 'the malformed case remains visibly attached to its owning tile');
     assert.equal(await page.locator('[data-comparison-cohort]').count(), 0,
       'a malformed case renders no stale comparison cohort rows');

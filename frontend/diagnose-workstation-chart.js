@@ -34,9 +34,31 @@ function windowRenderSpans(window) {
 
 // Shared plot insets. The HTML verdict lane is pinned to these so its cells sit
 // in register with the x-axis ticks.
-// the right margin seats the value tags that ride the median / lowest-median
-// levels, so it is wider than a plain plot inset would be
-export const GRID = { left: 52, right: 52 };
+// LEFT IS THE CANVAS-WIDE SPINE (#215). One number for the strip and for every
+// evidence tile, so titles, y-axis numbers and plot edges land on the same
+// vertical the whole way down the canvas. It is sized as air + the widest label
+// any of these charts draws + the gap to the plot — roughly 8 + 18 + 8 — and
+// deliberately no wider: at 52 the strip carried a third of an inch of nothing
+// beside its numbers. `--ck-grid-left` in diagnose-workstation.css tracks it,
+// and so do FULL_GRID/MINI_GRID in diagnose-evidence-charts.js.
+// The right margin seats the value tags that ride the median / lowest-median
+// levels, so it stays wider than a plain plot inset would be.
+export const GRID = { left: 34, right: 52 };
+
+/* The strip owns its ruler. Evidence tiles can arrive after it has painted, but
+   their values are not evidence for this pooled day surface and must never move
+   its axis. Keep the served envelope and the target band on a 20 mg/dL ruler. */
+export function stripGlucoseRange(envelope, target = [70, 180]) {
+  const values = [
+    ...['p10', 'p25', 'p50', 'p75', 'p90'].flatMap((key) => envelope[key] || []),
+    ...target,
+  ].filter(Number.isFinite);
+  if (!values.length) return [60, 200];
+  return [
+    Math.min(60, Math.floor(Math.min(...values) / 20) * 20),
+    Math.max(200, Math.ceil(Math.max(...values) / 20) * 20),
+  ];
+}
 
 function minuteOfDay(stamp) {
   const time = stamp.slice(11);
@@ -211,11 +233,8 @@ export function plotBox(el) {
 
 const CAT_MAX = BIN_COUNT - 1; // 95 — the last category, 23:45
 
-/* The window label owns a reserved band at the top of the plot. The occurrence
-   ticks sit BELOW it (they used to render at 292, inside the band, so a narrow
-   window's label crossed the tick row). Both are y-axis values, max 300. */
+/* The window label owns a reserved band at the top of the plot. */
 const LABEL_Y = 296;
-const OCCURRENCE_Y = 268;
 
 /**
  * Rough px width of a label. There is no measuring context here (the label is
@@ -274,35 +293,6 @@ export function buildDayTrace(day) {
     if (delta < dist[index]) { dist[index] = delta; best[index] = reading.bg; }
   }
   return best;
-}
-
-/**
- * Meals per captured day that fills the meal track (term 25, resettled #649).
- * Full height = a meal in this half hour on half the captured days.
- */
-export const GLYPH_FULL_HEIGHT_RATE = 0.5;
-
-/** Meal-bolus glyphs, clustered into clock groups so the track reads as a habit. */
-export function buildMealMarkers(days, { bucket = 30, minCarbs = 12 } = {}) {
-  const groups = new Map();
-  for (const day of Object.values(days)) {
-    for (const bolus of day.window.boluses) {
-      if (!bolus.carbs || bolus.carbs < minCarbs) continue;
-      const key = Math.floor(minuteOfDay(bolus.t) / bucket) * bucket;
-      if (!groups.has(key)) groups.set(key, []);
-      groups.get(key).push(bolus);
-    }
-  }
-  return [...groups.entries()].map(([minute, list]) => ({
-    minute,
-    index: Math.round(minute / BIN_MINUTES) % BIN_COUNT,
-    count: list.length,
-    carbs: list.reduce((sum, b) => sum + (b.carbs || 0), 0),
-    medianCarbs: Math.round(
-      percentile(list.map((b) => b.carbs).sort((a, b) => a - b), 0.5),
-    ),
-    insulin: list.reduce((sum, b) => sum + (b.insulin || 0), 0),
-  })).sort((a, b) => a.minute - b.minute);
 }
 
 /** Two-hour clock buckets for a factor's occurrences. Counts are the fixture's. */
@@ -589,6 +579,11 @@ function withOpacity(color, opacity) {
 }
 
 function displaySeries(series) {
+  /* The dim rects already speak the display axis's own minute coordinates —
+     re-binning them here null-padded the data and the scrim vanished exactly
+     and only in panned states, which is the live "no dimming after panning
+     around" the operator reported while every fixture probe passed. */
+  if (series.name === '__dim') return [series];
   const positioned = series.data?.some((point) => point && typeof point === 'object'
     && Array.isArray(point.value));
   const place = (dayIndex) => {
@@ -617,15 +612,14 @@ function displaySeries(series) {
 }
 
 /**
- * @param {object} opts { envelope, markers, colors, window:[startMin,endMin],
- *                        windowLabel, occurrences, selectedOcc }
+ * @param {object} opts { envelope, colors, window:[startMin,endMin], windowLabel }
  */
 export function renderCanvas(el, echarts, opts) {
-  const { envelope, markers, colors } = opts;
+  const { envelope, colors } = opts;
   const range = opts.range;
   if (!Array.isArray(range) || range.length !== 2
       || !range.every(Number.isFinite) || range[0] >= range[1]) {
-    throw new TypeError('glucose strip needs one injected arrangement range');
+    throw new TypeError('glucose strip needs one injected field range');
   }
   const stats = opts.stats || null;
   const target = opts.target || [70, 180];
@@ -693,10 +687,11 @@ export function renderCanvas(el, echarts, opts) {
   const windowAreas = binSpans.map(([start, end], index) => [
     {
       xAxis: panning ? String(start) : envelope.labels[start],
-      itemStyle: {
-        color: colors.windowFill, borderColor: colors.windowEdge,
-        borderWidth: 1, borderType: [4, 3],
-      },
+      /* Slice 4 — the window is the BRIGHT region, stated by dimming the
+         remainder (the __dim carrier below), so the area itself draws nothing:
+         no fill, and the dashed border is retired as the boundary statement.
+         The area survives as the label's carrier and the geometry's record. */
+      itemStyle: { color: 'transparent' },
       /* The 25–75 spread rides the window label rather than the band.
          Anchored in the band it collided with the p75 edge and the median at narrow
          windows and short viewports, and its two words broke across the band edge.
@@ -711,6 +706,31 @@ export function renderCanvas(el, echarts, opts) {
     },
     { xAxis: panning ? String(end) : envelope.labels[end] },
   ]);
+
+  /* Slice 4 — GATE EMPHASIS. The drawn window reads as the bright region over
+     a dimmed remainder of the 24h band: everything OUTSIDE the gates takes a
+     ground-colour scrim that clips exactly at the gate edges. It rides its own
+     silent carrier ABOVE the data series (z 9), because the bands and the
+     median must genuinely dim — the __context carrier sits under them. A
+     wrapped (#130) window's remainder is the single contiguous middle gap, so
+     the wrapped draw stays contiguous with no seam at midnight. */
+  const dimAreas = [];
+  if (hasWindow) {
+    if (panning) {
+      const [[start, end]] = binSpans;
+      const [axisFirst, axisLast] = [DISPLAY_AXIS[0], DISPLAY_AXIS[DISPLAY_AXIS.length - 1]];
+      if (start > Number(axisFirst)) dimAreas.push([axisFirst, String(start)]);
+      if (end < Number(axisLast)) dimAreas.push([String(end), axisLast]);
+    } else {
+      const covered = [...binSpans].sort((a, b) => a[0] - b[0]);
+      let cursor = 0;
+      for (const [start, end] of covered) {
+        if (start > cursor) dimAreas.push([envelope.labels[cursor], envelope.labels[start]]);
+        cursor = Math.max(cursor, end);
+      }
+      if (cursor < CAT_MAX) dimAreas.push([envelope.labels[cursor], envelope.labels[CAT_MAX]]);
+    }
+  }
 
   /* A captured day's real trace, when the caller has one. With it on the plot
      the pooled envelope recedes to context — it is a different thing (many days
@@ -751,13 +771,10 @@ export function renderCanvas(el, echarts, opts) {
     backgroundColor: 'transparent',
     animation: false,
     textStyle: { fontFamily: 'Inter, system-ui, sans-serif', color: colors.muted },
-    // two grids sharing the clock axis: the envelope, and a glyph track that
-    // sits UNDER the x-axis so meal boluses never float on the median
     grid: [
       // P4: the top gutter was ~40px of dead air between the title row and the
       // plot ceiling. The label band needs ~18px; the rest goes to the plot.
-      { left: GRID.left, right: GRID.right, top: 20, bottom: 56 },
-      { left: GRID.left, right: GRID.right, height: 18, bottom: 26 },
+      { left: GRID.left, right: GRID.right, top: 20, bottom: 26 },
     ],
     /* THE ONLY MARK KEY. The overlay chips are gone, so this legend carries the
        whole naming job — and it must not be mistakable for controls: silent and
@@ -767,10 +784,7 @@ export function renderCanvas(el, echarts, opts) {
        Every swatch replicates its mark 1:1, and the way to guarantee that is to
        NOT override `icon` on anything that can draw itself: a line series then
        renders its own stroke at its own width (Median's 2.4px, That day's
-       1.6px), a scatter renders its real symbol and fill (the occurrence
-       circle), and the meal track's bar renders the coral rect it actually
-       draws (#649 — it was a diamond until term 25 was resettled, and the
-       swatch followed the mark rather than being told about it). Only the two
+       1.6px). Only the two
        stacked area bands need an explicit rect, because their inherited glyph
        would be a line rather than a fill — and each is filled with the very
        expression its band uses. */
@@ -782,8 +796,6 @@ export function renderCanvas(el, echarts, opts) {
         { name: '10–90th', icon: 'rect', itemStyle: { color: recede(colors.bandOuter, 45), borderWidth: 0 } },
         { name: '25–75th', icon: 'rect', itemStyle: { color: recede(colors.bandInner, 45), borderWidth: 0 } },
         { name: 'Median' },
-        { name: 'Meal boluses' },
-        ...((opts.occurrences || []).length ? [{ name: 'Occurrences' }] : []),
         ...(trace ? [{ name: 'That day' }] : []),
       ],
     },
@@ -818,17 +830,6 @@ export function renderCanvas(el, echarts, opts) {
           interval: hourInterval, formatter: axisFormatter, rich: axisRich,
         },
       },
-      {
-        type: 'category', data: axisData, boundaryGap: false, gridIndex: 1,
-        min: panning ? BIN_COUNT + displayOffset / BIN_MINUTES : undefined,
-        max: panning ? BIN_COUNT + displayOffset / BIN_MINUTES + CAT_MAX : undefined,
-        axisLine: { show: false }, axisTick: { show: false }, axisLabel: { show: false },
-        splitLine: {
-          show: true,
-          interval: hourInterval,
-          lineStyle: { color: colors.grid },
-        },
-      },
     ],
     yAxis: [
       {
@@ -841,7 +842,6 @@ export function renderCanvas(el, echarts, opts) {
         name: 'mg/dL', nameTextStyle: { color: colors.muted, fontSize: 10, align: 'left' },
         nameGap: 6, nameLocation: 'end',
       },
-      { type: 'value', min: 0, max: 1, gridIndex: 1, show: false },
     ],
     series: noHoverFade([
       // target band + selected window, hung off a silent carrier
@@ -910,6 +910,29 @@ export function renderCanvas(el, echarts, opts) {
           data: [{ yAxis: target[0] }, { yAxis: target[1] }],
         },
       },
+      /* The outside-the-gates dimming — see the dimAreas note above. A CUSTOM
+         series drawing plain rects, NOT a markArea: the markArea version was in
+         every option dump and painted nothing in the live app across two
+         browsers while fixture harnesses swore it worked — the same
+         in-the-option/zero-pixels failure this file already hit with
+         color-mix. The custom renderItem is the exact vehicle the event
+         charts' spread whiskers use, and those provably paint everywhere. */
+      {
+        name: '__dim', type: 'custom', silent: true, z: 9,
+        data: dimAreas,
+        /* BOTH dims are x-coordinates. Without this encode the second value is
+           y-encoded by default, the category string parses to NaN on the value
+           axis, and the rect gets NaN width — in the option, zero pixels. */
+        encode: { x: [0, 1] },
+        renderItem(params, api) {
+          const x1 = api.coord([api.value(0), 0])[0];
+          const x2 = api.coord([api.value(1), 0])[0];
+          const cs = params.coordSys;
+          return { type: 'rect', silent: true,
+            shape: { x: x1, y: cs.y, width: x2 - x1, height: cs.height },
+            style: { fill: colors.windowDim } };
+        },
+      },
       ...bandPair('10–90th', envelope.p10, outer, 'outer', recede(colors.bandOuter, 45), 2),
       ...bandPair('25–75th', envelope.p25, inner, 'inner', recede(colors.bandInner, 45), 4),
       // hairline edges so the two bands read as two bands, not one gradient
@@ -950,81 +973,12 @@ export function renderCanvas(el, echarts, opts) {
         } : undefined,
         // the spread no longer hangs off the band — see the window label above
       },
-      // occurrence lane: one tick per occurrence of the drilled factor
       ...(trace ? [{
         name: 'That day', type: 'line', z: 10, data: trace.map((v) => (v == null ? '-' : v)),
         symbol: 'none', smooth: 0.2, connectNulls: false, animation: false,
         lineStyle: { color: colors.text, width: 1.6, cap: 'round' },
         itemStyle: { color: colors.text },
       }] : []),
-      {
-        /* Occurrence marks. They used to float as unlabelled ticks in a reserved
-           strip at the top of the plot, which read as debris; each one now sits
-           at its own recorded glucose value and is named in the legend.
-
-           SELECT-IN-PLACE (P35 retired): a selected roster row draws its own
-           mark bigger and outlined rather than moving the window (P21
-           retired) or opening a level of its own — the emphasis is drawn,
-           never a re-derived scope. */
-        name: 'Occurrences', type: 'scatter', z: 11,
-        data: (opts.occurrences || []).map((o) => {
-          const selected = opts.selectedOcc && o.t === opts.selectedOcc.t && o.date === opts.selectedOcc.date;
-          return {
-            value: [
-              Math.round(minuteOfDay(o.t) / BIN_MINUTES) % BIN_COUNT,
-              o.bg != null ? o.bg : (o.worst_bg != null ? o.worst_bg : OCCURRENCE_Y),
-            ],
-            meta: o,
-            symbolSize: selected ? 11 : 7,
-            itemStyle: selected
-              ? { color: colors.text, opacity: 1, borderColor: colors.occurrence, borderWidth: 2 }
-              : undefined,
-          };
-        }),
-        symbol: 'circle', symbolSize: 7,
-        itemStyle: {
-          color: colors.occurrence, opacity: 0.95,
-          borderColor: colors.surface, borderWidth: 1,
-        },
-
-      },
-      /* Meal track, in its own grid beneath the axis.
-
-         RESETTLED 2026-08-10 (term 25, issue #649, operator's pick). It was a
-         diamond whose SIZE ran 7-14px scaled to the busiest bucket in view, and
-         that rule fails at both ends of the only dimension nobody had varied —
-         how many days the capture holds:
-
-           3 captured days   every bucket holds 1, so the busiest holds 1 and
-                             EVERY glyph renders at full size
-           30 captured days  38 of 48 buckets occupied, counts 1-10, still on a
-                             7-14px ramp: neighbours stop separating and the
-                             three real meal habits sit level with the overnight
-                             rescue-carb scatter
-
-         Height on an ABSOLUTE scale answers both. The column is meals per
-         CAPTURED DAY, so a bucket keeps its height as the capture widens and
-         one meal in three days reads as the habit it is while one meal in
-         thirty does not. Length is also the channel the eye compares accurately
-         at small sizes, which area never was.
-
-         The ceiling is the one parameter: full height = a meal in this half
-         hour on GLYPH_FULL_HEIGHT_RATE of days. At 0.5 the busiest bucket in a
-         real 30-day capture (10 meals / 30 days) reaches two thirds of the
-         track and nothing clamps.
-
-         The series NAME is unchanged on purpose: the docked readout branches on
-         it (behaviour story S19), so a glyph still reports its count and median
-         carbs through the one channel under the new encoding. */
-      {
-        name: 'Meal boluses', type: 'bar', xAxisIndex: 1, yAxisIndex: 1, z: 7,
-        barWidth: 5,
-        data: markers.map((m) => ({
-          value: [m.index, Math.min(1, (m.count / envelope.days) / GLYPH_FULL_HEIGHT_RATE)],
-          meta: m,
-        })),
-        itemStyle: { color: colors.meal },
-      },
     ]),
   };
   if (panning) option.series = option.series.flatMap(displaySeries);
@@ -1033,42 +987,14 @@ export function renderCanvas(el, echarts, opts) {
      and getInstanceByDom hands back the SAME chart, so rebind rather than stack
      handlers — otherwise every redraw adds another reporter.
 
-     The occurrence dot and the meal glyph report through this one channel too,
-     so no floating box survives anywhere. An item hover latches: the axis
-     pointer keeps firing as the cursor moves over a dot, and without the latch
-     it would overwrite the dot's own reading on the very next mousemove. */
+     Only the pooled axis readout reaches this channel, so no floating box
+     survives anywhere. */
   chart.off('updateAxisPointer');
   chart.off('globalout');
-  chart.off('mouseover');
-  chart.off('mouseout');
   const report = opts.onHover;
   if (report) {
     const last = envelope.labels.length - 1;
-    let overItem = null;
-    chart.on('mouseover', (ev) => {
-      const meta = ev.data && ev.data.meta;
-      if (!meta) return;
-      if (ev.seriesName === 'Occurrences') {
-        const value = meta.bg != null ? meta.bg : meta.worst_bg;
-        overItem = {
-          kind: 'occurrence',
-          label: meta.t.slice(11, 16),
-          note: `${meta.cause_title || 'no cause attributed'}`
-            + `${value != null ? ` · ${Math.round(value)} mg/dL` : ''} · ${meta.date}`,
-        };
-      } else if (ev.seriesName === 'Meal boluses') {
-        overItem = {
-          kind: 'meal',
-          label: `${hhmm(meta.minute)}–${hhmm(meta.minute + 30)}`,
-          note: `${meta.count} meal bolus${meta.count === 1 ? '' : 'es'} captured`
-            + ` · median ${meta.medianCarbs} g carbs`,
-        };
-      } else { return; }
-      report(overItem);
-    });
-    chart.on('mouseout', () => { overItem = null; });
     chart.on('updateAxisPointer', (ev) => {
-      if (overItem) { report(overItem); return; }
       const axis = (ev.axesInfo || [])[0];
       if (!axis || axis.value == null) { report(null); return; }
       /* `axis.value` is an ORDINAL CATEGORY INDEX, never a minute. While
@@ -1087,7 +1013,7 @@ export function renderCanvas(el, echarts, opts) {
         n: envelope.counts[i], pool: envelope.pool,
       });
     });
-    chart.on('globalout', () => { overItem = null; report(null); });
+    chart.on('globalout', () => report(null));
   }
 
   return chart;

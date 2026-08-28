@@ -11,7 +11,7 @@ S41-S71.
 The app-only replay is
 `frontend/diagnose-workstation-behavior.replay.mjs`.
 
-**133 issued executable IDs:** S01–S113, C41–C57, and D1–D3
+**138 issued executable IDs:** S01–S118, C41–C57, and D1–D3
 **Active executable IDs:** all issued
 **Retired executable IDs:** none
 
@@ -2558,6 +2558,10 @@ entry erases or weakens the other.
   reason: `issue86FilteredRoot — the Event charts-only findings projection is retired with its root option — fix1`
 - **RETIRED issue86DirectEntryRestoration · fix1.** Returning from a behavioral chart no longer restores a retired root View.
   reason: `issue86DirectEntryRestoration — returning from a behavioral chart no longer restores a retired root View — fix1`
+- **RETIRED issue86DirectEntryRestoration · fix2.** The drill mark is read off the stage tile, never the row's registry echo. Operator ruling, 2026-08-27: "the only chart that needs to be displaying any kind of drill down ... is the spotlight. If you are interacting with a chart, it should either be full screen or in the spotlight." A row-derived event chart still seats directly — the same click promotes it to the stage — but the probe now asserts `#tile-focal`'s mark, matching S110/S111's stage-scoped contract, rather than the `#tile-row` echo it used to check.
+  reason: `issue86DirectEntryRestoration — the drill mark is the stage's, never the row's registry echo — fix2`
+- **RETIRED S40 · fix1.** Same amendment as issue86DirectEntryRestoration · fix2: the clicked comparison tile is promoted to the stage, so its persisting drill mark is asserted on `#tile-focal`, not the `#tile-row` cell the click came from.
+  reason: `S40 — the drill mark is the stage's, never the row's registry echo — fix1`
 - **RETIRED issue86PendingRoot · fix1.** Pending findings retain Sift only; there is no root View selection to preserve.
   reason: `issue86PendingRoot — pending findings retain Sift only; there is no root View selection to preserve — fix1`
 - **RETIRED issue86MalformedRecovery · fix1.** Malformed case recovery returns to the findings root without a retired Event charts View.
@@ -2592,6 +2596,26 @@ entry erases or weakens the other.
   sanction: Connor Griffin · 2026-08-26 · “rewrite their openers off the retired global 'By event' control onto the successor UI (the canvas's per-tile alignment / the case-file-backed comparison tile), preserving what those legs actually verify — the comparison's population semantics and the support audit's assertions.”
 - **RETIRED event-comparison replay S12 keyboard clause · final gate reconciliation.** Its server-owned downgrade, median, spread and legend assertions remain living; only the keyboard point-count clause retires with the global comparison cursor.
   sanction: Connor Griffin · 2026-08-26 · “rewrite their openers off the retired global 'By event' control onto the successor UI (the canvas's per-tile alignment / the case-file-backed comparison tile), preserving what those legs actually verify — the comparison's population semantics and the support audit's assertions.”
+- **RETIRED S92 · ADR 215 amendment.** Focus no longer swaps charts through fixed seats; promoting a chart leaves the dock's ordered set sorted.
+  sanction: ADR 215 amendment · 2026-08-26 · “A pin orders the dock; it is not membership of a position.”
+- **RETIRED S93 · ADR 215 amendment.** The zero-pin focal-plus-strip arrangement belonged to the withdrawn five-arrangement map.
+  sanction: ADR 215 amendment · 2026-08-26 · “A pin orders the dock; it is not membership of a position.”
+- **RETIRED S94 · ADR 215 amendment.** The one-pin split arrangement belonged to the withdrawn five-arrangement map.
+  sanction: ADR 215 amendment · 2026-08-26 · “A pin orders the dock; it is not membership of a position.”
+- **RETIRED S95 · ADR 215 amendment.** The two-pin stacked-pair arrangement belonged to the withdrawn five-arrangement map.
+  sanction: ADR 215 amendment · 2026-08-26 · “A pin orders the dock; it is not membership of a position.”
+- **RETIRED S96 · ADR 215 amendment.** The three-pin one-plus-two arrangement belonged to the withdrawn five-arrangement map.
+  sanction: ADR 215 amendment · 2026-08-26 · “A pin orders the dock; it is not membership of a position.”
+- **RETIRED S97 · ADR 215 amendment.** The four-pin quad arrangement belonged to the withdrawn five-arrangement map.
+  sanction: ADR 215 amendment · 2026-08-26 · “A pin orders the dock; it is not membership of a position.”
+- **RETIRED S98 · ADR 215 amendment.** A pin is never refused: the withdrawn cap cannot govern the ordered dock.
+  sanction: ADR 215 amendment · 2026-08-26 · “A pin orders the dock; it is not membership of a position.”
+- **RETIRED S99 · ADR 215 amendment.** Candidates no longer occupy derived available seats; the dock is the whole ordered set.
+  sanction: ADR 215 amendment · 2026-08-26 · “A pin orders the dock; it is not membership of a position.”
+- **RETIRED S101 · ADR 215 amendment.** Independently seated chart alignments belonged to the withdrawn fixed arrangement map.
+  sanction: ADR 215 amendment · 2026-08-26 · “A pin orders the dock; it is not membership of a position.”
+- **RETIRED S113 · ADR 215 amendment.** A chart may appear in both the spotlight and its dock cell; distinct live tile names and focal seating are no longer a contract.
+  sanction: ADR 215 amendment · 2026-08-26 · “The dock is the whole ordered set, spotlight included.”
 
 ### Permanent successor rewrites — final issue 135 reconciliation
 
@@ -2610,16 +2634,7 @@ entry erases or weakens the other.
 
 ### Added frozen stories — issue 135
 
-S92 · Focus swaps only on chart selection; the demoted chart lands in the selected chart's former seat, and the reverse swap restores both destinations. Evidence: replay S92 plus both transition renders.
-S93 · Zero pins derives the focal-plus-strip arrangement. Evidence: replay S93.
-S94 · One pin derives the fifty-fifty split arrangement. Evidence: replay S94.
-S95 · Two pins derive the stacked-pair arrangement. Evidence: replay S95.
-S96 · Three pins derive the one-plus-two arrangement. Evidence: replay S96.
-S97 · Four pins derive the quad arrangement. Evidence: replay S97.
-S98 · A fifth pin is refused at the control and all four pins remain intact. Evidence: replay S98.
-S99 · Live unpinned candidates seat into available positions without becoming pins. Evidence: replay S99.
 S100 · Capacity drops a surplus candidate from the field while every reader-owned pin stays seated. Evidence: replay S100.
-S101 · Two chart tiles hold different alignments at the same time. Evidence: replay S101.
 S102 · Every glucose-bearing chart in one arrangement receives one shared glucose range. Evidence: replay S102.
 S103 · A successful evidence read renders the named `ok` tile state. Evidence: replay S103.
 S104 · An evidence read with no plottable values renders the named `empty` tile state and explanation. Evidence: replay S104.
@@ -2630,8 +2645,6 @@ S108 · Dismissing temporary fullscreen restores the exact prior focal chart, se
 S109 · Explore extinguishes rankings, recommendations, verdict marks and staging while reader-owned pins retain their accent. Evidence: replay S109.
 S110 · A drill names and marks its owning chart in Findings and Explore. Evidence: replay S110.
 S111 · Clear trace returns to the untraced case view without closing the owning chart drill. Evidence: replay S111.
-S112 · At the narrow viewport the canvas linearizes into one column, leads the reading order with the FOCAL tile whichever pin it is, and removes unpinned slot charts from reading order. Evidence: replay S112.
-S113 · Drilling a behavioural finding seats that finding's own response comparison in the focal seat, marks the owning chart in words, leaves no two live charts identically named, and does not deepen the path when the same finding is drilled again. Evidence: replay S113.
 
 ### AMENDED — S112, the narrow reading order (#135 fix round, 2026-08-26)
 
@@ -2656,3 +2669,69 @@ Three stories carried the count as a witness and are amended, not retired: S01
 now reads the empty header plus the surviving pooled-days phrasing, and S06 and
 S21 read the lane's own dimming, which is the scope the reader acts on. Every
 one of the three keeps its original subject.
+
+
+## Revision amendment — 2026-08-26 (the drill mark leaves the header)
+
+**S113's word chip is now applied as a permanent `RETIRED` entry.** The drilled
+tile no longer carries `Open in inspector` in its header. S113 and the
+canvas-composition suite replace that positive assertion with a loud absence
+assertion and print this sanction on every run:
+
+`sanction: Connor Griffin · 2026-08-26 · "The ring and the raised rail mark the drilled tile. The chip was noise."`
+
+**The mark itself is not retired — only the word.** The drilled tile keeps its
+2px ring, now painted in whichever ink reaches rank one on the current ground
+(`--ck-focus-mark`), and gains a second channel that is shape rather than
+colour: its rail stays materialized — recess, inner edge, divider, full-ink
+glyphs — while every other tile on the canvas shows a bare gutter until the
+pointer enters it. That second channel is what the word was there to guarantee
+(Color-Never-Alone), and both replays now assert it directly by comparing the
+drilled tile's computed rail ground against an undrilled tile's, so a
+colour-only regression fails the run. The inspector continues to name the chart
+it is reading in `#drill-provenance`, unchanged.
+
+The old replay failed first with `expected 1, got 0`; the revised replay then
+passed.
+
+## Revision amendment — 2026-08-27 (Watching-tail promotion retention)
+
+S114 covers the corrected filmstrip transition. Selecting a Watching-tail chart
+promotes it to the spotlight even though it is not ranked; that promoted chart
+keeps exactly one strip cell, and that cell is the strip's one selected current
+frame. The story drives the tail cell through the shipped canvas and asserts all
+three observations after the promotion.
+
+## Revision amendment — 2026-08-27 (strip rank, paint and reading order)
+
+**S19 is amended.** Its occurrence-dot and meal-glyph hover/latch clauses are
+retired; pooled-bin hover is the strip's sole readout, and occurrences remain
+reachable from Findings. This supersedes the P29 item-hover latch only. The
+sanctions are: ConnorGriffin · 2026-08-27 · 'these dots mean nothing, just take
+them off the glucose chart. User can get to them from the findings panel.' and
+ConnorGriffin · 2026-08-27 · 'Please also remove meal markers from the glucose
+chart.'
+
+**S102 is amended.** Selecting an occurrence never changes the shared
+evidence-field range, and arriving evidence tiles never changes the glucose
+strip's envelope-and-target range. This supersedes S102's one unqualified
+arrangement-wide glucose-range clause.
+
+**S110 is amended.** Its duplicate drill-provenance name clause is retired;
+Findings still marks the chart owning the drill. This supersedes only the
+duplicate name beside the breadcrumb. Sanction: ConnorGriffin · 2026-08-27 ·
+'Stop repeating ourselfes. Respect the sanctitity of the breadcrumb.'
+
+**S115.** A dock mini, event comparison included, carries no axis furniture,
+tooltip, episode trace, or selected trace; Enter/Space promotes its cell to the
+spotlight. Evidence: replay S115.
+
+**S116.** Closing the chart explorer restores focus to its opener. Evidence:
+replay S116.
+
+**S117.** After a theme change, event evidence repaints from the live surface
+palette. Evidence: replay S117.
+
+**S118.** Findings rows number only visible priced ranked rows and reveal an
+asserting row's server-published annotation, composing no new clinical copy.
+Evidence: replay S118.

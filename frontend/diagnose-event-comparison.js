@@ -9,6 +9,7 @@ const STYLE = {
 };
 
 import { createDiagnoseWorkstation } from './diagnose-workstation.js';
+import { GRID } from './diagnose-workstation-chart.js';
 
 /* The registry adapter builds an option with no surface to read tokens off, so
    the document element answers for it. Outside a browser neither exists, and an
@@ -23,6 +24,11 @@ const rounded = (value) => value == null ? '—' : String(Math.round(value));
 const dateLabel = (date) => new Date(`${date}T00:00:00`).toLocaleDateString(
   'en-US', { month: 'short', day: 'numeric' },
 );
+/* At the anchor the axis prints the event's own name — "Completed carb bolus" —
+   which is most of a quad tile wide and lands on top of "+1 h" beside it. The
+   mini caller passes the empty string there instead: the chart already draws
+   its dashed anchor line and marker at zero, and the tile's title names the
+   finding the events belong to. */
 const axisLabel = (minute, anchor) => {
   if (minute === 0) return anchor;
   return `${minute < 0 ? '−' : '+'}${Math.abs(minute) / 60} h`;
@@ -97,28 +103,39 @@ function legend(surface, caseFile, selected) {
   if (selected) key.insertAdjacentHTML('beforeend', `<span class="ec-key-item" data-cohort="selected"><i class="ec-key-mark" aria-hidden="true"></i><strong>Selected trace</strong><small>${dateLabel(selected.date)} · observed</small></span>`);
 }
 
-function option(surface, caseFile, selected, range) {
+function option(surface, caseFile, selected, range, mini = false) {
   const { projection } = caseFile;
   const series = [{ type: 'line', data: [], silent: true, name: 'Target range',
-    markArea: { silent: true, itemStyle: { color: `color-mix(in srgb, ${css(surface, '--mk-ok')} 7%, transparent)` }, data: [[{ yAxis: 70, name: 'target 70–180' }, { yAxis: 180 }]] } }];
+    markArea: { silent: true, itemStyle: { color: `color-mix(in srgb, ${css(surface, '--mk-ok')} 7%, transparent)` }, data: [[{ yAxis: 70, ...(mini ? {} : { name: 'target 70–180' }) }, { yAxis: 180 }]] } }];
   for (const cohort of projection.cohorts) {
     for (const support of ['supported', 'limited']) {
       if (!cohort.points.some((point) => point.support === support)) continue;
       series.push(spreadSeries(surface, cohort, cohort.points, selected?.cohort, support));
       series.push(lineSeries(surface, cohort, cohort.points, selected?.cohort, support));
     }
-    if (cohort.support === 'withheld') series.push(...episodeSeries(surface, cohort, selected?.cohort));
+    /* The mini rank draws NO per-occurrence traces (operator, 2026-08-27): a
+       mini's question is whether there is a shape worth opening, and the cohort
+       medians alone answer it — the raw episode lines read as noise at 148px.
+       The selected trace is a reading emphasis, which only the stage carries. */
+    if (!mini && cohort.support === 'withheld') series.push(...episodeSeries(surface, cohort, selected?.cohort));
   }
-  series.push(...selectedSeries(surface, selected));
-  return { animation: false, backgroundColor: 'transparent', grid: { left: 52, right: 22, top: 24, bottom: 42 }, tooltip: { trigger: 'axis', showContent: false },
-    xAxis: { type: 'value', min: projection.window_min[0], max: projection.window_min[1], interval: 60, axisLine: { onZero: false, lineStyle: { color: css(surface, '--mk-line') } }, axisTick: { show: false }, splitLine: { show: true, lineStyle: { color: css(surface, '--mk-line'), opacity: .48 } }, axisLabel: { color: css(surface, '--mk-muted'), fontSize: 10, formatter: (minute) => axisLabel(minute, projection.anchor.label) } },
-    yAxis: { type: 'value', min: range[0], max: range[1], interval: 60, name: 'mg/dL', nameLocation: 'end', axisLine: { show: false }, axisTick: { show: false }, splitLine: { show: true, lineStyle: { color: css(surface, '--mk-line'), opacity: .58 } }, axisLabel: { color: css(surface, '--mk-muted'), fontSize: 10 } }, series };
+  if (!mini) series.push(...selectedSeries(surface, selected));
+  /* A MINI KEEPS NO AXIS FURNITURE AT ALL, and it is INERT (ADR 215 amendments,
+     2026-08-27) — the same rank the other evidence kinds take from
+     diagnose-evidence-charts' MINI_GRID: 6px of air on all four sides, no tick
+     labels, no split lines, no axis line, and no hover readout of any kind.
+     Reading happens on the stage; the cell's only verbs are the strip's own. */
+  return { animation: false, backgroundColor: 'transparent',
+    grid: mini ? { left: 6, right: 6, top: 6, bottom: 6 } : { left: GRID.left, right: 34, top: 26, bottom: 42 },
+    tooltip: mini ? { show: false } : { trigger: 'axis', showContent: false },
+    xAxis: { type: 'value', min: projection.window_min[0], max: projection.window_min[1], interval: 60, axisLine: { show: !mini, onZero: false, lineStyle: { color: css(surface, '--mk-line') } }, axisTick: { show: false }, splitLine: { show: !mini, lineStyle: { color: css(surface, '--mk-line'), opacity: .48 } }, axisLabel: { show: !mini, color: css(surface, '--mk-muted'), fontSize: 10, formatter: (minute) => axisLabel(minute, projection.anchor.label) } },
+    yAxis: { type: 'value', min: range[0], max: range[1], interval: 60, name: mini ? undefined : 'mg/dL', nameLocation: 'end', nameTextStyle: { color: css(surface, '--mk-muted'), fontSize: 9 }, nameGap: 8, axisLine: { show: false }, axisTick: { show: false }, splitLine: { show: !mini, lineStyle: { color: css(surface, '--mk-line'), opacity: .58 } }, axisLabel: { show: !mini, color: css(surface, '--mk-muted'), fontSize: 10 } }, series };
 }
 
 /* ONE GLUCOSE AXIS FOR A WHOLE ARRANGEMENT. The envelope is the range every
    glucose chart shows at rest; served values outside it widen the axis in fixed
    steps so tiles seated side by side are read against the same ruler. The range
-   is computed once by whoever composes the arrangement and injected, never
+   is computed once by whoever composes the field and injected, never
    re-derived per chart. */
 export const GLUCOSE_STEP = 20;
 export const GLUCOSE_ENVELOPE = [60, 200];
@@ -132,7 +149,9 @@ export function glucoseRange(values) {
   return [low, high];
 }
 
-/** Every glucose value this case file's comparison actually draws. */
+/** The shared tile range is based on served cohort evidence, never a selected
+ *  occurrence's detail trace. Selection is a reader state; letting its trace
+ *  widen the field would rescale every dock mini under one click. */
 export function eventComparisonGlucoseValues(caseFile) {
   const projection = caseFile?.projection;
   const cohortValues = (projection?.cohorts || []).flatMap((cohort) => [
@@ -140,9 +159,7 @@ export function eventComparisonGlucoseValues(caseFile) {
     ...(cohort.episodes || []).flatMap((episode) =>
       (episode.glucose || []).map((point) => point.bg)),
   ]);
-  const detail = caseFile?.selection?.state === 'selected' ? caseFile.selection.detail : null;
-  const selectedValues = (detail?.glucose || []).map((point) => point.bg);
-  return [...cohortValues, ...selectedValues].filter(Number.isFinite);
+  return cohortValues.filter(Number.isFinite);
 }
 
 function assertEventCaseFile(caseFile) {
@@ -155,16 +172,21 @@ function assertEventCaseFile(caseFile) {
 /* PRESENTATION ADAPTER, NOT A SECOND CHART. The evidence-tile registry draws
    the meals/lows comparison from the same served case file the shipped mount
    reads, through the same series builders — the only difference is that a tile
-   is handed its arrangement's glucose range instead of computing its own, and
+   is handed the field's glucose range instead of computing its own, and
    has no surface to read tokens off. (#181/#135: the case file is the one
    authority for this fact, and this is its second consumer.) */
-export function eventComparisonChartOption(caseFile, range, surface = null) {
+/* `mini` is the same rank the other evidence kinds carry: a quad tile gets the
+   tight grid, the small label rank and no axis name. Without it this builder
+   drew full-size furniture inside a 250px tile — a taller top and bottom than
+   its neighbours, so three tiles in a row had plots of different heights, and a
+   right inset sized for the strip's value tags, which nothing here has. */
+export function eventComparisonChartOption(caseFile, range, surface = null, mini = false) {
   if (!Array.isArray(range) || range.length !== 2
       || !range.every(Number.isFinite) || range[0] >= range[1]) {
-    throw new TypeError('event comparison needs one injected arrangement glucose range');
+    throw new TypeError('event comparison needs one injected field glucose range');
   }
   assertEventCaseFile(caseFile);
-  return option(surface, caseFile, selection(caseFile), range);
+  return option(surface, caseFile, selection(caseFile), range, mini);
 }
 
 /* The canvas header, rest line and docked readout together. The readout is the
@@ -191,7 +213,7 @@ export function renderEventSurface(surface, caseFile, { headerHost = null } = {}
   const chartElement = surface.querySelector('#ec-chart');
   const chart = window.echarts.init(chartElement, null, { renderer: 'canvas' });
   /* The mount reads its own axis off the cohort values it is about to draw:
-     alone on the surface, this chart IS its whole arrangement. */
+     alone on the surface, this chart IS the whole field. */
   chart.setOption(eventComparisonChartOption(
     caseFile, glucoseRange(eventComparisonGlucoseValues(caseFile)), surface,
   ));

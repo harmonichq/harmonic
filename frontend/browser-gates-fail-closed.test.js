@@ -15,7 +15,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -66,3 +66,20 @@ for (const { file: suite, payload } of SUITES) {
     }
   });
 }
+
+test('the composition suite registers and executes the retired Explore-mode guard', () => {
+  const source = readFileSync(join(FRONTEND,
+    'diagnose-canvas-composition.browser.test.mjs'), 'utf8');
+  assert.match(source, /test\('Explore mode stays retired — RETIRED'/,
+    'the browser suite must register the retired-mode guard');
+  assert.match(source,
+    /console\.log\(`RETIRED — \$\{RETIRED_EXPLORE_MODE_SANCTION\}`\)/,
+    'the guard must print its sanction on every run');
+  assert.match(source, /name: \/\^\(Findings\|Explore\)\$\//,
+    'the guard must look for either half of the retired mode switch');
+  assert.match(source, /assert\.equal\(await modeSwitch\.count\(\), 0/,
+    'the guard must fail when the retired mode switch returns');
+  assert.match(source,
+    /sanction: ConnorGriffin · 2026-08-26 · "Diagnose does NOT need to host an explore mode\. we\\'re building a better version of it right now\."/,
+    'the guard must carry ADR 215\'s amended operator sanction');
+});

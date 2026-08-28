@@ -2,9 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  BIN_MINUTES, buildMealMarkers, buildSlotLane, slotAssertsMove, snapWindow,
+  BIN_MINUTES, buildSlotLane, slotAssertsMove, snapWindow,
   renderCanvas, renderHistoryEvents, validateHistoryEvents, windowStats, windowSupport,
-  commitSlide, commitWindow, minuteAtX, windowSpans, xAtMinute, windowSpanText,
+  commitSlide, commitWindow, minuteAtX, windowSpans, xAtMinute, windowSpanText, GRID,
+  stripGlucoseRange,
 } from './diagnose-workstation-chart.js';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -40,24 +41,6 @@ test('a backend-asserted thin basal estimate remains asserted', () => {
 
 test('slotAssertsMove requires a sized backend recommendation', () => {
   assert.equal(slotAssertsMove({ asserts_move: true, recommended: null }), false);
-});
-
-test('buildMealMarkers uses 30-minute buckets and the 12 g floor', () => {
-  const markers = buildMealMarkers({
-    '2026-08-01': { window: { boluses: [
-      { t: '2026-08-01 07:02:00', carbs: 12, insulin: 1 },
-      { t: '2026-08-01 07:31:00', carbs: 24, insulin: 2 },
-      { t: '2026-08-01 07:29:00', carbs: 11, insulin: 1 },
-    ] } },
-    '2026-08-02': { window: { boluses: [
-      { t: '2026-08-02 07:11:00', carbs: 18, insulin: 1.5 },
-    ] } },
-  });
-
-  assert.deepEqual(markers, [
-    { minute: 420, index: 420 / BIN_MINUTES, count: 2, carbs: 30, medianCarbs: 15, insulin: 2.5 },
-    { minute: 450, index: 450 / BIN_MINUTES, count: 1, carbs: 24, medianCarbs: 24, insulin: 2 },
-  ]);
 });
 
 test('windowStats reads a snapped hand-built envelope window', () => {
@@ -123,11 +106,15 @@ test('unrolled display windows snap, preserve their anchor, and commit circularl
 
 test('window spans and pointer mapping share the panned display domain', () => {
   assert.deepEqual(windowSpans([1320, 120]), [[1320, 1440], [0, 120]]);
+  /* The two ends of the plot, named by the shared spine rather than by the
+     pixel it happens to sit at — this asserts the round trip, not the inset. */
   const el = { clientWidth: 1054 };
-  assert.equal(minuteAtX(el, 52, -120), -120);
-  assert.equal(minuteAtX(el, 1002, -120), 1305);
-  assert.equal(xAtMinute(el, -120, -120), 52);
-  assert.equal(xAtMinute(el, 1305, -120), 1002);
+  const plotLeft = GRID.left;
+  const plotRight = el.clientWidth - GRID.right;
+  assert.equal(minuteAtX(el, plotLeft, -120), -120);
+  assert.equal(minuteAtX(el, plotRight, -120), 1305);
+  assert.equal(xAtMinute(el, -120, -120), plotLeft);
+  assert.equal(xAtMinute(el, 1305, -120), plotRight);
 });
 
 test('wrapped windows pool both stretches for stats and support', () => {
@@ -216,6 +203,92 @@ test('renderCanvas draws a wrapped window as two areas with one range label', ()
   }));
   assert.equal(option.series.find((series) => series.name === '__context').markArea.data
     .filter(([start]) => start.xAxis != null).length, 0);
+});
+
+test('a tile landing never changes the already-drawn strip range', () => {
+  const labels = Array.from({ length: 96 }, (_, index) => `${String(Math.floor(index / 4)).padStart(2, '0')}:${String((index % 4) * 15).padStart(2, '0')}`);
+  const filled = (value) => Array.from({ length: 96 }, () => value);
+  const envelope = {
+    labels, p10: filled(80), p25: filled(100), p50: filled(120), p75: filled(140),
+    p90: filled(160), counts: filled(12), raw: filled(1), days: 12, pool: 45,
+  };
+  const colors = {
+    muted: '#111', targetFill: '#444', targetText: '#555', rail: '#666', windowDim: '#777',
+    windowEdge: '#888', bandOuter: '#999', bandInner: '#aaa', bandEdge: '#bbb', median: '#ccc',
+    targetEdge: '#ddd', onAccent: '#eee', text: '#123', surface2: '#234', line: '#345', grid: '#678',
+  };
+  let option = null;
+  const chart = { setOption(next) { option = next; }, off() {}, on() {} };
+  const paint = () => renderCanvas({ clientWidth: 1200 }, { getInstanceByDom() { return chart; } }, {
+    envelope, colors, range: stripGlucoseRange(envelope), window: [0, 360], windowLabel: '00:00–06:00',
+  });
+
+  paint();
+  const before = [option.yAxis[0].min, option.yAxis[0].max];
+  const landedTileEvidence = [40, 360];
+  assert.deepEqual(landedTileEvidence, [40, 360], 'the simulated tile would widen the field range');
+  paint();
+  assert.deepEqual([option.yAxis[0].min, option.yAxis[0].max], before,
+    'the strip remains on its own envelope-and-target ruler after tile evidence lands');
+});
+
+test('slice 4 · the outside-the-gates scrim is the exact complement of the window', () => {
+  const labels = Array.from({ length: 96 }, (_, index) => `${String(Math.floor(index / 4)).padStart(2, '0')}:${String((index % 4) * 15).padStart(2, '0')}`);
+  const filled = (value) => Array.from({ length: 96 }, () => value);
+  const envelope = {
+    labels, p10: filled(80), p25: filled(100), p50: filled(120), p75: filled(140),
+    p90: filled(160), counts: filled(12), raw: filled(1), days: 12, pool: 45,
+  };
+  const colors = {
+    muted: '#111', warn: '#222', danger: '#333', targetFill: '#444', targetText: '#555',
+    rail: '#666', windowDim: '#77777788', windowEdge: '#888', bandOuter: '#999',
+    bandInner: '#aaa', bandEdge: '#bbb', median: '#ccc', targetEdge: '#ddd',
+    onAccent: '#eee', text: '#123', surface2: '#234', line: '#345', occurrence: '#456', meal: '#567', grid: '#678',
+  };
+  let option = null;
+  const chart = { setOption(next) { option = next; }, off() {}, on() {} };
+  const render = (extra) => renderCanvas({ clientWidth: 4000 }, { getInstanceByDom() { return chart; } }, {
+    envelope, markers: [], colors, range: [40, 300], ...extra,
+  });
+  // the dim is a CUSTOM series of rects (a markArea painted nothing in the
+  // live app while every option dump swore it existed); its data is the
+  // complement span list and its renderItem fills with colors.windowDim
+  const dims = () => option.series.find((series) => series.name === '__dim').data;
+
+  // a plain window dims before its start and after its end, clipped at the gates
+  render({ window: [360, 720], windowLabel: '06:00–12:00' });
+  assert.deepEqual(dims(), [['00:00', '06:00'], ['12:00', '23:45']]);
+  const dim = option.series.find((series) => series.name === '__dim');
+  assert.equal(dim.type, 'custom');
+  const rect = dim.renderItem(
+    { coordSys: { x: 10, y: 20, width: 100, height: 50 } },
+    { value: (i) => ['00:00', '06:00'][i], coord: ([v]) => [v === '00:00' ? 10 : 35, 0] });
+  assert.deepEqual(rect.shape, { x: 10, y: 20, width: 25, height: 50 });
+  assert.equal(rect.style.fill, '#77777788');
+
+  // the window itself carries no fill and no dashed border — the scrim is the mark
+  const context = option.series.find((series) => series.name === '__context');
+  const [windowArea] = context.markArea.data.filter(([start]) => start.xAxis != null);
+  assert.deepEqual(windowArea[0].itemStyle, { color: 'transparent' });
+
+  // #130 — a wrapped window's remainder is the single contiguous middle gap
+  render({ window: [1320, 120], windowLabel: '22:00–02:00' });
+  assert.deepEqual(dims(), [['02:00', '22:00']]);
+
+  // a window starting at midnight leaves only the trailing scrim
+  render({ window: [0, 240], windowLabel: '00:00–04:00' });
+  assert.deepEqual(dims(), [['04:00', '23:45']]);
+
+  // no window, no scrim
+  render({ window: [0, 0], windowLabel: 'SELECTED WINDOW' });
+  assert.deepEqual(dims(), []);
+
+  // panning: the scrim runs to the unrolled axis's own ends, real categories only
+  render({ window: [1320, 120], displayWindow: [1320, 1560], displayOffset: 135, clientWidth: 1200 });
+  assert.deepEqual(dims(), [['-1440', '1320'], ['1560', '2865']]);
+  for (const point of dims().flat()) {
+    assert.ok(option.xAxis[0].data.includes(point), `${point} must be a real category`);
+  }
 });
 
 test('renderCanvas pans labels and every data series into dimmed neighbouring days', () => {

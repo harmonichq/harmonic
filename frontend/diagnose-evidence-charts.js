@@ -5,7 +5,7 @@ import {
   GLUCOSE_STEP,
   glucoseRange,
 } from './diagnose-event-comparison.js';
-import { mealMemberMarkers } from './diagnose-workstation-chart.js';
+import { mealMemberMarkers, GRID } from './diagnose-workstation-chart.js';
 
 export { eventComparisonGlucoseValues, GLUCOSE_ENVELOPE, GLUCOSE_STEP, glucoseRange };
 
@@ -30,19 +30,46 @@ const chartColors = () => {
   ]));
   return { ...colors, target: `color-mix(in srgb, ${colors.signal} 8%, transparent)` };
 };
+/* Both grids open on the canvas-wide spine, so a tile's numbers and its title
+   start where the strip's do. The right inset is not a spine — it is however
+   much of the LAST x-axis label hangs past the final tick, which is half a date
+   at full rank and half a "1,500" at mini. At 22 and 6 those were being cut. */
 const FULL_GRID = Object.freeze({
-  left: 52, right: 22, top: 24, bottom: 42, containLabel: false,
+  left: GRID.left, right: 34, top: 26, bottom: 42, containLabel: false,
 });
+/* A MINI KEEPS NO AXIS FURNITURE AT ALL, so its grid is inset by nothing but a
+   hairline of air. The spine alignment the full grid honours exists so a tile's
+   NUMBERS start where the strip's do; a mini has no numbers to align, and the
+   32px it was reserving for them was a third of the cell. */
 const MINI_GRID = Object.freeze({
-  left: 18, right: 6, top: 8, bottom: 14, containLabel: false,
+  left: 6, right: 6, top: 6, bottom: 6, containLabel: false,
 });
 
 const grid = (mini) => ({ ...(mini ? MINI_GRID : FULL_GRID) });
+/* An axis NAME was left at ECharts' own defaults — 12px in the chart's own font
+   with a 15px gap — so it drew a rank the canvas does not have, and at that gap
+   it sat above the grid's own top and was cut off by the tile ("U/h" losing its
+   head, "mg/dL" floating clear of its plot). It comes down to the caps rank the
+   rest of the metadata uses, and close enough to the axis to belong to it. */
 const axis = (colors, mini = false) => ({
   axisLine: { show: false },
   axisTick: { show: false },
-  axisLabel: { color: colors.muted, fontFamily: MONO, fontSize: mini ? 8 : 10 },
-  splitLine: { show: true, lineStyle: { color: colors.line, width: 1 } },
+  /* AT MINI RANK THERE IS NO AXIS AT ALL — no labels, no split lines and no
+     name. Ruled on the built strip: at 8px the tick labels ran together into a
+     smear that reads as texture rather than as numbers, and the grid they ruled
+     spent most of a 148px cell on furniture nobody can use. A mini's question
+     is whether there is a shape here worth opening, which is the one thing the
+     plot alone answers; every number it needs is a click away on the stage.
+
+     The name goes for the older reason too: "glucose change (mg/dL)" is wider
+     than a cell's whole plot, so it ran off the left edge, and shrinking it
+     only made an unreadable thing that still overhung. Every axis object here
+     spreads this last, so what a caller set is dropped rather than restyled. */
+  axisLabel: { show: !mini, color: colors.muted, fontFamily: MONO, fontSize: 10 },
+  nameTextStyle: { color: colors.muted, fontFamily: FONT, fontSize: 9 },
+  nameGap: 8,
+  splitLine: { show: !mini, lineStyle: { color: colors.line, width: 1 } },
+  ...(mini ? { name: undefined } : {}),
 });
 const chartBase = (description, mini, colors) => ({
   animation: false,
@@ -51,20 +78,17 @@ const chartBase = (description, mini, colors) => ({
   aria: { enabled: true, decal: { show: false }, description },
   grid: grid(mini),
 });
-const chartLegend = (data, colors) => ({
-  show: true, left: 52, right: 22, bottom: 0, selectedMode: false,
+/* A MINI TILE CARRIES NO LEGEND. It is a thumbnail, and its question is whether
+   there is a shape here worth opening — not which series is which, at a size
+   where they cannot be told apart anyway. It was spending a third of a ~100px
+   plot naming two series the tile's own caption has already introduced. */
+const chartLegend = (data, colors, mini = false) => (mini ? { show: false } : {
+  show: true, left: GRID.left, right: 22, bottom: 0, selectedMode: false,
   itemWidth: 22, itemHeight: 8, itemGap: 18,
   textStyle: { color: colors.muted, fontFamily: FONT, fontSize: 9 },
   data,
 });
 const finite = (value) => typeof value === 'number' && Number.isFinite(value);
-const showsAdvice = (presentation) => !presentation || [
-  presentation.rankFilament,
-  presentation.rankChips,
-  presentation.tallies,
-  presentation.staging,
-  presentation.recommendationCopy,
-].every((visible) => visible !== false);
 const hhmm = (minute) => {
   const normalized = ((minute % 1440) + 1440) % 1440;
   return `${String(Math.floor(normalized / 60)).padStart(2, '0')}:${String(normalized % 60).padStart(2, '0')}`;
@@ -115,44 +139,47 @@ const basalVerdict = (data) => {
   return BASAL_HELD_STATUSES.has(data?.safety_status) ? 'Held' : 'Insufficient evidence';
 };
 
-function basalOption(mode, { data, mini = false, presentation } = {}) {
+function basalOption(mode, { data, mini = false } = {}) {
   const colors = chartColors();
   const nights = data?.nights || [];
-  const advice = showsAdvice(presentation);
-  const description = advice
-    ? `${data?.roster_count ?? 0} nights of steady data; ${data?.directional_support_count ?? 0} support this reading.`
-    : `${data?.roster_count ?? 0} nights of steady data.`;
+  const description = `${data?.roster_count ?? 0} nights of steady data; ${data?.directional_support_count ?? 0} support this reading.`;
   if (mode === 'event') {
-    const support = advice
-      ? data?.directional_support_count ?? 0 : data?.roster_count ?? 0;
-    const assertsMove = advice && data?.asserts_move === true;
-    const verdict = advice ? basalVerdict(data) : 'Nights of steady data';
+    const support = data?.directional_support_count ?? 0;
+    const assertsMove = data?.asserts_move === true;
+    const verdict = basalVerdict(data);
     const label = hhmm((data?.slot ?? 0) * 30);
     return {
       ...chartBase(description, mini, colors),
-      legend: chartLegend([verdict], colors),
+      legend: chartLegend([verdict], colors, mini),
       xAxis: { type: 'category', data: [label], ...axis(colors, mini),
         splitLine: { show: false } },
       yAxis: { type: 'value', min: 0, name: 'nights', ...axis(colors, mini) },
       series: [
         { name: verdict, type: 'bar', data: [support], animation: false,
-          barCategoryGap: '25%', itemStyle: { color: advice
-            ? (assertsMove ? colors.basal : colors.excluded) : colors.basal } },
+          barCategoryGap: '25%',
+          itemStyle: { color: assertsMove ? colors.basal : colors.excluded } },
       ],
     };
   }
   return {
     ...chartBase(description, mini, colors),
-    legend: chartLegend(['Programmed basal', 'Delivered basal'], colors),
+    legend: chartLegend(['Programmed basal', 'Delivered basal'], colors, mini),
     xAxis: { type: 'category', data: nights.map((night) => night.date), ...axis(colors, mini),
       splitLine: { show: false } },
     yAxis: { type: 'value', name: 'U/h', ...axis(colors, mini) },
     series: [
+      /* A LEGEND SWATCH READS `itemStyle`, NOT `lineStyle`. Colour set only on
+         the line left the swatch on ECharts' stock palette — a blue dot and a
+         green dot, neither of which exists anywhere in this app, labelling two
+         lines that are both green and told apart by dash against solid. The
+         icon carries the same distinction the plot does. */
       { name: 'Programmed basal', type: 'line', symbol: 'none', connectNulls: true,
         data: nights.map((night) => night.programmed_rate),
+        itemStyle: { color: colors.programmed },
         lineStyle: { color: colors.programmed, width: 1.4, type: 'dashed' } },
       { name: 'Delivered basal', type: 'line', symbol: 'none', connectNulls: true,
         data: nights.map((night) => night.delivered_rate),
+        itemStyle: { color: colors.basal },
         lineStyle: { color: colors.basal, width: mini ? 1.2 : 2 } },
     ],
   };
@@ -168,7 +195,7 @@ function isfOption(mode, { data, mini = false } = {}) {
     const windowIndex = new Map(windows.map((window, index) => [window.id, index]));
     return {
       ...chartBase(description, mini, colors),
-      legend: chartLegend(['Qualifying fasting steps'], colors),
+      legend: chartLegend(['Qualifying fasting steps'], colors, mini),
       xAxis: { type: 'category', data: windows.map((window) => window.date),
         ...axis(colors, mini),
         splitLine: { show: false } },
@@ -181,7 +208,7 @@ function isfOption(mode, { data, mini = false } = {}) {
   }
   return {
     ...chartBase(description, mini, colors),
-    legend: chartLegend(['Qualifying fasting steps'], colors),
+    legend: chartLegend(['Qualifying fasting steps'], colors, mini),
     xAxis: { type: 'value', min: 0, name: 'insulin acted (U)', ...axis(colors, mini),
       splitLine: { show: false } },
     yAxis: { type: 'value', name: 'glucose change (mg/dL)', ...axis(colors, mini) },
@@ -192,46 +219,39 @@ function isfOption(mode, { data, mini = false } = {}) {
   };
 }
 
-function carbRatioOption(mode, { data, range, mini = false, window, presentation } = {}) {
+function carbRatioOption(mode, { data, range, mini = false, window } = {}) {
   const colors = chartColors();
   const block = data?.block || {};
   const runs = data?.runs || [];
-  const advice = showsAdvice(presentation);
-  const description = advice
-    ? `${block.examined_runs ?? 0} examined meal runs; ${block.support ?? 0} support; ${block.excluded_runs ?? 0} excluded. Support uses solid traces and filled diamonds; directional-only evidence uses dashed traces and open diamonds.`
-    : `${block.examined_runs ?? 0} measured meal runs.`;
+  const description = `${block.examined_runs ?? 0} examined meal runs; ${block.support ?? 0} support; ${block.excluded_runs ?? 0} excluded. Support uses solid traces and filled diamonds; directional-only evidence uses dashed traces and open diamonds.`;
   if (mode === 'clock') {
     const frame = clockFrame(window || [block.start_min ?? 0, block.end_min ?? 1440]);
     const points = (inPool) => runs.filter((run) => run.in_pool === inPool && finite(run.true_ic))
       .map((run) => [frame.map(minuteOfDay(run.t)), run.true_ic]);
-    const measuredPoints = () => runs.filter((run) => finite(run.true_ic))
-      .map((run) => [frame.map(minuteOfDay(run.t)), run.true_ic]);
     return {
       ...chartBase(description, mini, colors),
-      legend: chartLegend(advice ? [
+      legend: chartLegend([
         { name: 'Support run', icon: 'circle' },
         { name: 'Directional-only run', icon: 'emptyCircle' },
-      ] : [{ name: 'Measured meal run', icon: 'circle' }], colors),
+      ], colors, mini),
       xAxis: { type: 'value', min: 0, max: frame.span, name: 'meal start',
         ...axis(colors, mini),
         axisLabel: { ...axis(colors, mini).axisLabel, formatter: frame.label },
         splitLine: { show: false } },
       yAxis: { type: 'value', min: 0, name: 'Carb ratio (g/U)', ...axis(colors, mini) },
-      series: advice ? [
+      series: [
         { name: 'Directional-only run', type: 'scatter', symbol: 'emptyCircle',
           symbolSize: mini ? 3 : 6, data: points(false),
           itemStyle: { color: colors.excluded, opacity: .72 } },
         { name: 'Support run', type: 'scatter', symbol: 'circle',
           symbolSize: mini ? 4 : 8, data: points(true),
           itemStyle: { color: colors.signal, opacity: .88 } },
-      ] : [{ name: 'Measured meal run', type: 'scatter', symbol: 'circle',
-        symbolSize: mini ? 4 : 8, data: measuredPoints(),
-        itemStyle: { color: colors.signal, opacity: .88 } }],
+      ],
     };
   }
   if (!Array.isArray(range) || range.length !== 2
       || !range.every(finite) || range[0] >= range[1]) {
-    throw new TypeError('carb-ratio evidence needs one injected arrangement glucose range');
+    throw new TypeError('carb-ratio evidence needs one injected field glucose range');
   }
   const runById = new Map(runs.map((run) => [run.run_id, run]));
   const pointsByRun = new Map((data?.series || []).map((series) => [series.run_id, series.points]));
@@ -240,44 +260,44 @@ function carbRatioOption(mode, { data, range, mini = false, window, presentation
   })), range[0] + 4).map((marker) => ({
     ...marker,
     inPool: Boolean(runById.get(marker.runId)?.in_pool),
-    itemStyle: { color: advice && !runById.get(marker.runId)?.in_pool
-      ? colors.excluded : colors.signal },
+    itemStyle: { color: runById.get(marker.runId)?.in_pool ? colors.signal : colors.excluded },
   }));
   return {
     ...chartBase(description, mini, colors),
-    legend: chartLegend(advice ? [
+    legend: chartLegend([
       { name: 'Support run', icon: 'diamond' },
       { name: 'Directional-only run', icon: 'emptyDiamond' },
-    ] : [{ name: 'Measured meal run', icon: 'diamond' }], colors),
+    ], colors, mini),
     xAxis: { type: 'value', name: 'minutes from first meal', ...axis(colors, mini),
       splitLine: { show: false } },
     yAxis: { type: 'value', min: range[0], max: range[1], name: 'mg/dL',
       ...axis(colors, mini) },
     series: [
       { name: 'Target range', type: 'line', data: [], silent: true,
+      /* AT MINI RANK THE TARGET BAND KEEPS ITS FILL AND LOSES ITS NAME. ECharts
+         centres a markArea's name over the band at its own 12px default, so a
+         thumbnail whose axis labels are 8px carried a caption half again the
+         size of every other word in the cell, laid across the traces it was
+         drawn to contextualise — the same reason the legend and the axis names
+         already come off at mini. The band itself still says where target is. */
         markArea: { silent: true, itemStyle: { color: colors.target },
-          data: [[{ yAxis: 70, name: 'target 70–180' }, { yAxis: 180 }]] } },
+          data: [[{ yAxis: 70, ...(mini ? {} : { name: 'target 70–180' }) }, { yAxis: 180 }]] } },
       ...(data?.series || []).map((series) => ({
-        name: advice
-          ? (runById.get(series.run_id)?.in_pool ? 'Support run' : 'Directional-only run')
-          : 'Measured meal run',
+        name: runById.get(series.run_id)?.in_pool ? 'Support run' : 'Directional-only run',
         type: 'line', symbol: 'none', connectNulls: true, animation: false,
         data: series.points.map((point) => [point.minute, point.bg]),
-        lineStyle: { color: advice && !runById.get(series.run_id)?.in_pool
-          ? colors.excluded : colors.signal, width: mini ? .8 : 1.2,
-        opacity: advice && !runById.get(series.run_id)?.in_pool ? .28 : .48,
-        type: advice && !runById.get(series.run_id)?.in_pool ? 'dashed' : 'solid' },
+        lineStyle: {
+          color: runById.get(series.run_id)?.in_pool ? colors.signal : colors.excluded,
+          width: mini ? .8 : 1.2,
+          opacity: runById.get(series.run_id)?.in_pool ? .48 : .28,
+          type: runById.get(series.run_id)?.in_pool ? 'solid' : 'dashed' },
       })),
-      ...(advice ? [
-        { name: 'Support run', type: 'scatter', symbol: 'diamond',
-          symbolSize: mini ? 3 : 7, data: members.filter(({ inPool }) => inPool),
-          animation: false, emphasis: { disabled: true }, z: 8 },
-        { name: 'Directional-only run', type: 'scatter', symbol: 'emptyDiamond',
-          symbolSize: mini ? 3 : 7, data: members.filter(({ inPool }) => !inPool),
-          animation: false, emphasis: { disabled: true }, z: 8 },
-      ] : [{ name: 'Measured meal run', type: 'scatter', symbol: 'diamond',
-        symbolSize: mini ? 3 : 7, data: members,
-        animation: false, emphasis: { disabled: true }, z: 8 }]),
+      { name: 'Support run', type: 'scatter', symbol: 'diamond',
+        symbolSize: mini ? 3 : 7, data: members.filter(({ inPool }) => inPool),
+        animation: false, emphasis: { disabled: true }, z: 8 },
+      { name: 'Directional-only run', type: 'scatter', symbol: 'emptyDiamond',
+        symbolSize: mini ? 3 : 7, data: members.filter(({ inPool }) => !inPool),
+        animation: false, emphasis: { disabled: true }, z: 8 },
     ],
   };
 }
@@ -376,8 +396,8 @@ const entries = [
       title: row.title || 'Response comparison',
       meta: `${row.appearances?.[0]?.noun || 'responses'} aligned to each event`,
     }),
-    option: (_mode, { data, range, caseFile = data } = {}) =>
-      eventComparisonChartOption(caseFile, range),
+    option: (_mode, { data, range, caseFile = data, surface = null, mini = false } = {}) =>
+      eventComparisonChartOption(caseFile, range, surface, mini),
     thumbnail: (data, title) => thumbnail((title || 'Response comparison').toUpperCase(),
       data?.summary?.denominator ?? 0,
       [{ type: 'line', symbol: 'none', connectNulls: true,

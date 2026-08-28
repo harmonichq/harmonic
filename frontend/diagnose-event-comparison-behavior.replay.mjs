@@ -26,7 +26,7 @@ const MIME = {
    comparison tile. The tile's registry coordinates request event alignment from
    the Finding case-file path; there is no global mode switch in the successor UI. */
 const FINDINGS = ['finding:late_bolus', 'finding:over_treated_low', 'finding:missed_meal'];
-const RETIRED_GLOBAL_CURSOR_SANCTION = 'Connor Griffin · 2026-08-26 · "rewrite their openers off the retired global \'By event\' control onto the successor UI (the canvas\'s per-tile alignment / the case-file-backed comparison tile), preserving what those legs actually verify — the comparison\'s population semantics and the support audit\'s assertions."';
+const SPOTLIGHT_CURSOR_SANCTION = 'sanction: live-judging ruling · 2026-08-28 · "The visible comparison chart keeps its keyboard cursor; it is the reader\'s keyboard route into comparison evidence."';
 
 export class ReplayError extends Error {}
 const fail = (message) => { throw new ReplayError(message); };
@@ -34,6 +34,11 @@ const ok = (condition, message) => { if (!condition) fail(message); };
 const settle = (page, ms = 350) => page.waitForTimeout(ms);
 const problems = [];
 export const openerProblems = () => problems.slice();
+
+const findingTileSelector = (findingId) =>
+  `#tile-field .evidence-tile[data-chart-id="${findingId}"]`;
+const visibleFindingTile = (page, findingId) =>
+  page.locator(`${findingTileSelector(findingId)}:visible`).first();
 
 function playwright() {
   return require(process.env.PLAYWRIGHT_MODULE
@@ -154,27 +159,32 @@ export async function openApp(browser, options = {}) {
   const findingId = options.finding || FINDINGS[0];
   page.__comparisonFindingId = findingId;
   page.__comparisonServedByFinding = servedByFinding;
-  const queueIndex = await page.locator('#level .qrow').evaluateAll((rows, id) =>
-    rows.findIndex((row) => row.dataset.id === id), findingId);
-  ok(queueIndex >= 0, `${findingId} is absent from the unscoped findings queue`);
-  const tile = page.locator(`.evidence-tile[data-chart-id="${findingId}"]`);
-  if (!(await tile.isVisible())) {
+  const findingQueued = await page.locator('#level .qrow').evaluateAll((rows, id) =>
+    rows.some((row) => row.dataset.id === id), findingId);
+  ok(findingQueued, `${findingId} is absent from the unscoped findings queue`);
+  if (!(await visibleFindingTile(page, findingId).isVisible())) {
     await page.locator('#explorer-trigger').click();
-    await page.locator('.explorer-thumbnail').nth(queueIndex).click();
+    await page.locator(`${findingTileSelector(findingId)}[data-seat="grid"]`).click();
   }
   if (options.invalidComparison) {
-    await tile.locator('.tile-body').click();
+    await visibleFindingTile(page, findingId).locator('.tile-body').click();
     await page.waitForSelector('.case-file-error', { timeout: 15000 });
     return page;
   }
   await page.waitForSelector(
-    `.evidence-tile[data-chart-id="${findingId}"][data-state="ok"]`,
+    `${findingTileSelector(findingId)}[data-state="ok"]:visible`,
     { timeout: 15000 },
   );
+  /* Mini-owned proofs restore the dock explicitly. Readiness above cannot ask
+     the dock: the Finding may already own the spotlight while the dock is away. */
+  const dockMini = page.locator(`#tile-row .evidence-tile[data-chart-id="${findingId}"]`);
+  if (!(await dockMini.isVisible())) {
+    await page.locator('#dock-handle button[aria-label="Bring the charts up"]').click();
+  }
   try {
-    await tile.locator('.tile-chart canvas').waitFor({ state: 'visible', timeout: 15000 });
+    await dockMini.locator('.tile-chart canvas').waitFor({ state: 'visible', timeout: 15000 });
   } catch {
-    const boxes = await tile.evaluate((element) => Object.fromEntries(
+    const boxes = await dockMini.evaluate((element) => Object.fromEntries(
       [['tile', element], ['body', element.querySelector('.tile-body')],
         ['host', element.querySelector('.tile-chart')],
         ['canvas', element.querySelector('.tile-chart canvas')]]
@@ -185,20 +195,29 @@ export async function openApp(browser, options = {}) {
     ));
     fail(`${findingId} did not visibly render its successor tile canvas: ${JSON.stringify(boxes)}`);
   }
-  page.__compactComparison = await compactRendered(page, findingId);
-  await tile.locator('.tile-fullscreen').click();
-  await page.waitForSelector('#tile-field #ec-chart', { state: 'attached', timeout: 15000 });
+  page.__dockMiniComparison = await dockMiniRendered(page, findingId);
+  /* Promote the cell, then expand from the stage — a cell's only verb is
+     "become the spotlight" (ADR 215 amendment). */
+  await dockMini.click();
+  /* Opening the explorer can leave the dock raised over the spotlight. Settle
+     it through the reader's own dock control before asking the stage to act. */
+  if (await page.locator('#tile-field[data-raised]').count()) {
+    await page.locator('#dock-handle button[aria-label="Put the charts away"]').click();
+    await page.waitForSelector('#tile-field[data-dock="hidden"]', { timeout: 15000 });
+  }
+  await page.locator('#tile-focal .tile-fullscreen').click();
+  await page.waitForSelector('#tile-focal #ec-chart', { state: 'attached', timeout: 15000 });
   await settle(page, 700);
   if (options.selectCohort) {
-    await page.locator(`.evidence-tile[data-chart-id="${findingId}"] .tile-body`).click();
+    await page.locator(`#tile-focal .evidence-tile[data-chart-id="${findingId}"] .tile-body`).click();
     await page.locator(`[data-comparison-cohort="${options.selectCohort}"]`).first().click();
     await page.waitForSelector('#level .case-facts', { timeout: 15000 });
     await settle(page, 500);
     page.__selectedComparison = servedByFinding.get(findingId);
-    page.__fullscreenComparison = await fullscreenRendered(page);
-    await tile.locator('.tile-fullscreen').click();
-    await tile.locator('.tile-chart canvas').waitFor({ state: 'visible', timeout: 15000 });
-    page.__compactComparison = await compactRendered(page, findingId);
+    page.__spotlightComparison = await spotlightRendered(page, findingId);
+    await page.locator('#dock-headacts button[aria-label="Back to the dock"]').click();
+    await dockMini.locator('.tile-chart canvas').waitFor({ state: 'visible', timeout: 15000 });
+    page.__dockMiniComparison = await dockMiniRendered(page, findingId);
   }
   return page;
 }
@@ -208,11 +227,11 @@ async function use(open, browser, options, fn) {
   try { await fn(page); } finally { await page.close(); }
 }
 
-/* The compact registry tile is the successor surface. Read its own ECharts
-   instance before fullscreen replaces it; fullscreen remains an additional
-   view for its title, accessible legend and keyboard semantics. */
-const compactRendered = (page, findingId) => page.locator(
-  `.evidence-tile[data-chart-id="${findingId}"]`,
+/* The dock mini is the successor's front door. Read its own ECharts instance
+   before fullscreen replaces it; fullscreen remains an additional view for
+   its title, accessible legend and keyboard semantics. */
+const dockMiniRendered = (page, findingId) => page.locator(
+  `#tile-row .evidence-tile[data-chart-id="${findingId}"]`,
 ).evaluate((tile) => {
   const host = tile.querySelector('.tile-chart');
   const chart = host && window.echarts.getInstanceByDom(host);
@@ -233,36 +252,47 @@ const compactRendered = (page, findingId) => page.locator(
   };
 });
 
-const fullscreenRendered = (page) => page.evaluate(() => ({
-  legend: [...document.querySelectorAll('.ec-key-item')].map((item) => ({
-    cohort: item.dataset.cohort, support: item.dataset.support || null,
-    selected: item.dataset.selectedCohort || null,
-    name: item.querySelector('strong')?.textContent ?? null,
-    detail: item.querySelector('small')?.textContent.replace(/\s+/g, ' ').trim() ?? null,
-  })),
-  title: document.querySelector('#tile-field #ec-canvas-head h2')?.textContent ?? null,
-  chartLabel: document.querySelector('#ec-chart')?.getAttribute('aria-label') || '',
-}));
+const spotlightRendered = (page, findingId) => page.evaluate((id) => {
+  const host = document.querySelector(`#tile-focal .evidence-tile[data-chart-id="${id}"] #ec-chart`);
+  const chart = host && window.echarts.getInstanceByDom(host);
+  const option = chart?.getOption();
+  return {
+    legend: [...document.querySelectorAll('#tile-focal .ec-key-item')].map((item) => ({
+      cohort: item.dataset.cohort, support: item.dataset.support || null,
+      selected: item.dataset.selectedCohort || null,
+      name: item.querySelector('strong')?.textContent ?? null,
+      detail: item.querySelector('small')?.textContent.replace(/\s+/g, ' ').trim() ?? null,
+    })),
+    title: document.querySelector('#tile-focal #ec-canvas-head h2')?.textContent ?? null,
+    chartLabel: host?.getAttribute('aria-label') || '',
+    ids: option?.series.map((series) => series.id).filter(Boolean) || [],
+    series: option?.series.filter((series) => series.id).map((series) => ({
+      id: series.id, name: series.name, data: series.data,
+      opacity: series.lineStyle?.opacity ?? 1,
+    })) || [],
+  };
+}, findingId);
 
 /* Membership, counts and grades are server-owned, so compare the served case
-   file with what the compact option actually drew. Never use fullscreen's
-   global chart hook as the proof of the successor tile. */
+   file with what the dock mini drew. Selection is spotlight-only, so read its
+   trace from the spotlight rather than pretending the mini owns it. */
 const rendered = async (page) => {
-  const compact = page.__compactComparison;
+  const dockMini = page.__dockMiniComparison;
   const served = page.__selectedComparison
     || page.__comparisonServedByFinding.get(page.__comparisonFindingId);
-  ok(compact?.visible && compact.chartId === page.__comparisonFindingId,
-    `the compact registry tile did not expose its own ECharts option: ${JSON.stringify(compact)}`);
-  const ids = compact.ids;
+  ok(dockMini?.visible && dockMini.chartId === page.__comparisonFindingId,
+    `the dock mini did not expose its own ECharts option: ${JSON.stringify(dockMini)}`);
+  const ids = dockMini.ids;
   const { projection } = served;
-  const fullscreen = page.__fullscreenComparison || await fullscreenRendered(page);
+  const spotlight = page.__spotlightComparison || await spotlightRendered(page, page.__comparisonFindingId);
   return {
-    compact,
+    dockMini,
+    spotlight,
     schema: served.schema,
     alignment: projection.alignment,
     anchor: projection.anchor,
     window: projection.window_min,
-    axis: compact.axis,
+    axis: dockMini.axis,
     comparison: projection.comparison,
     counts: projection.counts,
     cohorts: projection.cohorts.map((cohort) => ({
@@ -273,8 +303,8 @@ const rendered = async (page) => {
       series: ids.filter((id) => id.startsWith(`${cohort.key}:`)),
     })),
     selected: served.selection,
-    legend: fullscreen.legend,
-    title: fullscreen.title,
+    legend: spotlight.legend,
+    title: spotlight.title,
   };
 };
 
@@ -421,17 +451,64 @@ export const S7 = async (open, browser) => use(open, browser, {}, async (page) =
   ok(await page.locator('.echarts-tooltip').count() === 0, 'floating tooltip appeared');
 });
 
-// RETIRED (issue #135) — the keyboard cursor belonged to the retired global
-// comparison canvas. The successor comparison is a compact row-derived tile;
-// its fullscreen compatibility renderer is not visible or focusable and cannot
-// honestly claim a reader keyboard path. The served support facts the cursor
-// announced remain covered by S7 and the support audit.
+// AMENDED (issue #135) — live-judging ruling · 2026-08-28. The global
+// comparison canvas remains retired, but its keyboard cursor is un-retired on
+// the visible, focusable comparison chart in the spotlight. It is the reader's
+// keyboard route into the served cohort evidence.
 export const S8 = async (open, browser) => use(open, browser, {}, async (page) => {
-  ok(await page.locator('.evidence-tile[data-chart-id^="finding:"]').first().isVisible(),
+  const findingId = page.__comparisonFindingId;
+  const chart = page.locator(
+    `#tile-focal .evidence-tile[data-chart-id="${findingId}"] #ec-chart`,
+  );
+  ok(await chart.isVisible(),
     'the successor comparison tile is not visible');
-  ok(!(await page.locator('#tile-field #ec-chart').isVisible()),
-    'the retired global comparison cursor became user-reachable again');
-  process.stdout.write(`RETIRED S8 — ${RETIRED_GLOBAL_CURSOR_SANCTION}\n`);
+  ok(await chart.getAttribute('tabindex') === '0',
+    'the spotlight comparison chart is not keyboard focusable');
+  await chart.focus();
+  ok(await chart.evaluate((element) => document.activeElement === element),
+    'the spotlight comparison chart did not take keyboard focus');
+
+  const caseFile = page.__comparisonServedByFinding.get(findingId);
+  const cursorMinute = 15;
+  const expected = caseFile.projection.cohorts.map((cohort) => {
+    const point = cohort.points.find((row) => row.minute === cursorMinute);
+    const unavailable = !point || point.support === 'withheld';
+    return {
+      name: cohort.name,
+      label: unavailable ? 'unavailable' : String(Math.round(point.median)),
+      readout: unavailable ? 'unavailable' : `${Math.round(point.median)} · n${point.n}`,
+    };
+  });
+  const restingLabel = await chart.getAttribute('aria-label');
+  for (let step = 0; step < 3; step += 1) {
+    await chart.press('ArrowRight');
+  }
+  const cursorLabel = '+0.25 h';
+  const readout = page.locator(
+    `#tile-focal .evidence-tile[data-chart-id="${findingId}"] #ec-canvas-head #ec-readout`,
+  );
+  ok(await readout.isVisible(), 'the keyboard cursor did not reveal its on-screen readout');
+  const shown = await readout.evaluate((element) => ({
+    time: element.querySelector('.rd-time')?.textContent ?? null,
+    cohorts: [...element.querySelectorAll('.rd-pair')].map((pair) => ({
+      name: pair.querySelector('.k')?.textContent ?? null,
+      value: pair.querySelector('.v')?.textContent ?? null,
+    })),
+  }));
+  ok(shown.time === cursorLabel,
+    `the keyboard cursor did not move three five-minute points: ${shown.time}`);
+  ok(JSON.stringify(shown.cohorts) === JSON.stringify(expected.map((row) => ({
+    name: row.name, value: row.readout,
+  }))), `the on-screen cursor readout diverged from served cohort evidence: ${JSON.stringify(shown.cohorts)}`);
+  const expectedLabel = `${caseFile.finding.title} response comparison. ${cursorLabel}. `
+    + `${expected.map((row) => `${row.name} ${row.label}`).join('. ')}.`;
+  const inspectedLabel = await chart.getAttribute('aria-label');
+  ok(inspectedLabel !== restingLabel && inspectedLabel === expectedLabel,
+    `the accessible cursor label diverged from served cohort evidence: ${inspectedLabel}`);
+  ok(await page.locator('#ec-chart').evaluateAll((charts) => charts.length > 0
+    && charts.every((element) => Boolean(element.closest('.evidence-tile')))),
+  'the retired global comparison canvas became user-reachable again outside a tile');
+  process.stdout.write(`UNRETIRED S8 — ${SPOTLIGHT_CURSOR_SANCTION}\n`);
 });
 
 // LOCK:diagnose-event-comparison:3 LOCK:diagnose-event-comparison:19
@@ -445,11 +522,11 @@ export const S9 = async (open, browser) => {
       const statePage = await open(browser, { finding, theme });
       try {
         const state = await rendered(statePage);
-        ok(await statePage.locator(`.evidence-tile[data-chart-id="${finding}"]`).isVisible(),
+        ok(await visibleFindingTile(statePage, finding).isVisible(),
           `${finding}/${theme} did not keep its comparison tile visible`);
-        ok(state.compact.visible && state.compact.ids.length > 0,
-          `${finding}/${theme} mounted no populated compact comparison canvas`);
-        ok(await statePage.locator('#tile-field #ec-chart canvas').count() > 0,
+        ok(state.dockMini.visible && state.dockMini.ids.length > 0,
+          `${finding}/${theme} mounted no populated dock-mini comparison canvas`);
+        ok(await statePage.locator('#tile-focal #ec-chart canvas').count() > 0,
           `${finding}/${theme} mounted no additional fullscreen comparison canvas`);
       } finally { await statePage.close(); }
     }
@@ -460,9 +537,9 @@ export const S9 = async (open, browser) => {
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth
       - document.documentElement.clientWidth);
     ok(overflow <= 1, `narrow page overflows by ${overflow}px`);
-    ok(await page.locator('.evidence-tile[data-chart-id^="finding:"]').first().isVisible(),
+    ok(await page.locator('#tile-field .evidence-tile[data-chart-id^="finding:"]:visible').first().isVisible(),
       'the comparison tile did not remain visible at narrow width');
-    ok(await page.locator('#tile-field #ec-chart canvas').count() > 0,
+    ok(await page.locator('#tile-focal #ec-chart canvas').count() > 0,
       'the comparison canvas did not mount at narrow width');
   });
 };
@@ -480,7 +557,7 @@ export const S10 = async (open, browser) => use(open, browser, {}, async (page) 
   const state = await rendered(page);
   ok(state.alignment === 'event',
     `the comparison tile did not receive its event-aligned case file: ${state.alignment}`);
-  ok(await page.locator('.evidence-tile[data-chart-id^="finding:"] .tile-modes').count() === 0,
+  ok(await page.locator('#tile-field .evidence-tile[data-chart-id^="finding:"] .tile-modes').count() === 0,
     'the fixed event-comparison tile exposed a redundant alignment control');
 });
 
@@ -498,19 +575,22 @@ export const S11 = async (open, browser) => use(open, browser, {
     'the roster selection did not land in the withheld cohort');
   ok(cohort.support === 'withheld', `the selected cohort is not Withheld: ${cohort.support}`);
   ok(cohort.series.length === 0, 'selection promoted a Withheld cohort aggregate');
-  const selected = state.compact.series.find((series) => series.id === 'selected:trace');
+  const selected = state.spotlight.series.find((series) => series.id === 'selected:trace');
   const marker = state.legend.find((item) => item.cohort === 'matched');
   ok(selected?.data.length > 0,
-    `the compact tile drew no selected ECharts trace points: ids=${state.compact.ids}; `
+    `the spotlight drew no selected ECharts trace points: ids=${state.spotlight.ids}; `
       + `selected legend=${JSON.stringify(marker)}`);
   ok(selected.data.length === state.selected.detail.glucose.length,
-    `the compact tile drew ${selected.data.length} of ${state.selected.detail.glucose.length} served selected glucose points`);
-  const otherLines = state.compact.series.filter((series) => /:line:/.test(series.id));
+    `the spotlight drew ${selected.data.length} of ${state.selected.detail.glucose.length} served selected glucose points`);
+  const otherLines = state.spotlight.series.filter((series) => /:line:/.test(series.id)
+    && !series.id.startsWith('matched:'));
   ok(otherLines.length > 0 && otherLines.every((series) => selected.opacity > series.opacity),
-    `the selected trace is not stronger than the other compact lines: selected=${selected.opacity}, others=${otherLines.map((series) => series.opacity)}`);
+    `the selected trace is not stronger than the other spotlight lines: selected=${selected.opacity}, others=${otherLines.map((series) => series.opacity)}`);
+  ok(!state.dockMini.ids.includes('selected:trace'),
+    `the static dock mini drew a selected trace: ids=${state.dockMini.ids}`);
   ok(marker?.selected === 'true' && /selected cohort/.test(marker.detail),
     `the additional fullscreen legend did not mark the selected cohort: ${JSON.stringify(marker)}`);
-  ok(await page.locator('.evidence-tile[data-chart-id="finding:missed_meal"][data-drilled]').count() === 1,
+  ok(await page.locator('#tile-focal .evidence-tile[data-chart-id="finding:missed_meal"][data-drilled]').count() === 1,
     'the comparison tile does not identify the selected cohort as its provenance');
 });
 
@@ -534,9 +614,9 @@ export const S12 = async (open, browser) => {
   };
   await use(open, browser, { caseFile: posed }, async (page) => {
     const state = await rendered(page);
-    const line = state.compact.series.find((series) => series.id === 'matched:line:limited');
-    const spread = state.compact.series.find((series) => series.id === 'matched:spread:limited');
-    const drawn = { ids: state.compact.ids,
+    const line = state.dockMini.series.find((series) => series.id === 'matched:line:limited');
+    const spread = state.dockMini.series.find((series) => series.id === 'matched:spread:limited');
+    const drawn = { ids: state.dockMini.ids,
       medians: line.data.filter(([, value]) => value != null), spread: spread.data };
     ok(JSON.stringify(drawn.medians) === JSON.stringify([[0, 105]]),
       `the canvas did not draw exactly the served median: ${JSON.stringify(drawn.medians)}`);
@@ -571,7 +651,7 @@ export const S13 = async (open, browser) => use(open, browser,
     }
     ok(await page.locator('#canvas-head').count() === 1,
       'the canvas shell does not own exactly one pane header');
-    ok(await page.locator('#tile-field #ec-canvas-head').count() === 1,
+    ok(await page.locator('#tile-focal #ec-canvas-head').count() === 1,
       'the fullscreen comparison does not own exactly one tile-local chart header');
   });
 

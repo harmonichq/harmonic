@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { blockKey } from './diagnose-workspaces.js';
-import { envelopeFromPooled, isfVerdict, markersFromPooled, toCaptures } from './diagnose-workstation-data.js';
+import { envelopeFromPooled, isfVerdict, toCaptures } from './diagnose-workstation-data.js';
 
 const pooled = {
   reading_count: 12,
@@ -17,12 +17,6 @@ test('envelopeFromPooled renames the server bins onto chart arrays', () => {
     labels: ['00:00'], p10: [80], p25: [90], p50: [100], p75: [110], p90: [120],
     counts: [4], raw: [2], readings: 12, days: 3, pool: 45,
   });
-});
-
-test('markersFromPooled supplies the chart category index', () => {
-  assert.deepEqual(markersFromPooled(pooled), [{
-    minute: 450, index: 30, count: 2, carbs: 42, medianCarbs: 21, insulin: 3,
-  }]);
 });
 
 test('toCaptures builds the four mock capture shapes with shared Plan keys', () => {

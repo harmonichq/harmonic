@@ -39,7 +39,10 @@
    `.panes` base rule (diagnose-workstation.css) reserves a second column for
    an inspector this surface no longer has; overridden to a single column
    here rather than left to draw dead whitespace where the inspector was. */
-.ec-panes { grid-template-columns: minmax(0, 1fr); }
+/* The fullscreen adapter nests this one-pane surface inside the workstation's
+   `.main-content .dw .panes` rule. Match that app context so its two-column
+   inspector split cannot leave half of the fullscreen chart empty. */
+.main-content .dw .ec-panes { grid-template-columns: minmax(0, 1fr); }
 /* No min-height: the shipped canvas header sizes itself to the same type ranks
    and lands at 22px. Holding ours at 26px pushed this pane's title and chart
    below where Glucose puts them. */

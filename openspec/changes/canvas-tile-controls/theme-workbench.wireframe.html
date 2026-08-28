@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Theme workbench — WIREFRAME</title>
+<style>
+  /* WIREFRAME — NO FIDELITY CLAIM — NOT LOCKABLE.
+     A token playground for the Diagnose canvas: schematic regions, real
+     adjacencies, live-editable theme tokens seeded from the shipped values.
+     Throwaway per ui-craft revise rules; delete when the change lands. */
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    font: 13px/1.45 Inter, system-ui, sans-serif;
+    background: #24201d; color: #e8e2d8;
+    display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 0;
+  }
+  .banner {
+    grid-column: 1 / -1; padding: 6px 14px; background: #3a2b1b; color: #d7a75c;
+    font-size: 11px; letter-spacing: .08em; text-transform: uppercase; font-weight: 700;
+  }
+
+  /* ---- the schematic, painted ONLY from the editable tokens ---- */
+  .stage { padding: 18px; overflow: auto; }
+  .frame {
+    /* every var below is set from JS; these are the shipped-light seeds */
+    --canvas:#17231d; --surface:#faf8f4; --rail:#f0eee8; --sunken:#e7e4dc;
+    --ink:#141a15; --body:#283b2f; --meta:#3d5848;
+    --rule:#c3bfb4; --rulestrong:#6b7669;
+    --signal:#a94f21; --signalwell:#f0dccd;
+    width: 100%; min-width: 880px; max-width: 1080px; margin: 0 auto;
+    background: var(--canvas); border-radius: 8px; overflow: hidden;
+    box-shadow: 0 14px 30px -16px rgba(0,0,0,.6);
+    display: grid; grid-template-rows: 34px 30px minmax(0,1fr) 26px;
+    height: 640px;
+  }
+  .r { cursor: pointer; }
+  .r.sel { outline: 2px dashed var(--signal); outline-offset: -2px; }
+
+  .chrome { display:flex; align-items:center; gap:10px; padding:0 12px;
+    color:#e8e2d8; font-weight:700; font-size:12px; }
+  .chrome .pill { border:1px solid #ffffff44; border-radius:999px; padding:1px 10px; font-weight:600; }
+  .chrome .spacer { margin-left:auto; }
+  .chrome .cta { background: var(--signal); color:#fff; border-radius:6px; padding:2px 9px; font-weight:700; }
+
+  .instruments { background: var(--surface); border-bottom:1px solid var(--rule);
+    display:flex; align-items:center; gap:8px; padding:0 12px; }
+  .seg { background: var(--sunken); border:1px solid var(--rule); border-radius:6px;
+    display:flex; gap:2px; padding:2px; }
+  .seg i { font-style:normal; font-size:10px; padding:1px 8px; border-radius:4px; color:var(--body); }
+  .seg i.on { background: var(--surface); color: var(--ink); box-shadow:0 1px 2px rgba(0,0,0,.25); }
+  .cap { font-size:9px; letter-spacing:.09em; font-weight:700; color:var(--meta); text-transform:uppercase; }
+
+  .panes { display:grid; grid-template-columns: minmax(0,1fr) 300px; min-height:0; }
+  .leftcol { display:grid; grid-template-rows: 24px 118px 14px minmax(0,1fr); min-height:0;
+    border-right:1px solid var(--rule); }
+
+  .refhead { background: var(--rail); border-bottom:1px solid var(--rule);
+    display:flex; align-items:center; justify-content:space-between; padding:0 12px; }
+  .refbody { background: var(--surface); position:relative; }
+  .lane { background: var(--rail); border-top:1px solid var(--rule); }
+
+  .field { background: var(--rail); position:relative; min-height:0;
+    display:grid; grid-template-rows: minmax(0,1fr) 150px; row-gap:34px;
+    box-shadow: inset 0 6px 10px -8px rgba(0,0,0,.35); }
+  .card { margin:10px 10px 0; background:var(--surface); border-radius:8px; overflow:hidden;
+    box-shadow: 0 1px 2px rgba(0,0,0,.06), 0 8px 20px -8px rgba(0,0,0,.2), 0 0 0 1px rgba(0,0,0,.05);
+    display:grid; grid-template-rows: 22px minmax(0,1fr); }
+  .slotrail { background: var(--sunken); border-bottom:1px solid var(--rule);
+    display:flex; align-items:center; justify-content:space-between; padding:0 10px; }
+  .plot { position:relative; }
+  svg.squiggle { position:absolute; inset:8px; width:calc(100% - 16px); height:calc(100% - 16px); }
+
+  .dockpanel { position:absolute; left:10px; right:10px; bottom:10px; height:180px;
+    background:var(--sunken); border-radius:8px; box-shadow: inset 0 1px 3px rgba(0,0,0,.12);
+    display:grid; grid-template-rows: 26px minmax(0,1fr); }
+  .lip { background: color-mix(in srgb, var(--sunken) 92%, var(--ink)); border-radius:8px 8px 0 0;
+    border-bottom:1px solid var(--rule); display:flex; align-items:center;
+    justify-content:space-between; padding:0 10px; }
+  .cells { display:grid; grid-auto-flow:column; grid-auto-columns: 1fr; gap:10px; margin:10px; }
+  .cell { background:var(--surface); border-radius:6px; overflow:hidden;
+    box-shadow: 0 1px 2px rgba(0,0,0,.05), 0 3px 8px -3px rgba(0,0,0,.14), 0 0 0 1px rgba(0,0,0,.05);
+    display:grid; grid-template-rows: 16px minmax(0,1fr); }
+  .cell .name { font-size:8px; letter-spacing:.08em; text-transform:uppercase; font-weight:700;
+    color:var(--meta); padding:3px 8px 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .cell.selmark { box-shadow: inset 0 1px 0 var(--signal),
+    0 1px 2px rgba(0,0,0,.05), 0 3px 8px -3px rgba(0,0,0,.14), 0 0 0 1px rgba(0,0,0,.05); }
+
+  .findings { background: var(--surface); display:grid; grid-template-rows: 24px minmax(0,1fr) 64px; }
+  .findhead { background: var(--rail); border-bottom:1px solid var(--rule);
+    display:flex; align-items:center; justify-content:space-between; padding:0 10px; }
+  .findrows { padding:8px 10px; color: var(--body); font-size:11px; }
+  .findrows b { color: var(--ink); display:block; font-size:12px; }
+  .findrows .tag { float:right; color:var(--meta); font-size:9px; letter-spacing:.08em; }
+  .watchfloor { background: var(--sunken); border-top:1px solid var(--rule);
+    padding:6px 10px; color:var(--meta); font-size:10px; }
+  .statusbar { background: var(--canvas); color:#e8e2d8cc; font-size:10px;
+    display:flex; align-items:center; gap:14px; padding:0 12px; }
+
+  /* ---- the control panel (its own fixed chrome, NOT token-painted) ---- */
+  .panel { background:#1b1917; border-left:1px solid #000; overflow:auto; padding:12px 14px; }
+  .panel h1 { font-size:13px; margin:0 0 2px; }
+  .panel .sub { color:#9a938a; font-size:11px; margin-bottom:10px; }
+  .tabs { display:flex; gap:4px; margin-bottom:10px; }
+  .tabs button { flex:1; background:#2a2724; color:#cfc8bd; border:1px solid #3a3733;
+    border-radius:6px; padding:4px; cursor:pointer; font:inherit; font-size:11px; }
+  .tabs button.on { background:#3a2b1b; color:#e8b075; border-color:#5a4028; }
+  .group { margin-bottom:10px; }
+  .group h2 { font-size:10px; letter-spacing:.08em; text-transform:uppercase;
+    color:#9a938a; margin:0 0 4px; }
+  .tok { display:grid; grid-template-columns: 26px minmax(0,1fr) 74px; gap:6px;
+    align-items:center; padding:2px 4px; border-radius:5px; }
+  .tok.sel { background:#3a2b1b; }
+  .tok input[type=color] { width:26px; height:20px; border:0; padding:0; background:none; cursor:pointer; }
+  .tok label { font-size:11px; color:#cfc8bd; }
+  .tok label small { display:block; color:#8a847b; font-size:9px; }
+  .tok input[type=text] { width:74px; background:#12100e; color:#e8e2d8; border:1px solid #3a3733;
+    border-radius:4px; font:11px ui-monospace,monospace; padding:2px 4px; }
+  .contrast { font:10px ui-monospace,monospace; color:#9a938a; margin:8px 0; }
+  .contrast em { font-style:normal; }
+  .contrast .bad { color:#d97f71; font-weight:700; }
+  .contrast .ok2 { color:#7cae8d; }
+  .actions { display:flex; gap:6px; margin-top:10px; }
+  .actions button { flex:1; background:#2a2724; color:#cfc8bd; border:1px solid #3a3733;
+    border-radius:6px; padding:6px; cursor:pointer; font:inherit; font-size:11px; }
+  textarea.out { width:100%; height:110px; background:#12100e; color:#cfc8bd;
+    border:1px solid #3a3733; border-radius:6px; font:10px ui-monospace,monospace; margin-top:8px; }
+  .hint { color:#8a847b; font-size:10px; margin-top:8px; }
+</style>
+</head>
+<body>
+<div class="banner">Wireframe — no fidelity claim — not lockable · Diagnose canvas theme workbench</div>
+
+<div class="stage">
+  <div class="frame" id="frame">
+    <div class="chrome r" data-tok="canvas"><span>H · Harmonic</span><span class="pill">Diagnose</span><span>Plan</span><span>Verify</span><span class="spacer"></span><span class="cta r" data-tok="signal">+ Log carbs</span></div>
+    <div class="instruments r" data-tok="surface"><span class="cap">Window</span>
+      <span class="seg r" data-tok="sunken"><i class="on">Overnight</i><i>Morning</i><i>Afternoon</i><i>24 h</i></span>
+    </div>
+    <div class="panes">
+      <div class="leftcol">
+        <div class="refhead r" data-tok="rail"><span class="cap">Glucose by time of day</span><span class="cap r" data-tok="meta">pooled from 30 days</span></div>
+        <div class="refbody r" data-tok="surface"><svg class="squiggle" id="sq-ref" preserveAspectRatio="none"></svg></div>
+        <div class="lane r" data-tok="rail"></div>
+        <div class="field r" data-tok="rail">
+          <div class="card r" data-tok="surface">
+            <div class="slotrail r" data-tok="sunken"><span class="cap">Carb ratio 00:00–24:00 · meal runs</span><span class="cap">⛶</span></div>
+            <div class="plot"><svg class="squiggle" id="sq-spot" preserveAspectRatio="none"></svg></div>
+          </div>
+          <div class="dockpanel r" data-tok="sunken">
+            <div class="lip"><span class="cap">Charts</span><span class="cap">⌄ ⛶</span></div>
+            <div class="cells">
+              <div class="cell selmark r" data-tok="surface"><span class="name">Carb ratio</span><svg class="squiggle" preserveAspectRatio="none"></svg></div>
+              <div class="cell"><span class="name">Basal 02:00</span><svg class="squiggle" preserveAspectRatio="none"></svg></div>
+              <div class="cell"><span class="name">Correction factor</span><svg class="squiggle" preserveAspectRatio="none"></svg></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="findings r" data-tok="surface">
+        <div class="findhead r" data-tok="rail"><span class="cap">Findings</span><span class="cap">Filter</span></div>
+        <div class="findrows"><b>I:C 00:00 to 24:00 · raise <span class="tag r" data-tok="meta">setting</span></b>
+          now 5.6 g/U → 5.7 g/U<br><br><span class="r" data-tok="meta" style="color:var(--meta)">Watching · 3 reads ▸</span></div>
+        <div class="watchfloor r" data-tok="sunken"><b style="color:var(--body)">Nothing being watched</b><br>No change staged, no trial or focus active</div>
+      </div>
+    </div>
+    <div class="statusbar r" data-tok="canvas"><span>Pump profile · ISF 42 mg/dL/U · I:C 5.6 g/U</span><span>Advisory only</span></div>
+  </div>
+</div>
+
+<div class="panel">
+  <h1>Theme workbench</h1>
+  <div class="sub">Click any region to see which token paints it. Edit tokens per theme; values persist locally.</div>
+  <div class="tabs"><button id="t-light" class="on">Light</button><button id="t-dark">Dark</button></div>
+  <div id="groups"></div>
+  <div class="contrast" id="contrast"></div>
+  <div class="actions">
+    <button id="reset">Reset to shipped</button>
+    <button id="copy">Copy CSS block</button>
+  </div>
+  <textarea class="out" id="out" readonly></textarea>
+  <div class="hint">Shipped seeds come from frontend/index.html <code>:root</code> / <code>html.dark</code>. Paste the block over those --wk-* values to try a direction in the real app.</div>
+</div>
+
+<script>
+const SHIPPED = {
+  light: { canvas:'#17231d', surface:'#faf8f4', rail:'#f0eee8', sunken:'#e7e4dc',
+    ink:'#141a15', body:'#283b2f', meta:'#3d5848',
+    rule:'#c3bfb4', rulestrong:'#6b7669', signal:'#a94f21', signalwell:'#f0dccd' },
+  dark: { canvas:'#0f0d0b', surface:'#26221f', rail:'#2d2926', sunken:'#504a45',
+    ink:'#f5ece0', body:'#dbcfbc', meta:'#a3968a',
+    rule:'#4d4742', rulestrong:'#776e68', signal:'#d2743e', signalwell:'#40291b' },
+};
+const ROLES = [
+  ['Grounds', [['canvas','desk / shell chrome'],['surface','panel · charts · findings'],
+    ['rail','headers · reference · field'],['sunken','slot rails · dock panel · wells']]],
+  ['Ink', [['ink','titles, headline numbers'],['body','body text'],['meta','caps labels, provenance']]],
+  ['Rules', [['rule','hairlines'],['rulestrong','strong rule']]],
+  ['Signal', [['signal','interaction / attention'],['signalwell','signal well']]],
+];
+const WKMAP = { canvas:'--wk-canvas', surface:'--wk-surface', rail:'--wk-surface-rail',
+  sunken:'--wk-surface-sunken', ink:'--wk-ink', body:'--wk-ink-body', meta:'--wk-ink-meta',
+  rule:'--wk-rule', rulestrong:'--wk-rule-strong', signal:'--wk-signal', signalwell:'--wk-signal-well' };
+
+let theme = 'light';
+let state;
+try { state = JSON.parse(localStorage.getItem('theme-workbench')) || null; } catch (e) { state = null; }
+if (!state) state = JSON.parse(JSON.stringify(SHIPPED));
+
+const frame = document.getElementById('frame');
+const groups = document.getElementById('groups');
+
+function apply() {
+  const t = state[theme];
+  for (const k in t) frame.style.setProperty('--' + k, t[k]);
+  frame.style.setProperty('--ck', t.canvas);
+  document.getElementById('out').value = cssBlock();
+  contrastReport();
+  try { localStorage.setItem('theme-workbench', JSON.stringify(state)); } catch (e) {}
+}
+function cssBlock() {
+  const t = state[theme];
+  return (theme === 'light' ? ':root {\n' : 'html.dark {\n') +
+    Object.keys(WKMAP).map(k => `  ${WKMAP[k]}:${t[k]};`).join('\n') + '\n}';
+}
+function lum(hex) {
+  const v = hex.replace('#','');
+  const n = v.length === 3 ? v.split('').map(c=>c+c).join('') : v;
+  const [r,g,b] = [0,2,4].map(i => {
+    let c = parseInt(n.slice(i,i+2),16)/255;
+    return c <= .03928 ? c/12.92 : Math.pow((c+.055)/1.055, 2.4);
+  });
+  return .2126*r + .7152*g + .0722*b;
+}
+function ratio(a,b) {
+  const [x,y] = [lum(a), lum(b)].sort((p,q)=>q-p);
+  return (x+.05)/(y+.05);
+}
+function contrastReport() {
+  const t = state[theme];
+  const pairs = [
+    ['ink on surface', t.ink, t.surface, 4.5], ['body on surface', t.body, t.surface, 4.5],
+    ['meta on rail', t.meta, t.rail, 4.5], ['meta on sunken', t.meta, t.sunken, 4.5],
+    ['signal on surface', t.signal, t.surface, 3], ['rule on surface', t.rule, t.surface, 1.2],
+  ];
+  document.getElementById('contrast').innerHTML = pairs.map(([n,a,b,floor]) => {
+    const r = ratio(a,b);
+    const cls = r >= floor ? 'ok2' : 'bad';
+    return `<em class="${cls}">${r.toFixed(2)}</em> ${n} (≥${floor})`;
+  }).join('<br>');
+}
+function buildPanel() {
+  groups.innerHTML = '';
+  const t = state[theme];
+  for (const [name, toks] of ROLES) {
+    const g = document.createElement('div'); g.className = 'group';
+    g.innerHTML = `<h2>${name}</h2>`;
+    for (const [key, desc] of toks) {
+      const row = document.createElement('div'); row.className = 'tok'; row.dataset.tok = key;
+      row.innerHTML = `<input type="color" value="${t[key]}">
+        <label>${WKMAP[key].replace('--wk-','')}<small>${desc}</small></label>
+        <input type="text" value="${t[key]}">`;
+      const [color, , text] = row.children;
+      color.oninput = () => { state[theme][key] = color.value; text.value = color.value; apply(); };
+      text.onchange = () => {
+        const v = text.value.trim();
+        if (/^#[0-9a-fA-F]{6}$/.test(v)) { state[theme][key] = v; color.value = v; apply(); }
+        else text.value = state[theme][key];
+      };
+      g.append(row);
+    }
+    groups.append(g);
+  }
+}
+function selectTok(key) {
+  document.querySelectorAll('.tok').forEach(el => el.classList.toggle('sel', el.dataset.tok === key));
+  document.querySelectorAll('.r').forEach(el => el.classList.toggle('sel', el.dataset.tok === key));
+}
+document.querySelectorAll('.r').forEach(el => el.addEventListener('click', (e) => {
+  e.stopPropagation(); selectTok(el.dataset.tok);
+}));
+document.getElementById('t-light').onclick = () => setTheme('light');
+document.getElementById('t-dark').onclick = () => setTheme('dark');
+function setTheme(t2) {
+  theme = t2;
+  document.getElementById('t-light').classList.toggle('on', t2==='light');
+  document.getElementById('t-dark').classList.toggle('on', t2==='dark');
+  buildPanel(); apply();
+}
+document.getElementById('reset').onclick = () => {
+  state[theme] = { ...SHIPPED[theme] }; buildPanel(); apply();
+};
+document.getElementById('copy').onclick = () => {
+  navigator.clipboard?.writeText(cssBlock());
+};
+/* schematic squiggles, drawn in the body ink so they re-tint with the theme */
+for (const svg of document.querySelectorAll('svg.squiggle')) {
+  let d = 'M0,60'; let y = 60;
+  for (let x = 5; x <= 200; x += 5) { y = Math.max(8, Math.min(92, y + (Math.random()*26 - 13))); d += ` L${x},${y.toFixed(0)}`; }
+  svg.setAttribute('viewBox','0 0 200 100');
+  svg.innerHTML = `<path d="${d}" fill="none" stroke="var(--body)" stroke-opacity=".55" stroke-width="1.6"/>`;
+}
+buildPanel(); apply();
+</script>
+</body>
+</html>

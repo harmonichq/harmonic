@@ -3,82 +3,61 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 import {
-  PIN_CAP,
-  arrangementFor,
-  arrangementRange,
   createCanvasLayout,
   descriptorsFromFindings,
-  focusSwap,
+  dockOrder,
+  fieldRange,
   optionForDescriptor,
   pinChart,
   placeSeats,
-  seatCountFor,
   tileStatePresentation,
+  unpinChart,
 } from './diagnose-canvas-layout.js';
 
-test('every pin count derives its arrangement', () => {
-  assert.equal(PIN_CAP, 4);
-  assert.deepEqual(Array.from({ length: 5 }, (_, count) => arrangementFor(count)),
-    ['focal', 'split', 'pair', 'onetwo', 'quad']);
-  assert.throws(() => arrangementFor(5), RangeError);
-});
-
-test('pinning alone reaches every arrangement before refusing the fifth pin', () => {
+test('pinning orders every chart without a cap or moving focus', () => {
   let layout = createCanvasLayout({ focalId: 'a' });
-  const reached = [layout.arrangement];
-  for (const chartId of ['a', 'b', 'c', 'd']) {
-    const result = pinChart(layout, chartId);
-    assert.equal(result.accepted, true);
-    layout = result.layout;
-    reached.push(layout.arrangement);
+  for (const chartId of ['b', 'd', 'a', 'e', 'c']) {
+    layout = pinChart(layout, chartId);
+    assert.equal(layout.focalId, 'a', `pinning ${chartId} leaves focus alone`);
   }
-  assert.deepEqual(reached, ['focal', 'split', 'pair', 'onetwo', 'quad']);
-  assert.equal(pinChart(layout, 'e').accepted, false);
+  assert.deepEqual(layout.pins, ['b', 'd', 'a', 'e', 'c'],
+    'a fifth pin is accepted and every earlier pin keeps its order');
+  assert.equal(pinChart(layout, 'b'), layout, 'pinning an existing chart is idempotent');
 });
 
-test('a fifth pin is refused rather than evicting the oldest', () => {
-  const layout = createCanvasLayout({ focalId: 'a', pins: ['a', 'b', 'c', 'd'] });
-  const result = pinChart(layout, 'e');
-  assert.equal(result.accepted, false);
-  assert.deepEqual(result.layout.pins, ['a', 'b', 'c', 'd']);
+test('unpinning releases only that chart and keeps focus', () => {
+  let layout = createCanvasLayout({ focalId: 'c' });
+  for (const chartId of ['b', 'd', 'c']) layout = pinChart(layout, chartId);
+  layout = unpinChart(layout, 'd');
+  assert.deepEqual(layout, { focalId: 'c', pins: ['b', 'c'] });
 });
 
-test('a demoted focal chart returns to the slot the promoted chart came from', () => {
-  const layout = createCanvasLayout({ focalId: 'a' });
-  const result = focusSwap(['a', 'b', 'c', 'd'], layout, 'c');
-  assert.equal(result.layout.focalId, 'c');
-  assert.deepEqual(result.candidates, ['c', 'b', 'a', 'd']);
-});
-
-test('focus swap exchanges two pinned seats without losing either pin', () => {
-  const layout = createCanvasLayout({ focalId: 'held-a', pins: ['held-a', 'held-b'] });
-  const result = focusSwap(['held-a', 'held-b', 'candidate'], layout, 'held-b');
-  assert.deepEqual(result.layout.pins, ['held-b', 'held-a']);
-  assert.deepEqual(placeSeats(result.candidates, result.layout), [
-    { chartId: 'held-b', seat: 'focal', pinned: true },
-    { chartId: 'held-a', seat: 'slot-1', pinned: true },
+test('placeSeats returns one focal chart followed by the complete ordered row', () => {
+  let layout = createCanvasLayout({ focalId: 'candidate-b' });
+  layout = pinChart(layout, 'held');
+  layout = pinChart(layout, 'candidate-c');
+  assert.deepEqual(placeSeats(
+    ['candidate-a', 'candidate-b', 'candidate-c', 'held', 'candidate-a'], layout,
+  ), [
+    { chartId: 'candidate-b', seat: 'focal', pinned: false },
+    { chartId: 'held', seat: 'mini', pinned: true },
+    { chartId: 'candidate-c', seat: 'mini', pinned: true },
+    { chartId: 'candidate-a', seat: 'mini', pinned: false },
   ]);
 });
 
-test('placeSeats fills only unpinned positions in candidate order', () => {
-  const layout = createCanvasLayout({ focalId: 'candidate-a', pins: ['held'] });
-  assert.deepEqual(placeSeats(['candidate-a', 'candidate-b', 'held'], layout), [
-    { chartId: 'candidate-a', seat: 'focal', pinned: false },
-    { chartId: 'held', seat: 'slot-1', pinned: true },
-  ]);
-});
-
-test('placeSeats drops surplus candidates with every pin intact', () => {
-  const layout = createCanvasLayout({ focalId: 'candidate-a', pins: ['held-a', 'held-b'] });
-  assert.deepEqual(placeSeats(['candidate-a', 'candidate-b', 'candidate-c'], layout), [
-    { chartId: 'held-a', seat: 'focal', pinned: true },
-    { chartId: 'held-b', seat: 'slot-1', pinned: true },
-  ]);
-});
-
-test('seat counts belong to the derived arrangement', () => {
-  assert.deepEqual(['focal', 'split', 'pair', 'onetwo', 'quad'].map(seatCountFor),
-    [4, 2, 2, 3, 4]);
+test('dockOrder keeps the whole set stable when focus changes', () => {
+  let layout = createCanvasLayout({ focalId: 'a' });
+  layout = pinChart(layout, 'd');
+  layout = pinChart(layout, 'b');
+  const candidates = ['a', 'b', 'c', 'd', 'e', 'a'];
+  const opening = dockOrder(candidates, layout);
+  const focused = dockOrder(candidates, createCanvasLayout({
+    focalId: 'c', pins: layout.pins,
+  }));
+  assert.deepEqual(opening, ['d', 'b', 'a', 'c', 'e']);
+  assert.deepEqual(focused, opening,
+    'selecting a different current frame does not reorder or remove any dock cell');
 });
 
 test('the live descriptor list follows findings rows without a second chart list', () => {
@@ -151,7 +130,7 @@ test('the live descriptor list follows findings rows without a second chart list
   assert.deepEqual(descriptorsFromFindings(findings, registry).map(({ chartId }) => chartId), ['isf']);
 });
 
-test('every glucose chart in one arrangement receives one shared range', () => {
+test('every glucose chart in the field receives one shared range', () => {
   const received = [];
   const registry = [
     { kind: 'a', glucoseValues: (data) => data.values,
@@ -163,7 +142,7 @@ test('every glucose chart in one arrangement receives one shared range', () => {
     { chartId: 'a', kind: 'a', mode: null, state: 'ok', data: { values: [55, 120] } },
     { chartId: 'b', kind: 'b', mode: null, state: 'ok', data: { values: [180, 211] } },
   ];
-  const range = arrangementRange(descriptors, registry, (values) => [
+  const range = fieldRange(descriptors, registry, (values) => [
     Math.min(...values), Math.max(...values),
   ]);
   assert.deepEqual(range, [55, 211]);
@@ -208,10 +187,10 @@ test('the layout module owns no findings-generation check of its own', () => {
     'all findings-generation refreshes pass through one request authority');
 });
 
-test('pinning holds and layers a chart without moving focus', () => {
+test('pinning preserves focus as the ordered pin list grows', () => {
   let layout = createCanvasLayout({ focalId: 'focal-chart' });
   for (const chartId of ['slot-a', 'slot-b', 'slot-c']) {
-    layout = pinChart(layout, chartId).layout;
+    layout = pinChart(layout, chartId);
     assert.equal(layout.focalId, 'focal-chart',
       `pinning ${chartId} leaves the focal chart where the reader put it`);
   }
@@ -219,9 +198,11 @@ test('pinning holds and layers a chart without moving focus', () => {
 });
 
 test('a pinned focal chart keeps the focal seat whatever order it was pinned in', () => {
-  const layout = createCanvasLayout({ focalId: 'second', pins: ['first', 'second'] });
+  let layout = createCanvasLayout({ focalId: 'second' });
+  layout = pinChart(layout, 'first');
+  layout = pinChart(layout, 'second');
   assert.deepEqual(placeSeats(['first', 'second'], layout), [
     { chartId: 'second', seat: 'focal', pinned: true },
-    { chartId: 'first', seat: 'slot-1', pinned: true },
+    { chartId: 'first', seat: 'mini', pinned: true },
   ]);
 });

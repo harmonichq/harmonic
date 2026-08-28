@@ -301,6 +301,33 @@ test('a sift computes its priced seam over only visible rows', () => {
   assert.ok(rows.filter((row) => row.hidden).every((row) => row.raw.priority != null));
 });
 
+test('slice 4 · the rank numeral spells visible position among priced ranked rows only', () => {
+  const rows = queueRows(W.global);
+  const priced = rows.filter((row) => !row.hidden && !row.collapsed
+    && ['assert', 'finding'].includes(row.register) && row.raw.priority != null);
+  assert.ok(priced.length > 1);
+  assert.deepEqual(priced.map((row) => row.rank), priced.map((_, index) => index + 1),
+    'numerals are 1..N in the server’s own order — no re-ranking');
+  for (const row of rows) {
+    if (!priced.includes(row)) assert.equal(row.rank, null, `${row.title} holds no rank`);
+  }
+  // a sift renumbers exactly as it re-positions: still 1..N over what is visible
+  const sifted = queueRows(W.global, new Set(['lows', 'corrections']))
+    .filter((row) => row.rank != null);
+  assert.deepEqual(sifted.map((row) => row.rank), sifted.map((_, index) => index + 1));
+});
+
+test('slice 4 · the evidence summary is the assert row’s own annotation, revealed', () => {
+  const rows = queueRows(W.global);
+  for (const row of rows) {
+    if (row.register === 'assert' && typeof row.raw.annotation === 'string') {
+      assert.equal(row.summary, row.raw.annotation, row.title);
+    } else {
+      assert.equal(row.summary, null, `${row.title} composes no summary`);
+    }
+  }
+});
+
 test('a null selection is byte-identical to the unsifted queue', () => {
   assert.deepEqual(queueRows(W.global), queueRows(W.global, null));
 });

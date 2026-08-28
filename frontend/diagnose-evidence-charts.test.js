@@ -12,6 +12,7 @@ import {
   GLUCOSE_STEP,
   glucoseRange,
 } from './diagnose-evidence-charts.js';
+import { fieldRange } from './diagnose-canvas-layout.js';
 
 const fixture = (path) => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'));
 /* The comparison kind reads a served Finding case file — the same payload the
@@ -351,11 +352,11 @@ test('chart options resolve live light and dark theme tokens', () => {
       // the comparison draws on the cockpit's own token names
       '--mk-muted': '#3d5848', '--mk-line': '#c3bfb4', '--mk-ok': '#5d7368' });
     const dark = build({ '--text': '#f5ece0', '--muted': '#a3968a',
-      '--line': '#4f4640', '--in-range': '#86ad78', '--basal': '#a89a85',
+      '--line': '#4d4742', '--in-range': '#86ad78', '--basal': '#a89a85',
       '--secondary': '#a89a85', '--warn': '#c98a4e', '--notindata': '#8d8579',
-      '--surface': '#262220', '--primary': '#e07f3f', '--accent': '#d08150',
+      '--surface': '#26221f', '--primary': '#e07f3f', '--accent': '#d08150',
       '--ok': '#9aada1', '--danger': '#ec6f55', '--manual-carb': '#d2743e',
-      '--mk-muted': '#a3968a', '--mk-line': '#4f4640', '--mk-ok': '#9aada1' });
+      '--mk-muted': '#a3968a', '--mk-line': '#4d4742', '--mk-ok': '#9aada1' });
     assert.equal(light.basal.yAxis.axisLabel.color, '#3d5848');
     assert.equal(dark.basal.yAxis.axisLabel.color, '#a3968a');
     assert.equal(light.basal.series[1].lineStyle.color, '#5d7368');
@@ -369,7 +370,7 @@ test('chart options resolve live light and dark theme tokens', () => {
     assert.equal(light.thumbnail.graphic[0].style.fill, '#3d5848');
     assert.equal(dark.thumbnail.graphic[0].style.fill, '#a3968a');
     assert.ok(contrast('#3d5848', '#faf8f4') >= 4.5);
-    assert.ok(contrast('#a3968a', '#262220') >= 4.5);
+    assert.ok(contrast('#a3968a', '#26221f') >= 4.5);
   } finally {
     globalThis.document = prior.document;
     globalThis.getComputedStyle = prior.getComputedStyle;
@@ -454,6 +455,18 @@ test('the event-comparison entry draws the shipped cohort series at the injected
     'the target band rides with the traces');
 });
 
+test('the event-comparison entry carries the dock mini rank through the registry', () => {
+  const event = eventCase();
+  const entry = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'event-comparison');
+  const option = entry.option(null, { data: event, range: [80, 240], mini: true });
+
+  assert.deepEqual(option.grid, { left: 6, right: 6, top: 6, bottom: 6 });
+  assert.equal(option.tooltip.show, false);
+  assert.equal(option.xAxis.axisLabel.show, false);
+  assert.equal(option.yAxis.axisLabel.show, false);
+  assert.equal(option.series.some((series) => /:episode:|selected:trace/.test(series.id || '')), false);
+});
+
 test('the shipped event-comparison mount derives its axis from rendered cohort glucose', () => {
   const prior = {
     window: globalThis.window,
@@ -521,6 +534,21 @@ test('a selected occurrence and a withheld cohort keep their own shipped series'
   }
 });
 
+test('a selected occurrence trace never changes the field range', () => {
+  const cases = caseFiles().cases['finding:carb_undercount'];
+  const [selectedId] = Object.keys(cases.selected_event);
+  const selected = structuredClone(cases.selected_event[selectedId]);
+  selected.selection.detail.glucose[0].bg = 360;
+  const descriptor = (data) => ({ chartId: 'finding:carb_undercount',
+    kind: 'event-comparison', state: 'ok', data });
+
+  assert.deepEqual(
+    fieldRange([descriptor(cases.event)], DIAGNOSE_EVIDENCE_CHARTS, glucoseRange),
+    fieldRange([descriptor(selected)], DIAGNOSE_EVIDENCE_CHARTS, glucoseRange),
+    'selection-only glucose cannot rescale the shared mini field',
+  );
+});
+
 test('current I:C event options render every published meal member', () => {
   const cases = fixture('../mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json')
     .cases;
@@ -546,14 +574,14 @@ test('current I:C event options render every published meal member', () => {
     ['diamond', 'emptyDiamond']);
 });
 
-test('glucose chart options fail closed without one injected arrangement range', () => {
+test('glucose chart options fail closed without one injected field range', () => {
   const ic = fixture('../mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json')
     .cases.below_floor;
   const event = eventCase();
   const byKind = Object.fromEntries(DIAGNOSE_EVIDENCE_CHARTS.map((entry) => [entry.kind, entry]));
 
   assert.throws(() => byKind['carb-ratio'].option('event', { data: ic }),
-    /arrangement glucose range/);
+    /field glucose range/);
   assert.throws(() => byKind['event-comparison'].option(null, { data: event }),
-    /arrangement glucose range/);
+    /field glucose range/);
 });

@@ -7,9 +7,31 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   DOCK_FLOOR, MINI_FLOOR, SPOTLIGHT_FLOOR, dismissRaisedDock, dockView,
-  isDrilledSpotlight, popInspector,
+  isDrilledSpotlight, popInspector, seatableChartIds,
 } from './diagnose-canvas-state.js';
 import { createCanvasLayout, placeSeats } from './diagnose-canvas-layout.js';
+
+test('ranked Findings self-seat in server order while Watching charts require a pin', () => {
+  const findings = { rows: [
+    { id: 'finding:carb_undercount', register: 'finding' },
+    { id: 'basal:0-30', register: 'held' },
+    { id: 'isf', register: 'assert' },
+    { id: 'ic:720', register: 'blind' },
+  ] };
+  const descriptors = [
+    { chartId: 'ic:720', kind: 'ic' },
+    { chartId: 'isf', kind: 'isf' },
+    { chartId: 'basal:0-30', kind: 'basal' },
+    { chartId: 'finding:carb_undercount', kind: 'event-comparison' },
+  ];
+
+  assert.deepEqual(seatableChartIds(findings, descriptors), [
+    'finding:carb_undercount', 'isf',
+  ], 'descriptor kind and order cannot put Watching ahead of ranked Findings');
+  assert.deepEqual(seatableChartIds(findings, descriptors, ['ic:720']), [
+    'finding:carb_undercount', 'isf', 'ic:720',
+  ], 'an explicit live Watching pin follows every ranked Finding without reordering them');
+});
 
 test('the dock floor is the room a spotlight and a mini need to sit one above the other', () => {
   assert.equal(DOCK_FLOOR, SPOTLIGHT_FLOOR + MINI_FLOOR + 8);

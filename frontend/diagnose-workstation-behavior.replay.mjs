@@ -3705,6 +3705,9 @@ export const S113 = retiredStory('S113');
 // STORY:finding-evidence-routing:S114
 export const S114 = async (page) => {
   await openCanvas(page);
+  await page.getByRole('button', { name: 'Morning', exact: true }).click();
+  await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false');
+  await page.waitForTimeout(700);
   if (await page.locator('#tile-field').getAttribute('data-dock') === 'hidden') {
     await page.getByRole('button', { name: 'Bring the charts up', exact: true }).click();
   }
@@ -3761,17 +3764,20 @@ export const S116 = async (page) => {
 // STORY:finding-evidence-routing:S117
 export const S117 = async (page) => {
   await openCanvas(page);
-  const eventInk = () => page.locator('#tile-row .evidence-tile[data-chart-id^="finding:"] .tile-chart')
-    .first().evaluate((host) => {
-      const option = window.echarts.getInstanceByDom(host)?.getOption();
-      return option?.series?.find((series) => series.name === 'Target range')
-        ?.markArea?.itemStyle?.color || null;
-    });
+  const chartId = await page.locator('#tile-row .evidence-tile[data-chart-id^="finding:"]')
+    .first().getAttribute('data-chart-id');
+  const eventInk = () => page.locator(
+    `#tile-row .evidence-tile[data-chart-id="${chartId}"] .tile-chart`,
+  ).evaluate((host) => {
+    const option = window.echarts.getInstanceByDom(host)?.getOption();
+    return option?.series?.find((series) => series.name === 'Target range')
+      ?.markArea?.itemStyle?.color || null;
+  });
   const darkInk = await eventInk();
   ok(darkInk, 'S117 the event tile exposes its live dark-surface ink');
   await page.locator('#theme-menu-button').click();
   await page.getByRole('menuitemradio', { name: 'Light', exact: true }).click();
-  await page.waitForTimeout(250);
+  await openCanvas(page);
   const lightInk = await eventInk();
   ok(lightInk, 'S117 the event tile exposes its live light-surface ink');
   ok(lightInk !== darkInk, 'S117 the event tile repaints from the changed surface palette');

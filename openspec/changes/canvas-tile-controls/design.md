@@ -24,10 +24,11 @@ making the chart visible makes that path real again.
 The frozen stories read geometry and state from the surfaces that own them. A
 brace drag derives the plot edges from the chart's exported grid insets, so a
 canvas alignment change cannot leave the replay aiming at a retired plot. A
-story about the Watching tail explicitly brings the dock up before asking for a
-tail cell, because a hidden dock deliberately draws none. Closing the explorer
-returns focus to its opener, and a dock repaint preserves that focus while it
-rebuilds the control.
+story about the Watching tail explicitly selects a scope that publishes
+Watching reads and brings the dock up before asking for a tail cell, because an
+all-ranked roster or a hidden dock deliberately draws none. Closing the
+explorer returns focus to its opener, and a dock repaint preserves that focus
+while it rebuilds the control.
 
 ## ADR 215 — Fixed canvas, membership pinning, Explore retired
 

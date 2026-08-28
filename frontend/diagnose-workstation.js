@@ -1428,8 +1428,8 @@ function boot(root, data, callbacks, signal) {
     return tileDescriptors.filter((descriptor) => tileRuntime.get(descriptor.chartId)?.current);
   }
 
-  /* THE ROW ORDER IS DERIVED, NEVER CARRIED. It is the pins followed by the
-     published findings rank, recomputed on every paint, so there is no reader
+  /* THE ROW ORDER IS DERIVED, NEVER CARRIED. It is the published findings rank
+     followed by still-live retained stars, recomputed on every paint, so there is no reader
      ordering to preserve across a reconcile and nothing to drop when the policy
      changes. #135 kept a candidate list here precisely because a focus swap
      shuffled the field; the field no longer shuffles. */
@@ -1484,7 +1484,7 @@ function boot(root, data, callbacks, signal) {
           || { current: true, pending: false, message: null, request: 0 };
         retained.current = true;
         retained.pending = false;
-        retained.message = 'Pinned chart is not in the current findings.';
+        retained.message = 'Kept chart is not in the current findings.';
         retained.retained = true;
         nextRuntime.set(seed.chartId, retained);
         return seed;
@@ -2632,7 +2632,7 @@ function boot(root, data, callbacks, signal) {
     if (!host || !focalHost || !rowHost) return;
     disposeTiles();
     const byId = new Map(tileDescriptors.map((descriptor) => [descriptor.chartId, descriptor]));
-    /* A SEAT WITHOUT A DESCRIPTOR IS NOT A TILE. Reconciliation gives a pin
+    /* A SEAT WITHOUT A DESCRIPTOR IS NOT A TILE. Reconciliation gives a star
        whose row vanished a named empty descriptor; this last filter only keeps
        the mechanical placement seam from ever painting an unknown chart id. */
     const placed = (fullscreen
@@ -2663,14 +2663,15 @@ function boot(root, data, callbacks, signal) {
        returns the focal chart FIRST, so feeding its output here hoisted the
        spotlighted chart to the head of the strip — the exact "the chosen chart
        moves left-most" the filmstrip exists to prevent. The candidate list is
-       the published rank, untouched by what is on stage.
+       the published rank plus any retained-live tail, untouched by what is on
+       stage or which charts are starred.
 
        A PROMOTED WATCHING CHART JOINS THE ORDER; IT DOES NOT LEAVE IT. The
-       candidates are the ranked charts, so a Watching read the reader clicked
+       candidates are ranked charts followed by retained stars, so a Watching read the reader clicked
        onto the stage held no cell here and vanished from the strip the moment
        it was picked — which breaks the filmstrip's one rule, that the current
-       frame is MARKED rather than removed. `dockOrder` puts it in rank order
-       like anything else; the seating pool below is the same list, so the strip
+       frame is MARKED rather than removed. `dockOrder` preserves that candidate
+       order; the seating pool below is the same list, so the strip
        and the tail can never disagree about what is already drawn. */
     const stripIds = dockOrder([...new Set([...currentTileCandidates(),
       ...(focalId ? [focalId] : [])])].filter((chartId) => byId.has(chartId)),
@@ -2782,11 +2783,10 @@ function boot(root, data, callbacks, signal) {
       tile.toggleAttribute('data-drilled', isDrilledSpotlight(
         seat, descriptor.chartId, drilledChartId,
       ));
-      /* NO `order` PROPERTY. `placeSeats` already emits pins-then-rank and the
+      /* NO `order` PROPERTY. `placeSeats` already emits candidate order and the
          tiles are appended in that order, so a second ordering here can only
-         disagree with the first — which is exactly what it did: #135's rule
-         gave every unpinned mini order 0 and every pin order 1+, painting the
-         pins to the RIGHT of the ranked charts they are supposed to lead. */
+         disagree with the first. Stars mark retention; they never supply a
+         competing CSS order. */
       const runtime = tileRuntime.get(descriptor.chartId);
       const presentation = tileStatePresentation(
         descriptor, runtime.pending, runtime.message,
@@ -2820,8 +2820,8 @@ function boot(root, data, callbacks, signal) {
          across the row, and the plot paid for all of it. Operator, on the built
          strip: "the filmstrip still looks like shit."
 
-         The pin stays, because it is the one verb that is about the STRIP
-         rather than about reading a chart — it says "keep this cell left-most"
+         The star stays, because it is the one verb that is about the STRIP
+         rather than about reading a chart — it says "keep this chart available"
          and there is nowhere else for it to mean that. Nothing is hidden to
          achieve this: a mini simply has one control, which is the rule the rail
          has always followed — a control is absent where it does not act. */
@@ -2860,21 +2860,19 @@ function boot(root, data, callbacks, signal) {
         else rail.append(full);
       }
 
-      /* A PIN ORDERS THE ROW (ADR 215 amendment), so it means one thing on
-         every tile — the focal one included, where it says "when this returns
-         to the row, keep it left-most". There is no cap, so there is no
-         refusal, no disabled state and no position that has to explain why its
-         pin does nothing. */
+      /* A STAR RETAINS THE CHART (ADR 226), so it means one thing on every tile:
+         keep this chart in the dock if findings rank stops carrying it. There
+         is no cap, so there is no refusal or disabled state. */
       const pin = railButton({
         className: 'tile-pin',
-        label: seat.pinned ? 'Unpin' : 'Pin',
+        label: seat.pinned ? 'Stop keeping' : 'Keep',
         glyph: 'pin',
         held: seat.pinned,
       });
-      pin.title = seat.pinned ? 'Release this chart to findings rank'
-        : 'Keep this chart left-most in the row';
+      pin.title = seat.pinned ? 'Stop keeping this chart'
+        : 'Keep this chart in the dock';
       pin.setAttribute('aria-label', seat.pinned
-        ? `Unpin ${descriptor.title}` : `Pin ${descriptor.title}`);
+        ? `Stop keeping ${descriptor.title}` : `Keep ${descriptor.title}`);
       pin.onclick = (event) => {
         event.stopPropagation();
         canvasLayout = seat.pinned

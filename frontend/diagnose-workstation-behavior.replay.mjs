@@ -3377,6 +3377,20 @@ const withGeneratedCarbRatioRecovery = (projected) => {
   return next.window?.scoped
     ? { ...next, analysis_generation: `${next.analysis_generation}:scoped` } : next;
 };
+const withStarBecomingWatching = (projected) => {
+  if (projected.window?.start_min !== 360 || projected.window?.end_min !== 720) {
+    return projected;
+  }
+  const source = FINDINGS_PROJECTION.windows.global.rows
+    .find((row) => row.id === 'basal:30-90');
+  if (!source || projected.rows.some((row) => row.id === source.id)) return projected;
+  const watching = { ...structuredClone(source), register: 'held', asserts_move: false };
+  return {
+    ...projected,
+    counts: { ...projected.counts, held: (projected.counts?.held || 0) + 1 },
+    rows: [...projected.rows, watching],
+  };
+};
 
 const canvasSnapshot = (page) => page.evaluate(() => ({
   arrangement: document.querySelector('#tile-field')?.dataset.arrangement || null,
@@ -3916,6 +3930,85 @@ export const S119 = async (page) => {
     'S119 resize and Back restore the exact prior Spotlight and dock state');
 };
 
+const starDockSnapshot = (page) => page.evaluate(() => ({
+  focal: document.querySelector('#tile-focal .evidence-tile')?.dataset.chartId || null,
+  row: [...document.querySelectorAll('#tile-row .evidence-tile')].map((tile) => ({
+    id: tile.dataset.chartId,
+    kept: tile.hasAttribute('data-pinned'),
+    selected: tile.hasAttribute('data-selected'),
+    tailHead: tile.hasAttribute('data-tail-head'),
+    title: tile.querySelector('h3')?.textContent.trim() || null,
+  })),
+}));
+
+// STORY:finding-evidence-routing:S120
+export const S120 = async (page) => {
+  const evidenceViewport = page.viewportSize();
+  const narrowEvidence = evidenceViewport.width < 760;
+  if (narrowEvidence) await page.setViewportSize({ width: 1440, height: 900 });
+  await openCanvas(page);
+
+  const opening = await starDockSnapshot(page);
+  const victimId = 'basal:30-90';
+  const victim = opening.row.find(({ id }) => id === victimId);
+  ok(victim, 'S120 the whole-day dock publishes the ranked chart that will become Watching');
+  const openingTail = opening.row.findIndex(({ tailHead }) => tailHead);
+  const openingRankEnd = openingTail < 0 ? opening.row.length : openingTail;
+  ok(openingRankEnd > opening.row.findIndex(({ id }) => id === victimId),
+    'S120 the chart starts inside the ranked group');
+  const openingRank = opening.row.slice(0, openingRankEnd).map(({ id }) => id);
+  const star = page.locator(`#tile-row .evidence-tile[data-chart-id="${victimId}"] .tile-pin`);
+  const keepName = await star.getAttribute('aria-label');
+  const keepTitle = await star.getAttribute('title');
+  await star.focus();
+  await page.keyboard.press('Space');
+  await settle(page, 350);
+  const starred = await starDockSnapshot(page);
+  const stopName = await star.getAttribute('aria-label');
+  const stopTitle = await star.getAttribute('title');
+  if (narrowEvidence) await page.setViewportSize(evidenceViewport);
+  await settle(page, 350);
+  await captureEvidence(page, 'ranked-star');
+  if (narrowEvidence) await page.setViewportSize({ width: 1440, height: 900 });
+  await settle(page, 350);
+
+  await page.getByRole('button', { name: 'Morning', exact: true }).click();
+  await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false');
+  await settle(page, 700);
+  const retained = await starDockSnapshot(page);
+  if (narrowEvidence) await page.setViewportSize(evidenceViewport);
+  await settle(page, 350);
+  await captureEvidence(page, 'unranked-retained-star');
+  if (narrowEvidence) await page.setViewportSize({ width: 1440, height: 900 });
+  await settle(page, 350);
+
+  is(keepName, `Keep ${victim.title}`, 'S120 the star names the Keep action');
+  is(keepTitle, 'Keep this chart in the dock', 'S120 the star title names retention');
+  is(stopName, `Stop keeping ${victim.title}`, 'S120 the held star names Stop keeping');
+  is(stopTitle, 'Stop keeping this chart', 'S120 the held star title names retention');
+  is(starred.focal, opening.focal, 'S120 starring leaves the Spotlight unchanged');
+  is(starred.row.slice(0, openingRankEnd).map(({ id }) => id), openingRank,
+    'S120 starring leaves the server-published ranked order unchanged');
+  const retainedIndex = retained.row.findIndex(({ id }) => id === victimId);
+  const retainedTail = retained.row.findIndex(({ tailHead }) => tailHead);
+  is(retainedIndex, retainedTail - 1,
+    'S120 an unranked retained star sits immediately before Watching');
+  ok(retained.row[retainedIndex].kept, 'S120 the retained chart keeps its star');
+
+  const retainedFocal = retained.focal;
+  const stop = page.locator(`#tile-row .evidence-tile[data-chart-id="${victimId}"] .tile-pin`);
+  await stop.focus();
+  await page.keyboard.press('Space');
+  await settle(page, 350);
+  const released = await starDockSnapshot(page);
+  const releasedIndex = released.row.findIndex(({ id }) => id === victimId);
+  const releasedTail = released.row.findIndex(({ tailHead }) => tailHead);
+  is(released.focal, retainedFocal, 'S120 stopping retention leaves the Spotlight unchanged');
+  ok(releasedIndex >= releasedTail && releasedTail >= 0,
+    `S120 stopping retention returns the chart to automatic Watching membership: ${JSON.stringify(released)}`);
+  ok(!released.row[releasedIndex].kept, 'S120 the released Watching chart is no longer starred');
+};
+
 export const STORIES = [
   ['S01', S01, 'drawn'], ['S02', S02, 'typical'], ['S03', S03, 'drawn'],
   ['S04', S04, 'drawn'], ['S05', S05, 'drawn'], ['S06', S06, 'typical'],
@@ -4079,6 +4172,8 @@ export const STORIES = [
   ['S115', S115, 'typical'], ['S116', S116, 'typical'],
   ['S117', S117, 'typical'], ['S118', S118, 'typical'],
   ['S119', S119, 'typical', { viewport: { width: 2084, height: 742 } }],
+  ['S120', S120, 'typical', { findingsInputs: FINDINGS_PROJECTION.inputs,
+    findingsProjectionInputs: withStarBecomingWatching }],
   ['C41', C41, 'typical', { caseScenario: {
     preparation: generatedFindingPose('finding:meal_over_delivery'),
   } }], ['C42', C42, 'typical'],

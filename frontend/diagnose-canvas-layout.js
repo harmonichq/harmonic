@@ -23,11 +23,10 @@ export function createCanvasLayout({ focalId = null, pins = [] } = {}) {
   return { focalId, pins: [...pins] };
 }
 
-/* A PIN ORDERS THE ROW; IT DOES NOT HOLD A POSITION (ADR 215 amendment). It
-   says "keep this left-most", so it can never be refused: a fourth pin is not
-   rejected, it sits one scroll-tick to the right of the three the row shows at
-   rest. That is why there is no cap here and no `accepted` answer to give — the
-   caller has no refusal to render. */
+/* A STAR RETAINS A CHART; IT DOES NOT ORDER THE ROW (ADR 226). Retention can
+   never be refused: a fifth star joins the reader-owned set without evicting
+   an earlier one. That is why there is no cap here and no `accepted` answer to
+   give — the caller has no refusal to render. */
 export function pinChart(layout, chartId) {
   return layout.pins.includes(chartId) ? layout : createCanvasLayout({
     focalId: layout.focalId,
@@ -53,31 +52,31 @@ export function unpinChart(layout, chartId) {
    The order is the same one `placeSeats` sorts by, derived here without lifting
    anything, so the two can never disagree about what comes first. */
 export function dockOrder(candidateIds, layout) {
-  const candidates = [...new Set(candidateIds)];
-  const pins = layout.pins.filter((id) => candidates.includes(id));
-  return [...pins, ...candidates.filter((id) => !pins.includes(id))];
+  return [...new Set(candidateIds)];
 }
 
-/* THE ROW IS A SORTED LIST AND NO INTERACTION SHUFFLES IT. The focal chart is
-   lifted OUT of the row; everything else follows in one order — pins first, in
-   the order they were pinned, then the ranked candidates. Promoting a mini
+/* THE ROW PRESERVES ITS CANDIDATE ORDER AND NO INTERACTION SHUFFLES IT. The
+   focal chart is lifted OUT of the row; everything else follows the server
+   rank plus retained-live tail already supplied by the membership seam. A
+   star is metadata on that order, never a second sort key. Promoting a mini
    therefore drops the demoted focal back to its own ordered position rather
    than into the seat the promoted chart vacated, which is #135's rule and is
    retired with the arrangements: a list that re-sorts itself under every click
    is a list a reader cannot keep their place in.
 
    This is also why no candidate-order state survives anywhere. The order is
-   derived from the pins and the published rank on every paint, so there is
-   nothing to carry across a reconcile and nothing to drop. */
+   supplied afresh on every paint, so there is nothing to carry across a
+   reconcile and nothing to drop. */
 export function placeSeats(candidateIds, layout) {
   const candidates = [...new Set(candidateIds)];
   const focal = layout.focalId && candidates.includes(layout.focalId)
     ? layout.focalId : candidates[0] || null;
-  const pins = layout.pins.filter((id) => candidates.includes(id) && id !== focal);
-  const row = [...pins, ...candidates.filter((id) => id !== focal && !pins.includes(id))];
+  const row = candidates.filter((id) => id !== focal);
   return [
     ...(focal ? [{ chartId: focal, seat: 'focal', pinned: layout.pins.includes(focal) }] : []),
-    ...row.map((chartId) => ({ chartId, seat: 'mini', pinned: pins.includes(chartId) })),
+    ...row.map((chartId) => ({
+      chartId, seat: 'mini', pinned: layout.pins.includes(chartId),
+    })),
   ];
 }
 

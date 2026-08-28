@@ -1,6 +1,6 @@
 # Generated facts — Star means keep (#226)
 
-Captured from base `4141df32178b72bff4638fa9fad773242a296292` before triage writes.
+Captured from base `45f0f7ddcacc606b530791c07f00271f30979852` before implementation writes.
 
 ## F1 — Named source and contract paths are tracked
 

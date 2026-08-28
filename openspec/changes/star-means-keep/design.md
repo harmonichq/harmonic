@@ -67,3 +67,14 @@ cells but before the first `data-tail-head` cell, and stop retention so the
 existing Watching membership resumes. The old replay must fail before the new
 one passes. Evidence uses the same generated synthetic source in desktop and
 narrow viewports, Light and Dark.
+
+### Observed revision results
+
+The old helper, composition, workstation, and S120 replay assertions failed on
+the expected pin-first ordering and copy before production edits. After the
+revision, the complete fast gate passed (2,101 backend tests with one intentional
+skip; 523 frontend tests), all thirteen documented drift checks were current,
+the affected browser suites passed 41/41 and 13/13 tests, and the app-only
+Diagnose replay passed 140/140 stories including S120. Sixteen paired synthetic
+base/revision images cover both required states at 1440×900 and 390×844 in Light
+and Dark.

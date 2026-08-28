@@ -304,7 +304,7 @@ test('#215 · fullscreen from the docked strip takes the header and draws the ch
        not return. */
     assert.deepEqual(await page.locator('#dock-headacts button')
       .evaluateAll((buttons) => buttons.map((button) => button.getAttribute('aria-label'))),
-    [`Pin ${chartTitle}`, 'Back to the dock'],
+    [`Keep ${chartTitle}`, 'Back to the dock'],
     'fullscreen moves the chart rail and its one way back into the shared header');
     assert.equal(await fullscreen.locator('.tile-fullscreen').count(), 0,
       'fullscreen shrink has one home, in the shared header');

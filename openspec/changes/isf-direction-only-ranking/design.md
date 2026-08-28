@@ -89,4 +89,13 @@ no rank numeral or stage affordance and explains which evidence owns the directi
 The canonical Surfaces specification is the only baseline specification amended;
 the Safety baseline's analyzer/staging and analysis-Priority contract is unchanged.
 
+**Evidence inventory.** The reviewed synthetic evidence is committed under
+`evidence/issue-223/`: `base/` and `revision/` each contain queue and Correction
+factor detail captures at 1440×900 and 390×844 in both light and dark themes;
+`replay.txt` records the complete shipped-surface replay ending with 138 of 138
+stories passed; and `manifest.txt` records the source revisions, manufactured data
+boundary, affected states, and every capture path. Revision captures were recorded
+at `b33dd94`; the later contract/test commits `885c3ca` and `a11169f` do not alter
+rendered output.
+
 Decision: ConnorGriffin, 2026-08-28.

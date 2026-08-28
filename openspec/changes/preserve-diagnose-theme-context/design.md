@@ -47,10 +47,10 @@ Measured in headless Chromium against the safe running app on fresh
   and the dock order was `ic:0`, `basal:120-180`, `isf`.
 
 Source inspection matches the rendered failure. The shell's theme watcher calls
-`diagnoseView.refresh()`. That method currently calls the full `render()` path,
-which tears down the boot instance and reconstructs `presetKey`, `drawn`, and
-`canvasLayout` from opening configuration. The same boot instance already
-exposes an in-place paint operation for a resolved Day trace.
+`diagnoseView.refresh()`. On the base SHA, that method called the full `render()`
+path, which tore down the boot instance and reconstructed `presetKey`, `drawn`,
+and `canvasLayout` from opening configuration. The same boot instance already
+exposed an in-place paint operation for a resolved Day trace.
 
 ## Verification contract
 
@@ -60,3 +60,47 @@ ids immediately before and after the theme action; it must not call `openCanvas`
 or another helper after the switch. The same story continues to prove that the
 event chart's palette ink changes. The full app-only replay and the repository's
 fast gate remain the verification backstop.
+
+## Built-app replay and render evidence
+
+The strengthened S117 failed against the base app with the expected identity
+change: after Dark → Light, `pressedWindow` changed from `["24 h"]` to
+`["Overnight"]` and `spotlightId` changed from
+`finding:correction_on_iob` to `finding:over_treated_low`. Against the revision,
+focused S117 passed and the aggregate app-only replay reported
+`app: 138 of 138 stories passed`, with no `FAIL` or `OPENER` output.
+
+The separate installed-driver capture used the built app and the safe-start
+command above. In each worktree it dynamically selected the first docked Finding
+chart that differed from the opening focal chart. Both base and revision selected
+the same identities before each theme action:
+
+- pressed window: `["24 h"]`;
+- spotlight: `finding:late_bolus` (non-default; opening spotlight `ic:0`);
+- ordered dock chart ids: `["ic:0", "finding:late_bolus"]`.
+
+Immediately after each base theme action, those identities reset in both
+directions to `["Overnight"]`, `ic:0`, and
+`["ic:0", "basal:120-180", "isf"]`. The paired reset renders are
+`evidence/base-dark-to-light-reset.png` and
+`evidence/base-light-to-dark-reset.png`.
+
+Immediately after each revision theme action, all three identities remained
+byte-for-byte equal to the staged values above. The focal Event chart's target
+range ink was `color-mix(in srgb, #347354 7%, transparent)` in Light and
+`color-mix(in srgb, #a89a85 7%, transparent)` in Dark. The paired preserved
+renders are `evidence/revision-dark-to-light-preserved.png` and
+`evidence/revision-light-to-dark-preserved.png`. Both driver runs reported an
+empty browser-console error list.
+
+**Visual verdict.** Inspection of all four 1280 × 720 synthetic renders confirms
+the DOM record. The base pair visibly returns to the Overnight I:C workspace and
+shows the remount's loading states. The revision pair keeps the 24-hour brace,
+Late bolus spotlight, and two-chart dock. Light uses the shipped bone grounds and
+green/terracotta marks; Dark uses the shipped near-black grounds and brighter
+olive/orange marks. Chart geometry, labels, ordering, and clinical meaning do not
+change. The visible difference is palette-only.
+
+`openspec/specs/surfaces/spec.md` remains unchanged. The implementation corrects
+the shipped interaction to satisfy the existing surface capability; it does not
+add or alter a baseline capability requirement.

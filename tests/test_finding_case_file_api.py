@@ -1050,6 +1050,52 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
         day = source_seq[1] // 100
         self.assertEqual(source_seq, [day * 100 + 11, day * 100 + 12])
 
+    def test_meal_bolus_short_uses_latest_high_for_scoped_membership(self):
+        readings = _trace(14, [
+            (9, 0, 110), (12, 0, 112), (12, 20, 120), (13, 0, 255),
+            (13, 35, 120), (13, 50, 120), (14, 35, 305), (15, 30, 145),
+        ])
+        bolus = [
+            (7001, datetime(2026, 6, 14, 12), 5.0, 85.0,
+             {"carb_ratio": 12.0}),
+            (7002, datetime(2026, 6, 14, 13, 20), 2.5, None),
+        ]
+        windows = (
+            ("earlier High", {"start_min": 12 * 60 + 30, "end_min": 13 * 60 + 30}, 0),
+            ("later High", {"start_min": 14 * 60 + 25, "end_min": 14 * 60 + 45}, 1),
+            ("episode end", {"start_min": 14 * 60 + 45, "end_min": 15 * 60}, 0),
+        )
+
+        with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
+            _seed_events(database.name, readings, bolus)
+            with TestClient(create_app(
+                    db_path=database.name, token=None, enable_fetch_loop=False)) as client:
+                for label, query, expected in windows:
+                    findings_response = client.get("/api/diagnose/findings", params=query)
+                    self.assertEqual(findings_response.status_code, 200, label)
+                    finding = next((
+                        row for row in findings_response.json()["rows"]
+                        if row.get("lever") == "meal_bolus_short"
+                    ), None)
+                    queue_count = finding["episodes"] if finding is not None else 0
+
+                    preparation_response = client.get(
+                        "/api/diagnose/finding-case-file-preparation", params=query,
+                    )
+                    self.assertEqual(preparation_response.status_code, 200,
+                                     preparation_response.text)
+                    case_response = client.get(
+                        "/api/diagnose/finding-case-file",
+                        params={
+                            "projection_id": preparation_response.json()["projection_id"],
+                            "lever": "meal_bolus_short", "alignment": "clock",
+                        },
+                    )
+                    self.assertEqual(case_response.status_code, 200, case_response.text)
+                    fired = [row for row in case_response.json()["occurrences"]
+                             if row["verdict"] == "fired"]
+                    self.assertEqual((queue_count, len(fired)), (expected, expected), label)
+
     def test_caused_low_uses_rebound_relative_membership_in_a_wrapping_window(self):
         base = datetime(2026, 6, 1, 20, 40)
 

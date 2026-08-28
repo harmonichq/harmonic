@@ -11,7 +11,7 @@ S41-S71.
 The app-only replay is
 `frontend/diagnose-workstation-behavior.replay.mjs`.
 
-**134 issued executable IDs:** S01–S114, C41–C57, and D1–D3
+**138 issued executable IDs:** S01–S118, C41–C57, and D1–D3
 **Active executable IDs:** all issued
 **Retired executable IDs:** none
 
@@ -2701,3 +2701,37 @@ promotes it to the spotlight even though it is not ranked; that promoted chart
 keeps exactly one strip cell, and that cell is the strip's one selected current
 frame. The story drives the tail cell through the shipped canvas and asserts all
 three observations after the promotion.
+
+## Revision amendment — 2026-08-27 (strip rank, paint and reading order)
+
+**S19 is amended.** Its occurrence-dot and meal-glyph hover/latch clauses are
+retired; pooled-bin hover is the strip's sole readout, and occurrences remain
+reachable from Findings. This supersedes the P29 item-hover latch only. The
+sanctions are: ConnorGriffin · 2026-08-27 · 'these dots mean nothing, just take
+them off the glucose chart. User can get to them from the findings panel.' and
+ConnorGriffin · 2026-08-27 · 'Please also remove meal markers from the glucose
+chart.'
+
+**S102 is amended.** Selecting an occurrence never changes the shared
+evidence-field range, and arriving evidence tiles never changes the glucose
+strip's envelope-and-target range. This supersedes S102's one unqualified
+arrangement-wide glucose-range clause.
+
+**S110 is amended.** Its duplicate drill-provenance name clause is retired;
+Findings still marks the chart owning the drill. This supersedes only the
+duplicate name beside the breadcrumb. Sanction: ConnorGriffin · 2026-08-27 ·
+'Stop repeating ourselfes. Respect the sanctitity of the breadcrumb.'
+
+**S115.** A dock mini, event comparison included, carries no axis furniture,
+tooltip, episode trace, or selected trace; Enter/Space promotes its cell to the
+spotlight. Evidence: replay S115.
+
+**S116.** Closing the chart explorer restores focus to its opener. Evidence:
+replay S116.
+
+**S117.** After a theme change, event evidence repaints from the live surface
+palette. Evidence: replay S117.
+
+**S118.** Findings rows number only visible priced ranked rows and reveal an
+asserting row's server-published annotation, composing no new clinical copy.
+Evidence: replay S118.

@@ -3,7 +3,7 @@
 //
 // WHY THIS EXISTS: the ledger records behavior that a still frame cannot prove:
 // that an edge is grabbable down its whole height, that a press which never
-// moves must change nothing, or that a hovered dot latches the docked readout.
+// moves must change nothing, or that a hovered pooled bin fills the docked readout.
 // The mock has since been archived (#722), and the app is now the sole contract
 // artifact for these behaviours. Each story below is one exported function
 // that performs the behaviour for real against the built app and asserts what
@@ -343,19 +343,6 @@ const holdUntilStop = async (page, start, direction, want) => {
   await chipIs(page, want);
   return state(page);
 };
-
-/** Pixel centres of the chart's own occurrence dots / meal glyphs, from the
-    ECharts instance — never guessed by scanning the canvas. */
-const marks = (page, seriesName) => page.evaluate((name) => {
-  const c = document.getElementById('chart');
-  const inst = window.echarts.getInstanceByDom(c);
-  const s = inst.getOption().series.find((x) => x.name === name);
-  const box = c.getBoundingClientRect();
-  return (s ? s.data : []).map((d) => {
-    const p = inst.convertToPixel({ seriesName: name }, d.value ?? d);
-    return { x: box.x + p[0], y: box.y + p[1], meta: d.meta || null };
-  });
-}, seriesName);
 
 /** The non-null values of the chart's 'That day' real-trace series, in bin
     order — or null when the series is absent (no captured trace). Read off the
@@ -1227,10 +1214,8 @@ export const S18 = async (page) => {
   is(inLane, false, 'S18 ISF is never a lane cell');
 };
 
-/** S19 · The hover readout is DOCKED: bin stats land in the fixed header row,
-    an occurrence dot or meal glyph reports through that same row (stats cells
-    withdrawn), a hovered item latches against the axis pointer, and leaving the
-    plot clears it. No floating tooltip is ever created. */
+/** S19 · The hover readout is DOCKED: pooled-bin stats land in the fixed header
+    row and leaving the plot clears it. No floating tooltip is ever created. */
 // LOCK:diagnose-workstation:10 LOCK:diagnose-workstation:11 LOCK:diagnose-workstation:23
 export const S19 = async (page) => {
   const b = await plot(page);
@@ -1248,25 +1233,13 @@ export const S19 = async (page) => {
     .filter((d) => /tooltip/i.test(d.className || '') && d.offsetParent !== null).length);
   is(floating, 0, 'S19 no floating tooltip anywhere');
 
-  const dots = await marks(page, 'Occurrences');
-  ok(dots.length > 0, 'S19 precondition: the canvas carries occurrence dots');
-  await page.mouse.move(10, 10); await settle(page, 250);
-  await page.mouse.move(dots[0].x, dots[0].y); await settle(page, 400);
-  const dot = await state(page);
-  is(dot.rd.statsShown, false, 'S19 a dot withdraws the stat cells');
-  ok((dot.rd.note || '').length > 0, `S19 the dot reports through the same row (${dot.rd.note})`);
-  // the latch: the axis pointer keeps firing while the pointer sits on the dot
-  // and must not overwrite the dot's own reading
-  await page.mouse.move(dots[0].x + 1, dots[0].y); await settle(page, 300);
-  const latched = await state(page);
-  is(latched.rd.note, dot.rd.note, 'S19 the hovered item latches against the axis pointer');
-
-  const meals = await marks(page, 'Meal boluses');
-  ok(meals.length > 0, 'S19 precondition: the canvas carries meal glyphs');
-  await page.mouse.move(10, 10); await settle(page, 250);
-  await page.mouse.move(meals[0].x, meals[0].y); await settle(page, 400);
-  const meal = await state(page);
-  ok(/meal bolus/.test(meal.rd.note || ''), `S19 a meal glyph reports through the same row (${meal.rd.note})`);
+  /* RETIRED CLAUSE — S19's occurrence-dot hover and latch. The findings panel
+     is the one occurrence route now. Sanction: ConnorGriffin · 2026-08-27 ·
+     "these dots mean nothing, just take them off the glucose chart. User can
+     get to them from the findings panel." */
+  is(await page.evaluate(() => window.echarts.getInstanceByDom(document.getElementById('chart'))
+    .getOption().series.some((series) => series.name === 'Occurrences')), false,
+  'S19 RETIRED — ConnorGriffin · 2026-08-27 · "these dots mean nothing, just take them off the glucose chart. User can get to them from the findings panel."');
 
   await page.mouse.move(5, 5);
   await settle(page, 400);
@@ -3658,8 +3631,14 @@ export const S110 = async (page) => {
   const tile = page.locator('.evidence-tile[data-chart-id^="finding:"]').first();
   const id = await tile.getAttribute('data-chart-id');
   await tile.locator('.tile-body').click(); await settle(page, 500);
-  const findingsName = (await page.locator('#drill-provenance').textContent()).trim();
-  ok(findingsName.length > 0, 'S110 Findings names the chart provenance');
+  /* RETIRED CLAUSE — S110's provenance-name half. The #drill-provenance
+     readout is retired: it restated the drilled chart's name beside a crumb
+     that already names the drilled level, while the spotlight nameplate names
+     the chart. Sanction: ConnorGriffin · 2026-08-27 · "Stop repeating
+     ourselfes. Respect the sanctitity of the breadcrumb." The drill-mark
+     clause below is untouched and still the story's subject. */
+  is(await page.locator('#drill-provenance').count(), 0,
+    'S110 RETIRED — the provenance readout must not return');
   is(await page.locator(`#tile-focal .evidence-tile[data-chart-id="${id}"]`).getAttribute('data-drilled'), '',
     'S110 Findings marks the chart that owns the drill');
   /* RETIRED CLAUSE — S110's Explore half. It asserted that the same provenance
@@ -3730,6 +3709,71 @@ export const S114 = async (page) => {
     .getAttribute('data-selected'), '', 'S114 the promoted Watching cell is selected');
   is(await page.locator('#tile-row .evidence-tile[data-selected]').count(), 1,
     'S114 the strip has one selected current frame');
+};
+
+// STORY:finding-evidence-routing:S115
+export const S115 = async (page) => {
+  await openCanvas(page);
+  const mini = page.locator('#tile-row .evidence-tile[data-chart-id^="finding:"]').first();
+  const chartId = await mini.getAttribute('data-chart-id');
+  const option = await mini.locator('.tile-chart').evaluate((host) =>
+    window.echarts.getInstanceByDom(host)?.getOption());
+  ok(option, 'S115 an event-comparison mini mounts its chart');
+  const axes = Array.isArray(option.xAxis) ? option.xAxis : [option.xAxis];
+  ok(axes.every((axis) => axis.axisLabel?.show === false),
+    'S115 the event-comparison mini carries no axis furniture');
+  is(option.tooltip?.show, false, 'S115 the mini tooltip is inert');
+  const series = Array.isArray(option.series) ? option.series : [];
+  ok(series.every((item) => !/(episode|selected)/i.test(item.name || '')),
+    'S115 the mini carries neither episode nor selected trace');
+  await mini.focus();
+  await page.keyboard.press('Enter');
+  await page.locator(`#tile-focal .evidence-tile[data-chart-id="${chartId}"]`).waitFor();
+  is(await page.locator(`#tile-focal .evidence-tile[data-chart-id="${chartId}"]`).count(), 1,
+    'S115 Enter promotes the mini to the spotlight');
+};
+
+// STORY:finding-evidence-routing:S116
+export const S116 = async (page) => {
+  await openCanvas(page);
+  const opener = page.locator('#explorer-trigger');
+  await opener.focus();
+  await opener.click();
+  await page.keyboard.press('Escape');
+  is(await page.evaluate(() => document.activeElement?.id), 'explorer-trigger',
+    'S116 closing the explorer restores focus to its opener');
+};
+
+// STORY:finding-evidence-routing:S117
+export const S117 = async (page) => {
+  await openCanvas(page);
+  const eventInk = () => page.locator('#tile-row .evidence-tile[data-chart-id^="finding:"] .tile-chart')
+    .first().evaluate((host) => {
+      const option = window.echarts.getInstanceByDom(host)?.getOption();
+      return option?.series?.find((series) => series.name === 'Target range')?.lineStyle?.color || null;
+    });
+  const darkInk = await eventInk();
+  ok(darkInk, 'S117 the event tile exposes its live dark-surface ink');
+  await page.locator('#theme-menu-button').click();
+  await page.getByRole('menuitemradio', { name: 'Light', exact: true }).click();
+  await page.waitForTimeout(250);
+  const lightInk = await eventInk();
+  ok(lightInk, 'S117 the event tile exposes its live light-surface ink');
+  ok(lightInk !== darkInk, 'S117 the event tile repaints from the changed surface palette');
+};
+
+// STORY:finding-evidence-routing:S118
+export const S118 = async (page) => {
+  await openCanvas(page);
+  const rows = await page.locator('#level .qrow').evaluateAll((nodes) => nodes.map((node) => ({
+    rank: node.querySelector('.n')?.textContent.trim() || '',
+    summary: node.querySelector('.sum')?.textContent.trim() || '',
+  })));
+  const ranks = rows.map((row) => row.rank).filter(Boolean).map(Number);
+  is(JSON.stringify(ranks), JSON.stringify(ranks.map((_, index) => index + 1)),
+    'S118 visible priced ranked rows carry consecutive numerals only');
+  ok(rows.some((row) => row.summary),
+    'S118 an asserting row reveals its server-published annotation');
 };
 
 export const STORIES = [
@@ -3892,6 +3936,8 @@ export const STORIES = [
   ['S112', S112, 'typical', { viewport: { width: 390, height: 844 } }],
   ['S113', S113, 'typical'],
   ['S114', S114, 'typical'],
+  ['S115', S115, 'typical'], ['S116', S116, 'typical'],
+  ['S117', S117, 'typical'], ['S118', S118, 'typical'],
   ['C41', C41, 'typical', { caseScenario: {
     preparation: generatedFindingPose('finding:meal_over_delivery'),
   } }], ['C42', C42, 'typical'],

@@ -824,3 +824,17 @@ separately filed chart-form issue; the theme rethink has a playground at
 `theme-workbench.wireframe.html` in this change directory (operator's, keep);
 the remaining prior-session `*.wireframe.html` here are superseded scratch to
 delete before any PR.
+
+### Amendment — 2026-08-27 — mini rank binds every chart, and meal markers retire
+
+**Mini rank binds every chart kind, including event-comparison.** This amends
+the earlier mini-furniture ruling only to make its reach explicit: a mini draws
+no axis furniture, is inert (no hover readout or tooltip), and carries no
+per-occurrence traces. Episode and selected traces are stage-rank only.
+Operator, 2026-08-27: "Minis should have their axes stripped … I should not be
+able to interact with them" / "I don't want traces to draw on the minis".
+
+**Meal markers are retired from the Diagnose glucose strip.** This withdraws
+the strip's meal-bolus glyph track and its `Meal boluses` legend entry; the Day
+surface is unchanged. Sanction: ConnorGriffin · 2026-08-27 · "Please also
+remove meal markers from the glucose chart."

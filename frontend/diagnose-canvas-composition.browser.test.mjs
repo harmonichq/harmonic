@@ -115,6 +115,7 @@ const RETIRED_EXPLORE_MODE_SANCTION = 'sanction: ConnorGriffin · 2026-08-26 · 
    the dock") retires that plate: the rail's ground no longer changes with
    drill or hover, and the mark it used to add is carried by elevation. */
 const RETIRED_RAIL_WELL_SANCTION = 'sanction: ADR 215 amendment · 2026-08-27 · "The hover well plate over a tile\'s plot is retired."';
+const RETIRED_MEAL_MARKERS_SANCTION = 'ConnorGriffin · 2026-08-27 · "Please also remove meal markers from the glucose chart."';
 
 const readField = (page) => page.evaluate(() => ({
   arrangement: document.querySelector('.tile-field')?.dataset.arrangement || null,
@@ -674,6 +675,22 @@ test('Explore mode stays retired — RETIRED', async () => {
   }
 });
 
+test('glucose-strip meal markers stay retired — RETIRED', async () => {
+  console.log(`RETIRED — ${RETIRED_MEAL_MARKERS_SANCTION}`);
+  const browser = await runner.browser();
+  const { page, errors } = await openCanvas(browser);
+  try {
+    const series = await page.evaluate(() => window.echarts.getInstanceByDom(
+      document.getElementById('chart'),
+    ).getOption().series.map((entry) => entry.name));
+    assert.equal(series.includes('Meal boluses'), false,
+      `RETIRED — ${RETIRED_MEAL_MARKERS_SANCTION}`);
+    assert.deepEqual(errors, [], 'checking retired meal markers throws nothing into the page');
+  } finally {
+    await page.close();
+  }
+});
+
 test('Backspace return restores provenance to the chart owning the finding frame', async () => {
   const browser = await runner.browser();
   const { page, errors } = await openCanvas(browser);
@@ -681,7 +698,12 @@ test('Backspace return restores provenance to the chart owning the finding frame
     const behavioral = page.locator('.evidence-tile[data-chart-id^="finding:"]').first();
     const behavioralId = await behavioral.getAttribute('data-chart-id');
     await behavioral.click();
-    const behavioralProvenance = await page.locator('#drill-provenance').textContent();
+    /* RETIRED — the #drill-provenance readout this test used to read.
+       Sanction: ConnorGriffin · 2026-08-27 · "Stop repeating ourselfes.
+       Respect the sanctitity of the breadcrumb." The drill mark (data-drilled)
+       is the sole restore evidence, asserted below. */
+    assert.equal(await page.locator('#drill-provenance').count(), 0,
+      'RETIRED — the provenance readout must not return');
 
     const basalId = await page.locator('.evidence-tile[data-chart-id^="basal:"]').first()
       .getAttribute('data-chart-id');
@@ -693,8 +715,6 @@ test('Backspace return restores provenance to the chart owning the finding frame
     assert.ok(parameterIds[0]?.startsWith('basal:'), 'the slot inspector marks its basal chart');
 
     await page.keyboard.press('Backspace');
-    assert.equal(await page.locator('#drill-provenance').textContent(), behavioralProvenance,
-      'the returned finding frame restores its own chart name');
     const returnedIds = await page.locator('.evidence-tile[data-drilled]')
       .evaluateAll((tiles) => [...new Set(tiles.map((tile) => tile.dataset.chartId))]);
     assert.deepEqual(returnedIds, [behavioralId],

@@ -284,9 +284,14 @@ def _population(
             )
             served_id = _opaque("m_", occurrence_id)
             associations[attr.lever].add(served_id)
-            outcomes[attr.lever][served_id] = max(
-                outcomes[attr.lever].get(served_id, episode.end), episode.end,
-            )
+            landing_kind = outcome_kind(attr.lever)
+            landings = [anchor.t for anchor in episode.anchors
+                        if anchor.kind.value == landing_kind]
+            if landings:
+                landing_t = max(landings)
+                outcomes[attr.lever][served_id] = max(
+                    outcomes[attr.lever].get(served_id, landing_t), landing_t,
+                )
             continue
         association = _association(attr, episode, by_family)
         if association is None:

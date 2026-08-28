@@ -15,13 +15,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, realpathSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const FRONTEND = fileURLToPath(new URL('.', import.meta.url));
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
+const REAL_FRONTEND = realpathSync(FRONTEND);
 
 const SUITES = [
   { file: 'cockpit-shell.browser.test.mjs', payload: false },
@@ -46,6 +47,11 @@ function spawnSuite(suite, envOverrides) {
   return { status: result.status, output: `${result.stdout}\n${result.stderr}` };
 }
 
+function isOutsideFrontend(path) {
+  const relativeToFrontend = relative(REAL_FRONTEND, realpathSync(path));
+  return relativeToFrontend === '..' || relativeToFrontend.startsWith(`..${sep}`);
+}
+
 for (const { file: suite, payload } of SUITES) {
   test(`${suite} fails closed and names missing prerequisites with no env`, () => {
     const { status, output } = spawnSuite(suite, {});
@@ -56,10 +62,12 @@ for (const { file: suite, payload } of SUITES) {
   });
 
   test(`${suite} fails closed and names the missing vendored assets when VENDOR_DIR is empty`, () => {
-    const dir = mkdtempSync(join(tmpdir(), '.browser-gates-fail-closed-'));
+    const tempRoot = realpathSync(tmpdir());
+    assert.ok(isOutsideFrontend(tempRoot),
+      `${suite} must resolve its temporary root outside the frontend source tree`);
+    const dir = mkdtempSync(join(tempRoot, '.browser-gates-fail-closed-'));
     try {
-      const relativeToFrontend = relative(FRONTEND, dir);
-      assert.ok(relativeToFrontend === '..' || relativeToFrontend.startsWith(`..${sep}`),
+      assert.ok(isOutsideFrontend(dir),
         `${suite} must keep its empty VENDOR_DIR outside the frontend source tree`);
       const { status, output } = spawnSuite(suite, { VENDOR_DIR: dir });
       assert.notEqual(status, 0, `${suite} must exit nonzero when the vendored assets are absent`);

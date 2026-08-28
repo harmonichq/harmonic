@@ -35,4 +35,4 @@
 - [x] Run the complete fast gate and drift checks plus the affected workstation,
       composition, behavior-replay, and support-audit browser legs declared in
       `AGENTS.md`; all must exit zero with nonzero story counts.
-- [ ] Open a pull request for human review and stop without merging.
+- [x] Open a pull request for human review and stop without merging.

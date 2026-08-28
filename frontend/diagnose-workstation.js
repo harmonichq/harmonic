@@ -749,10 +749,9 @@ function renderParameterEvidenceDetail(host, descriptor, entry) {
 }
 
 function renderBehavioralFullscreen(host, f) {
-  /* The event adapter's one-fr layout belongs on its host. Without this class
-     the nested surface sized itself to the chart's content and left the rest of
-     the fullscreen pane empty. */
-  host.classList.add('ec-surface');
+  /* The workstation supplied the bounded `.tile-chart.ec-surface` host. The
+     adapter contributes content only and returns the chart element whose box
+     the workstation observes. */
   const previous = window.__diagnoseEventComparison;
   const mounted = renderEventSurface(host, f.caseFile);
   mounted.restoreGlobal = () => {
@@ -1408,9 +1407,16 @@ function boot(root, data, callbacks, signal) {
     for (const mount of tileMounts) {
       mount.observer?.disconnect();
       mount.chart?.dispose();
+      mount.cleanup?.();
+      mount.restoreHeader?.();
       mount.restoreGlobal?.();
     }
     tileMounts = [];
+  }
+
+  function installTileMount(host, mount) {
+    return { ...mount,
+      observer: observeResize(mount.resizeHost || host, () => mount.chart) };
   }
 
   function currentTileDescriptors() {
@@ -2948,7 +2954,7 @@ function boot(root, data, callbacks, signal) {
                focal chart is read at full size, and only it gets full furniture. */
             if (fullscreen && descriptor.kind === 'event-comparison') {
               const mounted = renderBehavioralFullscreen(chartHost, { caseFile });
-              tileMounts.push(mounted);
+              tileMounts.push(installTileMount(chartHost, mounted));
             } else {
               const option = optionForDescriptor(
                 descriptor, DIAGNOSE_EVIDENCE_CHARTS, sharedGlucoseRange, {
@@ -2964,8 +2970,7 @@ function boot(root, data, callbacks, signal) {
                  `disposeTiles` can never reach — the catch below re-renders the
                  tile over a live canvas that nothing owns. */
               const evidenceChart = window.echarts.init(chartHost, null, { renderer: 'canvas' });
-              tileMounts.push({ chart: evidenceChart,
-                observer: observeResize(chartHost, () => evidenceChart) });
+              tileMounts.push(installTileMount(chartHost, { chart: evidenceChart }));
               evidenceChart.setOption(option, true);
             }
           } catch (error) {

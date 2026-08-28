@@ -65,3 +65,27 @@ with committed synthetic data. Independent targeted plan review first blocked on
 missing executable geometry evidence and ambiguous observer ownership. Both were
 corrected and the same reviewer countersigned the resulting work order.
 
+## Revision record — 2026-08-28
+
+The implementation follows the decision without introducing another module.
+`renderEventSurface` now returns the chart, its resize host, and content cleanup
+without constructing a `ResizeObserver`. The workstation installs the single
+observer for both ordinary and event-comparison mounts, and its existing teardown
+path disconnects the observer, disposes the chart, releases content listeners,
+and restores event-comparison globals.
+
+The retired desktop `310px` event-chart minimum and nested overflow authority
+were removed. The mobile event-comparison minimum remains unchanged because
+mobile redesign is outside this revision.
+
+The fail-first capture reproduced the event-comparison defect in both themes at
+2084×450: the plot and canvas ended 24 px below the fullscreen frame and
+overlapped the cohort key. The revision matrix passed all 16 combinations of four
+registered families, two themes, and two viewports, including exact Back-state
+restoration, one active resize owner, and exactly-once chart disposal. The 32
+same-fixture screenshots are under `evidence/base/` and `evidence/revision/`.
+
+Verification passed with 2,093 backend tests (one skipped), 520 frontend tests,
+13/13 composition tests, 41/41 workstation browser tests, 139/139 workstation
+replay stories, 14/14 event-comparison replay stories, five support-audit renders,
+and every drift and publishability check declared in `AGENTS.md`.

@@ -441,6 +441,21 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     for _page in SPA_PAGES:
         app.add_api_route(f"/{_page}", index, methods=["GET"])
 
+    # The frontend has no build step and no fingerprinted filenames, and these
+    # routes send no Cache-Control — so browsers heuristically cached the ES
+    # modules off Last-Modified and a reloaded page kept running week-old code
+    # while the server served fresh bytes (observed live: one URL, two bodies —
+    # the module map's copy stale, a cache-busted import current). `no-cache`
+    # forces revalidation on every load; the payloads are local files on a
+    # local port, so the cost is nil and stale UI is the only thing spent.
+    @app.middleware("http")
+    async def _frontend_no_store(request, call_next):
+        response = await call_next(request)
+        path = request.url.path
+        if path == "/" or path.lstrip("/") in SPA_PAGES or path.startswith("/assets/"):
+            response.headers["Cache-Control"] = "no-cache"
+        return response
+
     # Serve the frontend's sibling ES-module / stylesheet assets (#100). These
     # are explicit per-file routes (not a StaticFiles mount) so they can never
     # shadow an API route or the ``/`` index. No token, same as ``index``.

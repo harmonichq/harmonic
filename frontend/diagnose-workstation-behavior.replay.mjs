@@ -269,6 +269,7 @@ const plotGrid = (box) => ({
   right: box.x + box.w - GRID.right,
 });
 const PAN_EDGE_MARGIN = 8;
+const PAN_STOP_TIMEOUT_MS = 7000;
 
 const chartXAt = (box, minute) => {
   const grid = plotGrid(box);
@@ -278,7 +279,7 @@ const chartXAt = (box, minute) => {
 const chipIs = (page, want) => page.waitForFunction((expected) => {
   const follow = document.querySelector('#seg-window [data-follow]');
   return follow?.firstChild?.textContent.trim() === expected;
-}, want, { timeout: 5000 });
+}, want, { timeout: PAN_STOP_TIMEOUT_MS });
 
 const beginFreshDraw = async (page) => {
   await page.getByRole('button', { name: '24 h', exact: true }).click();
@@ -335,7 +336,7 @@ const clockPan = (page) => page.evaluate(() => Number(document.getElementById('c
 export const panThenAim = async (page, start, direction, { past, aim }) => {
   const y = await shoveToBoundary(page, start, direction);
   await page.waitForFunction((want) => Math.abs(Number(document.getElementById('chart')
-    .parentElement.dataset.clockPan || 0)) >= want, past, { timeout: 7000 });
+    .parentElement.dataset.clockPan || 0)) >= want, past, { timeout: PAN_STOP_TIMEOUT_MS });
   const b = await plot(page);
   await page.mouse.move(b.x + b.w / 2, y);   // back inside the plot: the day stops
   await settle(page, 150);

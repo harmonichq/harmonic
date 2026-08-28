@@ -2736,6 +2736,13 @@ palette. Evidence: replay S117.
 asserting row's server-published annotation, composing no new clinical copy.
 Evidence: replay S118.
 
+## Revision amendment — 2026-08-28 (announced-meal ownership at a Low)
+
+**S118 is amended.** A canonical Low whose shared backend judgment is a calm non-match
+remains in Over-treated low's served comparison cohort and ten-Low denominator.
+The browser does not promote that occurrence into the matched cohort or recreate
+fired evidence from its glucose shape. This extends S118's server-owned queue-copy
+contract without changing its existing assertions. Evidence: replay S118.
 ## Revision amendment — 2026-08-28 (shared fullscreen containment)
 
 **S119.** Every registered evidence chart uses the workstation's one fullscreen

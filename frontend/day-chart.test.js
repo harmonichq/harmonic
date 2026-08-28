@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import {
   buildRows, rowReason, rowForT, rowDomId, preemptedTimes, dayStats, bgAt,
   buildAnchorOverlay, buildEpisodeLedger, evidenceFocusGraphic, focusUpdate, anchorStateColor,
+  REASON_REFERENCE,
 } from './day-chart.js';
 import { buildLanesOption, LANE_SPAN } from './chart-builders.js';
 
@@ -60,6 +61,12 @@ test('buildRows: one row per anchor, chronological, carrying episode context', (
   assert.equal(rows[0].lever, 'over_treated_low');
   assert.equal(rows[0].headline.classifier, 'over_treated_low');
   assert.equal(rows[1].kind, 'meal');
+});
+
+test('reason reference keeps announced-meal ownership calm and server-owned', () => {
+  const reason = REASON_REFERENCE.find((row) => row.id === 'owned_by_announced_meal');
+  assert.equal(reason?.tier, 'inferred');
+  assert.match(reason?.def || '', /announced meal/i);
 });
 
 test('episode ledger shows a midnight marker once for the July 6 six-anchor overnight episode', () => {

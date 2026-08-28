@@ -32,7 +32,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import List, Optional, Sequence, Tuple
 
-from ...events import CgmReading
+from ...events import BolusEvent, CgmReading
 from ..scenario_config import ScenarioConfig
 from .anchors import Anchor, AnchorKind
 
@@ -439,8 +439,26 @@ def _rebounds(
     return peak is not None and peak >= scenario_config.segment_rebound_high_mgdl
 
 
+def announced_meal_owns_low(
+    bolus: BolusEvent,
+    nadir_t: datetime,
+    *,
+    scenario_config: ScenarioConfig = ScenarioConfig(),
+) -> bool:
+    """Whether a substantial announced meal at the low owns its rebound (ADR 225)."""
+    tolerance = timedelta(
+        minutes=scenario_config.segment_rebound_pre_nadir_meal_tolerance_min
+    )
+    return (
+        bolus.carbs is not None
+        and bolus.carbs >= scenario_config.segment_rebound_stop_meal_min_carbs
+        and nadir_t - tolerance <= bolus.t <= nadir_t
+    )
+
+
 def split_low_rebounds(
     episodes: Sequence[EpisodeAnchors], cgm: Sequence[CgmReading],
+    bolus: Sequence[BolusEvent],
     *, scenario_config: ScenarioConfig = ScenarioConfig(),
 ) -> List[EpisodeAnchors]:
     """Give any rebounding low its own episode so an upstream lever can't absorb it (#104).
@@ -460,18 +478,21 @@ def split_low_rebounds(
     """
     out: List[EpisodeAnchors] = []
     for ep in episodes:
-        out.extend(_split_low_one(ep, cgm, scenario_config=scenario_config))
+        out.extend(_split_low_one(ep, cgm, bolus, scenario_config=scenario_config))
     return out
 
 
 def _split_low_one(
-    ep: EpisodeAnchors, cgm: Sequence[CgmReading],
+    ep: EpisodeAnchors, cgm: Sequence[CgmReading], bolus: Sequence[BolusEvent],
     *, scenario_config: ScenarioConfig = ScenarioConfig(),
 ) -> List[EpisodeAnchors]:
     ordered = sorted(ep.anchors, key=lambda a: a.reach_start)
     for i, a in enumerate(ordered):
         if i == 0 or a.kind is not AnchorKind.LOW:
             continue                                   # head anchor attributes itself
+        if any(announced_meal_owns_low(b, a.t, scenario_config=scenario_config)
+               for b in bolus):
+            continue                                   # the meal owns this rebound
         if not _rebounds(cgm, a.t, scenario_config=scenario_config):
             continue                                   # a plain low stays with its meal
         left, right = ordered[:i], ordered[i:]
@@ -479,6 +500,7 @@ def _split_low_one(
             continue
         # Recurse on the right remainder so a second rebounding low splits off too.
         return [EpisodeAnchors(anchors=left)] + _split_low_one(
-            EpisodeAnchors(anchors=right), cgm, scenario_config=scenario_config
+            EpisodeAnchors(anchors=right), cgm, bolus,
+            scenario_config=scenario_config,
         )
     return [ep]

@@ -109,7 +109,7 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
                 segment(anchors, scenario_config=scenario_config), window_cgm,
                 scenario_config=scenario_config,
             ),
-            window_cgm, scenario_config=scenario_config,
+            window_cgm, window_bolus, scenario_config=scenario_config,
         ),
         window_cgm, window_bolus, window_basal,
         isf=isf, scenario_config=scenario_config, low_answers=low_answers,

@@ -11,6 +11,7 @@ import assert from 'node:assert/strict';
 import {
   buildRows, rowReason, rowClassifiers, rowTouchesDetector, rowTouchesReason,
   clsName, fmtU, fmtG, STATE_ORDER, rowForT, rowDomId,
+  REASON_REFERENCE,
 } from './model-view-log.js';
 
 // A tiny two-episode day: a fired low that also buries a near-miss meal.
@@ -95,6 +96,12 @@ test('clsName hand-tunes a few classifier ids', () => {
 
 test('STATE_ORDER leads with the loud states', () => {
   assert.equal(STATE_ORDER[0], 'near_miss');
+});
+
+test('reason reference names announced-meal ownership without re-deriving it', () => {
+  const reason = REASON_REFERENCE.find((row) => row.id === 'owned_by_announced_meal');
+  assert.equal(reason?.tier, 'inferred');
+  assert.match(reason?.def || '', /announced meal/i);
 });
 
 test('rowForT maps a marker time back to its log row (#217)', () => {

@@ -11,7 +11,7 @@ This module is the **single authoring surface** for that page:
   exposure, recommendation, meaning) so it can never drift from the taxonomy the
   engine actually attributes. The new ``meaning`` copy lives in ``_META`` itself.
 * The silence taxonomy is *enumerated* from
-  :class:`~ciq_autotune.analyzers.classifiers.SilenceReason` (all seven members,
+  :class:`~ciq_autotune.analyzers.classifiers.SilenceReason` (all eight members,
   ADR 0009) and the evidence tiers from
   :class:`~ciq_autotune.analyzers.classifiers.EvidenceTier`, each paired with the
   user-facing prose below. This page is a **read-only consumer** of those closed
@@ -148,7 +148,7 @@ _EXPOSURE_META = {
 }
 
 
-# --- the silence taxonomy, enumerated (all seven, ADR 0009) ---------------
+# --- the silence taxonomy, enumerated (all eight, ADR 0009) ---------------
 # label + user-facing body per SilenceReason. The evidence tier each member
 # rests on is read straight off the (member, tier) pairing below so the chip
 # color matches the honesty tier the classifier already returns.
@@ -190,6 +190,12 @@ _SILENCE_META = {
         "A completed carb bolus in the recent lookback already owns the rise this "
         "dose landed into. A real excursion already covered, not a late meal "
         "bolus.",
+    ),
+    SilenceReason.OWNED_BY_ANNOUNCED_MEAL: (
+        "Owned by announced meal",
+        EvidenceTier.INFERRED,
+        "A substantial announced meal at the low owns the rebound, so fast-carb "
+        "treatment cannot be isolated from the meal response.",
     ),
     SilenceReason.HORIZON_EXPIRED: (
         "Horizon expired",

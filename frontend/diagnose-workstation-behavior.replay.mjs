@@ -3830,6 +3830,22 @@ export const S118 = async (page) => {
     'S118 visible priced ranked rows carry consecutive numerals only');
   ok(rows.some((row) => row.summary),
     'S118 an asserting row reveals its server-published annotation');
+  await clickQueueRow(page, 'Over-treated low');
+  await page.locator(
+    '#tile-focal .evidence-tile[data-chart-id="finding:over_treated_low"] .tile-body',
+  ).click();
+  const cleanId = 'o_5188c361303b4fee56326cc5a61569ff';
+  const clean = page.locator(
+    `[data-comparison-cohort="comparison"][data-occurrence-id="${cleanId}"]`,
+  );
+  ok(await clean.isVisible(),
+    'S118 the server-owned non-firing Low remains in the comparison cohort');
+  is(await page.locator(
+    `[data-comparison-cohort="matched"][data-occurrence-id="${cleanId}"]`,
+  ).count(), 0,
+  'S118 the browser does not recreate fired Over-treated-low evidence');
+  is(await page.locator('#level .vband .bar [aria-label="Does not meet · 1"]').count(), 1,
+    'S118 the served calm Low remains in the ten-Low verdict accounting');
 };
 
 // STORY:finding-evidence-routing:S119

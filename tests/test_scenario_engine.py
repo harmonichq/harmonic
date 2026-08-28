@@ -70,6 +70,7 @@ from ciq_autotune.analyzers.scenario.segment import (
     GuardedRebound,
     guarded_rebound,
     guarded_rebound_peak,
+    announced_meal_owns_low,
     segment,
     split_double_humps,
 )
@@ -873,6 +874,7 @@ class OverTreatedLowTest(unittest.TestCase):
         self.assertEqual(attr.lever, Lever.OVER_TREATED_LOW)
         self.assertEqual(attr.steps[0].evidence_tier, EvidenceTier.INFERRED)
 
+
     def test_rebound_threshold_is_160(self):
         # A low rebounding into the 160-179 band (dropped by the old 180 cutoff) counts;
         # a low that only recovers to a benign 150 does not.
@@ -966,6 +968,68 @@ class OverTreatedLowTest(unittest.TestCase):
             self.assertLessEqual(earlier.end, later.start)
 
 
+class AnnouncedMealLowOwnershipTest(unittest.TestCase):
+    def test_ownership_includes_both_time_edges_and_the_substantial_meal_floor(self):
+        nadir_t = datetime(2026, 6, 17, 12, 0)
+        for bolus_t in (nadir_t - timedelta(minutes=10), nadir_t):
+            self.assertTrue(announced_meal_owns_low(
+                BolusEvent(t=bolus_t, insulin=2.0, carbs=20.0), nadir_t,
+            ))
+
+        self.assertFalse(announced_meal_owns_low(
+            BolusEvent(t=nadir_t - timedelta(minutes=10, seconds=1),
+                       insulin=2.0, carbs=20.0),
+            nadir_t,
+        ))
+        self.assertFalse(announced_meal_owns_low(
+            BolusEvent(t=nadir_t + timedelta(seconds=1),
+                       insulin=2.0, carbs=20.0),
+            nadir_t,
+        ))
+        self.assertFalse(announced_meal_owns_low(
+            BolusEvent(t=nadir_t, insulin=2.0, carbs=19.9), nadir_t,
+        ))
+
+    def test_meal_owned_rebound_is_not_attributed_even_when_treatment_was_confirmed(self):
+        cgm = OverTreatedLowTest._low_rebound(
+            self, 17, 11, 20, nadir=48.0, rebound=189.0,
+        )
+        nadir_t = datetime(2026, 6, 17, 12, 0)
+        bolus = [BolusEvent(t=nadir_t, insulin=2.0, carbs=20.0,
+                            completion="Completed")]
+        judgment = over_treated_rebound_judgment(cgm, nadir_t, 48.0, bolus)
+        self.assertFalse(judgment.verdict.matched)
+        self.assertEqual(
+            judgment.verdict.silence_reason,
+            SilenceReason.OWNED_BY_ANNOUNCED_MEAL,
+        )
+
+        episode = next(
+            ep for ep in segment(collect_anchors(bolus, cgm, []))
+            if any(anchor.kind is AnchorKind.LOW for anchor in ep.anchors)
+        )
+        answer = LowPromptAnswer(anchor_t=nadir_t, answer="carbs",
+                                 carb_t=nadir_t, carb_grams=15.0)
+        self.assertNotEqual(
+            attribute(episode, cgm, bolus, [], isf=ISF,
+                      low_answers=[answer]).lever,
+            Lever.OVER_TREATED_LOW,
+        )
+
+    def test_announced_meal_without_a_rebound_remains_insufficient_data(self):
+        nadir_t = datetime(2026, 6, 17, 12, 0)
+        judgment = over_treated_rebound_judgment(
+            [CgmReading(t=nadir_t, bg=55.0, type="EGV")],
+            nadir_t,
+            55.0,
+            [BolusEvent(t=nadir_t, insulin=2.0, carbs=20.0)],
+        )
+        self.assertFalse(judgment.verdict.matched)
+        self.assertEqual(judgment.verdict.evidence_tier, EvidenceTier.NOT_IN_DATA)
+        self.assertEqual(judgment.verdict.silence_reason,
+                         SilenceReason.INSUFFICIENT_DATA)
+
+
 class CorrectionOnIobLeverTest(unittest.TestCase):
     """#150: the lone-correction-on-IOB crash lever, wired into ``_low_lever``.
 
@@ -1021,6 +1085,24 @@ class CorrectionOnIobLeverTest(unittest.TestCase):
         eps = sorted(report.episodes.values(), key=lambda e: e.start)
         for earlier, later in zip(eps, eps[1:]):
             self.assertLessEqual(earlier.end, later.start)
+
+    def test_announced_meal_owns_rebound_but_preserves_correction_on_iob(self):
+        pre = cgm_flat(19, 18, 40, 120, 20)
+        rise = cgm_ramp(19, 19, 0, 120, 1.75, 40)
+        fall = cgm_ramp(19, 19, 40, 190, -1.4, 100)
+        rebound = cgm_ramp(19, 21, 20, 50, 4.0, 40)
+        settle = cgm_ramp(19, 22, 0, 210, -1.2, 80)
+        cgm = pre + rise + fall + rebound + settle
+        bolus = [
+            meal(19, 19, 0, carbs=40.0, dose=6.0),
+            corr(19, 20, 0, units=4.0),
+            meal(19, 21, 20, carbs=20.0, dose=2.0),
+        ]
+
+        report = assemble(bolus, cgm, [], isf=ISF)
+        levers = {episode.lever for episode in report.episodes.values()}
+        self.assertIn(Lever.CORRECTION_ON_IOB, levers)
+        self.assertNotIn(Lever.OVER_TREATED_LOW, levers)
 
     def test_owns_an_overnight_low_when_a_correction_is_actionable(self):
         # An 8 U dinner at 21:30 plus a lone 4 U correction at 22:30 still acting when

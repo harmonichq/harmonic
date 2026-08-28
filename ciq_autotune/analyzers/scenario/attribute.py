@@ -58,6 +58,7 @@ from .payload import Step, event_ref, window_ref
 from .segment import (
     EpisodeAnchors,
     GuardedRebound,
+    announced_meal_owns_low,
     guarded_rebound,
     recovery_dip,
 )
@@ -229,6 +230,15 @@ def over_treated_rebound_judgment(
             detail="no CGM rebound reading was available to judge this low",
             evidence_tier=EvidenceTier.NOT_IN_DATA,
             silence_reason=SilenceReason.INSUFFICIENT_DATA,
+        )
+    elif any(announced_meal_owns_low(b, nadir_t, scenario_config=scenario_config)
+             for b in bolus):
+        verdict = Verdict(
+            matched=False,
+            detail=("a substantial announced meal at the low owns the rebound, so "
+                    "low-treatment carbs cannot be isolated"),
+            evidence_tier=EvidenceTier.INFERRED,
+            silence_reason=SilenceReason.OWNED_BY_ANNOUNCED_MEAL,
         )
     elif rebound.peak >= rebound_bar:
         verdict = Verdict(

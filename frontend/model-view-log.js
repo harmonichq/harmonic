@@ -201,6 +201,7 @@ export const REASON_REFERENCE = [
   { id: 'upstream_cause', tier: 'inferred', def: 'An observable recent low (≤ 70 mg/dL within 90 min) and/or defensive suspend explains the move — a recovery, not the behavior.' },
   { id: 'prior_high_baseline', tier: 'observed', def: 'The rise was from an already-high start, not from flat.' },
   { id: 'owned_by_prior_bolus', tier: 'inferred', def: 'A completed carb bolus in the prior 60 min already owns the rise this dose landed on.' },
+  { id: 'owned_by_announced_meal', tier: 'inferred', def: 'A substantial announced meal at the low owns the rebound, so fast-carb treatment cannot be isolated.' },
   { id: 'horizon_expired', tier: 'observed', def: "The outcome never arrived inside the classifier's window." },
   { id: 'insufficient_data', tier: 'not_in_data', def: 'The window was too sparse — or settings were missing — to judge.' },
 ];

@@ -3763,24 +3763,54 @@ export const S116 = async (page) => {
 
 // STORY:finding-evidence-routing:S117
 export const S117 = async (page) => {
+  is(await page.locator('html').getAttribute('class'), 'dark',
+    'S117 starts on the dark surface');
   await openCanvas(page);
+  const defaultSpotlightId = await page.locator('#tile-focal .evidence-tile')
+    .getAttribute('data-chart-id');
   const chartId = await page.locator('#tile-row .evidence-tile[data-chart-id^="finding:"]')
-    .first().getAttribute('data-chart-id');
+    .evaluateAll((tiles, defaultId) => tiles
+      .map((tile) => tile.dataset.chartId)
+      .find((id) => id && id !== defaultId) || null, defaultSpotlightId);
+  ok(chartId, 'S117 exposes a non-default event chart to spotlight');
+  await page.locator(`#tile-row .evidence-tile[data-chart-id="${chartId}"]`).click();
+  await page.locator(`#tile-focal .evidence-tile[data-chart-id="${chartId}"]`).waitFor();
+  const readerContext = () => page.evaluate(() => ({
+    pressedWindow: [...document.querySelectorAll('#seg-window button[aria-pressed="true"]')]
+      .map((button) => button.textContent.replace('×', '').trim()),
+    spotlightId: document.querySelector('#tile-focal .evidence-tile')?.dataset.chartId || null,
+    dockChartIds: [...document.querySelectorAll('#tile-row .evidence-tile')]
+      .map((tile) => tile.dataset.chartId),
+  }));
   const eventInk = () => page.locator(
-    `#tile-row .evidence-tile[data-chart-id="${chartId}"] .tile-chart`,
+    `#tile-focal .evidence-tile[data-chart-id="${chartId}"] .tile-chart`,
   ).evaluate((host) => {
     const option = window.echarts.getInstanceByDom(host)?.getOption();
     return option?.series?.find((series) => series.name === 'Target range')
       ?.markArea?.itemStyle?.color || null;
   });
+  const darkContext = await readerContext();
+  is(darkContext.pressedWindow, ['24 h'], 'S117 records the pressed 24-hour window');
+  is(darkContext.spotlightId, chartId, 'S117 records the chosen event-chart spotlight');
+  ok(darkContext.dockChartIds.length > 0, 'S117 records the ordered dock charts');
   const darkInk = await eventInk();
   ok(darkInk, 'S117 the event tile exposes its live dark-surface ink');
   await page.locator('#theme-menu-button').click();
   await page.getByRole('menuitemradio', { name: 'Light', exact: true }).click();
-  await openCanvas(page);
+  await page.locator('html:not(.dark)').waitFor();
+  const lightContext = await readerContext();
+  is(lightContext, darkContext, 'S117 Light preserves the exact reader context');
   const lightInk = await eventInk();
   ok(lightInk, 'S117 the event tile exposes its live light-surface ink');
   ok(lightInk !== darkInk, 'S117 the event tile repaints from the changed surface palette');
+  await page.locator('#theme-menu-button').click();
+  await page.getByRole('menuitemradio', { name: 'Dark', exact: true }).click();
+  await page.locator('html.dark').waitFor();
+  const returnedDarkContext = await readerContext();
+  is(returnedDarkContext, darkContext, 'S117 Dark preserves the exact reader context');
+  const returnedDarkInk = await eventInk();
+  is(returnedDarkInk, darkInk, 'S117 Dark restores the original event-chart ink');
+  ok(returnedDarkInk !== lightInk, 'S117 the return to Dark repaints the event-chart ink');
 };
 
 // STORY:finding-evidence-routing:S118

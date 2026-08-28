@@ -557,7 +557,7 @@ class FindingsProjection:
 # looked and had nothing to flag (ADR 0019 §2's `_CALM_REASONS`, mirrored here
 # because this module reads the published `verdicts[]` contract, not the
 # model-view internals that own the enum).
-_CALM_SILENCE_REASONS = frozenset({None, "no_trigger"})
+_CALM_SILENCE_REASONS = frozenset({None, "no_trigger", "owned_by_announced_meal"})
 _NO_DATA_SILENCE_REASON = "insufficient_data"
 
 

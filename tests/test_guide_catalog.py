@@ -48,12 +48,12 @@ class BuildCatalogTest(unittest.TestCase):
         self.assertEqual(first["recommendation"], levers.recommendation(Lever.CARB_UNDERCOUNT))
         self.assertEqual(first["exposure"], Exposure.MEALS.value)
 
-    def test_silence_reasons_enumerate_all_seven(self):
+    def test_silence_reasons_enumerate_the_closed_taxonomy(self):
         self.assertEqual([s["value"] for s in self.cat["silence_reasons"]],
                          [s.value for s in SilenceReason])
-        # the seventh member (#167) must be present.
         values = {s["value"] for s in self.cat["silence_reasons"]}
         self.assertIn(SilenceReason.OWNED_BY_PRIOR_BOLUS.value, values)
+        self.assertIn(SilenceReason.OWNED_BY_ANNOUNCED_MEAL.value, values)
         # each carries a real evidence tier.
         tiers = {t.value for t in EvidenceTier}
         for s in self.cat["silence_reasons"]:

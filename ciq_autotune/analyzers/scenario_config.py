@@ -94,6 +94,10 @@ class ScenarioConfig:
     #: post-low rebound scan. Kept above the 15 g rescue-carb idiom so low treatment
     #: carbs do not erase an otherwise visible over-treated-low rebound.
     segment_rebound_stop_meal_min_carbs: float = 20.0
+    #: A substantial announced meal this many minutes before a low's nadir owns the
+    #: subsequent rise. The narrow window distinguishes meal-confounded treatment from
+    #: an earlier meal that can coexist with a genuine rescued-low rebound (ADR 225).
+    segment_rebound_pre_nadir_meal_tolerance_min: float = 10.0
     #: A settled recovery must hold roughly level in range this long to cap the scan.
     segment_recovery_dwell_min: float = 30.0
     #: Levelness gate (#153): a dwell's least-squares slope magnitude at/below this

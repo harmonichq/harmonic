@@ -139,6 +139,25 @@ class OverTreatedLowModelViewTest(unittest.TestCase):
         self.assertEqual(verdict.evidence_tier, EvidenceTier.NOT_IN_DATA)
         self.assertEqual(verdict.silence_reason, SilenceReason.INSUFFICIENT_DATA)
 
+    def test_announced_meal_ownership_is_a_calm_published_non_match(self):
+        t = datetime(2026, 6, 20, 12, 0)
+        anchor = Anchor(t=t, kind=AnchorKind.LOW, bg=55.0)
+        cgm = [
+            CgmReading(t=t, bg=55.0, type="EGV"),
+            CgmReading(t=t + timedelta(minutes=5), bg=165.0, type="EGV"),
+        ]
+        announced = BolusEvent(t=t, insulin=2.0, carbs=20.0)
+        verdict = next(v for v in _low_verdicts(
+            anchor, cgm, [announced], [],
+            scenario_config=ScenarioConfig(), low_answers=(),
+        ) if v.classifier == "over_treated_low")
+
+        self.assertFalse(verdict.matched)
+        self.assertEqual(verdict.evidence_tier, EvidenceTier.INFERRED)
+        self.assertEqual(verdict.silence_reason,
+                         SilenceReason.OWNED_BY_ANNOUNCED_MEAL)
+        self.assertEqual(_anchor_state(False, [verdict]), "clean")
+
     def test_published_model_view_keeps_matched_and_silent_low_judgments(self):
         for peak, matched, silence_reason in (
             (165.0, True, None),

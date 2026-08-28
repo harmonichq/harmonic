@@ -12,7 +12,7 @@ Each behavioral classifier (late bolus, missed meal, carb undercount, etc.) is a
 
 ### Requirement: A pattern asserts only when enough evidence backs it.
 
-Before a detector can assert a behavioral lever in an episode, three gates must open: the behavior must produce a matched verdict (not just a near-miss), the verdict must rest on sufficiently firm evidence (observed, not inferred from absence), and the downstream lever must clear its own eligibility bar. Seven silence reasons name why an instance did *not* assert — insufficient data, no trigger, under threshold, an upstream cause already explains it, a high baseline, an earlier bolus owns the rise, or the outcome never arrived in time. The silence reason is machine-readable; the human detail still carries the numbers. When an episode finds no assertable lever, it generates no pattern contribution and produces a silence reason instead.
+Before a detector can assert a behavioral lever in an episode, three gates must open: the behavior must produce a matched verdict (not just a near-miss), the verdict must rest on sufficiently firm evidence (observed, not inferred from absence), and the downstream lever must clear its own eligibility bar. Eight silence reasons name why an instance did *not* assert — insufficient data, no trigger, under threshold, an upstream cause already explains it, a high baseline, an earlier bolus owns the rise, an announced meal owns a low's rebound, or the outcome never arrived in time. The silence reason is machine-readable; the human detail still carries the numbers. When an episode finds no assertable lever, it generates no pattern contribution and produces a silence reason instead.
 
 ### Requirement: Behavioral and settings levers rank on a single 0–100 Priority axis.
 
@@ -80,6 +80,16 @@ from its three-population event comparison. The comparison names matched,
 nearly-matched, comparison, and not-comparable counts without recasting the
 Finding verdict account.
 
+A substantial announced meal owns an eligible Low's rebound when its carb-tagged
+bolus falls inclusively between ten minutes before the nadir and the nadir. The
+shared judgment then returns the calm `owned_by_announced_meal` non-match before
+the rebound can split into a separate Over-treated-low moment. The canonical
+sub-70 Low remains in the case population as a clean comparison, including when a
+prompt confirms low treatment. A meal before that interval does not suppress the
+judgment, while a meal after the nadir retains its existing role as the guarded
+scan boundary. This ownership rule does not suppress meal-owned levers or
+independently evidenced correction levers.
+
 ### Requirement: The layer refuses to assert on insufficient evidence and surfaces why.
 
-No judgment fires without a verdict grounded in data — either observed (a hard fact from the feed, like a bolus of 10 U) or inferred (shape-derived and hedged, like "likely rescue carbs, but we didn't see them"). A classifier never returns "this might maybe be late" — it returns matched=false with the specific silence reason (insufficient data / no trigger / under threshold / upstream cause / prior high baseline / owned by prior bolus / horizon expired). When enough clean windows exist to measure a pattern's rate via Wilson bounds, the bounds are wide enough to name the uncertainty honestly; when data is too thin, the pattern collapses behind an expander so no single rate gets fabricated from noise.
+No judgment fires without a verdict grounded in data — either observed (a hard fact from the feed, like a bolus of 10 U) or inferred (shape-derived and hedged, like "likely rescue carbs, but we didn't see them"). A classifier never returns "this might maybe be late" — it returns matched=false with the specific silence reason (insufficient data / no trigger / under threshold / upstream cause / prior high baseline / owned by prior bolus / owned by announced meal / horizon expired). When enough clean windows exist to measure a pattern's rate via Wilson bounds, the bounds are wide enough to name the uncertainty honestly; when data is too thin, the pattern collapses behind an expander so no single rate gets fabricated from noise.

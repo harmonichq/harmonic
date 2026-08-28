@@ -245,10 +245,24 @@ def _population(
     isf = _effective_isf(bolus, basal, cgm, store.settings_snapshots(), start, end)
     anchors = collect_anchors(filtered_bolus, filtered_cgm, filtered_basal,
                               scenario_config=config)
-    episodes = split_caused_over_treatments(split_low_rebounds(split_double_humps(
-        segment(anchors, scenario_config=config), filtered_cgm, scenario_config=config),
-        filtered_cgm, scenario_config=config), filtered_cgm, filtered_bolus,
-        filtered_basal, isf=isf, scenario_config=config, low_answers=answers)
+    episodes = split_caused_over_treatments(
+        split_low_rebounds(
+            split_double_humps(
+                segment(anchors, scenario_config=config),
+                filtered_cgm,
+                scenario_config=config,
+            ),
+            filtered_cgm,
+            filtered_bolus,
+            scenario_config=config,
+        ),
+        filtered_cgm,
+        filtered_bolus,
+        filtered_basal,
+        isf=isf,
+        scenario_config=config,
+        low_answers=answers,
+    )
 
     for index, episode in enumerate(episodes):
         lo = episode.start - timedelta(minutes=_CONTEXT_PAD_MIN)

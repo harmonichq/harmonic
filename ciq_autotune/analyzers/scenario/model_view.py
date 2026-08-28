@@ -81,7 +81,11 @@ _WINDOW_PAD_MIN = 15.0
 # Reasons that do NOT make an anchor a near-miss (a genuinely clean opportunity, or
 # unjudgeable). Everything else in the closed taxonomy is a "loud" near-miss reason —
 # the invisible under-threshold / recovery-masked misses this view exists to surface.
-_CALM_REASONS = frozenset({SilenceReason.NO_TRIGGER, SilenceReason.INSUFFICIENT_DATA})
+_CALM_REASONS = frozenset({
+    SilenceReason.NO_TRIGGER,
+    SilenceReason.INSUFFICIENT_DATA,
+    SilenceReason.OWNED_BY_ANNOUNCED_MEAL,
+})
 
 # Human labels per anchor kind (mirror the frontend KIND_LABEL).
 _KIND_LABEL = {
@@ -439,7 +443,7 @@ def assemble_model_view(
                 segment(anchors, scenario_config=scenario_config),
                 cgm_readings, scenario_config=scenario_config,
             ),
-            cgm_readings, scenario_config=scenario_config,
+            cgm_readings, bolus_events, scenario_config=scenario_config,
         ),
         cgm_readings, bolus_events, basal_events,
         isf=isf,

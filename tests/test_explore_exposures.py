@@ -140,6 +140,37 @@ class ExploreExposuresTest(unittest.TestCase):
             ))
             self.assertEqual(sum(family["by_cause"].values()), family["attributed"])
 
+    def test_announced_meal_low_stays_in_low_population_without_association(self):
+        from ciq_autotune.explore_exposures import build_exposures
+        from tests.test_scenario_engine import ISF, cgm_flat, cgm_ramp, corr, meal
+
+        cgm = (
+            cgm_flat(19, 18, 40, 120, 20)
+            + cgm_ramp(19, 19, 0, 120, 1.75, 40)
+            + cgm_ramp(19, 19, 40, 190, -1.4, 100)
+            + cgm_ramp(19, 21, 20, 50, 4.0, 40)
+            + cgm_ramp(19, 22, 0, 210, -1.2, 80)
+        )
+        bolus = [
+            meal(19, 19, 0, carbs=40, dose=6),
+            corr(19, 20, 0, units=4),
+            meal(19, 21, 20, carbs=20, dose=2),
+        ]
+        with tempfile.NamedTemporaryFile(suffix=".db") as db:
+            with Store.open(db.name) as store:
+                self._seed_scenario_events(store, bolus, cgm)
+                with patch("ciq_autotune.explore_exposures._effective_isf", return_value=ISF):
+                    payload = build_exposures(store)
+
+        low = next(row for row in payload["exposures"]["lows"]["occurrences"]
+                   if row["t"] == "2026-06-19 21:20:00")
+        own = next(v for v in low["verdicts"]
+                   if v["classifier"] == "over_treated_low")
+        self.assertEqual((own["matched"], own["silence_reason"]),
+                         (False, "owned_by_announced_meal"))
+        self.assertNotEqual(low["cause_lever"], "over_treated_low")
+        self.assertEqual(payload["exposures"]["lows"]["n"], 1)
+
 
 @unittest.skipUnless(_HAS_FASTAPI, "api extra not installed")
 class ExploreExposuresRouteTest(unittest.TestCase):

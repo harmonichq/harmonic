@@ -31,3 +31,23 @@ For a canonical sub-70 Low, ownership is a calm non-match named
 `owned_by_announced_meal`; the opportunity remains in the Low case population. This
 is distinct from `owned_by_prior_bolus`, whose closed meaning belongs to the
 late-bolus classifier. Near-lows remain outside the canonical Low population.
+
+## Revision evidence
+
+The surface lifecycle is **revise**. The safe data source is the committed
+`mockups/revise-e2e.synthetic/harmonic.sqlite` database served with the mandatory
+`--no-fetch` flag; no private data or live pull is used. The before replay ran at
+base `16cfbda` and passed all 138 issued app stories. This change amends S118 with
+a behavior-only proof: the visible Finding case retains the server-owned clean Low
+in its comparison cohort and does not promote it to matched. No new clinical copy,
+layout, or visual styling is introduced.
+
+Before implementation, the focused test stopped during collection because
+`announced_meal_owns_low` did not yet exist. The same synthetic 48 to 189 mg/dL
+shape, executed directly against untouched base `16cfbda` with a completed 20 g
+meal bolus at the nadir, produced `over_treated_low`; that is the old wrong output
+the tests close. After implementation, the complete gate passed 2,101 backend
+tests with one skip, 522 dependency-free frontend tests,
+all 138 replay stories, the three static guards, and every documented synthetic
+and private design-artifact drift check. Review then exposed an unobserved no-peak
+edge; its regression now pins `insufficient_data` before ownership is considered.

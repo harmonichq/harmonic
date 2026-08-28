@@ -46,7 +46,7 @@ class SilenceReason(str, Enum):
     behavior drew no lever, so #152 (per-day view) and #157 (Guide) read one source
     of truth instead of each re-deriving free-text.
 
-    The set is **closed** — seven members, mirroring the honesty tier each branch
+    The set is **closed** — eight members, mirroring the honesty tier each branch
     already returns. Adding one is a deliberate act, like adding a ``Lever``.
     Subclasses ``str`` so it serializes to a plain string in a payload.
 
@@ -64,6 +64,8 @@ class SilenceReason(str, Enum):
     * ``OWNED_BY_PRIOR_BOLUS`` — a completed carb bolus in the recent lookback owns
       the rise this bolus dosed into; a real carb excursion already covered by an
       earlier dose, not a late meal bolus (``INFERRED``; #167).
+    * ``OWNED_BY_ANNOUNCED_MEAL`` — a substantial announced meal at the low owns the
+      rebound, so fast-carb treatment cannot be isolated (``INFERRED``; ADR 225).
     * ``HORIZON_EXPIRED`` — the outcome never arrived inside the classifier's window
       (``OBSERVED``).
 
@@ -78,6 +80,7 @@ class SilenceReason(str, Enum):
     UPSTREAM_CAUSE = "upstream_cause"
     PRIOR_HIGH_BASELINE = "prior_high_baseline"
     OWNED_BY_PRIOR_BOLUS = "owned_by_prior_bolus"
+    OWNED_BY_ANNOUNCED_MEAL = "owned_by_announced_meal"
     HORIZON_EXPIRED = "horizon_expired"
 
 

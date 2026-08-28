@@ -938,6 +938,68 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
             "message": "Canonical association is unavailable.",
         }, prepared["withheld_findings"])
 
+    def test_announced_meal_low_is_a_clean_case_member_without_withholding(self):
+        readings = _low_rebound(1) + _low_rebound(2)
+        announced_at_nadir = [
+            (225, datetime(2026, 6, 2, 12, 10), 2.0, 20.0,
+             {"carb_ratio": 10.0}),
+        ]
+        with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
+            _seed_events(database.name, readings, announced_at_nadir)
+            with TestClient(create_app(
+                    db_path=database.name, token=None,
+                    enable_fetch_loop=False)) as client:
+                response = client.get(
+                    "/api/diagnose/finding-case-file-preparation")
+                self.assertEqual(response.status_code, 200, response.text)
+                prepared = response.json()
+                self.assertNotIn(
+                    "finding:over_treated_low",
+                    [row["finding_id"] for row in prepared["withheld_findings"]],
+                )
+                header = prepared["behavioral_case_headers"][
+                    "finding:over_treated_low"]
+                case_response = client.get(
+                    "/api/diagnose/finding-case-file",
+                    params={
+                        "projection_id": prepared["projection_id"],
+                        "finding_id": "finding:over_treated_low",
+                        "alignment": "event",
+                    },
+                )
+                self.assertEqual(case_response.status_code, 200, case_response.text)
+                case = case_response.json()
+
+        self.assertEqual(case["summary"], {
+            "claimed": 1, "denominator": 2, "noun": "lows",
+        })
+        self.assertEqual(header["summary"], case["summary"])
+        self.assertEqual(header["verdict_counts"], case["verdict_counts"])
+        self.assertEqual(len(case["occurrences"]), 2)
+        self.assertEqual(case["verdict_counts"]["fired"], 1)
+        self.assertEqual(case["verdict_counts"]["clean"], 1)
+        owned = next(row for row in case["occurrences"]
+                     if row["anchor"]["t"] == "2026-06-02 12:10:00")
+        self.assertEqual(owned["verdict"], "clean")
+
+    def test_announced_meal_near_low_stays_outside_canonical_low_population(self):
+        readings = [point for day in range(1, 5)
+                    for point in _low_rebound(day, nadir=72, rebound=244)]
+        announced = [
+            (2250 + day, datetime(2026, 6, day, 12, 10), 2.0, 20.0,
+             {"carb_ratio": 10.0})
+            for day in range(1, 5)
+        ]
+        prepared = self._real_preparation(readings, announced)
+        self.assertNotIn(
+            "finding:over_treated_low",
+            [row["id"] for row in prepared["rendered_rows"]],
+        )
+        self.assertNotIn(
+            "finding:over_treated_low",
+            [row["finding_id"] for row in prepared["withheld_findings"]],
+        )
+
     def test_remaining_four_levers_reach_http_from_real_analyzer_output(self):
         undercount_cgm = []
         undercount_bolus = []

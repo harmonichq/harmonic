@@ -1897,7 +1897,13 @@ export const S40 = async (page) => {
     .getAttribute('data-occurrence-id'), 'S40 the low tile requests the pressed opaque Occurrence id');
   ok((await page.locator('#level').innerText()).includes('Over-treated low'),
     'S40 the selected response remains inside the low Finding case');
-  is(await tile.getAttribute('data-drilled'), '', 'S40 the low comparison remains visibly drilled');
+  /* The stage carries the mark, never the registry echo (operator ruling,
+     2026-08-27: "the only chart that needs to be displaying any kind of
+     drill down ... is the spotlight"). The clicked chart was promoted onto
+     the stage, so the mark reads off #tile-focal, matching S110/S111. */
+  is(await page.locator(
+    '#tile-focal .evidence-tile[data-chart-id="finding:over_treated_low"]',
+  ).getAttribute('data-drilled'), '', 'S40 the low comparison remains visibly drilled on the stage');
 };
 
 // STORY:finding-evidence-routing:S41

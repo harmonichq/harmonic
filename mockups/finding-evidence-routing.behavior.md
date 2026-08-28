@@ -2560,6 +2560,8 @@ entry erases or weakens the other.
   reason: `issue86DirectEntryRestoration — returning from a behavioral chart no longer restores a retired root View — fix1`
 - **RETIRED issue86DirectEntryRestoration · fix2.** The drill mark is read off the stage tile, never the row's registry echo. Operator ruling, 2026-08-27: "the only chart that needs to be displaying any kind of drill down ... is the spotlight. If you are interacting with a chart, it should either be full screen or in the spotlight." A row-derived event chart still seats directly — the same click promotes it to the stage — but the probe now asserts `#tile-focal`'s mark, matching S110/S111's stage-scoped contract, rather than the `#tile-row` echo it used to check.
   reason: `issue86DirectEntryRestoration — the drill mark is the stage's, never the row's registry echo — fix2`
+- **RETIRED S40 · fix1.** Same amendment as issue86DirectEntryRestoration · fix2: the clicked comparison tile is promoted to the stage, so its persisting drill mark is asserted on `#tile-focal`, not the `#tile-row` cell the click came from.
+  reason: `S40 — the drill mark is the stage's, never the row's registry echo — fix1`
 - **RETIRED issue86PendingRoot · fix1.** Pending findings retain Sift only; there is no root View selection to preserve.
   reason: `issue86PendingRoot — pending findings retain Sift only; there is no root View selection to preserve — fix1`
 - **RETIRED issue86MalformedRecovery · fix1.** Malformed case recovery returns to the findings root without a retired Event charts View.

@@ -3939,12 +3939,11 @@ function boot(root, data, callbacks, signal) {
   /* The mock reaches Day through a dead button; the app has a real Day surface,
      so the occurrence level's link calls back into it. */
   root.__dwOpenDay = (occ) => callbacks.day?.(occ);
-  /* `destroy` tears down the boot instance; `repaintDay` is the ONE narrow
-     in-place operation the app seam is allowed to reach in with — a day's real
-     trace resolved (dayMap filled `day.days[date]`), so repaint the current
-     level and chart off the SAME frame stack, drawn window and staged sets.
-     It reuses `paint()`, so the reader's depth and workspace survive; it does
-     NOT re-run boot() or reassign the root MARKUP (#666). */
+  /* `destroy` tears down the boot instance; `repaint` is the narrow in-place
+     operation the app seam can reach in with. It redraws the current level and
+     charts off the SAME frame stack, drawn window, layout and staged sets, so a
+     resolved Day trace or theme repaint preserves the reader's workspace. It
+     does NOT re-run boot() or reassign the root MARKUP (#666, #230). */
   function leaveSurface() {
     canvasLayout = createCanvasLayout();
     fullscreen = null;
@@ -3955,7 +3954,7 @@ function boot(root, data, callbacks, signal) {
     paintTiles();
   }
 
-  return { destroy() { chart = null; disposeTiles(); }, repaintDay: paint, leaveSurface };
+  return { destroy() { chart = null; disposeTiles(); }, repaint: paint, leaveSurface };
 }
 
 /* ---------------------------------------------------------------------------
@@ -3966,16 +3965,16 @@ function boot(root, data, callbacks, signal) {
 /**
  * Mount the ported workstation into `root`.
  *
- * Interface: `setData` re-renders from a fresh API payload, `refresh` re-renders
- * in place (the theme watcher uses it, because the ported chartColors() samples
- * the live stylesheet), `setError` replaces the surface with a message. The
- * behaviour behind it is the locked mock's, unedited.
+ * Interface: `setData` re-renders from a fresh API payload, `refresh` repaints
+ * the mounted workspace in place (the theme watcher uses it, because the ported
+ * chartColors() samples the live stylesheet), `setError` replaces the surface
+ * with a message. The behaviour behind it is the locked mock's, unedited.
  */
 export function createDiagnoseWorkstation({ root, callbacks = {} }) {
   let payload = null;
   let captures = null;
   let teardown = null;
-  let repaintDay = null;
+  let repaint = null;
   let leaveSurface = null;
   let aborter = null;
 
@@ -3986,7 +3985,7 @@ export function createDiagnoseWorkstation({ root, callbacks = {} }) {
   function showError(message) {
     if (aborter) { aborter.abort(); aborter = null; }
     teardown = null;
-    repaintDay = null;
+    repaint = null;
     leaveSurface = null;
     root.className = 'dw dw-error';
     root.textContent = message;
@@ -3994,7 +3993,7 @@ export function createDiagnoseWorkstation({ root, callbacks = {} }) {
 
   function render() {
     if (teardown) { teardown(); teardown = null; }
-    repaintDay = null;
+    repaint = null;
     leaveSurface = null;
     if (aborter) { aborter.abort(); aborter = null; }
     if (!payload) return;
@@ -4032,7 +4031,7 @@ export function createDiagnoseWorkstation({ root, callbacks = {} }) {
     aborter = new AbortController();
     const booted = boot(root, captures, callbacks, aborter.signal);
     teardown = booted.destroy;
-    repaintDay = booted.repaintDay;
+    repaint = booted.repaint;
     leaveSurface = booted.leaveSurface;
   }
 
@@ -4051,11 +4050,11 @@ export function createDiagnoseWorkstation({ root, callbacks = {} }) {
   return {
     setData(nextPayload) { payload = nextPayload; render(); },
     setError(message) { showError(message); },
-    refresh() { render(); },
+    refresh() { repaint?.(); },
     /* A day's real trace resolved: repaint in place off the live boot instance,
        preserving navigation state. No-op if the surface is unmounted or in its
        error state (#666). */
-    repaintDay() { repaintDay?.(); },
+    repaintDay() { repaint?.(); },
     /* The reader navigated away from Diagnose. Pins and focus are session
        state, so they are dropped here rather than on a timer. */
     leaveSurface() { leaveSurface?.(); },

@@ -2729,8 +2729,11 @@ spotlight. Evidence: replay S115.
 **S116.** Closing the chart explorer restores focus to its opener. Evidence:
 replay S116.
 
-**S117.** After a theme change, event evidence repaints from the live surface
-palette. Evidence: replay S117.
+**S117.** Starting in Dark, the reader selects the 24-hour window and spotlights
+a non-default Event chart. A Dark → Light → Dark round trip repaints that
+chart from the live surface palette without changing the pressed window,
+spotlight, or ordered dock charts, and the reader does not re-select any of that
+context after either theme action. Evidence: replay S117.
 
 **S118.** Findings rows number only visible priced ranked rows and reveal an
 asserting row's server-published annotation, composing no new clinical copy.

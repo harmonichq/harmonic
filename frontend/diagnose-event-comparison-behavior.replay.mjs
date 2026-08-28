@@ -35,6 +35,11 @@ const settle = (page, ms = 350) => page.waitForTimeout(ms);
 const problems = [];
 export const openerProblems = () => problems.slice();
 
+const findingTileSelector = (findingId) =>
+  `#tile-field .evidence-tile[data-chart-id="${findingId}"]`;
+const visibleFindingTile = (page, findingId) =>
+  page.locator(`${findingTileSelector(findingId)}:visible`).first();
+
 function playwright() {
   return require(process.env.PLAYWRIGHT_MODULE
     ?? fail('PLAYWRIGHT_MODULE is required — this replay never skips'));
@@ -157,20 +162,25 @@ export async function openApp(browser, options = {}) {
   const queueIndex = await page.locator('#level .qrow').evaluateAll((rows, id) =>
     rows.findIndex((row) => row.dataset.id === id), findingId);
   ok(queueIndex >= 0, `${findingId} is absent from the unscoped findings queue`);
-  const dockMini = page.locator(`#tile-row .evidence-tile[data-chart-id="${findingId}"]`);
-  if (!(await dockMini.isVisible())) {
+  if (!(await visibleFindingTile(page, findingId).isVisible())) {
     await page.locator('#explorer-trigger').click();
     await page.locator('.explorer-thumbnail').nth(queueIndex).click();
   }
   if (options.invalidComparison) {
-    await dockMini.locator('.tile-body').click();
+    await visibleFindingTile(page, findingId).locator('.tile-body').click();
     await page.waitForSelector('.case-file-error', { timeout: 15000 });
     return page;
   }
   await page.waitForSelector(
-    `#tile-row .evidence-tile[data-chart-id="${findingId}"][data-state="ok"]`,
+    `${findingTileSelector(findingId)}[data-state="ok"]:visible`,
     { timeout: 15000 },
   );
+  /* Mini-owned proofs restore the dock explicitly. Readiness above cannot ask
+     the dock: the Finding may already own the spotlight while the dock is away. */
+  const dockMini = page.locator(`#tile-row .evidence-tile[data-chart-id="${findingId}"]`);
+  if (!(await dockMini.isVisible())) {
+    await page.locator('#dock-handle button[aria-label="Bring the charts up"]').click();
+  }
   try {
     await dockMini.locator('.tile-chart canvas').waitFor({ state: 'visible', timeout: 15000 });
   } catch {
@@ -190,7 +200,7 @@ export async function openApp(browser, options = {}) {
      "become the spotlight" (ADR 215 amendment). */
   await dockMini.click();
   await page.locator('#tile-focal .tile-fullscreen').click();
-  await page.waitForSelector('#tile-field #ec-chart', { state: 'attached', timeout: 15000 });
+  await page.waitForSelector('#tile-focal #ec-chart', { state: 'attached', timeout: 15000 });
   await settle(page, 700);
   if (options.selectCohort) {
     await page.locator(`#tile-focal .evidence-tile[data-chart-id="${findingId}"] .tile-body`).click();
@@ -460,11 +470,11 @@ export const S9 = async (open, browser) => {
       const statePage = await open(browser, { finding, theme });
       try {
         const state = await rendered(statePage);
-        ok(await statePage.locator(`#tile-row .evidence-tile[data-chart-id="${finding}"]`).isVisible(),
+        ok(await visibleFindingTile(statePage, finding).isVisible(),
           `${finding}/${theme} did not keep its comparison tile visible`);
         ok(state.dockMini.visible && state.dockMini.ids.length > 0,
           `${finding}/${theme} mounted no populated dock-mini comparison canvas`);
-        ok(await statePage.locator('#tile-field #ec-chart canvas').count() > 0,
+        ok(await statePage.locator('#tile-focal #ec-chart canvas').count() > 0,
           `${finding}/${theme} mounted no additional fullscreen comparison canvas`);
       } finally { await statePage.close(); }
     }
@@ -475,9 +485,9 @@ export const S9 = async (open, browser) => {
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth
       - document.documentElement.clientWidth);
     ok(overflow <= 1, `narrow page overflows by ${overflow}px`);
-    ok(await page.locator('#tile-row .evidence-tile[data-chart-id^="finding:"]').first().isVisible(),
+    ok(await page.locator('#tile-field .evidence-tile[data-chart-id^="finding:"]:visible').first().isVisible(),
       'the comparison tile did not remain visible at narrow width');
-    ok(await page.locator('#tile-field #ec-chart canvas').count() > 0,
+    ok(await page.locator('#tile-focal #ec-chart canvas').count() > 0,
       'the comparison canvas did not mount at narrow width');
   });
 };
@@ -589,7 +599,7 @@ export const S13 = async (open, browser) => use(open, browser,
     }
     ok(await page.locator('#canvas-head').count() === 1,
       'the canvas shell does not own exactly one pane header');
-    ok(await page.locator('#tile-field #ec-canvas-head').count() === 1,
+    ok(await page.locator('#tile-focal #ec-canvas-head').count() === 1,
       'the fullscreen comparison does not own exactly one tile-local chart header');
   });
 

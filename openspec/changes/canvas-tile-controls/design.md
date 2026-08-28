@@ -9,6 +9,12 @@ and deemphasizes the other cohort lines, while the dock mini remains the static
 cohort view. The frozen event-comparison stories read each fact from the surface
 that owns it and continue to reject a comparison canvas owned by no tile.
 
+The dock is a surface that can be away: chart fullscreen puts it away, and the
+spotlight-size rule hides it when the spotlight runs out of room. A frozen story
+asking whether a Finding remains on screen therefore checks its tile across the
+spotlight and the dock; only a story about mini-owned evidence asks the dock,
+after explicitly bringing it back.
+
 ## ADR 215 — Fixed canvas, membership pinning, Explore retired
 
 Ruled by the operator, 2026-08-26, during the #215 polish slices, reversing

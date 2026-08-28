@@ -198,8 +198,8 @@ try {
           /limited support$/,
           `${check.name}: limited cohort detail does not say limited support`);
         // A withheld point states that it has no value, and no cohort-level fact.
-        await page.locator('#ec-chart').dispatchEvent('keydown', { key: 'End' });
-        const inspected = await page.locator('#ec-chart').getAttribute('aria-label');
+        await page.locator('#tile-focal #ec-chart').dispatchEvent('keydown', { key: 'End' });
+        const inspected = await page.locator('#tile-focal #ec-chart').getAttribute('aria-label');
         assert.match(inspected, /unavailable/i,
           `${check.name}: withheld point does not state that it has no value`);
         assert.doesNotMatch(inspected, /shown individually|episodes|whiskers|percentile/i,

@@ -16,7 +16,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
-import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const FRONTEND = fileURLToPath(new URL('.', import.meta.url));
@@ -55,8 +56,11 @@ for (const { file: suite, payload } of SUITES) {
   });
 
   test(`${suite} fails closed and names the missing vendored assets when VENDOR_DIR is empty`, () => {
-    const dir = mkdtempSync(join(FRONTEND, '.browser-gates-fail-closed-'));
+    const dir = mkdtempSync(join(tmpdir(), '.browser-gates-fail-closed-'));
     try {
+      const relativeToFrontend = relative(FRONTEND, dir);
+      assert.ok(relativeToFrontend === '..' || relativeToFrontend.startsWith(`..${sep}`),
+        `${suite} must keep its empty VENDOR_DIR outside the frontend source tree`);
       const { status, output } = spawnSuite(suite, { VENDOR_DIR: dir });
       assert.notEqual(status, 0, `${suite} must exit nonzero when the vendored assets are absent`);
       assert.match(output, /vue\.esm-browser\.js/, `${suite} must name the missing vue.esm-browser.js`);

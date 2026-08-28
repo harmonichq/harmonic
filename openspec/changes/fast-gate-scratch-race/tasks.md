@@ -2,22 +2,37 @@
 
 ## 1. Pin the filesystem boundary
 
-- [ ] Add an assertion that fails on the ticket base because the fail-closed
+- [x] Add an assertion that fails on the ticket base because the fail-closed
       suite creates its empty vendor directory below `frontend/`.
-- [ ] Keep the assertion on the generated directory used by the spawned suite,
+- [x] Keep the assertion on the generated directory used by the spawned suite,
       not on a hand-set flag or a duplicate path constant.
 
 ## 2. Remove the collision
 
-- [ ] Move only the fail-closed suite's empty vendor directories to the
+- [x] Move only the fail-closed suite's empty vendor directories to the
       operating-system temporary root.
-- [ ] Preserve cleanup in `finally`, all existing browser-suite cases, every missing
+- [x] Preserve cleanup in `finally`, all existing browser-suite cases, every missing
       prerequisite assertion, and ADR 39's recursive stylesheet inventory.
 
 ## 3. Verify and review
 
-- [ ] Run the focused fail-closed and row-box tests together.
-- [ ] Run every command in the frontend CI job; require zero failures and
+- [x] Run the focused fail-closed and row-box tests together.
+- [x] Run every command in the frontend CI job; require zero failures and
       current generated artifacts.
 - [ ] Record red/green evidence here, run `/review` at Targeted depth, and resolve
       every blocking finding before opening one pull request. Do not merge.
+
+### Red/green evidence
+
+- **Red:** with the boundary assertion added and the scratch root unchanged,
+  `node --test frontend/browser-gates-fail-closed.test.js frontend/diagnose-evidence-row-box.test.js`
+  reported 9 tests, 6 passed, and 3 failed. Each failure was the new assertion:
+  `<suite> must keep its empty VENDOR_DIR outside the frontend source tree`.
+  Both ADR 39 stylesheet-inventory tests passed in the same run.
+- **Green:** after rooting the same generated directories at `tmpdir()`, the
+  focused command reported 9 tests passed and 0 failed.
+- **Frontend job:** `node --test 'frontend/**/*.test.js'` reported 523 tests
+  passed and 0 failed; `node --test scripts/screenshots.local.test.mjs`
+  reported 1 test passed and 0 failed; the event-comparison check printed
+  `event-comparison synthetic capture current`; and the exploration check printed
+  `finding-evidence-routing artifacts current (data.json, evidence-table.extracted.js, app-base.extracted.css)`.

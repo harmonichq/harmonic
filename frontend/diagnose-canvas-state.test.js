@@ -102,6 +102,24 @@ test('a returned frame keeps its drill mark only when its chart retakes the foca
     're-seating the returned chart as focal restores exactly its own mark');
 });
 
+/* CLICKING A CHART'S OWN REGISTRY TILE PUTS IT ON STAGE, MARKED THERE. Operator
+   ruling, 2026-08-27: "the only chart that needs to be displaying any kind of
+   drill down ... is the spotlight." A reader who clicks a chart already sitting
+   in the dock strip promotes it to focal — `dockOrder` then echoes that same
+   chart back into the strip as the current frame's selected cell — but the
+   mark belongs on the stage instance alone, never the echo the click came from. */
+test('a chart seated directly from its own registry tile is marked on the stage, not the echo it left behind', () => {
+  const candidateIds = ['finding:over_treated_low', 'isf', 'basal:0-30'];
+  const target = 'finding:over_treated_low';
+
+  const layout = createCanvasLayout({ focalId: target, pins: [] });
+  const placed = placeSeats([...new Set([...candidateIds, layout.focalId])], layout);
+  const marks = placed.filter((seat) => isDrilledSpotlight(seat, seat.chartId, target));
+  assert.deepEqual(marks.map((seat) => ({ chartId: seat.chartId, seat: seat.seat })),
+    [{ chartId: target, seat: 'focal' }],
+    'the seated chart is marked once, on the stage, whatever registry cell it was clicked from');
+});
+
 test('an unknown want is refused rather than silently resolved', () => {
   assert.throws(() => dockView(600, 'floating'), RangeError);
   assert.throws(() => dockView(600, 'mounted'), RangeError);

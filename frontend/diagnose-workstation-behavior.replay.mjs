@@ -2900,8 +2900,9 @@ export const issue86FilteredRoot = async (page) => {
   is(empty.filter.trigger, 'Filter 1', '#86 the trigger reports the one active Sift group');
 };
 
-/** #86 probe — a row-derived event chart seats directly; returning restores
-    the Sift, queue order and scroll without a root View or global Align. */
+/** #86 probe — a row-derived event chart seats directly onto the stage,
+    marked there; returning restores the Sift, queue order and scroll without
+    a root View or global Align. */
 export const issue86DirectEntryRestoration = async (page) => {
   await page.getByRole('button', { name: '24 h', exact: true }).click();
   await settle(page, 450);
@@ -2918,7 +2919,13 @@ export const issue86DirectEntryRestoration = async (page) => {
   await tile.locator('.tile-body').click();
   await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false');
   const opened = await state(page);
-  is(await tile.getAttribute('data-drilled'), '', '#86 the row-derived event chart is directly seated');
+  /* The stage carries the mark, never the registry echo (operator ruling,
+     2026-08-27: "the only chart that needs to be displaying any kind of drill
+     down ... is the spotlight"). Direct row seating promotes the clicked chart
+     onto the stage, so the mark is read off #tile-focal, not the row cell that
+     was clicked. */
+  const seated = page.locator('#tile-focal .evidence-tile[data-chart-id="finding:over_treated_low"]');
+  is(await seated.getAttribute('data-drilled'), '', '#86 the row-derived event chart is seated on the stage, marked');
   ok(opened.crumb.includes('Over-treated low'), '#86 the seated chart opens its Finding case');
   is(opened.filter.visible, false, '#86 Filter is hidden in a case file');
   await page.keyboard.press('Backspace');

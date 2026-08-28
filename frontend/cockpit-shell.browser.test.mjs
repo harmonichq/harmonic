@@ -1610,7 +1610,13 @@ test('event comparisons render the served case-file cohorts and retain no standa
     // The case file owns all three names and counts; the successor UI renders
     // them in the drilled inspector while its owning registry tile stays drawn.
     assert.ok(await tile.isVisible(), 'the row-derived tile is not seated');
-    assert.equal(await tile.getAttribute('data-drilled'), '');
+    // The stage carries the mark, never the registry echo (operator ruling,
+    // 2026-08-27: "the only chart that needs to be displaying any kind of
+    // drill down ... is the spotlight"). The clicked chart is promoted onto
+    // the stage, so the mark reads off #tile-focal.
+    assert.equal(await page.locator(
+      '#tile-focal .evidence-tile[data-chart-id="finding:over_treated_low"]',
+    ).getAttribute('data-drilled'), '');
     assert.deepEqual(await page.locator('#level .ev-group b').allTextContents(),
     ['Matched', 'Nearly matched', 'Other low excursions']);
     assert.deepEqual(await page.locator('#level .ev-group .n').allTextContents(),

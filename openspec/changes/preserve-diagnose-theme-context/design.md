@@ -79,10 +79,14 @@ the same identities before each theme action:
 - spotlight: `finding:late_bolus` (non-default; opening spotlight `ic:0`);
 - ordered dock chart ids: `["ic:0", "finding:late_bolus"]`.
 
-Immediately after each base theme action, those identities reset in both
-directions to `["Overnight"]`, `ic:0`, and
-`["ic:0", "basal:120-180", "isf"]`. The paired reset renders are
-`evidence/base-dark-to-light-reset.png` and
+After each base theme action settled, those identities reset in both directions
+to `["Overnight"]`, `ic:0`, and
+`["ic:0", "basal:120-180", "isf"]`. The Dark → Light render already showed
+that complete default dock. For the corrected Light → Dark render, the installed
+driver waited only for the theme-triggered remount to expose those three dock
+identities, asserted their exact order, and took the screenshot in the next
+command. It did not activate a window or chart control after the theme action.
+The paired reset renders are `evidence/base-dark-to-light-reset.png` and
 `evidence/base-light-to-dark-reset.png`.
 
 Immediately after each revision theme action, all three identities remained
@@ -94,12 +98,16 @@ renders are `evidence/revision-dark-to-light-preserved.png` and
 empty browser-console error list.
 
 **Visual verdict.** Inspection of all four 1280 × 720 synthetic renders confirms
-the DOM record. The base pair visibly returns to the Overnight I:C workspace and
-shows the remount's loading states. The revision pair keeps the 24-hour brace,
-Late bolus spotlight, and two-chart dock. Light uses the shipped bone grounds and
-green/terracotta marks; Dark uses the shipped near-black grounds and brighter
-olive/orange marks. Chart geometry, labels, ordering, and clinical meaning do not
-change. The visible difference is palette-only.
+the DOM record. The base pair visibly returns to the Overnight I:C workspace;
+each dock shows Carb ratio, Basal 02:00–03:00, and Correction factor in the
+recorded `ic:0`, `basal:120-180`, `isf` order, with no Late bolus tile. The two
+non-focal default charts are still loading evidence, which is the first settled
+identity point the corrected capture waits for. The revision pair keeps the
+24-hour brace, Late bolus spotlight, and two-chart dock. Light uses the shipped
+bone grounds and green/terracotta marks; Dark uses the shipped near-black grounds
+and brighter olive/orange marks. Chart geometry, labels, ordering, and clinical
+meaning do not change. The visible difference between destination themes is
+palette-only.
 
 `openspec/specs/surfaces/spec.md` remains unchanged. The implementation corrects
 the shipped interaction to satisfy the existing surface capability; it does not

@@ -942,7 +942,7 @@ function renderIcBlockLevel(host, cell, icStaged, onStage, demoNote) {
 const ISF_SCOPE = 'Measured in the overnight fasting window. Daytime ISF is not separately '
   + 'identifiable, so this one value stands for the whole day.';
 
-function renderIsfLevel(host, isf, isfStaged, onStage) {
+export function renderIsfLevel(host, isf, isfStaged, onStage) {
   const e = isf.estimate;
   /* Reading the verdict off `recommended` printed "no direction asserted" over
      this level's own weaken sentence, and disagreed with the queue row that

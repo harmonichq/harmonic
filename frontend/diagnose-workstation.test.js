@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { queryState } from './diagnose-workstation.js';
+import { queryState, renderIsfLevel } from './diagnose-workstation.js';
 import { assertMatchingFindingCasePreparation } from './finding-case-file-validation.js';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 import {
@@ -93,14 +93,34 @@ test('#223 · direction-only Correction factor detail leaves evidence ownership 
     new URL('./__fixtures__/findings-projection.json', import.meta.url), 'utf8',
   ));
   const analyzer = fixture.direction_only_inputs.analysis.isf[0];
-  const source = readFileSync(new URL('./diagnose-workstation.js', import.meta.url), 'utf8');
+  const originalDocument = globalThis.document;
+  const elements = [];
+  const element = (tagName = 'div') => {
+    const node = {
+      tagName: tagName.toUpperCase(), className: '', dataset: {}, innerHTML: '', children: [],
+      append(...children) { this.children.push(...children); },
+      addEventListener() {},
+    };
+    elements.push(node);
+    return node;
+  };
+  try {
+    globalThis.document = { createElement: element };
+    const host = element();
+    renderIsfLevel(host, analyzer, false, () => assert.fail('direction-only detail cannot stage'));
 
-  assert.match(analyzer.annotation, /fasting data agrees with the set factor/i);
-  assert.match(analyzer.annotation, /recurring correction-linked lows call for weaker corrections/i);
-  assert.match(source, /sentence: isf\.annotation,/, 'detail transcribes the analyzer explanation');
-  assert.match(source, /No new number is available, so there is nothing to stage\./,
-    'the extra footer is limited to actionability');
-  assert.doesNotMatch(source,
-    /Corrections look stronger than needed, but recent lows make a new number unsafe to suggest\./,
-    'the frontend does not restate which evidence owns the direction');
+    const [detail] = host.children;
+    assert.ok(detail.innerHTML.includes(analyzer.annotation),
+      'the rendered detail transcribes the analyzer explanation');
+    assert.match(analyzer.annotation, /fasting data agrees with the set factor/i);
+    assert.match(analyzer.annotation, /recurring correction-linked lows call for weaker corrections/i);
+    const footer = detail.children.find((child) => child.className === 'slot-foot');
+    assert.equal(footer?.innerHTML,
+      '<span class="foot-note">No new number is available, so there is nothing to stage.</span>',
+      'the rendered footer is limited to actionability');
+    assert.equal(elements.some((node) => node.tagName === 'BUTTON'), false,
+      'the rendered direction-only detail has no stage affordance');
+  } finally {
+    globalThis.document = originalDocument;
+  }
 });

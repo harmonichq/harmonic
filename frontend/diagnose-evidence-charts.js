@@ -396,8 +396,8 @@ const entries = [
       title: row.title || 'Response comparison',
       meta: `${row.appearances?.[0]?.noun || 'responses'} aligned to each event`,
     }),
-    option: (_mode, { data, range, caseFile = data, mini = false } = {}) =>
-      eventComparisonChartOption(caseFile, range, null, mini),
+    option: (_mode, { data, range, caseFile = data, surface = null, mini = false } = {}) =>
+      eventComparisonChartOption(caseFile, range, surface, mini),
     thumbnail: (data, title) => thumbnail((title || 'Response comparison').toUpperCase(),
       data?.summary?.denominator ?? 0,
       [{ type: 'line', symbol: 'none', connectNulls: true,

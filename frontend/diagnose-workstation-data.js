@@ -9,7 +9,7 @@
  * Vue-free and DOM-free on purpose, so it is node-testable with no importmap
  * (repo convention; see frontend/scenario-chart.js).
  */
-import { BIN_MINUTES, BIN_COUNT, hhmm } from './diagnose-workstation-chart.js';
+import { hhmm } from './diagnose-workstation-chart.js';
 import { blockKey } from './diagnose-workspaces.js';
 
 /** The mock's `buildEnvelope()` return, rebuilt from the server's pooled feed.
@@ -34,23 +34,6 @@ export function envelopeFromPooled(pooled) {
     days: pooled?.captured_days || 0,
     pool: pooled?.pool_minutes ?? 45,
   };
-}
-
-/** The mock's `buildMealMarkers()` return, from the server's half-hour buckets.
- *
- *  Term 25's height channel is meals per CAPTURED DAY, and `envelope.days` is
- *  the divisor the chart applies — so a bucket only has to carry its own count.
- *  `index` is the chart's category index, the one thing the server does not
- *  know about (it is a property of the 96-category clock axis). */
-export function markersFromPooled(pooled) {
-  return (pooled?.meals || []).map((bucket) => ({
-    minute: bucket.minute,
-    index: Math.round(bucket.minute / BIN_MINUTES) % BIN_COUNT,
-    count: bucket.count,
-    carbs: bucket.carbs,
-    medianCarbs: bucket.median_carbs,
-    insulin: bucket.insulin,
-  })).sort((a, b) => a.minute - b.minute);
 }
 
 /* `basal:<slot>` and `blockKey(block)` are the keys the app's Plan staging
@@ -115,7 +98,6 @@ export function toCaptures(payload = {}, { loadDay = null, onDayLoaded = null, s
     casePreparation: payload.casePreparation || null,
     watched: payload.watched || null,
     envelope: envelopeFromPooled(evidence.pooled),
-    markers: markersFromPooled(evidence.pooled),
   };
 }
 

@@ -284,6 +284,9 @@
 
     .plan-cell { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
     .plan-value { width: 84px; text-align: right; }
+    .plan-value:focus-visible { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--ring); }
+    .plan-diagnose-link { border: 0; padding: 0; background: transparent; color: var(--primary); font: inherit; text-decoration: underline; }
+    .plan-diagnose-link:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
     .tabular-nums { font-variant-numeric: tabular-nums; }
 
     /* #99 Plan tab */
@@ -1121,7 +1124,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
   .dn-col:last-child { border-right:1px solid transparent; }
   .dn-col.pick { cursor:pointer; }
   .dn-col.pick:hover { background:color-mix(in srgb, var(--muted) 12%, transparent); box-shadow:var(--shadow); }
-  .dn-col.pick:focus-visible { outline:none; box-shadow:0 0 0 2px var(--primary) inset; }
+  .dn-col.pick:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
   .dn-col.sel { background:color-mix(in srgb, var(--primary) 12%, transparent); }
   .dn-col.sel .dn-col-lab { border-bottom-color:var(--primary); }
   .dn-col.nodata { cursor:default; }
@@ -1740,7 +1743,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
                 <span class="pill" :class="planChips.length ? 'ok' : ''" style="margin-left:auto;">{{ planChips.length }}</span>
               </h2>
               <p v-if="!planChips.length" class="muted" style="margin-top:-8px;">
-                Nothing accepted yet. Stage a setting from the <a @click="setTab('diagnose')" style="cursor:pointer;">Diagnose</a> queue to stage changes here.
+                Nothing accepted yet. Stage a setting from the <button type="button" class="plan-diagnose-link" @click="setTab('diagnose')">Diagnose</button> queue to stage changes here.
               </p>
               <div v-else class="accepted-chip-row">
                 <span v-for="c in planChips" :key="c.key" class="accepted-chip" :class="{ edited: c.edited }">
@@ -2975,6 +2978,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         let hero = null, basalChart = null, contextChart = null;
         const open = reactive({ basal: false, context: false });  // which accordion strips are expanded
         const keyOpen = ref(false);                               // the "Key" popover
+        const keyTriggerEl = ref(null);
         let mql = null;
         let loadController = null;
 
@@ -3274,6 +3278,12 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         }
         function doseClose() { dispatchDose({ type: 'close', restoreFocus: true, trigger: doseTrigger }); }
         function onDoseKeydown(e) {
+          if (e.key === 'Escape' && keyOpen.value) {
+            e.preventDefault();
+            keyOpen.value = false;
+            nextTick(() => keyTriggerEl.value?.focus());
+            return;
+          }
           if (e.key === 'Escape' && !isMobile.value && doseState.activeGroup) {
             e.preventDefault();
             dispatchDose({ type: 'close', restoreFocus: true, trigger: doseTrigger });
@@ -3526,7 +3536,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           day, loading, error, noData, expanded, allChecks, quietOpen, focusT, chartEl,
           chartWrapEl, doseOverlayEl, doseCapsuleEl, doseKickerEl, doseRangeEl, doseRowsEl, doseClose,
           rows, ledger, ledgerSummary, ledgerSummaryCompact, preempted, stats,
-          isMobile, heroEl, basalEl, contextEl, open, keyOpen, toggleSection,
+          isMobile, heroEl, basalEl, contextEl, open, keyOpen, keyTriggerEl, toggleSection,
           selectedLever, leverChips, pickLever,
           falseLowArtifacts, undoFalseLow,
           rowTitle, stateToken, leadingVerdicts, silentVerdicts, quietDetail, checkState, allChecksOpen, toggleAllChecks, rowSteps, rawDump,
@@ -3613,7 +3623,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
                       <div class="ds-hero-date">{{ day.date }}</div>
                       <div class="ds-hero-sub">Day · glucose</div>
                     </div>
-                    <button type="button" class="ds-key" @click.stop="keyOpen = !keyOpen" aria-label="Show chart key">Key</button>
+                    <button ref="keyTriggerEl" type="button" class="ds-key" @click.stop="keyOpen = !keyOpen" aria-label="Show chart key">Key</button>
                   </div>
                   <div class="ds-herostats" v-if="stats">
                     <span>TIR <b>{{ stats.tir ?? '—' }}%</b></span>
@@ -5528,7 +5538,9 @@ html.dark .viz .tie:hover::before { opacity:.13; }
             return { date, midnight: `${date} 00:00:00`, window: win };
           } catch { return null; }
         }
-        watch(dark, () => { if (diagnoseView) diagnoseView.refresh(); });
+        // `dark` changes before Vue writes the shell class. The workstation
+        // samples computed CSS, so repaint only after that DOM update.
+        watch(dark, () => nextTick(() => diagnoseView?.refresh()));
 
         return {
           tabsList: tabsWithBadges, tab, setTab, dark, toggleDark, devMode, toggleDev, toast,

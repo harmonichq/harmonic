@@ -165,6 +165,7 @@ export function queueRows(projection, selected = null) {
   });
   let pricedSeen = false;
   let seamOpened = false;
+  let rankCounter = 0;
   return filtered.map(({ row, hidden, collapsed }) => {
     // The divider belongs to rows the reader can currently see, not to an
     // excluded row or to a read represented by the collapsed count.
@@ -174,7 +175,21 @@ export function queueRows(projection, selected = null) {
     const seam = shown && unpriced && pricedSeen && !seamOpened;
     if (seam) seamOpened = true;
     if (shown && ranked && !unpriced) pricedSeen = true;
+    /* The rank NUMERAL prints the row's visible position among priced ranked
+       rows — position was already the whole ranking statement (slice-2 ruling:
+       no scores), the numeral just spells it. Nothing is re-ranked here: the
+       counter walks the server's own order over the rows a reader can see, so a
+       sift renumbers exactly as it re-positions. Unpriced tail and Watching
+       rows carry no numeral — they hold no rank to state. */
+    const rank = shown && ranked && !unpriced ? ++rankCounter : null;
     return {
+      rank,
+      /* Slice 4 — the two-line evidence summary is the projection's own
+         `annotation` sentence, revealed rather than composed. Only an
+         asserting row carries one the queue was not already printing
+         (history's annotation restates its past/support detail line). */
+      summary: row.register === 'assert' && typeof row.annotation === 'string'
+        && row.annotation ? row.annotation : null,
       id: row.id,
       register: row.register,
       title: row.title,
@@ -301,6 +316,9 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
     node.dataset.state = row.register;
     node.dataset.tier = row.tier;
     node.dataset.id = row.id;
+    // the numeral restates the position a screen reader already announces
+    add(node, 'n', row.rank == null ? '' : String(row.rank))
+      .setAttribute('aria-hidden', 'true');
     add(node, 'lab', row.title);
     /* The tag is a SIBLING of the title, not a child of it: it owns the row's right
        spine, so it has to be a grid item of the row itself. Nested inside the title
@@ -311,6 +329,9 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
     tag.append(FLAVOR[row.flavor].word);
     // every row drills, held and blind included (terms 22 / 38)
     add(node, 'go', '›').setAttribute('aria-hidden', 'true');
+    // the evidence summary sits between the title and the denominator, clamped
+    // to two lines by the stylesheet
+    if (row.summary) add(node, 'sum', row.summary);
     const detail = paintDetail(node, row.detail);
     if (detail && row.raw.window_scope === 'whole_day') {
       add(detail, 'scope-note', ' · Whole day');

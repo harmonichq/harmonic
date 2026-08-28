@@ -113,12 +113,23 @@ function option(surface, caseFile, selected, range, mini = false) {
       series.push(spreadSeries(surface, cohort, cohort.points, selected?.cohort, support));
       series.push(lineSeries(surface, cohort, cohort.points, selected?.cohort, support));
     }
-    if (cohort.support === 'withheld') series.push(...episodeSeries(surface, cohort, selected?.cohort));
+    /* The mini rank draws NO per-occurrence traces (operator, 2026-08-27): a
+       mini's question is whether there is a shape worth opening, and the cohort
+       medians alone answer it — the raw episode lines read as noise at 148px.
+       The selected trace is a reading emphasis, which only the stage carries. */
+    if (!mini && cohort.support === 'withheld') series.push(...episodeSeries(surface, cohort, selected?.cohort));
   }
-  series.push(...selectedSeries(surface, selected));
-  return { animation: false, backgroundColor: 'transparent', grid: { left: GRID.left, right: mini ? 14 : 34, top: mini ? 8 : 26, bottom: mini ? 20 : 42 }, tooltip: { trigger: 'axis', showContent: false },
-    xAxis: { type: 'value', min: projection.window_min[0], max: projection.window_min[1], interval: 60, axisLine: { onZero: false, lineStyle: { color: css(surface, '--mk-line') } }, axisTick: { show: false }, splitLine: { show: true, lineStyle: { color: css(surface, '--mk-line'), opacity: .48 } }, axisLabel: { color: css(surface, '--mk-muted'), fontSize: mini ? 8 : 10, formatter: (minute) => (mini && minute === 0 ? '' : axisLabel(minute, projection.anchor.label)) } },
-    yAxis: { type: 'value', min: range[0], max: range[1], interval: 60, name: mini ? undefined : 'mg/dL', nameLocation: 'end', nameTextStyle: { color: css(surface, '--mk-muted'), fontSize: 9 }, nameGap: 8, axisLine: { show: false }, axisTick: { show: false }, splitLine: { show: true, lineStyle: { color: css(surface, '--mk-line'), opacity: .58 } }, axisLabel: { color: css(surface, '--mk-muted'), fontSize: mini ? 8 : 10 } }, series };
+  if (!mini) series.push(...selectedSeries(surface, selected));
+  /* A MINI KEEPS NO AXIS FURNITURE AT ALL, and it is INERT (ADR 215 amendments,
+     2026-08-27) — the same rank the other evidence kinds take from
+     diagnose-evidence-charts' MINI_GRID: 6px of air on all four sides, no tick
+     labels, no split lines, no axis line, and no hover readout of any kind.
+     Reading happens on the stage; the cell's only verbs are the strip's own. */
+  return { animation: false, backgroundColor: 'transparent',
+    grid: mini ? { left: 6, right: 6, top: 6, bottom: 6 } : { left: GRID.left, right: 34, top: 26, bottom: 42 },
+    tooltip: mini ? { show: false } : { trigger: 'axis', showContent: false },
+    xAxis: { type: 'value', min: projection.window_min[0], max: projection.window_min[1], interval: 60, axisLine: { show: !mini, onZero: false, lineStyle: { color: css(surface, '--mk-line') } }, axisTick: { show: false }, splitLine: { show: !mini, lineStyle: { color: css(surface, '--mk-line'), opacity: .48 } }, axisLabel: { show: !mini, color: css(surface, '--mk-muted'), fontSize: 10, formatter: (minute) => axisLabel(minute, projection.anchor.label) } },
+    yAxis: { type: 'value', min: range[0], max: range[1], interval: 60, name: mini ? undefined : 'mg/dL', nameLocation: 'end', nameTextStyle: { color: css(surface, '--mk-muted'), fontSize: 9 }, nameGap: 8, axisLine: { show: false }, axisTick: { show: false }, splitLine: { show: !mini, lineStyle: { color: css(surface, '--mk-line'), opacity: .58 } }, axisLabel: { show: !mini, color: css(surface, '--mk-muted'), fontSize: 10 } }, series };
 }
 
 /* ONE GLUCOSE AXIS FOR A WHOLE ARRANGEMENT. The envelope is the range every
@@ -138,7 +149,9 @@ export function glucoseRange(values) {
   return [low, high];
 }
 
-/** Every glucose value this case file's comparison actually draws. */
+/** The shared tile range is based on served cohort evidence, never a selected
+ *  occurrence's detail trace. Selection is a reader state; letting its trace
+ *  widen the field would rescale every dock mini under one click. */
 export function eventComparisonGlucoseValues(caseFile) {
   const projection = caseFile?.projection;
   const cohortValues = (projection?.cohorts || []).flatMap((cohort) => [
@@ -146,9 +159,7 @@ export function eventComparisonGlucoseValues(caseFile) {
     ...(cohort.episodes || []).flatMap((episode) =>
       (episode.glucose || []).map((point) => point.bg)),
   ]);
-  const detail = caseFile?.selection?.state === 'selected' ? caseFile.selection.detail : null;
-  const selectedValues = (detail?.glucose || []).map((point) => point.bg);
-  return [...cohortValues, ...selectedValues].filter(Number.isFinite);
+  return cohortValues.filter(Number.isFinite);
 }
 
 function assertEventCaseFile(caseFile) {

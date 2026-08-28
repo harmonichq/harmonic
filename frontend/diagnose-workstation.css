@@ -714,6 +714,22 @@ html.dark .tile-field[data-dock="docked"] > .tile-row > .evidence-tile {
      neutral: no signal colour, no partial band. */
   box-shadow: inset 0 0 0 1px var(--wk-rule-strong), var(--ck-cell-shadow);
 }
+/* A CELL ANSWERS THE POINTER (operator, 2026-08-27: "add some kind of hover
+   over the minis in the chart dock"). The chart plots are inert at mini rank,
+   so the CELL carries the affordance: the selected ring's own language one
+   step quieter — the plain rule's ink — and the pointer cursor the click
+   already earns. No lift, no ground change: hover must not resize or re-light
+   a chart, and the strong ring stays the selected cell's alone. */
+.tile-field:is([data-dock="docked"], [data-raised])
+  > .tile-row > .evidence-tile { cursor: pointer; }
+.tile-field:is([data-dock="docked"], [data-raised])
+  > .tile-row > .evidence-tile:hover:not([data-selected]) {
+  box-shadow: inset 0 0 0 1px var(--wk-rule), var(--ck-cell-shadow);
+}
+.tile-field:is([data-dock="docked"], [data-raised])
+  > .tile-row > .evidence-tile:focus-visible {
+  outline: 2px solid var(--ck-focus-mark); outline-offset: -2px;
+}
 
 /* THE DRILL ACCENT IS OFF INSIDE THE DOCK. It marked the chart the inspector is
    drilled into, which the spotlight now ALWAYS owns — so on a cell it either
@@ -1243,7 +1259,9 @@ html:not(.dark) .dw { --ck-well: var(--wk-surface-sunken); }
 /* vertical extent is set in paintBrace: from the plot's top edge down to the
    bottom of the basal lane, and no further — never into the chart header
    above, never past the lane into the key below */
-.brace .edge { position: absolute; width: 0; border-left: 1px dashed var(--ck-accent); }
+/* slice 4 — the gate edge is where the outside scrim stops; the edge line is a
+   quiet solid spine for the grips, no longer a dashed boundary statement */
+.brace .edge { position: absolute; width: 0; border-left: 1px solid color-mix(in srgb, var(--ck-accent) 62%, transparent); }
 /* the edge being dragged goes solid and high-contrast, so it reads as the one
    under the hand while the other stays a reference */
 .brace .edge.live { border-left: 1.5px solid var(--mk-text); }
@@ -1283,25 +1301,28 @@ html:not(.dark) .dw { --ck-well: var(--wk-surface-sunken); }
   margin-left: calc(var(--ck-grid-left) - (100% - var(--ck-grid-left) - var(--ck-grid-right)) - var(--clock-pan-px));
   margin-right: 0;
 }
-.lane button {
-  position: relative; border: 0; padding: 0; cursor: pointer; border-radius: 1px;
+.lane-cell {
+  border-radius: 1px;
   background: var(--cell, var(--ck-inset)); min-width: 0;
 }
-.lane button[data-verdict="up"] { --cell: color-mix(in srgb, var(--ck-up) 72%, transparent); }
-.lane button[data-verdict="down"] { --cell: color-mix(in srgb, var(--mk-danger) 72%, transparent); }
-.lane button[data-verdict="hold"] { --cell: color-mix(in srgb, var(--ck-hold) 45%, var(--mk-surface)); }
+.lane button.lane-cell {
+  position: relative; border: 0; padding: 0; cursor: pointer;
+}
+.lane-cell[data-verdict="up"] { --cell: color-mix(in srgb, var(--ck-up) 72%, transparent); }
+.lane-cell[data-verdict="down"] { --cell: color-mix(in srgb, var(--mk-danger) 72%, transparent); }
+.lane-cell[data-verdict="hold"] { --cell: color-mix(in srgb, var(--ck-hold) 45%, var(--mk-surface)); }
 /* insufficient reads as measured, not broken: outline only, full-contrast text
    lives in the inspector */
-.lane button[data-verdict="insufficient"] {
+.lane-cell[data-verdict="insufficient"] {
   --cell: transparent; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ck-insuff) 75%, transparent);
 }
-.lane button[data-verdict="nodata"] { --cell: transparent; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ck-hair) 90%, transparent); }
-.lane button[aria-pressed="true"] { outline: 1px solid var(--mk-text); outline-offset: 1px; }
+.lane-cell[data-verdict="nodata"] { --cell: transparent; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ck-hair) 90%, transparent); }
+.lane button.lane-cell[aria-pressed="true"] { outline: 1px solid var(--mk-text); outline-offset: 1px; }
 /* outside the drawn window a slot is de-emphasised, never hidden: its verdict
    is still true, it is just not what the canvas is scoped to */
-.lane button[data-outside="true"] { opacity: .38; }
-.lane button[data-neighbour] { opacity: .2; }
-.lane button[data-staged="true"]::after {
+.lane button.lane-cell[data-outside="true"] { opacity: .38; }
+.lane button.lane-cell[data-neighbour] { opacity: .2; }
+.lane button.lane-cell[data-staged="true"]::after {
   content: ''; position: absolute; left: 0; right: 0; bottom: -4px; height: 2px;
   background: var(--ck-accent); border-radius: 1px;
 }
@@ -1314,7 +1335,22 @@ html:not(.dark) .dw { --ck-well: var(--wk-surface-sunken); }
   white-space: nowrap;
 }
 .lane-key span { display: inline-flex; align-items: center; gap: 5px; }
-.lane-key i { width: 12px; height: 8px; border-radius: 2px; display: inline-block; }
+/* A swatch has to LAY THE TRACK DOWN UNDER ITSELF. The lane paints its cells on
+   its own ground (`.lane` background, --ck-inset) and the verdict tokens for
+   raise, lower and the two outline verdicts are translucent — they are
+   color-mix()ed with `transparent`, so what a cell actually reads as is the
+   token composited over that track. The key row has no track, so a swatch
+   composited over the panel ground instead and was a different colour from the
+   cell it names. Measured on rendered pixels: in light theme the raise swatch
+   read 104,146,125 against a real raise cell's 39,85,63 — a distance of 109,
+   with the reader asked to match them by eye. `hold` is the control that names
+   the cause: it mixes with an OPAQUE --mk-surface, so it is backing-independent
+   and matched exactly (distance 0) in both themes throughout. */
+.lane-key .lane-cell {
+  width: 12px; height: 8px; display: inline-block;
+  background-color: var(--ck-inset);
+  background-image: linear-gradient(var(--cell, transparent), var(--cell, transparent));
+}
 .lane-key .t { font-family: var(--ck-mono); }
 .lane-key .lead { color: var(--mk-secondary); font-family: Inter, system-ui, sans-serif; }
 /* the second lane's lead word opens a new group, so it gets a little more air
@@ -1635,10 +1671,13 @@ html:not(.dark) .dw { --ck-well: var(--wk-surface-sunken); }
    ====================================================================== */
 
 /* ---- the queue --------------------------------------------------------
-   POSITION IS RANK. No bars, no score numerals, no tint: the order of the rows
-   is the whole ranking statement, so nothing draws it a second time. Every row
-   is one spine (--ck-pad) with title + tag on the first line and its
-   denominator, in words, on the second.
+   POSITION IS RANK. No bars, no scores, no tint: the order of the rows is the
+   whole ranking statement, and the RANK NUMERAL (slice 4, the approved
+   evidence-canvas mock's row grammar) only spells that position — it is an
+   ordinal, never a priority score (the slice-2 no-score ruling stands). Every
+   row is one spine (--ck-pad): numeral gutter, then title + tag on the first
+   line, the row's evidence summary (two lines at most) beneath where it
+   carries one, and its denominator, in words, on the last line.
 
    TERM 44 — no hairlines between queue rows in any state; spacing separates
    (term 27 applied). A single gap sets the rhythm for the whole list, priced
@@ -1648,37 +1687,44 @@ html:not(.dark) .dw { --ck-well: var(--wk-surface-sunken); }
    flush beneath it. Right: the flavor tag in a FIXED column just inside the
    chevron, so it lands at the same x on every row instead of trailing a title of
    variable length. Nothing sits between the two. */
-/* CARD GEOMETRY, FIXED HEIGHT AGAIN (owner ruling, 2026-08-19, see the
-   behavior ledger, overriding round 4's auto-height ruling: "They need to be
-   fixed height. They just need to look better"). Round 4's rejected box was
-   84px, invented headroom above the
-   content it held; this one is PINNED AT THE CONTENT'S OWN CEILING, measured
-   off the live queue rather than guessed — 8px even vertical padding + one
-   label line + 4px row gap + one clamped detail line (`.den` XOR `.why`,
-   never both — `detailFor` in diagnose-findings-queue.js picks exactly one
-   per row) rendered at 51.67px in the running app, so 52px is pinned, not
-   84px. A row with no detail line at all (rare: `assertDetail` can return
-   null) does not shrink the box or leave it top-heavy — `align-content:
-   center` centers whatever content the row has as a group within the fixed
-   height, so a title-only row reads centered rather than pinned to the top
-   with dead air below. If a future reason genuinely needs two lines, that is
-   a design decision to revisit, not something this box silently absorbs. */
+/* CARD GEOMETRY (slice 4, superseding the 2026-08-19 fixed-height ruling's
+   number, not its intent). 52px was pinned at the content's own ceiling when a
+   row held one label line + one detail line; the approved mock's row grammar
+   adds an evidence summary of up to two lines to the rows that carry one, so
+   the ceiling is no longer one number for every row. 52px stays as the FLOOR —
+   a summaryless row keeps the exact box the ruling measured — and a row grows
+   only by the lines it actually prints, so rows of the same shape still share
+   one height. `align-content: center` keeps a short row's content centered
+   rather than pinned to the top with dead air below. */
 .dw .qrow {
   --tag-col: 58px;
-  display: grid; width: 100%; text-align: left; height: 52px;
-  grid-template-columns: minmax(0, 1fr) var(--tag-col) 12px;
-  grid-template-rows: auto auto;
+  display: grid; width: 100%; text-align: left; min-height: 52px;
+  grid-template-columns: 16px minmax(0, 1fr) var(--tag-col) 12px;
   column-gap: 9px; row-gap: 4px;
   align-items: baseline; align-content: center; padding: 8px var(--ck-pad);
   border: 0; background: none; color: inherit; overflow: hidden;
+}
+/* the rank numeral's gutter — mono and muted so it reads as furniture, blank
+   on the rows that hold no rank (unpriced tail, Watching) */
+.dw .qrow .n {
+  grid-column: 1; grid-row: 1;
+  font-family: var(--ck-mono); font-size: var(--ck-micro);
+  font-variant-numeric: tabular-nums; color: var(--mk-muted);
 }
 .dw button.qrow { cursor: pointer; }
 .dw button.qrow:hover { background: color-mix(in srgb, var(--mk-surface-2) 60%, transparent); }
 .dw button.qrow:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: -2px; }
 
 .dw .qrow .lab {
-  grid-column: 1; grid-row: 1; font-size: var(--ck-emph); font-weight: 600; color: var(--mk-text);
+  grid-column: 2; grid-row: 1; font-size: var(--ck-emph); font-weight: 600; color: var(--mk-text);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* the two-line evidence summary (slice 4) — the projection's own annotation
+   sentence, clamped at two lines so no row's geometry runs away */
+.dw .qrow .sum {
+  grid-column: 2 / -1; font-size: 11.5px; color: var(--mk-secondary); line-height: 1.45;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+  overflow: hidden;
 }
 /* FLAVOR TAGS (term 36) — glyph + word at caps-label rank, on the app's IDENTITY
    hues, never warn or danger, which are reserved for clinical state and would
@@ -1688,9 +1734,15 @@ html:not(.dark) .dw { --ck-well: var(--wk-surface-sunken); }
    collided with a data encoding and read as clinical state at once. The ◈ / ⚙
    glyph carries the differentiation; the hue only has to stay out of the way. */
 .dw .qrow .tag {
-  grid-column: 2; grid-row: 1; justify-self: end; align-self: center;
+  grid-column: 3; grid-row: 1; justify-self: end; align-self: center;
   text-align: right; font-size: var(--ck-micro); font-weight: 650;
   letter-spacing: var(--ck-track); text-transform: uppercase; white-space: nowrap;
+  /* slice 4 — the flavor is a CHIP: a quiet plate on the well ground
+     (`--ck-well`, never `--ck-inset` — the light-theme trap design.md
+     records), so SETTING/HABIT read as classification furniture rather than
+     trailing words. Hue and glyph are unchanged. */
+  padding: 1px 6px; border-radius: 4px;
+  border: 1px solid var(--ck-hair); background: var(--ck-well);
 }
 /* the glyph carries the shape channel; it is sized off the word, not fixed */
 .dw .qrow .tag .gly { margin-right: 3px; letter-spacing: 0; font-size: 1.1em; }
@@ -1698,9 +1750,11 @@ html:not(.dark) .dw { --ck-well: var(--wk-surface-sunken); }
 .dw .qrow .tag.habit { color: var(--mk-secondary); }
 .dw .qrow .tag.watching { color: var(--mk-muted); }
 .dw .qrow[data-state="history"] { --tag-col: 76px; }
-.dw .qrow .go { grid-column: 3; grid-row: 1; color: var(--ck-accent); font-size: 12px; }
+.dw .qrow .go { grid-column: 4; grid-row: 1; color: var(--ck-accent); font-size: 12px; }
+/* the denominator auto-flows to the row after the summary when one renders,
+   and directly under the title when none does */
 .dw .qrow .den {
-  grid-column: 1 / -1; grid-row: 2; font-size: var(--ck-data); color: var(--mk-muted); line-height: 1.45;
+  grid-column: 2 / -1; font-size: var(--ck-data); color: var(--mk-muted); line-height: 1.45;
   /* one line, a backstop not a design target (see the geometry note above) —
      nothing in the current queue's family appearances (term 35) needs a
      second line, and overflow ellipsizes rather than growing the row */
@@ -1751,7 +1805,7 @@ html:not(.dark) .dw { --ck-well: var(--wk-surface-sunken); }
 }
 /* one reason-line treatment too, for the same reason */
 .dw .qrow .why {
-  grid-column: 1 / -1; grid-row: 2; font-size: 11.5px; color: var(--mk-secondary); line-height: 1.45;
+  grid-column: 2 / -1; font-size: 11.5px; color: var(--mk-secondary); line-height: 1.45;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
@@ -1951,10 +2005,6 @@ html:not(.dark) .dw { --ck-well: var(--wk-surface-sunken); }
    width or putting a filled label back on the plate. */
 .evidence-tile[data-drilled] {
   outline: 2px solid var(--ck-focus-mark); outline-offset: -2px;
-}
-.drill-provenance {
-  min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--mk-text);
-  font-size: 9px; font-weight: 650; letter-spacing: .03em; text-transform: uppercase;
 }
 .chart-evidence-readout {
   display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));

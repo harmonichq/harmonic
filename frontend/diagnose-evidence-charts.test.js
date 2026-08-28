@@ -12,6 +12,7 @@ import {
   GLUCOSE_STEP,
   glucoseRange,
 } from './diagnose-evidence-charts.js';
+import { fieldRange } from './diagnose-canvas-layout.js';
 
 const fixture = (path) => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'));
 /* The comparison kind reads a served Finding case file — the same payload the
@@ -454,6 +455,18 @@ test('the event-comparison entry draws the shipped cohort series at the injected
     'the target band rides with the traces');
 });
 
+test('the event-comparison entry carries the dock mini rank through the registry', () => {
+  const event = eventCase();
+  const entry = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'event-comparison');
+  const option = entry.option(null, { data: event, range: [80, 240], mini: true });
+
+  assert.deepEqual(option.grid, { left: 6, right: 6, top: 6, bottom: 6 });
+  assert.equal(option.tooltip.show, false);
+  assert.equal(option.xAxis.axisLabel.show, false);
+  assert.equal(option.yAxis.axisLabel.show, false);
+  assert.equal(option.series.some((series) => /:episode:|selected:trace/.test(series.id || '')), false);
+});
+
 test('the shipped event-comparison mount derives its axis from rendered cohort glucose', () => {
   const prior = {
     window: globalThis.window,
@@ -519,6 +532,21 @@ test('a selected occurrence and a withheld cohort keep their own shipped series'
     assert.ok(!withoutSelection.series.some((series) =>
       series.id === `${cohort.key}:line:supported`));
   }
+});
+
+test('a selected occurrence trace never changes the field range', () => {
+  const cases = caseFiles().cases['finding:carb_undercount'];
+  const [selectedId] = Object.keys(cases.selected_event);
+  const selected = structuredClone(cases.selected_event[selectedId]);
+  selected.selection.detail.glucose[0].bg = 360;
+  const descriptor = (data) => ({ chartId: 'finding:carb_undercount',
+    kind: 'event-comparison', state: 'ok', data });
+
+  assert.deepEqual(
+    fieldRange([descriptor(cases.event)], DIAGNOSE_EVIDENCE_CHARTS, glucoseRange),
+    fieldRange([descriptor(selected)], DIAGNOSE_EVIDENCE_CHARTS, glucoseRange),
+    'selection-only glucose cannot rescale the shared mini field',
+  );
 });
 
 test('current I:C event options render every published meal member', () => {

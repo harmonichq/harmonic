@@ -23,7 +23,7 @@
  * canvas is now a strip above a registry-backed evidence tile field.
  */
 import {
-  buildEnvelope, buildMealMarkers, renderCanvas, observeResize,
+  buildEnvelope, renderCanvas, observeResize, stripGlucoseRange,
   buildSlotLane, cellAtMinute, windowStats, hhmm, windowSpanText,
   BIN_MINUTES, MIN_SUPPORTED_NIGHTS,
   snapMinute, snapWindow, commitWindow, commitSlide, minuteAtX, xAtMinute, plotBox, windowSpans,
@@ -159,7 +159,11 @@ const MARKUP = `
            behaviour-ledger story S16's header assertion. -->
       <header class="crumb">
         <h2 class="trail" id="crumb-trail"></h2>
-        <span class="drill-provenance" id="drill-provenance" hidden></span>
+        <!-- RETIRED — the drill-provenance readout. It restated the drilled
+             chart's name beside a crumb that already names the drilled level,
+             while the spotlight nameplate names the chart. Sanction:
+             ConnorGriffin · 2026-08-27 · "Stop repeating ourselfes. Respect
+             the sanctitity of the breadcrumb." -->
         <span class="meta" id="crumb-meta"></span>
         <div class="filter-wrap" id="filter-wrap" hidden>
           <button class="filter-trigger" id="filter-trigger" type="button"
@@ -235,7 +239,7 @@ const EVIDENCE_CAP = 5;
    never runs into the chart header above or past the basal lane below. Must
    track `grid` in the mock's own chart module. */
 const PLOT_TOP = 20;
-const PLOT_BOTTOM = 56;
+const PLOT_BOTTOM = 26;
 
 // the long form, for the level-2 stat line where there is room for it
 const FAMILY_LABEL = {
@@ -338,11 +342,32 @@ const chartColors = (root) => {
     onAccent: css('--mk-on-primary'),
     meal: css('--ck-meal'),
     mealEdge: c.surface,
-    occurrence: c['primary-600'] || c.primary,
     targetFill: `color-mix(in srgb, ${c.ok} 8%, transparent)`,
     targetEdge: `color-mix(in srgb, ${c.ok} 55%, transparent)`,
     targetText: `color-mix(in srgb, ${c.ok} 85%, ${c.text})`,
-    windowFill: `color-mix(in srgb, ${c.primary} 8%, transparent)`,
+    /* Slice 4 — the drawn window is the BRIGHT region; the remainder of the
+       band takes this ground-colour scrim (the panel ground at part strength),
+       so the data outside the gates washes toward the panel rather than being
+       tinted a second hue. Theme-aware through the rail token itself. */
+    /* Theme-split like the band mixes above, and for the same subtractive/
+       additive reason: in dark a 60% wash of the near-black rail visibly pulls
+       the bands under; in light the same 60% of a near-white rail over
+       already-pale bands moved them a few RGB points and the remainder read
+       undimmed (operator, on the built strip). Light spends more scrim. */
+    /* A PLAIN rgba(), NEVER color-mix(): ECharts' markArea fill goes through
+       zrender's own color parser, which silently drops a color-mix() string —
+       the scrim was in the option and painted nothing, proven live by swapping
+       in an rgba() and watching the same markArea appear. The band fills only
+       get away with color-mix because their path hands the string straight to
+       canvas. The rail token is a hex, so the mix is done here in numbers.
+       Theme-split like the band mixes above: light spends more scrim because a
+       near-white wash over already-pale bands is subtractively weak. */
+    windowDim: (() => {
+      const hex = css('--ck-rail').replace('#', '');
+      const wide = hex.length === 3 ? [...hex].map((h) => h + h).join('') : hex;
+      const [r, g, b] = [0, 2, 4].map((i) => parseInt(wide.slice(i, i + 2), 16));
+      return `rgba(${r},${g},${b},${dark ? 0.45 : 0.62})`;
+    })(),
     windowEdge: `color-mix(in srgb, ${c.primary} 72%, transparent)`,
   };
 };
@@ -476,19 +501,6 @@ function icBlockAtMinute(icBlocks, minute) {
     || icBlocks[0];
 }
 
-/** One swatch for the single-line key — same tokens as the cells themselves. */
-function keySwatch(k) {
-  return k === 'insufficient'
-    ? 'box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ck-insuff) 75%,transparent)'
-    : k === 'nodata'
-      ? 'box-shadow:inset 0 0 0 1px var(--ck-hair)'
-      : k === 'hold'
-        ? 'background:color-mix(in srgb,var(--ck-hold) 34%,transparent)'
-        : k === 'down'
-          ? 'background:color-mix(in srgb,var(--mk-danger) 72%,transparent)'
-          : 'background:color-mix(in srgb,var(--ck-up) 72%,transparent)';
-}
-
 function renderLane(lane, selectedCell, staged, onPick) {
   const host = el('lane');
   host.style.gridTemplateColumns = `repeat(${lane.cells.length}, 1fr)`;
@@ -496,6 +508,7 @@ function renderLane(lane, selectedCell, staged, onPick) {
   for (const cell of lane.cells) {
     const b = document.createElement('button');
     b.type = 'button';
+    b.className = 'lane-cell';
     b.dataset.verdict = cell.verdict;
     b.dataset.staged = String(staged.has(cell.i));
     b.setAttribute('aria-pressed', String(selectedCell != null && cell.i === selectedCell.i));
@@ -513,7 +526,7 @@ function renderLaneKey(lane) {
   const order = ['up', 'down', 'hold', 'insufficient', 'nodata'];
   const group = (leadWord, counts) => `<span class="lead">${leadWord}</span>`
     + order.filter((k) => counts[k]).map((k) => `<span title="${VERDICT_KEY[k]}">`
-      + `<i style="${keySwatch(k)}"></i>${VERDICT_SHORT[k]} <b class="t">${counts[k]}</b></span>`).join('');
+      + `<i class="lane-cell" data-verdict="${k}"></i>${VERDICT_SHORT[k]} <b class="t">${counts[k]}</b></span>`).join('');
   el('lane-key').innerHTML = group('Basal slots', lane.counts);
 }
 
@@ -736,6 +749,10 @@ function renderParameterEvidenceDetail(host, descriptor, entry) {
 }
 
 function renderBehavioralFullscreen(host, f) {
+  /* The event adapter's one-fr layout belongs on its host. Without this class
+     the nested surface sized itself to the chart's content and left the rest of
+     the fullscreen pane empty. */
+  host.classList.add('ec-surface');
   const previous = window.__diagnoseEventComparison;
   const mounted = renderEventSurface(host, f.caseFile);
   mounted.restoreGlobal = () => {
@@ -1123,7 +1140,7 @@ function renderVerdictBand(host, row, family, activeVerdict, onPick = null) {
    `signal` aborts the document/window listeners the ported code registers. */
 function boot(root, data, callbacks, signal) {
   const { day, exposureCapture, audit, params, icMissing } = data;
-  const { envelope: envelopeIn, markers: markersIn } = data;
+  const { envelope: envelopeIn } = data;
   /* #735 / ADR 79 — the queue's rows and the dock's object are server-owned.
      `findings` opens on the preparation's GLOBAL projection; a pressed preset
      or drawn brace requests a replacement preparation. Nothing about membership,
@@ -1188,11 +1205,8 @@ function boot(root, data, callbacks, signal) {
   const auditState = audit.states.trial;
   const lane = buildSlotLane(auditState.analysis.basal);
 
-  /* Replaces mock 2012-2013: the app is served an already-pooled envelope and
-     meal track, so the adapter hands over exactly what buildEnvelope() and
-     buildMealMarkers() return. Same structures, computed once server-side. */
+  /* The app is served an already-pooled glucose envelope. */
   const envelope = envelopeIn;
-  const markers = markersIn;
   /* ---- mock 2014-2716 — VERBATIM except the edits marked `PORT:` below ---- */
   const colors = chartColors(root);
 
@@ -1231,7 +1245,7 @@ function boot(root, data, callbacks, signal) {
   const icStaged = new Set();      // I:C blocks staged for Plan
   let isfStaged = false;           // the ISF value, staged for Plan
   /* A block selection marks a window SEGMENT, never a two-handle brace (term
-     32): the dashed edges and their grips are suppressed and the edges stop
+     32): the gate edges and their grips are suppressed and the edges stop
      being hit-testable, so a data boundary can never be dragged into a user
      window by accident. */
   let braceless = false;
@@ -2317,23 +2331,12 @@ function boot(root, data, callbacks, signal) {
     } else {
       pressPreset(canvasPresetKey);
     }
-    /* Occurrence marks follow the FRAME, whatever set the window — so a factor
-       drilled inside an explicit workspace still shows its own dots, on the
-       user's window rather than on a peak the canvas no longer jumps to. */
-    let occurrences = [];
-    if (f.k === 'factor' && f.caseFile) occurrences = f.caseFile.occurrences.map((row) => ({
-      id: row.id, t: row.anchor.t, date: row.date, bg: row.anchor.bg,
-      worst_bg: row.anchor.bg, verdict: row.verdict,
-    }));
-
     /* Selection puts the case file's exact trace over the pooled envelope.
        This is select-in-place (P35 retired): the selected Occurrence never
        narrows the window (P21 retired) — it only adds the server-owned trace
-       and mark on top of whatever window the factor frame resolved above. */
+       on top of whatever window the factor frame resolved above. */
     const detail = f.k === 'factor' && f.caseFile?.selection?.state === 'selected'
       ? f.caseFile.selection.detail : null;
-    const selectedOcc = detail ? { id: detail.id, t: detail.anchor.t,
-      date: detail.date, bg: detail.anchor.bg, worst_bg: detail.anchor.bg } : null;
     const trace = detail ? envelope.labels.map((label) => {
       const point = detail.glucose.find((row) => row.t.slice(11, 16) === label);
       return point?.bg ?? null;
@@ -2345,10 +2348,10 @@ function boot(root, data, callbacks, signal) {
     const stats = windowStats(envelope, win.range);
     paintReadout(null);          // a redraw ends the old hover
     chart = renderCanvas(el('chart'), window.echarts, {
-      envelope, markers, colors, occurrences, stats, range: sharedGlucoseRange,
+      envelope, colors, stats, range: stripGlucoseRange(envelope),
       window: win.range,
       windowLabel: label, trace, onHover: paintReadout,
-      selectedOcc, displayWindow: dragDisplayWindow, displayOffset: clockPanOffset,
+      displayWindow: dragDisplayWindow, displayOffset: clockPanOffset,
     });
     const chartNode = el('chart');
     const priorNotice = chartNode.parentElement.querySelector('.history-canvas-notice');
@@ -2504,6 +2507,7 @@ function boot(root, data, callbacks, signal) {
     const button = document.createElement('button');
     button.type = 'button';
     button.dataset.act = act;
+    if (act === 'explore') button.id = 'explorer-trigger';
     button.title = DOCK_ACTS[act].label;
     button.setAttribute('aria-label', DOCK_ACTS[act].label);
     button.append(dockFace(act));
@@ -2746,6 +2750,10 @@ function boot(root, data, callbacks, signal) {
       const entry = entries.get(descriptor.kind);
       const tile = document.createElement('article');
       tile.className = 'evidence-tile';
+      /* A mini is an evidence article, not a button: it contains its own pin
+         control. The article gets the keyboard path for its existing promotion
+         action without creating nested interactive controls. */
+      tile.tabIndex = seat.seat === 'mini' ? 0 : -1;
       tile.dataset.chartId = descriptor.chartId;
       /* Only a dock CELL can be the current frame; the spotlight is the stage
          itself and marking it would say the stage is one of its own frames. */
@@ -2910,7 +2918,10 @@ function boot(root, data, callbacks, signal) {
         body.append(named);
       } else {
         const chartHost = document.createElement('div');
-        chartHost.className = 'tile-chart';
+        /* Comparison charts resolve their cohort palette from the module's scoped
+           aliases. Every tile rank — mini, focal, explorer, fullscreen — shares
+           this host, so the aliases re-resolve from the live theme on repaint. */
+        chartHost.className = 'tile-chart ec-surface';
         body.append(chartHost);
         /* MOUNTED AFTER THE TILE IS IN THE DOM (ADR 215 amendment). `echarts.init`
            reads the host's box, and the host was still detached here — every
@@ -2935,6 +2946,10 @@ function boot(root, data, callbacks, signal) {
               const option = optionForDescriptor(
                 descriptor, DIAGNOSE_EVIDENCE_CHARTS, sharedGlucoseRange, {
                 mini: seat.seat === 'mini', window: scopeWindow(), caseFile,
+                /* Rebuild event ink on the live tile host after a theme refresh.
+                   The registry used to replace this with null, which made the
+                   chart fall back to ECharts' stale/default series ink. */
+                surface: chartHost,
               },
               );
               /* RECORDED BEFORE IT IS DRAWN. `setOption` is the throwing call in
@@ -2964,7 +2979,7 @@ function boot(root, data, callbacks, signal) {
         });
       }
       tile.append(body);
-      tile.onclick = () => {
+      const activateTile = () => {
         /* PICKING FROM THE EXPLORER IS WHAT CLOSES IT, landing the reader on
            the chart they picked. It makes open → find it → read it one gesture,
            and it is a second way out for a reader who never finds shrink.
@@ -2982,6 +2997,13 @@ function boot(root, data, callbacks, signal) {
         paintTiles();
         paintChart();
         paintBrace();
+      };
+      tile.onclick = activateTile;
+      tile.onkeydown = (event) => {
+        if (event.target !== tile || seat.seat !== 'mini'
+          || (event.key !== 'Enter' && event.key !== ' ')) return;
+        event.preventDefault();
+        activateTile();
       };
       /* ONE DIVIDER, ON THE FIRST TAIL TILE. It says the charts past it are a
          different kind of thing — reads the server did not rank — without
@@ -3231,11 +3253,6 @@ function boot(root, data, callbacks, signal) {
       if (trail.scrollWidth > trail.clientWidth) drawTrail([items[0], last]);
     }
     const f = top();
-    const drilledDescriptor = chartDescriptor(drilledChartId);
-    const provenance = el('drill-provenance');
-    provenance.hidden = !drilledDescriptor;
-    provenance.textContent = drilledDescriptor
-      ? `Drilled chart · ${drilledDescriptor.title}` : '';
     /* TERM 45 — at level 1 the meta is the queue's own copy and nothing else:
        `N findings · 30 days` global, `N in this window` scoped, `30 days` empty.
        No sort language (the order already shows the mechanism) and no window range
@@ -3521,12 +3538,12 @@ function boot(root, data, callbacks, signal) {
     const PAN_EDGE = 26;
     const PAN_PX_PER_FRAME = 13;
 
-    /* LIVE SHADING. Two moving dashed edges with nothing between them gave no
-       read on the window being created. Rather than invent a rubber-band style,
-       the COMMITTED treatment tracks the gesture: paintChart re-resolves the
-       window and re-renders, so the region carries the same markArea tint, the
-       same dashed border and the same label it will have on mouseup — they are
-       the same code path, so they cannot diverge.
+    /* LIVE SHADING. Two moving edges with nothing between them gave no read on
+       the window being created. Rather than invent a rubber-band style, the
+       COMMITTED treatment tracks the gesture: paintChart re-resolves the window
+       and re-renders, so the region carries the same outside-the-gates scrim
+       (slice 4) and the same label it will have on mouseup — they are the same
+       code path, so they cannot diverge.
 
        A DOM overlay was the other candidate and is rejected: the chart's own
        markArea would still be shading the OLD window underneath, so the plot
@@ -3667,9 +3684,9 @@ function boot(root, data, callbacks, signal) {
     /* Is this press inside the shown window's interior? Hit-tested rather than
        overlaid: an interior <div> would swallow the chart's own hover tooltip
        inside the very window being studied. */
-    const EDGE_GRAB = 5;   // px either side of a dashed edge
+    const EDGE_GRAB = 5;   // px either side of a gate edge
 
-    /* The dashed edge is drawn the full height of the plot, so the WHOLE length
+    /* The gate edge is drawn the full height of the plot, so the WHOLE length
        of it has to be grabbable — a hit zone that only covered the little top
        grip meant a press on the edge at mid-plot started a new window instead of
        resizing. Returns which edge is under x, or null. */
@@ -3883,6 +3900,7 @@ function boot(root, data, callbacks, signal) {
       ev.stopImmediatePropagation();
       explorerOpen = false;
       paint();
+      el('explorer-trigger')?.focus();
       return;
     }
   }, { capture: true, signal });

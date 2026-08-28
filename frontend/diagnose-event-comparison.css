@@ -56,6 +56,14 @@
 
 .ec-event-body { display: grid; grid-template-rows: minmax(0, 1fr) auto; min-height: 0; overflow: hidden; }
 
+/* THE READOUT THE FULLSCREEN ROW LENDS THIS CHART. `head-live` is hidden at
+   rest everywhere else because it swaps with a rest line behind it; in the
+   fullscreen row it sits beside the chart's name instead of behind it, and is
+   empty rather than hidden when the cursor is off the plot. */
+.canvas-head[data-full] .head-full .ec-lent-readout {
+  visibility: visible; opacity: 1; display: inline-flex; align-items: baseline;
+}
+
 .ec-canvas-readout .ec-rd-time {
   min-width: 5ch;
   color: var(--mk-text);

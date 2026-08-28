@@ -196,20 +196,35 @@ function headMarkup(caseFile) {
   return `<div class="head-swap"><div class="head-line head-rest"><h2>${caseFile.finding.title} response comparison</h2><span class="meta persist">${caseFile.projection.anchor.label}</span></div><div class="head-line head-live" id="ec-readout" aria-hidden="true"></div></div>`;
 }
 
-function markup(caseFile, headerHost) {
+function markup(caseFile, bodyOnly) {
   const title = `${caseFile.finding.title} response comparison`;
   const body = `<div class="body ec-event-body"><div id="ec-chart" class="ec-chart" role="img" tabindex="0" aria-label="${title}. Use left and right arrow keys to inspect five-minute points."></div><div id="ec-chart-key" class="ec-chart-key" aria-label="Comparison legend"></div></div>`;
-  if (headerHost) return body;
+  if (bodyOnly) return body;
   return `<main class="panes ec-panes"><section class="pane canvas-pane ec-canvas" aria-label="${title}"><header class="canvas-head" id="ec-canvas-head" data-hover="0">${headMarkup(caseFile)}</header>${body}</section></main>`;
 }
 
-export function renderEventSurface(surface, caseFile, { headerHost = null } = {}) {
+/* `headline` is for a caller whose own header ALREADY names this chart — the
+   workstation's fullscreen row is one. There the adapter draws no header of its
+   own (a second title under the first is the doubling the shared-header ruling
+   (#72) settled, which came back when fullscreen replaced the By-event mount it
+   was settled at) and hangs only its readout in the line the caller lends it. */
+export function renderEventSurface(surface, caseFile,
+  { headerHost = null, headline = null } = {}) {
   assertEventCaseFile(caseFile);
   const content = new AbortController();
   const selected = selection(caseFile);
   const previousHeader = headerHost && { html: headerHost.innerHTML, hover: headerHost.dataset.hover };
   if (headerHost) { headerHost.innerHTML = headMarkup(caseFile); headerHost.dataset.hover = '0'; }
-  surface.innerHTML = markup(caseFile, headerHost);
+  const lentReadout = headline && (() => {
+    const readout = document.createElement('span');
+    /* `head-live` is the shipped readout rank, not a second one: the row's mono
+       digits, its pair spacing and its tabular values all hang off that class. */
+    readout.className = 'head-live ec-lent-readout';
+    readout.id = 'ec-readout';
+    headline.append(readout);
+    return readout;
+  })();
+  surface.innerHTML = markup(caseFile, Boolean(headerHost || headline));
   legend(surface, caseFile, selected);
   const chartElement = surface.querySelector('#ec-chart');
   const chart = window.echarts.init(chartElement, null, { renderer: 'canvas' });
@@ -218,7 +233,7 @@ export function renderEventSurface(surface, caseFile, { headerHost = null } = {}
   chart.setOption(eventComparisonChartOption(
     caseFile, glucoseRange(eventComparisonGlucoseValues(caseFile)), surface,
   ));
-  const head = headerHost || surface.querySelector('#ec-canvas-head');
+  const head = headerHost || headline || surface.querySelector('#ec-canvas-head');
   const [windowStart, windowEnd] = caseFile.projection.window_min;
   /* One reading of the served points, feeding both disclosures — the keyboard
      label and the pointer readout say the same server-owned thing. */
@@ -248,10 +263,18 @@ export function renderEventSurface(surface, caseFile, { headerHost = null } = {}
     if (!Number.isFinite(at)) return;
     inspect(Math.max(windowStart, Math.min(windowEnd, Math.round(at / 5) * 5)));
   }, { signal: content.signal });
-  const rest = () => { if (head) head.dataset.hover = '0'; };
+  const rest = () => {
+    if (head) head.dataset.hover = '0';
+    /* A lent line has no rest copy to swap back to, so leaving the last reading
+       in it would claim a cursor that is no longer on the chart. */
+    if (lentReadout) lentReadout.innerHTML = '';
+  };
   chartElement.addEventListener('mouseleave', rest, { signal: content.signal });
   chartElement.addEventListener('blur', rest, { signal: content.signal });
-  const restoreHeader = () => { if (previousHeader) { headerHost.innerHTML = previousHeader.html; headerHost.dataset.hover = previousHeader.hover; } };
+  const restoreHeader = () => {
+    if (previousHeader) { headerHost.innerHTML = previousHeader.html; headerHost.dataset.hover = previousHeader.hover; }
+    lentReadout?.remove();
+  };
   /* Frame geometry and resize belong to the caller. This adapter returns the
      content host and its cleanup beside the chart so every caller can install
      exactly one observer at the frame it owns. */

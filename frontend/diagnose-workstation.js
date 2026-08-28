@@ -752,8 +752,13 @@ function renderBehavioralFullscreen(host, f) {
   /* The workstation supplied the bounded `.tile-chart.ec-surface` host. The
      adapter contributes content only and returns the chart element whose box
      the workstation observes. */
+  /* AND CONTENT MEANS THE CHART, NOT A SECOND HEADER. Fullscreen's own row
+     already carries this chart's name (`full-title` above), so the adapter's
+     header would stack a second title under the first — the exact doubling the
+     shared-header ruling (#72) settled at the By-event mount that fullscreen
+     replaced. */
   const previous = window.__diagnoseEventComparison;
-  const mounted = renderEventSurface(host, f.caseFile);
+  const mounted = renderEventSurface(host, f.caseFile, { headline: el('canvas-fullhead') });
   mounted.restoreGlobal = () => {
     if (window.__diagnoseEventComparison === mounted) {
       window.__diagnoseEventComparison = previous;

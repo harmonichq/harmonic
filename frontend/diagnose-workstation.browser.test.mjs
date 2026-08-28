@@ -414,6 +414,11 @@ test('#232 · every registered chart family stays inside one fullscreen frame', 
             return {
               frame: box(frameElement), host: box(hostElement), plot: box(plotElement),
               canvas: box(canvasElement), key: box(keyElement),
+              /* #72's ruling, measured where it kept breaking: the fullscreen row
+                 names the chart, and no family may draw a second header under it. */
+              headers: document.querySelectorAll('header.canvas-head').length,
+              framedHeaders: frameElement.querySelectorAll('header').length,
+              fullTitle: document.querySelector('#full-title')?.textContent || '',
               scroll: {
                 pageX: document.documentElement.scrollWidth - document.documentElement.clientWidth,
                 pageY: document.documentElement.scrollHeight - document.documentElement.clientHeight,
@@ -437,6 +442,13 @@ test('#232 · every registered chart family stays inside one fullscreen frame', 
           }
           if (measured.key && measured.plot.bottom > measured.key.top + 1) {
             failures.push(`${label} plot/key overlap: ${JSON.stringify(boxes)}`);
+          }
+          if (measured.headers !== 1 || measured.framedHeaders !== 0) {
+            failures.push(`${label} fullscreen doubled its header: `
+              + `${measured.headers} on the surface, ${measured.framedHeaders} in the frame`);
+          }
+          if (!measured.fullTitle.trim()) {
+            failures.push(`${label} fullscreen row names no chart`);
           }
           if (Object.values(measured.scroll).some((value) => value > 1)) {
             failures.push(`${label} fullscreen introduced scroll: ${JSON.stringify(measured.scroll)}`);

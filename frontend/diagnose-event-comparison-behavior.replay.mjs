@@ -263,7 +263,10 @@ const spotlightRendered = (page, findingId) => page.evaluate((id) => {
       name: item.querySelector('strong')?.textContent ?? null,
       detail: item.querySelector('small')?.textContent.replace(/\s+/g, ' ').trim() ?? null,
     })),
-    title: document.querySelector('#tile-focal #ec-canvas-head h2')?.textContent ?? null,
+    /* The fullscreen row names the chart now — the tile-local header under it
+       was the second title, and is gone (#72's ruling, re-applied at the mount
+       that replaced the one it was settled at). */
+    title: document.querySelector('#canvas-head[data-full] #full-title')?.textContent ?? null,
     chartLabel: host?.getAttribute('aria-label') || '',
     ids: option?.series.map((series) => series.id).filter(Boolean) || [],
     series: option?.series.filter((series) => series.id).map((series) => ({
@@ -484,9 +487,7 @@ export const S8 = async (open, browser) => use(open, browser, {}, async (page) =
     await chart.press('ArrowRight');
   }
   const cursorLabel = '+0.25 h';
-  const readout = page.locator(
-    `#tile-focal .evidence-tile[data-chart-id="${findingId}"] #ec-canvas-head #ec-readout`,
-  );
+  const readout = page.locator('#canvas-head[data-full] #canvas-fullhead #ec-readout');
   ok(await readout.isVisible(), 'the keyboard cursor did not reveal its on-screen readout');
   const shown = await readout.evaluate((element) => ({
     time: element.querySelector('.rd-time')?.textContent ?? null,
@@ -651,8 +652,10 @@ export const S13 = async (open, browser) => use(open, browser,
     }
     ok(await page.locator('#canvas-head').count() === 1,
       'the canvas shell does not own exactly one pane header');
-    ok(await page.locator('#tile-focal #ec-canvas-head').count() === 1,
-      'the fullscreen comparison does not own exactly one tile-local chart header');
+    ok(await page.locator('#tile-focal #ec-canvas-head').count() === 0,
+      'the fullscreen comparison drew a second header under the row that names it');
+    ok((await page.locator('#canvas-head[data-full] #full-title').textContent() || '').trim().length > 0,
+      'the fullscreen row does not name the comparison it is showing');
   });
 
 /* S14 · The workstation's shared fullscreen frame bounds the event plot and

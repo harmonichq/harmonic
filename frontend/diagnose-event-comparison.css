@@ -28,7 +28,6 @@
      receiving pointer events there. Explicit `1fr` gives the one remaining
      row the whole surface. */
   grid-template-rows: 1fr;
-  overflow: hidden;
   font-size: var(--ck-body);
 }
 
@@ -83,7 +82,7 @@
 
 .ec-chart {
   min-width: 0;
-  min-height: 310px;
+  min-height: 0;
   cursor: crosshair;
 }
 

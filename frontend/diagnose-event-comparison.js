@@ -205,6 +205,7 @@ function markup(caseFile, headerHost) {
 
 export function renderEventSurface(surface, caseFile, { headerHost = null } = {}) {
   assertEventCaseFile(caseFile);
+  const content = new AbortController();
   const selected = selection(caseFile);
   const previousHeader = headerHost && { html: headerHost.innerHTML, hover: headerHost.dataset.hover };
   if (headerHost) { headerHost.innerHTML = headMarkup(caseFile); headerHost.dataset.hover = '0'; }
@@ -241,19 +242,21 @@ export function renderEventSurface(surface, caseFile, { headerHost = null } = {}
     event.preventDefault();
     inspect(event.key === 'Home' ? windowStart : event.key === 'End' ? windowEnd
       : Math.max(windowStart, Math.min(windowEnd, minute + (event.key === 'ArrowRight' ? 5 : -5))));
-  });
+  }, { signal: content.signal });
   chartElement.addEventListener('mousemove', (event) => {
     const at = chart.convertFromPixel({ gridIndex: 0 }, [event.offsetX, event.offsetY])?.[0];
     if (!Number.isFinite(at)) return;
     inspect(Math.max(windowStart, Math.min(windowEnd, Math.round(at / 5) * 5)));
-  });
+  }, { signal: content.signal });
   const rest = () => { if (head) head.dataset.hover = '0'; };
-  chartElement.addEventListener('mouseleave', rest);
-  chartElement.addEventListener('blur', rest);
-  const observer = new ResizeObserver(() => chart.resize());
-  observer.observe(chartElement);
+  chartElement.addEventListener('mouseleave', rest, { signal: content.signal });
+  chartElement.addEventListener('blur', rest, { signal: content.signal });
   const restoreHeader = () => { if (previousHeader) { headerHost.innerHTML = previousHeader.html; headerHost.dataset.hover = previousHeader.hover; } };
-  const rendered = { chart, observer, restoreHeader, projection: caseFile, selected,
+  /* Frame geometry and resize belong to the caller. This adapter returns the
+     content host and its cleanup beside the chart so every caller can install
+     exactly one observer at the frame it owns. */
+  const rendered = { chart, resizeHost: chartElement, cleanup: () => content.abort(),
+    restoreHeader, projection: caseFile, selected,
     cohorts: Object.fromEntries(caseFile.projection.cohorts.map((cohort) => [cohort.key, cohort])),
     aggregates: Object.fromEntries(caseFile.projection.cohorts.map((cohort) => [cohort.key, cohort.points])) };
   window.__diagnoseEventComparison = rendered;

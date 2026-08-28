@@ -147,6 +147,18 @@ async function shot(page, family, state_, viewport, theme) {
 
 const VIEWPORTS = [{ width: 1440, height: 900 }, { width: 1280, height: 800 }];
 
+const FULLSCREEN_VIEWPORTS = [
+  { width: 2084, height: 450 },
+  { width: 2084, height: 742 },
+];
+
+const FULLSCREEN_FAMILIES = [
+  { kind: 'basal', chartId: 'basal:30-90', window: '24 h' },
+  { kind: 'isf', chartId: 'isf', window: 'Afternoon' },
+  { kind: 'carb-ratio', chartId: 'ic:720', window: '24 h' },
+  { kind: 'event-comparison', chartId: 'finding:carb_undercount', window: '24 h' },
+];
+
 const P27_SANCTION = 'Connor Griffin · 2026-08-23 · "#55 removed installSegKeys; the shipped Align control is two ordinary Tab stops"';
 
 const expandWatching = async (page) => {
@@ -312,6 +324,161 @@ test('#215 · fullscreen from the docked strip takes the header and draws the ch
   } finally {
     await page.close();
   }
+});
+
+test('#232 · every registered chart family stays inside one fullscreen frame', async () => {
+  const browser = await runner.browser();
+  const failures = [];
+  const rect = (box) => box && ({
+    left: box.left, top: box.top, right: box.right, bottom: box.bottom,
+    width: box.width, height: box.height,
+  });
+  const inside = (frame, box, tolerance = 1) => box
+    && box.left >= frame.left - tolerance && box.top >= frame.top - tolerance
+    && box.right <= frame.right + tolerance && box.bottom <= frame.bottom + tolerance;
+
+  for (const theme of ['light', 'dark']) {
+    for (const viewport of FULLSCREEN_VIEWPORTS) {
+      for (const family of FULLSCREEN_FAMILIES) {
+        const page = await openApp(browser, {
+          state: 'typical', theme, viewport, appSource: 'fixture',
+          findingsInputs: twoFamilyInputs,
+          exposuresInputs: async () => (await twoFamilyInputs()).exposures,
+          resizeProbe: true,
+        });
+        try {
+          await page.getByRole('button', { name: family.window, exact: true }).click();
+          await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false');
+          let row = page.locator(`#level .qrow[data-id="${family.chartId}"]`);
+          if (!await row.count()) {
+            const watching = page.locator('#level .qcollapse');
+            if (await watching.count() && await watching.getAttribute('aria-expanded') !== 'true') {
+              await watching.click();
+              row = page.locator(`#level .qrow[data-id="${family.chartId}"]`);
+            }
+          }
+          assert.equal(await row.count(), 1,
+            `${family.kind} has one live generated queue row in ${family.window}`);
+          await row.click();
+          const focal = page.locator(
+            `#tile-focal .evidence-tile[data-chart-id="${family.chartId}"]`,
+          );
+          await focal.waitFor({ state: 'visible' });
+          const before = await page.evaluate(() => ({
+            focal: document.querySelector('#tile-focal .evidence-tile')?.dataset.chartId || null,
+            dock: document.querySelector('#tile-field')?.dataset.dock || null,
+            pins: [...document.querySelectorAll('.evidence-tile[data-pinned]')]
+              .map((tile) => tile.dataset.chartId),
+            row: [...document.querySelectorAll('#tile-row .evidence-tile')]
+              .map((tile) => ({ id: tile.dataset.chartId,
+                selected: tile.hasAttribute('data-selected') })),
+            resizeObservers: window.__diagnoseResizeProbe.active().length,
+          }));
+          await page.evaluate(() => {
+            window.__fullscreenPreviousComparison = window.__diagnoseEventComparison;
+          });
+
+          await focal.locator('.tile-fullscreen').click();
+          await page.waitForSelector('#tile-field[data-fullscreen-tile]');
+          await page.setViewportSize({ width: viewport.width, height: viewport.height + 20 });
+          await page.setViewportSize(viewport);
+          await settle(page, 500);
+          await page.evaluate(() => {
+            const host = document.querySelector('#tile-focal #ec-chart')
+              || document.querySelector('#tile-focal .tile-chart');
+            const chart = window.echarts.getInstanceByDom(host);
+            const dispose = chart.dispose.bind(chart);
+            window.__fullscreenDisposeCount = 0;
+            chart.dispose = () => {
+              window.__fullscreenDisposeCount += 1;
+              return dispose();
+            };
+            window.__fullscreenResizeOwners = window.__diagnoseResizeProbe.observing(host);
+            window.__fullscreenDetachedHost = host;
+          });
+          assert.equal(await page.evaluate(() => window.__fullscreenResizeOwners), 1,
+            `${family.kind} fullscreen host has exactly one resize owner`);
+
+          const measured = await page.evaluate(() => {
+            const frameElement = document.querySelector(
+              '#tile-field[data-fullscreen-tile] #tile-focal .evidence-tile',
+            );
+            const hostElement = frameElement?.querySelector('.tile-chart');
+            const plotElement = frameElement?.querySelector('#ec-chart')
+              || frameElement?.querySelector('.tile-chart canvas');
+            const canvasElement = frameElement?.querySelector('.tile-chart canvas');
+            const keyElement = frameElement?.querySelector('#ec-chart-key');
+            const box = (element) => element?.getBoundingClientRect() || null;
+            const pane = document.querySelector('.canvas-pane');
+            const field = document.querySelector('#tile-field');
+            return {
+              frame: box(frameElement), host: box(hostElement), plot: box(plotElement),
+              canvas: box(canvasElement), key: box(keyElement),
+              scroll: {
+                pageX: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+                pageY: document.documentElement.scrollHeight - document.documentElement.clientHeight,
+                paneX: pane.scrollWidth - pane.clientWidth,
+                paneY: pane.scrollHeight - pane.clientHeight,
+                fieldX: field.scrollWidth - field.clientWidth,
+                fieldY: field.scrollHeight - field.clientHeight,
+              },
+            };
+          });
+          const boxes = Object.fromEntries(['frame', 'host', 'plot', 'canvas', 'key']
+            .map((name) => [name, rect(measured[name])]));
+          const label = `${family.kind}/${theme}/${viewport.width}x${viewport.height}`;
+          for (const name of ['host', 'plot', 'canvas']) {
+            if (!inside(measured.frame, measured[name])) {
+              failures.push(`${label} ${name} escaped: ${JSON.stringify(boxes)}`);
+            }
+          }
+          if (measured.key && !inside(measured.frame, measured.key)) {
+            failures.push(`${label} key escaped: ${JSON.stringify(boxes)}`);
+          }
+          if (measured.key && measured.plot.bottom > measured.key.top + 1) {
+            failures.push(`${label} plot/key overlap: ${JSON.stringify(boxes)}`);
+          }
+          if (Object.values(measured.scroll).some((value) => value > 1)) {
+            failures.push(`${label} fullscreen introduced scroll: ${JSON.stringify(measured.scroll)}`);
+          }
+          await shot(page, `fullscreen-${family.kind}`,
+            process.env.DIAGNOSE_SCREENSHOT_VARIANT || 'revision', viewport, theme);
+
+          await page.getByRole('button', { name: 'Back to the dock' }).click();
+          await settle(page);
+          const after = await page.evaluate(() => ({
+            focal: document.querySelector('#tile-focal .evidence-tile')?.dataset.chartId || null,
+            dock: document.querySelector('#tile-field')?.dataset.dock || null,
+            pins: [...document.querySelectorAll('.evidence-tile[data-pinned]')]
+              .map((tile) => tile.dataset.chartId),
+            row: [...document.querySelectorAll('#tile-row .evidence-tile')]
+              .map((tile) => ({ id: tile.dataset.chartId,
+                selected: tile.hasAttribute('data-selected') })),
+            resizeObservers: window.__diagnoseResizeProbe.active().length,
+          }));
+          assert.deepEqual(after, before, `${label} Back restores the exact prior canvas state`);
+          assert.equal(await page.evaluate(() => window.__fullscreenDisposeCount), 1,
+            `${label} disposes the replaced fullscreen chart exactly once`);
+          assert.equal(await page.evaluate(() => window.__diagnoseEventComparison
+            === window.__fullscreenPreviousComparison), true,
+          `${label} restores the prior event-comparison global`);
+          const detachedKey = await page.evaluate(() => {
+            const event = new KeyboardEvent('keydown', {
+              key: 'ArrowRight', bubbles: true, cancelable: true,
+            });
+            const notCanceled = window.__fullscreenDetachedHost.dispatchEvent(event);
+            return { notCanceled, defaultPrevented: event.defaultPrevented };
+          });
+          assert.deepEqual(detachedKey, { notCanceled: true, defaultPrevented: false },
+            `${label} releases listeners from the dismissed fullscreen host`);
+        } finally {
+          await page.close();
+        }
+      }
+    }
+  }
+
+  assert.deepEqual(failures, [], failures.join('\n'));
 });
 
 test(`#96 · global Align is permanently absent and alignment belongs to each tile — RETIRED — ${P27_SANCTION}`, async () => {

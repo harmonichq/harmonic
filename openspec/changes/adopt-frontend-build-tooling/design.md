@@ -99,3 +99,73 @@ such entry today.
 - **Evidence owed:** none from this ticket, which changes no behavior. The
   stage-1 build child owes proof that the shipped app is byte-identical and
   that the fast gate still runs with no npm install.
+
+## ADR 240 — Harness stories, and where each story's numbers come from
+
+**Decision.** The stage-1 harness carries six stories: one for each chart kind
+the registry publishes — basal, ISF, carb ratio and event comparison — plus the
+full-width clock strip (#204) and the inspector drill reached from a finding's
+case file (#212). Drawer thumbnails and mini tiles (#209) are not a seventh
+story: all four chart option builders already take a miniature flag, so a
+thumbnail is one of those four chart stories drawn at its miniature size
+setting. Inside a story, mode (where the kind carries more than one),
+coordinate, size and theme are pickers rather than stories of their own, and the
+picker state is carried in the address, so an exact view reopens from a link
+days later. Every story can be fed two ways behind one switch: from manufactured
+data committed to this repository, or from a running `harmonic serve`.
+Manufactured is the default. The manufactured side starts as exactly the payload
+set already committed under `mockups/`; a new manufactured state is added only
+when a review needs one it cannot otherwise show. No chart's form is settled
+until it has been seen on the operator's own history through that switch.
+
+**Why.** The goal that priced these rulings is cheap iteration on a chart with
+an AI agent, not coverage completeness. Manufactured data is the default because
+the operator's real history is never committed: an agent cannot load it and
+cannot reproduce what it is looking at, so a real-history default would make the
+agent's half of the loop impossible rather than merely slower. The flip to real
+history is nonetheless not optional. Measured read-only against a local snapshot
+of the operator's own database, his current history does not exercise every
+state the chart reviews judge, so manufactured data alone cannot show them all;
+which states were empty is deliberately not recorded, because what this ruling
+needs is that the gap was measured rather than assumed, and a later reader owes
+no re-measurement of that database to act on it. Starting the manufactured set
+at what is already committed holds the ongoing maintenance at nothing until a
+review proves it needs more, in the same spirit as ADR 239's pricing for minimum ongoing maintenance.
+
+**Consequences.** Feeding a story from committed data reuses the path the
+browser gates already run on — route stubs over the committed synthetic payloads
+plus the drift-checked mirror of the findings projection
+(`mockups/findings-projection.mirror.mjs`, held identical to the Python by
+`frontend/findings-projection-mirror.test.js`) — rather than standing up a
+second source of truth for what a chart is shown. The harness must never be
+pointed at the committed synthetic database by serving it: that mutates a
+tracked file, leaving WAL sidecars and a derived database beside it. A
+manufactured state added later owes a generator and a `--check` step in the same
+change, per this repository's fixture rule, so a committed payload can never
+silently drift from its producer. #209's review is conducted inside the four
+chart stories at their miniature setting, so closing it does not wait on a story
+of its own. ADR 239 listed running the harness without a local `harmonic serve`
+as unsupported; that bound was written before this ruling and is narrowed here,
+because the manufactured default is precisely such a run and is the case the
+harness is built for. Running the harness against a live vendor pull stays
+unsupported. And because no chart is settled on manufactured numbers, each of the
+chart reviews under #203 ends with a flip onto the running app, not with a
+manufactured screenshot.
+
+**Risk contract.**
+
+- **Must prevent:** any real glucose, insulin, dose, timestamp or credential
+  value reaching a commit, a screenshot, a CI log or a pull request body; a
+  chart settled on manufactured data alone; any harness dependency entering the
+  shipped app or the dependency-free fast gate.
+- **Must recover:** nothing; no unattended or long-running process exists here.
+- **Accepted failure:** the harness breaks because a pinned dependency no longer
+  works with the host Node or browser, or because a committed payload's shape
+  drifted from the app. Found the next time the harness is opened, repaired by
+  hand then.
+- **Unsupported:** running the manufactured side against a live vendor pull;
+  pointing the harness at the committed synthetic database by serving it; any
+  use of the harness as a test or a gate.
+- **Evidence owed:** none from this ticket, which changes no behavior. The
+  stage-1 build child (#241) owes proof that the shipped app is byte-identical
+  and that the fast gate still runs with no npm install.

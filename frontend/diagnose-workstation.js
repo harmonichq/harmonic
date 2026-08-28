@@ -2557,6 +2557,12 @@ function boot(root, data, callbacks, signal) {
     const handle = el('dock-handle');
     const headActs = el('dock-headacts');
     if (!handle || !headActs) return;
+    /* A RESIZE REPAINT MUST NOT ERASE THE EXPLORER'S RETURN FOCUS. Closing the
+       explorer restores focus after its opener has been rebuilt, but the field
+       ResizeObserver can immediately repaint the dock and replace that focused
+       button again. Carry focus across that replacement; once the reader moves
+       elsewhere, there is no focused opener to preserve. */
+    const preserveExplorerFocus = document.activeElement?.id === 'explorer-trigger';
     handle.innerHTML = '';
     headActs.innerHTML = '';
     handle.dataset.state = view.state;
@@ -2597,6 +2603,7 @@ function boot(root, data, callbacks, signal) {
        right. That's fucking stupid." The explorer is the strip's view of
        itself, so it sits with the thing it opens. */
     for (const act of view.acts) handle.append(dockButton(act));
+    if (preserveExplorerFocus) el('explorer-trigger')?.focus();
     /* THE WHOLE LIP IS STILL THE TARGET. The buttons are the explicit, keyboard
        reachable cells; the surface around them carries the toggle so a reader
        who grabs the edge anywhere gets what they reached for. */

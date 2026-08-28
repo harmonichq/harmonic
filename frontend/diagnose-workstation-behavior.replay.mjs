@@ -27,6 +27,7 @@ import { extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { projectFindings, projectIcHistoryEvents } from '../mockups/findings-projection.mirror.mjs';
 import { populateFindingCasePreparation } from './browser-fixture-population.js';
+import { GRID } from './diagnose-workstation-chart.js';
 // ADR 94: a router-owned page path IS the SPA document. Reload stories re-request
 // the address the app canonicalized to (`/diagnose?...`), so the page set has to
 // come from the router that owns it rather than a second list here.
@@ -263,7 +264,16 @@ const plot = (page) => page.evaluate(() => {
   return { x: r.x, y: r.y, w: r.width, h: r.height };
 });
 
-const chartXAt = (box, minute) => box.x + 52 + (minute / 1425) * (box.w - 104);
+const plotGrid = (box) => ({
+  left: box.x + GRID.left,
+  right: box.x + box.w - GRID.right,
+});
+const PAN_EDGE_MARGIN = 8;
+
+const chartXAt = (box, minute) => {
+  const grid = plotGrid(box);
+  return grid.left + (minute / 1425) * (grid.right - grid.left);
+};
 
 const chipIs = (page, want) => page.waitForFunction((expected) => {
   const follow = document.querySelector('#seg-window [data-follow]');
@@ -306,10 +316,12 @@ const drawInside = async (page, start, end) => {
    of. */
 const shoveToBoundary = async (page, start, direction) => {
   const b = await plot(page);
+  const grid = plotGrid(b);
   const y = start.y ?? b.y + b.h * 0.45;
   await page.mouse.move(start.x, y);
   await page.mouse.down();
-  await page.mouse.move(direction === 'right' ? b.x + b.w - 39 : b.x + 39, y,
+  await page.mouse.move(direction === 'right'
+    ? grid.right + PAN_EDGE_MARGIN : grid.left - PAN_EDGE_MARGIN, y,
     { steps: 8 });
   return y;
 };
@@ -329,8 +341,9 @@ export const panThenAim = async (page, start, direction, { past, aim }) => {
   await settle(page, 150);
   const pan = await clockPan(page);
   const x = chartXAt(b, aim - pan);
+  const grid = plotGrid(b);
   // a silent clamp to the plot edge would commit a window nobody asked for
-  if (x < b.x + 52 || x > b.x + b.w - 52) {
+  if (x < grid.left || x > grid.right) {
     throw new Error(`aim ${aim} is off the plot at pan ${pan} — travel further first`);
   }
   await page.mouse.move(x, y);
@@ -2379,17 +2392,11 @@ export const S82 = async (page) => {
   is((await state(page)).chip, 'Window 22:00–02:00', 'S82 draw right commits across midnight');
 };
 
-/* KNOWN PRE-EXISTING FAILURE — S83, S84 and S87, the three LEFTWARD brace
-   drags across midnight. All three time out in `panThenAim`'s wait for the day
-   to travel, and all three fail identically at 8d579a0, the branch tip before
-   the ADR 215 canvas rebuild began — bisected 2026-08-27 with ONLY=S83,S84,S87
-   against a server built from that commit: 0 of 3 passed, same timeout.
-
-   Their RIGHTWARD twins (S82, S86) pass on both trees, so the fault is in the
-   leftward pan and predates every canvas change recorded in ADR 215. They are
-   left failing rather than struck: the contract they assert — a draw, a grip
-   and a slide each cross 00:00 to the left — is live, and striking a live
-   contract to make a suite green is how a real defect becomes invisible. */
+/* S83, S84 and S87 were broken by this branch's plot-inset change, not by the
+   app's leftward pan: the replay hardcoded main's old 52px left inset, so its
+   boundary shove landed inside the branch's 34px plot edge and never armed the
+   pan. Main passes all three. The helpers above now derive both aim and travel
+   geometry from the chart module that owns it. */
 /** S83 · A fresh draw crosses 00:00 to the left. */
 // STORY:finding-evidence-routing:S83
 export const S83 = async (page) => {
@@ -3698,6 +3705,10 @@ export const S113 = retiredStory('S113');
 // STORY:finding-evidence-routing:S114
 export const S114 = async (page) => {
   await openCanvas(page);
+  if (await page.locator('#tile-field').getAttribute('data-dock') === 'hidden') {
+    await page.getByRole('button', { name: 'Bring the charts up', exact: true }).click();
+  }
+  await page.locator('#tile-field[data-dock="docked"]').waitFor();
   const tail = page.locator('#tile-row .evidence-tile[data-tail-head]').first();
   const chartId = await tail.getAttribute('data-chart-id');
   ok(Boolean(chartId), 'S114 the dock publishes a Watching tail chart');
@@ -3722,7 +3733,10 @@ export const S115 = async (page) => {
   const axes = Array.isArray(option.xAxis) ? option.xAxis : [option.xAxis];
   ok(axes.every((axis) => axis.axisLabel?.show === false),
     'S115 the event-comparison mini carries no axis furniture');
-  is(option.tooltip?.show, false, 'S115 the mini tooltip is inert');
+  const tooltips = option.tooltip == null ? []
+    : Array.isArray(option.tooltip) ? option.tooltip : [option.tooltip];
+  ok(tooltips.every((tooltip) => tooltip.show === false),
+    'S115 the mini tooltip is inert');
   const series = Array.isArray(option.series) ? option.series : [];
   ok(series.every((item) => !/(episode|selected)/i.test(item.name || '')),
     'S115 the mini carries neither episode nor selected trace');
@@ -3750,7 +3764,8 @@ export const S117 = async (page) => {
   const eventInk = () => page.locator('#tile-row .evidence-tile[data-chart-id^="finding:"] .tile-chart')
     .first().evaluate((host) => {
       const option = window.echarts.getInstanceByDom(host)?.getOption();
-      return option?.series?.find((series) => series.name === 'Target range')?.lineStyle?.color || null;
+      return option?.series?.find((series) => series.name === 'Target range')
+        ?.markArea?.itemStyle?.color || null;
     });
   const darkInk = await eventInk();
   ok(darkInk, 'S117 the event tile exposes its live dark-surface ink');

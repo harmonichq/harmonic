@@ -21,6 +21,14 @@ served cohort evidence in its on-screen readout and accessible label. The old
 keyboard path was dishonest only while its chart was hidden and unfocusable;
 making the chart visible makes that path real again.
 
+The frozen stories read geometry and state from the surfaces that own them. A
+brace drag derives the plot edges from the chart's exported grid insets, so a
+canvas alignment change cannot leave the replay aiming at a retired plot. A
+story about the Watching tail explicitly brings the dock up before asking for a
+tail cell, because a hidden dock deliberately draws none. Closing the explorer
+returns focus to its opener, and a dock repaint preserves that focus while it
+rebuilds the control.
+
 ## ADR 215 — Fixed canvas, membership pinning, Explore retired
 
 Ruled by the operator, 2026-08-26, during the #215 polish slices, reversing

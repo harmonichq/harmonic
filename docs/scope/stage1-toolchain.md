@@ -26,6 +26,12 @@ ruling below is priced against that, not against a contributor-facing project.
 - **The harness lives in a new top-level directory, not under `frontend/`.**
   It stays outside the materialised public tree, so no publish gate inspects
   it. → ADR
+- **The required Node version is 22, and it is documented, not enforced.** It
+  matches the `node-version` already pinned in three CI jobs, so the harness and
+  CI never disagree about the runtime. → ADR
+- **The harness directory is named `harness/`.** Settled during review, after a
+  cold reader found that "a new top-level directory" left the build child free to
+  choose. → ADR
 - **Corrected premise, verified live this session:** `harmonichq/harmonic` is
   itself a public repository, and no workflow publishes the materialised
   public tree. CI builds it into `$RUNNER_TEMP`, runs the link and
@@ -65,6 +71,16 @@ None. The frontier is empty.
 - Package manager is npm: CI already installs Playwright with npm and pins Node 22.
 - The harness proxies `/api` and `/assets` to a running `harmonic serve`, per #238.
 - The harness imports shipped registry modules live, never copies (ADR 213).
+
+## Plan review
+
+One panel, reviewer gpt-5.6-terra (Codex headroom 80%, known; routine stakes route
+per the reviewer matrix). Round 1 returned two blocking objections, both tagged
+`authoring` and none `injected`: the ruling named neither the Node version nor the
+directory, and the diff clause contradicted itself about whether the scope ledger is
+in the pull request. Both were fixed and the same reviewer re-checked the deltas
+clean, which ends an ordinary-stakes review. The round ledger is session scratch, not
+a repository artifact.
 
 ## Spawned tasks
 

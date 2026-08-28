@@ -199,6 +199,12 @@ export async function openApp(browser, options = {}) {
   /* Promote the cell, then expand from the stage — a cell's only verb is
      "become the spotlight" (ADR 215 amendment). */
   await dockMini.click();
+  /* Opening the explorer can leave the dock raised over the spotlight. Settle
+     it through the reader's own dock control before asking the stage to act. */
+  if (await page.locator('#tile-field[data-raised]').count()) {
+    await page.locator('#dock-handle button[aria-label="Put the charts away"]').click();
+    await page.waitForSelector('#tile-field[data-dock="hidden"]', { timeout: 15000 });
+  }
   await page.locator('#tile-focal .tile-fullscreen').click();
   await page.waitForSelector('#tile-focal #ec-chart', { state: 'attached', timeout: 15000 });
   await settle(page, 700);
@@ -478,7 +484,9 @@ export const S8 = async (open, browser) => use(open, browser, {}, async (page) =
     await chart.press('ArrowRight');
   }
   const cursorLabel = '+0.25 h';
-  const readout = page.locator('#canvas-head #ec-readout');
+  const readout = page.locator(
+    `#tile-focal .evidence-tile[data-chart-id="${findingId}"] #ec-canvas-head #ec-readout`,
+  );
   ok(await readout.isVisible(), 'the keyboard cursor did not reveal its on-screen readout');
   const shown = await readout.evaluate((element) => ({
     time: element.querySelector('.rd-time')?.textContent ?? null,

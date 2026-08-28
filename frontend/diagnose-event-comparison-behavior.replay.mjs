@@ -1,6 +1,6 @@
 // Executable half of the #677 behaviour ledger (archived; the Verify
 // workstation replay is the same pattern).
-// Twelve lock stories, run through the app opener — the mock this ledger once
+// Fourteen frozen stories, run through the app opener — the mock this ledger once
 // ran against is archived (#722); the app is the sole contract artifact.
 // S6/S7/S11 carry the #694 amendment. S12 (#711) rewrites glucose readings
 // after the fixture's server-owned support facts were computed, proving the
@@ -655,7 +655,34 @@ export const S13 = async (open, browser) => use(open, browser,
       'the fullscreen comparison does not own exactly one tile-local chart header');
   });
 
-export const STORIES = { S1, S2, S3, S4, S5, S6, S7, S8, S9, S10, S11, S12, S13 };
+/* S14 · The workstation's shared fullscreen frame bounds the event plot and
+   cohort key at the synthetic wide/short red viewport. */
+export const S14 = async (open, browser) => use(open, browser,
+  { finding: 'finding:carb_undercount', viewport: { width: 2084, height: 450 } },
+  async (page) => {
+    const measured = await page.locator('#tile-focal .evidence-tile').evaluate((frameElement) => {
+      const frame = frameElement.getBoundingClientRect();
+      const plot = frameElement.querySelector('#ec-chart').getBoundingClientRect();
+      const canvas = frameElement.querySelector('#ec-chart canvas').getBoundingClientRect();
+      const key = frameElement.querySelector('#ec-chart-key').getBoundingClientRect();
+      const rect = (box) => ({ left: box.left, top: box.top, right: box.right,
+        bottom: box.bottom, width: box.width, height: box.height });
+      return { frame: rect(frame), plot: rect(plot), canvas: rect(canvas), key: rect(key),
+        pageScroll: [document.documentElement.scrollWidth - document.documentElement.clientWidth,
+          document.documentElement.scrollHeight - document.documentElement.clientHeight] };
+    });
+    const inside = (box) => box.left >= measured.frame.left - 1
+      && box.top >= measured.frame.top - 1 && box.right <= measured.frame.right + 1
+      && box.bottom <= measured.frame.bottom + 1;
+    ok(inside(measured.plot) && inside(measured.canvas) && inside(measured.key),
+      `the Carb undercount plot, canvas and key escape the shared frame: ${JSON.stringify(measured)}`);
+    ok(measured.plot.bottom <= measured.key.top + 1,
+      `the Carb undercount plot overlaps its cohort key: ${JSON.stringify(measured)}`);
+    ok(measured.pageScroll.every((overflow) => overflow <= 1),
+      `fullscreen introduces page scroll: ${JSON.stringify(measured.pageScroll)}`);
+  });
+
+export const STORIES = { S1, S2, S3, S4, S5, S6, S7, S8, S9, S10, S11, S12, S13, S14 };
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const target = process.env.TARGET;

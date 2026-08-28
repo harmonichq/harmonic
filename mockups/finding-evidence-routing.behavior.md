@@ -11,7 +11,7 @@ S41-S71.
 The app-only replay is
 `frontend/diagnose-workstation-behavior.replay.mjs`.
 
-**138 issued executable IDs:** S01–S118, C41–C57, and D1–D3
+**139 issued executable IDs:** S01–S119, C41–C57, and D1–D3
 **Active executable IDs:** all issued
 **Retired executable IDs:** none
 
@@ -2743,3 +2743,15 @@ remains in Over-treated low's served comparison cohort and ten-Low denominator.
 The browser does not promote that occurrence into the matched cohort or recreate
 fired evidence from its glucose shape. This extends S118's server-owned queue-copy
 contract without changing its existing assertions. Evidence: replay S118.
+## Revision amendment — 2026-08-28 (shared fullscreen containment)
+
+**S119.** Every registered evidence chart uses the workstation's one fullscreen
+frame. At 2084×450 and 2084×742, in Light and Dark, the chart host, axis-bearing
+canvas, plot, and any cohort key or legend remain inside all four frame edges;
+plot and key do not overlap; fullscreen introduces no page or pane scroll; resize
+uses the frame's current box; and Back restores the exact prior Spotlight, dock,
+pins, selection, and arrangement. Evidence: replay S119 for the shared ordinary
+path, event-comparison replay S14 for the Carb undercount plot/key contract, and
+`frontend/diagnose-workstation.browser.test.mjs` for the complete four-family,
+two-theme, two-viewport matrix. Synthetic before/after renders are stored under
+`openspec/changes/fullscreen-chart-containment/evidence/`.

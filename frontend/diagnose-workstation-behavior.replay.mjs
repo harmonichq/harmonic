@@ -459,7 +459,7 @@ export async function openApp(browser, {
   findingsDelayMs = 0, findingsDelays = {}, findingsFailures = {}, findingsResponseBarrier = null,
   appSource = 'server',
   history = false, selectedFindingsResponses = [], historyResponses = [], stageProbe = false,
-  caseScenario = null, evidenceScenario = null,
+  caseScenario = null, evidenceScenario = null, resizeProbe = false,
   frontendRoot = join(ROOT, 'frontend'), fixtureBaseUrl = null,
 } = {}) {
   const payloadPath = process.env.PAYLOAD || fail('PAYLOAD is required for TARGET=app');
@@ -575,6 +575,41 @@ export async function openApp(browser, {
     if (/^Failed to load resource: the server responded with a status of \d+/.test(message.text())) return;
     problems.push(`console(app ${want}): ${message.text()}`);
   });
+  if (resizeProbe) {
+    await page.addInitScript(() => {
+      const NativeResizeObserver = window.ResizeObserver;
+      let nextId = 0;
+      const active = new Set();
+      const targets = new Map();
+      window.ResizeObserver = class TrackedResizeObserver extends NativeResizeObserver {
+        constructor(callback) {
+          super(callback);
+          this.__trackedId = ++nextId;
+          active.add(this.__trackedId);
+          targets.set(this.__trackedId, new Set());
+        }
+        observe(target, options) {
+          targets.get(this.__trackedId)?.add(target);
+          return super.observe(target, options);
+        }
+        unobserve(target) {
+          targets.get(this.__trackedId)?.delete(target);
+          return super.unobserve(target);
+        }
+        disconnect() {
+          active.delete(this.__trackedId);
+          targets.delete(this.__trackedId);
+          return super.disconnect();
+        }
+      };
+      window.__diagnoseResizeProbe = {
+        active: () => [...active],
+        created: () => nextId,
+        observing: (target) => [...targets.values()]
+          .filter((observed) => observed.has(target)).length,
+      };
+    });
+  }
   await page.addInitScript(([t, observeStage]) => {
     localStorage.setItem('ciq_token', 'behaviour-replay');
     localStorage.setItem('tab', 'diagnose');
@@ -3813,6 +3848,43 @@ export const S118 = async (page) => {
     'S118 the served calm Low remains in the ten-Low verdict accounting');
 };
 
+// STORY:finding-evidence-routing:S119
+export const S119 = async (page) => {
+  await openCanvas(page);
+  const basal = page.locator('#tile-row .evidence-tile[data-chart-id^="basal:"]').first();
+  ok(await basal.count(), 'S119 the generated canvas exposes one live basal chart');
+  await basal.click();
+  const before = await canvasSnapshot(page);
+  await page.locator('#tile-focal .tile-fullscreen').click();
+  await page.waitForSelector('#tile-field[data-fullscreen-tile]');
+  await page.setViewportSize({ width: 2084, height: 450 });
+  await settle(page, 500);
+  const measured = await page.evaluate(() => {
+    const frame = document.querySelector('#tile-focal .evidence-tile').getBoundingClientRect();
+    const host = document.querySelector('#tile-focal .tile-chart').getBoundingClientRect();
+    const canvas = document.querySelector('#tile-focal .tile-chart canvas').getBoundingClientRect();
+    return {
+      frame: { left: frame.left, top: frame.top, right: frame.right, bottom: frame.bottom },
+      host: { left: host.left, top: host.top, right: host.right, bottom: host.bottom },
+      canvas: { left: canvas.left, top: canvas.top, right: canvas.right, bottom: canvas.bottom },
+      pageScroll: [document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        document.documentElement.scrollHeight - document.documentElement.clientHeight],
+    };
+  });
+  const inside = (box) => box.left >= measured.frame.left - 1
+    && box.top >= measured.frame.top - 1 && box.right <= measured.frame.right + 1
+    && box.bottom <= measured.frame.bottom + 1;
+  ok(inside(measured.host) && inside(measured.canvas),
+    `S119 fullscreen host and canvas stay inside the shared frame: ${JSON.stringify(measured)}`);
+  ok(measured.pageScroll.every((overflow) => overflow <= 1),
+    `S119 fullscreen introduces no page scroll: ${JSON.stringify(measured.pageScroll)}`);
+  await page.setViewportSize({ width: 2084, height: 742 });
+  await settle(page, 500);
+  await page.getByRole('button', { name: 'Back to the dock' }).click();
+  is(await canvasSnapshot(page), before,
+    'S119 resize and Back restore the exact prior Spotlight and dock state');
+};
+
 export const STORIES = [
   ['S01', S01, 'drawn'], ['S02', S02, 'typical'], ['S03', S03, 'drawn'],
   ['S04', S04, 'drawn'], ['S05', S05, 'drawn'], ['S06', S06, 'typical'],
@@ -3975,6 +4047,7 @@ export const STORIES = [
   ['S114', S114, 'typical'],
   ['S115', S115, 'typical'], ['S116', S116, 'typical'],
   ['S117', S117, 'typical'], ['S118', S118, 'typical'],
+  ['S119', S119, 'typical', { viewport: { width: 2084, height: 742 } }],
   ['C41', C41, 'typical', { caseScenario: {
     preparation: generatedFindingPose('finding:meal_over_delivery'),
   } }], ['C42', C42, 'typical'],

@@ -1310,7 +1310,7 @@ test('a rounded false ISF verdict keeps evidence and empty Recommended geometry 
       }
       assert.equal(observed.length, VIEWPORTS.length * 2);
       for (const reading of observed) {
-        assert.deepEqual(reading.root, { state: 'assert', tier: 'next_in_line', nums: 0 },
+        assert.deepEqual(reading.root, { state: 'assert', tier: 'noted', nums: 0 },
           `${reading.viewport.width}x${reading.viewport.height} ${reading.theme}: queue register survives without an action number`);
         assert.equal(reading.recommended, '--', 'Recommended keeps its reserved row with no numeric value');
         assert.equal(reading.estimate, '31.40', 'the estimate remains visible');
@@ -1351,7 +1351,7 @@ test('a recommendation-bearing legacy ISF row with a missing verdict fails close
         'direction-only weaken retains its direction language');
       assert.match(text, /Corrections keep overshooting into lows/,
         'the analyzer refusal evidence remains visible');
-      assert.match(text, /recent lows make a new number unsafe to suggest/i);
+      assert.match(text, /No new number is available, so there is nothing to stage\./);
       await page.close();
       assert.deepEqual(openerProblems().slice(before), [],
         'no opener problems while exercising a missing legacy verdict');

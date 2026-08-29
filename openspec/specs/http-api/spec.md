@@ -23,6 +23,10 @@ that reads a filename from the request path (the knowledge-base articles) MUST
 restrict the slug to a fixed lowercase-and-hyphen charset so a request cannot
 escape its directory.
 
+#### Scenario: The service is local, self-hosted, and serves the app and the API on one port
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies
 ### Requirement: Data endpoints are gated by one optional static bearer token; the app shell is not
 
 There is no login screen and no session. The app shell and its assets load
@@ -33,6 +37,10 @@ on a loopback bind, and a real exposure the moment the port is reachable from
 elsewhere, so a deployment that publishes the port MUST set one. The token is a
 single shared secret for a single user; there are no accounts, roles, or scopes.
 
+#### Scenario: Data endpoints are gated by one optional static bearer token; the app shell is not
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies
 ### Requirement: The heavy read endpoints answer from one per-process result cache
 
 Recomputing the analysis from the store costs tens of seconds, so the expensive
@@ -54,7 +62,13 @@ it ran still returns its own freshly computed value to its caller but MUST NOT b
 stored — discard-on-store means "do not poison the cache," never "drop the
 response."
 
+#### Scenario: The heavy read endpoints answer from one per-process result cache
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies
 ### Requirement: Historical findings and event evidence share one restart-safe generation
+
+The system SHALL satisfy the following:
 
 `GET /api/diagnose/findings` and
 `GET /api/diagnose/carb-ratio-history/events` are projections of one cached historical
@@ -79,7 +93,14 @@ checked before any of those validation or data responses.
 Neither endpoint changes the Finding case-file contract, and neither projection may
 infer schedule membership, lifecycle, support, or actionability. Selecting a run
 changes only the echoed selection; it does not filter `run_ids` or `series`.
+
+#### Scenario: Historical findings and event evidence share one restart-safe generation
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies
 ### Requirement: Finding case files are bound to one snapshot preparation.
+
+The system SHALL satisfy the following:
 
 `GET /api/diagnose/finding-case-file-preparation` builds the active Findings queue and
 its case-file population inside one SQLite read snapshot. It returns an opaque,
@@ -105,7 +126,14 @@ the fixed `[-60, +300]` minute window, and publishes missed, announced, and
 not-comparable counts, including an explicit zero state. This comparison account
 is independent of the Finding's five-way High verdict denominator and does not
 replace the High roster or attribution account.
+
+#### Scenario: Finding case files are bound to one snapshot preparation.
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies
 ### Requirement: Every write path MUST invalidate the cache
+
+The system SHALL satisfy the following:
 
 Invalidation is coarse and global: a single `bump` clears the whole map and advances
 a monotonic version. There is no per-endpoint dependency tracking, because
@@ -218,6 +246,8 @@ loop.
 
 ### Requirement: Invalidation is process-local, and an out-of-process write does not reach a running server
 
+The system SHALL satisfy the following:
+
 The cache lives in the serving process's memory. This is a deliberate consequence of
 the single-user, single-process design — it needs no external cache infrastructure
 and is trivially consistent for the one process that owns both the API and the fetch
@@ -227,6 +257,10 @@ cache. The running server keeps serving its cached results until its own next wr
 or its next scheduled fetch. Anything that must be reflected immediately goes through
 the API rather than a second process.
 
+#### Scenario: Invalidation is process-local, and an out-of-process write does not reach a running server
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies
 ### Requirement: Configuration resolves in the app factory, so every entry path gets the same defaults
 
 The database path, the bearer token, the path to the credential-encryption key, and
@@ -253,3 +287,8 @@ the command-line front end before anything else runs, and it never overwrites a
 variable the environment already set. A caller that constructs the app directly does
 not get that step and MUST supply configuration through the environment or explicit
 arguments.
+
+#### Scenario: Configuration resolves in the app factory, so every entry path gets the same defaults
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies

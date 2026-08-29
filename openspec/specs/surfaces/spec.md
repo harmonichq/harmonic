@@ -8,6 +8,8 @@ Harmonic is a single-page app with no build step and no login — the HTML shell
 
 ### Requirement: The app is single-page, no-build, no-login HTML and Vue
 
+The system SHALL satisfy the following:
+
 The frontend is a single `frontend/index.html` file containing inlined Vue 3 and ECharts, loaded without a build step or login screen. The SPA shell loads on every origin, then makes bearer-token-gated API calls to load data. The three CDN dependencies (Vue esm-browser, ECharts) are vendored in browser tests; live requests use the unpkg / jsdelivr CDN.
 
 Canonical browser addressing is `/<page>?<existing-page-state>`. The route query
@@ -18,11 +20,23 @@ grammar is unsupported, so a saved hash link opens the default page rather than
 the page it names. Programmatic interfaces live below `/api` and local assets
 below `/assets`.
 
+#### Scenario: The app is single-page, no-build, no-login HTML and Vue
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies
 ### Requirement: Diagnose surface asks "what tuning moves are available now?"
+
+The system SHALL satisfy the following:
 
 Diagnose reads the current analysis result and presents a server-ranked queue of tuning findings (Audit). Each finding carries the evidence and severity behind it. The queue register is server-owned and direction-derived, so a direction-only ISF finding may remain visible in the asserted register even though it cannot stage. A setting finding receives a queue rank only when the change it represents can stage: an unstageable direction-only ISF warning follows every priced finding through the existing unranked path, carries no rank numeral, and does not move into Watching. Its underlying analysis Priority remains available outside queue placement. Automatic chart seating follows the server's ranked `assert` and `finding` order. A star retains a live chart without changing that order; if a retained chart leaves rank, it follows every ranked chart and remains ahead of the Watching divider until the reader stops keeping it. Explicit focus may also bring a Watching chart into the field, independently of retention. A staging control and actionable Recommended number appear only when the exact backend `asserts_move` verdict is true; a false or missing verdict fails closed. Findings in the held or still-collecting registers sit collapsed beneath the ranked queue behind a `Watching · N reads` toggle, expandable on demand. Explore mode is retired. Sanction: ConnorGriffin · 2026-08-26 · "Diagnose does NOT need to host an explore mode. we're building a better version of it right now."
 
+#### Scenario: Diagnose surface asks "what tuning moves are available now?"
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies
 ### Requirement: Diagnose presents retired I:C regimes as non-actionable Watching evidence
+
+The system SHALL satisfy the following:
 
 An active retired I:C regime appears after held and blind rows in the server's
 Watching order. Its queue row identifies a past setting and never shows today's
@@ -46,7 +60,13 @@ generation-mismatched, or superseded requests preserve the last coherent
 inspector/canvas pair; after one automatic coordinated retry, the surface marks it
 stale and offers one explicit Retry instead of clearing or mixing evidence.
 
+#### Scenario: Diagnose presents retired I:C regimes as non-actionable Watching evidence
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies
 ### Requirement: Diagnose renders Finding case files without browser-owned policy.
+
+The system SHALL satisfy the following:
 
 Diagnose loads the server-owned case-file preparation and renders its exact rows.
 Opening any visible behavioral Finding, changing its clock window or alignment,
@@ -73,22 +93,57 @@ cohort is an explicit empty state, not a fallback to High verdict membership;
 announced rows remain selectable through their server-owned Occurrence identity.
 The five-way High verdict band and its denominator remain a separate account.
 
+#### Scenario: Diagnose renders Finding case files without browser-owned policy.
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies
 ### Requirement: Plan surface asks "what will I program into my pump?"
+
+The system SHALL satisfy the following:
 
 The Plan surface holds a unified ≤16-segment pump-ready schedule built from the user's currently-active profile plus any accepted Diagnose recommendations and hand-edits. It shows the active profile as a reference, lists the accepted changes with provenance, and renders the editable deliverable. Plan reconciliation compares the deliverable to the latest detected pump profile to confirm it matches or flag keying errors. Users cannot stage changes directly on Plan; they stage from Diagnose and edit the deliverable here.
 
+#### Scenario: Plan surface asks "what will I program into my pump?"
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies
 ### Requirement: Day surface asks "what happened on this day?"
+
+The system SHALL satisfy the following:
 
 The Day surface is a one-day forensics view: a severity-encoded calendar navigator (ADR 0031) at the top, a sticky glucose chart on the left showing the day's CGM and insulin events, and a chronological Episode Log on the right where behavioral evidence (meals, corrections, lows, rescue carbs) folds in as tier-2 inline detail. Both components are self-contained; the app supplies the selected date. The Day surface is read-only and discovery-focused; it does not stage changes or execute commands.
 
+#### Scenario: Day surface asks "what happened on this day?"
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies
 ### Requirement: Verify surface asks "are my changes working?"
+
+The system SHALL satisfy the following:
 
 Verify tracks active Trials (detected setting changes) and pinned Focuses (behavioral changes the user is watching). For each, it shows before/after metrics anchored to the change date, rendering the specific metric most relevant to that change (e.g., overnight lows for a basal raise, post-meal nadirs for an I:C adjustment). Verify also shows outcome trends — glycemic metrics and clean rates — across an observation window. All data on Verify is read-only and retrospective; no staging or configuration happens here.
 
+#### Scenario: Verify surface asks "are my changes working?"
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies
 ### Requirement: Surfaces render server-owned projections; they do not re-derive analysis verdicts
+
+The system SHALL satisfy the following:
 
 Each surface renders data calculated by the backend and carried in `/api/analyze` or specialized endpoints (`/api/day-navigator`, `/api/verify/trials`, etc.). A surface never recalculates the engine's own verdicts — asserts_move, priority, recurrence, harm gates, silence reasons, localized outcome triage — even if tempted to re-check them for UI purposes. The backend is the single source of truth for all analysis. This boundary has been repeatedly load-bearing: frontend re-derivations of backend gates have diverged and silently invalidated the app's behavior.
 
+#### Scenario: Surfaces render server-owned projections; they do not re-derive analysis verdicts
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies
 ### Requirement: All four surfaces are available from the cockpit shell tab bar
 
+The system SHALL satisfy the following:
+
 The app shell presents a workflow sequence — Diagnose → Plan → Verify — as numbered steps in the header, plus a separate Day button anchored to the right. The drawer offers the same four buttons plus Settings. All surfaces update a single `tab` state; only the active tab is visible (others are `v-show="false"` and remain mounted).
+
+#### Scenario: All four surfaces are available from the cockpit shell tab bar
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies

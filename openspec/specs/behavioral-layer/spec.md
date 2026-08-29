@@ -8,21 +8,47 @@ The behavioral layer detects *actionable patterns* — habits and mistakes the u
 
 ### Requirement: Patterns are detected by instance classifiers that judge one behavior at a time.
 
+The system SHALL satisfy the following:
+
 Each behavioral classifier (late bolus, missed meal, carb undercount, etc.) is a pure function that inspects *one concrete occurrence* — "is this meal bolus late?" — and returns a judgment, a one-line reason, and an honesty tier. The scenario engine layers these instance verdicts into episodes, attributes each episode to its earliest actionable driver, and groups episodes by lever into patterns. A single dinner that trips multiple classifiers into three separate instance matches becomes one attributed episode, not three: co-occurring behaviors are narrated as consequences of the earliest cause, never as separate advice.
 
+#### Scenario: Patterns are detected by instance classifiers that judge one behavior at a time.
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies
 ### Requirement: A pattern asserts only when enough evidence backs it.
+
+The system SHALL satisfy the following:
 
 Before a detector can assert a behavioral lever in an episode, three gates must open: the behavior must produce a matched verdict (not just a near-miss), the verdict must rest on sufficiently firm evidence (observed, not inferred from absence), and the downstream lever must clear its own eligibility bar. Eight silence reasons name why an instance did *not* assert — insufficient data, no trigger, under threshold, an upstream cause already explains it, a high baseline, an earlier bolus owns the rise, an announced meal owns a low's rebound, or the outcome never arrived in time. The silence reason is machine-readable; the human detail still carries the numbers. When an episode finds no assertable lever, it generates no pattern contribution and produces a silence reason instead.
 
+#### Scenario: A pattern asserts only when enough evidence backs it.
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies
 ### Requirement: Behavioral and settings levers rank on a single 0–100 Priority axis.
+
+The system SHALL satisfy the following:
 
 Both flavors compose Priority identically as `100 · √(impact · recurrence)`, a geometric mean where one weak factor drags the score low. Behavioral impact is the hypo-weighted effect size of the bad outcome (0–1 range); settings impact is insulin-unit currency — basal/ISF/I:C changes priced through a shared soft-saturation curve so a 0.3 U/day move reads the same impact whether it moves basal or ISF. Recurrence is a Wilson lower bound that fuses "how often" and "how sure" into one unified confidence-adjusted rate, measured over each lever's own exposure denominator (meals for meal levers, lows for low levers, correction pairs for stacking, etc.). Because behavioral and settings impact live on the same axis without a hard ceiling, a strong recurring habit can outrank a thin setting change.
 
+#### Scenario: Behavioral and settings levers rank on a single 0–100 Priority axis.
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies
 ### Requirement: Exposure and Cause are different lists; the layer names both.
+
+The system SHALL satisfy the following:
 
 Exposure is the outcome family an episode lands in — "all meals," "all lows," "all correction pairs," "all highs" — paired to each lever by its nature (a meal lever like carb undercount exposes against meals; a low lever like over-treated low exposes against lows). A Pattern groups episodes by their attributed Lever and scores against that lever's recurrence population, which the evidence-population policy below owns and which is the same as its Exposure family for every lever but one. Cause is an internal construct for attribution — the early driver logic that picks the one lever each episode will carry — but a Cause is never surfaced as something a user changes. The recommendation always flows from the attributed Lever, never from the internal cause reasoning.
 
+#### Scenario: Exposure and Cause are different lists; the layer names both.
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies
 ### Requirement: One policy owns each lever's complete evidence populations.
+
+The system SHALL satisfy the following:
 
 A single backend policy declares, per behavioral lever, the population its
 recurrence is denominated on and the noun that names it, the population its event
@@ -51,7 +77,13 @@ insulin-free rows included.
 The served case file publishes the recurrence population's noun and the
 cross-population flag, so no consumer infers either from a lever's name.
 
+#### Scenario: One policy owns each lever's complete evidence populations.
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies
 ### Requirement: One canonical opportunity population owns every Finding case file.
+
+The system SHALL satisfy the following:
 
 The layer builds identity-bearing opportunities for the four declared Exposure
 families: meals, sub-70 runs, adjacent correction pairs, and >250 runs. Exposure
@@ -90,6 +122,17 @@ judgment, while a meal after the nadir retains its existing role as the guarded
 scan boundary. This ownership rule does not suppress meal-owned levers or
 independently evidenced correction levers.
 
+#### Scenario: One canonical opportunity population owns every Finding case file.
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies
 ### Requirement: The layer refuses to assert on insufficient evidence and surfaces why.
 
+The system SHALL satisfy the following:
+
 No judgment fires without a verdict grounded in data — either observed (a hard fact from the feed, like a bolus of 10 U) or inferred (shape-derived and hedged, like "likely rescue carbs, but we didn't see them"). A classifier never returns "this might maybe be late" — it returns matched=false with the specific silence reason (insufficient data / no trigger / under threshold / upstream cause / prior high baseline / owned by prior bolus / owned by announced meal / horizon expired). When enough clean windows exist to measure a pattern's rate via Wilson bounds, the bounds are wide enough to name the uncertainty honestly; when data is too thin, the pattern collapses behind an expander so no single rate gets fabricated from noise.
+
+#### Scenario: The layer refuses to assert on insufficient evidence and surfaces why.
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies

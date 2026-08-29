@@ -25,7 +25,7 @@ async function drawWorkstation(host, state, story) {
   const [analyze, scenarios, evidence, exposures, preparation, outcomes] = await Promise.all([
     request('/api/analyze?window=30&pool=1'),
     request('/api/scenarios?window=30'),
-    request('/api/explore/time'),
+    request('/api/explore/time-of-day'),
     request('/api/explore/exposures'),
     request('/api/diagnose/finding-case-file-preparation'),
     request('/api/outcomes?window=30'),

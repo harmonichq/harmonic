@@ -695,6 +695,26 @@ class DoseRatioBaselineTest(unittest.TestCase):
             # And the re-recorded set now passes a normal run.
             self.assertEqual(0, self.run_scan(root, config)[0])
 
+    def test_accept_refuses_to_rewrite_while_another_rule_fails(self):
+        dates = "\n".join(f"# 2026-06-{day:02d}" for day in range(1, 13))
+        with tempfile.TemporaryDirectory() as tmp:
+            root, config = self.build(
+                tmp,
+                {
+                    "a.md": f"dose {self.DOSE}\n",
+                    "b.md": f"dose {self.DOSE}\n",
+                    "dated.py": dates,
+                },
+                [("a.md", 1, self.DOSE)],
+            )
+            before = config.read_text()
+            code, out = self.run_scan(root, config, "--accept-dose-ratio-baseline")
+
+            self.assertEqual(1, code)
+            self.assertIn("rule3-date-count", out)
+            self.assertIn("refusing to accept", out)
+            self.assertEqual(before, config.read_text())
+
     def test_a_hand_edited_baseline_fails_the_config_closed(self):
         """The digest is what makes editing the generated block detectable."""
         with tempfile.TemporaryDirectory() as tmp:

@@ -132,9 +132,11 @@ authorized-synthetic mockups/diagnose-workstation.synthetic/settings-audit.captu
 # a dosing application legitimately says "U" and "g/U" — unit names, display
 # thresholds, and pump-programmable rounding precisions that are identical for
 # any pump and identify nobody. Every finding below was individually read and
-# judged on 2026-08-18, each one either INVENTED (a value the code itself
-# constructs) or GENERIC (a unit, a threshold, a documented precision). None
-# is a claim about the data subject. They are acknowledged rather than pinned,
+# judged when its baseline was accepted (the original set on 2026-08-18 and
+# 11 generated findings-projection additions on 2026-08-28), each one either
+# INVENTED (a value the code itself constructs) or GENERIC (a unit, a threshold,
+# a documented precision). None is a claim about the data subject. They are
+# acknowledged rather than pinned,
 # because plan §0.5.5.3 forbids pinning a prose hit and that refusal stays
 # enforced. The digest exists so that judgement cannot silently rot: the scan
 # fails on ANY change to this set — an addition, a removal, or a one-for-one

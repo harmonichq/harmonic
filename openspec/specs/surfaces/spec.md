@@ -24,6 +24,7 @@ below `/assets`.
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
 ### Requirement: Diagnose surface asks "what tuning moves are available now?"
 
 The system SHALL satisfy the following:
@@ -34,6 +35,7 @@ Diagnose reads the current analysis result and presents a server-ranked queue of
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
 ### Requirement: Diagnose presents retired I:C regimes as non-actionable Watching evidence
 
 The system SHALL satisfy the following:
@@ -64,6 +66,7 @@ stale and offers one explicit Retry instead of clearing or mixing evidence.
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
 ### Requirement: Diagnose renders Finding case files without browser-owned policy.
 
 The system SHALL satisfy the following:
@@ -97,6 +100,7 @@ The five-way High verdict band and its denominator remain a separate account.
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
 ### Requirement: Plan surface asks "what will I program into my pump?"
 
 The system SHALL satisfy the following:
@@ -107,6 +111,7 @@ The Plan surface holds a unified ≤16-segment pump-ready schedule built from th
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
 ### Requirement: Day surface asks "what happened on this day?"
 
 The system SHALL satisfy the following:
@@ -117,6 +122,7 @@ The Day surface is a one-day forensics view: a severity-encoded calendar navigat
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
 ### Requirement: Verify surface asks "are my changes working?"
 
 The system SHALL satisfy the following:
@@ -127,6 +133,7 @@ Verify tracks active Trials (detected setting changes) and pinned Focuses (behav
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
 ### Requirement: Surfaces render server-owned projections; they do not re-derive analysis verdicts
 
 The system SHALL satisfy the following:
@@ -137,6 +144,7 @@ Each surface renders data calculated by the backend and carried in `/api/analyze
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
 ### Requirement: All four surfaces are available from the cockpit shell tab bar
 
 The system SHALL satisfy the following:
@@ -147,3 +155,26 @@ The app shell presents a workflow sequence — Diagnose → Plan → Verify — 
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
+### Requirement: Diagnose separates clock-window selection from basal verdict state and keeps chart evidence legible
+
+The Diagnose glucose-by-time-of-day chart SHALL confine clock-window gate paint
+and hit testing to the glucose plot. Its clock-aligned basal verdict strip SHALL
+retain each backend verdict's paint independently of window selection. Held,
+insufficient-evidence, and no-data states SHALL remain distinguishable through
+theme-owned paint plus a non-color structural tell in Light and Dark. The plotted
+glucose evidence and chart furniture SHALL remain readable with and without an
+active clock window after every overlay is composited.
+
+#### Scenario: Moving a clock window preserves basal verdict rendering and chart legibility
+
+- **GIVEN** a populated Diagnose glucose-by-time-of-day chart in Light or Dark
+- **AND** the basal strip contains held, insufficient-evidence, and no-data slots
+- **WHEN** the wearer chooses, draws, resizes, slides, or wraps a clock window
+- **THEN** the gate paint and hit zones remain inside the glucose plot
+- **AND** each basal slot keeps the same verdict paint and opacity it had before
+  the window moved
+- **AND** the three passive basal states remain distinguishable by paint and
+  structure
+- **AND** the glucose bands, median, target treatment, axes, labels, endpoint
+  values, basal strip, and legend remain readable in their final composited state

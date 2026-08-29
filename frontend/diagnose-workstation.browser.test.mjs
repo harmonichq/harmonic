@@ -415,9 +415,11 @@ test('#232 · every registered chart family stays inside one fullscreen frame', 
               frame: box(frameElement), host: box(hostElement), plot: box(plotElement),
               canvas: box(canvasElement), key: box(keyElement),
               /* #72's ruling, measured where it kept breaking: the fullscreen row
-                 names the chart, and no family may draw a second header under it. */
+                 names the chart, and no family may RENDER a second header under it.
+                 The tile's hidden structural nameplate is not a second title. */
               headers: document.querySelectorAll('header.canvas-head').length,
-              framedHeaders: frameElement.querySelectorAll('header').length,
+              framedHeaders: [...frameElement.querySelectorAll('header')]
+                .filter((header) => header.checkVisibility()).length,
               fullTitle: document.querySelector('#full-title')?.textContent || '',
               scroll: {
                 pageX: document.documentElement.scrollWidth - document.documentElement.clientWidth,

@@ -304,35 +304,25 @@ const chartColors = (root) => {
      faithful translation is to read each workstation token from .dw, the
      element that declares it, rather than the app document root. */
   const css = (n) => getComputedStyle(root).getPropertyValue(n).trim();
-  /* THEME DEVIATION (#736) — the mix ratios cannot be one number.
-     The 10–90 envelope is ceiling-bound in DARK: at 13% of the measured signal
-     it composites to rgb(36,39,30) on the dark field and measures 1.22:1, and
-     no token can lift it, because the ceiling is the ratio and not the source —
-     even a pure-white source at 13% over that field stops at 1.52:1
-     (the Harmonic theme lock's "owed obligations"). Light does not have that
-     ceiling: a subtractive tint on a light ground reads at a contrast an
-     additive one does not, so its two bands can spend more chroma on the
-     measured shape without competing with the median.
-     So the ratio is theme-specific. It is read off `color-scheme`, which both
-     themes declare, rather than off a class name — this builder samples the
-     live stylesheet for every other value it returns and must not start
-     restating theme facts from memory (R3, and the wrong ink in #644). The
-     25–75 band stays at 38% in dark so 26/38 keeps a clear step (1.59:1 vs
-     2.09:1); light can open the same visual step further. */
+  /* THEME DEVIATION (#736): additive tint on the dark field and subtractive
+     tint on the light field need different envelope mixes. The explicit
+     percentile rails carry the graphical-object boundary; these fills retain
+     the two nested measured regions without competing with those rails or the
+     median. Read the live color-scheme rather than restating a theme class. */
   const dark = getComputedStyle(root).colorScheme === 'dark';
-  const bandOuterMix = dark ? '26%' : '18%';
-  const bandInnerMix = dark ? '38%' : '46%';
-  const bandEdgeMix = dark ? '55%' : '68%';
+  const bandOuterMix = dark ? '26%' : '14%';
+  const bandInnerMix = dark ? '30%' : '34%';
   return {
     ...c,
     surface2: c['surface-2'],
     rail: css('--ck-rail'),      // the panel ground under the plot
+    axisText: c.secondary || c.text,
 
     grid: `color-mix(in srgb, ${c.line} 80%, transparent)`,
     gridStrong: c.line,
     bandOuter: `color-mix(in srgb, ${c.primary} ${bandOuterMix}, transparent)`,
     bandInner: `color-mix(in srgb, ${c.primary} ${bandInnerMix}, transparent)`,
-    bandEdge: `color-mix(in srgb, ${c.primary} ${bandEdgeMix}, transparent)`,
+    bandEdge: c.text,
     median: c['primary-600'] || c.primary,
     /* The ink for text sitting ON the median fill — the axis-riding value tag
        (term 25). It was read as `colors.onAccent` and never defined anywhere:
@@ -343,30 +333,24 @@ const chartColors = (root) => {
     meal: css('--ck-meal'),
     mealEdge: c.surface,
     targetFill: `color-mix(in srgb, ${c.ok} 8%, transparent)`,
-    targetEdge: `color-mix(in srgb, ${c.ok} 55%, transparent)`,
-    targetText: `color-mix(in srgb, ${c.ok} 85%, ${c.text})`,
+    targetEdge: c.ok,
+    targetText: c.text,
     /* Slice 4 — the drawn window is the BRIGHT region; the remainder of the
        band takes this ground-colour scrim (the panel ground at part strength),
        so the data outside the gates washes toward the panel rather than being
        tinted a second hue. Theme-aware through the rail token itself. */
-    /* Theme-split like the band mixes above, and for the same subtractive/
-       additive reason: in dark a 60% wash of the near-black rail visibly pulls
-       the bands under; in light the same 60% of a near-white rail over
-       already-pale bands moved them a few RGB points and the remainder read
-       undimmed (operator, on the built strip). Light spends more scrim. */
     /* A PLAIN rgba(), NEVER color-mix(): ECharts' markArea fill goes through
        zrender's own color parser, which silently drops a color-mix() string —
        the scrim was in the option and painted nothing, proven live by swapping
        in an rgba() and watching the same markArea appear. The band fills only
        get away with color-mix because their path hands the string straight to
-       canvas. The rail token is a hex, so the mix is done here in numbers.
-       Theme-split like the band mixes above: light spends more scrim because a
-       near-white wash over already-pale bands is subtractively weak. */
+       canvas. The rail token is a hex, so the mix is done here in numbers. Its
+       restrained alpha preserves the 3:1 mark boundaries after compositing. */
     windowDim: (() => {
       const hex = css('--ck-rail').replace('#', '');
       const wide = hex.length === 3 ? [...hex].map((h) => h + h).join('') : hex;
       const [r, g, b] = [0, 2, 4].map((i) => parseInt(wide.slice(i, i + 2), 16));
-      return `rgba(${r},${g},${b},${dark ? 0.45 : 0.62})`;
+      return `rgba(${r},${g},${b},0.10)`;
     })(),
     windowEdge: `color-mix(in srgb, ${c.primary} 72%, transparent)`,
   };
@@ -3459,11 +3443,8 @@ function boot(root, data, callbacks, signal) {
       This is the only navigation that clears one — drilling never does. */
   function releaseWindow() { drawn = null; explicitPreset = false; }
 
-  /**
-   * Position the brace and dim the lane. The edges span the whole canvas body,
-   * so they project down through the basal lane on the plot's own spine; the
-   * lane carries no drag listener of its own, so it stays click-only.
-   */
+  /** Position the plot-only clock brace. The basal lane carries no drag listener
+   * and no window-selection paint, so it stays click-only and verdict-authored. */
   function paintBrace() {
     const brace = el('brace');
     const chartEl = el('chart');
@@ -3471,26 +3452,22 @@ function boot(root, data, callbacks, signal) {
     let cells = [...laneEl.querySelectorAll('button:not([data-clock-copy])')];
     if (!shownRange) {
       brace.hidden = true;
-      for (const b of cells) b.removeAttribute('data-outside');
       return;
     }
-    // a block selection marks its segment WITHOUT a resizable brace (term 32);
-    // the dimming below still runs, so the register stays readable
+    // a block selection marks its segment WITHOUT a resizable brace (term 32)
     brace.hidden = braceless;
     const [from, to] = dragDisplayWindow || shownRange;
     const xa = xAtMinute(chartEl, from, clockPanOffset);
     const xb = xAtMinute(chartEl, to, clockPanOffset);
-    /* PLOT_TOP/PLOT_BOTTOM track the chart module's grid[0] insets. The edges
-       run from the plot's top edge down to the bottom of the basal lane — the
-       "project through the lane" spine, clipped at both ends. */
-    const laneBottom = laneEl.offsetTop + laneEl.offsetHeight;
+    /* PLOT_TOP/PLOT_BOTTOM track the chart module's grid[0] insets. The clock
+       gates stop at the glucose x-axis, above the separate basal verdict lane. */
     const plotTop = PLOT_TOP;
     const plotBottom = chartEl.clientHeight - PLOT_BOTTOM;
     for (const [id, x] of [['brace-a', xa], ['brace-b', xb]]) {
       const edge = el(id);
       edge.style.left = `${x}px`;
       edge.style.top = `${plotTop}px`;
-      edge.style.height = `${Math.max(0, laneBottom - plotTop)}px`;
+      edge.style.height = `${Math.max(0, plotBottom - plotTop)}px`;
     }
     // grips sit BELOW the window label's line, so they can never cover its text
     const gripTop = Math.min(plotTop + 22, Math.max(plotTop, plotBottom - 22));
@@ -3522,16 +3499,9 @@ function boot(root, data, callbacks, signal) {
     laneEl.style.setProperty('--clock-pan-px', `${clockPanOffset / (95 * BIN_MINUTES)
       * plotBox(chartEl).width}px`);
 
-    const spans = dragDisplayWindow ? [dragDisplayWindow] : windowSpans(shownRange);
     const allCells = panning ? [...laneEl.querySelectorAll('button')] : cells;
-    allCells.forEach((button, index) => {
-      const sourceIndex = index % lane.cells.length;
-      const cell = lane.cells[sourceIndex];
+    allCells.forEach((button) => {
       const day = Number(button.dataset.clockCopy || 0);
-      const start = cell.startMin + day * 1440;
-      const end = cell.endMin + day * 1440;
-      button.dataset.outside = String(!spans.some(([spanStart, spanEnd]) =>
-        end > spanStart && start < spanEnd));
       button.toggleAttribute('data-neighbour', day !== 0);
     });
   }
@@ -3568,6 +3538,10 @@ function boot(root, data, callbacks, signal) {
        repainted here (only paintChart), so the drag costs one canvas redraw and
        no DOM rebuild. */
     const localX = (ev) => ev.clientX - chartEl.getBoundingClientRect().left;
+    const inPlotY = (ev) => {
+      const y = ev.clientY - chartEl.getBoundingClientRect().top;
+      return y >= PLOT_TOP && y <= chartEl.clientHeight - PLOT_BOTTOM;
+    };
     const minuteAt = (x) => minuteAtX(chartEl, x, clockPanOffset);
     const duration = ([start, end]) => end > start ? end - start : end + 1440 - start;
 
@@ -3737,6 +3711,7 @@ function boot(root, data, callbacks, signal) {
       if (kind === 'draw') {
         const box = plotBox(chartEl);
         if (x < box.left || x > box.right) return;   // margins are not the plot
+        if (!inPlotY(ev)) return;                    // the x-axis is the clock gate floor
         const edge = edgeAt(x);
         if (edge) return begin(edge, ev);            // an edge outranks draw-new
         if (overInterior(x)) return begin('slide', ev);
@@ -3754,6 +3729,7 @@ function boot(root, data, callbacks, signal) {
     // the only hover feedback: the cursor says which gesture this press will be
     chartEl.addEventListener('mousemove', (ev) => {
       if (mode) return;
+      if (!inPlotY(ev)) { chartEl.style.cursor = 'crosshair'; return; }
       const x = ev.clientX - chartEl.getBoundingClientRect().left;
       chartEl.style.cursor = edgeAt(x) ? 'col-resize'
         : overInterior(x) ? 'grab' : 'crosshair';

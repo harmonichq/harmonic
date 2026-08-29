@@ -810,6 +810,233 @@ test('populated Diagnose renders readable theme-specific ink and chart marks', a
   }
 });
 
+test('the populated 2084×742 glucose canvas keeps its composited window treatment and passive basal states legible', async () => {
+  const frontendRoot = process.env.DIAGNOSE_FRONTEND_ROOT || join(ROOT, 'frontend');
+  const evidenceKind = process.env.DIAGNOSE_EVIDENCE_KIND || 'revision';
+  const captureOnly = process.env.DIAGNOSE_CAPTURE_ONLY === '1';
+  const withPassiveStates = (analyze) => {
+    const next = structuredClone(analyze);
+    next.basal[2] = { ...next.basal[2], safety_status: 'no data', asserts_move: false,
+      recommended: null };
+    return next;
+  };
+  const audit = (page) => page.evaluate(() => {
+    const chartNode = document.getElementById('chart');
+    const chart = window.echarts.getInstanceByDom(chartNode);
+    const option = chart.getOption();
+    const canvas = chart.getZr().painter.getRenderedCanvas({ pixelRatio: 1,
+      backgroundColor: getComputedStyle(document.querySelector('.canvas-pane')).backgroundColor });
+    const context = canvas.getContext('2d', { willReadFrequently: true });
+    const pixel = (x, y) => [...context.getImageData(
+      Math.max(0, Math.min(canvas.width - 1, Math.round(x))),
+      Math.max(0, Math.min(canvas.height - 1, Math.round(y))), 1, 1).data.slice(0, 3)];
+    const luminance = (rgb) => rgb.map((channel) => {
+      const unit = channel / 255;
+      return unit <= .04045 ? unit / 12.92 : ((unit + .055) / 1.055) ** 2.4;
+    }).reduce((total, channel, index) => total + channel * [.2126, .7152, .0722][index], 0);
+    const ratio = (a, b) => {
+      const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+      return (hi + .05) / (lo + .05);
+    };
+    const display = chart.getZr().storage.getDisplayList();
+    const absoluteRect = (item) => {
+      const rect = item.getBoundingRect();
+      const transform = item.transform || [1, 0, 0, 1, 0, 0];
+      return { x: rect.x + transform[4], y: rect.y + transform[5],
+        width: rect.width, height: rect.height };
+    };
+    const textRatio = (pattern) => {
+      const item = display.find((candidate) => candidate.type === 'tspan'
+        && pattern.test(String(candidate.style?.text || '')));
+      if (!item) return 0;
+      const rect = absoluteRect(item);
+      const colors = new Map();
+      for (let y = Math.floor(rect.y); y <= Math.ceil(rect.y + rect.height); y += 1) {
+        for (let x = Math.floor(rect.x); x <= Math.ceil(rect.x + rect.width); x += 1) {
+          const value = pixel(x, y); const key = value.join(',');
+          colors.set(key, (colors.get(key) || 0) + 1);
+        }
+      }
+      const ground = [...colors].sort((a, b) => b[1] - a[1])[0][0].split(',').map(Number);
+      return Math.max(...[...colors].map(([key]) => ratio(key.split(',').map(Number), ground)));
+    };
+    const endpointRatios = display.filter((item) => item.type === 'tspan'
+      && /^\d+$/.test(String(item.style?.text || '')) && absoluteRect(item).x > canvas.width - 45)
+      .map((item) => textRatio(new RegExp(`^${item.style.text}$`)));
+    const boundaryRatio = (name, index) => {
+      const series = option.series.find((candidate) => candidate.name === name);
+      const value = series?.data?.[index];
+      if (!Number.isFinite(value)) return 0;
+      const [x, y] = chart.convertToPixel({ xAxisIndex: 0, yAxisIndex: 0 },
+        [option.xAxis[0].data[index], value]);
+      let best = 0;
+      for (let dx = -5; dx <= 5; dx += 1) {
+        for (let dy = -2; dy <= 2; dy += 1) {
+          const mark = pixel(x + dx, y + dy);
+          best = Math.max(best, Math.min(ratio(mark, pixel(x + dx, y - 3)),
+            ratio(mark, pixel(x + dx, y + 3))));
+        }
+      }
+      return best;
+    };
+    const resolveColor = (node, value) => {
+      const probe = document.createElement('i');
+      probe.style.backgroundColor = value;
+      node.append(probe);
+      const result = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      return result;
+    };
+    const cssRgb = (value) => {
+      const numbers = value.match(/[\d.]+/g).map(Number);
+      return value.startsWith('color(srgb') ? numbers.slice(0, 3).map((n) => Math.round(n * 255))
+        : numbers.slice(0, 3);
+    };
+    const root = document.querySelector('.dw');
+    const track = cssRgb(resolveColor(root, 'var(--ck-inset)'));
+    const passive = ['hold', 'insufficient', 'nodata'].map((verdict) => {
+      const lane = document.querySelector(`#lane .lane-cell[data-verdict="${verdict}"]`);
+      const key = document.querySelector(`#lane-key .lane-cell[data-verdict="${verdict}"]`);
+      if (!lane || !key) return { verdict, missing: true };
+      const laneStyle = getComputedStyle(lane); const keyStyle = getComputedStyle(key);
+      const markValue = verdict === 'insufficient'
+          ? 'color-mix(in srgb, var(--ck-insuff) 88%, var(--mk-surface))'
+          : 'var(--ck-hold)';
+      const mark = verdict === 'hold' ? cssRgb(laneStyle.backgroundColor)
+        : cssRgb(resolveColor(root, markValue));
+      return { verdict, missing: false, markRatio: ratio(mark, track), mark, track,
+        laneImage: laneStyle.backgroundImage, keyImage: keyStyle.backgroundImage,
+        laneColor: laneStyle.backgroundColor, keyColor: keyStyle.backgroundColor };
+    });
+    const styleRatio = (selector, foreground) => {
+      const node = document.querySelector(selector); const style = getComputedStyle(node);
+      let ground = node;
+      while (ground && getComputedStyle(ground).backgroundColor === 'rgba(0, 0, 0, 0)') {
+        ground = ground.parentElement;
+      }
+      return ratio(cssRgb(style[foreground]), cssRgb(getComputedStyle(ground).backgroundColor));
+    };
+    const compositePixels = (indices) => indices.flatMap((index) => {
+      const label = option.xAxis[0].data[index];
+      return ['__p25', 'Median', '__p75'].flatMap((name) => {
+        const value = option.series.find((series) => series.name === name)?.data?.[index];
+        if (!Number.isFinite(value)) return [];
+        const [x, y] = chart.convertToPixel({ xAxisIndex: 0, yAxisIndex: 0 }, [label, value]);
+        const samples = [];
+        for (let dx = -3; dx <= 3; dx += 1) {
+          for (let dy = -3; dy <= 3; dy += 1) samples.push(pixel(x + dx, y + dy));
+        }
+        return samples;
+      });
+    });
+    return {
+      width: chartNode.clientWidth,
+      dim: option.series.find((series) => series.name === '__dim').data.length,
+      text: {
+        axis: Math.min(...[/^mg\/dL$/, /^(60|120|180|220)$/, /^00:00$/].map(textRatio)),
+        target: textRatio(/^TARGET /), endpoints: endpointRatios.length ? Math.min(...endpointRatios) : null,
+        legend: Math.min(textRatio(/^10–90th$/), textRatio(/^25–75th$/), textRatio(/^Median$/)),
+        title: styleRatio('.canvas-pane > header h2', 'color'),
+        pool: styleRatio('#canvas-pool', 'color'),
+        basalLegend: styleRatio('#lane-key', 'color'),
+      },
+      graphics: Object.fromEntries(['__p10', '__p25', '__p75', '__p90', 'Median']
+        .flatMap((name) => [4, 16].map((index) => [`${name}:${index}`, boundaryRatio(name, index)]))),
+      targetRails: [4, 16].flatMap((index) => [70, 180].map((value) => {
+        const [x, y] = chart.convertToPixel({ xAxisIndex: 0, yAxisIndex: 0 },
+          [option.xAxis[0].data[index], value]);
+        let best = 0;
+        for (let dx = -5; dx <= 5; dx += 1) {
+          for (let dy = -2; dy <= 2; dy += 1) {
+            const mark = pixel(x + dx, y + dy);
+            best = Math.max(best, Math.min(ratio(mark, pixel(x + dx, y - 3)),
+              ratio(mark, pixel(x + dx, y + 3))));
+          }
+        }
+        return best;
+      })),
+      gate: ratio(cssRgb(getComputedStyle(document.getElementById('grip-a')).borderTopColor),
+        cssRgb(getComputedStyle(document.getElementById('grip-a')).backgroundColor)), passive,
+      /* Morning is 06:00–12:00. Sample the same rendered marks well inside
+         and outside those gates so the assertion below measures the final
+         canvas composite, independent of the scrim's source color. */
+      composite: {
+        outside: compositePixels([4, 12, 16, 64, 76, 88]),
+        inside: compositePixels([28, 36, 44]),
+      },
+      scope: document.getElementById('canvas-scope').textContent,
+      verdicts: [...document.querySelectorAll('#lane .lane-cell')].map((cell) => cell.dataset.verdict),
+    };
+  });
+  for (const theme of ['light', 'dark']) {
+    const browser = await runner.browser();
+    const page = await openApp(browser, {
+      state: 'typical', theme, viewport: { width: 2084, height: 742 }, appSource: 'fixture',
+      frontendRoot, analysisInputs: withPassiveStates,
+    });
+    try {
+      await page.getByRole('button', { name: '24 h', exact: true }).click();
+      const before = await audit(page);
+      await shot(page, 'glucose-chart-legibility', `${evidenceKind}-no-window`, { width: 2084, height: 742 }, theme);
+      await page.getByRole('button', { name: 'Morning', exact: true }).click();
+      const after = await audit(page);
+      await shot(page, 'glucose-chart-legibility', `${evidenceKind}-morning`, { width: 2084, height: 742 }, theme);
+      if (captureOnly) continue;
+      assert.ok(before.width > 1000, `${theme} audit uses the locked wide chart geometry`);
+      assert.equal(before.dim, 0, `${theme} 24 h scope has no selection scrim`);
+      assert.equal(after.dim, 2, `${theme} non-default Morning scope preserves the two scrim regions`);
+      const pixelShift = (first, second) => {
+        assert.equal(second.length, first.length, 'composite pixel samples keep a stable shape');
+        return first.reduce((total, rgb, index) => total
+          + rgb.reduce((sum, channel, channelIndex) =>
+            sum + Math.abs(channel - second[index][channelIndex]), 0), 0) / (first.length * 3);
+      };
+      const outsideShift = pixelShift(before.composite.outside, after.composite.outside);
+      const insideShift = pixelShift(before.composite.inside, after.composite.inside);
+      assert.ok(outsideShift >= 1 && outsideShift >= insideShift + 0.75,
+        `${theme} Morning visibly composites the outside (${outsideShift.toFixed(2)} mean RGB shift) `
+        + `beyond the inside redraw baseline (${insideShift.toFixed(2)})`);
+      for (const [state, result] of [['without a window', before], ['with Morning selected', after]]) {
+        for (const [subject, measured] of Object.entries(result.text)) {
+          if (measured == null) continue;
+          assert.ok(measured >= 4.5,
+            `${theme} ${state} ${subject} text clears 4.5:1 (${measured.toFixed(2)}:1)`);
+        }
+        for (const [subject, measured] of Object.entries(result.graphics)) assert.ok(measured >= 3,
+          `${theme} ${state} ${subject} boundary clears 3:1 on both sides (${measured.toFixed(2)}:1)`);
+        for (const measured of result.targetRails) assert.ok(measured >= 3,
+          `${theme} ${state} target rail clears 3:1 on both sides (${measured.toFixed(2)}:1)`);
+        assert.ok(result.gate >= 3, `${theme} ${state} active gate clears 3:1 (${result.gate.toFixed(2)}:1)`);
+        assert.deepEqual(result.passive.map((entry) => entry.verdict), ['hold', 'insufficient', 'nodata']);
+        for (const entry of result.passive) {
+          assert.equal(entry.missing, false, `${theme} fixture renders ${entry.verdict}`);
+          assert.ok(entry.markRatio >= 3,
+            `${theme} ${entry.verdict} structural paint clears its track (${entry.markRatio.toFixed(2)}:1; ${entry.mark} on ${entry.track})`);
+          const structure = (image) => image.includes('repeating') ? 'stripe'
+            : image.includes('radial') ? 'dot' : 'solid';
+          assert.equal(structure(entry.laneImage), structure(entry.keyImage),
+            `${theme} ${entry.verdict} key repeats the lane structure`);
+        }
+        const structures = result.passive.map((entry) => entry.laneImage.includes('repeating') ? 'stripe'
+          : entry.laneImage.includes('radial') ? 'dot' : 'solid');
+        assert.equal(new Set(structures).size, 3,
+          `${theme} passive lane structures remain mutually distinct`);
+      }
+      if (theme === 'light') {
+        const scope = after.scope; const verdicts = after.verdicts;
+        await page.getByRole('button', { name: 'Theme', exact: true }).click();
+        await page.getByRole('menuitemradio', { name: 'Dark', exact: true }).click();
+        await settle(page, 500);
+        const repainted = await audit(page);
+        assert.equal(repainted.scope, scope, 'theme toggle preserves the non-default window scope');
+        assert.deepEqual(repainted.verdicts, verdicts, 'theme toggle preserves all basal verdicts');
+        assert.notEqual(repainted.passive[0].laneColor, after.passive[0].laneColor,
+          'theme toggle repaints the basal lane');
+      }
+    } finally { await page.close(); }
+  }
+});
+
 /* The dock is now the canvas filmstrip, and the Charts lip is its control —
    neither inherits the retired explorer drawer's trench. Both carry compact
    text, so measure their rendered chrome in each theme rather than a token
@@ -912,7 +1139,7 @@ test('locked panel geometry matches across both required viewports and light/dar
     } finally { /* browser stays open; closed once in after() */ }
   });
 
-test('#130 · a wrapped draw leaves two endpoint edges and dims only the outside basal slots', async () => {
+test('#130 · a wrapped draw leaves two endpoint edges without adding basal selection paint', async () => {
   const browser = await runner.browser();
   const before = openerProblems().length;
   const viewport = VIEWPORTS[0];
@@ -921,6 +1148,23 @@ test('#130 · a wrapped draw leaves two endpoint edges and dims only the outside
     try {
       await page.getByRole('button', { name: '24 h', exact: true }).click();
       await settle(page, 450);
+      const snapshotBasalPaint = () => page.locator('#lane button:not([data-clock-copy])')
+        .evaluateAll((cells) => cells.map((cell) => {
+          const style = getComputedStyle(cell);
+          const border = (side) => [style[`border${side}Width`], style[`border${side}Style`],
+            style[`border${side}Color`]];
+          return {
+            label: cell.getAttribute('aria-label'), verdict: cell.dataset.verdict,
+            opacity: style.opacity,
+            background: [style.backgroundColor, style.backgroundImage, style.backgroundSize,
+              style.backgroundPosition, style.backgroundRepeat],
+            boxShadow: style.boxShadow,
+            outline: [style.outlineWidth, style.outlineStyle, style.outlineColor, style.outlineOffset],
+            border: ['Top', 'Right', 'Bottom', 'Left'].map(border),
+          };
+        }));
+      const basalPaintBefore = await snapshotBasalPaint();
+      assert.equal(basalPaintBefore.length, 48, 'the paint snapshot covers every basal slot');
       const chart = await page.locator('#chart').boundingBox();
       const xAt = (minute) => chart.x + 34 + (minute / 1425) * (chart.width - 86);
       const y = chart.y + chart.height * 0.45;
@@ -937,10 +1181,6 @@ test('#130 · a wrapped draw leaves two endpoint edges and dims only the outside
         edges: [...document.querySelectorAll('#brace .edge')].map((edge) => parseFloat(edge.style.left)),
         grips: [...document.querySelectorAll('#brace .grip')].map((grip) => parseFloat(grip.style.left)),
         braceParts: document.getElementById('brace').children.length,
-        inside: [...document.querySelectorAll('#lane button:not([data-clock-copy])')]
-          .filter((button) => button.dataset.outside === 'false').length,
-        outside: [...document.querySelectorAll('#lane button:not([data-clock-copy])')]
-          .filter((button) => button.dataset.outside === 'true').length,
         copies: document.querySelectorAll('#lane [data-clock-copy]').length,
         axisPoints: window.echarts.getInstanceByDom(document.getElementById('chart'))
           .getOption().xAxis[0].data.length,
@@ -963,8 +1203,8 @@ test('#130 · a wrapped draw leaves two endpoint edges and dims only the outside
         'the start grip sits on the 22:00 endpoint');
       assert.ok(Math.abs(wrapped.grips[1] - (xAt(120) - chart.x)) <= 1,
         'the end grip sits on the 02:00 endpoint');
-      assert.deepEqual([wrapped.inside, wrapped.outside], [8, 40],
-        'the two wrapped stretches keep eight half-hour slots in scope');
+      assert.deepEqual(await snapshotBasalPaint(), basalPaintBefore,
+        'the wrapped scope leaves every basal verdict cell at its original computed paint');
       assert.equal(wrapped.copies, 0, 'neighbour lane copies leave with the pan');
       assert.equal(wrapped.axisPoints, 96, 'the settled axis returns to the canonical day');
 

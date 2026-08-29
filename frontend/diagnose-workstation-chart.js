@@ -549,7 +549,7 @@ function bandPair(name, base, span, stack, color, z) {
 const edgeLine = (name, data, color, z) => ({
   name, type: 'line', z, data: data.map(gap), symbol: 'none', silent: true,
   smooth: 0.25, animation: false,
-  lineStyle: { color, width: 1, type: [3, 3], opacity: 0.9 },
+  lineStyle: { color, width: 1.5, type: 'solid', opacity: 1 },
 });
 
 const DISPLAY_AXIS = Array.from({ length: BIN_COUNT * 3 }, (_, index) =>
@@ -616,6 +616,7 @@ function displaySeries(series) {
  */
 export function renderCanvas(el, echarts, opts) {
   const { envelope, colors } = opts;
+  const axisText = colors.axisText || colors.muted;
   const range = opts.range;
   if (!Array.isArray(range) || range.length !== 2
       || !range.every(Number.isFinite) || range[0] >= range[1]) {
@@ -791,7 +792,7 @@ export function renderCanvas(el, echarts, opts) {
     legend: {
       show: true, top: 0, right: GRID.right, itemWidth: 12, itemHeight: 8, itemGap: 16,
       selectedMode: false, silent: true,
-      textStyle: { color: colors.muted, fontSize: 10 },
+      textStyle: { color: axisText, fontSize: 10 },
       data: [
         { name: '10–90th', icon: 'rect', itemStyle: { color: recede(colors.bandOuter, 45), borderWidth: 0 } },
         { name: '25–75th', icon: 'rect', itemStyle: { color: recede(colors.bandInner, 45), borderWidth: 0 } },
@@ -826,7 +827,7 @@ export function renderCanvas(el, echarts, opts) {
           lineStyle: { color: colors.grid },
         },
         axisLabel: {
-          color: colors.muted, fontSize: 10, margin: 8,
+          color: axisText, fontSize: 10, margin: 8,
           interval: hourInterval, formatter: axisFormatter, rich: axisRich,
         },
       },
@@ -835,11 +836,11 @@ export function renderCanvas(el, echarts, opts) {
       {
         type: 'value', min: range[0], max: range[1], interval: 60,
         axisLine: { show: false }, axisTick: { show: false },
-        axisLabel: { color: colors.muted, fontSize: 10, formatter: '{value}' },
+        axisLabel: { color: axisText, fontSize: 10, formatter: '{value}' },
         splitLine: { lineStyle: { color: colors.grid } },
         /* the caption sits ON the column's spine (the plot's left edge), so it
            stops being a fourth competing left edge in the top 60px */
-        name: 'mg/dL', nameTextStyle: { color: colors.muted, fontSize: 10, align: 'left' },
+        name: 'mg/dL', nameTextStyle: { color: axisText, fontSize: 10, align: 'left' },
         nameGap: 6, nameLocation: 'end',
       },
     ],
@@ -935,9 +936,13 @@ export function renderCanvas(el, echarts, opts) {
       },
       ...bandPair('10–90th', envelope.p10, outer, 'outer', recede(colors.bandOuter, 45), 2),
       ...bandPair('25–75th', envelope.p25, inner, 'inner', recede(colors.bandInner, 45), 4),
-      // hairline edges so the two bands read as two bands, not one gradient
+      // Hairline edges make all four percentile boundaries survive the window
+      // scrim as measured objects, rather than asking two translucent fills to
+      // imply the outer pair.
+      edgeLine('__p10', envelope.p10, recede(colors.bandEdge, 40), 6),
       edgeLine('__p25', envelope.p25, recede(colors.bandEdge, 40), 6),
       edgeLine('__p75', envelope.p75, recede(colors.bandEdge, 40), 6),
+      edgeLine('__p90', envelope.p90, recede(colors.bandEdge, 40), 6),
       {
         name: 'Median', type: 'line', z: 8, data: envelope.p50.map(gap),
         symbol: 'none', smooth: 0.25, animation: false,

@@ -1082,6 +1082,50 @@ test('the chart dock and its lip clear the text contrast floor in both themes', 
   }
 });
 
+test('Diagnose keeps the Dark material roles ordered and target bounds as rails', async () => {
+  const browser = await runner.browser();
+  for (const theme of ['dark', 'light']) {
+    const page = await openApp(browser, { state: 'typical', theme, appSource: 'fixture' });
+    try {
+      await page.getByRole('button', { name: '24 h', exact: true }).click();
+      await page.locator('#tile-focal .evidence-tile').waitFor({ state: 'visible' });
+      const roles = await page.locator('.dw').evaluate((root) => {
+        const bg = (selector) => getComputedStyle(root.querySelector(selector)).backgroundColor;
+        const token = (value) => {
+          const probe = document.createElement('i');
+          probe.style.background = value;
+          root.append(probe);
+          const result = getComputedStyle(probe).backgroundColor;
+          probe.remove();
+          return result;
+        };
+        const option = window.echarts.getInstanceByDom(document.querySelector('#chart')).getOption();
+        const targetSeries = option.series.find((series) => (series.markLine?.data || [])
+          .some((line) => Number.isFinite(line.yAxis)));
+        return {
+          canvas: bg('.canvas-pane'), inspector: bg('.inspector'), header: bg('.canvas-pane > header'),
+          rail: bg('.instruments'), field: bg('#tile-field'), focal: bg('#tile-focal .evidence-tile'),
+          wkField: token('var(--wk-field)'), wkRail: token('var(--wk-surface-rail)'),
+          wkWell: token('var(--wk-surface-sunken)'),
+          targetRails: (targetSeries?.markLine?.data || []).map((line) => line.yAxis).sort((a, b) => a - b),
+        };
+      });
+      if (theme === 'dark') {
+        assert.equal(roles.canvas, roles.wkField, 'Dark canvas uses the field role');
+        assert.equal(roles.inspector, roles.wkField, 'Dark Findings shares the canvas field');
+        assert.equal(roles.field, roles.wkField, 'Dark chart field keeps the field role');
+        assert.equal(roles.header, roles.wkRail, 'Dark pane header uses the rail role');
+        assert.equal(roles.rail, roles.wkRail, 'Dark controls use the shared rail role');
+        assert.equal(roles.focal, roles.wkWell, 'Dark focal vessel uses the chart-well role');
+      } else {
+        assert.notEqual(roles.canvas, 'rgba(0, 0, 0, 0)', 'Light canvas remains painted');
+        assert.notEqual(roles.focal, 'rgba(0, 0, 0, 0)', 'Light focal vessel remains painted');
+      }
+      assert.deepEqual(roles.targetRails, [70, 180], `${theme} glucose target is two boundary rails`);
+    } finally { await page.close(); }
+  }
+});
+
 /* LOCK:diagnose-workstation:1 — no page scroll at both required viewports (a
    narrower slice of term 1 than story S22 already owns: S22 covers it for
    the full "every state" contract; this only opens 'typical'). The

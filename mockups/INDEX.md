@@ -35,6 +35,16 @@ findings rank. A retained unranked chart sits after ranked charts and before the
 existing Watching divider; paired synthetic Light/Dark evidence is stored under
 `openspec/changes/star-means-keep/evidence/`, and ADR 226 is normative.
 
+Issue [#255](https://github.com/harmonichq/harmonic/issues/255) revises the shipped
+Dark Diagnose material hierarchy. Its behavior ledger and replay remain unchanged
+at `mockups/finding-evidence-routing.behavior.md` and
+`frontend/diagnose-workstation-behavior.replay.mjs`; synthetic visual evidence is
+`mockups/diagnose-evidence-canvas.exploration/`, whose generated `index.html` binds
+its Dark source extract to `frontend/index.html` and `frontend/theme.css`. Public
+Dark/Light contract coverage lives in `frontend/diagnose-workstation.browser.test.mjs`,
+`frontend/diagnose-canvas-composition.browser.test.mjs`, and
+`frontend/cockpit-shell.browser.test.mjs`.
+
 **Explore** is deliberately absent from this ledger. It is the arbitrary-slicing
 ambition, it has no surface yet, and the #31 exploration excludes it by name; it
 earns a row when it becomes a real job and gets its own round.

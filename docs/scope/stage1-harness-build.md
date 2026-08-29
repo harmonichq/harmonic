@@ -85,3 +85,31 @@ four chart stories) are all settled above.
 
 - ADR 241 is written by this ticket's own build, in
   `openspec/changes/adopt-frontend-build-tooling/design.md`. No separate issue.
+
+## Plan review
+
+One panel, ordinary stakes, cold reviewer Terra (`gpt-5.6-terra`, read-only, medium),
+selected by the routine `plan-review` row after a Codex headroom probe returned 57%
+(known). The reviewer spot-checked the spike's evidence block by running it; it matched
+byte for byte.
+
+- Round 1 — 3 blockers, all `authoring`:
+  1. Manufactured mode had no producer for `frontend/index.html` or the shipped
+     stylesheets. `/assets/*` was forwarded in live mode only, and `/index.html` at the
+     harness's Vite root is the harness's own page, so the token lift could not run and
+     the render acceptance criterion was unreachable.
+  2. The Done-when document clause contradicted step 6's required edit to the epic's
+     `design.md`.
+  3. The cited public-allowlist evidence was false: the order said 825 excluded; the
+     measured baseline is 824 and three staged harness files give 827.
+- Round 2 — 2 blockers, both `injected` by round 1's fixes:
+  4. The new `/assets/<name>` route took a browser-controlled path with no containment
+     rule, and overclaimed equivalence with the app, which `ciq_autotune/api.py:459-461`
+     states uses explicit per-file routes deliberately so they can never shadow an API
+     route.
+  5. The replacement allowlist evidence recorded a `git add` of files that no longer
+     exist, so it was not regenerable from the checkout.
+- Round 3 — clean. Countersigned.
+
+Injected blockers did not climb, and the third round returned empty, so the order was
+patched rather than rewritten clean.

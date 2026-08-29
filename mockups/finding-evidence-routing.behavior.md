@@ -203,7 +203,7 @@ run against a **real browser engine**, never source:
   against the built app through the same opener (`openApp`) and against the mock
   over a local static server at `127.0.0.1:8947`. They cover what the 28 stories
   never asserted: cursor feedback, handle geometry and titles, suppression
-  states, lane dimming, the crumb elision ladder, the lens keyboard cursor, and
+  states, lane verdict paint, the crumb elision ladder, the lens keyboard cursor, and
   every absence claimed on the mock side. Scripts are scratch, not committed;
   their readings are transcribed into the rows.
 
@@ -476,9 +476,9 @@ P14 · The basal lane carries NO drag listener and stays click-only. The window'
 P15 · The handles are SUPPRESSED in at least one state. An I:C block selection
       marks a window SEGMENT: the brace is hidden, the dashed edges stop being
       hit-testable (`braceless` short-circuits edgeAt and overInterior), so a
-      data boundary can never be dragged into a user window by accident. The
-      lane dimming still runs, so the register stays readable.
-  source:   frontend/diagnose-workstation.js:1160-1165, 1669-1671, 1500-1502
+      data boundary can never be dragged into a user window by accident.
+  source:   frontend/diagnose-workstation.js (paintChart / paintBrace /
+            installDrag)
   mock:     no handles to suppress
   evidence: replay S17 (app, pass) · probe2 (a wrapping block instead takes the
             say-it-in-words path: chip null, preset left standing)
@@ -2660,8 +2660,8 @@ absence.
 
 Three stories carried the count as a witness and are amended, not retired: S01
 now reads the empty header plus the surviving pooled-days phrasing, and S06 and
-S21 read the lane's own dimming, which is the scope the reader acts on. Every
-one of the three keeps its original subject.
+S21 read stable window scope through the crumb metadata and second brace edge.
+Every one of the three keeps its original subject.
 
 
 ## Revision amendment — 2026-08-26 (the drill mark leaves the header)

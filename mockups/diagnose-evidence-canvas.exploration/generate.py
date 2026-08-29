@@ -40,52 +40,9 @@ def read(name: str) -> dict:
     return json.loads((ROOT / name).read_text())
 
 
-def css_rule(source: str, start: int) -> str:
-    """Return one balanced CSS rule from a known selector boundary."""
-    open_brace = source.index("{", start)
-    depth = 0
-    quote = None
-    comment = False
-    end = open_brace
-    while end < len(source):
-        char = source[end]
-        next_char = source[end + 1] if end + 1 < len(source) else ""
-        if comment:
-            if char == "*" and next_char == "/":
-                comment = False
-                end += 2
-                continue
-            end += 1
-            continue
-        if quote:
-            if char == "\\":
-                end += 2
-                continue
-            if char == quote:
-                quote = None
-            end += 1
-            continue
-        if char == "/" and next_char == "*":
-            comment = True
-            end += 2
-            continue
-        if char in "\"'":
-            quote = char
-            end += 1
-            continue
-        if char == "{":
-            depth += 1
-        elif char == "}":
-            depth -= 1
-            if depth == 0:
-                return source[start:end + 1]
-        end += 1
-    raise ValueError("corrupt Dark theme source: unclosed standalone html.dark token block")
-
-
-def css_code(source: str) -> str:
-    """Mask CSS comments and strings before looking for declarations."""
-    code = []
+def css_mask(source: str) -> str:
+    """Mask comments and strings while preserving source offsets and newlines."""
+    masked = []
     quote = None
     comment = False
     index = 0
@@ -95,43 +52,61 @@ def css_code(source: str) -> str:
         if comment:
             if char == "*" and next_char == "/":
                 comment = False
-                code.extend("  ")
+                masked.extend("  ")
                 index += 2
-            else:
-                code.append(" ")
-                index += 1
+                continue
+            masked.append("\n" if char == "\n" else " ")
+            index += 1
             continue
         if quote:
-            code.append(" ")
-            if char == "\\" and index + 1 < len(source):
-                code.append(" ")
+            if char == "\\":
+                masked.append(" ")
+                if index + 1 < len(source):
+                    masked.append("\n" if next_char == "\n" else " ")
                 index += 2
-            else:
-                if char == quote:
-                    quote = None
-                index += 1
+                continue
+            if char == quote:
+                quote = None
+            masked.append("\n" if char == "\n" else " ")
+            index += 1
             continue
         if char == "/" and next_char == "*":
             comment = True
-            code.extend("  ")
+            masked.extend("  ")
             index += 2
-        elif char in "\"'":
+            continue
+        if char in "\"'":
             quote = char
-            code.append(" ")
+            masked.append(" ")
             index += 1
-        else:
-            code.append(char)
-            index += 1
-    return "".join(code)
+            continue
+        masked.append(char)
+        index += 1
+    return "".join(masked)
+
+
+def css_rule(source: str, masked: str, start: int) -> str:
+    """Return one balanced CSS rule using the shared lexical mask."""
+    open_brace = masked.index("{", start)
+    depth = 0
+    for end in range(open_brace, len(masked)):
+        if masked[end] == "{":
+            depth += 1
+        elif masked[end] == "}":
+            depth -= 1
+            if depth == 0:
+                return source[start:end + 1]
+    raise ValueError("corrupt Dark theme source: unclosed standalone html.dark token block")
 
 
 def standalone_dark_rule(source: str) -> str:
     """Return the one standalone Dark token rule, rejecting lookalikes."""
-    matches = list(re.finditer(r"(?m)^[ \t]*html\.dark[ \t]*\{", source))
+    masked = css_mask(source)
+    matches = list(re.finditer(r"(?m)^[ \t]*html\.dark[ \t]*\{", masked))
     if len(matches) != 1:
         raise ValueError("corrupt Dark theme source: expected exactly one standalone html.dark token block")
-    rule = css_rule(source, matches[0].start())
-    declared = set(re.findall(r"(--[\w-]+)\s*:", css_code(rule)))
+    rule = css_rule(source, masked, matches[0].start())
+    declared = set(re.findall(r"(--[\w-]+)\s*:", masked[matches[0].start():matches[0].start() + len(rule)]))
     missing = [role for role in REQUIRED_DARK_ROLES if role not in declared]
     if missing:
         raise ValueError("corrupt Dark theme source: missing required Dark roles " + ", ".join(missing))
@@ -141,38 +116,46 @@ def standalone_dark_rule(source: str) -> str:
 def self_check() -> int:
     """Exercise selector and role-validation corruption boundaries."""
     roles = "".join(f"{role}: value;" for role in REQUIRED_DARK_ROLES)
-    source = f"html.dark .component {{ --wk-canvas: wrong; }}\nhtml.dark {{{roles}}}"
-    selected = standalone_dark_rule(source)
+    def rejects(label: str, source: str, expected: str) -> None:
+        try:
+            standalone_dark_rule(source)
+        except ValueError as error:
+            if expected not in str(error):
+                raise
+        else:
+            raise AssertionError(f"{label} was accepted")
+        print(f"{label}: rejected")
+
+    rejects("comment-only fake block", f"/* html.dark {{{roles}}} */",
+            "expected exactly one standalone")
+    selected = standalone_dark_rule(f"/* html.dark {{{roles}}} */\nhtml.dark {{{roles}}}")
+    if selected.startswith("/*"):
+        raise AssertionError("commented fake block was selected")
+    print("comment-before-real block: real block selected without ambiguity")
+    selected = standalone_dark_rule(
+        f"html.dark {{/* html.dark {{ --wk-signal: fake; }} */"
+        f"--note: 'html.dark {{ --wk-signal: fake; }}';{roles}}}")
+    if not selected.endswith("}"):
+        raise AssertionError("comment or string content truncated the standalone token block")
+    print("comment/string selector, braces, and role names: ignored")
+    selected = standalone_dark_rule(
+        f"html.dark .component {{ --wk-canvas: wrong; }}\nhtml.dark {{{roles}}}")
     if "wrong" in selected or "html.dark .component" in selected:
         raise AssertionError("prefixed Dark selector was accepted as the token block")
-    rejection = ""
-    try:
-        standalone_dark_rule(source.replace("--wk-signal: value;", ""))
-    except ValueError as error:
-        if "missing required Dark roles --wk-signal" not in str(error):
-            raise
-        rejection = str(error)
-    else:
-        raise AssertionError("missing required Dark role was accepted")
+    print("prefixed selector: ignored")
+    rejects("two real standalone blocks", f"html.dark {{{roles}}}\nhtml.dark {{{roles}}}",
+            "expected exactly one standalone")
+    rejects("missing required role", f"html.dark {{{roles.replace('--wk-signal: value;', '')}}}",
+            "missing required Dark roles --wk-signal")
     for label, decoration in (
         ("comment braces", "/* } { */"),
         ("single-quoted braces", "--note: '} {';"),
         ("double-quoted braces", '--note: "} {";'),
         ("escaped quoted braces", r'--note: "\\\"} {";'),
     ):
-        selected = standalone_dark_rule(f"html.dark {{{decoration}{roles}}}")
-        if not selected.endswith("}"):
-            raise AssertionError(f"{label} truncated the standalone token block")
-    try:
-        standalone_dark_rule(f"html.dark {{{roles}")
-    except ValueError as error:
-        if "unclosed standalone html.dark token block" not in str(error):
-            raise
-    else:
-        raise AssertionError("unclosed standalone token block was accepted")
-    print("prefixed Dark selector ignored; standalone html.dark token block selected")
-    print(f"missing role rejected: {rejection}")
-    print("comment and quoted braces ignored; unclosed token block rejected")
+        standalone_dark_rule(f"html.dark {{{decoration}{roles}}}")
+        print(f"{label}: accepted")
+    rejects("unclosed real rule", f"html.dark {{{roles}", "unclosed standalone html.dark token block")
     return 0
 
 

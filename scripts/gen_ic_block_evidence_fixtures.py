@@ -55,7 +55,10 @@ def payload():
         for item in (_meal(day, 23, bg=110.0), _meal(day + 1, 1, bg=110.0))
     ]
     cross_cgm = [
-        CgmReading(event.t + timedelta(minutes=minute), 110, "synthetic")
+        # Keep the shared-ruler story distinguishable from the strip's fitted
+        # ruler: this generated evidence reaches the next 20 mg/dL step while
+        # the manufactured pooled strip remains below it.
+        CgmReading(event.t + timedelta(minutes=minute), 240, "synthetic")
         for event in cross_events for minute in (290, 295, 300, 305, 310)
     ]
     cross_midnight = _project(cross_events, cgm=cross_cgm,

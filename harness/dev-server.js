@@ -152,7 +152,12 @@ export function harnessDataPlugin({ repositoryRoot }) {
         } : null;
 
         if (url.pathname === '/api/diagnose/findings') {
-          send(res, 200, projectFindings(findingsInputs, bounds, url.searchParams.get('selected_id')));
+          const projection = projectFindings(findingsInputs, bounds, url.searchParams.get('selected_id'));
+          const prepared = scopedPreparation(caseFiles, projection, bounds);
+          send(res, 200, {
+            ...projection,
+            rows: [...projection.rows, ...prepared.rendered_rows],
+          });
           return;
         }
         if (url.pathname === '/api/diagnose/finding-case-file-preparation') {

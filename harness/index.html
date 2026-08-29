@@ -8,17 +8,16 @@
       * { box-sizing: border-box; }
       html, body { margin: 0; min-height: 100%; background: var(--surface); color: var(--text); }
       body { font-family: Inter, system-ui, sans-serif; }
-      .harness-shell { min-height: 100vh; display: grid; grid-template-rows: auto 1fr; }
+      .harness-shell { height: 100vh; display: grid; grid-template-rows: auto minmax(0, 1fr); overflow: hidden; }
       .harness-controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; padding: 14px 18px; border-bottom: 1px solid var(--line); background: var(--surface-2); }
       .harness-control { display: grid; gap: 4px; min-width: 116px; }
       .harness-control span { color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
       .harness-control select, .harness-control input { min-height: 34px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--text); padding: 6px 9px; }
       .harness-control[hidden] { display: none; }
       .harness-status { margin-left: auto; align-self: center; color: var(--muted); font-size: 13px; }
-      .harness-stage { min-height: 0; padding: 22px; }
-      .harness-chart { width: 100%; height: min(70vh, 680px); min-height: 360px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--wk-radius); overflow: hidden; }
-      .harness-chart[data-mini] { width: 320px; height: 180px; min-height: 180px; }
-      .harness-workstation { min-height: calc(100vh - 105px); }
+      .harness-stage { height: 100%; min-height: 0; padding: 0; overflow: hidden; }
+      .cockpit-shell.harness-cockpit { height: 100%; grid-template-rows: minmax(0, 1fr); }
+      .harness-cockpit > .cockpit-stage { grid-row: 1; height: 100%; }
       .harness-message { max-width: 680px; margin: 48px auto; padding: 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); line-height: 1.5; }
       @media (max-width: 720px) {
         .harness-status { width: 100%; margin-left: 0; }

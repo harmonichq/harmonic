@@ -1,17 +1,6 @@
 import {
-  DIAGNOSE_EVIDENCE_CHARTS,
-  glucoseRange,
-} from '../frontend/diagnose-evidence-charts.js';
-import { fieldRange } from '../frontend/diagnose-canvas-layout.js';
-import {
-  renderCanvas,
-  stripGlucoseRange,
-} from '../frontend/diagnose-workstation-chart.js';
-import {
   createDiagnoseWorkstation,
-  resolveColors,
 } from '../frontend/diagnose-workstation.js';
-import { envelopeFromPooled } from '../frontend/diagnose-workstation-data.js';
 
 export const STORIES = [
   { id: 'basal', label: 'Basal evidence', modes: ['clock', 'event'], sizes: true, range: false },
@@ -32,83 +21,7 @@ async function request(path) {
   return response.json();
 }
 
-async function directData() {
-  const preparation = await request('/api/diagnose/finding-case-file-preparation');
-  const findingId = preparation.rendered_rows.find((row) => row.register === 'finding')?.id;
-  const comparison = findingId ? await request(
-    `/api/diagnose/finding-case-file?projection_id=${encodeURIComponent(preparation.projection_id)}`
-      + `&finding_id=${encodeURIComponent(findingId)}&alignment=event`,
-  ) : null;
-  const [basal, isf, carbRatio] = await Promise.all([
-    request('/api/diagnose/basal-night-evidence'),
-    request('/api/diagnose/isf-rest-window-evidence'),
-    request('/api/diagnose/carb-ratio-block-evidence'),
-  ]);
-  return { basal, isf, 'carb-ratio': carbRatio, 'event-comparison': comparison };
-}
-
-function chartRange(kind, data, all, policy) {
-  const entry = DIAGNOSE_EVIDENCE_CHARTS.find((candidate) => candidate.kind === kind);
-  if (!entry.glucoseValues) return null;
-  if (policy === 'fitted') return glucoseRange(entry.glucoseValues(data));
-  return evidenceFieldRange(all);
-}
-
-function evidenceFieldRange(all) {
-  const descriptors = Object.entries(all).map(([descriptorKind, descriptorData]) => ({
-    kind: descriptorKind,
-    state: 'ok',
-    data: descriptorData,
-  }));
-  return fieldRange(descriptors, DIAGNOSE_EVIDENCE_CHARTS, glucoseRange);
-}
-
-async function drawEvidence(host, story, state) {
-  const all = await directData();
-  const entry = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === story.id);
-  const data = all[story.id];
-  const range = chartRange(story.id, data, all, state.range);
-  const chartHost = document.createElement('div');
-  chartHost.className = 'harness-chart ec-surface';
-  chartHost.toggleAttribute('data-mini', state.size === 'mini');
-  host.replaceChildren(chartHost);
-  const chart = window.echarts.init(chartHost, null, { renderer: 'canvas' });
-  chart.setOption(entry.option(state.mode || null, {
-    data,
-    caseFile: data,
-    range,
-    mini: state.size === 'mini',
-    surface: chartHost,
-  }), true);
-  return entry.glucoseValues
-    ? `${story.label} · ${state.range} range · ${state.size}`
-    : `${story.label} · no glucose axis · ${state.size}`;
-}
-
-async function drawStrip(host, state) {
-  const [pooled, all] = await Promise.all([
-    request('/api/explore/time'),
-    directData(),
-  ]);
-  const envelope = envelopeFromPooled(pooled);
-  const chartHost = document.createElement('div');
-  chartHost.className = 'harness-chart';
-  host.replaceChildren(chartHost);
-  const fitted = stripGlucoseRange(envelope);
-  const range = state.range === 'shared'
-    ? glucoseRange([...evidenceFieldRange(all), ...fitted])
-    : fitted;
-  renderCanvas(chartHost, window.echarts, {
-    envelope,
-    colors: resolveColors(),
-    range,
-    window: [0, 1440],
-    windowLabel: 'WHOLE DAY',
-  });
-  return `Glucose by clock · ${state.range} range`;
-}
-
-async function drawWorkstation(host, state) {
+async function drawWorkstation(host, state, story) {
   const [analyze, scenarios, evidence, exposures, preparation, outcomes] = await Promise.all([
     request('/api/analyze?window=30&pool=1'),
     request('/api/scenarios?window=30'),
@@ -117,9 +30,19 @@ async function drawWorkstation(host, state) {
     request('/api/diagnose/finding-case-file-preparation'),
     request('/api/outcomes?window=30'),
   ]);
+  const shell = document.createElement('div');
+  shell.className = 'cockpit-shell cockpit harness-cockpit';
+  const stage = document.createElement('main');
+  stage.className = 'cockpit-stage';
+  const main = document.createElement('div');
+  main.className = 'main-content';
+  const mount = document.createElement('div');
   const root = document.createElement('div');
-  root.className = 'harness-workstation';
-  host.replaceChildren(root);
+  mount.append(root);
+  main.append(mount);
+  stage.append(main);
+  shell.append(stage);
+  host.replaceChildren(shell);
   const view = createDiagnoseWorkstation({
     root,
     callbacks: {
@@ -173,14 +96,15 @@ async function drawWorkstation(host, state) {
     casePreparation: preparation,
     watched: outcomes.watched_change || null,
   });
-  if (!state.chart) return 'Diagnose workstation · undrilled';
   const findTile = () => [...root.querySelectorAll('.evidence-tile[data-chart-id]')]
-    .find((candidate) => candidate.dataset.chartId === state.chart
-      && candidate.dataset.state === 'ok');
-  const allDay = [...root.querySelectorAll('button')]
-    .find((button) => button.textContent.trim() === '24 h');
-  allDay?.click();
-  root.querySelector('#explorer-trigger')?.click();
+    .find((candidate) => candidate.dataset.state === 'ok' && (
+      state.chart ? candidate.dataset.chartId === state.chart
+        : story.id === 'basal' ? candidate.dataset.chartId.startsWith('basal:')
+          : story.id === 'isf' ? candidate.dataset.chartId === 'isf'
+            : story.id === 'carb-ratio' ? candidate.dataset.chartId.startsWith('ic:')
+              : story.id === 'event-comparison' ? candidate.dataset.chartId.startsWith('finding:')
+                : false));
+  if (story.id === 'strip' || story.id === 'workstation') return 'Diagnose workstation · undrilled';
   const tile = await new Promise((resolve) => {
     const deadline = performance.now() + 8000;
     const poll = () => {
@@ -190,15 +114,11 @@ async function drawWorkstation(host, state) {
     };
     poll();
   });
-  if (!tile) return `Diagnose workstation · chart id not found: ${state.chart}`;
+  if (!tile) return `Diagnose workstation · ${story.label} unavailable`;
   tile.click();
-  return `Diagnose workstation · drilled ${state.chart}`;
+  return `Diagnose workstation · drilled ${tile.dataset.chartId}`;
 }
 
 export async function renderStory(host, story, state) {
-  if (DIAGNOSE_EVIDENCE_CHARTS.some(({ kind }) => kind === story.id)) {
-    return drawEvidence(host, story, state);
-  }
-  if (story.id === 'strip') return drawStrip(host, state);
-  return drawWorkstation(host, state);
+  return drawWorkstation(host, state, story);
 }

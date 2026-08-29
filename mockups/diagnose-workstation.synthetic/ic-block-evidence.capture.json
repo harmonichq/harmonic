@@ -243,7 +243,7 @@
   "cross_midnight": {
    "analysis_generation": "ic-block-evidence-fixture:0",
    "block": {
-    "asserts_move": false,
+    "asserts_move": true,
     "block_id": 1200,
     "effective_support": 9.0,
     "end_min": 420,
@@ -256,12 +256,12 @@
    },
    "runs": [
     {
-     "bg_outcome_u": 0.0,
+     "bg_outcome_u": 2.6,
      "carbs": 120.0,
      "cgm_end_min": 435.0,
      "cgm_start_min": -10.0,
      "directional_only": false,
-     "effective_insulin": 24.0,
+     "effective_insulin": 26.6,
      "end_t": "2026-01-02T01:00:00",
      "in_pool": true,
      "member_offsets_min": [
@@ -269,21 +269,21 @@
       120.0
      ],
      "n_meals": 2,
-     "outcome_bg": 110.0,
+     "outcome_bg": 240.0,
      "outcome_min": 420.0,
      "ownership": 1.0,
      "run_id": "2026-01-01T23:00:00",
      "start_bg": 110.0,
      "t": "2026-01-01T23:00:00",
-     "true_ic": 5.0
+     "true_ic": 4.511
     },
     {
-     "bg_outcome_u": 0.0,
+     "bg_outcome_u": 2.6,
      "carbs": 120.0,
      "cgm_end_min": 435.0,
      "cgm_start_min": -10.0,
      "directional_only": false,
-     "effective_insulin": 24.0,
+     "effective_insulin": 26.6,
      "end_t": "2026-01-03T01:00:00",
      "in_pool": true,
      "member_offsets_min": [
@@ -291,21 +291,21 @@
       120.0
      ],
      "n_meals": 2,
-     "outcome_bg": 110.0,
+     "outcome_bg": 240.0,
      "outcome_min": 420.0,
      "ownership": 1.0,
      "run_id": "2026-01-02T23:00:00",
      "start_bg": 110.0,
      "t": "2026-01-02T23:00:00",
-     "true_ic": 5.0
+     "true_ic": 4.511
     },
     {
-     "bg_outcome_u": 0.0,
+     "bg_outcome_u": 2.6,
      "carbs": 120.0,
      "cgm_end_min": 435.0,
      "cgm_start_min": -10.0,
      "directional_only": false,
-     "effective_insulin": 24.0,
+     "effective_insulin": 26.6,
      "end_t": "2026-01-04T01:00:00",
      "in_pool": true,
      "member_offsets_min": [
@@ -313,21 +313,21 @@
       120.0
      ],
      "n_meals": 2,
-     "outcome_bg": 110.0,
+     "outcome_bg": 240.0,
      "outcome_min": 420.0,
      "ownership": 1.0,
      "run_id": "2026-01-03T23:00:00",
      "start_bg": 110.0,
      "t": "2026-01-03T23:00:00",
-     "true_ic": 5.0
+     "true_ic": 4.511
     },
     {
-     "bg_outcome_u": 0.0,
+     "bg_outcome_u": 2.6,
      "carbs": 120.0,
      "cgm_end_min": 435.0,
      "cgm_start_min": -10.0,
      "directional_only": false,
-     "effective_insulin": 24.0,
+     "effective_insulin": 26.6,
      "end_t": "2026-01-05T01:00:00",
      "in_pool": true,
      "member_offsets_min": [
@@ -335,21 +335,21 @@
       120.0
      ],
      "n_meals": 2,
-     "outcome_bg": 110.0,
+     "outcome_bg": 240.0,
      "outcome_min": 420.0,
      "ownership": 1.0,
      "run_id": "2026-01-04T23:00:00",
      "start_bg": 110.0,
      "t": "2026-01-04T23:00:00",
-     "true_ic": 5.0
+     "true_ic": 4.511
     },
     {
-     "bg_outcome_u": 0.0,
+     "bg_outcome_u": 2.6,
      "carbs": 120.0,
      "cgm_end_min": 435.0,
      "cgm_start_min": -10.0,
      "directional_only": false,
-     "effective_insulin": 24.0,
+     "effective_insulin": 26.6,
      "end_t": "2026-01-06T01:00:00",
      "in_pool": true,
      "member_offsets_min": [
@@ -357,21 +357,21 @@
       120.0
      ],
      "n_meals": 2,
-     "outcome_bg": 110.0,
+     "outcome_bg": 240.0,
      "outcome_min": 420.0,
      "ownership": 1.0,
      "run_id": "2026-01-05T23:00:00",
      "start_bg": 110.0,
      "t": "2026-01-05T23:00:00",
-     "true_ic": 5.0
+     "true_ic": 4.511
     },
     {
-     "bg_outcome_u": 0.0,
+     "bg_outcome_u": 2.6,
      "carbs": 120.0,
      "cgm_end_min": 435.0,
      "cgm_start_min": -10.0,
      "directional_only": false,
-     "effective_insulin": 24.0,
+     "effective_insulin": 26.6,
      "end_t": "2026-01-07T01:00:00",
      "in_pool": true,
      "member_offsets_min": [
@@ -379,21 +379,21 @@
       120.0
      ],
      "n_meals": 2,
-     "outcome_bg": 110.0,
+     "outcome_bg": 240.0,
      "outcome_min": 420.0,
      "ownership": 1.0,
      "run_id": "2026-01-06T23:00:00",
      "start_bg": 110.0,
      "t": "2026-01-06T23:00:00",
-     "true_ic": 5.0
+     "true_ic": 4.511
     },
     {
-     "bg_outcome_u": 0.0,
+     "bg_outcome_u": 2.6,
      "carbs": 120.0,
      "cgm_end_min": 435.0,
      "cgm_start_min": -10.0,
      "directional_only": false,
-     "effective_insulin": 24.0,
+     "effective_insulin": 26.6,
      "end_t": "2026-01-08T01:00:00",
      "in_pool": true,
      "member_offsets_min": [
@@ -401,21 +401,21 @@
       120.0
      ],
      "n_meals": 2,
-     "outcome_bg": 110.0,
+     "outcome_bg": 240.0,
      "outcome_min": 420.0,
      "ownership": 1.0,
      "run_id": "2026-01-07T23:00:00",
      "start_bg": 110.0,
      "t": "2026-01-07T23:00:00",
-     "true_ic": 5.0
+     "true_ic": 4.511
     },
     {
-     "bg_outcome_u": 0.0,
+     "bg_outcome_u": 2.6,
      "carbs": 120.0,
      "cgm_end_min": 435.0,
      "cgm_start_min": -10.0,
      "directional_only": false,
-     "effective_insulin": 24.0,
+     "effective_insulin": 26.6,
      "end_t": "2026-01-09T01:00:00",
      "in_pool": true,
      "member_offsets_min": [
@@ -423,21 +423,21 @@
       120.0
      ],
      "n_meals": 2,
-     "outcome_bg": 110.0,
+     "outcome_bg": 240.0,
      "outcome_min": 420.0,
      "ownership": 1.0,
      "run_id": "2026-01-08T23:00:00",
      "start_bg": 110.0,
      "t": "2026-01-08T23:00:00",
-     "true_ic": 5.0
+     "true_ic": 4.511
     },
     {
-     "bg_outcome_u": 0.0,
+     "bg_outcome_u": 2.6,
      "carbs": 120.0,
      "cgm_end_min": 435.0,
      "cgm_start_min": -10.0,
      "directional_only": false,
-     "effective_insulin": 24.0,
+     "effective_insulin": 26.6,
      "end_t": "2026-01-10T01:00:00",
      "in_pool": true,
      "member_offsets_min": [
@@ -445,13 +445,13 @@
       120.0
      ],
      "n_meals": 2,
-     "outcome_bg": 110.0,
+     "outcome_bg": 240.0,
      "outcome_min": 420.0,
      "ownership": 1.0,
      "run_id": "2026-01-09T23:00:00",
      "start_bg": 110.0,
      "t": "2026-01-09T23:00:00",
-     "true_ic": 5.0
+     "true_ic": 4.511
     }
    ],
    "schema": "diagnose-carb-ratio-block-evidence-v1",
@@ -459,43 +459,43 @@
     {
      "points": [
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 290.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 295.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 300.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 305.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 310.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 410.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 415.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 420.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 425.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 430.0
       }
      ],
@@ -504,43 +504,43 @@
     {
      "points": [
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 290.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 295.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 300.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 305.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 310.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 410.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 415.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 420.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 425.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 430.0
       }
      ],
@@ -549,43 +549,43 @@
     {
      "points": [
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 290.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 295.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 300.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 305.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 310.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 410.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 415.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 420.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 425.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 430.0
       }
      ],
@@ -594,43 +594,43 @@
     {
      "points": [
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 290.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 295.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 300.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 305.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 310.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 410.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 415.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 420.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 425.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 430.0
       }
      ],
@@ -639,43 +639,43 @@
     {
      "points": [
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 290.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 295.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 300.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 305.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 310.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 410.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 415.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 420.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 425.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 430.0
       }
      ],
@@ -684,43 +684,43 @@
     {
      "points": [
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 290.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 295.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 300.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 305.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 310.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 410.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 415.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 420.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 425.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 430.0
       }
      ],
@@ -729,43 +729,43 @@
     {
      "points": [
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 290.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 295.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 300.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 305.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 310.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 410.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 415.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 420.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 425.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 430.0
       }
      ],
@@ -774,43 +774,43 @@
     {
      "points": [
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 290.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 295.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 300.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 305.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 310.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 410.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 415.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 420.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 425.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 430.0
       }
      ],
@@ -819,43 +819,43 @@
     {
      "points": [
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 290.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 295.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 300.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 305.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 310.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 410.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 415.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 420.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 425.0
       },
       {
-       "bg": 110,
+       "bg": 240,
        "minute": 430.0
       }
      ],

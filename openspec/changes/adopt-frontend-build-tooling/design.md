@@ -169,3 +169,44 @@ manufactured screenshot.
 - **Evidence owed:** none from this ticket, which changes no behavior. The
   stage-1 build child (#241) owes proof that the shipped app is byte-identical
   and that the fast gate still runs with no npm install.
+
+## ADR 241 — The drill is a chart's state, not a story of its own
+
+**Decision.** The inspector drill is a state each chart story can be opened in,
+not ADR 240's sixth story. The harness reaches that state by mounting the real
+workstation unmodified and clicking the chart tile. ADR 240 is otherwise
+untouched.
+
+**Why.** The drill belongs to each chart: every chart that can take the
+spotlight must be drillable, and the inspector is the surface expected to be
+iterated on next. `showChartInspector` is the one entry for both parameter and
+behavioral chart families.
+
+**Consequences.** `gotoState` cannot address a drill, so clicking the tile is
+the app's own path into it. This adds no harness-only rendering path that could
+disagree with the app. The manufactured case-file store already carries
+`unavailable_*` and `empty_event` variants, so the drill's failure states need
+no new fixture.
+
+**Risk contract.**
+
+- **Must prevent:** any change to the shipped app's bytes; any real glucose,
+  insulin, dose, timestamp or credential value reaching a commit, a screenshot,
+  a CI log or a pull request body; any harness dependency entering the shipped
+  artifact or the dependency-free fast gate; a copy of shipped source, markup
+  or tokens living under `harness/`.
+- **Must recover:** nothing; the harness runs no unattended or long-running
+  process.
+- **Accepted failure:** the harness breaks because a pinned dependency no longer
+  works with the host Node or browser, or because a committed payload's shape
+  drifted from the app. Found the next time the harness is opened and repaired
+  by hand then. The operator starts `harmonic serve` himself for the live
+  switch; the harness does not launch it and shows a plain message when it is
+  absent.
+- **Unsupported:** running the manufactured side against a live vendor pull;
+  pointing the harness at the committed synthetic database by serving it; any
+  use of the harness as a test or a gate; contributor setup on a mismatched Node.
+- **Evidence owed:** the byte-identical `git diff` above, and the fast gate
+  passing with no `npm install`. No test suite is owed for the harness itself —
+  ADR 240 rules its use as a test or a gate unsupported, and a suite would be
+  the gate the epic declined.

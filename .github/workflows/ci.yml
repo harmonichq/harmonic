@@ -120,7 +120,7 @@ jobs:
         with:
           node-version: "22"
       # Pure-logic frontend modules are tested with Node's built-in runner —
-      # no npm/package.json (see CLAUDE.md conventions).
+      # no npm dependency; the dev-only harness/ is not exercised here.
       - name: Run tests
         run: node --test 'frontend/**/*.test.js'
       # The browser capture is generated too; a passing test must not run

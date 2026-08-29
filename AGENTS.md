@@ -219,6 +219,9 @@ your own database — never a published one, and never a live pull.**
   `frontend/index.html` at `/`, on the same port.
 - `frontend/` — a single-page Vue 3 app loaded from a CDN, no build step.
   ECharts renders the Day chart.
+- `harness/` — a dev-only Vite page that opens one shipped chart at a time on
+  manufactured data or a running `harmonic serve`. Node 22 is required but not
+  enforced; the harness never ships and never gates.
 - `openspec/specs/` — twelve capability specifications: what each part of the
   system is required to do, and why. The public "why" lives here.
 
@@ -384,11 +387,13 @@ Hard-won, and expensive to re-derive.
 ## Conventions
 
 - **Backend tests** use stdlib `unittest`, run under pytest.
-- **Frontend tests** use Node's built-in runner — no npm dependencies, no
-  `package.json`. Pure logic lives in **vue-free** `.js` modules so tests import
-  them with no importmap and no DOM. Vue components import `vue` plus those
-  modules and are not node-tested, because the bare `vue` specifier only
-  resolves through the browser importmap.
+- **Frontend tests** use Node's built-in runner: the fast gate and every
+  frontend test take no npm dependency. Pure logic lives in **vue-free** `.js`
+  modules so tests import them with no importmap and no DOM. Vue components
+  import `vue` plus those modules and are not node-tested, because the bare
+  `vue` specifier only resolves through the browser importmap. The dev-only
+  `harness/` has its own manifest and lockfile; it is never a gate and never
+  runs in CI.
 - **Browser-driven suites are named `*.browser.test.mjs`**, never `*.test.js`,
   so the fast gate's glob can never discover them.
 - **New behavior ships with a test through the public interface**, and — where

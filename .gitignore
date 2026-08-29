@@ -158,6 +158,9 @@ worktrees/
 .claude/worktrees/
 .claude/settings.local.json
 
+# Dev-only harness dependencies; nothing here enters the shipped app or CI.
+node_modules/
+
 # #394 screenshot harness scratch (pre-change builder copy)
 frontend/.chart-builders.before.mjs
 

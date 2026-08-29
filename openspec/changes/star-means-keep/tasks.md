@@ -31,4 +31,4 @@
 - [x] Run the full fast gate plus the affected Diagnose composition and
       workstation browser/replay gates from `AGENTS.md`; every command must exit
       zero and every browser/replay leg must report a nonzero count.
-- [ ] Open one pull request for human review and stop without merging.
+- [x] Open one pull request for human review and stop without merging.

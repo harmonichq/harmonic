@@ -52,6 +52,12 @@ tests/** {.py}
 # structural scan are what keep a future real-data JSON out of this rule.
 frontend/** {.html,.js,.mjs,.css,.svg,.json}
 
+# --- The dev-only component harness ------------------------------------
+# It ships as source so the README and contributor instructions resolve.
+# It never enters the production app or CI, and the structural scan covers
+# every committed harness byte before the public tree is materialised.
+harness/** {.html,.js,.json}
+
 # --- The public "why" (§0.2 [R5]) ---------------------------------------
 openspec/specs/** {.md}
 

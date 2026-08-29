@@ -74,13 +74,13 @@ is written down and left there.
 **Consequences.** ADR 213's phrase "Storybook-style workbench" described the
 shape of the tool, not a choice of product; it is settled here as Vite, and
 ADR 213 is otherwise untouched. `harness/` falls outside the materialised
-public tree by default exclusion, so the link and contamination checks never
-inspect it; the same harness placed under `frontend/` would be swept in by
-that tree's existing glob and would owe both checks. Pinned harness
+public tree by default, so the stage-1 build explicitly includes it: its README
+instructions resolve and the contamination scan inspects every committed byte.
+That does not put the harness in the production app or CI. Pinned harness
 dependencies will go stale, including with known vulnerabilities, and that is
 accepted because they never enter the shipped app and never run in CI. The
-stage-1 build child must add `node_modules` to `.gitignore`, which has no
-such entry today.
+stage-1 build child must add `node_modules` to `.gitignore`, which has no such
+entry today.
 
 **Risk contract.**
 

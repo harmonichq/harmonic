@@ -92,10 +92,10 @@ the Safety baseline's analyzer/staging and analysis-Priority contract is unchang
 **Evidence inventory.** The reviewed synthetic evidence is committed under
 `evidence/issue-223/`: `base/` and `revision/` each contain queue and Correction
 factor detail captures at 1440×900 and 390×844 in both light and dark themes;
-`replay.txt` records the complete shipped-surface replay ending with 138 of 138
+`replay.txt` records the complete shipped-surface replay ending with 140 of 140
 stories passed; and `manifest.txt` records the source revisions, manufactured data
-boundary, affected states, and every capture path. Revision captures were recorded
-at `b33dd94`; the later contract/test commits `885c3ca` and `a11169f` do not alter
-rendered output.
+boundary, affected states, and every capture path. After fresh-main integration,
+ticket 223's replay contract is issued as S120 so main's S118 Low-cohort contract
+and S119 fullscreen contract remain unchanged.
 
 Decision: ConnorGriffin, 2026-08-28.

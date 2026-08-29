@@ -916,6 +916,19 @@ test('the populated 2084×742 glucose canvas keeps its composited window treatme
       }
       return ratio(cssRgb(style[foreground]), cssRgb(getComputedStyle(ground).backgroundColor));
     };
+    const compositePixels = (indices) => indices.flatMap((index) => {
+      const label = option.xAxis[0].data[index];
+      return ['__p25', 'Median', '__p75'].flatMap((name) => {
+        const value = option.series.find((series) => series.name === name)?.data?.[index];
+        if (!Number.isFinite(value)) return [];
+        const [x, y] = chart.convertToPixel({ xAxisIndex: 0, yAxisIndex: 0 }, [label, value]);
+        const samples = [];
+        for (let dx = -3; dx <= 3; dx += 1) {
+          for (let dy = -3; dy <= 3; dy += 1) samples.push(pixel(x + dx, y + dy));
+        }
+        return samples;
+      });
+    });
     return {
       width: chartNode.clientWidth,
       dim: option.series.find((series) => series.name === '__dim').data.length,
@@ -944,6 +957,13 @@ test('the populated 2084×742 glucose canvas keeps its composited window treatme
       })),
       gate: ratio(cssRgb(getComputedStyle(document.getElementById('grip-a')).borderTopColor),
         cssRgb(getComputedStyle(document.getElementById('grip-a')).backgroundColor)), passive,
+      /* Morning is 06:00–12:00. Sample the same rendered marks well inside
+         and outside those gates so the assertion below measures the final
+         canvas composite, independent of the scrim's source color. */
+      composite: {
+        outside: compositePixels([4, 12, 16, 64, 76, 88]),
+        inside: compositePixels([28, 36, 44]),
+      },
       scope: document.getElementById('canvas-scope').textContent,
       verdicts: [...document.querySelectorAll('#lane .lane-cell')].map((cell) => cell.dataset.verdict),
     };
@@ -965,6 +985,17 @@ test('the populated 2084×742 glucose canvas keeps its composited window treatme
       assert.ok(before.width > 1000, `${theme} audit uses the locked wide chart geometry`);
       assert.equal(before.dim, 0, `${theme} 24 h scope has no selection scrim`);
       assert.equal(after.dim, 2, `${theme} non-default Morning scope preserves the two scrim regions`);
+      const pixelShift = (first, second) => {
+        assert.equal(second.length, first.length, 'composite pixel samples keep a stable shape');
+        return first.reduce((total, rgb, index) => total
+          + rgb.reduce((sum, channel, channelIndex) =>
+            sum + Math.abs(channel - second[index][channelIndex]), 0), 0) / (first.length * 3);
+      };
+      const outsideShift = pixelShift(before.composite.outside, after.composite.outside);
+      const insideShift = pixelShift(before.composite.inside, after.composite.inside);
+      assert.ok(outsideShift >= 1 && outsideShift >= insideShift + 0.75,
+        `${theme} Morning visibly composites the outside (${outsideShift.toFixed(2)} mean RGB shift) `
+        + `beyond the inside redraw baseline (${insideShift.toFixed(2)})`);
       for (const [state, result] of [['without a window', before], ['with Morning selected', after]]) {
         for (const [subject, measured] of Object.entries(result.text)) {
           if (measured == null) continue;

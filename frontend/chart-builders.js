@@ -454,8 +454,6 @@ export function buildLanesOption(day, dateStr, {
         showSymbol: true, symbolSize: 4, sampling: 'lttb', connectNulls: true,
         lineStyle: { width: 1.2, color: colors.inRange, opacity: 0.75 },
         data: cgmPoints, z: 5,
-        markArea: { silent: true, itemStyle: { color: colors.inRange, opacity: 0.05 },
-          data: [[{ yAxis: 70 }, { yAxis: 180 }]] },
         markLine: {
           symbol: 'none', silent: true,
           lineStyle: { type: 'dashed', color: colors.muted, opacity: 0.6 },

@@ -107,6 +107,13 @@ test('buildLanesOption: NO persistent full-height evidence/flag lines (#276)', (
     'evidence strip is left empty for the anchor overlay');
 });
 
+test('buildLanesOption: glucose targets are dashed boundary rails without a filled band (#255)', () => {
+  const glucose = findSeries(buildLanesOption(dayFixture, DAY, { colors: COLORS }), 'Glucose');
+  assert.equal(glucose.markArea, undefined, 'the desktop Day plot has no target fill');
+  assert.deepEqual(glucose.markLine.data, [{ yAxis: 70 }, { yAxis: 180 }]);
+  assert.equal(glucose.markLine.lineStyle.type, 'dashed');
+});
+
 test('buildLanesOption: basal strip shows the SIGNED delivered−programmed difference', () => {
   const opt = buildLanesOption(dayFixture, DAY, { colors: COLORS });
   const diff = findSeries(opt, 'Basal difference');

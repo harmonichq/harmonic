@@ -118,7 +118,7 @@
      dark shell canvas in both themes, so deriving from it gave light the dark
      trench too. The locked theme already owns this inset pane ground. */
   --ck-trench: var(--wk-surface-sunken);
-  --ck-tile-edge: color-mix(in srgb, var(--mk-line) 72%, transparent);
+  --ck-tile-edge: var(--wk-rule-strong);
   /* A TOP-EDGE HIGHLIGHT IS LIGHT IN BOTH THEMES. Deriving it from the text ink
      made it near-black on the bone panel — a shadow along the top edge, which
      reads as the panel sinking rather than catching the light. */
@@ -362,18 +362,8 @@ html.dark .dw {
   background-color: var(--ck-field);
   box-shadow: inset 0 6px 10px -8px rgba(0, 0, 0, .35);
 }
-/* Dark's settled `--wk-surface-sunken` is LIGHTER than the panel it recesses
-   into (#504a45 against #26221f) — a well lit warmer, which is right for the
-   rail's schematic cells and the Charts drawer but wrong for the one surface
-   the anchors now sit above: seated tiles on a lighter tray read raised. In
-   dark the field is cut through the anchor down to the shell's own canvas
-   ground, one step BELOW the panel it sits in, so the substrate is the darkest
-   thing here and no colour is restated. `--wk-canvas` is dark-only on purpose:
-   in light it is the shell's deep green, which is exactly the trench bug the
-   note at `--ck-trench` records. This is scoped to the field alone rather than
-   re-pointing `--ck-trench`, which also grounds the instrument rail and the
-   drawer and mixes their ink (`--ck-trench-quiet`). Light needs no such step:
-   its trench is already the darker of the two. */
+/* The Dark field is the named field role, one step above the shared chart well.
+   Keeping this scoped preserves Light's independently settled material roles. */
 /* `background-color`, not the shorthand: the docked field paints the channel's
    ground as a background LAYER, and this rule outspecifies it — a shorthand
    here resets that layer and the channel loses its floor in dark only. */
@@ -573,9 +563,11 @@ html.dark .tile-field[data-explorer] > .tile-row { background: var(--ck-field); 
   --ck-field-deep: #5e6b62;
 }
 html.dark .dw {
-  --ck-slot-rail: color-mix(in srgb, var(--wk-surface-sunken) 45%, var(--wk-surface-rail));
-  --ck-field: #202722;
-  --ck-field-deep: #2a332c;
+  --ck-rail: var(--wk-surface-sunken);
+  --ck-well: var(--wk-surface-sunken);
+  --ck-slot-rail: var(--wk-surface-rail);
+  --ck-field: var(--wk-field);
+  --ck-field-deep: var(--wk-canvas);
   --ck-cell-shadow:
     0 0 0 1px rgba(0, 0, 0, .5),
     0 4px 10px -4px rgba(0, 0, 0, .55);
@@ -654,10 +646,7 @@ html:not(.dark) .dw {
    own top wall (2 above) is drawn OVER the frames and is a stronger cut than a
    shadow falling onto them ever was. */
 .tile-field > .tile-focal > .evidence-tile {
-  background: var(--ck-rail); border-radius: 0; box-shadow: none;
-}
-html.dark .tile-field > .tile-focal > .evidence-tile {
-  background: color-mix(in srgb, var(--ck-rail) 90%, var(--mk-text));
+  background: var(--ck-well); border-radius: 4px; box-shadow: var(--wk-elevation);
 }
 /* THE SPOTLIGHT FLOATS ON THE TRAY IT ALWAYS HAD (2026-08-27, "wall of
    flatness" round). The field's sunken tray ground has been here since #215 —
@@ -673,17 +662,7 @@ html.dark .tile-field > .tile-focal > .evidence-tile {
 }
 .tile-field:not([data-fullscreen-tile]):not([data-explorer])
   > .tile-focal > .evidence-tile {
-  border-radius: 6px; overflow: hidden;
-  box-shadow:
-    0 1px 2px rgba(20, 26, 21, .05),
-    0 8px 20px -8px rgba(20, 26, 21, .18),
-    0 0 0 1px rgba(20, 26, 21, .05);
-}
-html.dark .tile-field:not([data-fullscreen-tile]):not([data-explorer])
-  > .tile-focal > .evidence-tile {
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, .5),
-    0 10px 26px -10px rgba(0, 0, 0, .65);
+  overflow: hidden;
 }
 /* --- 4 · the frames. They keep the tile ground, because a quiet chart is still
    evidence, but step one notch toward the field — toward it in each theme, so
@@ -1070,9 +1049,8 @@ html.dark .tile-field[data-raised] > .tile-row { background: color-mix(in srgb, 
 .evidence-tile {
   display: grid; grid-template: 28px minmax(0, 1fr) / minmax(0, 1fr) 24px;
   min-width: 0; min-height: 0;
-  margin: 0; overflow: hidden; background: var(--ck-rail); border-radius: 2px;
-  box-shadow: inset 0 0 0 1px var(--ck-tile-edge),
-    inset 0 1px 0 var(--ck-tile-top), var(--ck-tile-shadow);
+  margin: 0; overflow: hidden; background: var(--ck-rail); border-radius: 4px;
+  box-shadow: inset 0 0 0 1px var(--ck-tile-edge), var(--ck-tile-shadow);
 }
 /* A PIN IS NO LONGER A RING (#215). The tile-wide accent ring said "you pinned
    this" in the same pigment the drilled tile needs for "the inspector is

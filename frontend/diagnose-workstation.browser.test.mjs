@@ -772,8 +772,8 @@ test('populated Diagnose renders readable theme-specific ink and chart marks', a
       signal: 'rgb(47, 107, 79)', median: 'rgb(18, 61, 43)', meal: 'rgb(159, 96, 48)',
     }],
     ['dark', {
-      surface: 'rgb(38, 34, 31)', body: 'rgb(219, 207, 188)', meta: 'rgb(163, 150, 138)',
-      signal: 'rgb(134, 173, 120)', median: 'rgb(195, 180, 156)', meal: 'rgb(192, 141, 82)',
+      surface: 'rgb(20, 18, 15)', body: 'rgb(207, 200, 189)', meta: 'rgb(164, 156, 144)',
+      signal: 'rgb(134, 173, 120)', median: 'rgb(207, 200, 189)', meal: 'rgb(192, 141, 82)',
     }],
   ]) {
     const browser = await runner.browser();

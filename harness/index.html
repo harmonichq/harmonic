@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harmonic chart harness</title>
+    <style>
+      * { box-sizing: border-box; }
+      html, body { margin: 0; min-height: 100%; background: var(--surface); color: var(--text); }
+      body { font-family: Inter, system-ui, sans-serif; }
+      .harness-shell { height: 100vh; display: grid; grid-template-rows: auto minmax(0, 1fr); overflow: hidden; }
+      .harness-controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; padding: 14px 18px; border-bottom: 1px solid var(--line); background: var(--surface-2); }
+      .harness-control { display: grid; gap: 4px; min-width: 116px; }
+      .harness-control span { color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+      .harness-control select, .harness-control input { min-height: 34px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--text); padding: 6px 9px; }
+      .harness-control[hidden] { display: none; }
+      .harness-status { margin-left: auto; align-self: center; color: var(--muted); font-size: 13px; }
+      .harness-stage { height: 100%; min-height: 0; padding: 0; overflow: hidden; }
+      .cockpit-shell.harness-cockpit { height: 100%; grid-template-rows: minmax(0, 1fr); }
+      .harness-cockpit > .cockpit-stage { grid-row: 1; height: 100%; }
+      .harness-message { max-width: 680px; margin: 48px auto; padding: 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); line-height: 1.5; }
+      @media (max-width: 720px) {
+        .harness-status { width: 100%; margin-left: 0; }
+        .harness-stage { padding: 10px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="harness-shell">
+      <form class="harness-controls" id="controls">
+        <label class="harness-control"><span>Story</span><select name="story"></select></label>
+        <label class="harness-control" data-control="mode"><span>Mode</span><select name="mode"></select></label>
+        <label class="harness-control" data-control="size"><span>Size</span><select name="size"><option value="full">Full</option><option value="mini">Miniature</option></select></label>
+        <label class="harness-control"><span>Theme</span><select name="theme"><option value="light">Light</option><option value="dark">Dark</option></select></label>
+        <label class="harness-control" data-control="range"><span>Glucose range</span><select name="range"><option value="shared">Shared across field</option><option value="fitted">Fitted to chart</option></select></label>
+        <label class="harness-control"><span>Data</span><select name="source"><option value="manufactured">Manufactured</option><option value="live">Live Harmonic</option></select></label>
+        <label class="harness-control" data-control="chart"><span>Drill chart id</span><input name="chart" placeholder="optional chart id"></label>
+        <output class="harness-status" id="status"></output>
+      </form>
+      <main class="harness-stage" id="stage"></main>
+    </div>
+    <script type="module" src="/main.js"></script>
+  </body>
+</html>

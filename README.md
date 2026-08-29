@@ -120,6 +120,20 @@ trend, the carb log, prompts, focus, the timeline, backtests, the model view and
 more — and the rest the static files the UI loads. The complete list is
 browsable at `/api/docs` (FastAPI's Swagger UI) once `serve` is running.
 
+### Component harness
+
+Node 22 is required to open the dev-only chart harness. Install and start it
+from `harness/`:
+
+```sh
+npm install
+npm run dev
+```
+
+The harness opens on manufactured data committed to this repository. To use
+the live-data switch, start `uv run harmonic serve` yourself first; the harness
+never starts Harmonic or selects a database for it.
+
 `fetch` is idempotent: re-pulling an overlapping window merges rather than
 duplicates, so you can run it repeatedly. Windows longer than 31 days are split
 into 31-day requests automatically (t:connect rejects longer ones). Each fetch

@@ -18,10 +18,16 @@ from __future__ import annotations
 import argparse
 import json
 import pathlib
+import re
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 HERE = pathlib.Path(__file__).resolve().parent
 FIXTURES = "mockups/diagnose-workstation.synthetic/"
+REQUIRED_DARK_ROLES = (
+    "--wk-canvas", "--wk-field", "--wk-surface", "--wk-surface-rail",
+    "--wk-surface-sunken", "--wk-ink", "--wk-ink-body", "--wk-ink-meta",
+    "--wk-ink-nav", "--wk-rule", "--wk-rule-strong", "--wk-signal",
+)
 
 # The two block-evidence cases carrying nine runs each. Chosen for render density
 # alone — the lock evidence needs tiles with enough marks to judge — and saying
@@ -34,9 +40,8 @@ def read(name: str) -> dict:
     return json.loads((ROOT / name).read_text())
 
 
-def css_rule(source: str, selector: str) -> str:
-    """Return one balanced CSS rule without maintaining a duplicate palette."""
-    start = source.index(selector)
+def css_rule(source: str, start: int) -> str:
+    """Return one balanced CSS rule from a known selector boundary."""
     open_brace = source.index("{", start)
     depth = 0
     for end in range(open_brace, len(source)):
@@ -46,7 +51,41 @@ def css_rule(source: str, selector: str) -> str:
             depth -= 1
             if depth == 0:
                 return source[start:end + 1]
-    raise ValueError(f"unclosed CSS rule for {selector}")
+    raise ValueError("corrupt Dark theme source: unclosed standalone html.dark token block")
+
+
+def standalone_dark_rule(source: str) -> str:
+    """Return the one standalone Dark token rule, rejecting lookalikes."""
+    matches = list(re.finditer(r"(?m)^[ \t]*html\.dark[ \t]*\{", source))
+    if len(matches) != 1:
+        raise ValueError("corrupt Dark theme source: expected exactly one standalone html.dark token block")
+    rule = css_rule(source, matches[0].start())
+    declared = set(re.findall(r"(--[\w-]+)\s*:", rule))
+    missing = [role for role in REQUIRED_DARK_ROLES if role not in declared]
+    if missing:
+        raise ValueError("corrupt Dark theme source: missing required Dark roles " + ", ".join(missing))
+    return rule
+
+
+def self_check() -> int:
+    """Exercise selector and role-validation corruption boundaries."""
+    roles = "".join(f"{role}: value;" for role in REQUIRED_DARK_ROLES)
+    source = f"html.dark .component {{ --wk-canvas: wrong; }}\nhtml.dark {{{roles}}}"
+    selected = standalone_dark_rule(source)
+    if "wrong" in selected or "html.dark .component" in selected:
+        raise AssertionError("prefixed Dark selector was accepted as the token block")
+    rejection = ""
+    try:
+        standalone_dark_rule(source.replace("--wk-signal: value;", ""))
+    except ValueError as error:
+        if "missing required Dark roles --wk-signal" not in str(error):
+            raise
+        rejection = str(error)
+    else:
+        raise AssertionError("missing required Dark role was accepted")
+    print("prefixed Dark selector ignored; standalone html.dark token block selected")
+    print(f"missing role rejected: {rejection}")
+    return 0
 
 
 def shipped_dark_theme() -> str:
@@ -56,7 +95,7 @@ def shipped_dark_theme() -> str:
     # Keep both shipped sources in the generated HTML. The template names only
     # composition aliases below; it never copies a Dark value by hand.
     return ("/* generated from frontend/index.html html.dark and frontend/theme.css */\n"
-            + css_rule(index, "html.dark")
+            + standalone_dark_rule(index)
             + "\n\n/* frontend/theme.css — source-bound production role rules */\n"
             + theme)
 
@@ -187,8 +226,13 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--check", action="store_true",
                         help="fail if the committed exploration is stale")
+    parser.add_argument("--self-check", action="store_true",
+                        help="exercise Dark source selector and role corruption checks")
     parser.add_argument("--out", type=pathlib.Path, default=HERE / "index.html")
     args = parser.parse_args()
+
+    if args.self_check:
+        return self_check()
 
     text = render()
     current = args.out.read_text() if args.out.exists() else ""

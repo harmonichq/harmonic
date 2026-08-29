@@ -731,8 +731,14 @@ test('Dark canvas gives the shared hero/basal body one vessel edge and role-owne
       return {
         focalEdge: focal.boxShadow, focalRadius: focal.borderTopLeftRadius,
         chartBorder: chart.borderTopWidth, laneBorder: lane.borderTopWidth,
-        chartParent: document.querySelector('#chart').parentElement.className,
-        laneParent: document.querySelector('#lane').closest('.body').className,
+        sharedHeroBasalBody: document.querySelector('#chart').parentElement
+          === document.querySelector('#lane').closest('.body'),
+        separatedBodyFails: (() => {
+          const sharesBody = (chart, basal) => chart.parentElement === basal.closest('.body');
+          const separated = document.createElement('div');
+          separated.className = 'body';
+          return !sharesBody(document.querySelector('#chart'), separated);
+        })(),
         handleGround: handle.backgroundColor, slotGround: slot.backgroundColor,
         handleRule: handle.borderTopColor,
       };
@@ -741,7 +747,8 @@ test('Dark canvas gives the shared hero/basal body one vessel edge and role-owne
     assert.equal(surface.focalRadius, '4px', 'focal vessel keeps the shared radius');
     assert.equal(surface.chartBorder, '0px', 'hero chart adds no second top seam');
     assert.equal(surface.laneBorder, '0px', 'basal lane adds no second top seam');
-    assert.equal(surface.chartParent, surface.laneParent, 'hero chart and basal lane share one canvas body');
+    assert.equal(surface.sharedHeroBasalBody, true, 'hero chart and basal lane share one canvas body');
+    assert.equal(surface.separatedBodyFails, true, 'a separated basal body fails the shared-vessel identity check');
     assert.equal(surface.handleGround, surface.slotGround, 'dock handle shares the swappable-slot rail');
     assert.notEqual(surface.handleRule, 'rgba(0, 0, 0, 0)', 'dock handle exposes its own tray boundary');
     assert.deepEqual(errors, []);

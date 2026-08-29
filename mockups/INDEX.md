@@ -29,6 +29,12 @@ Finding → evidence routing surface so every registered evidence chart uses one
 bounded fullscreen frame. Its synthetic Light/Dark, red/control before-and-after
 evidence is stored under `openspec/changes/fullscreen-chart-containment/evidence/`.
 
+Issue [#226](https://github.com/harmonichq/harmonic/issues/226) revises the shipped
+Finding → evidence routing surface so a star keeps a live chart without changing
+findings rank. A retained unranked chart sits after ranked charts and before the
+existing Watching divider; paired synthetic Light/Dark evidence is stored under
+`openspec/changes/star-means-keep/evidence/`, and ADR 226 is normative.
+
 **Explore** is deliberately absent from this ledger. It is the arbitrary-slicing
 ambition, it has no surface yet, and the #31 exploration excludes it by name; it
 earns a row when it becomes a real job and gets its own round.

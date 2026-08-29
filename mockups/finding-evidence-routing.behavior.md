@@ -11,7 +11,7 @@ S41-S71.
 The app-only replay is
 `frontend/diagnose-workstation-behavior.replay.mjs`.
 
-**139 issued executable IDs:** S01–S119, C41–C57, and D1–D3
+**140 issued executable IDs:** S01–S120, C41–C57, and D1–D3
 **Active executable IDs:** all issued
 **Retired executable IDs:** none
 
@@ -2758,3 +2758,13 @@ path, event-comparison replay S14 for the Carb undercount plot/key contract, and
 `frontend/diagnose-workstation.browser.test.mjs` for the complete four-family,
 two-theme, two-viewport matrix. Synthetic before/after renders are stored under
 `openspec/changes/fullscreen-chart-containment/evidence/`.
+
+## Revision amendment — 2026-08-28 (star means keep)
+
+**S120.** Starring or unstarring a ranked chart leaves the server-published
+filmstrip order and current Spotlight unchanged. If that still-live chart later
+becomes a Watching read, its star keeps it immediately after the ranked charts
+and before the Watching divider. Stopping retention leaves the Spotlight alone
+and returns the chart to its automatic position after the divider. The star's
+keyboard path and accessible copy say **Keep** and **Stop keeping**, never Pin,
+Unpin, or left-most. Evidence: replay S120.

@@ -68,6 +68,14 @@ click a finding and its evidence takes the focal position.
 
 ### Amendment — 2026-08-26 — a pin orders the dock, and the dock has three states
 
+**Superseded ordering clauses.** ADR 226 in
+`openspec/changes/star-means-keep/design.md` supersedes this amendment wherever
+it says a star orders a chart left-most, sorts stars ahead of findings rank, or
+makes a Watching chart ranked. The historical text below remains as the record
+of the behavior that shipped; a star now retains a live chart without changing
+rank, and a retained unranked chart sits after ranked charts but before the
+Watching divider.
+
 Ruled by the operator across the slice-3 design rounds, superseding the parts
 of ADR 215 named below before they were built. Drawn and driven at
 `openspec/changes/canvas-tile-controls/dock-states.wireframe.html`; every

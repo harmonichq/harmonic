@@ -10,10 +10,10 @@
  *
  * Three regressions this file exists to hold, each of which a green fast gate
  * missed:
- *   · pinning a second chart silently moved the focal chart (pin state and
- *     focus are separate verbs);
+ *   · starring a ranked chart reordered the dock even though retention and
+ *     focus are separate verbs;
  *   · selecting a filmstrip cell moved that chart left-most instead of leaving
- *     the dock in its published pins-then-findings order;
+ *     the dock in its published findings order;
  *   · a stale-generation recovery restored a layout captured before the refresh,
  *     so a pin whose row the new generation dropped was seated with no
  *     descriptor and the repaint threw.
@@ -142,61 +142,66 @@ const readField = (page) => page.evaluate(() => ({
   })),
 }));
 
-test('five pins remain available and order the dock without moving the spotlight', async () => {
+test('five stars remain available without reordering the dock or moving the spotlight', async () => {
   const browser = await runner.browser();
   const { page, errors } = await openCanvas(browser);
   try {
     const opening = await readField(page);
     assert.ok(opening.focal, 'the fixed canvas opens with a spotlight');
-    const targets = opening.row.filter(({ pinned }) => !pinned).slice(0, 5);
-    assert.equal(targets.length, 5, 'the filmstrip exposes at least five charts to pin');
+    const order = opening.row.map(({ chartId }) => chartId);
+    const targets = opening.row.filter(({ pinned }) => !pinned).slice(0, 5).reverse();
+    assert.equal(targets.length, 5, 'the filmstrip exposes at least five charts to keep');
 
-    const pinned = [];
     for (const { chartId } of targets) {
       await page.locator(`#tile-row .evidence-tile[data-chart-id="${chartId}"] .tile-pin`).click();
       await page.waitForTimeout(350);
-      pinned.push(chartId);
       const field = await readField(page);
-      assert.equal(field.focal, opening.focal, `pinning ${chartId} leaves the spotlight alone`);
-      assert.deepEqual(field.row.slice(0, pinned.length).map(({ chartId: id }) => id), pinned,
-        'pins stay left-most in the order the reader made them');
+      assert.equal(field.focal, opening.focal, `starring ${chartId} leaves the spotlight alone`);
+      assert.deepEqual(field.row.map(({ chartId: id }) => id), order,
+        'stars never change the server-published dock order');
     }
-    assert.ok((await readField(page)).row.slice(0, 5).every(({ pinned: held }) => held),
-      'the fifth pin is accepted without evicting any earlier pin');
-    assert.deepEqual(errors, [], 'no page error during the pin sequence');
+    assert.equal((await readField(page)).row.filter(({ pinned }) => pinned).length, 5,
+      'the fifth star is accepted without evicting any earlier star');
+    assert.deepEqual(errors, [], 'no page error during the star sequence');
   } finally {
     await page.close();
   }
 });
 
-test('pinning reorders charts without moving the spotlight', async () => {
+test('a ranked chart star uses keep copy and changes no position or spotlight', async () => {
   const browser = await runner.browser();
   const { page, errors } = await openCanvas(browser);
   try {
     const opening = await readField(page);
     const focal = opening.focal;
     assert.ok(focal, 'the canvas opens with a focal chart');
-    /* PIN A FILMSTRIP CELL, never the spotlight. The regression this holds set the
-       focal chart to the FIRST PIN on the second pin, which is invisible when
-       the reader pins the focal chart first — so the sequence here is the one
-       that exposed it: two charts pinned, spotlight untouched. */
+    const order = opening.row.map(({ chartId }) => chartId);
     const mini = opening.row.find(({ chartId }) => chartId !== focal);
     assert.ok(mini, 'the opening filmstrip exposes a chart beside the spotlight');
-    await page.locator(`#tile-row .evidence-tile[data-chart-id="${mini.chartId}"] .tile-pin`).click();
+    const star = page.locator(`#tile-row .evidence-tile[data-chart-id="${mini.chartId}"] .tile-pin`);
+    const title = mini.title;
+    assert.equal(await star.getAttribute('aria-label'), `Keep ${title}`);
+    assert.equal(await star.getAttribute('title'), 'Keep this chart in the dock');
+    await star.focus();
+    await page.keyboard.press('Space');
     await page.waitForTimeout(350);
     let field = await readField(page);
-    assert.equal(field.focal, focal, 'pinning a filmstrip chart does not move focus to it');
+    assert.equal(field.focal, focal, 'starring a filmstrip chart does not move focus to it');
+    assert.deepEqual(field.row.map(({ chartId }) => chartId), order,
+      'starring a ranked chart leaves the published order unchanged');
     assert.equal(field.row.find(({ chartId }) => chartId === mini.chartId)?.pinned, true,
-      'the pinned chart moves into the left-most group');
+      'the star records retention without becoming ordering authority');
 
-    // the second pin is the one that used to reassign focus to the first pin
-    await page.locator(`#tile-focal .evidence-tile[data-chart-id="${focal}"] .tile-pin`).click();
+    assert.equal(await star.getAttribute('aria-label'), `Stop keeping ${title}`);
+    assert.equal(await star.getAttribute('title'), 'Stop keeping this chart');
+    await star.focus();
+    await page.keyboard.press('Space');
     await page.waitForTimeout(350);
     field = await readField(page);
     assert.equal(field.focal, focal,
-      'a second pin leaves the focal chart where the reader put it');
-    assert.equal(field.row.filter(({ pinned }) => pinned).length, 2,
-      'both charts lead the row in pin order');
+      'stopping retention leaves the focal chart where the reader put it');
+    assert.deepEqual(field.row.map(({ chartId }) => chartId), order,
+      'stopping retention also leaves the published order unchanged');
     assert.deepEqual(errors, []);
   } finally {
     await page.close();
@@ -626,7 +631,7 @@ test('a wrapping slicer drag coalesces pinned-chart re-reads before mouse-up', a
   }
 });
 
-test('reconcileTileDescriptors retains a pinned chart whose next slice drops its row', async () => {
+test('reconcileTileDescriptors keeps an unranked star immediately before Watching', async () => {
   const browser = await runner.browser();
   let served = 0;
   let droppedId = null;
@@ -663,10 +668,13 @@ test('reconcileTileDescriptors retains a pinned chart whose next slice drops its
     assert.ok(retained, 'the vanished row keeps its pinned tile through reconciliation');
     assert.equal(retained.pinned, true, 'the recommendation never evicts the pin');
     assert.equal(retained.state, 'empty', 'the retained tile names its degraded state');
-    assert.equal(retained.body, 'Pinned chart is not in the current findings.',
+    const retainedIndex = field.row.findIndex(({ chartId }) => chartId === victim.chartId);
+    const firstTailIndex = await page.locator('#tile-row .evidence-tile').evaluateAll((tiles) =>
+      tiles.findIndex((tile) => tile.hasAttribute('data-tail-head')));
+    assert.equal(retainedIndex, firstTailIndex - 1,
+      'the retained star follows every ranked chart and immediately precedes Watching');
+    assert.equal(retained.body, 'Kept chart is not in the current findings.',
       'the degraded tile explains why its measured evidence is absent');
-    assert.equal(field.row[0]?.chartId, victim.chartId,
-      'the retained pin keeps the vanished chart left-most in the ordered dock');
     assert.equal(field.pinCount, null, 'the uncapped pin model has no cap counter');
     assert.equal(field.arrangement, null, 'the field does not revive a derived arrangement');
     for (const tile of field.tiles) {

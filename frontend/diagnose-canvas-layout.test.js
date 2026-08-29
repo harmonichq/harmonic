@@ -14,25 +14,25 @@ import {
   unpinChart,
 } from './diagnose-canvas-layout.js';
 
-test('pinning orders every chart without a cap or moving focus', () => {
+test('starring retains every chart without a cap or moving focus', () => {
   let layout = createCanvasLayout({ focalId: 'a' });
   for (const chartId of ['b', 'd', 'a', 'e', 'c']) {
     layout = pinChart(layout, chartId);
-    assert.equal(layout.focalId, 'a', `pinning ${chartId} leaves focus alone`);
+    assert.equal(layout.focalId, 'a', `starring ${chartId} leaves focus alone`);
   }
   assert.deepEqual(layout.pins, ['b', 'd', 'a', 'e', 'c'],
-    'a fifth pin is accepted and every earlier pin keeps its order');
-  assert.equal(pinChart(layout, 'b'), layout, 'pinning an existing chart is idempotent');
+    'a fifth star is accepted and every earlier star remains retained');
+  assert.equal(pinChart(layout, 'b'), layout, 'starring an existing chart is idempotent');
 });
 
-test('unpinning releases only that chart and keeps focus', () => {
+test('stopping retention releases only that chart and keeps focus', () => {
   let layout = createCanvasLayout({ focalId: 'c' });
   for (const chartId of ['b', 'd', 'c']) layout = pinChart(layout, chartId);
   layout = unpinChart(layout, 'd');
   assert.deepEqual(layout, { focalId: 'c', pins: ['b', 'c'] });
 });
 
-test('placeSeats returns one focal chart followed by the complete ordered row', () => {
+test('placeSeats preserves candidate order after the focal chart', () => {
   let layout = createCanvasLayout({ focalId: 'candidate-b' });
   layout = pinChart(layout, 'held');
   layout = pinChart(layout, 'candidate-c');
@@ -40,9 +40,9 @@ test('placeSeats returns one focal chart followed by the complete ordered row', 
     ['candidate-a', 'candidate-b', 'candidate-c', 'held', 'candidate-a'], layout,
   ), [
     { chartId: 'candidate-b', seat: 'focal', pinned: false },
-    { chartId: 'held', seat: 'mini', pinned: true },
-    { chartId: 'candidate-c', seat: 'mini', pinned: true },
     { chartId: 'candidate-a', seat: 'mini', pinned: false },
+    { chartId: 'candidate-c', seat: 'mini', pinned: true },
+    { chartId: 'held', seat: 'mini', pinned: true },
   ]);
 });
 
@@ -55,7 +55,7 @@ test('dockOrder keeps the whole set stable when focus changes', () => {
   const focused = dockOrder(candidates, createCanvasLayout({
     focalId: 'c', pins: layout.pins,
   }));
-  assert.deepEqual(opening, ['d', 'b', 'a', 'c', 'e']);
+  assert.deepEqual(opening, ['a', 'b', 'c', 'd', 'e']);
   assert.deepEqual(focused, opening,
     'selecting a different current frame does not reorder or remove any dock cell');
 });
@@ -187,7 +187,7 @@ test('the layout module owns no findings-generation check of its own', () => {
     'all findings-generation refreshes pass through one request authority');
 });
 
-test('pinning preserves focus as the ordered pin list grows', () => {
+test('starring preserves focus as the retained set grows', () => {
   let layout = createCanvasLayout({ focalId: 'focal-chart' });
   for (const chartId of ['slot-a', 'slot-b', 'slot-c']) {
     layout = pinChart(layout, chartId);
@@ -197,7 +197,7 @@ test('pinning preserves focus as the ordered pin list grows', () => {
   assert.deepEqual(layout.pins, ['slot-a', 'slot-b', 'slot-c']);
 });
 
-test('a pinned focal chart keeps the focal seat whatever order it was pinned in', () => {
+test('a starred focal chart keeps the focal seat whatever order it was retained in', () => {
   let layout = createCanvasLayout({ focalId: 'second' });
   layout = pinChart(layout, 'first');
   layout = pinChart(layout, 'second');

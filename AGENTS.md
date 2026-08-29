@@ -188,6 +188,17 @@ your own database — never a published one, and never a live pull.**
   ```
 
   Exercise every other model path through tests and fixtures instead.
+
+  For chart-level UI revision rounds, the preferred safe surface is the
+  component harness: `npm install && npm run dev` inside `harness/`, in
+  manufactured mode (its default — served from committed synthetic fixtures,
+  no app process needed). It opens one shipped chart at a time through the
+  real Diagnose composition, so a chart revised there is the shipped chart.
+  Live mode only forwards to a `serve` the operator already started, and is
+  never used in automated work. One coupling to watch: the harness names app
+  API paths as hand-written strings that no test checks, so an endpoint
+  rename breaks a story silently in manufactured mode and loudly in live —
+  when an `/api/...` path changes, grep `harness/` in the same change.
 - **Committed fixtures come from a committed generator**, and carry a
   provenance stamp saying so. Do not hand-write a fixture out of real data, and
   do not paste real values into a test.

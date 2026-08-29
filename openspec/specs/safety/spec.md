@@ -25,6 +25,8 @@ direction the evidence cannot support.
 
 ### Requirement: Every recommendation is clamped to an absolute sane range
 
+The system SHALL satisfy the following:
+
 No recommended basal rate is ever emitted outside `SafetyConfig.abs_min` (0.1 U/h)
 and `SafetyConfig.abs_max` (3.0 U/h), whatever the estimate says. This clamp applies
 before any other rule and applies even when no current programmed rate is known, so
@@ -37,6 +39,8 @@ it is the one guard that can never be skipped.
 - **THEN** the recommendation is `abs_max`, never the raw estimate
 
 ### Requirement: A move from a known current setting is limited to one step
+
+The system SHALL satisfy the following:
 
 When a current programmed rate is known, the recommendation is clamped to
 `current × (1 ± SafetyConfig.max_step_frac)` — 20% per pass. A recommendation that
@@ -63,6 +67,8 @@ that the next window would have to undo.
 
 ### Requirement: A change smaller than the noise floor is reported as no change
 
+The system SHALL satisfy the following:
+
 A move whose magnitude is below `SafetyConfig.noise_floor` (0.05 U/h) resolves to
 `NO_CHANGE`, holding at the current rate. Below that magnitude the difference is
 indistinguishable from measurement noise, and re-programming a schedule for it
@@ -80,13 +86,21 @@ segments into the consolidated profile.
 
 ### Requirement: Without a current setting, only the absolute range applies
 
+The system SHALL satisfy the following:
+
 Control-IQ rarely lets the programmed profile show through, so many slots have no
 recoverable baseline. Such a slot reports `NO_BASELINE`: the absolute range still
 clamps it, but the relative step cap and the noise floor have no baseline to be
 computed against and are not applied. `NO_BASELINE` is not an actionable verdict —
 the number is shown, but nothing stages off it.
 
+#### Scenario: Without a current setting, only the absolute range applies
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies
 ### Requirement: A basal direction requires a family-corrected sign test
+
+The system SHALL satisfy the following:
 
 A basal direction is not read off the estimate's confidence interval. Each clean
 night contributes one sign per slot — delivered basal above or below the programmed
@@ -99,7 +113,13 @@ independent tests. Only a slot whose supported direction agrees with the propose
 move keeps a directional verdict; disagreement or no support downgrades it to
 `INSUFFICIENT`.
 
+#### Scenario: A basal direction requires a family-corrected sign test
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies
 ### Requirement: A basal slot below the minimum-supported-nights floor cannot assert a direction
+
+The system SHALL satisfy the following:
 
 A slot with fewer than `_MIN_SUPPORTED_NIGHTS` (8) informative non-tie nights is
 assigned p = 1 in the sign test, so it can never clear the family correction and can
@@ -127,6 +147,8 @@ a basal change.
 
 ### Requirement: The minimum-directional-days floor is a distinct, weaker guard
 
+The system SHALL satisfy the following:
+
 `_MIN_DIRECTIONAL_DAYS` (3) is not the supported-nights floor and must not be
 confused with it. It guards the interval-based direction rule, which applies to
 callers that supply no externally computed direction: such a caller's estimate is
@@ -137,7 +159,13 @@ agreement against pre-edit data before the two are pooled. The basal path does n
 use the interval rule at all — it supplies the family-corrected sign verdict — so
 the eight-night floor, not the three-day one, is what governs a basal assertion.
 
+#### Scenario: The minimum-directional-days floor is a distinct, weaker guard
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies
 ### Requirement: A wide estimate never asserts a direction, and neither does a band that spans the current setting
+
+The system SHALL satisfy the following:
 
 Under the interval rule, an estimate flagged wide by the estimate layer — a broad
 band relative to its point value, too few observations, or too few independent
@@ -155,6 +183,8 @@ that merely touches the current value at an endpoint survives.
 - **THEN** the verdict is `INSUFFICIENT` — a narrow band alone does not license a move
 
 ### Requirement: An I:C block asserts only when it meets the minimum-supported-runs floor
+
+The system SHALL satisfy the following:
 
 An I:C block — a maximal contiguous group of programmed segments sharing one value on
 the circular day, which is the unit a person can actually edit on the pump — may
@@ -190,6 +220,8 @@ the emerging number without it being able to move anything.
 
 ### Requirement: Historical I:C measurements can never become dosing advice
 
+The system SHALL satisfy the following:
+
 The supported-runs floor governs only the currently programmed I:C block. A retired
 regime may remain visible with a point estimate, interval, and support above or below
 that floor, but it carries no recommendation, direction, lean, priority, assertion,
@@ -207,6 +239,8 @@ non-null estimate, a narrow interval, or ample support as permission to act.
 
 ### Requirement: A held estimate keeps its number and its band visible
 
+The system SHALL satisfy the following:
+
 A verdict that withholds a direction never blanks the measurement. The capped
 recommendation, the point estimate, the confidence interval, and the sample size all
 remain in the payload for a held slot, block, or segment. Withholding the *assertion*
@@ -214,7 +248,13 @@ while showing the *evidence* is the intended posture: hiding a thin number would
 a reader the ability to see a signal forming, while presenting it as actionable would
 be the failure this capability exists to prevent.
 
+#### Scenario: A held estimate keeps its number and its band visible
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies
 ### Requirement: The verdict is the only staging and delivery predicate
+
+The system SHALL satisfy the following:
 
 The safety verdict — exposed as `SlotEstimate.asserts_move` for basal and as the I:C
 and ISF analyzers' own single eligibility flags — is what every
@@ -259,6 +299,8 @@ it currently agrees.
 
 ### Requirement: The harm layer may only ever move toward less insulin
 
+The system SHALL satisfy the following:
+
 Estimates are measured on clean windows, which by construction exclude the lows the
 current settings caused — a low is out of range and filtered out, so it is never
 measured. The harm layer is applied *on top of* a computed verdict to close that
@@ -299,6 +341,8 @@ is the point.
 
 ### Requirement: ISF and I:C moves are half-gap steps under the same 20% cap
 
+The system SHALL satisfy the following:
+
 The ISF and I:C analyzers do not route through the basal cap;
 each computes its own recommendation as half the gap from the programmed value toward
 its measured target, clamped to ±20% of the programmed value. Moving halfway per
@@ -306,7 +350,13 @@ window converges on the right value while re-measuring at each step, where repea
 full steps overshoot and reverse. The ±20% clamp is the same per-pass limit the basal
 step cap enforces, applied to a different parameter.
 
+#### Scenario: ISF and I:C moves are half-gap steps under the same 20% cap
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies
 ### Requirement: One backend predicate decides whether an ISF row may stage
+
+The system SHALL satisfy the following:
 
 `isf_asserts_move` is the ISF staging decision. It is evaluated after
 the harm gate from the final values that the analyzer publishes, and is true only
@@ -337,6 +387,8 @@ because it now shares the one-verdict staging invariant.
   false and no consumer may stage the row
 
 ### Requirement: A direction without a trustworthy number recommends nothing
+
+The system SHALL satisfy the following:
 
 Where harm evidence establishes a direction but the measurement cannot supply a value
 worth programming, no recommendation is emitted at all. Recurring correction-caused

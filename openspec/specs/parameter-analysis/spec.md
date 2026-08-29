@@ -20,6 +20,8 @@ onto their result rows for every downstream consumer.
 
 ### Requirement: ISF is a single fasting number, never a time-of-day schedule
 
+The system SHALL satisfy the following:
+
 The ISF analyzer produces exactly one estimate, labelled for the fasting regime,
 carried in the result schema as a one-row list anchored at the start of the day.
 Daytime ISF is not separately identifiable from this data — meal boluses logged
@@ -29,7 +31,13 @@ compares against is the median of the programmed segments overlapping the
 nocturnal envelope, because the pump's schedule is per-segment and the fasting
 regime spans several segments and wraps midnight.
 
+#### Scenario: ISF is a single fasting number, never a time-of-day schedule
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies
 ### Requirement: ISF is the slope of glucose change against insulin that acted
+
+The system SHALL satisfy the following:
 
 Over each consecutive pair of CGM readings inside a fasting window, the analyzer
 regresses the glucose change on the units of insulin that were absorbed across
@@ -40,7 +48,13 @@ marginal effect. Steps whose endpoints are further apart than a sensor gap
 allows, or whose glucose change is physiologically implausible, are dropped
 before the fit.
 
+#### Scenario: ISF is the slope of glucose change against insulin that acted
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies
 ### Requirement: The fasting window is a detected rest window with no carbs in play
+
+The system SHALL satisfy the following:
 
 A step is admissible only when **both** of its CGM endpoints fall inside the
 *same* detected rest window for that night — the behaviorally inferred at-rest
@@ -74,6 +88,8 @@ carb-bearing bolus and an unbolused Carb log entry contaminate differently:
 
 ### Requirement: The Carb log is an exclusion signal only
 
+The system SHALL satisfy the following:
+
 The manual Carb log — user-entered unbolused carbs, in practice a rescue log — is
 threaded into ISF purely to de-bias the fasting window. It scales how long a
 window stays masked and nothing else. It is never a modelling input, never
@@ -89,6 +105,8 @@ ISF fit exists to measure.
   contributes no dose, no carb term, and no adjustment to the fitted slope
 
 ### Requirement: Every estimate carries an interval, and a wide interval blocks assertion
+
+The system SHALL satisfy the following:
 
 Estimates ship as a point value, an 80% percentile-bootstrap interval, and the
 sample size behind them; thin data surfaces as a wide interval and a visible `n`,
@@ -108,6 +126,8 @@ clusters. A wide estimate still displays; it simply cannot support a move.
   how narrow the raw step-level band would have been
 
 ### Requirement: Harm evidence owns the ISF direction; the measurement may only strengthen
+
+The system SHALL satisfy the following:
 
 Correction-caused printed lows and correction-attributed rescue logs decide when
 ISF eases weaker. That check runs first, and it clears whenever the Wilson lower
@@ -140,6 +160,8 @@ corrections outright.
 
 ### Requirement: A harm-owned weaken is direction-only and never names a new ISF
 
+The system SHALL satisfy the following:
+
 When lows own the direction, the analysis states the direction and withholds the
 number: no recommended value is emitted, so nothing can be staged or programmed
 from it. The capped half-gap toward the robust per-night median survives only as
@@ -147,7 +169,13 @@ an internal basis for pricing the lever's ranking — it is never rendered, neve
 stageable, and never a schedule value. Harm evidence establishes that corrections
 are too aggressive; it does not identify a trustworthy replacement.
 
+#### Scenario: A harm-owned weaken is direction-only and never names a new ISF
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies
 ### Requirement: One predicate decides whether an ISF row may stage
+
+The system SHALL satisfy the following:
 
 `isf_asserts_move` is **the** ISF staging decision. The analyzer evaluates it
 after every harm adjustment and any final rounding, then stamps its boolean
@@ -173,6 +201,8 @@ one of them as a substitute staging gate.
   `asserts_move = false`, so it cannot enter Plan
 
 ### Requirement: I:C is measured from closed meal-run ledgers
+
+The system SHALL satisfy the following:
 
 The I:C unit of evidence is a **meal run**: a maximal chain of qualifying meals
 whose consecutive boluses sit no further apart than the isolation window. The run
@@ -206,6 +236,8 @@ them.
 
 ### Requirement: The carb-ratio block is the unit that decides; segments are display
 
+The system SHALL satisfy the following:
+
 A **block** is a maximal contiguous group of programmed I:C segments sharing one
 value, on the circular day — the thing the user can actually edit, since adjacent
 segments carrying the same ratio move together on the pump, and the thing the
@@ -234,7 +266,13 @@ that barely touches a block cannot unlock it, and a block built entirely of
 chained evidence is no longer condemned to report itself unmeasurable when it has
 plenty to say.
 
+#### Scenario: The carb-ratio block is the unit that decides; segments are display
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies
 ### Requirement: Retired I:C history requires proved schedule membership
+
+The system SHALL satisfy the following:
 
 A retired I:C regime is measurable only from closed meal runs whose entire
 membership is proved against the append-only settings snapshots in force at the
@@ -270,6 +308,8 @@ history lifecycle can assert a current move.
 
 ### Requirement: Historical event evidence preserves the whole meal run
 
+The system SHALL satisfy the following:
+
 The event evidence for a retired regime copies the analyzer-published run roster.
 Each run is anchored at its first member bolus, carries every later member as a
 minute offset, begins at its analyzer-owned pre-run CGM bound, and continues through
@@ -285,6 +325,8 @@ members, changes the roster, or shortens the series.
   present, while the full history population is unchanged
 
 ### Requirement: One predicate decides whether a block's ratio may move anything
+
+The system SHALL satisfy the following:
 
 `ic_asserts_move` is **the** I:C eligibility decision. Every condition lives
 inside it, and it is stamped onto the block from the evidence the analyzer just
@@ -329,6 +371,8 @@ verdict, so a surface can say *which* one is holding without re-implementing it.
 
 ### Requirement: Scatter is reported as carb counting, not as a ratio
 
+The system SHALL satisfy the following:
+
 Under-bolusing a meal is ambiguous between a weak ratio and undercounted carbs;
 consistency separates them. When enough closed runs exist but the whole-day
 pooled ratio's interval is wide, the analysis declines to recommend a ratio and
@@ -344,6 +388,8 @@ counting habit is the lever, not the setting. A tight interval does not fire it.
 
 ### Requirement: A recommendation moves half the gap and is capped
 
+The system SHALL satisfy the following:
+
 Where a parameter change is recommended at all, it moves halfway from the
 programmed value toward the measured target, then is clamped to ±20% of the
 programmed value. Half-gap converges without the reversals a full-step chase
@@ -352,7 +398,13 @@ overshooting. The step is priced once here; ranking never scales it a second
 time. Floors on how much evidence a move requires are the safety layer's, read
 from there rather than restated.
 
+#### Scenario: A recommendation moves half the gap and is capped
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies
 ### Requirement: Meals that cannot be attributed leave the numeric pool without leaving the record
+
+The system SHALL satisfy the following:
 
 Evidence that cannot carry a numeric claim is demoted, not deleted. A meal or run
 whose start carries more than the identifiability floor of reconstructed action
@@ -363,7 +415,13 @@ cannot carry a ledger at all. Correction-only prehistory never disqualifies a
 meal. Demoted evidence still counts as coverage, still gates, and is still shown
 with the reason it is excluded and how many identifiable meals are still needed.
 
+#### Scenario: Meals that cannot be attributed leave the numeric pool without leaving the record
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies
 ### Requirement: The analysis names what it refuses to assert
+
+The system SHALL satisfy the following:
 
 Several silences are deliberate and must survive refactoring:
 
@@ -387,7 +445,13 @@ Several silences are deliberate and must survive refactoring:
   response against its carb-share ownership. Neither averages meal ratios, which
   would overweight small meals and bias the number high.
 
+#### Scenario: The analysis names what it refuses to assert
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies
 ### Requirement: The measured ISF feeds the I:C ledger's glucose-travel term
+
+The system SHALL satisfy the following:
 
 Turning a run's glucose travel into insulin units requires one representative ISF
 for the window. The measured fasting ISF is used when the analyzer produced one;
@@ -397,7 +461,13 @@ unconfirmed. Confirmed and fallback runs centre differently, so whenever any run
 in a pool has a readable outcome the estimate is taken from that subpopulation
 alone rather than folding a mixture into one number.
 
+#### Scenario: The measured ISF feeds the I:C ledger's glucose-travel term
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies
 ### Requirement: A candidate I:C estimator is admitted by evidence, never by plausibility
+
+The system SHALL satisfy the following:
 
 No alternative I:C estimator influences a recommendation until it has cleared two
 bars, in order. The bars judge a candidate only through the same interface the
@@ -409,7 +479,13 @@ certify, so it is a defect rather than a convenience.
 The shipped ledger is run through both bars as the calibration check. An
 incumbent that fails a bar means the bar is wrong.
 
+#### Scenario: A candidate I:C estimator is admitted by evidence, never by plausibility
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies
 ### Requirement: The entry bar recovers known ratios and stays silent on placebo
+
+The system SHALL satisfy the following:
 
 A candidate is run over synthetic meal histories whose correct ratio is known in
 advance, and over placebo histories built to carry no ratio signal. It must
@@ -444,7 +520,13 @@ are not signal-free: pooling is convex in carbs over insulin, so either turns
 zero-mean noise into a biased confident finding. A placebo the shipped ledger
 cannot pass is a defect in the placebo, never grounds for loosening the bar.
 
+#### Scenario: The entry bar recovers known ratios and stays silent on placebo
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies
 ### Requirement: The real-data bar measures agreement, not truth, and refuses what it cannot judge
+
+The system SHALL satisfy the following:
 
 On real history a single held ratio offers no contrast, so no held-out score can
 establish that one estimator is closer to the truth than another. The real-data
@@ -466,7 +548,13 @@ pairwise rather than comparing endpoints, because a change that reverted leaves
 the endpoints equal while placing a second regime inside the window. A refusal is
 a legitimate outcome that names why, never a score.
 
+#### Scenario: The real-data bar measures agreement, not truth, and refuses what it cannot judge
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies
 ### Requirement: Replay output carries counts, deltas, and verdicts only
+
+The system SHALL satisfy the following:
 
 What a replay renders is counts, deltas, and verdicts. It never renders a meal
 row, a glucose value, or a ratio — an estimate is a ratio value. The bar runs
@@ -476,3 +564,8 @@ The guarantee holds against the candidate as well as the harness: candidate
 output produced during replay is suppressed, and a failure is reported by kind
 rather than by echoing the data that caused it, so neither a candidate that
 prints its arguments nor one that raises carrying them can leak through.
+
+#### Scenario: Replay output carries counts, deltas, and verdicts only
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies

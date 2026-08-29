@@ -21,6 +21,8 @@ assembles a whole-profile deliverable.
 
 ### Requirement: Basal is reasoned about on the pump's local wall clock
 
+The system SHALL satisfy the following:
+
 A **basal profile** is a wall-clock schedule, so every timestamp reaching this
 capability is already normalized to the pump's local wall clock, and every clean
 minute is assigned to the slot its local hour and minute fall in. The day is
@@ -38,6 +40,8 @@ since some anchor.
   contributes one independent observation to that slot
 
 ### Requirement: Only clean minutes may inform a slot's number
+
+The system SHALL satisfy the following:
 
 A minute is eligible only when every one of these holds: delivered basal is
 actually flowing at that minute (a delivery segment covers it and its rate is
@@ -83,6 +87,8 @@ and no imputation.
 
 ### Requirement: A slot's number is the median of clean delivered basal, never the mean
 
+The system SHALL satisfy the following:
+
 Control-IQ's clean delivery is right-skewed: it adds corrective basal when
 glucose runs high but still in range, and that long upper tail is the algorithm
 working, not baseline need. A mean chases the tail and over-suggests, so the
@@ -111,6 +117,8 @@ interval mass.
 
 ### Requirement: Each slot is measured against the programmed basal in force, and cut to its own setting epoch
 
+The system SHALL satisfy the following:
+
 The baseline a slot is compared against is the **programmed basal** from the
 current settings snapshot's active schedule when one is available, and the
 reconstruction from the dense programmed-rate feed otherwise. Separately, each
@@ -124,7 +132,13 @@ the post-edit subset is thick enough to run that comparison. When they disagree,
 the post-edit-only reading stands and the divergence is recorded as a per-slot
 data-quality note.
 
+#### Scenario: Each slot is measured against the programmed basal in force, and cut to its own setting epoch
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies
 ### Requirement: A slot may assert a direction only when the family-corrected night sign test supports it
+
+The system SHALL satisfy the following:
 
 Direction is decided per night, not from the pooled estimate. Each night's clean
 minutes in a slot yield a median departure from the programmed basal that was in
@@ -147,6 +161,8 @@ the supported direction for that slot agrees with the move's sign.
 
 ### Requirement: Below the supported-nights floor a slot holds, while still showing its number and interval
 
+The system SHALL satisfy the following:
+
 A basal direction needs at least the supported-nights floor of informative
 non-tie nights — currently eight — before the sign test can return any support
 at all; below it, both directional tails are reported as certain non-evidence,
@@ -166,6 +182,8 @@ assertion is withheld.
   remain visible, and it moves nothing downstream
 
 ### Requirement: `asserts_move` is the single predicate that lets a slot move anything
+
+The system SHALL satisfy the following:
 
 Whether a slot may move the deliverable schedule, count toward the tuning
 **Priority** impact tally, or be staged into a **Plan** is decided by exactly one
@@ -200,6 +218,8 @@ eligibility test its consumers may apply.
 
 ### Requirement: Safety and harm adjust the recommendation, never the measurement
 
+The system SHALL satisfy the following:
+
 The clean-window median stays the measurement. The safety layer produces the
 bounded recommended number and the status from it, and the harm layer is applied
 on top of that result and only ever toward less insulin — withholding a raise for
@@ -217,6 +237,8 @@ identical whether or not either layer acted.
   cap — while the same thinness still forbids any upward move
 
 ### Requirement: Slots consolidate into a profile the pump can actually accept
+
+The system SHALL satisfy the following:
 
 The pump accepts a limited number of profile segments, so the per-slot rates are
 consolidated. Each slot contributes its deliverable rate: the moved
@@ -242,6 +264,8 @@ with the worst basal deviation they introduced.
 
 ### Requirement: A slot whose clean glucose is one-sided is flagged, not suppressed
 
+The system SHALL satisfy the following:
+
 The clean-window filter admits only in-range glucose, so a person who runs high
 leaves a left-truncated distribution in which the median drifts toward the
 corrective end. When more than the configured fraction of a slot's clean minutes
@@ -250,3 +274,8 @@ verdict stating the fraction and an estimate of how much the number may lean
 high, computed as the gap between the slot's full median and the median of its
 lower-glucose half. The verdict is a review cue attached to the slot's evidence;
 it never blocks or alters the estimate.
+
+#### Scenario: A slot whose clean glucose is one-sided is flagged, not suppressed
+
+- **WHEN** the capability evaluates the behavior described by this requirement
+- **THEN** the stated behavior applies

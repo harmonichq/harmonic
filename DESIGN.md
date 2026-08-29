@@ -147,7 +147,7 @@ and technical documentation keep their established domain terms.
 6. Direction-only findings name the direction in user terms wherever the trend is
    referenced, such as **"Corrections look stronger than needed."**
 7. Use these refusal lines verbatim:
-   - **"Corrections look stronger than needed, but recent lows make a new number unsafe to suggest."**
+   - **"No new number is available, so there is nothing to stage."**
    - **"A change is already being watched, so nothing new starts until it finishes."**
 8. User copy uses **Correction factor**, **1 U : 36 mg/dL**, and **Carb ratio**.
    Reserve **segment** for actual pump-profile and I:C segments. Show basal model

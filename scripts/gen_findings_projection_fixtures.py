@@ -7,8 +7,9 @@ So every row in the committed fixture comes out of
 :meth:`~ciq_autotune.findings_projection.FindingsProjection.project`, and the payload
 it projects from comes out of the real engines: basal verdicts through
 :func:`~ciq_autotune.safety.cap`, their sentences through
-``analyzers.basal._annotation_for``, the ISF read through ``analyzers.isf._recommend``
-and ``analyzers.isf.isf_asserts_move``,
+``analyzers.basal._annotation_for``, the primary held ISF read through
+``analyzers.isf._recommend`` and ``analyzers.isf.isf_asserts_move``, the
+direction-only ISF read through ``analyzers.isf.analyze_isf``,
 the I:C blocks through the shipped block estimator + ``price_ic_blocks``, the
 priorities through ``build_tuning_levers`` and ``behavioral_priority``. Nothing here
 hand-sets ``asserts_move``, a status, a hold reason or a score — that is the exact trap
@@ -18,8 +19,8 @@ the most damage, because the queue IS the verdict.
 The inputs are invented on the real schema and shaped like the 2026-08-17 reading
 (basal 05:30 asserting a capped raise, 06:30 held for want of a supported direction,
 the early afternoon leaning lower and held, the 19:30–21:00 stretch with no clean day,
-ISF's band spanning the programmed value). Synthetic only: no patient data anywhere
-near it.
+and a separate ISF case where a flat fasting interval is outweighed by recurring
+correction-linked lows). Synthetic only: no patient data anywhere near it.
 
     python3 scripts/gen_findings_projection_fixtures.py         # rewrite in place
     python3 scripts/gen_findings_projection_fixtures.py --check  # CI-style drift check
@@ -30,6 +31,7 @@ from __future__ import annotations
 import argparse
 import json
 import pathlib
+import random
 import sys
 from datetime import date, datetime, timedelta
 from unittest.mock import patch
@@ -48,6 +50,7 @@ from ciq_autotune.analyzers.isf import (  # noqa: E402
     IsfChannels,
     IsfConfig,
     _recommend,
+    analyze_isf,
     isf_asserts_move,
 )
 from ciq_autotune.analyzers.scenario.payload import (  # noqa: E402
@@ -62,13 +65,16 @@ from ciq_autotune.analyzers.tuning_priority import (  # noqa: E402
     build_tuning_levers,
     price_ic_blocks,
 )
-from ciq_autotune.events import BolusEvent, CgmReading  # noqa: E402
+from ciq_autotune.events import BasalEvent, BolusEvent, CgmReading  # noqa: E402
 from ciq_autotune.findings_projection import (  # noqa: E402
     FindingsProjection,
     WindowQuery,
     prepare_findings_projection,
 )
 from ciq_autotune.model import _slot_label  # noqa: E402
+from ciq_autotune.harm import HarmArm, HarmConfig, PrintedLow  # noqa: E402
+from ciq_autotune.insulin import InsulinActivity, basal_microdoses  # noqa: E402
+from ciq_autotune.rest_window import RestWindow  # noqa: E402
 from ciq_autotune.result import (  # noqa: E402
     SCHEMA_VERSION,
     AnalysisResult,
@@ -161,8 +167,69 @@ def basal_rows():
 
 # --- ISF: the real correction-strength read ------------------------------------
 
+def _isf_night(day, plan, rng):
+    """One invented fasting night whose glucose follows known insulin activity."""
+    start = datetime(2026, 6, day)
+    basal = [
+        BasalEvent(t=start + timedelta(minutes=5 * index),
+                   delivery_type="algorithmDelivery", duration_mins=5.0,
+                   basal_rate=0.6, profile_basal_rate=0.6)
+        for index in range(72)
+    ]
+    bolus = [BolusEvent(t=start + timedelta(hours=hour, minutes=minute),
+                        insulin=units, carbs=None)
+             for hour, minute, units in plan]
+    activity = InsulinActivity(
+        [(row.t, row.insulin) for row in bolus] + basal_microdoses(basal),
+        _ISF_CFG.peak_min, _ISF_CFG.dia_min,
+    )
+    times = [start + timedelta(minutes=5 * index) for index in range(72)]
+    cgm = [CgmReading(t=times[0], bg=170.0, type="EGV")]
+    bg = 170.0
+    for t0, t1 in zip(times, times[1:]):
+        bg = bg - 40.0 * activity.acted(t0, t1) + 0.4 + rng.gauss(0, 3.0)
+        cgm.append(CgmReading(t=t1, bg=round(bg, 1), type="EGV"))
+    window = RestWindow(
+        date=start.date(), start=start, end=start + timedelta(hours=8))
+    return bolus, basal, cgm, window
+
+
+def direction_only_isf_rows():
+    """A flat fasting read whose recurring correction-linked lows own WEAKEN."""
+    plans = [[(1, 0, 3.0)], [(2, 0, 4.0), (4, 0, 2.0)], [(1, 30, 5.0)],
+             [(3, 0, 3.5)], [(0, 30, 2.0), (3, 30, 4.0)], [(2, 0, 6.0)],
+             [(1, 0, 3.0), (4, 30, 2.5)], [(2, 30, 5.0)]]
+    rng = random.Random(7)
+    bolus, basal, cgm, windows = [], [], [], []
+    for day, plan in enumerate(plans, start=1):
+        night_bolus, night_basal, night_cgm, window = _isf_night(day, plan, rng)
+        bolus += night_bolus
+        basal += night_basal
+        cgm += night_cgm
+        windows.append(window)
+    bolus += [
+        BolusEvent(t=datetime(2026, 6, day, hour), insulin=2.0, bg=220.0)
+        for day in range(1, 31) for hour in (9, 12, 15, 18)
+    ]
+    lows = [
+        PrintedLow(datetime(2026, 6, day, 3), 55.0, 1.2, HarmArm.ISF)
+        for day in (1, 5, 9, 13)
+    ]
+    rows = analyze_isf(
+        bolus, basal, cgm, [(0, 36.0)], rest_windows=windows,
+        harm_config=HarmConfig(), harm_lows=lows, window_days=WINDOW_DAYS,
+    )
+    row = rows[0]
+    if (row.evidence.get("direction") != "weaken" or row.recommended is not None
+            or row.asserts_move is not False
+            or not (row.estimate.lo <= row.current <= row.estimate.hi)):
+        raise SystemExit("the analyzer-produced ISF case no longer lands on the "
+                         "flat, direction-only weaken branch")
+    return rows
+
+
 def isf_rows():
-    """One fasting row whose band spans the programmed value, so nothing asserts."""
+    """The primary surface fixture's held ISF baseline."""
     fits = [(DAY - timedelta(days=offset), value)
             for offset, value in enumerate((31.0, 27.5, 34.0, 29.0, 33.5))]
     channels = IsfChannels(night_fits=fits, night_median=31.0, corr_low_days=0,
@@ -172,24 +239,26 @@ def isf_rows():
     recommended, annotation, direction, priced_target = _recommend(
         36.0, estimate, channels, _ISF_CFG, prior_strengthen_signal=False)
     if direction is not None:
-        raise SystemExit("the ISF case no longer lands on the held branch it was "
-                         f"built for (direction {direction!r})")
+        raise SystemExit("the primary ISF case no longer lands on its held branch")
     return [SegmentEstimate(
         start_min=0, label="Fasting", parameter="isf", current=36.0,
         estimate=estimate, recommended=recommended, annotation=annotation,
         evidence={
             "direction": direction,
             "night_median": 31.0,
-            "night_fits": [{"date": d.isoformat(), "isf": v} for d, v in fits],
+            "night_fits": [{"date": d.isoformat(), "isf": value}
+                           for d, value in fits],
             "recurrence_channels": {
                 "corr_low_days": 0, "rescue_days": 0, "covered_days": WINDOW_DAYS,
                 "rescue_observed_days": WINDOW_DAYS, "rescue_observed": True,
                 "side_k": 0, "side_n": len(fits), "measurement_asserts": False,
             },
-            "impact_inputs": {"corrections_per_day": 2.4,
-                              "median_mgdl_over_target": 48.0,
-                              "covered_days": WINDOW_DAYS,
-                              "priced_target": priced_target},
+            "impact_inputs": {
+                "corrections_per_day": 2.4,
+                "median_mgdl_over_target": 48.0,
+                "covered_days": WINDOW_DAYS,
+                "priced_target": priced_target,
+            },
         },
         asserts_move=isf_asserts_move(36.0, direction, recommended),
     )]
@@ -599,10 +668,10 @@ def scenarios():
     ).to_dict()
 
 
-def analysis(*, blocks=None):
+def analysis(*, blocks=None, isf=None):
     """The ``/analyze`` payload the projection reads, serialized by the real result."""
     basal = basal_rows()
-    isf = isf_rows()
+    isf = isf_rows() if isf is None else isf
     blocks = ic_blocks() if blocks is None else blocks
     active_history, _aged_history, _unavailable_history = history_catalogs()
     return AnalysisResult(
@@ -644,6 +713,10 @@ def empty_projection() -> FindingsProjection:
 
 def payload() -> dict:
     prepared = projection()
+    direction_only = prepare_findings_projection(
+        analysis=analysis(isf=direction_only_isf_rows()),
+        exposures=exposures(), scenarios=scenarios(),
+    )
     active_history, aged_history, unavailable_history = history_catalogs()
     density_history = density_history_catalog()
     selected_id = active_history[0].history_id
@@ -674,6 +747,19 @@ def payload() -> dict:
             "exposures": prepared._exposures,
             "scenarios": prepared._scenarios,
             "analysis_generation": ANALYSIS_GENERATION,
+        },
+        "direction_only_inputs": {
+            "analysis": direction_only._analysis,
+            "exposures": direction_only._exposures,
+            "scenarios": direction_only._scenarios,
+            "analysis_generation": ANALYSIS_GENERATION,
+        },
+        "direction_only_windows": {
+            name: direction_only.project(
+                WindowQuery.whole_day() if bounds is None
+                else WindowQuery.clock(*bounds),
+                analysis_generation=ANALYSIS_GENERATION)
+            for name, bounds in WINDOWS.items()
         },
         # The browser derives its density input from `inputs` by replacing only
         # this generator-authored analyzer catalog.  Freezing the whole input a

@@ -942,7 +942,7 @@ function renderIcBlockLevel(host, cell, icStaged, onStage, demoNote) {
 const ISF_SCOPE = 'Measured in the overnight fasting window. Daytime ISF is not separately '
   + 'identifiable, so this one value stands for the whole day.';
 
-function renderIsfLevel(host, isf, isfStaged, onStage) {
+export function renderIsfLevel(host, isf, isfStaged, onStage) {
   const e = isf.estimate;
   /* Reading the verdict off `recommended` printed "no direction asserted" over
      this level's own weaken sentence, and disagreed with the queue row that
@@ -980,7 +980,7 @@ function renderIsfLevel(host, isf, isfStaged, onStage) {
     footNote: roundedNoop
       ? 'The conservative step rounds to the current Correction factor, so there is no settings change to stage.'
       : direction === 'weaken'
-        ? 'Corrections look stronger than needed, but recent lows make a new number unsafe to suggest.'
+        ? 'No new number is available, so there is nothing to stage.'
         : direction === 'strengthen'
           ? 'This result is held, so there is no settings change to stage; the estimate and interval remain visible.'
       : `${e.wide ? 'The interval is wide and no' : 'No'} direction is asserted here, so `

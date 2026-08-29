@@ -3865,10 +3865,13 @@ export const S117 = async (page) => {
 
 // STORY:finding-evidence-routing:S118
 export const S118 = async (page) => {
-  await openCanvas(page);
+  await openWholeDay(page);
   const rows = await page.locator('#level .qrow').evaluateAll((nodes) => nodes.map((node) => ({
+    title: node.querySelector('.lab')?.textContent.trim() || '',
     rank: node.querySelector('.n')?.textContent.trim() || '',
     summary: node.querySelector('.sum')?.textContent.trim() || '',
+    register: node.dataset.state || '',
+    tier: node.dataset.tier || '',
   })));
   const ranks = rows.map((row) => row.rank).filter(Boolean).map(Number);
   is(JSON.stringify(ranks), JSON.stringify(ranks.map((_, index) => index + 1)),
@@ -4025,6 +4028,46 @@ export const S120 = async (page) => {
   ok(releasedIndex >= releasedTail && releasedTail >= 0,
     `S120 stopping retention returns the chart to automatic Watching membership: ${JSON.stringify(released)}`);
   ok(!released.row[releasedIndex].kept, 'S120 the released Watching chart is no longer starred');
+};
+
+// STORY:finding-evidence-routing:S121
+export const S121 = async (page) => {
+  await openWholeDay(page);
+  const analyzer = FINDINGS_PROJECTION.direction_only_inputs.analysis.isf[0];
+  const rows = await page.locator('#level .qrow').evaluateAll((nodes) => nodes.map((node) => ({
+    title: node.querySelector('.lab')?.textContent.trim() || '',
+    rank: node.querySelector('.n')?.textContent.trim() || '',
+    summary: node.querySelector('.sum')?.textContent.trim() || '',
+    register: node.dataset.state || '',
+    tier: node.dataset.tier || '',
+  })));
+  const at = rows.findIndex((row) => row.title === 'ISF · weaken');
+  ok(at >= 0, 'S121 the direction-only Correction factor warning remains reachable');
+  ok(rows.slice(0, at).some((row) => row.rank), 'S121 priced rows precede the warning');
+  ok(rows.slice(at + 1).every((row) => !row.rank),
+    'S121 every remaining row is unpriced in backend order');
+  is(rows[at].register, 'assert', 'S121 the warning remains asserted');
+  is(rows[at].tier, 'noted', 'S121 the warning keeps the backend-owned noted tier');
+  is(rows[at].rank, '', 'S121 the warning carries no rank numeral');
+  is(rows[at].summary, analyzer.annotation,
+    'S121 the queue transcribes the analyzer-owned two-signal explanation');
+  await page.locator('#level .qrow').nth(at).scrollIntoViewIfNeeded();
+  await settle(page, 100);
+  await captureEvidence(page, 'S121-direction-only-queue');
+
+  await clickQueueRow(page, 'ISF · weaken');
+  is(await page.locator('#level .stagebtn').count(), 0,
+    'S121 the direction-only detail offers no stage affordance');
+  const explanation = await page.locator('#level .slot-say').last().innerText();
+  is(explanation, analyzer.annotation, 'S121 detail keeps the analyzer explanation verbatim');
+  ok(/fasting data agrees with the set factor/i.test(explanation),
+    'S121 detail says the fasting signal agrees with the current setting');
+  ok(/recurring correction-linked lows call for weaker corrections/i.test(explanation),
+    'S121 detail says recurring correction-linked lows own the direction');
+  await captureEvidence(page, 'S121-direction-only-detail');
+  is(await page.locator('#level .foot-note').innerText(),
+    'No new number is available, so there is nothing to stage.',
+    'S121 the frontend adds actionability only');
 };
 
 export const STORIES = [
@@ -4192,6 +4235,9 @@ export const STORIES = [
   ['S119', S119, 'typical', { viewport: { width: 2084, height: 742 } }],
   ['S120', S120, 'typical', { findingsInputs: FINDINGS_PROJECTION.inputs,
     findingsProjectionInputs: withStarBecomingWatching }],
+  ['S121', S121, 'typical', {
+    findingsInputs: () => FINDINGS_PROJECTION.direction_only_inputs,
+  }],
   ['C41', C41, 'typical', { caseScenario: {
     preparation: generatedFindingPose('finding:meal_over_delivery'),
   } }], ['C42', C42, 'typical'],

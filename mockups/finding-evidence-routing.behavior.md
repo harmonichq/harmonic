@@ -11,7 +11,7 @@ S41-S71.
 The app-only replay is
 `frontend/diagnose-workstation-behavior.replay.mjs`.
 
-**140 issued executable IDs:** S01–S120, C41–C57, and D1–D3
+**141 issued executable IDs:** S01–S121, C41–C57, and D1–D3
 **Active executable IDs:** all issued
 **Retired executable IDs:** none
 
@@ -2746,6 +2746,7 @@ remains in Over-treated low's served comparison cohort and ten-Low denominator.
 The browser does not promote that occurrence into the matched cohort or recreate
 fired evidence from its glucose shape. This extends S118's server-owned queue-copy
 contract without changing its existing assertions. Evidence: replay S118.
+
 ## Revision amendment — 2026-08-28 (shared fullscreen containment)
 
 **S119.** Every registered evidence chart uses the workstation's one fullscreen
@@ -2768,3 +2769,13 @@ and before the Watching divider. Stopping retention leaves the Spotlight alone
 and returns the chart to its automatic position after the divider. The star's
 keyboard path and accessible copy say **Keep** and **Stop keeping**, never Pin,
 Unpin, or left-most. Evidence: replay S120.
+
+## Revision amendment — 2026-08-28 (direction-only Correction factor warning)
+
+**S121.** A direction-only Correction factor warning remains asserted and reachable
+in the Findings queue. It follows every stageable or otherwise priced row in backend
+order, carries the backend-owned `noted` tier but no rank numeral, and offers no
+stage affordance. Opening it preserves the analyzer's two-signal explanation: the
+fasting fit agrees with the current setting, while recurring correction-linked lows
+own the weaker-corrections direction. The frontend adds only that no new number is
+available, so there is nothing to stage. Evidence: replay S121.

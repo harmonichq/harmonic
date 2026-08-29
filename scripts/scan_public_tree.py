@@ -893,6 +893,14 @@ def main(argv: list[str] | None = None) -> int:
     hard = [f for f in result.findings if f.rule != DOSE_RATIO_RULE]
 
     if args.accept_dose_ratio_baseline:
+        if hard:
+            for finding in hard:
+                print(finding.render())
+            print(
+                "\nrefusing to accept the dose-ratio baseline while"
+                f" {len(hard)} other finding(s) remain."
+            )
+            return 1
         print(f"accepting {len(entries)} dose-ratio finding(s) as the baseline.")
         print_delta(added, removed)
         try:

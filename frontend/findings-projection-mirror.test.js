@@ -113,6 +113,25 @@ test('the mirror transcribes an absent analyzer verdict as the server row null',
   assert.equal(Object.hasOwn(row, 'asserts_move'), true);
 });
 
+test('the direction-only correction-factor warning stays visible and unranked', () => {
+  const lever = fixture.direction_only_inputs.analysis.tuning_levers.find(
+    (candidate) => candidate.parameter === 'isf');
+  assert.ok(lever.priority > 0, 'analysis keeps its priced ISF consequence');
+
+  for (const [name, bounds] of Object.entries(WINDOWS)) {
+    const projected = projectFindings(fixture.direction_only_inputs, bounds);
+    assert.deepEqual(projected, fixture.direction_only_windows[name],
+      `${name} matches the frozen server direction-only projection`);
+    const row = projected.rows.find((candidate) => candidate.parameter === 'isf');
+    assert.ok(row, `${name} keeps the whole-day ISF warning visible`);
+    assert.equal(row.register, 'assert', `${name} keeps the asserted register`);
+    assert.equal(row.direction, 'weaken', `${name} keeps the harm-owned direction`);
+    assert.equal(row.asserts_move, false, `${name} keeps staging closed`);
+    assert.equal(row.priority, null, `${name} withholds queue Priority`);
+    assert.equal(row.tier, 'noted', `${name} uses the unranked tier`);
+  }
+});
+
 /* The deep-compare above would still pass if BOTH sides regressed the honest
  * unexplained-highs count to zero together, and a count frozen at zero is exactly the
  * silent-drift shape #63 exists to close. So name the value: the fixture's ep6 is a

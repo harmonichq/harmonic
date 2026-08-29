@@ -24,7 +24,7 @@
   "strengthen": "overnight you look more sensitive to insulin than the set value, so corrections can run a little stronger",
   "watching_not_yet_held": "reading differs but hasn't held twice",
   "weaken_easing": "corrections keep overshooting into lows, so the correction factor eases weaker",
-  "weaken_easing_disagreeing_measurement": "corrections keep overshooting into lows, so the correction factor eases weaker (the overnight reading points the other way, but it is unsteady and the lows carry the decision)",
-  "weaken_no_target": "corrections keep overshooting into lows, so more overnight data is needed before a new number"
+  "weaken_easing_disagreeing_measurement": "fasting data points toward stronger corrections, but recurring correction-linked lows call for weaker corrections",
+  "weaken_no_target": "fasting data agrees with the set factor, but recurring correction-linked lows call for weaker corrections"
  }
 }

@@ -435,7 +435,8 @@ class FindingsProjection:
                 parameter="isf",
                 title=_title("ISF", register, direction),
                 label=row.get("label"),
-                priority=self._lever_priority("isf") if direction is not None else None,
+                priority=(self._lever_priority("isf")
+                          if row.get("asserts_move") is True else None),
                 span=None,
                 direction=direction,
                 asserts_move=row.get("asserts_move"),

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { queryState } from './diagnose-workstation.js';
+import { queryState, renderIsfLevel } from './diagnose-workstation.js';
 import { assertMatchingFindingCasePreparation } from './finding-case-file-validation.js';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 import {
@@ -86,4 +86,41 @@ test('generated missed-meal queue pose does not duplicate a served row', () => {
     'the combined queue projection and story pose retain one missed-meal finding');
   assert.doesNotThrow(() => assertMatchingFindingCasePreparation(posed, null),
     'the combined pose remains a valid no-duplicate-ready-id preparation response');
+});
+
+test('#223 · direction-only Correction factor detail leaves evidence ownership with the analyzer', () => {
+  const fixture = JSON.parse(readFileSync(
+    new URL('./__fixtures__/findings-projection.json', import.meta.url), 'utf8',
+  ));
+  const analyzer = fixture.direction_only_inputs.analysis.isf[0];
+  const originalDocument = globalThis.document;
+  const elements = [];
+  const element = (tagName = 'div') => {
+    const node = {
+      tagName: tagName.toUpperCase(), className: '', dataset: {}, innerHTML: '', children: [],
+      append(...children) { this.children.push(...children); },
+      addEventListener() {},
+    };
+    elements.push(node);
+    return node;
+  };
+  try {
+    globalThis.document = { createElement: element };
+    const host = element();
+    renderIsfLevel(host, analyzer, false, () => assert.fail('direction-only detail cannot stage'));
+
+    const [detail] = host.children;
+    assert.ok(detail.innerHTML.includes(analyzer.annotation),
+      'the rendered detail transcribes the analyzer explanation');
+    assert.match(analyzer.annotation, /fasting data agrees with the set factor/i);
+    assert.match(analyzer.annotation, /recurring correction-linked lows call for weaker corrections/i);
+    const footer = detail.children.find((child) => child.className === 'slot-foot');
+    assert.equal(footer?.innerHTML,
+      '<span class="foot-note">No new number is available, so there is nothing to stage.</span>',
+      'the rendered footer is limited to actionability');
+    assert.equal(elements.some((node) => node.tagName === 'BUTTON'), false,
+      'the rendered direction-only detail has no stage affordance');
+  } finally {
+    globalThis.document = originalDocument;
+  }
 });

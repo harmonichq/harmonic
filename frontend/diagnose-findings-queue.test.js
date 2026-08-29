@@ -328,6 +328,25 @@ test('slice 4 · the evidence summary is the assert row’s own annotation, reve
   }
 });
 
+test('#223 · direction-only Correction factor stays asserted after priced rows without an action', () => {
+  const projected = fixture.direction_only_windows.global;
+  const rows = queueRows(projected);
+  const isf = rows.find((row) => row.raw.parameter === 'isf');
+  const lastPriced = rows.findLastIndex((row) => row.raw.priority != null);
+
+  assert.ok(isf, 'the analyzer-produced Correction factor warning remains reachable');
+  assert.equal(isf.register, 'assert');
+  assert.ok(rows.indexOf(isf) > lastPriced, 'the warning follows every priced row in server order');
+  assert.equal(isf.rank, null, 'an unpriced warning receives no numeral');
+  assert.equal(isf.stageable, false, 'the analyzer staging verdict exposes no stage affordance');
+  assert.equal(isf.detail.kind, 'support', 'the row uses the existing unpriced detail seam');
+  assert.equal(isf.summary, isf.raw.annotation, 'the queue transcribes the analyzer explanation');
+  assert.match(isf.summary, /fasting data agrees with the set factor/i);
+  assert.match(isf.summary, /recurring correction-linked lows call for weaker corrections/i);
+  assert.deepEqual(rows.map((row) => row.raw.id), projected.rows.map((row) => row.id),
+    'automatic candidates retain backend order');
+});
+
 test('a null selection is byte-identical to the unsifted queue', () => {
   assert.deepEqual(queueRows(W.global), queueRows(W.global, null));
 });

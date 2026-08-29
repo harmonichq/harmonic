@@ -260,6 +260,13 @@ test('slice 4 · the outside-the-gates scrim is the exact complement of the wind
   assert.deepEqual(dims(), [['00:00', '06:00'], ['12:00', '23:45']]);
   const dim = option.series.find((series) => series.name === '__dim');
   assert.equal(dim.type, 'custom');
+  assert.deepEqual(['__p10', '__p25', '__p75', '__p90'].map((name) => {
+    const edge = option.series.find((series) => series.name === name);
+    return [edge.name, edge.lineStyle.color, edge.lineStyle.width, edge.lineStyle.type];
+  }), [
+    ['__p10', '#bbb', 1.5, 'solid'], ['__p25', '#bbb', 1.5, 'solid'],
+    ['__p75', '#bbb', 1.5, 'solid'], ['__p90', '#bbb', 1.5, 'solid'],
+  ], 'all four percentile boundaries use the one measured band-edge role');
   const rect = dim.renderItem(
     { coordSys: { x: 10, y: 20, width: 100, height: 50 } },
     { value: (i) => ['00:00', '06:00'][i], coord: ([v]) => [v === '00:00' ? 10 : 35, 0] });

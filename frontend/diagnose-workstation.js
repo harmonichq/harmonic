@@ -3459,11 +3459,8 @@ function boot(root, data, callbacks, signal) {
       This is the only navigation that clears one — drilling never does. */
   function releaseWindow() { drawn = null; explicitPreset = false; }
 
-  /**
-   * Position the brace and dim the lane. The edges span the whole canvas body,
-   * so they project down through the basal lane on the plot's own spine; the
-   * lane carries no drag listener of its own, so it stays click-only.
-   */
+  /** Position the plot-only clock brace. The basal lane carries no drag listener
+   * and no window-selection paint, so it stays click-only and verdict-authored. */
   function paintBrace() {
     const brace = el('brace');
     const chartEl = el('chart');
@@ -3471,26 +3468,22 @@ function boot(root, data, callbacks, signal) {
     let cells = [...laneEl.querySelectorAll('button:not([data-clock-copy])')];
     if (!shownRange) {
       brace.hidden = true;
-      for (const b of cells) b.removeAttribute('data-outside');
       return;
     }
-    // a block selection marks its segment WITHOUT a resizable brace (term 32);
-    // the dimming below still runs, so the register stays readable
+    // a block selection marks its segment WITHOUT a resizable brace (term 32)
     brace.hidden = braceless;
     const [from, to] = dragDisplayWindow || shownRange;
     const xa = xAtMinute(chartEl, from, clockPanOffset);
     const xb = xAtMinute(chartEl, to, clockPanOffset);
-    /* PLOT_TOP/PLOT_BOTTOM track the chart module's grid[0] insets. The edges
-       run from the plot's top edge down to the bottom of the basal lane — the
-       "project through the lane" spine, clipped at both ends. */
-    const laneBottom = laneEl.offsetTop + laneEl.offsetHeight;
+    /* PLOT_TOP/PLOT_BOTTOM track the chart module's grid[0] insets. The clock
+       gates stop at the glucose x-axis, above the separate basal verdict lane. */
     const plotTop = PLOT_TOP;
     const plotBottom = chartEl.clientHeight - PLOT_BOTTOM;
     for (const [id, x] of [['brace-a', xa], ['brace-b', xb]]) {
       const edge = el(id);
       edge.style.left = `${x}px`;
       edge.style.top = `${plotTop}px`;
-      edge.style.height = `${Math.max(0, laneBottom - plotTop)}px`;
+      edge.style.height = `${Math.max(0, plotBottom - plotTop)}px`;
     }
     // grips sit BELOW the window label's line, so they can never cover its text
     const gripTop = Math.min(plotTop + 22, Math.max(plotTop, plotBottom - 22));
@@ -3522,16 +3515,9 @@ function boot(root, data, callbacks, signal) {
     laneEl.style.setProperty('--clock-pan-px', `${clockPanOffset / (95 * BIN_MINUTES)
       * plotBox(chartEl).width}px`);
 
-    const spans = dragDisplayWindow ? [dragDisplayWindow] : windowSpans(shownRange);
     const allCells = panning ? [...laneEl.querySelectorAll('button')] : cells;
-    allCells.forEach((button, index) => {
-      const sourceIndex = index % lane.cells.length;
-      const cell = lane.cells[sourceIndex];
+    allCells.forEach((button) => {
       const day = Number(button.dataset.clockCopy || 0);
-      const start = cell.startMin + day * 1440;
-      const end = cell.endMin + day * 1440;
-      button.dataset.outside = String(!spans.some(([spanStart, spanEnd]) =>
-        end > spanStart && start < spanEnd));
       button.toggleAttribute('data-neighbour', day !== 0);
     });
   }
@@ -3568,6 +3554,10 @@ function boot(root, data, callbacks, signal) {
        repainted here (only paintChart), so the drag costs one canvas redraw and
        no DOM rebuild. */
     const localX = (ev) => ev.clientX - chartEl.getBoundingClientRect().left;
+    const inPlotY = (ev) => {
+      const y = ev.clientY - chartEl.getBoundingClientRect().top;
+      return y >= PLOT_TOP && y <= chartEl.clientHeight - PLOT_BOTTOM;
+    };
     const minuteAt = (x) => minuteAtX(chartEl, x, clockPanOffset);
     const duration = ([start, end]) => end > start ? end - start : end + 1440 - start;
 
@@ -3737,6 +3727,7 @@ function boot(root, data, callbacks, signal) {
       if (kind === 'draw') {
         const box = plotBox(chartEl);
         if (x < box.left || x > box.right) return;   // margins are not the plot
+        if (!inPlotY(ev)) return;                    // the x-axis is the clock gate floor
         const edge = edgeAt(x);
         if (edge) return begin(edge, ev);            // an edge outranks draw-new
         if (overInterior(x)) return begin('slide', ev);
@@ -3754,6 +3745,7 @@ function boot(root, data, callbacks, signal) {
     // the only hover feedback: the cursor says which gesture this press will be
     chartEl.addEventListener('mousemove', (ev) => {
       if (mode) return;
+      if (!inPlotY(ev)) { chartEl.style.cursor = 'crosshair'; return; }
       const x = ev.clientX - chartEl.getBoundingClientRect().left;
       chartEl.style.cursor = edgeAt(x) ? 'col-resize'
         : overInterior(x) ? 'grab' : 'crosshair';

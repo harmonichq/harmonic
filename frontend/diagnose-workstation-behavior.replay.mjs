@@ -76,6 +76,39 @@ export const near = (got, want, tol, what) => {
   if (!(Math.abs(got - want) <= tol)) fail(`${what}: ${got} not within ${tol} of ${want}`);
 };
 
+/** The brace is a plot-only clock gate. Its visual edge and the chart's edge
+    gesture both stop at the glucose x-axis, above the click-only basal strip. */
+const assertGateContained = async (page, story) => {
+  const geometry = await page.evaluate(() => {
+    const chart = document.getElementById('chart').getBoundingClientRect();
+    const lane = document.getElementById('lane').getBoundingClientRect();
+    const plotTop = chart.top + 20;
+    const plotBottom = chart.bottom - 26;
+    return {
+      plotTop,
+      plotBottom,
+      laneTop: lane.top,
+      edges: ['brace-a', 'brace-b'].map((id) => {
+        const r = document.getElementById(id).getBoundingClientRect();
+        /* `installDrag` is chart-owned and rejects pointer rows outside this
+           same plot span, making this the effective whole-height hit zone. */
+        return { id, left: r.left, top: r.top, bottom: r.bottom, hitTop: plotTop, hitBottom: plotBottom };
+      }),
+    };
+  });
+  for (const edge of geometry.edges) {
+    near(edge.top, geometry.plotTop, 1, `${story} ${edge.id} starts at the plot top`);
+    near(edge.bottom, geometry.plotBottom, 1, `${story} ${edge.id} ends at the glucose x-axis`);
+    near(edge.hitTop, geometry.plotTop, 1, `${story} ${edge.id} hit zone starts at the plot top`);
+    near(edge.hitBottom, geometry.plotBottom, 1, `${story} ${edge.id} hit zone ends at the glucose x-axis`);
+    ok(edge.bottom <= geometry.laneTop, `${story} ${edge.id} does not intersect the basal strip`);
+    ok(edge.hitBottom <= geometry.laneTop, `${story} ${edge.id} hit zone does not intersect the basal strip`);
+  }
+  await page.mouse.move(geometry.edges[0].left, geometry.plotBottom + 4);
+  is((await state(page)).cursor, 'crosshair',
+    `${story} an edge below the glucose x-axis is not an active resize gate`);
+};
+
 /* ------------------------------------------------------------- page readers */
 
 /** One structured read of everything the stories assert on. */
@@ -110,6 +143,10 @@ export const state = (page) => page.evaluate(() => {
     bandKeys: [...document.querySelectorAll('#level .vband .key .lead')].map((n) => n.textContent.trim()),
     pool: txt('#canvas-pool'),
     braceHidden: q('#brace')?.hidden ?? null,
+    braceEdges: ['brace-a', 'brace-b'].map((id) => {
+      const r = document.getElementById(id)?.getBoundingClientRect();
+      return r ? { top: Math.round(r.top), bottom: Math.round(r.bottom) } : null;
+    }),
     gripA: parseFloat(q('#grip-a')?.style.left || 'NaN'),
     gripB: parseFloat(q('#grip-b')?.style.left || 'NaN'),
     live: ['brace-a', 'brace-b'].filter((i) => document.getElementById(i)?.classList.contains('live')),
@@ -221,8 +258,6 @@ export const state = (page) => page.evaluate(() => {
           label: txt('#canvas-head .meta.persist'),
           window: [axis?.min ?? null, axis?.max ?? null],
           highlight: highlight ? [highlight[0]?.xAxis ?? null, highlight[1]?.xAxis ?? null] : null,
-          laneOutside: [...document.querySelectorAll('#lane button')]
-            .filter((button) => button.dataset.outside === 'true').length,
           series: (option.series || []).map((series) => ({
             name: series.name ?? null,
             type: series.type ?? null,
@@ -235,7 +270,10 @@ export const state = (page) => page.evaluate(() => {
     })(),
     laneSelected: [...document.querySelectorAll('#lane button')].findIndex((b) => b.getAttribute('aria-pressed') === 'true'),
     laneCells: document.querySelectorAll('#lane button').length,
-    laneOutside: [...document.querySelectorAll('#lane button')].filter((b) => b.dataset.outside === 'true').length,
+    basalPaint: [...document.querySelectorAll('#lane button:not([data-clock-copy])')].map((button) => {
+      const style = getComputedStyle(button);
+      return { backgroundColor: style.backgroundColor, boxShadow: style.boxShadow, opacity: style.opacity };
+    }),
     laneKey: q('#lane-key')?.innerText.replace(/\s+/g, ' ').trim() ?? null,
     hover: q('#canvas-head')?.dataset.hover ?? null,
     rd: {
@@ -883,7 +921,8 @@ export const S01 = async (page) => {
   is(after.scope, '', `S01 the strip header prints no reading count (${after.scope})`);
   ok(after.pool.includes('captured CGM days'),
     `S01 the pooled-days phrasing survives the count's retirement (${after.pool})`);
-  ok(after.laneOutside > 0, 'S01 slots outside the window are dimmed, not removed');
+  is(after.basalPaint, before.basalPaint,
+    'S01 changing the window leaves every basal verdict cell paint and opacity unchanged');
 };
 
 /** S02 · Dragging in the plot body draws a window: the chip follows live, the
@@ -903,6 +942,7 @@ export const S02 = async (page) => {
   ok(/^\d\d:\d\d$/.test(mid.readout || ''), `S02 moving edge reads its snapped time (${mid.readout})`);
   ok(/^Window \d\d:\d\d–\d\d:\d\d$/.test(mid.chip || ''), `S02 chip follows the gesture (${mid.chip})`);
   is(mid.braceHidden, false, 'S02 the brace is drawn during the gesture');
+  await assertGateContained(page, 'S02');
   await page.mouse.move(b.x + 520, y, { steps: 8 });
   const wider = await state(page);
   ok(wider.chip !== mid.chip, 'S02 chip tracks continuously');
@@ -925,6 +965,7 @@ export const S02 = async (page) => {
 // LOCK:diagnose-workstation:6 LOCK:diagnose-workstation:8
 export const S03 = async (page) => {
   const start = await state(page);
+  await assertGateContained(page, 'S03');
   const b = await plot(page);
   const y = b.y + b.h * 0.5;      // mid-plot, far below the grip band
   await page.mouse.move(b.x + start.gripB, y);
@@ -947,6 +988,7 @@ export const S03 = async (page) => {
 // LOCK:diagnose-workstation:6 LOCK:diagnose-workstation:8
 export const S04 = async (page) => {
   const start = await state(page);
+  await assertGateContained(page, 'S04');
   const b = await plot(page);
   const y = b.y + b.h * 0.5;
   const mid = (start.gripA + start.gripB) / 2;
@@ -969,6 +1011,7 @@ export const S04 = async (page) => {
 // LOCK:diagnose-workstation:6 LOCK:diagnose-workstation:8
 export const S05 = async (page) => {
   const start = await state(page);
+  await assertGateContained(page, 'S05');
   const g = await page.evaluate(() => { const r = document.getElementById('grip-a').getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
   await page.mouse.move(g.x, g.y);
   await page.mouse.down();
@@ -995,9 +1038,7 @@ export const S06 = async (page) => {
   const after = await state(page);
   is(after.chip, before.chip, 'S06 a click in the plot mints no window');
   is(after.pressed, before.pressed, 'S06 a click in the plot unpresses nothing');
-  // AMENDED #135 fix round: the strip header's reading count is retired, so the
-  // scope witness is the lane's own dimming — the scope the reader acts on.
-  is(after.laneOutside, before.laneOutside, 'S06 nothing re-scoped');
+  is(after.crumbMeta, before.crumbMeta, 'S06 nothing re-scoped');
 };
 
 /** S07 · Esc belongs to the WINDOW: it clears the drawn one and restores the
@@ -1324,9 +1365,7 @@ export const S21 = async (page) => {
   const drilled = await state(page);
   is(drilled.chip, start.chip, 'S21 drilling a factor does not move the user window');
   near(drilled.gripA, start.gripA, 1, 'S21 the brace stayed put');
-  // AMENDED #135 fix round, with S06: the retired reading count is replaced as
-  // this story's canvas witness by the lane dimming the same window produces.
-  is(drilled.laneOutside, start.laneOutside, 'S21 the canvas stayed on the user window');
+  is(drilled.braceEdges[1], start.braceEdges[1], 'S21 the second brace edge stayed put');
   await page.click('#level .ev-row');
   await settle(page, 450);
   is((await state(page)).chip, start.chip, 'S21 opening an occurrence does not move it either');

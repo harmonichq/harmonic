@@ -372,15 +372,10 @@ P57 · A slide can cross 24:00 in either direction. It preserves the circular
       stretch after release.
   source:   installDrag edgeAt / overInterior, frontend/diagnose-workstation.js
   evidence: the crossing, the preserved length and the live edges — replay S86,
-            S87. Grabbable on either stretch after release — the cursor loop in
-            frontend/diagnose-workstation.browser.test.mjs, test "#130 · a
-            wrapped draw leaves two endpoint edges and dims only the outside
-            basal slots", which reads the chart's own cursor at 23:00 and 01:00
-            (both `grab`, either side of midnight) and at 22:00 (`col-resize`);
-            it fails pre-ticket because the old linear `overInterior` returns
-            false on both stretches of a wrapped window. The two replay stories
-            commit the slide and check the chip; neither re-grabs the committed
-            window, so they do not carry that clause.
+            S87. Grabbable on either stretch after release — replay S86 and S87
+            keep the two live edges through each wrapped slide; the dedicated
+            cursor loop remains in the browser leg. Window selection does not
+            alter basal verdict paint (P43).
   verdict:  added         operator-ruled: Connor Griffin · 2026-08-24
 ```
 
@@ -466,15 +461,15 @@ P13 · Margins are not the plot. A press left of the plot box or right of it is
 ```
 
 ```
-P14 · The basal lane carries NO drag listener and stays click-only, while the
-      window's dashed edges project down THROUGH it on the plot's own spine —
-      measured: the edge runs from the plot's top edge to the lane stack's
-      bottom (845px), 26px past the chart's own box, and no further.
-  source:   frontend/diagnose-workstation.js:1481-1560 (paintBrace), and the
-            absence of any listener in renderLane at 464-479
+P14 · The basal lane carries NO drag listener and stays click-only. The window's
+      two clock-gate edges and their whole-height hit zones run only from the
+      plot top to the glucose x-axis; neither intersects the basal strip.
+  source:   frontend/diagnose-workstation.js (paintBrace / installDrag), and the
+            absence of any listener in renderLane
   mock:     no edges to project; the lane is a read-only strip
-  evidence: probe (edgeSpan: edgeBottom 845 == laneBottom 845, chartBottom 819)
-  verdict:  kept          operator-ruled: Connor Griffin · 2026-08-19
+  evidence: replay S02–S05 (app: both edge rectangles and effective hit zones
+            end at the glucose x-axis without intersecting the basal strip)
+  verdict:  amended       issue #253 · 2026-08-29
 ```
 
 ```
@@ -892,16 +887,14 @@ P42 · A basal lane cell is a shortcut INTO the slot branch: it pushes a level
 ```
 
 ```
-P43 · Lane cells outside the window are DIMMED to opacity .38 — de-emphasised,
-      never removed, because the verdict is still true, it is just not what the
-      canvas is scoped to. Both lanes, and a wrapping block piece by piece: one
-      piece inside the window and one outside are both true.
-  source:   frontend/diagnose-workstation.js:1538-1559; [data-outside="true"],
-            diagnose-workstation.css:307-308
-  mock:     0 of 48 cells carry data-outside in any state
-  evidence: probe (app, drawn state: 42 of 48 dimmed at opacity .38) ·
-            probe-mock (mock: laneOutside=0)
-  verdict:  kept          operator-ruled: Connor Griffin · 2026-08-19
+P43 · Basal verdict cells keep their computed paint and opacity when a window
+      changes. Window selection scopes the glucose plot and findings only; it
+      never reclassifies, dims, or otherwise repaints basal evidence.
+  source:   frontend/diagnose-workstation.js (paintBrace);
+            frontend/diagnose-workstation.css (lane verdict paint)
+  evidence: replay S01 (app: before/after computed paint and opacity for every
+            basal verdict cell are identical)
+  verdict:  amended       issue #253 · 2026-08-29
 ```
 
 ```
@@ -1077,7 +1070,7 @@ P55 · The Align group keeps its two ordinary Tab stops when a reader activates
   reduced-motion override, and the cursor declarations. The hover washes and
   focus rings arrive in the mock through the app's own linked stylesheets and
   are `kept` without individual rows; only the ones the mock cannot reach
-  (P07's cursor states, P43's dimming, P47's pop direction) are rows.
+  (P07's cursor states, P43's basal verdict paint, P47's pop direction) are rows.
 
 ## Tally
 

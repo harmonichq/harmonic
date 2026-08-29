@@ -164,6 +164,7 @@ RETIRED C53 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay 
   ok S118
   ok S119
   ok S120
+  ok S121
   ok C41
   ok C42
   ok C43
@@ -185,4 +186,4 @@ RETIRED C53 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay 
   ok D2
   ok D3
 
-app: 140 of 140 stories passed
+app: 141 of 141 stories passed

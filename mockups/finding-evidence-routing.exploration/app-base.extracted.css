@@ -87,9 +87,9 @@
          within .05, re-measured. Term 11 is intact — grounds keep their warmth
          and give up their saturation. */
       color-scheme: dark;
-      --wk-canvas:#0f0d0b; --wk-surface:#26221f; --wk-surface-rail:#2d2926; --wk-surface-sunken:#504a45;
-      --wk-ink:#f5ece0; --wk-ink-body:#dbcfbc; --wk-ink-meta:#a3968a; --wk-ink-nav:#bfb3a1;
-      --wk-rule:#4d4742; --wk-rule-strong:#776e68; --wk-hairline:1px; --wk-radius:5px;
+      --wk-canvas:#0f0d0b; --wk-field:#1e1a17; --wk-surface:#221e1b; --wk-surface-rail:#2b2622; --wk-surface-sunken:#14120f;
+      --wk-ink:#f2ede2; --wk-ink-body:#cfc8bd; --wk-ink-meta:#a49c90; --wk-ink-nav:#c6bfb3;
+      --wk-rule:#3f3833; --wk-rule-strong:#453d35; --wk-hairline:1px; --wk-radius:4px;
       --wk-shadow:0 1px 2px rgba(0,0,0,.5), 0 16px 34px -16px rgba(0,0,0,.8);
       --wk-elevation:0 16px 34px -16px rgba(0,0,0,.88);
       --wk-signal:#d2743e; --wk-signal-well:#40291b;

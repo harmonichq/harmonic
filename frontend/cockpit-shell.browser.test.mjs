@@ -1348,9 +1348,16 @@ test('Diagnose and Verify pane headers meet on one seam at every desktop size an
             };
             const canvas = rect(canvasSelector);
             const inspector = rect('.inspector > header');
+            const canvasPane = document.querySelector(`${selector} ${canvasSelector}`).parentElement;
+            const inspectorPane = document.querySelector(`${selector} .inspector`);
             return {
               canvas,
               inspector,
+              edge: {
+                canvasRight: getComputedStyle(canvasPane).borderRightWidth,
+                inspectorLeft: getComputedStyle(inspectorPane).borderLeftWidth,
+                inspectorColor: getComputedStyle(inspectorPane).borderLeftColor,
+              },
               populated: selector === '.dw'
                 ? document.querySelectorAll(`${selector} .qrow`).length > 0
                 : Boolean(document.querySelector(`${selector} .trial-line`)),
@@ -1360,6 +1367,9 @@ test('Diagnose and Verify pane headers meet on one seam at every desktop size an
           assert.equal(seam.populated, true, `${label} mounts its populated workstation`);
           assert.ok(seam.canvas.left < seam.inspector.left,
             `${label} keeps the canvas and inspector side by side`);
+          assert.equal(seam.edge.canvasRight, '0px', `${label} canvas contributes no duplicate seam`);
+          assert.equal(seam.edge.inspectorLeft, '1px', `${label} inspector owns one vessel edge`);
+          assert.notEqual(seam.edge.inspectorColor, 'rgba(0, 0, 0, 0)', `${label} vessel edge is visible`);
           if (seam.canvas.top !== seam.inspector.top || seam.canvas.bottom !== seam.inspector.bottom) {
             mismatches.push({
               label,

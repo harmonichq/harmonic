@@ -716,6 +716,38 @@ test('glucose-strip meal markers stay retired — RETIRED', async () => {
   }
 });
 
+test('Dark canvas gives the shared hero/basal body one vessel edge and role-owned dock chrome', async () => {
+  const browser = await runner.browser();
+  const { page, errors } = await openCanvas(browser);
+  try {
+    await page.locator('#tile-focal .evidence-tile').waitFor({ state: 'visible' });
+    const surface = await page.evaluate(() => {
+      const style = (selector) => getComputedStyle(document.querySelector(selector));
+      const focal = style('#tile-focal .evidence-tile');
+      const chart = style('#chart');
+      const lane = style('#lane');
+      const handle = style('#dock-handle');
+      const slot = style('#tile-focal .tile-head');
+      return {
+        focalEdge: focal.boxShadow, focalRadius: focal.borderTopLeftRadius,
+        chartBorder: chart.borderTopWidth, laneBorder: lane.borderTopWidth,
+        chartParent: document.querySelector('#chart').parentElement.className,
+        laneParent: document.querySelector('#lane').closest('.body').className,
+        handleGround: handle.backgroundColor, slotGround: slot.backgroundColor,
+        handleRule: handle.borderTopColor,
+      };
+    });
+    assert.match(surface.focalEdge, /0px 0px 0px 1px inset/, 'focal chart has one inset vessel edge');
+    assert.equal(surface.focalRadius, '4px', 'focal vessel keeps the shared radius');
+    assert.equal(surface.chartBorder, '0px', 'hero chart adds no second top seam');
+    assert.equal(surface.laneBorder, '0px', 'basal lane adds no second top seam');
+    assert.equal(surface.chartParent, surface.laneParent, 'hero chart and basal lane share one canvas body');
+    assert.equal(surface.handleGround, surface.slotGround, 'dock handle shares the swappable-slot rail');
+    assert.notEqual(surface.handleRule, 'rgba(0, 0, 0, 0)', 'dock handle exposes its own tray boundary');
+    assert.deepEqual(errors, []);
+  } finally { await page.close(); }
+});
+
 test('Backspace return restores provenance to the chart owning the finding frame', async () => {
   const browser = await runner.browser();
   const { page, errors } = await openCanvas(browser);

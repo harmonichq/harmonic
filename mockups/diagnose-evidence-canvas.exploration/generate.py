@@ -34,6 +34,33 @@ def read(name: str) -> dict:
     return json.loads((ROOT / name).read_text())
 
 
+def css_rule(source: str, selector: str) -> str:
+    """Return one balanced CSS rule without maintaining a duplicate palette."""
+    start = source.index(selector)
+    open_brace = source.index("{", start)
+    depth = 0
+    for end in range(open_brace, len(source)):
+        if source[end] == "{":
+            depth += 1
+        elif source[end] == "}":
+            depth -= 1
+            if depth == 0:
+                return source[start:end + 1]
+    raise ValueError(f"unclosed CSS rule for {selector}")
+
+
+def shipped_dark_theme() -> str:
+    """Extract the shipped Dark token source used by this synthetic canvas."""
+    index = (ROOT / "frontend/index.html").read_text()
+    theme = (ROOT / "frontend/theme.css").read_text()
+    # Keep both shipped sources in the generated HTML. The template names only
+    # composition aliases below; it never copies a Dark value by hand.
+    return ("/* generated from frontend/index.html html.dark and frontend/theme.css */\n"
+            + css_rule(index, "html.dark")
+            + "\n\n/* frontend/theme.css — source-bound production role rules */\n"
+            + theme)
+
+
 def synthetic_jitter_milli(seed: int, count: int, scale: int) -> list:
     """Return uncorrelated-looking render noise as integer millipoints.
 
@@ -151,7 +178,9 @@ def payload() -> dict:
 def render() -> str:
     template = (HERE / "canvas.tpl.html").read_text()
     blob = json.dumps(payload(), sort_keys=True, separators=(",", ":"))
-    return template.replace("/*__DATA__*/", "const D = " + blob + ";")
+    return (template
+            .replace("/*__SHIPPED_DARK_THEME__*/", shipped_dark_theme())
+            .replace("/*__DATA__*/", "const D = " + blob + ";"))
 
 
 def main() -> int:
@@ -165,7 +194,7 @@ def main() -> int:
     current = args.out.read_text() if args.out.exists() else ""
     if args.check:
         if current != text:
-            print(f"stale generated exploration: {args.out} —"
+            print(f"stale shipped Dark theme contract or generated exploration: {args.out} —"
                   f" rerun {HERE / 'generate.py'}")
             return 1
         print(f"evidence-canvas exploration current ({args.out})")

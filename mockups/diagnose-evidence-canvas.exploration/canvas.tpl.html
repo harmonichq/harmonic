@@ -5,26 +5,17 @@
 <title>Evidence canvas — synthetic derivative</title>
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
 <style>
-/* ── app tokens, verbatim from frontend/index.html html.dark + theme.css ───── */
+/* ── source-bound Dark roles ───────────────────────────────────────────────── */
+/*__SHIPPED_DARK_THEME__*/
 :root{
-  --wk-canvas:#0f0d0b; --wk-surface:#26221f; --wk-surface-rail:#2d2926; --wk-surface-sunken:#504a45;
-  --wk-ink:#f5ece0; --wk-ink-body:#dbcfbc; --wk-ink-meta:#a3968a;
-  --wk-rule:#4d4742; --wk-rule-strong:#776e68;
-  --primary:#e07f3f; --primary-600:#ef9459; --primary-100:#40291b;
-  --secondary:#a89a85; --warn:#c98a4e; --danger:#ec6f55; --low:#ec6f55; --high:#e07f3f;
-  --in-range:#86ad78; --on-target:#86ad78; --on-target-soft:#2f3a2c;
-  --wk-status-incomplete:#d7a75c; --wk-status-adverse:#d97f71; --wk-status-favorable:#7cae8d;
-  --mk-primary:#86ad78; --mk-primary-600:#c3b49c; --mk-primary-soft:#2f3a2c;
-  --mk-accent:#e07f3f; --mk-ok:#a89a85; --mk-line:#322e29;
-  /* chrome bar, theme.css html.dark .cockpit-topbar */
-  --ck-ground:#171412; --ck-panel:#292522; --ck-text:#efe5d4; --ck-body:#d3c7b4; --ck-meta:#a19484;
-  --ck-rule:#48433e; --ck-bar-signal:#dc7b42; --ck-bar-on-signal:#171412;
-  /* docked workspace grounds, theme.css html.dark :is(.dw,.vw) */
-  --field:#161311; --pane-head:#1b1816; --rail:#1e1b19; --hair:#302c29; --seam:#524c47;
-  --seg-line:#3b3632; --seg-bg:#171412; --seg-on:#332e2b;
-  /* the gutter substrate. Lifted from #0a0908 so the ambient shadow beneath the
-     tiles has room to read; still the darkest value on screen — below the tile
-     field (#161311) and below the app ground (#171412). */
+  /* Composition aliases name jobs only; production values above remain the sole
+     Dark palette. The `theme.css` read in generate.py keeps this provenance
+     boundary fail-closed when the shared role source moves. */
+  --ck-ground:var(--wk-canvas); --ck-panel:var(--wk-surface); --ck-text:var(--wk-ink); --ck-body:var(--wk-ink-body); --ck-meta:var(--wk-ink-meta);
+  --ck-rule:var(--wk-rule); --ck-bar-signal:var(--wk-signal); --ck-bar-on-signal:var(--wk-canvas);
+  --field:var(--wk-field); --pane-head:var(--wk-surface-rail); --rail:var(--wk-surface-rail); --hair:var(--wk-rule); --seam:var(--wk-rule-strong);
+  --seg-line:var(--wk-rule); --seg-bg:var(--wk-surface-sunken); --seg-on:var(--wk-surface);
+  /* The gutter substrate remains below the source-bound field and canvas roles. */
   --trench:#100e0d;
   --label-ink:#c6b7a2;
   --ck-label:10px; --ck-micro:11px; --ck-data:12px; --ck-emphasis:13px; --ck-track:.08em;
@@ -344,12 +335,20 @@ body{margin:0;background:#08090a;color:var(--wk-ink);font-family:var(--ui);
 <script>
 /*__DATA__*/
 
-/* ── palette handles ─────────────────────────────────────────────────────── */
-const C = {
-  field:'#161311', hair:'#302c29', line:'#322e29', ink:'#f5ece0', body:'#dbcfbc', meta:'#a3968a',
-  rule:'#4d4742', ruleStrong:'#776e68', signal:'#86ad78', median:'#c3b49c', soft:'#2f3a2c',
-  accent:'#e07f3f', warn:'#c98a4e', low:'#ec6f55', ok:'#a89a85', label:'#c6b7a2'
+/* ── palette handles — resolved from the source-bound roles ─────────────── */
+const sourceColor = (role) => {
+  const probe = document.createElement('i');
+  probe.style.backgroundColor = `var(${role})`;
+  document.body.append(probe);
+  const [r,g,b] = getComputedStyle(probe).backgroundColor.match(/\d+/g).map(Number);
+  probe.remove();
+  return '#'+[r,g,b].map(n=>n.toString(16).padStart(2,'0')).join('');
 };
+const C = Object.fromEntries(Object.entries({
+  field:'--wk-field', hair:'--wk-rule', line:'--mk-line', ink:'--wk-ink', body:'--wk-ink-body', meta:'--wk-ink-meta',
+  rule:'--wk-rule', ruleStrong:'--wk-rule-strong', signal:'--mk-primary', median:'--mk-primary-600', soft:'--mk-primary-soft',
+  accent:'--mk-accent', warn:'--warn', low:'--low', ok:'--mk-ok', label:'--wk-ink-nav'
+}).map(([name, role]) => [name, sourceColor(role)]));
 const MONO = 'ui-monospace, SF Mono, Menlo, monospace';
 const hhmm = m => String(Math.floor(((m%1440)+1440)%1440/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
 const dim = (hex,a) => { const n=parseInt(hex.slice(1),16);

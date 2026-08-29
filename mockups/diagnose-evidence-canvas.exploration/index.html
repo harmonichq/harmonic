@@ -5,26 +5,503 @@
 <title>Evidence canvas — synthetic derivative</title>
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
 <style>
-/* ── app tokens, verbatim from frontend/index.html html.dark + theme.css ───── */
+/* ── source-bound Dark roles ───────────────────────────────────────────────── */
+/* generated from frontend/index.html html.dark and frontend/theme.css */
+html.dark {
+      /* DARK IS DERIVED, NOT INVERTED (term 9): the role ratios below track the
+         light theme against dark's own ground. The desk carries NO GREEN (term
+         10) — a green-black ground under a green line reads as phosphor — and
+         structure recedes by LIGHTNESS rather than by hue, so the frame holds
+         one warm hue family (term 12) across a real 7%-69% tonal range (term
+         13), descending chrome -> rail -> header -> field without banding.
+
+         #215 — ONE HUE, HELD DELIBERATELY LOW. The grounds honoured term 12 in
+         name only: measured, they sat at OKLCH chroma .003-.009 with the hue
+         wandering 48deg to 78deg, so the family was incoherent as well as
+         nearly achromatic. Every ground and rule below is re-derived at ONE hue
+         (60deg) with chroma .005 at the deepest rising to .015 at the strongest
+         rule, holding each value's ORIGINAL lightness to three decimals.
+
+         The ceiling on that chroma is a review finding, not caution. Warmth was
+         taken up to the light theme's own ground register first (80deg, .011 to
+         .028) and the desk read as pumpkin, because at that chroma it shares
+         the burnt-orange signal's own family. Stepping the hue off orange to
+         110deg made it olive — term 10's phosphor warning arriving from the
+         ground rather than from the line. A cool slate at 265deg fixed both and
+         was rejected as a bigger identity change than this canvas is entitled
+         to make. What is left is the one thing all three attempts agreed on:
+         the family must be COHERENT; how much chroma it carries is a small
+         dial, and the setting that survives review is a low one.
+
+         Depth is made of lightness steps, the top highlight and the pooled
+         shadow, so nothing about the tonal range or the stacking order moved;
+         every ink/ground contrast ratio in this file and theme.css holds to
+         within .05, re-measured. Term 11 is intact — grounds keep their warmth
+         and give up their saturation. */
+      color-scheme: dark;
+      --wk-canvas:#0f0d0b; --wk-field:#1e1a17; --wk-surface:#221e1b; --wk-surface-rail:#2b2622; --wk-surface-sunken:#14120f;
+      --wk-ink:#f2ede2; --wk-ink-body:#cfc8bd; --wk-ink-meta:#a49c90; --wk-ink-nav:#c6bfb3;
+      --wk-rule:#3f3833; --wk-rule-strong:#453d35; --wk-hairline:1px; --wk-radius:4px;
+      --wk-shadow:0 1px 2px rgba(0,0,0,.5), 0 16px 34px -16px rgba(0,0,0,.8);
+      --wk-elevation:0 16px 34px -16px rgba(0,0,0,.88);
+      --wk-signal:#d2743e; --wk-signal-well:#40291b;
+      --wk-status-incomplete:#d7a75c; --wk-status-adverse:#d97f71; --wk-status-favorable:#7cae8d;
+
+      --bg:var(--wk-canvas); --bg-tint:var(--wk-surface-sunken); --surface:var(--wk-surface); --surface-2:var(--wk-surface-sunken);
+      --primary:#e07f3f; --primary-600:#ef9459; --primary-100:#40291b; --on-primary:#1b1109;
+      --secondary:#a89a85; --accent:#d08150; --accent-100:#43291d;
+      --text:var(--wk-ink); --muted:var(--wk-ink-meta); --line:var(--wk-rule);
+      --danger:#ec6f55; --danger-bg:#3a221c; --ok:#9aada1; --ok-bg:#2b332d;
+      --warn:#c98a4e; --warn-bg:#3a2b1b; --ring:rgba(210,116,62,.34);
+      --shadow:var(--wk-shadow);
+      --radius:var(--wk-radius); --radius-sm:var(--wk-radius); --grain-op:.035;
+      --in-range:#86ad78; --high:#e07f3f; --low:#ec6f55;
+      --ran-low:#a89a85;  --ran-low-soft:#2b332d;
+      --on-target:#86ad78; --on-target-soft:#2f3a2c; --on-target-ink:#9fbea5;
+      --manual-carb:#d2743e; --manual-carb-soft:#40291b;
+      /* #64 scenario screen — evidence-tier + basal colors */
+      --observed:#86ad78; --inferred:#b08858; --notindata:#8d8579; --basal:#a89a85;
+    }
+
+/* frontend/theme.css — source-bound production role rules */
+/* ★ HARMONIC — the shell, by ROLE. Locked 2026-08-18 (#736), against
+ * the archived Harmonic-theme lock.
+ *
+ * The lock was settled against a five-file REFERENCE overlay, applied in
+ * filename order, which is a design-time record and does not ship. This file is
+ * where those five files resolve to in the app's own tree: the token values
+ * landed in the :root / html.dark block of frontend/index.html, and every rule
+ * below is one of the overlay's rules with its cascade already collapsed — a
+ * declaration a later overlay file overwrote is simply absent here, rather than
+ * restated and then beaten.
+ *
+ * WHY THIS FILE EXISTS AT ALL, RATHER THAN EDITS INSIDE THE SURFACE FILES:
+ * the single most expensive defect of the lock round was a theme rule wearing a
+ * surface's selector. The docked workspace was scoped to `.dw`, so Verify (.vw)
+ * kept rendering as two floating cards; and Verify's `.verify-strip` was missed
+ * even though verify-workstation.css calls it "the shipped .instruments row,
+ * exact values", so its Trial line rendered dark-on-dark and vanished in BOTH
+ * themes. Neither was visible until a POPULATED render of a second surface.
+ *
+ * So the shell is themed by ROLE, and the roles are:
+ *
+ *   chrome bar         .cockpit-topbar, .cockpit-footer
+ *   instrument rail    :is(.dw, .vw) :is(.instruments, .ec-coordinates),
+                      .vw .verify-strip
+ *   pane header rail   :is(.dw, .vw) .pane > header
+ *   pane body          :is(.dw, .vw) .pane
+ *   dock floor         :is(.dw, .vw) .inspector > .watch
+ *
+ * A new surface either realises a role above, or it is a recorded gap. Never a
+ * silent third material. Renaming `.dw` / `.vw` / `.verify-strip` so the roles
+ * read off the class names is deferred to its own pass by the lock itself.
+ *
+ * This file is loaded LAST by index.html. It has to be: a theme rule and a
+ * surface rule collide at equal specificity, so ordering, not specificity, is
+ * what decides. Adding a stylesheet after this one puts the surface back on top.
+ */
+
+/* ---- chart marks are not the interaction palette (terms 5, 6, 14) --------
+   diagnose-workstation.css aliases the ported `--mk-*` namespace onto the app's
+   own tokens rather than restating any colour, which is right for every token
+   whose chart meaning and app meaning agree. Harmonic deliberately splits the
+   ones below: orange owns interaction, so the median, its envelope and the
+   grid may not read from `--primary` / `--line`. Only the diverging tokens are
+   declared — the rest keep the adapter's alias, so there is still one source. */
+:root {
+  /* the measured signal is forest, and the median (`--mk-primary-600`) is the
+     darkest step of it against the sheet */
+  --mk-primary: #2f6b4f;
+  --mk-primary-600: #123d2b;
+  --mk-primary-soft: #d6e8dc;
+  --mk-ok: #347354;
+  /* the plot draws no frame of its own: the grid recedes beneath the data so
+     the dashed target rails outrank the gridlines (term 6) */
+  --mk-line: #d4cfc3;
+}
+/* Light ALONE splits the warn/danger marks from their text inks: term 4 raises
+   --warn and --danger far enough to clear 4.5:1 as small text, and a mark
+   calibrated for 3:1 graphics should not follow them up. Re-measured against
+   the bone grounds ADR 37 landed (#FAF8F4 sheet / #F0EEE8 rail / #E7E4DC
+   sunken): --warn #8d3c17 reads 7.09 / 6.48 / 5.92:1 and --danger #9d3018
+   reads 6.90 / 6.31 / 5.76:1, so the claim holds with more headroom than it
+   had on parchment, where the same inks read 6.13–5.15:1. Dark's inks already
+   sit where its marks want to be, so it keeps the adapter's alias rather than
+   restating a value — and scoping this to light is what stops a light literal
+   from leaking into dark, which is how Verify's movement chips lost their ink. */
+html:not(.dark) {
+  --mk-warn: #94501f;
+  --mk-danger: #ab3a24;
+}
+html.dark {
+  /* THE INVERSION: in light the measured signal is dark forest ON the sheet; in
+     dark the light theme's GROUND becomes the ink. The median is bone and the
+     green identity lives in the bands beneath it, so the two are set apart.
+     The median joins the BODY tier, warmed toward the sheet and never toward
+     white — the brightest LINE, never the brightest THING (term 14). */
+  --mk-primary: #86ad78;
+  --mk-primary-600: #cfc8bd;
+  --mk-primary-soft: #2f3a2c;
+  /* structure rejoins the warm family and recedes by lightness (term 12) */
+  --mk-accent: #e07f3f;
+  --mk-ok: #a49c90;
+  --mk-line: var(--wk-rule);
+}
+
+/* ---- ROLE: chrome bar ----------------------------------------------------
+   The app frame — workflow, scope, utilities. It is the one surface that is not
+   the sheet, and it keeps its own token set so nothing inside it has to opt out
+   of the sheet's ground. */
+.cockpit-topbar,
+.cockpit-footer {
+  --ck-ground: #183326;
+  --ck-panel: #244638;
+  --ck-text: #f5f1e9;
+  --ck-body: #d8e0da;
+  --ck-meta: #afc0b5;
+  --ck-rule: #557061;
+  /* The bar's signal is DERIVED FOR THIS GROUND, and can never be the sheet's
+     (ADR 47). This bar is dark in both themes while light's sheet is bone, so no
+     one value serves both: bone caps a signal used as text at relative luminance
+     .1700 for 4.5:1, and this evergreen floors a signal used as a mark at .1811
+     for 3:1. That band is empty. It is also how the literals that used to sit
+     here came to BE the pre-ADR-37 primary ramp (#b35b2e / #8f4524) — copied
+     once, then left behind when the sheet relit from parchment to bone.
+     Re-derive, never copy. The rule: the signal must clear 4.5:1 as TEXT on
+     --ck-panel above, which is the heaviest job it has (the Log carbs `+`, the
+     checked theme name). Every other use is a 3:1 mark and follows for free. */
+  --ck-bar-signal: #f79d60;       /* L .4470 — 4.95:1 on --ck-panel, 6.46:1 on --ck-ground */
+  --ck-bar-signal-well: #874928;  /* L .1000 — holds --ck-body at 5.17:1, sits 3.30:1 under the signal */
+  --ck-bar-on-signal: var(--ck-ground);  /* ink ON the signal is the bar's own ground: 6.46:1 */
+  --ck-accent: var(--ck-bar-signal);
+  --ck-accent-soft: var(--ck-bar-signal-well);
+  background: #183326;
+  color: #f5f1e9;
+}
+html.dark .cockpit-topbar,
+html.dark .cockpit-footer {
+  /* the same desk, one step deeper — never a black bar */
+  --ck-ground: var(--wk-canvas);
+  --ck-panel: var(--wk-surface);
+  --ck-text: var(--wk-ink);
+  --ck-body: var(--wk-ink-body);
+  --ck-meta: var(--wk-ink-meta);
+  --ck-rule: var(--wk-rule);
+  /* Derived against THIS bar's panel by the same rule, not carried over from
+     light and not aliased to the sheet's dark signal. Both grounds happen to be
+     dark in this theme, so one value COULD serve both here — which is exactly
+     the coincidence that produced the light bug, so the token stays its own. */
+  --ck-bar-signal: #dc7b42;       /* L .2960 — 5.05:1 on --ck-panel, 6.08:1 on --ck-ground */
+  --ck-bar-signal-well: #64361e;  /* L .0550 — holds --ck-body at 6.03:1, sits 3.33:1 under the signal */
+  --ck-bar-on-signal: var(--ck-ground);  /* ink ON the signal is the bar's own ground: 6.08:1 */
+  --ck-accent: var(--ck-bar-signal);
+  --ck-accent-soft: var(--ck-bar-signal-well);
+  background: var(--ck-ground);
+}
+.cockpit-step[aria-current="step"] {
+  border-color: color-mix(in srgb, var(--ck-accent) 75%, #f5f1e9);
+  color: #fff8f1;
+}
+.cockpit-step[aria-current="step"] .cockpit-step-number {
+  border-color: #f5f1e9;
+  background: var(--ck-accent);
+  /* The ink is shell.css's --ck-bar-on-signal. It used to be #ffffff here, the
+     last member of the copied ramp: white reads on a dark orange and stops
+     reading as the signal lightens to clear its own ground (dark measured
+     3.33:1 even before that). Ink on the signal is now the bar's own ground. */
+}
+.cockpit-scope { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .035); }
+
+/* Term 8 — every control in the chrome speaks ONE vocabulary. Log carbs sat on
+   the user-claim ochre at its own radius and ground, a hollow tinted box in a
+   different vocabulary from the SCOPE chip beside it, which is why it read as a
+   web CTA rather than a toolbar action. It now matches that chip exactly and
+   spends the accent on the `+` alone, where it still marks the write. */
+.cockpit-log-carbs {
+  padding: 4px 10px;
+  border: 1px solid var(--ck-rule);
+  border-radius: 7px;
+  background: var(--ck-panel);
+  color: var(--ck-text);
+  font-weight: 600;
+}
+.cockpit-log-carbs .plus { color: var(--ck-accent); font-weight: 700; }
+.cockpit-log-carbs:hover { border-color: var(--ck-accent); }
+
+/* Metadata rails are SENTENCES, not readings: the footer leaves mono and keeps
+   tabular figures so its digits still hold still (term 3). */
+.cockpit-footer,
+.cockpit-profile-facts,
+.cockpit-footer .cockpit-count,
+.cockpit-utilities > button {
+  font-family: Inter, system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: normal;
+}
+
+/* ---- ROLE: pane body — ONE docked workspace, not two floating cards ------
+   Term 1. The panes lose their gutters, radii and shadows; one hairline divides
+   canvas from inspector, and the sheet becomes the working surface itself.
+   This is the rule that was scoped to `.dw`. */
+:is(.dw, .vw) .panes {
+  gap: 0;
+  padding: 0;
+  background: var(--wk-surface);
+  border-top: 1px solid var(--wk-rule-strong);
+}
+:is(.dw, .vw) .pane {
+  border: 0;
+  border-radius: 0;
+  background: var(--wk-surface);
+  box-shadow: none;
+}
+:is(.dw, .vw) .panes > .pane + .pane { border-left: 1px solid var(--wk-rule); }
+
+/* ---- ROLE: pane header rail ---------------------------------------------
+   Pane headers become dock rails rather than card captions, and both share one
+   height so the divider reads as a single seam. */
+:is(.dw, .vw) .pane > header {
+  min-height: 30px;
+  align-items: center;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  background: var(--wk-surface-rail);
+  border-bottom: 1px solid var(--wk-rule);
+}
+
+/* Dark has to make the material step explicit or the inspector floats on the
+   chart's own ground. Light never needed it stated: the sheet and the rail were
+   already different substances with a tonal step behind the divider. Three
+   substances, each one step warmer than the last — chart field, inspector wall,
+   dock floor — and no jump big enough to band (term 13). */
+/* #215 — the Diagnose inspector joins the canvas on that ground. With the two
+   anchors abutting as one docked surface, the wall/field step read as two
+   materials in dark where light shows one, and the darker chart ground is the
+   one worth keeping. Verify's `.vw` dock is untouched, and the values stay
+   single-sourced here rather than restated in the Diagnose adapter. */
+html.dark :is(.dw, .vw) .panes,
+html.dark :is(.dw, .vw) .canvas-pane,
+html.dark .dw .inspector { background: var(--wk-field); }
+html.dark :is(.dw, .vw) .canvas-pane > header,
+html.dark .dw .inspector > header { background: var(--wk-surface-rail); }
+html.dark :is(.dw, .vw) .panes > .pane + .pane { border-left-color: var(--wk-rule-strong); }
+
+/* ---- ROLE: dock floor ----------------------------------------------------
+   The pinned watched-change slot. Its markup belongs to the dock re-settle
+   (#662); the material it sits on belongs to the theme, so the role is styled
+   here and the surface inherits it the moment the markup lands. */
+html.dark :is(.dw, .vw) .inspector > .watch { background: #36312e; }
+html.dark :is(.dw, .vw) .watch .go { border-color: #68605a; background: #2a2623; }
+
+/* ---- ROLE: instrument rail ----------------------------------------------
+   Term 7. The controls that scope the surface below them belong to the SHEET,
+   not to the frame. They were a third material — evergreen chrome above,
+   parchment workspace below, and a near-black band of their own in between — so
+   VIEW and WINDOW read as part of the window frame rather than part of the
+   instrument. They drive the plot, so they join the plot's material and become
+   the workspace's top rail.
+
+   THREE classes realise this ONE role, and all three are named here on purpose.
+   `.verify-strip` is Verify's, and missing it made the Trial line vanish.
+   `.ec-coordinates` is the event comparison's, and missing IT is measurable
+   rather than merely visible: the Glucose lens renders `.dw .instruments` while
+   Meals and Lows render `.ec-coordinates`, and the behaviour ledger asserts the
+   two rails are pixel-identical across the three lenses — so theming one and
+   not the other moved the cap half a pixel and failed the gate. Same anatomy
+   (`.instrument`, `.cap`, `.seg`), same element, same material. */
+:is(.dw, .vw) :is(.instruments, .ec-coordinates),
+.vw .verify-strip {
+  background: var(--wk-surface-rail);
+  color: var(--wk-ink);
+  border-bottom: 1px solid var(--wk-rule);
+}
+:is(.dw, .vw) :is(.instruments, .ec-coordinates) .seg {
+  border-color: var(--wk-rule);
+  background: var(--wk-surface-sunken);
+}
+:is(.dw, .vw) :is(.instruments, .ec-coordinates) .seg button { color: var(--wk-ink-body); }
+:is(.dw, .vw) :is(.instruments, .ec-coordinates) .seg button .x { color: var(--wk-ink-meta); }
+:is(.dw, .vw) :is(.instruments, .ec-coordinates) .seg button[aria-pressed="true"] {
+  background: var(--wk-surface);
+  color: var(--wk-ink);
+  box-shadow: 0 1px 2px rgba(8, 18, 13, .18),
+              inset 0 0 0 1px color-mix(in srgb, var(--primary) 46%, transparent);
+}
+.vw .verify-strip .strip-note { color: var(--wk-ink-meta); }
+
+/* In dark the rail descends INTO the plot instead of sitting continuous with
+   the sheet: chrome -> rail -> chart header -> field, each step slightly
+   deeper. Lit the other way it was lighter than both its neighbours and the top
+   of the surface stacked as three warm-grey stripes. */
+html.dark :is(.dw, .vw) :is(.instruments, .ec-coordinates),
+html.dark .vw .verify-strip {
+  background: var(--wk-surface-rail);
+  color: var(--wk-ink);
+  border-bottom-color: var(--wk-rule);
+}
+html.dark :is(.dw, .vw) :is(.instruments, .ec-coordinates) .seg { border-color: var(--wk-rule); background: var(--wk-surface-sunken); }
+html.dark :is(.dw, .vw) :is(.instruments, .ec-coordinates) .seg button { color: var(--wk-ink-body); }
+html.dark :is(.dw, .vw) :is(.instruments, .ec-coordinates) .seg button[aria-pressed="true"] {
+  background: var(--wk-surface);
+  color: var(--wk-ink);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 62%, transparent);
+}
+
+/* ---- type is split by KIND, not by rank (term 3) -------------------------
+   UI sans for chrome, labels, prose and conclusions; tabular mono reserved for
+   readings, times, units and counts. */
+:is(.dw, .vw) .pane > header h2,
+:is(.dw, .vw) .instrument > .cap,
+:is(.dw, .vw) .lane-key .t,
+:is(.dw, .vw) .lvl-cap .meta,
+:is(.dw, .vw) .slot-stats,
+:is(.dw, .vw) .ev-row button,
+:is(.dw, .vw) .head-live .rd-note {
+  font-family: Inter, system-ui, sans-serif;
+  letter-spacing: normal;
+}
+:is(.dw, .vw) .slot-head .time,
+:is(.dw, .vw) .clock .axis,
+:is(.dw, .vw) .clock .bars .n,
+:is(.dw, .vw) .numrow b,
+:is(.dw, .vw) .statline b,
+:is(.dw, .vw) .ev-group .n,
+:is(.dw, .vw) .occ-head .when,
+:is(.dw, .vw) .occ-nums,
+:is(.dw, .vw) .head-live .rd-time,
+:is(.dw, .vw) .head-live .rd-pair .v {
+  font-family: var(--ck-mono);
+  font-variant-numeric: tabular-nums;
+}
+/* A pane's own metadata is a sentence about the reading, not a reading. */
+:is(.dw, .vw) .pane > header .meta,
+:is(.dw, .vw) #crumb-meta,
+:is(.dw, .vw) .canvas-head .persist {
+  font-family: Inter, system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: normal;
+}
+/* Lift the micro band off the 10px floor so labels stop impersonating data. */
+:is(.dw, .vw) { --ck-micro: 11px; }
+
+/* ---- structural labels tie to the chrome by INK, not by ground (term 7) --
+   The rails keep the sheet's material so the docked workspace stays one
+   surface; only the labels take the brand's evergreen, and that is what relates
+   them to the chrome above. */
+:is(.dw, .vw) .lane-key { color: var(--mk-secondary); }
+:is(.dw, .vw) .pane > header h2,
+:is(.dw, .vw) .instrument > .cap,
+.vw .verify-strip .cap { color: #1f4130; }
+
+/* Dark cannot copy that. Evergreen ink is a LIGHT-theme device: at 145° against
+   dark's warm 30-37° substrate it recreates the clash term 12 measures out.
+   What transfers is the RELATIONSHIP, not the hue — the labels take the
+   topbar's own ink, one clear step above body text, so structure still reads as
+   chrome-family, by value instead of by colour. */
+html.dark :is(.dw, .vw) .pane > header h2,
+html.dark :is(.dw, .vw) .instrument > .cap,
+html.dark .vw .verify-strip .cap { color: var(--wk-ink-nav); }
+
+/* ---- orange means interaction and high/attention, and nothing else ------- */
+/* Term 5. Meals take clay, neutral proportions take forest, and insufficiency
+   takes neutral ink plus a structural tell. */
+:is(.dw, .vw) {
+  --ck-meal: #9f6030;
+  --ck-insuff: #5e645b;
+  --ck-up: #2f6b4f;
+}
+html.dark :is(.dw, .vw) {
+  --ck-rail: var(--wk-surface-sunken);
+  --ck-inset: var(--wk-surface-sunken);
+  --ck-manual: #d9b568;
+  --ck-manual-soft: #3a2e18;
+  --ck-meal: #c08d52;
+  --ck-insuff: #8d8579;
+  --ck-up: #86ad78;
+}
+/* TEXT NEVER SITS ON THE LANE'S GROUND.
+   `--ck-inset` is derived as `color-mix(--mk-bg 82%, #000)`. That produced a
+   light grey while `--mk-bg` was one; under Harmonic `--mk-bg` IS the dark desk,
+   so in LIGHT the derivation drops to near-black — correct for what it mostly
+   is (the schedule lanes' track, the clock's empty cells, the level meter),
+   where nothing but colour sits on it, and wrong for the few wells that carry
+   words. Measured on parchment: the occurrence tag read #526358 on #131D18 at
+   2.71:1, and the event comparison's Factor and occurrence selects read #172219
+   on the same ground at 1.05:1 — invisible. Those wells step DOWN into the
+   sheet instead, which is the material the instrument rail's own segmented
+   controls already sit on. `.capchip` is here because it carries the identical
+   border/ground/ink triple as the tag that was measured, not because it was
+   rendered. DARK is deliberately untouched: its well is stated outright at
+   #191614, the same tag measures 6.54:1 there, and dark's `--wk-surface-sunken`
+   is lifted for the value tag's plate, so borrowing it here would make this
+   worse rather than better. */
+html:not(.dark) :is(.dw, .vw) :is(select, .capchip, .occ-head .tag) {
+  background: var(--wk-surface-sunken);
+}
+
+:is(.dw, .vw) [data-safety="insufficient"],
+:is(.dw, .vw) [data-verdict="insufficient"] {
+  outline: 1px dashed color-mix(in srgb, var(--wk-rule-strong) 90%, transparent);
+  outline-offset: -1px;
+}
+/* Adverse states keep a structural tell even though the palette is simpler:
+   a full rule, never a colour patch alone. */
+:is(.dw, .vw) [data-verdict="low"],
+:is(.dw, .vw) [data-verdict="adverse"] {
+  outline: 1px solid var(--low);
+  outline-offset: -1px;
+}
+/* A median reading above target is attention, not insufficiency, so it leaves
+   `--ck-insuff` for the attention token — which term 4 already made text-safe. */
+:is(.dw, .vw) .head-live #rd-med[data-verdict="above"] { color: var(--warn); }
+/* The share bar is a neutral PROPORTION, so it leaves the interaction hue. */
+:is(.dw, .vw) .factor .track i { background: var(--ck-up); }
+
+/* Diagnose's chart plane, specifically: `--ck-accent` is the interaction hue
+   everywhere in the workstation, and orange is forbidden from the plot, so
+   `#chart` re-points `--primary` at the measured signal for the rules inside
+   it. Verify's `.vw` keeps `--ck-accent` on `--mk-primary` already, so its hero
+   chart needs no equivalent — this is an element rule, not a role rule. */
+.dw {
+  --ck-accent: var(--primary);
+  --ck-sel: color-mix(in srgb, var(--primary) 16%, transparent);
+}
+.dw #chart { --primary: var(--mk-primary); }
+.dw .canvas-pane .brace { --ck-accent: var(--mk-primary); }
+
+/* ---- findings-queue flavour tags (#662 term 36) --------------------------
+   Markup owned by the queue build; the ink is a theme decision, so it is
+   recorded here rather than left to be re-derived. The tag names a KIND of
+   finding, not a state: under Harmonic `--primary` is byte-identical to
+   `--high`, so a tag on the accent would read as clinical attention — the exact
+   collision term 36 forbids. Warm graphite is on-theme and is shared with no
+   chart mark and no clinical token; the glyph carries the differentiation. */
+:is(.dw, .vw) .qrow .tag.setting,
+:is(.dw, .vw) .qrow .tag.habit { color: #6a5d4e; }
+:is(.dw, .vw) .qrow[data-tier="noted"] .tag.setting,
+:is(.dw, .vw) .qrow[data-tier="noted"] .tag.habit { color: color-mix(in srgb, #6a5d4e 72%, transparent); }
+html.dark :is(.dw, .vw) .qrow .tag.setting,
+html.dark :is(.dw, .vw) .qrow .tag.habit { color: #b3a48d; }
+html.dark :is(.dw, .vw) .qrow[data-tier="noted"] .tag.setting,
+html.dark :is(.dw, .vw) .qrow[data-tier="noted"] .tag.habit { color: color-mix(in srgb, #a2937f 72%, transparent); }
+/* One phrase, one ink: a bright value beside a dim noun inside four words read
+   as two colours arguing, so the noun comes up to meet it. */
+html.dark :is(.dw, .vw) .qrow .den { color: #bdb1a0; }
+html.dark :is(.dw, .vw) .qrow .den .v { color: #f0e6d6; }
+
+@media (prefers-reduced-motion: reduce) {
+  :is(.dw, .vw) .panes { transition: none; }
+}
+
 :root{
-  --wk-canvas:#0f0d0b; --wk-surface:#26221f; --wk-surface-rail:#2d2926; --wk-surface-sunken:#504a45;
-  --wk-ink:#f5ece0; --wk-ink-body:#dbcfbc; --wk-ink-meta:#a3968a;
-  --wk-rule:#4d4742; --wk-rule-strong:#776e68;
-  --primary:#e07f3f; --primary-600:#ef9459; --primary-100:#40291b;
-  --secondary:#a89a85; --warn:#c98a4e; --danger:#ec6f55; --low:#ec6f55; --high:#e07f3f;
-  --in-range:#86ad78; --on-target:#86ad78; --on-target-soft:#2f3a2c;
-  --wk-status-incomplete:#d7a75c; --wk-status-adverse:#d97f71; --wk-status-favorable:#7cae8d;
-  --mk-primary:#86ad78; --mk-primary-600:#c3b49c; --mk-primary-soft:#2f3a2c;
-  --mk-accent:#e07f3f; --mk-ok:#a89a85; --mk-line:#322e29;
-  /* chrome bar, theme.css html.dark .cockpit-topbar */
-  --ck-ground:#171412; --ck-panel:#292522; --ck-text:#efe5d4; --ck-body:#d3c7b4; --ck-meta:#a19484;
-  --ck-rule:#48433e; --ck-bar-signal:#dc7b42; --ck-bar-on-signal:#171412;
-  /* docked workspace grounds, theme.css html.dark :is(.dw,.vw) */
-  --field:#161311; --pane-head:#1b1816; --rail:#1e1b19; --hair:#302c29; --seam:#524c47;
-  --seg-line:#3b3632; --seg-bg:#171412; --seg-on:#332e2b;
-  /* the gutter substrate. Lifted from #0a0908 so the ambient shadow beneath the
-     tiles has room to read; still the darkest value on screen — below the tile
-     field (#161311) and below the app ground (#171412). */
+  /* Composition aliases name jobs only; production values above remain the sole
+     Dark palette. The `theme.css` read in generate.py keeps this provenance
+     boundary fail-closed when the shared role source moves. */
+  --ck-ground:var(--wk-canvas); --ck-panel:var(--wk-surface); --ck-text:var(--wk-ink); --ck-body:var(--wk-ink-body); --ck-meta:var(--wk-ink-meta);
+  --ck-rule:var(--wk-rule); --ck-bar-signal:var(--wk-signal); --ck-bar-on-signal:var(--wk-canvas);
+  --field:var(--wk-field); --pane-head:var(--wk-surface-rail); --rail:var(--wk-surface-rail); --hair:var(--wk-rule); --seam:var(--wk-rule-strong);
+  --seg-line:var(--wk-rule); --seg-bg:var(--wk-surface-sunken); --seg-on:var(--wk-surface);
+  /* The gutter substrate remains below the source-bound field and canvas roles. */
   --trench:#100e0d;
   --label-ink:#c6b7a2;
   --ck-label:10px; --ck-micro:11px; --ck-data:12px; --ck-emphasis:13px; --ck-track:.08em;
@@ -344,12 +821,20 @@ body{margin:0;background:#08090a;color:var(--wk-ink);font-family:var(--ui);
 <script>
 const D = {"basal":[["00:00",0.8,0.86,0.5,1.24,3],["00:30",0.833,0.833,0.783,0.883,22],["01:00",0.865,0.865,0.815,0.915,22],["01:30",0.896,0.896,0.846,0.946,22],["02:00",0.925,0.925,0.875,0.975,22],["02:30",0.952,0.952,0.902,1.002,22],["03:00",0.977,0.977,0.927,1.027,22],["03:30",0.998,1.058,0.698,1.438,5],["04:00",1.017,1.017,0.967,1.067,22],["04:30",1.031,1.031,0.981,1.081,22],["05:00",1.041,1.041,0.991,1.091,22],["05:30",1.048,1.048,0.998,1.098,22],["06:00",1.05,1.05,1.0,1.1,22],["06:30",1.048,1.048,0.998,1.098,22],["07:00",1.041,1.131,1.041,1.371,20],["07:30",1.031,1.031,0.981,1.081,22],["08:00",1.017,1.017,0.967,1.067,22],["08:30",0.998,0.998,0.948,1.048,22],["09:00",0.977,0.977,0.927,1.027,22],["09:30",0.952,0.952,0.902,1.002,22],["10:00",0.925,0.925,0.875,0.975,22],["10:30",0.896,0.956,0.596,1.336,2],["11:00",0.865,0.865,0.815,0.915,22],["11:30",0.833,0.833,0.783,0.883,22],["12:00",0.8,0.8,0.75,0.85,22],["12:30",0.767,0.767,0.717,0.817,22],["13:00",0.735,0.735,0.685,0.785,22],["13:30",0.704,0.704,0.654,0.754,22],["14:00",0.675,0.735,0.375,1.115,2],["14:30",0.648,0.648,0.598,0.698,22],["15:00",0.623,0.623,0.573,0.673,22],["15:30",0.602,0.602,0.552,0.652,22],["16:00",0.583,0.583,0.533,0.633,22],["16:30",0.569,0.569,0.519,0.619,22],["17:00",0.559,0.559,0.509,0.609,22],["17:30",0.552,0.612,0.252,0.992,5],["18:00",0.55,0.55,0.5,0.6,22],["18:30",0.552,0.552,0.502,0.602,22],["19:00",0.559,0.559,0.509,0.609,22],["19:30",0.569,0.569,0.519,0.619,22],["20:00",0.583,0.583,0.533,0.633,22],["20:30",0.602,0.602,0.552,0.652,22],["21:00",0.623,0.683,0.323,1.063,2],["21:30",0.648,0.648,0.598,0.698,22],["22:00",0.675,0.675,0.625,0.725,22],["22:30",0.704,0.704,0.654,0.754,22],["23:00",0.735,0.735,0.685,0.785,22],["23:30",0.767,0.767,0.717,0.817,22]],"ic420":{"current":5.6,"scatter":[[540,5.0,true,true],[540,5.0,true,true],[540,5.0,true,true],[540,5.0,true,true],[540,5.0,true,true],[540,5.0,true,true],[540,5.0,true,true],[540,5.0,true,true],[540,50.0,false,false]],"series":[{"pts":[[290.0,110],[295.0,110],[300.0,110],[305.0,110],[310.0,110]]},{"pts":[[290.0,110],[295.0,110],[300.0,110],[305.0,110],[310.0,110]]},{"pts":[[290.0,110],[295.0,110],[300.0,110],[305.0,110],[310.0,110]]},{"pts":[[290.0,110],[295.0,110],[300.0,110],[305.0,110],[310.0,110]]},{"pts":[[290.0,110],[295.0,110],[300.0,110],[305.0,110],[310.0,110]]},{"pts":[[290.0,110],[295.0,110],[300.0,110],[305.0,110],[310.0,110]]},{"pts":[[290.0,110],[295.0,110],[300.0,110],[305.0,110],[310.0,110]]},{"pts":[[290.0,110],[295.0,110],[300.0,110],[305.0,110],[310.0,110]]},{"pts":[[290.0,40],[295.0,40],[300.0,40],[305.0,40],[310.0,40]]}]},"ic660":{"current":5.6,"scatter":[[1380,5.0,true,true],[1380,5.0,true,true],[1380,5.0,true,true],[1380,5.0,true,true],[1380,5.0,true,true],[1380,5.0,true,true],[1380,5.0,true,true],[1380,5.0,true,true],[1380,5.0,true,true]],"series":[{"pts":[[290.0,110],[295.0,110],[300.0,110],[305.0,110],[310.0,110],[410.0,110],[415.0,110],[420.0,110],[425.0,110],[430.0,110]]},{"pts":[[290.0,110],[295.0,110],[300.0,110],[305.0,110],[310.0,110],[410.0,110],[415.0,110],[420.0,110],[425.0,110],[430.0,110]]},{"pts":[[290.0,110],[295.0,110],[300.0,110],[305.0,110],[310.0,110],[410.0,110],[415.0,110],[420.0,110],[425.0,110],[430.0,110]]},{"pts":[[290.0,110],[295.0,110],[300.0,110],[305.0,110],[310.0,110],[410.0,110],[415.0,110],[420.0,110],[425.0,110],[430.0,110]]},{"pts":[[290.0,110],[295.0,110],[300.0,110],[305.0,110],[310.0,110],[410.0,110],[415.0,110],[420.0,110],[425.0,110],[430.0,110]]},{"pts":[[290.0,110],[295.0,110],[300.0,110],[305.0,110],[310.0,110],[410.0,110],[415.0,110],[420.0,110],[425.0,110],[430.0,110]]},{"pts":[[290.0,110],[295.0,110],[300.0,110],[305.0,110],[310.0,110],[410.0,110],[415.0,110],[420.0,110],[425.0,110],[430.0,110]]},{"pts":[[290.0,110],[295.0,110],[300.0,110],[305.0,110],[310.0,110],[410.0,110],[415.0,110],[420.0,110],[425.0,110],[430.0,110]]},{"pts":[[290.0,110],[295.0,110],[300.0,110],[305.0,110],[310.0,110],[410.0,110],[415.0,110],[420.0,110],[425.0,110],[430.0,110]]}]},"isf":{"intercept":30.633,"nights":[["1",38.898],["2",28.866],["3",24.576],["4",57.312],["5",31.308],["6",36.852],["7",29.79],["8",53.682],["9",50.844],["10",30.714],["11",57.114],["12",41.67],["13",51.504],["14",53.088],["15",55.266],["16",47.412],["17",37.644],["18",57.774],["19",30.384],["20",76.914],["21",19.758],["22",33.156],["23",53.484],["24",34.014]],"programmed":42.0,"pts":[[0.0002,34.469],[0.0007,37.229],[0.0014,29.354],[0.0024,27.581],[0.0036,26.483],[0.005,41.075],[0.0065,34.262],[0.0082,22.235],[0.01,29.831],[0.0118,22.607],[0.0138,19.529],[0.0157,13.871],[0.0177,1.082],[0.0198,21.527],[0.0218,19.775],[0.0239,18.614],[0.0259,15.38],[0.0279,5.867],[0.0299,14.879],[0.0319,11.762],[0.0338,8.015],[0.0357,3.761],[0.0375,-2.41],[0.0393,2.144],[0.041,1.115],[0.0427,-1.513],[0.0443,-9.217],[0.0459,-5.338],[0.0474,2.474],[0.0488,-12.847],[0.0502,3.305],[0.0515,-17.326],[0.0527,0.374],[0.0539,-10.162],[0.055,0.59],[0.0561,-7.963],[0.0571,-8.995],[0.058,-17.014],[0.0589,-15.556],[0.0597,-8.722],[0.0605,-16.63],[0.0612,-13.585],[0.0619,-5.665],[0.0625,-4.732],[0.0631,-14.29],[0.0636,-16.483],[0.064,-9.556],[0.0645,-5.782],[0.0649,-16.873],[0.0652,-13.813],[0.0655,-23.506],[0.0658,-21.382],[0.066,-10.528],[0.0662,-24.634],[0.0663,-8.053],[0.0665,-30.076],[0.0665,-23.29],[0.0666,-14.314],[0.0667,-27.958],[0.0667,-9.784],[0.0667,-13.684],[0.0667,-9.667],[0.0667,-29.791],[0.0667,-2.491],[0.0667,-23.122],[0.0667,-6.313],[0.0667,-24.175],[0.0667,-15.556],[0.0667,-13.918],[0.0667,-12.436],[0.0667,-32.599],[0.0667,-16.882],[0.0667,-20.002],[0.0667,-15.712],[0.0667,-13.177],[0.0667,-22.225],[0.0667,-12.865],[0.0667,-19.261],[0.0667,-2.881],[0.0667,-10.954],[0.0667,-18.871],[0.0667,-21.601],[0.0667,-5.104],[0.0667,-19.183],[0.0667,-5.065],[0.0667,-22.225],[0.0667,-24.565],[0.0667,-10.135],[0.0667,-22.615],[0.0667,-25.657],[0.0667,-11.344],[0.0667,-3.193],[0.0667,-12.67],[0.0667,-24.682],[0.0667,-7.6],[0.0667,-20.587],[0.0667,-18.637],[0.0667,-13.84],[0.0667,-10.018],[0.0667,-21.094],[0.0667,-19.924],[0.0667,-18.832],[0.0667,-30.805],[0.0667,-14.737],[0.0667,-15.439],[0.0667,-6.196],[0.0667,-25.774],[0.0667,-17.623],[0.0667,-21.055],[0.0667,-2.335],[0.0667,-22.342],[0.0667,-15.985],[0.0667,-25.384],[0.0667,-23.551],[0.0667,-4.909],[0.0667,-22.147],[0.0667,-19.729],[0.0667,-30.22],[0.0667,-13.918],[0.0667,-15.4],[0.0002,29.243],[0.0007,37.736],[0.0014,21.983],[0.0024,29.258],[0.0036,29.096],[0.005,25.202],[0.0065,34.379],[0.0082,13.538],[0.01,14.036],[0.0118,27.56],[0.0138,16.37],[0.0157,7.631],[0.0177,11.3],[0.0198,2.495],[0.0218,23.246],[0.0239,10.775],[0.0259,9.725],[0.0279,14.954],[0.0299,20.066],[0.0319,19.484],[0.0338,10.004],[0.0357,0.68],[0.0375,8.432],[0.0393,6.629],[0.041,-3.253],[0.0427,-2.332],[0.0443,-2.47],[0.0459,-4.909],[0.0474,0.992],[0.0488,-6.763],[0.0502,0.497],[0.0515,-4.027],[0.0527,-0.016],[0.0539,-6.067],[0.055,-11.5],[0.0561,-6.754],[0.0571,-5.758],[0.058,-10.579],[0.0589,0.317],[0.0597,3.758],[0.0605,-10.78],[0.0612,-21.775],[0.0619,-16.468],[0.0625,-1.729],[0.0631,-11.053],[0.0636,-18.901],[0.064,-23.869],[0.0645,-18.574],[0.0649,-20.656],[0.0652,-21.73],[0.0655,-18.709],[0.0658,-17.833],[0.066,-15.91],[0.0662,-4.666],[0.0663,-16.282],[0.0665,-16.894],[0.0665,-12.526],[0.0666,-5.734],[0.0667,-15.205],[0.0667,-33.457],[0.0667,-21.601],[0.0667,-20.587],[0.0667,-16.18],[0.0667,-14.542],[0.0667,-9.121],[0.0667,-8.458],[0.0667,-13.099],[0.0667,-6.157],[0.0667,-10.798],[0.0667,-11.773],[0.0667,-19.573],[0.0667,-15.283],[0.0667,-14.269],[0.0667,-14.23],[0.0667,-8.419],[0.0667,-8.38],[0.0667,-17.662],[0.0667,-20.626],[0.0667,-19.807],[0.0667,-5.884],[0.0667,-15.01],[0.0667,-17.194],[0.0667,-15.322],[0.0667,-20.275],[0.0667,-22.615],[0.0667,-23.083],[0.0667,-13.177],[0.0667,-16.414],[0.0667,-3.271],[0.0667,-23.161],[0.0667,-10.408],[0.0667,-4.246],[0.0667,-18.715],[0.0667,-22.147],[0.0667,-13.645],[0.0667,-16.609],[0.0667,-12.514],[0.0667,-19.729],[0.0667,-21.328],[0.0667,-9.043],[0.0667,-10.525],[0.0667,-16.531],[0.0667,-7.21],[0.0667,-18.052],[0.0667,-19.378],[0.0667,-27.022],[0.0667,-14.464],[0.0667,-16.843],[0.0667,-14.971],[0.0667,-23.59],[0.0667,-7.99],[0.0667,-25.579],[0.0667,-24.916],[0.0667,-6.82],[0.0667,-1.048],[0.0667,-9.94],[0.0667,-13.177],[0.0667,-13.021],[0.0667,-29.674],[0.0667,-17.896]],"slope":-701.744},"strip":{"bins":[[0,105.65,101.875,109.775,96.03,112.86,54,9],[15,105.05,100.05,109.675,95.66,112.15,54,9],[30,104.19999999999999,97.975,109.525,93.39,112.22,54,9],[45,102.1,94.1,108.9,90.19,111.62,54,9],[60,99.35,91.6,105.3,86.38,109.67,54,9],[75,95.7,89.35,102.1,82.2,108.36,54,9],[90,90.4,82.925,98.75,76.48,102.1,54,9],[105,86.2,78.225,94.7,74.33,99.61,54,9],[120,83.15,76.9,89.95,73.74,97.7,54,9],[135,82.2,76.9,88.675,73.74,96.97,54,9],[150,82.5,76.9,89.95,73.74,97.53,54,9],[165,83.6,77.85,96.75,74.36,104.98,54,9],[180,92.2,79.8,104.325,75.99,110.05,54,9],[195,100.2,88.675,110.2,79.7,120.28,54,9],[210,107.80000000000001,96.45,118.725,84.48,124.78,54,9],[225,111.8,104.8,122.975,96.75,126.73,54,9],[240,119.05,110.325,124.8,102.22,128.84,54,9],[255,123.85,114.575,127.85,110.35,134.14,54,9],[270,125.80000000000001,122.3,132.225,114.65,135.16,54,9],[285,127.0,123.725,132.75,119.03,136.13,54,9],[300,128.14999999999998,125.4,136.15,122.18,142.22,54,9],[315,133.35,127.025,139.8,124.6,145.0,54,9],[330,138.05,129.0,145.075,126.62,156.15,54,9],[345,142.5,133.375,156.175,127.03,163.41,54,9],[360,151.2,139.8,164.1,128.26,173.36,54,9],[375,157.5,145.85,173.825,140.25,184.82,54,9],[390,169.45,155.925,185.075,144.05,189.77,54,9],[405,181.14999999999998,164.275,188.475,155.95,193.23,54,9],[420,186.39999999999998,174.775,192.2,164.29,196.33,54,9],[435,189.35,184.55,193.9,176.98,196.81,54,9],[450,190.05,185.425,194.075,178.86,196.81,54,9],[465,189.6,182.375,193.9,176.03,196.51,54,9],[480,187.10000000000002,175.4,193.575,166.01,196.51,54,9],[495,178.15,165.5,192.175,159.81,195.48,54,9],[510,168.45,160.875,181.225,155.46,193.33,54,9],[525,165.35000000000002,157.225,175.1,148.67,181.09,54,9],[540,160.0,155.1,167.025,145.96,173.99,54,9],[555,158.7,152.05,164.425,145.96,167.79,54,9],[570,155.75,147.5,160.3,144.83,165.22,54,9],[585,154.7,146.975,159.25,144.83,164.41,54,9],[600,154.7,147.6,157.6,145.96,162.01,54,9],[615,154.7,148.375,158.125,146.36,162.47,54,9],[630,155.35000000000002,149.15,160.275,146.53,164.57,54,9],[645,155.95,150.225,160.725,146.66,164.88,54,9],[660,158.25,154.225,163.7,148.93,170.21,54,9],[675,161.55,156.025,170.525,150.99,176.58,54,9],[690,166.4,158.875,176.075,154.72,184.48,54,9],[705,172.5,163.175,184.5,158.17,194.69,54,9],[720,180.55,170.075,190.0,161.49,197.16,54,9],[735,186.75,175.625,195.15,170.09,199.85,54,9],[750,188.15,183.75,195.975,175.67,200.39,54,9],[765,188.15,183.75,196.325,174.61,200.39,54,9],[780,188.45,183.325,196.325,174.05,199.97,54,9],[795,186.55,176.975,194.25,170.59,199.01,54,9],[810,179.85000000000002,170.575,188.675,158.57,199.01,54,9],[825,172.25,158.375,186.175,150.74,188.63,54,9],[840,164.65,152.475,177.125,147.03,186.47,54,9],[855,156.85000000000002,147.1,170.425,140.0,181.86,54,9],[870,150.0,142.75,160.1,136.72,170.71,54,9],[885,146.05,139.625,152.25,134.72,160.04,54,9],[900,143.14999999999998,137.05,148.4,132.3,155.1,54,9],[915,140.14999999999998,135.725,146.55,131.69,149.52,54,9],[930,138.8,135.025,142.55,130.83,147.01,54,9],[945,136.8,131.825,141.775,127.89,146.5,54,9],[960,135.65,130.525,140.425,124.8,144.89,54,9],[975,135.05,128.825,139.05,124.1,144.59,54,9],[990,134.85,128.975,138.625,124.1,142.98,54,9],[1005,135.14999999999998,129.25,140.05,124.1,145.87,54,9],[1020,135.35000000000002,129.525,141.7,124.1,147.11,54,9],[1035,138.95,132.275,146.425,126.43,149.98,54,9],[1050,142.85,135.325,150.05,129.26,159.51,54,9],[1065,147.5,140.275,159.575,134.71,172.19,54,9],[1080,156.15,144.65,170.325,139.68,176.59,54,9],[1095,161.14999999999998,149.35,173.225,142.49,178.19,54,9],[1110,169.35,158.075,174.65,149.42,178.89,54,9],[1125,170.05,161.625,174.65,157.53,178.89,54,9],[1140,169.35,161.025,174.65,155.24,178.89,54,9],[1155,165.85,155.15,173.425,138.38,177.61,54,9],[1170,158.4,138.475,168.975,129.13,174.91,54,9],[1185,146.75,129.025,161.675,121.26,170.12,54,9],[1200,135.2,121.875,153.45,113.57,161.67,54,9],[1215,125.15,113.525,137.825,107.69,149.64,54,9],[1230,117.5,108.5,128.9,102.97,139.51,54,9],[1245,111.55000000000001,105.85,122.325,98.88,129.17,54,9],[1260,108.8,103.775,114.375,95.76,122.01,54,9],[1275,106.65,99.45,111.15,92.2,115.87,54,9],[1290,104.9,98.1,108.35,92.06,111.61,54,9],[1305,103.5,97.575,107.775,92.06,112.05,54,9],[1320,101.5,97.425,107.55,92.59,111.93,54,9],[1335,101.3,97.4,107.775,92.2,111.96,54,9],[1350,100.65,97.325,106.9,92.29,111.05,54,9],[1365,101.3,97.4,107.425,93.83,111.96,54,9],[1380,102.94999999999999,97.75,108.15,95.86,112.2,54,9],[1395,103.4,97.775,108.45,95.86,112.05,54,9],[1410,103.9,99.325,110.0,94.9,112.27,54,9],[1425,104.3,98.45,109.775,95.66,112.86,54,9]],"days":30,"meals":[[420,3],[450,3],[750,3],[1110,3],[1140,6]]},"window":{"days":30}};
 
-/* ── palette handles ─────────────────────────────────────────────────────── */
-const C = {
-  field:'#161311', hair:'#302c29', line:'#322e29', ink:'#f5ece0', body:'#dbcfbc', meta:'#a3968a',
-  rule:'#4d4742', ruleStrong:'#776e68', signal:'#86ad78', median:'#c3b49c', soft:'#2f3a2c',
-  accent:'#e07f3f', warn:'#c98a4e', low:'#ec6f55', ok:'#a89a85', label:'#c6b7a2'
+/* ── palette handles — resolved from the source-bound roles ─────────────── */
+const sourceColor = (role) => {
+  const probe = document.createElement('i');
+  probe.style.backgroundColor = `var(${role})`;
+  document.body.append(probe);
+  const [r,g,b] = getComputedStyle(probe).backgroundColor.match(/\d+/g).map(Number);
+  probe.remove();
+  return '#'+[r,g,b].map(n=>n.toString(16).padStart(2,'0')).join('');
 };
+const C = Object.fromEntries(Object.entries({
+  field:'--wk-field', hair:'--wk-rule', line:'--mk-line', ink:'--wk-ink', body:'--wk-ink-body', meta:'--wk-ink-meta',
+  rule:'--wk-rule', ruleStrong:'--wk-rule-strong', signal:'--mk-primary', median:'--mk-primary-600', soft:'--mk-primary-soft',
+  accent:'--mk-accent', warn:'--warn', low:'--low', ok:'--mk-ok', label:'--wk-ink-nav'
+}).map(([name, role]) => [name, sourceColor(role)]));
 const MONO = 'ui-monospace, SF Mono, Menlo, monospace';
 const hhmm = m => String(Math.floor(((m%1440)+1440)%1440/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
 const dim = (hex,a) => { const n=parseInt(hex.slice(1),16);

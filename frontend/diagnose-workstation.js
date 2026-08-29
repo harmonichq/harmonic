@@ -3518,6 +3518,7 @@ function boot(root, data, callbacks, signal) {
     let mode = null; let anchor = 0; let width = 0; let grabOffset = 0;
     let moved = false; let pressMinute = 0;
     let pressX = 0; let pressY = 0; let pointerId = null; let pointerType = null;
+    let committedBeforeDrag = null;
     let lastX = 0; let panMin = 0; let panMax = 0;
     let rafId = 0;
     const DISPLAY_SPAN = 95 * BIN_MINUTES;
@@ -3603,6 +3604,7 @@ function boot(root, data, callbacks, signal) {
 
     function move(ev) {
       if (!mode || ev.pointerId !== pointerId) return;
+      if (!moved && ev.clientX === pressX && ev.clientY === pressY) return;
       /* `touch-action: pan-y` reserves a vertical touch for its scrollable
          ancestor. Do not let its first sampled move alter the window before
          Chromium takes that gesture over. */
@@ -3660,6 +3662,7 @@ function boot(root, data, callbacks, signal) {
       if (!mode || ev.pointerId !== pointerId) return;
       if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
       const dragged = moved;
+      const cancelled = ev.type !== 'pointerup';
       const wholeDay = dragged && mode !== 'slide' && dragDisplayWindow
         && commitWindow(dragDisplayWindow) === null;
       mode = null;
@@ -3671,12 +3674,17 @@ function boot(root, data, callbacks, signal) {
       }
       // a press that never moved changed nothing, so there is nothing to commit
       // and nothing to undo — leave the panel exactly as the press found it
-      if (!dragged) return;
-      if (wholeDay) {
+      if (!dragged) { committedBeforeDrag = null; return; }
+      if (cancelled) {
+        drawn = committedBeforeDrag.drawn;
+        presetKey = committedBeforeDrag.presetKey;
+        explicitPreset = committedBeforeDrag.explicitPreset;
+      } else if (wholeDay) {
         drawn = null;
         presetKey = 'all';
         explicitPreset = true;
       }
+      committedBeforeDrag = null;
       dragDisplayWindow = null;
       clockPanOffset = 0;
       delete chartEl.parentElement.dataset.clockPan;
@@ -3736,6 +3744,11 @@ function boot(root, data, callbacks, signal) {
       pointerType = ev.pointerType;
       pressX = ev.clientX;
       pressY = ev.clientY;
+      committedBeforeDrag = {
+        drawn: drawn ? drawn.slice() : null,
+        presetKey,
+        explicitPreset,
+      };
       lastX = localX(ev);
       pressMinute = minuteAt(lastX);
       chartEl.setPointerCapture(pointerId);

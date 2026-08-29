@@ -499,7 +499,7 @@ export async function openApp(browser, {
   appSource = 'server',
   history = false, selectedFindingsResponses = [], historyResponses = [], stageProbe = false,
   caseScenario = null, evidenceScenario = null, resizeProbe = false,
-  hasTouch = false,
+  hasTouch = false, isMobile = false,
   frontendRoot = join(ROOT, 'frontend'), fixtureBaseUrl = null,
 } = {}) {
   const payloadPath = process.env.PAYLOAD || fail('PAYLOAD is required for TARGET=app');
@@ -590,7 +590,7 @@ export async function openApp(browser, {
     [apiPattern('/pump-settings$'), () => pumpSettingsFrom || ({ configured: false })],
     [apiPattern('/pump'), () => ({ settings: {} })],
   ];
-  const page = await browser.newPage({ viewport, hasTouch });
+  const page = await browser.newPage({ viewport, hasTouch, isMobile });
   let preparationRequests = 0;
   let caseRequests = 0;
   const evidenceRequests = new Map();
@@ -960,6 +960,56 @@ export const S02 = async (page) => {
     `S02 inspector re-scoped to the drawn window (${after.crumbMeta})`);
 };
 
+const touchDrag = async (page, from, to, { end = 'up', steps = 1 } = {}) => {
+  const session = await page.context().newCDPSession(page);
+  const point = (x, y) => ({ x, y, id: 1, radiusX: 1, radiusY: 1, force: 1 });
+  const inspectEnd = end === 'cancel' || end === 'lost-capture';
+  if (inspectEnd) {
+    await page.evaluate(() => {
+      window.__diagnoseReplayPointerId = null;
+      document.getElementById('chart').addEventListener('pointerdown', (event) => {
+        window.__diagnoseReplayPointerId = event.pointerId;
+      }, { once: true });
+    });
+  }
+  await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [point(from.x, from.y)] });
+  for (let step = 1; step <= steps; step += 1) {
+    await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [point(
+      from.x + (to.x - from.x) * step / steps,
+      from.y + (to.y - from.y) * step / steps,
+    )] });
+  }
+  const beforeEnd = inspectEnd ? await page.evaluate(() => {
+    const chart = document.getElementById('chart');
+    const pointerId = window.__diagnoseReplayPointerId;
+    return {
+      pointerId,
+      captured: pointerId !== null && chart.hasPointerCapture(pointerId),
+    };
+  }) : null;
+  if (end === 'cancel') {
+    await session.send('Input.dispatchTouchEvent', { type: 'touchCancel', touchPoints: [] });
+  } else if (end === 'lost-capture') {
+    await page.evaluate((id) => {
+      const chart = document.getElementById('chart');
+      if (id !== null && chart.hasPointerCapture(id)) chart.releasePointerCapture(id);
+    }, beforeEnd.pointerId);
+    await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  } else {
+    await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  }
+  await session.detach();
+  return beforeEnd;
+};
+
+const touchScroll = async (page, at) => {
+  const session = await page.context().newCDPSession(page);
+  await session.send('Input.synthesizeScrollGesture', {
+    x: at.x, y: at.y, xDistance: 0, yDistance: -80, gestureSourceType: 'touch', speed: 800,
+  });
+  await session.detach();
+};
+
 /** S03 · The dashed edge is grabbable down its WHOLE height (±5px), not only at
     the little grip — grabbing it mid-plot resizes rather than starting a new
     window. */
@@ -982,6 +1032,31 @@ export const S03 = async (page) => {
   near(after.gripA, start.gripA, 1, 'S03 the far edge did not move');
   ok(after.gripB > start.gripB + 40, 'S03 the grabbed edge moved');
   ok(after.chip !== start.chip, 'S03 the chip reports the resized window');
+
+  const failures = [];
+  const check = (assertion) => {
+    try { assertion(); } catch (error) { failures.push(error.message); }
+  };
+  const leftStart = await state(page);
+  await touchDrag(page,
+    { x: b.x + leftStart.gripA, y }, { x: b.x + leftStart.gripA + 30, y });
+  await settle(page);
+  const leftAfter = await state(page);
+  check(() => ok(leftAfter.gripA > leftStart.gripA + 10,
+    'S03 primary touch moves the left full-height gate'));
+  check(() => near(leftAfter.gripB, leftStart.gripB, 1,
+    'S03 left primary touch holds the far gate'));
+
+  const rightStart = await state(page);
+  await touchDrag(page,
+    { x: b.x + rightStart.gripB, y }, { x: b.x + rightStart.gripB + 70, y });
+  await settle(page);
+  const rightAfter = await state(page);
+  check(() => ok(rightAfter.gripB > rightStart.gripB + 20,
+    'S03 primary touch moves the right full-height gate'));
+  check(() => near(rightAfter.gripA, rightStart.gripA, 1,
+    'S03 right primary touch holds the far gate'));
+  if (failures.length) fail(failures.join('; '));
 };
 
 /** S04 · Dragging INSIDE a window slides it whole — both edges live, the width
@@ -1006,6 +1081,70 @@ export const S04 = async (page) => {
   const after = await state(page);
   ok(after.gripA > start.gripA + 40, 'S04 the window moved');
   near(after.gripB - after.gripA, width, 2, 'S04 the width is preserved by a slide');
+
+  const touchStart = await state(page);
+  const touchMid = (touchStart.gripA + touchStart.gripB) / 2;
+  const touchWidth = touchStart.gripB - touchStart.gripA;
+  await touchDrag(page, { x: b.x + touchMid, y }, { x: b.x + touchMid + 120, y });
+  await settle(page);
+  const touchAfter = await state(page);
+  ok(touchAfter.gripA > touchStart.gripA + 40,
+    'S04 primary touch moves the scrim window');
+  near(touchAfter.gripB - touchAfter.gripA, touchWidth, 2,
+    'S04 primary touch preserves scrim width');
+
+  const tapBefore = await state(page);
+  const tapMid = (tapBefore.gripA + tapBefore.gripB) / 2;
+  await touchDrag(page, { x: b.x + tapMid, y }, { x: b.x + tapMid, y });
+  await settle(page);
+  is((await state(page)).chip, tapBefore.chip,
+    'S04 primary touch without movement changes no window');
+
+  const verticalBefore = await state(page);
+  const verticalMid = (verticalBefore.gripA + verticalBefore.gripB) / 2;
+  await touchDrag(page,
+    { x: b.x + verticalMid, y }, { x: b.x + verticalMid, y: y + 80 });
+  await settle(page);
+  const verticalAfter = await state(page);
+  is(verticalAfter.chip, verticalBefore.chip,
+    'S04 a vertical primary touch leaves clock-window ownership with the scroll path');
+
+  const scrollBefore = await page.evaluate(() => {
+    const chart = document.getElementById('chart');
+    const host = chart.closest('.canvas-pane');
+    const saved = { display: host.style.display, height: host.style.height, overflowY: host.style.overflowY };
+    host.style.display = 'block';
+    host.style.height = `${host.clientHeight - 40}px`;
+    host.style.overflowY = 'auto';
+    const spacer = document.createElement('div');
+    spacer.id = 's04-scroll-spacer';
+    spacer.style.cssText = 'grid-row: 4; height: 160px;';
+    host.append(spacer);
+    return {
+      saved, hostTop: host.scrollTop, shellTop: document.scrollingElement.scrollTop,
+      clientHeight: host.clientHeight, scrollHeight: host.scrollHeight,
+    };
+  });
+  const scrollPlot = await plot(page);
+  await touchScroll(page,
+    { x: scrollPlot.x + verticalMid, y: scrollPlot.y + scrollPlot.h * 0.5 });
+  await settle(page);
+  const scrollAfter = await page.evaluate((saved) => {
+    const chart = document.getElementById('chart');
+    const host = chart.closest('.canvas-pane');
+    const result = { hostTop: host.scrollTop, shellTop: document.scrollingElement.scrollTop };
+    host.style.display = saved.display;
+    host.style.height = saved.height;
+    host.style.overflowY = saved.overflowY;
+    document.getElementById('s04-scroll-spacer').remove();
+    return result;
+  }, scrollBefore.saved);
+  ok(scrollAfter.hostTop > scrollBefore.hostTop,
+    `S04 vertical primary touch moves an already-scrollable chart ancestor (${scrollBefore.hostTop} → ${scrollAfter.hostTop}; ${scrollBefore.clientHeight}/${scrollBefore.scrollHeight}px)`);
+  is(scrollAfter.shellTop, scrollBefore.shellTop,
+    'S04 vertical touch preserves the shell no-page-scroll contract');
+  is((await state(page)).chip, verticalAfter.chip,
+    'S04 ancestor scrolling leaves the clock window unchanged');
 };
 
 /** S05 · The grip handles drag the same edge the full-height zone does. */
@@ -1013,17 +1152,44 @@ export const S04 = async (page) => {
 export const S05 = async (page) => {
   const start = await state(page);
   await assertGateContained(page, 'S05');
+  const b = await plot(page);
+  const y = b.y + b.h * 0.5;
   const g = await page.evaluate(() => { const r = document.getElementById('grip-a').getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
   await page.mouse.move(g.x, g.y);
   await page.mouse.down();
-  await page.mouse.move(g.x - 70, g.y, { steps: 6 });
+  await page.mouse.move(g.x + 30, g.y, { steps: 6 });
   const during = await state(page);
   is(during.live, ['brace-a'], 'S05 the grip drags its own edge');
   await page.mouse.up();
   await settle(page);
   const after = await state(page);
-  ok(after.gripA < start.gripA - 20, 'S05 grip-a moved the near edge');
+  ok(after.gripA > start.gripA + 10,
+    `S05 grip-a moved the near edge (${start.gripA} → ${after.gripA})`);
   near(after.gripB, start.gripB, 1, 'S05 the far edge stayed');
+
+  const cancelStart = await state(page);
+  const cancelMid = (cancelStart.gripA + cancelStart.gripB) / 2;
+  const cancelBeforeEnd = await touchDrag(page,
+    { x: b.x + cancelMid, y }, { x: b.x + cancelMid + 60, y }, { end: 'cancel' });
+  await settle(page);
+  const cancelAfter = await state(page);
+  ok(cancelBeforeEnd.captured,
+    'S05 primary touch is captured before Chromium cancellation');
+  is(cancelAfter.live, [], 'S05 pointer cancellation clears live gates');
+  is(cancelAfter.readout, null, 'S05 pointer cancellation clears the live readout');
+  is(cancelAfter.chip, cancelStart.chip,
+    'S05 pointer cancellation restores the last committed window');
+
+  const lostStart = await state(page);
+  const lostMid = (lostStart.gripA + lostStart.gripB) / 2;
+  await touchDrag(page,
+    { x: b.x + lostMid, y }, { x: b.x + lostMid + 60, y }, { end: 'lost-capture' });
+  await settle(page);
+  const lostAfter = await state(page);
+  is(lostAfter.live, [], 'S05 lost capture clears live gates');
+  is(lostAfter.readout, null, 'S05 lost capture clears the live readout');
+  is(lostAfter.chip, lostStart.chip,
+    'S05 lost capture restores the last committed window');
 };
 
 /** S06 · A press that never moves changes nothing — no window minted, no preset
@@ -1040,81 +1206,6 @@ export const S06 = async (page) => {
   is(after.chip, before.chip, 'S06 a click in the plot mints no window');
   is(after.pressed, before.pressed, 'S06 a click in the plot unpresses nothing');
   is(after.crumbMeta, before.crumbMeta, 'S06 nothing re-scoped');
-};
-
-const touchDrag = async (page, from, to, { cancel = false } = {}) => {
-  const session = await page.context().newCDPSession(page);
-  const point = (x, y) => ({ x, y, id: 1, radiusX: 1, radiusY: 1, force: 1 });
-  const activePointer = cancel ? page.evaluate(() => new Promise((resolve) => {
-    document.getElementById('chart').addEventListener('pointerdown', (event) => resolve(event.pointerId), { once: true });
-  })) : null;
-  await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [point(from.x, from.y)] });
-  await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [point(to.x, to.y)] });
-  if (cancel) {
-    const pointerId = await activePointer;
-    await page.evaluate((id) => document.getElementById('chart').dispatchEvent(new PointerEvent('pointercancel', {
-      bubbles: true, pointerId: id, pointerType: 'touch', isPrimary: true,
-    })), pointerId);
-  } else {
-    await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-  }
-  await session.detach();
-};
-
-/** S122 · At tablet width, primary touch uses the clock-window coordinator:
-    scrim slide, both full-height gates, no-movement tap, and cancellation. */
-export const S122 = async (page) => {
-  const b = await plot(page);
-  const y = b.y + b.h * 0.5;
-  const touch = async (from, to, options) => touchDrag(page, from, to, options);
-
-  const slideStart = await state(page);
-  const slideMid = (slideStart.gripA + slideStart.gripB) / 2;
-  const slideWidth = slideStart.gripB - slideStart.gripA;
-  await touch({ x: b.x + slideMid, y }, { x: b.x + slideMid + 120, y });
-  await settle(page);
-  const slideAfter = await state(page);
-  ok(slideAfter.gripA > slideStart.gripA + 40, 'S122 primary touch moves the scrim window');
-  near(slideAfter.gripB - slideAfter.gripA, slideWidth, 2,
-    'S122 primary touch preserves scrim width');
-
-  const leftStart = await state(page);
-  await touch({ x: b.x + leftStart.gripA, y }, { x: b.x + leftStart.gripA - 70, y });
-  await settle(page);
-  const leftAfter = await state(page);
-  ok(leftAfter.gripA < leftStart.gripA - 20, 'S122 primary touch moves the left full-height gate');
-  near(leftAfter.gripB, leftStart.gripB, 1, 'S122 left touch holds the far gate');
-
-  const rightStart = await state(page);
-  await touch({ x: b.x + rightStart.gripB, y }, { x: b.x + rightStart.gripB + 70, y });
-  await settle(page);
-  const rightAfter = await state(page);
-  ok(rightAfter.gripB > rightStart.gripB + 20, 'S122 primary touch moves the right full-height gate');
-  near(rightAfter.gripA, rightStart.gripA, 1, 'S122 right touch holds the far gate');
-
-  const tapBefore = await state(page);
-  await touch({ x: b.x + (tapBefore.gripA + tapBefore.gripB) / 2, y },
-    { x: b.x + (tapBefore.gripA + tapBefore.gripB) / 2, y });
-  await settle(page);
-  const tapAfter = await state(page);
-  is(tapAfter.chip, tapBefore.chip, 'S122 primary touch without movement changes no window');
-
-  const verticalBefore = await state(page);
-  const verticalMid = (verticalBefore.gripA + verticalBefore.gripB) / 2;
-  await touch({ x: b.x + verticalMid, y }, { x: b.x + verticalMid, y: y + 80 });
-  await settle(page);
-  const verticalAfter = await state(page);
-  is(verticalAfter.chip, verticalBefore.chip,
-    'S122 a vertical primary touch leaves clock-window ownership with the scroll path');
-
-  const cancelStart = await state(page);
-  const cancelMid = (cancelStart.gripA + cancelStart.gripB) / 2;
-  await touch({ x: b.x + cancelMid, y }, { x: b.x + cancelMid + 60, y }, { cancel: true });
-  await settle(page);
-  const cancelAfter = await state(page);
-  is(cancelAfter.live, [], 'S122 pointer cancellation clears live gates');
-  is(cancelAfter.readout, null, 'S122 pointer cancellation clears the live readout');
-  ok(cancelAfter.chip !== null, 'S122 pointer cancellation leaves a coherent shown window');
 };
 
 /** S07 · Esc belongs to the WINDOW: it clears the drawn one and restores the
@@ -4186,8 +4277,11 @@ export const S121 = async (page) => {
 };
 
 export const STORIES = [
-  ['S01', S01, 'drawn'], ['S02', S02, 'typical'], ['S03', S03, 'drawn'],
-  ['S04', S04, 'drawn'], ['S05', S05, 'drawn'], ['S06', S06, 'typical'],
+  ['S01', S01, 'drawn'], ['S02', S02, 'typical'],
+  ['S03', S03, 'drawn', { viewport: { width: 1024, height: 768 }, hasTouch: true, isMobile: true }],
+  ['S04', S04, 'drawn', { viewport: { width: 1024, height: 768 }, hasTouch: true, isMobile: true }],
+  ['S05', S05, 'drawn', { viewport: { width: 1024, height: 768 }, hasTouch: true, isMobile: true }],
+  ['S06', S06, 'typical'],
   ['S07', S07, 'drawn'], ['S08', S08, 'drawn'], ['S09', S09, 'typical'],
   ['S10', S10, 'dense'], ['S11', S11, 'dense'], ['S12', S12, 'dense'],
   ['S13', S13, 'dense'], ['S14', S14, 'dense'], ['S15', S15, 'typical'],
@@ -4353,7 +4447,6 @@ export const STORIES = [
   ['S121', S121, 'typical', {
     findingsInputs: () => FINDINGS_PROJECTION.direction_only_inputs,
   }],
-  ['S122', S122, 'drawn', { viewport: { width: 1024, height: 768 }, hasTouch: true }],
   ['C41', C41, 'typical', { caseScenario: {
     preparation: generatedFindingPose('finding:meal_over_delivery'),
   } }], ['C42', C42, 'typical'],

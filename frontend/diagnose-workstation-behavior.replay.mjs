@@ -499,6 +499,7 @@ export async function openApp(browser, {
   appSource = 'server',
   history = false, selectedFindingsResponses = [], historyResponses = [], stageProbe = false,
   caseScenario = null, evidenceScenario = null, resizeProbe = false,
+  hasTouch = false,
   frontendRoot = join(ROOT, 'frontend'), fixtureBaseUrl = null,
 } = {}) {
   const payloadPath = process.env.PAYLOAD || fail('PAYLOAD is required for TARGET=app');
@@ -589,7 +590,7 @@ export async function openApp(browser, {
     [apiPattern('/pump-settings$'), () => pumpSettingsFrom || ({ configured: false })],
     [apiPattern('/pump'), () => ({ settings: {} })],
   ];
-  const page = await browser.newPage({ viewport });
+  const page = await browser.newPage({ viewport, hasTouch });
   let preparationRequests = 0;
   let caseRequests = 0;
   const evidenceRequests = new Map();
@@ -1039,6 +1040,81 @@ export const S06 = async (page) => {
   is(after.chip, before.chip, 'S06 a click in the plot mints no window');
   is(after.pressed, before.pressed, 'S06 a click in the plot unpresses nothing');
   is(after.crumbMeta, before.crumbMeta, 'S06 nothing re-scoped');
+};
+
+const touchDrag = async (page, from, to, { cancel = false } = {}) => {
+  const session = await page.context().newCDPSession(page);
+  const point = (x, y) => ({ x, y, id: 1, radiusX: 1, radiusY: 1, force: 1 });
+  const activePointer = cancel ? page.evaluate(() => new Promise((resolve) => {
+    document.getElementById('chart').addEventListener('pointerdown', (event) => resolve(event.pointerId), { once: true });
+  })) : null;
+  await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [point(from.x, from.y)] });
+  await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [point(to.x, to.y)] });
+  if (cancel) {
+    const pointerId = await activePointer;
+    await page.evaluate((id) => document.getElementById('chart').dispatchEvent(new PointerEvent('pointercancel', {
+      bubbles: true, pointerId: id, pointerType: 'touch', isPrimary: true,
+    })), pointerId);
+  } else {
+    await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  }
+  await session.detach();
+};
+
+/** S122 · At tablet width, primary touch uses the clock-window coordinator:
+    scrim slide, both full-height gates, no-movement tap, and cancellation. */
+export const S122 = async (page) => {
+  const b = await plot(page);
+  const y = b.y + b.h * 0.5;
+  const touch = async (from, to, options) => touchDrag(page, from, to, options);
+
+  const slideStart = await state(page);
+  const slideMid = (slideStart.gripA + slideStart.gripB) / 2;
+  const slideWidth = slideStart.gripB - slideStart.gripA;
+  await touch({ x: b.x + slideMid, y }, { x: b.x + slideMid + 120, y });
+  await settle(page);
+  const slideAfter = await state(page);
+  ok(slideAfter.gripA > slideStart.gripA + 40, 'S122 primary touch moves the scrim window');
+  near(slideAfter.gripB - slideAfter.gripA, slideWidth, 2,
+    'S122 primary touch preserves scrim width');
+
+  const leftStart = await state(page);
+  await touch({ x: b.x + leftStart.gripA, y }, { x: b.x + leftStart.gripA - 70, y });
+  await settle(page);
+  const leftAfter = await state(page);
+  ok(leftAfter.gripA < leftStart.gripA - 20, 'S122 primary touch moves the left full-height gate');
+  near(leftAfter.gripB, leftStart.gripB, 1, 'S122 left touch holds the far gate');
+
+  const rightStart = await state(page);
+  await touch({ x: b.x + rightStart.gripB, y }, { x: b.x + rightStart.gripB + 70, y });
+  await settle(page);
+  const rightAfter = await state(page);
+  ok(rightAfter.gripB > rightStart.gripB + 20, 'S122 primary touch moves the right full-height gate');
+  near(rightAfter.gripA, rightStart.gripA, 1, 'S122 right touch holds the far gate');
+
+  const tapBefore = await state(page);
+  await touch({ x: b.x + (tapBefore.gripA + tapBefore.gripB) / 2, y },
+    { x: b.x + (tapBefore.gripA + tapBefore.gripB) / 2, y });
+  await settle(page);
+  const tapAfter = await state(page);
+  is(tapAfter.chip, tapBefore.chip, 'S122 primary touch without movement changes no window');
+
+  const verticalBefore = await state(page);
+  const verticalMid = (verticalBefore.gripA + verticalBefore.gripB) / 2;
+  await touch({ x: b.x + verticalMid, y }, { x: b.x + verticalMid, y: y + 80 });
+  await settle(page);
+  const verticalAfter = await state(page);
+  is(verticalAfter.chip, verticalBefore.chip,
+    'S122 a vertical primary touch leaves clock-window ownership with the scroll path');
+
+  const cancelStart = await state(page);
+  const cancelMid = (cancelStart.gripA + cancelStart.gripB) / 2;
+  await touch({ x: b.x + cancelMid, y }, { x: b.x + cancelMid + 60, y }, { cancel: true });
+  await settle(page);
+  const cancelAfter = await state(page);
+  is(cancelAfter.live, [], 'S122 pointer cancellation clears live gates');
+  is(cancelAfter.readout, null, 'S122 pointer cancellation clears the live readout');
+  ok(cancelAfter.chip !== null, 'S122 pointer cancellation leaves a coherent shown window');
 };
 
 /** S07 · Esc belongs to the WINDOW: it clears the drawn one and restores the
@@ -4277,6 +4353,7 @@ export const STORIES = [
   ['S121', S121, 'typical', {
     findingsInputs: () => FINDINGS_PROJECTION.direction_only_inputs,
   }],
+  ['S122', S122, 'drawn', { viewport: { width: 1024, height: 768 }, hasTouch: true }],
   ['C41', C41, 'typical', { caseScenario: {
     preparation: generatedFindingPose('finding:meal_over_delivery'),
   } }], ['C42', C42, 'typical'],

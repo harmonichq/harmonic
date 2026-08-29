@@ -810,6 +810,52 @@ test('populated Diagnose renders readable theme-specific ink and chart marks', a
   }
 });
 
+test('the populated 2084×742 glucose canvas keeps its composited window treatment and passive basal states legible', async () => {
+  for (const theme of ['light', 'dark']) {
+    const browser = await runner.browser();
+    const page = await openApp(browser, {
+      state: 'typical', theme, viewport: { width: 2084, height: 742 }, appSource: 'fixture',
+    });
+    try {
+      const before = await page.evaluate(() => {
+        const chart = window.echarts.getInstanceByDom(document.getElementById('chart'));
+        const dim = chart.getOption().series.find((series) => series.name === '__dim');
+        return { width: document.getElementById('chart').clientWidth, dim: dim.data.length };
+      });
+      await shot(page, 'glucose-chart-legibility', 'revision-overnight', { width: 2084, height: 742 }, theme);
+      await page.getByRole('button', { name: 'Morning', exact: true }).click();
+      const after = await page.evaluate(() => {
+        const chart = window.echarts.getInstanceByDom(document.getElementById('chart'));
+        const dim = chart.getOption().series.find((series) => series.name === '__dim');
+        const host = document.querySelector('#lane');
+        const probes = ['hold', 'insufficient', 'nodata'].map((verdict) => {
+          const cell = document.createElement('i');
+          cell.className = 'lane-cell'; cell.dataset.verdict = verdict;
+          host.append(cell);
+          const cellStyle = getComputedStyle(cell);
+          const key = document.createElement('i');
+          key.className = 'lane-cell'; key.dataset.verdict = verdict;
+          document.querySelector('#lane-key').append(key);
+          const keyStyle = getComputedStyle(key);
+          const value = { verdict, cellImage: cellStyle.backgroundImage, keyImage: keyStyle.backgroundImage,
+            cellShadow: cellStyle.boxShadow, keyShadow: keyStyle.boxShadow };
+          cell.remove(); key.remove(); return value;
+        });
+        return { dim: dim.data.length, probes };
+      });
+      await shot(page, 'glucose-chart-legibility', 'revision-morning', { width: 2084, height: 742 }, theme);
+      assert.ok(before.width > 1000, `${theme} audit uses the locked wide chart geometry`);
+      assert.equal(before.dim, 1, `${theme} default Overnight scope renders its final-composite outside scrim`);
+      assert.equal(after.dim, 2, `${theme} non-default Morning scope preserves the two scrim regions`);
+      const [hold, insufficient, nodata] = after.probes;
+      assert.notEqual(hold.cellImage, insufficient.cellImage, `${theme} held and insufficient lane paint differ`);
+      assert.notEqual(insufficient.cellImage, nodata.cellImage, `${theme} passive lane patterns differ`);
+      assert.notEqual(insufficient.keyImage, nodata.keyImage, `${theme} passive key patterns differ`);
+      assert.notEqual(insufficient.cellShadow, nodata.cellShadow, `${theme} passive lane boundaries differ`);
+    } finally { await page.close(); }
+  }
+});
+
 /* The dock is now the canvas filmstrip, and the Charts lip is its control —
    neither inherits the retired explorer drawer's trench. Both carry compact
    text, so measure their rendered chrome in each theme rather than a token

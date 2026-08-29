@@ -74,12 +74,12 @@ html.dark {
      The median joins the BODY tier, warmed toward the sheet and never toward
      white — the brightest LINE, never the brightest THING (term 14). */
   --mk-primary: #86ad78;
-  --mk-primary-600: #c3b49c;
+  --mk-primary-600: #cfc8bd;
   --mk-primary-soft: #2f3a2c;
   /* structure rejoins the warm family and recedes by lightness (term 12) */
   --mk-accent: #e07f3f;
-  --mk-ok: #a89a85;
-  --mk-line: #322e29;
+  --mk-ok: #a49c90;
+  --mk-line: var(--wk-rule);
 }
 
 /* ---- ROLE: chrome bar ----------------------------------------------------
@@ -115,12 +115,12 @@ html.dark {
 html.dark .cockpit-topbar,
 html.dark .cockpit-footer {
   /* the same desk, one step deeper — never a black bar */
-  --ck-ground: #171412;
-  --ck-panel: #292522;
-  --ck-text: #efe5d4;
-  --ck-body: #d3c7b4;
-  --ck-meta: #a19484;
-  --ck-rule: #48433e;
+  --ck-ground: var(--wk-canvas);
+  --ck-panel: var(--wk-surface);
+  --ck-text: var(--wk-ink);
+  --ck-body: var(--wk-ink-body);
+  --ck-meta: var(--wk-ink-meta);
+  --ck-rule: var(--wk-rule);
   /* Derived against THIS bar's panel by the same rule, not carried over from
      light and not aliased to the sheet's dark signal. Both grounds happen to be
      dark in this theme, so one value COULD serve both here — which is exactly
@@ -130,7 +130,7 @@ html.dark .cockpit-footer {
   --ck-bar-on-signal: var(--ck-ground);  /* ink ON the signal is the bar's own ground: 6.08:1 */
   --ck-accent: var(--ck-bar-signal);
   --ck-accent-soft: var(--ck-bar-signal-well);
-  background: #171412;
+  background: var(--ck-ground);
 }
 .cockpit-step[aria-current="step"] {
   border-color: color-mix(in srgb, var(--ck-accent) 75%, #f5f1e9);
@@ -215,10 +215,10 @@ html.dark .cockpit-footer {
    single-sourced here rather than restated in the Diagnose adapter. */
 html.dark :is(.dw, .vw) .panes,
 html.dark :is(.dw, .vw) .canvas-pane,
-html.dark .dw .inspector { background: #161311; }
+html.dark .dw .inspector { background: var(--wk-field); }
 html.dark :is(.dw, .vw) .canvas-pane > header,
-html.dark .dw .inspector > header { background: #1b1816; }
-html.dark :is(.dw, .vw) .panes > .pane + .pane { border-left-color: #524c47; }
+html.dark .dw .inspector > header { background: var(--wk-surface-rail); }
+html.dark :is(.dw, .vw) .panes > .pane + .pane { border-left-color: var(--wk-rule-strong); }
 
 /* ---- ROLE: dock floor ----------------------------------------------------
    The pinned watched-change slot. Its markup belongs to the dock re-settle
@@ -269,15 +269,15 @@ html.dark :is(.dw, .vw) .watch .go { border-color: #68605a; background: #2a2623;
    of the surface stacked as three warm-grey stripes. */
 html.dark :is(.dw, .vw) :is(.instruments, .ec-coordinates),
 html.dark .vw .verify-strip {
-  background: #1e1b19;
+  background: var(--wk-surface-rail);
   color: var(--wk-ink);
-  border-bottom-color: #302c29;
+  border-bottom-color: var(--wk-rule);
 }
-html.dark :is(.dw, .vw) :is(.instruments, .ec-coordinates) .seg { border-color: #3b3632; background: #171412; }
-html.dark :is(.dw, .vw) :is(.instruments, .ec-coordinates) .seg button { color: #cabfae; }
+html.dark :is(.dw, .vw) :is(.instruments, .ec-coordinates) .seg { border-color: var(--wk-rule); background: var(--wk-surface-sunken); }
+html.dark :is(.dw, .vw) :is(.instruments, .ec-coordinates) .seg button { color: var(--wk-ink-body); }
 html.dark :is(.dw, .vw) :is(.instruments, .ec-coordinates) .seg button[aria-pressed="true"] {
-  background: #332e2b;
-  color: #f5ece0;
+  background: var(--wk-surface);
+  color: var(--wk-ink);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 62%, transparent);
 }
 
@@ -334,7 +334,7 @@ html.dark :is(.dw, .vw) :is(.instruments, .ec-coordinates) .seg button[aria-pres
    chrome-family, by value instead of by colour. */
 html.dark :is(.dw, .vw) .pane > header h2,
 html.dark :is(.dw, .vw) .instrument > .cap,
-html.dark .vw .verify-strip .cap { color: #c6b7a2; }
+html.dark .vw .verify-strip .cap { color: var(--wk-ink-nav); }
 
 /* ---- orange means interaction and high/attention, and nothing else ------- */
 /* Term 5. Meals take clay, neutral proportions take forest, and insufficiency
@@ -345,8 +345,8 @@ html.dark .vw .verify-strip .cap { color: #c6b7a2; }
   --ck-up: #2f6b4f;
 }
 html.dark :is(.dw, .vw) {
-  --ck-rail: var(--wk-surface);
-  --ck-inset: #191614;
+  --ck-rail: var(--wk-surface-sunken);
+  --ck-inset: var(--wk-surface-sunken);
   --ck-manual: #d9b568;
   --ck-manual-soft: #3a2e18;
   --ck-meal: #c08d52;

@@ -274,14 +274,10 @@ function carbRatioOption(mode, { data, range, mini = false, window } = {}) {
       ...axis(colors, mini) },
     series: [
       { name: 'Target range', type: 'line', data: [], silent: true,
-      /* AT MINI RANK THE TARGET BAND KEEPS ITS FILL AND LOSES ITS NAME. ECharts
-         centres a markArea's name over the band at its own 12px default, so a
-         thumbnail whose axis labels are 8px carried a caption half again the
-         size of every other word in the cell, laid across the traces it was
-         drawn to contextualise — the same reason the legend and the axis names
-         already come off at mini. The band itself still says where target is. */
-        markArea: { silent: true, itemStyle: { color: colors.target },
-          data: [[{ yAxis: 70, ...(mini ? {} : { name: 'target 70–180' }) }, { yAxis: 180 }]] } },
+        markLine: { symbol: 'none', silent: true,
+          lineStyle: { type: 'dashed', color: colors.muted, opacity: .6 },
+          label: { show: !mini, position: 'insideEndTop', color: colors.muted,
+            fontSize: 10, formatter: '{c}' }, data: [{ yAxis: 70 }, { yAxis: 180 }] } },
       ...(data?.series || []).map((series) => ({
         name: runById.get(series.run_id)?.in_pool ? 'Support run' : 'Directional-only run',
         type: 'line', symbol: 'none', connectNulls: true, animation: false,
@@ -289,7 +285,7 @@ function carbRatioOption(mode, { data, range, mini = false, window } = {}) {
         lineStyle: {
           color: runById.get(series.run_id)?.in_pool ? colors.signal : colors.excluded,
           width: mini ? .8 : 1.2,
-          opacity: runById.get(series.run_id)?.in_pool ? .48 : .28,
+          opacity: runById.get(series.run_id)?.in_pool ? .34 : .20,
           type: runById.get(series.run_id)?.in_pool ? 'solid' : 'dashed' },
       })),
       { name: 'Support run', type: 'scatter', symbol: 'diamond',

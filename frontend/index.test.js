@@ -5,6 +5,44 @@ import { readFileSync } from 'node:fs';
 const page = readFileSync(new URL('./index.html', import.meta.url), 'utf8');
 const shell = readFileSync(new URL('./shell.css', import.meta.url), 'utf8');
 const favicon = readFileSync(new URL('./favicon.svg', import.meta.url), 'utf8');
+const theme = readFileSync(new URL('./theme.css', import.meta.url), 'utf8');
+const workstation = readFileSync(new URL('./diagnose-workstation.css', import.meta.url), 'utf8');
+
+test('Dark derives the Diagnose material ladder through the shipped role owners (#255)', () => {
+  const dark = page.match(/html\.dark \{[\s\S]*?\n    \}/)[0];
+  assert.match(dark, /--wk-canvas:#0f0d0b; --wk-field:#1e1a17; --wk-surface:#221e1b; --wk-surface-rail:#2b2622; --wk-surface-sunken:#14120f;/,
+    'the app token owner orders desk, sheet, rail, and well');
+  assert.match(dark, /--wk-ink:#f2ede2; --wk-ink-body:#cfc8bd; --wk-ink-meta:#a49c90; --wk-ink-nav:#c6bfb3;/,
+    'the app token owner carries the approved Dark ink hierarchy');
+  assert.match(dark, /--wk-rule:#3f3833; --wk-rule-strong:#453d35;/,
+    'quiet rules and vessel edges remain separate roles');
+  assert.match(theme, /html\.dark \{[\s\S]*?--mk-line: var\(--wk-rule\);/,
+    'chart grid ink derives from the quiet rule role');
+  assert.match(workstation, /--ck-tile-edge: var\(--wk-rule-strong\);/,
+    'chart vessel edges derive from the strong edge role, not grid ink');
+  assert.match(workstation, /\.tile-field > \.tile-focal > \.evidence-tile \{[\s\S]*?background: var\(--ck-well\);[\s\S]*?inset 0 0 0 1px var\(--ck-tile-edge\), var\(--wk-elevation\);/,
+    'the focal chart uses the shared well and shadow-only elevation');
+  assert.doesNotMatch(workstation, /html\.dark \.tile-field > \.tile-focal > \.evidence-tile \{[\s\S]*?background:/,
+    'the spotlight does not add a Dark plate over the well');
+});
+
+test('the vessel cascade preserves Light edges and composes one Dark 1px/4px grammar (#255)', () => {
+  assert.match(workstation, /--ck-tile-edge: color-mix\(in srgb, var\(--mk-line\) 72%, transparent\);/,
+    'Light retains its established edge derivation');
+  assert.match(workstation, /html\.dark \.dw \{[\s\S]*?--ck-tile-edge: var\(--wk-rule-strong\);/,
+    'Dark alone resolves the vessel edge through the strong edge role');
+  assert.match(workstation, /\.tile-field > \.tile-focal > \.evidence-tile \{[\s\S]*?border-radius: 4px;[\s\S]*?inset 0 0 0 1px var\(--ck-tile-edge\), var\(--wk-elevation\);/,
+    'the spotlight adds only elevation beyond the shared vessel edge');
+  for (const selector of [
+    '\\.tile-field\\[data-dock="docked"\\] > \\.tile-row > \\.evidence-tile',
+    '\\.tile-field\\[data-raised\\] > \\.tile-row > \\.evidence-tile',
+    '\\.tile-field\\[data-explorer\\] \\.evidence-tile',
+    '\\.tile-field:is\\(\\[data-fullscreen-tile\\], \\[data-explorer\\]\\) \\.evidence-tile',
+  ]) {
+    assert.match(workstation, new RegExp(`${selector} \\{[\\s\\S]*?border-radius: 4px;[\\s\\S]*?inset 0 0 0 1px var\\(--ck-tile-edge\\)`),
+      `${selector} keeps the shared vessel edge and radius`);
+  }
+});
 
 test('Diagnose mounts the merged workstation surface (#636)', () => {
   assert.match(page, /ref="diagnoseRoot"/, 'one Diagnose root owns the merged instrument');

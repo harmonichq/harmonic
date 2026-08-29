@@ -1148,6 +1148,23 @@ test('#130 · a wrapped draw leaves two endpoint edges without adding basal sele
     try {
       await page.getByRole('button', { name: '24 h', exact: true }).click();
       await settle(page, 450);
+      const snapshotBasalPaint = () => page.locator('#lane button:not([data-clock-copy])')
+        .evaluateAll((cells) => cells.map((cell) => {
+          const style = getComputedStyle(cell);
+          const border = (side) => [style[`border${side}Width`], style[`border${side}Style`],
+            style[`border${side}Color`]];
+          return {
+            label: cell.getAttribute('aria-label'), verdict: cell.dataset.verdict,
+            opacity: style.opacity,
+            background: [style.backgroundColor, style.backgroundImage, style.backgroundSize,
+              style.backgroundPosition, style.backgroundRepeat],
+            boxShadow: style.boxShadow,
+            outline: [style.outlineWidth, style.outlineStyle, style.outlineColor, style.outlineOffset],
+            border: ['Top', 'Right', 'Bottom', 'Left'].map(border),
+          };
+        }));
+      const basalPaintBefore = await snapshotBasalPaint();
+      assert.equal(basalPaintBefore.length, 48, 'the paint snapshot covers every basal slot');
       const chart = await page.locator('#chart').boundingBox();
       const xAt = (minute) => chart.x + 34 + (minute / 1425) * (chart.width - 86);
       const y = chart.y + chart.height * 0.45;
@@ -1164,10 +1181,6 @@ test('#130 · a wrapped draw leaves two endpoint edges without adding basal sele
         edges: [...document.querySelectorAll('#brace .edge')].map((edge) => parseFloat(edge.style.left)),
         grips: [...document.querySelectorAll('#brace .grip')].map((grip) => parseFloat(grip.style.left)),
         braceParts: document.getElementById('brace').children.length,
-        inside: [...document.querySelectorAll('#lane button:not([data-clock-copy])')]
-          .filter((button) => button.dataset.outside === 'false').length,
-        outside: [...document.querySelectorAll('#lane button:not([data-clock-copy])')]
-          .filter((button) => button.dataset.outside === 'true').length,
         copies: document.querySelectorAll('#lane [data-clock-copy]').length,
         axisPoints: window.echarts.getInstanceByDom(document.getElementById('chart'))
           .getOption().xAxis[0].data.length,
@@ -1190,8 +1203,8 @@ test('#130 · a wrapped draw leaves two endpoint edges without adding basal sele
         'the start grip sits on the 22:00 endpoint');
       assert.ok(Math.abs(wrapped.grips[1] - (xAt(120) - chart.x)) <= 1,
         'the end grip sits on the 02:00 endpoint');
-      assert.deepEqual([wrapped.inside, wrapped.outside], [0, 0],
-        'the wrapped scope adds no selection-paint authority to basal cells');
+      assert.deepEqual(await snapshotBasalPaint(), basalPaintBefore,
+        'the wrapped scope leaves every basal verdict cell at its original computed paint');
       assert.equal(wrapped.copies, 0, 'neighbour lane copies leave with the pan');
       assert.equal(wrapped.axisPoints, 96, 'the settled axis returns to the canonical day');
 

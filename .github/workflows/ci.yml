@@ -119,6 +119,8 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: "22"
+      - name: Validate OpenSpec
+        run: npx --yes @fission-ai/openspec@1 validate --all --strict
       # Pure-logic frontend modules are tested with Node's built-in runner —
       # no npm/package.json (see CLAUDE.md conventions).
       - name: Run tests

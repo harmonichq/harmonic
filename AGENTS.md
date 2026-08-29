@@ -46,6 +46,7 @@ adds the live pull; the `api` extra adds the HTTP API and the web UI.
 ```sh
 uv run python -m pytest                    # backend, stdlib unittest
 node --test 'frontend/**/*.test.js'        # frontend, Node's built-in runner
+npx --yes @fission-ai/openspec@1 validate --all --strict # OpenSpec requirements and changes
 python3 scripts/check_adr_numbers.py       # decision-record naming guard
 python3 scripts/check_owned_identifiers.py # product-name guard
 python3 scripts/check_public_allowlist.py  # publishable-tree guard

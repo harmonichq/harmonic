@@ -124,7 +124,7 @@ class IsfConfig:
     # oref activity curve (rapid analog defaults; peak < dia/2).
     peak_min: float = 75.0
     dia_min: float = 300.0
-    # Cap a recommendation's move from programmed.
+    # Cap a recommendation's move from programmed; twin: safety.py SafetyConfig.max_step_frac.
     max_step_frac: float = 0.20
     # Cap the scatter/drill-down evidence (the estimate always uses every step).
     max_evidence_points: int = 200

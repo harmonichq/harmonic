@@ -143,7 +143,7 @@ _ACTIONABLE = frozenset(
 
 @dataclass(frozen=True)
 class SafetyConfig:
-    max_step_frac: float = 0.20   # +/-20% of current per pass
+    max_step_frac: float = 0.20   # +/-20% of current per pass; twin: analyzers/isf.py IsfConfig.max_step_frac
     abs_min: float = 0.1          # U/h
     abs_max: float = 3.0          # U/h
     noise_floor: float = 0.05     # U/h; smaller moves report as "no change"

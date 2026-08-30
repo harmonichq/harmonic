@@ -8,21 +8,21 @@ worktree. Re-run the command after changing anything it describes.
 Command:
 
 ```sh
-rg -n "addEventListener\\('(mouse|pointer|touch)|removeEventListener\\('(mouse|pointer|touch)" frontend/diagnose-workstation.js
+rg -n "addEventListener\\('(mouse|pointer|touch|lostpointercapture)|removeEventListener\\('(mouse|pointer|touch|lostpointercapture)" frontend/diagnose-workstation.js
 ```
 
 Output:
 
 ```text
-3657:      document.removeEventListener('mousemove', move);
-3658:      document.removeEventListener('mouseup', end);
-3724:      document.addEventListener('mousemove', move);
-3725:      document.addEventListener('mouseup', end);
-3728:    chartEl.addEventListener('mousedown', (ev) => begin('draw', ev));
-3730:    chartEl.addEventListener('mousemove', (ev) => {
-3737:    el('grip-a').addEventListener('mousedown', (ev) => { ev.stopPropagation(); begin('a', ev); });
-3738:    el('grip-b').addEventListener('mousedown', (ev) => { ev.stopPropagation(); begin('b', ev); });
-3898:  document.addEventListener('pointerdown', (ev) => {
+3757:    chartEl.addEventListener('pointerdown', (ev) => begin('draw', ev), { signal });
+3758:    chartEl.addEventListener('pointermove', move, { signal });
+3759:    chartEl.addEventListener('pointerup', finish, { signal });
+3760:    chartEl.addEventListener('pointercancel', finish, { signal });
+3761:    chartEl.addEventListener('lostpointercapture', finish, { signal });
+3763:    chartEl.addEventListener('pointermove', (ev) => {
+3770:    el('grip-a').addEventListener('pointerdown', (ev) => { ev.stopPropagation(); begin('a', ev); }, { signal });
+3771:    el('grip-b').addEventListener('pointerdown', (ev) => { ev.stopPropagation(); begin('b', ev); }, { signal });
+3931:  document.addEventListener('pointerdown', (ev) => {
 ```
 
 ## F2 — Living resize and whole-window ledger rows
@@ -30,19 +30,20 @@ Output:
 Command:
 
 ```sh
-rg -n "^P0[3-5] ·|evidence: replay S0[3-5]" mockups/finding-evidence-routing.behavior.md
+rg -n "^P(0[3-5]|122) ·|evidence: replay S0[3-5]" mockups/finding-evidence-routing.behavior.md
 ```
 
 Output:
 
 ```text
-255:  evidence: replay S05 (app, pass) · probe (grips: title="Drag to resize",
-261:P03 · A resize grows away from the edge the reader is NOT dragging. Grabbing
-266:  evidence: replay S05 (app, pass)
-271:P04 · The dashed edge is grabbable down its WHOLE height, ±5px — not only at
-276:  evidence: replay S03 (app, pass)
-281:P05 · Dragging INSIDE the window slides it whole — width preserved, both edges
-285:  evidence: replay S04 (app, pass)
+258:  evidence: replay S05 (app, pass) · probe (grips: title="Drag to resize",
+264:P03 · A resize grows away from the edge the reader is NOT dragging. Grabbing
+270:  evidence: replay S05 (app, pass)
+279:P04 · The dashed edge is grabbable down its WHOLE height, ±5px — not only at
+285:  evidence: replay S03 (app, pass)
+293:P05 · Dragging INSIDE the window slides it whole — width preserved, both edges
+298:  evidence: replay S04 (app, pass)
+312:P122 · The primary pointer owns one clock-window gesture. A primary touch can
 ```
 
 ## F3 — Frozen shipped-surface contract files

@@ -177,7 +177,9 @@ active clock window after every overlay is composited.
 - **AND** the three passive basal states remain distinguishable by paint and
   structure
 - **AND** the glucose bands, median, target treatment, axes, labels, endpoint
-  values, basal strip, and legend remain readable in their final composited state
+  values, and basal strip remain readable in their final composited state, with
+  the chart root naming the band and median marks accessibly in place of a
+  rendered legend
 
 ### Requirement: Diagnose clock-window gestures work with direct tablet touch
 

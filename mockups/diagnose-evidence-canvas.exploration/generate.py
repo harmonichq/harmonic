@@ -309,7 +309,7 @@ def main() -> int:
     current = args.out.read_text() if args.out.exists() else ""
     if args.check:
         if current != text:
-            print(f"stale shipped Dark theme contract or generated exploration: {args.out} —"
+            print(f"stale generated exploration or shipped Dark theme contract: {args.out} —"
                   f" rerun {HERE / 'generate.py'}")
             return 1
         print(f"evidence-canvas exploration current ({args.out})")

@@ -11,10 +11,10 @@ Base commit: `9564cd378dabb640a3f814115d9ab0131012910c` (detached,
 `Triage dark Diagnose retheme`) in `/Users/connor/worktrees/harmonic/255-base`.
 All `dark/base` and `light/base` PNGs were recaptured from this checkout.
 
-Revision capture source: `d60c657f32b9769343f47d7a8defac704a52676d` in
-`/Users/connor/worktrees/harmonic/255` (`Restore Dark glucose boundary
-contrast`). The following evidence-record-only commit changes no rendered
-source; it records the captures produced from that reviewed state.
+Revision capture source: `b47c2aeb2156098aaad5a4919877726242ed331c` in
+`/Users/connor/worktrees/harmonic/255` (`Keep glucose scrim repair Dark-only`).
+The following evidence-record-only commit changes no rendered source; it
+records the captures produced from that reviewed state.
 
 ## Replayable commands
 

@@ -918,8 +918,15 @@ test('the populated 2084×742 glucose canvas keeps its composited window treatme
     };
     const compositePixels = (indices) => indices.flatMap((index) => {
       const label = option.xAxis[0].data[index];
-      return ['__p25', 'Median', '__p75'].flatMap((name) => {
-        const value = option.series.find((series) => series.name === name)?.data?.[index];
+      /* p25/p75 heights re-derived from the inner band pair — the boundary
+         stroke series that used to carry them are retired (#258/#204). */
+      const seriesData = (name) => option.series.find((series) => series.name === name)?.data;
+      const p25 = seriesData('__inner')?.[index];
+      const span = seriesData('25–75th')?.[index];
+      const heights = { p25, median: seriesData('Median')?.[index],
+        p75: Number.isFinite(p25) && Number.isFinite(span) ? p25 + span : null };
+      return ['p25', 'median', 'p75'].flatMap((name) => {
+        const value = heights[name];
         if (!Number.isFinite(value)) return [];
         const [x, y] = chart.convertToPixel({ xAxisIndex: 0, yAxisIndex: 0 }, [label, value]);
         const samples = [];
@@ -935,12 +942,34 @@ test('the populated 2084×742 glucose canvas keeps its composited window treatme
       text: {
         axis: Math.min(...[/^mg\/dL$/, /^(60|120|180|220)$/, /^00:00$/].map(textRatio)),
         target: textRatio(/^TARGET /), endpoints: endpointRatios.length ? Math.min(...endpointRatios) : null,
-        legend: Math.min(textRatio(/^10–90th$/), textRatio(/^25–75th$/), textRatio(/^Median$/)),
         title: styleRatio('.canvas-pane > header h2', 'color'),
         pool: styleRatio('#canvas-pool', 'color'),
         basalLegend: styleRatio('#lane-key', 'color'),
       },
-      graphics: Object.fromEntries(['__p10', '__p25', '__p75', '__p90', 'Median']
+      /* #258/#204 — the legend and the four percentile boundary strokes are
+         retired; the chart root's accessible name carries the mark key, and
+         the median is the one measured continuous boundary. */
+      legendTexts: [/^10–90th$/, /^25–75th$/].map(textRatio),
+      retiredEdges: option.series.filter((series) => /^__p\d+$/.test(series.name)).length,
+      accessibleName: { role: chartNode.getAttribute('role'),
+        label: chartNode.getAttribute('aria-label') },
+      /* #258 regression pins: the scrim's alpha read off the __dim series' own
+         renderItem, and the median colour resolved against the live theme —
+         without these both corrections could revert with every gate green. */
+      dimFill: (() => {
+        const dim = option.series.find((series) => series.name === '__dim');
+        if (!dim || !dim.data.length) return null;
+        return dim.renderItem(
+          { coordSys: { x: 0, y: 0, width: 100, height: 10 } },
+          { value: (index) => dim.data[0][index], coord: () => [0, 0] },
+        ).style.fill;
+      })(),
+      medianPaint: {
+        actual: resolveColor(root, option.series.find((series) => series.name === 'Median').lineStyle.color),
+        dark: resolveColor(root, 'color-mix(in srgb, var(--mk-primary) 62%, #fff)'),
+        light: resolveColor(root, 'var(--mk-primary-600)'),
+      },
+      graphics: Object.fromEntries(['Median']
         .flatMap((name) => [4, 16].map((index) => [`${name}:${index}`, boundaryRatio(name, index)]))),
       targetRails: [4, 16].flatMap((index) => [70, 180].map((value) => {
         const [x, y] = chart.convertToPixel({ xAxisIndex: 0, yAxisIndex: 0 },
@@ -985,6 +1014,9 @@ test('the populated 2084×742 glucose canvas keeps its composited window treatme
       assert.ok(before.width > 1000, `${theme} audit uses the locked wide chart geometry`);
       assert.equal(before.dim, 0, `${theme} 24 h scope has no selection scrim`);
       assert.equal(after.dim, 2, `${theme} non-default Morning scope preserves the two scrim regions`);
+      const dimAlpha = parseFloat((after.dimFill?.match(/rgba\([^)]+,\s*([\d.]+)\)/) || [])[1]);
+      assert.equal(dimAlpha, theme === 'dark' ? 0.28 : 0.10,
+        `${theme} outside-window scrim keeps its recomposed alpha (${after.dimFill})`);
       const pixelShift = (first, second) => {
         assert.equal(second.length, first.length, 'composite pixel samples keep a stable shape');
         return first.reduce((total, rgb, index) => total
@@ -1004,6 +1036,18 @@ test('the populated 2084×742 glucose canvas keeps its composited window treatme
         }
         for (const [subject, measured] of Object.entries(result.graphics)) assert.ok(measured >= 3,
           `${theme} ${state} ${subject} boundary clears 3:1 on both sides (${measured.toFixed(2)}:1)`);
+        for (const measured of result.legendTexts) assert.equal(measured, 0,
+          `${theme} ${state} renders no legend text`);
+        assert.equal(result.retiredEdges, 0,
+          `${theme} ${state} draws no percentile boundary strokes`);
+        assert.equal(result.accessibleName.role, 'img',
+          `${theme} ${state} chart root carries the img role`);
+        assert.equal(result.accessibleName.label,
+          'Glucose bands: 10th to 90th and 25th to 75th percentile ranges; median line',
+          `${theme} ${state} chart root names the marks the legend used to`);
+        assert.equal(result.medianPaint.actual,
+          theme === 'dark' ? result.medianPaint.dark : result.medianPaint.light,
+          `${theme} ${state} median draws lightened primary in Dark, primary-600 in Light`);
         for (const measured of result.targetRails) assert.ok(measured >= 3,
           `${theme} ${state} target rail clears 3:1 on both sides (${measured.toFixed(2)}:1)`);
         assert.ok(result.gate >= 3, `${theme} ${state} active gate clears 3:1 (${result.gate.toFixed(2)}:1)`);

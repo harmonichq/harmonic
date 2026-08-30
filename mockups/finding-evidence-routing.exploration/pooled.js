@@ -245,6 +245,8 @@ export function paintPooled({
     markers,
     colors,
     stats,
+    // Private fixture mirror of the API's served basal_support_floor.
+    supportFloor: 8,
     /* No `target`: the shipped workstation passes none and lets `renderCanvas`
        fall through to its own [70, 180]. */
     window: drawn,

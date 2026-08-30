@@ -1180,6 +1180,17 @@ test('Light vessel states retain their fixed-point cascade while Dark owns the r
       }
 
       await page.locator('#tile-field').evaluate((field) => field.removeAttribute('data-explorer'));
+      const hoverTile = page.locator('#tile-row .evidence-tile:not([data-selected]):not([data-tail-head])').first();
+      await hoverTile.hover();
+      const hover = await hoverTile.evaluate((node) => getComputedStyle(node).boxShadow);
+      if (theme === 'light') {
+        assert.match(hover, /rgb\(195, 191, 180\) 0px 0px 0px 1px inset, rgba\(20, 26, 21, 0\.05\) 0px 1px 2px 0px, rgba\(20, 26, 21, 0\.12\) 0px 3px 8px -3px, rgba\(20, 26, 21, 0\.13\) 0px 0px 0px 1px/,
+          'Light hover keeps the fixed-point quiet-rule inset and cell-shadow stack');
+      } else {
+        assert.match(hover, /rgb\(69, 61, 53\) 0px 0px 0px 1px inset, rgba\(0, 0, 0, 0\.5\) 0px 0px 0px 1px, rgba\(0, 0, 0, 0\.55\) 0px 4px 10px -4px/,
+          'Dark hover keeps the #453d35 vessel edge and cell-shadow stack');
+      }
+
       await page.locator('#tile-row .evidence-tile').first().click();
       await page.locator('#tile-focal .evidence-tile').waitFor({ state: 'visible' });
       const focal = await page.locator('#tile-focal .evidence-tile').evaluate((node) => {

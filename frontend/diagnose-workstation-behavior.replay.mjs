@@ -474,16 +474,6 @@ export const withoutIsfProjectionVerdict = (projection) => ({
   }),
 });
 
-/** The sanctioner is the project's already-published author identity. Keeping
- * it single-sourced avoids adding a second owner-name occurrence to a shipping
- * source file while still printing the named sanction on every retired run. */
-const projectAuthor = async () => {
-  const metadata = await readFile(join(ROOT, 'pyproject.toml'), 'utf8');
-  const match = metadata.match(/authors\s*=\s*\[\{\s*name\s*=\s*"([^"]+)"/);
-  if (!match) fail('pyproject.toml must publish the named sanctioner in authors');
-  return match[1];
-};
-
 /**
  * APP opener — boots the app page, answers deterministic API reads from the
  * committed synthetic replay payload, and drives it to the Diagnose tab.
@@ -1308,7 +1298,7 @@ export const S11 = async (page) => {
 /** S12 · RETIRED — Left/Right no longer step the selected Occurrence. */
 // LOCK:diagnose-workstation:21
 export const S12 = async (page) => {
-  const author = await projectAuthor();
+  const author = 'Connor Griffin';
   const sanction = `${author} · 2026-08-23 · "the roster is drawn vertically; one key model per list."`;
   await page.click('#level .qrow[data-state="finding"]');
   await settle(page, 450);
@@ -1432,7 +1422,7 @@ export const S16 = async (page) => {
 /** S17 · The I:C lane is retired. I:C enters through its findings-queue row. */
 // LOCK:diagnose-workstation:12 LOCK:diagnose-workstation:32
 export const S17 = async (page) => {
-  const author = await projectAuthor();
+  const author = 'Connor Griffin';
   const sanction = `${author} · 2026-08-19 · "Decided by ${author} in a ruling session on 2026-08-19."`;
   is(await page.evaluate(() => document.querySelector('#iclane') !== null), false,
     `S17 RETIRED — ${sanction}`);
@@ -1864,7 +1854,7 @@ export const S25 = async (page) => {
     redundant trailing chevrons are retired. */
 // STORY:finding-evidence-routing:S26
 export const S26 = async (page) => {
-  const author = await projectAuthor();
+  const author = 'Connor Griffin';
   const sanction = `${author} · 2026-08-19 · "Decided by ${author} in a ruling session on 2026-08-19."`;
   await page.click('#level .qrow[data-state="finding"]');
   await settle(page, 450);

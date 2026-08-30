@@ -539,9 +539,6 @@ function bandPair(name, base, span, stack, color, z) {
     {
       name, type: 'line', stack, z: z + 1, data: span.map(gap), symbol: 'none',
       silent: true, lineStyle: { opacity: 0 }, areaStyle: { color, opacity: 1 }, animation: false,
-      // the legend chip samples itemStyle, NOT areaStyle — without this the chip
-      // falls back to the default ECharts palette and mislabels the band
-      itemStyle: { color },
     },
   ];
 }
@@ -919,7 +916,6 @@ export function renderCanvas(el, echarts, opts) {
         name: 'Median', type: 'line', z: 8, data: envelope.p50.map(gap),
         symbol: 'none', smooth: 0.25, animation: false,
         lineStyle: { color: recede(colors.median, 40), width: trace ? 1.4 : 2.4, cap: 'round' },
-        itemStyle: { color: colors.median }, // legend chip source
         // readouts ride their own geometry: a value tag at the plot's right
         // margin on the window's median level, and on its lowest-median level
         markLine: (stats && !thin) ? {
@@ -954,7 +950,6 @@ export function renderCanvas(el, echarts, opts) {
         name: 'That day', type: 'line', z: 10, data: trace.map((v) => (v == null ? '-' : v)),
         symbol: 'none', smooth: 0.2, connectNulls: false, animation: false,
         lineStyle: { color: colors.text, width: 1.6, cap: 'round' },
-        itemStyle: { color: colors.text },
       }] : []),
     ]),
   };
@@ -965,7 +960,8 @@ export function renderCanvas(el, echarts, opts) {
      is name-prohibited, so the role is part of the contract. */
   el.setAttribute('role', 'img');
   el.setAttribute('aria-label',
-    'Glucose bands: 10th to 90th and 25th to 75th percentile ranges; median line');
+    'Glucose bands: 10th to 90th and 25th to 75th percentile ranges; median line'
+    + (trace ? '; selected day trace' : ''));
   /* Feed the docked header readout. renderCanvas re-runs on every window change
      and getInstanceByDom hands back the SAME chart, so rebind rather than stack
      handlers — otherwise every redraw adds another reporter.

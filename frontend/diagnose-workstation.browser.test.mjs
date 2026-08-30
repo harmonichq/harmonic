@@ -953,6 +953,22 @@ test('the populated 2084×742 glucose canvas keeps its composited window treatme
       retiredEdges: option.series.filter((series) => /^__p\d+$/.test(series.name)).length,
       accessibleName: { role: chartNode.getAttribute('role'),
         label: chartNode.getAttribute('aria-label') },
+      /* #258 regression pins: the scrim's alpha read off the __dim series' own
+         renderItem, and the median colour resolved against the live theme —
+         without these both corrections could revert with every gate green. */
+      dimFill: (() => {
+        const dim = option.series.find((series) => series.name === '__dim');
+        if (!dim || !dim.data.length) return null;
+        return dim.renderItem(
+          { coordSys: { x: 0, y: 0, width: 100, height: 10 } },
+          { value: (index) => dim.data[0][index], coord: () => [0, 0] },
+        ).style.fill;
+      })(),
+      medianPaint: {
+        actual: resolveColor(root, option.series.find((series) => series.name === 'Median').lineStyle.color),
+        dark: resolveColor(root, 'color-mix(in srgb, var(--mk-primary) 62%, #fff)'),
+        light: resolveColor(root, 'var(--mk-primary-600)'),
+      },
       graphics: Object.fromEntries(['Median']
         .flatMap((name) => [4, 16].map((index) => [`${name}:${index}`, boundaryRatio(name, index)]))),
       targetRails: [4, 16].flatMap((index) => [70, 180].map((value) => {
@@ -998,6 +1014,9 @@ test('the populated 2084×742 glucose canvas keeps its composited window treatme
       assert.ok(before.width > 1000, `${theme} audit uses the locked wide chart geometry`);
       assert.equal(before.dim, 0, `${theme} 24 h scope has no selection scrim`);
       assert.equal(after.dim, 2, `${theme} non-default Morning scope preserves the two scrim regions`);
+      const dimAlpha = parseFloat((after.dimFill?.match(/rgba\([^)]+,\s*([\d.]+)\)/) || [])[1]);
+      assert.equal(dimAlpha, theme === 'dark' ? 0.28 : 0.10,
+        `${theme} outside-window scrim keeps its recomposed alpha (${after.dimFill})`);
       const pixelShift = (first, second) => {
         assert.equal(second.length, first.length, 'composite pixel samples keep a stable shape');
         return first.reduce((total, rgb, index) => total
@@ -1026,6 +1045,9 @@ test('the populated 2084×742 glucose canvas keeps its composited window treatme
         assert.equal(result.accessibleName.label,
           'Glucose bands: 10th to 90th and 25th to 75th percentile ranges; median line',
           `${theme} ${state} chart root names the marks the legend used to`);
+        assert.equal(result.medianPaint.actual,
+          theme === 'dark' ? result.medianPaint.dark : result.medianPaint.light,
+          `${theme} ${state} median draws lightened primary in Dark, primary-600 in Light`);
         for (const measured of result.targetRails) assert.ok(measured >= 3,
           `${theme} ${state} target rail clears 3:1 on both sides (${measured.toFixed(2)}:1)`);
         assert.ok(result.gate >= 3, `${theme} ${state} active gate clears 3:1 (${result.gate.toFixed(2)}:1)`);

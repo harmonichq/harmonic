@@ -154,7 +154,7 @@ test('renderCanvas draws a wrapped window as two areas with one range label', ()
   const colors = {
     muted: '#111', warn: '#222', danger: '#333', targetFill: '#444', targetText: '#555',
     rail: '#666', windowFill: '#777', windowEdge: '#888', bandOuter: '#999',
-    bandInner: '#aaa', bandEdge: '#bbb', median: '#ccc', targetEdge: '#ddd',
+    bandInner: '#aaa', median: '#ccc', targetEdge: '#ddd',
     onAccent: '#eee', text: '#123', surface2: '#234', line: '#345', occurrence: '#456', meal: '#567', grid: '#678',
   };
   let option = null;
@@ -214,7 +214,7 @@ test('a tile landing never changes the already-drawn strip range', () => {
   };
   const colors = {
     muted: '#111', targetFill: '#444', targetText: '#555', rail: '#666', windowDim: '#777',
-    windowEdge: '#888', bandOuter: '#999', bandInner: '#aaa', bandEdge: '#bbb', median: '#ccc',
+    windowEdge: '#888', bandOuter: '#999', bandInner: '#aaa', median: '#ccc',
     targetEdge: '#ddd', onAccent: '#eee', text: '#123', surface2: '#234', line: '#345', grid: '#678',
   };
   let option = null;
@@ -242,7 +242,7 @@ test('slice 4 · the outside-the-gates scrim is the exact complement of the wind
   const colors = {
     muted: '#111', warn: '#222', danger: '#333', targetFill: '#444', targetText: '#555',
     rail: '#666', windowDim: '#77777788', windowEdge: '#888', bandOuter: '#999',
-    bandInner: '#aaa', bandEdge: '#bbb', median: '#ccc', targetEdge: '#ddd',
+    bandInner: '#aaa', median: '#ccc', targetEdge: '#ddd',
     onAccent: '#eee', text: '#123', surface2: '#234', line: '#345', occurrence: '#456', meal: '#567', grid: '#678',
   };
   let option = null;
@@ -305,7 +305,7 @@ test('renderCanvas pans labels and every data series into dimmed neighbouring da
   const colors = {
     muted: '#111111', warn: '#222', danger: '#333', targetFill: '#444', targetText: '#555',
     rail: '#666', windowFill: '#777', windowEdge: '#888', bandOuter: '#999',
-    bandInner: '#aaa', bandEdge: '#bbb', median: '#ccc', targetEdge: '#ddd',
+    bandInner: '#aaa', median: '#ccc', targetEdge: '#ddd',
     onAccent: '#eee', text: '#123', surface2: '#234', line: '#345', occurrence: '#456', meal: '#567', grid: '#678',
   };
   let option = null;
@@ -343,7 +343,7 @@ test("#130 · a full-travel slide keeps its live band on the unrolled axis", () 
   const colors = {
     muted: '#111111', warn: '#222', danger: '#333', targetFill: '#444', targetText: '#555',
     rail: '#666', windowFill: '#777', windowEdge: '#888', bandOuter: '#999',
-    bandInner: '#aaa', bandEdge: '#bbb', median: '#ccc', targetEdge: '#ddd',
+    bandInner: '#aaa', median: '#ccc', targetEdge: '#ddd',
     onAccent: '#eee', text: '#123', surface2: '#234', line: '#345', occurrence: '#456', meal: '#567', grid: '#678',
   };
   let option = null;
@@ -386,7 +386,7 @@ test('#130 · the docked readout reads the pooled bin under a panning axis point
   const colors = {
     muted: '#111111', warn: '#222', danger: '#333', targetFill: '#444', targetText: '#555',
     rail: '#666', windowFill: '#777', windowEdge: '#888', bandOuter: '#999',
-    bandInner: '#aaa', bandEdge: '#bbb', median: '#ccc', targetEdge: '#ddd',
+    bandInner: '#aaa', median: '#ccc', targetEdge: '#ddd',
     onAccent: '#eee', text: '#123', surface2: '#234', line: '#345', occurrence: '#456', meal: '#567', grid: '#678',
   };
   const handlers = {};
@@ -561,5 +561,14 @@ test('#204 · the legend is retired for an accessible chart name and the band ou
   const widest = Math.max(...option.series
     .filter((series) => series.type === 'line' && !series.name.startsWith('__'))
     .map((series) => series.lineStyle?.width || 0));
-  assert.equal(widest, 2.4, 'no other continuous mark out-weighs the median');
+  assert.equal(widest, 2.4,
+    'no other pooled-envelope mark out-weighs the median (a drilled day trace deliberately does)');
+
+  // a drilled day trace joins the accessible name; the base name stays fixed
+  renderCanvas(el, { getInstanceByDom() { return chart; } }, {
+    envelope, colors, range: [40, 300], window: [360, 720], windowLabel: '06:00–12:00',
+    trace: envelope.p50.slice(),
+  });
+  assert.equal(attrs.get('aria-label'),
+    'Glucose bands: 10th to 90th and 25th to 75th percentile ranges; median line; selected day trace');
 });

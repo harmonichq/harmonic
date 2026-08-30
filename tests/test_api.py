@@ -164,6 +164,7 @@ class ApiTest(unittest.TestCase):
         body = r.json()
         self.assertEqual(body["schema_version"], SCHEMA_VERSION)
         self.assertEqual(len(body["basal"]), 48)
+        self.assertEqual(body["basal_support_floor"], 8)
         self.assertIn("isf", body)
         self.assertIn("behavioral", body)
 

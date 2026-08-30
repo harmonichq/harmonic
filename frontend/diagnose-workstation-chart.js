@@ -264,16 +264,16 @@ export function minuteAtX(el, offsetX, displayOffset = 0) {
 
 /**
  * Does the pooled sample under a window clear the SAME floor the basal slots
- * use? A slot needs `MIN_SUPPORTED_NIGHTS` independent nights before it may
+ * use? A slot needs the served support floor's independent nights before it may
  * assert anything; a pooled bin's sample is the canvas analogue, so a window
  * whose thinnest bin falls under that floor reports itself insufficient rather
  * than printing a precise median off a handful of readings.
  */
-export function windowSupport(envelope, [startMin, endMin]) {
+export function windowSupport(envelope, [startMin, endMin], supportFloor) {
   const counts = windowBinSpans([startMin, endMin])
     .flatMap(([a, b]) => envelope.counts.slice(a, b + 1));
   const thinnest = counts.length ? Math.min(...counts) : 0;
-  return { thinnest, supported: thinnest >= MIN_SUPPORTED_NIGHTS };
+  return { thinnest, supported: supportFloor != null && thinnest >= supportFloor };
 }
 
 /**
@@ -311,22 +311,15 @@ export function clockBuckets(occurrences, { bucketHours = 2 } = {}) {
 /* ======================= basal verdict lane ============================ */
 
 /**
- * The support floor for asserting a basal direction: a slot needs at least this
- * many clean nights AND a CI that is not wide. This is the app's hardest-won
- * safety rule (issue #273, safety._MIN_SUPPORTED_NIGHTS).
- */
-export const MIN_SUPPORTED_NIGHTS = 8;
-
-/**
  * PORT DEVIATION from the mock (#654) — the load-bearing one.
  *
  * The mock re-applies the support floor here because ITS capture predates the
  * backend rule: settings-audit.capture.json carries `asserts_move: true` on
  * slots with n=1..7 and a wide CI, so the mock could not trust the flag. The
  * live API can be trusted, but not for the reason this comment used to give.
- * `safety._MIN_SUPPORTED_NIGHTS` (8) is enforced inside `_sign_tails`
- * (ciq_autotune/safety.py): a slot with fewer than eight informative nights
- * gets p=1 for BOTH tails, so no direction is ever supported below the floor
+ * The backend enforces the support floor inside `_sign_tails`
+ * (ciq_autotune/safety.py): a thin slot gets p=1 for BOTH tails, so no direction
+ * is ever supported below that floor
  * and `asserts_move` cannot come back true. It is NOT applied through
  * `cap(..., min_directional_days=…)` — that parameter defaults to
  * `_MIN_DIRECTIONAL_DAYS`, which is 3, `analyzers/basal.py` never overrides it,
@@ -603,7 +596,7 @@ function displaySeries(series) {
 }
 
 /**
- * @param {object} opts { envelope, colors, window:[startMin,endMin], windowLabel }
+ * @param {object} opts { envelope, colors, supportFloor, window:[startMin,endMin], windowLabel }
  */
 export function renderCanvas(el, echarts, opts) {
   const { envelope, colors } = opts;
@@ -631,7 +624,7 @@ export function renderCanvas(el, echarts, opts) {
   /* Same floor the basal slots use, applied to the window's pooled sample: below
      it the canvas prints NO precise median — it says so, in the window's own
      label, in the warn colour. Thinness is loud, not gray. */
-  const support = windowSupport(envelope, [winStart, winEnd]);
+  const support = windowSupport(envelope, [winStart, winEnd], opts.supportFloor);
   const thin = !support.supported;
 
   /* ---- window label: fit it to the window, or move it out ------------------

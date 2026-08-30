@@ -1061,6 +1061,7 @@
     "slot": 47
    }
   ],
+  "basal_support_floor": 8,
   "data_quality": {
    "counts": {
     "boluses": 18,

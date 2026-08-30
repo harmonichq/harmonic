@@ -78,7 +78,11 @@ export function toCaptures(payload = {}, { loadDay = null, onDayLoaded = null, s
       states: {
         trial: {
           as_of: (analyze.generated_at || '').slice(0, 10),
-          analysis: { window_days: analyze.window_days, basal },
+          analysis: {
+            window_days: analyze.window_days,
+            basal_support_floor: analyze.basal_support_floor,
+            basal,
+          },
         },
       },
     },

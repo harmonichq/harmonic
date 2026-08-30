@@ -1062,6 +1062,7 @@
       "slot": 47
      }
     ],
+    "basal_support_floor": 8,
     "behavioral": [],
     "window_days": 30
    },
@@ -2130,6 +2131,7 @@
       "slot": 47
      }
     ],
+    "basal_support_floor": 8,
     "behavioral": [],
     "window_days": 30
    },
@@ -3198,6 +3200,7 @@
       "slot": 47
      }
     ],
+    "basal_support_floor": 8,
     "behavioral": [],
     "window_days": 30
    },
@@ -4266,6 +4269,7 @@
       "slot": 47
      }
     ],
+    "basal_support_floor": 8,
     "behavioral": [],
     "window_days": 30
    },

@@ -35,8 +35,7 @@ tree is what gets scanned. Five rules, in the order the plan fixes:
      assignment instead (see ``synthetic_fixture_spans``) — rule 4 only, never
      a whole file, never rules 1, 3 or 5, and never without a reason.
   5. **Prose**, run last: dose and ratio claims, dated health events,
-     credentials, absolute paths carrying a username, and the owner's first
-     name plus the sanction idioms.
+     credentials, and absolute paths carrying a username.
 
 **Fails closed.** A file that cannot be decoded or parsed is a FAILURE finding,
 never a skip.
@@ -76,7 +75,7 @@ STRUCTURAL_EXTENSIONS = frozenset({".json", ".yaml", ".yml", ".csv"})
 
 # Rule 5's sub-checks, each separately dispositionable so a finding names the
 # thing it found rather than "prose".
-PROSE_CHECKS = ("dose-ratio", "dated-health-event", "credential", "user-path", "owner-name")
+PROSE_CHECKS = ("dose-ratio", "dated-health-event", "credential", "user-path")
 
 # The one rule carrying an acknowledged baseline rather than hard-failing on
 # any hit. A dosing application's prose legitimately says "U" and "g/U" — unit
@@ -123,19 +122,6 @@ _CREDENTIAL_RE = re.compile(
     r"|-----BEGIN [A-Z ]*PRIVATE KEY-----"
 )
 _USER_PATH_RE = re.compile(r"/(?:Users|home)/(?!runner\b)[A-Za-z][\w.-]*")
-# The sanction idioms: prose crediting a decision to a private authority a
-# reader cannot consult. The pattern used to name one verb in one voice, and a
-# possessive form carrying an attribution noun slipped past it by a single
-# word — so the possessive and the other attribution nouns are matched too.
-# The bare phrase is NOT a hit: the app's own copy uses it for whoever is
-# reading the surface, which is an ordinary second person, not a citation.
-# Written without quoting either idiom, so this file does not trip its own rule.
-_OWNER_NAME_RE = re.compile(
-    r"\bConnor\b|\bsanctioned by\b"
-    r"|\bthe operator(?:['\u2019]s)?\s+"
-    r"(?:ruled?|ruling|rulings|said|says|decided|decision|sanction|"
-    r"finding|findings|call|review|round)\b"
-)
 
 
 class ConfigError(ValueError):
@@ -213,7 +199,7 @@ def parse_config(text: str) -> ScanConfig:
         ships.
       * ``prose-exempt <exact path> <check> | <reason>`` — the plan's one
         ruled prose exemption, scoped to a single check so it can never
-        silently cover the other four.
+        silently cover the other three.
       * ``authorized-synthetic <exact path> | <reason>`` — clears ONE file to
         carry the ``authorized`` + ``synthetic`` stamp. Without a line here the
         two keys exempt nothing, whatever they say.
@@ -555,8 +541,8 @@ def _within(line: int, spans: list[tuple[int, int]]) -> bool:
 # arbitrary amount in a constructor or an assertion — rather than a clinical
 # claim about the data subject. In these, the dose/ratio check reads comment and
 # block-comment text only; everywhere else — markdown, JSON copy strings, CSV —
-# it reads every line. The other four checks always read every line: a
-# credential, a home path or the owner's name is a leak wherever it sits.
+# it reads every line. The other three checks always read every line: a
+# credential or a home path is a leak wherever it sits.
 _CODE_EXTENSIONS = frozenset({".py", ".js", ".mjs", ".ts", ".css", ".sh", ".html"})
 
 _LINE_COMMENT_RE = re.compile(r"(?://|#)(.*)$")
@@ -610,7 +596,6 @@ def prose_findings(rel: str, text: str) -> list[tuple[str, int, str]]:
             ("dose-ratio", _RATIO_RE.search(prose) or _DOSE_RE.search(prose)),
             ("credential", _CREDENTIAL_RE.search(line)),
             ("user-path", _USER_PATH_RE.search(line)),
-            ("owner-name", _OWNER_NAME_RE.search(line)),
         ):
             if match:
                 hits.append((check, lineno, match.group(0).strip()))

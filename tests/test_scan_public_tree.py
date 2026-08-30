@@ -380,27 +380,16 @@ class Rule5ProseTest(unittest.TestCase):
         findings, _ = scan_text("s.py", sample('"/Users', '/someone/Code/thing"\n'))
         self.assertIn("rule5-user-path", rules_of(findings))
 
-    def test_the_owner_name_and_sanction_idioms_are_flagged(self):
-        for text in (sample("# Con", "nor's real candy sizes"),
-                     sample("# sanctioned ", "by the owner"),
-                     sample("# the operator ", "ruled otherwise"),
-                     # The possessive form slipped past the older pattern by a
-                     # single word, which is how an attribution to a private
-                     # review round shipped in a source docstring.
-                     sample("# the operator", "'s round-2 coverage finding"),
-                     sample("# the operator", "'s call, recorded elsewhere")):
+    def test_the_owners_name_and_a_credited_ruling_are_not_findings(self):
+        """It is his repository and his name belongs in it. A shipping file may
+        name him, and may credit a decision to him, with no exemption holding a
+        check back."""
+        for text in ("# Connor Griffin owns this project\n",
+                     "# the operator ruled otherwise\n",
+                     "# sanctioned by the owner\n"):
             with self.subTest(text=text):
                 findings, _ = scan_text("f.js", text)
-                self.assertIn("rule5-owner-name", rules_of(findings))
-
-    def test_the_reader_facing_second_person_is_not_an_attribution(self):
-        """The app's own copy calls whoever is reading a surface "the operator".
-        That is an ordinary second person, not a citation of a private ruling,
-        and widening the idiom must not start flagging it."""
-        findings, _ = scan_text(
-            "f.js", sample("// a coincidence the operator ", "can follow\n")
-        )
-        self.assertEqual([], rules_of(findings))
+                self.assertEqual([], rules_of(findings))
 
 
 class FailClosedTest(unittest.TestCase):
@@ -488,11 +477,11 @@ class PinTest(unittest.TestCase):
     def test_the_prose_exemption_is_scoped_to_one_named_check(self):
         config = scan.parse_config(
             "span-start 2025-07-01\n"
-            "prose-exempt pyproject.toml owner-name | deliberate authorship\n"
+            "prose-exempt notes.md dose-ratio | an acknowledged record\n"
         )
         findings, _ = scan_text(
-            "pyproject.toml",
-            sample('authors = [{ name = "Con', 'nor Griffin" }]\n',
+            "notes.md",
+            sample("a 9.0 ", "U bolus at 18:40\n",
                    'password = "s3cr', 't-value"\n'),
             config,
         )
@@ -531,24 +520,16 @@ class ShippedConfigTest(unittest.TestCase):
         self.assertEqual("2025-07-01", config.span_start)
         self.assertTrue(all(reason for reason in config.pins.values()))
         self.assertIn("uv.lock", config.pins)
-        self.assertIn(
-            ("pyproject.toml", "owner-name"), config.prose_exempt,
-        )
 
-    def test_permanent_sanction_owner_name_exemptions_are_exact(self):
+    def test_the_only_prose_exemption_is_the_generated_dose_ratio_baseline(self):
+        """The one exemption left is the config holding back the dose check on
+        its own generated record. Anything else appearing here means a check is
+        being held back on a shipping file again."""
         config = scan.load_config()
-        owner_name_exemptions = {
-            exemption for exemption in config.prose_exempt
-            if exemption[1] == "owner-name"
-        }
-        self.assertEqual({
-            ("LICENSE", "owner-name"),
-            ("pyproject.toml", "owner-name"),
-            ("frontend/cockpit-shell.browser.test.mjs", "owner-name"),
-            ("frontend/diagnose-event-comparison-behavior.replay.mjs", "owner-name"),
-            ("frontend/diagnose-workstation.browser.test.mjs", "owner-name"),
-            ("frontend/diagnose-workstation-behavior.replay.mjs", "owner-name"),
-        }, owner_name_exemptions)
+        self.assertEqual(
+            {("scripts/public_scan_config.txt", "dose-ratio")},
+            set(config.prose_exempt),
+        )
 
     def test_every_authorized_synthetic_clearance_is_named_and_reasoned(self):
         """The stamp that says "a human cleared this" is honoured only where the

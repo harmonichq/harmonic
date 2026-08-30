@@ -82,30 +82,13 @@ tests/test_api.py | 8 invented round test dates (§3.1 [R6])
 mockups/diagnose-event-comparison.synthetic/capture.json | dates a synthetic projection carries in its own source_window field; carries no value, dose or ratio; ships by ruling (§3.1 [R3])
 
 # --- Narrow ruled prose exemptions (§3.1 [R5]) ----------------------------
-# pyproject.toml's `authors` entry is deliberate authorship and stays,
-# which §3.1 rules explicitly while §0.5.5.3 forbids pinning prose. Encoded as
-# its own directive, scoped to the single check it exempts, so it can never
-# silently cover the credential, dose, user-path or dated-event checks on this
-# file, and so no structural pin is ever read as suppressing prose.
-prose-exempt pyproject.toml owner-name | deliberate authorship, ruled to stay (§3.1 [R5])
-# The permanent dated acceptance sanction is an observable replay contract, so
-# these exact source files retain it. Each exemption reaches owner-name only.
-prose-exempt frontend/diagnose-event-comparison-behavior.replay.mjs owner-name | required permanent dated acceptance sanction (#58)
-prose-exempt frontend/diagnose-workstation-behavior.replay.mjs owner-name | required permanent dated acceptance sanction (#58)
-prose-exempt frontend/cockpit-shell.browser.test.mjs owner-name | required permanent dated retirement sanction (#52)
-prose-exempt frontend/diagnose-workstation.browser.test.mjs owner-name | required permanent dated retirement sanction (#96)
-# The licence names its licensor for the same reason, and a licence with no
-# licensor named is not a licence. Same class as the pyproject.toml authorship;
-# holds under the pending swap to PolyForm Noncommercial 1.0.0, which also
-# names the licensor.
 # This config is itself a shipping file, and the generated block below
 # RECORDS 136 matched dose texts — so without this line the record of the
 # findings becomes 136 more findings, and the set can never settle. Scoped to
 # dose-ratio alone: the block is generated, digest-guarded (a hand edit fails
 # the config closed), and by construction contains only text already judged
-# non-identifying. The other four prose checks still apply to this file.
+# non-identifying. The other three prose checks still apply to this file.
 prose-exempt scripts/public_scan_config.txt dose-ratio | the generated baseline records matched dose texts; without this the record of the findings is itself findings (#728)
-prose-exempt LICENSE owner-name | the licensor must be named for the licence to function; deliberate authorship, same class as pyproject.toml (§3.1 [R5])
 
 # --- Files cleared to carry the `authorized` + `synthetic` stamp ---------
 # Rule 2's other three stamp forms say how a file was MADE and are checkable on

@@ -1120,6 +1120,10 @@ export const S04 = async (page) => {
     spacer.id = 's04-scroll-spacer';
     spacer.style.cssText = 'grid-row: 4; height: 160px;';
     host.append(spacer);
+    /* CDP's synthetic touch-scroll direction differs between the macOS and
+       Linux browser runners. Start away from either boundary: this story owns
+       whether the touch gesture moves the ancestor, not the platform's sign. */
+    host.scrollTop = 80;
     return {
       saved, hostTop: host.scrollTop, shellTop: document.scrollingElement.scrollTop,
       clientHeight: host.clientHeight, scrollHeight: host.scrollHeight,
@@ -1139,7 +1143,7 @@ export const S04 = async (page) => {
     document.getElementById('s04-scroll-spacer').remove();
     return result;
   }, scrollBefore.saved);
-  ok(scrollAfter.hostTop > scrollBefore.hostTop,
+  ok(scrollAfter.hostTop !== scrollBefore.hostTop,
     `S04 vertical primary touch moves an already-scrollable chart ancestor (${scrollBefore.hostTop} → ${scrollAfter.hostTop}; ${scrollBefore.clientHeight}/${scrollBefore.scrollHeight}px)`);
   is(scrollAfter.shellTop, scrollBefore.shellTop,
     'S04 vertical touch preserves the shell no-page-scroll contract');

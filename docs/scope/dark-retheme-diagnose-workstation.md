@@ -65,6 +65,10 @@ ticket is started.
 - Chunk 3 converged at the third targeted round after correcting true-base
   provenance, recording replayable capture commands and paths, and rerunning an
   intermittent #215 dock timeout cleanly.
+- Whole-diff review caught a theme-agnostic vessel cascade that changed Light.
+  The author restored the exact fixed-point Light values, refreshed the affected
+  evidence, and added computed hover coverage. The final Standards review
+  converged at 16/16 and the final Spec review converged at 13/13 in round 3.
 - The unchanged Diagnose replay passed 141/141 stories on the true base and the
   revision. The committed record contains 120 synthetic Dark/Light captures and
   documents the complete verification result.

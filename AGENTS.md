@@ -217,7 +217,8 @@ your own database — never a published one, and never a live pull.**
   reads raw attributes) so the core imports without the `sync` extra. Keep it
   that way.
 - `ciq_autotune/insulin.py` — reconstructed bolus insulin-on-board.
-- `ciq_autotune/model.py` — the clean-window filter every analyzer feeds on.
+- `ciq_autotune/model.py` — the clean-window filter used by basal, backtest,
+  and report.
 - `ciq_autotune/analyzers/` — basal, correction factor (ISF), carb ratio (I:C),
   and the behavioral detectors. One versioned `AnalysisResult` comes out.
 - `ciq_autotune/safety.py` — the caps and the support floors. Read "Safety
@@ -285,7 +286,8 @@ post-harm values and stamped onto the analyzer's `SegmentEstimate`. It is true
 only when a current programmed value and a direction both exist and the
 recommendation differs from current. A direction-only weakening, a missing
 programmed value, a hold, and a rounded no-op all remain visible but cannot
-stage. `isf.py` still imports nothing from `safety.py`: its caps are its own
+stage; the findings projection queue withholds their rank. `isf.py` still
+imports nothing from `safety.py`: its caps are its own
 (`IsfConfig.max_step_frac`, `_half_gap`), and its rows are deliberately not fed
 into the consolidated pump-profile schedule. The shared invariant is one
 backend staging verdict, not one universal classifier, cap, evidence floor, or

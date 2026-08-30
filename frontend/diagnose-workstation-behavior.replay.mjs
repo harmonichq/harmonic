@@ -1004,9 +1004,17 @@ const touchDrag = async (page, from, to, { end = 'up', steps = 1 } = {}) => {
 
 const touchScroll = async (page, at) => {
   const session = await page.context().newCDPSession(page);
-  await session.send('Input.synthesizeScrollGesture', {
-    x: at.x, y: at.y, xDistance: 0, yDistance: -80, gestureSourceType: 'touch', speed: 800,
+  const point = (y) => ({ x: at.x, y, id: 1, radiusX: 1, radiusY: 1, force: 1 });
+  await session.send('Input.dispatchTouchEvent', {
+    type: 'touchStart', touchPoints: [point(at.y)],
   });
+  for (let step = 1; step <= 8; step += 1) {
+    await session.send('Input.dispatchTouchEvent', {
+      type: 'touchMove', touchPoints: [point(at.y - 120 * step / 8)],
+    });
+    await page.waitForTimeout(16);
+  }
+  await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
   await session.detach();
 };
 
@@ -1120,9 +1128,8 @@ export const S04 = async (page) => {
     spacer.id = 's04-scroll-spacer';
     spacer.style.cssText = 'grid-row: 4; height: 160px;';
     host.append(spacer);
-    /* CDP's synthetic touch-scroll direction differs between the macOS and
-       Linux browser runners. Start away from either boundary: this story owns
-       whether the touch gesture moves the ancestor, not the platform's sign. */
+    /* Start away from either boundary so the story owns whether the touch
+       gesture moves the ancestor, independent of scroll direction. */
     host.scrollTop = 80;
     return {
       saved, hostTop: host.scrollTop, shellTop: document.scrollingElement.scrollTop,

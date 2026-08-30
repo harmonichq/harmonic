@@ -44,7 +44,7 @@ from ..insulin import (
     BolusIob,
     InsulinActivity,
 )
-from ..model import _CgmSeries
+from ..model import CgmSeries
 from ..ic_history import (
     HistoryIdentity,
     RunEvidence,
@@ -435,7 +435,7 @@ def _dose_is_untrustworthy(m: BolusEvent, aborts: Sequence[BolusEvent],
     return any(c.t < m.t <= c.t + reissue_window for c in aborts)
 
 
-def _outcome_bg(cgm: _CgmSeries, meal_t: datetime,
+def _outcome_bg(cgm: CgmSeries, meal_t: datetime,
                 cfg: IcConfig) -> Optional[Tuple[float, datetime]]:
     """The meal's outcome BG at full DIA, or ``None`` when it can't be read.
 
@@ -593,7 +593,7 @@ def _meal_printed_lows(
 
 
 def _peak_bg_between(
-    cgm: Optional["_CgmSeries"], lo: datetime, hi: datetime
+    cgm: Optional["CgmSeries"], lo: datetime, hi: datetime
 ) -> Optional[float]:
     """Max CGM value in ``(lo, hi]``, or None when no reading falls there."""
     if cgm is None or hi <= lo:
@@ -622,14 +622,14 @@ def _rescue_evidence(rescues: Sequence[PreemptedLowEntry]) -> dict:
 
 
 def meal_start_bg(bolus: BolusEvent,
-                  cgm: Optional["_CgmSeries"]) -> Optional[float]:
+                  cgm: Optional["CgmSeries"]) -> Optional[float]:
     """A meal's starting BG (``bg0``): the bolus row's own ``bg``, else the nearest CGM
     reading within ``IcConfig.bg0_max_gap_min`` of the bolus, else ``None``.
 
     This is the single resolution :func:`meal_burdens` and :func:`_meals_start_high_finding`
     use for the pre-meal-high signal. Extracted (#302) so the Outcomes trend's per-window
     median reads the *same* ``bg0`` — never a second, subtly-different pre-meal BG. ``cgm``
-    is a :class:`~ciq_autotune.model._CgmSeries` built with ``bg0_max_gap_min`` as its
+    is a :class:`~ciq_autotune.model.CgmSeries` built with ``bg0_max_gap_min`` as its
     max-stale, or ``None`` when no CGM is available (then only the bolus row's ``bg``
     can supply a start).
     """
@@ -743,7 +743,7 @@ def meal_burdens(bolus_events: List[BolusEvent],
     # One CGM view. The outcome read bisects `times` over its own window, so the
     # series' max_stale only governs `nearest` — which is used solely to resolve
     # the pre-meal bg0, hence ±bg0_max_gap_min.
-    cgm = (_CgmSeries(cgm_readings, timedelta(minutes=cfg.bg0_max_gap_min))
+    cgm = (CgmSeries(cgm_readings, timedelta(minutes=cfg.bg0_max_gap_min))
            if cgm_readings is not None and isf_effective else None)
 
     out: List[MealBurden] = []
@@ -1127,7 +1127,7 @@ def run_burdens(bolus_events: List[BolusEvent],
     corrections = sorted(((b.t, b.insulin, b.is_automatic_bolus)
                           for b in bolus_events if _is_correction(b)),
                          key=lambda r: r[0])
-    cgm = (_CgmSeries(cgm_readings, timedelta(minutes=cfg.bg0_max_gap_min))
+    cgm = (CgmSeries(cgm_readings, timedelta(minutes=cfg.bg0_max_gap_min))
            if cgm_readings is not None and isf_effective else None)
 
     # Two meal boluses sharing a timestamp to the second (distinct seqNums, #194)

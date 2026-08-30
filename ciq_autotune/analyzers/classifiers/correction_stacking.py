@@ -41,7 +41,7 @@ from typing import List, Optional, Sequence, Tuple
 
 from ...events import BasalEvent, BolusEvent, CgmReading
 from ...insulin import ACCOUNTING_DIA_MIN, BolusIob
-from ...model import _CgmSeries
+from ...model import CgmSeries
 from ..scenario_config import ScenarioConfig
 from .context_gate import GateResult, upstream_cause
 from .evidence import EvidenceTier, SilenceReason, Verdict
@@ -217,7 +217,7 @@ def classify_correction_stacking(
     stack = corr[stack_idx]
     gap_min = (stack.t - prev.t).total_seconds() / 60.0
 
-    series = _CgmSeries(cgm_readings, timedelta(minutes=scenario_config.cgm_max_stale_min))
+    series = CgmSeries(cgm_readings, timedelta(minutes=scenario_config.cgm_max_stale_min))
     bg_at_stack = series.nearest(stack.t)
     slope = series.slope(stack.t, timedelta(minutes=slope_lookback_min))
 
@@ -393,7 +393,7 @@ def count_correction_stacks(
     iob_peak_min = scenario_config.stacking_iob_peak_min
     iob_dia_min = ACCOUNTING_DIA_MIN
     pairs = _user_corrections(window_boluses, scenario_config=scenario_config)
-    series = _CgmSeries(context_cgm, timedelta(minutes=scenario_config.cgm_max_stale_min))
+    series = CgmSeries(context_cgm, timedelta(minutes=scenario_config.cgm_max_stale_min))
     # IOB rides on *all* prior boluses (meals + the first correction), so the padded
     # context slice — not the window slice — feeds the reconstruction.
     iob = BolusIob(list(context_boluses), iob_peak_min, iob_dia_min)

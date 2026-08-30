@@ -42,7 +42,7 @@ from datetime import datetime, timedelta
 from typing import Optional, Sequence
 
 from ...events import BasalEvent, BolusEvent, CgmReading
-from ...model import _CgmSeries
+from ...model import CgmSeries
 from ..scenario_config import ScenarioConfig
 from .context_gate import GateResult, upstream_cause
 from .evidence import EvidenceTier, SilenceReason, Verdict
@@ -73,7 +73,7 @@ class CarbUndercountVerdict(Verdict):
     gate: Optional[GateResult] = None
 
 
-def _peak_after(series: _CgmSeries, start, end) -> Optional[float]:
+def _peak_after(series: CgmSeries, start, end) -> Optional[float]:
     """The highest CGM value in ``(start, end]``, or ``None`` if empty."""
     lo = bisect.bisect_right(series.times, start)
     hi = bisect.bisect_right(series.times, end)
@@ -169,7 +169,7 @@ def classify_carb_undercount(
             logged_carbs=logged,
         )
 
-    series = _CgmSeries(cgm_readings, timedelta(minutes=scenario_config.cgm_max_stale_min))
+    series = CgmSeries(cgm_readings, timedelta(minutes=scenario_config.cgm_max_stale_min))
     baseline = series.nearest(meal.t)
     # Read only the excursion this meal owns: from the bolus to the look-ahead horizon,
     # capped at the next *separate* meal so a meal never claims the next meal's spike

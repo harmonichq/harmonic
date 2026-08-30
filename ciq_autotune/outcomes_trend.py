@@ -68,7 +68,7 @@ from .false_low import drop_readings, false_low_spans
 from .analyzers.scenario.levers import recommendation, title
 from .analyzers.scenario.evidence_population import policy_for
 from .analyzers.scenario.preempted import is_preempted_low_entry
-from .model import _CgmSeries
+from .model import CgmSeries
 from .outcomes import TBR_L1, _EXPECTED_PER_DAY, compute_metrics
 from .rescue_evidence import (
     eligible_carb_entries,
@@ -736,7 +736,7 @@ def pre_meal_start(meals: Sequence, cgm: Sequence) -> tuple:
     use, so this trend never re-derives a subtly-different pre-meal BG. Pure function of
     its inputs, so it is unit-testable on a synthetic series.
     """
-    series = _CgmSeries(cgm, timedelta(minutes=IcConfig().bg0_max_gap_min))
+    series = CgmSeries(cgm, timedelta(minutes=IcConfig().bg0_max_gap_min))
     starts = [bg0 for bg0 in (meal_start_bg(m, series) for m in meals) if bg0 is not None]
     median = round(statistics.median(starts), 1) if len(starts) >= ARC_MIN_MEALS else None
     return median, len(starts)

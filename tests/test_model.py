@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 from ciq_autotune.events import BasalEvent, BolusEvent, CarbEntry, CgmReading, PumpEvent
 from ciq_autotune.model import (
     ModelConfig,
-    _CgmSeries,
+    CgmSeries,
     clean_samples,
     suggest_basal_profile,
 )
@@ -223,14 +223,14 @@ class ConfigTest(unittest.TestCase):
 
 
 class CgmSlopeGuardTest(unittest.TestCase):
-    """`_CgmSeries.slope` must refuse to fit a slope from sparse/stale clusters —
+    """`CgmSeries.slope` must refuse to fit a slope from sparse/stale clusters —
     two points 30s apart otherwise yield ±720 mg/dL/min artifacts (issue #59)."""
 
     def _series(self, offsets_bg):
         t0 = datetime(2022, 6, 1, 12, 0, 0)
         readings = [CgmReading(t=t0 + timedelta(minutes=off), bg=bg, type="EGV")
                     for off, bg in offsets_bg]
-        return _CgmSeries(readings, timedelta(minutes=10)), t0 + timedelta(minutes=30)
+        return CgmSeries(readings, timedelta(minutes=10)), t0 + timedelta(minutes=30)
 
     def test_dense_window_returns_a_real_slope(self):
         # 5-min CGM across the whole 30-min window: ~+2 mg/dL/min.
@@ -261,9 +261,9 @@ class CgmSlopeGuardTest(unittest.TestCase):
         window = timedelta(minutes=30)
         # Default config admits this window.
         self.assertIsNotNone(
-            _CgmSeries(readings, timedelta(minutes=10)).slope(t, window))
+            CgmSeries(readings, timedelta(minutes=10)).slope(t, window))
         # Demanding 4 points rejects the same window — the knob changed behavior.
-        strict = _CgmSeries(readings, timedelta(minutes=10), slope_min_points=4)
+        strict = CgmSeries(readings, timedelta(minutes=10), slope_min_points=4)
         self.assertIsNone(strict.slope(t, window))
 
     def test_slope_min_span_frac_override_rejects_a_default_passing_window(self):
@@ -277,8 +277,8 @@ class CgmSlopeGuardTest(unittest.TestCase):
         t = t0 + timedelta(minutes=30)
         window = timedelta(minutes=30)
         self.assertIsNotNone(
-            _CgmSeries(readings, timedelta(minutes=10)).slope(t, window))
-        strict = _CgmSeries(readings, timedelta(minutes=10), slope_min_span_frac=0.9)
+            CgmSeries(readings, timedelta(minutes=10)).slope(t, window))
+        strict = CgmSeries(readings, timedelta(minutes=10), slope_min_span_frac=0.9)
         self.assertIsNone(strict.slope(t, window))
 
 

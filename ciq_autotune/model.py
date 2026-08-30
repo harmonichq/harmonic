@@ -238,7 +238,7 @@ class _BasalTimeline:
         return self.programmed_rates[i] if i is not None else None
 
 
-class _CgmSeries:
+class CgmSeries:
     # Default slope-guard parameters (mirror ModelConfig defaults). Callers that
     # don't have a ModelConfig (e.g. the behavioral classifiers in analyzers/) use
     # these class-level defaults; clean_samples() passes the live config values.
@@ -427,7 +427,7 @@ def clean_samples(
     cfg = config
     timeline = _BasalTimeline(basal_events)
     bolus_iob = BolusIob(bolus_events, cfg.insulin_peak_min, cfg.insulin_dia_min)
-    cgm = _CgmSeries(
+    cgm = CgmSeries(
         cgm_readings,
         timedelta(minutes=cfg.bg_max_stale_min),
         slope_min_points=cfg.slope_min_points,

@@ -34,7 +34,7 @@ from datetime import datetime, timedelta
 from typing import Optional, Sequence
 
 from ...events import BasalEvent, BolusEvent, CgmReading
-from ...model import _CgmSeries
+from ...model import CgmSeries
 from ..scenario_config import ScenarioConfig
 from .context_gate import GateResult, upstream_cause
 from .evidence import EvidenceTier, SilenceReason, Verdict
@@ -127,7 +127,7 @@ def classify_missed_meal(
     slope_lookback_min = scenario_config.missed_meal_slope_lookback_min
     digestion_lookback_min = scenario_config.missed_meal_digestion_lookback_min
     meal_min_carbs = scenario_config.missed_meal_min_carbs
-    series = _CgmSeries(cgm_readings, timedelta(minutes=scenario_config.cgm_max_stale_min))
+    series = CgmSeries(cgm_readings, timedelta(minutes=scenario_config.cgm_max_stale_min))
     slope = series.slope(anchor, timedelta(minutes=slope_lookback_min))
 
     if slope is None:

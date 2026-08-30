@@ -772,8 +772,8 @@ test('populated Diagnose renders readable theme-specific ink and chart marks', a
       signal: 'rgb(47, 107, 79)', median: 'rgb(18, 61, 43)', meal: 'rgb(159, 96, 48)',
     }],
     ['dark', {
-      surface: 'rgb(38, 34, 31)', body: 'rgb(219, 207, 188)', meta: 'rgb(163, 150, 138)',
-      signal: 'rgb(134, 173, 120)', median: 'rgb(195, 180, 156)', meal: 'rgb(192, 141, 82)',
+      surface: 'rgb(20, 18, 15)', body: 'rgb(207, 200, 189)', meta: 'rgb(164, 156, 144)',
+      signal: 'rgb(134, 173, 120)', median: 'rgb(207, 200, 189)', meal: 'rgb(192, 141, 82)',
     }],
   ]) {
     const browser = await runner.browser();
@@ -1079,6 +1079,146 @@ test('the chart dock and its lip clear the text contrast floor in both themes', 
     } finally {
       await page.close();
     }
+  }
+});
+
+test('Diagnose keeps the Dark material roles ordered and target bounds as rails', async () => {
+  const browser = await runner.browser();
+  for (const theme of ['dark', 'light']) {
+    const page = await openApp(browser, { state: 'typical', theme, appSource: 'fixture' });
+    try {
+      await page.getByRole('button', { name: '24 h', exact: true }).click();
+      await page.locator('#tile-focal .evidence-tile').waitFor({ state: 'visible' });
+      const roles = await page.locator('.dw').evaluate((root) => {
+        const bg = (selector) => getComputedStyle(root.querySelector(selector)).backgroundColor;
+        const token = (value) => {
+          const probe = document.createElement('i');
+          probe.style.background = value;
+          root.append(probe);
+          const result = getComputedStyle(probe).backgroundColor;
+          probe.remove();
+          return result;
+        };
+        const option = window.echarts.getInstanceByDom(document.querySelector('#chart')).getOption();
+        const targetSeries = option.series.find((series) => (series.markLine?.data || [])
+          .some((line) => Number.isFinite(line.yAxis)));
+        return {
+          canvas: bg('.canvas-pane'), inspector: bg('.inspector'), header: bg('.canvas-pane > header'),
+          rail: bg('.instruments'), field: bg('#tile-field'), focal: bg('#tile-focal .evidence-tile'),
+          wkField: token('var(--wk-field)'), wkRail: token('var(--wk-surface-rail)'),
+          wkWell: token('var(--wk-surface-sunken)'),
+          targetRails: (targetSeries?.markLine?.data || []).map((line) => line.yAxis).sort((a, b) => a - b),
+        };
+      });
+      if (theme === 'dark') {
+        assert.equal(roles.canvas, roles.wkField, 'Dark canvas uses the field role');
+        assert.equal(roles.inspector, roles.wkField, 'Dark Findings shares the canvas field');
+        assert.equal(roles.field, roles.wkField, 'Dark chart field keeps the field role');
+        assert.equal(roles.header, roles.wkRail, 'Dark pane header uses the rail role');
+        assert.equal(roles.rail, roles.wkRail, 'Dark controls use the shared rail role');
+        assert.equal(roles.focal, roles.wkWell, 'Dark focal vessel uses the chart-well role');
+      } else {
+        assert.notEqual(roles.canvas, 'rgba(0, 0, 0, 0)', 'Light canvas remains painted');
+        assert.notEqual(roles.focal, 'rgba(0, 0, 0, 0)', 'Light focal vessel remains painted');
+      }
+      assert.deepEqual(roles.targetRails, [70, 180], `${theme} glucose target is two boundary rails`);
+    } finally { await page.close(); }
+  }
+});
+
+test('Light vessel states retain their fixed-point cascade while Dark owns the retheme', async () => {
+  const browser = await runner.browser();
+  for (const theme of ['light', 'dark']) {
+    const page = await openApp(browser, { state: 'typical', theme, appSource: 'fixture' });
+    try {
+      await page.locator(theme === 'light' ? 'html:not(.dark)' : 'html.dark').waitFor();
+      await page.getByRole('button', { name: '24 h', exact: true }).click();
+      const styles = await page.evaluate(() => {
+        const field = document.querySelector('#tile-field');
+        const selector = '#tile-row .evidence-tile:not([data-selected]):not([data-tail-head])';
+        const style = (node) => {
+          const computed = getComputedStyle(node);
+          return { radius: computed.borderRadius, shadow: computed.boxShadow };
+        };
+        field.removeAttribute('data-dock');
+        field.removeAttribute('data-raised');
+        field.removeAttribute('data-explorer');
+        const general = style(document.querySelector(selector));
+        field.setAttribute('data-dock', 'docked');
+        const docked = style(document.querySelector(selector));
+        const selectedNode = document.querySelector(selector);
+        selectedNode.setAttribute('data-selected', '');
+        const selected = style(selectedNode);
+        selectedNode.removeAttribute('data-selected');
+        selectedNode.setAttribute('data-tail-head', '');
+        const tail = style(selectedNode);
+        selectedNode.removeAttribute('data-tail-head');
+        field.setAttribute('data-raised', '');
+        const raised = style(document.querySelector(selector));
+        field.removeAttribute('data-raised');
+        field.setAttribute('data-explorer', '');
+        const explorer = style(document.querySelector(selector));
+        return { general, docked, selected, tail, raised, explorer };
+      });
+      if (theme === 'light') {
+        assert.equal(styles.general.radius, '2px');
+        assert.match(styles.general.shadow, /inset/, 'Light general tiles keep the fixed-point edge and top highlight');
+        for (const state of ['docked', 'raised', 'explorer']) {
+          assert.equal(styles[state].radius, '4px');
+          assert.doesNotMatch(styles[state].shadow, /inset/, `Light ${state} cells keep their fixed-point shadow stack`);
+        }
+        assert.match(styles.selected.shadow, /rgb\(107, 118, 105\) 0px 0px 0px 1px inset/,
+          'Light selected cells retain their fixed-point strong-rule ring');
+        assert.match(styles.tail.shadow, /color\(srgb 0\.831372 0\.811765 0\.764706 \/ 0\.72\) -5px 0px 0px -4px/,
+          'Light tail-head cells retain their fixed-point edge marker');
+      } else {
+        for (const state of ['general', 'docked', 'selected', 'tail', 'raised', 'explorer']) {
+          assert.equal(styles[state].radius, '4px');
+          assert.match(styles[state].shadow, /rgb\(69, 61, 53\) 0px 0px 0px 1px inset/,
+            `Dark ${state} cells retain the #453d35 vessel edge`);
+        }
+      }
+
+      await page.locator('#tile-field').evaluate((field) => field.removeAttribute('data-explorer'));
+      const hoverTile = page.locator('#tile-row .evidence-tile:not([data-selected]):not([data-tail-head])').first();
+      await hoverTile.hover();
+      const hover = await hoverTile.evaluate((node) => getComputedStyle(node).boxShadow);
+      if (theme === 'light') {
+        assert.match(hover, /rgb\(195, 191, 180\) 0px 0px 0px 1px inset, rgba\(20, 26, 21, 0\.05\) 0px 1px 2px 0px, rgba\(20, 26, 21, 0\.12\) 0px 3px 8px -3px, rgba\(20, 26, 21, 0\.13\) 0px 0px 0px 1px/,
+          'Light hover keeps the fixed-point quiet-rule inset and cell-shadow stack');
+      } else {
+        assert.match(hover, /rgb\(69, 61, 53\) 0px 0px 0px 1px inset, rgba\(0, 0, 0, 0\.5\) 0px 0px 0px 1px, rgba\(0, 0, 0, 0\.55\) 0px 4px 10px -4px/,
+          'Dark hover keeps the #453d35 vessel edge and cell-shadow stack');
+      }
+
+      await page.locator('#tile-row .evidence-tile').first().click();
+      await page.locator('#tile-focal .evidence-tile').waitFor({ state: 'visible' });
+      const focal = await page.locator('#tile-focal .evidence-tile').evaluate((node) => {
+        const style = getComputedStyle(node);
+        return { radius: style.borderRadius, shadow: style.boxShadow };
+      });
+      if (theme === 'light') {
+        assert.equal(focal.radius, '6px');
+        assert.doesNotMatch(focal.shadow, /inset/, 'Light focal vessel keeps its fixed-point elevation stack');
+      } else {
+        assert.equal(focal.radius, '4px');
+        assert.match(focal.shadow, /rgb\(69, 61, 53\) 0px 0px 0px 1px inset/,
+          'Dark focal retains its #453d35 vessel edge');
+      }
+
+      await page.locator('#tile-focal .tile-fullscreen').click();
+      await page.locator('#tile-field[data-fullscreen-tile]').waitFor();
+      const fullscreen = await page.locator('#tile-focal .evidence-tile').evaluate((node) => {
+        const style = getComputedStyle(node);
+        return { radius: style.borderRadius, shadow: style.boxShadow };
+      });
+      if (theme === 'light') assert.deepEqual(fullscreen, { radius: '0px', shadow: 'none' });
+      else {
+        assert.equal(fullscreen.radius, '4px');
+        assert.match(fullscreen.shadow, /rgb\(69, 61, 53\) 0px 0px 0px 1px inset/,
+          'Dark fullscreen retains its #453d35 vessel edge');
+      }
+    } finally { await page.close(); }
   }
 });
 

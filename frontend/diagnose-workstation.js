@@ -310,8 +310,8 @@ const chartColors = (root) => {
      the two nested measured regions without competing with those rails or the
      median. Read the live color-scheme rather than restating a theme class. */
   const dark = getComputedStyle(root).colorScheme === 'dark';
-  const bandOuterMix = dark ? '26%' : '14%';
-  const bandInnerMix = dark ? '30%' : '34%';
+  const bandOuterMix = dark ? '22%' : '14%';
+  const bandInnerMix = dark ? '26%' : '34%';
   return {
     ...c,
     surface2: c['surface-2'],
@@ -350,7 +350,7 @@ const chartColors = (root) => {
       const hex = css('--ck-rail').replace('#', '');
       const wide = hex.length === 3 ? [...hex].map((h) => h + h).join('') : hex;
       const [r, g, b] = [0, 2, 4].map((i) => parseInt(wide.slice(i, i + 2), 16));
-      return `rgba(${r},${g},${b},0.10)`;
+      return `rgba(${r},${g},${b},${dark ? '0.06' : '0.10'})`;
     })(),
     windowEdge: `color-mix(in srgb, ${c.primary} 72%, transparent)`,
   };

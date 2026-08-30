@@ -279,6 +279,26 @@ test('every multi-series evidence form carries an on-chart legend', () => {
   assert.ok(options.every(({ legend }) => legend.data.length > 0));
 });
 
+test('carb-ratio target boundaries stay rails while meal runs stay distinct strands (#255)', () => {
+  const data = fixture('../mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json')
+    .cases.directional_only;
+  const entry = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'carb-ratio');
+  const option = entry.option('event', { data, range: [80, 220], mini: false });
+  const target = option.series.find(({ name }) => name === 'Target range');
+  const runs = option.series.filter(({ name, type }) => type === 'line' &&
+    (name === 'Support run' || name === 'Directional-only run'));
+
+  assert.equal(target.markArea, undefined, 'the target range does not fill the evidence plot');
+  assert.deepEqual(target.markLine.data, [{ yAxis: 70 }, { yAxis: 180 }]);
+  assert.equal(target.markLine.lineStyle.type, 'dashed');
+  assert.deepEqual(runs.map(({ name, symbol, data: points, lineStyle }) =>
+    ({ name, symbol, points, type: lineStyle.type, opacity: lineStyle.opacity })),
+  runs.map(({ name, symbol, data: points, lineStyle }) => ({
+    name, symbol, points, type: lineStyle.type,
+    opacity: name === 'Support run' ? .34 : .20,
+  })), 'only the locked strand opacity pair changes presentation');
+});
+
 test('feed-only forms do not invent unavailable fit or current-setting values', () => {
   const isf = fixture('../mockups/diagnose-workstation.synthetic/isf-rest-window-evidence.capture.json').payload;
   const ic = fixture('../mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json')
@@ -452,7 +472,7 @@ test('the event-comparison entry draws the shipped cohort series at the injected
     assert.ok(option.series.some((series) => series.id === `${cohort.key}:spread:supported`));
   }
   assert.ok(option.series.some((series) => series.name === 'Target range'),
-    'the target band rides with the traces');
+    'the target rails ride with the traces');
 });
 
 test('the event-comparison entry carries the dock mini rank through the registry', () => {

@@ -1432,13 +1432,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         """
         from .backtest import backtest as run_backtest
 
-        def compute() -> dict:
-            with Store.open(db_path) as store:
-                basal = store.basal_events()
-                cgm = store.cgm_readings()
-                bolus = store.bolus_events()
-                pump = store.pump_events()
-            bt = run_backtest(basal, cgm, bolus, pump, holdout_days=holdout_days)
+        def result(bt) -> dict:
             return {
                 "holdout_days": bt.holdout_days,
                 "train_days": bt.train_days,
@@ -1453,16 +1447,20 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 "improvement": bt.improvement,
             }
 
+        def compute() -> dict:
+            with Store.open(db_path) as store:
+                basal = store.basal_events()
+                cgm = store.cgm_readings()
+                bolus = store.bolus_events()
+                pump = store.pump_events()
+            bt = run_backtest(basal, cgm, bolus, pump, holdout_days=holdout_days)
+            return result(bt)
+
         key = ("backtest", holdout_days)
         def snapshot_compute(store):
             bt = run_backtest(store.basal_events(), store.cgm_readings(),
                               store.bolus_events(), store.pump_events(), holdout_days=holdout_days)
-            return {"holdout_days": bt.holdout_days, "train_days": bt.train_days,
-                    "test_clean_minutes": bt.test_clean_minutes, "mae_suggested": bt.mae_suggested,
-                    "n_suggested": bt.n_suggested, "mae_current": bt.mae_current,
-                    "n_current": bt.n_current, "mae_suggested_matched": bt.mae_suggested_matched,
-                    "mae_current_matched": bt.mae_current_matched, "n_matched": bt.n_matched,
-                    "improvement": bt.improvement}
+            return result(bt)
         return (fixed_response(fixed(key, "backtest-v1", snapshot_compute)) if holdout_days == 2
                 else cache.get_or_compute(key, compute))
 

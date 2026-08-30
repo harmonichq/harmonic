@@ -2316,14 +2316,14 @@ html.dark .viz .tie:hover::before { opacity:.13; }
 
     // #101: the pure chart-option builders live in their own vue-free module so
     // their returned option JSON is node-testable. The shared pure helpers
-    // (fmt/direction/LANE_SPAN) are re-imported here so there is one source of
+    // (fmt/LANE_SPAN) are re-imported here so there is one source of
     // truth. The shell retains its live ECharts instances and DOM integration
     // below, and injects page-specific state, filters, and resolved visual
     // tokens into the imported builders. They return option JSON without
     // reaching back into the page shell.
     import {
       buildLanesOption,
-      fmt, direction, LANE_SPAN,
+      fmt, LANE_SPAN,
     } from '/assets/chart-builders.js';
 
     // #136: pure date/bounds helpers for the Daily Report day-picker nav
@@ -4983,10 +4983,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
         function selectScnPattern(p) {
           scnActiveLever.value = p.lever;
         }
-        // fmt / direction moved to chart-builders.js (#101).
-        function directionBadgeClass(s) {
-          return direction(s) === 'on target' ? 'ok' : 'warn';
-        }
+        // fmt moved to chart-builders.js (#101).
 
         function severityBadgeClass(severity) {
           if (severity === 'high') return 'err';
@@ -5584,7 +5581,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
           dataQualityDismissed, thinEpochs, thinEpochsSummary, dataQualityModalOpen, openDataQuality, closeDataQuality,
           dashboardGroups, icFindings, itemKey,
           settlingByParam, basalSettling, settlingCountdown,
-          fmt, direction, directionBadgeClass, severityBadgeClass, findingTitle, mealsStartHighFinding,
+          fmt, severityBadgeClass, findingTitle, mealsStartHighFinding,
           inPlan, togglePlan,
           planItems, planHistory, applyingPlan, planReviewGuidance,
           // #99 Plan layers (deliverable via plan.js)

@@ -11,12 +11,10 @@ Base commit: `9564cd378dabb640a3f814115d9ab0131012910c` (detached,
 `Triage dark Diagnose retheme`) in `/Users/connor/worktrees/harmonic/255-base`.
 All `dark/base` and `light/base` PNGs were recaptured from this checkout.
 
-Revision capture source: `2766b5d0614bfedab4a6b1a03ba1e42221e17f53` in
-`/Users/connor/worktrees/harmonic/255-c3` (`Merge Light preservation review
-fix for ticket 255`). The following evidence-record-only commit changes no
-rendered source; it records the captures produced from that reviewed state. The
-shipped revision includes the Dark expected-color correction in
-`frontend/diagnose-workstation.browser.test.mjs`.
+Revision capture source: `d60c657f32b9769343f47d7a8defac704a52676d` in
+`/Users/connor/worktrees/harmonic/255` (`Restore Dark glucose boundary
+contrast`). The following evidence-record-only commit changes no rendered
+source; it records the captures produced from that reviewed state.
 
 ## Replayable commands
 
@@ -36,7 +34,7 @@ uv run harmonic serve --no-fetch --db mockups/revise-e2e.synthetic/harmonic.sqli
 ```
 
 ```sh
-cd /Users/connor/worktrees/harmonic/255-c3
+cd /Users/connor/worktrees/harmonic/255
 uv run harmonic serve --no-fetch --db mockups/revise-e2e.synthetic/harmonic.sqlite --port 31782
 ```
 
@@ -52,7 +50,7 @@ node frontend/diagnose-workstation-behavior.replay.mjs
 ```
 
 ```sh
-cd /Users/connor/worktrees/harmonic/255-c3
+cd /Users/connor/worktrees/harmonic/255
 PLAYWRIGHT_MODULE=/Users/connor/.cache/harmonic-browser-gate/pw/node_modules/playwright \
 VENDOR_DIR=/Users/connor/.cache/harmonic-browser-gate/vendor \
 PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json \
@@ -72,7 +70,7 @@ cd /Users/connor/worktrees/harmonic/255-base
 eval "$(python3 scripts/ensure_browser_gate_env.py)"
 PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json \
 DIAGNOSE_SCREENSHOT_VARIANT=base \
-DIAGNOSE_SCREENSHOT_DIR=/Users/connor/worktrees/harmonic/255-c3/openspec/changes/dark-retheme-diagnose-workstation/evidence/dark/base \
+DIAGNOSE_SCREENSHOT_DIR=/Users/connor/worktrees/harmonic/255/openspec/changes/dark-retheme-diagnose-workstation/evidence/dark/base \
 node --test frontend/diagnose-workstation.browser.test.mjs
 ```
 
@@ -81,25 +79,25 @@ cd /Users/connor/worktrees/harmonic/255-base
 eval "$(python3 scripts/ensure_browser_gate_env.py)"
 PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json \
 DIAGNOSE_SCREENSHOT_VARIANT=base \
-DIAGNOSE_SCREENSHOT_DIR=/Users/connor/worktrees/harmonic/255-c3/openspec/changes/dark-retheme-diagnose-workstation/evidence/light/base \
+DIAGNOSE_SCREENSHOT_DIR=/Users/connor/worktrees/harmonic/255/openspec/changes/dark-retheme-diagnose-workstation/evidence/light/base \
 node --test frontend/diagnose-workstation.browser.test.mjs
 ```
 
 ```sh
-cd /Users/connor/worktrees/harmonic/255-c3
+cd /Users/connor/worktrees/harmonic/255
 eval "$(python3 scripts/ensure_browser_gate_env.py)"
 PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json \
 DIAGNOSE_SCREENSHOT_VARIANT=revision \
-DIAGNOSE_SCREENSHOT_DIR=/Users/connor/worktrees/harmonic/255-c3/openspec/changes/dark-retheme-diagnose-workstation/evidence/dark/revision \
+DIAGNOSE_SCREENSHOT_DIR=/Users/connor/worktrees/harmonic/255/openspec/changes/dark-retheme-diagnose-workstation/evidence/dark/revision \
 node --test frontend/diagnose-workstation.browser.test.mjs
 ```
 
 ```sh
-cd /Users/connor/worktrees/harmonic/255-c3
+cd /Users/connor/worktrees/harmonic/255
 eval "$(python3 scripts/ensure_browser_gate_env.py)"
 PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json \
 DIAGNOSE_SCREENSHOT_VARIANT=revision \
-DIAGNOSE_SCREENSHOT_DIR=/Users/connor/worktrees/harmonic/255-c3/openspec/changes/dark-retheme-diagnose-workstation/evidence/light/revision \
+DIAGNOSE_SCREENSHOT_DIR=/Users/connor/worktrees/harmonic/255/openspec/changes/dark-retheme-diagnose-workstation/evidence/light/revision \
 node --test frontend/diagnose-workstation.browser.test.mjs
 ```
 
@@ -112,7 +110,9 @@ true-base checkout; the integrated ticket worktree was not used.
   heavier, less-separated material hierarchy.
 - `dark/revision/` — the revision visibly replaces that field with distinct
   near-black/brown Dark material roles while retaining rails, vessel edges,
-  dock states, and quieter carb-ratio strands.
+  dock states, and quieter carb-ratio strands. Its outside-window scrim is less
+  washed out and its composited percentile boundaries clear the graphical
+  contrast floor.
 - `light/base/` and `light/revision/` — inspection confirms the restored
   fixed-point Light vessel cascade remains unchanged; no Light design ruling
   changed.
@@ -167,11 +167,9 @@ both variants because that existing capture helper owns those labels.
 
 ## Verification result
 
-The true-base Dark and Light runs each report 42/42. The restored-Light Dark
-and Light revision matrices each report 43/44: `#215` and the Light
-fixed-point cascade contract are green, with only issue #258's known 2.94:1
-`__p75:4` boundary against its 3:1 floor deferred. The deterministic
-fullscreen containment sweep within every run is green. Issue #258 owns the
-remaining hero-chart boundary defect, so this chunk deliberately does not
-change hero-chart rendering, percentile bands, median, scrim, or legend
-behavior.
+The true-base Dark and Light runs each report 42/42. The final revision reports
+44/44: `#215`, the Light fixed-point cascade, and the 3:1 composited boundary
+contract are green. The deterministic fullscreen containment sweep is green.
+Issue #258 continues to own removal of the unwanted percentile outlines,
+median hierarchy, and legend artifacts; this CI repair only restores the
+existing boundary contract and reduces the outside-window scrim strength.

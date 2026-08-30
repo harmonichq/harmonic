@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 
 from ciq_autotune.events import BasalEvent, BolusEvent, CgmReading
 from ciq_autotune.insulin import iob_fraction
-from ciq_autotune.safety import SafetyConfig, Status, apply_safety_caps, cap
+from ciq_autotune.safety import SafetyConfig, Status, cap
 from ciq_autotune.backtest import (
     DiaPoint,
     DiaSweep,
@@ -17,7 +17,7 @@ from ciq_autotune.backtest import (
     dia_sweep,
     render_dia_sweep,
 )
-from ciq_autotune.model import ModelConfig, suggest_basal_profile
+from ciq_autotune.model import ModelConfig
 from ciq_autotune.uncertainty import Estimate
 
 CFG = SafetyConfig()
@@ -60,7 +60,7 @@ class UncertaintyGateTest(unittest.TestCase):
     support a sign (issue #54): wide, n<3, or the CI strictly spans current."""
 
     def test_no_estimate_keeps_old_behavior(self):
-        # Legacy caller (apply_safety_caps) passes no estimate -> unchanged.
+        # A caller without an estimate retains the ordinary directional verdict.
         self.assertEqual(cap(1.0, 1.1, CFG)[1], Status.RAISE)
 
     def test_wide_estimate_is_insufficient(self):
@@ -126,22 +126,6 @@ class StatusActionableTest(unittest.TestCase):
         self.assertEqual(str(Status.CAPPED_RAISE), "capped (raise)")
 
 
-class AdvisoryTest(unittest.TestCase):
-    def test_join_carries_suggestion_and_recommendation(self):
-        # Delivered 1.4 vs a revealed current of 1.0 at 03:00 -> a +40% move that
-        # the ±20% cap pulls back to a capped raise. One Advisory carries both the
-        # model fields and the recommendation, so no slot re-join is needed.
-        basal, cgm = _disagreement_dataset([1, 2, 3])
-        advisory = apply_safety_caps(suggest_basal_profile(basal, cgm, [], []))
-        slot = next(s for s in advisory.slots if s.label == "03:00")
-        self.assertEqual(slot.current, 1.0)
-        self.assertGreater(slot.clean_minutes, 0)
-        self.assertIsNotNone(slot.suggested)
-        self.assertEqual(slot.status, Status.CAPPED_RAISE)
-        self.assertTrue(slot.actionable)
-        self.assertGreaterEqual(advisory.actionable_count, 1)
-
-
 def _seg(day, h, m, dur, rate, dtype, profile_rate=None):
     return BasalEvent(t=datetime(2022, 6, day, h, m), delivery_type=dtype,
                       duration_mins=dur, basal_rate=rate,
@@ -159,10 +143,8 @@ def _disagreement_dataset(days):
     (revealed by one 5-min profileDelivery sliver on day 1, at 03:00) is 1.0.
     No boluses, so every flat in-range minute is clean.
 
-    The 03:00 sliver carries the programmed rate two ways so both paths recover
-    ``current`` at 1.0: ``basal_rate`` for the legacy profileDelivery scan the
-    Advisory test still exercises, and ``profile_basal_rate`` for the dense feed
-    the shipped estimator (and the reworked backtest, #84) reads."""
+    The 03:00 sliver carries the programmed rate as ``profile_basal_rate`` for the
+    dense feed the shipped estimator (and the reworked backtest, #84) reads."""
     basal, cgm = [], []
     for d in days:
         if d == days[0]:

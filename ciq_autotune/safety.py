@@ -19,9 +19,8 @@ from __future__ import annotations
 import enum
 import math
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Sequence
+from typing import Dict, Optional, Sequence
 
-from .model import ProfileSuggestion
 from .uncertainty import Estimate
 
 # A directional recommendation needs at least this many independent days behind
@@ -147,36 +146,6 @@ class SafetyConfig:
     abs_min: float = 0.1          # U/h
     abs_max: float = 3.0          # U/h
     noise_floor: float = 0.05     # U/h; smaller moves report as "no change"
-
-
-@dataclass
-class SlotAdvisory:
-    """One slot's full advisory: the model's suggestion joined with the capped
-    recommendation, assembled once so the renderers only have to format it."""
-
-    slot: int
-    label: str
-    current: Optional[float]      # programmed profile rate, if recoverable
-    suggested: Optional[float]    # model's uncapped suggestion
-    recommended: Optional[float]  # after caps; None when there's nothing to advise
-    clean_minutes: int
-    days: int
-    confidence: str
-    status: Status
-
-    @property
-    def actionable(self) -> bool:
-        return self.status.actionable
-
-
-@dataclass
-class Advisory:
-    slots: List[SlotAdvisory]
-    config: SafetyConfig
-
-    @property
-    def actionable_count(self) -> int:
-        return sum(1 for s in self.slots if s.actionable)
 
 
 def _clamp(x: float, lo: float, hi: float) -> float:
@@ -313,17 +282,3 @@ def apply_harm(current: Optional[float], recommended: Optional[float],
     if status in (Status.RAISE, Status.CAPPED_RAISE):
         return current, Status.HARM_GATED
     return recommended, status
-
-
-def apply_safety_caps(result: ProfileSuggestion,
-                      config: SafetyConfig = SafetyConfig()) -> Advisory:
-    """Join each model suggestion with its capped recommendation into one Advisory."""
-    slots = []
-    for s in result.slots:
-        recommended, status = cap(s.current, s.suggested, config)
-        slots.append(SlotAdvisory(
-            slot=s.slot, label=s.label, current=s.current, suggested=s.suggested,
-            recommended=recommended, clean_minutes=s.clean_minutes, days=s.days,
-            confidence=s.confidence, status=status,
-        ))
-    return Advisory(slots=slots, config=config)

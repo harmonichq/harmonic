@@ -172,4 +172,4 @@ The true-base Dark and Light runs each report 42/42. The final revision reports
 contract are green. The deterministic fullscreen containment sweep is green.
 Issue #258 continues to own removal of the unwanted percentile outlines,
 median hierarchy, and legend artifacts; this CI repair only restores the
-existing boundary contract and reduces the outside-window scrim strength.
+existing boundary contract and reduces the Dark outside-window scrim strength.

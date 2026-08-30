@@ -310,8 +310,8 @@ const chartColors = (root) => {
      the two nested measured regions without competing with those rails or the
      median. Read the live color-scheme rather than restating a theme class. */
   const dark = getComputedStyle(root).colorScheme === 'dark';
-  const bandOuterMix = dark ? '26%' : '14%';
-  const bandInnerMix = dark ? '30%' : '34%';
+  const bandOuterMix = dark ? '22%' : '14%';
+  const bandInnerMix = dark ? '26%' : '34%';
   return {
     ...c,
     surface2: c['surface-2'],
@@ -322,11 +322,7 @@ const chartColors = (root) => {
     gridStrong: c.line,
     bandOuter: `color-mix(in srgb, ${c.primary} ${bandOuterMix}, transparent)`,
     bandInner: `color-mix(in srgb, ${c.primary} ${bandInnerMix}, transparent)`,
-    /* The Dark retheme deepens both envelope fills. Keep the existing measured
-       boundary role, but lift its ink just enough that the final composited
-       stroke still clears 3:1 on either neighboring fill. Light keeps its
-       fixed-point value exactly. */
-    bandEdge: dark ? `color-mix(in srgb, ${c.text} 50%, white)` : c.text,
+    bandEdge: c.text,
     median: c['primary-600'] || c.primary,
     /* The ink for text sitting ON the median fill — the axis-riding value tag
        (term 25). It was read as `colors.onAccent` and never defined anywhere:

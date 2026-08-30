@@ -10,8 +10,9 @@ an `aria-label` alone would not surface.
 
 **Decision.** The chart root carries `role="img"` and the fixed accessible
 name "Glucose bands: 10th to 90th and 25th to 75th percentile ranges; median
-line". The role is part of the contract, and the name is one fixed string — it
-names the chart's mark vocabulary, not its current data. The #204 audit
+line". The role is part of the contract, and the name tracks the chart's mark
+vocabulary, not its current data: a fixed base string, plus one conditional
+clause for the one conditional mark. The #204 audit
 briefly restored the retired meal-bolus track (the backend still publishes
 `pooled.meals`) before the canvas-composition suite's pinned regression
 surfaced the operator's 2026-08-27 ruling — "Please also remove meal markers

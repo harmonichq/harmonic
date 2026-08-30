@@ -60,12 +60,6 @@ export function fmt(v, decimals = 3) {
   return v == null ? '—' : Number(v.toFixed(decimals)).toString();
 }
 
-export function direction(s) {
-  if (s.recommended == null || s.current == null) return null;
-  if (Math.abs(s.recommended - s.current) < 1e-9) return 'on target';
-  return s.recommended > s.current ? 'raise' : 'lower';
-}
-
 export function bolusKind(b) {
   const hasCarbs = (b.carbs || 0) > 0;
   const hasCorrection = (b.bg || 0) > 0;

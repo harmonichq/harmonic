@@ -16,7 +16,7 @@ land in one place even when the raw episode split them (spec §1), and it never
 overrides a meal/high lever (those win by earliest-actionable-by-time).
 
 It **reuses ``correction_stacking``'s primitives** — :class:`BolusIob`,
-:class:`_CgmSeries` slope, and the shared :func:`upstream_cause` gate — with one
+:class:`CgmSeries` slope, and the shared :func:`upstream_cause` gate — with one
 tightening: the slope guard is **stricter**. ``correction_stacking`` only excludes
 a rising chase when BG is *also* >= 180 (a runaway); a *lone* correction needs
 stronger proof it wasn't a rational spike-chase, so **any** BG rising faster than
@@ -39,7 +39,7 @@ from typing import Optional, Sequence
 
 from ...events import BasalEvent, BolusEvent, CgmReading
 from ...insulin import ACCOUNTING_DIA_MIN, BolusIob
-from ...model import _CgmSeries
+from ...model import CgmSeries
 from ..scenario_config import ScenarioConfig
 from .context_gate import GateResult, upstream_cause
 from .correction_stacking import _user_corrections
@@ -192,7 +192,7 @@ def classify_correction_on_iob(
                 mins_to_low=mins_to_low,
             )
 
-    series = _CgmSeries(cgm_readings, timedelta(minutes=scenario_config.cgm_max_stale_min))
+    series = CgmSeries(cgm_readings, timedelta(minutes=scenario_config.cgm_max_stale_min))
     bg_at_correction = series.nearest(driver.t)
     slope = series.slope(driver.t, timedelta(minutes=slope_lookback_min))
 

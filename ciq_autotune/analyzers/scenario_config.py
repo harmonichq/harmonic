@@ -332,7 +332,7 @@ class ScenarioConfig:
     #: (:func:`~ciq_autotune.analyzers.ic.ic_asserts_move`) or not at all.
 
     # --- shared CGM staleness (all slope-reading classifiers) --------------------
-    #: Staleness guard (min) for the ``_CgmSeries``: a gap wider than this leaves the
+    #: Staleness guard (min) for the ``CgmSeries``: a gap wider than this leaves the
     #: slope undefined rather than interpolating across missing data. Shared by the
     #: late-bolus / missed-meal / carb-undercount / correction-stacking / correction-on-IOB
     #: classifiers (they all built ``timedelta(minutes=10)`` locally).

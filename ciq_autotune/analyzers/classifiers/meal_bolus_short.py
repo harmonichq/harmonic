@@ -36,7 +36,7 @@ from datetime import datetime, timedelta
 from typing import Optional, Sequence
 
 from ...events import BasalEvent, BolusEvent, CgmReading
-from ...model import _CgmSeries
+from ...model import CgmSeries
 from ..scenario_config import ScenarioConfig
 from .context_gate import GateResult, upstream_cause
 from .evidence import EvidenceTier, SilenceReason, Verdict
@@ -162,7 +162,7 @@ def classify_meal_bolus_short(
     horizon_min = scenario_config.meal_bolus_short_correction_horizon_min
     correction_floor_u = scenario_config.meal_bolus_short_correction_floor_u
     split_grace_min = scenario_config.meal_bolus_short_dose_split_grace_min
-    series = _CgmSeries(cgm_readings, timedelta(minutes=scenario_config.cgm_max_stale_min))
+    series = CgmSeries(cgm_readings, timedelta(minutes=scenario_config.cgm_max_stale_min))
     slope = series.slope(anchor, timedelta(minutes=slope_lookback_min))
 
     if slope is None:

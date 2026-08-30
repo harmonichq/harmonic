@@ -1126,6 +1126,91 @@ test('Diagnose keeps the Dark material roles ordered and target bounds as rails'
   }
 });
 
+test('Light vessel states retain their fixed-point cascade while Dark owns the retheme', async () => {
+  const browser = await runner.browser();
+  for (const theme of ['light', 'dark']) {
+    const page = await openApp(browser, { state: 'typical', theme, appSource: 'fixture' });
+    try {
+      await page.locator(theme === 'light' ? 'html:not(.dark)' : 'html.dark').waitFor();
+      await page.getByRole('button', { name: '24 h', exact: true }).click();
+      const styles = await page.evaluate(() => {
+        const field = document.querySelector('#tile-field');
+        const selector = '#tile-row .evidence-tile:not([data-selected]):not([data-tail-head])';
+        const style = (node) => {
+          const computed = getComputedStyle(node);
+          return { radius: computed.borderRadius, shadow: computed.boxShadow };
+        };
+        field.removeAttribute('data-dock');
+        field.removeAttribute('data-raised');
+        field.removeAttribute('data-explorer');
+        const general = style(document.querySelector(selector));
+        field.setAttribute('data-dock', 'docked');
+        const docked = style(document.querySelector(selector));
+        const selectedNode = document.querySelector(selector);
+        selectedNode.setAttribute('data-selected', '');
+        const selected = style(selectedNode);
+        selectedNode.removeAttribute('data-selected');
+        selectedNode.setAttribute('data-tail-head', '');
+        const tail = style(selectedNode);
+        selectedNode.removeAttribute('data-tail-head');
+        field.setAttribute('data-raised', '');
+        const raised = style(document.querySelector(selector));
+        field.removeAttribute('data-raised');
+        field.setAttribute('data-explorer', '');
+        const explorer = style(document.querySelector(selector));
+        return { general, docked, selected, tail, raised, explorer };
+      });
+      if (theme === 'light') {
+        assert.equal(styles.general.radius, '2px');
+        assert.match(styles.general.shadow, /inset/, 'Light general tiles keep the fixed-point edge and top highlight');
+        for (const state of ['docked', 'raised', 'explorer']) {
+          assert.equal(styles[state].radius, '4px');
+          assert.doesNotMatch(styles[state].shadow, /inset/, `Light ${state} cells keep their fixed-point shadow stack`);
+        }
+        assert.match(styles.selected.shadow, /rgb\(107, 118, 105\) 0px 0px 0px 1px inset/,
+          'Light selected cells retain their fixed-point strong-rule ring');
+        assert.match(styles.tail.shadow, /color\(srgb 0\.831372 0\.811765 0\.764706 \/ 0\.72\) -5px 0px 0px -4px/,
+          'Light tail-head cells retain their fixed-point edge marker');
+      } else {
+        for (const state of ['general', 'docked', 'selected', 'tail', 'raised', 'explorer']) {
+          assert.equal(styles[state].radius, '4px');
+          assert.match(styles[state].shadow, /rgb\(69, 61, 53\) 0px 0px 0px 1px inset/,
+            `Dark ${state} cells retain the #453d35 vessel edge`);
+        }
+      }
+
+      await page.locator('#tile-field').evaluate((field) => field.removeAttribute('data-explorer'));
+      await page.locator('#tile-row .evidence-tile').first().click();
+      await page.locator('#tile-focal .evidence-tile').waitFor({ state: 'visible' });
+      const focal = await page.locator('#tile-focal .evidence-tile').evaluate((node) => {
+        const style = getComputedStyle(node);
+        return { radius: style.borderRadius, shadow: style.boxShadow };
+      });
+      if (theme === 'light') {
+        assert.equal(focal.radius, '6px');
+        assert.doesNotMatch(focal.shadow, /inset/, 'Light focal vessel keeps its fixed-point elevation stack');
+      } else {
+        assert.equal(focal.radius, '4px');
+        assert.match(focal.shadow, /rgb\(69, 61, 53\) 0px 0px 0px 1px inset/,
+          'Dark focal retains its #453d35 vessel edge');
+      }
+
+      await page.locator('#tile-focal .tile-fullscreen').click();
+      await page.locator('#tile-field[data-fullscreen-tile]').waitFor();
+      const fullscreen = await page.locator('#tile-focal .evidence-tile').evaluate((node) => {
+        const style = getComputedStyle(node);
+        return { radius: style.borderRadius, shadow: style.boxShadow };
+      });
+      if (theme === 'light') assert.deepEqual(fullscreen, { radius: '0px', shadow: 'none' });
+      else {
+        assert.equal(fullscreen.radius, '4px');
+        assert.match(fullscreen.shadow, /rgb\(69, 61, 53\) 0px 0px 0px 1px inset/,
+          'Dark fullscreen retains its #453d35 vessel edge');
+      }
+    } finally { await page.close(); }
+  }
+});
+
 /* LOCK:diagnose-workstation:1 — no page scroll at both required viewports (a
    narrower slice of term 1 than story S22 already owns: S22 covers it for
    the full "every state" contract; this only opens 'typical'). The

@@ -164,11 +164,10 @@ both variants because that existing capture helper owns those labels.
 
 ## Verification result
 
-The true-base Dark and Light runs each report 42/42. This revision recapture's
-Dark run reports 41/43 because the existing intermittent `#215` docked-tile
-timeout recurred alongside issue #258; its Light run reports 42/43 with only
-issue #258's known 2.94:1 `__p75:4` boundary against its 3:1 floor. The
-deterministic fullscreen containment sweep within every run is green. Issue
-#258 owns the remaining hero-chart boundary defect, so this chunk deliberately
-does not change hero-chart rendering, percentile bands, median, scrim, or
-legend behavior.
+The true-base Dark and Light runs each report 42/42. The clean Dark revision
+recapture and its Light counterpart each report 42/43, with only issue #258's
+known 2.94:1 `__p75:4` boundary against its 3:1 floor. The deterministic
+fullscreen containment sweep within every run is green. Issue #258 owns the
+remaining hero-chart boundary defect, so this chunk deliberately does not
+change hero-chart rendering, percentile bands, median, scrim, or legend
+behavior.

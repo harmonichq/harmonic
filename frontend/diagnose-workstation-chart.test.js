@@ -72,7 +72,7 @@ test('#130 · a zero-extent window answers with an empty sample, never a throw',
     assert.deepEqual(windowStats(envelope, range), {
       a: 0, b: 0, median: null, lowest: null, lowestIndex: -1, spread: null, readings: 0,
     }, `${range} reads as an empty sample`);
-    assert.deepEqual(windowSupport(envelope, range), { thinnest: 0, supported: false });
+    assert.deepEqual(windowSupport(envelope, range, 8), { thinnest: 0, supported: false });
   }
 });
 
@@ -138,8 +138,8 @@ test('wrapped windows pool both stretches for stats and support', () => {
   assert.deepEqual(windowStats({ p25, p50, p75, raw }, [1320, 120]), {
     a: 88, b: 95, median: 125, lowest: 100, lowestIndex: 0, spread: 28, readings: 17,
   });
-  assert.deepEqual(windowSupport({ counts }, [1320, 120]), { thinnest: 7, supported: false });
-  assert.deepEqual(windowSupport({ counts }, [1320, 1350]), { thinnest: 12, supported: true });
+  assert.deepEqual(windowSupport({ counts }, [1320, 120], 8), { thinnest: 7, supported: false });
+  assert.deepEqual(windowSupport({ counts }, [1320, 1350], 8), { thinnest: 12, supported: true });
 });
 
 test('renderCanvas draws a wrapped window as two areas with one range label', () => {
@@ -161,7 +161,7 @@ test('renderCanvas draws a wrapped window as two areas with one range label', ()
   const chart = { setOption(next) { option = next; }, off() {}, on() {} };
 
   renderCanvas({ clientWidth: 4000, setAttribute() {} }, { getInstanceByDom() { return chart; } }, {
-    envelope, markers: [], colors, stats: { spread: 27 }, range: [60, 220],
+    envelope, markers: [], colors, supportFloor: 8, stats: { spread: 27 }, range: [60, 220],
     window: [1320, 120], windowLabel: '22:00–02:00',
   });
 
@@ -179,7 +179,7 @@ test('renderCanvas draws a wrapped window as two areas with one range label', ()
   assert.equal(context.markPoint.data.at(-1).label.formatter, 'CONTINUES');
 
   renderCanvas({ clientWidth: 4000, setAttribute() {} }, { getInstanceByDom() { return chart; } }, {
-    envelope, markers: [], colors, range: [40, 300],
+    envelope, markers: [], colors, supportFloor: 8, range: [40, 300],
     window: [15, 105], windowLabel: '00:15–01:45',
   });
   assert.deepEqual(option.series.find((series) => series.name === '__context').markArea.data
@@ -188,7 +188,7 @@ test('renderCanvas draws a wrapped window as two areas with one range label', ()
 
   for (const window of [[1320, 0], [1440, 120]]) {
     renderCanvas({ clientWidth: 4000, setAttribute() {} }, { getInstanceByDom() { return chart; } }, {
-      envelope, markers: [], colors, range: [40, 300], window, windowLabel: 'SELECTED WINDOW',
+      envelope, markers: [], colors, supportFloor: 8, range: [40, 300], window, windowLabel: 'SELECTED WINDOW',
     });
     const degenerateAreas = option.series.find((series) => series.name === '__context').markArea.data
       .filter(([start]) => start.yAxis == null);
@@ -198,7 +198,7 @@ test('renderCanvas draws a wrapped window as two areas with one range label', ()
   }
 
   assert.doesNotThrow(() => renderCanvas({ clientWidth: 4000, setAttribute() {} }, { getInstanceByDom() { return chart; } }, {
-    envelope, markers: [], colors, range: [40, 300],
+    envelope, markers: [], colors, supportFloor: 8, range: [40, 300],
     window: [0, 0], windowLabel: 'SELECTED WINDOW',
   }));
   assert.equal(option.series.find((series) => series.name === '__context').markArea.data
@@ -220,7 +220,7 @@ test('a tile landing never changes the already-drawn strip range', () => {
   let option = null;
   const chart = { setOption(next) { option = next; }, off() {}, on() {} };
   const paint = () => renderCanvas({ clientWidth: 1200, setAttribute() {} }, { getInstanceByDom() { return chart; } }, {
-    envelope, colors, range: stripGlucoseRange(envelope), window: [0, 360], windowLabel: '00:00–06:00',
+    envelope, colors, supportFloor: 8, range: stripGlucoseRange(envelope), window: [0, 360], windowLabel: '00:00–06:00',
   });
 
   paint();
@@ -248,7 +248,7 @@ test('slice 4 · the outside-the-gates scrim is the exact complement of the wind
   let option = null;
   const chart = { setOption(next) { option = next; }, off() {}, on() {} };
   const render = (extra) => renderCanvas({ clientWidth: 4000, setAttribute() {} }, { getInstanceByDom() { return chart; } }, {
-    envelope, markers: [], colors, range: [40, 300], ...extra,
+    envelope, markers: [], colors, supportFloor: 8, range: [40, 300], ...extra,
   });
   // the dim is a CUSTOM series of rects (a markArea painted nothing in the
   // live app while every option dump swore it existed); its data is the
@@ -312,7 +312,7 @@ test('renderCanvas pans labels and every data series into dimmed neighbouring da
   const chart = { setOption(next) { option = next; }, off() {}, on() {} };
 
   renderCanvas({ clientWidth: 1200, setAttribute() {} }, { getInstanceByDom() { return chart; } }, {
-    envelope, markers: [{ index: 4, count: 1, minute: 60, medianCarbs: 20 }], colors,
+    envelope, markers: [{ index: 4, count: 1, minute: 60, medianCarbs: 20 }], colors, supportFloor: 8,
     range: [40, 300],
     window: [1320, 120], displayWindow: [1320, 1560], displayOffset: 135,
   });
@@ -359,7 +359,7 @@ test("#130 · a full-travel slide keeps its live band on the unrolled axis", () 
     [[1320, 1560], 135, ['1320', '1560']],       // in range: untouched
   ]) {
     renderCanvas({ clientWidth: 1200, setAttribute() {} }, { getInstanceByDom() { return chart; } }, {
-      envelope, markers: [], colors, range: [40, 300],
+      envelope, markers: [], colors, supportFloor: 8, range: [40, 300],
       window: [1320, 60], displayWindow, displayOffset,
     });
     const axis = option.xAxis[0].data;
@@ -393,7 +393,7 @@ test('#130 · the docked readout reads the pooled bin under a panning axis point
   const chart = { setOption() {}, off() {}, on(name, fn) { handlers[name] = fn; } };
   let reported = null;
   const render = (extra) => renderCanvas({ clientWidth: 1200, setAttribute() {} }, { getInstanceByDom() { return chart; } }, {
-    envelope, markers: [], colors, range: [40, 300], window: [1320, 120],
+    envelope, markers: [], colors, supportFloor: 8, range: [40, 300], window: [1320, 120],
     onHover: (item) => { reported = item; }, ...extra,
   });
 
@@ -542,7 +542,7 @@ test('#204 · the legend is retired for an accessible chart name and the band ou
   const attrs = new Map();
   const el = { clientWidth: 1200, setAttribute: (name, value) => attrs.set(name, value) };
   renderCanvas(el, { getInstanceByDom() { return chart; } }, {
-    envelope, colors, range: [40, 300], window: [360, 720], windowLabel: '06:00–12:00',
+    envelope, colors, supportFloor: 8, range: [40, 300], window: [360, 720], windowLabel: '06:00–12:00',
   });
 
   assert.equal(option.legend, undefined, 'no legend rides the plot');
@@ -566,7 +566,7 @@ test('#204 · the legend is retired for an accessible chart name and the band ou
 
   // a drilled day trace joins the accessible name; the base name stays fixed
   renderCanvas(el, { getInstanceByDom() { return chart; } }, {
-    envelope, colors, range: [40, 300], window: [360, 720], windowLabel: '06:00–12:00',
+    envelope, colors, supportFloor: 8, range: [40, 300], window: [360, 720], windowLabel: '06:00–12:00',
     trace: envelope.p50.slice(),
   });
   assert.equal(attrs.get('aria-label'),

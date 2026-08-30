@@ -38,6 +38,7 @@ from ciq_autotune.analyzers.scenario.levers import Exposure, Lever, exposure, ti
 from ciq_autotune.analyzers.scenario.opportunities import Opportunity
 from ciq_autotune.events import BasalEvent, BolusEvent, CarbEntry, CgmReading
 from ciq_autotune.finding_case_file import Member, PreparedCases, _opaque, wrap
+from ciq_autotune.safety import _MIN_SUPPORTED_NIGHTS
 from ciq_autotune.store import Store
 from ciq_autotune.window_membership import WindowQuery
 
@@ -246,7 +247,8 @@ def build_audit():
                           'days': 22, 'evidence': {'points': []},
                           'asserts_move': False, 'safety_status': 'no change'})
     state = {'as_of': WINDOW['end'],
-             'analysis': {'window_days': 30, 'basal': basal, 'behavioral': []},
+             'analysis': {'window_days': 30, 'basal_support_floor': _MIN_SUPPORTED_NIGHTS,
+                          'basal': basal, 'behavioral': []},
              'habit_levers': [], 'trial': None}
     return {**LABEL, 'states': {'trial': state, 'dense': state, 'typical': state, 'empty': state}}
 
@@ -360,6 +362,7 @@ def build_payload(scenarios, evidence, exposures, audit, ic, ic_asserting):
                   'seed. See the module docstring.'),
         'analyze': {'generated_at': f'{WINDOW["end"]}T00:00:00+00:00',
                     'window_days': 30,
+                    'basal_support_floor': audit['states']['trial']['analysis']['basal_support_floor'],
                     'basal': audit['states']['trial']['analysis']['basal'],
                     'ic_blocks': ic['ic_blocks'],
                     'ic_blocks_asserting': ic_asserting['ic_blocks'],

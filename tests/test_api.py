@@ -159,13 +159,15 @@ class ApiTest(unittest.TestCase):
         self.assertEqual(r.json()["schema_version"], SCHEMA_VERSION)
 
     def test_analyze_returns_versioned_result(self):
-        r = self.client.get("/api/analyze", params={"window": 30})
-        self.assertEqual(r.status_code, 200)
-        body = r.json()
-        self.assertEqual(body["schema_version"], SCHEMA_VERSION)
-        self.assertEqual(len(body["basal"]), 48)
-        self.assertIn("isf", body)
-        self.assertIn("behavioral", body)
+        for params in ({"window": 30}, {"window": 30, "pool": True}):
+            r = self.client.get("/api/analyze", params=params)
+            self.assertEqual(r.status_code, 200)
+            body = r.json()
+            self.assertEqual(body["schema_version"], SCHEMA_VERSION)
+            self.assertEqual(len(body["basal"]), 48)
+            self.assertEqual(body["basal_support_floor"], 8)
+            self.assertIn("isf", body)
+            self.assertIn("behavioral", body)
 
     def test_analyze_is_cached_two_identical_gets_are_equal(self):
         # #267: two identical GETs return the same payload — the second answers from
@@ -174,6 +176,7 @@ class ApiTest(unittest.TestCase):
         b = self.client.get("/api/analyze", params={"window": 30})
         self.assertEqual(a.status_code, 200)
         self.assertEqual(a.json(), b.json())
+        self.assertEqual(b.json()["basal_support_floor"], 8)
 
     def test_pattern_sweep_serves_payload_with_exact_footnote(self):
         # #378: the read endpoint answers with the versioned sweep payload; its only

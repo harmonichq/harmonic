@@ -25,7 +25,7 @@
 import {
   buildEnvelope, renderCanvas, observeResize, stripGlucoseRange,
   buildSlotLane, cellAtMinute, windowStats, hhmm, windowSpanText,
-  BIN_MINUTES, MIN_SUPPORTED_NIGHTS,
+  BIN_MINUTES,
   snapMinute, snapWindow, commitWindow, commitSlide, minuteAtX, xAtMinute, plotBox, windowSpans,
   buildDayTrace,
   validateHistoryEvents,
@@ -835,13 +835,12 @@ function renderParamLevel(host, spec) {
 }
 
 /** The slot branch: one pushed level, same back gesture as everything else. */
-function renderSlotLevel(host, cell, staged, windowDays, onStage) {
+export function renderSlotLevel(host, cell, staged, windowDays, supportFloor, onStage) {
   const s = cell.slot;
   const e = s.estimate;
   const canStage = cell.asserts;
   const capped = /capped/i.test(s.annotation || '');
-  // the floor, stated in the slot's own numbers
-  const thin = e.n < MIN_SUPPORTED_NIGHTS || e.wide;
+  const thin = (supportFloor != null && e.n < supportFloor) || e.wide;
   renderParamLevel(host, {
     head: `${hhmm(cell.startMin)}–${hhmm(cell.endMin)}`,
     verdict: canStage ? s.safety_status : VERDICT_KEY[cell.verdict],
@@ -861,8 +860,9 @@ function renderSlotLevel(host, cell, staged, windowDays, onStage) {
     canStage,
     isStaged: staged.has(cell.i),
     footNote: thin
-      ? `${e.n} night${e.n === 1 ? '' : 's'} of steady data — below the ${MIN_SUPPORTED_NIGHTS}-night `
-        + `support floor${e.wide ? ' and the interval is wide' : ''}; no direction asserted, `
+      ? `${e.n} night${e.n === 1 ? '' : 's'} of steady data — ${supportFloor == null
+        ? 'the support floor is unavailable'
+        : `below the ${supportFloor}-night support floor`}${e.wide ? ' and the interval is wide' : ''}; no direction asserted, `
         + 'nothing to stage.'
       : 'No direction asserted here, so there is nothing to stage; the number and its interval '
         + 'are shown as measured.',
@@ -1203,6 +1203,7 @@ function boot(root, data, callbacks, signal) {
   // NOTHING stageable, so the lane binds to `trial`, the one state holding a slot
   // that genuinely clears it (07:00, n=20, CI 0.86–1.20, not wide).
   const auditState = audit.states.trial;
+  const supportFloor = auditState.analysis.basal_support_floor;
   const lane = buildSlotLane(auditState.analysis.basal);
 
   /* The app is served an already-pooled glucose envelope. */
@@ -2358,6 +2359,7 @@ function boot(root, data, callbacks, signal) {
       envelope, colors, stats, range: stripGlucoseRange(envelope),
       window: win.range,
       windowLabel: label, trace, onHover: paintReadout,
+      supportFloor,
       displayWindow: dragDisplayWindow, displayOffset: clockPanOffset,
     });
     const chartNode = el('chart');
@@ -3371,7 +3373,7 @@ function boot(root, data, callbacks, signal) {
       return;
     }
     if (f.k === 'slot') {
-      renderSlotLevel(host, f.cell, staged, auditState.analysis.window_days, (cell) => {
+      renderSlotLevel(host, f.cell, staged, auditState.analysis.window_days, supportFloor, (cell) => {
         if (staged.has(cell.i)) staged.delete(cell.i); else staged.add(cell.i);
         // PORT: reach the app's Plan draft as well as the local tally
         callbacks.stage?.({ family: 'basal', key: cell.slot.__planKey }, staged.has(cell.i));

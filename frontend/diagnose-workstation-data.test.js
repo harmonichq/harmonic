@@ -22,7 +22,7 @@ test('envelopeFromPooled renames the server bins onto chart arrays', () => {
 test('toCaptures builds the four mock capture shapes with shared Plan keys', () => {
   const block = { block_id: 425, current_values: [7], start_min: 425, end_min: 610 };
   const payload = {
-    analyze: { generated_at: '2026-08-10T12:00:00Z', window_days: 30,
+    analyze: { generated_at: '2026-08-10T12:00:00Z', window_days: 30, basal_support_floor: 11,
       basal: [{ slot: 2, current: 0.8 }], ic_blocks: [block], isf: [{ current: 36 }] },
     evidence: { pooled, window: { start: '2026-07-11', end: '2026-08-10' } },
     exposures: { window: { start: '2026-07-11', end: '2026-08-10' }, exposures: { meals: {} } },
@@ -35,6 +35,7 @@ test('toCaptures builds the four mock capture shapes with shared Plan keys', () 
   assert.equal(captures.day.isf, 36);
   assert.deepEqual(captures.exposureCapture, payload.exposures);
   assert.equal(captures.audit.states.trial.as_of, '2026-08-10');
+  assert.equal(captures.audit.states.trial.analysis.basal_support_floor, 11);
   assert.equal(captures.params.ic_blocks[0].__planKey, blockKey(block));
 });
 

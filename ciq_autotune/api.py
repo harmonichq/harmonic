@@ -63,6 +63,7 @@ from .isf_rest_window_evidence import prepare_isf_rest_window_evidence
 from .window_membership import WindowQuery
 from .result import SCHEMA_VERSION
 from .result_cache import ResultCache
+from .safety import _MIN_SUPPORTED_NIGHTS
 from .derived_artifacts import (
     discard_artifact, dump_findings, dump_ic_history,
     dump_ic_block_evidence, FixedResult, InputRevisionChanged, is_sidecar_rebuilt,
@@ -87,6 +88,11 @@ SPA_PAGES = ("day", "diagnose", "verify", "plan", "settings", "guide")
 # never escape the directory (no dots, no slashes) into the wider filesystem.
 _KB_DIR = Path(__file__).resolve().parent.parent / "docs" / "kb"
 _KB_SLUG_RE = re.compile(r"[a-z0-9-]+")
+
+
+def _analysis_payload(result) -> dict:
+    """Render the analysis with its backend-owned basal support floor."""
+    return {**result.to_dict(), "basal_support_floor": _MIN_SUPPORTED_NIGHTS}
 
 
 def _latest_instant(store) -> Optional[datetime]:
@@ -231,7 +237,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 pool_agreeing_basal_regimes=True, carb_entries=store.carb_entries(),
                 prompt_responses=store.prompt_responses(),
                 isf_fasting_evidence_sink=captured.append,
-            ).to_dict()
+            )
+            payload = _analysis_payload(payload)
             if len(captured) != 1:
                 raise ValueError("ISF analyzer did not retain fasting evidence")
             # The retained rows are an internal fixed-artifact adjunct: only the
@@ -679,24 +686,27 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         # settled, not merely because the profile was touched recently (ADR 0032).
         def compute() -> dict:
             with Store.open(db_path) as store:
-                return analyze(store, window_days=window,
-                               ignore_setting_changes=ignore_changes,
-                               pool_agreeing_basal_regimes=pool,
-                               carb_entries=store.carb_entries(),
-                               prompt_responses=store.prompt_responses()).to_dict()
+                return _analysis_payload(analyze(
+                    store, window_days=window, ignore_setting_changes=ignore_changes,
+                    pool_agreeing_basal_regimes=pool, carb_entries=store.carb_entries(),
+                    prompt_responses=store.prompt_responses()))
 
         key = ("analyze", window, ignore_changes, pool)
         if window == 30 and not ignore_changes:
             if pool:
                 return fixed_response(
                     canonical_pooled_analysis(window),
-                    lambda value: {key: item for key, item in value.items()
-                                   if key != "_isf_rest_window_steps"},
+                    lambda value: {
+                        **{key: item for key, item in value.items()
+                           if key != "_isf_rest_window_steps"},
+                        "basal_support_floor": _MIN_SUPPORTED_NIGHTS,
+                    },
                 )
-            return fixed_response(fixed(key, "analyze-v1", lambda store: analyze(
+            return fixed_response(fixed(key, "analyze-v1", lambda store: _analysis_payload(analyze(
                 store, window_days=window, ignore_setting_changes=ignore_changes,
                 pool_agreeing_basal_regimes=pool, carb_entries=store.carb_entries(),
-                prompt_responses=store.prompt_responses()).to_dict()))
+                prompt_responses=store.prompt_responses()))),
+                lambda value: {**value, "basal_support_floor": _MIN_SUPPORTED_NIGHTS})
         return cache.get_or_compute(key, compute)
 
     @app.get("/api/scenarios")

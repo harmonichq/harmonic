@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { queryState, renderIsfLevel } from './diagnose-workstation.js';
+import { queryState, renderIsfLevel, renderSlotLevel } from './diagnose-workstation.js';
 import { assertMatchingFindingCasePreparation } from './finding-case-file-validation.js';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 import {
@@ -120,6 +120,32 @@ test('#223 · direction-only Correction factor detail leaves evidence ownership 
       'the rendered footer is limited to actionability');
     assert.equal(elements.some((node) => node.tagName === 'BUTTON'), false,
       'the rendered direction-only detail has no stage affordance');
+  } finally {
+    globalThis.document = originalDocument;
+  }
+});
+
+test('basal detail states the served support floor', () => {
+  const originalDocument = globalThis.document;
+  const element = () => ({
+    className: '', innerHTML: '', children: [], dataset: {},
+    append(...children) { this.children.push(...children); },
+    addEventListener() {},
+  });
+  try {
+    globalThis.document = { createElement: element };
+    const host = element();
+    renderSlotLevel(host, {
+      i: 0, startMin: 0, endMin: 30, asserts: false, verdict: 'insufficient',
+      slot: {
+        current: 0.8, recommended: null, safety_status: 'insufficient evidence',
+        annotation: 'not enough nights of steady data yet to point one way',
+        estimate: { value: 0.8, lo: 0.7, hi: 0.9, n: 3, wide: false },
+      },
+    }, new Set(), 30, 11, () => assert.fail('thin detail cannot stage'));
+
+    const footer = host.children[0].children.find((child) => child.className === 'slot-foot');
+    assert.match(footer.innerHTML, /below the 11-night support floor/);
   } finally {
     globalThis.document = originalDocument;
   }

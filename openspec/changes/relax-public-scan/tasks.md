@@ -24,7 +24,7 @@
 
 - [x] Run the fast gate, the publishable-tree scan over a materialised tree, and
       the workstation replay browser gate.
-- [ ] Record red/green evidence here, run `/review` at Full depth, and resolve
+- [x] Record red/green evidence here, run `/review` at Full depth, and resolve
       every blocking finding before opening one pull request. Do not merge.
 
 ### Red/green evidence
@@ -54,4 +54,19 @@
 
 ### Full review
 
-- Pending.
+- **Round 1:** Standards checked all 18 enumerated rules and found every one
+  holding, having executed the three repository guards, the scan's own Rule 5,
+  pin and shipped-config test classes, and the config parser against the head
+  tree. Spec checked 23 order items and 8 risk entries and found no findings and
+  no scope creep. Zero blocking findings, so no fix round followed.
+- **Non-blocking observations, all ruled out of scope by the order:** the change
+  writes no `design.md` (the order says none is needed, because the decision is
+  the operator's ruling already recorded in the scope ledger); the sanctioner's
+  name is now three literals in the replay driver, which matches how that file
+  already writes it elsewhere; and two historical scope ledgers still describe
+  the retired rule, which the order's boundaries forbid editing because they are
+  dated records and the public tree excludes them.
+- **Reviewer coverage note:** both reviewers ran sandboxed and could neither
+  launch Chromium nor materialise a public tree, so they took the browser gate
+  and the tree scan from the evidence above. The coordinator ran both legs
+  unsandboxed; their real output is recorded above.

@@ -70,3 +70,10 @@ None. Frontier empty after round 1.
 ## Spawned tasks
 
 None yet.
+
+## Review rounds
+
+- Panel 1 (Terra, 3 rounds): 6 authoring blockers R1, 2 authoring blockers R2
+  (one injected-adjacent: the R1 legend fix left the contract vague), 1 injected
+  blocker R3 (aria-label on a generic div, introduced by the R2 fix).
+  Countersigned on rev4.

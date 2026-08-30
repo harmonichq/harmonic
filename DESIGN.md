@@ -106,7 +106,11 @@ components:
 > request #37): parchment
 > `#F3EADB`/`#EBE0CF`/`#E3D7C5` became bone `#FAF8F4`/`#F0EEE8`/`#E7E4DC` over a
 > darker `#C3BFB4` rule, with the saved chroma spent on ink and marks. Values
-> only — no term of #736 was reopened, and dark is unchanged.
+> only — no term of #736 was reopened at that point. Dark was subsequently
+> re-settled by **ADR 255** (issue #255): one warm tonal ladder now owns the
+> Diagnose desk, well, field, sheet, rail, rule, edge, and ink roles; chart
+> wells sit below sheets; vessels use one visible edge; spotlight elevation is
+> shadow-only; and glucose targets use boundary rails instead of a filled slab.
 > The sections here still describe component anatomy and voice.
 > The shell is locked **by role** (chrome bar · instrument rail · pane header rail ·
 > pane body · dock floor), not by surface class: a rule scoped to `.dw` left Verify
@@ -192,6 +196,14 @@ Two committed brand colors (teal, terracotta) carry identity; a much larger set 
 - **Ink** (`--text`, `#1B2126` / `#E9EAEC`): body text.
 - **Ash** (`--muted`, `#69727B` / `#93979E`): secondary text, labels, placeholders. Meets 4.5:1 against `--bg` in both themes.
 - **Hairline** (`--line`, `#E3E7EA` / `#2C2E33`): all borders and dividers.
+
+For the Diagnose Dark workstation, ADR 255's shipped role ladder supersedes
+the legacy Dark examples above: desk `#0F0D0B`, chart well `#14120F`, field
+`#1E1A17`, sheet `#221E1B`, rail `#2B2622`, rule `#3F3833`, vessel edge
+`#453D35`, and inks `#F2EDE2` / `#CFC8BD` / `#A49C90` (nav `#C6BFB3`).
+The `--wk-*`, `--mk-*`, `--ck-*`, and compatibility namespaces derive from
+those roles; they are not independent palettes. Forest green remains confined
+to data marks and burnt orange to interaction.
 
 ### Data Semantics (domain-specific, not brand)
 These encode meaning in glucose/insulin charts and are never used decoratively:

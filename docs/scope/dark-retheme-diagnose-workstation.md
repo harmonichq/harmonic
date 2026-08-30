@@ -49,3 +49,24 @@ file outside the closed expected diff returns to triage.
 None during triage. The approved work order will define three implementation
 sub-orders; no implementation starts until the work order is posted and the
 ticket is started.
+
+## Delivery outcome
+
+- Production styling and chart grammar landed in three reviewed chunks without
+  changing the frozen behavior ledger, advisory computation, staging, fixtures,
+  mobile Day hero, or Light theme.
+- Chunk 1 converged after two targeted review rounds; its Light vessel-edge
+  regression was corrected before integration.
+- Chunk 2 reached the three-round review cap on a split CSS lexer. The author
+  then unified selector discovery, rule extent, and role validation behind one
+  lexical mask; executable adversarial cases and coordinator browser checks
+  passed. No prohibited fourth review round was opened, so the capped review is
+  carried into the pull-request record.
+- Chunk 3 converged at the third targeted round after correcting true-base
+  provenance, recording replayable capture commands and paths, and rerunning an
+  intermittent #215 dock timeout cleanly.
+- The unchanged Diagnose replay passed 141/141 stories on the true base and the
+  revision. The committed record contains 120 synthetic Dark/Light captures and
+  documents the complete verification result.
+- Hero glucose-chart wash, percentile boundaries, median contrast, and legend
+  artifacts remain outside this change and are tracked separately in #258.

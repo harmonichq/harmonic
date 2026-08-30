@@ -11,11 +11,12 @@ Base commit: `9564cd378dabb640a3f814115d9ab0131012910c` (detached,
 `Triage dark Diagnose retheme`) in `/Users/connor/worktrees/harmonic/255-base`.
 All `dark/base` and `light/base` PNGs were recaptured from this checkout.
 
-Revision capture source: `c357bafef29a1894e80d2a73c0d636180e049755` in
-`/Users/connor/worktrees/harmonic/255-c3`. The following evidence-record-only
-commit changes no rendered source; it records the captures produced from that
-reviewed state. The shipped revision includes the Dark expected-color correction
-in `frontend/diagnose-workstation.browser.test.mjs`.
+Revision capture source: `2766b5d0614bfedab4a6b1a03ba1e42221e17f53` in
+`/Users/connor/worktrees/harmonic/255-c3` (`Merge Light preservation review
+fix for ticket 255`). The following evidence-record-only commit changes no
+rendered source; it records the captures produced from that reviewed state. The
+shipped revision includes the Dark expected-color correction in
+`frontend/diagnose-workstation.browser.test.mjs`.
 
 ## Replayable commands
 
@@ -112,16 +113,18 @@ true-base checkout; the integrated ticket worktree was not used.
 - `dark/revision/` — the revision visibly replaces that field with distinct
   near-black/brown Dark material roles while retaining rails, vessel edges,
   dock states, and quieter carb-ratio strands.
-- `light/base/` and `light/revision/` — the true-base and revision captures
-  remain materially consistent; no Light design ruling changed.
+- `light/base/` and `light/revision/` — inspection confirms the restored
+  fixed-point Light vessel cascade remains unchanged; no Light design ruling
+  changed.
 
 The `build/typical` captures are present at 1440x900 and 1280x800 in both
 themes. Every `fullscreen-*` family is present at 2084x450 and 2084x742 in
 both themes. Direct image inspection covered the desktop pairs and each
 fullscreen family across base/revision. The Dark 1440x900 pair visibly differs
-as expected (base green field versus revision's separate Dark roles); Light
-remains consistent. No rendered correction beyond the allowed expected-color
-assertion was made.
+as expected (base green field versus revision's separate Dark roles), while
+the Dark revision is unchanged by the Light restoration. Light remains
+consistent with its base/fixed-point vessel treatment. No rendered correction
+beyond the allowed expected-color assertion was made.
 
 The 30 leaf paths below occur beneath each of `dark/base`, `dark/revision`,
 `light/base`, and `light/revision`, for 120 committed PNGs total:
@@ -164,9 +167,10 @@ both variants because that existing capture helper owns those labels.
 
 ## Verification result
 
-The true-base Dark and Light runs each report 42/42. The clean Dark revision
-recapture and its Light counterpart each report 42/43, with only issue #258's
-known 2.94:1 `__p75:4` boundary against its 3:1 floor. The deterministic
+The true-base Dark and Light runs each report 42/42. The restored-Light Dark
+and Light revision matrices each report 43/44: `#215` and the Light
+fixed-point cascade contract are green, with only issue #258's known 2.94:1
+`__p75:4` boundary against its 3:1 floor deferred. The deterministic
 fullscreen containment sweep within every run is green. Issue #258 owns the
 remaining hero-chart boundary defect, so this chunk deliberately does not
 change hero-chart rendering, percentile bands, median, scrim, or legend

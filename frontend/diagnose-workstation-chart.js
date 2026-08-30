@@ -546,12 +546,6 @@ function bandPair(name, base, span, stack, color, z) {
   ];
 }
 
-const edgeLine = (name, data, color, z) => ({
-  name, type: 'line', z, data: data.map(gap), symbol: 'none', silent: true,
-  smooth: 0.25, animation: false,
-  lineStyle: { color, width: 1.5, type: 'solid', opacity: 1 },
-});
-
 const DISPLAY_AXIS = Array.from({ length: BIN_COUNT * 3 }, (_, index) =>
   String((index - BIN_COUNT) * BIN_MINUTES));
 
@@ -777,29 +771,11 @@ export function renderCanvas(el, echarts, opts) {
       // plot ceiling. The label band needs ~18px; the rest goes to the plot.
       { left: GRID.left, right: GRID.right, top: 20, bottom: 26 },
     ],
-    /* THE ONLY MARK KEY. The overlay chips are gone, so this legend carries the
-       whole naming job — and it must not be mistakable for controls: silent and
-       non-selectable (no hover state, no pointer cursor, nothing to click), no
-       container, no border, no fill behind it.
-
-       Every swatch replicates its mark 1:1, and the way to guarantee that is to
-       NOT override `icon` on anything that can draw itself: a line series then
-       renders its own stroke at its own width (Median's 2.4px, That day's
-       1.6px). Only the two
-       stacked area bands need an explicit rect, because their inherited glyph
-       would be a line rather than a fill — and each is filled with the very
-       expression its band uses. */
-    legend: {
-      show: true, top: 0, right: GRID.right, itemWidth: 12, itemHeight: 8, itemGap: 16,
-      selectedMode: false, silent: true,
-      textStyle: { color: axisText, fontSize: 10 },
-      data: [
-        { name: '10–90th', icon: 'rect', itemStyle: { color: recede(colors.bandOuter, 45), borderWidth: 0 } },
-        { name: '25–75th', icon: 'rect', itemStyle: { color: recede(colors.bandInner, 45), borderWidth: 0 } },
-        { name: 'Median' },
-        ...(trace ? [{ name: 'That day' }] : []),
-      ],
-    },
+    /* THE LEGEND IS GONE (#258, #204). Its chips rendered as low-contrast
+       artifacts rather than chart furniture, and the naming job it carried
+       moves to the chart root's accessible name below — the docked readout is
+       aria-hidden, so the root's role + aria-label is the one non-visual
+       naming contract this chart has. */
     /* DOCKED READOUT — there is no floating box anywhere. Hover draws a thin
        crosshair and nothing else; the numbers are reported through
        `opts.onHover` and the card renders them in its header row (.head-live in
@@ -934,15 +910,11 @@ export function renderCanvas(el, echarts, opts) {
             style: { fill: colors.windowDim } };
         },
       },
+      // The bands read as fills, not four traced contours (#258): the 1px
+      // boundary strokes were never approved and out-shone the median in Dark,
+      // so the two nested fills carry the envelope on their own.
       ...bandPair('10–90th', envelope.p10, outer, 'outer', recede(colors.bandOuter, 45), 2),
       ...bandPair('25–75th', envelope.p25, inner, 'inner', recede(colors.bandInner, 45), 4),
-      // Hairline edges make all four percentile boundaries survive the window
-      // scrim as measured objects, rather than asking two translucent fills to
-      // imply the outer pair.
-      edgeLine('__p10', envelope.p10, recede(colors.bandEdge, 40), 6),
-      edgeLine('__p25', envelope.p25, recede(colors.bandEdge, 40), 6),
-      edgeLine('__p75', envelope.p75, recede(colors.bandEdge, 40), 6),
-      edgeLine('__p90', envelope.p90, recede(colors.bandEdge, 40), 6),
       {
         name: 'Median', type: 'line', z: 8, data: envelope.p50.map(gap),
         symbol: 'none', smooth: 0.25, animation: false,
@@ -988,6 +960,12 @@ export function renderCanvas(el, echarts, opts) {
   };
   if (panning) option.series = option.series.flatMap(displaySeries);
   chart.setOption(option, true);
+  /* THE ONLY MARK KEY (#258, #204): with the legend retired, the chart root
+     carries the naming job. The shipped root is a bare div, whose generic role
+     is name-prohibited, so the role is part of the contract. */
+  el.setAttribute('role', 'img');
+  el.setAttribute('aria-label',
+    'Glucose bands: 10th to 90th and 25th to 75th percentile ranges; median line');
   /* Feed the docked header readout. renderCanvas re-runs on every window change
      and getInstanceByDom hands back the SAME chart, so rebind rather than stack
      handlers — otherwise every redraw adds another reporter.

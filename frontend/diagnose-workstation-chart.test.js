@@ -160,7 +160,7 @@ test('renderCanvas draws a wrapped window as two areas with one range label', ()
   let option = null;
   const chart = { setOption(next) { option = next; }, off() {}, on() {} };
 
-  renderCanvas({ clientWidth: 4000 }, { getInstanceByDom() { return chart; } }, {
+  renderCanvas({ clientWidth: 4000, setAttribute() {} }, { getInstanceByDom() { return chart; } }, {
     envelope, markers: [], colors, stats: { spread: 27 }, range: [60, 220],
     window: [1320, 120], windowLabel: '22:00–02:00',
   });
@@ -178,7 +178,7 @@ test('renderCanvas draws a wrapped window as two areas with one range label', ()
   assert.deepEqual(areas[1][0].label, { show: false });
   assert.equal(context.markPoint.data.at(-1).label.formatter, 'CONTINUES');
 
-  renderCanvas({ clientWidth: 4000 }, { getInstanceByDom() { return chart; } }, {
+  renderCanvas({ clientWidth: 4000, setAttribute() {} }, { getInstanceByDom() { return chart; } }, {
     envelope, markers: [], colors, range: [40, 300],
     window: [15, 105], windowLabel: '00:15–01:45',
   });
@@ -187,7 +187,7 @@ test('renderCanvas draws a wrapped window as two areas with one range label', ()
     .map(([start, end]) => [start.xAxis, end.xAxis]), [['00:15', '01:45']]);
 
   for (const window of [[1320, 0], [1440, 120]]) {
-    renderCanvas({ clientWidth: 4000 }, { getInstanceByDom() { return chart; } }, {
+    renderCanvas({ clientWidth: 4000, setAttribute() {} }, { getInstanceByDom() { return chart; } }, {
       envelope, markers: [], colors, range: [40, 300], window, windowLabel: 'SELECTED WINDOW',
     });
     const degenerateAreas = option.series.find((series) => series.name === '__context').markArea.data
@@ -197,7 +197,7 @@ test('renderCanvas draws a wrapped window as two areas with one range label', ()
     assert.equal(degenerateAreas.length, 1);
   }
 
-  assert.doesNotThrow(() => renderCanvas({ clientWidth: 4000 }, { getInstanceByDom() { return chart; } }, {
+  assert.doesNotThrow(() => renderCanvas({ clientWidth: 4000, setAttribute() {} }, { getInstanceByDom() { return chart; } }, {
     envelope, markers: [], colors, range: [40, 300],
     window: [0, 0], windowLabel: 'SELECTED WINDOW',
   }));
@@ -219,7 +219,7 @@ test('a tile landing never changes the already-drawn strip range', () => {
   };
   let option = null;
   const chart = { setOption(next) { option = next; }, off() {}, on() {} };
-  const paint = () => renderCanvas({ clientWidth: 1200 }, { getInstanceByDom() { return chart; } }, {
+  const paint = () => renderCanvas({ clientWidth: 1200, setAttribute() {} }, { getInstanceByDom() { return chart; } }, {
     envelope, colors, range: stripGlucoseRange(envelope), window: [0, 360], windowLabel: '00:00–06:00',
   });
 
@@ -247,7 +247,7 @@ test('slice 4 · the outside-the-gates scrim is the exact complement of the wind
   };
   let option = null;
   const chart = { setOption(next) { option = next; }, off() {}, on() {} };
-  const render = (extra) => renderCanvas({ clientWidth: 4000 }, { getInstanceByDom() { return chart; } }, {
+  const render = (extra) => renderCanvas({ clientWidth: 4000, setAttribute() {} }, { getInstanceByDom() { return chart; } }, {
     envelope, markers: [], colors, range: [40, 300], ...extra,
   });
   // the dim is a CUSTOM series of rects (a markArea painted nothing in the
@@ -260,13 +260,9 @@ test('slice 4 · the outside-the-gates scrim is the exact complement of the wind
   assert.deepEqual(dims(), [['00:00', '06:00'], ['12:00', '23:45']]);
   const dim = option.series.find((series) => series.name === '__dim');
   assert.equal(dim.type, 'custom');
-  assert.deepEqual(['__p10', '__p25', '__p75', '__p90'].map((name) => {
-    const edge = option.series.find((series) => series.name === name);
-    return [edge.name, edge.lineStyle.color, edge.lineStyle.width, edge.lineStyle.type];
-  }), [
-    ['__p10', '#bbb', 1.5, 'solid'], ['__p25', '#bbb', 1.5, 'solid'],
-    ['__p75', '#bbb', 1.5, 'solid'], ['__p90', '#bbb', 1.5, 'solid'],
-  ], 'all four percentile boundaries use the one measured band-edge role');
+  // #258 — the bands read as fills: no traced percentile contour survives
+  assert.equal(option.series.filter((series) => /^__p\d+$/.test(series.name)).length, 0,
+    'the percentile boundary strokes stay retired');
   const rect = dim.renderItem(
     { coordSys: { x: 10, y: 20, width: 100, height: 50 } },
     { value: (i) => ['00:00', '06:00'][i], coord: ([v]) => [v === '00:00' ? 10 : 35, 0] });
@@ -315,7 +311,7 @@ test('renderCanvas pans labels and every data series into dimmed neighbouring da
   let option = null;
   const chart = { setOption(next) { option = next; }, off() {}, on() {} };
 
-  renderCanvas({ clientWidth: 1200 }, { getInstanceByDom() { return chart; } }, {
+  renderCanvas({ clientWidth: 1200, setAttribute() {} }, { getInstanceByDom() { return chart; } }, {
     envelope, markers: [{ index: 4, count: 1, minute: 60, medianCarbs: 20 }], colors,
     range: [40, 300],
     window: [1320, 120], displayWindow: [1320, 1560], displayOffset: 135,
@@ -362,7 +358,7 @@ test("#130 · a full-travel slide keeps its live band on the unrolled axis", () 
     [[-1455, -1335], -1440, ['-1440', '-1335']], // grabbed after midnight, slid left to panMin
     [[1320, 1560], 135, ['1320', '1560']],       // in range: untouched
   ]) {
-    renderCanvas({ clientWidth: 1200 }, { getInstanceByDom() { return chart; } }, {
+    renderCanvas({ clientWidth: 1200, setAttribute() {} }, { getInstanceByDom() { return chart; } }, {
       envelope, markers: [], colors, range: [40, 300],
       window: [1320, 60], displayWindow, displayOffset,
     });
@@ -396,7 +392,7 @@ test('#130 · the docked readout reads the pooled bin under a panning axis point
   const handlers = {};
   const chart = { setOption() {}, off() {}, on(name, fn) { handlers[name] = fn; } };
   let reported = null;
-  const render = (extra) => renderCanvas({ clientWidth: 1200 }, { getInstanceByDom() { return chart; } }, {
+  const render = (extra) => renderCanvas({ clientWidth: 1200, setAttribute() {} }, { getInstanceByDom() { return chart; } }, {
     envelope, markers: [], colors, range: [40, 300], window: [1320, 120],
     onHover: (item) => { reported = item; }, ...extra,
   });
@@ -525,4 +521,45 @@ test('S69/S70 · mismatched history pairs are rejected before paint', () => {
     historyId: projection.history_id,
     analysisGeneration: projection.analysis_generation,
   }), /coherent history evidence/);
+});
+
+test('#204 · the legend is retired for an accessible chart name and the band outlines are gone', () => {
+  const labels = Array.from({ length: 96 }, (_, index) =>
+    `${String(Math.floor(index / 4)).padStart(2, '0')}:${String((index % 4) * 15).padStart(2, '0')}`);
+  const filled = (value) => Array.from({ length: 96 }, () => value);
+  const envelope = {
+    labels, p10: filled(80), p25: filled(100), p50: filled(120), p75: filled(140),
+    p90: filled(160), counts: filled(12), raw: filled(1), days: 12, pool: 45,
+  };
+  const colors = {
+    muted: '#111', warn: '#222', danger: '#333', targetFill: '#444', targetText: '#555',
+    rail: '#666', windowDim: '#77777788', windowEdge: '#888', bandOuter: '#999',
+    bandInner: '#aaa', median: '#ccc', targetEdge: '#ddd',
+    onAccent: '#eee', text: '#123', surface2: '#234', line: '#345', meal: '#567', grid: '#678',
+  };
+  let option = null;
+  const chart = { setOption(next) { option = next; }, off() {}, on() {} };
+  const attrs = new Map();
+  const el = { clientWidth: 1200, setAttribute: (name, value) => attrs.set(name, value) };
+  renderCanvas(el, { getInstanceByDom() { return chart; } }, {
+    envelope, colors, range: [40, 300], window: [360, 720], windowLabel: '06:00–12:00',
+  });
+
+  assert.equal(option.legend, undefined, 'no legend rides the plot');
+  assert.equal(attrs.get('role'), 'img',
+    'the bare div root is name-prohibited without an explicit role');
+  assert.equal(attrs.get('aria-label'),
+    'Glucose bands: 10th to 90th and 25th to 75th percentile ranges; median line');
+
+  const names = option.series.map((series) => series.name);
+  for (const retired of ['__p10', '__p25', '__p75', '__p90']) {
+    assert.ok(!names.includes(retired), `${retired} boundary stroke is retired`);
+  }
+  const median = option.series.find((series) => series.name === 'Median');
+  assert.equal(median.lineStyle.color, '#ccc', 'the median keeps the injected mark colour');
+  assert.equal(median.lineStyle.width, 2.4, 'the median stays the widest continuous data mark');
+  const widest = Math.max(...option.series
+    .filter((series) => series.type === 'line' && !series.name.startsWith('__'))
+    .map((series) => series.lineStyle?.width || 0));
+  assert.equal(widest, 2.4, 'no other continuous mark out-weighs the median');
 });

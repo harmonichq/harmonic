@@ -322,8 +322,14 @@ const chartColors = (root) => {
     gridStrong: c.line,
     bandOuter: `color-mix(in srgb, ${c.primary} ${bandOuterMix}, transparent)`,
     bandInner: `color-mix(in srgb, ${c.primary} ${bandInnerMix}, transparent)`,
-    bandEdge: c.text,
-    median: c['primary-600'] || c.primary,
+    /* The median is the primary reading, so it must be the clearest continuous
+       data mark (#258). In Light, primary-600 is the deep forest ink and leads
+       already. In Dark, primary-600 resolves into the warm-grey text family —
+       outside the forest data family the bands draw in — and bare primary
+       composits to ~2.7:1 against the inner band fill, under the 3:1 non-text
+       floor. Lightened primary stays in the family and clears the floor over
+       both the fill and the scrimmed fill. */
+    median: dark ? `color-mix(in srgb, ${c.primary} 62%, #fff)` : (c['primary-600'] || c.primary),
     /* The ink for text sitting ON the median fill — the axis-riding value tag
        (term 25). It was read as `colors.onAccent` and never defined anywhere:
        not by resolveColors(), not here. ECharts fell back to the option's
@@ -344,13 +350,19 @@ const chartColors = (root) => {
        the scrim was in the option and painted nothing, proven live by swapping
        in an rgba() and watching the same markArea appear. The band fills only
        get away with color-mix because their path hands the string straight to
-       canvas. The rail token is a hex, so the mix is done here in numbers. Its
-       restrained alpha preserves the 3:1 mark boundaries after compositing. */
+       canvas. The rail token is a hex, so the mix is done here in numbers. The
+       browser suite's composite audit holds the rails and the median above the
+       non-text floor under whatever alpha stands here. */
     windowDim: (() => {
       const hex = css('--ck-rail').replace('#', '');
       const wide = hex.length === 3 ? [...hex].map((h) => h + h).join('') : hex;
       const [r, g, b] = [0, 2, 4].map((i) => parseInt(wide.slice(i, i + 2), 16));
-      return `rgba(${r},${g},${b},${dark ? '0.06' : '0.10'})`;
+      /* #258 recompose: at 0.06 the Dark scrim measured only a ~5% composite
+         shift — the plot stayed legible but the selected window did not read
+         at all. 0.28 dims the remainder decisively while the rails and fills
+         beneath stay above the non-text floor (the browser suite's composite
+         audit measures both). Light keeps its original restraint. */
+      return `rgba(${r},${g},${b},${dark ? '0.28' : '0.10'})`;
     })(),
     windowEdge: `color-mix(in srgb, ${c.primary} 72%, transparent)`,
   };

@@ -14,20 +14,11 @@ the missing capability is one input path into that model.
 
 ## What changes
 
-- The existing chart drag coordinator accepts primary pointer input for drawing,
-  resizing either gate, and sliding the whole selected window.
-- A touch drag inside the selected window preserves its width while moving both
-  gates; a touch drag on either gate moves only that edge under the existing snap,
-  wrap, and edge-pan rules.
-- The gesture captures its active pointer so leaving the chart does not strand a
-  drag. Vertical touch movement does not alter the clock window or obstruct an
-  already-scrollable ancestor; horizontal drags that begin in the glucose plot
-  or on a gate belong to the chart. The shell's existing no-page-scroll contract
-  remains unchanged.
-- The frozen Diagnose behavior ledger and app-only replay gain tablet-specific
-  stories for whole-window and individual-gate dragging at 1024×768.
-- Existing mouse, click-without-movement, hover, keyboard Escape, basal-lane, and
-  chart-tooltip behavior remain intact.
+- Implement the tablet gesture requirement defined once in
+  `specs/surfaces/spec.md` through the existing chart drag coordinator.
+- Amend the shipped-surface inventory and its app-only replay so that contract has
+  executable primary-touch regression evidence at 1024×768.
+- Preserve the mouse and non-window behavior already owned by that inventory.
 
 ## Risk contract
 

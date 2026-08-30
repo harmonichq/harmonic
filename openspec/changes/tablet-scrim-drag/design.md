@@ -3,21 +3,10 @@
 ## ADR 257 — One pointer coordinator owns mouse and touch window gestures
 
 **Decision.** Replace the mouse-only event plumbing around the existing Diagnose
-window drag state machine with one primary-pointer coordinator. The coordinator
-keeps the current `draw`, `a`, `b`, and `slide` modes and their snapping, wrap,
-edge-pan, live repaint, and commit functions. It captures the accepted pointer,
-tracks only that pointer until `pointerup` or `pointercancel`, and releases all
-transient state through one end path.
-
-The glucose plot continues to own hit testing. Gate edges outrank the scrim
-interior, the scrim interior outranks drawing a new window, and the x-axis and
-basal strip remain outside the gesture region. The existing chart and gate
-elements declare a touch-action policy before the browser arbitrates movement:
-vertical touch movement does not alter the clock window or obstruct an
-already-scrollable ancestor, while horizontal drags that begin in the glucose
-plot or on a gate belong to the chart. The shell's existing no-page-scroll
-contract remains unchanged. Mouse hover cursor feedback remains a mouse-only
-affordance, while keyboard Escape keeps clearing a drawn window.
+window drag state machine with one primary-pointer coordinator. Keep the current
+window modes and model intact; add pointer identity, capture, and one completion
+path at the transport boundary. `specs/surfaces/spec.md` is the single normative
+source for gesture semantics and containment.
 
 **Why.** The live synthetic app at 1024×768 moves the whole window under the
 existing mouse replay but moves neither the scrim nor a gate under Chromium's
@@ -31,6 +20,20 @@ the one coordinator browsers already support.
 It does not change the scrim or gate visuals, the selected-window data contract,
 scope requests, basal verdict rendering, ECharts hover reporting, presets, lane
 navigation, analyzer output, or staging.
+
+## Record ownership
+
+Each artifact has one role rather than restating an interchangeable contract:
+
+- `specs/surfaces/spec.md` owns the normative tablet requirement.
+- The Risk contract in `proposal.md` owns admitted failure, recovery, and evidence
+  bounds.
+- ADR 257 owns the transport decision and its rationale.
+- `mockups/finding-evidence-routing.behavior.md` inventories shipped behavior and
+  provenance; `frontend/diagnose-workstation-behavior.replay.mjs` is its executable
+  browser evidence.
+- `generated-facts.md` contains only re-runnable grounding output, while `tasks.md`
+  is the dated completion checklist. Neither is a second behavior specification.
 
 ## UI Craft revision provenance
 
@@ -52,22 +55,6 @@ A Chromium touch drag of 120 pixels inside the scrim leaves both gate positions
 unchanged, and a 90-pixel touch drag on the right gate also leaves both positions
 unchanged. Source inspection matches the observation: the drag coordinator has no
 pointer or touch listeners.
-
-## Verification contract
-
-1. Amend the living window stories rather than creating a second ledger or
-   disconnected touch harness. Prove tablet stories fail on the base for no
-   movement before production edits.
-2. Exercise primary touch on the scrim interior and on both gates at 1024×768.
-   Sliding preserves width; resizing anchors the far edge; every path keeps the
-   gesture above the glucose x-axis.
-3. Exercise `pointercancel` or lost capture and prove transient live state clears
-   without committing an incoherent window.
-4. Re-run the existing mouse draw, full-height gate resize, grip resize, whole
-   slide, wrap/edge-pan, click-without-movement, preset, Escape, hover, and lane
-   stories to prove the input migration preserved their public behavior.
-5. Capture and inspect the synthetic tablet result in Light and Dark, with no
-   console errors, unstubbed requests, overflow, or native-scroll conflict.
 
 ## Revision evidence
 
@@ -97,6 +84,11 @@ Base gestures left the 02:15–04:45 window unchanged. Revision moved the scrim 
 10:15 with 02:15 anchored.
 
 ## Verification result
+
+This is a historical execution record from 2026-08-29 against the Revision code
+at `cb167923`; it does not assert that a later checkout still passes. The commands
+in `generated-facts.md` and `AGENTS.md` are the re-runnable sources for current
+state.
 
 - The Base touch replay failed S03–S05 for no movement: 0 of 3 stories passed.
 - The Revision touch replay passed S03–S05 in both themes: 3 of 3 stories passed.

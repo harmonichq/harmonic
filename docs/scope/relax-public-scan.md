@@ -78,6 +78,22 @@ exemption. The end state is green with no compensating edits anywhere else.
 `readFile` and `join` stay in use in the replay driver after the indirection is
 collapsed, so no import goes dead.
 
+## Review rounds
+
+- Round 1 (cold Opus, read-only, plan-review): BLOCKED, 3 blocking + 1 note, all
+  tagged `authoring`. Every objection was an incomplete or wrong enumeration in an
+  edit step: contradictory config line ranges that would have decapitated the
+  surviving exemption's rationale, a stale count in `parse_config`'s grammar
+  docstring, a test whose whole subject is the removed rule, and a delete range one
+  line short of a closing paren. All four reproduced by the coordinator against the
+  tree before any edit; none refuted. A fifth of the same class was found while
+  reproducing the second, at `scan_public_tree.py:558`.
+- All five corrected as mechanical fixes and re-checked by the same reviewer in the
+  same round: COUNTERSIGNED, no new blocking finding, and the reviewer confirmed the
+  count-statement enumeration is now exhaustive across both files.
+- The reviewer's sandbox blocked command execution, so it reviewed the recorded spike
+  figures rather than reproducing them. Its objections were all file-read grounded.
+
 ## Open questions
 
 (none)

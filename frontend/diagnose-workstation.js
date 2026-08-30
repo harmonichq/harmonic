@@ -3511,12 +3511,14 @@ function boot(root, data, callbacks, signal) {
    * listener, so it stays click-only. The existing frame-throttled chart repaint
    * carries the committed window treatment throughout the gesture; at a clock
    * boundary it also translates the repeated day beneath the held edge. The
-   * circular window commits only on mouseup.
+   * circular window commits only when its primary pointer ends.
    */
   function installDrag() {
     const chartEl = el('chart');
     let mode = null; let anchor = 0; let width = 0; let grabOffset = 0;
     let moved = false; let pressMinute = 0;
+    let pressX = 0; let pressY = 0; let pointerId = null; let pointerType = null;
+    let committedBeforeDrag = null;
     let lastX = 0; let panMin = 0; let panMax = 0;
     let rafId = 0;
     const DISPLAY_SPAN = 95 * BIN_MINUTES;
@@ -3527,7 +3529,7 @@ function boot(root, data, callbacks, signal) {
        the window being created. Rather than invent a rubber-band style, the
        COMMITTED treatment tracks the gesture: paintChart re-resolves the window
        and re-renders, so the region carries the same outside-the-gates scrim
-       (slice 4) and the same label it will have on mouseup — they are the same
+       (slice 4) and the same label it will have on pointer completion — they are the same
        code path, so they cannot diverge.
 
        A DOM overlay was the other candidate and is rejected: the chart's own
@@ -3601,7 +3603,16 @@ function boot(root, data, callbacks, signal) {
     }
 
     function move(ev) {
-      if (!mode) return;
+      if (!mode || ev.pointerId !== pointerId) return;
+      if (!moved && ev.clientX === pressX && ev.clientY === pressY) return;
+      /* `touch-action: pan-y` reserves a vertical touch for its scrollable
+         ancestor. Do not let its first sampled move alter the window before
+         Chromium takes that gesture over. */
+      if (!moved && pointerType === 'touch'
+        && Math.abs(ev.clientY - pressY) > Math.abs(ev.clientX - pressX)) {
+        finish(ev);
+        return;
+      }
       lastX = localX(ev);
       if (!moved) {
         /* First real movement: NOW the gesture takes hold of the window. Every
@@ -3647,23 +3658,33 @@ function boot(root, data, callbacks, signal) {
       readout.style.top = `${braceGripTop + 26}px`;
     }
 
-    function end() {
-      if (!mode) return;
+    function finish(ev) {
+      if (!mode || ev.pointerId !== pointerId) return;
       if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
       const dragged = moved;
+      const cancelled = ev.type !== 'pointerup';
       const wholeDay = dragged && mode !== 'slide' && dragDisplayWindow
         && commitWindow(dragDisplayWindow) === null;
       mode = null;
-      document.removeEventListener('mousemove', move);
-      document.removeEventListener('mouseup', end);
+      const captured = pointerId;
+      pointerId = null;
+      pointerType = null;
+      if (ev.type !== 'lostpointercapture' && chartEl.hasPointerCapture(captured)) {
+        chartEl.releasePointerCapture(captured);
+      }
       // a press that never moved changed nothing, so there is nothing to commit
       // and nothing to undo — leave the panel exactly as the press found it
-      if (!dragged) return;
-      if (wholeDay) {
+      if (!dragged) { committedBeforeDrag = null; return; }
+      if (cancelled) {
+        drawn = committedBeforeDrag.drawn;
+        presetKey = committedBeforeDrag.presetKey;
+        explicitPreset = committedBeforeDrag.explicitPreset;
+      } else if (wholeDay) {
         drawn = null;
         presetKey = 'all';
         explicitPreset = true;
       }
+      committedBeforeDrag = null;
       dragDisplayWindow = null;
       clockPanOffset = 0;
       delete chartEl.parentElement.dataset.clockPan;
@@ -3702,11 +3723,11 @@ function boot(root, data, callbacks, signal) {
        created or repainted until the pointer actually moves — so a click and
        release anywhere in the plot is a no-op by construction rather than by a
        restore-what-we-broke path. This is what leaked: the edge and interior
-       branches ran takeHold() on mousedown and never set `moved`, so clicking
+       branches ran takeHold() on press and never set `moved`, so clicking
        (not dragging) a preset's edge silently turned it into a drawn window,
        unpressed the preset and left a chip behind. */
     function begin(kind, ev) {
-      if (ev.button !== 0) return;
+      if (pointerId !== null || !ev.isPrimary || ev.button !== 0) return;
       const x = ev.clientX - chartEl.getBoundingClientRect().left;
       if (kind === 'draw') {
         const box = plotBox(chartEl);
@@ -3716,26 +3737,38 @@ function boot(root, data, callbacks, signal) {
         if (edge) return begin(edge, ev);            // an edge outranks draw-new
         if (overInterior(x)) return begin('slide', ev);
       }
-      ev.preventDefault();
+      if (ev.pointerType === 'mouse') ev.preventDefault();
       mode = kind;
       moved = false;
+      pointerId = ev.pointerId;
+      pointerType = ev.pointerType;
+      pressX = ev.clientX;
+      pressY = ev.clientY;
+      committedBeforeDrag = {
+        drawn: drawn ? drawn.slice() : null,
+        presetKey,
+        explicitPreset,
+      };
       lastX = localX(ev);
       pressMinute = minuteAt(lastX);
-      document.addEventListener('mousemove', move);
-      document.addEventListener('mouseup', end);
+      chartEl.setPointerCapture(pointerId);
     }
 
-    chartEl.addEventListener('mousedown', (ev) => begin('draw', ev));
+    chartEl.addEventListener('pointerdown', (ev) => begin('draw', ev), { signal });
+    chartEl.addEventListener('pointermove', move, { signal });
+    chartEl.addEventListener('pointerup', finish, { signal });
+    chartEl.addEventListener('pointercancel', finish, { signal });
+    chartEl.addEventListener('lostpointercapture', finish, { signal });
     // the only hover feedback: the cursor says which gesture this press will be
-    chartEl.addEventListener('mousemove', (ev) => {
-      if (mode) return;
+    chartEl.addEventListener('pointermove', (ev) => {
+      if (mode || ev.pointerType !== 'mouse') return;
       if (!inPlotY(ev)) { chartEl.style.cursor = 'crosshair'; return; }
       const x = ev.clientX - chartEl.getBoundingClientRect().left;
       chartEl.style.cursor = edgeAt(x) ? 'col-resize'
         : overInterior(x) ? 'grab' : 'crosshair';
-    });
-    el('grip-a').addEventListener('mousedown', (ev) => { ev.stopPropagation(); begin('a', ev); });
-    el('grip-b').addEventListener('mousedown', (ev) => { ev.stopPropagation(); begin('b', ev); });
+    }, { signal });
+    el('grip-a').addEventListener('pointerdown', (ev) => { ev.stopPropagation(); begin('a', ev); }, { signal });
+    el('grip-b').addEventListener('pointerdown', (ev) => { ev.stopPropagation(); begin('b', ev); }, { signal });
     // Esc restores the last preset
     document.addEventListener('keydown', (ev) => {
       if (ev.key === 'Escape' && drawn) { ev.preventDefault(); clearDrawn(); }

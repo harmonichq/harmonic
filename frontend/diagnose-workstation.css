@@ -1256,6 +1256,9 @@ html:not(.dark) .dw { --ck-well: var(--wk-surface-sunken); }
    fill rectangle, no floating bubble, no animation. */
 .brace { position: absolute; inset: 0; pointer-events: none; z-index: 4; }
 .brace[hidden] { display: none; }
+/* Horizontal clock gestures belong to the chart; vertical touch remains
+   available to an ancestor that can scroll it. */
+#chart, .brace .grip { touch-action: pan-y; }
 /* vertical extent is set in paintBrace: from the plot's top edge to its x-axis,
    never into the chart header or the basal lane below */
 /* slice 4 — the gate edge is where the outside scrim stops; the edge line is a

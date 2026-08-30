@@ -231,17 +231,20 @@ six confirm-and-quote questions. They did not become sanctions by themselves.
 imported module; `frontend/index.html` shows none of it.
 
 ```
-P01 · Dragging in the plot body draws a custom selection window. mousedown
-      arms, first movement takes hold, mouseup commits; the window snaps to the
-      pooling grid and re-scopes the canvas, the inspector's denominators and
-      the queue together.
-  element:  #chart (mousedown/mousemove) + document (mousemove/mouseup)
-  source:   frontend/diagnose-workstation.js:1700-1721 (begin/move/end)
+P01 · Dragging in the plot body draws a custom selection window. A primary
+      pointer press arms, first movement takes hold, and pointer completion
+      commits; the window snaps to the pooling grid and re-scopes the canvas,
+      the inspector's denominators and the queue together.
+  element:  #chart (pointerdown/pointermove/pointerup)
+  source:   frontend/diagnose-workstation.js (installDrag begin/move/finish)
   mock:     no #brace, no grip elements, no mousedown listener anywhere; a
             25%→60% drag across the plot body leaves the scope readout and the
             pressed preset byte-identical
   evidence: replay S02 (app, pass) · probe-mock (mock, dragInPlot.changed=false)
   verdict:  kept          operator-ruled: Connor Griffin · 2026-08-19
+
+  amendment #257 · 2026-08-29: mouse and primary touch now share this Pointer
+                    Events transport; replays S03–S05 cover the touch path.
 ```
 
 ```
@@ -260,26 +263,36 @@ P02 · Two grab handles resize the window. #grip-a / #grip-b, each titled
 ```
 P03 · A resize grows away from the edge the reader is NOT dragging. Grabbing
       grip-a anchors on drawn[1]; grabbing grip-b anchors on drawn[0]. One
-      grammar, so the far edge never moves under the hand.
+      grammar, so the far edge never moves under the hand. Primary touch uses
+      this same resize grammar.
   source:   frontend/diagnose-workstation.js:1290-1296 (anchor assignment)
   mock:     no resize path
   evidence: replay S05 (app, pass)
   verdict:  kept          operator-ruled: Connor Griffin · 2026-08-19
+
+  amendment #257 · 2026-08-29: primary touch resizes through the same window
+                    coordinator; replay S03 holds the far edge while a touch
+                    moves either full-height gate.
 ```
 
 ```
 P04 · The dashed edge is grabbable down its WHOLE height, ±5px — not only at
       the little grip. A press on the edge at mid-plot resizes; it does not
-      start a new window.
+      start a new window. This full-height edge accepts primary touch as well
+      as mouse input.
   source:   frontend/diagnose-workstation.js:1668-1680 (EDGE_GRAB, edgeAt)
   mock:     no edge
   evidence: replay S03 (app, pass)
   verdict:  kept          operator-ruled: Connor Griffin · 2026-08-19
+
+  amendment #257 · 2026-08-29: replay S03 drives primary touch at mid-plot
+                    on both gates; neither path is substituted by a grip.
 ```
 
 ```
 P05 · Dragging INSIDE the window slides it whole — width preserved, both edges
-      live, clamped to 00:00–24:00.
+      live, clamped to 00:00–24:00. Primary touch inside the scrim uses the
+      same whole-window slide.
   source:   frontend/diagnose-workstation.js:1682-1685 (overInterior), 1305-1309
   mock:     no interior hit test
   evidence: replay S04 (app, pass)
@@ -290,6 +303,22 @@ P05 · Dragging INSIDE the window slides it whole — width preserved, both edge
                   lands back on its own start.
   evidence: replay S86, S87, S89
   operator-ruled: Connor Griffin · 2026-08-24
+
+  amendment #257 · 2026-08-29: replay S04 proves a primary-touch scrim slide
+                    moves both gates while preserving their width.
+```
+
+```
+P122 · The primary pointer owns one clock-window gesture. A primary touch can
+       slide the scrim or resize either full-height gate; a tap without movement
+       changes nothing. A vertical touch leaves the window unchanged and lets a
+       scrollable chart ancestor move without moving the shell. Chromium touch
+       cancellation or lost capture clears live drag feedback and restores the
+       last committed window.
+  source:   frontend/diagnose-workstation.js (installDrag pointer coordinator)
+  mock:     archived; app-only contract
+  evidence: replays S03–S05 (app, pass)
+  verdict:  added #257 · 2026-08-29
 ```
 
 ```

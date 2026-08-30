@@ -20,10 +20,10 @@ test('Dark derives the Diagnose material ladder through the shipped role owners 
     'chart grid ink derives from the quiet rule role');
   assert.match(workstation, /--ck-tile-edge: var\(--wk-rule-strong\);/,
     'chart vessel edges derive from the strong edge role, not grid ink');
-  assert.match(workstation, /\.tile-field > \.tile-focal > \.evidence-tile \{[\s\S]*?background: var\(--ck-well\);[\s\S]*?inset 0 0 0 1px var\(--ck-tile-edge\), var\(--wk-elevation\);/,
-    'the focal chart uses the shared well and shadow-only elevation');
-  assert.doesNotMatch(workstation, /html\.dark \.tile-field > \.tile-focal > \.evidence-tile \{[\s\S]*?background:/,
-    'the spotlight does not add a Dark plate over the well');
+  assert.match(workstation, /html\.dark \.tile-field > \.tile-focal > \.evidence-tile \{[\s\S]*?background: var\(--ck-well\);[\s\S]*?inset 0 0 0 1px var\(--ck-tile-edge\), var\(--wk-elevation\);/,
+    'the Dark focal chart uses the shared well and shadow-only elevation');
+  assert.match(workstation, /\.tile-field > \.tile-focal > \.evidence-tile \{[\s\S]*?background: var\(--ck-rail\); border-radius: 0; box-shadow: none;/,
+    'the Dark-only focal role leaves the fixed-point Light plate untouched');
 });
 
 test('the vessel cascade preserves Light edges and composes one Dark 1px/4px grammar (#255)', () => {
@@ -31,17 +31,12 @@ test('the vessel cascade preserves Light edges and composes one Dark 1px/4px gra
     'Light retains its established edge derivation');
   assert.match(workstation, /html\.dark \.dw \{[\s\S]*?--ck-tile-edge: var\(--wk-rule-strong\);/,
     'Dark alone resolves the vessel edge through the strong edge role');
-  assert.match(workstation, /\.tile-field > \.tile-focal > \.evidence-tile \{[\s\S]*?border-radius: 4px;[\s\S]*?inset 0 0 0 1px var\(--ck-tile-edge\), var\(--wk-elevation\);/,
-    'the spotlight adds only elevation beyond the shared vessel edge');
-  for (const selector of [
-    '\\.tile-field\\[data-dock="docked"\\] > \\.tile-row > \\.evidence-tile',
-    '\\.tile-field\\[data-raised\\] > \\.tile-row > \\.evidence-tile',
-    '\\.tile-field\\[data-explorer\\] \\.evidence-tile',
-    '\\.tile-field:is\\(\\[data-fullscreen-tile\\], \\[data-explorer\\]\\) \\.evidence-tile',
-  ]) {
-    assert.match(workstation, new RegExp(`${selector} \\{[\\s\\S]*?border-radius: 4px;[\\s\\S]*?inset 0 0 0 1px var\\(--ck-tile-edge\\)`),
-      `${selector} keeps the shared vessel edge and radius`);
-  }
+  assert.match(workstation, /html\.dark \.tile-field > \.tile-focal > \.evidence-tile \{[\s\S]*?border-radius: 4px;[\s\S]*?inset 0 0 0 1px var\(--ck-tile-edge\), var\(--wk-elevation\);/,
+    'the Dark spotlight adds only elevation beyond the shared vessel edge');
+  assert.match(workstation, /html\.dark \.tile-field\[data-dock="docked"\][\s\S]*?html\.dark \.tile-field\[data-raised\][\s\S]*?html\.dark \.tile-field\[data-explorer\] \.evidence-tile \{[\s\S]*?border-radius: 4px;[\s\S]*?inset 0 0 0 1px var\(--ck-tile-edge\)/,
+    'Dark docked, raised, and Explorer cells keep the shared vessel edge and radius');
+  assert.match(workstation, /html\.dark \.tile-field:is\(\[data-fullscreen-tile\], \[data-explorer\]\) \.evidence-tile \{[\s\S]*?border-radius: 4px;[\s\S]*?inset 0 0 0 1px var\(--ck-tile-edge\)/,
+    'Dark fullscreen cells keep the shared vessel edge and radius');
 });
 
 test('Diagnose mounts the merged workstation surface (#636)', () => {

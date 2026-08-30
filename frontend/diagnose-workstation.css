@@ -447,8 +447,10 @@ html.dark .tile-field { background-color: var(--ck-field); }
   grid-template-rows: minmax(0, 1fr);
 }
 .tile-field:is([data-fullscreen-tile], [data-explorer]) .evidence-tile {
-  border-radius: 4px; box-shadow: inset 0 0 0 1px var(--ck-tile-edge);
-  background: var(--ck-rail);
+  border-radius: 0; box-shadow: none; background: var(--ck-rail);
+}
+html.dark .tile-field:is([data-fullscreen-tile], [data-explorer]) .evidence-tile {
+  background: color-mix(in srgb, var(--ck-rail) 90%, var(--mk-text));
 }
 /* THE DRILL ACCENT IS OFF IN BOTH. It marks the chart the inspector is holding,
    which in fullscreen is the only chart there is — so it outlines the pane and
@@ -636,11 +638,13 @@ html:not(.dark) .dw {
    raised plate — ring, lit top edge and a two-stage cast reaching down onto the
    strip — and every one of those marks was drawing the spotlight as an object.
    A ring says "this is a thing on a surface", and the thing it framed was the
-   surface. The spotlight therefore keeps the shared well, 1px vessel edge,
-   and 4px radius; its elevation shadow is its only rank-specific treatment. */
+   surface. Dark therefore keeps the shared well, 1px vessel edge, and 4px
+   radius; its elevation shadow is its only rank-specific treatment. */
 .tile-field > .tile-focal > .evidence-tile {
-  background: var(--ck-well); border-radius: 4px;
-  box-shadow: inset 0 0 0 1px var(--ck-tile-edge), var(--wk-elevation);
+  background: var(--ck-rail); border-radius: 0; box-shadow: none;
+}
+html.dark .tile-field > .tile-focal > .evidence-tile {
+  background: color-mix(in srgb, var(--ck-rail) 90%, var(--mk-text));
 }
 /* THE SPOTLIGHT FLOATS ON THE TRAY IT ALWAYS HAD (2026-08-27, "wall of
    flatness" round). The field's sunken tray ground has been here since #215 —
@@ -649,29 +653,37 @@ html:not(.dark) .dw {
    soft layered shadow: elevation states the hierarchy the retired ring and
    the retired desk-band tried to draw as outlines. The reference chart above
    stays at its own rank — fixed chrome — so the one elevated surface on the
-   canvas is the one swappable thing. Fullscreen and explorer retain the shared
-   vessel edge without borrowing the spotlight shadow. */
+   canvas is the one swappable thing. Dark fullscreen and Explorer retain the
+   shared vessel edge without borrowing the spotlight shadow. */
 .tile-field:not([data-fullscreen-tile]):not([data-explorer]) > .tile-focal {
   margin: 10px 10px 0;
 }
 .tile-field:not([data-fullscreen-tile]):not([data-explorer])
   > .tile-focal > .evidence-tile {
-  overflow: hidden;
+  border-radius: 6px; overflow: hidden;
+  box-shadow:
+    0 1px 2px rgba(20, 26, 21, .05),
+    0 8px 20px -8px rgba(20, 26, 21, .18),
+    0 0 0 1px rgba(20, 26, 21, .05);
 }
-/* --- 4 · the frames. Every vessel retains the shared 1px edge and 4px radius.
+html.dark .tile-field:not([data-fullscreen-tile]):not([data-explorer])
+  > .tile-focal > .evidence-tile {
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, .5),
+    0 10px 26px -10px rgba(0, 0, 0, .65);
+}
+/* --- 4 · the frames. Dark vessels retain the shared 1px edge and 4px radius.
    Minis step back by omitting the spotlight elevation, not their boundary
-   against the field. */
+   against the field; Light keeps its fixed-point cascade below. */
 .tile-field[data-dock="docked"] > .tile-row > .evidence-tile {
-  border-radius: 4px; overflow: hidden;
-  box-shadow: inset 0 0 0 1px var(--ck-tile-edge), var(--ck-cell-shadow);
+  border-radius: 4px; overflow: hidden; box-shadow: var(--ck-cell-shadow);
   background: var(--ck-rail);
 }
 html.dark .tile-field[data-dock="docked"] > .tile-row > .evidence-tile {
   background: var(--ck-rail);
 }
 .tile-field[data-raised] > .tile-row > .evidence-tile {
-  border-radius: 4px; overflow: hidden;
-  box-shadow: inset 0 0 0 1px var(--ck-tile-edge), var(--ck-cell-shadow);
+  border-radius: 4px; overflow: hidden; box-shadow: var(--ck-cell-shadow);
   background: var(--ck-rail);
 }
 /* THE CURRENT FRAME IS MARKED FAINTLY, BECAUSE THE SPOTLIGHT IS THE MARK. The
@@ -685,7 +697,7 @@ html.dark .tile-field[data-dock="docked"] > .tile-row > .evidence-tile {
   > .tile-row > .evidence-tile[data-selected] {
   /* The picked cell is ringed in the strong rule's own ink — definite, and
      neutral: no signal colour, no partial band. */
-  box-shadow: inset 0 0 0 1px var(--ck-tile-edge), var(--ck-cell-shadow);
+  box-shadow: inset 0 0 0 1px var(--wk-rule-strong), var(--ck-cell-shadow);
 }
 /* A CELL ANSWERS THE POINTER (operator, 2026-08-27: "add some kind of hover
    over the minis in the chart dock"). The chart plots are inert at mini rank,
@@ -697,7 +709,7 @@ html.dark .tile-field[data-dock="docked"] > .tile-row > .evidence-tile {
   > .tile-row > .evidence-tile { cursor: pointer; }
 .tile-field:is([data-dock="docked"], [data-raised])
   > .tile-row > .evidence-tile:hover:not([data-selected]) {
-  box-shadow: inset 0 0 0 1px var(--ck-tile-edge), var(--ck-cell-shadow);
+  box-shadow: inset 0 0 0 1px var(--wk-rule), var(--ck-cell-shadow);
 }
 .tile-field:is([data-dock="docked"], [data-raised])
   > .tile-row > .evidence-tile:focus-visible {
@@ -819,11 +831,10 @@ html.dark .tile-field[data-dock="docked"]::after {
 /* THE EXPLORER SPEAKS THE CANVAS'S CARD LANGUAGE ("wall of flatness" round,
    superseding the flat-cells-and-grout reading above). Every chart on the
    tray is a rounded card with the shared cell shadow; the explorer's cells
-   are the same objects at a readable size, so they keep the same vessel edge
-   and radius. Fullscreen omits elevation because the chart IS the pane. */
+   are the same objects at a readable size. Dark keeps the vessel edge and
+   radius; Light retains its fixed-point card cascade. */
 .tile-field[data-explorer] .evidence-tile {
-  border-radius: 4px; overflow: hidden;
-  box-shadow: inset 0 0 0 1px var(--ck-tile-edge), var(--ck-cell-shadow);
+  border-radius: 6px; overflow: hidden; box-shadow: var(--ck-cell-shadow);
 }
 
 /* RAISED — a raised dock FLOATS over the spotlight and never squeezes it.
@@ -848,13 +859,12 @@ html.dark .tile-field[data-raised] > .tile-row { background: color-mix(in srgb, 
    Watching reads. A box-shadow costs no cell, and `overflow: hidden` on the
    tile clips its descendants, never its own cast. */
 .tile-field:not([data-explorer]) > .tile-row > .evidence-tile[data-tail-head] {
-  box-shadow: -5px 0 0 -4px var(--ck-tile-edge),
-    inset 0 0 0 1px var(--ck-tile-edge), var(--ck-cell-shadow);
+  box-shadow: -5px 0 0 -4px var(--ck-tile-edge), var(--ck-cell-shadow);
 }
 /* Both marks at once: a picked first-tail cell keeps the divider AND the ring. */
 .tile-field:not([data-explorer]) > .tile-row > .evidence-tile[data-tail-head][data-selected] {
   box-shadow: -5px 0 0 -4px var(--ck-tile-edge),
-    inset 0 0 0 1px var(--ck-tile-edge), var(--ck-cell-shadow);
+    inset 0 0 0 1px var(--wk-rule-strong), var(--ck-cell-shadow);
 }
 /* ---- the lip, which is the control ------------------------------------
    The lip is the dock's own top edge, not furniture parked near it. It carries
@@ -1043,8 +1053,50 @@ html.dark .tile-field[data-raised] > .tile-row { background: color-mix(in srgb, 
 .evidence-tile {
   display: grid; grid-template: 28px minmax(0, 1fr) / minmax(0, 1fr) 24px;
   min-width: 0; min-height: 0;
-  margin: 0; overflow: hidden; background: var(--ck-rail); border-radius: 4px;
+  margin: 0; overflow: hidden; background: var(--ck-rail); border-radius: 2px;
+  box-shadow: inset 0 0 0 1px var(--ck-tile-edge),
+    inset 0 1px 0 var(--ck-tile-top), var(--ck-tile-shadow);
+}
+
+/* #255 changes vessel grammar only in Dark. Light retains the fixed-point
+   material, radii, and shadow cascade above. */
+html.dark .evidence-tile {
+  border-radius: 4px;
   box-shadow: inset 0 0 0 1px var(--ck-tile-edge), var(--ck-tile-shadow);
+}
+html.dark .tile-field > .tile-focal > .evidence-tile {
+  background: var(--ck-well); border-radius: 4px;
+  box-shadow: inset 0 0 0 1px var(--ck-tile-edge), var(--wk-elevation);
+}
+html.dark .tile-field:not([data-fullscreen-tile]):not([data-explorer])
+  > .tile-focal > .evidence-tile {
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px var(--ck-tile-edge), var(--wk-elevation);
+}
+html.dark .tile-field:is([data-fullscreen-tile], [data-explorer]) .evidence-tile {
+  border-radius: 4px; box-shadow: inset 0 0 0 1px var(--ck-tile-edge);
+  background: var(--ck-rail);
+}
+html.dark .tile-field[data-fullscreen-tile] > .tile-focal > .evidence-tile {
+  background: var(--ck-well); border-radius: 4px;
+  box-shadow: inset 0 0 0 1px var(--ck-tile-edge), var(--wk-elevation);
+}
+html.dark .tile-field[data-dock="docked"] > .tile-row > .evidence-tile,
+html.dark .tile-field[data-raised] > .tile-row > .evidence-tile,
+html.dark .tile-field[data-explorer] .evidence-tile {
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px var(--ck-tile-edge), var(--ck-cell-shadow);
+}
+html.dark .tile-field:is([data-dock="docked"], [data-raised])
+  > .tile-row > .evidence-tile[data-selected],
+html.dark .tile-field:is([data-dock="docked"], [data-raised])
+  > .tile-row > .evidence-tile:hover:not([data-selected]) {
+  box-shadow: inset 0 0 0 1px var(--ck-tile-edge), var(--ck-cell-shadow);
+}
+html.dark .tile-field:not([data-explorer]) > .tile-row > .evidence-tile[data-tail-head],
+html.dark .tile-field:not([data-explorer]) > .tile-row > .evidence-tile[data-tail-head][data-selected] {
+  box-shadow: -5px 0 0 -4px var(--ck-tile-edge),
+    inset 0 0 0 1px var(--ck-tile-edge), var(--ck-cell-shadow);
 }
 /* A PIN IS NO LONGER A RING (#215). The tile-wide accent ring said "you pinned
    this" in the same pigment the drilled tile needs for "the inspector is

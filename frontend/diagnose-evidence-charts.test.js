@@ -105,6 +105,9 @@ test('the registry declares four stateless chart kinds and their request coordin
   ]);
   assert.ok(DIAGNOSE_EVIDENCE_CHARTS.every((entry) => typeof entry.matches === 'function'));
   assert.ok(DIAGNOSE_EVIDENCE_CHARTS.every((entry) => typeof entry.coordinates === 'function'));
+  /* The workstation calls entry.meta(mode) for every tile; a string here
+     throws at mount and blanks the canvas (caught live during #205). */
+  assert.ok(DIAGNOSE_EVIDENCE_CHARTS.every((entry) => entry.meta == null || typeof entry.meta === 'function'));
 });
 
 test('every entry produces exactly the coordinates it declares', () => {

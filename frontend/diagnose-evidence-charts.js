@@ -1047,7 +1047,7 @@ const entries = [
       meta: null,
     }),
     modes: null,
-    meta: 'nights at or above each rate · one step per night',
+    meta: () => 'nights at or above each rate · one step per night',
     option: basalOption,
     thumbnail: (data, title) => thumbnail((title || 'Basal · delivered vs programmed').toUpperCase(),
       `${data?.roster_count ?? 0} / ${data?.directional_support_count ?? 0}`,

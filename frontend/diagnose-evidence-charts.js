@@ -141,6 +141,161 @@ const basalVerdict = (data) => {
   return BASAL_HELD_STATUSES.has(data?.safety_status) ? 'Held' : 'Insufficient evidence';
 };
 
+const basalFacts = (data) => {
+  const nights = data?.nights || [];
+  const oldestFirst = [...nights].sort((a, b) => (a.date < b.date ? -1 : 1));
+  const programmed = oldestFirst.find((night) => finite(night.programmed_rate))?.programmed_rate;
+  const ciLo = data?.estimate?.lo;
+  const ciHi = data?.estimate?.hi;
+  const estimateValue = data?.estimate?.value;
+  const delivered = nights.map((night) => night.delivered_rate).filter(finite);
+  const sorted = [...delivered].sort((a, b) => a - b);
+  const p85 = sorted.length ? sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * .85))] : 0;
+  return {
+    nights, oldestFirst, programmed, ciLo, ciHi, estimateValue, p85,
+    above: nights.filter((night) => night.sign === 1).length,
+    below: nights.filter((night) => night.sign === -1).length,
+    atRate: nights.filter((night) => night.sign === null).length,
+  };
+};
+
+const basalScale = ({ ciHi, estimateValue, programmed, p85 }, ledger = false) => {
+  if (ledger) {
+    let step = Math.max(ciHi || 0, estimateValue || 0, programmed || 0, p85) > 1.2 ? .25
+      : Math.max(ciHi || 0, estimateValue || 0, programmed || 0, p85) > .6 ? .1 : .05;
+    let yMax = Math.ceil(Math.max(ciHi || 0, estimateValue || 0, programmed || 0, p85, step) * 1.25 / step) * step;
+    while (finite(programmed) && programmed / yMax > .55) yMax += step;
+    return { yMax, yStep: step };
+  }
+  const yRaw = Math.max(
+    Math.ceil(Math.max(ciHi || 0, estimateValue || 0, programmed || 0) * 1.6 * 10) / 10,
+    Math.ceil(p85 * 10) / 10) || 1;
+  const yStep = yRaw > 1.2 ? .5 : yRaw > .6 ? .25 : .1;
+  return { yMax: Math.ceil(yRaw / yStep) * yStep, yStep };
+};
+
+const basalTally = (facts, data, colors, vertical = false) => {
+  const lessColor = `color-mix(in srgb, ${colors.basal} 76%, ${colors.text})`;
+  const rich = {
+    swMore: { backgroundColor: colors.high, width: vertical ? 8 : 4, height: vertical ? 4 : 8, borderRadius: 1 },
+    swLess: { backgroundColor: lessColor, width: vertical ? 8 : 4, height: vertical ? 4 : 8, borderRadius: 1 },
+    swAt: { backgroundColor: colors.programmed, width: vertical ? 2.5 : 9, height: vertical ? 9 : 2.5 },
+    n: { color: colors.text, fontFamily: MONO, fontSize: 10, padding: [0, 7, 0, 4] },
+    m: { color: colors.muted, fontFamily: FONT, fontSize: 9, padding: [0, 0, 0, 5] },
+  };
+  return { rich, text: `{swMore|}{n|${facts.above}}{m| MORE}{swLess|}{n|${facts.below}}{m| LESS}`
+    + `{swAt|}{n|${facts.atRate}}{m| AS SET}{m|${facts.nights.length} STEADY NIGHTS · ${data?.excluded_night_count ?? 0} EXCLUDED}` };
+};
+
+function basalBayOption(data, mini, colors, description) {
+  const facts = basalFacts(data);
+  const { oldestFirst, programmed, ciLo, ciHi, estimateValue } = facts;
+  const { yMax, yStep } = basalScale(facts);
+  const lessColor = `color-mix(in srgb, ${colors.basal} 76%, ${colors.text})`;
+  const columns = oldestFirst.map((night) => ({ ...night, capped: finite(night.delivered_rate) && night.delivered_rate > yMax,
+    top: finite(night.delivered_rate) ? Math.min(night.delivered_rate, yMax) : programmed }));
+  const mondays = new Set(columns.filter((night) => new Date(`${night.date}T00:00:00Z`).getUTCDay() === 1).map((night) => night.date));
+  const labels = new Set([columns[0]?.date, columns.at(-1)?.date]);
+  columns.forEach((night, index) => { if (mondays.has(night.date) && index > 1 && index < columns.length - 2) labels.add(night.date); });
+  if (mini) {
+    return {
+      ...chartBase(description, true, colors), legend: { show: false },
+      grid: { ...MINI_GRID, right: 16 },
+      xAxis: { type: 'category', data: columns.map((night) => night.date), show: false },
+      yAxis: { type: 'value', min: 0, max: yMax, show: false },
+      series: [{ type: 'bar', animation: false, silent: true, barCategoryGap: '44%',
+        data: columns.map((night) => ({ value: night.sign === null ? 0 : Math.abs(night.top - programmed),
+          itemStyle: { color: night.sign === 1 ? colors.high : lessColor } })) },
+      { type: 'custom', animation: false, silent: true, data: [0], renderItem: (params, api) => {
+        const y = api.coord([0, programmed])[1]; const x = params.coordSys.x;
+        return { type: 'group', children: [{ type: 'line', shape: { x1: x, y1: y, x2: params.coordSys.x + params.coordSys.width, y2: y }, style: { stroke: colors.programmed, lineWidth: 1 } },
+          ...(finite(ciLo) && finite(ciHi) ? [{ type: 'line', shape: { x1: params.coordSys.x + params.coordSys.width + 7, y1: api.coord([0, ciHi])[1], x2: params.coordSys.x + params.coordSys.width + 7, y2: api.coord([0, ciLo])[1] }, style: { stroke: colors.signal, lineWidth: 3 } }] : [])] };
+      } }],
+    };
+  }
+  const tally = basalTally(facts, data, colors);
+  return {
+    ...chartBase(description, false, colors), legend: { show: false },
+    grid: [{ left: 34, top: 22, right: 174, bottom: 58 }, { width: 150, right: 10, top: 22, bottom: 58 }],
+    graphic: [{ type: 'rect', right: 10, top: 8, silent: true, shape: { width: 150, height: '100%' },
+      style: { fill: 'var(--wk-surface-sunken)', stroke: 'var(--wk-rule-strong)', lineWidth: 1 } },
+    { type: 'line', left: 34, right: 10, bottom: 35, silent: true, shape: { x1: 0, y1: 0, x2: 1, y2: 0 }, style: { stroke: colors.line, lineWidth: 1 } },
+    { type: 'text', left: 34, bottom: 6, silent: true, style: { text: tally.text, rich: tally.rich } }],
+    xAxis: [{ type: 'category', data: columns.map((night) => night.date), ...axis(colors), splitLine: { show: false },
+      axisLabel: { color: colors.muted, fontFamily: MONO, fontSize: 10, formatter: (date) => date.slice(5), interval: (index) => labels.has(columns[index]?.date) } },
+    { type: 'value', min: 0, max: 1, show: false, gridIndex: 1 }],
+    yAxis: [{ type: 'value', min: 0, max: yMax, interval: yStep, ...axis(colors), axisLabel: { color: colors.muted, fontFamily: MONO, fontSize: 10 }, splitLine: { show: false } },
+    { type: 'value', min: 0, max: yMax, interval: yStep, show: false, gridIndex: 1 }],
+    series: [{ type: 'custom', animation: false, silent: false, data: columns.map((night, index) => [index, night.top]),
+      renderItem: (params, api) => { const night = columns[params.dataIndex]; if (!finite(programmed)) return null;
+        const [x, y] = api.coord([params.dataIndex, night.top]); const datum = api.coord([params.dataIndex, programmed])[1];
+        const width = Math.min(12, api.size([1, 0])[0] * .56); const up = night.sign === 1;
+        if (night.sign === null) return { type: 'rect', shape: { x: x - 6, y: datum - 1.5, width: 12, height: 3 }, style: { fill: colors.programmed } };
+        return { type: 'rect', shape: { x: x - width / 2, y: Math.min(y, datum), width, height: Math.abs(datum - y), r: up ? [0, 0, 2, 2] : [2, 2, 0, 0] }, style: { fill: up ? colors.high : lessColor } };
+      }, tooltip: { formatter: (params) => { const night = columns[params.dataIndex]; return `${night.date} · ${night.delivered_rate} U/h · ${night.programmed_rate} U/h · ${night.sign === 1 ? 'more' : night.sign === -1 ? 'less' : 'as set'}`; } } },
+    { type: 'custom', animation: false, silent: true, data: [0], renderItem: (params, api) => { if (!finite(programmed)) return null;
+      const y = api.coord([0, programmed])[1]; const mainEnd = params.coordSys.x + params.coordSys.width;
+      const scale = Array.from({ length: 4 }, (_, index) => yStep * (index + 1)).filter((value) => value < yMax && value !== programmed);
+      return { type: 'group', children: [
+        ...scale.map((value) => ({ type: 'line', shape: { x1: params.coordSys.x, y1: api.coord([0, value])[1], x2: mainEnd - 8, y2: api.coord([0, value])[1] }, style: { stroke: `color-mix(in srgb, ${colors.line} 42%, transparent)`, lineWidth: 1 } })),
+        { type: 'line', shape: { x1: params.coordSys.x, y1: y, x2: mainEnd, y2: y }, style: { stroke: colors.programmed, lineWidth: 1.5 } },
+        { type: 'line', shape: { x1: mainEnd, y1: y, x2: mainEnd + 14 + 24, y2: y }, style: { stroke: colors.programmed, lineWidth: 1, lineDash: [1, 3], opacity: .72 } }] };
+    } },
+    { type: 'scatter', animation: false, silent: true, symbol: 'triangle', symbolSize: [7, 5], symbolOffset: [0, -7], itemStyle: { color: colors.high },
+      data: columns.filter((night) => night.capped).map((night) => ({ value: [night.date, yMax], label: { show: true, position: 'top', distance: 4, color: colors.high, fontFamily: MONO, fontSize: 10, formatter: String(night.delivered_rate) } })) },
+    ...(finite(ciLo) && finite(ciHi) ? [{ type: 'custom', animation: false, silent: true, xAxisIndex: 1, yAxisIndex: 1, data: [0], renderItem: (params, api) => {
+      const x = params.coordSys.x + 24; const yLo = api.coord([0, ciLo])[1]; const yHi = api.coord([0, ciHi])[1]; const yEst = finite(estimateValue) ? api.coord([0, estimateValue])[1] : null;
+      const readY = Math.max(params.coordSys.y + 18, Math.min(yEst ?? yHi, params.coordSys.y + params.coordSys.height - 42));
+      return { type: 'group', children: [{ type: 'rect', shape: { x: x - 9, y: yHi, width: 18, height: yLo - yHi }, style: { fill: `color-mix(in srgb, ${colors.signal} 14%, transparent)` } },
+        { type: 'rect', shape: { x: x - 1, y: yHi, width: 2, height: yLo - yHi }, style: { fill: colors.programmed } },
+        { type: 'rect', shape: { x: x - 9, y: yHi - 1, width: 18, height: 2 }, style: { fill: colors.programmed } },
+        { type: 'rect', shape: { x: x - 9, y: yLo - 1, width: 18, height: 2 }, style: { fill: colors.programmed } },
+        ...(yEst === null ? [] : [{ type: 'rect', shape: { x: x - 15, y: yEst - 1.5, width: 30, height: 3 }, style: { fill: colors.signal } },
+          { type: 'text', style: { text: estimateValue.toFixed(2), x: x + 22, y: readY, fill: colors.text, font: `800 21px ${MONO}`, verticalAlign: 'middle' } },
+          { type: 'text', style: { text: 'U/h · ESTIMATE', x: x + 22, y: readY + 18, fill: colors.muted, font: `9px ${FONT}` } },
+          { type: 'text', style: { text: `${ciLo.toFixed(2)}–${ciHi.toFixed(2)} CI\nSET ${programmed?.toFixed(2) ?? '—'}`, x: x + 22, y: readY + 31, fill: colors.muted, font: `10px ${MONO}`, lineHeight: 13 } }]),
+        { type: 'text', style: { text: ciHi.toFixed(2), x: x - 13, y: yHi, align: 'right', verticalAlign: 'middle', fill: colors.muted, font: `10px ${MONO}` } },
+        { type: 'text', style: { text: ciLo.toFixed(2), x: x - 13, y: yLo, align: 'right', verticalAlign: 'middle', fill: colors.muted, font: `10px ${MONO}` } },
+        ...(data?.verdict ? [{ type: 'text', right: 2, top: 2, style: { text: data.verdict, fill: colors.muted, font: `700 10px ${FONT}` } }] : [])] };
+    } }] : []),
+    ],
+  };
+}
+
+function basalLedgerOption(data, mini, colors, description) {
+  const facts = basalFacts(data);
+  const { programmed, ciLo, ciHi, estimateValue } = facts;
+  const { yMax, yStep } = basalScale(facts, true);
+  const lessColor = `color-mix(in srgb, ${colors.basal} 76%, ${colors.text})`;
+  const rows = [...facts.oldestFirst].sort((a, b) => ((b.delivered_rate ?? programmed) - programmed) - ((a.delivered_rate ?? programmed) - programmed) || a.date.localeCompare(b.date));
+  const tally = basalTally(facts, data, colors, true);
+  const gridA = mini ? { ...MINI_GRID } : { left: GRID.left, right: 30, top: 32, bottom: 92 };
+  if (mini) return { ...chartBase(description, true, colors), legend: { show: false }, grid: gridA,
+    xAxis: { type: 'value', min: 0, max: yMax, show: false }, yAxis: { type: 'category', data: rows.map((row) => row.date), show: false },
+    series: [{ type: 'custom', animation: false, silent: true, data: rows.map((row, index) => [row.delivered_rate, index]), renderItem: (params, api) => {
+      const row = rows[params.dataIndex]; const x = api.coord([programmed, params.dataIndex])[0]; const end = api.coord([Math.min(row.delivered_rate, yMax), params.dataIndex])[0]; const h = api.size([0, 1])[1] * .8;
+      return { type: 'rect', shape: { x: Math.min(x, end), y: api.coord([0, params.dataIndex])[1] - h / 2, width: Math.abs(end - x) || 3, height: h }, style: { fill: row.sign === 1 ? colors.high : row.sign === -1 ? lessColor : colors.programmed } };
+    } }] };
+  return {
+    ...chartBase(description, false, colors), legend: { show: false }, grid: [gridA, { left: GRID.left, right: 30, bottom: 40, height: 30 }],
+    graphic: [{ type: 'line', left: GRID.left, right: 30, bottom: 81, silent: true, shape: { x1: 0, y1: 0, x2: 1, y2: 0 }, style: { stroke: colors.line, lineWidth: 1 } },
+      { type: 'text', left: GRID.left, bottom: 6, silent: true, style: { text: tally.text, rich: tally.rich } }],
+    xAxis: [{ type: 'value', min: 0, max: yMax, interval: yStep, ...axis(colors), axisLabel: { show: false }, splitLine: { show: true, lineStyle: { color: `color-mix(in srgb, ${colors.line} 60%, transparent)`, width: 1 } } },
+      { type: 'value', min: 0, max: yMax, interval: yStep, gridIndex: 1, ...axis(colors), axisLabel: { color: colors.muted, fontFamily: MONO, fontSize: 10, margin: 8, formatter: (value) => value === 0 ? '0' : value.toFixed(2) }, splitLine: { show: false } }],
+    yAxis: [{ type: 'category', data: rows.map((row) => row.date), ...axis(colors), axisLabel: { color: colors.muted, fontFamily: MONO, fontSize: 9, margin: 8, formatter: (date) => date.slice(5) }, splitLine: { show: false } },
+      { type: 'value', min: 0, max: 1, gridIndex: 1, show: false }],
+    series: [{ type: 'custom', animation: false, data: rows.map((row, index) => [row.delivered_rate, index]), renderItem: (params, api) => {
+      const row = rows[params.dataIndex]; if (!finite(programmed)) return null; const x = api.coord([programmed, params.dataIndex])[0]; const end = api.coord([Math.min(row.delivered_rate, yMax), params.dataIndex])[0]; const h = api.size([0, 1])[1] * .62;
+      if (row.sign === null) return { type: 'rect', shape: { x: x - 2.5, y: api.coord([0, params.dataIndex])[1] - h / 2, width: 5, height: h }, style: { fill: colors.programmed } };
+      return { type: 'rect', shape: { x: Math.min(x, end), y: api.coord([0, params.dataIndex])[1] - h / 2, width: Math.abs(end - x), height: h, r: row.sign === 1 ? [0, 2, 2, 0] : [2, 0, 0, 2] }, style: { fill: row.sign === 1 ? colors.high : lessColor } };
+    }, tooltip: { formatter: (params) => { const row = rows[params.dataIndex]; return `${row.date} · ${row.delivered_rate} U/h · ${row.sign === 1 ? '+' : row.sign === -1 ? '−' : ''}${Math.abs((row.delivered_rate ?? programmed) - programmed).toFixed(2)} vs set`; } } },
+    { type: 'custom', animation: false, silent: true, data: [0], renderItem: (params, api) => { if (!finite(programmed)) return null; const x = api.coord([programmed, 0])[0]; return { type: 'group', children: [{ type: 'rect', shape: { x: x - .75, y: params.coordSys.y - 10, width: 1.5, height: params.coordSys.height + 10 + 52 }, style: { fill: `color-mix(in srgb, ${colors.programmed} 55%, ${colors.text})` } }, { type: 'text', style: { text: `set ${programmed.toFixed(2)}`, x, y: params.coordSys.y - 12, align: 'center', fill: `color-mix(in srgb, ${colors.programmed} 55%, ${colors.text})`, font: `9px ${MONO}` } }] }; } },
+    { type: 'custom', animation: false, silent: true, data: rows.map((row, index) => [row.delivered_rate, index]).filter(([value]) => finite(value) && value > yMax), renderItem: (_params, api) => { const index = api.value(1); const row = rows[index]; const [x, y] = api.coord([yMax, index]); return { type: 'group', children: [{ type: 'polygon', shape: { points: [[x + 4, y], [x, y - 3.5], [x, y + 3.5]] }, style: { fill: colors.high } }, { type: 'text', style: { text: row.delivered_rate.toFixed(1), x: x + 13, y, verticalAlign: 'middle', fill: colors.high, font: `9px ${MONO}` } }] }; } },
+    ...(finite(ciLo) && finite(ciHi) ? [{ type: 'custom', animation: false, silent: true, xAxisIndex: 1, yAxisIndex: 1, data: [0], renderItem: (params, api) => { const xLo = api.coord([ciLo, .5])[0]; const xHi = api.coord([ciHi, .5])[0]; const xEst = finite(estimateValue) ? api.coord([estimateValue, .5])[0] : null; const y = api.coord([0, .5])[1]; return { type: 'group', children: [{ type: 'rect', shape: { x: xLo, y: y - 6, width: xHi - xLo, height: 12 }, style: { fill: `color-mix(in srgb, ${colors.signal} 16%, transparent)`, stroke: `color-mix(in srgb, ${colors.signal} 45%, transparent)`, lineWidth: 1 } }, { type: 'rect', shape: { x: xLo - .6, y: y - 8, width: 1.2, height: 16 }, style: { fill: colors.signal, opacity: .7 } }, { type: 'rect', shape: { x: xHi - .6, y: y - 8, width: 1.2, height: 16 }, style: { fill: colors.signal, opacity: .7 } }, ...(xEst === null ? [] : [{ type: 'rect', shape: { x: xEst - 1.1, y: y - 10, width: 2.2, height: 20 }, style: { fill: colors.signal } }, { type: 'text', style: { text: `est ${estimateValue.toFixed(2)}`, x: xEst, y: y + 18, align: 'center', fill: colors.signal, font: `9px ${MONO}` } }]), { type: 'text', style: { text: ciHi.toFixed(2), x: xHi, y: y + 18, align: 'center', fill: colors.muted, font: `9px ${MONO}` } }, { type: 'text', style: { text: basalVerdict(data), x: params.coordSys.x, y, fill: data?.asserts_move ? colors.signal : colors.muted, font: `700 9px ${FONT}` } }] }; } }] : []),
+    ],
+  };
+}
+
 function basalOption(mode, { data, mini = false } = {}) {
   const colors = chartColors();
   const nights = data?.nights || [];
@@ -163,6 +318,8 @@ function basalOption(mode, { data, mini = false } = {}) {
       ],
     };
   }
+  if (mode === 'bay') return basalBayOption(data, mini, colors, description);
+  if (mode === 'ledger') return basalLedgerOption(data, mini, colors, description);
   /* NIGHTS ARE UNCONNECTED OBSERVATIONS, NOT A SERIES — and each one's story
      is "how far from the programmed rate did the algorithm land". So a night
      is a deviation COLUMN rising (or dropping) from the programmed baseline:
@@ -549,9 +706,12 @@ const entries = [
       title: row.span?.label ? `Basal ${row.span.label}` : 'Basal',
       meta: null,
     }),
-    modes: ['clock', 'event'],
+    modes: ['clock', 'bay', 'ledger', 'event'],
     meta: (mode) => mode === 'clock'
-      ? 'delivered vs programmed, U/h · one bar per night' : 'supported vs insufficient evidence',
+      ? 'delivered vs programmed, U/h · one bar per night'
+      : mode === 'bay' ? 'nightly evidence with estimate verdict bay'
+        : mode === 'ledger' ? 'nights sorted by deviation from programmed rate'
+          : 'supported vs insufficient evidence',
     option: basalOption,
     thumbnail: (data, title) => thumbnail((title || 'Basal · delivered vs programmed').toUpperCase(),
       `${data?.roster_count ?? 0} / ${data?.directional_support_count ?? 0}`,

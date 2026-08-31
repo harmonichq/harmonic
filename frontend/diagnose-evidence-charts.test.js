@@ -101,7 +101,7 @@ test('the registry declares four stateless chart kinds and their request coordin
     ['projection_id', 'finding_id', 'alignment', 'factor', 'view'],
   ]);
   assert.deepEqual(DIAGNOSE_EVIDENCE_CHARTS.map(({ modes }) => modes), [
-    ['clock', 'event'], ['event', 'clock'], ['event', 'clock'], null,
+    ['clock', 'bay', 'ledger', 'event'], ['event', 'clock'], ['event', 'clock'], null,
   ]);
   assert.ok(DIAGNOSE_EVIDENCE_CHARTS.every((entry) => typeof entry.matches === 'function'));
   assert.ok(DIAGNOSE_EVIDENCE_CHARTS.every((entry) => typeof entry.coordinates === 'function'));
@@ -141,7 +141,7 @@ test('every entry produces exactly the coordinates it declares', () => {
    row. Built from projection rows, never from a hand-set title. */
 test('every kind a window publishes more than once names each tile from its own row', () => {
   const byKind = Object.fromEntries(DIAGNOSE_EVIDENCE_CHARTS.map((entry) => [entry.kind, entry]));
-  const EVIDENCE = { basal: 'nights of steady data', 'carb-ratio': 'meal runs' };
+  const EVIDENCE = { basal: 'delivered vs programmed', 'carb-ratio': 'meal runs' };
   const most = { basal: 0, 'carb-ratio': 0 };
 
   const projected = Object.entries(PROJECTED_WINDOWS).map(([name, bounds]) => [
@@ -161,7 +161,8 @@ test('every kind a window publishes more than once names each tile from its own 
         const { title } = byKind[kind].nameFor(row);
         assert.ok(title.includes(row.span.label),
           `${title} carries its own row's published span in ${name}`);
-        assert.ok(title.endsWith(` · ${evidence}`), `${title} keeps the ${kind} evidence phrase`);
+        assert.ok(kind === 'basal' ? byKind[kind].name.includes(evidence) : title.endsWith(` · ${evidence}`),
+          `${kind} keeps its evidence phrase`);
         assert.doesNotMatch(title, /I:C/);
         titles.push(title);
       }
@@ -175,8 +176,7 @@ test('every kind a window publishes more than once names each tile from its own 
 
 test('a parameter row arriving without a span keeps the standing kind name', () => {
   const byKind = Object.fromEntries(DIAGNOSE_EVIDENCE_CHARTS.map((entry) => [entry.kind, entry]));
-  assert.equal(byKind.basal.nameFor({ id: 'basal:0-30', parameter: 'basal_rate' }).title,
-    'Basal · nights of steady data');
+  assert.equal(byKind.basal.nameFor({ id: 'basal:0-30', parameter: 'basal_rate' }).title, 'Basal');
   assert.equal(byKind['carb-ratio'].nameFor({ id: 'ic:0', parameter: 'carb_ratio' }).title,
     'Carb ratio · meal runs');
 });
@@ -195,7 +195,7 @@ test('a parameter thumbnail captions itself with the tile name it was given', ()
   assert.equal(byKind['carb-ratio'].thumbnail(ic, 'Carb ratio 12:00 to 24:00 · meal runs')
     .graphic[0].style.text, 'CARB RATIO 12:00 TO 24:00 · MEAL RUNS');
   assert.equal(byKind.basal.thumbnail(basal).graphic[0].style.text,
-    'BASAL · NIGHTS OF STEADY DATA');
+    'BASAL · DELIVERED VS PROGRAMMED');
 });
 
 test('entries build different alignments simultaneously with one optical spine', () => {
@@ -219,11 +219,11 @@ test('entries build different alignments simultaneously with one optical spine',
     data: event, range: [80, 220], explore: false, mini: false, window: [1320, 120],
   });
 
-  assert.equal(basalClock.xAxis.type, 'category');
+  assert.equal(basalClock.xAxis[0].type, 'category');
   assert.equal(isfEvent.xAxis.name, 'insulin acted (U)');
   assert.deepEqual(icEvent.yAxis.min, 80);
   assert.deepEqual(icEvent.yAxis.max, 220);
-  assert.deepEqual(basalClock.grid, isfEvent.grid);
+  assert.equal(basalClock.grid[0].left, isfEvent.grid.left);
   assert.deepEqual(isfEvent.grid, icEvent.grid);
   const { containLabel, ...icPlot } = icEvent.grid;
   assert.deepEqual(icPlot, comparison.grid,
@@ -261,6 +261,21 @@ test('basal event treatment follows the backend verdict in product language', ()
     /directional support|analyzer verdict|recurring-low gate/i);
 });
 
+test('Bay and Ledger keep payload-derived tallies and tolerate an absent estimate', () => {
+  const basal = fixture('./__fixtures__/basal-night-evidence.json').expected;
+  const entry = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'basal');
+  const more = basal.nights.filter(({ sign }) => sign === 1).length;
+  const less = basal.nights.filter(({ sign }) => sign === -1).length;
+  for (const mode of ['bay', 'ledger']) {
+    const option = entry.option(mode, { data: basal });
+    assert.equal(option.animation, false);
+    assert.ok(option.series.every((series) => series.animation === false));
+    assert.match(JSON.stringify(option), new RegExp(`\\{n\\|${more}\\}`));
+    assert.match(JSON.stringify(option), new RegExp(`\\{n\\|${less}\\}`));
+    assert.doesNotThrow(() => entry.option(mode, { data: { ...basal, estimate: null } }));
+  }
+});
+
 test('every multi-series evidence form carries an on-chart legend', () => {
   const basal = fixture('./__fixtures__/basal-night-evidence.json').expected;
   const isf = fixture('../mockups/diagnose-workstation.synthetic/isf-rest-window-evidence.capture.json').payload;
@@ -275,8 +290,10 @@ test('every multi-series evidence form carries an on-chart legend', () => {
     byKind['carb-ratio'].option('clock', { data: ic, window: [1200, 420] }),
   ];
 
-  assert.ok(options.every(({ legend }) => legend?.show === true));
-  assert.ok(options.every(({ legend }) => legend.data.length > 0));
+  assert.ok(options.slice(1).every(({ legend }) => legend?.show === true));
+  assert.ok(options.slice(1).every(({ legend }) => legend.data.length > 0));
+  assert.equal(options[0].legend.show, false);
+  assert.ok(options[0].graphic.length > 0, 'the basal clock uses its instrument ledger in place of a legend');
 });
 
 test('carb-ratio target boundaries stay rails while meal runs stay distinct strands (#255)', () => {
@@ -377,10 +394,10 @@ test('chart options resolve live light and dark theme tokens', () => {
       '--surface': '#26221f', '--primary': '#e07f3f', '--accent': '#d08150',
       '--ok': '#9aada1', '--danger': '#ec6f55', '--manual-carb': '#d2743e',
       '--mk-muted': '#a3968a', '--mk-line': '#4d4742', '--mk-ok': '#9aada1' });
-    assert.equal(light.basal.yAxis.axisLabel.color, '#3d5848');
-    assert.equal(dark.basal.yAxis.axisLabel.color, '#a3968a');
-    assert.equal(light.basal.series[1].lineStyle.color, '#5d7368');
-    assert.equal(dark.basal.series[1].lineStyle.color, '#a89a85');
+    assert.equal(light.basal.yAxis[0].axisLabel.color, '#3d5848');
+    assert.equal(dark.basal.yAxis[0].axisLabel.color, '#a3968a');
+    assert.equal(light.basal.series[1].markLine.lineStyle.color, '#4d5c53');
+    assert.equal(dark.basal.series[1].markLine.lineStyle.color, '#a89a85');
     assert.equal(light.isf.series[0].itemStyle.color, '#3f5a3b');
     assert.equal(dark.isf.series[0].itemStyle.color, '#86ad78');
     assert.equal(light.ic.series[1].lineStyle.color, '#3f5a3b');

@@ -3,7 +3,7 @@ import {
 } from '../frontend/diagnose-workstation.js';
 
 export const STORIES = [
-  { id: 'basal', label: 'Basal evidence', modes: ['clock'], sizes: true, range: false },
+  { id: 'basal', label: 'Basal evidence', modes: ['clock', 'bay', 'ledger'], sizes: true, range: false },
   { id: 'isf', label: 'Correction factor evidence', modes: ['event', 'clock'], sizes: true, range: false },
   { id: 'carb-ratio', label: 'Carb ratio evidence', modes: ['event', 'clock'], sizes: true, range: true },
   { id: 'event-comparison', label: 'Response comparison', modes: [], sizes: true, range: true },
@@ -116,6 +116,18 @@ async function drawWorkstation(host, state, story) {
   });
   if (!tile) return `Diagnose workstation · ${story.label} unavailable`;
   tile.click();
+  if (state.mode && state.mode !== story.modes?.[0]) {
+    const mode = await new Promise((resolve) => {
+      const deadline = performance.now() + 1000;
+      const find = () => {
+        const button = root.querySelector(`.tile-mode-${state.mode}`);
+        if (button || performance.now() >= deadline) resolve(button || null);
+        else setTimeout(find, 25);
+      };
+      find();
+    });
+    mode?.click();
+  }
   return `Diagnose workstation · drilled ${tile.dataset.chartId}`;
 }
 

@@ -355,13 +355,14 @@ function basalEditorialOption(data, mini, colors) {
   const slotLabel = finite(data?.slot) ? hhmm(data.slot * 30) : null;
   const slotWindow = slotLabel ? `${slotLabel}–${hhmm(data.slot * 30 + 30)}` : null;
   const ink = (percent) => `color-mix(in srgb, ${colors.text} ${percent}%, transparent)`;
-  const rustFill = `color-mix(in srgb, ${colors.high} ${colors.dark ? 18 : 12}%, transparent)`;
-  const greyFill = `color-mix(in srgb, ${colors.basal} ${colors.dark ? 14 : 10}%, transparent)`;
+  const rustFill = `color-mix(in srgb, ${colors.high} ${colors.dark ? 26 : 20}%, transparent)`;
+  const greyFill = `color-mix(in srgb, ${colors.basal} ${colors.dark ? 18 : 14}%, transparent)`;
   const hair = ink(colors.dark ? 18 : 12);
   const shadow = ink(colors.dark ? 26 : 22);
   const staircase = (curve, color, fill) => ({
-    type: 'line', data: curve, symbol: 'none', animation: false, silent: true, z: 2,
-    lineStyle: { color, width: mini ? 0 : 2 }, areaStyle: { color: fill },
+    type: 'line', data: curve, symbol: 'none', animation: false, silent: true, z: 4,
+    lineStyle: { color, width: mini ? 0 : 1.5 },
+    ...(fill ? { areaStyle: { color: fill } } : {}),
   });
   /* A staircase read aloud is its crossing and its tally — the standing kind
      description ("N nights of steady data") names the roster this form is not
@@ -392,7 +393,7 @@ function basalEditorialOption(data, mini, colors) {
       series: [
         staircase(left, colors.basal, greyFill),
         ...(right.length ? [staircase(right, colors.high, rustFill)] : []),
-        { type: 'custom', animation: false, silent: true, clip: false, data: [0],
+        { type: 'custom', id: 'furniture', animation: false, silent: true, clip: false, data: [0],
           renderItem: (params, api) => {
             const base = api.coord([xMin, 0])[1];
             const children = [];
@@ -502,22 +503,48 @@ function basalEditorialOption(data, mini, colors) {
         formatter: (value) => value.toFixed(xStep >= .1 ? 1 : 2) } },
     yAxis: { type: 'value', min: 0, max: yMax, show: false },
     series: [
-      staircase(left, colors.basal, greyFill),
-      ...(right.length ? [staircase(right, colors.high, rustFill)] : []),
-      /* The night squares ride the line rather than forming a strip of their
-         own: one per night, on the corner of the step that night cut. */
-      { type: 'scatter', symbol: 'rect', symbolSize: 3, animation: false, z: 6,
+      /* THE SILHOUETTE IS BUILT FROM NIGHTS, NOT POURED. A continuous fill under
+         this curve reads as an area chart — a quantity standing at each rate —
+         and it was read that way: "zero days at 1.8, 10 days at 0.72". But the
+         area decomposes exactly, with nothing invented: the staircase is N
+         nights tall at the left edge and steps down by one at each night's own
+         rate, so every night owns one horizontal band, running from the left
+         edge to the rate that night ran. Twenty nights, twenty cells, stacked —
+         countable, and each one hoverable as itself. The row a night occupies is
+         its rank in the roster, so the stack is sorted by rate on the way down.
+         The mini rank keeps the poured silhouette: at 48px tall a cell is under
+         two pixels, and a thumbnail's question is the shape, not the count. */
+      { type: 'custom', id: 'nights', animation: false, z: 3,
         data: roster.map((night, index) => ({
           value: [Math.min(night.delivered_rate, xMax), total - index], name: night.date,
-          /* The square can be pinned to the ceiling; the number it reports may
+          /* The cell can be pinned to the ceiling; the number it reports may
              never be. */
           delivered: night.delivered_rate,
-          itemStyle: { color: hasRule && night.delivered_rate < programmed
-            ? colors.basal : colors.high },
         })),
+        renderItem: (params, api) => {
+          const top = api.coord([xMin, api.value(1)])[1];
+          const floor = api.coord([xMin, api.value(1) - 1])[1];
+          const gap = Math.min(2, (floor - top) * .28);
+          const y = top + gap / 2;
+          const cell = Math.max(1.5, floor - top - gap);
+          const from = params.coordSys.x;
+          const to = api.coord([api.value(0), 0])[0];
+          const split = hasRule
+            ? Math.min(Math.max(api.coord([programmed, 0])[0], from), to) : to;
+          return { type: 'group', children: [
+            ...(split > from ? [{ type: 'rect', shape: { x: from, y, width: split - from, height: cell },
+              style: { fill: greyFill } }] : []),
+            ...(to > split ? [{ type: 'rect', shape: { x: split, y, width: to - split, height: cell },
+              style: { fill: rustFill } }] : []),
+          ] };
+        },
         tooltip: { formatter: (params) => `${params.name} — delivered ${params.data.delivered} U/h`
           + `${hasRule ? ` · programmed ${programmed.toFixed(2)}` : ''}` } },
-      { type: 'custom', animation: false, silent: true, clip: false, z: 10, data: [0],
+      /* The outline still traces the whole roster as one object; the cells under
+         it are what make it countable. */
+      staircase(left, colors.basal, null),
+      ...(right.length ? [staircase(right, colors.high, null)] : []),
+      { type: 'custom', id: 'furniture', animation: false, silent: true, clip: false, z: 10, data: [0],
         renderItem: (params, api) => {
           const cs = params.coordSys;
           const width = api.getWidth();

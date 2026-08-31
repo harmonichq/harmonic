@@ -305,10 +305,14 @@ test('the editorial staircase counts the roster from the payload', () => {
   assert.equal(option.xAxis.name, 'insulin rate, U/h');
   assert.equal(option.xAxis.nameLocation, 'middle');
   assert.ok(option.xAxis.nameGap > 8, 'the name clears the tick labels it sits under');
-  /* One step per night, and the staircase meets the programmed rule at the
-     nights that ran at or above it. */
-  const squares = option.series.find(({ type }) => type === 'scatter');
-  assert.equal(squares.data.length, basal.nights.length);
+  /* ONE CELL PER NIGHT, stacked — the silhouette is countable rather than
+     poured, because a continuous fill under this curve was read as a quantity
+     standing at each rate. Each cell owns one row of the stack. */
+  const cells = option.series.find(({ id }) => id === 'nights');
+  assert.equal(cells.data.length, basal.nights.length);
+  assert.deepEqual(cells.data.map(({ value }) => value[1]),
+    basal.nights.map((_, index) => basal.nights.length - index),
+    'the cells occupy one row each, from the top of the stack down');
   const rust = option.series.filter(({ type }) => type === 'line')[1];
   assert.deepEqual(rust.data[0], [programmed, more + asSet]);
   assert.equal(rust.data[rust.data.length - 1][1], 0, 'the staircase lands on the baseline');
@@ -329,9 +333,9 @@ test('the editorial ceiling caps an outlier night without hiding its value', () 
 
   assert.ok(option.xAxis.max < outlier.delivered_rate,
     'the domain answers to the roster, not to its tallest night');
-  const squares = option.series.find(({ type }) => type === 'scatter');
-  const capped = squares.data.find(({ name }) => name === outlier.date);
-  assert.equal(capped.value[0], option.xAxis.max, 'the capped night is pinned to the ceiling');
+  const cells = option.series.find(({ id }) => id === 'nights');
+  const capped = cells.data.find(({ name }) => name === outlier.date);
+  assert.equal(capped.value[0], option.xAxis.max, 'the capped night runs to the ceiling');
   assert.equal(capped.delivered, outlier.delivered_rate,
     'the number the night reports is never the capped one');
   const rust = option.series.filter(({ type }) => type === 'line')[1];
@@ -352,7 +356,7 @@ test('the editorial staircase tolerates an absent estimate at both ranks', () =>
   const bare = entry.option('editorial', { data: basal });
   assert.equal(JSON.stringify(bare.graphic).includes('range '), false,
     'no interval is printed when none was served');
-  assert.equal(bare.series.some(({ type }) => type === 'custom'), true,
+  assert.equal(bare.series.some(({ id }) => id === 'furniture'), true,
     'the plot furniture still draws without an interval');
 });
 
@@ -380,11 +384,25 @@ test('the editorial furniture draws against every payload shape', () => {
   for (const data of shapes) {
     for (const mini of [false, true]) {
       const option = entry.option('editorial', { data, mini });
-      const furniture = option.series.find(({ type }) => type === 'custom');
+      const furniture = option.series.find(({ id }) => id === 'furniture');
       const drawn = furniture.renderItem(params, api);
       assert.equal(drawn.type, 'group');
       assert.ok(drawn.children.every((child) => typeof child.type === 'string'
         && Number.isFinite(child.shape?.x ?? child.shape?.x1 ?? child.style?.x ?? 0)));
+      /* And every night cell: one row of the stack, drawn from the plot's left
+         edge to the rate that night ran. */
+      const cells = option.series.find(({ id }) => id === 'nights');
+      for (const [index, item] of (cells?.data || []).entries()) {
+        const boxes = cells.renderItem({ ...params, dataIndex: index },
+          { ...api, value: (dimension) => item.value[dimension] }).children;
+        assert.ok(boxes.length > 0, 'a night is drawn as at least one cell');
+        for (const cell of boxes) {
+          assert.ok(cell.shape.height > 0 && cell.shape.width >= 0);
+          assert.ok(cell.shape.y >= params.coordSys.y - 1
+            && cell.shape.y + cell.shape.height <= params.coordSys.y + params.coordSys.height + 1,
+          'a night cell stays inside the plot');
+        }
+      }
     }
   }
 });
@@ -411,7 +429,7 @@ test('editorial labels stay inside the plot and clear of each other (held payloa
         plot.y + plot.height - (y / option.yAxis.max) * plot.height],
       getWidth: () => 950, getHeight: () => 307,
     };
-    const boxes = option.series.find(({ type }) => type === 'custom')
+    const boxes = option.series.find(({ id }) => id === 'furniture')
       .renderItem({ coordSys: plot, dataIndex: 0 }, api).children
       .filter(({ type }) => type === 'text')
       .map(({ style }) => {

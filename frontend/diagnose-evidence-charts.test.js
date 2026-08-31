@@ -294,11 +294,36 @@ test('the editorial staircase counts the roster from the payload', () => {
 
   assert.equal(option.animation, false);
   assert.ok(option.series.every((series) => series.animation === false));
+  /* THE RAIL IS SET AS A TABLE: one numeral column right-aligned to a fixed x,
+     one label column left-aligned to a fixed x, one pitch, and a wrapped label
+     hanging in the label column beside an empty numeral. Set as rich-text rows
+     each row was laid out to its own content and the numerals staggered. */
+  const columns = option.graphic.filter(({ style }) => style?.lineHeight === 24
+    && style.width !== undefined && style.width < 206);
+  const [tallyNumerals, tallyLabels, excludedNumerals, excludedLabels] = columns;
+  assert.equal(columns.length, 4, 'two tables, two columns each');
+  assert.equal(tallyNumerals.style.text, `${more}\n${less}\n${asSet}`);
+  assert.equal(tallyLabels.style.text, 'more than programmed\nless\nexactly as set');
+  assert.equal(excludedNumerals.style.text, `${basal.excluded_night_count}\n`,
+    'a wrapped label leaves its continuation row without a numeral');
+  assert.equal(excludedLabels.style.text, 'excluded — not steady enough\nto count');
+  for (const numerals of [tallyNumerals, excludedNumerals]) {
+    assert.equal(numerals.style.align, 'right');
+    assert.equal(numerals.right, excludedNumerals.right, 'one numeral column, one x');
+  }
+  for (const labels of [tallyLabels, excludedLabels]) {
+    assert.equal(labels.style.align, 'left');
+    assert.equal(labels.style.width, tallyLabels.style.width, 'one label column, one width');
+    assert.equal(labels.right, 28, 'the label column runs out to the rail margin');
+  }
+  assert.equal(tallyNumerals.right, 28 + tallyLabels.style.width + 10,
+    'the numerals end one gutter short of where the labels begin');
+  /* And the verdict block above shares that margin, so the section has one edge
+     rather than four. */
   const rail = JSON.stringify(option.graphic);
-  assert.ok(rail.includes(`{n|${more}}{l|more than programmed}`), 'the rail keeps the payload more count');
-  assert.ok(rail.includes(`{n|${less}}{l|less}`), 'the rail keeps the payload less count');
-  assert.ok(rail.includes(`{n|${asSet}}{l|exactly as set}`), 'the rail keeps the payload as-set count');
-  assert.ok(rail.includes(`{n|${basal.excluded_night_count}}`), 'the excluded nights are disclosed in the rail');
+  const heads = option.graphic.filter(({ style }) => style?.width === 206);
+  assert.equal(heads.length, 4, 'slug, estimate, range and table head');
+  assert.ok(heads.every(({ right, style }) => right === 28 && style.align === 'right'));
   assert.ok(rail.includes(`${basal.nights.length} STEADY NIGHTS`));
   /* The scale is a rate, and it says so under its own numbers: a bare 0.0–1.8
      ladder on a chart about nights was read as a count of days. */

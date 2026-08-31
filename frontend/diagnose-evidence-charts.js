@@ -290,6 +290,29 @@ function basalLedgerOption(data, mini, colors, description) {
 const EDITORIAL = Object.freeze({
   margin: 28, deckTop: 16, figureTop: 80, footerBand: 80, rail: 206,
 });
+/* THE RAIL IS A TABLE, so it is set as one: a numeral column right-aligned to a
+   fixed x, a fixed gutter, and a label column left-aligned to a fixed x, with
+   one pitch down the whole section. Set as rich-text rows it was neither — each
+   row's line box was laid out to its own content, so the numerals staggered
+   (11, 4, 5 each finding its own right edge), the labels ragged against them,
+   and a wrapped label centred itself under its own row instead of hanging in
+   the label column. The three widths sum to `EDITORIAL.rail`, which is what the
+   section's hairlines already span. */
+const RAIL = Object.freeze({ numeral: 28, gutter: 10, label: 168, pitch: 24 });
+/* One line per row, and a wrapped label takes another line with an empty
+   numeral beside it — so the two columns stay in step and the wrap hangs in the
+   label column alone. */
+const railTable = (rows) => {
+  const numerals = [];
+  const labels = [];
+  for (const [count, label] of rows) {
+    for (const [index, line] of editorialWrap(label, RAIL.label, 11).split('\n').entries()) {
+      numerals.push(index ? '' : String(count));
+      labels.push(line);
+    }
+  }
+  return { numerals: numerals.join('\n'), labels: labels.join('\n') };
+};
 /* Canvas text has no flow, so a line break is a decision made here. The budget
    is a character count off the font's mean advance — a hairline of slack is
    cheaper than measuring text the layout cannot reflow anyway. */
@@ -477,19 +500,31 @@ function basalEditorialOption(data, mini, colors) {
       : below > above
         ? `Pump ran below the programmed rate on ${below} of ${facts.nights.length} nights`
         : `Pump ran at the programmed rate on ${atRate} of ${facts.nights.length} nights`;
-  const railRows = [
-    `{n|${above}}{l|more than programmed}`,
-    `{n|${below}}{l|less}`,
-    `{n|${atRate}}{l|exactly as set}`,
-  ].join('\n');
-  const railTail = `{n|${data?.excluded_night_count ?? 0}}{l|excluded — not steady}\n{n|}{l|enough to count}`;
-  const railRich = {
-    n: { width: 26, align: 'right', color: colors.text, fontFamily: MONO,
-      fontSize: 16, fontWeight: 600, lineHeight: 22 },
-    l: { padding: [0, 0, 0, 8], color: colors.muted, fontFamily: FONT,
-      fontSize: 11, lineHeight: 22 },
-  };
+  const tally = railTable([
+    [above, 'more than programmed'],
+    [below, 'less'],
+    [atRate, 'exactly as set'],
+  ]);
+  const excluded = railTable([
+    [data?.excluded_night_count ?? 0, 'excluded — not steady enough to count'],
+  ]);
   const caps = `500 10px ${FONT}`;
+  /* Both columns hang off the rail's right margin, so the section keeps one
+     right edge whatever the tile is wide: the labels fill a fixed-width box out
+     to that margin, and the numerals end one gutter short of where the labels
+     begin. */
+  const railColumns = (rows, top) => [
+    { type: 'text', right: EDITORIAL.margin + RAIL.label + RAIL.gutter, top, silent: true,
+      style: { text: rows.numerals, fill: colors.text, font: `600 16px ${MONO}`,
+        align: 'right', width: RAIL.numeral, lineHeight: RAIL.pitch } },
+    { type: 'text', right: EDITORIAL.margin, top: top + 2, silent: true,
+      style: { text: rows.labels, fill: colors.muted, font: `11px ${FONT}`,
+        align: 'left', width: RAIL.label, overflow: 'break', lineHeight: RAIL.pitch } },
+  ];
+  /* The verdict block reads as the table's own head: same right margin, same
+     width, so the section has one edge rather than four. */
+  const railHead = (style, top) => ({ type: 'text', right: EDITORIAL.margin, top,
+    silent: true, style: { align: 'right', width: EDITORIAL.rail, ...style } });
   return {
     ...chartBase(description, false, colors),
     legend: { show: false },
@@ -501,33 +536,22 @@ function basalEditorialOption(data, mini, colors) {
           font: `600 21px ${FONT}`, lineHeight: 24 } },
       /* The verdict slug wears a warm-grey square, never rust: a hold is not an
          alarm, and the word beside it is the backend's own. */
-      { type: 'text', right: EDITORIAL.margin, top: 16, silent: true,
-        style: { text: `{sq|}{v|${verdict.toUpperCase()}}`,
-          rich: { sq: { backgroundColor: ink(45), width: 6, height: 6 },
-            v: { color: colors.muted, fontFamily: FONT, fontSize: 10,
-              fontWeight: 500, padding: [0, 0, 0, 6] } } } },
-      ...(finite(estimateValue) ? [
-        { type: 'text', right: EDITORIAL.margin, top: 34, silent: true,
-          style: { text: `${estimateValue.toFixed(2)} U/h`, fill: colors.text,
-            font: `600 19px ${MONO}` } },
-      ] : [
-        { type: 'text', right: EDITORIAL.margin, top: 36, silent: true,
-          style: { text: 'no estimate', fill: colors.muted, font: `11px ${FONT}` } },
-      ]),
-      ...(hasBand ? [{ type: 'text', right: EDITORIAL.margin, top: 58, silent: true,
-        style: { text: `range ${ciLo.toFixed(2)} – ${ciHi.toFixed(2)}`,
-          fill: colors.muted, font: `11px ${MONO}` } }] : []),
+      railHead({ text: `{sq|}{v|${verdict.toUpperCase()}}`,
+        rich: { sq: { backgroundColor: ink(45), width: 6, height: 6 },
+          v: { color: colors.muted, fontFamily: FONT, fontSize: 10,
+            fontWeight: 500, padding: [0, 0, 0, 6] } } }, 16),
+      ...(finite(estimateValue)
+        ? [railHead({ text: `${estimateValue.toFixed(2)} U/h`, fill: colors.text,
+          font: `600 19px ${MONO}` }, 34)]
+        : [railHead({ text: 'no estimate', fill: colors.muted, font: `11px ${FONT}` }, 36)]),
+      ...(hasBand ? [railHead({ text: `range ${ciLo.toFixed(2)} – ${ciHi.toFixed(2)}`,
+        fill: colors.muted, font: `11px ${MONO}` }, 58)] : []),
       /* The roster as type, not as a chart: three directions, then the nights
          that never qualified, disclosed here rather than cluttering the plot. */
-      { type: 'text', right: EDITORIAL.margin, top: EDITORIAL.figureTop, silent: true,
-        style: { text: `${facts.nights.length} STEADY NIGHT${facts.nights.length === 1 ? '' : 'S'}`,
-          fill: colors.muted, font: caps } },
-      { type: 'text', right: EDITORIAL.margin, top: EDITORIAL.figureTop + 26, silent: true,
-        style: { text: railRows, rich: railRich } },
-      { type: 'text', right: EDITORIAL.margin, top: EDITORIAL.figureTop + 106, silent: true,
-        style: { text: railTail,
-          rich: { ...railRich, n: { ...railRich.n, lineHeight: 15 },
-            l: { ...railRich.l, lineHeight: 15 } } } },
+      railHead({ text: `${facts.nights.length} STEADY NIGHT${facts.nights.length === 1 ? '' : 'S'}`,
+        fill: colors.muted, font: caps }, EDITORIAL.figureTop),
+      ...railColumns(tally, EDITORIAL.figureTop + 26),
+      ...railColumns(excluded, EDITORIAL.figureTop + 112),
       /* The footer is the window and nothing else: the exclusion rule it used to
          recite is the rail's last row. */
       ...(slotWindow ? [{ type: 'text', left: EDITORIAL.margin, bottom: 10, silent: true,
@@ -567,7 +591,7 @@ function basalEditorialOption(data, mini, colors) {
           const children = [
             box(EDITORIAL.margin, height - 28, width - EDITORIAL.margin * 2, 1, hair),
             box(railLeft, EDITORIAL.figureTop + 18, EDITORIAL.rail, 1, hair),
-            box(railLeft, EDITORIAL.figureTop + 98, EDITORIAL.rail, 1, hair),
+            box(railLeft, EDITORIAL.figureTop + 104, EDITORIAL.rail, 1, hair),
           ];
           /* A 12px text sets to about .52 of its size per character. Nothing on
              this canvas reflows, so a label that would overrun the plot is

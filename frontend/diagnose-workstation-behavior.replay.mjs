@@ -4325,7 +4325,7 @@ export const S122 = async (page) => {
 export const S123 = async (page) => {
   await openWholeDay(page);
   await captureEvidence(page, 'S123-before-chart-click');
-  await page.locator('.evidence-tile[data-chart-id="ic:720"] .tile-body').click();
+  await page.locator('#tile-row .evidence-tile[data-chart-id="ic:720"] .tile-body').click();
   await settle(page, 450);
   const viaChart = await state(page);
   ok(/block$/.test(viaChart.crumb[viaChart.crumb.length - 1]),
@@ -4398,7 +4398,12 @@ export const S125 = async (page) => {
 export const S126 = async (page) => {
   await openWholeDay(page);
 
-  await drawWindow(page, [120, 300], [0, 1440]);
+  /* A drawn window re-scopes the queue in place (term 45), so the drag below
+     must overlap the target row's own span or the row — and its tile — drops
+     out of the findings response entirely. Basal (330-360) and carb ratio
+     (720-1440) are window-filtered; ISF is not (`isfRows` takes no window
+     argument), so its check draws a window that overlaps neither. */
+  await drawWindow(page, [300, 420], [0, 1440]);
   const drawn1 = await state(page);
   ok(/^Window /.test(drawn1.chip || ''), `S126 precondition: a drawn window stands (${drawn1.chip})`);
   await page.locator('.evidence-tile[data-chart-id="basal:330-360"] .tile-body').click();
@@ -4408,10 +4413,10 @@ export const S126 = async (page) => {
 
   await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
   await settle(page, 450);
-  await drawWindow(page, [120, 300], [0, 1440]);
+  await drawWindow(page, [700, 900], [0, 1440]);
   const drawn2 = await state(page);
   ok(/^Window /.test(drawn2.chip || ''), 'S126 the window is drawn again for the carb-ratio check');
-  await page.locator('.evidence-tile[data-chart-id="ic:720"] .tile-body').click();
+  await page.locator('#tile-row .evidence-tile[data-chart-id="ic:720"] .tile-body').click();
   await settle(page, 450);
   const carb = await state(page);
   ok(/^Block /.test(carb.chip || ''),
@@ -4419,7 +4424,7 @@ export const S126 = async (page) => {
 
   await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
   await settle(page, 450);
-  await drawWindow(page, [120, 300], [0, 1440]);
+  await drawWindow(page, [540, 660], [0, 1440]);
   const drawn3 = await state(page);
   ok(/^Window /.test(drawn3.chip || ''), 'S126 the window is drawn a third time for the correction-factor check');
   await captureEvidence(page, 'S126-before-isf-chart-click');

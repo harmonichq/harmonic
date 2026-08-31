@@ -288,7 +288,7 @@ function basalLedgerOption(data, mini, colors, description) {
    the exclusions, the verdict — is set as type, because only the part carrying
    the argument earns ink. */
 const EDITORIAL = Object.freeze({
-  margin: 28, deckTop: 14, standfirstTop: 42, figureTop: 88, footerBand: 104, rail: 206,
+  margin: 28, deckTop: 16, figureTop: 80, footerBand: 80, rail: 206,
 });
 /* Canvas text has no flow, so a line break is a decision made here. The budget
    is a character count off the font's mean advance — a hairline of slack is
@@ -303,9 +303,8 @@ const editorialWrap = (text, width, size) => {
   }
   return lines.join('\n');
 };
-const nightCount = (count) => `${count} night${count === 1 ? '' : 's'}`;
 
-function basalEditorialOption(data, mini, colors, description) {
+function basalEditorialOption(data, mini, colors) {
   const facts = basalFacts(data);
   const { programmed, ciLo, ciHi, estimateValue, above, below, atRate } = facts;
   const roster = facts.nights.filter((night) => finite(night.delivered_rate))
@@ -351,18 +350,33 @@ function basalEditorialOption(data, mini, colors, description) {
   if (hasRule && (right[0]?.[0] !== programmed || right[0]?.[1] !== crossing)) {
     right.unshift([programmed, crossing]);
   }
-  const slotLabel = hhmm((data?.slot ?? 0) * 30);
-  const slotEnd = hhmm((data?.slot ?? 0) * 30 + 30);
+  /* A slot the payload did not number has no window to print, and printing one
+     anyway is how `NaN:NaN` reaches a tile. */
+  const slotLabel = finite(data?.slot) ? hhmm(data.slot * 30) : null;
+  const slotWindow = slotLabel ? `${slotLabel}–${hhmm(data.slot * 30 + 30)}` : null;
   const ink = (percent) => `color-mix(in srgb, ${colors.text} ${percent}%, transparent)`;
   const rustFill = `color-mix(in srgb, ${colors.high} ${colors.dark ? 18 : 12}%, transparent)`;
   const greyFill = `color-mix(in srgb, ${colors.basal} ${colors.dark ? 14 : 10}%, transparent)`;
   const hair = ink(colors.dark ? 18 : 12);
   const shadow = ink(colors.dark ? 26 : 22);
-  const leader = `color-mix(in srgb, ${colors.muted} ${colors.dark ? 45 : 35}%, transparent)`;
   const staircase = (curve, color, fill) => ({
     type: 'line', data: curve, symbol: 'none', animation: false, silent: true, z: 2,
     lineStyle: { color, width: mini ? 0 : 2 }, areaStyle: { color: fill },
   });
+  /* A staircase read aloud is its crossing and its tally — the standing kind
+     description ("N nights of steady data") names the roster this form is not
+     drawing. */
+  const description = [
+    `${facts.nights.length} steady nights${slotLabel ? ` at ${slotLabel}` : ''}`,
+    ...(hasRule
+      ? [`the pump ran at or above the programmed ${programmed.toFixed(2)} U/h on`
+        + ` ${crossing} of them`, `${above} more, ${below} less, ${atRate} exactly as set`]
+      : []),
+    ...(finite(estimateValue)
+      ? [`estimate ${estimateValue.toFixed(2)} U/h`
+        + (hasBand ? `, range ${ciLo.toFixed(2)} to ${ciHi.toFixed(2)}` : '')] : []),
+    `${data?.excluded_night_count ?? 0} nights excluded`,
+  ].join('; ');
   if (mini) {
     /* THE THUMBNAIL IS ONE SENTENCE: a lopsided hill with a line through it and
        most of the mass on the far side. Stroke, squares, axis and every word
@@ -373,8 +387,8 @@ function basalEditorialOption(data, mini, colors, description) {
       grid: { left: 4, right: 4, top: 16, bottom: 12 },
       xAxis: { type: 'value', min: xMin, max: xMax, show: false },
       yAxis: { type: 'value', min: 0, max: yMax, show: false },
-      graphic: [{ type: 'text', left: 5, top: 3, silent: true,
-        style: { text: slotLabel, fill: colors.muted, font: `500 9px ${FONT}` } }],
+      graphic: slotLabel ? [{ type: 'text', left: 5, top: 3, silent: true,
+        style: { text: slotLabel, fill: colors.muted, font: `500 9px ${FONT}` } }] : [],
       series: [
         staircase(left, colors.basal, greyFill),
         ...(right.length ? [staircase(right, colors.high, rustFill)] : []),
@@ -401,38 +415,23 @@ function basalEditorialOption(data, mini, colors, description) {
   }
   const verdict = basalVerdict(data);
   const maxRate = total ? rates[total - 1] : null;
-  const minRate = total ? rates[0] : null;
+  /* ONE FACT, ONE HOME. The reader chose this slot, so nothing here re-sets the
+     scene: the headline states the finding and its support, the rail holds the
+     tally and the exclusions, the slug holds the estimate and its range, the
+     footer holds the window. Two things that were said twice are gone with the
+     saying — the standfirst repeated the rail's three counts, and the interval
+     caption repeated the slug's range and then its verdict word. What a mark
+     already shows is not captioned either: the cliff of nights sitting on the
+     rule was labelled "5 nights ran exactly as programmed" beside a rail row
+     reading "5 exactly as set", and that label was also the text the collision
+     audit caught running off the plot into the rail. */
   const headline = !hasRule
-    ? 'Overnight, this is how often the algorithm ran at each rate.'
-    : above > below ? 'Overnight, the pump kept adding to the rate you set.'
-      : below > above ? 'Overnight, the pump kept trimming the rate you set.'
-        : 'Overnight, the pump mostly ran the rate you set.';
-  /* The headline carries the claim; everything under it reports. The deck used
-     to address the reader in the second person throughout ("your 0.72", "YOU
-     PROGRAMMED", "the rate you already use") — one notch of that voice is more
-     than an advisory reading needs, so the programmed rate is simply named
-     below the headline and the claim keeps the only "you" on the tile. */
-  const standfirst = hasRule
-    ? `On ${above} of ${facts.nights.length} steady nights at ${slotLabel} it delivered more`
-      + ` than the programmed ${programmed.toFixed(2)} U/h; on ${atRate} it matched exactly,`
-      + ` and on ${below} it delivered less.`
-    : `${facts.nights.length} steady nights at ${slotLabel}, counted by the rate`
-      + ' the algorithm ran.';
-  /* THE ONE RENAME. The backend's verdict word is printed verbatim in the slug;
-     this sentence says what the reader is looking at and what Harmonic did with
-     it. It re-derives no threshold and no direction of its own. */
-  const held = verdict === 'Supported' ? 'Harmonic supports moving this setting.'
-    : verdict === 'Held' ? 'Harmonic is holding this setting.'
-      : 'Harmonic is not calling this one.';
-  /* One line, because the second one landed on the footer rule and because a
-     caption under a chart is a caption, not a paragraph. */
-  const caption = hasBand
-    ? `Likely true rate ${ciLo.toFixed(2)}–${ciHi.toFixed(2)} U/h`
-      + (hasRule && ciLo <= programmed && programmed <= ciHi
-        ? ' — wide enough to still include the programmed rate. '
-        : ' — clear of the programmed rate. ')
-      + held
-    : held;
+    ? `${facts.nights.length} nights, counted by the rate the pump ran`
+    : above > below
+      ? `Pump ran above the programmed rate on ${above} of ${facts.nights.length} nights`
+      : below > above
+        ? `Pump ran below the programmed rate on ${below} of ${facts.nights.length} nights`
+        : `Pump ran at the programmed rate on ${atRate} of ${facts.nights.length} nights`;
   const railRows = [
     `{n|${above}}{l|more than programmed}`,
     `{n|${below}}{l|less}`,
@@ -453,14 +452,11 @@ function basalEditorialOption(data, mini, colors, description) {
       top: EDITORIAL.figureTop, bottom: EDITORIAL.footerBand, containLabel: false },
     graphic: [
       { type: 'text', left: EDITORIAL.margin, top: EDITORIAL.deckTop, silent: true,
-        style: { text: editorialWrap(headline, 640, 21), fill: colors.text,
+        style: { text: editorialWrap(headline, 620, 21), fill: colors.text,
           font: `600 21px ${FONT}`, lineHeight: 24 } },
-      { type: 'text', left: EDITORIAL.margin, top: EDITORIAL.standfirstTop, silent: true,
-        style: { text: editorialWrap(standfirst, 640, 13), fill: colors.muted,
-          font: `13px ${FONT}`, lineHeight: 17 } },
       /* The verdict slug wears a warm-grey square, never rust: a hold is not an
          alarm, and the word beside it is the backend's own. */
-      { type: 'text', right: EDITORIAL.margin, top: 20, silent: true,
+      { type: 'text', right: EDITORIAL.margin, top: 16, silent: true,
         style: { text: `{sq|}{v|${verdict.toUpperCase()}}`,
           rich: { sq: { backgroundColor: ink(45), width: 6, height: 6 },
             v: { color: colors.muted, fontFamily: FONT, fontSize: 10,
@@ -470,7 +466,7 @@ function basalEditorialOption(data, mini, colors, description) {
           style: { text: `${estimateValue.toFixed(2)} U/h`, fill: colors.text,
             font: `600 19px ${MONO}` } },
       ] : [
-        { type: 'text', right: EDITORIAL.margin, top: 38, silent: true,
+        { type: 'text', right: EDITORIAL.margin, top: 36, silent: true,
           style: { text: 'no estimate', fill: colors.muted, font: `11px ${FONT}` } },
       ]),
       ...(hasBand ? [{ type: 'text', right: EDITORIAL.margin, top: 58, silent: true,
@@ -479,16 +475,18 @@ function basalEditorialOption(data, mini, colors, description) {
       /* The roster as type, not as a chart: three directions, then the nights
          that never qualified, disclosed here rather than cluttering the plot. */
       { type: 'text', right: EDITORIAL.margin, top: EDITORIAL.figureTop, silent: true,
-        style: { text: `${facts.nights.length} STEADY NIGHTS`, fill: colors.muted, font: caps } },
-      { type: 'text', right: EDITORIAL.margin, top: 114, silent: true,
+        style: { text: `${facts.nights.length} STEADY NIGHT${facts.nights.length === 1 ? '' : 'S'}`,
+          fill: colors.muted, font: caps } },
+      { type: 'text', right: EDITORIAL.margin, top: EDITORIAL.figureTop + 26, silent: true,
         style: { text: railRows, rich: railRich } },
-      { type: 'text', right: EDITORIAL.margin, top: 194, silent: true,
+      { type: 'text', right: EDITORIAL.margin, top: EDITORIAL.figureTop + 106, silent: true,
         style: { text: railTail,
           rich: { ...railRich, n: { ...railRich.n, lineHeight: 15 },
             l: { ...railRich.l, lineHeight: 15 } } } },
-      { type: 'text', left: EDITORIAL.margin, bottom: 10, silent: true,
-        style: { text: 'Steady overnight windows only — nights with a bolus still acting'
-          + ` are excluded. ${slotLabel}–${slotEnd}.`, fill: colors.muted, font: caps } },
+      /* The footer is the window and nothing else: the exclusion rule it used to
+         recite is the rail's last row. */
+      ...(slotWindow ? [{ type: 'text', left: EDITORIAL.margin, bottom: 10, silent: true,
+        style: { text: slotWindow, fill: colors.muted, font: caps } }] : []),
     ],
     /* THE AXIS SAYS WHAT IT MEASURES, UNDER ITS OWN NUMBERS. A unit hung after
        the last tick is read after the scale, not with it: a bare ladder of
@@ -535,8 +533,15 @@ function basalEditorialOption(data, mini, colors, description) {
           const children = [
             box(EDITORIAL.margin, height - 28, width - EDITORIAL.margin * 2, 1, hair),
             box(railLeft, EDITORIAL.figureTop + 18, EDITORIAL.rail, 1, hair),
-            box(railLeft, 186, EDITORIAL.rail, 1, hair),
+            box(railLeft, EDITORIAL.figureTop + 98, EDITORIAL.rail, 1, hair),
           ];
+          /* A 12px text sets to about .52 of its size per character. Nothing on
+             this canvas reflows, so a label that would overrun the plot is
+             mirrored to the other side of its mark rather than clipped — the
+             collision the audit caught was this label, at a slot whose rule
+             sits far enough right that its caption ran into the rail. */
+          const roomRight = (x, content, size = 12) =>
+            x + content.length * size * .52 < cs.x + cs.width - 4;
           /* Two dotted counts and nothing else: the baseline is the zero, so it
              never gets a rule of its own. Each count is named UNDER its own
              hairline — the top one runs along the plot's ceiling, and a label
@@ -558,72 +563,52 @@ function basalEditorialOption(data, mini, colors, description) {
             if (finite(estimateValue)) {
               children.push(box(api.coord([estimateValue, 0])[0] - 1, base + 34, 2, 14, colors.basal));
             }
-            children.push({ type: 'polyline',
-              shape: { points: [[xLo, base + 47], [xLo, base + 52], [cs.x, base + 52]] },
-              style: { stroke: leader, lineWidth: 1, fill: 'none' } });
           }
-          children.push(text(editorialWrap(caption, cs.width - 8, 11),
-            cs.x, base + 54, `11px ${FONT}`, colors.muted, { lineHeight: 15 }));
           /* A night past the ceiling leaves by a caret carrying its true value:
-             an advisory chart may cap a scale, never hide a big night. */
+             an advisory chart may cap a scale, never hide a big night. This is
+             the only rate on the tile no mark can show, so it is the only one
+             still set as a label out here. */
           if (overflow > 0 && finite(maxRate)) {
             const yExit = api.coord([xMax, overflow])[1];
             children.push({ type: 'polygon',
               shape: { points: [[cs.x + cs.width + 6, yExit],
                 [cs.x + cs.width, yExit - 3.5], [cs.x + cs.width, yExit + 3.5]] },
-              style: { fill: colors.high } });
-            /* The caret prints its own value only when no callout is already
-               carrying it — two copies of one night's rate is one too many. */
-            if (above === 0) {
-              children.push(text(maxRate.toFixed(1), cs.x + cs.width - 4, yExit - 6,
-                `9px ${MONO}`, colors.high, { align: 'right', verticalAlign: 'bottom' }));
-            }
+              style: { fill: colors.high } },
+            text(`tallest ${maxRate.toFixed(1)} U/h`, cs.x + cs.width - 4, yExit - 6,
+              `500 11px ${FONT}`, colors.high, { align: 'right', verticalAlign: 'bottom' }));
           }
           if (hasRule) {
             const ruleX = api.coord([programmed, 0])[0];
             const yCross = api.coord([programmed, crossing])[1];
             children.push(box(ruleX - .75, cs.y, 1.5, base + 10 - cs.y, colors.basal));
             /* The flag rides just inside the plot's top edge — the deck owns
-               every pixel above it, and a caps line set into the deck's own band
-               would run through the standfirst. */
-            const flagRight = ruleX > cs.x + cs.width - 160;
-            children.push(box(ruleX + (flagRight ? -4 : 1), cs.y + 7, 3, 3, colors.basal),
-              text(`PROGRAMMED ${programmed.toFixed(2)} U/H`,
-                ruleX + (flagRight ? -9 : 7), cs.y + 4, caps, colors.muted,
-                { align: flagRight ? 'right' : 'left' }));
+               every pixel above it. The unit comes off it now that the axis
+               below names itself. */
+            const flag = `PROGRAMMED ${programmed.toFixed(2)}`;
+            const flagLeft = roomRight(ruleX + 7, flag, 10);
+            children.push(box(ruleX + (flagLeft ? 1 : -4), cs.y + 7, 3, 3, colors.basal),
+              text(flag, ruleX + (flagLeft ? 7 : -9), cs.y + 4, caps, colors.muted,
+                { align: flagLeft ? 'left' : 'right' }));
+            /* The cliff of nights that ran exactly as programmed keeps its
+               thickened mark and loses its caption: the rail already counts
+               them, and the mark is the part the rail cannot draw. */
             if (atRate > 0) {
-              const yFoot = api.coord([programmed, crossing - atRate])[1];
-              children.push(box(ruleX - 1.5, yCross, 3, yFoot - yCross, colors.high));
-              const yMid = (yCross + yFoot) / 2;
-              const yCallout = Math.max(cs.y + 30, yMid - 26);
-              children.push({ type: 'polyline',
-                shape: { points: [[ruleX + 4, yMid], [ruleX + 36, yMid], [ruleX + 36, yCallout]] },
-                style: { stroke: leader, lineWidth: 1, fill: 'none' } });
-              children.push(text(`${nightCount(atRate)} ran exactly as programmed.`,
-                ruleX + 42, yCallout, `500 12px ${FONT}`, colors.text,
-                { verticalAlign: 'middle' }));
+              children.push(box(ruleX - 1.5, yCross,
+                3, api.coord([programmed, crossing - atRate])[1] - yCross, colors.high));
             }
-            /* The crossing: a ring filled with the surface so it stands clear
-               of the rule it sits on. */
+            /* THE ONE NUMBER THE MARKS CANNOT SAY. The ring's height is the
+               finding — nights at or above the programmed rate — and reading it
+               off the staircase means counting steps, so the crossing is
+               labelled and nothing else on the plot is. */
             children.push({ type: 'circle', shape: { cx: ruleX, cy: yCross, r: 4 },
               style: { fill: colors.surface, stroke: colors.high, lineWidth: 2 } });
-          }
-          /* THE TAIL CALLOUT SITS ON THE TAIL IT NAMES. Anchored to the plot's
-             top edge it shared a band with the cliff's callout and the two ran
-             through each other; anchored to the silhouette's own right-hand end
-             it can only ever sit above a curve that is nearly spent, which is
-             also where the spec asked for it. */
-          const tail = above > 0
-            ? `${nightCount(above)} ran higher,\nreaching ${maxRate?.toFixed(1)} U/h.`
-            : below > 0
-              ? `${nightCount(below)} ran lower,\ndown to ${minRate?.toFixed(1)} U/h.`
-              : null;
-          if (tail) {
-            const xTail = xMin + (xMax - xMin) * .78;
-            const yTail = Math.max(cs.y + 44,
-              api.coord([xTail, rates.filter((rate) => rate >= xTail).length])[1] - 12);
-            children.push(text(tail, cs.x + cs.width, yTail, `500 12px ${FONT}`,
-              colors.text, { align: 'right', verticalAlign: 'bottom', lineHeight: 16 }));
+            const atOrAbove = `${crossing} of ${total} night${total === 1 ? '' : 's'} at or above`;
+            const labelRight = roomRight(ruleX + 10, atOrAbove);
+            /* Clear of the flag's own band: a crossing at the ceiling puts this
+               label exactly where the flag is, and both hang off the same rule. */
+            children.push(text(atOrAbove, ruleX + (labelRight ? 10 : -10),
+              Math.max(cs.y + 38, yCross - 8), `500 12px ${FONT}`, colors.text,
+              { align: labelRight ? 'left' : 'right', verticalAlign: 'bottom' }));
           }
           return { type: 'group', children };
         } },
@@ -655,7 +640,7 @@ function basalOption(mode, { data, mini = false } = {}) {
   }
   if (mode === 'bay') return basalBayOption(data, mini, colors, description);
   if (mode === 'ledger') return basalLedgerOption(data, mini, colors, description);
-  if (mode === 'editorial') return basalEditorialOption(data, mini, colors, description);
+  if (mode === 'editorial') return basalEditorialOption(data, mini, colors);
   /* NIGHTS ARE UNCONNECTED OBSERVATIONS, NOT A SERIES — and each one's story
      is "how far from the programmed rate did the algorithm land". So a night
      is a deviation COLUMN rising (or dropping) from the programmed baseline:

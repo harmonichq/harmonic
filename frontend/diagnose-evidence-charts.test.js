@@ -389,6 +389,73 @@ test('the editorial furniture draws against every payload shape', () => {
   }
 });
 
+/* THE COLLISION THE SWEEP CAUGHT, held open. Under the harness's held edge
+   payload the programmed rule sits far right, and a label hung off it ran out of
+   the plot and into the tally rail; a crossing at the ceiling put another one
+   through the rule's own flag. Nothing on this canvas reflows, so the guard is
+   arithmetic: every label hung off a mark is measured, mirrored to the mark's
+   other side when it would overrun, and kept out of the flag's band. */
+test('editorial labels stay inside the plot and clear of each other (held payload)', () => {
+  const basal = fixture('./__fixtures__/basal-night-evidence.json').expected;
+  const entry = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'basal');
+  const night = (delivered, sign) => ({ date: `2026-02-0${sign + 2}`, delivered_rate: delivered,
+    programmed_rate: .72, sign, t: '2026-02-01T00:00:00' });
+  const held = { ...basal, slot: 'edge-hold', excluded_night_count: 0, asserts_move: false,
+    safety_status: 'held (recurring-low gate)',
+    nights: [night(.62, -1), night(.61, -1), night(.72, null)] };
+  const plot = { x: 28, y: 80, width: 672, height: 147 };
+  for (const data of [held, { ...basal, estimate: { value: .74, lo: .6, hi: .92 } }]) {
+    const option = entry.option('editorial', { data });
+    const api = {
+      coord: ([x, y]) => [plot.x + ((x - option.xAxis.min) / (option.xAxis.max - option.xAxis.min)) * plot.width,
+        plot.y + plot.height - (y / option.yAxis.max) * plot.height],
+      getWidth: () => 950, getHeight: () => 307,
+    };
+    const boxes = option.series.find(({ type }) => type === 'custom')
+      .renderItem({ coordSys: plot, dataIndex: 0 }, api).children
+      .filter(({ type }) => type === 'text')
+      .map(({ style }) => {
+        const lines = String(style.text).split('\n');
+        const size = Number(/(\d+)px/.exec(style.font)[1]);
+        const width = Math.max(...lines.map(({ length }) => length)) * size * .52;
+        const height = lines.length * (style.lineHeight || size * 1.25);
+        return { text: style.text, width, height,
+          x: style.align === 'right' ? style.x - width : style.x,
+          y: style.verticalAlign === 'bottom' ? style.y - height : style.y };
+      });
+    for (const box of boxes) {
+      assert.ok(box.x + box.width <= plot.x + plot.width + 2,
+        `"${box.text}" runs out of the plot and into the rail`);
+      assert.ok(box.x >= plot.x - 2, `"${box.text}" runs off the left of the plot`);
+    }
+    for (const [index, box] of boxes.entries()) {
+      for (const other of boxes.slice(index + 1)) {
+        assert.ok(box.x >= other.x + other.width || other.x >= box.x + box.width
+          || box.y >= other.y + other.height || other.y >= box.y + box.height,
+        `"${box.text}" collides with "${other.text}"`);
+      }
+    }
+  }
+  /* A slot the payload never numbered prints no window rather than NaN:NaN. */
+  const option = entry.option('editorial', { data: held });
+  assert.doesNotMatch(JSON.stringify(option.graphic), /NaN/);
+  assert.doesNotMatch(option.aria.description, /NaN/);
+});
+
+/* The figure read aloud is its crossing and its tally, not the standing roster
+   line the other basal modes carry. */
+test('the editorial reading names the crossing, the tally and the exclusions', () => {
+  const basal = fixture('./__fixtures__/basal-night-evidence.json').expected;
+  const entry = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'basal');
+  const more = basal.nights.filter(({ sign }) => sign === 1).length;
+  const asSet = basal.nights.filter(({ sign }) => sign === null).length;
+  const { description } = entry.option('editorial', { data: basal }).aria;
+
+  assert.match(description, new RegExp(`at or above the programmed 0\\.60 U/h on ${more + asSet} of them`));
+  assert.match(description, new RegExp(`${more} more, 0 less, ${asSet} exactly as set`));
+  assert.match(description, new RegExp(`${basal.excluded_night_count} nights excluded`));
+});
+
 test('every multi-series evidence form carries an on-chart legend', () => {
   const basal = fixture('./__fixtures__/basal-night-evidence.json').expected;
   const isf = fixture('../mockups/diagnose-workstation.synthetic/isf-rest-window-evidence.capture.json').payload;

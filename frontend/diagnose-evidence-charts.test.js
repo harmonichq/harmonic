@@ -294,35 +294,33 @@ test('the editorial staircase counts the roster from the payload', () => {
 
   assert.equal(option.animation, false);
   assert.ok(option.series.every((series) => series.animation === false));
-  /* THE RAIL IS SET AS A TABLE: one numeral column right-aligned to a fixed x,
-     one label column left-aligned to a fixed x, one pitch, and a wrapped label
-     hanging in the label column beside an empty numeral. Set as rich-text rows
-     each row was laid out to its own content and the numerals staggered. */
-  const columns = option.graphic.filter(({ style }) => style?.lineHeight === 24
-    && style.width !== undefined && style.width < 206);
-  const [tallyNumerals, tallyLabels, excludedNumerals, excludedLabels] = columns;
-  assert.equal(columns.length, 4, 'two tables, two columns each');
-  assert.equal(tallyNumerals.style.text, `${more}\n${less}\n${asSet}`);
-  assert.equal(tallyLabels.style.text, 'more than programmed\nless\nexactly as set');
-  assert.equal(excludedNumerals.style.text, `${basal.excluded_night_count}\n`,
-    'a wrapped label leaves its continuation row without a numeral');
-  assert.equal(excludedLabels.style.text, 'excluded — not steady\nenough to count');
-  for (const numerals of [tallyNumerals, excludedNumerals]) {
-    assert.equal(numerals.style.align, 'right');
-    assert.equal(numerals.right, excludedNumerals.right, 'one numeral column, one x');
-  }
-  for (const labels of [tallyLabels, excludedLabels]) {
-    assert.equal(labels.style.align, 'left');
-    assert.equal(labels.style.width, tallyLabels.style.width, 'one label column, one width');
-    assert.equal(labels.right, 28, 'the label column runs out to the rail margin');
-  }
-  assert.equal(tallyNumerals.right, 28 + tallyLabels.style.width + 10,
+  /* THE RAIL IS SET AS A TABLE OF PAIRS: every numeral right-aligned to one
+     fixed x, every label left-aligned one fixed gutter after it, and the numeral
+     centred against its own label rather than hung from the label's first line.
+     Set as rich-text rows each row was laid out to its own content and the
+     numerals staggered; set as two column-wide blocks the numerals were marooned
+     a column away from the words they belong to. */
+  const numerals = option.graphic.filter(({ style }) => style?.width === 28);
+  const labels = option.graphic.filter(({ style }) => style?.width === 132);
+  assert.deepEqual(numerals.map(({ style }) => style.text),
+    [more, less, asSet, basal.excluded_night_count].map(String));
+  assert.deepEqual(labels.map(({ style }) => style.text),
+    ['more than programmed', 'less', 'exactly as set', 'excluded — not steady'],
+    'the exclusion reads as one statement on one line, not two data points');
+  assert.ok(numerals.every(({ right, style }) => right === numerals[0].right
+    && style.align === 'right'), 'one numeral column, one x');
+  assert.ok(labels.every(({ right, style }) => right === 28 && style.align === 'left'),
+    'one label column, out to the rail margin');
+  assert.equal(numerals[0].right, 28 + 132 + 10,
     'the numerals end one gutter short of where the labels begin');
-  /* The pair stays tight and the block of pairs sits against the rail's margin:
-     a label column stretched to the rail's full width marooned the numerals a
-     column away from the words they belong to. */
-  assert.ok(tallyLabels.style.width <= 130,
-    'the label column is only as wide as the labels need');
+  /* Each pair shares a centre line: a numeral is 16px and its label 11px, so
+     equal tops would not be equal middles. */
+  for (const [index, numeral] of numerals.entries()) {
+    const label = labels[index];
+    const lines = label.style.text.split('\n').length;
+    assert.ok(Math.abs((numeral.top + 8) - (label.top + lines * 7)) <= 1,
+      `row ${index} centres its numeral against its label`);
+  }
   assert.ok(option.graphic.every(({ style }) => !/circle/.test(style?.text ?? '')));
   assert.equal(option.series.find(({ id }) => id === 'furniture')
     .renderItem({ coordSys: { x: 28, y: 80, width: 672, height: 147 }, dataIndex: 0 }, {

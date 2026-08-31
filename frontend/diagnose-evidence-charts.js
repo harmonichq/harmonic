@@ -297,21 +297,7 @@ const EDITORIAL = Object.freeze({
    PAIR stays tight and the block of pairs sits against the rail's own margin:
    stretched to the full rail width the numerals ended up marooned a column away
    from the words they belong to, with the white space inside the row. */
-const RAIL = Object.freeze({ numeral: 28, gutter: 10, label: 124, pitch: 24 });
-/* One line per row, and a wrapped label takes another line with an empty
-   numeral beside it — so the two columns stay in step and the wrap hangs in the
-   label column alone. */
-const railTable = (rows) => {
-  const numerals = [];
-  const labels = [];
-  for (const [count, label] of rows) {
-    for (const [index, line] of editorialWrap(label, RAIL.label, 11).split('\n').entries()) {
-      numerals.push(index ? '' : String(count));
-      labels.push(line);
-    }
-  }
-  return { numerals: numerals.join('\n'), labels: labels.join('\n') };
-};
+const RAIL = Object.freeze({ numeral: 28, gutter: 10, label: 132, pitch: 24, lead: 14 });
 /* Canvas text has no flow, so a line break is a decision made here. The budget
    is a character count off the font's mean advance — a hairline of slack is
    cheaper than measuring text the layout cannot reflow anyway. */
@@ -499,27 +485,32 @@ function basalEditorialOption(data, mini, colors) {
       : below > above
         ? `Pump ran below the programmed rate on ${below} of ${facts.nights.length} nights`
         : `Pump ran at the programmed rate on ${atRate} of ${facts.nights.length} nights`;
-  const tally = railTable([
-    [above, 'more than programmed'],
-    [below, 'less'],
-    [atRate, 'exactly as set'],
-  ]);
-  const excluded = railTable([
-    [data?.excluded_night_count ?? 0, 'excluded — not steady enough to count'],
-  ]);
   const caps = `500 10px ${FONT}`;
-  /* Both columns hang off the rail's right margin, so the section keeps one
-     right edge whatever the tile is wide: the labels fill a fixed-width box out
-     to that margin, and the numerals end one gutter short of where the labels
-     begin. */
-  const railColumns = (rows, top) => [
-    { type: 'text', right: EDITORIAL.margin + RAIL.label + RAIL.gutter, top, silent: true,
-      style: { text: rows.numerals, fill: colors.text, font: `600 16px ${MONO}`,
-        align: 'right', width: RAIL.numeral, lineHeight: RAIL.pitch } },
-    { type: 'text', right: EDITORIAL.margin, top: top + 2, silent: true,
-      style: { text: rows.labels, fill: colors.muted, font: `11px ${FONT}`,
-        align: 'left', width: RAIL.label, overflow: 'break', lineHeight: RAIL.pitch } },
-  ];
+  /* A ROW IS ONE UNIT, so the numeral is centred against its label rather than
+     hung from the label's first line — with the label set as one block and the
+     numeral as another, a wrapped label left its count sitting against the top
+     line and reading as a heading for two data points. Both columns hang off
+     the rail's right margin, so the section keeps one right edge whatever the
+     tile is wide, and a label that does wrap keeps its continuation in the label
+     column on the tighter leading of a single statement. */
+  const railColumns = (rows, top) => {
+    const elements = [];
+    let y = top;
+    for (const [count, label] of rows) {
+      const lines = editorialWrap(label, RAIL.label, 11).split('\n');
+      const height = Math.max(RAIL.pitch, lines.length * RAIL.lead);
+      elements.push({ type: 'text', right: EDITORIAL.margin + RAIL.label + RAIL.gutter,
+        top: y + (height - 16) / 2, silent: true,
+        style: { text: String(count), fill: colors.text, font: `600 16px ${MONO}`,
+          align: 'right', width: RAIL.numeral } },
+      { type: 'text', right: EDITORIAL.margin,
+        top: y + (height - lines.length * RAIL.lead) / 2, silent: true,
+        style: { text: lines.join('\n'), fill: colors.muted, font: `11px ${FONT}`,
+          align: 'left', width: RAIL.label, overflow: 'break', lineHeight: RAIL.lead } });
+      y += height;
+    }
+    return elements;
+  };
   /* The verdict block reads as the table's own head: same right margin, same
      width, so the section has one edge rather than four. */
   const railHead = (style, top) => ({ type: 'text', right: EDITORIAL.margin, top,
@@ -549,8 +540,18 @@ function basalEditorialOption(data, mini, colors) {
          that never qualified, disclosed here rather than cluttering the plot. */
       railHead({ text: `${facts.nights.length} STEADY NIGHT${facts.nights.length === 1 ? '' : 'S'}`,
         fill: colors.muted, font: caps }, EDITORIAL.figureTop),
-      ...railColumns(tally, EDITORIAL.figureTop + 26),
-      ...railColumns(excluded, EDITORIAL.figureTop + 112),
+      ...railColumns([
+        [above, 'more than programmed'],
+        [below, 'less'],
+        [atRate, 'exactly as set'],
+      ], EDITORIAL.figureTop + 26),
+      /* One statement, one line: "excluded — not steady enough to count" wrapped
+         into two rows that read as two separate counts. The rail's own head
+         already says these are the steady nights, so "not steady" carries the
+         reason without reciting the criterion. */
+      ...railColumns([
+        [data?.excluded_night_count ?? 0, 'excluded — not steady'],
+      ], EDITORIAL.figureTop + 112),
       /* The footer is the window and nothing else: the exclusion rule it used to
          recite is the rail's last row. */
       ...(slotWindow ? [{ type: 'text', left: EDITORIAL.margin, bottom: 10, silent: true,

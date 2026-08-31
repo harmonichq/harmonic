@@ -4,7 +4,14 @@
   "expected": {
     "analysis_generation": "basal-night-evidence-fixture:0",
     "asserts_move": false,
+    "current": 0.6,
     "directional_support_count": 6,
+    "estimate": {
+      "confidence": 0.8,
+      "hi": 0.8,
+      "lo": 0.8,
+      "value": 0.8
+    },
     "excluded_night_count": 1,
     "nights": [
       {
@@ -57,6 +64,7 @@
         "t": "2026-01-07T00:00:00"
       }
     ],
+    "recommended": 0.72,
     "roster_count": 7,
     "safety_status": "insufficient evidence",
     "schema": "diagnose-basal-night-evidence-v1",

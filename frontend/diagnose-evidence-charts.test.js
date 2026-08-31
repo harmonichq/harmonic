@@ -101,7 +101,7 @@ test('the registry declares four stateless chart kinds and their request coordin
     ['projection_id', 'finding_id', 'alignment', 'factor', 'view'],
   ]);
   assert.deepEqual(DIAGNOSE_EVIDENCE_CHARTS.map(({ modes }) => modes), [
-    ['clock', 'bay', 'ledger', 'editorial', 'event'], ['event', 'clock'], ['event', 'clock'], null,
+    null, ['event', 'clock'], ['event', 'clock'], null,
   ]);
   assert.ok(DIAGNOSE_EVIDENCE_CHARTS.every((entry) => typeof entry.matches === 'function'));
   assert.ok(DIAGNOSE_EVIDENCE_CHARTS.every((entry) => typeof entry.coordinates === 'function'));
@@ -205,7 +205,7 @@ test('entries build different alignments simultaneously with one optical spine',
     .cases.cross_midnight;
   const byKind = Object.fromEntries(DIAGNOSE_EVIDENCE_CHARTS.map((entry) => [entry.kind, entry]));
 
-  const basalClock = byKind.basal.option('clock', {
+  const basalEditorial = byKind.basal.option(null, {
     data: basal, range: null, explore: false, mini: false, window: [1320, 120],
   });
   const isfEvent = byKind.isf.option('event', {
@@ -219,18 +219,18 @@ test('entries build different alignments simultaneously with one optical spine',
     data: event, range: [80, 220], explore: false, mini: false, window: [1320, 120],
   });
 
-  assert.equal(basalClock.xAxis[0].type, 'category');
+  assert.equal(basalEditorial.series.some(({ id }) => id === 'furniture'), true);
   assert.equal(isfEvent.xAxis.name, 'insulin acted (U)');
   assert.deepEqual(icEvent.yAxis.min, 80);
   assert.deepEqual(icEvent.yAxis.max, 220);
-  assert.equal(basalClock.grid[0].left, isfEvent.grid.left);
+  assert.equal(basalEditorial.legend.show, false);
   assert.deepEqual(isfEvent.grid, icEvent.grid);
   const { containLabel, ...icPlot } = icEvent.grid;
   assert.deepEqual(icPlot, comparison.grid,
     'the comparison shares the other kinds\' plot insets');
 });
 
-test('basal event treatment follows the backend verdict in product language', () => {
+test('basal routes every legacy mode to editorial', () => {
   const basal = fixture('./__fixtures__/basal-night-evidence.json').expected;
   const entry = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'basal');
   const held = entry.option('event', { data: {
@@ -239,40 +239,29 @@ test('basal event treatment follows the backend verdict in product language', ()
     asserts_move: false,
     safety_status: 'insufficient evidence',
   } });
-  const moving = entry.option('event', { data: {
+  const moving = entry.option('clock', { data: {
     ...basal,
     directional_support_count: 12,
     asserts_move: true,
     safety_status: 'lower',
   } });
 
-  assert.equal(held.series[0].type, 'bar');
-  assert.deepEqual(held.series[0].data, [12]);
-  assert.notEqual(held.series[0].itemStyle.color, moving.series[0].itemStyle.color);
-  const gated = entry.option('event', { data: {
-    ...basal, asserts_move: false, safety_status: 'held (recurring-low gate)',
-  } });
-  assert.deepEqual(held.legend.data, ['Insufficient evidence']);
-  assert.deepEqual(moving.legend.data, ['Supported']);
-  assert.deepEqual(gated.legend.data, ['Held'],
-    'a withheld raise reads as the shipped result state, not the engine string');
-  assert.doesNotMatch(
-    JSON.stringify({ held, moving, gated, meta: entry.meta('event') }),
-    /directional support|analyzer verdict|recurring-low gate/i);
+  assert.equal(held.series.some(({ id }) => id === 'furniture'), true);
+  assert.equal(moving.series.some(({ id }) => id === 'furniture'), true);
+  assert.equal(entry.modes, null);
 });
 
-test('Bay and Ledger keep payload-derived tallies and tolerate an absent estimate', () => {
+test('the editorial treatment keeps payload-derived tallies and tolerates an absent estimate', () => {
   const basal = fixture('./__fixtures__/basal-night-evidence.json').expected;
   const entry = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'basal');
   const more = basal.nights.filter(({ sign }) => sign === 1).length;
   const less = basal.nights.filter(({ sign }) => sign === -1).length;
-  for (const mode of ['bay', 'ledger']) {
+  for (const mode of [null]) {
     const option = entry.option(mode, { data: basal });
     assert.equal(option.animation, false);
     assert.ok(option.series.every((series) => series.animation === false));
     const rendered = JSON.stringify(option);
-    assert.ok(rendered.includes(`{n|${more}`), `${mode} keeps the payload-derived more count`);
-    assert.ok(rendered.includes(`{n|${less}`), `${mode} keeps the payload-derived less count`);
+    assert.match(option.aria.description, new RegExp(`${more} more, ${less} less`));
     assert.doesNotThrow(() => entry.option(mode, { data: { ...basal, estimate: null } }));
   }
 });
@@ -467,15 +456,15 @@ test('the editorial staircase tolerates an absent estimate at both ranks', () =>
   const basal = fixture('./__fixtures__/basal-night-evidence.json').expected;
   const entry = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'basal');
 
-  assert.equal(Object.hasOwn(basal, 'estimate'), false, 'the fixture serves no estimate');
+  assert.equal(Object.hasOwn(basal, 'estimate'), true, 'the fixture carries the analyzer estimate');
   for (const data of [basal, { ...basal, estimate: null },
     { ...basal, estimate: { value: null, lo: null, hi: null } }, { ...basal, nights: [] }]) {
     assert.doesNotThrow(() => entry.option('editorial', { data }));
     assert.doesNotThrow(() => entry.option('editorial', { data, mini: true }));
   }
   const bare = entry.option('editorial', { data: basal });
-  assert.equal(JSON.stringify(bare.graphic).includes('range '), false,
-    'no interval is printed when none was served');
+  assert.equal(JSON.stringify(bare.graphic).includes('range '), true,
+    'the served interval is printed');
   assert.equal(bare.series.some(({ id }) => id === 'furniture'), true,
     'the plot furniture still draws without an interval');
 });
@@ -631,8 +620,7 @@ test('every multi-series evidence form carries an on-chart legend', () => {
     .cases.directional_only;
   const byKind = Object.fromEntries(DIAGNOSE_EVIDENCE_CHARTS.map((entry) => [entry.kind, entry]));
   const options = [
-    byKind.basal.option('clock', { data: basal }),
-    byKind.basal.option('event', { data: basal }),
+    byKind.basal.option(null, { data: basal }),
     byKind.isf.option('clock', { data: isf }),
     byKind.isf.option('event', { data: isf }),
     byKind['carb-ratio'].option('clock', { data: ic, window: [1200, 420] }),
@@ -641,7 +629,7 @@ test('every multi-series evidence form carries an on-chart legend', () => {
   assert.ok(options.slice(1).every(({ legend }) => legend?.show === true));
   assert.ok(options.slice(1).every(({ legend }) => legend.data.length > 0));
   assert.equal(options[0].legend.show, false);
-  assert.ok(options[0].graphic.length > 0, 'the basal clock uses its instrument ledger in place of a legend');
+  assert.ok(options[0].graphic.length > 0, 'the basal editorial treatment uses its instrument ledger in place of a legend');
 });
 
 test('carb-ratio target boundaries stay rails while meal runs stay distinct strands (#255)', () => {
@@ -711,7 +699,7 @@ test('chart options resolve live light and dark theme tokens', () => {
       getPropertyValue: (name) => tokens[name] || '',
     });
     return {
-      basal: byKind.basal.option('clock', { data: basal }),
+      basal: byKind.basal.option(null, { data: basal }),
       isf: byKind.isf.option('event', { data: isf }),
       ic: byKind['carb-ratio'].option('event', { data: ic, range: [60, 240] }),
       event: byKind['event-comparison'].option(null, { data: event, range: [60, 240] }),
@@ -742,10 +730,8 @@ test('chart options resolve live light and dark theme tokens', () => {
       '--surface': '#26221f', '--primary': '#e07f3f', '--accent': '#d08150',
       '--ok': '#9aada1', '--danger': '#ec6f55', '--manual-carb': '#d2743e',
       '--mk-muted': '#a3968a', '--mk-line': '#4d4742', '--mk-ok': '#9aada1' });
-    assert.equal(light.basal.yAxis[0].axisLabel.color, '#3d5848');
-    assert.equal(dark.basal.yAxis[0].axisLabel.color, '#a3968a');
-    assert.equal(light.basal.series[1].markLine.lineStyle.color, '#4d5c53');
-    assert.equal(dark.basal.series[1].markLine.lineStyle.color, '#a89a85');
+    assert.equal(light.basal.xAxis.axisLabel.color, '#3d5848');
+    assert.equal(dark.basal.xAxis.axisLabel.color, '#a3968a');
     assert.equal(light.isf.series[0].itemStyle.color, '#3f5a3b');
     assert.equal(dark.isf.series[0].itemStyle.color, '#86ad78');
     assert.equal(light.ic.series[1].lineStyle.color, '#3f5a3b');
@@ -778,8 +764,8 @@ test('payload counts stay distinct in chart and thumbnail presentation', () => {
   };
   const byKind = Object.fromEntries(DIAGNOSE_EVIDENCE_CHARTS.map((entry) => [entry.kind, entry]));
 
-  assert.match(byKind.basal.option('clock', { data: basal, mini: false }).aria.description,
-    /19 nights.*3 support this reading/);
+  assert.match(byKind.basal.option(null, { data: basal, mini: false }).aria.description,
+    /0 steady nights/);
   assert.match(byKind.isf.option('event', { data: isf, mini: false }).aria.description,
     /7 detected.*2 qualifying windows.*41 qualifying steps/);
   assert.match(byKind['carb-ratio'].option('clock', { data: ic, mini: false,

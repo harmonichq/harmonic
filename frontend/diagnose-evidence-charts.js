@@ -192,89 +192,6 @@ const basalTally = (facts, data, colors, vertical = false) => {
     + `{gap|}{tail|${facts.nights.length} STEADY NIGHTS · ${data?.excluded_night_count ?? 0} EXCLUDED}` };
 };
 
-function basalBayOption(data, mini, colors, description) {
-  const option = basalOption('clock', { data, mini });
-  if (mini) return option;
-
-  const { programmed, ciLo, ciHi, estimateValue } = basalFacts(data);
-  const mainGrid = { ...option.grid[0], right: 174 };
-  option.grid = [mainGrid, { right: 10, width: 150, top: mainGrid.top, bottom: mainGrid.bottom }];
-  option.xAxis[1] = { type: 'value', min: 0, max: 1, show: false, gridIndex: 1 };
-  option.yAxis[1] = { type: 'value', min: 0, max: option.yAxis[0].max, show: false, gridIndex: 1 };
-
-  const gutterIndex = option.series.findIndex((series) => series.xAxisIndex === 1 && series.yAxisIndex === 1);
-  if (gutterIndex >= 0) option.series.splice(gutterIndex, 1);
-  option.series.unshift({ type: 'custom', animation: false, silent: true, clip: false,
-    xAxisIndex: 1, yAxisIndex: 1, data: [0], renderItem: (params) => ({ type: 'rect',
-      shape: { x: params.coordSys.x, y: 8, width: 150, height: params.coordSys.y + params.coordSys.height - 36 },
-      style: { fill: colors.sunken, stroke: colors.dark ? colors.ruleStrong : 'transparent', lineWidth: 1 } }),
-  });
-  option.series.push({ type: 'custom', animation: false, silent: true, clip: false, data: [0],
-    renderItem: (params, api) => {
-      if (!finite(programmed)) return null;
-      const y = api.coord([0, programmed])[1];
-      const mainEnd = params.coordSys.x + params.coordSys.width;
-      return { type: 'line', shape: { x1: mainEnd, y1: y, x2: mainEnd + 14 + 24, y2: y },
-        style: { stroke: colors.programmed, lineWidth: 1, lineDash: [1, 3], opacity: .72 } };
-    },
-  });
-  if (!finite(ciLo) || !finite(ciHi)) return option;
-  option.series.push({ type: 'custom', animation: false, silent: true, xAxisIndex: 1, yAxisIndex: 1,
-    data: [0], renderItem: (params, api) => {
-      const x = params.coordSys.x + 24;
-      const yLo = api.coord([0, ciLo])[1];
-      const yHi = api.coord([0, ciHi])[1];
-      const yEst = finite(estimateValue) ? api.coord([0, estimateValue])[1] : null;
-      const readY = Math.max(params.coordSys.y + 18, Math.min(yEst ?? yHi, params.coordSys.y + params.coordSys.height - 42));
-      return { type: 'group', children: [{ type: 'rect', shape: { x: x - 9, y: yHi, width: 18, height: yLo - yHi }, style: { fill: `color-mix(in srgb, ${colors.signal} 14%, transparent)` } },
-        { type: 'rect', shape: { x: x - 1, y: yHi, width: 2, height: yLo - yHi }, style: { fill: colors.programmed } },
-        { type: 'rect', shape: { x: x - 9, y: yHi - 1, width: 18, height: 2 }, style: { fill: colors.programmed } },
-        { type: 'rect', shape: { x: x - 9, y: yLo - 1, width: 18, height: 2 }, style: { fill: colors.programmed } },
-        ...(yEst === null ? [] : [{ type: 'rect', shape: { x: x - 15, y: yEst - 1.5, width: 30, height: 3 }, style: { fill: colors.signal } },
-          { type: 'text', style: { text: estimateValue.toFixed(2), x: x + 22, y: readY, fill: colors.text, font: `800 21px ${MONO}`, verticalAlign: 'middle' } },
-          { type: 'text', style: { text: 'U/h · ESTIMATE', x: x + 22, y: readY + 18, fill: colors.muted, font: `9px ${FONT}` } },
-          { type: 'text', style: { text: `${ciLo.toFixed(2)}–${ciHi.toFixed(2)} CI\nSET ${programmed?.toFixed(2) ?? '—'}`, x: x + 22, y: readY + 31, fill: colors.muted, font: `10px ${MONO}`, lineHeight: 13 } }]),
-        { type: 'text', style: { text: ciHi.toFixed(2), x: x - 13, y: yHi, align: 'right', verticalAlign: 'middle', fill: colors.muted, font: `10px ${MONO}` } },
-        { type: 'text', style: { text: ciLo.toFixed(2), x: x - 13, y: yLo, align: 'right', verticalAlign: 'middle', fill: colors.muted, font: `10px ${MONO}` } }] };
-    },
-  });
-  return option;
-}
-
-function basalLedgerOption(data, mini, colors, description) {
-  const facts = basalFacts(data);
-  const { programmed, ciLo, ciHi, estimateValue } = facts;
-  const { yMax, yStep } = basalScale(facts, true);
-  const lessColor = `color-mix(in srgb, ${colors.basal} 76%, ${colors.text})`;
-  const rows = [...facts.oldestFirst].sort((a, b) => ((b.delivered_rate ?? programmed) - programmed) - ((a.delivered_rate ?? programmed) - programmed) || a.date.localeCompare(b.date));
-  const tally = basalTally(facts, data, colors, true);
-  const gridA = mini ? { ...MINI_GRID } : { left: GRID.left + 6, right: 30, top: 32, bottom: 92 };
-  if (mini) return { ...chartBase(description, true, colors), legend: { show: false }, grid: gridA,
-    xAxis: { type: 'value', min: 0, max: yMax, show: false }, yAxis: { type: 'category', data: rows.map((row) => row.date), show: false },
-    series: [{ type: 'custom', animation: false, silent: true, data: rows.map((row, index) => [row.delivered_rate, index]), renderItem: (params, api) => {
-      const row = rows[params.dataIndex]; const x = api.coord([programmed, params.dataIndex])[0]; const end = api.coord([Math.min(row.delivered_rate, yMax), params.dataIndex])[0]; const h = api.size([0, 1])[1] * .8;
-      return { type: 'rect', shape: { x: Math.min(x, end), y: api.coord([0, params.dataIndex])[1] - h / 2, width: Math.abs(end - x) || 3, height: h }, style: { fill: row.sign === 1 ? colors.high : row.sign === -1 ? lessColor : colors.programmed } };
-    } }] };
-  return {
-    ...chartBase(description, false, colors), legend: { show: false }, grid: [gridA, { left: GRID.left + 6, right: 30, bottom: 40, height: 30 }],
-    graphic: [{ type: 'text', left: GRID.left + 6, bottom: 6, silent: true, style: { text: tally.text, rich: tally.rich } }],
-    xAxis: [{ type: 'value', min: 0, max: yMax, interval: yStep, ...axis(colors), axisLabel: { show: false }, splitLine: { show: true, lineStyle: { color: `color-mix(in srgb, ${colors.line} 60%, transparent)`, width: 1 } } },
-      { type: 'value', min: 0, max: yMax, interval: yStep, gridIndex: 1, ...axis(colors), axisLabel: { color: colors.muted, fontFamily: MONO, fontSize: 10, margin: 8, formatter: (value) => value === 0 ? '0' : value.toFixed(2) }, splitLine: { show: false } }],
-    yAxis: [{ type: 'category', data: rows.map((row) => row.date), inverse: true, ...axis(colors), axisLabel: { interval: 0, color: colors.muted, fontFamily: MONO, fontSize: 8, margin: 8, formatter: (date) => date.slice(5) }, splitLine: { show: false } },
-      { type: 'value', min: 0, max: 1, gridIndex: 1, show: false }],
-    series: [{ type: 'custom', animation: false, data: rows.map((row, index) => [row.delivered_rate, index]), renderItem: (params, api) => {
-      const row = rows[params.dataIndex]; if (!finite(programmed)) return null; const x = api.coord([programmed, params.dataIndex])[0]; const end = api.coord([Math.min(row.delivered_rate, yMax), params.dataIndex])[0]; const h = api.size([0, 1])[1] * .8;
-      if (row.sign === null) return { type: 'rect', shape: { x: x - 2.5, y: api.coord([0, params.dataIndex])[1] - h / 2, width: 5, height: h }, style: { fill: colors.programmed } };
-      return { type: 'rect', shape: { x: Math.min(x, end), y: api.coord([0, params.dataIndex])[1] - h / 2, width: Math.abs(end - x), height: h, r: row.sign === 1 ? [0, 2, 2, 0] : [2, 0, 0, 2] }, style: { fill: row.sign === 1 ? colors.high : lessColor } };
-    }, tooltip: { formatter: (params) => { const row = rows[params.dataIndex]; return `${row.date} · ${row.delivered_rate} U/h · ${row.sign === 1 ? '+' : row.sign === -1 ? '−' : ''}${Math.abs((row.delivered_rate ?? programmed) - programmed).toFixed(2)} vs set`; } } },
-    { type: 'custom', animation: false, silent: true, clip: false, data: [0], renderItem: (params, api) => { if (!finite(programmed)) return null; const x = api.coord([programmed, 0])[0]; return { type: 'group', children: [{ type: 'rect', shape: { x: x - .75, y: params.coordSys.y - 10, width: 1.5, height: params.coordSys.height + 10 + 52 }, style: { fill: `color-mix(in srgb, ${colors.programmed} 55%, ${colors.text})` } }, { type: 'text', style: { text: `set ${programmed.toFixed(2)}`, x: x - 6, y: params.coordSys.y - 12, align: 'right', fill: `color-mix(in srgb, ${colors.programmed} 55%, ${colors.text})`, font: `9px ${MONO}` } }] }; } },
-    { type: 'custom', animation: false, silent: true, data: rows.map((row, index) => [row.delivered_rate, index]).filter(([value]) => finite(value) && value > yMax), renderItem: (_params, api) => { const index = api.value(1); const row = rows[index]; const [x, y] = api.coord([yMax, index]); return { type: 'group', children: [{ type: 'polygon', shape: { points: [[x + 4, y], [x, y - 3.5], [x, y + 3.5]] }, style: { fill: colors.high } }, { type: 'text', style: { text: row.delivered_rate.toFixed(1), x: x + 13, y, verticalAlign: 'middle', fill: colors.high, font: `9px ${MONO}` } }] }; } },
-    { type: 'custom', animation: false, silent: true, clip: false, xAxisIndex: 1, yAxisIndex: 1, data: [0], renderItem: (params) => ({ type: 'line', shape: { x1: params.coordSys.x, y1: params.coordSys.y - 11, x2: params.coordSys.x + params.coordSys.width, y2: params.coordSys.y - 11 }, style: { stroke: colors.line, lineWidth: 1 } }) },
-    ...(finite(ciLo) && finite(ciHi) ? [{ type: 'custom', animation: false, silent: true, xAxisIndex: 1, yAxisIndex: 1, data: [0], renderItem: (params, api) => { const xLo = api.coord([ciLo, .5])[0]; const xHi = api.coord([ciHi, .5])[0]; const xEst = finite(estimateValue) ? api.coord([estimateValue, .5])[0] : null; const y = api.coord([0, .5])[1]; const railLabelY = params.coordSys.y - 3; return { type: 'group', children: [{ type: 'rect', shape: { x: xLo, y: y - 6, width: xHi - xLo, height: 12 }, style: { fill: `color-mix(in srgb, ${colors.signal} 22%, transparent)` } }, { type: 'line', shape: { x1: xLo, y1: y - 6, x2: xHi, y2: y - 6 }, style: { stroke: `color-mix(in srgb, ${colors.signal} 50%, transparent)`, lineWidth: 1 } }, { type: 'line', shape: { x1: xLo, y1: y + 6, x2: xHi, y2: y + 6 }, style: { stroke: `color-mix(in srgb, ${colors.signal} 50%, transparent)`, lineWidth: 1 } }, { type: 'rect', shape: { x: xLo - .7, y: y - 9, width: 1.4, height: 18 }, style: { fill: colors.signal, opacity: .85 } }, { type: 'rect', shape: { x: xHi - .7, y: y - 9, width: 1.4, height: 18 }, style: { fill: colors.signal, opacity: .85 } }, ...(xEst === null ? [] : [{ type: 'rect', shape: { x: xEst - 1.1, y: y - 10, width: 2.2, height: 20 }, style: { fill: colors.signal } }, { type: 'text', style: { text: `est ${estimateValue.toFixed(2)}`, x: xEst, y: railLabelY, align: 'center', verticalAlign: 'bottom', fill: colors.signal, font: `9px ${MONO}` } }]), { type: 'text', style: { text: ciHi.toFixed(2), x: xHi, y: railLabelY, align: 'center', verticalAlign: 'bottom', fill: colors.muted, font: `9px ${MONO}` } }, { type: 'text', style: { text: basalVerdict(data), x: params.coordSys.x, y, fill: colors.muted, font: `700 9px ${FONT}`, letterSpacing: '.06em' } }] }; } }] : []),
-    ],
-  };
-}
-
 /* SIXTEEN OF TWENTY — the roster as ONE silhouette instead of twenty marks.
    Every other basal form here plots one mark per night; this one counts, for a
    given rate, how many nights the algorithm ran AT OR ABOVE it. Each night is
@@ -736,31 +653,13 @@ function basalEditorialOption(data, mini, colors, surface) {
    already handed to every tile so the comparison kind can re-resolve its ink on
    a theme change. The editorial mode reads its BOX: mounts run after the tile is
    in the DOM (ADR 215 amendment), so the measurement is the seat's real width. */
-function basalOption(mode, { data, mini = false, surface = null } = {}) {
+function basalOption(_mode, { data, mini = false, surface = null } = {}) {
   const colors = chartColors();
+  return basalEditorialOption(data, mini, colors, surface);
+  /* Retained below temporarily while this branch is reduced to the one shipped
+     treatment; it is unreachable and removed with the legacy implementation. */
   const nights = data?.nights || [];
   const description = `${data?.roster_count ?? 0} nights of steady data; ${data?.directional_support_count ?? 0} support this reading.`;
-  if (mode === 'event') {
-    const support = data?.directional_support_count ?? 0;
-    const assertsMove = data?.asserts_move === true;
-    const verdict = basalVerdict(data);
-    const label = hhmm((data?.slot ?? 0) * 30);
-    return {
-      ...chartBase(description, mini, colors),
-      legend: chartLegend([verdict], colors, mini),
-      xAxis: { type: 'category', data: [label], ...axis(colors, mini),
-        splitLine: { show: false } },
-      yAxis: { type: 'value', min: 0, name: 'nights', ...axis(colors, mini) },
-      series: [
-        { name: verdict, type: 'bar', data: [support], animation: false,
-          barCategoryGap: '25%',
-          itemStyle: { color: assertsMove ? colors.basal : colors.excluded } },
-      ],
-    };
-  }
-  if (mode === 'bay') return basalBayOption(data, mini, colors, description);
-  if (mode === 'ledger') return basalLedgerOption(data, mini, colors, description);
-  if (mode === 'editorial') return basalEditorialOption(data, mini, colors, surface);
   /* NIGHTS ARE UNCONNECTED OBSERVATIONS, NOT A SERIES — and each one's story
      is "how far from the programmed rate did the algorithm land". So a night
      is a deviation COLUMN rising (or dropping) from the programmed baseline:
@@ -1147,20 +1046,15 @@ const entries = [
       title: row.span?.label ? `Basal ${row.span.label}` : 'Basal',
       meta: null,
     }),
-    modes: ['clock', 'bay', 'ledger', 'editorial', 'event'],
-    meta: (mode) => mode === 'clock'
-      ? 'delivered vs programmed, U/h · one bar per night'
-      : mode === 'bay' ? 'delivered vs programmed, U/h · one bar per night'
-        : mode === 'ledger' ? 'nights sorted by deviation from programmed rate'
-          : mode === 'editorial' ? 'nights at or above each rate · one step per night'
-            : 'supported vs insufficient evidence',
+    modes: null,
+    meta: 'nights at or above each rate · one step per night',
     option: basalOption,
     thumbnail: (data, title) => thumbnail((title || 'Basal · delivered vs programmed').toUpperCase(),
       `${data?.roster_count ?? 0} / ${data?.directional_support_count ?? 0}`,
       [{ type: 'line', symbol: 'none', data: (data?.nights || []).map((night) => night.delivered_rate),
         lineStyle: { color: chartColors().basal, width: 1 } }]),
     coordinateSchema: ['slot'],
-    matches: (row) => !row.event_chart && row.parameter === 'basal_rate',
+    matches: (row) => row.parameter === 'basal_rate',
     coordinates: (row) => ({
       slot: row.slot ?? Math.floor((row.span?.start_min ?? 0) / 30),
     }),

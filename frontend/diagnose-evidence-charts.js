@@ -297,7 +297,7 @@ const EDITORIAL = Object.freeze({
    PAIR stays tight and the block of pairs sits against the rail's own margin:
    stretched to the full rail width the numerals ended up marooned a column away
    from the words they belong to, with the white space inside the row. */
-const RAIL = Object.freeze({ numeral: 28, gutter: 10, label: 132, pitch: 24, lead: 14 });
+const RAIL = Object.freeze({ gutter: 10, label: 132, pitch: 24, lead: 14 });
 /* Canvas text has no flow, so a line break is a decision made here. The budget
    is a character count off the font's mean advance — a hairline of slack is
    cheaper than measuring text the layout cannot reflow anyway. */
@@ -486,31 +486,23 @@ function basalEditorialOption(data, mini, colors) {
         ? `Pump ran below the programmed rate on ${below} of ${facts.nights.length} nights`
         : `Pump ran at the programmed rate on ${atRate} of ${facts.nights.length} nights`;
   const caps = `500 10px ${FONT}`;
-  /* A ROW IS ONE UNIT, so the numeral is centred against its label rather than
-     hung from the label's first line — with the label set as one block and the
-     numeral as another, a wrapped label left its count sitting against the top
-     line and reading as a heading for two data points. Both columns hang off
-     the rail's right margin, so the section keeps one right edge whatever the
-     tile is wide, and a label that does wrap keeps its continuation in the label
-     column on the tighter leading of a single statement. */
-  const railColumns = (rows, top) => {
-    const elements = [];
-    let y = top;
-    for (const [count, label] of rows) {
-      const lines = editorialWrap(label, RAIL.label, 11).split('\n');
-      const height = Math.max(RAIL.pitch, lines.length * RAIL.lead);
-      elements.push({ type: 'text', right: EDITORIAL.margin + RAIL.label + RAIL.gutter,
-        top: y + (height - 16) / 2, silent: true,
-        style: { text: String(count), fill: colors.text, font: `600 16px ${MONO}`,
-          align: 'right', width: RAIL.numeral } },
-      { type: 'text', right: EDITORIAL.margin,
-        top: y + (height - lines.length * RAIL.lead) / 2, silent: true,
-        style: { text: lines.join('\n'), fill: colors.muted, font: `11px ${FONT}`,
-          align: 'left', width: RAIL.label, overflow: 'break', lineHeight: RAIL.lead } });
-      y += height;
-    }
-    return elements;
-  };
+  /* THE ROWS ARE PLACED IN PIXELS, not anchored to the rail's margin. A graphic
+     element's box is its own text's box: anchor it by `right` and a short label
+     lands against the far margin however wide `style.width` says the column is,
+     which put the gulf back inside the row ("4 … less"). Measured from the
+     canvas instead, the numeral column ends at one x, every label begins one
+     10px gutter after it, and each pair is centred on one line — a row is one
+     unit, so its count sits against the middle of its label rather than the
+     label's first line. */
+  const railRows = [
+    [above, 'more than programmed', EDITORIAL.figureTop + 26],
+    [below, 'less', EDITORIAL.figureTop + 50],
+    [atRate, 'exactly as set', EDITORIAL.figureTop + 74],
+    /* One statement, one line: the rail's head already says these are the steady
+       nights, so "not steady" carries the reason without reciting the criterion
+       and without wrapping into what read as a second data point. */
+    [data?.excluded_night_count ?? 0, 'excluded — not steady', EDITORIAL.figureTop + 112],
+  ];
   /* The verdict block reads as the table's own head: same right margin, same
      width, so the section has one edge rather than four. */
   const railHead = (style, top) => ({ type: 'text', right: EDITORIAL.margin, top,
@@ -540,18 +532,6 @@ function basalEditorialOption(data, mini, colors) {
          that never qualified, disclosed here rather than cluttering the plot. */
       railHead({ text: `${facts.nights.length} STEADY NIGHT${facts.nights.length === 1 ? '' : 'S'}`,
         fill: colors.muted, font: caps }, EDITORIAL.figureTop),
-      ...railColumns([
-        [above, 'more than programmed'],
-        [below, 'less'],
-        [atRate, 'exactly as set'],
-      ], EDITORIAL.figureTop + 26),
-      /* One statement, one line: "excluded — not steady enough to count" wrapped
-         into two rows that read as two separate counts. The rail's own head
-         already says these are the steady nights, so "not steady" carries the
-         reason without reciting the criterion. */
-      ...railColumns([
-        [data?.excluded_night_count ?? 0, 'excluded — not steady'],
-      ], EDITORIAL.figureTop + 112),
       /* The footer is the window and nothing else: the exclusion rule it used to
          recite is the rail's last row. */
       ...(slotWindow ? [{ type: 'text', left: EDITORIAL.margin, bottom: 10, silent: true,
@@ -575,6 +555,21 @@ function basalEditorialOption(data, mini, colors) {
     yAxis: { type: 'value', min: 0, max: yMax, show: false, inverse: true },
     series: [
       nightCells(2, true),
+      { type: 'custom', id: 'rail', animation: false, silent: true, clip: false, z: 10, data: [0],
+        renderItem: (params, api) => {
+          const numeralEnd = api.getWidth() - EDITORIAL.margin - RAIL.label - RAIL.gutter;
+          return { type: 'group', children: railRows.flatMap(([count, label, top]) => {
+            const middle = top + RAIL.pitch / 2;
+            return [
+              { type: 'text', style: { text: String(count), x: numeralEnd, y: middle,
+                align: 'right', verticalAlign: 'middle',
+                fill: colors.text, font: `600 16px ${MONO}` } },
+              { type: 'text', style: { text: editorialWrap(label, RAIL.label, 11),
+                x: numeralEnd + RAIL.gutter, y: middle, align: 'left', verticalAlign: 'middle',
+                lineHeight: RAIL.lead, fill: colors.muted, font: `11px ${FONT}` } },
+            ];
+          }) };
+        } },
       { type: 'custom', id: 'furniture', animation: false, silent: true, clip: false, z: 10, data: [0],
         renderItem: (params, api) => {
           const cs = params.coordSys;

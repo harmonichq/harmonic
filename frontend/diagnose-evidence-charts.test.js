@@ -300,27 +300,29 @@ test('the editorial staircase counts the roster from the payload', () => {
      Set as rich-text rows each row was laid out to its own content and the
      numerals staggered; set as two column-wide blocks the numerals were marooned
      a column away from the words they belong to. */
-  const numerals = option.graphic.filter(({ style }) => style?.width === 28);
-  const labels = option.graphic.filter(({ style }) => style?.width === 132);
+  const drawn = option.series.find(({ id }) => id === 'rail')
+    .renderItem({ dataIndex: 0 }, { getWidth: () => 950, getHeight: () => 307 }).children;
+  const numerals = drawn.filter(({ style }) => style.align === 'right');
+  const labels = drawn.filter(({ style }) => style.align === 'left');
   assert.deepEqual(numerals.map(({ style }) => style.text),
     [more, less, asSet, basal.excluded_night_count].map(String));
   assert.deepEqual(labels.map(({ style }) => style.text),
     ['more than programmed', 'less', 'exactly as set', 'excluded — not steady'],
     'the exclusion reads as one statement on one line, not two data points');
-  assert.ok(numerals.every(({ right, style }) => right === numerals[0].right
-    && style.align === 'right'), 'one numeral column, one x');
-  assert.ok(labels.every(({ right, style }) => right === 28 && style.align === 'left'),
-    'one label column, out to the rail margin');
-  assert.equal(numerals[0].right, 28 + 132 + 10,
-    'the numerals end one gutter short of where the labels begin');
-  /* Each pair shares a centre line: a numeral is 16px and its label 11px, so
-     equal tops would not be equal middles. */
+  assert.ok(numerals.every(({ style }) => style.x === numerals[0].style.x),
+    'one numeral column, one x');
+  assert.ok(labels.every(({ style }) => style.x === numerals[0].style.x + 10),
+    'every label begins one gutter after the numeral column, never at the far margin');
+  /* Each pair shares one centre line, so a 16px count sits against the middle of
+     its 11px label rather than the label's first line. */
   for (const [index, numeral] of numerals.entries()) {
-    const label = labels[index];
-    const lines = label.style.text.split('\n').length;
-    assert.ok(Math.abs((numeral.top + 8) - (label.top + lines * 7)) <= 1,
+    assert.equal(labels[index].style.y, numeral.style.y,
       `row ${index} centres its numeral against its label`);
+    assert.equal(numeral.style.verticalAlign, 'middle');
+    assert.equal(labels[index].style.verticalAlign, 'middle');
   }
+  assert.deepEqual(numerals.map(({ style }) => style.y), [118, 142, 166, 204],
+    'one pitch down the tally, and the excluded row below its own rule');
   assert.ok(option.graphic.every(({ style }) => !/circle/.test(style?.text ?? '')));
   assert.equal(option.series.find(({ id }) => id === 'furniture')
     .renderItem({ coordSys: { x: 28, y: 80, width: 672, height: 147 }, dataIndex: 0 }, {

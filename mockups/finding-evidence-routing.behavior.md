@@ -2822,11 +2822,16 @@ settings kind and for a click that crosses parameters:
 
 ```
 S122 · A basal chart click opens the identical slot panel its findings-queue
-       row opens.
+       row opens, printing the same served verdict word and support count and
+       offering the staging control because this slot's asserts_move is true.
 S123 · A carb-ratio chart click opens the identical block panel its
-       findings-queue row opens.
+       findings-queue row opens, printing the same served verdict word and
+       support count and offering the staging control because this block's
+       asserts_move is true.
 S124 · A correction-factor chart click opens the identical ISF panel its
-       findings-queue row opens.
+       findings-queue row opens, printing the same served verdict word and
+       support count and withholding the staging control because this row's
+       asserts_move is false.
 S125 · A settings chart click is one level, always the same one: clicking a
        different parameter's chart replaces the standing level-2 frame
        instead of stacking a third under it.

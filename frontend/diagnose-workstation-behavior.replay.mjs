@@ -4306,6 +4306,18 @@ export const S121 = async (page) => {
    which is the same reason `diagnose-canvas-composition.browser.test.mjs:221`
    scopes the identical gesture the same way. */
 
+/** The one shared item panel (`renderParamLevel`) every settings kind renders
+    through: `.slot-head .verdict` is the served verdict word, the LAST
+    `.slot-stats` is the served support line (the first is always the CI), and
+    `.stagebtn`'s presence is the staging control the spec ties to the
+    backend's own `asserts_move`. */
+const panelSnapshot = (page) => page.evaluate(() => ({
+  verdict: document.querySelector('#level .slot-head .verdict')?.textContent.trim() || null,
+  support: [...document.querySelectorAll('#level .slot-stats')].pop()
+    ?.textContent.replace(/\s+/g, ' ').trim() || null,
+  stageCount: document.querySelectorAll('#level .stagebtn').length,
+}));
+
 // STORY:finding-evidence-routing:S122
 /** S122 · A basal chart click opens the identical slot panel its
     findings-queue row opens. */
@@ -4318,6 +4330,12 @@ export const S122 = async (page) => {
   ok(/slot$/.test(viaChart.crumb[viaChart.crumb.length - 1]),
     `S122 the basal chart opens the slot panel (${viaChart.crumb})`);
   ok(/^Slot /.test(viaChart.chip || ''), 'S122 the slot chip stands');
+  const chartPanel = await panelSnapshot(page);
+  is(chartPanel.verdict, 'capped (raise)', 'S122 the chart route prints the served verdict word');
+  is(chartPanel.support, '22 nights of steady data · 30 d basal run',
+    'S122 the chart route prints the served support count');
+  is(chartPanel.stageCount, 1,
+    'S122 the staging control is offered — this slot\'s backend asserts_move is true');
   await captureEvidence(page, 'S122-after-chart-click');
 
   await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
@@ -4327,6 +4345,8 @@ export const S122 = async (page) => {
   const viaRow = await state(page);
   is(viaRow.crumb, viaChart.crumb, 'S122 the queue-row route lands on the identical crumb');
   is(viaRow.chip, viaChart.chip, 'S122 the queue-row route lands on the identical chip');
+  is(await panelSnapshot(page), chartPanel,
+    'S122 the queue-row route prints the identical verdict, support and staging control');
 };
 
 // STORY:finding-evidence-routing:S123
@@ -4341,6 +4361,12 @@ export const S123 = async (page) => {
   ok(/block$/.test(viaChart.crumb[viaChart.crumb.length - 1]),
     `S123 the carb-ratio chart opens the block panel (${viaChart.crumb})`);
   ok(/^Block /.test(viaChart.chip || ''), 'S123 the block chip stands');
+  const chartPanel = await panelSnapshot(page);
+  is(chartPanel.verdict, 'suggests a tighter ratio', 'S123 the chart route prints the served verdict word');
+  is(chartPanel.support, '24 meal runs · 24 meals',
+    'S123 the chart route prints the served support count');
+  is(chartPanel.stageCount, 1,
+    'S123 the staging control is offered — this block\'s backend asserts_move is true');
   await captureEvidence(page, 'S123-after-chart-click');
 
   await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
@@ -4350,6 +4376,8 @@ export const S123 = async (page) => {
   const viaRow = await state(page);
   is(viaRow.crumb, viaChart.crumb, 'S123 the queue-row route lands on the identical crumb');
   is(viaRow.chip, viaChart.chip, 'S123 the queue-row route lands on the identical chip');
+  is(await panelSnapshot(page), chartPanel,
+    'S123 the queue-row route prints the identical verdict, support and staging control');
 };
 
 // STORY:finding-evidence-routing:S124
@@ -4363,6 +4391,13 @@ export const S124 = async (page) => {
   const viaChart = await state(page);
   is(viaChart.crumb[viaChart.crumb.length - 1], 'ISF',
     `S124 the correction-factor chart opens the ISF panel (${viaChart.crumb})`);
+  const chartPanel = await panelSnapshot(page);
+  is(chartPanel.verdict, 'corrections look stronger than needed',
+    'S124 the chart route prints the served verdict word');
+  is(chartPanel.support, '568 correction steps · 8 fasting nights',
+    'S124 the chart route prints the served support count');
+  is(chartPanel.stageCount, 0,
+    'S124 the staging control is withheld — this row\'s backend asserts_move is false');
   await captureEvidence(page, 'S124-after-chart-click');
 
   await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
@@ -4372,6 +4407,8 @@ export const S124 = async (page) => {
   const viaRow = await state(page);
   is(viaRow.crumb, viaChart.crumb, 'S124 the queue-row route lands on the identical crumb');
   is(viaRow.chip, viaChart.chip, 'S124 the queue-row route lands on the identical chip');
+  is(await panelSnapshot(page), chartPanel,
+    'S124 the queue-row route prints the identical verdict, support and staging control');
 };
 
 // STORY:finding-evidence-routing:S125

@@ -73,7 +73,7 @@ export function reconcileTileDescriptors(
    equals the chart's own id and handing it to the row route; evidence chart
    descriptors are generated one per findings row and carry that row's id as
    their chart identity, so the same resolution reaches every settings kind
-   too — basal, correction factor and carb ratio open the identical panel
+   too — basal, ISF and I:C open the identical panel
    their findings-queue row opens, never a second implementation of it.
 
    NOT EVERY LEVEL-2 FRAME CARRIES `rowId`. A frame the row route creates

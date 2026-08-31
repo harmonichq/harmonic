@@ -21,7 +21,17 @@ async function request(path) {
   return response.json();
 }
 
+/* Basal evidence uses its 0–47 profile index at the API boundary. The harness
+   also accepts an unambiguous wall-clock minute such as `?slot=330`, because
+   that is how a reader sees the same half-hour in the finding. */
+function basalSlot(raw) {
+  if (!/^\d+$/.test(raw || '')) return raw || null;
+  const value = Number(raw);
+  return value >= 48 && value % 30 === 0 ? value / 30 : value;
+}
+
 async function drawWorkstation(host, state, story) {
+  const slot = story.id === 'basal' ? basalSlot(state.slot) : null;
   const [analyze, scenarios, evidence, exposures, preparation, outcomes] = await Promise.all([
     request('/api/analyze?window=30&pool=1'),
     request('/api/scenarios?window=30'),
@@ -52,7 +62,7 @@ async function drawWorkstation(host, state, story) {
       retry: () => {},
       loadDay: async () => null,
       onDayLoaded: () => view.repaintDay(),
-      loadBasalEvidence: (coordinates) => request(`/api/diagnose/basal-night-evidence?slot=${encodeURIComponent(coordinates.slot ?? '')}`),
+      loadBasalEvidence: (coordinates) => request(`/api/diagnose/basal-night-evidence?slot=${encodeURIComponent(slot ?? coordinates.slot ?? '')}`),
       loadIsfEvidence: () => request('/api/diagnose/isf-rest-window-evidence'),
       loadCarbRatioEvidence: (coordinates) => request(
         `/api/diagnose/carb-ratio-block-evidence?block_id=${encodeURIComponent(coordinates.block_id ?? '')}`
@@ -128,7 +138,7 @@ async function drawWorkstation(host, state, story) {
     });
     mode?.click();
   }
-  return `Diagnose workstation · drilled ${tile.dataset.chartId}`;
+  return `Diagnose workstation · drilled ${slot == null ? tile.dataset.chartId : `basal:${slot}`}`;
 }
 
 export async function renderStory(host, story, state) {

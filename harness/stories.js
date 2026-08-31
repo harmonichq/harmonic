@@ -3,7 +3,7 @@ import {
 } from '../frontend/diagnose-workstation.js';
 
 export const STORIES = [
-  { id: 'basal', label: 'Basal evidence', modes: ['clock', 'bay', 'ledger'], sizes: true, range: false },
+  { id: 'basal', label: 'Basal evidence', modes: ['clock', 'bay', 'ledger', 'editorial'], sizes: true, range: false },
   { id: 'isf', label: 'Correction factor evidence', modes: ['event', 'clock'], sizes: true, range: false },
   { id: 'carb-ratio', label: 'Carb ratio evidence', modes: ['event', 'clock'], sizes: true, range: true },
   { id: 'event-comparison', label: 'Response comparison', modes: [], sizes: true, range: true },

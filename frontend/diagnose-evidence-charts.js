@@ -15,11 +15,13 @@ const FALLBACK_COLORS = {
   signal: '#3f5a3b', basal: '#5d7368', programmed: '#4d5c53',
   line: '#c3bfb4', text: '#141a15', muted: '#3d5848', excluded: '#6b7169',
   high: '#a94f21', low: '#9d3018', sunken: '#e7e4dc', ruleStrong: '#6b7669',
+  surface: '#faf8f4',
 };
 const COLOR_TOKENS = {
   signal: '--in-range', basal: '--basal', programmed: '--secondary',
   line: '--line', text: '--text', muted: '--muted', excluded: '--notindata',
   high: '--high', low: '--low', sunken: '--wk-surface-sunken', ruleStrong: '--wk-rule-strong',
+  surface: '--wk-surface',
 };
 const chartColors = () => {
   if (typeof document === 'undefined' || typeof getComputedStyle === 'undefined') {
@@ -275,6 +277,307 @@ function basalLedgerOption(data, mini, colors, description) {
   };
 }
 
+/* SIXTEEN OF TWENTY — the roster as ONE silhouette instead of twenty marks.
+   Every other basal form here plots one mark per night; this one counts, for a
+   given rate, how many nights the algorithm ran AT OR ABOVE it. Each night is
+   its own 1-night step, so nothing is smoothed and nothing is invented, but the
+   roster becomes a single object with a shape read in one glance. The wearer's
+   programmed rate is a vertical rule through it, and where the staircase stands
+   as it crosses that rule IS the finding: the nights at exactly the programmed
+   rate fall as a cliff landing on the rule itself. Everything else — the tally,
+   the exclusions, the verdict — is set as type, because only the part carrying
+   the argument earns ink. */
+const EDITORIAL = Object.freeze({
+  margin: 28, deckTop: 18, standfirstTop: 46, figureTop: 88, footerBand: 86, rail: 206,
+});
+/* Canvas text has no flow, so a line break is a decision made here. The budget
+   is a character count off the font's mean advance — a hairline of slack is
+   cheaper than measuring text the layout cannot reflow anyway. */
+const editorialWrap = (text, width, size) => {
+  const budget = Math.max(8, Math.floor(width / (size * .52)));
+  const lines = [];
+  for (const word of text.split(' ')) {
+    const last = lines.length - 1;
+    if (last >= 0 && `${lines[last]} ${word}`.length <= budget) lines[last] += ` ${word}`;
+    else lines.push(word);
+  }
+  return lines.join('\n');
+};
+const nightCount = (count) => `${count} night${count === 1 ? '' : 's'}`;
+
+function basalEditorialOption(data, mini, colors, description) {
+  const facts = basalFacts(data);
+  const { programmed, ciLo, ciHi, estimateValue, above, below, atRate } = facts;
+  const roster = facts.nights.filter((night) => finite(night.delivered_rate))
+    .sort((a, b) => a.delivered_rate - b.delivered_rate);
+  const rates = roster.map((night) => night.delivered_rate);
+  const total = rates.length;
+  const hasRule = finite(programmed);
+  const hasBand = finite(ciLo) && finite(ciHi);
+  const round2 = (value) => Math.round(value * 100) / 100;
+  const bounds = [...rates, programmed, ciLo, ciHi, estimateValue].filter(finite);
+  const lo = bounds.length ? Math.min(...bounds) : 0;
+  const hi = bounds.length ? Math.max(...bounds) : 1;
+  const pad = Math.max((hi - lo) * .12, .05);
+  const xSpan = (hi - lo) + pad * 2;
+  const xStep = xSpan > 1 ? .25 : xSpan > .5 ? .2 : xSpan > .25 ? .1 : .05;
+  const xMin = Math.max(0, round2(Math.floor((lo - pad) / xStep) * xStep));
+  const xMax = round2(Math.ceil((hi + pad) / xStep) * xStep);
+  const yMax = Math.max(total, 1);
+  /* The staircase, built from the roster and nothing else: arrive at a rate's
+     corner still standing at the count that reached it, then drop by however
+     many nights sat exactly there. */
+  const points = [[xMin, total]];
+  let standing = total;
+  rates.forEach((rate, index) => {
+    if (index && rate === rates[index - 1]) return;
+    points.push([rate, standing]);
+    standing -= rates.filter((other) => other === rate).length;
+    points.push([rate, standing]);
+  });
+  points.push([xMax, 0]);
+  const crossing = hasRule ? rates.filter((rate) => rate >= programmed).length : total;
+  const left = hasRule
+    ? [...points.filter(([x]) => x < programmed), [programmed, crossing]] : points;
+  const right = hasRule ? points.filter(([x]) => x >= programmed) : [];
+  if (hasRule && (right[0]?.[0] !== programmed || right[0]?.[1] !== crossing)) {
+    right.unshift([programmed, crossing]);
+  }
+  const slotLabel = hhmm((data?.slot ?? 0) * 30);
+  const slotEnd = hhmm((data?.slot ?? 0) * 30 + 30);
+  const ink = (percent) => `color-mix(in srgb, ${colors.text} ${percent}%, transparent)`;
+  const rustFill = `color-mix(in srgb, ${colors.high} ${colors.dark ? 18 : 12}%, transparent)`;
+  const greyFill = `color-mix(in srgb, ${colors.basal} ${colors.dark ? 14 : 10}%, transparent)`;
+  const hair = ink(colors.dark ? 18 : 12);
+  const shadow = ink(colors.dark ? 26 : 22);
+  const leader = `color-mix(in srgb, ${colors.muted} ${colors.dark ? 45 : 35}%, transparent)`;
+  const staircase = (curve, color, fill) => ({
+    type: 'line', data: curve, symbol: 'none', animation: false, silent: true, z: 2,
+    lineStyle: { color, width: mini ? 0 : 2 }, areaStyle: { color: fill },
+  });
+  if (mini) {
+    /* THE THUMBNAIL IS ONE SENTENCE: a lopsided hill with a line through it and
+       most of the mass on the far side. Stroke, squares, axis and every word
+       but the slot go; the silhouette, the rule and a 3px shadow stay. */
+    return {
+      ...chartBase(description, true, colors),
+      legend: { show: false },
+      grid: { left: 4, right: 4, top: 16, bottom: 12 },
+      xAxis: { type: 'value', min: xMin, max: xMax, show: false },
+      yAxis: { type: 'value', min: 0, max: yMax, show: false },
+      graphic: [{ type: 'text', left: 5, top: 3, silent: true,
+        style: { text: slotLabel, fill: colors.muted, font: `500 9px ${FONT}` } }],
+      series: [
+        staircase(left, colors.basal, greyFill),
+        ...(right.length ? [staircase(right, colors.high, rustFill)] : []),
+        { type: 'custom', animation: false, silent: true, clip: false, data: [0],
+          renderItem: (params, api) => {
+            const base = api.coord([xMin, 0])[1];
+            const children = [];
+            if (hasRule) {
+              children.push({ type: 'rect',
+                shape: { x: api.coord([programmed, 0])[0] - .5, y: params.coordSys.y,
+                  width: 1, height: base - params.coordSys.y },
+                style: { fill: colors.basal } });
+            }
+            if (hasBand) {
+              children.push({ type: 'rect',
+                shape: { x: api.coord([ciLo, 0])[0], y: base + 4,
+                  width: api.coord([ciHi, 0])[0] - api.coord([ciLo, 0])[0], height: 3 },
+                style: { fill: shadow } });
+            }
+            return { type: 'group', children };
+          } },
+      ],
+    };
+  }
+  const verdict = basalVerdict(data);
+  const maxRate = total ? rates[total - 1] : null;
+  const minRate = total ? rates[0] : null;
+  const headline = !hasRule
+    ? 'Overnight, this is how often the algorithm ran at each rate.'
+    : above > below ? 'Overnight, the pump kept adding to the rate you set.'
+      : below > above ? 'Overnight, the pump kept trimming the rate you set.'
+        : 'Overnight, the pump mostly ran the rate you set.';
+  const standfirst = hasRule
+    ? `On ${above} of ${facts.nights.length} steady nights at ${slotLabel} it delivered more`
+      + ` than your ${programmed.toFixed(2)} U/h; on ${atRate} it matched exactly,`
+      + ` and on ${below} it delivered less.`
+    : `${facts.nights.length} steady nights at ${slotLabel}, counted by the rate`
+      + ' the algorithm ran.';
+  /* THE ONE RENAME. The backend's verdict word is printed verbatim in the slug;
+     this sentence says what the reader is looking at and what Harmonic did with
+     it. It re-derives no threshold and no direction of its own. */
+  const held = verdict === 'Supported' ? 'Harmonic supports moving this setting.'
+    : verdict === 'Held' ? 'Harmonic is holding this setting.'
+      : 'Harmonic is not calling this one.';
+  const caption = hasBand
+    ? `The likely true rate lands anywhere between ${ciLo.toFixed(2)} and ${ciHi.toFixed(2)}`
+      + (hasRule && ciLo <= programmed && programmed <= ciHi
+        ? ' — a range wide enough that it still includes the rate you already use. '
+        : ' — a range that sits clear of the rate you already use. ')
+      + held
+    : held;
+  const railRows = [
+    `{n|${above}}{l|more than programmed}`,
+    `{n|${below}}{l|less}`,
+    `{n|${atRate}}{l|exactly as set}`,
+  ].join('\n');
+  const railTail = `{n|${data?.excluded_night_count ?? 0}}{l|more nights weren't}\n{n|}{l|steady enough to count}`;
+  const railRich = {
+    n: { width: 26, align: 'right', color: colors.text, fontFamily: MONO,
+      fontSize: 16, fontWeight: 600, lineHeight: 22 },
+    l: { padding: [0, 0, 0, 8], color: colors.muted, fontFamily: FONT,
+      fontSize: 11, lineHeight: 22 },
+  };
+  const caps = `500 10px ${FONT}`;
+  return {
+    ...chartBase(description, false, colors),
+    legend: { show: false },
+    grid: { left: EDITORIAL.margin, right: EDITORIAL.rail + EDITORIAL.margin + 16,
+      top: EDITORIAL.figureTop, bottom: EDITORIAL.footerBand, containLabel: false },
+    graphic: [
+      { type: 'text', left: EDITORIAL.margin, top: EDITORIAL.deckTop, silent: true,
+        style: { text: editorialWrap(headline, 640, 21), fill: colors.text,
+          font: `600 21px ${FONT}`, lineHeight: 24 } },
+      { type: 'text', left: EDITORIAL.margin, top: EDITORIAL.standfirstTop, silent: true,
+        style: { text: editorialWrap(standfirst, 640, 13), fill: colors.muted,
+          font: `13px ${FONT}`, lineHeight: 17 } },
+      /* The verdict slug wears a warm-grey square, never rust: a hold is not an
+         alarm, and the word beside it is the backend's own. */
+      { type: 'text', right: EDITORIAL.margin, top: 20, silent: true,
+        style: { text: `{sq|}{v|${verdict.toUpperCase()}}`,
+          rich: { sq: { backgroundColor: ink(45), width: 6, height: 6 },
+            v: { color: colors.muted, fontFamily: FONT, fontSize: 10,
+              fontWeight: 500, padding: [0, 0, 0, 6] } } } },
+      ...(finite(estimateValue) ? [
+        { type: 'text', right: EDITORIAL.margin, top: 34, silent: true,
+          style: { text: `${estimateValue.toFixed(2)} U/h`, fill: colors.text,
+            font: `600 19px ${MONO}` } },
+      ] : [
+        { type: 'text', right: EDITORIAL.margin, top: 38, silent: true,
+          style: { text: 'no estimate', fill: colors.muted, font: `11px ${FONT}` } },
+      ]),
+      ...(hasBand ? [{ type: 'text', right: EDITORIAL.margin, top: 58, silent: true,
+        style: { text: `range ${ciLo.toFixed(2)} – ${ciHi.toFixed(2)}`,
+          fill: colors.muted, font: `11px ${MONO}` } }] : []),
+      /* The roster as type, not as a chart: three directions, then the nights
+         that never qualified, disclosed here rather than cluttering the plot. */
+      { type: 'text', right: EDITORIAL.margin, top: EDITORIAL.figureTop, silent: true,
+        style: { text: `THE ${facts.nights.length} NIGHTS`, fill: colors.muted, font: caps } },
+      { type: 'text', right: EDITORIAL.margin, top: 114, silent: true,
+        style: { text: railRows, rich: railRich } },
+      { type: 'text', right: EDITORIAL.margin, top: 194, silent: true,
+        style: { text: railTail,
+          rich: { ...railRich, n: { ...railRich.n, lineHeight: 15 },
+            l: { ...railRich.l, lineHeight: 15 } } } },
+      { type: 'text', left: EDITORIAL.margin, bottom: 10, silent: true,
+        style: { text: 'Steady overnight windows only — nights with a bolus still acting'
+          + ` are excluded. ${slotLabel}–${slotEnd}.`, fill: colors.muted, font: caps } },
+    ],
+    xAxis: { type: 'value', min: xMin, max: xMax, interval: xStep,
+      ...axis(colors), splitLine: { show: false },
+      axisTick: { show: true, length: 4, lineStyle: { color: hair } },
+      axisLabel: { margin: 6, color: colors.muted, fontFamily: MONO, fontSize: 10,
+        formatter: (value) => value.toFixed(xStep >= .1 ? 1 : 2) } },
+    yAxis: { type: 'value', min: 0, max: yMax, show: false },
+    series: [
+      staircase(left, colors.basal, greyFill),
+      ...(right.length ? [staircase(right, colors.high, rustFill)] : []),
+      /* The night squares ride the line rather than forming a strip of their
+         own: one per night, on the corner of the step that night cut. */
+      { type: 'scatter', symbol: 'rect', symbolSize: 3, animation: false, z: 6,
+        data: roster.map((night, index) => ({
+          value: [night.delivered_rate, total - index], name: night.date,
+          itemStyle: { color: hasRule && night.delivered_rate < programmed
+            ? colors.basal : colors.high },
+        })),
+        tooltip: { formatter: (params) => `${params.name} — delivered ${params.value[0]} U/h`
+          + `${hasRule ? ` · programmed ${programmed.toFixed(2)}` : ''}` } },
+      { type: 'custom', animation: false, silent: true, clip: false, z: 10, data: [0],
+        renderItem: (params, api) => {
+          const cs = params.coordSys;
+          const width = api.getWidth();
+          const height = api.getHeight();
+          const base = api.coord([xMin, 0])[1];
+          const railLeft = width - EDITORIAL.margin - EDITORIAL.rail;
+          const box = (x, y, w, h, fill) => ({ type: 'rect',
+            shape: { x, y, width: w, height: h }, style: { fill } });
+          const text = (content, x, y, font, fill, extra = {}) => ({ type: 'text',
+            style: { text: content, x, y, font, fill, ...extra } });
+          const children = [
+            box(EDITORIAL.margin, 8, width - EDITORIAL.margin * 2, 1, hair),
+            box(EDITORIAL.margin, height - 30, width - EDITORIAL.margin * 2, 1, hair),
+            box(railLeft, EDITORIAL.figureTop + 18, EDITORIAL.rail, 1, hair),
+            box(railLeft, 186, EDITORIAL.rail, 1, hair),
+            text('U/h', cs.x + cs.width + 6, base + 6, `500 10px ${FONT}`, colors.muted),
+          ];
+          /* Two dotted counts and nothing else: the baseline is the zero. */
+          for (const count of new Set([total, Math.round(total / 2)])) {
+            const y = api.coord([xMin, count])[1];
+            children.push({ type: 'line', shape: { x1: cs.x, y1: y, x2: cs.x + cs.width, y2: y },
+              style: { stroke: ink(colors.dark ? 18 : 12), lineWidth: 1, lineDash: [1, 3] } });
+            children.push(text(String(count), cs.x, y - 4, `500 10px ${FONT}`, colors.muted,
+              { verticalAlign: 'bottom' }));
+          }
+          /* Uncertainty lives on the ground, under the data — a shadow on the
+             floor, not a box drawn around it. */
+          if (hasBand) {
+            const xLo = api.coord([ciLo, 0])[0];
+            const xHi = api.coord([ciHi, 0])[0];
+            children.push(box(xLo, base + 10, xHi - xLo, 6, shadow),
+              box(xLo, base + 7, 1, 12, shadow), box(xHi - 1, base + 7, 1, 12, shadow));
+            if (finite(estimateValue)) {
+              children.push(box(api.coord([estimateValue, 0])[0] - 1, base + 6, 2, 14, colors.basal));
+            }
+            children.push({ type: 'polyline',
+              shape: { points: [[xLo, base + 19], [xLo, base + 24],
+                [cs.x, base + 24]] },
+              style: { stroke: leader, lineWidth: 1, fill: 'none' } });
+          }
+          children.push(text(editorialWrap(caption, cs.width - 8, 11),
+            cs.x, base + 30, `11px ${FONT}`, colors.muted, { lineHeight: 15 }));
+          if (hasRule) {
+            const ruleX = api.coord([programmed, 0])[0];
+            const yCross = api.coord([programmed, crossing])[1];
+            children.push(box(ruleX - .75, cs.y, 1.5, base + 10 - cs.y, colors.basal));
+            const flagRight = ruleX > cs.x + cs.width - 150;
+            children.push(box(ruleX + (flagRight ? -4 : 1), cs.y - 12, 3, 3, colors.basal),
+              text(`YOU PROGRAMMED ${programmed.toFixed(2)}`,
+                ruleX + (flagRight ? -9 : 7), cs.y - 14, caps, colors.muted,
+                { align: flagRight ? 'right' : 'left' }));
+            if (atRate > 0) {
+              const yFoot = api.coord([programmed, crossing - atRate])[1];
+              children.push(box(ruleX - 1.5, yCross, 3, yFoot - yCross, colors.high));
+              const yMid = (yCross + yFoot) / 2;
+              const yCallout = Math.max(cs.y + 40, yMid - 26);
+              children.push({ type: 'polyline',
+                shape: { points: [[ruleX + 4, yMid], [ruleX + 36, yMid], [ruleX + 36, yCallout]] },
+                style: { stroke: leader, lineWidth: 1, fill: 'none' } });
+              children.push(text(`${nightCount(atRate)} it ran exactly what you programmed.`,
+                ruleX + 42, yCallout, `500 12px ${FONT}`, colors.text,
+                { verticalAlign: 'middle' }));
+            }
+            /* The crossing: a ring filled with the surface so it stands clear
+               of the rule it sits on. */
+            children.push({ type: 'circle', shape: { cx: ruleX, cy: yCross, r: 4 },
+              style: { fill: colors.surface, stroke: colors.high, lineWidth: 2 } });
+          }
+          const tail = above > 0
+            ? `${nightCount(above)} it ran higher —\nthe tallest reached ${maxRate?.toFixed(1)} U/h.`
+            : below > 0
+              ? `${nightCount(below)} it ran lower —\nthe lowest reached ${minRate?.toFixed(1)} U/h.`
+              : null;
+          if (tail) {
+            children.push(text(tail, cs.x + cs.width, cs.y + 14, `500 12px ${FONT}`,
+              colors.text, { align: 'right', lineHeight: 16 }));
+          }
+          return { type: 'group', children };
+        } },
+    ],
+  };
+}
+
 function basalOption(mode, { data, mini = false } = {}) {
   const colors = chartColors();
   const nights = data?.nights || [];
@@ -299,6 +602,7 @@ function basalOption(mode, { data, mini = false } = {}) {
   }
   if (mode === 'bay') return basalBayOption(data, mini, colors, description);
   if (mode === 'ledger') return basalLedgerOption(data, mini, colors, description);
+  if (mode === 'editorial') return basalEditorialOption(data, mini, colors, description);
   /* NIGHTS ARE UNCONNECTED OBSERVATIONS, NOT A SERIES — and each one's story
      is "how far from the programmed rate did the algorithm land". So a night
      is a deviation COLUMN rising (or dropping) from the programmed baseline:
@@ -685,12 +989,13 @@ const entries = [
       title: row.span?.label ? `Basal ${row.span.label}` : 'Basal',
       meta: null,
     }),
-    modes: ['clock', 'bay', 'ledger', 'event'],
+    modes: ['clock', 'bay', 'ledger', 'editorial', 'event'],
     meta: (mode) => mode === 'clock'
       ? 'delivered vs programmed, U/h · one bar per night'
       : mode === 'bay' ? 'delivered vs programmed, U/h · one bar per night'
         : mode === 'ledger' ? 'nights sorted by deviation from programmed rate'
-          : 'supported vs insufficient evidence',
+          : mode === 'editorial' ? 'nights at or above each rate · one step per night'
+            : 'supported vs insufficient evidence',
     option: basalOption,
     thumbnail: (data, title) => thumbnail((title || 'Basal · delivered vs programmed').toUpperCase(),
       `${data?.roster_count ?? 0} / ${data?.directional_support_count ?? 0}`,

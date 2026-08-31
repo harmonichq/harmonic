@@ -101,7 +101,7 @@ test('the registry declares four stateless chart kinds and their request coordin
     ['projection_id', 'finding_id', 'alignment', 'factor', 'view'],
   ]);
   assert.deepEqual(DIAGNOSE_EVIDENCE_CHARTS.map(({ modes }) => modes), [
-    ['clock', 'bay', 'ledger', 'event'], ['event', 'clock'], ['event', 'clock'], null,
+    ['clock', 'bay', 'ledger', 'editorial', 'event'], ['event', 'clock'], ['event', 'clock'], null,
   ]);
   assert.ok(DIAGNOSE_EVIDENCE_CHARTS.every((entry) => typeof entry.matches === 'function'));
   assert.ok(DIAGNOSE_EVIDENCE_CHARTS.every((entry) => typeof entry.coordinates === 'function'));
@@ -274,6 +274,88 @@ test('Bay and Ledger keep payload-derived tallies and tolerate an absent estimat
     assert.ok(rendered.includes(`{n|${more}`), `${mode} keeps the payload-derived more count`);
     assert.ok(rendered.includes(`{n|${less}`), `${mode} keeps the payload-derived less count`);
     assert.doesNotThrow(() => entry.option(mode, { data: { ...basal, estimate: null } }));
+  }
+});
+
+/* The editorial staircase counts the roster ITSELF — its crossing height, its
+   step count and every tally in its rail come off the payload, so a fixture with
+   no estimate at all still draws, and one with an interval still crosses at the
+   nights that reached the programmed rate. */
+test('the editorial staircase counts the roster from the payload', () => {
+  const basal = fixture('./__fixtures__/basal-night-evidence.json').expected;
+  const entry = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'basal');
+  const more = basal.nights.filter(({ sign }) => sign === 1).length;
+  const less = basal.nights.filter(({ sign }) => sign === -1).length;
+  const asSet = basal.nights.filter(({ sign }) => sign === null).length;
+  const programmed = basal.nights[0].programmed_rate;
+  const option = entry.option('editorial', {
+    data: { ...basal, estimate: { value: .74, lo: .6, hi: .92 } },
+  });
+
+  assert.equal(option.animation, false);
+  assert.ok(option.series.every((series) => series.animation === false));
+  const rail = JSON.stringify(option.graphic);
+  assert.ok(rail.includes(`{n|${more}}{l|more than programmed}`), 'the rail keeps the payload more count');
+  assert.ok(rail.includes(`{n|${less}}{l|less}`), 'the rail keeps the payload less count');
+  assert.ok(rail.includes(`{n|${asSet}}{l|exactly as set}`), 'the rail keeps the payload as-set count');
+  assert.ok(rail.includes(`{n|${basal.excluded_night_count}}`), 'the excluded nights are disclosed in the rail');
+  assert.ok(rail.includes(`THE ${basal.nights.length} NIGHTS`));
+  /* One step per night, and the staircase meets the programmed rule at the
+     nights that ran at or above it. */
+  const squares = option.series.find(({ type }) => type === 'scatter');
+  assert.equal(squares.data.length, basal.nights.length);
+  const rust = option.series.filter(({ type }) => type === 'line')[1];
+  assert.deepEqual(rust.data[0], [programmed, more + asSet]);
+  assert.equal(rust.data[rust.data.length - 1][1], 0, 'the staircase lands on the baseline');
+});
+
+test('the editorial staircase tolerates an absent estimate at both ranks', () => {
+  const basal = fixture('./__fixtures__/basal-night-evidence.json').expected;
+  const entry = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'basal');
+
+  assert.equal(Object.hasOwn(basal, 'estimate'), false, 'the fixture serves no estimate');
+  for (const data of [basal, { ...basal, estimate: null },
+    { ...basal, estimate: { value: null, lo: null, hi: null } }, { ...basal, nights: [] }]) {
+    assert.doesNotThrow(() => entry.option('editorial', { data }));
+    assert.doesNotThrow(() => entry.option('editorial', { data, mini: true }));
+  }
+  const bare = entry.option('editorial', { data: basal });
+  assert.equal(JSON.stringify(bare.graphic).includes('range '), false,
+    'no interval is printed when none was served');
+  assert.equal(bare.series.some(({ type }) => type === 'custom'), true,
+    'the plot furniture still draws without an interval');
+});
+
+/* The tile's page furniture — rules, rail hairlines, the interval shadow, the
+   cliff, the callouts — is drawn from pixels the renderer hands back, so nothing
+   about it is visible in the option alone. Driving renderItem against a stub
+   coordinate system is the only way the dependency-free gate sees that path at
+   all, and it is the path an absent interval or an absent programmed rate walks
+   a different way through. */
+test('the editorial furniture draws against every payload shape', () => {
+  const basal = fixture('./__fixtures__/basal-night-evidence.json').expected;
+  const entry = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'basal');
+  const api = {
+    coord: ([x, y]) => [28 + x * 400, 244 - y * 8],
+    getWidth: () => 950,
+    getHeight: () => 330,
+  };
+  const params = { coordSys: { x: 28, y: 88, width: 640, height: 156 }, dataIndex: 0 };
+  const shapes = [
+    basal,
+    { ...basal, estimate: { value: .74, lo: .6, hi: .92 } },
+    { ...basal, estimate: null },
+    { ...basal, nights: basal.nights.map((night) => ({ ...night, programmed_rate: null })) },
+  ];
+  for (const data of shapes) {
+    for (const mini of [false, true]) {
+      const option = entry.option('editorial', { data, mini });
+      const furniture = option.series.find(({ type }) => type === 'custom');
+      const drawn = furniture.renderItem(params, api);
+      assert.equal(drawn.type, 'group');
+      assert.ok(drawn.children.every((child) => typeof child.type === 'string'
+        && Number.isFinite(child.shape?.x ?? child.shape?.x1 ?? child.style?.x ?? 0)));
+    }
   }
 });
 

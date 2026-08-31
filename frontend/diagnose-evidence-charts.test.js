@@ -270,8 +270,9 @@ test('Bay and Ledger keep payload-derived tallies and tolerate an absent estimat
     const option = entry.option(mode, { data: basal });
     assert.equal(option.animation, false);
     assert.ok(option.series.every((series) => series.animation === false));
-    assert.match(JSON.stringify(option), new RegExp(`\\{n\\|${more}\\}`));
-    assert.match(JSON.stringify(option), new RegExp(`\\{n\\|${less}\\}`));
+    const rendered = JSON.stringify(option);
+    assert.ok(rendered.includes(`{n|${more}`), `${mode} keeps the payload-derived more count`);
+    assert.ok(rendered.includes(`{n|${less}`), `${mode} keeps the payload-derived less count`);
     assert.doesNotThrow(() => entry.option(mode, { data: { ...basal, estimate: null } }));
   }
 });

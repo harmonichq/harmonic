@@ -193,65 +193,38 @@ const basalTally = (facts, data, colors, vertical = false) => {
 };
 
 function basalBayOption(data, mini, colors, description) {
-  const facts = basalFacts(data);
-  const { oldestFirst, programmed, ciLo, ciHi, estimateValue } = facts;
-  const { yMax, yStep } = basalScale(facts);
-  const lessColor = `color-mix(in srgb, ${colors.basal} 76%, ${colors.text})`;
-  const columns = oldestFirst.map((night) => ({ ...night, capped: finite(night.delivered_rate) && night.delivered_rate > yMax,
-    top: finite(night.delivered_rate) ? Math.min(night.delivered_rate, yMax) : programmed }));
-  const mondays = new Set(columns.filter((night) => new Date(`${night.date}T00:00:00Z`).getUTCDay() === 1).map((night) => night.date));
-  const labels = new Set([columns[0]?.date, columns.at(-1)?.date]);
-  columns.forEach((night, index) => { if (mondays.has(night.date) && index > 1 && index < columns.length - 2) labels.add(night.date); });
-  if (mini) {
-    return {
-      ...chartBase(description, true, colors), legend: { show: false },
-      grid: { ...MINI_GRID, right: 16 },
-      xAxis: { type: 'category', data: columns.map((night) => night.date), show: false },
-      yAxis: { type: 'value', min: 0, max: yMax, show: false },
-      series: [{ type: 'bar', animation: false, silent: true, barCategoryGap: '44%',
-        data: columns.map((night) => ({ value: night.sign === null ? 0 : Math.abs(night.top - programmed),
-          itemStyle: { color: night.sign === 1 ? colors.high : lessColor } })) },
-      { type: 'custom', animation: false, silent: true, data: [0], renderItem: (params, api) => {
-        const y = api.coord([0, programmed])[1]; const x = params.coordSys.x;
-        return { type: 'group', children: [{ type: 'line', shape: { x1: x, y1: y, x2: params.coordSys.x + params.coordSys.width, y2: y }, style: { stroke: colors.programmed, lineWidth: 1 } },
-          ...(finite(ciLo) && finite(ciHi) ? [{ type: 'line', shape: { x1: params.coordSys.x + params.coordSys.width + 7, y1: api.coord([0, ciHi])[1], x2: params.coordSys.x + params.coordSys.width + 7, y2: api.coord([0, ciLo])[1] }, style: { stroke: colors.signal, lineWidth: 3 } }] : [])] };
-      } }],
-    };
-  }
-  const tally = basalTally(facts, data, colors);
-  return {
-    ...chartBase(description, false, colors), legend: { show: false },
-    grid: [{ left: 34, top: 22, right: 174, bottom: 58 }, { width: 150, right: 10, top: 22, bottom: 58 }],
-    graphic: [{ type: 'text', left: 34, bottom: 6, silent: true, style: { text: tally.text, rich: tally.rich } }],
-    xAxis: [{ type: 'category', data: columns.map((night) => night.date), ...axis(colors), splitLine: { show: false },
-      axisLabel: { color: colors.muted, fontFamily: MONO, fontSize: 10, formatter: (date) => date.slice(5), interval: (index) => labels.has(columns[index]?.date) } },
-    { type: 'value', min: 0, max: 1, show: false, gridIndex: 1 }],
-    yAxis: [{ type: 'value', min: 0, max: yMax, interval: yStep, ...axis(colors), axisLabel: { color: colors.muted, fontFamily: MONO, fontSize: 10 }, splitLine: { show: false } },
-    { type: 'value', min: 0, max: yMax, interval: yStep, show: false, gridIndex: 1 }],
-    series: [{ type: 'custom', animation: false, silent: true, clip: false, xAxisIndex: 1, yAxisIndex: 1, data: [0],
-      renderItem: (params) => ({ type: 'rect', shape: { x: params.coordSys.x, y: 8,
-        width: 150, height: params.coordSys.y + params.coordSys.height - 36 },
-      style: { fill: colors.sunken, stroke: colors.dark ? colors.ruleStrong : 'transparent', lineWidth: 1 } }) },
-    { type: 'custom', animation: false, silent: false, data: columns.map((night, index) => [index, night.top]),
-      renderItem: (params, api) => { const night = columns[params.dataIndex]; if (!finite(programmed)) return null;
-        const [x, y] = api.coord([params.dataIndex, night.top]); const datum = api.coord([params.dataIndex, programmed])[1];
-        const width = Math.min(12, api.size([1, 0])[0] * .56); const up = night.sign === 1;
-        if (night.sign === null) return { type: 'rect', shape: { x: x - 6, y: datum - 1.5, width: 12, height: 3 }, style: { fill: colors.programmed } };
-        return { type: 'rect', shape: { x: x - width / 2, y: Math.min(y, datum), width, height: Math.abs(datum - y), r: up ? [0, 0, 2, 2] : [2, 2, 0, 0] }, style: { fill: up ? colors.high : lessColor } };
-      }, tooltip: { formatter: (params) => { const night = columns[params.dataIndex]; return `${night.date} · ${night.delivered_rate} U/h · ${night.programmed_rate} U/h · ${night.sign === 1 ? 'more' : night.sign === -1 ? 'less' : 'as set'}`; } } },
-    { type: 'custom', animation: false, silent: true, clip: false, data: [0], renderItem: (params, api) => { if (!finite(programmed)) return null;
-      const y = api.coord([0, programmed])[1]; const mainEnd = params.coordSys.x + params.coordSys.width;
-      const scale = Array.from({ length: 4 }, (_, index) => yStep * (index + 1)).filter((value) => value < yMax && value !== programmed);
-      return { type: 'group', children: [
-        ...scale.map((value) => ({ type: 'line', shape: { x1: params.coordSys.x, y1: api.coord([0, value])[1], x2: mainEnd - 8, y2: api.coord([0, value])[1] }, style: { stroke: `color-mix(in srgb, ${colors.line} 42%, transparent)`, lineWidth: 1 } })),
-        { type: 'line', shape: { x1: params.coordSys.x, y1: y, x2: mainEnd, y2: y }, style: { stroke: colors.programmed, lineWidth: 1.5 } },
-        { type: 'line', shape: { x1: mainEnd, y1: y, x2: mainEnd + 14 + 24, y2: y }, style: { stroke: colors.programmed, lineWidth: 1, lineDash: [1, 3], opacity: .72 } },
-        { type: 'line', shape: { x1: params.coordSys.x, y1: params.coordSys.y + params.coordSys.height + 23, x2: mainEnd + 14 + 150, y2: params.coordSys.y + params.coordSys.height + 23 }, style: { stroke: colors.line, lineWidth: 1 } }] };
-    } },
-    { type: 'scatter', animation: false, silent: true, symbol: 'triangle', symbolSize: [7, 5], symbolOffset: [0, -7], itemStyle: { color: colors.high },
-      data: columns.filter((night) => night.capped).map((night) => ({ value: [night.date, yMax], label: { show: true, position: 'top', distance: 4, color: colors.high, fontFamily: MONO, fontSize: 10, formatter: () => night.delivered_rate.toFixed(1) } })) },
-    ...(finite(ciLo) && finite(ciHi) ? [{ type: 'custom', animation: false, silent: true, xAxisIndex: 1, yAxisIndex: 1, data: [0], renderItem: (params, api) => {
-      const x = params.coordSys.x + 24; const yLo = api.coord([0, ciLo])[1]; const yHi = api.coord([0, ciHi])[1]; const yEst = finite(estimateValue) ? api.coord([0, estimateValue])[1] : null;
+  const option = basalOption('clock', { data, mini });
+  if (mini) return option;
+
+  const { programmed, ciLo, ciHi, estimateValue } = basalFacts(data);
+  const mainGrid = { ...option.grid[0], right: 174 };
+  option.grid = [mainGrid, { right: 10, width: 150, top: mainGrid.top, bottom: mainGrid.bottom }];
+  option.xAxis[1] = { type: 'value', min: 0, max: 1, show: false, gridIndex: 1 };
+  option.yAxis[1] = { type: 'value', min: 0, max: option.yAxis[0].max, show: false, gridIndex: 1 };
+
+  const gutterIndex = option.series.findIndex((series) => series.xAxisIndex === 1 && series.yAxisIndex === 1);
+  if (gutterIndex >= 0) option.series.splice(gutterIndex, 1);
+  option.series.unshift({ type: 'custom', animation: false, silent: true, clip: false,
+    xAxisIndex: 1, yAxisIndex: 1, data: [0], renderItem: (params) => ({ type: 'rect',
+      shape: { x: params.coordSys.x, y: 8, width: 150, height: params.coordSys.y + params.coordSys.height - 36 },
+      style: { fill: colors.sunken, stroke: colors.dark ? colors.ruleStrong : 'transparent', lineWidth: 1 } }),
+  });
+  option.series.push({ type: 'custom', animation: false, silent: true, clip: false, data: [0],
+    renderItem: (params, api) => {
+      if (!finite(programmed)) return null;
+      const y = api.coord([0, programmed])[1];
+      const mainEnd = params.coordSys.x + params.coordSys.width;
+      return { type: 'line', shape: { x1: mainEnd, y1: y, x2: mainEnd + 14 + 24, y2: y },
+        style: { stroke: colors.programmed, lineWidth: 1, lineDash: [1, 3], opacity: .72 } };
+    },
+  });
+  if (!finite(ciLo) || !finite(ciHi)) return option;
+  option.series.push({ type: 'custom', animation: false, silent: true, xAxisIndex: 1, yAxisIndex: 1,
+    data: [0], renderItem: (params, api) => {
+      const x = params.coordSys.x + 24;
+      const yLo = api.coord([0, ciLo])[1];
+      const yHi = api.coord([0, ciHi])[1];
+      const yEst = finite(estimateValue) ? api.coord([0, estimateValue])[1] : null;
       const readY = Math.max(params.coordSys.y + 18, Math.min(yEst ?? yHi, params.coordSys.y + params.coordSys.height - 42));
       return { type: 'group', children: [{ type: 'rect', shape: { x: x - 9, y: yHi, width: 18, height: yLo - yHi }, style: { fill: `color-mix(in srgb, ${colors.signal} 14%, transparent)` } },
         { type: 'rect', shape: { x: x - 1, y: yHi, width: 2, height: yLo - yHi }, style: { fill: colors.programmed } },
@@ -262,11 +235,10 @@ function basalBayOption(data, mini, colors, description) {
           { type: 'text', style: { text: 'U/h · ESTIMATE', x: x + 22, y: readY + 18, fill: colors.muted, font: `9px ${FONT}` } },
           { type: 'text', style: { text: `${ciLo.toFixed(2)}–${ciHi.toFixed(2)} CI\nSET ${programmed?.toFixed(2) ?? '—'}`, x: x + 22, y: readY + 31, fill: colors.muted, font: `10px ${MONO}`, lineHeight: 13 } }]),
         { type: 'text', style: { text: ciHi.toFixed(2), x: x - 13, y: yHi, align: 'right', verticalAlign: 'middle', fill: colors.muted, font: `10px ${MONO}` } },
-        { type: 'text', style: { text: ciLo.toFixed(2), x: x - 13, y: yLo, align: 'right', verticalAlign: 'middle', fill: colors.muted, font: `10px ${MONO}` } },
-        ...(data?.verdict ? [{ type: 'text', right: 2, top: 2, style: { text: data.verdict, fill: colors.muted, font: `700 10px ${FONT}` } }] : [])] };
-    } }] : []),
-    ],
-  };
+        { type: 'text', style: { text: ciLo.toFixed(2), x: x - 13, y: yLo, align: 'right', verticalAlign: 'middle', fill: colors.muted, font: `10px ${MONO}` } }] };
+    },
+  });
+  return option;
 }
 
 function basalLedgerOption(data, mini, colors, description) {
